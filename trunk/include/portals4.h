@@ -22,6 +22,7 @@ enum ptl_retvals {
     PTL_PID_IN_USE,	/*!< The specified PID is currently in use. */
     PTL_MD_IN_USE,	/*!< The specified memory descriptor is currently in use. */
     PTL_NO_SPACE,	/*!< Sufficient memory for specified action was not available. */
+    PTL_LE_LIST_TOO_LONG, /*!< The resulting list is too long (maximum is interface-dependent). */
 };
 
 /**************
@@ -49,6 +50,7 @@ typedef int		ptl_handle_ni_t; /*!< A network interface handle */
 typedef int		ptl_handle_eq_t; /*!< An event queue handle */
 typedef int		ptl_handle_ct_t; /*!< A counting type event handle */
 typedef int		ptl_handle_md_t; /*!< A memory descriptor handle */
+typedef int		ptl_handle_le_t; /*!< A list entry handle */
 /*!
  * @union ptl_process_id_t
  * @brief A union for representing processes either physically or logically.
@@ -75,6 +77,7 @@ typedef union {
     ptl_handle_eq_t eq; /*!< An event queue handle */
     ptl_handle_ct_t ct; /*!< A counting type event handle */
     ptl_handle_md_t md; /*!< A memory descriptor handle */
+    ptl_handle_le_t le; /*!< A list entry handle */
 }			ptl_handle_any_t;
 /*!
  * @struct ptl_md_t
@@ -149,6 +152,109 @@ typedef struct {
     void* iov_base; /*!< The byte aligned start address of the vector element. */
     ptl_size_t iov_len; /*!< The length (in bytes) of the vector element. */
 } ptl_iovec_t;
+/*! @struct ptl_ac_id_t
+ * @brief To facilitate access control to both list entries and match list
+ *	entries, the ptl_ac_id_t is defined as a union of a job ID and a user
+ *	ID. A ptl_ac_id_t is attached to each list entry or match list entry to
+ *	control which user (or which job, as selected by an option) can access
+ *	the entry. Either field can specify a wildcard.
+ * @ingroup LEL
+ */
+typedef union {
+    ptl_jid_t	jid; /*!< The user identifier of the \a initiator that may
+		       access the associated list entry or match list entry.
+		       This may be set to \c PTL_UID_ANY to allow access by any
+		       user. */
+    ptl_uid_t	uid; /*!< The job identifier of the \a initiator that may
+		       access the associated list entry or match list entry.
+		       This may be set to \c PTL_JID_ANY to allow access by any
+		       job. */
+} ptl_ac_id_t;
+/*!
+ * @struct ptl_le_t
+ * @brief Defines the visible parts of a list entry. Values of this type are
+ *	used to initialize the list entries.
+ *
+ * @ingroup LEL
+ * @note The list entry (LE) has a number of fields in common with the memory
+ *	descriptor (MD). The overlapping fields have the same meaning in the LE
+ *	as in the MD; however, since initiator and target resources are
+ *	decoupled, the MD is not a proper subset of the LE, and the options
+ *	field has different meaning based on whether it is used at an initiator
+ *	or target, it was deemed undesirable and cumbersome to include a
+ *	"target MD" structure that would be included as an entry in the LE.
+ * @note The default behavior from Portals 3.3 (no truncation and locally
+ *	managed offsets) has been changed to match the default semantics of the
+ *	list entry, which does not provide matching.
+ */
+typedef struct {
+    void*	    start; /*!< Specify the starting address of the memory
+			     region associated with the match list entry. Can
+			     be \c NULL provided that \a length is zero.
+			     Zero-length buffers (NULL LE) are useful to record
+			     events. There are no alignment restrictions on
+			     buffer alignment, the starting address, or the
+			     length of the region; although messages that are
+			     not natively aligned (e.g. to a four byte or eight
+			     byte boundary) may be slower (i.e. lower bandwidth
+			     and/or longer latency) on some implementations. */
+    ptl_size_t	    length; /*!< Specify the length of the memory region
+			      associated with the match list entry. */
+    ptl_handle_ct_t ct_handle; /*!< A handle for counting type events
+				 associated with the memory region. If this
+				 argument is \c PTL_CT_NONE, operations
+				 performed on this list entry are not counted.
+				 */
+    ptl_ac_id_t	    ac_id; /*!< Specifies either the user ID or job ID (as
+			     selected by the \a options) that may access this
+			     list entry. Either the user ID or job ID may be
+			     set to a wildcard (\c PTL_UID_ANY or \c
+			     PTL_JID_ANY). If the access control check fails,
+			     then the message is dropped without modifying
+			     Portals state. This is treated as a permissions
+			     failure and the PtlNIStatus() register indexed by
+			     \c PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
+			     This failure is also indicated to the initiator
+			     through the \a ni_fail_type in the \c
+			     PTL_EVENT_SEND event, unles the \c
+			     PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+    unsigned int    options; /*!< Specifies the behavior of the list entry. The
+			       following options can be selected: enable put
+			       operations (yes or no), enable get operations
+			       (yes or no), offset management (local or
+			       remote), message truncation (yes or no),
+			       acknowledgement (yes or no), use scatter/gather
+			       vectors and disable events. Values for this
+			       argument can be constructed using a bitwise OR
+			       of the following values:
+ - \c PTL_LE_OP_PUT
+ - \c PTL_LE_OP_GET
+ - \c PTL_LE_USE_ONCE
+ - \c PTL_LE_ACK_DISABLE
+ - \c PTL_IOVEC
+ - \c PTL_LE_EVENT_DISABLE
+ - \c PTL_LE_EVENT_SUCCESS_DISABLE
+ - \c PTL_LE_EVENT_OVER_DISABLE
+ - \c PTL_LE_EVENT_UNLINK_DISABLE
+ - \c PTL_LE_EVENT_CT_GET
+ - \c PTL_LE_EVENT_CT_PUT
+ - \c PTL_LE_EVENT_CT_PUT_OVERFLOW
+ - \c PTL_LE_EVENT_CT_ATOMIC
+ - \c PTL_LE_EVENT_CT_ATOMIC_OVERFLOW
+ - \c PTL_LE_AUTH_USE_JID
+ */
+} ptl_le_t;
+/*! @enum ptl_list_t
+ * @brief A behavior for PtlLEAppend()
+ * @ingroup LEL
+ */
+typedef enum {
+    PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
+    PTL_OVERFLOW, /*!< The overflow list associated with a portal table entry. */
+    PTL_PROBE_ONLY, /*!< Do not attach to a list. Use the LE to proble the
+		      overflow list, without consuming an item in the list and
+		      without being attached anywhere. */
+} ptl_list_t;
 
 /********************
  * Option Constants *
@@ -196,6 +302,7 @@ typedef struct {
 					       \c PTL_EVENT_SEND) from having
 					       to wait for a round-trip
 					       notification before delivery. */
+/* @} */
 #define PTL_IOVEC		     (1<<7) /*!< Specifies that the \a start
 					      member of the ptl_md_t structure
 					      is a pointer to an array of type
@@ -209,6 +316,96 @@ typedef struct {
 					      as a memory descriptor that
 					      describes a single virtually
 					      contiguous region of memory. */
+/*! @addtogroup LEL
+ * @{ */
+#define PTL_LE_OP_PUT			(1) /*!< Specifies that the list entry
+					      will respond to put operations.
+					      By default, list entries reject
+					      put operations. If a put
+					      operation targets a list entry
+					      where \c PTL_LE_OP_PUT is not
+					      set, it is treated as a
+					      permissions failure. */
+#define PTL_LE_OP_GET			(1<<1) /*!< Specifies that the list
+						 entry will respond to get
+						 operations. By default, list
+						 entries reject get operations.
+						 If a get operations targets a
+						 list entry where \c
+						 PTL_LE_OP_GET is not set, it
+						 is treated as a permissions
+						 failure.
+						 @note It is not considered an
+						 error to have a list entry
+						 taht does not respond to
+						 either put or get operations:
+						 Every list entry responds to
+						 reply operations. Nor is it
+						 considered an error to have a
+						 list entry that responds to
+						 both put and get operations.
+						 In fact, it is often desirable
+						 for a list entry used in an
+						 atomic operation to be
+						 configured to respond to both
+						 put and get operations. */
+#define PTL_LE_USE_ONCE			(1<<2) /*!< Specifies that the list
+						 entry will only be used once
+						 and then unlinked. If this
+						 option is not set, the list
+						 entry persists until it is
+						 explicitly unlinked. */
+#define PTL_LE_ACK_DISABLE		(1<<3) /*!< Specifies that an
+						 acknowledgement should not be
+						 sent for incoming put
+						 operations, even if requested.
+						 By default, acknowledgements
+						 are sent for put operations
+						 that request an
+						 acknowledgement. This applies
+						 to both standard and counting
+						 type events. Acknowledgements
+						 are never sent for get
+						 operations. The data sent in
+						 the reply serves as an
+						 implicit acknowledgement. */
+#define PTL_LE_EVENT_DISABLE		(1<<4) /*!< Specifies that this list
+						 entry should not generate
+						 events. */
+#define PTL_LE_EVENT_SUCCESS_DISABLE	(1<<5) /*!< Specifies that this list
+						 entry should not generate
+						 events that indicate success.
+						 This is useful in scenarios
+						 where the application does not
+						 need normal events, but does
+						 require failure information to
+						 enhance reliability. */
+#define PTL_LE_EVENT_OVER_DISABLE	(1<<6) /*!< Specifies that this list
+						 entry should not generate
+						 overflow list events. */
+#define PTL_LE_EVENT_UNLINK_DISABLE	(1<<8) /*!< Specifies that this list
+						 entry should not gnerate
+						 unlink (\c PTL_EVENT_UNLINK)
+						 or free (\c PTL_EVENT_FREE)
+						 events. */
+#define PTL_LE_EVENT_CT_GET		(1<<9) /*!< Enable the counting of \c
+						 PTL_EVENT_GET events */
+#define PTL_LE_EVENT_CT_PUT		(1<<10) /*!< Enable the counting of \c
+						  PTL_EVENT_PUT events */
+#define PTL_LE_EVENT_CT_PUT_OVERFLOW	(1<<11) /*!< Enable the counting of \c
+						  PTL_EVENT_PUT_OVERFLOW events
+						  */
+#define PTL_LE_EVENT_CT_ATOMIC		(1<<12) /*!< Enable the counting of \c
+						  PTL_EVENT_ATOMIC events */
+#define PTL_LE_EVENT_CT_ATOMIC_OVERFLOW (1<<13) /*!< Enable the counting of \c
+						  PTL_EVENT_ATOMIC_OVERFLOW
+						  events */
+#define PTL_LE_AUTH_USE_JID		(1<<14) /*!< Use job ID for
+						  authentication instead of
+						  user ID. By default, the user
+						  ID must match to allow a
+						  message to access a list
+						  entry. */
 /* @} */
 
 /*************
@@ -686,6 +883,90 @@ int PtlMDBind(ptl_handle_ni_t	ni_handle,
  * @see PtlMDBind()
  */
 int PtlMDRelease(ptl_handle_md_t md_handle);
+/*! @} */
+
+/**************************
+ * List Entries and Lists *
+ **************************/
+/*!
+ * @addtogroup LEL List Entries and Lists
+ * @{
+ * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
+ *		   ptl_pt_index_t   pt_index,
+ *		   ptl_le_t	    le,
+ *		   ptl_list_t	    ptl_list,
+ *		   void*	    user_ptr,
+ *		   ptl_handle_le_t* le_handle)
+ * @brief Creates a single list entry and appends this entry to the end of the
+ *	list specified by \a ptl_list associated with the portal table entry
+ *	specified by \a pt_index for the portal table for \a ni_handle. if the
+ *	list is currently uninitialized, the PtlLEAAppend() function creates
+ *	the first entry in the list.
+ *
+ *	When a list entry is posted to a list, the overflow list is checked to
+ *	see if a message has arrived prior to posting the list entry. if so, a
+ *	\c PTL_EVENT_PUT_OVERFLOW event is generated. No searching is performed
+ *	when a list entry is posted to the overflow list.
+ * @param[in] ni_handle	    The interface handle to use.
+ * @param[in] pt_index	    The portal table index where the list entry should
+ *			    be appended.
+ * @param[in] le	    Provides initial values for the user-visible parts
+ *			    of a list entry. Other than its use for
+ *			    initialization, there is no linkage between this
+ *			    structure and the list entry maintained by the API.
+ * @param[in] ptl_list	    Determines whether the list entry is appended to
+ *			    the priority list, appended to the overflow list,
+ *			    or simply queries the overflow list.
+ * @param[in] user_ptr	    A user-specified value that is associated with each
+ *			    command that can generate an event. The value does
+ *			    not need to be a pointer, but must fit in the space
+ *			    used by a pointer. This value (along with other
+ *			    values) is recorded in events associated with
+ *			    operations on this list entry.
+ * @param[out] le_handle    On successful return, this location will hold the
+ *			    newly created list entry handle.
+ * @retval PTL_OK		Indicates success.
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that either \a ni_handle is not a
+ *				valid network interface handle or \a pt_index
+ *				is not a valid portal table index.
+ * @retval PTL_NO_SPACE		Indicates that there is insufficient memory to
+ *				allocate the match list entry.
+ * @retval PTL_LE_LIST_TOO_LONG	Indicates that the resulting list is too long.
+ *				The maximum length for a list is defined by the
+ *				interface.
+ * @see PtlLEUnlink()
+ */
+int PtlLEAppend(ptl_handle_ni_t	    ni_handle,
+		ptl_pt_index_t	    pt_index,
+		ptl_le_t	    le,
+		ptl_list_t	    ptl_list,
+		void*		    user_ptr,
+		ptl_handle_le_t*    le_handle);
+/*!
+ * @fn PtlLEUnlink(ptl_handle_le_t le_handle)
+ * @brief Used to unlink a list entry from a list. This operation also releases
+ *	any resources associated with the list entry. It is an error to use the
+ *	list entry handle after calling PtlLEUnlink().
+ * @param[in] le_handle	The list entry handle to be unlinked.
+ * @note If this list entry has pending operations; e.g., an unfinished reply
+ *	operation, then PtlLEUnlink() will return \c PTL_LE_IN_USE, and the
+ *	list entry will not be unlinked. This essentially creates a race
+ *	between the application retrying the unlink operation and a new
+ *	operation arriving. This is believed to be reasonable as the
+ *	application rarely wants to unlink an LE while new operations are
+ *	arriving to it.
+ * @retval PTL_OK	    Indicates success.
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that \a le_handle is not a valid
+ *			    list entry handle.
+ * @retval PTL_LE_IN_USE    Indicates that the list entry has pending
+ *			    operations and cannot be unlinked.
+ * @see PtlLEAppend()
+ */
+int PtlLEUnlink(ptl_handle_le_t le_handle);
 /*! @} */
 
 #endif
