@@ -31,6 +31,9 @@ enum ptl_retvals {
 typedef uint64_t	ptl_size_t; /*!< Unsigned 64-bit integral type used for representing sizes. */
 typedef unsigned int	ptl_pt_index_t; /*!< Integral type used for representing portal table indices. */
 typedef uint64_t	ptl_match_bits_t; /*!< Capable of holding unsigned 64-bit integer values. */
+typedef uint64_t	ptl_hdr_data_t; /*!< 64 bits of out-of-band user data. */
+typedef uint64_t	ptl_seq_t; /*!< Sequence number; should be unique for the life of the program. */
+typedef unsigned int	ptl_time_t; /*!< Time in milliseconds (used for timeout specification). */
 typedef unsigned int	ptl_interface_t; /*!< Integral type used for identifying different network interfaces. */
 typedef unsigned int	ptl_nid_t; /*!< Integral type used for representing node identifiers. */
 typedef unsigned int	ptl_pid_t; /*!< Integral type used for representing
@@ -271,15 +274,6 @@ extern const ptl_jid_t PTL_JID_ANY;	/*!< Matches any job identifier. */
 extern const ptl_rank_t PTL_RANK_ANY;	/*!< Matches any rank. */
 extern const ptl_sr_index_t PTL_SR_DROP_COUNT;	/*!< Identifies the status register that counts the dropped requests for the interface. */
 extern const ptl_sr_index_t PTL_SR_PERMISSIONS_VIOLATIONS;	/*!< Identifies the status register that counts the number of attempted permission violations. */
-extern const unsigned int PTL_NI_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching enabled. */
-extern const unsigned int PTL_NI_NO_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching
-						 * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
-						 * exclusive. */
-extern const unsigned int PTL_NI_LOGICAL;	/*!< Request that the interface specified in \a iface be opened with logical
-						 * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
-extern const unsigned int PTL_NI_PHYSICAL;	/*!< Request that the interface specified in \a iface be opened with physical
-						 * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
-						 * PTL_NI_PHYSICAL are mutually exclusive */
 
 /******************************
  * Initialization and Cleanup *
@@ -316,7 +310,7 @@ void PtlFini(void);
  * Network Interfaces *
  **********************/
 /*!
- * @addtogroup NI Network Interfaces
+ * @addtogroup NI (NI) Network Interfaces
  * @{
  * @implnote A logical interface is very similar to a physical interface. Like
  * a physical interface, a logical interface is a "well known" interface --
@@ -326,7 +320,31 @@ void PtlFini(void);
  * the logical interface on which this message was sent. In addition, all
  * logical interfaces associated with a single physical interface must share a
  * single node ID and Portals process ID.
- *
+ */
+typedef int ptl_ni_fail_t; /*!< A network interface can use this integral type
+			     to define specific information regarding the
+			     failure of an operation. */
+extern const unsigned int PTL_NI_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching enabled. */
+extern const unsigned int PTL_NI_NO_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching
+						 * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
+						 * exclusive. */
+extern const unsigned int PTL_NI_LOGICAL;	/*!< Request that the interface specified in \a iface be opened with logical
+						 * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
+extern const unsigned int PTL_NI_PHYSICAL;	/*!< Request that the interface specified in \a iface be opened with physical
+						 * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
+						 * PTL_NI_PHYSICAL are mutually exclusive */
+extern const ptl_ni_fail_t PTL_NI_OK; /*!< Used in successful end events to
+					indicate that there has been no
+					failure. */
+extern const ptl_ni_fail_t PTL_NI_UNDELIVERABLE; /*!< Indicates a system
+						   failure that prevents
+						   message delivery. */
+extern const ptl_ni_fail_t PTL_NI_FLOW_CTRL; /*!< Indicates that the remote
+					       node has exhausted its
+					       resources, enabled flow control,
+					       and dropped this message. */
+extern const ptl_ni_fail_t PTL_NI_PERM_VIOLATION; /*!< Indicates that the remote Portals addressing indicated a permissions violation for this message. */
+/*!
  * @struct ptl_ni_limits_t
  * @brief The network interface (NI) limits type */
 typedef struct {
@@ -484,7 +502,7 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  * Portal Table Entries *
  ************************/
 /*!
- * @addtogroup PT Portal Table Entries
+ * @addtogroup PT (PT) Portal Table Entries
  * @{ */
 /*! Hint to the underlying implementation that all entries attached to this
  * portal table entry will have the \c PTL_ME_USE_ONCE or \c PTL_LE_USE_ONCE
@@ -577,7 +595,7 @@ int PtlPTDisable(ptl_handle_ni_t    ni_handle,
  * @brief Indicates to an implementation that a previously disabled portal
  *	table entry should be re-enabled. This is used to enable portal table
  *	entries that were automatically or manually disabled. The function
- *	blocks until the portal table entry status has been updated.
+ *	blocks until the portal table entry is enabled.
  * @param[in] ni_handle	The interface handle to use.
  * @param[in] pt_index	The portal index that is to be enabled.
  * @retval PTL_OK	    Indicates success.
@@ -681,7 +699,7 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  * Memory Descriptors *
  **********************/
 /*!
- * @addtogroup MD Memory Descriptors
+ * @addtogroup MD (MD) Memory Descriptors
  * @{ */
 /*! Specifies that this memory descriptor should not generate events. */
 #define PTL_MD_EVENT_DISABLE	     (1)
@@ -776,7 +794,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  * List Entries and Lists *
  **************************/
 /*!
- * @addtogroup LEL List Entries and Lists
+ * @addtogroup LEL (LE) List Entries and Lists
  * @{
  * @enum ptl_list_t
  * @brief A behavior for list appending.
@@ -940,7 +958,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * Matching List Entries and Matching Lists *
  ********************************************/
 /*!
- * @addtogroup MLEML Matching List Entries and Matching Lists
+ * @addtogroup MLEML (ME) Matching List Entries and Matching Lists
  * @{
  */
 /*! Specifies that the match list entry will respond to \p put operations. By
@@ -1057,93 +1075,85 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * @endcode
  */
 typedef struct {
-    void *		start; /*!< Specify the starting address of the memory
-				 region associated with the match list entry.
-				 The \a start member can be \c NULL provided
-				 that the \a length member is zero. Zero-length
-				 buffers (NULL ME) are useful to record events.
-				 There are no alignment restrictions on buffer
-				 alignment, the starting address or the length
-				 of the region; although unaligned messages may
-				 be slower (i.e., lower bandwidth and/or longer
-				 latency) on some implementations. */
-    ptl_size_t		length; /*!< Specify the length of the memory region associated with the match list entry. */
-    ptl_handle_ct_t	ct_handle; /*!< A handle for counting type events
-				     associated with the memory region. If this
-				     argument is \c PTL_CT_NONE, operations
-				     performed on this match list entry are not
-				     counted. */
-    ptl_size_t		min_free; /*!< When the unused portion of a match list
-				    entry (length - local offset) falls below
-				    this value, the match list entry
-				    automatically unlinks. This value is only
-				    used if the \c PTL_ME_MIN_FREE option is
-				    specified and \c PTL_ME_MANAGE_LOCAL is
-				    set. */
-    ptl_ac_id_t		ac_id; /*!< Specifies either the user ID or job ID (as
-				 selected by the options) that may access this
-				 match list entry. Either the user ID or job ID
-				 may be set to a wildcard (\c PTL_UID_ANY or \c
-				 PTL_JID_ANY). If the access control check
-				 fails, then the message is dropped without
-				 modifying Portals state. This is treated as a
-				 permissions failure and the PtlNIStatus()
-				 register indexed by \c
-				 PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
-				 This failure is also indicated to the
-				 initiator through the \a ni_fail_type in the
-				 \c PTL_EVENT_SEND event, unless the \c
-				 PTL_MD_REMOTE_FAILURE_DISABLE option is set.
-				 */
-    unsigned int	options; /*!< Specifies the behavior of the match list
-				   entry. The following options can be
-				   selected: enable put opterations (yes or
-				   no), enable get operations (yes or no),
-				   offset management (local or remote), message
-				   truncation (yes or no), acknowledgement (yes
-				   or no), use scatter/gater vectors and
-				   disable events. Values for this argument can
-				   be constructed using a bitwise OR of the
-				   following values:
- - \c PTL_ME_OP_PUT
- - \c PTL_ME_OP_GET
- - \c PTL_ME_MANAGE_LOCAL
- - \c PTL_ME_NO_TRUNCATE
- - \c PTL_ME_USE_ONCE
- - \c PTL_ME_MAY_ALIGN
- - \c PTL_ME_ACK_DISABLE
- - \c PTL_IOVEC
- - \c PTL_ME_MIN_FREE
- - \c PTL_ME_EVENT_DISABLE
- - \c PTL_ME_EVENT_SUCCESS_DISABLE
- - \c PTL_ME_EVENT_OVER_DISABLE
- - \c PTL_ME_EVENT_UNLINK_DISABLE
- - \c PTL_ME_EVENT_CT_GET
- - \c PTL_ME_EVENT_CT_PUT
- - \c PTL_ME_EVENT_CT_PUT_OVERFLOW
- - \c PTL_ME_EVENT_CT_ATOMIC
- - \c PTL_ME_EVENT_CT_ATOMIC_OVERFLOW
- - \c PTL_ME_AUTH_USE_JID
- */
-    ptl_process_id_t	match_id; /*!< Specifies the match criteria for the
-				    process identifier of the requester. The
-				    constants \c PTL_PID_ANY and \c PTL_NID_ANY
-				    can be used to wildcard either of the
-				    physical identifiers in the
-				    ptl_process_id_t structure, or \c
-				    PTL_RANK_ANY can be used to wildcard the
-				    rank for logical addressing. */
-    ptl_match_bits_t	match_bits; /*!< Specify the match criteria to apply to
-				      the match bits in the incoming request.
-				      The \a ignore_bits are used to mask out
-				      insignificant bits in the incoming match
-				      bits. The resulting bits are then
-				      compared to the match list entry's match
-				      bits to determine if the incoming request
-				      meets the match criteria. */
-    ptl_match_bits_t	ignore_bits; /*!< The \a ignore_bits are used to mask out
-				      insignificant bits in the incoming match
-				      bits. */
+    /*! Specify the starting address of the memory region associated with the
+     * match list entry. The \a start member can be \c NULL provided that the
+     * \a length member is zero. Zero-length buffers (NULL ME) are useful to
+     * record events. There are no alignment restrictions on buffer alignment,
+     * the starting address or the length of the region; although unaligned
+     * messages may be slower (i.e., lower bandwidth and/or longer latency) on
+     * some implementations. */
+    void *		start;
+
+    /*! Specify the length of the memory region associated with the match list entry. */
+    ptl_size_t		length;
+
+    /*! A handle for counting type events associated with the memory region.
+     * If this argument is \c PTL_CT_NONE, operations performed on this match
+     * list entry are not counted. */
+    ptl_handle_ct_t	ct_handle;
+
+    /*! When the unused portion of a match list entry (length - local offset)
+     * falls below this value, the match list entry automatically unlinks. This
+     * value is only used if the \c PTL_ME_MIN_FREE option is specified and \c
+     * PTL_ME_MANAGE_LOCAL is set. */
+    ptl_size_t		min_free;
+
+    /*! Specifies either the user ID or job ID (as selected by the options)
+     * that may access this match list entry. Either the user ID or job ID may
+     * be set to a wildcard (\c PTL_UID_ANY or \c PTL_JID_ANY). If the access
+     * control check fails, then the message is dropped without modifying
+     * Portals state. This is treated as a permissions failure and the
+     * PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
+     * incremented. This failure is also indicated to the initiator through the
+     * \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
+     * PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+    ptl_ac_id_t		ac_id;
+
+    /*! Specifies the behavior of the match list entry. The following options
+     * can be selected: enable put opterations (yes or no), enable get
+     * operations (yes or no), offset management (local or remote), message
+     * truncation (yes or no), acknowledgement (yes or no), use scatter/gater
+     * vectors and disable events. Values for this argument can be constructed
+     * using a bitwise OR of the following values:
+     - \c PTL_ME_OP_PUT
+     - \c PTL_ME_OP_GET
+     - \c PTL_ME_MANAGE_LOCAL
+     - \c PTL_ME_NO_TRUNCATE
+     - \c PTL_ME_USE_ONCE
+     - \c PTL_ME_MAY_ALIGN
+     - \c PTL_ME_ACK_DISABLE
+     - \c PTL_IOVEC
+     - \c PTL_ME_MIN_FREE
+     - \c PTL_ME_EVENT_DISABLE
+     - \c PTL_ME_EVENT_SUCCESS_DISABLE
+     - \c PTL_ME_EVENT_OVER_DISABLE
+     - \c PTL_ME_EVENT_UNLINK_DISABLE
+     - \c PTL_ME_EVENT_CT_GET
+     - \c PTL_ME_EVENT_CT_PUT
+     - \c PTL_ME_EVENT_CT_PUT_OVERFLOW
+     - \c PTL_ME_EVENT_CT_ATOMIC
+     - \c PTL_ME_EVENT_CT_ATOMIC_OVERFLOW
+     - \c PTL_ME_AUTH_USE_JID
+     */
+    unsigned int	options;
+
+    /*! Specifies the match criteria for the process identifier of the
+     * requester. The constants \c PTL_PID_ANY and \c PTL_NID_ANY can be used
+     * to wildcard either of the physical identifiers in the ptl_process_id_t
+     * structure, or \c PTL_RANK_ANY can be used to wildcard the rank for
+     * logical addressing. */
+    ptl_process_id_t	match_id;
+
+    /*! Specify the match criteria to apply to the match bits in the incoming
+     * request. The \a ignore_bits are used to mask out insignificant bits in
+     * the incoming match bits. The resulting bits are then compared to the
+     * match list entry's match bits to determine if the incoming request meets
+     * the match criteria. */
+    ptl_match_bits_t	match_bits;
+
+    /*! The \a ignore_bits are used to mask out insignificant bits in the
+     * incoming match bits. */
+    ptl_match_bits_t	ignore_bits;
 } ptl_me_t;
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t	ni_handle,
@@ -1207,6 +1217,7 @@ typedef struct {
  *	any communication with other nodes in the system. Therefore, \c
  *	PTL_PROCESS_INVALID may not be returned in some cases where it would
  *	seem appropriate.
+ * @see PtlMEUnlink()
  */
 int PtlMEAppend(ptl_handle_ni_t	    ni_handle,
 		ptl_pt_index_t	    pt_index,
@@ -1230,10 +1241,11 @@ int PtlMEAppend(ptl_handle_ni_t	    ni_handle,
  * @retval PTL_OK		Indicates success
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that either \a me_handle is not a
- *				valid match list entry handle.
+ * @retval PTL_ARG_INVALID	Indicates that \a me_handle is not a valid
+ *				match list entry handle.
  * @retval PTL_IN_USE		Indicates that the match list entry has pending
  *				operations and cannot be unlinked.
+ * @see PtlMEAppend()
  */
 int PtlMEUnlink(ptl_handle_me_t me_handle);
 /*! @} */
@@ -1244,7 +1256,405 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
 /*!
  * @addtogroup EEQ Events and Event Queues
  * @{
+ * @enum ptl_event_kind_t
+ * @brief The portals API defines twelve types of events that can be logged in
+ *	an event queue.
+ * @implnote An implementation is not required to deliver overflow events, if
+ *	it can prevent an overflow from happening. For example, if an
+ *	implementation used rendezvous at the lowest level, it could always
+ *	choose to deliver the message into the memory of the ME that would
+ *	eventually be posted.
  */
+typedef enum {
+    /*! A previously initiated \p get operation completed successfully. */
+    PTL_EVENT_GET,
+
+    /*! A previously initiated \p put operation completed successfully. The
+     * underlying layers will not alter the memory (on behalf of this
+     * operation) once this event has been logged. */
+    PTL_EVENT_PUT,
+
+    /*! A match list entry posted by PtMEAppend() matched a message that has
+     * already arrived and is managed within the overflow list. All, some, or
+     * none of the message may have been captured in local memory as requested
+     * by the match list entry and described by the \a rlength and \a mlength
+     * in the event. The event will point to the start of the message in the
+     * memory region described by the match list entry from the overflow list,
+     * if any of the message was captured. When the \a rlength and \a mlength fields
+     * do not match (i.e. the message was truncated), the application is
+     * responsible for performing the remaining transfer. This typically occurs
+     * when the application has provided an overflow list entry designed to
+     * accept headers but not message bodies. The transfer is typically done by
+     * the initiator creating a match list entry using a unique set of bits and
+     * then placing the match bits in the \a hdr_data field. The target can
+     * then use the \a hdr_data field (along with other information in the
+     * event) to retrieve the message. */
+    PTL_EVENT_PUT_OVERFLOW,
+
+    /*! A previously initiated \p atomic operation completed successfully. */
+    PTL_EVENT_ATOMIC,
+
+    /*! A match list entry posted by PtlMEAppend() matched an atomic operation
+     * message that has already arrived and is managed within the overflow
+     * list. The behavior is the same as with the \c PTL_EVENT_PUT_OVERFLOW. */
+    PTL_EVENT_ATOMIC_OVERFLOW,
+
+    /*! A previously initiated \p reply operation has completed successfully.
+     * This event is logged after the data (if any) from the reply has been
+     * written into the memory descriptor. */
+    PTL_EVENT_REPLY,
+
+    /*! A previously initiated \p send operation has completed. This event is
+     * logged after the entire buffer has been sent and it is safe to reuse the
+     * buffer. */
+    PTL_EVENT_SEND,
+
+    /*! An \p acknowledgment was received. This event is logged when the
+     * acknowledgment is received. */
+    PTL_EVENT_ACK,
+
+    /*! A message arrived, but did not match the priority list and the overflow
+     * list was out of space. Thus, the message had to be dropped. */
+    PTL_EVENT_DROPPED,
+
+    /*! Resource exhaustion has occurred on this portal table entry. */
+    PTL_EVENT_PT_DISABLED,
+
+    /*! A match list entry was unlinked. */
+    PTL_EVENT_UNLINK,
+
+    /*! A match list entry in the overflow list that was previously unlinked is
+     * now free to be reused by the application. */
+    PTL_EVENT_FREE,
+
+    /*! A previously initiated PtlMEAppend() call that was set to "probe only"
+     * completed. If a match message was found in the overflow list, \c
+     * PTL_NI_OK is returned in the \a ni_fail_type field of the event and the
+     * event queue entries are filled in as if it were a \c
+     * PTL_EVENT_PUT_OVERFLOW event. Otherwise, a failure is recorded in the \a
+     * ni_fail_type field, and the \a user_ptr is filled in correctly, and the
+     * other fields are undefined. */
+    PTL_EVENT_PROBE
+} ptl_event_kind_t;
+/*!
+ * @enum ptl_op_t
+ * @brief An atomic operation type
+ */
+typedef enum {
+    PTL_MIN, /*!< Compute and return the minimum of the initiator and target value. */
+    PTL_MAX, /*!< Compute and return the maximum of the initiator and target value. */
+    PTL_SUM, /*!< Compute and return the sum of the initiator and target value. */
+    PTL_PROD, /*!< Compute and return the product of the initiator and target value. */
+    PTL_LOR, /*!< Compute and return the logical OR of the initiator and target value. */
+    PTL_LAND, /*!< Compute and return the logical AND of the initiator and target value. */
+    PTL_BOR, /*!< Compute and return the bitwise OR of the initiator and target value. */
+    PTL_BAND, /*!< Compute and return the bitwise AND of the initiator and target value. */
+    PTL_LXOR, /*!< Compute and return the logical XOR of the initiator and target value. */
+    PTL_BXOR, /*!< Compute and return the bitwise XOR of the initiator and target value. */
+    PTL_SWAP, /*!< Swap the initiator and target value and return the target value. */
+    PTL_CSWAP, /*!< A conditional swap -- if the value of the operand is equal
+		 to the target value, the initiator and target value are
+		 swapped. The target value is always returned. This operation
+		 is limited to single data items. */
+    PTL_MSWAP /*!< A swap under mask -- update the bits of the target value
+		that are set to 1 in the operand and return the target value.
+		This operation is limited to single data items. */
+} ptl_op_t;
+/*!
+ * @enum ptl_datatype_t
+ * @brief The type of data an atomic operation is operating on
+ */
+typedef enum {
+    PTL_CHAR, /*!< 8-bit signed integer */
+    PTL_UCHAR, /*!< 8-bit unsigned integer */
+    PTL_SHORT, /*!< 16-bit signed integer */
+    PTL_USHORT, /*!< 16-bit unsigned integer */
+    PTL_INT, /*!< 32-bit signed integer */
+    PTL_UINT, /*!< 32-bit unsigned integer */
+    PTL_LONG, /*!< 64-bit signed integer */
+    PTL_ULONG, /*!< 64-bit unsigned integer */
+    PTL_FLOAT, /*!< 32-bit floating-point number */
+    PTL_DOUBLE /*!< 64-bit floating-point number */
+} ptl_datatype_t;
+/*!
+ * @struct ptl_target_event_t
+ * @brief An operation on the \e target needs information about the local match
+ *	list entry modified, the initiator of the operation and the operation
+ *	itself. These fields are included in a structure. */
+typedef struct {
+    /*! The identifier of the \e initiator. */
+    ptl_process_id_t	    initiator;
+
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t	    pt_index;
+
+    /*! The user identifier of the initiator. */
+    ptl_uid_t		    uid;
+
+    /*! The job identifier of the initiator. May be \c PTL_JID_NONE in
+     * implementations that do not support job identifiers. */
+    ptl_jid_t		    jid;
+
+    /*! The match bits specified by the \e initiator. */
+    ptl_match_bits_t	    match_bits;
+
+    /*! The length (in bytes) specified in the request. */
+    ptl_size_t		    rlength;
+
+    /*! The length (in bytes) of the data that was manipulated by the
+     * operation. For truncated operations, the manipulated length will be the
+     * number of bytes specified by the memory descriptor operation (possibly
+     * with an offset). For all other operations, the manipulated length will
+     * be the length of the requested operation. */
+    ptl_size_t		    mlength;
+
+    /*! The offset requested by the initiator. */
+    ptl_size_t		    remote_offset;
+
+    /*! The starting location (virtual, byte address) where the message has
+     * been placed. The \a start variable is the sum of the \a start variable
+     * in the match list entry and the offset used for the operation. The
+     * offset can be determined by the operation for a remote managed match
+     * list entry or by the local memory descriptor.
+     *
+     * When the PtlMEAppend() call matches a message that has arrived in the
+     * overflow list, the start address points to the address in the overflow
+     * list where the matching message resides. This may require the
+     * application to copy the message to the desired buffer. */
+    void *		    start;
+
+    /*! A user-specified value that is associated with each command that can
+     * generate an event. The \a user_ptr is placed in the event. */
+    void *		    user_ptr;
+
+    /*! 64 bits of out-of-band user data. */
+    ptl_hdr_data_t	    hdr_data;
+
+    /*! Used to convey the failure of an operation. Success is indicated by \c
+     * PTL_NI_OK. */
+    ptl_ni_fail_t	    ni_fail_type;
+
+    /*! If this event corresponds to an atomic operation, this indicates the
+     * atomic operation that was performed. */
+    ptl_op_t		    atomic_operation;
+
+    /*! If this event corresponds to an atomic operation, this indicates the
+     * data type of the atomic operation that was performed. */
+    ptl_datatype_t	    atomic_type;
+
+    /*! The sequence number for this event. Sequence numbers are unique to each
+     * event. */
+    ptl_seq_t		    sequence;
+} ptl_target_event_t;
+/*!
+ * @struct ptl_initiator_event_t
+ * @brief The \e initiator can track all information about the attempted
+ *	operation, but in order to do so needs the result of the operation and
+ *	a pointer to resolve back to the local structure tracking the
+ *	information about the operation.
+ */
+typedef struct {
+    ptl_size_t	    mlength; /*!< @see ptl_target_event_t::mlength */
+    ptl_size_t	    offset; /*!< The displacement (in bytes) into the memory
+			      region that the operation used. The offset can be
+			      determined by the operation for a remote managed
+			      memory descriptor or by the local memory
+			      descriptor. The offset and the length of the
+			      memory descriptor can be used to determine if \a
+			      min_free has been exceeded. */
+    void *	    user_ptr; /*!< @see ptl_target_event_t::user_ptr */
+    ptl_ni_fail_t   ni_fail_type; /*!< @see ptl_target_event_t::ni_fail_type */
+    ptl_seq_t	    sequence; /*!< @see ptl_target_event_t::sequence */
+} ptl_initiator_event_t;
+/*!
+ * @struct ptl_event_t
+ * @brief An event queue contains ptl_event_t structures, which contain a \a
+ *	type and a union of the \e target specific event structure and the \e
+ *	initiator specific event structure. */
+typedef struct {
+    ptl_event_kind_t		type; /*!< Indicates the type of the event. */
+    union {
+	ptl_target_event_t	tevent;
+	ptl_initiator_event_t	ievent;
+    } event; /*!< Contains the event information. */
+} ptl_event_t;
+/*!
+ * @fn PtlEQAlloc(ptl_handle_ni_t   ni_handle,
+ *		  ptl_size_t	    count,
+ *		  ptl_handle_eq_t * eq_handle)
+ * @brief Used to build an event queue.
+ * @param[in] ni_handle	    The interface handle with which the event queue
+ *			    will be associate.
+ * @param[in] count	    A hint as to the number of events to be stored in
+ *			    the event queue. An implementation may provide
+ *			    space for more than the requested number of event
+ *			    queue slots.
+ * @param[out] eq_handle    On successful return, this location will hold the
+ *			    newly created event queue handle.
+ * @note An event queue has room for at least count number of events. The event
+ *	queue is circular. If flow control is not enabled on the portal table
+ *	entry, then older events will be overwritten by new ones if they are
+ *	not removed in time by the user -- using the functions PtlEQGet(),
+ *	PtlEQWait(), or PtlEQPoll(). It is up to the user to determine the
+ *	appropriate size of the event queue to prevent this loss of events.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ni_handle is not a valid
+ *				network interface handle.
+ * @retval PTL_NO_SPACE		Indicates that there is insufficient memory to
+ *				allocate the event queue.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @implnote The event queue is designed to reside in user space.
+ *	High-performance implementations can be designed so they only need to
+ *	write to the event queue but never have to read from it. This limits
+ *	the number of protection boundary crossings to update the event queue.
+ *	However, implementors are free to place the event queue anywhere they
+ *	like; inside the kernel or the NIC for example.
+ * @implnote Because flow control may be enabled on the portal table entries
+ *	that this EQ is attached to, the implementation should ensure that the
+ *	space allocated for the EQ is large enough to hold the requested number
+ *	of events plus the number of portal table entries associated with this
+ *	\a ni_handle. For each PtlPTAlloc() that enables flow control and uses
+ *	a given EQ, one space should be reserved for a \c PTL_EVENT_PT_DISABLED
+ *	event associated with that EQ.
+ * @see PtlEQFree()
+ */
+int PtlEQAlloc(ptl_handle_ni_t	    ni_handle,
+	       ptl_size_t	    count,
+	       ptl_handle_eq_t *    eq_handle);
+/*!
+ * @fn PtlEQFree(ptl_handle_eq_t eq_handle)
+ * @brief Releases the resources associated with an event queue. it is up to
+ *	the user to ensure that no memory descriptors or match list entries are
+ *	associated with the event queue once it is freed.
+ * @param[in] eq_handle	The event queue handle to be released
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
+ *				event queue handle.
+ * @see PtlEQAlloc()
+ */
+int PtlEQFree(ptl_handle_eq_t eq_handle);
+/*!
+ * @fn PtlEQGet(ptl_handle_eq_t	eq_handle,
+ *		ptl_event_t *	event)
+ * @brief A nonblocking function that can be used to get the next event in an
+ *	event queue. The event is removed from the queue.
+ * @param[in] eq_handle	The event queue handle.
+ * @param[out] event	On successful return, this location will hold the
+ *			values associated with the next event in the event queue.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
+ *				event queue handle.
+ * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
+ *				thread is waiting in PtlEQWait().
+ * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
+ *				and that at least one event between this event
+ *				and the last event obtained -- using
+ *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
+ *				this event queue has been dropped due to
+ *				limited space in the event queue.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @see PtlEQWait(), PtlEQPoll()
+ */
+int PtlEQGet(ptl_handle_eq_t	eq_handle,
+	     ptl_event_t *	event);
+/*!
+ * @fn PtlEQWait(ptl_handle_eq_t    eq_handle,
+ *		 ptl_event_t *	    event)
+ * @brief Used to block the calling process or thread until there is an event
+ *	in an event queue. This function returns the next event in the event
+ *	queue and removes this event from the queue. In the event that multiple
+ *	threads are waiting on the same event queue, PtlEQWait() is guaranteed
+ *	to wake exactly one thread, but the order in which they are awakened is
+ *	not specified.
+ * @param[in] eq_handle	    The event queue handle to wait on. The calling
+ *			    process (thread) will be blocked until the event
+ *			    queue is not empty.
+ * @param[out] event	    On successful return, this locaiton will hold the
+ *			    values associated with the next even tin the event
+ *			    queue.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
+ *				event queue handle.
+ * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
+ *				thread is waiting in PtlEQWait().
+ * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
+ *				and that at least one event between this event
+ *				and the last event obtained -- using
+ *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
+ *				this event queue has been dropped due to
+ *				limited space in the event queue.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @see PtlEQGet(), PtlEQPoll()
+ */
+int PtlEQWait(ptl_handle_eq_t	eq_handle,
+	      ptl_event_t *	event);
+/*!
+ * @fn PtlEQPoll(ptl_handle_eq_t *  eq_handles,
+ *		 int		    size,
+ *		 ptl_time_t	    timeout,
+ *		 ptl_event_t *	    event,
+ *		 int *		    which)
+ * @brief Looks for an event from a set of event queues. Should an event arrive
+ *	on any of the queues contained in the array of event queue handles, the
+ *	event will be returned in \a event and \a which will contain the index
+ *	of the event queue from which the event was taken.
+ *
+ *	If PtlEQPoll() returns success, the corresponding event is consumed.
+ *	PtlEQPoll() provides a timeout to allow applications to poll, block for
+ *	a fixed period, or block indefinitely. PtlEQPoll() is sufficiently
+ *	general to implement both PtlEQGet() and PtlEQWait(), but these
+ *	functions have been retained in the PI for backward compatibility.
+ * @implnote PtlEQPoll() should poll the list of queues in a round-robin
+ *	fashion. This cannot guarantee fairness but meets common expectations.
+ * @param[in] eq_handles    An array of event queue handles. All the handles
+ *			    must refer to the same interface.
+ * @param[in] size	    Length of the array.
+ * @param[in] timeout	    Time in milliseconds to wait for an event to occur
+ *			    in one of the event queue handles. The constant \c
+ *			    PTL_TIME_FOREVER can be used to indicate an
+ *			    infinite timeout.
+ * @param[out] event	    On successful return (\c PTL_OK or \c
+ *			    PTL_EQ_DROPPED), this location will hold the values
+ *			    associated with the next event in the queue.
+ * @param[out] which	    On successful return, this location will contain
+ *			    the index into \a eq_handles of the event queue
+ *			    from which the event was taken.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
+ *				event queue handle.
+ * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
+ *				thread is waiting in PtlEQWait().
+ * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
+ *				and that at least one event between this event
+ *				and the last event obtained -- using
+ *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
+ *				this event queue has been dropped due to
+ *				limited space in the event queue.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @implnote Implementations are free to provide macros for PtlEQGet() and
+ *	PtlEQWait() that use PtlEQPoll() instead of providing these functions.
+ * @implnote All of the members of the ptl_event_t structure (and corresponding
+ *	ptl_initiator_event_t or ptl_target_event_t sub-field) returned from
+ *	PtlEQGet(), PtlEQWait(), and PtlEQPoll() must be filled in with valid
+ *	information. An implementation may not leave any field in an event
+ *	unset.
+ * @see PtlEQGet(), PtlEQWait()
+ */
+int PtlEQPoll(ptl_handle_eq_t *	    eq_handles,
+	      int		    size,
+	      ptl_time_t	    timeout,
+	      ptl_event_t *	    event,
+	      int *		    which);
 /*! @} */
 
 /*********************************
@@ -1253,7 +1663,139 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
 /*!
  * @addtogroup LCE Lightweight "Counting" Events
  * @{
+ * @struct ptl_ct_event_t
+ * @brief A \a ct_handle refers to a ptl_ct_event_t structure.
  */
+typedef struct {
+    ptl_size_t	success; /*!< A count associated with successful events that
+			   counts events or bytes. */
+    ptl_size_t	failure; /*!< A count associated with failed events that counts
+			   events or bytes. */
+} ptl_ct_event_t;
+/*!
+ * @enum ptl_ct_type_t
+ * @brief The type of counting event.
+ */
+typedef enum {
+    PTL_CT_OPERATION,
+    PTL_CT_BYTE
+} ptl_ct_type_t;
+/*!
+ * @fn PtlCTAlloc(ptl_handle_ni_t   ni_handle,
+ *		  ptl_ct_type_t	    ct_type,
+ *		  ptl_handle_ct_t * ct_handle)
+ * @brief Used to allocate a counting event that counts either operations on
+ *	the memory descriptor (match list entry) or bytes that flow out of
+ *	(into) a memory descriptor (match list entry). While a PtlCTAlloc()
+ *	call could be as simple as a malloc of a structure holding the counting
+ *	event and a network interface handle, it may be necessary to allocate
+ *	the counting event in low memory or some other protected space; thus,
+ *	an allocation routine is provided. A newly allocated count is
+ *	initialized to zero.
+ * @param[in] ni_handle	    The interface handle with which the counting event
+ *			    will be associated.
+ * @param[in] ct_type	    A selection between counting operations and
+ *			    counting bytes.
+ * @param[out] ct_handle    On successful return, this location will hold the
+ *			    newly created counting event handle.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ni_handle is not a valid
+ *				network interface handle.
+ * @retval PTL_NO_SPACE		Indicates that there is insufficient memory to
+ *				allocate the counting event.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @implnote A quality implementation will attempt to minimize the cost of
+ *	counting events. This can be done by translating the simple functions
+ *	(PtlCTGet(), PtlCTWait(), PtlCTSet(), and PtlCTInc()) into simple
+ *	macros that directly access a structure in the applications memory
+ *	unless otherwise required by the hardware.
+ * @see PtlCTFree()
+ */
+int PtlCTAlloc(ptl_handle_ni_t	    ni_handle,
+	       ptl_ct_type_t	    ct_type,
+	       ptl_handle_ct_t *    ct_handle);
+/*!
+ * @fn PtlCTFree(ptl_handle_ct_t ct_handle)
+ * @brief Releases the resources associated with a counting event. It is up to
+ *	the user to ensure that no memory descriptors or match list entries are
+ *	associated with the counting event once it is freed.
+ * @param[in] ct_handle	The counting event handle to be released.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
+ *				counting event handle.
+ * @see PtlCTAlloc()
+ */
+int PtlCTFree(ptl_handle_ct_t ct_handle);
+/*!
+ * @fn PtlCTGet(ptl_handle_ct_t	    ct_handle,
+ *		ptl_ct_event_t *    event)
+ * @brief Used to obtain the current value of a counting event.
+ * @param[in] ct_handle	    The counting event handle.
+ * @param[out] event	    On successful return, this location will hold the
+ *			    current value associated with the counting event.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
+ *				counting event handle.
+ * @retval PTL_SEGV		Caught a segfault.
+ * @see PtlCTWait()
+ */
+int PtlCTGet(ptl_handle_ct_t	ct_handle,
+	     ptl_ct_event_t *	event);
+/*!
+ * @fn PtlCTWait(ptl_handle_ct_t    ct_handle,
+ *		 ptl_size_t	    test)
+ * @brief Used to wait until the value of a counting event is equal to a test
+ *	value.
+ * @param[in] ct_handle	The counting event handle.
+ * @param[in] test	On successful return, the sum of the success and
+ *			failure fields of the counting event will be greater
+ *			than or equal to this value.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
+ *				counting event handle.
+ * @see PtlCTGet()
+ */
+int PtlCTWait(ptl_handle_ct_t	ct_handle,
+	      ptl_size_t	test);
+/*!
+ * @fn PtlCTSet(ptl_handle_ct_t	ct_handle,
+ *		ptl_ct_event_t	new_ct)
+ * @brief Used to set the value of a counting event.
+ * @param[in] ct_handle	The counting event handle.
+ * @param[in] new_ct	On successful return, the value of the counting event
+ *			will have been set to this value.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
+ *				counting event handle.
+ * @see PtlCTInc()
+ */
+int PtlCTSet(ptl_handle_ct_t	ct_handle,
+	     ptl_ct_event_t	test);
+/*!
+ * @fn PtlCTInc(ptl_handle_ct_t	ct_handle,
+ *		ptl_ct_event_t	increment)
+ * @brief Used to (atomically) increment the value of a counting event.
+ * @param[in] ct_handle	The counting event handle.
+ * @param[in] increment	On successful return, the value of the counting event will have been incremented by this value.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
+ *				counting event handle.
+ * @see PtlCTSet()
+ */
+int PtlCTInc(ptl_handle_ct_t	ct_handle,
+	     ptl_ct_event_t	increment);
 /*! @} */
 
 /****************************
@@ -1262,7 +1804,117 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
 /*!
  * @addtogroup DMO Data Movement Operations
  * @{
+ * @implnote Other than PtlPut(), PtlGet(), PtlAtomic(), PtlFetchAtomic(), and
+ *	PtlSwap() (and their triggered variants), no function in the portals
+ *	API requires communication with other nodes in the system.
+ * @enum ptl_ack_req_t
+ * @brief Values of the type ptl_ack_req_t are used to control whether an
+ *	acknowledgment should be sent when the operation completes (i.e., when
+ *	the data has been written to a match list entry of the \e target
+ *	process).
+ *
+ *	When a counting acknowledgment is requested, either \c PTL_CT_OPERATION
+ *	or \c PTL_CT_BYTE can be set in the \a ct_handle. If \c
+ *	PTL_CT_OPERATION is set, the number of acknowledgments is counted. If
+ *	\c PTL_CT_BYTE is set, the modified length (\a mlength) from the target
+ *	is counted at the initiator. The operation completed acknowledgment is
+ *	an acknowledgment that simply indicated that the operation has
+ *	completed at the target. It \e does \e not indicate what was done with
+ *	the message. The message may have been dropped due to a permission
+ *	violation or may not have matched in the priority list or overflow
+ *	list; however, the operation completed acknowledgment would still be
+ *	sent. The operation completed acknowledgment is a subset of the
+ *	counting acknowledgment with weaker semantics. That is, it is a
+ *	counting type of acknowledgment, but it can only count operations.
  */
+typedef enum {
+    PTL_ACK_REQ, /*!< Requests an acknowledgment. */
+    PTL_NO_ACK_REQ, /*!< Requests that no acknowledgment should be generated. */
+    PTL_CT_ACK_REQ, /*!< Requests a simple counting acknowledgment. */
+    PTL_OC_ACK_REQ /*!< Requests an operation completed acknowledgment. */
+} ptl_ack_req_t;
+/*!
+ * @fn PtlPut(ptl_handle_md_t	md_handle,
+ *	      ptl_size_t	local_offset,
+ *	      ptl_size_t	length,
+ *	      ptl_ack_req_t	ack_req,
+ *	      ptl_process_id_t	target_id,
+ *	      ptl_pt_index_t	pt_index,
+ *	      ptl_match_bits_t	match_bits,
+ *	      ptl_size_t	remote_offset,
+ *	      void *		user_ptr,
+ *	      ptl_hdr_data_t	hdr_data)
+ * @brief Initiates an asynchronous \p put operation. There are several events
+ *	associated with a \p put operation: completion of the send on the \e
+ *	initiator node (\c PTL_EVENT_SEND) and, when the send completes
+ *	successfully, the receipt of an acknowledgment (\c PTL_EVENT_ACK)
+ *	indicating that the operation was accepted by the target. The event \c
+ *	PTL_EVENT_PUT is used at the \e target node to indicate the end of data
+ *	delivery, while c PTL_EVENT_PUT_OVERFLOW can be used on the \e target
+ *	node when a message arrives before the corresponding match list entry.
+ *
+ *	These (local) events will be logged in the event queue associated with
+ *	the memory descriptor (\a md_handle) used in the \p put operation.
+ *	Using a memory descriptor that does not have an associated event queue
+ *	results in these events being discarded. In this case, the caller must
+ *	have another mechanism (e.g., a higher level protocol) for determining
+ *	when it is safe to modify the memory region associated with the memory
+ *	descriptor.
+ *
+ *	The local (\e initiator) offset is used to determine the starting
+ *	address of the memory region within the region specified by hte memory
+ *	descriptor and the length specifies the length of the region in bytes.
+ *	It is an error for the local offset and length parameters to specify
+ *	memory outside the memory described by the memory descriptor.
+ * @param[in] md_handle	    The memory descriptor handle that describes the
+ *			    memory to be sent. If the memory descriptor has an
+ *			    event queue associated with it, it will be used to
+ *			    record events when the message has been sent (\c
+ *			    PTL_EVENT_SEND, \c PTL_EVENT_ACK).
+ * @param[in] local_offset  Offset from the start of the memory descriptor.
+ * @param[in] length	    Length of the memory region to be sent.
+ * @param[in] ack_req	    Controls whether an acknowledgment event is
+ *			    requested. Acknowledgments are only sent when they
+ *			    are requested by the initiating process \b and the
+ *			    memory descriptor has an event queue \b and the
+ *			    target memory descriptor enables them.
+ * @param[in] target_id	    A process identifier for the \e target process.
+ * @param[in] pt_index	    The index in the \e target portal table.
+ * @param[in] match_bits    The match bits to use for message selection at the
+ *			    \e target process (only used when matching is
+ *			    enabled on the network interface).
+ * @param[in] remote_offset The offset into the target memory region (used
+ *			    unless the \e target match list entry has the \c
+ *			    PTL_ME_MANAGE_LOCAL option set).
+ * @param[in] user_ptr	    A user-specified value that is associated with each
+ *			    command that can generate an event. The value does
+ *			    not need to be a pointer, but must fit in the space
+ *			    sued by a pointer. This value (along with other
+ *			    values) is recorded in \e initiator events
+ *			    associated with this \p put operation.
+ * @param[in] hdr_data	    64 bites of user data that can be included in the
+ *			    message header. This data is written to an event
+ *			    queue entry at the \e target if an event queue is
+ *			    present on the match list entry that matches the
+ *			    message.
+ * @retval PTL_OK		Indicates success
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
+ * @retval PTL_ARG_INVALID	Indicates that either \a md_handle is not a valid
+ *				memory descriptor or \a target_id is not a
+ *				valid process identifier.
+ * @see PtlGet()
+ */
+int PtlPut(ptl_handle_md_t  md_handle,
+	   ptl_size_t	    local_offset,
+	   ptl_size_t	    length,
+	   ptl_ack_req_t    ack_req,
+	   ptl_process_id_t target_id,
+	   ptl_pt_index_t   pt_index,
+	   ptl_match_bits_t match_bits,
+	   ptl_size_t	    remote_offset,
+	   void *	    user_ptr,
+	   ptl_hdr_data_t   hdr_data);
 /*! @} */
 
 /************************
