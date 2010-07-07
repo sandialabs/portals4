@@ -8,6 +8,8 @@
 #ifndef PORTALS4_H
 #define PORTALS4_H
 
+#include <stdint.h> // assume C99, for uint64_t
+
 /*****************
  * Return Values *
  *****************/
@@ -18,11 +20,7 @@ enum ptl_retvals {
     PTL_NO_INIT,	/*!< Init has not yet completed successfully. */
     PTL_ARG_INVALID,	/*!< One of the arguments is invalid. */
     PTL_SEGV,		/*!< Caught a segfault. */
-    PTL_PT_IN_USE,	/*!< The specified index is currently in use. */
-    PTL_PID_IN_USE,	/*!< The specified PID is currently in use. */
-    PTL_MD_IN_USE,	/*!< The specified memory descriptor is currently in use. */
-    PTL_LE_IN_USE,	/*!< The specified list entry is currently in use. */
-    PTL_ME_IN_USE,	/*!< The specified match list entry is currently in use. */
+    PTL_IN_USE,		/*!< The specified resource is currently in use. */
     PTL_NO_SPACE,	/*!< Sufficient memory for specified action was not available. */
     PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (maximum is interface-dependent). */
 };
@@ -53,6 +51,7 @@ typedef int		ptl_handle_eq_t; /*!< An event queue handle */
 typedef int		ptl_handle_ct_t; /*!< A counting type event handle */
 typedef int		ptl_handle_md_t; /*!< A memory descriptor handle */
 typedef int		ptl_handle_le_t; /*!< A list entry handle */
+typedef int		ptl_handle_me_t; /*!< A match list entry handle */
 /*!
  * @union ptl_handle_any_t
  * @brief The generic handle type.
@@ -64,6 +63,7 @@ typedef union {
     ptl_handle_ct_t ct; /*!< A counting type event handle */
     ptl_handle_md_t md; /*!< A memory descriptor handle */
     ptl_handle_le_t le; /*!< A list entry handle */
+    ptl_handle_me_t me; /*!< A match list entry handle */
 }			ptl_handle_any_t;
 /*!
  * @union ptl_process_id_t
@@ -397,7 +397,7 @@ typedef struct {
  * @retval PTL_ARG_INVALID	Indicates that either \a iface is not a valid network
  *				interface or \a pid is not a valid process
  *				identifier.
- * @retval PTL_PID_IN_USE	Indicates that \a pid is currently in use.
+ * @retval PTL_IN_USE		Indicates that \a pid is currently in use.
  * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
  *				allocate the memory required to initialize this
  *				interface.
@@ -543,7 +543,7 @@ int PtlPTAlloc(ptl_handle_ni_t  ni_handle,
  * @retval PTL_ARG_INVALID	Indicates that either \a pt_index is not a valid
  *				portal table index or \a ni_handle is not a
  *				valid network interface handle.
- * @retval PTL_PT_IN_USE	Indicates that \a pt_index is currently in use
+ * @retval PTL_IN_USE		Indicates that \a pt_index is currently in use
  *				(e.g. a match list entry is still attached).
  * @see PtlPTAlloc()
  */
@@ -765,7 +765,7 @@ int PtlMDBind(ptl_handle_ni_t	ni_handle,
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a md_handle is not a valid memory
  *			    descriptor hadle.
- * @retval PTL_MD_IN_USE    Indicates that \a md_handle has pending operations
+ * @retval PTL_IN_USE	    Indicates that \a md_handle has pending operations
  *			    and cannot be released.
  * @see PtlMDBind()
  */
@@ -918,7 +918,7 @@ int PtlLEAppend(ptl_handle_ni_t	    ni_handle,
  *	list entry handle after calling PtlLEUnlink().
  * @param[in] le_handle	The list entry handle to be unlinked.
  * @note If this list entry has pending operations; e.g., an unfinished reply
- *	operation, then PtlLEUnlink() will return \c PTL_LE_IN_USE, and the
+ *	operation, then PtlLEUnlink() will return \c PTL_IN_USE, and the
  *	list entry will not be unlinked. This essentially creates a race
  *	between the application retrying the unlink operation and a new
  *	operation arriving. This is believed to be reasonable as the
@@ -929,7 +929,7 @@ int PtlLEAppend(ptl_handle_ni_t	    ni_handle,
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a le_handle is not a valid
  *			    list entry handle.
- * @retval PTL_LE_IN_USE    Indicates that the list entry has pending
+ * @retval PTL_IN_USE	    Indicates that the list entry has pending
  *			    operations and cannot be unlinked.
  * @see PtlLEAppend()
  */
@@ -1221,7 +1221,7 @@ int PtlMEAppend(ptl_handle_ni_t	    ni_handle,
  *	error to use the match list entry handle after calling PtlMEUnlink().
  * @param[in] me_handle	The match list entry handle to be unlinked.
  * @note If this match list entry has pending operations; e.g., an unfinished
- *	\p reply operation, then PtlMEUnlink() will return \c PTL_ME_IN_USE,
+ *	\p reply operation, then PtlMEUnlink() will return \c PTL_IN_USE,
  *	and the match list entry will not be unlinked. This essentially creates
  *	a race between the application retrying the unlink operation and a new
  *	operation arriving. This is believed to be reasonable as the
@@ -1232,7 +1232,7 @@ int PtlMEAppend(ptl_handle_ni_t	    ni_handle,
  *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that either \a me_handle is not a
  *				valid match list entry handle.
- * @retval PTL_ME_IN_USE	Indicates that the match list entry has pending
+ * @retval PTL_IN_USE		Indicates that the match list entry has pending
  *				operations and cannot be unlinked.
  */
 int PtlMEUnlink(ptl_handle_me_t me_handle);

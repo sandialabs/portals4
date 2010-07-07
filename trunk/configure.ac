@@ -15,7 +15,7 @@ AC_PREREQ(2.60)
 AC_INIT([portals], [4], [kbwheel@sandia.gov])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
-AC_CONFIG_SRCDIR([src/init.c])
+AC_CONFIG_SRCDIR([src/shmem/init.c])
 
 dnl Require at least AM 1.7.  Prior versions require AM_CONFIG_HEADER
 dnl and have no equivalent to AC_CONFIG_HEADERS (the plural version),
@@ -80,12 +80,12 @@ AC_C_INLINE
 AC_C_VOLATILE
 # Find out if we need the -restrict flag
 RESTRICT_CXXFLAGS=""
-AS_IF([test "x$qthread_cv_cxx_compiler_type" = "xIntel"],
+AS_IF([test "x$sandia_cv_cxx_compiler_type" = "xIntel"],
 	  [CXXFLAGS="-restrict $CXXFLAGS"])
 
 AX_C_RESTRICT
 AS_IF([test "x$enable_picky" == xyes],
-  [case "$qthread_cv_c_compiler_type" in
+  [case "$sandia_cv_c_compiler_type" in
    GNU)
    CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"
    ;;
@@ -102,7 +102,7 @@ AS_IF([test "x$enable_picky" == xyes],
    CFLAGS="-Wall $CFLAGS"
    ;;
    esac
-   case "$qthread_cv_cxx_compiler_type" in
+   case "$sandia_cv_cxx_compiler_type" in
    GNU)
    CXXFLAGS="-Wall $CXXFLAGS"
    ;;
@@ -120,6 +120,10 @@ AS_IF([test "x$enable_picky" == xyes],
    ;;
    esac])
 
+SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([atomics are no implemented portably])])
+
+AC_CACHE_SAVE
+
 ## --------------------------- ##
 ## Check for library functions ##
 ## --------------------------- ##
@@ -131,6 +135,9 @@ AC_CACHE_SAVE
 ## --------------- ##
 ## Output and done ##
 ## --------------- ##
+
+AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
+
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
 				 src/Makefile

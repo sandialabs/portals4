@@ -22,4 +22,10 @@ lib_LTLIBRARIES = libportals.la
 # - If you support all the same functions (just bugfixes or whatnot), increment
 #   the revision number
 libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
-libportals_la_SOURCES = init.c
+libportals_la_SOURCES =
+
+if BACKEND_IMPL_SHMEM
+include shmem/Makefile.inc
+else
+libportals_la_SOURCES += ib/main.c
+endif
