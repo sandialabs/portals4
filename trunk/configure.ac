@@ -49,8 +49,8 @@ AS_IF([test "x$enable_picky" == x],
 ## ------------------- ##
 ## Checks for programs ##
 ## ------------------- ##
+AC_PROG_AWK
 AC_PROG_CC
-dnl We use system extensions.  This includes setting _GNU_SOURCE
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AC_PROG_CPP
@@ -66,10 +66,15 @@ AC_CACHE_SAVE
 ## ----------------------- ##
 AC_HEADER_STDC
 AC_SYS_LARGEFILE
+AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h])
 
 ## --------------- ##
 ## Check for types ##
 ## --------------- ##
+AC_C_INLINE
+AC_TYPE_SIZE_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
 
 ## ---------------------------------- ##
 ## Check for compiler characteristics ##
@@ -129,6 +134,10 @@ AC_CACHE_SAVE
 ## --------------------------- ##
 
 AC_FUNC_MMAP
+AC_CHECK_FUNCS([munmap]) # how absurd is this?
+AC_SEARCH_LIBS([shm_open],
+	       [rt], [],
+	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
 
 AC_CACHE_SAVE
 
