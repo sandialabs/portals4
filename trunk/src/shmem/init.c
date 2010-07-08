@@ -31,8 +31,8 @@ int API_FUNC PtlInit(
     void)
 {
     unsigned int race = PtlInternalAtomicInc(&init_ref_count, 1);
-    static int done_initializing = 0;
-    static int failure = 0;
+    static volatile int done_initializing = 0;
+    static volatile int failure = 0;
 
     if (race == 0) {
 	int fd;
@@ -63,8 +63,8 @@ int API_FUNC PtlInit(
 	}
     } else {
 	/* Should block until other inits finish. */
-	while (!(volatile int)done_initializing) ;
-	if (!(volatile int)failure)
+	while (!done_initializing) ;
+	if (!failure)
 	    return PTL_OK;
 	else
 	    goto exit_fail_fast;
