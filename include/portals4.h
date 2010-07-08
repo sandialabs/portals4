@@ -19,22 +19,28 @@ enum ptl_retvals {
     PTL_FAIL,		/*!< Indicates a non-specific error */
     PTL_NO_INIT,	/*!< Init has not yet completed successfully. */
     PTL_ARG_INVALID,	/*!< One of the arguments is invalid. */
-    PTL_SEGV,		/*!< Caught a segfault. */
     PTL_IN_USE,		/*!< The specified resource is currently in use. */
-    PTL_NO_SPACE,	/*!< Sufficient memory for specified action was not available. */
-    PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (maximum is interface-dependent). */
+    PTL_NO_SPACE,	/*!< Sufficient memory for action was not available. */
+    PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
 };
 
 /**************
  * Base Types *
  **************/
-typedef uint64_t	ptl_size_t; /*!< Unsigned 64-bit integral type used for representing sizes. */
-typedef unsigned int	ptl_pt_index_t; /*!< Integral type used for representing portal table indices. */
-typedef uint64_t	ptl_match_bits_t; /*!< Capable of holding unsigned 64-bit integer values. */
+typedef uint64_t	ptl_size_t; /*!< Unsigned 64-bit integral type used for
+				      representing sizes. */
+typedef unsigned int	ptl_pt_index_t; /*!< Integral type used for
+					  representing portal table indices. */
+typedef uint64_t	ptl_match_bits_t; /*!< Capable of holding unsigned
+					    64-bit integer values. */
 typedef uint64_t	ptl_hdr_data_t; /*!< 64 bits of out-of-band user data. */
-typedef unsigned int	ptl_time_t; /*!< Time in milliseconds (used for timeout specification). */
-typedef unsigned int	ptl_interface_t; /*!< Integral type used for identifying different network interfaces. */
-typedef unsigned int	ptl_nid_t; /*!< Integral type used for representing node identifiers. */
+typedef unsigned int	ptl_time_t; /*!< Time in milliseconds (used for timeout
+				      specification). */
+typedef unsigned int	ptl_interface_t; /*!< Integral type used for
+					   identifying different network
+					   interfaces. */
+typedef unsigned int	ptl_nid_t; /*!< Integral type used for representing
+				     node identifiers. */
 typedef unsigned int	ptl_pid_t; /*!< Integral type used for representing
 				     process identifiers when physical
 				     addressing is used in the network
@@ -43,10 +49,16 @@ typedef unsigned int	ptl_rank_t; /*!< Integral type used for representing
 				      process identifiers when logical
 				      addressing is used in the network
 				      interface (PTL_NI_LOGICAL is set). */
-typedef unsigned int	ptl_uid_t; /*!< Integral type for representing user identifiers. */
-typedef unsigned int	ptl_jid_t; /*!< Integral type for representing job identifiers. */
-typedef unsigned int	ptl_sr_index_t; /*!< Defines the types of indexes that can be used to access the status registers. */
-typedef int		ptl_sr_value_t; /*!< Signed integral type that defines the types of values held in status registers. */
+typedef unsigned int	ptl_uid_t; /*!< Integral type for representing user
+				     identifiers. */
+typedef unsigned int	ptl_jid_t; /*!< Integral type for representing job
+				     identifiers. */
+typedef unsigned int	ptl_sr_index_t; /*!< Defines the types of indexes that
+					  can be used to access the status
+					  registers. */
+typedef int		ptl_sr_value_t; /*!< Signed integral type that defines
+					  the types of values held in status
+					  registers. */
 /* Handles */
 typedef int		ptl_handle_ni_t; /*!< A network interface handle */
 typedef int		ptl_handle_eq_t; /*!< An event queue handle */
@@ -124,7 +136,7 @@ typedef struct {
     - \c PTL_IOVEC
 			       */
     ptl_handle_eq_t eq_handle; /*!< The event queue handle used to log the
-				 operations performed on the memory region. if
+				 operations performed on the memory region. If
 				 this member is \c PTL_EQ_NONE, operations
 				 performed on this memory descriptor are not
 				 logged. */
@@ -263,16 +275,37 @@ typedef struct {
 /*************
  * Constants *
  *************/
-extern const ptl_handle_eq_t PTL_EQ_NONE;	/*!< Indicates the absence of an event queue. */
-extern const ptl_handle_ct_t PTL_CT_NONE;	/*!< Indicates the absence of a counting type event. */
-extern const ptl_handle_any_t PTL_INVALID_HANDLE;	/*!< Represents an invalid handle. */
-extern const ptl_interface_t PTL_IFACE_DEFAULT;	/*!< Identifies the default interface. */
-extern const ptl_pid_t PTL_PID_ANY;	/*!< Matches any process identifier. */
-extern const ptl_nid_t PTL_NID_ANY;	/*!< Matches any node identifier. */
-extern const ptl_jid_t PTL_JID_ANY;	/*!< Matches any job identifier. */
-extern const ptl_rank_t PTL_RANK_ANY;	/*!< Matches any rank. */
-extern const ptl_sr_index_t PTL_SR_DROP_COUNT;	/*!< Identifies the status register that counts the dropped requests for the interface. */
-extern const ptl_sr_index_t PTL_SR_PERMISSIONS_VIOLATIONS;	/*!< Identifies the status register that counts the number of attempted permission violations. */
+/*! Indicate the absence of an event queue. */
+extern const ptl_handle_eq_t PTL_EQ_NONE;
+
+/*! Indicate the absence of a counting type event. */
+extern const ptl_handle_ct_t PTL_CT_NONE;
+
+/*! Represent an invalid handle. */
+extern const ptl_handle_any_t PTL_INVALID_HANDLE;
+
+/*! Identify the default interface. */
+extern const ptl_interface_t PTL_IFACE_DEFAULT;
+
+/*! Match any process identifier. */
+extern const ptl_pid_t PTL_PID_ANY;
+
+/*! Match any node identifier. */
+extern const ptl_nid_t PTL_NID_ANY;
+
+/*! Match any job identifier. */
+extern const ptl_jid_t PTL_JID_ANY;
+
+/*! Match any rank. */
+extern const ptl_rank_t PTL_RANK_ANY;
+
+/*! Specifies the status register that counts the dropped requests for the
+ * interface. */
+extern const ptl_sr_index_t PTL_SR_DROP_COUNT;
+
+/*! Specifies the status register that counts the number of attempted
+ * permission violations. */
+extern const ptl_sr_index_t PTL_SR_PERMISSIONS_VIOLATIONS;
 
 /******************************
  * Initialization and Cleanup *
@@ -320,42 +353,67 @@ void PtlFini(void);
  * logical interfaces associated with a single physical interface must share a
  * single node ID and Portals process ID.
  */
-typedef int ptl_ni_fail_t; /*!< A network interface can use this integral type
-			     to define specific information regarding the
-			     failure of an operation. */
-extern const unsigned int PTL_NI_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching enabled. */
-extern const unsigned int PTL_NI_NO_MATCHING;	/*!< Request that the interface specified in \a iface be opened with matching
-						 * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
-						 * exclusive. */
-extern const unsigned int PTL_NI_LOGICAL;	/*!< Request that the interface specified in \a iface be opened with logical
-						 * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
-extern const unsigned int PTL_NI_PHYSICAL;	/*!< Request that the interface specified in \a iface be opened with physical
-						 * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
-						 * PTL_NI_PHYSICAL are mutually exclusive */
-extern const ptl_ni_fail_t PTL_NI_OK; /*!< Used in successful end events to
-					indicate that there has been no
-					failure. */
-extern const ptl_ni_fail_t PTL_NI_UNDELIVERABLE; /*!< Indicates a system
-						   failure that prevents
-						   message delivery. */
-extern const ptl_ni_fail_t PTL_NI_FLOW_CTRL; /*!< Indicates that the remote
-					       node has exhausted its
-					       resources, enabled flow control,
-					       and dropped this message. */
-extern const ptl_ni_fail_t PTL_NI_PERM_VIOLATION; /*!< Indicates that the remote Portals addressing indicated a permissions violation for this message. */
+/*! @typedef ptl_ni_fail_t
+ * A network interface can use this integral type to define specific
+ * information regarding the failure of an operation. */
+typedef int ptl_ni_fail_t;
+
+/*! Request that the interface specified in \a iface be opened with matching
+ * enabled. */
+extern const unsigned int PTL_NI_MATCHING;
+
+/*! Request that the interface specified in \a iface be opened with matching
+ * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
+ * exclusive. */
+extern const unsigned int PTL_NI_NO_MATCHING;
+
+/*! Request that the interface specified in \a iface be opened with logical
+ * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
+extern const unsigned int PTL_NI_LOGICAL;
+
+/*! Request that the interface specified in \a iface be opened with physical
+ * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
+ * PTL_NI_PHYSICAL are mutually exclusive */
+extern const unsigned int PTL_NI_PHYSICAL;
+
+/*! Used in successful end events to indicate that there has been no failure. */
+extern const ptl_ni_fail_t PTL_NI_OK;
+
+/*! Indicates a system failure that prevents message delivery. */
+extern const ptl_ni_fail_t PTL_NI_UNDELIVERABLE;
+
+/*! Indicates that the remote node has exhausted its resources, enabled flow
+ * control, and dropped this message. */
+extern const ptl_ni_fail_t PTL_NI_FLOW_CTRL;
+
+/*! Indicates that the remote Portals addressing indicated a permissions
+ * violation for this message. */
+extern const ptl_ni_fail_t PTL_NI_PERM_VIOLATION;
+
 /*!
  * @struct ptl_ni_limits_t
  * @brief The network interface (NI) limits type */
 typedef struct {
-    int max_mes; /*!< Maximum number of match list entries that can be allocated at any one time. */
-    int max_mds; /*!< Maximum number of memory descriptors that can be allocated at any one time. */
-    int max_cts; /*!< Maximum number of counting events that can be allocated at any one time. */
-    int max_eqs; /*!< Maximum number of event queues that can be allocated at any one time. */
-    int max_pt_index; /*!< Largest portal table index for this interface, valid indexes range from 0 to max_pt_index, inclusive. An interface must have a max_pt_index of at least 63. */
-    int max_iovecs; /*!< Maximum number of I/O vectors for a single memory descriptor for this interface. */
-    int max_me_list; /*!< Maximum number of match list entries that can be attached to any portal table index. */
-    ptl_size_t max_msg_size; /*!< Maximum size (in bytes) of a message (put, get, or reply). */
-    ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) of an atomic operation. */
+    int max_mes;		/*!< Maximum number of match list entries that
+				  can be allocated at any one time. */
+    int max_mds;		/*!< Maximum number of memory descriptors that
+				  can be allocated at any one time. */
+    int max_cts;		/*!< Maximum number of counting events that can
+				  be allocated at any one time. */
+    int max_eqs;		/*!< Maximum number of event queues that can be
+				  allocated at any one time. */
+    int max_pt_index;		/*!< Largest portal table index for this
+				  interface, valid indexes range from 0 to
+				  max_pt_index, inclusive. An interface must
+				  have a max_pt_index of at least 63. */
+    int max_iovecs;		/*!< Maximum number of I/O vectors for a single
+				  memory descriptor for this interface. */
+    int max_me_list;		/*!< Maximum number of match list entries that
+				  can be attached to any portal table index. */
+    ptl_size_t max_msg_size;	/*!< Maximum size (in bytes) of a message (put,
+				  get, or reply). */
+    ptl_size_t max_atomic_size;	/*!< Maximum size (in bytes) of an atomic
+				  operation. */
 } ptl_ni_limits_t;
 
 /*!
@@ -411,17 +469,13 @@ typedef struct {
  * @retval PTL_OK		Indicates success.
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that either \a iface is not a valid network
- *				interface or \a pid is not a valid process
- *				identifier.
+ * @retval PTL_ARG_INVALID	Indicates that either \a iface is not a valid
+ *				network interface or \a pid is not a valid
+ *				process identifier.
  * @retval PTL_IN_USE		Indicates that \a pid is currently in use.
  * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
  *				allocate the memory required to initialize this
  *				interface.
- * @retval PTL_SEGV		Indicates that \a actual or \a ni_handle is not
- *				\c NULL or a legal address, or that \a desired
- *				is not \c NULL and does not point to a valid
- *				address.
  * @see PtlNIFini(), PtlNIStatus()
  */
 int PtlNIInit(ptl_interface_t	iface,
@@ -467,11 +521,11 @@ int PtlNIFini(ptl_handle_ni_t ni_handle);
  * @param[out]	status		On successful return, this location will hold
  *				the current value of the status register.
  * @retval PTL_OK		Indicates success.
- * @retval PTL_NO_INIT		Indicates that the portals API has not been successfully initialized.
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that either \a ni_handle is not a
  *				valid network interface handle or \a
  *				status_register is not a valid status register.
- * @retval PTL_SEGV		Indicates that \a status is not to a valid address.
  * @see PtlNIInit(), PtlNIFini()
  */
 int PtlNIStatus(ptl_handle_ni_t ni_handle,
@@ -487,9 +541,9 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle,
  * @param[out] ni_handle    On successful return, this location will hold the
  *			    network interface handle associated with \a handle.
  * @retval PTL_OK		Indicates success.
- * @retval PTL_NO_INIT		Indicates that the portals API has not been successfully initialized.
+ * @retval PTL_NO_INIT		Indicates that the portals API has not been
+ *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that \a handle is not a valid handle.
- * @retval PTL_SEGV		Indicates that \a ni_handle is not to a valid address.
  * @implnote Every handle should encode the network interface and the object
  * identifier relative to this handle.
  */
@@ -530,7 +584,7 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  *			    containing ptl_target_event_t type events. If this
  *			    argument is \c PTL_EQ_NONE, operations performed on
  *			    this portal table entry are not logged.
- * @param[in] pt_index_req  The value of the portal index that is requested. if
+ * @param[in] pt_index_req  The value of the portal index that is requested. If
  *			    the value is set to \c PTL_PT_ANY, the
  *			    implementation can return any portal index.
  * @param[out] pt_index	    On successful return, this location will hold the
@@ -627,7 +681,6 @@ int PtlPTEnable(ptl_handle_ni_t	ni_handle,
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
  *			    interface handle.
- * @retval PTL_SEGV	    Indicates that \a uid is not a legal address.
  */
 int PtlGetUid(ptl_handle_ni_t	ni_handle,
 	      ptl_uid_t*	uid);
@@ -650,8 +703,8 @@ int PtlGetUid(ptl_handle_ni_t	ni_handle,
  * @retval PTL_OK	    Indicates success.
  * @retval PTL_NO_INIT	    Indicates that the portals API has not been
  *			    successfully initialized.
- * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network interface handle
- * @retval PTL_SEGV	    Indicates that \a id is not a legal address.
+ * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
+ *			    interface handle
  */
 int PtlGetId(ptl_handle_ni_t	ni_handle,
 	     ptl_process_id_t*	id);
@@ -688,8 +741,8 @@ int PtlGetId(ptl_handle_ni_t	ni_handle,
  * @retval PTL_OK	    Indicates success.
  * @retval PTL_NO_INIT	    Indicates that the portals API has not been
  *			    successfully initialized.
- * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network interface handle
- * @retval PTL_SEGV	    Indicates that \a jid is not a legal address.
+ * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
+ *			    interface handle
  */
 int PtlGetJid(ptl_handle_ni_t	ni_handle,
 	     ptl_jid_t*		jid);
@@ -734,7 +787,8 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  * @brief Used to create a memory descriptor to be used by the \a initiator. On
  *	systems that require memory registration, the PtlMDBind() operation
  *	would invoke the approprioate memory registration functions.
- * @param[in] ni_handle	    The network interface handle with which the memory descriptor will be associated.
+ * @param[in] ni_handle	    The network interface handle with which the memory
+ *			    descriptor will be associated.
  * @param[in] md	    Provides initial values for the user-visible parts
  *			    of a memory descriptor. Other than its use for
  *			    initialization, there is no linkage between this
@@ -759,7 +813,6 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  *			    valid.
  * @retval PTL_NO_SPACE	    Indicates that there is insufficient memory to
  *			    allocate the memory descriptor.
- * @retval PTL_SEGV	    Indicates that \a md_handle is not a legal address.
  * @see PtlMDRelease()
  */
 int PtlMDBind(ptl_handle_ni_t	ni_handle,
@@ -972,10 +1025,11 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * permissions failure.
  * @note It is not considered an error to have a match list entry that does not
  *	respond to either \p put or \p get operations: Every match list entry
- *	responds to \p reply operations. Nor is it considered an error to have a
- *	match list entry that responds to both \p put and \p get operations. In fact,
- *	it is often desirable for a match list entry used in an \p atomic
- *	operation to be configured to respond to both \p put and \p get operations. */
+ *	responds to \p reply operations. Nor is it considered an error to have
+ *	a match list entry that responds to both \p put and \p get operations.
+ *	In fact, it is often desirable for a match list entry used in an \p
+ *	atomic operation to be configured to respond to both \p put and \p get
+ *	operations. */
 #define PTL_ME_OP_GET			(1<<2)
 
 /*! Specifies that the offset used in accessing the memory region is managed
@@ -1009,11 +1063,12 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * */
 #define PTL_ME_MAY_ALIGN		(1<<6)
 
-/*! Specifies that an \p acknowledgment should \e not be sent for incoming \p put
- * operations, even if requested. By default, acknowledgments are sent for put
- * operations that request an acknowledgment. This applies to both standard and
- * counting type events. Acknowledgments are never sent for \p get operations.
- * The data sent in the \p reply serves as an implicit acknowledgment. */
+/*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
+ * put operations, even if requested. By default, acknowledgments are sent for
+ * put operations that request an acknowledgment. This applies to both standard
+ * and counting type events. Acknowledgments are never sent for \p get
+ * operations. The data sent in the \p reply serves as an implicit
+ * acknowledgment. */
 #define PTL_ME_ACK_DISABLE		(1<<7)
 
 /*! Specifies that the \a min_free field in the match list entry is to be used.
@@ -1083,7 +1138,8 @@ typedef struct {
      * some implementations. */
     void *		start;
 
-    /*! Specify the length of the memory region associated with the match list entry. */
+    /*! Specify the length of the memory region associated with the match list
+     * entry. */
     ptl_size_t		length;
 
     /*! A handle for counting type events associated with the memory region.
@@ -1297,7 +1353,6 @@ typedef enum {
  *				network interface handle.
  * @retval PTL_NO_SPACE		Indicates that there is insufficient memory to
  *				allocate the counting event.
- * @retval PTL_SEGV		Caught a segfault.
  * @implnote A quality implementation will attempt to minimize the cost of
  *	counting events. This can be done by translating the simple functions
  *	(PtlCTGet(), PtlCTWait(), PtlCTSet(), and PtlCTInc()) into simple
@@ -1334,7 +1389,6 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
  *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
  *				counting event handle.
- * @retval PTL_SEGV		Caught a segfault.
  * @see PtlCTWait()
  */
 int PtlCTGet(ptl_handle_ct_t	ct_handle,
@@ -1378,7 +1432,8 @@ int PtlCTSet(ptl_handle_ct_t	ct_handle,
  *		ptl_ct_event_t	increment)
  * @brief Used to (atomically) increment the value of a counting event.
  * @param[in] ct_handle	The counting event handle.
- * @param[in] increment	On successful return, the value of the counting event will have been incremented by this value.
+ * @param[in] increment	On successful return, the value of the counting event
+ *			will have been incremented by this value.
  * @retval PTL_OK		Indicates success
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
@@ -1492,9 +1547,9 @@ typedef enum {
  * @retval PTL_OK		Indicates success
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that either \a md_handle is not a valid
- *				memory descriptor or \a target_id is not a
- *				valid process identifier.
+ * @retval PTL_ARG_INVALID	Indicates that either \a md_handle is not a
+ *				valid memory descriptor or \a target_id is not
+ *				a valid process identifier.
  * @see PtlGet()
  */
 int PtlPut(ptl_handle_md_t  md_handle,
@@ -1600,24 +1655,39 @@ int PtlGet(ptl_handle_md_t  md_handle,
  * @brief An atomic operation type
  */
 typedef enum {
-    PTL_MIN, /*!< Compute and return the minimum of the initiator and target value. */
-    PTL_MAX, /*!< Compute and return the maximum of the initiator and target value. */
-    PTL_SUM, /*!< Compute and return the sum of the initiator and target value. */
-    PTL_PROD, /*!< Compute and return the product of the initiator and target value. */
-    PTL_LOR, /*!< Compute and return the logical OR of the initiator and target value. */
-    PTL_LAND, /*!< Compute and return the logical AND of the initiator and target value. */
-    PTL_BOR, /*!< Compute and return the bitwise OR of the initiator and target value. */
-    PTL_BAND, /*!< Compute and return the bitwise AND of the initiator and target value. */
-    PTL_LXOR, /*!< Compute and return the logical XOR of the initiator and target value. */
-    PTL_BXOR, /*!< Compute and return the bitwise XOR of the initiator and target value. */
-    PTL_SWAP, /*!< Swap the initiator and target value and return the target value. */
-    PTL_CSWAP, /*!< A conditional swap -- if the value of the operand is equal
-		 to the target value, the initiator and target value are
-		 swapped. The target value is always returned. This operation
-		 is limited to single data items. */
-    PTL_MSWAP /*!< A swap under mask -- update the bits of the target value
-		that are set to 1 in the operand and return the target value.
-		This operation is limited to single data items. */
+    PTL_MIN,			/*!< Compute and return the minimum of the
+				 * initiator and target value. */
+    PTL_MAX,			/*!< Compute and return the maximum of the
+				 * initiator and target value. */
+    PTL_SUM,			/*!< Compute and return the sum of the
+				 * initiator and target value. */
+    PTL_PROD,			/*!< Compute and return the product of the
+				 * initiator and target value. */
+    PTL_LOR,			/*!< Compute and return the logical OR of the
+				 * initiator and target value. */
+    PTL_LAND,			/*!< Compute and return the logical AND of the
+				 * initiator and target value. */
+    PTL_BOR,			/*!< Compute and return the bitwise OR of the
+				 * initiator and target value. */
+    PTL_BAND,			/*!< Compute and return the bitwise AND of the
+				 * initiator and target value. */
+    PTL_LXOR,			/*!< Compute and return the logical XOR of the
+				 * initiator and target value. */
+    PTL_BXOR,			/*!< Compute and return the bitwise XOR of the
+				 * initiator and target value. */
+    PTL_SWAP,			/*!< Swap the initiator and target value and
+				 * return the target value. */
+    PTL_CSWAP,			/*!< A conditional swap -- if the value of the
+				 * operand is equal to the target value, the
+				 * initiator and target value are swapped. The
+				 * target value is always returned. This
+				 * operation is limited to single data items.
+				 */
+    PTL_MSWAP			/*!< A swap under mask -- update the bits of
+				 * the target value that are set to 1 in the
+				 * operand and return the target value. This
+				 * operation is limited to single data items.
+				 */
 } ptl_op_t;
 /*!
  * @enum ptl_datatype_t
@@ -1885,8 +1955,8 @@ typedef enum {
      * by the match list entry and described by the \a rlength and \a mlength
      * in the event. The event will point to the start of the message in the
      * memory region described by the match list entry from the overflow list,
-     * if any of the message was captured. When the \a rlength and \a mlength fields
-     * do not match (i.e. the message was truncated), the application is
+     * if any of the message was captured. When the \a rlength and \a mlength
+     * fields do not match (i.e. the message was truncated), the application is
      * responsible for performing the remaining transfer. This typically occurs
      * when the application has provided an overflow list entry designed to
      * accept headers but not message bodies. The transfer is typically done by
@@ -2064,7 +2134,6 @@ typedef struct {
  *				network interface handle.
  * @retval PTL_NO_SPACE		Indicates that there is insufficient memory to
  *				allocate the event queue.
- * @retval PTL_SEGV		Caught a segfault.
  * @implnote The event queue is designed to reside in user space.
  *	High-performance implementations can be designed so they only need to
  *	write to the event queue but never have to read from it. This limits
@@ -2085,7 +2154,7 @@ int PtlEQAlloc(ptl_handle_ni_t	    ni_handle,
 	       ptl_handle_eq_t *    eq_handle);
 /*!
  * @fn PtlEQFree(ptl_handle_eq_t eq_handle)
- * @brief Releases the resources associated with an event queue. it is up to
+ * @brief Releases the resources associated with an event queue. It is up to
  *	the user to ensure that no memory descriptors or match list entries are
  *	associated with the event queue once it is freed.
  * @param[in] eq_handle	The event queue handle to be released
@@ -2118,7 +2187,6 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
  *				this event queue has been dropped due to
  *				limited space in the event queue.
- * @retval PTL_SEGV		Caught a segfault.
  * @see PtlEQWait(), PtlEQPoll()
  */
 int PtlEQGet(ptl_handle_eq_t	eq_handle,
@@ -2151,7 +2219,6 @@ int PtlEQGet(ptl_handle_eq_t	eq_handle,
  *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
  *				this event queue has been dropped due to
  *				limited space in the event queue.
- * @retval PTL_SEGV		Caught a segfault.
  * @see PtlEQGet(), PtlEQPoll()
  */
 int PtlEQWait(ptl_handle_eq_t	eq_handle,
@@ -2200,7 +2267,6 @@ int PtlEQWait(ptl_handle_eq_t	eq_handle,
  *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
  *				this event queue has been dropped due to
  *				limited space in the event queue.
- * @retval PTL_SEGV		Caught a segfault.
  * @implnote Implementations are free to provide macros for PtlEQGet() and
  *	PtlEQWait() that use PtlEQPoll() instead of providing these functions.
  * @implnote All of the members of the ptl_event_t structure (and corresponding
