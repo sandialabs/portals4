@@ -118,7 +118,6 @@ int main(int argc, char *argv[])
 	snprintf(procstr, 10, "%li", c);
 	assert(setenv("PORTALS4_MYPROC_ID", procstr, 1) == 0);
 	if ((pids[c] = fork()) == 0) {
-	    int i;
 	    /* child */
 	    execv(argv[optind], argv + optind);
 	    perror("execv failed!");
