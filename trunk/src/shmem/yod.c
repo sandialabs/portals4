@@ -19,8 +19,8 @@
 #include <sys/mman.h>		       /* for shm_open() */
 #include <sys/stat.h>		       /* for S_IRUSR and friends */
 #include <fcntl.h>		       /* for O_RDWR */
-#include <sys/wait.h> /* for waitpid() */
-#include <string.h> /* for memset() */
+#include <sys/wait.h>		       /* for waitpid() */
+#include <string.h>		       /* for memset() */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
 /* this is getting kinda idiotic */
@@ -36,44 +36,55 @@
 # define PSHMNAMLEN 100
 #endif
 
-static void print_usage(int ex);
+static void print_usage(
+    int ex);
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     char shmname[PSHMNAMLEN + 1];
     char countstr[10];
     char procstr[10];
-    int opt;
     long count = 0;
     pid_t *pids;
     int shm_fd;
+    int err = 0;
 
-    while ((opt = getopt(argc, argv, "hc:")) != -1) {
-	switch (opt) {
-	    case 'h':
-		print_usage(0);
-		break;
-	    case 'c':
-	    {
-		char *opterr = NULL;
-		count = strtol(optarg, &opterr, 0);
-		if (opterr == NULL || opterr == optarg) {
-		    fprintf(stderr,
-			    "Error: Unparseable number of processes! (%s)\n",
-			    optarg);
-		    print_usage(1);
+    {
+	int opt;
+	while ((opt = getopt(argc, argv, "hc:")) != -1) {
+	    switch (opt) {
+		case 'h':
+		    print_usage(0);
+		    break;
+		case 'c':
+		{
+		    char *opterr = NULL;
+		    count = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg) {
+			fprintf(stderr,
+				"Error: Unparseable number of processes! (%s)\n",
+				optarg);
+			print_usage(1);
+		    }
+		    if (count > 128) {
+			fprintf(stderr,
+				"Error: Exceeded max of 128 processes. (complain to developer)\n");
+			exit(EXIT_FAILURE);
+		    }
 		}
+		    break;
+		case ':':
+		    fprintf(stderr, "Error: Option `%c' needs a value!\n",
+			    optopt);
+		    print_usage(1);
+		    break;
+		case '?':
+		    fprintf(stderr, "Error: No such option: `%c'\n", optopt);
+		    print_usage(1);
+		    break;
 	    }
-		break;
-	    case ':':
-		fprintf(stderr, "Error: Option `%c' needs a value!\n",
-			optopt);
-		print_usage(1);
-		break;
-	    case '?':
-		fprintf(stderr, "Error: No such option: `%c'\n", optopt);
-		print_usage(1);
-		break;
 	}
     }
     if (count == 0) {
@@ -89,7 +100,7 @@ int main(int argc, char *argv[])
 	long int r1 = random();
 	long int r2 = random();
 	long int r3 = random();
-	memset(shmname, 0, PSHMNAMLEN+1);
+	memset(shmname, 0, PSHMNAMLEN + 1);
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
@@ -97,16 +108,31 @@ int main(int argc, char *argv[])
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (shm_fd >= 0) {
+	void *commpad;
+	const size_t commsize = getpagesize();
 	/* pre-allocate the shared memory page... necessary on BSD */
-	if (ftruncate(shm_fd, getpagesize()) != 0) {
-	    perror("ftruncate failed");
+	if (ftruncate(shm_fd, commsize) != 0) {
+	    perror("yod-> ftruncate failed");
 	    if (shm_unlink(shmname) == -1) {
-		perror("shm_unlink failed");
+		perror("yod-> shm_unlink failed");
 	    }
 	    exit(EXIT_FAILURE);
 	}
+	if ((commpad =
+	     mmap(NULL, commsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd,
+		  0)) == MAP_FAILED) {
+	    perror("yod-> mmap failed");
+	    if (shm_unlink(shmname) == -1) {
+		perror("yod-> shm_unlink failed");
+	    }
+	    exit(EXIT_FAILURE);
+	}
+	memset(commpad, 0, commsize);
+	if (munmap(commpad, commsize) != 0) {
+	    perror("yod-> munmap failed");   /* technically non-fatal */
+	}
     } else {
-	perror("shm_open failed");
+	perror("yod-> shm_open failed");
 	exit(EXIT_FAILURE);
     }
 
@@ -120,10 +146,10 @@ int main(int argc, char *argv[])
 	if ((pids[c] = fork()) == 0) {
 	    /* child */
 	    execv(argv[optind], argv + optind);
-	    perror("execv failed!");
+	    perror("yod-> child execv failed!");
 	    exit(EXIT_SUCCESS);
 	} else if (pids[c] == -1) {
-	    perror("could not launch process!\n");
+	    perror("yod-> could not launch process!\n");
 	    if (c > 0) {
 		fprintf(stderr,
 			"... I should probably kill any that have been spawned so far. Kick the lazy developer.\n");
@@ -134,21 +160,29 @@ int main(int argc, char *argv[])
 
     /* Wait for all children to exit */
     for (long c = 0; c < count; ++c) {
-	int junk;
-	if (waitpid(pids[c], &junk, 0) != pids[c]) {
-	    perror("waitpid failed");
+	int status;
+	if (waitpid(pids[c], &status, 0) != pids[c]) {
+	    perror("yod-> waitpid failed");
+	}
+	if (!WIFEXITED(status)) {
+	    ++err;
+	    fprintf(stderr, "yod-> child pid %i died unexpectedly\n", (int)pids[c]);
+	} else if (WEXITSTATUS(status) > 0) {
+	    ++err;
+	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c], WEXITSTATUS(status));
 	}
     }
 
     /* Cleanup */
     if (shm_unlink(shmname) != 0) {
-	perror("shm_unlink failed");
+	perror("yod-> shm_unlink failed");
 	exit(EXIT_FAILURE);
     }
-    return 0;
+    return err;
 }
 
-void print_usage(int ex)
+void print_usage(
+    int ex)
 {
     printf("yod -c [num_procs] executable\n");
     fflush(stdout);

@@ -20,7 +20,7 @@
 
 static unsigned int init_ref_count = 0;
 static void *comm_pad = NULL;
-const size_t comm_pad_size = 4096 * 16;	// XXX: completely arbitrary
+size_t comm_pad_size = 0;	// XXX: completely arbitrary
 const char *comm_pad_shm_name = NULL;
 
 /* The trick to this function is making it thread-safe: multiple threads can
@@ -35,31 +35,34 @@ int API_FUNC PtlInit(void)
     static volatile int failure = 0;
 
     if (race == 0) {
-	int fd;
+	int shm_fd;
+
+	comm_pad_size = getpagesize();
 
 	/* Open the communication pad */
 	assert(comm_pad == NULL);
 	comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
-	assert(comm_pad_shm_name != NULL);
-	if (comm_pad_shm_name) {
+	if (comm_pad_shm_name == NULL) {
 	    goto exit_fail;
 	}
-	fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
-	assert(fd >= 0);
-	if (fd >= 0) {
+	shm_fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
+	assert(shm_fd >= 0);
+	if (shm_fd >= 0) {
 	    comm_pad =
 		mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE, MAP_SHARED,
-		     fd, 0);
+		     shm_fd, 0);
 	    if (comm_pad != MAP_FAILED) {
-		close(fd);
+		close(shm_fd);
 		/* Release any concurrent initialization calls */
 		__sync_synchronize();
 		done_initializing = 1;
 		return PTL_OK;
 	    } else {
+		//perror("PtlInit: mmap failed");
 		goto exit_fail;
 	    }
 	} else {
+	    //perror("PtlInit: shm_open failed");
 	    goto exit_fail;
 	}
     } else {
