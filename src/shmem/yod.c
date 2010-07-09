@@ -1,8 +1,7 @@
 /* System V Interface Definition; for random() and waitpid() */
 #define _SVID_SOURCE
-/* For SUSv2 (UNIX 98) definitions (ftruncate), and
- * SUSv3 (UNIX 03) definitions (setenv) */
-#define _XOPEN_SOURCE 600
+/* For BSD definitions (ftruncate, setenv) */
+#define _BSD_SOURCE
 
 #include <portals4.h>
 
@@ -24,9 +23,12 @@
 #include <string.h> /* for memset() */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
+/* this is getting kinda idiotic */
+# define _DARWIN_C_SOURCE
 # ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # endif
+# include <sys/types.h>
 # include <sys/posix_shm.h>	       /* for PSHMNAMLEN */
 #endif
 
@@ -62,7 +64,6 @@ int main(int argc, char *argv[])
 		    print_usage(1);
 		}
 	    }
-		printf("Running %li instances\n", count);
 		break;
 	    case ':':
 		fprintf(stderr, "Error: Option `%c' needs a value!\n",
@@ -119,10 +120,6 @@ int main(int argc, char *argv[])
 	if ((pids[c] = fork()) == 0) {
 	    int i;
 	    /* child */
-	    printf("running %s with args:\n", argv[optind]);
-	    for (i = optind + 1; i < argc; ++i) {
-		printf("\t%s\n", argv[i]);
-	    }
 	    execv(argv[optind], argv + optind);
 	    perror("execv failed!");
 	    exit(EXIT_SUCCESS);
