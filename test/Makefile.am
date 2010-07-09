@@ -17,7 +17,9 @@ OUTPUTDIR = $(top_builddir)/src
 PORTALSLIB = $(OUTPUTDIR)/libportals.la
 LDADD = $(PORTALSLIB)
 
-TESTS_ENVIRONMENT = $(top_builddir)/src/yod -c 1
+THREADS ?= 1
+
+TESTS_ENVIRONMENT = $(top_builddir)/src/yod -c $(THREADS)
 
 test_init_SOURCES = test_init.c
 test_init_DEPENDENCIES = $(PORTALSLIB)

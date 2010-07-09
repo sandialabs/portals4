@@ -44,8 +44,11 @@ int main(
     char *argv[])
 {
     char shmname[PSHMNAMLEN + 1];
+    size_t commsize = 1048576;	// 1MB
+    size_t buffsize = getpagesize();
     char countstr[10];
     char procstr[10];
+    char commstr[20];
     long count = 0;
     pid_t *pids;
     int shm_fd;
@@ -53,7 +56,7 @@ int main(
 
     {
 	int opt;
-	while ((opt = getopt(argc, argv, "hc:")) != -1) {
+	while ((opt = getopt(argc, argv, "b:hc:")) != -1) {
 	    switch (opt) {
 		case 'h':
 		    print_usage(0);
@@ -75,6 +78,17 @@ int main(
 		    }
 		}
 		    break;
+		case 'b':
+		{
+		    char *opterr = NULL;
+		    commsize = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg) {
+			fprintf(stderr,
+				"Error: Unparseable communication buffer size! (%s)\n",
+				optarg);
+			print_usage(1);
+		    }
+		}
 		case ':':
 		    fprintf(stderr, "Error: Option `%c' needs a value!\n",
 			    optopt);
@@ -104,14 +118,14 @@ int main(
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
+    buffsize += commsize * count;
 
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (shm_fd >= 0) {
 	void *commpad;
-	const size_t commsize = getpagesize();
-	/* pre-allocate the shared memory page... necessary on BSD */
-	if (ftruncate(shm_fd, commsize) != 0) {
+	/* pre-allocate the shared memory ... necessary on BSD */
+	if (ftruncate(shm_fd, buffsize) != 0) {
 	    perror("yod-> ftruncate failed");
 	    if (shm_unlink(shmname) == -1) {
 		perror("yod-> shm_unlink failed");
@@ -119,7 +133,7 @@ int main(
 	    exit(EXIT_FAILURE);
 	}
 	if ((commpad =
-	     mmap(NULL, commsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd,
+	     mmap(NULL, buffsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd,
 		  0)) == MAP_FAILED) {
 	    perror("yod-> mmap failed");
 	    if (shm_unlink(shmname) == -1) {
@@ -127,22 +141,24 @@ int main(
 	    }
 	    exit(EXIT_FAILURE);
 	}
-	memset(commpad, 0, commsize);
-	if (munmap(commpad, commsize) != 0) {
-	    perror("yod-> munmap failed");   /* technically non-fatal */
+	memset(commpad, 0, buffsize);
+	if (munmap(commpad, buffsize) != 0) {
+	    perror("yod-> munmap failed");	/* technically non-fatal */
 	}
     } else {
 	perror("yod-> shm_open failed");
 	exit(EXIT_FAILURE);
     }
 
+    snprintf(commstr, 20, "%lu", commsize);
+    assert(setenv("PORTALS4_COMM_SIZE", commstr, 1) == 0);
     snprintf(countstr, 10, "%li", count);
     assert(setenv("PORTALS4_NUM_PROCS", countstr, 1) == 0);
     pids = malloc(sizeof(pid_t) * count);
 
     for (long c = 0; c < count; ++c) {
 	snprintf(procstr, 10, "%li", c);
-	assert(setenv("PORTALS4_MYPROC_ID", procstr, 1) == 0);
+	assert(setenv("PORTALS4_PROC_ID", procstr, 1) == 0);
 	if ((pids[c] = fork()) == 0) {
 	    /* child */
 	    execv(argv[optind], argv + optind);
@@ -166,10 +182,12 @@ int main(
 	}
 	if (!WIFEXITED(status)) {
 	    ++err;
-	    fprintf(stderr, "yod-> child pid %i died unexpectedly\n", (int)pids[c]);
+	    fprintf(stderr, "yod-> child pid %i died unexpectedly\n",
+		    (int)pids[c]);
 	} else if (WEXITSTATUS(status) > 0) {
 	    ++err;
-	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c], WEXITSTATUS(status));
+	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c],
+		    WEXITSTATUS(status));
 	}
     }
 
