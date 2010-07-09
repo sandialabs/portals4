@@ -6,6 +6,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
 lib_LTLIBRARIES = libportals.la
+bin_PROGRAMS = yod
 
 # version-info fields are:
 # 1. the current interface revision number (i.e. whenever arguments of existing

@@ -66,7 +66,12 @@ AC_CACHE_SAVE
 ## ----------------------- ##
 AC_HEADER_STDC
 AC_SYS_LARGEFILE
-AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h])
+AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h sys/time.h])
+AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
+[#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+])
 
 ## --------------- ##
 ## Check for types ##
