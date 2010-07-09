@@ -1,3 +1,9 @@
+/* System V Interface Definition; for random() and waitpid() */
+#define _SVID_SOURCE
+/* For SUSv2 (UNIX 98) definitions (ftruncate), and
+ * SUSv3 (UNIX 03) definitions (setenv) */
+#define _XOPEN_SOURCE 600
+
 #include <portals4.h>
 
 #ifdef HAVE_CONFIG_H
@@ -14,25 +20,25 @@
 #include <sys/mman.h>		       /* for shm_open() */
 #include <sys/stat.h>		       /* for S_IRUSR and friends */
 #include <fcntl.h>		       /* for O_RDWR */
+#include <sys/wait.h> /* for waitpid() */
+#include <string.h> /* for memset() */
+
 #ifdef HAVE_SYS_POSIX_SHM_H
 # ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # endif
-# include <sys/posix_shm.h>	    /* for PSHMNAMLEN */
+# include <sys/posix_shm.h>	       /* for PSHMNAMLEN */
 #endif
 
 #ifndef PSHMNAMLEN
 # define PSHMNAMLEN 100
 #endif
 
-void print_usage(
-    int ex);
+static void print_usage(int ex);
 
-int main(
-    int argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
-    char shmname[PSHMNAMLEN+1];
+    char shmname[PSHMNAMLEN + 1];
     char countstr[10];
     char procstr[10];
     int opt;
@@ -78,8 +84,13 @@ int main(
     }
 
     srandom(time(NULL));
-    snprintf(shmname, PSHMNAMLEN, "ptl_commpad_%lx%lx%lx", random(), random(),
-	     random());
+    {
+	long int r1 = random();
+	long int r2 = random();
+	long int r3 = random();
+	memset(shmname, 0, PSHMNAMLEN+1);
+	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
+    }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
 
     /* Establish the communication pad */
@@ -141,8 +152,7 @@ int main(
     return 0;
 }
 
-void print_usage(
-    int ex)
+void print_usage(int ex)
 {
     printf("yod -c [num_procs] executable\n");
     fflush(stdout);
