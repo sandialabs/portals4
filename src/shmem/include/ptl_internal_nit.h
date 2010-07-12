@@ -5,12 +5,12 @@
 
 typedef struct {
     pthread_mutex_t *lock;
-    void * mle;
-} ptl_table_t;
+    void *mle;
+} ptl_table_entry_t;
 
 typedef struct {
-    ptl_table_t * tables[4];
-    unsigned int enabled; // mask
+    ptl_table_entry_t *tables[4];
+    unsigned int enabled;	// mask
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;

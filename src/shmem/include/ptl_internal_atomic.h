@@ -37,4 +37,40 @@ static inline unsigned long PtlInternalAtomicIncXX(
 }
 #endif
 
+#if defined(SANDIA_BUILTIN_CAS)
+# define PtlInternalAtomicCasPtr( ADDR, OLDVAL, NEWVAL ) \
+    (void*)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
+#else
+#error Need to implement my own CAS (suggest stealing from qthreads)
+static inline uint32_t PtlInternalAtomicCas32(
+    volatile uint32_t * addr,
+    uint32_t oldval,
+    uint32_t newval)
+{
+}
+
+static inline uint64_t PtlInternalAtomicCas64(
+    volatile uint64_t * addr,
+    uint64_t oldval,
+    uint64_t newval)
+{
+}
+
+static inline void *PtlInternalAtomicCasPtr(
+    void *volatile *addr,
+    void *oldval,
+    void *newval)
+{
+#if (SIZEOF_VOIDP == 4)
+    PtlInternalAtomicCas32((volatile uint32_t *)addr, (uint32_t) oldval,
+			   (uint32_t) newval);
+#elif (SIZEOF_VOIDP == 8)
+    PtlInternalAtomicCas64((volatile uint64_t *)addr, (uint64_t) oldval,
+			   (uint64_t) newval);
+#else
+#error unknown size of void*
 #endif
+}
+#endif /* SANDIA_BUILTIN_CAS */
+
+#endif /* PTL_INTERNAL_ATOMIC_H */

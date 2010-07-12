@@ -109,16 +109,16 @@ return foo;
 AS_IF([test "$sandia_cv_require_ia64intrin_h" = "yes"],
 	  [AC_DEFINE([SANDIA_NEEDS_INTEL_INTRIN],[1],[if this header is necessary for builtin atomics])])
 AS_IF([test "x$sandia_cv_atomic_CASptr" = "xyes"],
-      [AC_DEFINE([SANDIA_ATOMIC_CAS_PTR],[1],
+      [AC_DEFINE([SANDIA_BUILTIN_CAS_PTR],[1],
 	  	[if the compiler supports __sync_val_compare_and_swap on pointers])])
 AS_IF([test "x$sandia_cv_atomic_CAS32" = "xyes"],
-      [AC_DEFINE([SANDIA_ATOMIC_CAS32],[1],
+      [AC_DEFINE([SANDIA_BUILTIN_CAS32],[1],
 	  	[if the compiler supports __sync_val_compare_and_swap on 32-bit ints])])
 AS_IF([test "x$sandia_cv_atomic_CAS64" = "xyes"],
-      [AC_DEFINE([SANDIA_ATOMIC_CAS64],[1],
+      [AC_DEFINE([SANDIA_BUILTIN_CAS64],[1],
 	  	[if the compiler supports __sync_val_compare_and_swap on 64-bit ints])])
 AS_IF([test "x$sandia_cv_atomic_CAS" = "xyes"],
-	[AC_DEFINE([SANDIA_ATOMIC_CAS],[1],[if the compiler supports __sync_val_compare_and_swap])])
+	[AC_DEFINE([SANDIA_BUILTIN_CAS],[1],[if the compiler supports __sync_val_compare_and_swap])])
 AS_IF([test "$sandia_cv_atomic_incr" = "yes"],
 	[AC_DEFINE([SANDIA_BUILTIN_INCR],[1],[if the compiler supports __sync_fetch_and_add])])
 AS_IF([test "$sandia_cv_atomic_CAS" = "yes" -a "$sandia_cv_atomic_incr" = "yes"],
