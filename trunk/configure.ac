@@ -143,6 +143,7 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
+AC_CHECK_FUNCS([getpagesize])
 AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_SEARCH_LIBS([shm_open],
