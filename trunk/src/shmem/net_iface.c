@@ -22,6 +22,7 @@ ptl_ni_limits_t nit_limits;
 
 const ptl_nid_t PTL_NID_ANY = UINT_MAX;
 const ptl_rank_t PTL_RANK_ANY = UINT_MAX;
+const ptl_interface_t PTL_IFACE_DEFAULT = UINT_MAX;
 
 int PtlNIInit(
     ptl_interface_t iface,
@@ -34,8 +35,14 @@ int PtlNIInit(
     ptl_process_id_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
 #ifndef NO_ARG_VALIDATION
-    if (iface != 0) {
+    if (iface != 0 && iface != PTL_IFACE_DEFAULT) {
+	return PTL_ARG_INVALID;
+    }
+    if (pid != PTL_PID_ANY && pid != proc_number) {
 	return PTL_ARG_INVALID;
     }
     if (options & PTL_NI_MATCHING && options & PTL_NI_NO_MATCHING) {
@@ -72,33 +79,25 @@ int PtlNIInit(
 	    return PTL_ARG_INVALID;
 #endif
     }
-    *actual = nit_limits;
-    switch (*ni_handle) {
-	case 0:
-	case 1:		       // LOGICAL
-	    for (int i = 0; i < map_size; ++i) {
-		if (i >= num_siblings) {
-		    actual_mapping[i].rank = PTL_RANK_ANY;	// aka "invalid"
-		} else {
-		    actual_mapping[i].rank = i;
-		}
+    if (actual != NULL) {
+	*actual = nit_limits;
+    }
+    if (options & PTL_NI_LOGICAL) {
+	for (int i = 0; i < map_size; ++i) {
+	    if (i >= num_siblings) {
+		actual_mapping[i].phys.nid = PTL_NID_ANY;	// aka "invalid"
+		actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
+	    } else {
+		actual_mapping[i].phys.nid = 0;
+		actual_mapping[i].phys.pid = i;
 	    }
-	    break;
-	case 2:
-	case 3:		       // PHYSICAL
-	    for (int i = 0; i < map_size; ++i) {
-		if (i >= num_siblings) {
-		    actual_mapping[i].phys.nid = PTL_NID_ANY;	// aka "invalid"
-		    actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
-		} else {
-		    actual_mapping[i].phys.nid = 0;
-		    actual_mapping[i].phys.pid = i;
-		}
-	    }
-	    break;
+	}
     }
     nit.tables[*ni_handle] =
-	calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_t));
+	calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
+    if (nit.tables[*ni_handle] == NULL) {
+	return PTL_NO_SPACE;
+    }
     __sync_synchronize();	       // full memory fence
     nit.enabled |= (1 << (*ni_handle));	// XXX: needs to be an atomic CAS
     return PTL_OK;
