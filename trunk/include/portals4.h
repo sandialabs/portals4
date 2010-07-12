@@ -360,21 +360,21 @@ typedef int ptl_ni_fail_t;
 
 /*! Request that the interface specified in \a iface be opened with matching
  * enabled. */
-extern const unsigned int PTL_NI_MATCHING;
+#define PTL_NI_MATCHING	    (1)
 
 /*! Request that the interface specified in \a iface be opened with matching
  * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
  * exclusive. */
-extern const unsigned int PTL_NI_NO_MATCHING;
+#define PTL_NI_NO_MATCHING  (1<<1)
 
 /*! Request that the interface specified in \a iface be opened with logical
  * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
-extern const unsigned int PTL_NI_LOGICAL;
+#define PTL_NI_LOGICAL	    (1<<2)
 
 /*! Request that the interface specified in \a iface be opened with physical
  * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
  * PTL_NI_PHYSICAL are mutually exclusive */
-extern const unsigned int PTL_NI_PHYSICAL;
+#define PTL_NI_PHYSICAL	    (1<<3)
 
 /*! Used in successful end events to indicate that there has been no failure. */
 extern const ptl_ni_fail_t PTL_NI_OK;

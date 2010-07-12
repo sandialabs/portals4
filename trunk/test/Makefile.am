@@ -5,7 +5,8 @@
 
 AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 
-TESTS = test_init
+TESTS = test_init \
+	test_NIInit
 
 buildall: $(TESTS)
 .PHONY: buildall
@@ -23,3 +24,6 @@ TESTS_ENVIRONMENT = $(top_builddir)/src/yod -c $(THREADS)
 
 test_init_SOURCES = test_init.c
 test_init_DEPENDENCIES = $(PORTALSLIB)
+
+test_NIInit_SOURCES = test_NIInit.c
+test_NIInit_DEPENDENCIES = $(PORTALSLIB)
