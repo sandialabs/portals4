@@ -2,6 +2,7 @@
 #define PTL_INTERNAL_NIT_H
 
 #include <pthread.h>
+#include <stdint.h>		       /* for uint32_t */
 
 typedef struct {
     pthread_mutex_t *lock;
@@ -10,7 +11,7 @@ typedef struct {
 
 typedef struct {
     ptl_table_entry_t *tables[4];
-    unsigned int enabled;	// mask
+    uint32_t enabled;	// mask
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;

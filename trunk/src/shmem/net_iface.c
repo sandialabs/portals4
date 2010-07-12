@@ -16,6 +16,7 @@
 #include "ptl_visibility.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_atomic.h"
 
 ptl_internal_nit_t nit;
 ptl_ni_limits_t nit_limits;
@@ -99,7 +100,13 @@ int PtlNIInit(
 	return PTL_NO_SPACE;
     }
     __sync_synchronize();	       // full memory fence
-    nit.enabled |= (1 << (*ni_handle));	// XXX: needs to be an atomic CAS
+    {
+	uint32_t oldval, newval = nit.enabled;
+	do {
+	    oldval = newval;
+	    newval |= (1 << (*ni_handle));
+	} while ((newval = PtlInternalAtomicCas32(&(nit.enabled), oldval, newval)) != oldval);
+    }
     return PTL_OK;
 }
 
