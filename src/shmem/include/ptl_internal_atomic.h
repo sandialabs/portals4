@@ -38,6 +38,10 @@ static inline unsigned long PtlInternalAtomicIncXX(
 #endif
 
 #if defined(SANDIA_BUILTIN_CAS)
+# define PtlInternalAtomicCas32( ADDR, OLDVAL, NEWVAL ) \
+    (uint32_t)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
+# define PtlInternalAtomicCas64( ADDR, OLDVAL, NEWVAL ) \
+    (uint64_t)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
 # define PtlInternalAtomicCasPtr( ADDR, OLDVAL, NEWVAL ) \
     (void*)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
 #else
