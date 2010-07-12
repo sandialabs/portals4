@@ -13,19 +13,26 @@
 #include <fcntl.h>		       /* for O_RDWR */
 #include <stdlib.h>		       /* for getenv() */
 #include <unistd.h>		       /* for close() */
+#include <limits.h>		       /* for UINT_MAX */
+#include <string.h>		       /* for memset() */
 
 /* Internals */
 #include "ptl_visibility.h"
 #include "ptl_internal_atomic.h"
+#include "ptl_internal_commpad.h"
+#include "ptl_internal_nit.h"
+
+volatile char *comm_pad = NULL;
+size_t num_siblings = 0;
+size_t proc_number = 0;
+size_t per_proc_comm_buf_size = 0;
+size_t firstpagesize = 0;
+
+const ptl_pid_t PTL_PID_ANY = UINT_MAX;
 
 static unsigned int init_ref_count = 0;
-static volatile char *comm_pad = NULL;
 static size_t comm_pad_size = 0;
-static size_t firstpagesize = 0;
 static const char *comm_pad_shm_name = NULL;
-static size_t num_siblings = 0;
-static size_t proc_number = 0;
-static size_t per_proc_comm_buf_size = 0;
 
 /* The trick to this function is making it thread-safe: multiple threads can
  * all call PtlInit concurrently, and all will wait until initialization is
@@ -47,7 +54,15 @@ int API_FUNC PtlInit(
 	char *strerr = NULL;
 	const char *str = NULL;
 
+#ifdef _SC_PAGESIZE
+	firstpagesize = sysconf(_SC_PAGESIZE);
+#elif defined(_SC_PAGE_SIZE)
+	firstpagesize = sysconf(_SC_PAGE_SIZE);
+#elif defined(HAVE_GETPAGESIZE)
 	firstpagesize = getpagesize();
+#else
+	firstpagesize = 4096;
+#endif
 
 	/* Parse the official yod-provided environment variables */
 	comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
@@ -81,7 +96,19 @@ int API_FUNC PtlInit(
 	    /* could not parse! */
 	    goto exit_fail;
 	}
-	comm_pad_size = firstpagesize + (per_proc_comm_buf_size * num_siblings);
+	comm_pad_size =
+	    firstpagesize + (per_proc_comm_buf_size * num_siblings);
+
+	memset(&nit, 0, sizeof(ptl_internal_nit_t));
+	nit_limits.max_mes = INT_MAX;  // more important when using pooling
+	nit_limits.max_mds = INT_MAX;  // more important when using pooling
+	nit_limits.max_cts = INT_MAX;  // more important when using pooling
+	nit_limits.max_eqs = INT_MAX;  // more important when using pooling
+	nit_limits.max_pt_index = 63;
+	nit_limits.max_iovecs = INT_MAX;	// ???
+	nit_limits.max_me_list = nit_limits.max_mes;	// may be smaller if not using a linked-list implementaiton
+	nit_limits.max_msg_size = per_proc_comm_buf_size;	// may need to be smaller
+	nit_limits.max_atomic_size = 8;	// XXX: does not apply to all architectures
 
 	/* Open the communication pad */
 	assert(comm_pad == NULL);
@@ -145,5 +172,6 @@ void API_FUNC PtlFini(
     if (lastone == 1) {
 	/* Clean up */
 	assert(munmap((void *)comm_pad, comm_pad_size) == 0);
+	comm_pad = NULL;
     }
 }
