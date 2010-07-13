@@ -8,6 +8,8 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 TESTS = test_init \
 	test_NIInit
 
+EXTRA_PROGRAMS = test_bootstrap
+
 buildall: $(TESTS)
 .PHONY: buildall
 
@@ -27,3 +29,6 @@ test_init_DEPENDENCIES = $(PORTALSLIB)
 
 test_NIInit_SOURCES = test_NIInit.c
 test_NIInit_DEPENDENCIES = $(PORTALSLIB)
+
+test_bootstrap_SOURCES = test_bootstrap.c
+test_bootstrap_DEPENDENCIES = $(PORTALSLIB)

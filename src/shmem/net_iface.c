@@ -36,10 +36,10 @@ int PtlNIInit(
     ptl_process_id_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
+#ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-#ifndef NO_ARG_VALIDATION
     if (iface != 0 && iface != PTL_IFACE_DEFAULT) {
 	return PTL_ARG_INVALID;
     }
@@ -94,25 +94,34 @@ int PtlNIInit(
 	    }
 	}
     }
-    nit.tables[*ni_handle] =
-	calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
-    if (nit.tables[*ni_handle] == NULL) {
-	return PTL_NO_SPACE;
+    /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
+    ptl_table_entry_t *tmp =
+	PtlInternalAtomicCasPtr(&(nit.tables[*ni_handle]), NULL, (void *)1);
+    if (tmp == NULL) {
+	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
+	if (tmp == NULL) {
+	    nit.tables[*ni_handle] = NULL;
+	    return PTL_NO_SPACE;
+	}
+	nit.tables[*ni_handle] = tmp;
     }
     __sync_synchronize();	       // full memory fence
-    {
-	uint32_t oldval, newval = nit.enabled;
-	do {
-	    oldval = newval;
-	    newval |= (1 << (*ni_handle));
-	} while ((newval = PtlInternalAtomicCas32(&(nit.enabled), oldval, newval)) != oldval);
-    }
+    PtlInternalAtomicInc(&(nit.refcount[*ni_handle]), 1);
     return PTL_OK;
 }
 
 int PtlNIFini(
     ptl_handle_ni_t ni_handle)
 {
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+    if (ni_handle >= 4 || (nit.refcount[ni_handle] == 0)) {
+	return PTL_ARG_INVALID;
+    }
+#endif
+    PtlInternalAtomicInc(&(nit.refcount[ni_handle]), -1);
     return PTL_OK;
 }
 
