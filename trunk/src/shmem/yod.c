@@ -155,6 +155,8 @@ int main(
     snprintf(countstr, 10, "%li", count);
     assert(setenv("PORTALS4_NUM_PROCS", countstr, 1) == 0);
     pids = malloc(sizeof(pid_t) * count);
+    assert(setenv("PORTALS4_COLLECTOR_NID", "0", 1) == 0);
+    assert(setenv("PORTALS4_COLLECTOR_PID", countstr, 1) == 0);
 
     for (long c = 0; c < count; ++c) {
 	snprintf(procstr, 10, "%li", c);
