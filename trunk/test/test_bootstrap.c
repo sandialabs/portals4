@@ -35,7 +35,7 @@ int main(
 	/* this will never happen in user code, because the collector stuff is
 	 * handled by Yod, I'm just putting the code here to show both sides */
 
-	/* set up a landing pad to collect everyone's information. */
+	/* set up a landing pad to collect & distribute everyone's information. */
 	md.start = le.start = mapping;
 	md.length = le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
 	le.ac_id.uid = PTL_UID_ANY;
@@ -49,45 +49,62 @@ int main(
 		&le_handle) == PTL_OK);
 	/* wait for everyone to post to the mapping */
 	assert(PtlCTWait(le.ct_handle, maxrank + 1) == PTL_OK);
+	assert(le.ct_handle.failures == 0);
+	/* cleanup */
+	assert(PtlCTFree(le.ct_handle) == PTL_OK);
+	assert(PtlLEUnlink(le_handle) == PTL_OK);
 	/* now distribute the mapping */
-	md.options = PTL_MD_EVENT_DISABLE;
+	md.options = PTL_MD_EVENT_CT_ACK;
 	md.eq_handle = PTL_EQ_NONE;
-	md.ct_handle = PTL_CT_NONE;
+	assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &md.ct_handle) ==
+	       PTL_OK);
 	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
 	for (uint64_t r = 0; r <= maxrank; ++r) {
 	    assert(PtlPut
 		   (md_handle, 0, (maxrank + 1) * sizeof(ptl_process_id_t),
-		    PTL_NO_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+		    PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
 	}
+	/* wait for the puts to finish */
+	assert(PtlCTWait(md.ct_handle, maxrank + 1) == PTL_OK);
+	assert(md.ct_handle.failures == 0);
 	/* cleanup */
+	assert(PtlCTFree(md.ct_handle) == PTL_OK);
 	assert(PtlMDRelease(md_handle) == PTL_OK);
-	assert(PtlCTFree(le.ct_handle) == PTL_OK);
-	assert(PtlLEUnlink(le_handle) == PTL_OK);
 	assert(PtlNIFini(ni_physical) == PTL_OK);
     } else {
-
+	/* for distributing my ID */
 	md.start = &myself;
 	md.length = sizeof(ptl_process_id_t);
 	md.options = PTL_MD_EVENT_DISABLE;	// i.e. don't count sends
 	md.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
-	md.ct_handle = PTL_CT_NONE;    // i.e. don't count sends
-	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
-	assert(PtlPut
-	       (md_handle, 0, sizeof(ptl_process_id_t), PTL_NO_ACK_REQ,
-		COLLECTOR, 0, 0, rank * sizeof(ptl_process_id_t), NULL,
-		0) == PTL_OK);
-	assert(PtlMDRelease(md_handle) == PTL_OK);
-	/* wait to receive the mapping from the COLLECTOR */
+	assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &md.ct_handle) ==
+	       PTL_OK);
+	/* for receiving the mapping */
 	le.start = mapping;
 	le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &le.ct_handle) ==
 	       PTL_OK);
+	/* post this now to avoid a race condition later */
 	assert(PtlLEAppend
 	       (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
 		&le_handle) == PTL_OK);
+	/* now send my ID to the collector */
+	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
+	assert(PtlPut
+	       (md_handle, 0, sizeof(ptl_process_id_t), PTL_OC_ACK_REQ,
+		COLLECTOR, 0, 0, rank * sizeof(ptl_process_id_t), NULL,
+		0) == PTL_OK);
+	/* wait for the send to finish */
+	assert(PtlCTWait(md.ct_handle, 1) == PTL_OK);
+	assert(md.ct_handle.failures == 0);
+	/* cleanup */
+	assert(PtlCTFree(md.ct_handle) == PTL_OK);
+	assert(PtlMDRelease(md_handle) == PTL_OK);
+	/* wait to receive the mapping from the COLLECTOR */
 	assert(PtlCTWait(le.ct_handle, 1) == PTL_OK);
+	assert(le.ct_handle.failures == 0);
 	/* cleanup the counter */
 	assert(PtlCTFree(le.ct_handle) == PTL_OK);
 	/* feed the accumulated mapping into NIInit to create the rank-based
