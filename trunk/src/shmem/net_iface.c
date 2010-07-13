@@ -24,6 +24,7 @@ ptl_ni_limits_t nit_limits;
 const ptl_nid_t PTL_NID_ANY = UINT_MAX;
 const ptl_rank_t PTL_RANK_ANY = UINT_MAX;
 const ptl_interface_t PTL_IFACE_DEFAULT = UINT_MAX;
+const ptl_handle_any_t PTL_INVALID_HADLE = { UINT_MAX };
 
 int API_FUNC PtlNIInit(
     ptl_interface_t iface,
@@ -133,9 +134,35 @@ int API_FUNC PtlNIStatus(
     return PTL_FAIL;
 }
 
+#define HANDLE_SELECTOR(x) (((x) >> 29) & 0x7)
+#define HANDLE_NI_CODE 0
+#define HANDLE_EQ_CODE 1
+#define HANDLE_CT_CODE 2
+#define HANDLE_MD_CODE 3
+#define HANDLE_LE_CODE 4
+#define HANDLE_ME_CODE 5
+
 int API_FUNC PtlNIHandle(
     ptl_handle_any_t handle,
     ptl_handle_ni_t * ni_handle)
 {
-    return PTL_FAIL;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+#endif
+    switch (HANDLE_SELECTOR(handle.ni)) {
+	case HANDLE_NI_CODE:
+	    *ni_handle = handle.ni;
+	    break;
+	case HANDLE_EQ_CODE:
+	case HANDLE_CT_CODE:
+	case HANDLE_MD_CODE:
+	case HANDLE_LE_CODE:
+	case HANDLE_ME_CODE:
+	    abort();
+	default:
+	    return PTL_ARG_INVALID;
+    }
+    return PTL_OK;
 }
