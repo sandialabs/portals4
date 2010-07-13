@@ -160,7 +160,7 @@ int main(
 
     for (long c = 0; c < count; ++c) {
 	snprintf(procstr, 10, "%li", c);
-	assert(setenv("PORTALS4_PROC_ID", procstr, 1) == 0);
+	assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
 	if ((pids[c] = fork()) == 0) {
 	    /* child */
 	    execv(argv[optind], argv + optind);
