@@ -109,7 +109,7 @@ typedef union {
  *	operating systems that require it) and to carry that information across
  *	multiple operations (an MD is persistent until released). PtlMDBind()
  *	is used to create a memory descriptor and PtlMDRelease() is used to
- *	unlink and release the resources associated wiht a memory descriptor.
+ *	unlink and release the resources associated with a memory descriptor.
  * @ingroup MD
  */
 typedef struct {
@@ -157,7 +157,7 @@ typedef struct {
  *	with ptl_iovec_t. While this is a supported operation, it is unlikely
  *	to perform well in most implementations.
  * @implnote The implementation is required to support the mixing of the
- *	ptl_iovec_t type with offsets (local and remote); howeve,r it will be
+ *	ptl_iovec_t type with offsets (local and remote); however, it will be
  *	difficult to make this perform well in the general case. The correct
  *	behavior in this scenario is to treat the region described by the
  *	ptl_iovec_t type as if it were a single contiguous region. In some
@@ -177,11 +177,11 @@ typedef struct {
  * @ingroup LEL
  */
 typedef union {
-    ptl_jid_t	jid; /*!< The user identifier of the \a initiator that may
+    ptl_uid_t	uid; /*!< The user identifier of the \a initiator that may
 		       access the associated list entry or match list entry.
 		       This may be set to \c PTL_UID_ANY to allow access by any
 		       user. */
-    ptl_uid_t	uid; /*!< The job identifier of the \a initiator that may
+    ptl_jid_t	jid; /*!< The job identifier of the \a initiator that may
 		       access the associated list entry or match list entry.
 		       This may be set to \c PTL_JID_ANY to allow access by any
 		       job. */
@@ -239,7 +239,7 @@ typedef struct {
 			       operations (yes or no), enable get operations
 			       (yes or no), offset management (local or
 			       remote), message truncation (yes or no),
-			       acknowledgement (yes or no), use scatter/gather
+			       acknowledgment (yes or no), use scatter/gather
 			       vectors and disable events. Values for this
 			       argument can be constructed using a bitwise OR
 			       of the following values:
@@ -292,6 +292,9 @@ extern const ptl_pid_t PTL_PID_ANY;
 
 /*! Match any node identifier. */
 extern const ptl_nid_t PTL_NID_ANY;
+
+/*! Match any user identifier. */
+extern const ptl_uid_t PTL_UID_ANY;
 
 /*! Match any job identifier. */
 extern const ptl_jid_t PTL_JID_ANY;
@@ -496,7 +499,7 @@ int PtlNIInit(ptl_interface_t	iface,
  *	reaches zero. Once the release of resources has begun, the results of
  *	pending API operations (e.g. operation initiated by another thread) for
  *	this interface are undefined. Similarly the efects of incoming
- *	operations (put, get, atomic) or return values (acknowledgement and
+ *	operations (put, get, atomic) or return values (acknowledgment and
  *	reply) for this interface are undefined.
  * @param[in] ni_handle	    An interface handle to shut down.
  * @retval PTL_OK	    Indicates success.
@@ -729,7 +732,7 @@ int PtlGetId(ptl_handle_ni_t	ni_handle,
  *	All application processes and job-specific support programs, such as
  *	the parallel job launcher, share the same job identifier. This
  *	identifier is assigned by the runtime system upon job launch and is
- *	guaranteed to be unique among application jobs currently runing on the
+ *	guaranteed to be unique among application jobs currently running on the
  *	entire distributed system. An individual serial process may be assigned
  *	a job identifier that is not shared with any other processes in the
  *	system or can be assigned the constant \c PTL_JID_NONE.
@@ -775,7 +778,7 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  * descriptor do not have to arrive at the target in order. */
 #define PTL_MD_UNORDERED	     (1<<5)
 
-/*! Indicate to the portals implementation that faiilures requiring
+/*! Indicate to the portals implementation that failures requiring
  * notification from the target should not be delivered to the local
  * application. This prevents the local events (e.g. \c PTL_EVENT_SEND) from
  * having to wait for a round-trip notification before delivery. */
@@ -786,7 +789,7 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  *		 ptl_handle_md_t*   md_handle)
  * @brief Used to create a memory descriptor to be used by the \a initiator. On
  *	systems that require memory registration, the PtlMDBind() operation
- *	would invoke the approprioate memory registration functions.
+ *	would invoke the appropriate memory registration functions.
  * @param[in] ni_handle	    The network interface handle with which the memory
  *			    descriptor will be associated.
  * @param[in] md	    Provides initial values for the user-visible parts
@@ -834,7 +837,7 @@ int PtlMDBind(ptl_handle_ni_t	ni_handle,
  * @retval PTL_NO_INIT	    Indicates that the portals API has not been
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a md_handle is not a valid memory
- *			    descriptor hadle.
+ *			    descriptor handle.
  * @retval PTL_IN_USE	    Indicates that \a md_handle has pending operations
  *			    and cannot be released.
  * @see PtlMDBind()
@@ -857,7 +860,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
     PTL_OVERFLOW, /*!< The overflow list associated with a portal table entry. */
-    PTL_PROBE_ONLY, /*!< Do not attach to a list. Use the LE to proble the
+    PTL_PROBE_ONLY, /*!< Do not attach to a list. Use the LE to probe the
 		      overflow list, without consuming an item in the list and
 		      without being attached anywhere. */
 } ptl_list_t;
@@ -905,7 +908,7 @@ typedef enum {
  */
 #define PTL_LE_EVENT_OVER_DISABLE	(1<<7)
 
-/*! Specifies that this list entry should not gnerate unlink (\c
+/*! Specifies that this list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
 #define PTL_LE_EVENT_UNLINK_DISABLE	(1<<8)
 
@@ -936,12 +939,12 @@ typedef enum {
  *		   ptl_handle_le_t* le_handle)
  * @brief Creates a single list entry and appends this entry to the end of the
  *	list specified by \a ptl_list associated with the portal table entry
- *	specified by \a pt_index for the portal table for \a ni_handle. if the
- *	list is currently uninitialized, the PtlLEAAppend() function creates
+ *	specified by \a pt_index for the portal table for \a ni_handle. If the
+ *	list is currently uninitialized, the PtlLEAppend() function creates
  *	the first entry in the list.
  *
  *	When a list entry is posted to a list, the overflow list is checked to
- *	see if a message has arrived prior to posting the list entry. if so, a
+ *	see if a message has arrived prior to posting the list entry. If so, a
  *	\c PTL_EVENT_PUT_OVERFLOW event is generated. No searching is performed
  *	when a list entry is posted to the overflow list.
  * @param[in] ni_handle	    The interface handle to use.
@@ -1165,9 +1168,9 @@ typedef struct {
     ptl_ac_id_t		ac_id;
 
     /*! Specifies the behavior of the match list entry. The following options
-     * can be selected: enable put opterations (yes or no), enable get
+     * can be selected: enable put operations (yes or no), enable get
      * operations (yes or no), offset management (local or remote), message
-     * truncation (yes or no), acknowledgement (yes or no), use scatter/gater
+     * truncation (yes or no), acknowledgment (yes or no), use scatter/gather
      * vectors and disable events. Values for this argument can be constructed
      * using a bitwise OR of the following values:
      - \c PTL_ME_OP_PUT
@@ -1234,7 +1237,7 @@ typedef struct {
  *	to support the MPI_Probe functionality. A probe of the overflow list
  *	will \e always generate a \c PTL_EVENT_PROBE event. If a matching
  *	message was found in the overflow list, \c PTL_NI_OK is returned in the
- *	event. Otherwise, the even tindicates that the probe operation failed.
+ *	event. Otherwise, the event indicates that the probe operation failed.
  * @param[in] ni_handle	    The interface handle to use.
  * @param[in] pt_index	    The portal table index where the match list entry
  *			    should be appended.
@@ -1244,7 +1247,7 @@ typedef struct {
  *			    structure and the match list entry maintained by
  *			    the API.
  * @param[in] ptl_list	    Determines whether the match list entry is appended
- *			    to the priority list, appended ot the overflow
+ *			    to the priority list, appended to the overflow
  *			    list, or simply queries the overflow list.
  * @param[in] user_ptr	    A user-specified value that is associated with each
  *			    command that can generate an event. The value does
@@ -1309,7 +1312,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
  * Lightweight "Counting" Events *
  *********************************/
 /*!
- * @addtogroup LCE Lightweight "Counting" Events
+ * @addtogroup LCE (CT) Lightweight "Counting" Events
  * @{
  * @struct ptl_ct_event_t
  * @brief A \a ct_handle refers to a ptl_ct_event_t structure.
@@ -1509,7 +1512,7 @@ typedef enum {
  *	descriptor.
  *
  *	The local (\e initiator) offset is used to determine the starting
- *	address of the memory region within the region specified by hte memory
+ *	address of the memory region within the region specified by the memory
  *	descriptor and the length specifies the length of the region in bytes.
  *	It is an error for the local offset and length parameters to specify
  *	memory outside the memory described by the memory descriptor.
@@ -1573,9 +1576,9 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *	      ptl_size_t	remote_offset)
  * @brief Initiates a remote read operation. There are two events associated
  *	with a get operation. When the data is sent from the \e target node, a
- *	\c PTL_EVENT_GET event is registerd on the \e target node. When the
+ *	\c PTL_EVENT_GET event is registered on the \e target node. When the
  *	data is returned from the \e target node, a \c PTL_EVENT_REPLY event is
- *	registerd on the \e initiator node.
+ *	registered on the \e initiator node.
  *
  *	The local (\e initiator) offset is used to determine the starting
  *	address of the memory region and the length specifies the length of the
@@ -2203,7 +2206,7 @@ int PtlEQGet(ptl_handle_eq_t	eq_handle,
  * @param[in] eq_handle	    The event queue handle to wait on. The calling
  *			    process (thread) will be blocked until the event
  *			    queue is not empty.
- * @param[out] event	    On successful return, this locaiton will hold the
+ * @param[out] event	    On successful return, this location will hold the
  *			    values associated with the next even tin the event
  *			    queue.
  * @retval PTL_OK		Indicates success
