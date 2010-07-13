@@ -8,7 +8,10 @@
 /* System headers */
 #include <assert.h>
 
-int PtlMDBind(
+/* Internals */
+#include "ptl_visibility.h"
+
+int API_FUNC PtlMDBind(
     ptl_handle_ni_t ni_handle,
     ptl_md_t * md,
     ptl_handle_md_t * md_handle)
@@ -16,7 +19,7 @@ int PtlMDBind(
     return PTL_FAIL;
 }
 
-int PtlMDRelease(
+int API_FUNC PtlMDRelease(
     ptl_handle_md_t md_handle)
 {
     return PTL_FAIL;

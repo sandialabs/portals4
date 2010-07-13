@@ -8,7 +8,10 @@
 /* System headers */
 #include <assert.h>
 
-int PtlMEAppend(
+/* Internals */
+#include "ptl_visibility.h"
+
+int API_FUNC PtlMEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
     ptl_me_t me,
@@ -19,7 +22,7 @@ int PtlMEAppend(
     return PTL_FAIL;
 }
 
-int PtlMEUnlink(
+int API_FUNC PtlMEUnlink(
     ptl_handle_me_t me_handle)
 {
     return PTL_FAIL;

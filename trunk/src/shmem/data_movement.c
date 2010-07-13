@@ -8,7 +8,10 @@
 /* System headers */
 #include <assert.h>
 
-int PtlPut(
+/* Internals */
+#include "ptl_visibility.h"
+
+int API_FUNC PtlPut(
     ptl_handle_md_t md_handle,
     ptl_size_t local_offset,
     ptl_size_t length,
@@ -23,7 +26,7 @@ int PtlPut(
     return PTL_FAIL;
 }
 
-int PtlGet(
+int API_FUNC PtlGet(
     ptl_handle_md_t md_handle,
     ptl_size_t local_offset,
     ptl_size_t length,
@@ -36,7 +39,7 @@ int PtlGet(
     return PTL_FAIL;
 }
 
-int PtlAtomic(
+int API_FUNC PtlAtomic(
     ptl_handle_md_t md_handle,
     ptl_size_t local_offset,
     ptl_size_t length,
@@ -53,7 +56,7 @@ int PtlAtomic(
     return PTL_FAIL;
 }
 
-int PtlFetchAtomic(
+int API_FUNC PtlFetchAtomic(
     ptl_handle_md_t get_md_handle,
     ptl_size_t local_get_offset,
     ptl_handle_md_t put_md_handle,
@@ -71,7 +74,7 @@ int PtlFetchAtomic(
     return PTL_FAIL;
 }
 
-int PtlSwap(
+int API_FUNC PtlSwap(
     ptl_handle_md_t get_md_handle,
     ptl_size_t local_get_offset,
     ptl_handle_md_t put_md_handle,
