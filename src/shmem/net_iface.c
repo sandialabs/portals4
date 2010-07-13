@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>		       /* for UINT_MAX */
+#include <string.h>		       /* for memcpy() */
 
 #include <stdio.h>
 
@@ -17,6 +18,7 @@
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_atomic.h"
+#include "ptl_internal_handles.h"
 
 ptl_internal_nit_t nit;
 ptl_ni_limits_t nit_limits;
@@ -37,6 +39,7 @@ int API_FUNC PtlNIInit(
     ptl_process_id_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
+    ptl_handle_encoding_t ni = { HANDLE_NI_CODE, 0, 0 };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -63,24 +66,29 @@ int API_FUNC PtlNIInit(
 	return PTL_ARG_INVALID;
     }
 #endif
+    if (iface == PTL_IFACE_DEFAULT) {
+	iface = 0;
+    }
+    ni.code = iface;
     switch (options) {
 	case (PTL_NI_MATCHING | PTL_NI_LOGICAL):
-	    *ni_handle = 0;
+	    ni.ni = 0;
 	    break;
 	case PTL_NI_NO_MATCHING | PTL_NI_LOGICAL:
-	    *ni_handle = 1;
+	    ni.ni = 1;
 	    break;
 	case (PTL_NI_MATCHING | PTL_NI_PHYSICAL):
-	    *ni_handle = 2;
+	    ni.ni = 2;
 	    break;
 	case PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL:
-	    *ni_handle = 3;
+	    ni.ni = 3;
 	    break;
 #ifndef NO_ARG_VALIDATION
 	default:
 	    return PTL_ARG_INVALID;
 #endif
     }
+    memcpy(ni_handle, &ni, sizeof(ptl_handle_ni_t));
     if (actual != NULL) {
 	*actual = nit_limits;
     }
@@ -97,32 +105,38 @@ int API_FUNC PtlNIInit(
     }
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     ptl_table_entry_t *tmp =
-	PtlInternalAtomicCasPtr(&(nit.tables[*ni_handle]), NULL, (void *)1);
+	PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL, (void *)1);
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
 	if (tmp == NULL) {
-	    nit.tables[*ni_handle] = NULL;
+	    nit.tables[ni.ni] = NULL;
 	    return PTL_NO_SPACE;
 	}
-	nit.tables[*ni_handle] = tmp;
+	nit.tables[ni.ni] = tmp;
     }
     __sync_synchronize();	       // full memory fence
-    PtlInternalAtomicInc(&(nit.refcount[*ni_handle]), 1);
+    PtlInternalAtomicInc(&(nit.refcount[ni.ni]), 1);
     return PTL_OK;
 }
 
 int API_FUNC PtlNIFini(
     ptl_handle_ni_t ni_handle)
 {
+    ptl_handle_encoding_t ni;
+    memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (ni_handle >= 4 || (nit.refcount[ni_handle] == 0)) {
+    if (ni.ni >= 4 || ni.code != 0 || (nit.refcount[ni.ni] == 0)) {
 	return PTL_ARG_INVALID;
     }
 #endif
-    PtlInternalAtomicInc(&(nit.refcount[ni_handle]), -1);
+    if (PtlInternalAtomicInc(&(nit.refcount[ni.ni]), -1) == 1) {
+	/* deallocate NI */
+	free(nit.tables[ni.ni]);
+	nit.tables[ni.ni] = NULL;
+    }
     return PTL_OK;
 }
 
@@ -131,27 +145,38 @@ int API_FUNC PtlNIStatus(
     ptl_sr_index_t status_register,
     ptl_sr_value_t * status)
 {
+    ptl_handle_encoding_t ni;
+    memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+    if (ni.ni >= 4 || ni.code != 0 || (nit.refcount[ni.ni] == 0)) {
+	return PTL_ARG_INVALID;
+    }
+    if (status == NULL) {
+	return PTL_ARG_INVALID;
+    }
+    if (status_register >= 2) {
+	return PTL_ARG_INVALID;
+    }
+#endif
+    *status = nit.regs[ni.ni][status_register];
     return PTL_FAIL;
 }
-
-#define HANDLE_SELECTOR(x) (((x) >> 29) & 0x7)
-#define HANDLE_NI_CODE 0
-#define HANDLE_EQ_CODE 1
-#define HANDLE_CT_CODE 2
-#define HANDLE_MD_CODE 3
-#define HANDLE_LE_CODE 4
-#define HANDLE_ME_CODE 5
 
 int API_FUNC PtlNIHandle(
     ptl_handle_any_t handle,
     ptl_handle_ni_t * ni_handle)
 {
+    ptl_handle_encoding_t ehandle;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
 #endif
-    switch (HANDLE_SELECTOR(handle.ni)) {
+    memcpy(&ehandle, &handle, sizeof(uint32_t));
+    switch (ehandle.selector) {
 	case HANDLE_NI_CODE:
 	    *ni_handle = handle.ni;
 	    break;
@@ -160,7 +185,10 @@ int API_FUNC PtlNIHandle(
 	case HANDLE_MD_CODE:
 	case HANDLE_LE_CODE:
 	case HANDLE_ME_CODE:
-	    abort();
+	    ehandle.code = 0;
+	    ehandle.selector = HANDLE_NI_CODE;
+	    memcpy(ni_handle, &ehandle, sizeof(uint32_t));
+	    break;
 	default:
 	    return PTL_ARG_INVALID;
     }
