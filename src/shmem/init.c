@@ -78,7 +78,7 @@ int API_FUNC PtlInit(
 	    /* could not parse! */
 	    goto exit_fail;
 	}
-	str = getenv("PORTALS4_PROC_ID");
+	str = getenv("PORTALS4_RANK");
 	if (str == NULL) {
 	    goto exit_fail;
 	}
