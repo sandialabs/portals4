@@ -18,6 +18,9 @@ const ptl_uid_t PTL_UID_ANY = UINT_MAX;
 int PtlGetId(ptl_handle_ni_t	ni_handle,
 	     ptl_process_id_t*	id)
 {
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
     if (ni_handle > 3 || nit.refcount[ni_handle] == 0) {
 	return PTL_ARG_INVALID;
     }
