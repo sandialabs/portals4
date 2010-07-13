@@ -12,7 +12,7 @@
 /* Internals */
 #include "ptl_visibility.h"
 
-const ptl_handle_ct_t PTL_CT_NONE = UINT_MAX;
+const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
 int API_FUNC PtlCTAlloc(
     ptl_handle_ni_t ni_handle,
