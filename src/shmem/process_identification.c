@@ -12,6 +12,7 @@
 /* Internals */
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
+#include "ptl_visibility.h"
 
 const ptl_uid_t PTL_UID_ANY = UINT_MAX;
 

@@ -8,7 +8,10 @@
 /* System headers */
 #include <assert.h>
 
-int PtlLEAppend(
+/* Internals */
+#include "ptl_visibility.h"
+
+int API_FUNC PtlLEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
     ptl_le_t le,
@@ -19,7 +22,7 @@ int PtlLEAppend(
     return PTL_FAIL;
 }
 
-int PtlLEUnlink(
+int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {
     return PTL_FAIL;

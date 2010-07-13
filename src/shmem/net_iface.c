@@ -25,7 +25,7 @@ const ptl_nid_t PTL_NID_ANY = UINT_MAX;
 const ptl_rank_t PTL_RANK_ANY = UINT_MAX;
 const ptl_interface_t PTL_IFACE_DEFAULT = UINT_MAX;
 
-int PtlNIInit(
+int API_FUNC PtlNIInit(
     ptl_interface_t iface,
     unsigned int options,
     ptl_pid_t pid,
@@ -110,7 +110,7 @@ int PtlNIInit(
     return PTL_OK;
 }
 
-int PtlNIFini(
+int API_FUNC PtlNIFini(
     ptl_handle_ni_t ni_handle)
 {
 #ifndef NO_ARG_VALIDATION
@@ -125,7 +125,7 @@ int PtlNIFini(
     return PTL_OK;
 }
 
-int PtlNIStatus(
+int API_FUNC PtlNIStatus(
     ptl_handle_ni_t ni_handle,
     ptl_sr_index_t status_register,
     ptl_sr_value_t * status)
@@ -133,7 +133,7 @@ int PtlNIStatus(
     return PTL_FAIL;
 }
 
-int PtlNIHandle(
+int API_FUNC PtlNIHandle(
     ptl_handle_any_t handle,
     ptl_handle_ni_t * ni_handle)
 {
