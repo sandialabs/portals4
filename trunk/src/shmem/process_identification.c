@@ -15,8 +15,9 @@
 
 const ptl_uid_t PTL_UID_ANY = UINT_MAX;
 
-int PtlGetId(ptl_handle_ni_t	ni_handle,
-	     ptl_process_id_t*	id)
+int API_FUNC PtlGetId(
+    ptl_handle_ni_t ni_handle,
+    ptl_process_id_t * id)
 {
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -25,15 +26,17 @@ int PtlGetId(ptl_handle_ni_t	ni_handle,
 	return PTL_ARG_INVALID;
     }
     switch (ni_handle) {
-	case 0: case 1:
-	    id->rank = proc_number; // heh
+	case 0:
+	case 1:
+	    id->rank = proc_number;    // heh
 	    break;
-	case 2: case 3:
+	case 2:
+	case 3:
 	    id->phys.pid = proc_number;
 	    id->phys.nid = 0;
 	    break;
 	default:
-	    *(int *)0 = 0; // should never happen
+	    *(int *)0 = 0;	       // should never happen
     }
     return PTL_OK;
 }
