@@ -60,12 +60,12 @@ typedef int		ptl_sr_value_t; /*!< Signed integral type that defines
 					  the types of values held in status
 					  registers. */
 /* Handles */
-typedef int		ptl_handle_ni_t; /*!< A network interface handle */
-typedef int		ptl_handle_eq_t; /*!< An event queue handle */
-typedef int		ptl_handle_ct_t; /*!< A counting type event handle */
-typedef int		ptl_handle_md_t; /*!< A memory descriptor handle */
-typedef int		ptl_handle_le_t; /*!< A list entry handle */
-typedef int		ptl_handle_me_t; /*!< A match list entry handle */
+typedef uint32_t	ptl_handle_ni_t; /*!< A network interface handle */
+typedef uint32_t	ptl_handle_eq_t; /*!< An event queue handle */
+typedef uint32_t	ptl_handle_ct_t; /*!< A counting type event handle */
+typedef uint32_t	ptl_handle_md_t; /*!< A memory descriptor handle */
+typedef uint32_t	ptl_handle_le_t; /*!< A list entry handle */
+typedef uint32_t	ptl_handle_me_t; /*!< A match list entry handle */
 /*!
  * @union ptl_handle_any_t
  * @brief The generic handle type.
@@ -1932,7 +1932,7 @@ int PtlSwap(ptl_handle_md_t	get_md_handle,
  * Events and Event Queues *
  ***************************/
 /*!
- * @addtogroup EEQ Events and Event Queues
+ * @addtogroup EQ (EQ) Events and Event Queues
  * @{
  * @enum ptl_event_kind_t
  * @brief The portals API defines twelve types of events that can be logged in
