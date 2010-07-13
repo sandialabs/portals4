@@ -132,6 +132,7 @@ AS_IF([test "x$enable_picky" == xyes],
    esac])
 
 SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([atomics are no implemented portably])])
+SANDIA_CHECK_BITFIELDS
 
 AC_CACHE_SAVE
 

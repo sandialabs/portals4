@@ -12,6 +12,7 @@ typedef struct {
 typedef struct {
     ptl_table_entry_t *tables[4];
     uint32_t refcount[4];
+    ptl_sr_value_t regs[4][2];
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;
