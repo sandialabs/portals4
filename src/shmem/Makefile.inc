@@ -11,12 +11,15 @@ libportals_la_SOURCES += \
 			 shmem/matching_list_entries.c \
 			 shmem/process_identification.c \
 			 shmem/data_movement.c \
+			 shmem/queues.c \
 			 shmem/init.c
 
 yod_SOURCES += shmem/yod.c
 
 noinst_HEADERS += \
 		shmem/include/ptl_internal_CT.h \
+		shmem/include/ptl_internal_LE.h \
+		shmem/include/ptl_internal_queues.h \
 		shmem/include/ptl_internal_atomic.h \
 		shmem/include/ptl_internal_commpad.h \
 		shmem/include/ptl_internal_handles.h \

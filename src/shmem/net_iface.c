@@ -20,6 +20,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
+#include "ptl_internal_LE.h"
 
 ptl_internal_nit_t nit;
 ptl_ni_limits_t nit_limits;
@@ -125,6 +126,7 @@ int API_FUNC PtlNIInit(
 	}
     }
     PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
+    PtlInternalLENISetup(ni.ni, nit_limits.max_mes);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,
@@ -134,6 +136,9 @@ int API_FUNC PtlNIInit(
 	if (tmp == NULL) {
 	    nit.tables[ni.ni] = NULL;
 	    return PTL_NO_SPACE;
+	}
+	for (size_t e=0; e<=nit_limits.max_pt_index; ++e) {
+	    assert(pthread_mutex_init(&tmp[e].lock, NULL) == 0);
 	}
 	nit.tables[ni.ni] = tmp;
     }

@@ -5,8 +5,9 @@
 #include <stdint.h>		       /* for uint32_t */
 
 typedef struct {
-    pthread_mutex_t *lock;
-    void *mle;
+    pthread_mutex_t lock;
+    void *priority;
+    void *overflow;
 } ptl_table_entry_t;
 
 typedef struct {

@@ -21,7 +21,8 @@ enum ptl_retvals {
     PTL_ARG_INVALID,	/*!< One of the arguments is invalid. */
     PTL_IN_USE,		/*!< The specified resource is currently in use. */
     PTL_NO_SPACE,	/*!< Sufficient memory for action was not available. */
-    PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
+    PTL_LE_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
+    PTL_ME_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
 };
 
 /**************
