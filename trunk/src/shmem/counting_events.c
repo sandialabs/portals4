@@ -100,9 +100,11 @@ int API_FUNC PtlCTAlloc(
     ct.ni = ni.s.ni;
     cts = ct_events[ni.s.ni];
     for (offset = 0; offset < nit_limits.max_cts; ++offset) {
-	if (PtlInternalAtomicCas32(&(cts[offset].enabled), 0, 1) == 0) {
-	    ct.code = offset;
-	    break;
+	if (cts[offset].enabled == 0) {
+	    if (PtlInternalAtomicCas32(&(cts[offset].enabled), 0, 1) == 0) {
+		ct.code = offset;
+		break;
+	    }
 	}
     }
     if (offset >= nit_limits.max_cts) {
