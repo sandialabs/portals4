@@ -45,6 +45,11 @@ AS_IF([test "x$enable_picky" == x],
 	  [AS_IF([test -d "${srcdir}/.svn"],
 			 [echo "--> developer override: enable picky compiler by default"
 			  enable_picky=yes])])
+AC_ARG_ENABLE([arg-checking],
+			  [AS_HELP_STRING([--disable-arg-checking],
+							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
+AS_IF([test "x$enable_arg_checking" = xno],
+	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
 
 ## ------------------- ##
 ## Checks for programs ##
