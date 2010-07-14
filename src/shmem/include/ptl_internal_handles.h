@@ -1,17 +1,27 @@
 #ifndef PTL_INTERNAL_HANDLES_H
 #define PTL_INTERNAL_HANDLES_H
 
+#define HANDLE_SELECTOR_BITS	3
+#define HANDLE_NI_BITS		2
+#define HANDLE_CODE_BITS	27
+
 typedef struct {
 #ifdef BITFIELD_ORDER_FORWARD
-    unsigned int selector:3;
-    unsigned int ni:3;
-    unsigned int code:26;
+    unsigned int selector:HANDLE_SELECTOR_BITS;
+    unsigned int ni:HANDLE_NI_BITS;
+    unsigned int code:HANDLE_CODE_BITS;
 #else
-    unsigned int code:26;
-    unsigned int ni:3;
-    unsigned int selector:3;
+    unsigned int code:HANDLE_CODE_BITS;
+    unsigned int ni:HANDLE_NI_BITS;
+    unsigned int selector:HANDLE_SELECTOR_BITS;
 #endif
 } ptl_handle_encoding_t;
+
+typedef union {
+    uint32_t i;
+    ptl_handle_encoding_t s;
+    ptl_handle_any_t a;
+} ptl_internal_handle_converter_t;
 
 #define HANDLE_NI_CODE 0
 #define HANDLE_EQ_CODE 1
