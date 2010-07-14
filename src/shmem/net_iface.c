@@ -145,21 +145,20 @@ int API_FUNC PtlNIInit(
 int API_FUNC PtlNIFini(
     ptl_handle_ni_t ni_handle)
 {
-    ptl_handle_encoding_t ni;
-    memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));
+    const ptl_internal_handle_converter_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (ni.ni >= 4 || ni.code != 0 || (nit.refcount[ni.ni] == 0)) {
+    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
 	return PTL_ARG_INVALID;
     }
 #endif
-    if (PtlInternalAtomicInc(&(nit.refcount[ni.ni]), -1) == 1) {
-	PtlInternalCTNITeardown(ni.ni);
+    if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
+	PtlInternalCTNITeardown(ni.s.ni);
 	/* deallocate NI */
-	free(nit.tables[ni.ni]);
-	nit.tables[ni.ni] = NULL;
+	free(nit.tables[ni.s.ni]);
+	nit.tables[ni.s.ni] = NULL;
     }
     return PTL_OK;
 }
@@ -169,13 +168,12 @@ int API_FUNC PtlNIStatus(
     ptl_sr_index_t status_register,
     ptl_sr_value_t * status)
 {
-    ptl_handle_encoding_t ni;
-    memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));
+    const ptl_internal_handle_converter_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (ni.ni >= 4 || ni.code != 0 || (nit.refcount[ni.ni] == 0)) {
+    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
 	return PTL_ARG_INVALID;
     }
     if (status == NULL) {
@@ -185,7 +183,7 @@ int API_FUNC PtlNIStatus(
 	return PTL_ARG_INVALID;
     }
 #endif
-    *status = nit.regs[ni.ni][status_register];
+    *status = nit.regs[ni.s.ni][status_register];
     return PTL_FAIL;
 }
 
@@ -193,25 +191,25 @@ int API_FUNC PtlNIHandle(
     ptl_handle_any_t handle,
     ptl_handle_ni_t * ni_handle)
 {
-    ptl_handle_encoding_t ehandle;
+    ptl_internal_handle_converter_t ehandle;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
 #endif
-    memcpy(&ehandle, &handle, sizeof(uint32_t));
-    switch (ehandle.selector) {
+    ehandle.a = handle;
+    switch (ehandle.s.selector) {
 	case HANDLE_NI_CODE:
-	    *ni_handle = handle.ni;
+	    *ni_handle = ehandle.i;
 	    break;
 	case HANDLE_EQ_CODE:
 	case HANDLE_CT_CODE:
 	case HANDLE_MD_CODE:
 	case HANDLE_LE_CODE:
 	case HANDLE_ME_CODE:
-	    ehandle.code = 0;
-	    ehandle.selector = HANDLE_NI_CODE;
-	    memcpy(ni_handle, &ehandle, sizeof(uint32_t));
+	    ehandle.s.code = 0;
+	    ehandle.s.selector = HANDLE_NI_CODE;
+	    *ni_handle = ehandle.i;
 	    break;
 	default:
 	    return PTL_ARG_INVALID;
