@@ -25,6 +25,10 @@ bin_PROGRAMS = yod
 libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
 libportals_la_SOURCES =
 
+yod_SOURCES =
+
+noinst_HEADERS =
+
 if BACKEND_IMPL_SHMEM
 include shmem/Makefile.inc
 else

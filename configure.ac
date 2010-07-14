@@ -144,12 +144,22 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
-AC_CHECK_FUNCS([getpagesize])
+AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
+AC_CHECK_FUNCS([getpagesize]) # not mandatory
 AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_SEARCH_LIBS([shm_open],
 	       [rt], [],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
+
+## -------------------------- ##
+## Check for library behavior ##
+## -------------------------- ##
+SANDIA_CHECK_8ALIGNED_MALLOC
+SANDIA_CHECK_8ALIGNED_CALLOC
+SANDIA_CHECK_16ALIGNED_MALLOC
+SANDIA_CHECK_16ALIGNED_CALLOC
+SANDIA_CHECK_WORKING_VALLOC
 
 AC_CACHE_SAVE
 

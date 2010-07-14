@@ -13,4 +13,12 @@ libportals_la_SOURCES += \
 			 shmem/data_movement.c \
 			 shmem/init.c
 
-yod_SOURCES = shmem/yod.c
+yod_SOURCES += shmem/yod.c
+
+noinst_HEADERS += \
+		shmem/include/ptl_internal_CT.h \
+		shmem/include/ptl_internal_atomic.h \
+		shmem/include/ptl_internal_commpad.h \
+		shmem/include/ptl_internal_handles.h \
+		shmem/include/ptl_internal_nit.h \
+		shmem/include/ptl_visibility.h

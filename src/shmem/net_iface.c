@@ -19,9 +19,11 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
+#include "ptl_internal_CT.h"
 
 ptl_internal_nit_t nit;
 ptl_ni_limits_t nit_limits;
+static volatile uint32_t nit_limits_init = 0;
 
 const ptl_nid_t PTL_NID_ANY = UINT_MAX;
 const ptl_rank_t PTL_RANK_ANY = UINT_MAX;
@@ -40,6 +42,7 @@ int API_FUNC PtlNIInit(
     ptl_handle_ni_t * ni_handle)
 {
     ptl_handle_encoding_t ni = { HANDLE_NI_CODE, 0, 0 };
+    ptl_table_entry_t *tmp;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -89,7 +92,25 @@ int API_FUNC PtlNIInit(
 #endif
     }
     memcpy(ni_handle, &ni, sizeof(ptl_handle_ni_t));
+    if (desired != NULL &&
+	PtlInternalAtomicCas32(&nit_limits_init, 0, 1) == 0) {
+	/* nit_limits_init now marked as "being initialized" */
+	//nit_limits.max_mes = INT_MAX;  // more important when using pooling
+	//nit_limits.max_mds = INT_MAX;  // more important when using pooling
+	if (desired->max_cts > 0 && desired->max_cts < (1<<HANDLE_CODE_BITS)) {
+	    nit_limits.max_cts = desired->max_cts;
+	}
+	//nit_limits.max_eqs = INT_MAX;  // more important when using pooling
+	//nit_limits.max_pt_index = 63;
+	//nit_limits.max_iovecs = INT_MAX;      // ???
+	//nit_limits.max_me_list = nit_limits.max_mes;  // may be smaller if not using a linked-list implementaiton
+	//nit_limits.max_msg_size = per_proc_comm_buf_size;     // may need to be smaller
+	//nit_limits.max_atomic_size = 8;       // XXX: does not apply to all architectures
+	nit_limits_init = 2;	       // mark it as done being initialized
+    }
+    PtlInternalAtomicCas32(&nit_limits_init, 0, 2);	/* if not yet initialized, it is now */
     if (actual != NULL) {
+	while (nit_limits_init == 1) ; /* if being initialized by another thread, wait for it to be initialized */
 	*actual = nit_limits;
     }
     if (options & PTL_NI_LOGICAL) {
@@ -103,9 +124,11 @@ int API_FUNC PtlNIInit(
 	    }
 	}
     }
+    PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
-    ptl_table_entry_t *tmp =
-	PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL, (void *)1);
+    while ((tmp =
+	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,
+				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
 	if (tmp == NULL) {
@@ -133,6 +156,7 @@ int API_FUNC PtlNIFini(
     }
 #endif
     if (PtlInternalAtomicInc(&(nit.refcount[ni.ni]), -1) == 1) {
+	PtlInternalCTNITeardown(ni.ni);
 	/* deallocate NI */
 	free(nit.tables[ni.ni]);
 	nit.tables[ni.ni] = NULL;
