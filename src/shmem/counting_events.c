@@ -42,7 +42,7 @@ void INTERNAL PtlInternalCTNISetup(
 	assert(tmp != NULL);
 	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
 #elif defined(HAVE_POSIX_MEMALIGN)
-	assert(posix_memalign(&tmp, 8, nit_limits.max_cts * sizeof(ptl_internal_ct_t)) == 0);
+	assert(posix_memalign((void**)&tmp, 8, nit_limits.max_cts * sizeof(ptl_internal_ct_t)) == 0);
 	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
 #elif defined(HAVE_8ALIGNED_CALLOC)
 	tmp = calloc(nit_limits.max_cts, sizeof(ptl_internal_ct_t));
