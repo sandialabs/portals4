@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <stdlib.h>		       /* for calloc() */
 #include <string.h>		       /* for memcpy() */
+#if defined(HAVE_MALLOC_H)
+# include <malloc.h>		       /* for memalign() */
+#endif
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -20,7 +23,8 @@
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff;	/* (2<<29) & 0x1fffffff */
 
-typedef struct {
+typedef struct
+{
     ptl_ct_type_t type;
     volatile ptl_ct_event_t data;
     volatile uint32_t enabled;
@@ -28,9 +32,7 @@ typedef struct {
 
 static ptl_internal_ct_t *ct_events[4];
 
-void INTERNAL PtlInternalCTNISetup(
-    unsigned int ni,
-    ptl_size_t limit)
+void INTERNAL PtlInternalCTNISetup(unsigned int ni, ptl_size_t limit)
 {
     ptl_internal_ct_t *tmp;
     while ((tmp =
@@ -38,31 +40,31 @@ void INTERNAL PtlInternalCTNISetup(
 				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 #if defined(HAVE_MEMALIGN)
-	tmp = memalign(8, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	tmp = memalign(8, limit * sizeof(ptl_internal_ct_t));
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_ct_t));
 #elif defined(HAVE_POSIX_MEMALIGN)
-	assert(posix_memalign((void**)&tmp, 8, nit_limits.max_cts * sizeof(ptl_internal_ct_t)) == 0);
-	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	assert(posix_memalign
+	       ((void **)&tmp, 8, limit * sizeof(ptl_internal_ct_t)) == 0);
+	memset(tmp, 0, limit * sizeof(ptl_internal_ct_t));
 #elif defined(HAVE_8ALIGNED_CALLOC)
-	tmp = calloc(nit_limits.max_cts, sizeof(ptl_internal_ct_t));
+	tmp = calloc(limit, sizeof(ptl_internal_ct_t));
 	assert(tmp != NULL);
 #elif defined(HAVE_8ALIGNED_MALLOC)
-	tmp = malloc(nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	tmp = malloc(limit * sizeof(ptl_internal_ct_t));
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_ct_t));
 #else
-	tmp = valloc(nit_limits.max_cts * sizeof(ptl_internal_ct_t)); /* cross your fingers */
+	tmp = valloc(limit * sizeof(ptl_internal_ct_t));	/* cross your fingers */
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_cts * sizeof(ptl_internal_ct_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_ct_t));
 #endif
-	assert((((intptr_t)tmp) & 0x7) == 0);
+	assert((((intptr_t) tmp) & 0x7) == 0);
 	ct_events[ni] = tmp;
     }
 }
 
-void INTERNAL PtlInternalCTNITeardown(
-    int ni)
+void INTERNAL PtlInternalCTNITeardown(int ni)
 {
     ptl_internal_ct_t *tmp = ct_events[ni];
     ct_events[ni] = NULL;
@@ -71,10 +73,8 @@ void INTERNAL PtlInternalCTNITeardown(
     free(tmp);
 }
 
-int API_FUNC PtlCTAlloc(
-    ptl_handle_ni_t ni_handle,
-    ptl_ct_type_t ct_type,
-    ptl_handle_ct_t * ct_handle)
+int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_ct_type_t ct_type,
+			ptl_handle_ct_t * ct_handle)
 {
     ptl_internal_ct_t *cts;
     ptl_size_t offset;
@@ -102,6 +102,9 @@ int API_FUNC PtlCTAlloc(
     for (offset = 0; offset < nit_limits.max_cts; ++offset) {
 	if (cts[offset].enabled == 0) {
 	    if (PtlInternalAtomicCas32(&(cts[offset].enabled), 0, 1) == 0) {
+		cts[offset].type = ct_type;
+		cts[offset].data.success = 0;
+		cts[offset].data.failure = 0;
 		ct.code = offset;
 		break;
 	    }
@@ -116,8 +119,7 @@ int API_FUNC PtlCTAlloc(
     }
 }
 
-int API_FUNC PtlCTFree(
-    ptl_handle_ct_t ct_handle)
+int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
@@ -141,9 +143,7 @@ int API_FUNC PtlCTFree(
     return PTL_OK;
 }
 
-int API_FUNC PtlCTGet(
-    ptl_handle_ct_t ct_handle,
-    ptl_ct_event_t * event)
+int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t * event)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
@@ -167,9 +167,7 @@ int API_FUNC PtlCTGet(
     return PTL_FAIL;
 }
 
-int API_FUNC PtlCTWait(
-    ptl_handle_ct_t ct_handle,
-    ptl_size_t test)
+int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle, ptl_size_t test)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_internal_ct_t *cte;
@@ -199,9 +197,7 @@ int API_FUNC PtlCTWait(
     return PTL_FAIL;
 }
 
-int API_FUNC PtlCTSet(
-    ptl_handle_ct_t ct_handle,
-    ptl_ct_event_t test)
+int API_FUNC PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t test)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
@@ -225,9 +221,7 @@ int API_FUNC PtlCTSet(
     return PTL_FAIL;
 }
 
-int API_FUNC PtlCTInc(
-    ptl_handle_ct_t ct_handle,
-    ptl_ct_event_t increment)
+int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_internal_ct_t *cte;
