@@ -1,5 +1,6 @@
 #include <stdlib.h>		       /* for calloc() */
 #include <assert.h>
+#include <stdint.h>		       /* for uintptr_t (C99) */
 
 #include "ptl_visibility.h"
 #include "ptl_internal_queues.h"
@@ -13,15 +14,12 @@
 // This lock-free algorithm borrowed from qthreads, which borrowed it from
 // http://www.research.ibm.com/people/m/michael/podc-1996.pdf
 
-void INTERNAL PtlInternalQueueInit(
-    ptl_internal_q_t * q)
+void INTERNAL PtlInternalQueueInit(ptl_internal_q_t * q)
 {
     q->head = q->tail = calloc(1, sizeof(ptl_internal_qnode_t));
 }
 
-void INTERNAL PtlInternalQueueAppend(
-    ptl_internal_q_t * q,
-    void *t)
+void INTERNAL PtlInternalQueueAppend(ptl_internal_q_t * q, void *t)
 {
     volatile ptl_internal_qnode_t *tail;
     volatile ptl_internal_qnode_t *next;
@@ -55,8 +53,7 @@ void INTERNAL PtlInternalQueueAppend(
     (void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(node, tail));
 }
 
-void INTERNAL *PtlInternalQueuePop(
-    ptl_internal_q_t * q)
+void INTERNAL *PtlInternalQueuePop(ptl_internal_q_t * q)
 {
     void *p;
     volatile ptl_internal_qnode_t *head;
