@@ -147,7 +147,7 @@ int API_FUNC PtlNIInit(
 	}
     }
     PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
-    PtlInternalLENISetup(ni.ni, nit_limits.max_mes);
+    PtlInternalLENISetup(nit_limits.max_mes);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,
