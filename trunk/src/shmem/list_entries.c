@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <stdlib.h>		       /* for malloc() */
 #include <string.h>		       /* for memset() */
+#if defined(HAVE_MALLOC_H)
+# include <malloc.h>		       /* for memalign() */
+#endif
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -39,16 +42,16 @@ static ptl_internal_q_t appends;
 static pthread_t LEthread;
 
 static void *LEprocessor(
-    void *junk)
+    void * __attribute__((unused)) junk)
 {
     while (1) {
 	ptl_internal_appendLE_t *append_me;
 	ptl_table_entry_t *t;
 	ptl_internal_le_t *entries;
 	while ((append_me = PtlInternalQueuePop(&appends)) == NULL) {
-#ifdef HAVE_PTHREAD_YIELD
+#if defined(HAVE_PTHREAD_YIELD)
 	    pthread_yield();
-#elif HAVE_SCHED_YIELD
+#elif defined(HAVE_SCHED_YIELD)
 	    sched_yield();
 #endif
 	}
@@ -102,11 +105,9 @@ static void *LEprocessor(
 		break;
 	}
     }
-    return NULL;
 }
 
 void INTERNAL PtlInternalLENISetup(
-    unsigned int ni,
     ptl_size_t limit)
 {
     ptl_internal_le_t *tmp;
@@ -114,35 +115,35 @@ void INTERNAL PtlInternalLENISetup(
 	    PtlInternalAtomicCasPtr(&(les), NULL, (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 #if defined(HAVE_MEMALIGN)
-	tmp = memalign(8, nit_limits.max_mes * sizeof(ptl_internal_le_t));
+	tmp = memalign(8, limit * sizeof(ptl_internal_le_t));
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_mes * sizeof(ptl_internal_le_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #elif defined(HAVE_POSIX_MEMALIGN)
 	assert(posix_memalign
 	       ((void **)&tmp, 8,
-		nit_limits.max_mes * sizeof(ptl_internal_le_t)) == 0);
-	memset(tmp, 0, nit_limits.max_mes * sizeof(ptl_internal_le_t));
+		limit * sizeof(ptl_internal_le_t)) == 0);
+	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #elif defined(HAVE_8ALIGNED_CALLOC)
-	tmp = calloc(nit_limits.max_mes, sizeof(ptl_internal_le_t));
+	tmp = calloc(limit, sizeof(ptl_internal_le_t));
 	assert(tmp != NULL);
 #elif defined(HAVE_8ALIGNED_MALLOC)
-	tmp = malloc(nit_limits.max_mes * sizeof(ptl_internal_le_t));
+	tmp = malloc(limit * sizeof(ptl_internal_le_t));
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_mes * sizeof(ptl_internal_le_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #else
-	tmp = valloc(nit_limits.max_mes * sizeof(ptl_internal_le_t));	/* cross your fingers */
+	tmp = valloc(limit * sizeof(ptl_internal_le_t));	/* cross your fingers */
 	assert(tmp != NULL);
-	memset(tmp, 0, nit_limits.max_mes * sizeof(ptl_internal_le_t));
+	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #endif
 	assert((((intptr_t) tmp) & 0x7) == 0);
-	les = tmp;
 	PtlInternalQueueInit(&appends);
+	les = tmp;
 	assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
     }
 }
 
 void INTERNAL PtlInternalLENITeardown(
-    unsigned int ni)
+    void)
 {
     ptl_internal_le_t *tmp;
     assert(pthread_cancel(LEthread) == 0);
