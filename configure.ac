@@ -71,7 +71,7 @@ AC_CACHE_SAVE
 ## ----------------------- ##
 AC_HEADER_STDC
 AC_SYS_LARGEFILE
-AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h sys/time.h limits.h])
+AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h malloc.h sys/time.h limits.h])
 AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
 [#ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
