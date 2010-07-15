@@ -233,7 +233,7 @@ typedef struct {
 			     \c PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
 			     This failure is also indicated to the initiator
 			     through the \a ni_fail_type in the \c
-			     PTL_EVENT_SEND event, unles the \c
+			     PTL_EVENT_SEND event, unless the \c
 			     PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
     unsigned int    options; /*!< Specifies the behavior of the list entry. The
 			       following options can be selected: enable put
