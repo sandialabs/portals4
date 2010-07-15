@@ -42,7 +42,7 @@ static ptl_internal_q_t appends;
 static pthread_t LEthread;
 
 static void *LEprocessor(
-    void * __attribute__((unused)) junk)
+    void * __attribute__ ((unused)) junk)
 {
     while (1) {
 	ptl_internal_appendLE_t *append_me;
@@ -84,10 +84,26 @@ static void *LEprocessor(
 	switch (append_me->ptl_list) {
 	    case PTL_PRIORITY_LIST:
 		assert(t->priority != NULL);
-		entries = (ptl_internal_le_t *) t->priority;
-		/* first, search the overflow list */
-		/* second, if (not_found || !(append_me->le.options & PTL_LE_USE_ONCE)), append to priority list */
-		abort();
+		{
+		    int found = 1;
+		    /* first, search the overflow list */
+		    found = 0;
+#warning LEAppend() does not handle the overflow list, which may be tricky.
+		    /* second, if (not_found || !(append_me->le.options & PTL_LE_USE_ONCE)), append to priority list */
+		    if (!found || !(append_me->le.options & PTL_LE_USE_ONCE)) {
+			entries = (ptl_internal_le_t *) t->priority;
+			for (size_t i = 0; i < nit_limits.max_me_list; ++i) {
+			    if (PtlInternalAtomicCas32
+				(&(entries[i].status), 0, 2) == 0) {
+				entries[i].visible = append_me->le;
+				__sync_synchronize();
+				entries[i].status = 1;
+				break;
+			    }
+			}
+		    }
+		    free(append_me);
+		}
 		break;
 	    case PTL_OVERFLOW:
 		assert(t->overflow != NULL);
@@ -96,12 +112,16 @@ static void *LEprocessor(
 		    if (PtlInternalAtomicCas32(&(entries[i].status), 0, 2) ==
 			0) {
 			entries[i].visible = append_me->le;
+			__sync_synchronize();
 			entries[i].status = 1;
 			break;
 		    }
 		}
+		free(append_me);
 		break;
 	    case PTL_PROBE_ONLY:
+		abort();
+# warning probe_only is not implemented
 		break;
 	}
     }
@@ -120,8 +140,7 @@ void INTERNAL PtlInternalLENISetup(
 	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #elif defined(HAVE_POSIX_MEMALIGN)
 	assert(posix_memalign
-	       ((void **)&tmp, 8,
-		limit * sizeof(ptl_internal_le_t)) == 0);
+	       ((void **)&tmp, 8, limit * sizeof(ptl_internal_le_t)) == 0);
 	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #elif defined(HAVE_8ALIGNED_CALLOC)
 	tmp = calloc(limit, sizeof(ptl_internal_le_t));
