@@ -21,7 +21,7 @@
 
 typedef struct {
     ptl_le_t visible;
-    volatile uint32_t in_use;
+    volatile uint32_t status;	// 0=free, 1=allocated, 2=in-use
 } ptl_internal_le_t;
 
 typedef struct {
@@ -38,23 +38,65 @@ static ptl_internal_le_t *les = NULL;
 static ptl_internal_q_t appends;
 static pthread_t LEthread;
 
-static void *LEprocessor(void*junk)
+static void *LEprocessor(
+    void *junk)
 {
     while (1) {
-	ptl_internal_appendLE_t *tmp = PtlInternalQueuePop(&appends);
-	if (tmp == NULL) {
+	ptl_internal_appendLE_t *append_me;
+	ptl_table_entry_t *t;
+	ptl_internal_le_t *entries;
+	while ((append_me = PtlInternalQueuePop(&appends)) == NULL) {
 #ifdef HAVE_PTHREAD_YIELD
 	    pthread_yield();
 #elif HAVE_SCHED_YIELD
 	    sched_yield();
 #endif
-	    continue;
 	}
-	assert(tmp);
-	switch(tmp->ptl_list) {
+	assert(append_me);
+	t = &(nit.tables[append_me->ni_handle.s.ni][append_me->pt_index]);
+	/* check memory allocation */
+	if (t->priority == NULL || t->overflow == NULL) {
+	    /* this is done with mutexes to avoid cache-flushing
+	     * atomics/volatiles in the common case */
+	    assert(pthread_mutex_lock(&(t->lock)) == 0);
+	    if (t->priority == NULL) {
+		t->priority =
+		    malloc((nit_limits.max_me_list + 1) * sizeof(uint64_t));
+		assert(t->priority != NULL);
+		assert(((uintptr_t) t->priority) & 0x7);	// 8-byte alignment
+		memset(t->priority, 0,
+		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
+	    }
+	    if (t->overflow == NULL) {
+		t->overflow =
+		    malloc((nit_limits.max_me_list +
+			    1) * sizeof(ptl_internal_le_t));
+		assert(t->overflow != NULL);
+		assert(((uintptr_t) t->overflow) & 0x7);	// 8-byte alignment
+		memset(t->overflow, 0,
+		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
+	    }
+	    assert(pthread_mutex_unlock(&(t->lock)) == 0);
+	}
+	switch (append_me->ptl_list) {
 	    case PTL_PRIORITY_LIST:
+		assert(t->priority != NULL);
+		entries = (ptl_internal_le_t *) t->priority;
+		/* first, search the overflow list */
+		/* second, if (not_found || !(append_me->le.options & PTL_LE_USE_ONCE)), append to priority list */
+		abort();
 		break;
 	    case PTL_OVERFLOW:
+		assert(t->overflow != NULL);
+		entries = (ptl_internal_le_t *) t->overflow;
+		for (size_t i = 0; i < nit_limits.max_me_list; ++i) {
+		    if (PtlInternalAtomicCas32(&(entries[i].status), 0, 2) ==
+			0) {
+			entries[i].visible = append_me->le;
+			entries[i].status = 1;
+			break;
+		    }
+		}
 		break;
 	    case PTL_PROBE_ONLY:
 		break;
@@ -102,7 +144,9 @@ void INTERNAL PtlInternalLENISetup(
 void INTERNAL PtlInternalLENITeardown(
     unsigned int ni)
 {
-    ptl_internal_le_t *tmp = les;
+    ptl_internal_le_t *tmp;
+    assert(pthread_cancel(LEthread) == 0);
+    tmp = les;
     les = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
@@ -128,6 +172,9 @@ int API_FUNC PtlLEAppend(
     if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
 	return PTL_ARG_INVALID;
     }
+    if (ni.s.ni == 0 || ni.s.ni == 2) {	// must be a non-matching NI
+	return PTL_ARG_INVALID;
+    }
     if (pt_index > nit_limits.max_pt_index) {
 	return PTL_ARG_INVALID;
     }
@@ -146,8 +193,8 @@ int API_FUNC PtlLEAppend(
     Qentry->user_ptr = user_ptr;
     /* find an LE handle */
     for (offset = 0; offset < nit_limits.max_mes; ++offset) {
-	if (les[offset].in_use == 0) {
-	    if (PtlInternalAtomicCas32(&(les[offset].in_use), 0, 1) == 0) {
+	if (les[offset].status == 0) {
+	    if (PtlInternalAtomicCas32(&(les[offset].status), 0, 2) == 0) {
 		leh.code = offset;
 		break;
 	    }
