@@ -96,22 +96,43 @@ int API_FUNC PtlNIInit(
     if (desired != NULL &&
 	PtlInternalAtomicCas32(&nit_limits_init, 0, 1) == 0) {
 	/* nit_limits_init now marked as "being initialized" */
-	//nit_limits.max_mes = INT_MAX;  // more important when using pooling
-	//nit_limits.max_mds = INT_MAX;  // more important when using pooling
-	if (desired->max_cts > 0 && desired->max_cts < (1<<HANDLE_CODE_BITS)) {
+	if (desired->max_mes > 0 &&
+	    desired->max_mes < (1 << HANDLE_CODE_BITS)) {
+	    nit_limits.max_mes = desired->max_mes;
+	}
+	if (desired->max_mds > 0 &&
+	    desired->max_mds < (1 << HANDLE_CODE_BITS)) {
+	    nit_limits.max_mds = desired->max_mds;
+	}
+	if (desired->max_cts > 0 &&
+	    desired->max_cts < (1 << HANDLE_CODE_BITS)) {
 	    nit_limits.max_cts = desired->max_cts;
 	}
-	//nit_limits.max_eqs = INT_MAX;  // more important when using pooling
-	//nit_limits.max_pt_index = 63;
+	if (desired->max_eqs > 0 &&
+	    desired->max_eqs < (1 << HANDLE_CODE_BITS)) {
+	    nit_limits.max_eqs = desired->max_eqs;
+	}
+	if (desired->max_pt_index >= 63) {	// XXX: there may need to be more restrictions on this
+	    nit_limits.max_pt_index = desired->max_pt_index;
+	}
 	//nit_limits.max_iovecs = INT_MAX;      // ???
-	//nit_limits.max_me_list = nit_limits.max_mes;  // may be smaller if not using a linked-list implementaiton
-	//nit_limits.max_msg_size = per_proc_comm_buf_size;     // may need to be smaller
-	//nit_limits.max_atomic_size = 8;       // XXX: does not apply to all architectures
+	if (desired->max_me_list > 0 &&
+	    desired->max_me_list < (1UL << (sizeof(uint32_t) * 8))) {
+	    nit_limits.max_me_list = desired->max_me_list;
+	}
+	if (desired->max_msg_size > 0 &&
+	    desired->max_msg_size <=
+	    nit_limits.max_msg_size /* per_proc_comm_buf_size */ ) {
+	    nit_limits.max_msg_size = desired->max_msg_size;
+	}
+	if (desired->max_atomic_size > 0 && desired->max_atomic_size <= 8) {
+	    nit_limits.max_atomic_size = desired->max_atomic_size;
+	}
 	nit_limits_init = 2;	       // mark it as done being initialized
     }
     PtlInternalAtomicCas32(&nit_limits_init, 0, 2);	/* if not yet initialized, it is now */
+    while (nit_limits_init == 1) ;     /* if being initialized by another thread, wait for it to be initialized */
     if (actual != NULL) {
-	while (nit_limits_init == 1) ; /* if being initialized by another thread, wait for it to be initialized */
 	*actual = nit_limits;
     }
     if (options & PTL_NI_LOGICAL) {
@@ -137,7 +158,7 @@ int API_FUNC PtlNIInit(
 	    nit.tables[ni.ni] = NULL;
 	    return PTL_NO_SPACE;
 	}
-	for (size_t e=0; e<=nit_limits.max_pt_index; ++e) {
+	for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
 	    assert(pthread_mutex_init(&tmp[e].lock, NULL) == 0);
 	}
 	nit.tables[ni.ni] = tmp;
