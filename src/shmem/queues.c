@@ -1,6 +1,7 @@
 #include <stdlib.h>		       /* for calloc() */
 #include <assert.h>
 
+#include "ptl_visibility.h"
 #include "ptl_internal_queues.h"
 #include "ptl_internal_atomic.h"
 
@@ -12,13 +13,13 @@
 // This lock-free algorithm borrowed from qthreads, which borrowed it from
 // http://www.research.ibm.com/people/m/michael/podc-1996.pdf
 
-void PtlInternalQueueInit(
+void INTERNAL PtlInternalQueueInit(
     ptl_internal_q_t * q)
 {
     q->head = q->tail = calloc(1, sizeof(ptl_internal_qnode_t));
 }
 
-void PtlInternalQueueAppend(
+void INTERNAL PtlInternalQueueAppend(
     ptl_internal_q_t * q,
     void *t)
 {
@@ -54,7 +55,8 @@ void PtlInternalQueueAppend(
     (void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(node, tail));
 }
 
-void *PtlInternalQueuePop(ptl_internal_q_t *q)
+void INTERNAL *PtlInternalQueuePop(
+    ptl_internal_q_t * q)
 {
     void *p;
     volatile ptl_internal_qnode_t *head;
@@ -66,21 +68,23 @@ void *PtlInternalQueuePop(ptl_internal_q_t *q)
 	head = q->head;
 	tail = q->tail;
 	next_ptr = QPTR(QPTR(head)->next);
-	if (head == q->head) { // are head, tail, and next consistent?
-	    if (head == tail) { // is queue empty or tail falling behind?
-		if (next_ptr == NULL) { // is queue empty?
+	if (head == q->head) {	       // are head, tail, and next consistent?
+	    if (head == tail) {	       // is queue empty or tail falling behind?
+		if (next_ptr == NULL) {	// is queue empty?
 		    return NULL;
 		}
-		(void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(next_ptr, tail));
-	    } else { // no need to deal with the tail
+		(void)PtlInternalAtomicCasPtr(&(q->tail), tail,
+					      QCOMPOSE(next_ptr, tail));
+	    } else {		       // no need to deal with the tail
 		// read value before CAS, otherwise another dequeue might free the next node
 		p = next_ptr->value;
-		if (PtlInternalAtomicCasPtr(&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
-		    break; // success!
+		if (PtlInternalAtomicCasPtr
+		    (&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
+		    break;	       // success!
 		}
 	    }
 	}
     }
-    free((void*)QPTR(head));
+    free((void *)QPTR(head));
     return p;
 }
