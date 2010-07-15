@@ -100,13 +100,13 @@ int API_FUNC PtlInit(
 	    firstpagesize + (per_proc_comm_buf_size * num_siblings);
 
 	memset(&nit, 0, sizeof(ptl_internal_nit_t));
-	nit_limits.max_mes = 0;
+	nit_limits.max_mes = 128*4; // Thus, the ME/LE list for each NI can be maxed out
 	nit_limits.max_mds = 0;
 	nit_limits.max_cts = 128; // Arbitrary, but reasonable
 	nit_limits.max_eqs = 0;
 	nit_limits.max_pt_index = 63;
 	nit_limits.max_iovecs = 0;	// XXX: ???
-	nit_limits.max_me_list = nit_limits.max_mes;	// may be smaller if not using a linked-list implementaiton
+	nit_limits.max_me_list = 128;	// Arbitrary
 	nit_limits.max_msg_size = per_proc_comm_buf_size;	// may need to be smaller
 	nit_limits.max_atomic_size = 8;	// XXX: does not apply to all architectures
 
