@@ -11,8 +11,16 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_EQ.h"
 
-const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff; /* (1<<29) & 0x1fffffff */
+const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff;	/* (1<<29) & 0x1fffffff */
+
+int INTERNAL PtlInternalEQHandleValidator(
+    ptl_handle_eq_t handle,
+    int none_ok)
+{
+    return PTL_OK;
+}
 
 int API_FUNC PtlEQAlloc(
     ptl_handle_ni_t ni_handle,
