@@ -20,6 +20,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
+#include "ptl_internal_MD.h"
 #include "ptl_internal_LE.h"
 
 ptl_internal_nit_t nit;
@@ -100,6 +101,10 @@ int API_FUNC PtlNIInit(
 	    desired->max_mes < (1 << HANDLE_CODE_BITS)) {
 	    nit_limits.max_mes = desired->max_mes;
 	}
+	if (desired->max_over > 0 &&
+	    desired->max_over < (1 << HANDLE_CODE_BITS)) {
+	    nit_limits.max_over = desired->max_over;
+	}
 	if (desired->max_mds > 0 &&
 	    desired->max_mds < (1 << HANDLE_CODE_BITS)) {
 	    nit_limits.max_mds = desired->max_mds;
@@ -147,6 +152,7 @@ int API_FUNC PtlNIInit(
 	}
     }
     PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
+    PtlInternalMDNISetup(ni.ni, nit_limits.max_mds);
     PtlInternalLENISetup(nit_limits.max_mes);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
@@ -182,6 +188,7 @@ int API_FUNC PtlNIFini(
 #endif
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
 	PtlInternalCTNITeardown(ni.s.ni);
+	PtlInternalMDNITeardown(ni.s.ni);
 	/* deallocate NI */
 	free(nit.tables[ni.s.ni]);
 	nit.tables[ni.s.ni] = NULL;
