@@ -106,6 +106,63 @@ return foo;
 		[sandia_cv_require_ia64intrin_h="no"],
 		[sandia_cv_require_ia64intrin_h="yes"])])])
 ])
+AC_CACHE_CHECK([whether the compiler supports CMPXCHG16B],
+  [sandia_cv_cmpxchg16b],
+  [AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#include <stdint.h> /* for uint64_t */
+struct m128 {
+uint64_t a,b;
+} one, two, tmp;
+int main(void)
+{
+one.a = 1;
+one.b = 2;
+two.a = 3;
+two.b = 4;
+tmp.a = 5;
+tmp.b = 6;
+__asm__ __volatile__ ("lock cmpxchg16b (%2)"
+:"=a"(tmp.a),"=d"(tmp.b)
+:"r"(&two),"a"(two.a),"d"(two.b),"b"(one.a),"c"(one.b)
+:"memory");
+return tmp.a;
+}]])],
+    [sandia_cv_cmpxchg16b="yes"],
+	[sandia_cv_cmpxchg16b="no"])])
+AS_IF([test "x$sandia_cv_cmpxchg16b" = "xyes"],
+[AC_CACHE_CHECK([whether the CPU supports CMPXCHG16B],
+  [sandia_cv_cpu_cmpxchg16b],
+  [AC_ARG_ENABLE([cross-cmpxchg16b],
+     [AS_HELP_STRING([--enable-cross-cmpxchg16b],
+	     [when cross compiling, ordinarily we asume that cmpxchg16b is not available, however this option forces us to assume that cmpxchg16b IS available])])
+   AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#include <stdint.h> /* for uint64_t */
+struct m128 {
+uint64_t a,b;
+} one, two, tmp;
+int main(void)
+{
+one.a = 1;
+one.b = 2;
+two.a = 3;
+two.b = 4;
+tmp.a = 5;
+tmp.b = 6;
+__asm__ __volatile__ ("lock cmpxchg16b (%2)"
+:"=a"(tmp.a),"=d"(tmp.b)
+:"r"(&two),"a"(two.a),"d"(two.b),"b"(one.a),"c"(one.b)
+:"memory");
+return 0;
+}]])],
+    [sandia_cv_cpu_cmpxchg16b="yes"],
+	[sandia_cv_cpu_cmpxchg16b="no"],
+	[AS_IF([test "x$enable_cross_cmpxchg16b" == "xyes"],
+	       [sandia_cv_cpu_cmpxchg16b="assuming yes"],
+	       [sandia_cv_cpu_cmpxchg16b="assuming no"])])])
+		   ])
+AS_IF([test "x$sandia_cv_cpu_cmpxchg16b" == "xassuming yes"],[sandia_cv_cpu_cmpxchg16b="yes"])
+AS_IF([test "x$sandia_cv_cpu_cmpxchg16b" == "xyes"],
+      [AC_DEFINE([HAVE_CMPXCHG16B],[1],[if the compiler and cpu can both handle the 128-bit CMPXCHG16B instruction])])
 AS_IF([test "$sandia_cv_require_ia64intrin_h" = "yes"],
 	  [AC_DEFINE([SANDIA_NEEDS_INTEL_INTRIN],[1],[if this header is necessary for builtin atomics])])
 AS_IF([test "x$sandia_cv_atomic_CASptr" = "xyes"],
