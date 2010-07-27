@@ -101,8 +101,9 @@ int API_FUNC PtlInit(
 
 	memset(&nit, 0, sizeof(ptl_internal_nit_t));
 	nit_limits.max_mes = 128*4; // Thus, the ME/LE list for each NI can be maxed out
-	nit_limits.max_mds = 0;
-	nit_limits.max_cts = 128; // Arbitrary, but reasonable
+	nit_limits.max_over = 128; // Arbitrary
+	nit_limits.max_mds = 128; // Arbitrary
+	nit_limits.max_cts = 128; // Arbitrary
 	nit_limits.max_eqs = 0;
 	nit_limits.max_pt_index = 63;
 	nit_limits.max_iovecs = 0;	// XXX: ???
