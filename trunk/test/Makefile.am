@@ -6,9 +6,10 @@
 AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 
 TESTS = test_init \
-	test_NIInit
+	test_NIInit \
+	test_bootstrap
 
-EXTRA_PROGRAMS = test_bootstrap
+#EXTRA_PROGRAMS = test_bootstrap
 
 buildall: $(TESTS)
 .PHONY: buildall
