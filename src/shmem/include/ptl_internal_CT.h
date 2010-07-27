@@ -6,5 +6,8 @@ void PtlInternalCTNISetup(
     ptl_size_t limit);
 void PtlInternalCTNITeardown(
     int ni_num);
+int PtlInternalCTHandleValidator(
+    ptl_handle_ct_t handle,
+    int none_ok);
 
 #endif
