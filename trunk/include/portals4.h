@@ -400,6 +400,8 @@ extern const ptl_ni_fail_t PTL_NI_PERM_VIOLATION;
 typedef struct {
     int max_mes;		/*!< Maximum number of match list entries that
 				  can be allocated at any one time. */
+    int max_over;		/*!< Maximum number of overflow list entries
+				  that can be allocated at any one time. */
     int max_mds;		/*!< Maximum number of memory descriptors that
 				  can be allocated at any one time. */
     int max_cts;		/*!< Maximum number of counting events that can
