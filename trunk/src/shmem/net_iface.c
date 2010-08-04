@@ -22,6 +22,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_LE.h"
+#include "ptl_internal_DM.h"
 
 ptl_internal_nit_t nit;
 ptl_ni_limits_t nit_limits;
@@ -127,7 +128,7 @@ int API_FUNC PtlNIInit(
 	}
 	if (desired->max_msg_size > 0 &&
 	    desired->max_msg_size <=
-	    nit_limits.max_msg_size /* per_proc_comm_buf_size */ ) {
+	    nit_limits.max_msg_size /* per_proc_comm_buf_size - sizeof(ptl_internal_header_t) */ ) {
 	    nit_limits.max_msg_size = desired->max_msg_size;
 	}
 	if (desired->max_atomic_size > 0 && desired->max_atomic_size <= 8) {
@@ -154,6 +155,7 @@ int API_FUNC PtlNIInit(
     PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
     PtlInternalMDNISetup(ni.ni, nit_limits.max_mds);
     PtlInternalLENISetup(nit_limits.max_mes);
+    PtlInternalDMSetup(nit_limits.max_msg_size);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,

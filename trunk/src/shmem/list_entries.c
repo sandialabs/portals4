@@ -48,6 +48,7 @@ static void *LEprocessor(
 	ptl_internal_appendLE_t *append_me;
 	ptl_table_entry_t *t;
 	ptl_internal_le_t *entries;
+#warning LEprocessor needs a better poll/awaken implementation
 	while ((append_me = PtlInternalQueuePop(&appends)) == NULL) {
 #if defined(HAVE_PTHREAD_YIELD)
 	    pthread_yield();
@@ -121,7 +122,7 @@ static void *LEprocessor(
 		break;
 	    case PTL_PROBE_ONLY:
 		abort();
-# warning probe_only is not implemented
+# warning PTL_PROBE_ONLY is not implemented
 		break;
 	}
     }
@@ -156,6 +157,7 @@ void INTERNAL PtlInternalLENISetup(
 #endif
 	assert((((intptr_t) tmp) & 0x7) == 0);
 	PtlInternalQueueInit(&appends);
+	__sync_synchronize();
 	les = tmp;
 	assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
     }
@@ -171,6 +173,7 @@ void INTERNAL PtlInternalLENITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
+    PtlInternalQueueDestroy(&appends);
 }
 
 int API_FUNC PtlLEAppend(
