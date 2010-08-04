@@ -13,10 +13,12 @@ typedef struct {
 
 void PtlInternalQueueInit(
     ptl_internal_q_t * q);
+void PtlInternalQueueDestroy(
+    ptl_internal_q_t * q);
 void PtlInternalQueueAppend(
     ptl_internal_q_t * q,
     void *t);
-void *PtlInternalQueuePop(
+void * PtlInternalQueuePop(
     ptl_internal_q_t * q);
 
 

@@ -27,6 +27,7 @@ size_t num_siblings = 0;
 size_t proc_number = 0;
 size_t per_proc_comm_buf_size = 0;
 size_t firstpagesize = 0;
+volatile ptl_internal_header_t *ops = NULL;
 
 const ptl_pid_t PTL_PID_ANY = UINT_MAX;
 
@@ -100,15 +101,15 @@ int API_FUNC PtlInit(
 	    firstpagesize + (per_proc_comm_buf_size * num_siblings);
 
 	memset(&nit, 0, sizeof(ptl_internal_nit_t));
-	nit_limits.max_mes = 128*4; // Thus, the ME/LE list for each NI can be maxed out
-	nit_limits.max_over = 128; // Arbitrary
-	nit_limits.max_mds = 128; // Arbitrary
-	nit_limits.max_cts = 128; // Arbitrary
+	nit_limits.max_mes = 128 * 4;  // Thus, the ME/LE list for each NI can be maxed out
+	nit_limits.max_over = 128;     // Arbitrary
+	nit_limits.max_mds = 128;      // Arbitrary
+	nit_limits.max_cts = 128;      // Arbitrary
 	nit_limits.max_eqs = 0;
 	nit_limits.max_pt_index = 63;
-	nit_limits.max_iovecs = 0;	// XXX: ???
-	nit_limits.max_me_list = 128;	// Arbitrary
-	nit_limits.max_msg_size = per_proc_comm_buf_size;	// may need to be smaller
+	nit_limits.max_iovecs = 0;     // XXX: ???
+	nit_limits.max_me_list = 128;  // Arbitrary
+	nit_limits.max_msg_size = per_proc_comm_buf_size - (sizeof(ptl_internal_header_t) * num_siblings);	// may need to be smaller
 	nit_limits.max_atomic_size = 8;	// XXX: does not apply to all architectures
 
 	/* Open the communication pad */
@@ -127,6 +128,11 @@ int API_FUNC PtlInit(
 	    goto exit_fail;
 	}
 	assert(close(shm_fd) == 0);
+	/* Locate my buffer of ops */
+	ops =
+	    (ptl_internal_header_t *) (comm_pad + firstpagesize +
+				       (per_proc_comm_buf_size *
+					proc_number));
 
 	/**************************************************************************
 	 * Can Now Announce My Presence

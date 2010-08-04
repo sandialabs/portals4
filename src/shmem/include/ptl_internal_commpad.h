@@ -9,4 +9,26 @@ extern size_t proc_number;
 extern size_t per_proc_comm_buf_size;
 extern size_t firstpagesize;
 
+typedef struct
+{
+    unsigned char ni;
+    unsigned char type;
+    union {
+	struct {
+	} put;
+	struct {
+	} get;
+	struct {
+	} atomic;
+	struct {
+	} fetchatomic;
+	struct {
+	} swap;
+    } info;
+    volatile void * volatile next;
+} ptl_internal_header_t;
+
+extern volatile ptl_internal_header_t *ops;
+
+
 #endif
