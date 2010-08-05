@@ -35,6 +35,7 @@ typedef struct {		/* this is ordered to encourage optimal packing */
 } ptl_internal_ct_t;
 
 static ptl_internal_ct_t *ct_events[4] = { NULL, NULL, NULL, NULL };
+static uint64_t waiters = 0;
 
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)	    (a.success == b.success && a.failure == b.failure)
@@ -155,9 +156,12 @@ void INTERNAL PtlInternalCTNITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     for (size_t i = 0; i < nit_limits.max_cts; ++i) {
-	assert(tmp[i].enabled != CT_BUSY);
+	tmp[i].data.success = 0xffffffffffffffffULL;
+	tmp[i].data.failure = 0xffffffffffffffffULL;
+	tmp[i].generation = 0xffffffffffffffffULL;
 	tmp[i].enabled = CT_FREE;
     }
+    while(waiters > 0) ;
     free(tmp);
 }
 
@@ -222,7 +226,6 @@ int API_FUNC PtlCTAlloc(
 		cts[offset].type = ct_type;
 		cts[offset].data.success = 0;
 		cts[offset].data.failure = 0;
-		cts[offset].generation++;
 		__sync_synchronize();
 		cts[offset].enabled = CT_READY;
 		ct.code = offset;
@@ -251,6 +254,7 @@ int API_FUNC PtlCTFree(
 	return PTL_ARG_INVALID;
     }
 #endif
+    ++ct_events[ct.s.ni][ct.s.code].generation;
     ct_events[ct.s.ni][ct.s.code].enabled = CT_FREE;
     return PTL_OK;
 }
@@ -278,6 +282,7 @@ int API_FUNC PtlCTWait(
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_internal_ct_t *cte;
+    uint64_t my_generation;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -287,16 +292,19 @@ int API_FUNC PtlCTWait(
     }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
-    /* I wish this loop were tighter, but because CT's can be destroyed
-     * unexpectedly, it can't be */
-    while (cte->enabled == CT_READY) {
+    /* I wish this loop were tighter, but because CT's can be
+     * destroyed/reallocated unexpectedly, it can't be */
+    my_generation = cte->generation;
+    while (cte->generation == my_generation) {
 	ptl_ct_event_t tmpread;
 	PtlInternalAtomicReadCT(&tmpread, &(cte->data));
 	if ((tmpread.success + tmpread.failure) >= test) {
-	    if (cte->enabled == CT_READY)
+	    if (cte->generation == my_generation) {
+		assert(cte->enabled == CT_READY);
 		return PTL_OK;
-	    else
+	    } else {
 		return PTL_FAIL;
+	    }
 	}
     }
     return PTL_FAIL;
