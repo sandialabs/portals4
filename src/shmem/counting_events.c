@@ -287,6 +287,8 @@ int API_FUNC PtlCTWait(
     }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
+    /* I wish this loop were tighter, but because CT's can be destroyed
+     * unexpectedly, it can't be */
     while (cte->enabled == CT_READY) {
 	ptl_ct_event_t tmpread;
 	PtlInternalAtomicReadCT(&tmpread, &(cte->data));
