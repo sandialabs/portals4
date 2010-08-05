@@ -15,13 +15,18 @@ libportals_la_SOURCES += \
 			 shmem/init.c
 
 yod_SOURCES += shmem/yod.c
+yod_LDADD = $(top_builddir)/src/libportals.la
 
 noinst_HEADERS += \
 		shmem/include/ptl_internal_CT.h \
+		shmem/include/ptl_internal_DM.h \
+		shmem/include/ptl_internal_EQ.h \
 		shmem/include/ptl_internal_LE.h \
-		shmem/include/ptl_internal_queues.h \
+		shmem/include/ptl_internal_MD.h \
 		shmem/include/ptl_internal_atomic.h \
 		shmem/include/ptl_internal_commpad.h \
 		shmem/include/ptl_internal_handles.h \
 		shmem/include/ptl_internal_nit.h \
+		shmem/include/ptl_internal_pid.h \
+		shmem/include/ptl_internal_queues.h \
 		shmem/include/ptl_visibility.h
