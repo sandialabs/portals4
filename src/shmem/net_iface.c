@@ -24,8 +24,8 @@
 #include "ptl_internal_LE.h"
 #include "ptl_internal_DM.h"
 
-ptl_internal_nit_t nit;
-ptl_ni_limits_t nit_limits;
+ptl_internal_nit_t nit = { 0 };
+ptl_ni_limits_t nit_limits = { 0 };
 static volatile uint32_t nit_limits_init = 0;
 
 const ptl_nid_t PTL_NID_ANY = UINT_MAX;
