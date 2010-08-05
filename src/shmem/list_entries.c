@@ -67,7 +67,7 @@ static void *LEprocessor(
 		t->priority =
 		    malloc((nit_limits.max_me_list + 1) * sizeof(uint64_t));
 		assert(t->priority != NULL);
-		assert(((uintptr_t) t->priority) & 0x7);	// 8-byte alignment
+		assert((((uintptr_t) t->priority) & 0x7) == 0);	// 8-byte alignment
 		memset(t->priority, 0,
 		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
 	    }
@@ -76,7 +76,7 @@ static void *LEprocessor(
 		    malloc((nit_limits.max_me_list +
 			    1) * sizeof(ptl_internal_le_t));
 		assert(t->overflow != NULL);
-		assert(((uintptr_t) t->overflow) & 0x7);	// 8-byte alignment
+		assert((((uintptr_t) t->overflow) & 0x7) == 0);	// 8-byte alignment
 		memset(t->overflow, 0,
 		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
 	    }
