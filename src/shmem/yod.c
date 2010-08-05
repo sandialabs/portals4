@@ -21,6 +21,7 @@
 #include <fcntl.h>		       /* for O_RDWR */
 #include <sys/wait.h>		       /* for waitpid() */
 #include <string.h>		       /* for memset() */
+#include <pthread.h>		       /* for all pthread functions */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
 /* this is getting kinda idiotic */
@@ -36,8 +37,12 @@
 # define PSHMNAMLEN 100
 #endif
 
+static long count = 0;
+
 static void print_usage(
     int ex);
+static void *collator(
+    void *junk);
 
 int main(
     int argc,
@@ -49,10 +54,11 @@ int main(
     char countstr[10];
     char procstr[10];
     char commstr[20];
-    long count = 0;
     pid_t *pids;
     int shm_fd;
     int err = 0;
+    pthread_t collator_thread;
+    int ct_spawned = 1;
 
     {
 	int opt;
@@ -118,7 +124,7 @@ int main(
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
-    buffsize += commsize * count;
+    buffsize += commsize * (count + 1);	// the one extra is for the collator
 
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
@@ -154,10 +160,11 @@ int main(
     assert(setenv("PORTALS4_COMM_SIZE", commstr, 1) == 0);
     snprintf(countstr, 10, "%li", count);
     assert(setenv("PORTALS4_NUM_PROCS", countstr, 1) == 0);
-    pids = malloc(sizeof(pid_t) * count);
+    pids = malloc(sizeof(pid_t) * (count + 1));
     assert(setenv("PORTALS4_COLLECTOR_NID", "0", 1) == 0);
     assert(setenv("PORTALS4_COLLECTOR_PID", countstr, 1) == 0);
 
+    /* Launch children */
     for (long c = 0; c < count; ++c) {
 	snprintf(procstr, 10, "%li", c);
 	assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
@@ -165,7 +172,7 @@ int main(
 	    /* child */
 	    execv(argv[optind], argv + optind);
 	    perror("yod-> child execv failed!");
-	    exit(EXIT_SUCCESS);
+	    exit(EXIT_FAILURE);
 	} else if (pids[c] == -1) {
 	    perror("yod-> could not launch process!\n");
 	    if (c > 0) {
@@ -174,6 +181,15 @@ int main(
 	    }
 	    exit(EXIT_FAILURE);
 	}
+    }
+
+    /*****************************
+     * Provide COLLATOR services *
+     *****************************/
+    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
+	perror("pthread_create");
+	fprintf(stderr, "yod-> failed to create collator thread\n");
+	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
 
     /* Wait for all children to exit */
@@ -192,6 +208,12 @@ int main(
 		    WEXITSTATUS(status));
 	}
     }
+    if (ct_spawned == 1) {
+	if (pthread_cancel(collator_thread) != 0) {
+	    perror("yod-> pthread_cancel");
+	}
+	PtlFini();
+    }
 
     /* Cleanup */
     if (shm_unlink(shmname) != 0) {
@@ -199,6 +221,73 @@ int main(
 	exit(EXIT_FAILURE);
     }
     return err;
+}
+
+void *collator(
+    void *junk)
+{
+    char procstr[10];
+    ptl_process_id_t *mapping;
+
+    snprintf(procstr, 10, "%li", count);
+    assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
+    assert(PtlInit() == PTL_OK);
+    ptl_handle_ni_t ni_physical;
+    assert(PtlNIInit
+	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
+    /* set up the landing pad to collect and distribute mapping information */
+    mapping = calloc(count + 1, sizeof(ptl_process_id_t));
+    assert(mapping != NULL);
+    ptl_le_t le;
+    ptl_md_t md;
+    ptl_handle_le_t le_handle;
+    ptl_handle_md_t md_handle;
+    md.start = le.start = mapping;
+    md.length = le.length = (count + 1) * sizeof(ptl_process_id_t);
+    le.ac_id.uid = PTL_UID_ANY;
+    le.options =
+	PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
+	PTL_LE_EVENT_CT_GET;
+    assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &le.ct_handle) ==
+	   PTL_OK);
+    assert(PtlLEAppend
+	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
+	    &le_handle) == PTL_OK);
+    /* wait for everyone to post to the mapping */
+    {
+	ptl_ct_event_t ct_data;
+	assert(PtlCTWait(le.ct_handle, count + 1) == PTL_OK);
+	assert(PtlCTGet(le.ct_handle, &ct_data) == PTL_OK);
+	assert(ct_data.failure == 0);
+    }
+    /* cleanup */
+    assert(PtlCTFree(le.ct_handle) == PTL_OK);
+    assert(PtlLEUnlink(le_handle) == PTL_OK);
+    /* now distribute the mapping */
+    md.options = PTL_MD_EVENT_CT_ACK;
+    md.eq_handle = PTL_EQ_NONE;
+    assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &md.ct_handle) ==
+	   PTL_OK);
+    assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
+    for (uint64_t r = 0; r <= count; ++r) {
+	assert(PtlPut
+	       (md_handle, 0, (count + 1) * sizeof(ptl_process_id_t),
+		PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+    }
+    /* wait for the puts to finish */
+    {
+	ptl_ct_event_t ct_data;
+	assert(PtlCTWait(md.ct_handle, count + 1) == PTL_OK);
+	assert(PtlCTGet(md.ct_handle, &ct_data) == PTL_OK);
+	assert(ct_data.failure == 0);
+    }
+    /* cleanup */
+    assert(PtlCTFree(md.ct_handle) == PTL_OK);
+    assert(PtlMDRelease(md_handle) == PTL_OK);
+    assert(PtlNIFini(ni_physical) == PTL_OK);
+    free(mapping);
+    return NULL;
 }
 
 void print_usage(
