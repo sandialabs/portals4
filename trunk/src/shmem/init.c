@@ -98,7 +98,7 @@ int API_FUNC PtlInit(
 	    goto exit_fail;
 	}
 	comm_pad_size =
-	    firstpagesize + (per_proc_comm_buf_size * num_siblings);
+	    firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1)); // the one extra is for the collator
 
 	memset(&nit, 0, sizeof(ptl_internal_nit_t));
 	nit_limits.max_mes = 128 * 4;  // Thus, the ME/LE list for each NI can be maxed out
@@ -141,7 +141,7 @@ int API_FUNC PtlInit(
 
 	/* Now, wait for my siblings to get here. */
 	size_t i;
-	for (i = 0; i < num_siblings; ++i) {
+	for (i = 0; i <= num_siblings; ++i) {
 	    /* oddly enough, this should reduce cache traffic for large numbers
 	     * of siblings */
 	    while (comm_pad[i] == 0) ;
