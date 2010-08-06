@@ -381,18 +381,18 @@ typedef int ptl_ni_fail_t;
 #define PTL_NI_PHYSICAL	    (1<<3)
 
 /*! Used in successful end events to indicate that there has been no failure. */
-extern const ptl_ni_fail_t PTL_NI_OK;
+#define PTL_NI_OK		((ptl_ni_fail_t) 0)
 
 /*! Indicates a system failure that prevents message delivery. */
-extern const ptl_ni_fail_t PTL_NI_UNDELIVERABLE;
+#define PTL_NI_UNDELIVERABLE	((ptl_ni_fail_t) 1)
 
 /*! Indicates that the remote node has exhausted its resources, enabled flow
  * control, and dropped this message. */
-extern const ptl_ni_fail_t PTL_NI_FLOW_CTRL;
+#define PTL_NI_FLOW_CTRL	((ptl_ni_fail_t) 2)
 
 /*! Indicates that the remote Portals addressing indicated a permissions
  * violation for this message. */
-extern const ptl_ni_fail_t PTL_NI_PERM_VIOLATION;
+#define PTL_NI_PERM_VIOLATION	((ptl_ni_fail_t) 3)
 
 /*!
  * @struct ptl_ni_limits_t
