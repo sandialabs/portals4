@@ -325,9 +325,11 @@ void *collator(
     /* wait for everyone to post to the mapping */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(le.ct_handle, count + 1) == PTL_OK);
+	assert(PtlCTWait(le.ct_handle, count) == PTL_OK);
+	printf("COLLECTOR-> everyone posted!\n");
 	assert(PtlCTGet(le.ct_handle, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);
+	printf("COLLECTOR-> zero failures!\n");
     }
     /* cleanup */
     assert(PtlCTFree(le.ct_handle) == PTL_OK);

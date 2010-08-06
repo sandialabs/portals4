@@ -25,6 +25,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_MD.h"
+#include "ptl_internal_error.h"
 
 const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
@@ -86,17 +87,41 @@ int INTERNAL PtlInternalMDHandleValidator(
     ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
+    ptl_internal_md_t *mdptr;
+    int ct_optional = 1;
+    int eq_optional = 0;
     if (md.s.selector != HANDLE_MD_CODE) {
-	printf("selector not a MD selector (%i)\n", md.s.selector);
+	VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
 	return PTL_ARG_INVALID;
     }
-    if (md.s.ni > 3 || md.s.code != 0 || (nit.refcount[md.s.ni] == 0)) {
+    if (md.s.ni > 3 || md.s.code > nit_limits.max_mds || (nit.refcount[md.s.ni] == 0)) {
+	VERBOSE_ERROR("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", md.s.ni, md.s.code, nit_limits.max_mds);
 	return PTL_ARG_INVALID;
     }
     if (mds[md.s.ni] == NULL) {
+	VERBOSE_ERROR("MD aray for NI uninitialized\n");
 	return PTL_ARG_INVALID;
     }
     if (mds[md.s.ni][md.s.code].in_use != MD_IN_USE) {
+	VERBOSE_ERROR("MD appears to be free already\n");
+	return PTL_ARG_INVALID;
+    }
+#warning what if an md gets deallocated while its handle is being validated?
+    mdptr = &(mds[md.s.ni][md.s.code]);
+    if (mdptr->visible.options & PTL_MD_EVENT_DISABLE) {
+	eq_optional = 1;
+    }
+    if (PtlInternalEQHandleValidator(mdptr->visible.eq_handle, eq_optional)) {
+	VERBOSE_ERROR("MD has a bad EQ handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (mdptr->visible.
+	options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+		   PTL_MD_EVENT_CT_ACK)) {
+	ct_optional = 0;
+    }
+    if (PtlInternalCTHandleValidator(mdptr->visible.ct_handle, ct_optional)) {
+	VERBOSE_ERROR("MD has a bad CT handle\n");
 	return PTL_ARG_INVALID;
     }
     return PTL_OK;
@@ -111,6 +136,8 @@ int API_FUNC PtlMDBind(
     ptl_internal_handle_converter_t mdh;
     size_t offset;
 #ifndef NO_ARG_VALIDATION
+    int ct_optional = 1;
+    int eq_optional = 0;
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
@@ -120,10 +147,17 @@ int API_FUNC PtlMDBind(
     if (md->start == NULL || md->length == 0) {
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalCTHandleValidator(md->ct_handle, 1)) {
+    if (md->options & PTL_MD_EVENT_DISABLE) {
+	eq_optional = 1;
+    }
+    if (PtlInternalEQHandleValidator(md->eq_handle, eq_optional)) {
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalEQHandleValidator(md->eq_handle, 1)) {
+    if (md->options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+		   PTL_MD_EVENT_CT_ACK)) {
+	ct_optional = 0;
+    }
+    if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -177,4 +211,11 @@ ptl_size_t INTERNAL PtlInternalMDLength(
 {
     const ptl_internal_handle_converter_t md = { handle };
     return mds[md.s.ni][md.s.code].visible.length;
+}
+
+ptl_md_t INTERNAL *PtlInternalMDFetch(
+    ptl_handle_md_t handle)
+{
+    const ptl_internal_handle_converter_t md = { handle };
+    return &(mds[md.s.ni][md.s.code].visible);
 }

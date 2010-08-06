@@ -13,6 +13,7 @@
 /* Internal headers */
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_atomic.h"
+#include "ptl_internal_commpad.h"
 #include "ptl_visibility.h"
 
 /* Fragment format:
@@ -35,29 +36,47 @@ typedef struct {
     char data[];
 } fragment_hdr_t;
 
+typedef struct {
+    fragment_hdr_t *volatile head;
+    fragment_hdr_t *volatile tail;
+} NEMESIS_queue;
+
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
+static NEMESIS_queue *receiveQ = NULL;
+static NEMESIS_queue *ackQ = NULL;
 
 void INTERNAL PtlInternalFragmentSetup(
     volatile char *buf)
 {
     size_t i;
-    fragment_hdr_t *ptr;
+    fragment_hdr_t *fptr;
+
+    /* init metadata */
     SMALL_FRAG_PAYLOAD = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);
     LARGE_FRAG_PAYLOAD = LARGE_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);
-
-    ptr = (fragment_hdr_t *) buf;
+    /* first, initialize the receive queue */
+    receiveQ = (NEMESIS_queue *) buf;
+    receiveQ->head = NULL;
+    receiveQ->tail = NULL;
+    /* next, initialize the ack queue */
+    ackQ = receiveQ + 1;
+    ackQ->head = NULL;
+    ackQ->tail = NULL;
+    /* now, initialize the small fragment free-list */
+    fptr = (fragment_hdr_t *) (ackQ + 1);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
-	ptr->next = small_free_list;
-	ptr->size = SMALL_FRAG_SIZE;
-	small_free_list = ptr;
-	ptr = (fragment_hdr_t *) (((char *)ptr) + SMALL_FRAG_SIZE);
+	fptr->next = small_free_list;
+	fptr->size = SMALL_FRAG_SIZE;
+	small_free_list = fptr;
+	fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
     }
+    /* and finally, initialize the large fragment free-list */
     for (i = 0; i < LARGE_FRAG_COUNT; ++i) {
-	ptr->next = large_free_list;
-	ptr->size = LARGE_FRAG_SIZE;
-	large_free_list = ptr;
-	ptr = (fragment_hdr_t *) (((char *)ptr) + LARGE_FRAG_SIZE);
+	fptr->next = large_free_list;
+	fptr->size = LARGE_FRAG_SIZE;
+	large_free_list = fptr;
+	fptr = (fragment_hdr_t *) (fptr->data + LARGE_FRAG_PAYLOAD);
     }
 }
 
@@ -103,13 +122,50 @@ void INTERNAL *PtlInternalFragmentFetch(
     return retv->data;
 }
 
+/* Fragment queueing uses the NEMESIS lock-free queue protocol from
+ * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
+ * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
+ * with multiple enqueuers and a single de-queuer. */
+static void PtlInternalNEMESISEnqueue(
+    NEMESIS_queue * q,
+    fragment_hdr_t * f)
+{
+    fragment_hdr_t *prev =
+	PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), f);
+    if (prev == NULL) {
+	q->head = f;
+    } else {
+	prev->next = f;
+    }
+}
+
+static fragment_hdr_t *PtlInternalNEMESISDequeue(
+    NEMESIS_queue * q)
+{
+    fragment_hdr_t *retval = q->head;
+    if (retval->next != NULL) {
+	q->head = retval->next;
+    } else {
+	fragment_hdr_t *old;
+	q->head = NULL;
+	old = PtlInternalAtomicCasPtr(&(q->tail), retval, NULL);
+	if (old != retval) {
+	    while (retval->next == NULL) ;
+	    q->head = retval->next;
+	}
+    }
+    return retval;
+}
+
 /* this enqueues a fragment in the specified receive queue */
 void INTERNAL PtlInternalFragmentToss(
     void *frag,
     ptl_pid_t dest)
 {
-    fprintf(stderr, "fragment toss unimplemented\n");
-    abort();
+    NEMESIS_queue *destQ =
+	(NEMESIS_queue *) (comm_pad + firstpagesize +
+			   (per_proc_comm_buf_size * dest));
+    PtlInternalNEMESISEnqueue(destQ, frag);
 }
 
 /* this enqueues a fragment in the specified ack queue */
@@ -117,8 +173,11 @@ void INTERNAL PtlInternalFragmentAck(
     void *frag,
     ptl_pid_t dest)
 {
-    fprintf(stderr, "fragment ack unimplemented\n");
-    abort();
+    NEMESIS_queue *destQ =
+	(NEMESIS_queue *) (comm_pad + firstpagesize +
+			   (per_proc_comm_buf_size * dest) +
+			   sizeof(NEMESIS_queue));
+    PtlInternalNEMESISEnqueue(destQ, frag);
 }
 
 /* this dequeues a fragment from my receive queue */
