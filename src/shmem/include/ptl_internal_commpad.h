@@ -9,26 +9,52 @@ extern size_t proc_number;
 extern size_t per_proc_comm_buf_size;
 extern size_t firstpagesize;
 
-typedef struct
-{
+#define HDR_TYPE_PUT		0
+#define HDR_TYPE_GET		1
+#define HDR_TYPE_ATOMIC		2
+#define HDR_TYPE_FETCHATOMIC	3
+#define HDR_TYPE_SWAP		4
+#define HDR_TYPE_ACK		5
+
+typedef struct {
+    void *volatile next;
+    unsigned char type;		// 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
     unsigned char ni;
-    unsigned char type;
+    uint32_t src;
+    ptl_process_id_t target_id;
+    ptl_pt_index_t pt_index;
+    ptl_match_bits_t match_bits;
+    ptl_size_t dest_offset;
+    ptl_size_t length;
+    void *user_ptr;
+    void *src_data_ptr;
     union {
 	struct {
+	    ptl_hdr_data_t hdr_data;
+	    ptl_ack_req_t ack_req;
 	} put;
 	struct {
 	} get;
 	struct {
+	    ptl_hdr_data_t hdr_data;
+	    ptl_ack_req_t ack_req;
+	    ptl_op_t operation;
+	    ptl_datatype_t datatype;
 	} atomic;
 	struct {
+	    ptl_hdr_data_t hdr_data;
+	    ptl_op_t operation;
+	    ptl_datatype_t datatype;
 	} fetchatomic;
 	struct {
+	    ptl_hdr_data_t hdr_data;
+	    ptl_op_t operation;
+	    ptl_datatype_t datatype;
 	} swap;
     } info;
-    volatile void * volatile next;
 } ptl_internal_header_t;
 
-extern volatile ptl_internal_header_t *ops;
+extern ptl_internal_header_t **volatile ops;	// the base ptr
 
 
 #endif

@@ -24,8 +24,16 @@
 #include "ptl_internal_LE.h"
 #include "ptl_internal_DM.h"
 
-ptl_internal_nit_t nit = { 0 };
+ptl_internal_nit_t nit = { {0, 0, 0, 0}
+, {0, 0, 0, 0}
+, {{0, 0}
+   , {0, 0}
+   , {0, 0}
+   , {0, 0}
+   }
+};
 ptl_ni_limits_t nit_limits = { 0 };
+
 static volatile uint32_t nit_limits_init = 0;
 
 const ptl_nid_t PTL_NID_ANY = UINT_MAX;
@@ -123,12 +131,11 @@ int API_FUNC PtlNIInit(
 	}
 	//nit_limits.max_iovecs = INT_MAX;      // ???
 	if (desired->max_me_list > 0 &&
-	    desired->max_me_list < (1UL << (sizeof(uint32_t) * 8))) {
+	    desired->max_me_list < (1ULL << (sizeof(uint32_t) * 8))) {
 	    nit_limits.max_me_list = desired->max_me_list;
 	}
 	if (desired->max_msg_size > 0 &&
-	    desired->max_msg_size <=
-	    nit_limits.max_msg_size /* per_proc_comm_buf_size - sizeof(ptl_internal_header_t) */ ) {
+	    desired->max_msg_size < nit_limits.max_msg_size) {
 	    nit_limits.max_msg_size = desired->max_msg_size;
 	}
 	if (desired->max_atomic_size > 0 && desired->max_atomic_size <= 8) {

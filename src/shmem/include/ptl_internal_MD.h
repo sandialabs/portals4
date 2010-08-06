@@ -9,4 +9,9 @@ void PtlInternalMDNITeardown(
 int PtlInternalMDHandleValidator(
     ptl_handle_md_t handle);
 
+char *PtlInternalMDDataPtr(
+    ptl_handle_md_t handle);
+ptl_size_t PtlInternalMDLength(
+    ptl_handle_md_t handle);
+
 #endif

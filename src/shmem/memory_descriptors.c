@@ -38,7 +38,9 @@ typedef struct {
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
 
-void INTERNAL PtlInternalMDNISetup(unsigned int ni, ptl_size_t limit)
+void INTERNAL PtlInternalMDNISetup(
+    unsigned int ni,
+    ptl_size_t limit)
 {
     ptl_internal_md_t *tmp;
     while ((tmp =
@@ -70,7 +72,8 @@ void INTERNAL PtlInternalMDNISetup(unsigned int ni, ptl_size_t limit)
     }
 }
 
-void INTERNAL PtlInternalMDNITeardown(unsigned int ni)
+void INTERNAL PtlInternalMDNITeardown(
+    unsigned int ni)
 {
     ptl_internal_md_t *tmp = mds[ni];
     mds[ni] = NULL;
@@ -79,7 +82,8 @@ void INTERNAL PtlInternalMDNITeardown(unsigned int ni)
     free(tmp);
 }
 
-int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle)
+int INTERNAL PtlInternalMDHandleValidator(
+    ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
     if (md.s.selector != HANDLE_MD_CODE) {
@@ -127,7 +131,9 @@ int API_FUNC PtlMDBind(
     mdh.s.ni = ni.s.ni;
     for (offset = 0; offset < nit_limits.max_mds; ++offset) {
 	if (mds[ni.s.ni][offset].in_use == MD_FREE) {
-	    if (PtlInternalAtomicCas32(&(mds[ni.s.ni][offset].in_use), MD_FREE, MD_IN_USE) == MD_FREE) {
+	    if (PtlInternalAtomicCas32
+		(&(mds[ni.s.ni][offset].in_use), MD_FREE,
+		 MD_IN_USE) == MD_FREE) {
 		mds[ni.s.ni][offset].visible = *md;
 		mdh.s.code = offset;
 		break;
@@ -157,4 +163,18 @@ int API_FUNC PtlMDRelease(
 #endif
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
     return PTL_OK;
+}
+
+char INTERNAL *PtlInternalMDDataPtr(
+    ptl_handle_md_t handle)
+{
+    const ptl_internal_handle_converter_t md = { handle };
+    return mds[md.s.ni][md.s.code].visible.start;
+}
+
+ptl_size_t INTERNAL PtlInternalMDLength(
+    ptl_handle_md_t handle)
+{
+    const ptl_internal_handle_converter_t md = { handle };
+    return mds[md.s.ni][md.s.code].visible.length;
 }

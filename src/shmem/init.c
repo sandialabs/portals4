@@ -21,19 +21,34 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_fragments.h"
 
 volatile char *comm_pad = NULL;
 size_t num_siblings = 0;
 size_t proc_number = 0;
 size_t per_proc_comm_buf_size = 0;
 size_t firstpagesize = 0;
-volatile ptl_internal_header_t *ops = NULL;
+ptl_internal_header_t **volatile ops = NULL;
 
 const ptl_pid_t PTL_PID_ANY = UINT_MAX;
 
 static unsigned int init_ref_count = 0;
 static size_t comm_pad_size = 0;
 static const char *comm_pad_shm_name = NULL;
+
+#define PARSE_ENV_NUM(env_str, var, reqd) do { \
+    char * strerr; \
+    const char *str = getenv(env_str); \
+    if (str == NULL) { \
+	if (reqd == 1) goto exit_fail; \
+    } else { \
+	size_t tmp = strtol(str, &strerr, 10); \
+	if (strerr == NULL || strerr == str || *strerr != 0) { \
+	    goto exit_fail; \
+	} \
+	var = tmp; \
+    } \
+} while (0)
 
 /* The trick to this function is making it thread-safe: multiple threads can
  * all call PtlInit concurrently, and all will wait until initialization is
@@ -52,8 +67,6 @@ int API_FUNC PtlInit(
 
     if (race == 0) {
 	int shm_fd;
-	char *strerr = NULL;
-	const char *str = NULL;
 
 #ifdef _SC_PAGESIZE
 	firstpagesize = sysconf(_SC_PAGESIZE);
@@ -70,35 +83,18 @@ int API_FUNC PtlInit(
 	if (comm_pad_shm_name == NULL) {
 	    goto exit_fail;
 	}
-	str = getenv("PORTALS4_NUM_PROCS");
-	if (str == NULL) {
-	    goto exit_fail;
-	}
-	num_siblings = strtol(str, &strerr, 10);
-	if (strerr == NULL || strerr == str) {
-	    /* could not parse! */
-	    goto exit_fail;
-	}
-	str = getenv("PORTALS4_RANK");
-	if (str == NULL) {
-	    goto exit_fail;
-	}
-	proc_number = strtol(str, &strerr, 10);
-	if (strerr == NULL || strerr == str) {
-	    /* could not parse! */
-	    goto exit_fail;
-	}
-	str = getenv("PORTALS4_COMM_SIZE");
-	if (str == NULL) {
-	    goto exit_fail;
-	}
-	per_proc_comm_buf_size = strtol(str, &strerr, 10);
-	if (strerr == NULL || strerr == str) {
-	    /* could not parse! */
-	    goto exit_fail;
-	}
-	comm_pad_size =
-	    firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1)); // the one extra is for the collator
+	PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 1);
+	PARSE_ENV_NUM("PORTALS4_RANK", proc_number, 1);
+	PARSE_ENV_NUM("PORTALS4_COMM_SIZE", per_proc_comm_buf_size, 1);
+	PARSE_ENV_NUM("PORTALS4_SMALL_FRAG_SIZE", SMALL_FRAG_SIZE, 0);
+	PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_SIZE", LARGE_FRAG_SIZE, 0);
+	PARSE_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", SMALL_FRAG_COUNT, 0);
+	PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", LARGE_FRAG_COUNT, 0);
+	assert(((SMALL_FRAG_COUNT * SMALL_FRAG_SIZE) +
+		(LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
+		(sizeof(void *) * 4)) == per_proc_comm_buf_size);
+
+	comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));	// the one extra is for the collator
 
 	memset(&nit, 0, sizeof(ptl_internal_nit_t));
 	nit_limits.max_mes = 128 * 4;  // Thus, the ME/LE list for each NI can be maxed out
@@ -109,7 +105,7 @@ int API_FUNC PtlInit(
 	nit_limits.max_pt_index = 63;
 	nit_limits.max_iovecs = 0;     // XXX: ???
 	nit_limits.max_me_list = 128;  // Arbitrary
-	nit_limits.max_msg_size = per_proc_comm_buf_size - (sizeof(ptl_internal_header_t) * num_siblings);	// may need to be smaller
+	nit_limits.max_msg_size = 0xffffffffffffffffULL;	// may need to be smaller
 	nit_limits.max_atomic_size = 8;	// XXX: does not apply to all architectures
 
 	/* Open the communication pad */
@@ -128,11 +124,9 @@ int API_FUNC PtlInit(
 	    goto exit_fail;
 	}
 	assert(close(shm_fd) == 0);
-	/* Locate my buffer of ops */
-	ops =
-	    (ptl_internal_header_t *) (comm_pad + firstpagesize +
-				       (per_proc_comm_buf_size *
-					proc_number));
+	/* Locate and initialize my fragments memory (beginning with a pointer to headers) */
+	PtlInternalFragmentSetup((comm_pad + firstpagesize +
+				  (per_proc_comm_buf_size * proc_number)));
 
 	/**************************************************************************
 	 * Can Now Announce My Presence
