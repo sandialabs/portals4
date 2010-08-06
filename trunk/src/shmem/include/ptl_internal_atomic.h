@@ -77,4 +77,14 @@ static inline void *PtlInternalAtomicCasPtr(
 }
 #endif /* SANDIA_BUILTIN_CAS */
 
+static inline void *PtlInternalAtomicSwapPtr(void *volatile*addr, void*newval)
+{
+    void *oldval = *addr;
+    void *tmp;
+    while ((tmp = PtlInternalAtomicCasPtr(addr, oldval, newval)) != oldval) {
+	oldval = tmp;
+    }
+    return oldval;
+}
+
 #endif /* PTL_INTERNAL_ATOMIC_H */
