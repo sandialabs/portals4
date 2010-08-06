@@ -28,7 +28,6 @@ size_t num_siblings = 0;
 size_t proc_number = 0;
 size_t per_proc_comm_buf_size = 0;
 size_t firstpagesize = 0;
-ptl_internal_header_t **volatile ops = NULL;
 
 const ptl_pid_t PTL_PID_ANY = UINT_MAX;
 

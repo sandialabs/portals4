@@ -20,6 +20,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
+#include "ptl_internal_error.h"
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff;	/* (2<<29) & 0x1fffffff */
 
@@ -172,18 +173,22 @@ int INTERNAL PtlInternalCTHandleValidator(
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ct = { handle };
     if (ct.s.selector != HANDLE_CT_CODE) {
+	VERBOSE_ERROR("Expected CT handle, but it's not a CT handle\n");
 	return PTL_ARG_INVALID;
     }
     if (none_ok == 1 && handle == PTL_CT_NONE) {
 	return PTL_OK;
     }
-    if (ct.s.ni > 3 || ct.s.code != 0 || (nit.refcount[ct.s.ni] == 0)) {
+    if (ct.s.ni > 3 || ct.s.code > nit_limits.max_cts || (nit.refcount[ct.s.ni] == 0)) {
+	VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n", ct.s.ni, ct.s.code, nit_limits.max_cts);
 	return PTL_ARG_INVALID;
     }
     if (ct_events[ct.s.ni] == NULL) {
+	VERBOSE_ERROR("CT table for NI uninitialized\n");
 	return PTL_ARG_INVALID;
     }
     if (ct_events[ct.s.ni][ct.s.code].enabled != CT_READY) {
+	VERBOSE_ERROR("CT appears to be deallocated\n");
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -273,7 +278,7 @@ int API_FUNC PtlCTGet(
     }
 #endif
     *event = ct_events[ct.s.ni][ct.s.code].data;
-    return PTL_FAIL;
+    return PTL_OK;
 }
 
 int API_FUNC PtlCTWait(
@@ -295,6 +300,7 @@ int API_FUNC PtlCTWait(
     /* I wish this loop were tighter, but because CT's can be
      * destroyed/reallocated unexpectedly, it can't be */
     my_generation = cte->generation;
+    //printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long long)ct.i, (unsigned long long)test);
     while (cte->generation == my_generation) {
 	ptl_ct_event_t tmpread;
 	PtlInternalAtomicReadCT(&tmpread, &(cte->data));

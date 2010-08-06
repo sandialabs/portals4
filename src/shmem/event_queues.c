@@ -59,3 +59,9 @@ int API_FUNC PtlEQPoll(
 {
     return PTL_FAIL;
 }
+
+void INTERNAL PtlInternalEQPush(
+    ptl_handle_eq_t eq_handle,
+    ptl_event_t * event)
+{
+}

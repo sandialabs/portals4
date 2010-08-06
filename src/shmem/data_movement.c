@@ -23,6 +23,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_EQ.h"
 
 typedef union {
     struct {
@@ -68,6 +69,7 @@ int API_FUNC PtlPut(
     ptl_hdr_data_t hdr_data)
 {
     ptl_internal_header_t *qme;
+    ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -96,7 +98,6 @@ int API_FUNC PtlPut(
 #endif
     /* step 1: get a local memory fragment */
     qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("fetched a fragment (%p)\n", qme);
     /* step 2: fill the op structure */
     qme->type = HDR_TYPE_PUT;
     qme->ni = md.s.ni;
@@ -106,7 +107,8 @@ int API_FUNC PtlPut(
     qme->dest_offset = remote_offset;
     qme->length = length;
     qme->user_ptr = user_ptr;
-    qme->src_data_ptr = NULL;
+    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
+    qme->src_data_ptr = (void*)(intptr_t)md_handle;
     qme->info.put.hdr_data = hdr_data;
     qme->info.put.ack_req = ack_req;
     /* step 3: load up the data */
@@ -127,6 +129,23 @@ int API_FUNC PtlPut(
 	case 3:		       // Physical
 	    PtlInternalFragmentToss(qme, target_id.phys.pid);
 	    break;
+    }
+    /* step 5: report the send event */
+    mdptr = PtlInternalMDFetch(md_handle);
+    if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
+	ptl_ct_event_t cte = {1, 0};
+	PtlCTInc(mdptr->ct_handle, cte);
+    }
+    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
+	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+	    ptl_event_t e;
+	    e.type = PTL_EVENT_SEND;
+	    e.event.ievent.mlength = length;
+	    e.event.ievent.offset = local_offset;
+	    e.event.ievent.user_ptr = user_ptr;
+	    e.event.ievent.ni_fail_type = PTL_NI_OK;
+	    PtlInternalEQPush(mdptr->eq_handle, &e);
+	}
     }
     return PTL_OK;
 }
@@ -170,7 +189,6 @@ int API_FUNC PtlGet(
 #endif
     /* step 1: get a local memory fragment */
     qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("fetched a fragment (%p)\n", qme);
     /* step 2: fill the op structure */
     qme->type = HDR_TYPE_GET;
     qme->ni = md.s.ni;
@@ -180,7 +198,8 @@ int API_FUNC PtlGet(
     qme->dest_offset = remote_offset;
     qme->length = length;
     qme->user_ptr = user_ptr;
-    qme->src_data_ptr = NULL;
+    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
+    qme->src_data_ptr = (void*)(intptr_t)md_handle;
     /* step 3: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
@@ -192,6 +211,7 @@ int API_FUNC PtlGet(
 	    PtlInternalFragmentToss(qme, target_id.phys.pid);
 	    break;
     }
+    /* no send event to report */
     return PTL_OK;
 }
 
@@ -210,6 +230,7 @@ int API_FUNC PtlAtomic(
     ptl_datatype_t datatype)
 {
     ptl_internal_header_t *qme;
+    ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -222,6 +243,9 @@ int API_FUNC PtlAtomic(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
+	return PTL_ARG_INVALID;
+    }
+    if (operation == PTL_SWAP || operation == PTL_MSWAP || operation == PTL_CSWAP) {
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -241,7 +265,6 @@ int API_FUNC PtlAtomic(
 #endif
     /* step 1: get a local memory fragment */
     qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("fetched a fragment (%p)\n", qme);
     /* step 2: fill the op structure */
     qme->type = HDR_TYPE_ATOMIC;
     qme->ni = md.s.ni;
@@ -251,7 +274,8 @@ int API_FUNC PtlAtomic(
     qme->dest_offset = remote_offset;
     qme->length = length;
     qme->user_ptr = user_ptr;
-    qme->src_data_ptr = NULL;
+    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
+    qme->src_data_ptr = (void*)(intptr_t)md_handle;
     qme->info.atomic.hdr_data = hdr_data;
     qme->info.atomic.ack_req = ack_req;
     qme->info.atomic.operation = operation;
@@ -268,6 +292,23 @@ int API_FUNC PtlAtomic(
 	case 3:		       // Physical
 	    PtlInternalFragmentToss(qme, target_id.phys.pid);
 	    break;
+    }
+    /* step 5: report the send event */
+    mdptr = PtlInternalMDFetch(md_handle);
+    if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
+	ptl_ct_event_t cte = {1, 0};
+	PtlCTInc(mdptr->ct_handle, cte);
+    }
+    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
+	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+	    ptl_event_t e;
+	    e.type = PTL_EVENT_SEND;
+	    e.event.ievent.mlength = length;
+	    e.event.ievent.offset = local_offset;
+	    e.event.ievent.user_ptr = user_ptr;
+	    e.event.ievent.ni_fail_type = PTL_NI_OK;
+	    PtlInternalEQPush(mdptr->eq_handle, &e);
+	}
     }
     return PTL_OK;
 }
@@ -288,6 +329,7 @@ int API_FUNC PtlFetchAtomic(
     ptl_datatype_t datatype)
 {
     ptl_internal_header_t *qme;
+    ptl_md_t *mdptr;
     ptl_internal_srcdata_t *extra_info;
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -310,6 +352,9 @@ int API_FUNC PtlFetchAtomic(
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
 	return PTL_ARG_INVALID;
     }
+    if (operation == PTL_SWAP || operation == PTL_MSWAP || operation == PTL_CSWAP) {
+	return PTL_ARG_INVALID;
+    }
     if (get_md.s.ni != put_md.s.ni) {
 	return PTL_ARG_INVALID;
     }
@@ -330,7 +375,6 @@ int API_FUNC PtlFetchAtomic(
 #endif
     /* step 1: get a local memory fragment */
     qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("fetched a fragment (%p)\n", qme);
     /* step 2: fill the op structure */
     qme->type = HDR_TYPE_FETCHATOMIC;
     qme->ni = get_md.s.ni;
@@ -364,6 +408,23 @@ int API_FUNC PtlFetchAtomic(
 	    PtlInternalFragmentToss(qme, target_id.phys.pid);
 	    break;
     }
+    /* step 5: report the send event */
+    mdptr = PtlInternalMDFetch(put_md_handle);
+    if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
+	ptl_ct_event_t cte = {1, 0};
+	PtlCTInc(mdptr->ct_handle, cte);
+    }
+    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
+	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+	    ptl_event_t e;
+	    e.type = PTL_EVENT_SEND;
+	    e.event.ievent.mlength = length;
+	    e.event.ievent.offset = local_put_offset;
+	    e.event.ievent.user_ptr = user_ptr;
+	    e.event.ievent.ni_fail_type = PTL_NI_OK;
+	    PtlInternalEQPush(mdptr->eq_handle, &e);
+	}
+    }
     return PTL_OK;
 }
 
@@ -387,7 +448,6 @@ int API_FUNC PtlSwap(
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
     ptl_internal_header_t *qme;
     ptl_internal_srcdata_t *extra_info;
-    char *dataptr;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -402,6 +462,9 @@ int API_FUNC PtlSwap(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
+	return PTL_ARG_INVALID;
+    }
+    if (operation != PTL_SWAP && operation != PTL_MSWAP && operation != PTL_CSWAP) {
 	return PTL_ARG_INVALID;
     }
     if (get_md.s.ni != put_md.s.ni) {
@@ -424,7 +487,6 @@ int API_FUNC PtlSwap(
 #endif
     /* step 1: get a local memory fragment */
     qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("fetched a fragment (%p)\n", qme);
     /* step 2: fill the op structure */
     qme->type = HDR_TYPE_SWAP;
     qme->ni = get_md.s.ni;
@@ -445,33 +507,37 @@ int API_FUNC PtlSwap(
     qme->info.swap.operation = operation;
     qme->info.swap.datatype = datatype;
     /* step 3: load up the data */
-    dataptr = (char *)(qme + 1);
-    switch (datatype) {
-	case PTL_CHAR:
-	case PTL_UCHAR:
-	    memcpy(dataptr, operand, 1);
-	    ++dataptr;
-	    break;
-	case PTL_SHORT:
-	case PTL_USHORT:
-	    memcpy(dataptr, operand, 2);
-	    dataptr += 2;
-	    break;
-	case PTL_INT:
-	case PTL_UINT:
-	case PTL_FLOAT:
-	    memcpy(dataptr, operand, 4);
-	    dataptr += 4;
-	    break;
-	case PTL_LONG:
-	case PTL_ULONG:
-	case PTL_DOUBLE:
-	    memcpy(dataptr, operand, 8);
-	    dataptr += 8;
-	    break;
+    {
+	char *dataptr = (char *)(qme + 1);
+	if (operation == PTL_CSWAP || operation == PTL_MSWAP) {
+	    switch (datatype) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    memcpy(dataptr, operand, 1);
+		    ++dataptr;
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    memcpy(dataptr, operand, 2);
+		    dataptr += 2;
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    memcpy(dataptr, operand, 4);
+		    dataptr += 4;
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    memcpy(dataptr, operand, 8);
+		    dataptr += 8;
+		    break;
+	    }
+	}
+	memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
+		length);
     }
-    memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
-	   length);
     /* step 4: enqueue the op structure on the target */
     switch (get_md.s.ni) {
 	case 0:
@@ -482,6 +548,25 @@ int API_FUNC PtlSwap(
 	case 3:		       // Physical
 	    PtlInternalFragmentToss(qme, target_id.phys.pid);
 	    break;
+    }
+    /* step 5: report the send event */
+    {
+	ptl_md_t *mdptr = PtlInternalMDFetch(put_md_handle);
+	if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
+	    ptl_ct_event_t cte = {1, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	}
+	if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
+	    if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+		ptl_event_t e;
+		e.type = PTL_EVENT_SEND;
+		e.event.ievent.mlength = length;
+		e.event.ievent.offset = local_put_offset;
+		e.event.ievent.user_ptr = user_ptr;
+		e.event.ievent.ni_fail_type = PTL_NI_OK;
+		PtlInternalEQPush(mdptr->eq_handle, &e);
+	    }
+	}
     }
     return PTL_OK;
 }

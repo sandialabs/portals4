@@ -14,7 +14,6 @@ extern size_t firstpagesize;
 #define HDR_TYPE_ATOMIC		2
 #define HDR_TYPE_FETCHATOMIC	3
 #define HDR_TYPE_SWAP		4
-#define HDR_TYPE_ACK		5
 
 typedef struct {
     void *volatile next;
@@ -53,8 +52,5 @@ typedef struct {
 	} swap;
     } info;
 } ptl_internal_header_t;
-
-extern ptl_internal_header_t **volatile ops;	// the base ptr
-
 
 #endif
