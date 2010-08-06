@@ -11,6 +11,7 @@ libportals_la_SOURCES += \
 			 shmem/matching_list_entries.c \
 			 shmem/process_identification.c \
 			 shmem/data_movement.c \
+			 shmem/fragments.c \
 			 shmem/queues.c \
 			 shmem/init.c
 

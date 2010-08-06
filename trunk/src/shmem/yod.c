@@ -22,6 +22,8 @@
 #include <sys/wait.h>		       /* for waitpid() */
 #include <string.h>		       /* for memset() */
 #include <pthread.h>		       /* for all pthread functions */
+#include <signal.h>		       /* for kill() */
+#include <errno.h>		       /* for errno */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
 /* this is getting kinda idiotic */
@@ -44,6 +46,12 @@ static void print_usage(
 static void *collator(
     void *junk);
 
+#define EXPORT_ENV_NUM(env_str, val) do { \
+    char str[10]; \
+    snprintf(str, 10, "%lu", (unsigned long)val); \
+    assert(setenv(env_str, str, 1) == 0); \
+} while (0)
+
 int main(
     int argc,
     char *argv[])
@@ -51,18 +59,19 @@ int main(
     char shmname[PSHMNAMLEN + 1];
     size_t commsize = 1048576;	// 1MB
     size_t buffsize = getpagesize();
-    char countstr[10];
-    char procstr[10];
-    char commstr[20];
     pid_t *pids;
     int shm_fd;
     int err = 0;
     pthread_t collator_thread;
     int ct_spawned = 1;
+    size_t small_frag_size = 128;
+    size_t small_frag_count = 512;
+    size_t large_frag_size = 4096;
+    size_t large_frag_count = 128;
 
     {
 	int opt;
-	while ((opt = getopt(argc, argv, "b:hc:")) != -1) {
+	while ((opt = getopt(argc, argv, "l:s:hc:L:S:")) != -1) {
 	    switch (opt) {
 		case 'h':
 		    print_usage(0);
@@ -84,16 +93,53 @@ int main(
 		    }
 		}
 		    break;
-		case 'b':
+		case 's':
 		{
 		    char *opterr = NULL;
-		    commsize = strtol(optarg, &opterr, 0);
-		    if (opterr == NULL || opterr == optarg) {
+		    small_frag_size = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg || *opterr == 0) {
 			fprintf(stderr,
-				"Error: Unparseable communication buffer size! (%s)\n",
+				"Error: Unparseable small fragment size! (%s)\n",
 				optarg);
 			print_usage(1);
 		    }
+		    break;
+		}
+		case 'l':
+		{
+		    char *opterr = NULL;
+		    large_frag_size = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+			fprintf(stderr,
+				"Error: Unparseable large fragment size! (%s)\n",
+				optarg);
+			print_usage(1);
+		    }
+		    break;
+		}
+		case 'S':
+		{
+		    char *opterr = NULL;
+		    small_frag_count = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+			fprintf(stderr,
+				"Error: Unparseable small fragment count! (%s)\n",
+				optarg);
+			print_usage(1);
+		    }
+		    break;
+		}
+		case 'L':
+		{
+		    char *opterr = NULL;
+		    large_frag_count = strtol(optarg, &opterr, 0);
+		    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+			fprintf(stderr,
+				"Error: Unparseable large fragment count! (%s)\n",
+				optarg);
+			print_usage(1);
+		    }
+		    break;
 		}
 		case ':':
 		    fprintf(stderr, "Error: Option `%c' needs a value!\n",
@@ -124,6 +170,9 @@ int main(
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
+    commsize =
+	(small_frag_count * small_frag_size) +
+	(large_frag_count * large_frag_size) + (sizeof(void *) * 4);
     buffsize += commsize * (count + 1);	// the one extra is for the collator
 
     /* Establish the communication pad */
@@ -153,21 +202,25 @@ int main(
 	}
     } else {
 	perror("yod-> shm_open failed");
+	if (shm_unlink(shmname) == -1) {
+	    perror("yod-> attempting to clean up; shm_unlink failed");
+	}
 	exit(EXIT_FAILURE);
     }
 
-    snprintf(commstr, 20, "%lu", commsize);
-    assert(setenv("PORTALS4_COMM_SIZE", commstr, 1) == 0);
-    snprintf(countstr, 10, "%li", count);
-    assert(setenv("PORTALS4_NUM_PROCS", countstr, 1) == 0);
     pids = malloc(sizeof(pid_t) * (count + 1));
-    assert(setenv("PORTALS4_COLLECTOR_NID", "0", 1) == 0);
-    assert(setenv("PORTALS4_COLLECTOR_PID", countstr, 1) == 0);
+    EXPORT_ENV_NUM("PORTALS4_COMM_SIZE", commsize);
+    EXPORT_ENV_NUM("PORTALS4_NUM_PROCS", count);
+    EXPORT_ENV_NUM("PORTALS4_COLLECTOR_NID", 0);
+    EXPORT_ENV_NUM("PORTALS4_COLLECTOR_PID", count);
+    EXPORT_ENV_NUM("PORTALS4_SMALL_FRAG_SIZE", small_frag_size);
+    EXPORT_ENV_NUM("PORTALS4_LARGE_FRAG_SIZE", large_frag_size);
+    EXPORT_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", small_frag_count);
+    EXPORT_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", large_frag_count);
 
     /* Launch children */
     for (long c = 0; c < count; ++c) {
-	snprintf(procstr, 10, "%li", c);
-	assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
+	EXPORT_ENV_NUM("PORTALS4_RANK", c);
 	if ((pids[c] = fork()) == 0) {
 	    /* child */
 	    execv(argv[optind], argv + optind);
@@ -193,15 +246,30 @@ int main(
     }
 
     /* Wait for all children to exit */
-    for (long c = 0; c < count; ++c) {
+    for (size_t c = 0; c < count; ++c) {
 	int status;
-	if (waitpid(pids[c], &status, 0) != pids[c]) {
-	    perror("yod-> waitpid failed");
+	pid_t exited;
+	if ((exited = wait(&status)) == -1) {
+	    perror("yod-> wait failed");
 	}
 	if (!WIFEXITED(status)) {
+	    size_t d;
 	    ++err;
-	    fprintf(stderr, "yod-> child pid %i died unexpectedly\n",
+	    fprintf(stderr,
+		    "yod-> child pid %i died unexpectedly, killing everyone\n",
 		    (int)pids[c]);
+	    for (d = 0; d < count; ++d) {
+		if (pids[d] != exited) {
+		    if (kill(pids[d], SIGKILL) == -1) {
+			if (errno != ESRCH) {
+			    perror("yod-> kill failed!\n");
+			} else {
+			    fprintf(stderr, "yod-> child %i already dead\n",
+				    (int)pids[d]);
+			}
+		    }
+		}
+	    }
 	} else if (WEXITSTATUS(status) > 0) {
 	    ++err;
 	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c],
