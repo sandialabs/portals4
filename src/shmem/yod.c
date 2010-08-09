@@ -41,6 +41,9 @@
 
 static long count = 0;
 
+static char shmname[PSHMNAMLEN + 1];
+static void cleanup(int s);
+
 static void print_usage(
     int ex);
 static void *collator(
@@ -56,7 +59,6 @@ int main(
     int argc,
     char *argv[])
 {
-    char shmname[PSHMNAMLEN + 1];
     size_t commsize = 1048576;	// 1MB
     size_t buffsize = getpagesize();
     pid_t *pids;
@@ -245,6 +247,9 @@ int main(
 	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
 
+    /* Clean up after Ctrl-C */
+    signal(SIGINT, cleanup);
+
     /* Wait for all children to exit */
     for (size_t c = 0; c < count; ++c) {
 	int status;
@@ -284,11 +289,19 @@ int main(
     }
 
     /* Cleanup */
+    cleanup(0);
+    return err;
+}
+
+static void cleanup(int s)
+{
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");
 	exit(EXIT_FAILURE);
     }
-    return err;
+    if (s != 0) {
+	exit(EXIT_FAILURE);
+    }
 }
 
 void *collator(
