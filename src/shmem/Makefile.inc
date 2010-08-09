@@ -12,6 +12,7 @@ libportals_la_SOURCES += \
 			 shmem/process_identification.c \
 			 shmem/data_movement.c \
 			 shmem/fragments.c \
+			 shmem/nemesis.c \
 			 shmem/queues.c \
 			 shmem/init.c
 
@@ -30,4 +31,5 @@ noinst_HEADERS += \
 		shmem/include/ptl_internal_nit.h \
 		shmem/include/ptl_internal_pid.h \
 		shmem/include/ptl_internal_queues.h \
+		shmem/include/ptl_internal_nemesis.h \
 		shmem/include/ptl_visibility.h

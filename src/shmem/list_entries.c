@@ -20,7 +20,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_LE.h"
-#include "ptl_internal_queues.h"
+#include "ptl_internal_nemesis.h"
 
 typedef struct {
     ptl_le_t visible;
@@ -28,17 +28,17 @@ typedef struct {
 } ptl_internal_le_t;
 
 typedef struct {
+    void *next;
     ptl_internal_handle_converter_t ni_handle;
     ptl_pt_index_t pt_index;
     ptl_le_t le;
     ptl_list_t ptl_list;
     void *user_ptr;
     ptl_internal_handle_converter_t le_handle;
-    void *next;
 } ptl_internal_appendLE_t;
 
 static ptl_internal_le_t *les = NULL;
-static ptl_internal_q_t appends;
+static NEMESIS_blocking_queue appends;
 static pthread_t LEthread;
 
 static void *LEprocessor(
@@ -49,7 +49,7 @@ static void *LEprocessor(
 	ptl_table_entry_t *t;
 	ptl_internal_le_t *entries;
 #warning LEprocessor needs a better poll/awaken implementation
-	while ((append_me = PtlInternalQueuePop(&appends)) == NULL) {
+	while ((append_me = PtlInternalNEMESISBlockingDequeue(&appends)) == NULL) {
 #if defined(HAVE_PTHREAD_YIELD)
 	    pthread_yield();
 #elif defined(HAVE_SCHED_YIELD)
@@ -156,7 +156,7 @@ void INTERNAL PtlInternalLENISetup(
 	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #endif
 	assert((((intptr_t) tmp) & 0x7) == 0);
-	PtlInternalQueueInit(&appends);
+	PtlInternalNEMESISBlockingInit(&appends);
 	__sync_synchronize();
 	les = tmp;
 	assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
@@ -173,7 +173,7 @@ void INTERNAL PtlInternalLENITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
-    PtlInternalQueueDestroy(&appends);
+    PtlInternalNEMESISBlockingDestroy(&appends);
 }
 
 int API_FUNC PtlLEAppend(
@@ -226,7 +226,7 @@ int API_FUNC PtlLEAppend(
     Qentry->le_handle.s = leh;
     memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
     /* append Qentry to the appends queue */
-    PtlInternalQueueAppend(&appends, Qentry);
+    PtlInternalNEMESISBlockingEnqueue(&appends, (NEMESIS_entry*)Qentry);
     return PTL_OK;
 }
 

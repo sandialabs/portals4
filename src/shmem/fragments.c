@@ -14,6 +14,7 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
+#include "ptl_internal_nemesis.h"
 #include "ptl_visibility.h"
 
 /* Fragment format:
@@ -31,15 +32,10 @@ size_t LARGE_FRAG_SIZE = 4096;
 size_t LARGE_FRAG_COUNT = 128;
 
 typedef struct {
-    void *next;
+    void *next; // for NEMESIS_entry
     uint64_t size;
     char data[];
 } fragment_hdr_t;
-
-typedef struct {
-    fragment_hdr_t *volatile head;
-    fragment_hdr_t *volatile tail;
-} NEMESIS_queue;
 
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
@@ -122,41 +118,6 @@ void INTERNAL *PtlInternalFragmentFetch(
     return retv->data;
 }
 
-/* Fragment queueing uses the NEMESIS lock-free queue protocol from
- * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
- * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
- * with multiple enqueuers and a single de-queuer. */
-static void PtlInternalNEMESISEnqueue(
-    NEMESIS_queue * q,
-    fragment_hdr_t * f)
-{
-    fragment_hdr_t *prev =
-	PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), f);
-    if (prev == NULL) {
-	q->head = f;
-    } else {
-	prev->next = f;
-    }
-}
-
-static fragment_hdr_t *PtlInternalNEMESISDequeue(
-    NEMESIS_queue * q)
-{
-    fragment_hdr_t *retval = q->head;
-    if (retval->next != NULL) {
-	q->head = retval->next;
-    } else {
-	fragment_hdr_t *old;
-	q->head = NULL;
-	old = PtlInternalAtomicCasPtr(&(q->tail), retval, NULL);
-	if (old != retval) {
-	    while (retval->next == NULL) ;
-	    q->head = retval->next;
-	}
-    }
-    return retval;
-}
-
 /* this enqueues a fragment in the specified receive queue */
 void INTERNAL PtlInternalFragmentToss(
     void *frag,
@@ -165,7 +126,7 @@ void INTERNAL PtlInternalFragmentToss(
     NEMESIS_queue *destQ =
 	(NEMESIS_queue *) (comm_pad + firstpagesize +
 			   (per_proc_comm_buf_size * dest));
-    PtlInternalNEMESISEnqueue(destQ, frag);
+    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry*)frag);
 }
 
 /* this enqueues a fragment in the specified ack queue */
@@ -177,7 +138,7 @@ void INTERNAL PtlInternalFragmentAck(
 	(NEMESIS_queue *) (comm_pad + firstpagesize +
 			   (per_proc_comm_buf_size * dest) +
 			   sizeof(NEMESIS_queue));
-    PtlInternalNEMESISEnqueue(destQ, frag);
+    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry*)frag);
 }
 
 /* this dequeues a fragment from my receive queue */
