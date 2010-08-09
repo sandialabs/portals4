@@ -52,8 +52,8 @@ static void *collator(
     void *junk);
 
 #define EXPORT_ENV_NUM(env_str, val) do { \
-    char str[10]; \
-    snprintf(str, 10, "%lu", (unsigned long)val); \
+    char str[21]; \
+    snprintf(str, 21, "%lu", (unsigned long)val); \
     assert(setenv(env_str, str, 1) == 0); \
 } while (0)
 
