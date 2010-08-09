@@ -22,6 +22,7 @@
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_nemesis.h"
 
 volatile char *comm_pad = NULL;
 size_t num_siblings = 0;
@@ -91,7 +92,7 @@ int API_FUNC PtlInit(
 	PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", LARGE_FRAG_COUNT, 0);
 	assert(((SMALL_FRAG_COUNT * SMALL_FRAG_SIZE) +
 		(LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
-		(sizeof(void *) * 4)) == per_proc_comm_buf_size);
+		(sizeof(NEMESIS_blocking_queue) * 2)) == per_proc_comm_buf_size);
 
 	comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));	// the one extra is for the collator
 

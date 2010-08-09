@@ -35,6 +35,8 @@
 # include <sys/posix_shm.h>	       /* for PSHMNAMLEN */
 #endif
 
+#include "ptl_internal_nemesis.h"
+
 #ifndef PSHMNAMLEN
 # define PSHMNAMLEN 100
 #endif
@@ -174,7 +176,7 @@ int main(
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
     commsize =
 	(small_frag_count * small_frag_size) +
-	(large_frag_count * large_frag_size) + (sizeof(void *) * 4);
+	(large_frag_count * large_frag_size) + (sizeof(NEMESIS_blocking_queue) * 2);
     buffsize += commsize * (count + 1);	// the one extra is for the collator
 
     /* Establish the communication pad */
@@ -257,7 +259,7 @@ int main(
 	if ((exited = wait(&status)) == -1) {
 	    perror("yod-> wait failed");
 	}
-	if (!WIFEXITED(status)) {
+	if (WIFSIGNALED(status)) {
 	    size_t d;
 	    ++err;
 	    fprintf(stderr,
@@ -275,7 +277,7 @@ int main(
 		    }
 		}
 	    }
-	} else if (WEXITSTATUS(status) > 0) {
+	} else if (WIFEXITED(status) && WEXITSTATUS(status) > 0) {
 	    ++err;
 	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c],
 		    WEXITSTATUS(status));
