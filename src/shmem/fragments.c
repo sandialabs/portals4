@@ -32,15 +32,15 @@ size_t LARGE_FRAG_SIZE = 4096;
 size_t LARGE_FRAG_COUNT = 128;
 
 typedef struct {
-    void *next; // for NEMESIS_entry
+    void *next;			// for NEMESIS_entry
     uint64_t size;
     char data[];
 } fragment_hdr_t;
 
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
-static NEMESIS_queue *receiveQ = NULL;
-static NEMESIS_queue *ackQ = NULL;
+static NEMESIS_blocking_queue *receiveQ = NULL;
+static NEMESIS_blocking_queue *ackQ = NULL;
 
 void INTERNAL PtlInternalFragmentSetup(
     volatile char *buf)
@@ -52,13 +52,11 @@ void INTERNAL PtlInternalFragmentSetup(
     SMALL_FRAG_PAYLOAD = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);
     LARGE_FRAG_PAYLOAD = LARGE_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);
     /* first, initialize the receive queue */
-    receiveQ = (NEMESIS_queue *) buf;
-    receiveQ->head = NULL;
-    receiveQ->tail = NULL;
+    receiveQ = (NEMESIS_blocking_queue *) buf;
+    PtlInternalNEMESISBlockingInit(receiveQ);
     /* next, initialize the ack queue */
     ackQ = receiveQ + 1;
-    ackQ->head = NULL;
-    ackQ->tail = NULL;
+    PtlInternalNEMESISBlockingInit(ackQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *) (ackQ + 1);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
@@ -79,6 +77,8 @@ void INTERNAL PtlInternalFragmentSetup(
 void INTERNAL PtlInternalFragmentTeardown(
     void)
 {
+    PtlInternalNEMESISBlockingDestroy(receiveQ);
+    PtlInternalNEMESISBlockingDestroy(ackQ);
 }
 
 /* this pulls a fragment off the free-list(s) big enough to hold the data.
@@ -126,7 +126,8 @@ void INTERNAL PtlInternalFragmentToss(
     NEMESIS_queue *destQ =
 	(NEMESIS_queue *) (comm_pad + firstpagesize +
 			   (per_proc_comm_buf_size * dest));
-    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry*)frag);
+    frag = ((uint64_t *) frag) - 2;
+    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry *) frag);
 }
 
 /* this enqueues a fragment in the specified ack queue */
@@ -134,33 +135,48 @@ void INTERNAL PtlInternalFragmentAck(
     void *frag,
     ptl_pid_t dest)
 {
-    NEMESIS_queue *destQ =
-	(NEMESIS_queue *) (comm_pad + firstpagesize +
-			   (per_proc_comm_buf_size * dest) +
-			   sizeof(NEMESIS_queue));
-    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry*)frag);
+    NEMESIS_blocking_queue *destQ =
+	(NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
+				    (per_proc_comm_buf_size * dest) +
+				    sizeof(NEMESIS_queue));
+    frag = ((uint64_t *) frag) - 2;
+    PtlInternalNEMESISBlockingEnqueue(destQ, (NEMESIS_entry *) frag);
 }
 
 /* this dequeues a fragment from my receive queue */
 void INTERNAL *PtlInternalFragmentReceive(
     void)
 {
-    fprintf(stderr, "fragment receive unimplemented\n");
-    abort();
-    return NULL;
+    fragment_hdr_t *frag =
+	(fragment_hdr_t *) PtlInternalNEMESISBlockingDequeue(receiveQ);
+    return frag->data;
 }
 
 /* this dequeues a fragment from my ack queue */
 void INTERNAL *PtlInternalFragmentAckReceive(
     void)
 {
-    fprintf(stderr, "fragment ack receive unimplemented\n");
-    abort();
-    return NULL;
+    fragment_hdr_t *frag =
+	(fragment_hdr_t *) PtlInternalNEMESISBlockingDequeue(ackQ);
+    return frag->data;
 }
 
-size_t INTERNAL PtlInternalFragmentSize(
+uint64_t INTERNAL PtlInternalFragmentSize(
     void *frag)
 {
     return *(((uint64_t *) frag) - 1);
+}
+
+void INTERNAL PtlInternalFragmentFree(
+    void *data)
+{
+    fragment_hdr_t *frag = (fragment_hdr_t *) (((uint64_t *) data) - 2);
+    assert(frag->next == NULL);
+    if (frag->size == SMALL_FRAG_SIZE) {
+	frag->next = small_free_list;
+	small_free_list = frag;
+    } else {
+	frag->next = large_free_list;
+	large_free_list = frag;
+    }
 }

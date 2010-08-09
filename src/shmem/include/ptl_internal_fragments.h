@@ -24,8 +24,10 @@ void *PtlInternalFragmentReceive(
     void);
 void *PtlInternalFragmentAckReceive(
     void);
+void PtlInternalFragmentFree(
+    void *data);
 
-size_t PtlInternalFragmentSize(
+uint64_t PtlInternalFragmentSize(
     void *frag);
 
 #endif
