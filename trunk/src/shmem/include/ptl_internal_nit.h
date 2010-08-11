@@ -1,14 +1,9 @@
 #ifndef PTL_INTERNAL_NIT_H
 #define PTL_INTERNAL_NIT_H
 
-#include <pthread.h>
 #include <stdint.h>		       /* for uint32_t */
 
-typedef struct {
-    pthread_mutex_t lock;
-    void *priority;
-    void *overflow;
-} ptl_table_entry_t;
+#include "ptl_internal_PT.h"
 
 typedef struct {
     ptl_table_entry_t *tables[4];
