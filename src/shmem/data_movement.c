@@ -55,7 +55,9 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
     while (1) {
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
+	printf("got a header! %p\n", hdr);
 	assert(nit.tables != NULL);
+	printf("nit.tables[%i] = %p\n", hdr->ni, nit.tables[hdr->ni]);
 	assert(nit.tables[hdr->ni] != NULL);
 	ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
 	assert(table_entry != NULL);
@@ -193,16 +195,14 @@ int API_FUNC PtlPut(
 	ptl_ct_event_t cte = {1, 0};
 	PtlCTInc(mdptr->ct_handle, cte);
     }
-    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
-	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-	    ptl_event_t e;
-	    e.type = PTL_EVENT_SEND;
-	    e.event.ievent.mlength = length;
-	    e.event.ievent.offset = local_offset;
-	    e.event.ievent.user_ptr = user_ptr;
-	    e.event.ievent.ni_fail_type = PTL_NI_OK;
-	    PtlInternalEQPush(mdptr->eq_handle, &e);
-	}
+    if ((mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+	ptl_event_t e;
+	e.type = PTL_EVENT_SEND;
+	e.event.ievent.mlength = length;
+	e.event.ievent.offset = local_offset;
+	e.event.ievent.user_ptr = user_ptr;
+	e.event.ievent.ni_fail_type = PTL_NI_OK;
+	PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
 }
