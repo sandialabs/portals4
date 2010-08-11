@@ -170,6 +170,7 @@ int main(
 	long int r1 = random();
 	long int r2 = random();
 	long int r3 = random();
+	r1 = r2 = r3 = 0; // for testing
 	memset(shmname, 0, PSHMNAMLEN + 1);
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
@@ -259,12 +260,12 @@ int main(
 	if ((exited = wait(&status)) == -1) {
 	    perror("yod-> wait failed");
 	}
-	if (WIFSIGNALED(status)) {
+	if (WIFSIGNALED(status) && ! WIFSTOPPED(status)) {
 	    size_t d;
 	    ++err;
 	    fprintf(stderr,
-		    "yod-> child pid %i died unexpectedly, killing everyone\n",
-		    (int)pids[c]);
+		    "yod-> child pid %i died unexpectedly (%i), killing everyone\n",
+		    (int)pids[c], WTERMSIG(status));
 	    for (d = 0; d < count; ++d) {
 		if (pids[d] != exited) {
 		    if (kill(pids[d], SIGKILL) == -1) {
@@ -340,9 +341,8 @@ void *collator(
     /* wait for everyone to post to the mapping */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(le.ct_handle, count) == PTL_OK);
+	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
 	printf("COLLECTOR-> everyone posted!\n");
-	assert(PtlCTGet(le.ct_handle, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);
 	printf("COLLECTOR-> zero failures!\n");
     }
@@ -363,8 +363,7 @@ void *collator(
     /* wait for the puts to finish */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(md.ct_handle, count + 1) == PTL_OK);
-	assert(PtlCTGet(md.ct_handle, &ct_data) == PTL_OK);
+	assert(PtlCTWait(md.ct_handle, count + 1, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);
     }
     /* cleanup */
