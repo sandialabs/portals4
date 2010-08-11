@@ -115,6 +115,7 @@ void INTERNAL *PtlInternalFragmentFetch(
 	    assert(retv != NULL);
 	} while (retv != oldv);
     }
+    retv->next = NULL;
     return retv->data;
 }
 
@@ -123,11 +124,11 @@ void INTERNAL PtlInternalFragmentToss(
     void *frag,
     ptl_pid_t dest)
 {
-    NEMESIS_queue *destQ =
-	(NEMESIS_queue *) (comm_pad + firstpagesize +
+    NEMESIS_blocking_queue *destQ =
+	(NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
 			   (per_proc_comm_buf_size * dest));
     frag = ((uint64_t *) frag) - 2;
-    PtlInternalNEMESISEnqueue(destQ, (NEMESIS_entry *) frag);
+    PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }
 
 /* this enqueues a fragment in the specified ack queue */
@@ -140,7 +141,7 @@ void INTERNAL PtlInternalFragmentAck(
 				    (per_proc_comm_buf_size * dest) +
 				    sizeof(NEMESIS_queue));
     frag = ((uint64_t *) frag) - 2;
-    PtlInternalNEMESISBlockingEnqueue(destQ, (NEMESIS_entry *) frag);
+    PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }
 
 /* this dequeues a fragment from my receive queue */
@@ -148,7 +149,7 @@ void INTERNAL *PtlInternalFragmentReceive(
     void)
 {
     fragment_hdr_t *frag =
-	(fragment_hdr_t *) PtlInternalNEMESISBlockingDequeue(receiveQ);
+	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
     return frag->data;
 }
 
@@ -157,7 +158,7 @@ void INTERNAL *PtlInternalFragmentAckReceive(
     void)
 {
     fragment_hdr_t *frag =
-	(fragment_hdr_t *) PtlInternalNEMESISBlockingDequeue(ackQ);
+	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(ackQ);
     return frag->data;
 }
 
