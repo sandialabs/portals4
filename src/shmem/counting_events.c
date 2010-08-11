@@ -42,16 +42,18 @@ static uint64_t waiters = 0;
 #define CT_EQUAL(a,b)	    (a.success == b.success && a.failure == b.failure)
 
 /* 128-bit Atomics */
-static inline ptl_ct_event_t PtlInternalAtomicCasCT(
+static inline int PtlInternalAtomicCasCT(
     volatile ptl_ct_event_t * addr,
     const ptl_ct_event_t oldval,
     const ptl_ct_event_t newval)
 {
 #ifdef HAVE_CMPXCHG16B
-    ptl_ct_event_t ret;
+    register unsigned char ret;
+    assert(((uintptr_t)addr & 0xf) == 0);
     __asm__ __volatile__(
-    "lock cmpxchg16b %2"
-    :"=a"(ret.success), "=d" (ret.failure), "+m"(*addr)
+    "lock cmpxchg16b %1\n\t"
+    "sete	     %0"
+    :"=q"(ret), "+m"(*addr)
     :"a"     (oldval.success),
     "d"     (oldval.failure),
     "b"     (newval.success),
@@ -358,13 +360,12 @@ int API_FUNC PtlCTInc(
     } else if (increment.success != 0 && increment.failure != 0) {
 	/* expensive increment */
 	ptl_ct_event_t old, tmp;
-	PtlInternalAtomicReadCT(&tmp, &(cte->data));
 	do {
+	    PtlInternalAtomicReadCT(&tmp, &(cte->data));
 	    old = tmp;
 	    tmp.success += increment.success;
 	    tmp.failure += increment.failure;
-	    tmp = PtlInternalAtomicCasCT(&(cte->data), old, tmp);
-	} while (CT_NOT_EQUAL(tmp, old));
+	} while (PtlInternalAtomicCasCT(&(cte->data), old, tmp));
     }
     return PTL_OK;
 }
