@@ -21,8 +21,12 @@ enum ptl_retvals {
     PTL_ARG_INVALID,	/*!< One of the arguments is invalid. */
     PTL_IN_USE,		/*!< The specified resource is currently in use. */
     PTL_NO_SPACE,	/*!< Sufficient memory for action was not available. */
-    PTL_LE_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
-    PTL_ME_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
+    PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
+    PTL_PT_IN_USE,	/*!< Portal table index is busy. */
+    PTL_PT_FULL,	/*!< Portal table has no empty entries. */
+    PTL_EQ_DROPPED,	/*!< At least one event has been dropped. */
+    PTL_EQ_EMPTY,	/*!< No events available in an event queue. */
+    PTL_INTERRUPTED,	/*!< Wait/get operation was interrupted. */
 };
 
 /**************
@@ -302,6 +306,9 @@ extern const ptl_uid_t PTL_UID_ANY;
 
 /*! Match *no* job identifier. */
 #define PTL_JID_NONE ((ptl_jid_t) 0)
+
+/*! Wildcard for portal table entry identifier fields. */
+#define PTL_PT_ANY ((ptl_pt_index_t) 0xffffffff)
 
 /*! Match any rank. */
 extern const ptl_rank_t PTL_RANK_ANY;
