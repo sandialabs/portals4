@@ -312,11 +312,11 @@ int API_FUNC PtlCTWait(
 		if (event != NULL) *event = tmpread;
 		return PTL_OK;
 	    } else {
-		return PTL_FAIL;
+		return PTL_INTERRUPTED;
 	    }
 	}
     }
-    return PTL_FAIL;
+    return PTL_INTERRUPTED;
 }
 
 int API_FUNC PtlCTSet(
@@ -333,7 +333,7 @@ int API_FUNC PtlCTSet(
     }
 #endif
     PtlInternalAtomicWriteCT(&(ct_events[ct.s.ni][ct.s.code].data), test);
-    return PTL_FAIL;
+    return PTL_OK;
 }
 
 int API_FUNC PtlCTInc(
@@ -351,13 +351,13 @@ int API_FUNC PtlCTInc(
     }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
-    if (increment.success == 0 && increment.failure != 0) {
-	/* cheaper than a 128-bit atomic increment */
-	PtlInternalAtomicInc(&(cte->data.failure), increment.failure);
-    } else if (increment.success != 0 && increment.failure == 0) {
+    if (increment.failure == 0) {
 	/* cheaper than a 128-bit atomic increment */
 	PtlInternalAtomicInc(&(cte->data.success), increment.success);
-    } else if (increment.success != 0 && increment.failure != 0) {
+    } else if (increment.success == 0) {
+	/* cheaper than a 128-bit atomic increment */
+	PtlInternalAtomicInc(&(cte->data.success), increment.success);
+    } else {
 	/* expensive increment */
 	ptl_ct_event_t old, tmp;
 	do {
