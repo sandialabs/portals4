@@ -81,6 +81,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		printf("delivering to LE table\n");
 		switch (PtlInternalLEDeliver(table_entry, hdr)) {
 		    case 1: // success
+			printf("LE delivery success!\n");
 			break;
 		    case 2: // overflow
 			break;
@@ -89,9 +90,12 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		}
 		break;
 	}
+	printf("unlocking\n");
 	assert(pthread_mutex_unlock(&table_entry->lock) == 0);
+	printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
 	PtlInternalFragmentAck(hdr, hdr->src);
+	printf("back to the beginning\n");
     }
     return NULL;
 }
