@@ -298,18 +298,21 @@ extern const ptl_nid_t PTL_NID_ANY;
 extern const ptl_uid_t PTL_UID_ANY;
 
 /*! Match any job identifier. */
-extern const ptl_jid_t PTL_JID_ANY;
+#define PTL_JID_ANY ((ptl_jid_t) 0xffffffff)
+
+/*! Match *no* job identifier. */
+#define PTL_JID_NONE ((ptl_jid_t) 0)
 
 /*! Match any rank. */
 extern const ptl_rank_t PTL_RANK_ANY;
 
 /*! Specifies the status register that counts the dropped requests for the
  * interface. */
-extern const ptl_sr_index_t PTL_SR_DROP_COUNT;
+#define PTL_SR_DROP_COUNT ((ptl_sr_index_t) 0)
 
 /*! Specifies the status register that counts the number of attempted
  * permission violations. */
-extern const ptl_sr_index_t PTL_SR_PERMISSIONS_VIOLATIONS;
+#define PTL_SR_PERMISSIONS_VIOLATIONS ((ptl_sr_index_t) 1)
 
 /******************************
  * Initialization and Cleanup *
@@ -1401,13 +1404,16 @@ int PtlCTGet(ptl_handle_ct_t	ct_handle,
 	     ptl_ct_event_t *	event);
 /*!
  * @fn PtlCTWait(ptl_handle_ct_t    ct_handle,
- *		 ptl_size_t	    test)
+ *		 ptl_size_t	    test,
+ *		 ptl_ct_event_t *   event)
  * @brief Used to wait until the value of a counting event is equal to a test
  *	value.
  * @param[in] ct_handle	The counting event handle.
  * @param[in] test	On successful return, the sum of the success and
  *			failure fields of the counting event will be greater
  *			than or equal to this value.
+ * @param[out] event	On successful return, this location will hold the
+ *			current value associated with the counting event.
  * @retval PTL_OK		Indicates success
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
@@ -1416,7 +1422,8 @@ int PtlCTGet(ptl_handle_ct_t	ct_handle,
  * @see PtlCTGet()
  */
 int PtlCTWait(ptl_handle_ct_t	ct_handle,
-	      ptl_size_t	test);
+	      ptl_size_t	test,
+	      ptl_ct_event_t *	event);
 /*!
  * @fn PtlCTSet(ptl_handle_ct_t	ct_handle,
  *		ptl_ct_event_t	new_ct)
