@@ -43,6 +43,7 @@ int main(
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical), "PtlNIInit");
     CHECK_RETURNVAL(PtlGetId(ni_physical, &myself), "PtlGetId");
     CHECK_RETURNVAL(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &phys_pt_index), "PtlPTAlloc");
+    assert(phys_pt_index == 0);
     /* \begin{runtime_stuff} */
     assert(getenv("PORTALS4_COLLECTOR_NID") != NULL);
     assert(getenv("PORTALS4_COLLECTOR_PID") != NULL);
@@ -141,6 +142,7 @@ int main(
 		&ni_logical), "PtlNIInit");
 	printf("progress: %i\n", __LINE__);
 	CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index), "PtlPTAlloc");
+	assert(logical_pt_index == 0);
 	printf("progress: %i\n", __LINE__);
 	/* don't need this anymore, so free up resources */
 	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index), "PtlPTFree");
