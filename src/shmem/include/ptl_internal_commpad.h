@@ -1,6 +1,8 @@
 #ifndef PTL_INTERNAL_COMMPAD_H
 #define PTL_INTERNAL_COMMPAD_H
 
+#include <portals4.h>
+
 #include <stddef.h>		       /* for size_t */
 
 extern volatile char *comm_pad;
@@ -19,7 +21,7 @@ typedef struct {
     void *volatile next;
     unsigned char type;		// 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
     unsigned char ni;
-    uint32_t src;
+    ptl_pid_t src;
     ptl_process_id_t target_id;
     ptl_pt_index_t pt_index;
     ptl_match_bits_t match_bits;
@@ -51,6 +53,7 @@ typedef struct {
 	    ptl_datatype_t datatype;
 	} swap;
     } info;
+    char data[];
 } ptl_internal_header_t;
 
 #endif
