@@ -162,7 +162,6 @@ int API_FUNC PtlNIInit(
     PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
     PtlInternalMDNISetup(ni.ni, nit_limits.max_mds);
     PtlInternalLENISetup(nit_limits.max_mes);
-    PtlInternalDMSetup();
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,
@@ -181,6 +180,7 @@ int API_FUNC PtlNIInit(
     assert(nit.tables[ni.ni] != NULL);
     __sync_synchronize();	       // full memory fence
     PtlInternalAtomicInc(&(nit.refcount[ni.ni]), 1);
+    PtlInternalDMSetup(); // This MUST happen AFTER the tables are set up
     return PTL_OK;
 }
 
