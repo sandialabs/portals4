@@ -109,23 +109,32 @@ return foo;
 AC_CACHE_CHECK([whether the compiler supports CMPXCHG16B],
   [sandia_cv_cmpxchg16b],
   [AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#include <stdint.h> /* for uint64_t */
+#include <stdint.h> /* for uint64_t and intptr_t (C99) */
 struct m128 {
 uint64_t a,b;
-} one, two, tmp;
+};
 int main(void)
 {
-one.a = 1;
-one.b = 2;
-two.a = 3;
-two.b = 4;
-tmp.a = 5;
-tmp.b = 6;
-__asm__ __volatile__ ("lock cmpxchg16b (%2)"
-:"=a"(tmp.a),"=d"(tmp.b)
-:"r"(&two),"a"(two.a),"d"(two.b),"b"(one.a),"c"(one.b)
-:"memory");
-return tmp.a;
+char blob[sizeof(struct m128)*4];
+intptr_t b2 = (intptr_t)blob;
+struct m128 *one, *two, *three;
+if (b2 & 0xf) { // fix alignment
+b2 += 0xf - (b2 & 0xf);
+}
+one = (struct m128*)b2;
+two = one+1;
+three = two+1;
+one->a = 1;
+one->b = 2;
+two->a = 3;
+two->b = 4;
+three->a = 5;
+three->b = 6;
+__asm__ __volatile__ ("lock cmpxchg16b %2"
+:"=a"(three->a),"=d"(three->b),"+m"(*two)
+:"a"(two->a),"d"(two->b),"b"(one->a),"c"(one->b)
+:"cc", "memory");
+return three->a;
 }]])],
     [sandia_cv_cmpxchg16b="yes"],
 	[sandia_cv_cmpxchg16b="no"])])
@@ -136,22 +145,31 @@ AS_IF([test "x$sandia_cv_cmpxchg16b" = "xyes"],
      [AS_HELP_STRING([--enable-cross-cmpxchg16b],
 	     [when cross compiling, ordinarily we asume that cmpxchg16b is not available, however this option forces us to assume that cmpxchg16b IS available])])
    AC_RUN_IFELSE([AC_LANG_SOURCE([[
-#include <stdint.h> /* for uint64_t */
+#include <stdint.h> /* for uint64_t and intptr_t (C99) */
 struct m128 {
 uint64_t a,b;
-} one, two, tmp;
+};
 int main(void)
 {
-one.a = 1;
-one.b = 2;
-two.a = 3;
-two.b = 4;
-tmp.a = 5;
-tmp.b = 6;
-__asm__ __volatile__ ("lock cmpxchg16b (%2)"
-:"=a"(tmp.a),"=d"(tmp.b)
-:"r"(&two),"a"(two.a),"d"(two.b),"b"(one.a),"c"(one.b)
-:"memory");
+char blob[sizeof(struct m128)*4];
+intptr_t b2 = (intptr_t)blob;
+struct m128 *one, *two, *three;
+if (b2 & 0xf) { // fix alignment
+b2 += 0xf - (b2 & 0xf);
+}
+one = (struct m128*)b2;
+two = one+1;
+three = two+1;
+one->a = 1;
+one->b = 2;
+two->a = 3;
+two->b = 4;
+three->a = 5;
+three->b = 6;
+__asm__ __volatile__ ("lock cmpxchg16b %2"
+:"=a"(three->a),"=d"(three->b),"+m"(*two)
+:"a"(two->a),"d"(two->b),"b"(one->a),"c"(one->b)
+:"cc", "memory");
 return 0;
 }]])],
     [sandia_cv_cpu_cmpxchg16b="yes"],
