@@ -13,6 +13,8 @@
 # include <malloc.h>		       /* for memalign() */
 #endif
 
+#include <stdio.h>
+
 /* Internals */
 #include "ptl_visibility.h"
 #include "ptl_internal_commpad.h"
@@ -21,6 +23,12 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_LE.h"
 #include "ptl_internal_nemesis.h"
+#include "ptl_internal_EQ.h"
+#include "ptl_internal_PT.h"
+
+#define LE_FREE		0
+#define LE_ALLOCATED	1
+#define LE_IN_USE	2
 
 typedef struct {
     ptl_le_t visible;
@@ -28,105 +36,14 @@ typedef struct {
 } ptl_internal_le_t;
 
 typedef struct {
-    void *next;
-    ptl_internal_handle_converter_t ni_handle;
-    ptl_pt_index_t pt_index;
-    ptl_le_t le;
-    ptl_list_t ptl_list;
+    void *next; // for nemesis
     void *user_ptr;
     ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
 
 static ptl_internal_le_t *les = NULL;
 static NEMESIS_blocking_queue appends;
-static pthread_t LEthread;
-
-static void *LEprocessor(
-    void * __attribute__ ((unused)) junk)
-{
-    while (1) {
-	ptl_internal_appendLE_t *append_me;
-	ptl_table_entry_t *t;
-	ptl_internal_le_t *entries;
-#warning LEprocessor needs a better poll/awaken implementation
-	while ((append_me = PtlInternalNEMESISBlockingDequeue(&appends)) == NULL) {
-#if defined(HAVE_PTHREAD_YIELD)
-	    pthread_yield();
-#elif defined(HAVE_SCHED_YIELD)
-	    sched_yield();
-#endif
-	}
-	assert(append_me);
-	t = &(nit.tables[append_me->ni_handle.s.ni][append_me->pt_index]);
-	/* check memory allocation */
-	if (t->priority == NULL || t->overflow == NULL) {
-	    /* this is done with mutexes to avoid cache-flushing
-	     * atomics/volatiles in the common case */
-	    assert(pthread_mutex_lock(&(t->lock)) == 0);
-	    if (t->priority == NULL) {
-		t->priority =
-		    malloc((nit_limits.max_me_list + 1) * sizeof(uint64_t));
-		assert(t->priority != NULL);
-		assert((((uintptr_t) t->priority) & 0x7) == 0);	// 8-byte alignment
-		memset(t->priority, 0,
-		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
-	    }
-	    if (t->overflow == NULL) {
-		t->overflow =
-		    malloc((nit_limits.max_me_list +
-			    1) * sizeof(ptl_internal_le_t));
-		assert(t->overflow != NULL);
-		assert((((uintptr_t) t->overflow) & 0x7) == 0);	// 8-byte alignment
-		memset(t->overflow, 0,
-		       (nit_limits.max_me_list + 1) * sizeof(uint64_t));
-	    }
-	    assert(pthread_mutex_unlock(&(t->lock)) == 0);
-	}
-	switch (append_me->ptl_list) {
-	    case PTL_PRIORITY_LIST:
-		assert(t->priority != NULL);
-		{
-		    int found = 1;
-		    /* first, search the overflow list */
-		    found = 0;
-#warning LEAppend() does not handle the overflow list, which may be tricky.
-		    /* second, if (not_found || !(append_me->le.options & PTL_LE_USE_ONCE)), append to priority list */
-		    if (!found || !(append_me->le.options & PTL_LE_USE_ONCE)) {
-			entries = (ptl_internal_le_t *) t->priority;
-			for (size_t i = 0; i < nit_limits.max_me_list; ++i) {
-			    if (PtlInternalAtomicCas32
-				(&(entries[i].status), 0, 2) == 0) {
-				entries[i].visible = append_me->le;
-				__sync_synchronize();
-				entries[i].status = 1;
-				break;
-			    }
-			}
-		    }
-		    free(append_me);
-		}
-		break;
-	    case PTL_OVERFLOW:
-		assert(t->overflow != NULL);
-		entries = (ptl_internal_le_t *) t->overflow;
-		for (size_t i = 0; i < nit_limits.max_me_list; ++i) {
-		    if (PtlInternalAtomicCas32(&(entries[i].status), 0, 2) ==
-			0) {
-			entries[i].visible = append_me->le;
-			__sync_synchronize();
-			entries[i].status = 1;
-			break;
-		    }
-		}
-		free(append_me);
-		break;
-	    case PTL_PROBE_ONLY:
-		abort();
-# warning PTL_PROBE_ONLY is not implemented
-		break;
-	}
-    }
-}
+//static pthread_t LEthread;
 
 void INTERNAL PtlInternalLENISetup(
     ptl_size_t limit)
@@ -159,7 +76,7 @@ void INTERNAL PtlInternalLENISetup(
 	PtlInternalNEMESISBlockingInit(&appends);
 	__sync_synchronize();
 	les = tmp;
-	assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
+	//assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
     }
 }
 
@@ -167,7 +84,7 @@ void INTERNAL PtlInternalLENITeardown(
     void)
 {
     ptl_internal_le_t *tmp;
-    assert(pthread_cancel(LEthread) == 0);
+    //assert(pthread_cancel(LEthread) == 0);
     tmp = les;
     les = NULL;
     assert(tmp != NULL);
@@ -188,6 +105,7 @@ int API_FUNC PtlLEAppend(
     ptl_handle_encoding_t leh = { HANDLE_LE_CODE, 0, 0 };
     ptl_internal_appendLE_t *Qentry;
     uint32_t offset;
+    ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -198,7 +116,14 @@ int API_FUNC PtlLEAppend(
     if (ni.s.ni == 0 || ni.s.ni == 2) {	// must be a non-matching NI
 	return PTL_ARG_INVALID;
     }
+    if (nit.tables[ni.s.ni] == NULL) { // this should never happen
+	assert(nit.tables[ni.s.ni] != NULL);
+	return PTL_ARG_INVALID;
+    }
     if (pt_index > nit_limits.max_pt_index) {
+	return PTL_ARG_INVALID;
+    }
+    if (PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index])) {
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -209,15 +134,12 @@ int API_FUNC PtlLEAppend(
 	return PTL_NO_SPACE;
     }
     assert(Qentry != NULL);
-    Qentry->ni_handle.a.ni = ni_handle;
-    Qentry->pt_index = pt_index;
-    Qentry->le = le;
-    Qentry->ptl_list = ptl_list;
     Qentry->user_ptr = user_ptr;
     /* find an LE handle */
     for (offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (les[offset].status == 0) {
-	    if (PtlInternalAtomicCas32(&(les[offset].status), 0, 2) == 0) {
+	    if (PtlInternalAtomicCas32
+		(&(les[offset].status), LE_FREE, LE_IN_USE) == LE_FREE) {
 		leh.code = offset;
 		break;
 	    }
@@ -225,8 +147,38 @@ int API_FUNC PtlLEAppend(
     }
     Qentry->le_handle.s = leh;
     memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
-    /* append Qentry to the appends queue */
-    PtlInternalNEMESISBlockingEnqueue(&appends, (NEMESIS_entry*)Qentry);
+    /* append to associated list */
+    t = &(nit.tables[ni.s.ni][pt_index]);
+    assert(pthread_mutex_lock(&t->lock) == 0);
+    switch (ptl_list) {
+	case PTL_PRIORITY_LIST:
+	    {
+		ptl_internal_appendLE_t* prev = (ptl_internal_appendLE_t*)(t->priority.tail);
+		t->priority.tail = Qentry;
+		if (prev == NULL) {
+		    t->priority.head = Qentry;
+		} else {
+		    prev->next = Qentry;
+		}
+	    }
+	    break;
+	case PTL_OVERFLOW:
+	    {
+		ptl_internal_appendLE_t* prev = (ptl_internal_appendLE_t*)(t->overflow.tail);
+		t->overflow.tail = Qentry;
+		if (prev == NULL) {
+		    t->overflow.head = Qentry;
+		} else {
+		    prev->next = Qentry;
+		}
+	    }
+	    break;
+	case PTL_PROBE_ONLY:
+	    fprintf(stderr, "PTL_PROBE_ONLY not yet implemented\n");
+	    abort();
+	    break;
+    }
+    assert(pthread_mutex_unlock(&t->lock) == 0);
     return PTL_OK;
 }
 
@@ -234,4 +186,88 @@ int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {
     return PTL_FAIL;
+}
+
+int INTERNAL PtlInternalLEDeliver(
+    ptl_table_entry_t *restrict t,
+    ptl_internal_header_t *restrict hdr)
+{
+    ptl_event_t e; // for posting what happens here
+    printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
+    if (t->priority.head) {
+	ptl_internal_appendLE_t *entry = t->priority.head;
+	ptl_le_t *le = &(les[entry->le_handle.s.code].visible);
+	assert(les[entry->le_handle.s.code].status != LE_FREE);
+	if (les[entry->le_handle.s.code].visible.options & PTL_LE_USE_ONCE) {
+	    if (entry->next != NULL) {
+		t->priority.head = entry->next;
+	    } else {
+		t->priority.head = t->priority.tail = NULL;
+	    }
+	}
+	// check the protections on the le
+	if (le->options & PTL_LE_AUTH_USE_JID) {
+	    if (le->ac_id.jid != PTL_JID_ANY) {
+		fprintf(stderr, "BAD AC_ID! 1 (I should probably enqueue an event of some kind and free the memory)\n");
+		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		return 3;
+	    }
+	} else {
+	    if (le->ac_id.uid != PTL_UID_ANY) {
+		fprintf(stderr, "BAD AC_ID! 2 (I should probably enqueue an event of some kind and free the memory)\n");
+		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		return 3;
+	    }
+	}
+	switch (hdr->type) {
+	    case HDR_TYPE_PUT:
+		if ((le->options & PTL_LE_OP_PUT) == 0) {
+		    fprintf(stderr, "LE not labelled for PUT\n");
+		    abort();
+		}
+		printf("now to copy the data!\n");
+		break;
+	    default:
+		fprintf(stderr, "non-put LE handling is unimplemented\n");
+		abort();
+	}
+	return 1;
+    } else if (t->overflow.head) {
+	fprintf(stderr, "overflow LE handling is unimplemented\n");
+	abort();
+	return 2;
+    } else { // nothing posted *at all!*
+	PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+	if (t->EQ != PTL_EQ_NONE) {
+	    e.type = PTL_EVENT_DROPPED;
+	    e.event.tevent.initiator.phys.pid = hdr->src;
+	    e.event.tevent.initiator.phys.nid = 0;
+	    e.event.tevent.pt_index = hdr->pt_index;
+	    e.event.tevent.uid = 0;
+	    e.event.tevent.jid = PTL_JID_NONE;
+	    e.event.tevent.match_bits = 0;
+	    e.event.tevent.rlength = hdr->length;
+	    e.event.tevent.mlength = 0;
+	    e.event.tevent.remote_offset = hdr->dest_offset;
+	    e.event.tevent.start = NULL;
+	    e.event.tevent.user_ptr = hdr->user_ptr;
+	    switch (hdr->type) {
+		case HDR_TYPE_PUT:
+		    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+		    break;
+		case HDR_TYPE_FETCHATOMIC:
+		    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+		    break;
+		case HDR_TYPE_SWAP:
+		    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+		    break;
+	    }
+	    e.event.tevent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+	    PtlInternalEQPush(t->EQ, &e);
+	}
+	return 0;
+    }
 }
