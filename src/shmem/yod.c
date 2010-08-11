@@ -319,6 +319,7 @@ void *collator(
 {
     char procstr[10];
     ptl_process_id_t *mapping;
+    ptl_pt_index_t pt_index;
 
     snprintf(procstr, 10, "%li", count);
     assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
@@ -327,6 +328,7 @@ void *collator(
     assert(PtlNIInit
 	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
+    assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
     /* set up the landing pad to collect and distribute mapping information */
     mapping = calloc(count + 1, sizeof(ptl_process_id_t));
     assert(mapping != NULL);
@@ -376,6 +378,7 @@ void *collator(
     /* cleanup */
     assert(PtlCTFree(md.ct_handle) == PTL_OK);
     assert(PtlMDRelease(md_handle) == PTL_OK);
+    assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
     assert(PtlNIFini(ni_physical) == PTL_OK);
     free(mapping);
     return NULL;
