@@ -174,10 +174,11 @@ int API_FUNC PtlNIInit(
 	    return PTL_NO_SPACE;
 	}
 	for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
-	    assert(pthread_mutex_init(&tmp[e].lock, NULL) == 0);
+	    PtlInternalPTInit(tmp+e);
 	}
 	nit.tables[ni.ni] = tmp;
     }
+    assert(nit.tables[ni.ni] != NULL);
     __sync_synchronize();	       // full memory fence
     PtlInternalAtomicInc(&(nit.refcount[ni.ni]), 1);
     return PTL_OK;
