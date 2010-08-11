@@ -17,11 +17,8 @@ static void noFailures(
     ptl_size_t threshold)
 {
     ptl_ct_event_t ct_data;
-    CHECK_RETURNVAL(PtlCTWait(ct, threshold), "PtlCTWait");
-    //printf("bootstrap-> CTWait returned!\n");
-    CHECK_RETURNVAL(PtlCTGet(ct, &ct_data), "PtlCTGet");
+    CHECK_RETURNVAL(PtlCTWait(ct, threshold, &ct_data), "PtlCTWait");
     assert(ct_data.failure == 0);
-    //printf("bootstrap-> CTWait reports no failures!\n");
 }
 
 int main(
@@ -32,6 +29,7 @@ int main(
     ptl_process_id_t myself;
     ptl_process_id_t COLLECTOR;
     uint64_t rank, maxrank;
+    ptl_pt_index_t phys_pt_index, logical_pt_index;
     ptl_process_id_t *mapping;
     ptl_le_t le;
     ptl_handle_le_t le_handle;
@@ -44,6 +42,7 @@ int main(
 	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical), "PtlNIInit");
     CHECK_RETURNVAL(PtlGetId(ni_physical, &myself), "PtlGetId");
+    CHECK_RETURNVAL(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &phys_pt_index), "PtlPTAlloc");
     /* \begin{runtime_stuff} */
     assert(getenv("PORTALS4_COLLECTOR_NID") != NULL);
     assert(getenv("PORTALS4_COLLECTOR_PID") != NULL);
@@ -93,6 +92,7 @@ int main(
 	/* cleanup */
 	assert(PtlCTFree(md.ct_handle) == PTL_OK);
 	assert(PtlMDRelease(md_handle) == PTL_OK);
+	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index), "PtlPTFree");
 	assert(PtlNIFini(ni_physical) == PTL_OK);
     } else {
 	/* for distributing my ID */
@@ -140,7 +140,10 @@ int main(
 		myself.phys.pid, NULL, NULL, maxrank, mapping, NULL,
 		&ni_logical), "PtlNIInit");
 	printf("progress: %i\n", __LINE__);
+	CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index), "PtlPTAlloc");
+	printf("progress: %i\n", __LINE__);
 	/* don't need this anymore, so free up resources */
+	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index), "PtlPTFree");
 	CHECK_RETURNVAL(PtlNIFini(ni_physical), "PtlNIFini");
 	printf("progress: %i\n", __LINE__);
     }
@@ -150,7 +153,8 @@ int main(
     printf("progress: %i\n", __LINE__);
 
     /* cleanup */
-    assert(PtlNIFini(ni_logical) == PTL_OK);
+    CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index), "PtlPTFree");
+    CHECK_RETURNVAL(PtlNIFini(ni_logical), "PtlNIFini");
     printf("progress: %i\n", __LINE__);
     PtlFini();
     printf("progress: %i\n", __LINE__);
