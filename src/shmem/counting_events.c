@@ -51,7 +51,7 @@ static inline ptl_ct_event_t PtlInternalAtomicCasCT(
     ptl_ct_event_t ret;
     __asm__ __volatile__(
     "lock cmpxchg16b %2"
-    :"=a"(ret.success), "=d" (ret.failure), "=m"(*addr)
+    :"=a"(ret.success), "=d" (ret.failure), "+m"(*addr)
     :"a"     (oldval.success),
     "d"     (oldval.failure),
     "b"     (newval.success),
@@ -102,7 +102,7 @@ static inline void PtlInternalAtomicWriteCT(
     "1:\n\t"
     "lock cmpxchg16b %0\n\t"
     "jne 1b"
-    :"=m" (*addr)
+    :"+m" (*addr)
     :"a"     (addr->success),
     "d"     (addr->failure),
     "b"     (newval.success),
