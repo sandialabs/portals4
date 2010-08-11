@@ -141,6 +141,7 @@ int API_FUNC PtlLEAppend(
 	    if (PtlInternalAtomicCas32
 		(&(les[offset].status), LE_FREE, LE_IN_USE) == LE_FREE) {
 		leh.code = offset;
+		les[offset].visible = le;
 		break;
 	    }
 	}
