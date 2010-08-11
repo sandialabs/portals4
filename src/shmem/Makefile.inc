@@ -10,6 +10,7 @@ libportals_la_SOURCES += \
 			 shmem/list_entries.c \
 			 shmem/matching_list_entries.c \
 			 shmem/process_identification.c \
+			 shmem/table_entries.c \
 			 shmem/data_movement.c \
 			 shmem/fragments.c \
 			 shmem/nemesis.c \
@@ -25,6 +26,7 @@ noinst_HEADERS += \
 		shmem/include/ptl_internal_EQ.h \
 		shmem/include/ptl_internal_LE.h \
 		shmem/include/ptl_internal_MD.h \
+		shmem/include/ptl_internal_PT.h \
 		shmem/include/ptl_internal_atomic.h \
 		shmem/include/ptl_internal_commpad.h \
 		shmem/include/ptl_internal_handles.h \
