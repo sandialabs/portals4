@@ -2,8 +2,6 @@
 #define _SVID_SOURCE
 /* For BSD definitions (ftruncate, setenv) */
 #define _BSD_SOURCE
-/* For POSIX definitions (kill) */
-#define _POSIX_SOURCE
 
 #include <portals4.h>
 
@@ -24,8 +22,14 @@
 #include <sys/wait.h>		       /* for waitpid() */
 #include <string.h>		       /* for memset() */
 #include <pthread.h>		       /* for all pthread functions */
-#include <sys/types.h>		       /* for kill() */
-#include <signal.h>		       /* for kill() */
+#ifdef __APPLE__
+# include <signal.h>		       /* for kill() */
+#else
+/* For POSIX definitions (kill) */
+# define _POSIX_SOURCE
+# include <sys/types.h>		       /* for kill() */
+# include <signal.h>		       /* for kill() */
+#endif
 #include <errno.h>		       /* for errno */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
