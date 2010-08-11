@@ -11,7 +11,8 @@ typedef struct {
     } priority,
             overflow;
     ptl_handle_eq_t EQ;
-    enum { PT_FREE, PT_ENABLED, PT_DISABLED } status;
+    uint32_t status;
+    unsigned int options;
 } ptl_table_entry_t;
 
 void PtlInternalPTInit(

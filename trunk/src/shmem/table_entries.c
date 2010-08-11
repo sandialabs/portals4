@@ -10,6 +10,10 @@
 /* Internal headers */
 #include "ptl_internal_PT.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_handles.h"
+#include "ptl_internal_atomic.h"
+#include "ptl_internal_commpad.h"
+#include "ptl_internal_nit.h"
 #include "ptl_visibility.h"
 
 #define PT_FREE     0
@@ -23,7 +27,63 @@ int API_FUNC PtlPTAlloc(
     ptl_pt_index_t pt_index_req,
     ptl_pt_index_t * pt_index)
 {
-    return PTL_FAIL;
+    const ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_table_entry_t *pt = NULL;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	return PTL_ARG_INVALID;
+    }
+    if (eq_handle == PTL_EQ_NONE && options & PTL_PT_FLOW_CONTROL) {
+        return PTL_ARG_INVALID; // PTL_PT_EQ_NEEDED
+    }
+    if (PtlInternalEQHandleValidator(eq_handle, 1)) {
+	return PTL_ARG_INVALID;
+    }
+    if (pt_index_req > nit_limits.max_pt_index && pt_index_req != PTL_PT_ANY) {
+	return PTL_ARG_INVALID;
+    }
+    if (pt_index == NULL) {
+        return PTL_ARG_INVALID;
+    }
+#endif
+    if (pt_index_req != PTL_PT_ANY) {
+        pt = &(nit.tables[ni.s.ni][pt_index_req]);
+        assert(pthread_mutex_lock(&pt->lock) == 0);
+        if (pt->status != PT_FREE) {
+            assert(pthread_mutex_unlock(&pt->lock) == 0);
+            return PTL_PT_IN_USE;
+        }
+        pt->status = PT_DISABLED;
+        *pt_index = pt_index_req;
+    } else {
+        ptl_pt_index_t pti;
+        for (pti=0;pti<=nit_limits.max_pt_index;++pti) {
+            if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
+                pt = &(nit.tables[ni.s.ni][pti]);
+                assert(pthread_mutex_lock(&pt->lock) == 0);
+                if (pt->status == PT_FREE) {
+                    *pt_index = pti;
+                    pt->status = PT_DISABLED;
+                    break;
+                }
+                assert(pthread_mutex_unlock(&pt->lock) == 0);
+                pt = NULL;
+            }
+        }
+        if (pt == NULL) {
+            return PTL_PT_FULL;
+        }
+    }
+    assert(pt->priority.head == NULL);
+    assert(pt->priority.tail == NULL);
+    assert(pt->overflow.head == NULL);
+    assert(pt->overflow.head == NULL);
+    pt->EQ = eq_handle;
+    pt->options = options;
+    return PTL_OK;
 }
 
 int API_FUNC PtlPTFree(
