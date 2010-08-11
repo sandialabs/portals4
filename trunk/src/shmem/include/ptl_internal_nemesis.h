@@ -7,6 +7,7 @@
 
 /* Internal headers */
 #include "ptl_internal_atomic.h"
+#include "ptl_internal_commpad.h"
 
 typedef struct {
     void *volatile next;
@@ -65,6 +66,44 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(
     return retval;
 }
 
+#define OFF2PTR(off) (((intptr_t)off==0)?NULL:((NEMESIS_entry*)(comm_pad+(intptr_t)off)))
+#define PTR2OFF(ptr) ((ptr == NULL)?0:((intptr_t)ptr-(intptr_t)comm_pad))
+
+static inline void PtlInternalNEMESISOffsetEnqueue(
+    NEMESIS_queue * restrict q,
+    NEMESIS_entry * restrict f)
+{
+    void *offset_f = (void*)PTR2OFF(f);
+    assert(f->next == NULL);
+    intptr_t prev =
+	(intptr_t)PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), offset_f);
+    if (prev == 0) {
+	q->head = offset_f;
+    } else {
+	OFF2PTR(prev)->next = offset_f;
+    }
+}
+
+static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
+    NEMESIS_queue * q)
+{
+    NEMESIS_entry *retval = OFF2PTR(q->head);
+    if (retval != NULL) {
+	if (retval->next != NULL) {
+	    q->head = (void*)PTR2OFF(retval->next);
+	} else {
+	    intptr_t old;
+	    q->head = NULL;
+	    old = (intptr_t)PtlInternalAtomicCasPtr(&(q->tail), PTR2OFF(retval), NULL);
+	    if (old != PTR2OFF(retval)) {
+		while (retval->next == NULL) ;
+		q->head = retval->next;
+	    }
+	}
+    }
+    return retval;
+}
+
 
 void PtlInternalNEMESISBlockingInit(
     NEMESIS_blocking_queue * q);
@@ -74,6 +113,11 @@ void PtlInternalNEMESISBlockingEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict e);
 NEMESIS_entry *PtlInternalNEMESISBlockingDequeue(
+    NEMESIS_blocking_queue * q);
+void PtlInternalNEMESISBlockingOffsetEnqueue(
+    NEMESIS_blocking_queue * restrict q,
+    NEMESIS_entry * restrict e);
+NEMESIS_entry *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_blocking_queue * q);
 
 #endif
