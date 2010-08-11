@@ -283,7 +283,8 @@ int API_FUNC PtlCTGet(
 
 int API_FUNC PtlCTWait(
     ptl_handle_ct_t ct_handle,
-    ptl_size_t test)
+    ptl_size_t test,
+    ptl_ct_event_t *event)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_internal_ct_t *cte;
@@ -297,16 +298,17 @@ int API_FUNC PtlCTWait(
     }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
-    /* I wish this loop were tighter, but because CT's can be
-     * destroyed/reallocated unexpectedly, it can't be */
     my_generation = cte->generation;
     //printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long long)ct.i, (unsigned long long)test);
+    /* I wish this loop were tighter, but because CT's can be
+     * destroyed/reallocated unexpectedly, it can't be */
     while (cte->generation == my_generation) {
 	ptl_ct_event_t tmpread;
 	PtlInternalAtomicReadCT(&tmpread, &(cte->data));
 	if ((tmpread.success + tmpread.failure) >= test) {
 	    if (cte->generation == my_generation) {
 		assert(cte->enabled == CT_READY);
+		if (event != NULL) *event = tmpread;
 		return PTL_OK;
 	    } else {
 		return PTL_FAIL;
