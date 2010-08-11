@@ -50,14 +50,13 @@ static inline ptl_ct_event_t PtlInternalAtomicCasCT(
 #ifdef HAVE_CMPXCHG16B
     ptl_ct_event_t ret;
     __asm__ __volatile__(
-    "lock cmpxchg16b (%2)":"=a"(ret.success),
-    "=d"    (ret.failure)
-    :"r"    (addr),
-    "a"     (oldval.success),
+    "lock cmpxchg16b %2"
+    :"=a"(ret.success), "=d" (ret.failure), "=m"(*addr)
+    :"a"     (oldval.success),
     "d"     (oldval.failure),
     "b"     (newval.success),
     "c"     (newval.failure)
-    :"memory");
+    :"cc", "memory");
     return ret;
 #else
 #error No known 128-bit atomic CAS operations are available
@@ -88,7 +87,7 @@ static inline void PtlInternalAtomicReadCT(
     :"=m"   (dest->success),
     "=m"    (dest->failure)
     :"r"    (src)
-    :"rax", "rbx", "rcx", "rdx");
+    :"cc", "rax", "rbx", "rcx", "rdx");
 #else
 #error No known 128-bit atomic read operations are available
 #endif
@@ -101,14 +100,14 @@ static inline void PtlInternalAtomicWriteCT(
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__(
     "1:\n\t"
-    "lock cmpxchg16b (%0)\n\t"
+    "lock cmpxchg16b %0\n\t"
     "jne 1b"
-    ::"r"   (addr),
-    "a"     (addr->success),
+    :"=m" (*addr)
+    :"a"     (addr->success),
     "d"     (addr->failure),
     "b"     (newval.success),
     "c"     (newval.failure)
-    :"memory");
+    :"cc", "memory");
 #else
 #error No known 128-bit atomic write operations are available
 #endif
