@@ -2,7 +2,7 @@
 #define PTL_INTERNAL_DM_H
 
 void PtlInternalDMSetup(
-    ptl_size_t max_msg_size);
+    void);
 void PtlInternalDMTeardown(
     void);
 
