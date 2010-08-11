@@ -2,6 +2,8 @@
 #define _SVID_SOURCE
 /* For BSD definitions (ftruncate, setenv) */
 #define _BSD_SOURCE
+/* For POSIX definitions (kill) */
+#define _POSIX_SOURCE
 
 #include <portals4.h>
 
@@ -22,6 +24,7 @@
 #include <sys/wait.h>		       /* for waitpid() */
 #include <string.h>		       /* for memset() */
 #include <pthread.h>		       /* for all pthread functions */
+#include <sys/types.h>		       /* for kill() */
 #include <signal.h>		       /* for kill() */
 #include <errno.h>		       /* for errno */
 
@@ -308,7 +311,7 @@ static void cleanup(int s)
 }
 
 void *collator(
-    void *junk)
+    void * __attribute__((unused)) junk)
 {
     char procstr[10];
     ptl_process_id_t *mapping;

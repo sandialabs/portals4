@@ -50,7 +50,7 @@ typedef union {
 static uint32_t spawned;
 static pthread_t catcher;
 
-static void *PtlInternalDMCatcher(void *junk)
+static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 {
     while (1) {
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
@@ -95,7 +95,7 @@ static void *PtlInternalDMCatcher(void *junk)
 }
 
 void INTERNAL PtlInternalDMSetup(
-    ptl_size_t max_msg_size)
+    void)
 {
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
 	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) == 0);
@@ -157,7 +157,7 @@ int API_FUNC PtlPut(
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_PUT;
     hdr->ni = md.s.ni;
-    printf("hdr->NI = %i, md.s.ni = %i\n", hdr->ni, md.s.ni);
+    printf("hdr->NI = %u, md.s.ni = %u\n", hdr->ni, md.s.ni);
     hdr->src = proc_number;
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
