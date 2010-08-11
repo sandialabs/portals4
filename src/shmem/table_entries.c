@@ -14,6 +14,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_error.h"
 #include "ptl_visibility.h"
 
 #define PT_FREE     0
@@ -83,6 +84,8 @@ int API_FUNC PtlPTAlloc(
     assert(pt->overflow.head == NULL);
     pt->EQ = eq_handle;
     pt->options = options;
+    pt->status = PT_ENABLED;
+    assert(pthread_mutex_unlock(&pt->lock) == 0);
     return PTL_OK;
 }
 
@@ -123,12 +126,15 @@ int INTERNAL PtlInternalPTValidate(
     ptl_table_entry_t * t)
 {
     if (PtlInternalEQHandleValidator(t->EQ, 1)) {
+        VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
         return 3;
     }
     switch (t->status) {
         case PT_FREE:
+            VERBOSE_ERROR("PT has not been allocated\n");
             return 1;
         case PT_DISABLED:
+            VERBOSE_ERROR("PT has been disabled\n");
             return 2;
         case PT_ENABLED:
             return 0;
