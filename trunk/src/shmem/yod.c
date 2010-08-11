@@ -332,6 +332,7 @@ void *collator(
     /* set up the landing pad to collect and distribute mapping information */
     mapping = calloc(count + 1, sizeof(ptl_process_id_t));
     assert(mapping != NULL);
+    printf("mapping = %p\n", mapping);
     ptl_le_t le;
     ptl_md_t md;
     ptl_handle_le_t le_handle;
@@ -354,6 +355,9 @@ void *collator(
 	printf("COLLECTOR-> everyone posted!\n");
 	assert(ct_data.failure == 0);
 	printf("COLLECTOR-> zero failures!\n");
+    }
+    for (unsigned int i=0;i<=count;i++) {
+	printf("mapping[%u] = {%u,%u}\n", i, mapping[i].phys.pid, mapping[i].phys.nid);
     }
     /* cleanup */
     assert(PtlCTFree(le.ct_handle) == PTL_OK);

@@ -25,6 +25,7 @@
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_PT.h"
+#include "ptl_internal_error.h"
 
 #define LE_FREE		0
 #define LE_ALLOCATED	1
@@ -108,12 +109,15 @@ int API_FUNC PtlLEAppend(
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
     }
     if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	VERBOSE_ERROR("ni code wrong\n");
 	return PTL_ARG_INVALID;
     }
     if (ni.s.ni == 0 || ni.s.ni == 2) {	// must be a non-matching NI
+	VERBOSE_ERROR("must be a non-matching NI\n");
 	return PTL_ARG_INVALID;
     }
     if (nit.tables[ni.s.ni] == NULL) { // this should never happen
@@ -121,9 +125,11 @@ int API_FUNC PtlLEAppend(
 	return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits.max_pt_index) {
+	VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index, nit_limits.max_pt_index);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index])) {
+	VERBOSE_ERROR("LEAppend sees an invalid PT\n");
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -194,10 +200,13 @@ int INTERNAL PtlInternalLEDeliver(
     ptl_internal_header_t *restrict hdr)
 {
     ptl_event_t e; // for posting what happens here
+    assert(t);
+    assert(hdr);
     printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
     if (t->priority.head) {
 	ptl_internal_appendLE_t *entry = t->priority.head;
 	ptl_le_t *le = &(les[entry->le_handle.s.code].visible);
+	assert(le != NULL);
 	assert(les[entry->le_handle.s.code].status != LE_FREE);
 	if (les[entry->le_handle.s.code].visible.options & PTL_LE_USE_ONCE) {
 	    if (entry->next != NULL) {
@@ -206,6 +215,8 @@ int INTERNAL PtlInternalLEDeliver(
 		t->priority.head = t->priority.tail = NULL;
 	    }
 	}
+	assert(entry);
+	printf("checking protections on the LE (%p)\n", le);
 	// check the protections on the le
 	if (le->options & PTL_LE_AUTH_USE_JID) {
 	    if (le->ac_id.jid != PTL_JID_ANY) {
@@ -226,7 +237,53 @@ int INTERNAL PtlInternalLEDeliver(
 		    fprintf(stderr, "LE not labelled for PUT\n");
 		    abort();
 		}
-		printf("now to copy the data!\n");
+		if (hdr->length > (le->length - hdr->dest_offset)) {
+		    fprintf(stderr, "LE is too short!\n");
+		    abort();
+		}
+		/* drumroll please... */
+		printf("calling memcpy(%p + %lu, %p, %lu)\n", le->start, (unsigned long)hdr->dest_offset, hdr->data, (unsigned long)hdr->length);
+		memcpy((char*)le->start + hdr->dest_offset, hdr->data, hdr->length);
+		printf("memcopy returned!\n");
+		/* now announce it */
+		if (le->options & PTL_LE_EVENT_CT_PUT) {
+		    ptl_ct_event_t cte = {1, 0};
+		    printf("incrementing CT\n");
+		    PtlCTInc(le->ct_handle, cte);
+		}
+		printf("EQ?\n");
+		if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+		    ptl_event_t e;
+		    e.type = PTL_EVENT_PUT;
+		    e.event.tevent.initiator.phys.pid = hdr->src;
+		    e.event.tevent.initiator.phys.nid = 0;
+		    e.event.tevent.pt_index = hdr->pt_index;
+		    e.event.tevent.uid = 0;
+		    e.event.tevent.match_bits = 0;
+		    e.event.tevent.rlength = hdr->length;
+		    e.event.tevent.mlength = hdr->length;
+		    e.event.tevent.remote_offset = hdr->dest_offset;
+		    e.event.tevent.start = (char*)le->start + hdr->dest_offset;
+		    e.event.tevent.user_ptr = hdr->user_ptr;
+		    switch (hdr->type) {
+			case HDR_TYPE_PUT:
+			    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+			    break;
+			case HDR_TYPE_ATOMIC:
+			    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+			    break;
+			case HDR_TYPE_FETCHATOMIC:
+			    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+			    break;
+			case HDR_TYPE_SWAP:
+			    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+			    break;
+		    }
+		    e.event.tevent.ni_fail_type = PTL_NI_OK;
+		    printf("push to EQ\n");
+		    PtlInternalEQPush(t->EQ, &e);
+		    printf("pushed\n");
+		}
 		break;
 	    default:
 		fprintf(stderr, "non-put LE handling is unimplemented\n");
