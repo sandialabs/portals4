@@ -24,6 +24,7 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_LE.h"
 
 typedef union {
     struct {
@@ -46,14 +47,68 @@ typedef union {
     } swap;
 } ptl_internal_srcdata_t;
 
+static uint32_t spawned;
+static pthread_t catcher;
+
+static void *PtlInternalDMCatcher(void *junk)
+{
+    while (1) {
+	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
+	assert(hdr != NULL);
+	assert(nit.tables != NULL);
+	assert(nit.tables[hdr->ni] != NULL);
+	ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
+	assert(table_entry != NULL);
+	assert(pthread_mutex_lock(&table_entry->lock) == 0);
+	switch (PtlInternalPTValidate(table_entry)) {
+	    case 1: // uninitialized
+		fprintf(stderr, "sent to an uninitialized PT!\n");
+		abort();
+		break;
+	    case 2: // disabled
+		fprintf(stderr, "sent to a disabled PT!\n");
+		abort();
+		break;
+	}
+	printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
+	switch (hdr->ni) {
+	    case 0: case 2: // Matching (ME)
+		fprintf(stderr, "Matching delivery not handled yet, sorry\n");
+		break;
+	    case 1: case 3: // Non-matching (LE)
+		printf("delivering to LE table\n");
+		switch (PtlInternalLEDeliver(table_entry, hdr)) {
+		    case 1: // success
+			break;
+		    case 2: // overflow
+			break;
+		    case 0: // nothing matched, report error
+			break;
+		}
+		break;
+	}
+	assert(pthread_mutex_unlock(&table_entry->lock) == 0);
+	/* Now, return the fragment to the sender */
+	PtlInternalFragmentAck(hdr, hdr->src);
+    }
+    return NULL;
+}
+
 void INTERNAL PtlInternalDMSetup(
     ptl_size_t max_msg_size)
 {
+    if (PtlInternalAtomicInc(&spawned, 1) == 0) {
+	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) == 0);
+    }
 }
 
 void INTERNAL PtlInternalDMTeardown(
     void)
 {
+    if (PtlInternalAtomicInc(&spawned, -1) == 1) {
+	assert(pthread_cancel(catcher) == 0);
+	assert(pthread_join(catcher, NULL) == 0);
+    }
 }
 
 int API_FUNC PtlPut(
@@ -68,7 +123,7 @@ int API_FUNC PtlPut(
     void *user_ptr,
     ptl_hdr_data_t hdr_data)
 {
-    ptl_internal_header_t *qme;
+    ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
@@ -97,37 +152,39 @@ int API_FUNC PtlPut(
     }
 #endif
     /* step 1: get a local memory fragment */
-    qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
     /* step 2: fill the op structure */
-    qme->type = HDR_TYPE_PUT;
-    qme->ni = md.s.ni;
-    qme->src = proc_number;
-    qme->pt_index = pt_index;
-    qme->match_bits = match_bits;
-    qme->dest_offset = remote_offset;
-    qme->length = length;
-    qme->user_ptr = user_ptr;
+    hdr->type = HDR_TYPE_PUT;
+    hdr->ni = md.s.ni;
+    printf("hdr->NI = %i, md.s.ni = %i\n", hdr->ni, md.s.ni);
+    hdr->src = proc_number;
+    hdr->pt_index = pt_index;
+    hdr->match_bits = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length = length;
+    hdr->user_ptr = user_ptr;
     assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    qme->src_data_ptr = (void*)(intptr_t)md_handle;
-    qme->info.put.hdr_data = hdr_data;
-    qme->info.put.ack_req = ack_req;
+    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
+    hdr->info.put.hdr_data = hdr_data;
+    hdr->info.put.ack_req = ack_req;
     /* step 3: load up the data */
-    if (PtlInternalFragmentSize(qme) - sizeof(ptl_internal_header_t) >= length) {
-	memcpy(qme + 1, PtlInternalMDDataPtr(md_handle) + local_offset, length);
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
+	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset, length);
     } else {
 #warning supersize messages need to be handled
-	fprintf(stderr, "need to implement rendezvous protocol (got a %llu-byte fragment, need to send %llu bytes)\n", (unsigned long long)PtlInternalFragmentSize(qme), (unsigned long long) length);
+	fprintf(stderr, "need to implement rendezvous protocol (got a %llu-byte fragment, need to send %llu bytes)\n", (unsigned long long)PtlInternalFragmentSize(hdr), (unsigned long long) length);
 	abort();
     }
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
 	case 1:		       // Logical
-	    PtlInternalFragmentToss(qme, target_id.rank);
+	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
-	    PtlInternalFragmentToss(qme, target_id.phys.pid);
+	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
     /* step 5: report the send event */
@@ -161,7 +218,7 @@ int API_FUNC PtlGet(
     ptl_size_t remote_offset)
 {
     const ptl_internal_handle_converter_t md = { md_handle };
-    ptl_internal_header_t *qme;
+    ptl_internal_header_t *hdr;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -188,27 +245,27 @@ int API_FUNC PtlGet(
     }
 #endif
     /* step 1: get a local memory fragment */
-    qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
-    qme->type = HDR_TYPE_GET;
-    qme->ni = md.s.ni;
-    qme->src = proc_number;
-    qme->pt_index = pt_index;
-    qme->match_bits = match_bits;
-    qme->dest_offset = remote_offset;
-    qme->length = length;
-    qme->user_ptr = user_ptr;
+    hdr->type = HDR_TYPE_GET;
+    hdr->ni = md.s.ni;
+    hdr->src = proc_number;
+    hdr->pt_index = pt_index;
+    hdr->match_bits = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length = length;
+    hdr->user_ptr = user_ptr;
     assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    qme->src_data_ptr = (void*)(intptr_t)md_handle;
+    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
     /* step 3: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
 	case 1:		       // Logical
-	    PtlInternalFragmentToss(qme, target_id.rank);
+	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
-	    PtlInternalFragmentToss(qme, target_id.phys.pid);
+	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
     /* no send event to report */
@@ -229,7 +286,7 @@ int API_FUNC PtlAtomic(
     ptl_op_t operation,
     ptl_datatype_t datatype)
 {
-    ptl_internal_header_t *qme;
+    ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
@@ -264,33 +321,33 @@ int API_FUNC PtlAtomic(
     }
 #endif
     /* step 1: get a local memory fragment */
-    qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
-    qme->type = HDR_TYPE_ATOMIC;
-    qme->ni = md.s.ni;
-    qme->src = proc_number;
-    qme->pt_index = pt_index;
-    qme->match_bits = match_bits;
-    qme->dest_offset = remote_offset;
-    qme->length = length;
-    qme->user_ptr = user_ptr;
+    hdr->type = HDR_TYPE_ATOMIC;
+    hdr->ni = md.s.ni;
+    hdr->src = proc_number;
+    hdr->pt_index = pt_index;
+    hdr->match_bits = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length = length;
+    hdr->user_ptr = user_ptr;
     assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    qme->src_data_ptr = (void*)(intptr_t)md_handle;
-    qme->info.atomic.hdr_data = hdr_data;
-    qme->info.atomic.ack_req = ack_req;
-    qme->info.atomic.operation = operation;
-    qme->info.atomic.datatype = datatype;
+    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
+    hdr->info.atomic.hdr_data = hdr_data;
+    hdr->info.atomic.ack_req = ack_req;
+    hdr->info.atomic.operation = operation;
+    hdr->info.atomic.datatype = datatype;
     /* step 3: load up the data */
-    memcpy(qme + 1, PtlInternalMDDataPtr(md_handle) + local_offset, length);
+    memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset, length);
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
 	case 1:		       // Logical
-	    PtlInternalFragmentToss(qme, target_id.rank);
+	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
-	    PtlInternalFragmentToss(qme, target_id.phys.pid);
+	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
     /* step 5: report the send event */
@@ -328,7 +385,7 @@ int API_FUNC PtlFetchAtomic(
     ptl_op_t operation,
     ptl_datatype_t datatype)
 {
-    ptl_internal_header_t *qme;
+    ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     ptl_internal_srcdata_t *extra_info;
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -374,38 +431,38 @@ int API_FUNC PtlFetchAtomic(
     }
 #endif
     /* step 1: get a local memory fragment */
-    qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
-    qme->type = HDR_TYPE_FETCHATOMIC;
-    qme->ni = get_md.s.ni;
-    qme->src = proc_number;
-    qme->pt_index = pt_index;
-    qme->match_bits = match_bits;
-    qme->dest_offset = remote_offset;
-    qme->length = length;
-    qme->user_ptr = user_ptr;
+    hdr->type = HDR_TYPE_FETCHATOMIC;
+    hdr->ni = get_md.s.ni;
+    hdr->src = proc_number;
+    hdr->pt_index = pt_index;
+    hdr->match_bits = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length = length;
+    hdr->user_ptr = user_ptr;
     extra_info = malloc(sizeof(ptl_internal_srcdata_t));
     assert(extra_info);
     extra_info->fetchatomic.get_md_handle.a.md = get_md_handle;
     extra_info->fetchatomic.local_get_offset = local_get_offset;
     extra_info->fetchatomic.put_md_handle.a.md = put_md_handle;
     extra_info->fetchatomic.local_put_offset = local_put_offset;
-    qme->src_data_ptr = extra_info;
-    qme->info.fetchatomic.hdr_data = hdr_data;
-    qme->info.fetchatomic.operation = operation;
-    qme->info.fetchatomic.datatype = datatype;
+    hdr->src_data_ptr = extra_info;
+    hdr->info.fetchatomic.hdr_data = hdr_data;
+    hdr->info.fetchatomic.operation = operation;
+    hdr->info.fetchatomic.datatype = datatype;
     /* step 3: load up the data */
-    memcpy(qme + 1, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
+    memcpy(hdr->data, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
 	   length);
     /* step 4: enqueue the op structure on the target */
     switch (put_md.s.ni) {
 	case 0:
 	case 1:		       // Logical
-	    PtlInternalFragmentToss(qme, target_id.rank);
+	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
-	    PtlInternalFragmentToss(qme, target_id.phys.pid);
+	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
     /* step 5: report the send event */
@@ -446,7 +503,7 @@ int API_FUNC PtlSwap(
 {
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-    ptl_internal_header_t *qme;
+    ptl_internal_header_t *hdr;
     ptl_internal_srcdata_t *extra_info;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -486,29 +543,29 @@ int API_FUNC PtlSwap(
     }
 #endif
     /* step 1: get a local memory fragment */
-    qme = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
-    qme->type = HDR_TYPE_SWAP;
-    qme->ni = get_md.s.ni;
-    qme->src = proc_number;
-    qme->pt_index = pt_index;
-    qme->match_bits = match_bits;
-    qme->dest_offset = remote_offset;
-    qme->length = length;
-    qme->user_ptr = user_ptr;
+    hdr->type = HDR_TYPE_SWAP;
+    hdr->ni = get_md.s.ni;
+    hdr->src = proc_number;
+    hdr->pt_index = pt_index;
+    hdr->match_bits = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length = length;
+    hdr->user_ptr = user_ptr;
     extra_info = malloc(sizeof(ptl_internal_srcdata_t));
     assert(extra_info);
     extra_info->swap.get_md_handle.a.md = get_md_handle;
     extra_info->swap.local_get_offset = local_get_offset;
     extra_info->swap.put_md_handle.a.md = put_md_handle;
     extra_info->swap.local_put_offset = local_put_offset;
-    qme->src_data_ptr = extra_info;
-    qme->info.swap.hdr_data = hdr_data;
-    qme->info.swap.operation = operation;
-    qme->info.swap.datatype = datatype;
+    hdr->src_data_ptr = extra_info;
+    hdr->info.swap.hdr_data = hdr_data;
+    hdr->info.swap.operation = operation;
+    hdr->info.swap.datatype = datatype;
     /* step 3: load up the data */
     {
-	char *dataptr = (char *)(qme + 1);
+	char *dataptr = hdr->data;
 	if (operation == PTL_CSWAP || operation == PTL_MSWAP) {
 	    switch (datatype) {
 		case PTL_CHAR:
@@ -542,11 +599,11 @@ int API_FUNC PtlSwap(
     switch (get_md.s.ni) {
 	case 0:
 	case 1:		       // Logical
-	    PtlInternalFragmentToss(qme, target_id.rank);
+	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
-	    PtlInternalFragmentToss(qme, target_id.phys.pid);
+	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
     /* step 5: report the send event */
