@@ -63,3 +63,45 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingDequeue(
     }
     return retval;
 }
+
+void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
+    NEMESIS_blocking_queue * restrict q,
+    NEMESIS_entry * restrict f)
+{
+    PtlInternalNEMESISOffsetEnqueue(&q->q, f);
+    /* awake waiter */
+    if (q->frustration) {
+	//printf("%i locking %li\n", getpid(), PTR2OFF(&q->trigger_lock));
+	assert(pthread_mutex_lock(&q->trigger_lock) == 0);
+	if (q->frustration) {
+	    q->frustration = 0;
+	    //printf("%i triggering %li\n", getpid(), PTR2OFF(&q->trigger));
+	    assert(pthread_cond_signal(&q->trigger) == 0);
+	}
+	assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
+    } else {
+	//printf("%i would have triggered %li\n", getpid(), PTR2OFF(&q->trigger));
+    }
+}
+
+NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
+    NEMESIS_blocking_queue * q)
+{
+    NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
+    if (retval == NULL) {
+	while (q->q.head == NULL) {
+	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
+		//printf("%i locking on %li\n", getpid(), PTR2OFF(&q->trigger_lock));
+		assert(pthread_mutex_lock(&q->trigger_lock) == 0);
+		//do { // this loop is unnecessary for only 1 dequeuer
+		//printf("%i waiting on %li\n", getpid(), PTR2OFF(&q->trigger));
+		assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
+		//} while (q->frustration > 1000);
+		assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
+	    }
+	}
+	retval = PtlInternalNEMESISOffsetDequeue(&q->q);
+	assert(retval != NULL);
+    }
+    return retval;
+}
