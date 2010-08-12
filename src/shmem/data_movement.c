@@ -57,45 +57,47 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
 	printf("got a header! %p\n", hdr);
+	src = hdr->src;
 	assert(nit.tables != NULL);
-	printf("nit.tables[%i] = %p\n", hdr->ni, nit.tables[hdr->ni]);
 	assert(nit.tables[hdr->ni] != NULL);
 	ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
-	assert(table_entry != NULL);
-	src = hdr->src;
-	assert(pthread_mutex_lock(&table_entry->lock) == 0);
-	switch (PtlInternalPTValidate(table_entry)) {
-	    case 1: // uninitialized
-		fprintf(stderr, "sent to an uninitialized PT!\n");
-		abort();
-		break;
-	    case 2: // disabled
-		fprintf(stderr, "sent to a disabled PT!\n");
-		abort();
-		break;
+	if (table_entry->status != 0) {
+	    assert(pthread_mutex_lock(&table_entry->lock) == 0);
+	    switch (PtlInternalPTValidate(table_entry)) {
+		case 1: // uninitialized
+		    fprintf(stderr, "sent to an uninitialized PT!\n");
+		    abort();
+		    break;
+		case 2: // disabled
+		    fprintf(stderr, "sent to a disabled PT!\n");
+		    abort();
+		    break;
+	    }
+	    printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
+	    switch (hdr->ni) {
+		case 0: case 2: // Matching (ME)
+		    fprintf(stderr, "Matching delivery not handled yet, sorry\n");
+		    break;
+		case 1: case 3: // Non-matching (LE)
+		    printf("delivering to LE table\n");
+		    switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
+			case 1: // success
+			    printf("LE delivery success!\n");
+			    break;
+			case 2: // overflow
+			    break;
+			case 0: // nothing matched, report error
+			case 3: // Permission Violation
+			    hdr->length = 0;
+			    break;
+		    }
+		    break;
+	    }
+	    printf("unlocking\n");
+	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
+	} else {
+	    hdr->src = -1;
 	}
-	printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
-	switch (hdr->ni) {
-	    case 0: case 2: // Matching (ME)
-		fprintf(stderr, "Matching delivery not handled yet, sorry\n");
-		break;
-	    case 1: case 3: // Non-matching (LE)
-		printf("delivering to LE table\n");
-		switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
-		    case 1: // success
-			printf("LE delivery success!\n");
-			break;
-		    case 2: // overflow
-			break;
-		    case 0: // nothing matched, report error
-			break;
-		    case 3: // Permission Violation
-			break;
-		}
-		break;
-	}
-	printf("unlocking\n");
-	assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
 	PtlInternalFragmentAck(hdr, src);
@@ -150,7 +152,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    if (hdr->src == 3) {
 				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
 			    } else {
-				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+				e.event.ievent.ni_fail_type = PTL_NI_OK;
 			    }
 			    PtlInternalEQPush(mdptr->eq_handle, &e);
 			}
