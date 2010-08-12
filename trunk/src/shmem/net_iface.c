@@ -173,14 +173,14 @@ int API_FUNC PtlNIInit(
 	    return PTL_NO_SPACE;
 	}
 	for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
-	    PtlInternalPTInit(tmp+e);
+	    PtlInternalPTInit(tmp + e);
 	}
 	nit.tables[ni.ni] = tmp;
     }
     assert(nit.tables[ni.ni] != NULL);
     __sync_synchronize();	       // full memory fence
     PtlInternalAtomicInc(&(nit.refcount[ni.ni]), 1);
-    PtlInternalDMSetup(); // This MUST happen AFTER the tables are set up
+    PtlInternalDMSetup();	       // This MUST happen AFTER the tables are set up
     return PTL_OK;
 }
 
@@ -257,5 +257,19 @@ int API_FUNC PtlNIHandle(
 	default:
 	    return PTL_ARG_INVALID;
     }
+    return PTL_OK;
+}
+
+int INTERNAL PtlInternalNIValidator(
+    const ptl_internal_handle_converter_t ni)
+{
+#ifndef NO_ARG_VALIDATION
+    if (ni.s.selector != HANDLE_NI_CODE) {
+	return PTL_ARG_INVALID;
+    }
+    if (ni.s.ni > 3 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	return PTL_ARG_INVALID;
+    }
+#endif
     return PTL_OK;
 }
