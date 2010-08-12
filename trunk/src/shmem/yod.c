@@ -2,6 +2,11 @@
 #define _SVID_SOURCE
 /* For BSD definitions (ftruncate, setenv) */
 #define _BSD_SOURCE
+/* For POSIX definitions (kill) on Linux */
+#define _POSIX_SOURCE
+/* for Darwin definitions (getpagesize) on Darwin;
+ * only necessary because _POSIX_SOURCE conflicts */
+#define _DARWIN_C_SOURCE // Enables getpagesize() on Darwin (only necessary because of _POSIX_SOURCE)
 
 #include <portals4.h>
 
