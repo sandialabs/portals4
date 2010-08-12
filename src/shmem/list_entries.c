@@ -223,9 +223,8 @@ int API_FUNC PtlLEUnlink(
 	return PTL_ARG_INVALID;
     }
 #endif
-    if (PtlInternalAtomicCas32(&les[le.s.code].status, LE_ALLOCATED, LE_FREE) == LE_IN_USE) {
-	return PTL_IN_USE;
-    }
+#warning need to fix the LE in-use detection
+    les[le.s.code].status = LE_FREE;
     return PTL_OK;
 }
 
