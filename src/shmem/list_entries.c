@@ -253,7 +253,6 @@ int INTERNAL PtlInternalLEDeliver(
 		}
 		printf("EQ?\n");
 		if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
-		    ptl_event_t e;
 		    e.type = PTL_EVENT_PUT;
 		    e.event.tevent.initiator.phys.pid = hdr->src;
 		    e.event.tevent.initiator.phys.nid = 0;
