@@ -35,6 +35,7 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 typedef struct {
     ptl_md_t visible;
     uint32_t in_use;		// 0=free, 1=in_use
+    uint32_t refcount;
 } ptl_internal_md_t;
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
@@ -106,7 +107,6 @@ int INTERNAL PtlInternalMDHandleValidator(
 	VERBOSE_ERROR("MD appears to be free already\n");
 	return PTL_ARG_INVALID;
     }
-#warning what if an md gets deallocated while its handle is being validated?
     mdptr = &(mds[md.s.ni][md.s.code]);
     if (mdptr->visible.options & PTL_MD_EVENT_DISABLE) {
 	eq_optional = 1;
@@ -195,6 +195,9 @@ int API_FUNC PtlMDRelease(
 	return PTL_ARG_INVALID;
     }
 #endif
+    if (mds[md.s.ni][md.s.code].refcount != 0) {
+	return PTL_IN_USE;
+    }
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
     return PTL_OK;
 }
@@ -218,4 +221,18 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(
 {
     const ptl_internal_handle_converter_t md = { handle };
     return &(mds[md.s.ni][md.s.code].visible);
+}
+
+void INTERNAL PtlInternalMDPosted(
+	ptl_handle_md_t handle)
+{
+    const ptl_internal_handle_converter_t md = { handle };
+    PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, 1);
+}
+
+void INTERNAL PtlInternalMDCleared(
+	ptl_handle_md_t handle)
+{
+    const ptl_internal_handle_converter_t md = { handle };
+    PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
 }
