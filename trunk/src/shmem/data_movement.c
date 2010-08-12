@@ -48,11 +48,12 @@ typedef union {
 } ptl_internal_srcdata_t;
 
 static uint32_t spawned;
-static pthread_t catcher;
+static pthread_t catcher, ack_catcher;
 
 static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 {
     while (1) {
+	ptl_pid_t src;
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
 	printf("got a header! %p\n", hdr);
@@ -61,6 +62,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 	assert(nit.tables[hdr->ni] != NULL);
 	ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
 	assert(table_entry != NULL);
+	src = hdr->src;
 	assert(pthread_mutex_lock(&table_entry->lock) == 0);
 	switch (PtlInternalPTValidate(table_entry)) {
 	    case 1: // uninitialized
@@ -79,13 +81,15 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		break;
 	    case 1: case 3: // Non-matching (LE)
 		printf("delivering to LE table\n");
-		switch (PtlInternalLEDeliver(table_entry, hdr)) {
+		switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
 		    case 1: // success
 			printf("LE delivery success!\n");
 			break;
 		    case 2: // overflow
 			break;
 		    case 0: // nothing matched, report error
+			break;
+		    case 3: // Permission Violation
 			break;
 		}
 		break;
@@ -94,10 +98,76 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 	assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
-	PtlInternalFragmentAck(hdr, hdr->src);
+	PtlInternalFragmentAck(hdr, src);
 	printf("back to the beginning\n");
     }
     return NULL;
+}
+
+static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
+{
+    while (1) {
+	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
+	ptl_md_t *mdptr;
+	ptl_handle_md_t md_handle;
+	/* first, figure out what to do with the ack */
+	switch(hdr->type) {
+	    case HDR_TYPE_PUT:
+		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		PtlInternalMDCleared(md_handle);
+		/* Report the ack */
+		mdptr = PtlInternalMDFetch(md_handle);
+		assert(mdptr != NULL);
+		switch(hdr->src) {
+		    case 1: // success
+		    case 2: // overflow
+			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
+			    ptl_ct_event_t cte = {1, 0};
+			    PtlCTInc(mdptr->ct_handle, cte);
+			}
+			if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+			    ptl_event_t e;
+			    e.type = PTL_EVENT_ACK;
+			    e.event.ievent.mlength = hdr->length;
+			    e.event.ievent.offset = hdr->dest_offset;
+			    e.event.ievent.user_ptr = hdr->user_ptr;
+			    e.event.ievent.ni_fail_type = PTL_NI_OK;
+			    PtlInternalEQPush(mdptr->eq_handle, &e);
+			}
+			break;
+		    case 3: // Permission Violation
+		    case 0: // nothing matched, report error
+			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
+			    ptl_ct_event_t cte = {0, 1};
+			    PtlCTInc(mdptr->ct_handle, cte);
+			}
+			if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
+			    ptl_event_t e;
+			    e.type = PTL_EVENT_ACK;
+			    e.event.ievent.mlength = hdr->length;
+			    e.event.ievent.offset = hdr->dest_offset;
+			    e.event.ievent.user_ptr = hdr->user_ptr;
+			    if (hdr->src == 3) {
+				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
+			    } else {
+				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+			    }
+			    PtlInternalEQPush(mdptr->eq_handle, &e);
+			}
+			break;
+		}
+		break;
+	    case HDR_TYPE_GET:
+	    case HDR_TYPE_ATOMIC:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		fprintf(stderr, "unimplemented");
+		abort();
+		break;
+	}
+	/* now, put the fragment back in the freelist */
+	PtlInternalFragmentFree(hdr);
+    }
 }
 
 void INTERNAL PtlInternalDMSetup(
@@ -105,6 +175,7 @@ void INTERNAL PtlInternalDMSetup(
 {
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
 	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) == 0);
+	assert(pthread_create(&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL) == 0);
     }
 }
 
@@ -114,6 +185,8 @@ void INTERNAL PtlInternalDMTeardown(
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
 	assert(pthread_cancel(catcher) == 0);
 	assert(pthread_join(catcher, NULL) == 0);
+	assert(pthread_cancel(ack_catcher) == 0);
+	assert(pthread_join(ack_catcher, NULL) == 0);
     }
 }
 
@@ -157,6 +230,7 @@ int API_FUNC PtlPut(
 	    break;
     }
 #endif
+    PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
