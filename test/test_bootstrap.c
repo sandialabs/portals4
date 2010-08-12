@@ -67,7 +67,7 @@ int main(
 	le.options =
 	    PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
 	    PTL_LE_EVENT_CT_GET;
-	assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &le.ct_handle)
+	assert(PtlCTAlloc(ni_physical, &le.ct_handle)
 	       == PTL_OK);
 	assert(PtlLEAppend
 	       (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
@@ -80,7 +80,7 @@ int main(
 	/* now distribute the mapping */
 	md.options = PTL_MD_EVENT_CT_ACK;
 	md.eq_handle = PTL_EQ_NONE;
-	assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &md.ct_handle) ==
+	assert(PtlCTAlloc(ni_physical, &md.ct_handle) ==
 	       PTL_OK);
 	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
 	for (uint64_t r = 0; r <= maxrank; ++r) {
@@ -102,7 +102,7 @@ int main(
 	md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_SEND;	// count sends, but don't trigger events
 	md.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
 	CHECK_RETURNVAL(PtlCTAlloc
-			(ni_physical, PTL_CT_OPERATION, &md.ct_handle),
+			(ni_physical, &md.ct_handle),
 			"PtlCTAlloc");
 	/* for receiving the mapping */
 	le.start = mapping;
@@ -110,7 +110,7 @@ int main(
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	CHECK_RETURNVAL(PtlCTAlloc
-			(ni_physical, PTL_CT_OPERATION, &le.ct_handle),
+			(ni_physical, &le.ct_handle),
 			"PtlCTAlloc");
 	/* post this now to avoid a race condition later */
 	CHECK_RETURNVAL(PtlLEAppend
