@@ -24,6 +24,7 @@ enum ptl_retvals {
     PTL_LIST_TOO_LONG,	/*!< The resulting list is too long (interface-dependent). */
     PTL_PT_IN_USE,	/*!< Portal table index is busy. */
     PTL_PT_FULL,	/*!< Portal table has no empty entries. */
+    PTL_PT_EQ_NEEDED,	/*!< Flow control is enabled and there is no EQ provided. */
     PTL_EQ_DROPPED,	/*!< At least one event has been dropped. */
     PTL_EQ_EMPTY,	/*!< No events available in an event queue. */
     PTL_INTERRUPTED,	/*!< Wait/get operation was interrupted. */
@@ -610,6 +611,12 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
  *			    interface handle.
+ * @retval PTL_PT_FULL	    Indicates that there are no free entries in the
+ *			    portal table.
+ * @retval PTL_PT_IN_USE    Indicates that the Portal table entry requested is
+ *			    in use.
+ * @retval PTL_PT_EQ_NEEDED Indicates that flow control is enabled and there is
+ *			    no EQ attached.
  * @see PtlPTFree()
  */
 int PtlPTAlloc(ptl_handle_ni_t  ni_handle,
@@ -652,9 +659,9 @@ int PtlPTFree(ptl_handle_ni_t	ni_handle,
  *			    interface handle.
  * @see PtlPTEnable()
  * @note After successful completion, no other messages will be accepted on
- * this portal table entry and no more events associated with this portal table
- * entry will be delivered. Replies arriving at this initiator will continue to
- * succeed.
+ *	this portal table entry and no more events associated with this portal
+ *	table entry will be delivered. Replies arriving at this initiator will
+ *	continue to succeed.
  */
 int PtlPTDisable(ptl_handle_ni_t    ni_handle,
 		 ptl_pt_index_t	    pt_index);
@@ -1346,7 +1353,6 @@ typedef enum {
 } ptl_ct_type_t;
 /*!
  * @fn PtlCTAlloc(ptl_handle_ni_t   ni_handle,
- *		  ptl_ct_type_t	    ct_type,
  *		  ptl_handle_ct_t * ct_handle)
  * @brief Used to allocate a counting event that counts either operations on
  *	the memory descriptor (match list entry) or bytes that flow out of
@@ -1358,8 +1364,6 @@ typedef enum {
  *	initialized to zero.
  * @param[in] ni_handle	    The interface handle with which the counting event
  *			    will be associated.
- * @param[in] ct_type	    A selection between counting operations and
- *			    counting bytes.
  * @param[out] ct_handle    On successful return, this location will hold the
  *			    newly created counting event handle.
  * @retval PTL_OK		Indicates success
@@ -1377,7 +1381,6 @@ typedef enum {
  * @see PtlCTFree()
  */
 int PtlCTAlloc(ptl_handle_ni_t	    ni_handle,
-	       ptl_ct_type_t	    ct_type,
 	       ptl_handle_ct_t *    ct_handle);
 /*!
  * @fn PtlCTFree(ptl_handle_ct_t ct_handle)
@@ -1400,11 +1403,19 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
  * @param[in] ct_handle	    The counting event handle.
  * @param[out] event	    On successful return, this location will hold the
  *			    current value associated with the counting event.
- * @retval PTL_OK		Indicates success
- * @retval PTL_NO_INIT		Indicates that the portals API has not been
- *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
- *				counting event handle.
+ * @retval PTL_OK	    Indicates success
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that \a ct_handle is not a valid
+ *			    counting event handle.
+ * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
+ *			    called by another thread while this thread was
+ *			    in PtlCTWait()
+ * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree of
+ *	complexity to the PtlCTGet() and PtlCTWait() functions; however, it was
+ *	deemed necessary to be able to interrupt waiting functions for the sake
+ *	of applications that need to tolerate failures. Hence, this approach to
+ *	dealing with the conflict of reading and freeing events was chosen.
  * @see PtlCTWait()
  */
 int PtlCTGet(ptl_handle_ct_t	ct_handle,
@@ -1421,11 +1432,14 @@ int PtlCTGet(ptl_handle_ct_t	ct_handle,
  *			than or equal to this value.
  * @param[out] event	On successful return, this location will hold the
  *			current value associated with the counting event.
- * @retval PTL_OK		Indicates success
- * @retval PTL_NO_INIT		Indicates that the portals API has not been
- *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
- *				counting event handle.
+ * @retval PTL_OK	    Indicates success
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that \a ct_handle is not a valid
+ *			    counting event handle.
+ * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
+ *			    called by another thread while this thread was
+ *			    waiting in PtlCTWait()
  * @see PtlCTGet()
  */
 int PtlCTWait(ptl_handle_ct_t	ct_handle,
@@ -2194,19 +2208,28 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  * @param[in] eq_handle	The event queue handle.
  * @param[out] event	On successful return, this location will hold the
  *			values associated with the next event in the event queue.
- * @retval PTL_OK		Indicates success
- * @retval PTL_NO_INIT		Indicates that the portals API has not been
- *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
- *				event queue handle.
- * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
- *				thread is waiting in PtlEQWait().
- * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
- *				and that at least one event between this event
- *				and the last event obtained -- using
- *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
- *				this event queue has been dropped due to
- *				limited space in the event queue.
+ * @retval PTL_OK	    Indicates success
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that \a eq_handle is not a valid event
+ *			    queue handle.
+ * @retval PTL_EQ_EMPTY	    Indicates that \a eq_handle is empty or another
+ *			    thread is waiting in PtlEQWait().
+ * @retval PTL_EQ_DROPPED   Indicates success (i.e., an event is returned) and
+ *			    that at least one event between this event and the
+ *			    last event obtained -- using PtlEQGet(),
+ *			    PtlEQWait(), or PtlEQPoll() -- from this event
+ *			    queue has been dropped due to limited space in the
+ *			    event queue.
+ * @retval PTL_INTERRUPTED  Indicates that PtlEQFree() or PtlNIFini() was
+ *			    called by another thread while this thread was in
+ *			    PtlEQGet().
+ * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree of
+ *	complexity to the PtlEQGet(), PtlEQWait(), and PtlEQPoll() functions;
+ *	however, it was deemed necessary to be able to interrupt waiting
+ *	functions for the sake of applications that need to tolerate failures.
+ *	Hence, this approach to dealing with the conflict of reading and
+ *	freeing events was chosen.
  * @see PtlEQWait(), PtlEQPoll()
  */
 int PtlEQGet(ptl_handle_eq_t	eq_handle,
