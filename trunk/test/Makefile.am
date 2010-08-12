@@ -11,6 +11,7 @@ TESTS = test_init \
 
 #EXTRA_PROGRAMS = test_bootstrap
 
+all: $(TESTS)
 buildall: $(TESTS)
 .PHONY: buildall
 
