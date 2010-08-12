@@ -27,14 +27,8 @@
 #include <sys/wait.h>		       /* for waitpid() */
 #include <string.h>		       /* for memset() */
 #include <pthread.h>		       /* for all pthread functions */
-#ifdef __APPLE__
-# include <signal.h>		       /* for kill() */
-#else
-/* For POSIX definitions (kill) */
-# define _POSIX_SOURCE
-# include <sys/types.h>		       /* for kill() */
-# include <signal.h>		       /* for kill() */
-#endif
+#include <sys/types.h>		       /* for kill() */
+#include <signal.h>		       /* for kill() */
 #include <errno.h>		       /* for errno */
 
 #ifdef HAVE_SYS_POSIX_SHM_H
