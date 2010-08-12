@@ -38,7 +38,7 @@ int API_FUNC PtlPTAlloc(
 	return PTL_ARG_INVALID;
     }
     if (eq_handle == PTL_EQ_NONE && options & PTL_PT_FLOW_CONTROL) {
-        return PTL_ARG_INVALID; // PTL_PT_EQ_NEEDED
+        return PTL_PT_EQ_NEEDED;
     }
     if (PtlInternalEQHandleValidator(eq_handle, 1)) {
 	return PTL_ARG_INVALID;
