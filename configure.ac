@@ -153,6 +153,7 @@ AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
 AC_CHECK_FUNCS([getpagesize]) # not mandatory
 AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
 			   [AC_MSG_ERROR([required function not found])])
+AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD functions like ftruncate
 AC_SEARCH_LIBS([shm_open],
 	       [rt], [],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
