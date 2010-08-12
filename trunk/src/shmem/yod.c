@@ -50,7 +50,8 @@
 static long count = 0;
 
 static char shmname[PSHMNAMLEN + 1];
-static void cleanup(int s);
+static void cleanup(
+    int s);
 
 static void print_usage(
     int ex);
@@ -176,14 +177,15 @@ int main(
 	long int r1 = random();
 	long int r2 = random();
 	long int r3 = random();
-	r1 = r2 = r3 = 0; // for testing
+	r1 = r2 = r3 = 0;	       // for testing
 	memset(shmname, 0, PSHMNAMLEN + 1);
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
     assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
     commsize =
 	(small_frag_count * small_frag_size) +
-	(large_frag_count * large_frag_size) + (sizeof(NEMESIS_blocking_queue) * 2);
+	(large_frag_count * large_frag_size) +
+	(sizeof(NEMESIS_blocking_queue) * 2);
     buffsize += commsize * (count + 1);	// the one extra is for the collator
 
     /* Establish the communication pad */
@@ -266,7 +268,7 @@ int main(
 	if ((exited = wait(&status)) == -1) {
 	    perror("yod-> wait failed");
 	}
-	if (WIFSIGNALED(status) && ! WIFSTOPPED(status)) {
+	if (WIFSIGNALED(status) && !WIFSTOPPED(status)) {
 	    size_t d;
 	    ++err;
 	    fprintf(stderr,
@@ -302,7 +304,8 @@ int main(
     return err;
 }
 
-static void cleanup(int s)
+static void cleanup(
+    int s)
 {
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");
@@ -314,7 +317,7 @@ static void cleanup(int s)
 }
 
 void *collator(
-    void * __attribute__((unused)) junk)
+    void * __attribute__ ((unused)) junk)
 {
     char procstr[10];
     ptl_process_id_t *mapping;
@@ -342,8 +345,7 @@ void *collator(
     le.options =
 	PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
 	PTL_LE_EVENT_CT_GET;
-    assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &le.ct_handle) ==
-	   PTL_OK);
+    assert(PtlCTAlloc(ni_physical, &le.ct_handle) == PTL_OK);
     assert(PtlLEAppend
 	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
 	    &le_handle) == PTL_OK);
@@ -355,8 +357,9 @@ void *collator(
 	assert(ct_data.failure == 0);
 	printf("COLLECTOR-> zero failures!\n");
     }
-    for (unsigned int i=0;i<=count;i++) {
-	printf("mapping[%u] = {%u,%u}\n", i, mapping[i].phys.pid, mapping[i].phys.nid);
+    for (unsigned int i = 0; i <= count; i++) {
+	printf("mapping[%u] = {%u,%u}\n", i, mapping[i].phys.pid,
+	       mapping[i].phys.nid);
     }
     /* cleanup */
     assert(PtlCTFree(le.ct_handle) == PTL_OK);
@@ -364,8 +367,7 @@ void *collator(
     /* now distribute the mapping */
     md.options = PTL_MD_EVENT_CT_ACK;
     md.eq_handle = PTL_EQ_NONE;
-    assert(PtlCTAlloc(ni_physical, PTL_CT_OPERATION, &md.ct_handle) ==
-	   PTL_OK);
+    assert(PtlCTAlloc(ni_physical, &md.ct_handle) == PTL_OK);
     assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
     for (uint64_t r = 0; r <= count; ++r) {
 	assert(PtlPut
