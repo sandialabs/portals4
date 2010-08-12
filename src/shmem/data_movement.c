@@ -156,6 +156,8 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    e.event.ievent.user_ptr = hdr->user_ptr;
 			    if (hdr->src == 3) {
 				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
+			    } else if (hdr->src == 9999) {
+				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
 			    } else {
 				e.event.ievent.ni_fail_type = PTL_NI_OK;
 			    }
