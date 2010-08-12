@@ -3,6 +3,7 @@
 
 #include <stdint.h>		       /* for uint32_t */
 
+#include "ptl_internal_handles.h"
 #include "ptl_internal_PT.h"
 
 typedef struct {
@@ -13,5 +14,8 @@ typedef struct {
 
 extern ptl_internal_nit_t nit;
 extern ptl_ni_limits_t nit_limits;
+
+int PtlInternalNIValidator(
+    const ptl_internal_handle_converter_t ni);
 
 #endif
