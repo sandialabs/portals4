@@ -128,9 +128,12 @@ int API_FUNC PtlLEAppend(
 	VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index, nit_limits.max_pt_index);
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index])) {
-	VERBOSE_ERROR("LEAppend sees an invalid PT\n");
-	return PTL_ARG_INVALID;
+    {
+	int ptv = PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index]);
+	if (ptv == 1 || ptv == 3) { // Unallocated or bad EQ (enabled/disabled both allowed)
+	    VERBOSE_ERROR("LEAppend sees an invalid PT\n");
+	    return PTL_ARG_INVALID;
+	}
     }
 #endif
     assert(les != NULL);
