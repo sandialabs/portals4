@@ -6,7 +6,7 @@
 #define _POSIX_SOURCE
 /* for Darwin definitions (getpagesize) on Darwin;
  * only necessary because _POSIX_SOURCE conflicts */
-#define _DARWIN_C_SOURCE // Enables getpagesize() on Darwin (only necessary because of _POSIX_SOURCE)
+#define _DARWIN_C_SOURCE
 
 #include <portals4.h>
 
