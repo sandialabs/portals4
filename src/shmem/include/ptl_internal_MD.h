@@ -15,5 +15,9 @@ ptl_size_t PtlInternalMDLength(
     ptl_handle_md_t handle);
 ptl_md_t *PtlInternalMDFetch(
     ptl_handle_md_t handle);
+void PtlInternalMDPosted(
+    ptl_handle_md_t handle);
+void PtlInternalMDCleared(
+    ptl_handle_md_t handle);
 
 #endif
