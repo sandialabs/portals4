@@ -24,6 +24,7 @@
 #include "ptl_internal_LE.h"
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_CT.h"
 #include "ptl_internal_PT.h"
 #include "ptl_internal_error.h"
 
@@ -44,7 +45,6 @@ typedef struct {
 
 static ptl_internal_le_t *les = NULL;
 static NEMESIS_blocking_queue appends;
-//static pthread_t LEthread;
 
 void INTERNAL PtlInternalLENISetup(
     ptl_size_t limit)
@@ -195,7 +195,38 @@ int API_FUNC PtlLEAppend(
 int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {
-    return PTL_FAIL;
+    const ptl_internal_handle_converter_t le = { le_handle };
+#ifndef NO_ARG_VALIDATION
+    int ct_optional = 0;
+    if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
+	return PTL_NO_INIT;
+    }
+    if (le.s.ni > 3 || le.s.code > nit_limits.max_mds || (nit.refcount[le.s.ni] == 0)) {
+	VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", le.s.ni, le.s.code, nit_limits.max_mds);
+	return PTL_ARG_INVALID;
+    }
+    if (les == NULL) {
+	VERBOSE_ERROR("LE array uninitialized\n");
+	return PTL_ARG_INVALID;
+    }
+    if (les[le.s.code].status == LE_FREE) {
+	VERBOSE_ERROR("LE appears to be free already\n");
+	return PTL_ARG_INVALID;
+    }
+    if (les[le.s.code].visible.options & (PTL_LE_EVENT_CT_GET | PTL_LE_EVENT_CT_PUT |
+		   PTL_LE_EVENT_CT_PUT_OVERFLOW | PTL_LE_EVENT_CT_ATOMIC | PTL_LE_EVENT_CT_ATOMIC_OVERFLOW)) {
+	ct_optional = 0;
+    }
+    if (PtlInternalCTHandleValidator(les[le.s.code].visible.ct_handle, ct_optional)) {
+	VERBOSE_ERROR("LE has a bad CT handle\n");
+	return PTL_ARG_INVALID;
+    }
+#endif
+    if (PtlInternalAtomicCas32(&les[le.s.code].status, LE_ALLOCATED, LE_FREE) == LE_IN_USE) {
+	return PTL_IN_USE;
+    }
+    return PTL_OK;
 }
 
 int INTERNAL PtlInternalLEDeliver(
@@ -217,6 +248,35 @@ int INTERNAL PtlInternalLEDeliver(
 	    } else {
 		t->priority.head = t->priority.tail = NULL;
 	    }
+	    if ((les[entry->le_handle.s.code].visible.options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
+		e.type = PTL_EVENT_UNLINK;
+		e.event.tevent.initiator.phys.pid = hdr->src;
+		e.event.tevent.initiator.phys.nid = 0;
+		e.event.tevent.pt_index = hdr->pt_index;
+		e.event.tevent.uid = 0;
+		e.event.tevent.match_bits = 0;
+		e.event.tevent.rlength = hdr->length;
+		e.event.tevent.mlength = hdr->length;
+		e.event.tevent.remote_offset = hdr->dest_offset;
+		e.event.tevent.start = (char*)le->start + hdr->dest_offset;
+		e.event.tevent.user_ptr = hdr->user_ptr;
+		switch (hdr->type) {
+		    case HDR_TYPE_PUT:
+			e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+			break;
+		    case HDR_TYPE_ATOMIC:
+			e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+			break;
+		    case HDR_TYPE_FETCHATOMIC:
+			e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+			break;
+		    case HDR_TYPE_SWAP:
+			e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+			break;
+		}
+		e.event.tevent.ni_fail_type = PTL_NI_OK;
+		PtlInternalEQPush(t->EQ, &e);
+	    }
 	}
 	assert(entry);
 	printf("checking protections on the LE (%p)\n", le);
@@ -225,13 +285,13 @@ int INTERNAL PtlInternalLEDeliver(
 	    if (le->ac_id.jid != PTL_JID_ANY) {
 		fprintf(stderr, "BAD AC_ID! 1 (I should probably enqueue an event of some kind and free the memory)\n");
 		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return 3;
+		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	} else {
 	    if (le->ac_id.uid != PTL_UID_ANY) {
 		fprintf(stderr, "BAD AC_ID! 2 (I should probably enqueue an event of some kind and free the memory)\n");
 		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return 3;
+		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	}
 	switch (hdr->type) {
@@ -291,11 +351,11 @@ int INTERNAL PtlInternalLEDeliver(
 		fprintf(stderr, "non-put LE handling is unimplemented\n");
 		abort();
 	}
-	return 1;
+	return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:1;
     } else if (t->overflow.head) {
 	fprintf(stderr, "overflow LE handling is unimplemented\n");
 	abort();
-	return 2;
+	return 2; // check for ACK_DISABLE
     } else { // nothing posted *at all!*
 	PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
 	if (t->EQ != PTL_EQ_NONE) {
@@ -325,9 +385,9 @@ int INTERNAL PtlInternalLEDeliver(
 		    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
 		    break;
 	    }
-	    e.event.tevent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+	    e.event.tevent.ni_fail_type = PTL_NI_OK;
 	    PtlInternalEQPush(t->EQ, &e);
 	}
-	return 0;
+	return 4;
     }
 }
