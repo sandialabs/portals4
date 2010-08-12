@@ -305,15 +305,17 @@ int API_FUNC PtlCTWait(
     rc = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
     //printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long
     //long)ct.i, (unsigned long long)test);
+    PtlInternalAtomicInc(rc, 1);
     do {
 	ptl_ct_event_t tmpread;
 	PtlInternalAtomicReadCT(&tmpread, cte);
-	if (CT_EQUAL(tmpread, CTERR)) {
+	if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
 	    PtlInternalAtomicInc(rc, -1);
 	    return PTL_INTERRUPTED;
 	} else if ((tmpread.success + tmpread.failure) >= test) {
 	    if (event != NULL)
 		*event = tmpread;
+	    PtlInternalAtomicInc(rc, -1);
 	    return PTL_OK;
 	}
     } while (1);

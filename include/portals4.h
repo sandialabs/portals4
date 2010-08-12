@@ -803,6 +803,7 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  * application. This prevents the local events (e.g. \c PTL_EVENT_SEND) from
  * having to wait for a round-trip notification before delivery. */
 #define PTL_MD_REMOTE_FAILURE_DISABLE (1<<6)
+
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
  *		 ptl_md_t*	    md,
