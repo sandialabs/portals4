@@ -81,12 +81,14 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		case 1: case 3: // Non-matching (LE)
 		    printf("delivering to LE table\n");
 		    switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
+			case 0: // who knows, we must not send an ack
+			    break;
 			case 1: // success
 			    printf("LE delivery success!\n");
 			    break;
 			case 2: // overflow
 			    break;
-			case 0: // nothing matched, report error
+			case 4: // nothing matched, report error
 			case 3: // Permission Violation
 			    hdr->length = 0;
 			    break;
@@ -96,7 +98,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 	    printf("unlocking\n");
 	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	} else {
-	    hdr->src = -1;
+	    hdr->src = 9999;
 	}
 	printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
@@ -121,6 +123,8 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		mdptr = PtlInternalMDFetch(md_handle);
 		assert(mdptr != NULL);
 		switch(hdr->src) {
+		    case 0: // Pretend we didn't send an ack
+			break;
 		    case 1: // success
 		    case 2: // overflow
 			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
@@ -137,8 +141,9 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    PtlInternalEQPush(mdptr->eq_handle, &e);
 			}
 			break;
+		    case 9999: // PT not allocated
 		    case 3: // Permission Violation
-		    case 0: // nothing matched, report error
+		    case 4: // nothing matched, report error
 			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
 			    ptl_ct_event_t cte = {0, 1};
 			    PtlCTInc(mdptr->ct_handle, cte);
