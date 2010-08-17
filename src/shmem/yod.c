@@ -264,6 +264,9 @@ int main(
 	fprintf(stderr, "yod-> failed to create collator thread\n");
 	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
+    if (pthread_detach(collator_thread) != 0) {
+	perror("pthread_detach"); /* failure is not a big deal */
+    }
 
     /* Clean up after Ctrl-C */
     signal(SIGINT, cleanup);
@@ -300,8 +303,13 @@ int main(
 	}
     }
     if (ct_spawned == 1) {
-	if (pthread_cancel(collator_thread) != 0) {
-	    perror("yod-> pthread_cancel");
+	switch (pthread_cancel(collator_thread)) {
+	    case 0: // success!
+	    case ESRCH: // thread already gone
+		break;
+	    default:
+		perror("yod-> pthread_cancel");
+		break;
 	}
 	PtlFini();
     }
@@ -339,15 +347,14 @@ void *collator(
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
     assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
     /* set up the landing pad to collect and distribute mapping information */
-    mapping = calloc(count + 1, sizeof(ptl_process_id_t));
+    mapping = calloc(count, sizeof(ptl_process_id_t));
     assert(mapping != NULL);
-    printf("mapping = %p\n", mapping);
     ptl_le_t le;
     ptl_md_t md;
     ptl_handle_le_t le_handle;
     ptl_handle_md_t md_handle;
     md.start = le.start = mapping;
-    md.length = le.length = (count + 1) * sizeof(ptl_process_id_t);
+    md.length = le.length = count * sizeof(ptl_process_id_t);
     le.ac_id.uid = PTL_UID_ANY;
     le.options =
 	PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
@@ -360,11 +367,9 @@ void *collator(
     {
 	ptl_ct_event_t ct_data;
 	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
-	printf("COLLECTOR-> everyone posted!\n");
-	assert(ct_data.failure == 0);
-	printf("COLLECTOR-> zero failures!\n");
+	assert(ct_data.failure == 0); // XXX: should do something useful
     }
-    for (unsigned int i = 0; i <= count; i++) {
+    for (unsigned int i = 0; i < count; i++) {
 	printf("mapping[%u] = {%u,%u}\n", i, mapping[i].phys.pid,
 	       mapping[i].phys.nid);
     }
@@ -376,15 +381,15 @@ void *collator(
     md.eq_handle = PTL_EQ_NONE;
     assert(PtlCTAlloc(ni_physical, &md.ct_handle) == PTL_OK);
     assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
-    for (uint64_t r = 0; r <= count; ++r) {
+    for (uint64_t r = 0; r < count; ++r) {
 	assert(PtlPut
-	       (md_handle, 0, (count + 1) * sizeof(ptl_process_id_t),
+	       (md_handle, 0, count * sizeof(ptl_process_id_t),
 		PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
     }
     /* wait for the puts to finish */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(md.ct_handle, count + 1, &ct_data) == PTL_OK);
+	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);
     }
     /* cleanup */
