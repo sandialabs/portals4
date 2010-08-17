@@ -150,8 +150,8 @@ void INTERNAL PtlInternalCTNISetup(
 void INTERNAL PtlInternalCTNITeardown(
     int ni)
 {
-    ptl_ct_event_t *tmp;
-    volatile uint64_t *rc;
+    ptl_ct_event_t *restrict tmp;
+    volatile uint64_t *restrict rc;
     while (ct_events[ni] == (void *)1) ;	// in case its in the middle of being allocated (this should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
     rc = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
@@ -160,8 +160,10 @@ void INTERNAL PtlInternalCTNITeardown(
     assert(tmp != (void *)1);
     assert(rc != NULL);
     for (size_t i = 0; i < nit_limits.max_cts; ++i) {
-	PtlInternalAtomicWriteCT(&(tmp[i]), CTERR);
-	PtlInternalAtomicInc(&(rc[i]), -1);
+	if (rc[i] != 0) {
+	    PtlInternalAtomicWriteCT(&(tmp[i]), CTERR);
+	    PtlInternalAtomicInc(&(rc[i]), -1);
+	}
     }
     for (size_t i = 0; i < nit_limits.max_cts; ++i) {
 	while (rc[i] != 0) ;
