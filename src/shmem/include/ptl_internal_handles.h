@@ -8,11 +8,11 @@
 typedef struct {
 #ifdef BITFIELD_ORDER_FORWARD
     unsigned int selector:HANDLE_SELECTOR_BITS;
-    unsigned int ni:HANDLE_NI_BITS;
+    unsigned char ni:HANDLE_NI_BITS;
     unsigned int code:HANDLE_CODE_BITS;
 #else
     unsigned int code:HANDLE_CODE_BITS;
-    unsigned int ni:HANDLE_NI_BITS;
+    unsigned char ni:HANDLE_NI_BITS;
     unsigned int selector:HANDLE_SELECTOR_BITS;
 #endif
 } ptl_handle_encoding_t;
