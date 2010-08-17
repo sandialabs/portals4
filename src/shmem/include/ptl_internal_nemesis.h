@@ -67,7 +67,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(
     return retval;
 }
 
-#define OFF2PTR(off) (((intptr_t)off==0)?NULL:((NEMESIS_entry*)(comm_pad+(intptr_t)off)))
+#define OFF2PTR(off) (((intptr_t)off==0)?NULL:((NEMESIS_entry*)((intptr_t)comm_pad+(intptr_t)off)))
 #define PTR2OFF(ptr) ((ptr == NULL)?0:((intptr_t)ptr-(intptr_t)comm_pad))
 
 static inline void PtlInternalNEMESISOffsetEnqueue(
@@ -76,12 +76,12 @@ static inline void PtlInternalNEMESISOffsetEnqueue(
 {
     void *offset_f = (void*)PTR2OFF(f);
     assert(f->next == NULL);
-    intptr_t prev =
+    intptr_t offset_prev =
 	(intptr_t)PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), offset_f);
-    if (prev == 0) {
+    if (offset_prev == 0) {
 	q->head = offset_f;
     } else {
-	OFF2PTR(prev)->next = offset_f;
+	OFF2PTR(offset_prev)->next = offset_f;
     }
 }
 
@@ -91,7 +91,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
     NEMESIS_entry *retval = OFF2PTR(q->head);
     if (retval != NULL) {
 	if (retval->next != NULL) {
-	    q->head = (void*)PTR2OFF(retval->next);
+	    q->head = retval->next;
 	    retval->next = NULL;
 	} else {
 	    intptr_t old;
