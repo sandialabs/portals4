@@ -73,7 +73,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		    abort();
 		    break;
 	    }
-	    printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
+	    printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
 	    switch (hdr->ni) {
 		case 0: case 2: // Matching (ME)
 		    fprintf(stderr, "Matching delivery not handled yet, sorry\n");
@@ -218,7 +218,7 @@ int API_FUNC PtlPut(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(md_handle)) {
+    if (PtlInternalMDHandleValidator(md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
@@ -246,7 +246,7 @@ int API_FUNC PtlPut(
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_PUT;
     hdr->ni = md.s.ni;
-    printf("hdr->NI = %u, md.s.ni = %u\n", hdr->ni, md.s.ni);
+    printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
     hdr->src = proc_number;
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -310,7 +310,7 @@ int API_FUNC PtlGet(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(md_handle)) {
+    if (PtlInternalMDHandleValidator(md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
@@ -383,7 +383,7 @@ int API_FUNC PtlAtomic(
     if (length > nit_limits.max_atomic_size) {
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(md_handle)) {
+    if (PtlInternalMDHandleValidator(md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
@@ -481,10 +481,10 @@ int API_FUNC PtlFetchAtomic(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(get_md_handle)) {
+    if (PtlInternalMDHandleValidator(get_md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(put_md_handle)) {
+    if (PtlInternalMDHandleValidator(put_md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
     if (length > nit_limits.max_atomic_size) {
@@ -596,10 +596,10 @@ int API_FUNC PtlSwap(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(get_md_handle)) {
+    if (PtlInternalMDHandleValidator(get_md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(put_md_handle)) {
+    if (PtlInternalMDHandleValidator(put_md_handle,1)) {
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
