@@ -7,7 +7,8 @@ void PtlInternalMDNISetup(
 void PtlInternalMDNITeardown(
     unsigned int ni_num);
 int PtlInternalMDHandleValidator(
-    ptl_handle_md_t handle);
+    ptl_handle_md_t handle,
+    int care_about_ct);
 
 char *PtlInternalMDDataPtr(
     ptl_handle_md_t handle);

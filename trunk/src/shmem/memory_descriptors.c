@@ -85,11 +85,10 @@ void INTERNAL PtlInternalMDNITeardown(
 }
 
 int INTERNAL PtlInternalMDHandleValidator(
-    ptl_handle_md_t handle)
+    ptl_handle_md_t handle, int care_about_ct)
 {
     const ptl_internal_handle_converter_t md = { handle };
     ptl_internal_md_t *mdptr;
-    int ct_optional = 1;
     int eq_optional = 0;
     if (md.s.selector != HANDLE_MD_CODE) {
 	VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
@@ -115,14 +114,17 @@ int INTERNAL PtlInternalMDHandleValidator(
 	VERBOSE_ERROR("MD has a bad EQ handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (mdptr->visible.
-	options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-		   PTL_MD_EVENT_CT_ACK)) {
-	ct_optional = 0;
-    }
-    if (PtlInternalCTHandleValidator(mdptr->visible.ct_handle, ct_optional)) {
-	VERBOSE_ERROR("MD has a bad CT handle\n");
-	return PTL_ARG_INVALID;
+    if (care_about_ct) {
+	int ct_optional = 1;
+	if (mdptr->visible.
+		options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+		    PTL_MD_EVENT_CT_ACK)) {
+	    ct_optional = 0;
+	}
+	if (PtlInternalCTHandleValidator(mdptr->visible.ct_handle, ct_optional)) {
+	    VERBOSE_ERROR("MD has a bad CT handle\n");
+	    return PTL_ARG_INVALID;
+	}
     }
     return PTL_OK;
 }
@@ -191,7 +193,7 @@ int API_FUNC PtlMDRelease(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(md_handle)) {
+    if (PtlInternalMDHandleValidator(md_handle, 0)) {
 	return PTL_ARG_INVALID;
     }
 #endif
