@@ -7,9 +7,9 @@
 
 #define CHECK_RETURNVAL(x, call) do { switch (x) { \
 	    case PTL_OK: break; \
-	    case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", call, __LINE__); abort(); break; \
-	    case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", call, __LINE__); abort(); break; \
-	    case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", call, __LINE__); abort(); break; \
+	    case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", call, (unsigned int)__LINE__); abort(); break; \
+	    case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", call, (unsigned int)__LINE__); abort(); break; \
+	    case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", call, (unsigned int)__LINE__); abort(); break; \
 	} } while (0)
 
 static void noFailures(
@@ -107,6 +107,7 @@ int main(
 	/* for receiving the mapping */
 	le.start = mapping;
 	le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
+	printf("test_bootstrap-------> receive length %u\n", le.length);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	CHECK_RETURNVAL(PtlCTAlloc
