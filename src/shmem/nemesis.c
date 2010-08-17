@@ -16,17 +16,22 @@
  * with multiple enqueuers and a single de-queuer. */
 void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
 {
-    pthread_mutexattr_t ma;
-    pthread_condattr_t ca;
     PtlInternalNEMESISInit(&q->q);
     q->frustration = 0;
-    assert(pthread_mutexattr_init(&ma) == 0);
-    printf("pshared returned %i\n", pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED));
-    assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) == 0);
-    assert(pthread_mutex_init(&q->trigger_lock, &ma) == 0);
-    assert(pthread_condattr_init(&ca) == 0);
-    assert(pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) == 0);
-    assert(pthread_cond_init(&q->trigger, &ca) == 0);
+    {
+	pthread_mutexattr_t ma;
+	assert(pthread_mutexattr_init(&ma) == 0);
+	assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) == 0);
+	assert(pthread_mutex_init(&q->trigger_lock, &ma) == 0);
+	assert(pthread_mutexattr_destroy(&ma) == 0);
+    }
+    {
+	pthread_condattr_t ca;
+	assert(pthread_condattr_init(&ca) == 0);
+	assert(pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) == 0);
+	assert(pthread_cond_init(&q->trigger, &ca) == 0);
+	assert(pthread_condattr_destroy(&ca) == 0);
+    }
 }
 
 void INTERNAL PtlInternalNEMESISBlockingDestroy(NEMESIS_blocking_queue *q)
@@ -75,6 +80,7 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict f)
 {
+    assert(f->next == NULL);
     PtlInternalNEMESISOffsetEnqueue(&q->q, f);
     /* awake waiter */
     if (q->frustration) {

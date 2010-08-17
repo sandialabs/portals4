@@ -30,7 +30,7 @@ int main(
     ptl_process_id_t COLLECTOR;
     uint64_t rank, maxrank;
     ptl_pt_index_t phys_pt_index, logical_pt_index;
-    ptl_process_id_t *mapping;
+    ptl_process_id_t *dmapping, *amapping;
     ptl_le_t le;
     ptl_handle_le_t le_handle;
     ptl_md_t md;
@@ -54,14 +54,16 @@ int main(
     assert(getenv("PORTALS4_NUM_PROCS") != NULL);
     maxrank = atoi(getenv("PORTALS4_NUM_PROCS")) - 1;
     /* \end{runtime_stuff} */
-    mapping = calloc(maxrank + 1, sizeof(ptl_process_id_t));
-    assert(mapping != NULL);
+    dmapping = calloc(maxrank + 1, sizeof(ptl_process_id_t));
+    assert(dmapping != NULL);
+    amapping = calloc(maxrank + 1, sizeof(ptl_process_id_t));
+    assert(amapping != NULL);
     if (myself.phys.pid == COLLECTOR.phys.pid) {
 	/* this will never happen in user code, because the collector stuff is
 	 * handled by Yod, I'm just putting the code here to show both sides */
 
 	/* set up a landing pad to collect & distribute everyone's information. */
-	md.start = le.start = mapping;
+	md.start = le.start = dmapping;
 	md.length = le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options =
@@ -86,7 +88,7 @@ int main(
 	for (uint64_t r = 0; r <= maxrank; ++r) {
 	    assert(PtlPut
 		   (md_handle, 0, (maxrank + 1) * sizeof(ptl_process_id_t),
-		    PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+		    PTL_CT_ACK_REQ, dmapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
 	}
 	/* wait for the puts to finish */
 	noFailures(md.ct_handle, maxrank + 1);
@@ -105,9 +107,8 @@ int main(
 			(ni_physical, &md.ct_handle),
 			"PtlCTAlloc");
 	/* for receiving the mapping */
-	le.start = mapping;
+	le.start = dmapping;
 	le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
-	printf("test_bootstrap-------> receive length %u\n", (unsigned int)le.length);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	CHECK_RETURNVAL(PtlCTAlloc
@@ -128,40 +129,34 @@ int main(
 	/* cleanup */
 	CHECK_RETURNVAL(PtlMDRelease(md_handle), "PtlMDRelease");
 	CHECK_RETURNVAL(PtlCTFree(md.ct_handle), "PtlCTFree");
-	printf("progress: %i\n", __LINE__);
 	/* wait to receive the mapping from the COLLECTOR */
 	noFailures(le.ct_handle, 1);
-	printf("progress: %i\n", __LINE__);
 	/* cleanup the counter */
 	CHECK_RETURNVAL(PtlCTFree(le.ct_handle), "PtlCTFree");
-	printf("progress: %i\n", __LINE__);
 	/* feed the accumulated mapping into NIInit to create the rank-based
 	 * interface */
-	printf("calling PtlNIInit with maxrank(%i), desired_mapping(%p)\n", (int)maxrank+1, mapping);
 	CHECK_RETURNVAL(PtlNIInit
 	       (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
-		PTL_PID_ANY, NULL, NULL, maxrank+1, mapping, NULL,
+		PTL_PID_ANY, NULL, NULL, maxrank+1, dmapping, amapping,
 		&ni_logical), "PtlNIInit");
-	printf("progress: %i\n", __LINE__);
+	CHECK_RETURNVAL(PtlGetId(ni_logical, &myself), "PtlGetId");
+	for (int i=0; i<maxrank+1; ++i) {
+	    printf("%u's mapping[%i] = {%u,%u}\n", (unsigned int)myself.rank, i, amapping[i].phys.pid, amapping[i].phys.nid);
+	}
 	CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index), "PtlPTAlloc");
 	assert(logical_pt_index == 0);
-	printf("progress: %i\n", __LINE__);
 	/* don't need this anymore, so free up resources */
 	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index), "PtlPTFree");
 	CHECK_RETURNVAL(PtlNIFini(ni_physical), "PtlNIFini");
-	printf("progress: %i\n", __LINE__);
     }
 
     /* now I can communicate between ranks with ni_logical */
     /* ... do stuff ... */
-    printf("progress: %i\n", __LINE__);
 
     /* cleanup */
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index), "PtlPTFree");
     CHECK_RETURNVAL(PtlNIFini(ni_logical), "PtlNIFini");
-    printf("progress: %i\n", __LINE__);
     PtlFini();
-    printf("progress: %i\n", __LINE__);
 
     return 0;
 }

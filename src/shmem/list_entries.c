@@ -298,7 +298,7 @@ int INTERNAL PtlInternalLEDeliver(
     ptl_event_t e; // for posting what happens here
     assert(t);
     assert(hdr);
-    printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
+    //printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
     if (t->priority.head) {
 	ptl_internal_appendLE_t *entry = t->priority.head;
 	ptl_le_t *le = &(les[entry->le_handle.s.code].visible);
@@ -341,7 +341,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    }
 	}
 	assert(entry);
-	printf("checking protections on the LE (%p)\n", le);
+	//printf("checking protections on the LE (%p)\n", le);
 	// check the protections on the le
 	if (le->options & PTL_LE_AUTH_USE_JID) {
 	    if (le->ac_id.jid != PTL_JID_ANY) {
@@ -363,20 +363,20 @@ int INTERNAL PtlInternalLEDeliver(
 		    abort();
 		}
 		if (hdr->length > (le->length - hdr->dest_offset)) {
-		    fprintf(stderr, "LE is too short!\n");
+		    fprintf(stderr, "LE is too short! hdr->length=%u, le->length=%u, hdr->dest_offset=%u\n", (unsigned int)hdr->length, (unsigned int)le->length, (unsigned int)hdr->dest_offset);
 		    abort();
 		}
 		/* drumroll please... */
-		printf("calling memcpy(%p + %lu, %p, %lu)\n", le->start, (unsigned long)hdr->dest_offset, hdr->data, (unsigned long)hdr->length);
+		//printf("calling memcpy(%p + %lu, %p, %lu)\n", le->start, (unsigned long)hdr->dest_offset, hdr->data, (unsigned long)hdr->length);
 		memcpy((char*)le->start + hdr->dest_offset, hdr->data, hdr->length);
-		printf("memcopy returned!\n");
+		//printf("memcopy returned!\n");
 		/* now announce it */
 		if (le->options & PTL_LE_EVENT_CT_PUT) {
 		    ptl_ct_event_t cte = {1, 0};
-		    printf("incrementing CT\n");
+		    //printf("incrementing CT\n");
 		    PtlCTInc(le->ct_handle, cte);
 		}
-		printf("EQ?\n");
+		//printf("EQ?\n");
 		if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
 		    e.type = PTL_EVENT_PUT;
 		    e.event.tevent.initiator.phys.pid = hdr->src;
@@ -404,9 +404,9 @@ int INTERNAL PtlInternalLEDeliver(
 			    break;
 		    }
 		    e.event.tevent.ni_fail_type = PTL_NI_OK;
-		    printf("push to EQ\n");
+		    //printf("push to EQ\n");
 		    PtlInternalEQPush(t->EQ, &e);
-		    printf("pushed\n");
+		    //printf("pushed\n");
 		}
 		break;
 	    default:
