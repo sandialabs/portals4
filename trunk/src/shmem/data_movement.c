@@ -50,13 +50,13 @@ typedef union {
 static uint32_t spawned;
 static pthread_t catcher, ack_catcher;
 
-static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
+static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETURN
 {
     while (1) {
 	ptl_pid_t src;
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
-	printf("got a header! %p\n", hdr);
+	//printf("got a header! %p\n", hdr);
 	src = hdr->src;
 	assert(nit.tables != NULL);
 	assert(nit.tables[hdr->ni] != NULL);
@@ -73,18 +73,18 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		    abort();
 		    break;
 	    }
-	    printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
+	    //printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
 	    switch (hdr->ni) {
 		case 0: case 2: // Matching (ME)
 		    fprintf(stderr, "Matching delivery not handled yet, sorry\n");
 		    break;
 		case 1: case 3: // Non-matching (LE)
-		    printf("delivering to LE table\n");
+		    //printf("delivering to LE table\n");
 		    switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
 			case 0: // who knows, we must not send an ack
 			    break;
 			case 1: // success
-			    printf("LE delivery success!\n");
+			    //printf("LE delivery success!\n");
 			    break;
 			case 2: // overflow
 			    break;
@@ -95,17 +95,16 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk)
 		    }
 		    break;
 	    }
-	    printf("unlocking\n");
+	    //printf("unlocking\n");
 	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	} else {
 	    hdr->src = 9999;
 	}
-	printf("returning fragment\n");
+	//printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
 	PtlInternalFragmentAck(hdr, src);
-	printf("back to the beginning\n");
+	//printf("back to the beginning\n");
     }
-    return NULL;
 }
 
 static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
@@ -242,11 +241,11 @@ int API_FUNC PtlPut(
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
+    //printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_PUT;
     hdr->ni = md.s.ni;
-    printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
+    //printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
     hdr->src = proc_number;
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;

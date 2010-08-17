@@ -53,6 +53,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(
     if (retval != NULL) {
 	if (retval->next != NULL) {
 	    q->head = retval->next;
+	    retval->next = NULL;
 	} else {
 	    NEMESIS_entry *old;
 	    q->head = NULL;
@@ -91,6 +92,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
     if (retval != NULL) {
 	if (retval->next != NULL) {
 	    q->head = (void*)PTR2OFF(retval->next);
+	    retval->next = NULL;
 	} else {
 	    intptr_t old;
 	    q->head = NULL;

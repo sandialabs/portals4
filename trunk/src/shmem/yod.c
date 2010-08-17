@@ -369,10 +369,6 @@ void *collator(
 	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0); // XXX: should do something useful
     }
-    for (unsigned int i = 0; i < count; i++) {
-	printf("mapping[%u] = {%u,%u}\n", i, mapping[i].phys.pid,
-	       mapping[i].phys.nid);
-    }
     /* cleanup */
     assert(PtlCTFree(le.ct_handle) == PTL_OK);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
