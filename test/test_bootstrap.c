@@ -107,7 +107,7 @@ int main(
 	/* for receiving the mapping */
 	le.start = mapping;
 	le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
-	printf("test_bootstrap-------> receive length %u\n", le.length);
+	printf("test_bootstrap-------> receive length %u\n", (unsigned int)le.length);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	CHECK_RETURNVAL(PtlCTAlloc
@@ -137,9 +137,10 @@ int main(
 	printf("progress: %i\n", __LINE__);
 	/* feed the accumulated mapping into NIInit to create the rank-based
 	 * interface */
+	printf("calling PtlNIInit with maxrank(%i), desired_mapping(%p)\n", (int)maxrank+1, mapping);
 	CHECK_RETURNVAL(PtlNIInit
 	       (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
-		myself.phys.pid, NULL, NULL, maxrank, mapping, NULL,
+		PTL_PID_ANY, NULL, NULL, maxrank+1, mapping, NULL,
 		&ni_logical), "PtlNIInit");
 	printf("progress: %i\n", __LINE__);
 	CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index), "PtlPTAlloc");
