@@ -94,6 +94,7 @@ SANDIA_DETECT_COMPILER_TYPE
 AC_C_CONST
 AC_C_INLINE
 AC_C_VOLATILE
+SANDIA_NORETURN_ATTRIBUTE
 # Find out if we need the -restrict flag
 RESTRICT_CXXFLAGS=""
 AS_IF([test "x$sandia_cv_cxx_compiler_type" = "xIntel"],
