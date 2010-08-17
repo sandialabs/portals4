@@ -33,18 +33,20 @@
 #define LE_IN_USE	2
 
 typedef struct {
-    ptl_le_t visible;
-    volatile uint32_t status;	// 0=free, 1=allocated, 2=in-use
-} ptl_internal_le_t;
-
-typedef struct {
     void *next; // for nemesis
     void *user_ptr;
     ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
 
+typedef struct {
+    ptl_le_t visible;
+    volatile uint32_t status;	// 0=free, 1=allocated, 2=in-use
+    ptl_pt_index_t pt_index;
+    ptl_list_t ptl_list;
+    ptl_internal_appendLE_t Qentry;
+} ptl_internal_le_t;
+
 static ptl_internal_le_t *les = NULL;
-static NEMESIS_blocking_queue appends;
 
 void INTERNAL PtlInternalLENISetup(
     ptl_size_t limit)
@@ -74,7 +76,6 @@ void INTERNAL PtlInternalLENISetup(
 	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
 #endif
 	assert((((intptr_t) tmp) & 0x7) == 0);
-	PtlInternalNEMESISBlockingInit(&appends);
 	__sync_synchronize();
 	les = tmp;
 	//assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
@@ -91,7 +92,6 @@ void INTERNAL PtlInternalLENITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
-    PtlInternalNEMESISBlockingDestroy(&appends);
 }
 
 int API_FUNC PtlLEAppend(
@@ -104,7 +104,7 @@ int API_FUNC PtlLEAppend(
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_handle_encoding_t leh = { HANDLE_LE_CODE, 0, 0 };
-    ptl_internal_appendLE_t *Qentry;
+    ptl_internal_appendLE_t *Qentry = NULL;
     uint32_t offset;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -138,23 +138,22 @@ int API_FUNC PtlLEAppend(
 #endif
     assert(les != NULL);
     leh.ni = ni.s.ni;
-    Qentry = malloc(sizeof(ptl_internal_appendLE_t));
-    if (Qentry == NULL) {
-	return PTL_NO_SPACE;
-    }
-    assert(Qentry != NULL);
-    Qentry->user_ptr = user_ptr;
     /* find an LE handle */
     for (offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (les[offset].status == 0) {
 	    if (PtlInternalAtomicCas32
-		(&(les[offset].status), LE_FREE, LE_IN_USE) == LE_FREE) {
+		(&(les[offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
 		leh.code = offset;
 		les[offset].visible = le;
+		les[offset].pt_index = pt_index;
+		les[offset].ptl_list = ptl_list;
+		Qentry = &(les[offset].Qentry);
 		break;
 	    }
 	}
     }
+    assert(Qentry != NULL);
+    Qentry->user_ptr = user_ptr;
     Qentry->le_handle.s = leh;
     memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
     /* append to associated list */
@@ -196,8 +195,8 @@ int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {
     const ptl_internal_handle_converter_t le = { le_handle };
+    ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
-    int ct_optional = 0;
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
@@ -214,17 +213,81 @@ int API_FUNC PtlLEUnlink(
 	VERBOSE_ERROR("LE appears to be free already\n");
 	return PTL_ARG_INVALID;
     }
-    if (les[le.s.code].visible.options & (PTL_LE_EVENT_CT_GET | PTL_LE_EVENT_CT_PUT |
-		   PTL_LE_EVENT_CT_PUT_OVERFLOW | PTL_LE_EVENT_CT_ATOMIC | PTL_LE_EVENT_CT_ATOMIC_OVERFLOW)) {
-	ct_optional = 0;
-    }
-    if (PtlInternalCTHandleValidator(les[le.s.code].visible.ct_handle, ct_optional)) {
-	VERBOSE_ERROR("LE has a bad CT handle\n");
-	return PTL_ARG_INVALID;
-    }
 #endif
-#warning need to fix the LE in-use detection
-    les[le.s.code].status = LE_FREE;
+    t = &(nit.tables[le.s.ni][les[le.s.code].pt_index]);
+    assert(pthread_mutex_lock(&t->lock) == 0);
+    switch(les[le.s.code].ptl_list) {
+	case PTL_PRIORITY_LIST:
+	    {
+		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->priority.head);
+		if (dq == &(les[le.s.code].Qentry)) {
+		    if (dq->next != NULL) {
+			t->priority.head = dq->next;
+		    } else {
+			t->priority.head = t->priority.tail = NULL;
+		    }
+		} else {
+		    ptl_internal_appendLE_t *prev = NULL;
+		    while (dq != &(les[le.s.code].Qentry) && dq != NULL) {
+			prev = dq;
+			dq = dq->next;
+		    }
+		    if (dq == NULL) {
+			fprintf(stderr, "attempted to unlink an un-queued LE\n");
+			abort();
+		    }
+		    prev->next = dq->next;
+		    if (dq->next == NULL) {
+			assert(t->priority.tail == dq);
+			t->priority.tail = prev;
+		    }
+		}
+	    }
+	    break;
+	case PTL_OVERFLOW:
+	    {
+		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->overflow.head);
+		if (dq == &(les[le.s.code].Qentry)) {
+		    if (dq->next != NULL) {
+			t->overflow.head = dq->next;
+		    } else {
+			t->overflow.head = t->overflow.tail = NULL;
+		    }
+		} else {
+		    ptl_internal_appendLE_t *prev = NULL;
+		    while (dq != &(les[le.s.code].Qentry) && dq != NULL) {
+			prev = dq;
+			dq = dq->next;
+		    }
+		    if (dq == NULL) {
+			fprintf(stderr, "attempted to unlink an un-queued LE\n");
+			abort();
+		    }
+		    prev->next = dq->next;
+		    if (dq->next == NULL) {
+			assert(t->overflow.tail == dq);
+			t->overflow.tail = prev;
+		    }
+		}
+	    }
+	    break;
+	case PTL_PROBE_ONLY:
+	    fprintf(stderr, "how on earth did this happen?\n");
+	    abort();
+	    break;
+    }
+    assert(pthread_mutex_unlock(&t->lock) == 0);
+    switch (PtlInternalAtomicCas32(&(les[le.s.code].status), LE_ALLOCATED, LE_FREE)) {
+	case LE_IN_USE:
+	    return PTL_IN_USE;
+	case LE_ALLOCATED:
+	    return PTL_OK;
+#ifndef NO_ARG_VALIDATION
+	case LE_FREE:
+	    VERBOSE_ERROR("LE unexpectedly became free");
+	    return PTL_ARG_INVALID;
+#endif
+    }
     return PTL_OK;
 }
 
