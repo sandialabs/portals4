@@ -23,6 +23,7 @@
 #include "ptl_internal_MD.h"
 #include "ptl_internal_LE.h"
 #include "ptl_internal_DM.h"
+#include "ptl_internal_error.h"
 
 ptl_internal_nit_t nit = { {0, 0, 0, 0}
 , {0, 0, 0, 0}
@@ -59,24 +60,30 @@ int API_FUNC PtlNIInit(
 	return PTL_NO_INIT;
     }
     if (iface != 0 && iface != PTL_IFACE_DEFAULT) {
+	VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
 	return PTL_ARG_INVALID;
     }
     if (pid != PTL_PID_ANY && pid != proc_number) {
+	VERBOSE_ERROR("Weird PID (%i)\n", (int)pid);
 	return PTL_ARG_INVALID;
     }
     if (options & PTL_NI_MATCHING && options & PTL_NI_NO_MATCHING) {
+	VERBOSE_ERROR("Neither matching nor non-matching\n");
 	return PTL_ARG_INVALID;
     }
     if (options & PTL_NI_LOGICAL && options & PTL_NI_PHYSICAL) {
+	VERBOSE_ERROR("Neither logical nor physical\n");
 	return PTL_ARG_INVALID;
     }
     if (pid > num_siblings && pid != PTL_PID_ANY) {
+	VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid, (int)num_siblings);
 	return PTL_ARG_INVALID;
     }
     if (ni_handle == NULL) {
+	VERBOSE_ERROR("ni_handle == NULL\n");
 	return PTL_ARG_INVALID;
     }
-    if (map_size > 0 && (desired_mapping == NULL || actual_mapping == NULL)) {
+    if (map_size > 0 && (desired_mapping == NULL && actual_mapping == NULL)) {
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -148,7 +155,7 @@ int API_FUNC PtlNIInit(
     if (actual != NULL) {
 	*actual = nit_limits;
     }
-    if (options & PTL_NI_LOGICAL) {
+    if ((options & PTL_NI_LOGICAL) != 0 && actual_mapping != NULL) {
 	for (int i = 0; i < map_size; ++i) {
 	    if (i >= num_siblings) {
 		actual_mapping[i].phys.nid = PTL_NID_ANY;	// aka "invalid"
