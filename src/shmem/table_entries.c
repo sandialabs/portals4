@@ -93,7 +93,42 @@ int API_FUNC PtlPTFree(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index)
 {
-    return PTL_FAIL;
+    const ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_table_entry_t *pt = NULL;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	return PTL_ARG_INVALID;
+    }
+    if (pt_index == PTL_PT_ANY) {
+	return PTL_ARG_INVALID;
+    }
+    if (pt_index > nit_limits.max_pt_index) {
+	return PTL_ARG_INVALID;
+    }
+#endif
+    pt = &(nit.tables[ni.s.ni][pt_index]);
+    if (pt->priority.head || pt->priority.tail || pt->overflow.head || pt->overflow.tail) {
+	return PTL_PT_IN_USE;
+    }
+    switch (PtlInternalAtomicCas32(&pt->status, PT_ENABLED, PT_FREE)) {
+	default:
+	case PT_FREE: // already free'd (double-free)
+	    return PTL_ARG_INVALID;
+	case PT_ENABLED: // success!
+	    return PTL_OK;
+	case PT_DISABLED: // OK, it was disabled, so...
+	    switch(PtlInternalAtomicCas32(&pt->status, PT_DISABLED, PT_FREE)) {
+		default:
+		case PT_FREE: // already free'd (double-free)
+		case PT_ENABLED: // if this happens, someone else is monkeying with this PT
+		    return PTL_ARG_INVALID;
+		case PT_DISABLED:
+		    return PTL_OK;
+	    }
+    }
 }
 
 int API_FUNC PtlPTDisable(
