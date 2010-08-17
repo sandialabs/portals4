@@ -54,9 +54,11 @@ void INTERNAL PtlInternalFragmentSetup(
     /* first, initialize the receive queue */
     receiveQ = (NEMESIS_blocking_queue *) buf;
     PtlInternalNEMESISBlockingInit(receiveQ);
+    printf("%i==========> receiveQ (%p) initialized\n", (int)getpid(), receiveQ);
     /* next, initialize the ack queue */
     ackQ = receiveQ + 1;
     PtlInternalNEMESISBlockingInit(ackQ);
+    printf("%i==========> ackQ (%p) initialized\n", (int)getpid(), ackQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *) (ackQ + 1);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
@@ -139,7 +141,7 @@ void INTERNAL PtlInternalFragmentAck(
     NEMESIS_blocking_queue *destQ =
 	(NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
 				    (per_proc_comm_buf_size * dest) +
-				    sizeof(NEMESIS_queue));
+				    sizeof(NEMESIS_blocking_queue));
     frag = ((uint64_t *) frag) - 2;
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }
