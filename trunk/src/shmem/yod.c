@@ -165,9 +165,9 @@ int main(
 	}
     }
     if (count == 0) {
-	fprintf(stderr, "Error: no count specified!\n");
-	print_usage(1);
-    } else if (argv[optind] == NULL) {
+	count = 1;
+    }
+    if (argv[optind] == NULL) {
 	fprintf(stderr, "Error: no executable specified!\n");
 	print_usage(1);
     }
@@ -190,6 +190,13 @@ int main(
 
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+    if (shm_fd < 0) {
+	if (shm_unlink(shmname) == -1) {
+	    perror("yod-> attempting to clean up; shm_unlink failed");
+	    exit(EXIT_FAILURE);
+	}
+	shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+    }
     if (shm_fd >= 0) {
 	void *commpad;
 	/* pre-allocate the shared memory ... necessary on BSD */
@@ -392,7 +399,14 @@ void *collator(
 void print_usage(
     int ex)
 {
-    printf("yod -c [num_procs] executable\n");
+    printf("yod {options} executable\n");
+    printf("Options are:\n");
+    printf("\t-c [num_procs]            Spawn num_procs processes.\n");
+    printf("\t-l [large_fragment_size]  The size in bytes of large message buffers (default: 4k).\n");
+    printf("\t-s [small_fragment_size]  The size in bytes of small message buffers (default: 128)\n");
+    printf("\t-h                        Print this help.\n");
+    printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
+    printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
     fflush(stdout);
     if (ex) {
 	exit(EXIT_FAILURE);
