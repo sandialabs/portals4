@@ -127,8 +127,13 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		    case 1: // success
 		    case 2: // overflow
 			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
-			    ptl_ct_event_t cte = {1, 0};
-			    PtlCTInc(mdptr->ct_handle, cte);
+			    if (mdptr->options & PTL_MD_EVENT_CT_BYTES == 0) {
+				ptl_ct_event_t cte = {1, 0};
+				PtlCTInc(mdptr->ct_handle, cte);
+			    } else {
+				ptl_ct_event_t cte = {hdr->length, 0};
+				PtlCTInc(mdptr->ct_handle, cte);
+			    }
 			}
 			if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
 			    ptl_event_t e;
@@ -278,8 +283,13 @@ int API_FUNC PtlPut(
     /* step 5: report the send event */
     mdptr = PtlInternalMDFetch(md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
-	ptl_ct_event_t cte = {1, 0};
-	PtlCTInc(mdptr->ct_handle, cte);
+	if (mdptr->options & PTL_MD_EVENT_CT_BYTES == 0) {
+	    ptl_ct_event_t cte = {1, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	} else {
+	    ptl_ct_event_t cte = {hdr->length, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	}
     }
     if ((mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
 	ptl_event_t e;
@@ -439,8 +449,13 @@ int API_FUNC PtlAtomic(
     /* step 5: report the send event */
     mdptr = PtlInternalMDFetch(md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
-	ptl_ct_event_t cte = {1, 0};
-	PtlCTInc(mdptr->ct_handle, cte);
+	if (mdptr->options & PTL_MD_EVENT_CT_BYTES == 0) {
+	    ptl_ct_event_t cte = {1, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	} else {
+	    ptl_ct_event_t cte = {hdr->length, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	}
     }
     if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
 	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
@@ -554,8 +569,13 @@ int API_FUNC PtlFetchAtomic(
     /* step 5: report the send event */
     mdptr = PtlInternalMDFetch(put_md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
-	ptl_ct_event_t cte = {1, 0};
-	PtlCTInc(mdptr->ct_handle, cte);
+	if (mdptr->options & PTL_MD_EVENT_CT_BYTES == 0) {
+	    ptl_ct_event_t cte = {1, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	} else {
+	    ptl_ct_event_t cte = {hdr->length, 0};
+	    PtlCTInc(mdptr->ct_handle, cte);
+	}
     }
     if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
 	if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
@@ -696,8 +716,13 @@ int API_FUNC PtlSwap(
     {
 	ptl_md_t *mdptr = PtlInternalMDFetch(put_md_handle);
 	if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
-	    ptl_ct_event_t cte = {1, 0};
-	    PtlCTInc(mdptr->ct_handle, cte);
+	    if (mdptr->options & PTL_MD_EVENT_CT_BYTES == 0) {
+		ptl_ct_event_t cte = {1, 0};
+		PtlCTInc(mdptr->ct_handle, cte);
+	    } else {
+		ptl_ct_event_t cte = {hdr->length, 0};
+		PtlCTInc(mdptr->ct_handle, cte);
+	    }
 	}
 	if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
 	    if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
