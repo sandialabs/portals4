@@ -296,6 +296,7 @@ int INTERNAL PtlInternalLEDeliver(
     ptl_internal_header_t *restrict hdr)
 {
     ptl_event_t e; // for posting what happens here
+    ptl_size_t mlength;
     assert(t);
     assert(hdr);
     //printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
@@ -318,7 +319,7 @@ int INTERNAL PtlInternalLEDeliver(
 		e.event.tevent.uid = 0;
 		e.event.tevent.match_bits = 0;
 		e.event.tevent.rlength = hdr->length;
-		e.event.tevent.mlength = hdr->length;
+		e.event.tevent.mlength = 0;
 		e.event.tevent.remote_offset = hdr->dest_offset;
 		e.event.tevent.start = (char*)le->start + hdr->dest_offset;
 		e.event.tevent.user_ptr = hdr->user_ptr;
@@ -345,13 +346,11 @@ int INTERNAL PtlInternalLEDeliver(
 	// check the protections on the le
 	if (le->options & PTL_LE_AUTH_USE_JID) {
 	    if (le->ac_id.jid != PTL_JID_ANY) {
-		fprintf(stderr, "BAD AC_ID! 1 (I should probably enqueue an event of some kind and free the memory)\n");
 		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	} else {
 	    if (le->ac_id.uid != PTL_UID_ANY) {
-		fprintf(stderr, "BAD AC_ID! 2 (I should probably enqueue an event of some kind and free the memory)\n");
 		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
@@ -359,24 +358,26 @@ int INTERNAL PtlInternalLEDeliver(
 	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
 		if ((le->options & PTL_LE_OP_PUT) == 0) {
-		    fprintf(stderr, "LE not labelled for PUT\n");
-		    abort();
+		    PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
 		if (hdr->length > (le->length - hdr->dest_offset)) {
-		    fprintf(stderr, "LE is too short! hdr->length=%u, le->length=%u, hdr->dest_offset=%u\n", (unsigned int)hdr->length, (unsigned int)le->length, (unsigned int)hdr->dest_offset);
-		    abort();
+		    mlength = le->length - hdr->dest_offset;
+		} else {
+		    mlength = hdr->length;
 		}
 		/* drumroll please... */
-		//printf("calling memcpy(%p + %lu, %p, %lu)\n", le->start, (unsigned long)hdr->dest_offset, hdr->data, (unsigned long)hdr->length);
-		memcpy((char*)le->start + hdr->dest_offset, hdr->data, hdr->length);
-		//printf("memcopy returned!\n");
+		memcpy((char*)le->start + hdr->dest_offset, hdr->data, mlength);
 		/* now announce it */
 		if (le->options & PTL_LE_EVENT_CT_PUT) {
-		    ptl_ct_event_t cte = {1, 0};
-		    //printf("incrementing CT\n");
-		    PtlCTInc(le->ct_handle, cte);
+		    if (le->options & PTL_LE_EVENT_CT_BYTES == 0) {
+			ptl_ct_event_t cte = {1, 0};
+			PtlCTInc(le->ct_handle, cte);
+		    } else {
+			ptl_ct_event_t cte = {hdr->length, 0};
+			PtlCTInc(le->ct_handle, cte);
+		    }
 		}
-		//printf("EQ?\n");
 		if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
 		    e.type = PTL_EVENT_PUT;
 		    e.event.tevent.initiator.phys.pid = hdr->src;
@@ -385,7 +386,7 @@ int INTERNAL PtlInternalLEDeliver(
 		    e.event.tevent.uid = 0;
 		    e.event.tevent.match_bits = 0;
 		    e.event.tevent.rlength = hdr->length;
-		    e.event.tevent.mlength = hdr->length;
+		    e.event.tevent.mlength = mlength;
 		    e.event.tevent.remote_offset = hdr->dest_offset;
 		    e.event.tevent.start = (char*)le->start + hdr->dest_offset;
 		    e.event.tevent.user_ptr = hdr->user_ptr;
@@ -404,9 +405,7 @@ int INTERNAL PtlInternalLEDeliver(
 			    break;
 		    }
 		    e.event.tevent.ni_fail_type = PTL_NI_OK;
-		    //printf("push to EQ\n");
 		    PtlInternalEQPush(t->EQ, &e);
-		    //printf("pushed\n");
 		}
 		break;
 	    default:
@@ -415,6 +414,7 @@ int INTERNAL PtlInternalLEDeliver(
 	}
 	return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:1;
     } else if (t->overflow.head) {
+#warning Overflow LE handling is unimplemented
 	fprintf(stderr, "overflow LE handling is unimplemented\n");
 	abort();
 	return 2; // check for ACK_DISABLE
