@@ -68,7 +68,7 @@ int main(
     int argc,
     char *argv[])
 {
-    size_t commsize = 1048576;	// 1MB
+    size_t commsize;
     size_t buffsize = getpagesize();
     pid_t *pids;
     int shm_fd;
@@ -79,6 +79,7 @@ int main(
     size_t small_frag_count = 512;
     size_t large_frag_size = 4096;
     size_t large_frag_count = 128;
+    const size_t max_count = buffsize - 1;
 
     {
 	int opt;
@@ -97,7 +98,7 @@ int main(
 				optarg);
 			print_usage(1);
 		    }
-		    if (count > 128) {
+		    if (count > max_count) { /* technically, this is an arbitrary limit; more would require multiple pages for the initial init barier. */
 			fprintf(stderr,
 				"Error: Exceeded max of 128 processes. (complain to developer)\n");
 			exit(EXIT_FAILURE);
