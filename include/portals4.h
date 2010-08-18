@@ -137,6 +137,7 @@ typedef struct {
     - \c PTL_MD_EVENT_CT_SEND
     - \c PTL_MD_EVENT_CT_REPLY
     - \c PTL_MD_EVENT_CT_ACK
+    - \c PTL_MD_EVENT_CT_BYTES
     - \c PTL_MD_UNORDERED
     - \c PTL_MD_REMOTE_FAILURE_DISABLE
     - \c PTL_IOVEC
@@ -263,6 +264,7 @@ typedef struct {
  - \c PTL_LE_EVENT_CT_PUT_OVERFLOW
  - \c PTL_LE_EVENT_CT_ATOMIC
  - \c PTL_LE_EVENT_CT_ATOMIC_OVERFLOW
+ - \c PTL_LE_EVENT_CT_BYTES
  - \c PTL_LE_AUTH_USE_JID
  */
 } ptl_le_t;
@@ -468,9 +470,11 @@ typedef struct {
  * @param[out] actual	    If not \c NULL, on successful return, the location
  *			    pointed to by \a actual will hold the actual
  *			    limits.
- * @param[in] map_size	    Contains the size of the map being passed in (zero
- *			    for \c NULL). This field is ignored if the \c
- *			    PTL_NI_LOGICAL option is set.
+ * @param[in] map_size	    Contains the size of the map being passed in. If \a
+ *			    map_size is non-zero and \a desired_mapping is \c
+ *			    NULL, PtlNIInit() simply returns the actual mapping
+ *			    in \a actual_mapping. This field is ignored if the
+ *			    \c PTL_NI_LOGICAL option is set.
  * @param[in] desired_mapping	If not \c NULL, points to an array of
  *				structures that holds the desired mapping of
  *				logical identifiers to NID/PID pairs. This
@@ -480,7 +484,8 @@ typedef struct {
  *				on successful return, the location pointed to
  *				by \a actual_mapping will hold the actual
  *				mapping of logical identifiers to NID/PID
- *				pairs.
+ *				pairs. The mapping returned will be no longer
+ *				than \a map_size.
  * @param[out] ni_handle	On successful return, this location
  *				will hold the interface handle.
  * @retval PTL_OK		Indicates success.
@@ -649,7 +654,9 @@ int PtlPTFree(ptl_handle_ni_t	ni_handle,
  * @brief Indicates to an implementation that no new messages should be
  *	accepted on that portal table entry. The function blocks until the
  *	portal table entry status has been updated, all messages being actively
- *	processed are completed, and all events are posted.
+ *	processed are completed, and all events are posted. Since
+ *	PtlPTDisable() waits until the portal table entry is disabled before it
+ *	returns, it does not generate a \c PTL_EVENT_PT_DISABLED.
  * @param[in] ni_handle	The interface handle to use.
  * @param[in] pt_index	The portal index that is to be disabled.
  * @retval PTL_OK	    Indicates success.
@@ -794,15 +801,20 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
 /*! Enable the counting of \c PTL_EVENT_ACK events. */
 #define PTL_MD_EVENT_CT_ACK	     (1<<4)
 
+/*! By default, counting events count events. When set, this option causes
+ * successful bytes to be counted instead. Failures are still counted as
+ * events. */
+#define PTL_MD_EVENT_CT_BYTES	     (1<<5)
+
 /*! Indicate to the portals implementation that messages sent from this memory
  * descriptor do not have to arrive at the target in order. */
-#define PTL_MD_UNORDERED	     (1<<5)
+#define PTL_MD_UNORDERED	     (1<<6)
 
 /*! Indicate to the portals implementation that failures requiring
  * notification from the target should not be delivered to the local
  * application. This prevents the local events (e.g. \c PTL_EVENT_SEND) from
  * having to wait for a round-trip notification before delivery. */
-#define PTL_MD_REMOTE_FAILURE_DISABLE (1<<6)
+#define PTL_MD_REMOTE_FAILURE_DISABLE (1<<7)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
@@ -948,9 +960,14 @@ typedef enum {
 /*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events */
 #define PTL_LE_EVENT_CT_ATOMIC_OVERFLOW (1<<13)
 
+/*! By default, counting events count events. When set, this option causes
+ * successful bytes to be counted instead. Failures are still counted as
+ * events. */
+#define PTL_LE_EVENT_CT_BYTES		(1<<14)
+
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a list entry. */
-#define PTL_LE_AUTH_USE_JID		(1<<14)
+#define PTL_LE_AUTH_USE_JID		(1<<15)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *		   ptl_pt_index_t   pt_index,
@@ -1131,9 +1148,14 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
 /*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events. */
 #define PTL_ME_EVENT_CT_ATOMIC_OVERFLOW	(1<<17)
 
+/*! By default, counting events count events. When set, this option causes
+ * successful bytes to be counted instead. Failures are still counted as
+ * events. */
+#define PTL_ME_EVENT_CT_BYTES		(1<<18)
+
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID		(1<<18)
+#define PTL_ME_AUTH_USE_JID		(1<<19)
 /*!
  * @struct ptl_me_t
  * @brief Defines the visible parts of a match list entry. Values of this type
@@ -1212,6 +1234,7 @@ typedef struct {
      - \c PTL_ME_EVENT_CT_PUT_OVERFLOW
      - \c PTL_ME_EVENT_CT_ATOMIC
      - \c PTL_ME_EVENT_CT_ATOMIC_OVERFLOW
+     - \c PTL_ME_EVENT_CT_BYTES
      - \c PTL_ME_AUTH_USE_JID
      */
     unsigned int	options;
@@ -1400,7 +1423,11 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
 /*!
  * @fn PtlCTGet(ptl_handle_ct_t	    ct_handle,
  *		ptl_ct_event_t *    event)
- * @brief Used to obtain the current value of a counting event.
+ * @brief Used to obtain the current value of a counting event. Accesses made
+ *	by PtlCTGet() are not atomic relative to modifications made by the
+ *	PtlCTSet() and PtlCTInc() functions. Calling PtlCTFree() in a separate
+ *	thread while PtlCTGet() is executing may yield undefined results in the
+ *	returned value.
  * @param[in] ct_handle	    The counting event handle.
  * @param[out] event	    On successful return, this location will hold the
  *			    current value associated with the counting event.
@@ -1412,11 +1439,10 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
  * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
  *			    called by another thread while this thread was
  *			    in PtlCTWait()
- * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree of
- *	complexity to the PtlCTGet() and PtlCTWait() functions; however, it was
- *	deemed necessary to be able to interrupt waiting functions for the sake
- *	of applications that need to tolerate failures. Hence, this approach to
- *	dealing with the conflict of reading and freeing events was chosen.
+ * @note PtlCTGet() must be as close to the speed of a simple variable
+ *	access as possible; hence, PtlCTGet() is not atomic relative to
+ *	PtlCTSet() or PtlCTInc() and is undefined if PtlCTFree() or PtlNIFini()
+ *	is called during the execution of the function.
  * @see PtlCTWait()
  */
 int PtlCTGet(ptl_handle_ct_t	ct_handle,
@@ -1441,6 +1467,15 @@ int PtlCTGet(ptl_handle_ct_t	ct_handle,
  * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
  *			    called by another thread while this thread was
  *			    waiting in PtlCTWait()
+ * @note PtlCTWait() returns when the counting event referenced by the \a
+ *	ct_handle is greater than or equal to the test; thus, the actual value
+ *	of the counting event is returned to prevent the user from having to
+ *	call PtlCTGet().
+ * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree
+ *	of complexity to the PtlCTWait() function; however, it was deemed
+ *	necessary to be able to interrupt waiting functions for the sake of
+ *	applications that need to tolerate failures. Hence, this approach to
+ *	dealing with the conflict of reading and freeing events was chosen.
  * @see PtlCTGet()
  */
 int PtlCTWait(ptl_handle_ct_t	ct_handle,
@@ -1450,6 +1485,13 @@ int PtlCTWait(ptl_handle_ct_t	ct_handle,
  * @fn PtlCTSet(ptl_handle_ct_t	ct_handle,
  *		ptl_ct_event_t	new_ct)
  * @brief Used to set the value of a counting event.
+ *	Periodically, it is desirable to reinitialize or adjust the value of a
+ *	counting event. This must be done atomically relative to other
+ *	modifications, so a functional interface is provided. The PtlCTSet()
+ *	function is used to set the value of a counting event. The entire
+ *	ptl_ct_event_t is updated atomically relative to other modifications of
+ *	the counting event; however, it is not atomic relative to read accesses
+ *	of the counting event.
  * @param[in] ct_handle	The counting event handle.
  * @param[in] new_ct	On successful return, the value of the counting event
  *			will have been set to this value.
@@ -1466,6 +1508,13 @@ int PtlCTSet(ptl_handle_ct_t	ct_handle,
  * @fn PtlCTInc(ptl_handle_ct_t	ct_handle,
  *		ptl_ct_event_t	increment)
  * @brief Used to (atomically) increment the value of a counting event.
+ *	In some scenarios, the counting event will need to be incremented by
+ *	the application. This must be done atomically relative to other
+ *	modifications of the counting event, so a functional interface is
+ *	provided. The PtlCTInc() function is used to increment the value of a
+ *	counting event. The entire ptl_ct_event_t is updated atomically
+ *	relative to other modifications of the counting event; however, it is
+ *	not atomic relative to read accesses of the counting event.
  * @param[in] ct_handle	The counting event handle.
  * @param[in] increment	On successful return, the value of the counting event
  *			will have been incremented by this value.
@@ -1474,6 +1523,11 @@ int PtlCTSet(ptl_handle_ct_t	ct_handle,
  *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that \a ct_handle is not a valid
  *				counting event handle.
+ * @note As an example, a counting event may need to be incremented at the
+ *	completion of a message that is received. If the message arrives in the
+ *	overflow list, it may be desirable to delay the counting event
+ *	increment until the application can place the data in the correct
+ *	buffer.
  * @see PtlCTSet()
  */
 int PtlCTInc(ptl_handle_ct_t	ct_handle,
@@ -1753,8 +1807,12 @@ typedef enum {
  *		 ptl_hdr_data_t	    hdr_data,
  *		 ptl_op_t	    operation,
  *		 ptl_datatype_t	    datatype)
- * @brief A one-way operation that performs an atomic operation on data at the
- * \e target with the data passed in the \p put memory descriptor.
+ * @brief Initiates an asynchronous atomic operation. The events behave like
+ *	the PtlPut() function, with the exception of the target side event,
+ *	which is a \c PTL_EVENT_ATOMIC (or \c PTL_EVENT_ATOMIC_OVERFLOW)
+ *	instead of a \c PTL_EVENT_PUT. Similarly, the arguments mirror PtlPut()
+ *	with the addition of a ptl_datatype_t and ptl_op_t to specify the
+ *	datatype and operation being performed, respectively.
  * @param[in] md_handle	    The memory descriptor handle that describes the
  *			    memory to be sent. If the memory descriptor has an
  *			    event queue associated with it, it will be used to
@@ -1819,7 +1877,19 @@ int PtlAtomic(ptl_handle_md_t	md_handle,
  *		      ptl_hdr_data_t	hdr_data,
  *		      ptl_op_t		operation,
  *		      ptl_datatype_t	datatype)
- * @brief Extends PtlAtomic() to be an atomic fetch-and-update operation.
+ * @brief Extends PtlAtomic() to return the value from the target \e prior \e
+ *	to \e the \e operation \e being \e performed. This means that both
+ *	PtlPut() and PtlGet() style events can be delivered. When data is sent
+ *	from the initiator node, a \c PTL_EVENT_SEND event is registered on the
+ *	\e initiator node in the event queue specified by the \a put_md_handle.
+ *	The even t\c PTL_EVENT_ATOMIC is registered on the \e target node to
+ *	indicate completion of an atomic operation; and if data is returned
+ *	from the \e target node, a \c PTL_EVENT_REPLY event is registered on
+ *	the \e initiator node in the even tqueue specified by the \a
+ *	get_md_handle. Note that receiving a \c PTL_EVENT_REPLY inherently
+ *	implies that the flow control check has passed on the target node. In
+ *	addition, it is an error to use memory descriptors bound to different
+ *	network interfaces in a single PtlFetchAtomic() call.
  * @param[in] get_md_handle	The memory descriptor handle that describes the
  *				memory into which the result of the operation
  *				will be placed. The memory descriptor can have
@@ -1893,7 +1963,15 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *	       void *		operand,
  *	       ptl_op_t		operation,
  *	       ptl_datatype_t   datatype)
- * @brief Atomically swaps data.
+ * @brief Provides an extra argument (the \a operand) beyond the
+ *	PtlFetchAtomic() function. PtlSwap() handles the \c PTL_SWAP, \c
+ *	PTL_CSWAP, and \c PTL_MSWAP operations and is subject to the additional
+ *	restriction that \c PTL_CSWAP and \c PTL_MSWAP operations can only be
+ *	as long as a single datatype item. Like PtlFetchAtomic(), receiving a
+ *	\c PTL_EVENT_REPLY inherently implies that the flow control check has
+ *	passed on the target node. In addition, it is an error to use memory
+ *	descriptors bound to different network interfaces in a single PtlSwap()
+ *	call.
  * @param[in] get_md_handle	The memory descriptor handle that describes the
  *				memory into which the result of the operation
  *				will be placed. The memory descriptor can have
@@ -2339,12 +2417,12 @@ int PtlEQPoll(ptl_handle_eq_t *	    eq_handles,
  * after receiving a PtlAtomic() from all of its children. To provide this
  * operation, triggered versions of each of the data movement operations are
  * provided. To create a triggered operation, a \a trig_ct_handle and an
- * integer \a threshold are added to the argument list. When the count
- * referenced by the \a trig_ct_handle argument reaches or exceeds the \a
- * threshold (equal to or greater), the operation proceeds \e at \e the \e initiator
- * \e of \e the \e operation. For example, a PtlTriggeredGet() or a
- * PtlTriggeredAtomic() will not leave the \e initiator until the threshold is
- * reached.
+ * integer \a threshold are added to the argument list. When the count (the sum
+ * of the success and failure fields) referenced by the \a trig_ct_handle
+ * argument reaches or exceeds the \a threshold (equal to or greater), the
+ * operation proceeds \e at \e the \e initiator \e of \e the \e operation. For
+ * example, a PtlTriggeredGet() or a PtlTriggeredAtomic() will not leave the \e
+ * initiator until the threshold is reached.
  *
  * @note The use of a \a trig_ct_handle and \a threshold enables a variety of
  *	usage models. A single match list entry can trigger one operation (or
