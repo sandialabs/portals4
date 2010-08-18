@@ -98,9 +98,9 @@ int main(
 				optarg);
 			print_usage(1);
 		    }
-		    if (count > max_count) { /* technically, this is an arbitrary limit; more would require multiple pages for the initial init barier. */
+		    if (count > max_count) {	/* technically, this is an arbitrary limit; more would require multiple pages for the initial init barier. */
 			fprintf(stderr,
-				"Error: Exceeded max of 128 processes. (complain to developer)\n");
+				"Error: Exceeded max of %lu processes. (complain to developer)\n", (unsigned long)max_count);
 			exit(EXIT_FAILURE);
 		    }
 		}
@@ -196,7 +196,8 @@ int main(
 	    perror("yod-> attempting to clean up; shm_unlink failed");
 	    exit(EXIT_FAILURE);
 	}
-	shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+	shm_fd =
+	    shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     }
     if (shm_fd >= 0) {
 	void *commpad;
@@ -266,7 +267,7 @@ int main(
 	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
     if (pthread_detach(collator_thread) != 0) {
-	perror("pthread_detach"); /* failure is not a big deal */
+	perror("pthread_detach");      /* failure is not a big deal */
     }
 
     /* Clean up after Ctrl-C */
@@ -305,8 +306,8 @@ int main(
     }
     if (ct_spawned == 1) {
 	switch (pthread_cancel(collator_thread)) {
-	    case 0: // success!
-	    case ESRCH: // thread already gone
+	    case 0:		       // success!
+	    case ESRCH:	       // thread already gone
 		break;
 	    default:
 		perror("yod-> pthread_cancel");
@@ -368,7 +369,7 @@ void *collator(
     {
 	ptl_ct_event_t ct_data;
 	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
-	assert(ct_data.failure == 0); // XXX: should do something useful
+	assert(ct_data.failure == 0);  // XXX: should do something useful
     }
     /* cleanup */
     assert(PtlCTFree(le.ct_handle) == PTL_OK);
@@ -404,11 +405,15 @@ void print_usage(
     printf("yod {options} executable\n");
     printf("Options are:\n");
     printf("\t-c [num_procs]            Spawn num_procs processes.\n");
-    printf("\t-l [large_fragment_size]  The size in bytes of large message buffers (default: 4k).\n");
-    printf("\t-s [small_fragment_size]  The size in bytes of small message buffers (default: 128)\n");
+    printf
+	("\t-l [large_fragment_size]  The size in bytes of large message buffers (default: 4k).\n");
+    printf
+	("\t-s [small_fragment_size]  The size in bytes of small message buffers (default: 128)\n");
     printf("\t-h                        Print this help.\n");
-    printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
-    printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
+    printf
+	("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
+    printf
+	("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
     fflush(stdout);
     if (ex) {
 	exit(EXIT_FAILURE);
