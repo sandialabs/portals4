@@ -7,7 +7,8 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 
 TESTS = test_init \
 	test_NIInit \
-	test_bootstrap
+	test_bootstrap \
+	test_get
 
 #EXTRA_PROGRAMS = test_bootstrap
 
@@ -34,3 +35,6 @@ test_NIInit_DEPENDENCIES = $(PORTALSLIB)
 
 test_bootstrap_SOURCES = test_bootstrap.c
 test_bootstrap_DEPENDENCIES = $(PORTALSLIB)
+
+test_get_SOURCES = test_get.c
+test_get_DEPENDENCIES = $(PORTALSLIB)
