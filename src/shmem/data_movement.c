@@ -111,73 +111,105 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 {
     while (1) {
 	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
-	ptl_md_t *mdptr;
+	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle;
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
 	    case HDR_TYPE_PUT:
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
-		PtlInternalMDCleared(md_handle);
-		/* Report the ack */
 		mdptr = PtlInternalMDFetch(md_handle);
 		assert(mdptr != NULL);
-		switch(hdr->src) {
-		    case 0: // Pretend we didn't send an ack
-			break;
-		    case 1: // success
-		    case 2: // overflow
-			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
-			    if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-				ptl_ct_event_t cte = {1, 0};
-				PtlCTInc(mdptr->ct_handle, cte);
-			    } else {
-				ptl_ct_event_t cte = {hdr->length, 0};
-				PtlCTInc(mdptr->ct_handle, cte);
-			    }
-			}
-			if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
-			    ptl_event_t e;
-			    e.type = PTL_EVENT_ACK;
-			    e.event.ievent.mlength = hdr->length;
-			    e.event.ievent.offset = hdr->dest_offset;
-			    e.event.ievent.user_ptr = hdr->user_ptr;
-			    e.event.ievent.ni_fail_type = PTL_NI_OK;
-			    PtlInternalEQPush(mdptr->eq_handle, &e);
-			}
-			break;
-		    case 9999: // PT not allocated
-		    case 3: // Permission Violation
-		    case 4: // nothing matched, report error
-			if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
-			    ptl_ct_event_t cte = {0, 1};
-			    PtlCTInc(mdptr->ct_handle, cte);
-			}
-			if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
-			    ptl_event_t e;
-			    e.type = PTL_EVENT_ACK;
-			    e.event.ievent.mlength = hdr->length;
-			    e.event.ievent.offset = hdr->dest_offset;
-			    e.event.ievent.user_ptr = hdr->user_ptr;
-			    if (hdr->src == 3) {
-				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
-			    } else if (hdr->src == 9999) {
-				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
-			    } else {
-				e.event.ievent.ni_fail_type = PTL_NI_OK;
-			    }
-			    PtlInternalEQPush(mdptr->eq_handle, &e);
-			}
-			break;
-		}
 		break;
 	    case HDR_TYPE_GET:
+		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		mdptr = PtlInternalMDFetch(md_handle);
+		assert(mdptr != NULL);
+		/* pull the data out of the reply */
+		printf("replied with %i data\n", (int)hdr->length);
+		if (hdr->src == 1 || hdr->src == 0) {
+		    memcpy(mdptr->start, hdr->data, hdr->length);
+		}
+		break;
 	    case HDR_TYPE_ATOMIC:
-	    case HDR_TYPE_FETCHATOMIC:
-	    case HDR_TYPE_SWAP:
-		fprintf(stderr, "unimplemented");
+		fprintf(stderr, "ATOMIC REPLY unimplemented");
 		abort();
 		break;
+	    case HDR_TYPE_FETCHATOMIC:
+		fprintf(stderr, "FETCHATOMIC REPLY unimplemented");
+		abort();
+		break;
+	    case HDR_TYPE_SWAP:
+		fprintf(stderr, "SWAP REPLY unimplemented");
+		abort();
+		break;
+	    default: // impossible
+		*(int*)0 = 0;
 	}
+	/* Report the ack */
+	switch(hdr->src) {
+	    case 0: // Pretend we didn't send an ack
+		break;
+	    case 1: // success
+	    case 2: // overflow
+		{
+		    int ct_enabled = 0;
+		    if (hdr->type == HDR_TYPE_PUT) {
+			ct_enabled = mdptr->options & PTL_MD_EVENT_CT_ACK;
+		    } else {
+			ct_enabled = mdptr->options & PTL_MD_EVENT_CT_REPLY;
+		    }
+		    if (mdptr->ct_handle != PTL_CT_NONE && ct_enabled != 0) {
+			if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
+			    ptl_ct_event_t cte = {1, 0};
+			    PtlCTInc(mdptr->ct_handle, cte);
+			} else {
+			    ptl_ct_event_t cte = {hdr->length, 0};
+			    PtlCTInc(mdptr->ct_handle, cte);
+			}
+		    }
+		}
+		if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+		    ptl_event_t e;
+		    switch (hdr->type) {
+			case HDR_TYPE_PUT:
+			    e.type = PTL_EVENT_ACK;
+			    break;
+			default:
+			    e.type = PTL_EVENT_REPLY;
+			    break;
+		    }
+		    e.event.ievent.mlength = hdr->length;
+		    e.event.ievent.offset = hdr->dest_offset;
+		    e.event.ievent.user_ptr = hdr->user_ptr;
+		    e.event.ievent.ni_fail_type = PTL_NI_OK;
+		    PtlInternalEQPush(mdptr->eq_handle, &e);
+		}
+		break;
+	    case 9999: // PT not allocated
+	    case 3: // Permission Violation
+	    case 4: // nothing matched, report error
+		if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
+		    ptl_ct_event_t cte = {0, 1};
+		    PtlCTInc(mdptr->ct_handle, cte);
+		}
+		if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
+		    ptl_event_t e;
+		    e.type = PTL_EVENT_ACK;
+		    e.event.ievent.mlength = hdr->length;
+		    e.event.ievent.offset = hdr->dest_offset;
+		    e.event.ievent.user_ptr = hdr->user_ptr;
+		    if (hdr->src == 3) {
+			e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
+		    } else if (hdr->src == 9999) {
+			e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+		    } else {
+			e.event.ievent.ni_fail_type = PTL_NI_OK;
+		    }
+		    PtlInternalEQPush(mdptr->eq_handle, &e);
+		}
+		break;
+	}
+	PtlInternalMDCleared(md_handle);
 	/* now, put the fragment back in the freelist */
 	PtlInternalFragmentFree(hdr);
     }
