@@ -398,9 +398,6 @@ int API_FUNC PtlAtomic(
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	return PTL_ARG_INVALID;
     }
-    if (operation == PTL_SWAP || operation == PTL_MSWAP || operation == PTL_CSWAP) {
-	return PTL_ARG_INVALID;
-    }
     switch (md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
@@ -414,6 +411,16 @@ int API_FUNC PtlAtomic(
 		return PTL_ARG_INVALID;
 	    }
 	    break;
+    }
+    switch (operation) {
+	case PTL_SWAP: case PTL_CSWAP: case PTL_MSWAP:
+	    return PTL_ARG_INVALID;
+	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
+	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
+	    switch (datatype) {
+		case PTL_DOUBLE: case PTL_FLOAT:
+		    return PTL_ARG_INVALID;
+	    }
     }
 #endif
     /* step 1: get a local memory fragment */
@@ -530,6 +537,16 @@ int API_FUNC PtlFetchAtomic(
 	    }
 	    break;
     }
+    switch (operation) {
+	case PTL_CSWAP: case PTL_MSWAP:
+	    return PTL_ARG_INVALID;
+	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
+	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
+	    switch (datatype) {
+		case PTL_DOUBLE: case PTL_FLOAT:
+		    return PTL_ARG_INVALID;
+	    }
+    }
 #endif
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
@@ -627,9 +644,6 @@ int API_FUNC PtlSwap(
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
 	return PTL_ARG_INVALID;
     }
-    if (operation != PTL_SWAP && operation != PTL_MSWAP && operation != PTL_CSWAP) {
-	return PTL_ARG_INVALID;
-    }
     if (get_md.s.ni != put_md.s.ni) {
 	return PTL_ARG_INVALID;
     }
@@ -646,6 +660,18 @@ int API_FUNC PtlSwap(
 		return PTL_ARG_INVALID;
 	    }
 	    break;
+    }
+    switch (operation) {
+	case PTL_SWAP:
+	    break;
+	case PTL_CSWAP: case PTL_MSWAP:
+	    switch (datatype) {
+		case PTL_DOUBLE: case PTL_FLOAT:
+		    return PTL_ARG_INVALID;
+	    }
+	    break;
+	default:
+	    return PTL_ARG_INVALID;
     }
 #endif
     /* step 1: get a local memory fragment */
