@@ -675,7 +675,7 @@ int API_FUNC PtlSwap(
     }
 #endif
     /* step 1: get a local memory fragment */
-    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_SWAP;
     hdr->ni = get_md.s.ni;
@@ -703,27 +703,24 @@ int API_FUNC PtlSwap(
 		case PTL_CHAR:
 		case PTL_UCHAR:
 		    memcpy(dataptr, operand, 1);
-		    ++dataptr;
 		    break;
 		case PTL_SHORT:
 		case PTL_USHORT:
 		    memcpy(dataptr, operand, 2);
-		    dataptr += 2;
 		    break;
 		case PTL_INT:
 		case PTL_UINT:
 		case PTL_FLOAT:
 		    memcpy(dataptr, operand, 4);
-		    dataptr += 4;
 		    break;
 		case PTL_LONG:
 		case PTL_ULONG:
 		case PTL_DOUBLE:
 		    memcpy(dataptr, operand, 8);
-		    dataptr += 8;
 		    break;
 	    }
 	}
+	dataptr += 8;
 	memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
 		length);
     }
