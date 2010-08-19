@@ -27,6 +27,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_PT.h"
 #include "ptl_internal_error.h"
+#include "ptl_internal_performatomic.h"
 
 #define LE_FREE		0
 #define LE_ALLOCATED	1
@@ -357,60 +358,109 @@ int INTERNAL PtlInternalLEDeliver(
 	}
 	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
+	    case HDR_TYPE_ATOMIC:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
 		if ((le->options & PTL_LE_OP_PUT) == 0) {
 		    PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
-		if (hdr->length > (le->length - hdr->dest_offset)) {
-		    mlength = le->length - hdr->dest_offset;
-		} else {
-		    mlength = hdr->length;
+	}
+	switch (hdr->type) {
+	    case HDR_TYPE_GET:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		if ((le->options & PTL_LE_ACK_DISABLE) == 0 && (le->options & PTL_LE_OP_GET) == 0) {
+		    PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
-		/* drumroll please... */
+	}
+	/* check lengths */
+	if (hdr->length > (le->length - hdr->dest_offset)) {
+	    mlength = le->length - hdr->dest_offset;
+	} else {
+	    mlength = hdr->length;
+	}
+	/* drumroll please... */
+	switch (hdr->type) {
+	    case HDR_TYPE_PUT:
 		memcpy((char*)le->start + hdr->dest_offset, hdr->data, mlength);
-		/* now announce it */
-		if (le->options & PTL_LE_EVENT_CT_PUT) {
-		    if (le->options & PTL_LE_EVENT_CT_BYTES == 0) {
-			ptl_ct_event_t cte = {1, 0};
-			PtlCTInc(le->ct_handle, cte);
-		    } else {
-			ptl_ct_event_t cte = {hdr->length, 0};
-			PtlCTInc(le->ct_handle, cte);
-		    }
-		}
-		if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
-		    e.type = PTL_EVENT_PUT;
-		    e.event.tevent.initiator.phys.pid = hdr->src;
-		    e.event.tevent.initiator.phys.nid = 0;
-		    e.event.tevent.pt_index = hdr->pt_index;
-		    e.event.tevent.uid = 0;
-		    e.event.tevent.match_bits = 0;
-		    e.event.tevent.rlength = hdr->length;
-		    e.event.tevent.mlength = mlength;
-		    e.event.tevent.remote_offset = hdr->dest_offset;
-		    e.event.tevent.start = (char*)le->start + hdr->dest_offset;
-		    e.event.tevent.user_ptr = hdr->user_ptr;
-		    switch (hdr->type) {
-			case HDR_TYPE_PUT:
-			    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
-			    break;
-			case HDR_TYPE_ATOMIC:
-			    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
-			    break;
-			case HDR_TYPE_FETCHATOMIC:
-			    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
-			    break;
-			case HDR_TYPE_SWAP:
-			    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
-			    break;
-		    }
-		    e.event.tevent.ni_fail_type = PTL_NI_OK;
-		    PtlInternalEQPush(t->EQ, &e);
-		}
+		break;
+	    case HDR_TYPE_ATOMIC:
+		PtlInternalPerformAtomic((char*)le->start + hdr->dest_offset, hdr->data, mlength, hdr->info.atomic.operation, hdr->info.atomic.datatype);
+		break;
+	    case HDR_TYPE_FETCHATOMIC:
+		PtlInternalPerformAtomic((char*)le->start + hdr->dest_offset, hdr->data, mlength, hdr->info.fetchatomic.operation, hdr->info.fetchatomic.datatype);
+		break;
+	    case HDR_TYPE_GET:
+		memcpy(hdr->data, (char*)le->start + hdr->dest_offset, mlength);
+		break;
+	    case HDR_TYPE_SWAP:
+		PtlInternalPerformAtomicArg((char*)le->start + hdr->dest_offset, hdr->data+8, *(uint64_t*)hdr->data, mlength, hdr->info.swap.operation, hdr->info.swap.datatype);
 		break;
 	    default:
-		fprintf(stderr, "non-put LE handling is unimplemented\n");
-		abort();
+		/* this should never happen */
+		*(int*)0 = 0;
+	}
+	/* now announce it */
+	{
+	    int ct_announce = 0;
+	    switch (hdr->type) {
+		case HDR_TYPE_PUT:
+		    ct_announce = le->options & PTL_LE_EVENT_CT_PUT;
+		    break;
+		case HDR_TYPE_GET:
+		    ct_announce = le->options & PTL_LE_EVENT_CT_GET;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		case HDR_TYPE_FETCHATOMIC:
+		case HDR_TYPE_SWAP:
+		    ct_announce = le->options & PTL_LE_EVENT_CT_ATOMIC;
+		    break;
+	    }
+	    if (ct_announce != 0) {
+		if (le->options & PTL_LE_EVENT_CT_BYTES == 0) {
+		    ptl_ct_event_t cte = {1, 0};
+		    PtlCTInc(le->ct_handle, cte);
+		} else {
+		    ptl_ct_event_t cte = {mlength, 0};
+		    PtlCTInc(le->ct_handle, cte);
+		}
+	    }
+	}
+	if ((le->options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+	    e.event.tevent.initiator.phys.pid = hdr->src;
+	    e.event.tevent.initiator.phys.nid = 0;
+	    e.event.tevent.pt_index = hdr->pt_index;
+	    e.event.tevent.uid = 0;
+	    e.event.tevent.match_bits = 0;
+	    e.event.tevent.rlength = hdr->length;
+	    e.event.tevent.mlength = mlength;
+	    e.event.tevent.remote_offset = hdr->dest_offset;
+	    e.event.tevent.start = (char*)le->start + hdr->dest_offset;
+	    e.event.tevent.user_ptr = hdr->user_ptr;
+	    switch (hdr->type) {
+		case HDR_TYPE_PUT:
+		    e.type = PTL_EVENT_PUT;
+		    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		    e.type = PTL_EVENT_ATOMIC;
+		    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+		    break;
+		case HDR_TYPE_FETCHATOMIC:
+		    e.type = PTL_EVENT_ATOMIC;
+		    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+		case HDR_TYPE_SWAP:
+		    e.type = PTL_EVENT_ATOMIC;
+		    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+		    break;
+		case HDR_TYPE_GET:
+		    e.type = PTL_EVENT_GET;
+		    break;
+	    }
+	    e.event.tevent.ni_fail_type = PTL_NI_OK;
+	    PtlInternalEQPush(t->EQ, &e);
 	}
 	return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:1;
     } else if (t->overflow.head) {
