@@ -158,52 +158,6 @@ static void inline PtlInternalPerformAtomicCswap(
     uint64_t operand,
     ptl_datatype_t dt)
 {
-    switch (dt) {
-	case PTL_CHAR:
-	case PTL_UCHAR:
-	    CAS(uint8_t);
-	    break;
-	case PTL_SHORT:
-	case PTL_USHORT:
-	    CAS(uint16_t);
-	    break;
-	case PTL_INT:
-	case PTL_UINT:
-	case PTL_FLOAT:
-	    CAS(uint32_t);
-	    break;
-	case PTL_LONG:
-	case PTL_ULONG:
-	case PTL_DOUBLE:
-	    CAS(uint64_t);
-	    break;
-    }
-}
-
-static void inline PtlInternalPerformAtomicMswap(
-    volatile char *dest,
-    char *src,
-    uint64_t operand,
-    ptl_datatype_t dt)
-{
-    switch (dt) {
-	case PTL_CHAR:
-	case PTL_UCHAR:
-	    MAS(uint8_t);
-	    break;
-	case PTL_SHORT:
-	case PTL_USHORT:
-	    MAS(uint16_t);
-	    break;
-	case PTL_INT:
-	case PTL_UINT:
-	    MAS(uint32_t);
-	    break;
-	case PTL_LONG:
-	case PTL_ULONG:
-	    MAS(uint64_t);
-	    break;
-    }
 }
 
 static unsigned char datatype_size_table[] = {1,1,2,2,4,4,8,8,4,8};
@@ -255,7 +209,51 @@ void INTERNAL PtlInternalPerformAtomicArg(
 		abort();
 	    }
 	    break;
-	case PTL_CSWAP: PtlInternalPerformAtomicCswap(dest, src, operand, dt); break;
-	case PTL_MSWAP: PtlInternalPerformAtomicMswap(dest, src, operand, dt); break;
+	case PTL_CSWAP:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_MSWAP:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    MAS(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    MAS(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		    MAS(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		    MAS(uint64_t);
+		    break;
+		default: /* should never happen */
+		    *(int*)0 = 0;
+	    }
+			break;
+	default: /* should never happen */
+	    *(int*)0 = 0;
     }
 }

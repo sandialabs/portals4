@@ -419,7 +419,7 @@ int INTERNAL PtlInternalLEDeliver(
 		    break;
 	    }
 	    if (ct_announce != 0) {
-		if (le->options & PTL_LE_EVENT_CT_BYTES == 0) {
+		if ((le->options & PTL_LE_EVENT_CT_BYTES) == 0) {
 		    ptl_ct_event_t cte = {1, 0};
 		    PtlCTInc(le->ct_handle, cte);
 		} else {
