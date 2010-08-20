@@ -84,7 +84,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 		    case 1: case 3: // Non-matching (LE)
 			//printf("delivering to LE table\n");
 			switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
-			    case 0: // who knows, we must not send an ack
+			    case 0: // target said silent ACK (might be no LE posted)
 				//printf("%u ~> not sending an ack\n", (unsigned int)proc_number);
 				break;
 			    case 1: // success
@@ -93,10 +93,6 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 				break;
 			    case 2: // overflow
 				//printf("%u ~> LE delivery overflow!\n", (unsigned int)proc_number);
-				break;
-			    case 4: // nothing matched, report error
-				//printf("%u ~> LE says nothing matched!\n", (unsigned int)proc_number);
-				hdr->length = 0;
 				break;
 			    case 3: // Permission Violation
 				//printf("%u ~> LE says permission violation!\n", (unsigned int)proc_number);
@@ -108,11 +104,14 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 		//printf("unlocking\n");
 		assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	    } else {
-		hdr->src = 9999;
+		/* Invalid PT: increment the dropped counter */
+		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+		/* silently ACK */
+		hdr->src = 0;
 		//printf("%u ~> table_entry->status == 0\n", (unsigned int)proc_number);
 	    }
 	} else { // uninitialized NI
-	    hdr->src = 99999;
+	    hdr->src = 0; // silent ACK
 	}
 	//printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
@@ -157,7 +156,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		einfo = hdr->src_data_ptr;
 		assert(einfo != NULL);
 		md_handle = einfo->fetchatomic.get_md_handle.a.md;
-		if (einfo->fetchatomic.put_md_handle.a.md != PTL_INVALID_HANDLE.md) {
+		if (einfo->fetchatomic.put_md_handle.a.md != PTL_INVALID_HANDLE.md && einfo->fetchatomic.put_md_handle.a.md != md_handle) {
 		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.a.md);
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
@@ -168,10 +167,22 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		break;
 	    case HDR_TYPE_SWAP:
-		fprintf(stderr, "SWAP REPLY unimplemented\n");
-		abort();
+		//printf("%u +> it's an ACK for a SWAP\n", (unsigned int)proc_number);
+		einfo = hdr->src_data_ptr;
+		assert(einfo != NULL);
+		md_handle = einfo->swap.get_md_handle.a.md;
+		if (einfo->swap.put_md_handle.a.md != PTL_INVALID_HANDLE.md && einfo->swap.put_md_handle.a.md != md_handle) {
+		    PtlInternalMDCleared(einfo->swap.put_md_handle.a.md);
+		}
+		mdptr = PtlInternalMDFetch(md_handle);
+		/* pull the data out of the reply */
+		//printf("replied with %i data\n", (int)hdr->length);
+		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
+		    memcpy((uint8_t*)(mdptr->start) + einfo->swap.local_get_offset, hdr->data, hdr->length);
+		}
 		break;
 	    default: // impossible
+		UNREACHABLE;
 		*(int*)0 = 0;
 	}
 	/* Report the ack */
@@ -217,12 +228,6 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		//printf("%u +> finished notification of successful ACK\n", (unsigned int)proc_number);
 		break;
-	    case 99999: // NI not initialized
-		//printf("%u +> ACK says NI not initialized\n", (unsigned int)proc_number);
-		//goto reporterror;
-	    case 9999: // PT not allocated
-		//printf("%u +> ACK says PT-not-allocated\n", (unsigned int)proc_number);
-		//goto reporterror;
 	    case 3: // Permission Violation
 		//printf("%u +> ACK says permission violation\n", (unsigned int)proc_number);
 		//goto reporterror;
@@ -257,10 +262,6 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			switch (hdr->src) {
 			    case 3:
 				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
-				break;
-			    case 9999: // bad PT
-			    case 99999: // bad NI
-				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
 				break;
 			    default:
 				e.event.ievent.ni_fail_type = PTL_NI_OK;
@@ -701,7 +702,9 @@ int API_FUNC PtlFetchAtomic(
     }
 #endif
     PtlInternalMDPosted(put_md_handle);
-    PtlInternalMDPosted(get_md_handle);
+    if (get_md_handle != put_md_handle) {
+	PtlInternalMDPosted(get_md_handle);
+    }
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
@@ -847,7 +850,9 @@ int API_FUNC PtlSwap(
     }
 #endif
     PtlInternalMDPosted(put_md_handle);
-    PtlInternalMDPosted(get_md_handle);
+    if (get_md_handle != put_md_handle) {
+	PtlInternalMDPosted(get_md_handle);
+    }
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
     /* step 2: fill the op structure */
