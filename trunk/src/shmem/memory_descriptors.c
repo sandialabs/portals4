@@ -143,16 +143,19 @@ int API_FUNC PtlMDBind(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+    if (ni.s.ni > 3 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	VERBOSE_ERROR("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n", ni.s.ni, ni.s.code);
 	return PTL_ARG_INVALID;
     }
     if (md->start == NULL || md->length == 0) {
+	VERBOSE_ERROR("start is NULL (%p) or length is 0 (%u); cannot detect failures!\n", md->start, (unsigned int)md->length);
 	return PTL_ARG_INVALID;
     }
     if (md->options & PTL_MD_EVENT_DISABLE) {
 	eq_optional = 1;
     }
     if (PtlInternalEQHandleValidator(md->eq_handle, eq_optional)) {
+	VERBOSE_ERROR("MD saw invalid EQ\n");
 	return PTL_ARG_INVALID;
     }
     if (md->options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
@@ -160,6 +163,7 @@ int API_FUNC PtlMDBind(
 	ct_optional = 0;
     }
     if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {
+	VERBOSE_ERROR("MD saw invalid CT\n");
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -222,7 +226,12 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(
     ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
-    return &(mds[md.s.ni][md.s.code].visible);
+    /* this check allows us to process acks from/to dead NI's */
+    if (PtlInternalMDHandleValidator(handle, 0) == 0) {
+	return &(mds[md.s.ni][md.s.code].visible);
+    } else {
+	return NULL;
+    }
 }
 
 void INTERNAL PtlInternalMDPosted(
@@ -236,5 +245,8 @@ void INTERNAL PtlInternalMDCleared(
 	ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
-    PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
+    /* this check allows us to process acks from/to dead NI's */
+    if (PtlInternalMDHandleValidator(handle, 0) == 0) {
+	PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
+    }
 }
