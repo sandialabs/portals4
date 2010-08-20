@@ -75,7 +75,7 @@ static void barrier(ptl_handle_ni_t ni, ptl_process_t myself, ptl_pt_index_t pti
 	/* wait for rank 0 to respond */
 	noFailures(le.ct_handle, 1, __LINE__); // this is the barrier
     }
-    CHECK_RETURNVAL(PtlLEUnlink(le_handle));
+    CHECK_RETURNVAL(PtlLEUnlink(leh));
     CHECK_RETURNVAL(PtlMDRelease(mdh));
     CHECK_RETURNVAL(PtlCTFree(md.ct_handle));
     CHECK_RETURNVAL(PtlCTFree(le.ct_handle));
