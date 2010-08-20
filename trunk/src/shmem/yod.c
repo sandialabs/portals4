@@ -337,7 +337,7 @@ void *collator(
     void * __attribute__ ((unused)) junk)
 {
     char procstr[10];
-    ptl_process_id_t *mapping;
+    ptl_process_t *mapping;
     ptl_pt_index_t pt_index;
 
     snprintf(procstr, 10, "%li", count);
@@ -349,14 +349,14 @@ void *collator(
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
     assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
     /* set up the landing pad to collect and distribute mapping information */
-    mapping = calloc(count, sizeof(ptl_process_id_t));
+    mapping = calloc(count, sizeof(ptl_process_t));
     assert(mapping != NULL);
     ptl_le_t le;
     ptl_md_t md;
     ptl_handle_le_t le_handle;
     ptl_handle_md_t md_handle;
     md.start = le.start = mapping;
-    md.length = le.length = count * sizeof(ptl_process_id_t);
+    md.length = le.length = count * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
     le.options =
 	PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
@@ -381,7 +381,7 @@ void *collator(
     assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
     for (uint64_t r = 0; r < count; ++r) {
 	assert(PtlPut
-	       (md_handle, 0, count * sizeof(ptl_process_id_t),
+	       (md_handle, 0, count * sizeof(ptl_process_t),
 		PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
     }
     /* wait for the puts to finish */
