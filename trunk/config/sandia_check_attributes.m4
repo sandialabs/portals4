@@ -86,3 +86,19 @@ void * f(int i) __attribute__((noreturn)) { while (1) ; }]])],
 		   [if the compiler supports __attribute__((noreturn))])
  AS_IF([test "x$sandia_cv_noreturn_attr" = xyes], [$1], [$2])
 ])
+
+AC_DEFUN([SANDIA_BUILTIN_UNREACHABLE],[dnl
+AC_CACHE_CHECK(
+ [support for __builtin_unreachable()],
+ [sandia_cv_builtin_unreachable],
+ [AC_LINK_IFELSE([AC_LANG_SOURCE([[
+void * f(int i) { while (1) ; __builtin_unreachable(); }]])],
+ [sandia_cv_builtin_unreachable=yes],
+ [sandia_cv_builtin_unreachable=no])])
+ AS_IF([test "x$sandia_cv_builtin_unreachable" = xyes],
+ 	   [defstr="__builtin_unreachable()"],
+	   [defstr=""])
+ AC_DEFINE_UNQUOTED([UNREACHABLE], [$defstr],
+		   [if the compiler supports __builtin_unreachable()))])
+ AS_IF([test "x$sandia_cv_builtin_unreachable" = xyes], [$1], [$2])
+])
