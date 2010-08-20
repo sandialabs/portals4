@@ -86,7 +86,7 @@ typedef union {
     ptl_handle_me_t me; /*!< A match list entry handle */
 }			ptl_handle_any_t;
 /*!
- * @union ptl_process_id_t
+ * @union ptl_process_t
  * @brief A union for representing processes either physically or logically.
  * The physical address uses two identifiers to represent the process
  * identifier: a node identifier \a nid and a process identifier \a pid. In
@@ -100,7 +100,7 @@ typedef union {
 	ptl_pid_t pid;	/*!< The process identifier. */
     } phys;		/*!< The physical representation of a node. */
     ptl_rank_t rank;	/*!< The logical representation of a node. */
-}			ptl_process_id_t;
+}			ptl_process_t;
 /*!
  * @struct ptl_md_t
  * @brief Defines the visible parts of a memory descriptor. Values of this type
@@ -436,15 +436,15 @@ typedef struct {
 } ptl_ni_limits_t;
 
 /*!
- * @fn PtlNIInit(ptl_interface_t iface,
- *		 unsigned int options,
- *		 ptl_pid_t pid,
- *		 ptl_ni_limits_t *desired,
- *		 ptl_ni_limits_t *actual,
- *		 ptl_size_t map_size,
- *		 ptl_process_id_t *desired_mapping,
- *		 ptl_process_id_t *actual_mapping,
- *		 ptl_handle_ni_t *ni_handle)
+ * @fn PtlNIInit(ptl_interface_t    iface,
+ *		 unsigned int	    options,
+ *		 ptl_pid_t	    pid,
+ *		 ptl_ni_limits_t *  desired,
+ *		 ptl_ni_limits_t *  actual,
+ *		 ptl_size_t	    map_size,
+ *		 ptl_process_t *    desired_mapping,
+ *		 ptl_process_t *    actual_mapping,
+ *		 ptl_handle_ni_t *  ni_handle)
  * @brief Initializes the portals API for a network interface (NI). A process
  *	using portals must call this function at least once before any other
  *	functions that apply to that interface. For subsequent calls to
@@ -506,8 +506,8 @@ int PtlNIInit(ptl_interface_t	iface,
 	      ptl_ni_limits_t	*desired,
 	      ptl_ni_limits_t	*actual,
 	      ptl_size_t	map_size,
-	      ptl_process_id_t	*desired_mapping,
-	      ptl_process_id_t	*actual_mapping,
+	      ptl_process_t	*desired_mapping,
+	      ptl_process_t	*actual_mapping,
 	      ptl_handle_ni_t	*ni_handle);
 /*!
  * @fn PtlNIFini(ptl_handle_ni_t ni_handle)
@@ -722,7 +722,7 @@ int PtlGetUid(ptl_handle_ni_t	ni_handle,
  * @addtogroup PI Process Identification
  * @{
  * @fn PtlGetId(ptl_handle_ni_t	    ni_handle,
- *		ptl_process_id_t*   id)
+ *		ptl_process_t*	    id)
  * @brief Retrieves the process identifier of the calling process.
  * @param[in] ni_handle	A network interface handle.
  * @param[out] id	On successful return, this location will hold the
@@ -737,7 +737,7 @@ int PtlGetUid(ptl_handle_ni_t	ni_handle,
  *			    interface handle
  */
 int PtlGetId(ptl_handle_ni_t	ni_handle,
-	     ptl_process_id_t*	id);
+	     ptl_process_t*	id);
 /*! @} */
 /***********************
  * Process Aggregation *
@@ -1241,10 +1241,10 @@ typedef struct {
 
     /*! Specifies the match criteria for the process identifier of the
      * requester. The constants \c PTL_PID_ANY and \c PTL_NID_ANY can be used
-     * to wildcard either of the physical identifiers in the ptl_process_id_t
+     * to wildcard either of the physical identifiers in the ptl_process_t
      * structure, or \c PTL_RANK_ANY can be used to wildcard the rank for
      * logical addressing. */
-    ptl_process_id_t	match_id;
+    ptl_process_t	match_id;
 
     /*! Specify the match criteria to apply to the match bits in the incoming
      * request. The \a ignore_bits are used to mask out insignificant bits in
@@ -1574,7 +1574,7 @@ typedef enum {
  *	      ptl_size_t	local_offset,
  *	      ptl_size_t	length,
  *	      ptl_ack_req_t	ack_req,
- *	      ptl_process_id_t	target_id,
+ *	      ptl_process_t	target_id,
  *	      ptl_pt_index_t	pt_index,
  *	      ptl_match_bits_t	match_bits,
  *	      ptl_size_t	remote_offset,
@@ -1645,7 +1645,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
 	   ptl_size_t	    local_offset,
 	   ptl_size_t	    length,
 	   ptl_ack_req_t    ack_req,
-	   ptl_process_id_t target_id,
+	   ptl_process_t    target_id,
 	   ptl_pt_index_t   pt_index,
 	   ptl_match_bits_t match_bits,
 	   ptl_size_t	    remote_offset,
@@ -1655,7 +1655,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
  * @fn PtlGet(ptl_handle_md_t	md_handle,
  *	      ptl_size_t	local_offset,
  *	      ptl_size_t	length,
- *	      ptl_process_id_t	target_id,
+ *	      ptl_process_t	target_id,
  *	      ptl_pt_index_t	pt_index,
  *	      ptl_match_bits_t	match_bits,
  *	      void *		user_ptr,
@@ -1697,7 +1697,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
 int PtlGet(ptl_handle_md_t  md_handle,
 	   ptl_size_t	    local_offset,
 	   ptl_size_t	    length,
-	   ptl_process_id_t target_id,
+	   ptl_process_t    target_id,
 	   ptl_pt_index_t   pt_index,
 	   ptl_match_bits_t match_bits,
 	   void *	    user_ptr,
@@ -1799,7 +1799,7 @@ typedef enum {
  *		 ptl_size_t	    local_offset,
  *		 ptl_size_t	    length,
  *		 ptl_ack_req_t	    ack_req,
- *		 ptl_process_id_t   target_id,
+ *		 ptl_process_t	    target_id,
  *		 ptl_pt_index_t	    pt_index,
  *		 ptl_match_bits_t   match_bits,
  *		 ptl_size_t	    remote_offset,
@@ -1855,7 +1855,7 @@ int PtlAtomic(ptl_handle_md_t	md_handle,
 	      ptl_size_t	local_offset,
 	      ptl_size_t	length,
 	      ptl_ack_req_t	ack_req,
-	      ptl_process_id_t  target_id,
+	      ptl_process_t	target_id,
 	      ptl_pt_index_t	pt_index,
 	      ptl_match_bits_t  match_bits,
 	      ptl_size_t	remote_offset,
@@ -1869,7 +1869,7 @@ int PtlAtomic(ptl_handle_md_t	md_handle,
  *		      ptl_handle_md_t	put_md_handle,
  *		      ptl_size_t	local_put_offset,
  *		      ptl_size_t	length,
- *		      ptl_process_id_t	target_id,
+ *		      ptl_process_t	target_id,
  *		      ptl_pt_index_t	pt_index,
  *		      ptl_match_bits_t	match_bits,
  *		      ptl_size_t	remote_offset,
@@ -1940,7 +1940,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 		   ptl_handle_md_t  put_md_handle,
 		   ptl_size_t	    local_put_offset,
 		   ptl_size_t	    length,
-		   ptl_process_id_t target_id,
+		   ptl_process_t    target_id,
 		   ptl_pt_index_t   pt_index,
 		   ptl_match_bits_t match_bits,
 		   ptl_size_t	    remote_offset,
@@ -1954,7 +1954,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *	       ptl_handle_md_t	put_md_handle,
  *	       ptl_size_t	local_put_offset,
  *	       ptl_size_t	length,
- *	       ptl_process_id_t target_id,
+ *	       ptl_process_t	target_id,
  *	       ptl_pt_index_t   pt_index,
  *	       ptl_match_bits_t match_bits,
  *	       ptl_size_t	remote_offset,
@@ -2026,7 +2026,7 @@ int PtlSwap(ptl_handle_md_t	get_md_handle,
 	    ptl_handle_md_t	put_md_handle,
 	    ptl_size_t		local_put_offset,
 	    ptl_size_t		length,
-	    ptl_process_id_t	target_id,
+	    ptl_process_t	target_id,
 	    ptl_pt_index_t	pt_index,
 	    ptl_match_bits_t	match_bits,
 	    ptl_size_t		remote_offset,
@@ -2131,7 +2131,7 @@ typedef enum {
  *	itself. These fields are included in a structure. */
 typedef struct {
     /*! The identifier of the \e initiator. */
-    ptl_process_id_t	    initiator;
+    ptl_process_t	    initiator;
 
     /*! The portal table index where the message arrived. */
     ptl_pt_index_t	    pt_index;
@@ -2454,7 +2454,7 @@ int PtlEQPoll(ptl_handle_eq_t *	    eq_handles,
  *		       ptl_size_t	local_offset,
  *		       ptl_size_t	length,
  *		       ptl_ack_req_t	ack_req,
- *		       ptl_process_id_t	target_id,
+ *		       ptl_process_t	target_id,
  *		       ptl_pt_index_t	pt_index,
  *		       ptl_match_bits_t	match_bits,
  *		       ptl_size_t	remote_offset,
@@ -2487,7 +2487,7 @@ int PtlTriggeredPut(ptl_handle_md_t	md_handle,
 		    ptl_size_t		local_offset,
 		    ptl_size_t		length,
 		    ptl_ack_req_t	ack_req,
-		    ptl_process_id_t	target_id,
+		    ptl_process_t	target_id,
 		    ptl_pt_index_t	pt_index,
 		    ptl_match_bits_t	match_bits,
 		    ptl_size_t		remote_offset,
@@ -2499,7 +2499,7 @@ int PtlTriggeredPut(ptl_handle_md_t	md_handle,
  * @fn PtlTriggeredGet(ptl_handle_md_t	md_handle,
  *		       ptl_size_t	local_offset,
  *		       ptl_size_t	length,
- *		       ptl_process_id_t target_id,
+ *		       ptl_process_t	target_id,
  *		       ptl_pt_index_t	pt_index,
  *		       ptl_match_bits_t match_bits,
  *		       void *		user_ptr,
@@ -2528,7 +2528,7 @@ int PtlTriggeredPut(ptl_handle_md_t	md_handle,
 int PtlTriggeredGet(ptl_handle_md_t	md_handle,
 		    ptl_size_t		local_offset,
 		    ptl_size_t		length,
-		    ptl_process_id_t	target_id,
+		    ptl_process_t	target_id,
 		    ptl_pt_index_t	pt_index,
 		    ptl_match_bits_t	match_bits,
 		    void *		user_ptr,
@@ -2540,7 +2540,7 @@ int PtlTriggeredGet(ptl_handle_md_t	md_handle,
  *			  ptl_size_t	    local_offset,
  *			  ptl_size_t	    length,
  *			  ptl_ack_req_t	    ack_req,
- *			  ptl_process_id_t  target_id,
+ *			  ptl_process_t	    target_id,
  *			  ptl_pt_index_t    pt_index,
  *			  ptl_match_bits_t  match_bits,
  *			  ptl_size_t	    remote_offset,
@@ -2577,7 +2577,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t	md_handle,
 		       ptl_size_t	local_offset,
 		       ptl_size_t	length,
 		       ptl_ack_req_t	ack_req,
-		       ptl_process_id_t target_id,
+		       ptl_process_t	target_id,
 		       ptl_pt_index_t	pt_index,
 		       ptl_match_bits_t match_bits,
 		       ptl_size_t	remote_offset,
@@ -2593,7 +2593,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t	md_handle,
  *			       ptl_handle_md_t  put_md_handle,
  *			       ptl_size_t	local_put_offset,
  *			       ptl_size_t	length,
- *			       ptl_process_id_t target_id,
+ *			       ptl_process_t	target_id,
  *			       ptl_pt_index_t   pt_index,
  *			       ptl_match_bits_t match_bits,
  *			       ptl_size_t	remote_offset,
@@ -2632,7 +2632,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t	get_md_handle,
 			    ptl_handle_md_t	put_md_handle,
 			    ptl_size_t		local_put_offset,
 			    ptl_size_t		length,
-			    ptl_process_id_t	target_id,
+			    ptl_process_t	target_id,
 			    ptl_pt_index_t	pt_index,
 			    ptl_match_bits_t	match_bits,
 			    ptl_size_t		remote_offset,
@@ -2648,7 +2648,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t	get_md_handle,
  *			ptl_handle_md_t	    put_md_handle,
  *			ptl_size_t	    local_put_offset,
  *			ptl_size_t	    length,
- *			ptl_process_id_t    target_id,
+ *			ptl_process_t	    target_id,
  *			ptl_pt_index_t	    pt_index,
  *			ptl_match_bits_t    match_bits,
  *			ptl_size_t	    remote_offset,
@@ -2689,7 +2689,7 @@ int PtlTriggeredSwap(ptl_handle_md_t	get_md_handle,
 		     ptl_handle_md_t	put_md_handle,
 		     ptl_size_t		local_put_offset,
 		     ptl_size_t		length,
-		     ptl_process_id_t	target_id,
+		     ptl_process_t	target_id,
 		     ptl_pt_index_t	pt_index,
 		     ptl_match_bits_t	match_bits,
 		     ptl_size_t		remote_offset,

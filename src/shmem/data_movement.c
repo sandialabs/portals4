@@ -56,7 +56,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 	ptl_pid_t src;
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
-	//printf("got a header! %p\n", hdr);
+	printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
 	src = hdr->src;
 	assert(nit.tables != NULL);
 	assert(nit.tables[hdr->ni] != NULL);
@@ -240,7 +240,7 @@ int API_FUNC PtlPut(
     ptl_size_t local_offset,
     ptl_size_t length,
     ptl_ack_req_t ack_req,
-    ptl_process_id_t target_id,
+    ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
     ptl_size_t remote_offset,
@@ -339,7 +339,7 @@ int API_FUNC PtlGet(
     ptl_handle_md_t md_handle,
     ptl_size_t local_offset,
     ptl_size_t length,
-    ptl_process_id_t target_id,
+    ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
     void *user_ptr,
@@ -405,7 +405,7 @@ int API_FUNC PtlAtomic(
     ptl_size_t local_offset,
     ptl_size_t length,
     ptl_ack_req_t ack_req,
-    ptl_process_id_t target_id,
+    ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
     ptl_size_t remote_offset,
@@ -520,7 +520,7 @@ int API_FUNC PtlFetchAtomic(
     ptl_handle_md_t put_md_handle,
     ptl_size_t local_put_offset,
     ptl_size_t length,
-    ptl_process_id_t target_id,
+    ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
     ptl_size_t remote_offset,
@@ -654,7 +654,7 @@ int API_FUNC PtlSwap(
     ptl_handle_md_t put_md_handle,
     ptl_size_t local_put_offset,
     ptl_size_t length,
-    ptl_process_id_t target_id,
+    ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
     ptl_size_t remote_offset,

@@ -49,8 +49,8 @@ int API_FUNC PtlNIInit(
     ptl_ni_limits_t * desired,
     ptl_ni_limits_t * actual,
     ptl_size_t map_size,
-    ptl_process_id_t * desired_mapping,
-    ptl_process_id_t * actual_mapping,
+    ptl_process_t * desired_mapping,
+    ptl_process_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
     ptl_handle_encoding_t ni = { HANDLE_NI_CODE, 0, 0 };

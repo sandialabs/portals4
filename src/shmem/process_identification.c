@@ -19,12 +19,12 @@
 
 const ptl_uid_t PTL_UID_ANY = UINT_MAX;
 
-int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_id_t p)
+int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
     return (p.rank >= num_siblings);
 }
 
-int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_id_t p)
+int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
 {
     /* pid == num_siblings is the COLLECTOR */
     return (p.phys.pid > num_siblings || p.phys.nid != 0);
@@ -32,7 +32,7 @@ int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_id_t p)
 
 int API_FUNC PtlGetId(
     ptl_handle_ni_t ni_handle,
-    ptl_process_id_t * id)
+    ptl_process_t * id)
 {
     ptl_handle_encoding_t ni;
     memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));

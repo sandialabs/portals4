@@ -26,11 +26,11 @@ int main(
     char *argv[])
 {
     ptl_handle_ni_t ni_physical, ni_logical;
-    ptl_process_id_t myself;
-    ptl_process_id_t COLLECTOR;
+    ptl_process_t myself;
+    ptl_process_t COLLECTOR;
     uint64_t rank, maxrank;
     ptl_pt_index_t phys_pt_index, logical_pt_index;
-    ptl_process_id_t *dmapping, *amapping;
+    ptl_process_t *dmapping, *amapping;
     ptl_le_t le;
     ptl_handle_le_t le_handle;
     ptl_md_t md;
@@ -54,9 +54,9 @@ int main(
     assert(getenv("PORTALS4_NUM_PROCS") != NULL);
     maxrank = atoi(getenv("PORTALS4_NUM_PROCS")) - 1;
     /* \end{runtime_stuff} */
-    dmapping = calloc(maxrank + 1, sizeof(ptl_process_id_t));
+    dmapping = calloc(maxrank + 1, sizeof(ptl_process_t));
     assert(dmapping != NULL);
-    amapping = calloc(maxrank + 1, sizeof(ptl_process_id_t));
+    amapping = calloc(maxrank + 1, sizeof(ptl_process_t));
     assert(amapping != NULL);
     if (myself.phys.pid == COLLECTOR.phys.pid) {
 	/* this will never happen in user code, because the collector stuff is
@@ -64,7 +64,7 @@ int main(
 
 	/* set up a landing pad to collect & distribute everyone's information. */
 	md.start = le.start = dmapping;
-	md.length = le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
+	md.length = le.length = (maxrank + 1) * sizeof(ptl_process_t);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options =
 	    PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
@@ -87,7 +87,7 @@ int main(
 	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
 	for (uint64_t r = 0; r <= maxrank; ++r) {
 	    assert(PtlPut
-		   (md_handle, 0, (maxrank + 1) * sizeof(ptl_process_id_t),
+		   (md_handle, 0, (maxrank + 1) * sizeof(ptl_process_t),
 		    PTL_CT_ACK_REQ, dmapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
 	}
 	/* wait for the puts to finish */
@@ -100,14 +100,14 @@ int main(
     } else {
 	/* for distributing my ID */
 	md.start = &myself;
-	md.length = sizeof(ptl_process_id_t);
+	md.length = sizeof(ptl_process_t);
 	md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_SEND;	// count sends, but don't trigger events
 	md.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
 	CHECK_RETURNVAL(PtlCTAlloc
 			(ni_physical, &md.ct_handle));
 	/* for receiving the mapping */
 	le.start = dmapping;
-	le.length = (maxrank + 1) * sizeof(ptl_process_id_t);
+	le.length = (maxrank + 1) * sizeof(ptl_process_t);
 	le.ac_id.uid = PTL_UID_ANY;
 	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
 	CHECK_RETURNVAL(PtlCTAlloc
@@ -119,9 +119,9 @@ int main(
 	/* now send my ID to the collector */
 	CHECK_RETURNVAL(PtlMDBind(ni_physical, &md, &md_handle));
 	CHECK_RETURNVAL(PtlPut
-			(md_handle, 0, sizeof(ptl_process_id_t),
+			(md_handle, 0, sizeof(ptl_process_t),
 			 PTL_OC_ACK_REQ, COLLECTOR, 0, 0,
-			 rank * sizeof(ptl_process_id_t), NULL, 0));
+			 rank * sizeof(ptl_process_t), NULL, 0));
 	/* wait for the send to finish */
 	noFailures(md.ct_handle, 1);
 	/* cleanup */
