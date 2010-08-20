@@ -124,7 +124,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
     while (1) {
 	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
 	ptl_md_t *mdptr = NULL;
-	ptl_handle_md_t md_handle;
+	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
 	//printf("%u +> got an ACK (%p)\n", (unsigned int)proc_number, hdr);
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
@@ -144,15 +144,16 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		break;
 	    case HDR_TYPE_ATOMIC:
-		fprintf(stderr, "ATOMIC REPLY unimplemented");
-		abort();
+		//printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
+		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		mdptr = PtlInternalMDFetch(md_handle);
 		break;
 	    case HDR_TYPE_FETCHATOMIC:
-		fprintf(stderr, "FETCHATOMIC REPLY unimplemented");
+		fprintf(stderr, "FETCHATOMIC REPLY unimplemented\n");
 		abort();
 		break;
 	    case HDR_TYPE_SWAP:
-		fprintf(stderr, "SWAP REPLY unimplemented");
+		fprintf(stderr, "SWAP REPLY unimplemented\n");
 		abort();
 		break;
 	    default: // impossible
@@ -254,7 +255,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		break;
 	}
-	if (mdptr != NULL) {
+	if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE.md) {
 	    //printf("%u +> clearing ACK's md_handle\n", (unsigned int)proc_number);
 	    PtlInternalMDCleared(md_handle);
 	}
