@@ -797,7 +797,7 @@ int API_FUNC PtlSwap(
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
-	    if (PtlInternalPhysicalPProcessValidator(target_id)) {
+	    if (PtlInternalPhysicalProcessValidator(target_id)) {
 		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
