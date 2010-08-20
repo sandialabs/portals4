@@ -152,14 +152,6 @@ static void inline PtlInternalPerformAtomicSwap(
 } while (0)
 
 
-static void inline PtlInternalPerformAtomicCswap(
-    volatile char *dest,
-    char *src,
-    uint64_t operand,
-    ptl_datatype_t dt)
-{
-}
-
 static unsigned char datatype_size_table[] = {1,1,2,2,4,4,8,8,4,8};
 
 void INTERNAL PtlInternalPerformAtomic(
