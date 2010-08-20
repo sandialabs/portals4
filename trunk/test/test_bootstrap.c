@@ -120,7 +120,7 @@ int main(
 	CHECK_RETURNVAL(PtlMDBind(ni_physical, &md, &md_handle));
 	CHECK_RETURNVAL(PtlPut
 			(md_handle, 0, sizeof(ptl_process_t),
-			 PTL_OC_ACK_REQ, COLLECTOR, 0, 0,
+			 PTL_OC_ACK_REQ, COLLECTOR, phys_pt_index, 0,
 			 rank * sizeof(ptl_process_t), NULL, 0));
 	/* wait for the send to finish */
 	noFailures(md.ct_handle, 1);
