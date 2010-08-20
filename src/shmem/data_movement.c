@@ -304,25 +304,29 @@ int API_FUNC PtlPut(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle,1)) {
-	VERBOSE_ERROR("Put saw invalid MD\n");
+	VERBOSE_ERROR("Invalid md_handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (length == 0) {
+	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("Put saw MD too short for local_offset\n");
+	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Put saw invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Put saw invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -372,7 +376,7 @@ int API_FUNC PtlPut(
 	    ptl_ct_event_t cte = {1, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	} else {
-	    ptl_ct_event_t cte = {hdr->length, 0};
+	    ptl_ct_event_t cte = {length, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	}
     }
@@ -405,21 +409,29 @@ int API_FUNC PtlGet(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle,1)) {
+	VERBOSE_ERROR("Invalid md_handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (length == 0) {
+	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
+	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -474,36 +486,47 @@ int API_FUNC PtlAtomic(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
+    if (length == 0) {
+	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
+	return PTL_ARG_INVALID;
+    }
     if (length > nit_limits.max_atomic_size) {
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDHandleValidator(md_handle,1)) {
+	VERBOSE_ERROR("Invalid MD\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
+	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
     }
     switch (operation) {
 	case PTL_SWAP: case PTL_CSWAP: case PTL_MSWAP:
+	    VERBOSE_ERROR("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
 	    return PTL_ARG_INVALID;
 	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
 	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
 	    switch (datatype) {
 		case PTL_DOUBLE: case PTL_FLOAT:
+		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
@@ -549,7 +572,7 @@ int API_FUNC PtlAtomic(
 	    ptl_ct_event_t cte = {1, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	} else {
-	    ptl_ct_event_t cte = {hdr->length, 0};
+	    ptl_ct_event_t cte = {length, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	}
     }
@@ -592,47 +615,58 @@ int API_FUNC PtlFetchAtomic(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle,1)) {
+	VERBOSE_ERROR("Invalid get_md_handle\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDHandleValidator(put_md_handle,1)) {
+	VERBOSE_ERROR("Invalid put_md_handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (length == 0) {
+	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
     }
     if (length > nit_limits.max_atomic_size) {
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
+	VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-	return PTL_ARG_INVALID;
-    }
-    if (operation == PTL_SWAP || operation == PTL_MSWAP || operation == PTL_CSWAP) {
+	VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     if (get_md.s.ni != put_md.s.ni) {
+	VERBOSE_ERROR("MDs *must* be on the same NI\n");
 	return PTL_ARG_INVALID;
     }
     switch (get_md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
     }
     switch (operation) {
 	case PTL_CSWAP: case PTL_MSWAP:
+	    VERBOSE_ERROR("MSWAP/CSWAP should be performed with PtlSwap\n");
 	    return PTL_ARG_INVALID;
 	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
 	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
 	    switch (datatype) {
 		case PTL_DOUBLE: case PTL_FLOAT:
+		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
@@ -683,7 +717,7 @@ int API_FUNC PtlFetchAtomic(
 	    ptl_ct_event_t cte = {1, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	} else {
-	    ptl_ct_event_t cte = {hdr->length, 0};
+	    ptl_ct_event_t cte = {length, 0};
 	    PtlCTInc(mdptr->ct_handle, cte);
 	}
     }
@@ -726,30 +760,45 @@ int API_FUNC PtlSwap(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle,1)) {
+	VERBOSE_ERROR("Swap saw invalid get_md_handle\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDHandleValidator(put_md_handle,1)) {
+	VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (length == 0) {
+	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
+	return PTL_ARG_INVALID;
+    }
+    if (length > nit_limits.max_atomic_size) {
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
+	VERBOSE_ERROR("Swap saw get_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
+	VERBOSE_ERROR("Swap saw put_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     if (get_md.s.ni != put_md.s.ni) {
+	VERBOSE_ERROR("MDs *must* be on the same NI\n");
 	return PTL_ARG_INVALID;
     }
     switch (get_md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
-	    if (PtlInternalPhysicalProcessValidator(target_id)) {
+	    if (PtlInternalPhysicalPProcessValidator(target_id)) {
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -760,11 +809,13 @@ int API_FUNC PtlSwap(
 	case PTL_CSWAP: case PTL_MSWAP:
 	    switch (datatype) {
 		case PTL_DOUBLE: case PTL_FLOAT:
+		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
 	    }
 	default:
+	    VERBOSE_ERROR("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
 	    return PTL_ARG_INVALID;
     }
 #endif
@@ -837,7 +888,7 @@ int API_FUNC PtlSwap(
 		ptl_ct_event_t cte = {1, 0};
 		PtlCTInc(mdptr->ct_handle, cte);
 	    } else {
-		ptl_ct_event_t cte = {hdr->length, 0};
+		ptl_ct_event_t cte = {length, 0};
 		PtlCTInc(mdptr->ct_handle, cte);
 	    }
 	}

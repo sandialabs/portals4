@@ -52,7 +52,7 @@ static void barrier(ptl_handle_ni_t ni, ptl_process_t myself, ptl_pt_index_t pti
 	/* now release everyone */
 	for (ptl_rank_t r=1;r<count;r++) {
 	    const ptl_process_t t = amapping[r];
-	    CHECK_RETURNVAL(PtlPut(mdh, 0, 0, PTL_OC_ACK_REQ, t, pti, 0, 0, NULL, 0));
+	    CHECK_RETURNVAL(PtlPut(mdh, 0, md.length, PTL_OC_ACK_REQ, t, pti, 0, 0, NULL, 0));
 	}
 	/* wait for everything to be sent */
 	noFailures(md.ct_handle, count-1, __LINE__);
@@ -63,7 +63,7 @@ static void barrier(ptl_handle_ni_t ni, ptl_process_t myself, ptl_pt_index_t pti
 	{
 	    size_t waitfor = 1;
 	    do {
-		CHECK_RETURNVAL(PtlPut(mdh, 0, 0, PTL_OC_ACK_REQ, gatekeeper, pti, 0, 0, NULL, 0));
+		CHECK_RETURNVAL(PtlPut(mdh, 0, md.length, PTL_OC_ACK_REQ, gatekeeper, pti, 0, 0, NULL, 0));
 		/* wait for the ping to be sent */
 		CHECK_RETURNVAL(PtlCTWait(md.ct_handle, waitfor, &ctc));
 		if (ctc.success == 0) {
@@ -75,6 +75,7 @@ static void barrier(ptl_handle_ni_t ni, ptl_process_t myself, ptl_pt_index_t pti
 	/* wait for rank 0 to respond */
 	noFailures(le.ct_handle, 1, __LINE__); // this is the barrier
     }
+    CHECK_RETURNVAL(PtlLEUnlink(le_handle));
     CHECK_RETURNVAL(PtlMDRelease(mdh));
     CHECK_RETURNVAL(PtlCTFree(md.ct_handle));
     CHECK_RETURNVAL(PtlCTFree(le.ct_handle));
