@@ -95,11 +95,11 @@ typedef union {
  * @ingroup PI
  */
 typedef union {
+    ptl_rank_t rank;	/*!< The logical representation of a node. */
     struct {
 	ptl_nid_t nid;	/*!< The node identifier. */
 	ptl_pid_t pid;	/*!< The process identifier. */
     } phys;		/*!< The physical representation of a node. */
-    ptl_rank_t rank;	/*!< The logical representation of a node. */
 }			ptl_process_t;
 /*!
  * @struct ptl_md_t
