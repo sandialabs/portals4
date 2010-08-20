@@ -31,6 +31,8 @@ typedef union {
     struct {
     } put;
     struct {
+	ptl_internal_handle_converter_t md_handle;
+	ptl_size_t local_offset;
     } get;
     struct {
     } atomic;
@@ -125,6 +127,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
+	ptl_internal_srcdata_t *einfo = NULL;
 	//printf("%u +> got an ACK (%p)\n", (unsigned int)proc_number, hdr);
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
@@ -135,22 +138,34 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		break;
 	    case HDR_TYPE_GET:
 		//printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
-		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		einfo = hdr->src_data_ptr;
+		md_handle = einfo->get.md_handle.a.md;
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
 		//printf("replied with %i data\n", (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-		    memcpy(mdptr->start, hdr->data, hdr->length);
+		    memcpy((uint8_t*)(mdptr->start) + einfo->get.local_offset, hdr->data, hdr->length);
 		}
 		break;
 	    case HDR_TYPE_ATOMIC:
-		//printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
+		//printf("%u +> it's an ACK for an ATOMIC\n", (unsigned int)proc_number);
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
 		break;
 	    case HDR_TYPE_FETCHATOMIC:
-		fprintf(stderr, "FETCHATOMIC REPLY unimplemented\n");
-		abort();
+		//printf("%u +> it's an ACK for a FETCHATOMIC\n", (unsigned int)proc_number);
+		einfo = hdr->src_data_ptr;
+		assert(einfo != NULL);
+		md_handle = einfo->fetchatomic.get_md_handle.a.md;
+		if (einfo->fetchatomic.put_md_handle.a.md != PTL_INVALID_HANDLE.md) {
+		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.a.md);
+		}
+		mdptr = PtlInternalMDFetch(md_handle);
+		/* pull the data out of the reply */
+		//printf("replied with %i data\n", (int)hdr->length);
+		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
+		    memcpy((uint8_t*)(mdptr->start) + einfo->fetchatomic.local_get_offset, hdr->data, hdr->length);
+		}
 		break;
 	    case HDR_TYPE_SWAP:
 		fprintf(stderr, "SWAP REPLY unimplemented\n");
@@ -258,6 +273,9 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE.md) {
 	    //printf("%u +> clearing ACK's md_handle\n", (unsigned int)proc_number);
 	    PtlInternalMDCleared(md_handle);
+	}
+	if (einfo != NULL) {
+	    free(einfo);
 	}
 	//printf("%u +> freeing fragment (%p)\n", (unsigned int)proc_number, hdr);
 	/* now, put the fragment back in the freelist */
@@ -404,6 +422,7 @@ int API_FUNC PtlGet(
     ptl_size_t remote_offset)
 {
     const ptl_internal_handle_converter_t md = { md_handle };
+    ptl_internal_srcdata_t *extra_info;
     ptl_internal_header_t *hdr;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -438,6 +457,7 @@ int API_FUNC PtlGet(
 	    break;
     }
 #endif
+    PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
@@ -449,8 +469,11 @@ int API_FUNC PtlGet(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
+    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
+    assert(extra_info);
+    extra_info->get.md_handle.a.md = md_handle;
+    extra_info->get.local_offset = local_offset;
+    hdr->src_data_ptr = extra_info;
     /* step 3: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
@@ -536,6 +559,7 @@ int API_FUNC PtlAtomic(
 	    break;
     }
 #endif
+    PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
@@ -676,6 +700,8 @@ int API_FUNC PtlFetchAtomic(
 	    break;
     }
 #endif
+    PtlInternalMDPosted(put_md_handle);
+    PtlInternalMDPosted(get_md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
@@ -820,6 +846,8 @@ int API_FUNC PtlSwap(
 	    return PTL_ARG_INVALID;
     }
 #endif
+    PtlInternalMDPosted(put_md_handle);
+    PtlInternalMDPosted(get_md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
     /* step 2: fill the op structure */
