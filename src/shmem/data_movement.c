@@ -25,6 +25,7 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_LE.h"
+#include "ptl_internal_error.h"
 
 typedef union {
     struct {
@@ -56,49 +57,60 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 	ptl_pid_t src;
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
-	printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
+	//printf("%u ~> got a header! %p points to ni %i\n", (unsigned int)proc_number, hdr, hdr->ni);
 	src = hdr->src;
 	assert(nit.tables != NULL);
-	assert(nit.tables[hdr->ni] != NULL);
-	ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
-	if (table_entry->status != 0) {
-	    assert(pthread_mutex_lock(&table_entry->lock) == 0);
-	    switch (PtlInternalPTValidate(table_entry)) {
-		case 1: // uninitialized
-		    fprintf(stderr, "sent to an uninitialized PT!\n");
-		    abort();
-		    break;
-		case 2: // disabled
-		    fprintf(stderr, "sent to a disabled PT!\n");
-		    abort();
-		    break;
+	if (nit.tables[hdr->ni] != NULL) {
+	    ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
+	    if (table_entry->status != 0) {
+		assert(pthread_mutex_lock(&table_entry->lock) == 0);
+		switch (PtlInternalPTValidate(table_entry)) {
+		    case 1: // uninitialized
+			fprintf(stderr, "sent to an uninitialized PT!\n");
+			abort();
+			break;
+		    case 2: // disabled
+			fprintf(stderr, "sent to a disabled PT!\n");
+			abort();
+			break;
+		}
+		//printf("%u ~> received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", (unsigned int)proc_number, (unsigned int)hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
+		switch (hdr->ni) {
+		    case 0: case 2: // Matching (ME)
+			fprintf(stderr, "Matching delivery not handled yet, sorry\n");
+			break;
+		    case 1: case 3: // Non-matching (LE)
+			//printf("delivering to LE table\n");
+			switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
+			    case 0: // who knows, we must not send an ack
+				//printf("%u ~> not sending an ack\n", (unsigned int)proc_number);
+				break;
+			    case 1: // success
+				//printf("LE delivery success!\n");
+				//printf("%u ~> LE delivery success!\n", (unsigned int)proc_number);
+				break;
+			    case 2: // overflow
+				//printf("%u ~> LE delivery overflow!\n", (unsigned int)proc_number);
+				break;
+			    case 4: // nothing matched, report error
+				//printf("%u ~> LE says nothing matched!\n", (unsigned int)proc_number);
+				hdr->length = 0;
+				break;
+			    case 3: // Permission Violation
+				//printf("%u ~> LE says permission violation!\n", (unsigned int)proc_number);
+				hdr->length = 0;
+				break;
+			}
+			break;
+		}
+		//printf("unlocking\n");
+		assert(pthread_mutex_unlock(&table_entry->lock) == 0);
+	    } else {
+		hdr->src = 9999;
+		//printf("%u ~> table_entry->status == 0\n", (unsigned int)proc_number);
 	    }
-	    //printf("received NI = %u, pt_index = %u, priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, table_entry->priority.head, table_entry->overflow.head);
-	    switch (hdr->ni) {
-		case 0: case 2: // Matching (ME)
-		    fprintf(stderr, "Matching delivery not handled yet, sorry\n");
-		    break;
-		case 1: case 3: // Non-matching (LE)
-		    //printf("delivering to LE table\n");
-		    switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
-			case 0: // who knows, we must not send an ack
-			    break;
-			case 1: // success
-			    //printf("LE delivery success!\n");
-			    break;
-			case 2: // overflow
-			    break;
-			case 4: // nothing matched, report error
-			case 3: // Permission Violation
-			    hdr->length = 0;
-			    break;
-		    }
-		    break;
-	    }
-	    //printf("unlocking\n");
-	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
-	} else {
-	    hdr->src = 9999;
+	} else { // uninitialized NI
+	    hdr->src = 99999;
 	}
 	//printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
@@ -113,20 +125,21 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle;
+	//printf("%u +> got an ACK (%p)\n", (unsigned int)proc_number, hdr);
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
 	    case HDR_TYPE_PUT:
+		//printf("%u +> it's an ACK for a PUT\n", (unsigned int)proc_number);
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
-		assert(mdptr != NULL);
 		break;
 	    case HDR_TYPE_GET:
+		//printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
-		assert(mdptr != NULL);
 		/* pull the data out of the reply */
-		printf("replied with %i data\n", (int)hdr->length);
-		if (hdr->src == 1 || hdr->src == 0) {
+		//printf("replied with %i data\n", (int)hdr->length);
+		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		    memcpy(mdptr->start, hdr->data, hdr->length);
 		}
 		break;
@@ -147,11 +160,13 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	}
 	/* Report the ack */
 	switch(hdr->src) {
-	    case 0: // Pretend we didn't send an ack
+	    case 0: // Pretend we didn't recieve an ack
+		//printf("%u +> it's a secret ACK\n", (unsigned int)proc_number);
 		break;
 	    case 1: // success
 	    case 2: // overflow
-		{
+		//printf("%u +> it's a successful/overflow ACK (%p)\n", (unsigned int)proc_number, mdptr);
+		if (mdptr != NULL) {
 		    int ct_enabled = 0;
 		    if (hdr->type == HDR_TYPE_PUT) {
 			ct_enabled = mdptr->options & PTL_MD_EVENT_CT_ACK;
@@ -167,49 +182,83 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    PtlCTInc(mdptr->ct_handle, cte);
 			}
 		    }
-		}
-		if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
-		    ptl_event_t e;
-		    switch (hdr->type) {
-			case HDR_TYPE_PUT:
-			    e.type = PTL_EVENT_ACK;
-			    break;
-			default:
-			    e.type = PTL_EVENT_REPLY;
-			    break;
-		    }
-		    e.event.ievent.mlength = hdr->length;
-		    e.event.ievent.offset = hdr->dest_offset;
-		    e.event.ievent.user_ptr = hdr->user_ptr;
-		    e.event.ievent.ni_fail_type = PTL_NI_OK;
-		    PtlInternalEQPush(mdptr->eq_handle, &e);
-		}
-		break;
-	    case 9999: // PT not allocated
-	    case 3: // Permission Violation
-	    case 4: // nothing matched, report error
-		if (mdptr->ct_handle != PTL_CT_NONE && (mdptr->options & PTL_MD_EVENT_CT_ACK)) {
-		    ptl_ct_event_t cte = {0, 1};
-		    PtlCTInc(mdptr->ct_handle, cte);
-		}
-		if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
-		    ptl_event_t e;
-		    e.type = PTL_EVENT_ACK;
-		    e.event.ievent.mlength = hdr->length;
-		    e.event.ievent.offset = hdr->dest_offset;
-		    e.event.ievent.user_ptr = hdr->user_ptr;
-		    if (hdr->src == 3) {
-			e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
-		    } else if (hdr->src == 9999) {
-			e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
-		    } else {
+		    if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+			ptl_event_t e;
+			switch (hdr->type) {
+			    case HDR_TYPE_PUT:
+				e.type = PTL_EVENT_ACK;
+				break;
+			    default:
+				e.type = PTL_EVENT_REPLY;
+				break;
+			}
+			e.event.ievent.mlength = hdr->length;
+			e.event.ievent.offset = hdr->dest_offset;
+			e.event.ievent.user_ptr = hdr->user_ptr;
 			e.event.ievent.ni_fail_type = PTL_NI_OK;
+			PtlInternalEQPush(mdptr->eq_handle, &e);
 		    }
-		    PtlInternalEQPush(mdptr->eq_handle, &e);
+		}
+		//printf("%u +> finished notification of successful ACK\n", (unsigned int)proc_number);
+		break;
+	    case 99999: // NI not initialized
+		//printf("%u +> ACK says NI not initialized\n", (unsigned int)proc_number);
+		//goto reporterror;
+	    case 9999: // PT not allocated
+		//printf("%u +> ACK says PT-not-allocated\n", (unsigned int)proc_number);
+		//goto reporterror;
+	    case 3: // Permission Violation
+		//printf("%u +> ACK says permission violation\n", (unsigned int)proc_number);
+		//goto reporterror;
+	    case 4: // nothing matched, report error
+//reporterror:
+		//printf("%u +> ACK says nothing matched!\n", (unsigned int)proc_number);
+		if (mdptr != NULL) {
+		    int ct_enabled = 0;
+		    switch (hdr->type) {
+			case HDR_TYPE_PUT: ct_enabled = mdptr->options & PTL_MD_EVENT_CT_ACK; break;
+			default: ct_enabled = mdptr->options & PTL_MD_EVENT_CT_REPLY; break;
+		    }
+		    if (ct_enabled) {
+			if (mdptr->ct_handle != PTL_CT_NONE) {
+			    ptl_ct_event_t cte = {0, 1};
+			    ptl_ct_event_t ctc;
+			    PtlCTGet(mdptr->ct_handle, &ctc);
+			    //printf("%u +> ct before inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			    PtlCTInc(mdptr->ct_handle, cte);
+			    PtlCTGet(mdptr->ct_handle, &ctc);
+			    //printf("%u +> ct after inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			} else {
+			    fprintf(stderr, "enabled CT counting, but no CT!\n");
+			}
+		    }
+		    if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
+			ptl_event_t e;
+			e.type = PTL_EVENT_ACK;
+			e.event.ievent.mlength = hdr->length;
+			e.event.ievent.offset = hdr->dest_offset;
+			e.event.ievent.user_ptr = hdr->user_ptr;
+			switch (hdr->src) {
+			    case 3:
+				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
+				break;
+			    case 9999: // bad PT
+			    case 99999: // bad NI
+				e.event.ievent.ni_fail_type = PTL_NI_UNDELIVERABLE;
+				break;
+			    default:
+				e.event.ievent.ni_fail_type = PTL_NI_OK;
+			}
+			PtlInternalEQPush(mdptr->eq_handle, &e);
+		    }
 		}
 		break;
 	}
-	PtlInternalMDCleared(md_handle);
+	if (mdptr != NULL) {
+	    //printf("%u +> clearing ACK's md_handle\n", (unsigned int)proc_number);
+	    PtlInternalMDCleared(md_handle);
+	}
+	//printf("%u +> freeing fragment (%p)\n", (unsigned int)proc_number, hdr);
 	/* now, put the fragment back in the freelist */
 	PtlInternalFragmentFree(hdr);
     }
@@ -255,21 +304,25 @@ int API_FUNC PtlPut(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle,1)) {
+	VERBOSE_ERROR("Put saw invalid MD\n");
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
+	VERBOSE_ERROR("Put saw MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Put saw invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
+		VERBOSE_ERROR("Put saw invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
