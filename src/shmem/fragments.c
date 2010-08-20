@@ -92,30 +92,29 @@ void INTERNAL PtlInternalFragmentTeardown(
 void INTERNAL *PtlInternalFragmentFetch(
     size_t payload_size)
 {
-#warning Need to do something intelligent if/when we have no more fragments in one of the two lists.
     fragment_hdr_t *oldv, *newv, *retv;
     if (payload_size <= SMALL_FRAG_PAYLOAD) {
-	assert(small_free_list != NULL);
 	retv = small_free_list;
 	do {
 	    oldv = retv;
 	    if (retv != NULL) {
 		newv = retv->next;
+	    } else {
+		newv = NULL;
 	    }
 	    retv = PtlInternalAtomicCasPtr(&small_free_list, oldv, newv);
-	    assert(retv != NULL);
-	} while (retv != oldv);
+	} while (retv != oldv || retv == NULL /* perhaps should yield? */);
     } else {
-	assert(large_free_list != NULL);
 	retv = large_free_list;
 	do {
 	    oldv = retv;
 	    if (retv != NULL) {
 		newv = retv->next;
+	    } else {
+		newv = NULL;
 	    }
 	    retv = PtlInternalAtomicCasPtr(&large_free_list, oldv, newv);
-	    assert(retv != NULL);
-	} while (retv != oldv);
+	} while (retv != oldv || retv == NULL /* perhaps should yield? */);
     }
     retv->next = NULL;
     return retv->data;
@@ -179,8 +178,11 @@ void INTERNAL PtlInternalFragmentFree(
     if (frag->size == SMALL_FRAG_SIZE) {
 	frag->next = small_free_list;
 	small_free_list = frag;
-    } else {
+    } else if (frag->size == LARGE_FRAG_SIZE) {
 	frag->next = large_free_list;
 	large_free_list = frag;
+    } else {
+	fprintf(stderr, "corrupt fragment freed! (size=%u)\n", (unsigned int)frag->size);
+	abort();
     }
 }
