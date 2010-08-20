@@ -196,7 +196,7 @@ AS_IF([test "x$sandia_cv_atomic_CAS" = "xyes"],
 	[AC_DEFINE([SANDIA_BUILTIN_CAS],[1],[if the compiler supports __sync_val_compare_and_swap])])
 AS_IF([test "$sandia_cv_atomic_incr" = "yes"],
 	[AC_DEFINE([SANDIA_BUILTIN_INCR],[1],[if the compiler supports __sync_fetch_and_add])])
-AS_IF([test "$sandia_cv_atomic_CAS" = "yes" -a "$sandia_cv_atomic_incr" = "yes"],
+AS_IF([test "$sandia_cv_atomic_CAS" = "yes" -a "$sandia_cv_atomic_incr" = "yes" -a "x$sandia_cv_cpu_cmpxchg16b" = "xyes"],
   		[AC_DEFINE([SANDIA_ATOMIC_BUILTINS],[1],[if the compiler supports __sync_val_compare_and_swap])
 		 $1],
 		[$2])

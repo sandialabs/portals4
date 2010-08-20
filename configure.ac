@@ -137,7 +137,7 @@ AS_IF([test "x$enable_picky" == xyes],
    ;;
    esac])
 
-SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([atomics are no implemented portably])])
+SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([Atomics are not implemented portably])])
 SANDIA_CHECK_BITFIELDS
 
 AC_CACHE_SAVE
@@ -168,7 +168,7 @@ SANDIA_CHECK_16ALIGNED_MALLOC
 SANDIA_CHECK_16ALIGNED_CALLOC
 SANDIA_CHECK_WORKING_VALLOC
 SANDIA_CHECK_PTHREAD_PROCESS_SHARED([],
-									[AC_MSG_ERROR([Currently MUST be able to share mutexes between processes, but this OS does not support it.])])
+									[AC_MSG_ERROR([Currently MUST be able to share mutexes between processes (i.e. mark mutexes with the attribure PTHREAD_PROCESS_SHARED), but this OS does not support it.])])
 
 AC_CACHE_SAVE
 
