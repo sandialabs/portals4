@@ -120,6 +120,12 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
     }
 }
 
+#if 0
+#define ack_printf(format,...) printf(format, __VA_ARGS__)
+#else
+#define ack_printf(format,...)
+#endif
+
 static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 {
     while (1) {
@@ -127,32 +133,32 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
 	ptl_internal_srcdata_t *einfo = NULL;
-	//printf("%u +> got an ACK (%p)\n", (unsigned int)proc_number, hdr);
+	ack_printf("%u +> got an ACK (%p)\n", (unsigned int)proc_number, hdr);
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
 	    case HDR_TYPE_PUT:
-		//printf("%u +> it's an ACK for a PUT\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's an ACK for a PUT\n", (unsigned int)proc_number);
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
 		break;
 	    case HDR_TYPE_GET:
-		//printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's an ACK for a GET\n", (unsigned int)proc_number);
 		einfo = hdr->src_data_ptr;
 		md_handle = einfo->get.md_handle.a.md;
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
-		//printf("replied with %i data\n", (int)hdr->length);
+		ack_printf("%u +> replied with %i data\n", (unsigned int)proc_number, (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		    memcpy((uint8_t*)(mdptr->start) + einfo->get.local_offset, hdr->data, hdr->length);
 		}
 		break;
 	    case HDR_TYPE_ATOMIC:
-		//printf("%u +> it's an ACK for an ATOMIC\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's an ACK for an ATOMIC\n", (unsigned int)proc_number);
 		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
 		break;
 	    case HDR_TYPE_FETCHATOMIC:
-		//printf("%u +> it's an ACK for a FETCHATOMIC\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's an ACK for a FETCHATOMIC\n", (unsigned int)proc_number);
 		einfo = hdr->src_data_ptr;
 		assert(einfo != NULL);
 		md_handle = einfo->fetchatomic.get_md_handle.a.md;
@@ -161,13 +167,13 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
-		//printf("replied with %i data\n", (int)hdr->length);
+		ack_printf("%u +> replied with %i data\n", (unsigned int)proc_number, (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		    memcpy((uint8_t*)(mdptr->start) + einfo->fetchatomic.local_get_offset, hdr->data, hdr->length);
 		}
 		break;
 	    case HDR_TYPE_SWAP:
-		//printf("%u +> it's an ACK for a SWAP\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's an ACK for a SWAP\n", (unsigned int)proc_number);
 		einfo = hdr->src_data_ptr;
 		assert(einfo != NULL);
 		md_handle = einfo->swap.get_md_handle.a.md;
@@ -176,7 +182,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
-		//printf("replied with %i data\n", (int)hdr->length);
+		ack_printf("%u +> replied with %i data\n", (unsigned int)proc_number, (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		    memcpy((uint8_t*)(mdptr->start) + einfo->swap.local_get_offset, hdr->data, hdr->length);
 		}
@@ -188,11 +194,11 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	/* Report the ack */
 	switch(hdr->src) {
 	    case 0: // Pretend we didn't recieve an ack
-		//printf("%u +> it's a secret ACK\n", (unsigned int)proc_number);
+		ack_printf("%u +> it's a secret ACK\n", (unsigned int)proc_number);
 		break;
 	    case 1: // success
 	    case 2: // overflow
-		//printf("%u +> it's a successful/overflow ACK (%p)\n", (unsigned int)proc_number, mdptr);
+		ack_printf("%u +> it's a successful/overflow ACK (%p)\n", (unsigned int)proc_number, mdptr);
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
 		    if (hdr->type == HDR_TYPE_PUT) {
@@ -226,14 +232,14 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			PtlInternalEQPush(mdptr->eq_handle, &e);
 		    }
 		}
-		//printf("%u +> finished notification of successful ACK\n", (unsigned int)proc_number);
+		ack_printf("%u +> finished notification of successful ACK\n", (unsigned int)proc_number);
 		break;
 	    case 3: // Permission Violation
-		//printf("%u +> ACK says permission violation\n", (unsigned int)proc_number);
+		ack_printf("%u +> ACK says permission violation\n", (unsigned int)proc_number);
 		//goto reporterror;
 	    case 4: // nothing matched, report error
 //reporterror:
-		//printf("%u +> ACK says nothing matched!\n", (unsigned int)proc_number);
+		ack_printf("%u +> ACK says nothing matched!\n", (unsigned int)proc_number);
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
 		    switch (hdr->type) {
@@ -245,10 +251,10 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    ptl_ct_event_t cte = {0, 1};
 			    ptl_ct_event_t ctc;
 			    PtlCTGet(mdptr->ct_handle, &ctc);
-			    //printf("%u +> ct before inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			    ack_printf("%u +> ct before inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
 			    PtlCTInc(mdptr->ct_handle, cte);
 			    PtlCTGet(mdptr->ct_handle, &ctc);
-			    //printf("%u +> ct after inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			    ack_printf("%u +> ct after inc = {%u,%u}\n", (unsigned int)proc_number, (unsigned int)ctc.success, (unsigned int)ctc.failure);
 			} else {
 			    fprintf(stderr, "enabled CT counting, but no CT!\n");
 			}
@@ -272,13 +278,13 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		break;
 	}
 	if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE.md) {
-	    //printf("%u +> clearing ACK's md_handle\n", (unsigned int)proc_number);
+	    ack_printf("%u +> clearing ACK's md_handle\n", (unsigned int)proc_number);
 	    PtlInternalMDCleared(md_handle);
 	}
 	if (einfo != NULL) {
 	    free(einfo);
 	}
-	//printf("%u +> freeing fragment (%p)\n", (unsigned int)proc_number, hdr);
+	ack_printf("%u +> freeing fragment (%p)\n", (unsigned int)proc_number, hdr);
 	/* now, put the fragment back in the freelist */
 	PtlInternalFragmentFree(hdr);
     }
