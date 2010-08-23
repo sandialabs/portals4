@@ -10,7 +10,8 @@ TESTS = test_init \
 	test_bootstrap \
 	test_get \
 	test_atomic \
-	test_fetchatomic
+	test_fetchatomic \
+	test_swap
 
 #EXTRA_PROGRAMS = test_bootstrap
 
@@ -46,3 +47,6 @@ test_atomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_fetchatomic_SOURCES = test_fetchatomic.c
 test_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
+
+test_swap_SOURCES = test_swap.c
+test_swap_DEPENDENCIES = $(PORTALSLIB)
