@@ -147,10 +147,10 @@ int API_FUNC PtlMDBind(
 	VERBOSE_ERROR("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n", ni.s.ni, ni.s.code);
 	return PTL_ARG_INVALID;
     }
-    if (md->start == NULL || md->length == 0) {
+    /*if (md->start == NULL || md->length == 0) {
 	VERBOSE_ERROR("start is NULL (%p) or length is 0 (%u); cannot detect failures!\n", md->start, (unsigned int)md->length);
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (md->options & PTL_MD_EVENT_DISABLE) {
 	eq_optional = 1;
     }
