@@ -1,4 +1,5 @@
 #include <portals4.h>
+#include <portals4_runtime.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -12,8 +13,6 @@
 	    case PTL_ARG_INVALID: fprintf(stderr, "=> " #x " returned PTL_ARG_INVALID (line %u)\n", (unsigned int)__LINE__); abort(); break; \
 	    case PTL_NO_INIT: fprintf(stderr, "=> " #x " returned PTL_NO_INIT (line %u)\n", (unsigned int)__LINE__); abort(); break; \
 	} } while (0)
-
-static ptl_process_t COLLECTOR;
 
 static void noFailures(
     ptl_handle_ct_t ct,
@@ -30,34 +29,6 @@ static void noFailures(
     }
 }
 
-static void barrier(
-    ptl_handle_ni_t ni)
-{
-    ptl_handle_le_t leh;
-    ptl_le_t le;
-    ptl_handle_md_t mdh;
-    ptl_md_t md;
-    le.start = md.start = NULL;
-    le.length = md.length = 0;
-    le.ac_id.uid = PTL_UID_ANY;
-    le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
-    md.options = PTL_MD_EVENT_DISABLE;
-    md.ct_handle = PTL_CT_NONE;
-    CHECK_RETURNVAL(PtlCTAlloc(ni, &le.ct_handle));
-    /* post my sensor */
-    CHECK_RETURNVAL(PtlLEAppend(ni, 0, le, PTL_PRIORITY_LIST, NULL, &leh));
-    /* prepare my messenger */
-    CHECK_RETURNVAL(PtlMDBind(ni, &md, &mdh));
-    /* alert COLLECTOR of my presence */
-    CHECK_RETURNVAL(PtlPut
-		    (mdh, 0, md.length, PTL_OC_ACK_REQ, COLLECTOR, 0, 0, 0,
-		     NULL, 0));
-    /* wait for collector to respond */
-    noFailures(le.ct_handle, 1, __LINE__);	// this is the barrier
-    CHECK_RETURNVAL(PtlMDRelease(mdh));
-    CHECK_RETURNVAL(PtlCTFree(le.ct_handle));
-}
-
 int main(
     int argc,
     char *argv[])
@@ -66,6 +37,7 @@ int main(
     ptl_process_t myself;
     /* used in bootstrap */
     uint64_t rank, maxrank;
+    ptl_process_t COLLECTOR;
     ptl_pt_index_t phys_pt_index, logical_pt_index;
     ptl_process_t *dmapping, *amapping;
     ptl_le_t le;
@@ -156,7 +128,7 @@ int main(
 		     &value_le_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
-    barrier(ni_physical);
+    runtime_barrier();
     /* don't need this anymore, so free up resources */
     CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_physical));
