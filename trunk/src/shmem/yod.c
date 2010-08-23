@@ -100,7 +100,8 @@ int main(
 		    }
 		    if (count > max_count) {	/* technically, this is an arbitrary limit; more would require multiple pages for the initial init barier. */
 			fprintf(stderr,
-				"Error: Exceeded max of %lu processes. (complain to developer)\n", (unsigned long)max_count);
+				"Error: Exceeded max of %lu processes. (complain to developer)\n",
+				(unsigned long)max_count);
 			exit(EXIT_FAILURE);
 		    }
 		}
@@ -334,7 +335,7 @@ static void cleanup(
 }
 
 void *collator(
-    void * __attribute__ ((unused)) junk)
+    void * Q_UNUSED junk) Q_NORETURN
 {
     char procstr[10];
     ptl_process_t *mapping;
@@ -358,9 +359,7 @@ void *collator(
     md.start = le.start = mapping;
     md.length = le.length = count * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
-    le.options =
-	PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
-	PTL_LE_EVENT_CT_GET;
+    le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
     assert(PtlCTAlloc(ni_physical, &le.ct_handle) == PTL_OK);
     assert(PtlLEAppend
 	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
@@ -370,10 +369,17 @@ void *collator(
 	ptl_ct_event_t ct_data;
 	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);  // XXX: should do something useful
+	ct_data.success = ct_data.failure = 0;
+	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
     }
     /* cleanup */
-    assert(PtlCTFree(le.ct_handle) == PTL_OK);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
+    /* prepare for being a barrier captain */
+    le.start = NULL;
+    le.length = 0;
+    assert(PtlLEAppend
+	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle)
+	   == PTL_OK);
     /* now distribute the mapping */
     md.options = PTL_MD_EVENT_CT_ACK;
     md.eq_handle = PTL_EQ_NONE;
@@ -381,21 +387,51 @@ void *collator(
     assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
     for (uint64_t r = 0; r < count; ++r) {
 	assert(PtlPut
-	       (md_handle, 0, count * sizeof(ptl_process_t),
-		PTL_CT_ACK_REQ, mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+	       (md_handle, 0, count * sizeof(ptl_process_t), PTL_CT_ACK_REQ,
+		mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
     }
     /* wait for the puts to finish */
     {
 	ptl_ct_event_t ct_data;
 	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
 	assert(ct_data.failure == 0);
+	ct_data.success = ct_data.failure = 0;
+	assert(PtlCTSet(md.ct_handle, ct_data) == PTL_OK);
     }
     /* cleanup */
-    assert(PtlCTFree(md.ct_handle) == PTL_OK);
     assert(PtlMDRelease(md_handle) == PTL_OK);
-    assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
-    assert(PtlNIFini(ni_physical) == PTL_OK);
     free(mapping);
+    /* prepare for being a barrier captain */
+    md.start = NULL;
+    md.length = 0;
+    assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
+    /*******************************************************
+     * Transition point to being a general BARRIER captain *
+     *******************************************************/
+    while (1) {
+	/* wait for everyone to post to the barrier */
+	ptl_ct_event_t ct_data;
+	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
+	assert(ct_data.failure == 0);
+	/* reset the LE's CT */
+	ct_data.success = ct_data.failure = 0;
+	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
+	/* release everyone */
+	for (uint64_t r = 0; r < count; ++r) {
+	    assert(PtlPut(md_handle, 0, 0, PTL_CT_ACK_REQ,
+			mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+	}
+	/* wait for the releases to finish */
+	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
+	assert(ct_data.failure == 0);
+	/* reset the MD's CT */
+	ct_data.success = ct_data.failure = 0;
+	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
+    }
+    /* cleanup */
+    /*assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
+    assert(PtlNIFini(ni_physical) == PTL_OK);*/
+    UNREACHABLE;
     return NULL;
 }
 
