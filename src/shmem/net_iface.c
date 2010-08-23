@@ -53,7 +53,7 @@ int API_FUNC PtlNIInit(
     ptl_process_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
-    ptl_handle_encoding_t ni = { HANDLE_NI_CODE, 0, 0 };
+    ptl_internal_handle_converter_t ni = { .s={ HANDLE_NI_CODE, 0, 0 } };
     ptl_table_entry_t *tmp;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -90,26 +90,26 @@ int API_FUNC PtlNIInit(
     if (iface == PTL_IFACE_DEFAULT) {
 	iface = 0;
     }
-    ni.code = iface;
+    ni.s.code = iface;
     switch (options) {
 	case (PTL_NI_MATCHING | PTL_NI_LOGICAL):
-	    ni.ni = 0;
+	    ni.s.ni = 0;
 	    break;
 	case PTL_NI_NO_MATCHING | PTL_NI_LOGICAL:
-	    ni.ni = 1;
+	    ni.s.ni = 1;
 	    break;
 	case (PTL_NI_MATCHING | PTL_NI_PHYSICAL):
-	    ni.ni = 2;
+	    ni.s.ni = 2;
 	    break;
 	case PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL:
-	    ni.ni = 3;
+	    ni.s.ni = 3;
 	    break;
 #ifndef NO_ARG_VALIDATION
 	default:
 	    return PTL_ARG_INVALID;
 #endif
     }
-    memcpy(ni_handle, &ni, sizeof(ptl_handle_ni_t));
+    *ni_handle = ni.a.ni;
     if (desired != NULL &&
 	PtlInternalAtomicCas32(&nit_limits_init, 0, 1) == 0) {
 	/* nit_limits_init now marked as "being initialized" */
@@ -166,27 +166,27 @@ int API_FUNC PtlNIInit(
 	    }
 	}
     }
-    PtlInternalCTNISetup(ni.ni, nit_limits.max_cts);
-    PtlInternalMDNISetup(ni.ni, nit_limits.max_mds);
+    PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
+    PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
     PtlInternalLENISetup(nit_limits.max_mes);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
-	    PtlInternalAtomicCasPtr(&(nit.tables[ni.ni]), NULL,
+	    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
 				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
 	if (tmp == NULL) {
-	    nit.tables[ni.ni] = NULL;
+	    nit.tables[ni.s.ni] = NULL;
 	    return PTL_NO_SPACE;
 	}
 	for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
 	    PtlInternalPTInit(tmp + e);
 	}
-	nit.tables[ni.ni] = tmp;
+	nit.tables[ni.s.ni] = tmp;
     }
-    assert(nit.tables[ni.ni] != NULL);
+    assert(nit.tables[ni.s.ni] != NULL);
     __sync_synchronize();	       // full memory fence
-    PtlInternalAtomicInc(&(nit.refcount[ni.ni]), 1);
+    PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1);
     PtlInternalDMSetup();	       // This MUST happen AFTER the tables are set up
     return PTL_OK;
 }
