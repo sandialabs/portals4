@@ -105,15 +105,11 @@ static void inline PtlInternalPerformAtomicSum(
 }
 
 #define BUILTINSWAP(int_type) do { \
-    int_type before = *(volatile int_type *)dest; \
-    *(int_type*)src = __sync_val_compare_and_swap((volatile int_type*)dest, before, *(int_type*)src); \
-} while (0)
-#define BUILTINSWAPF(f_type, i_type) do { \
-    union { f_type f; i_type i; } before, after; \
-    after.f = *(volatile f_type *)src; \
-    do { \
-	before.f = *(volatile f_type *)dest; \
-    } while (__sync_bool_compare_and_swap((volatile i_type*)dest, before.i, after.i)); \
+    int_type before = *(volatile int_type *)dest, tmp; \
+    while ((tmp = __sync_val_compare_and_swap((volatile int_type*)dest, before, *(int_type*)src)) != before) { \
+	before = tmp; \
+    } \
+    *(int_type*)src = before; \
 } while (0)
 static void inline PtlInternalPerformAtomicSwap(
     volatile char *dest,
@@ -129,8 +125,8 @@ static void inline PtlInternalPerformAtomicSwap(
 	case PTL_UINT:   BUILTINSWAP(uint32_t); break;
 	case PTL_LONG:   BUILTINSWAP(int64_t); break;
 	case PTL_ULONG:  BUILTINSWAP(uint64_t); break;
-	case PTL_FLOAT:  BUILTINSWAPF(float, uint32_t); break;
-	case PTL_DOUBLE: BUILTINSWAPF(double, uint64_t); break;
+	case PTL_FLOAT:  BUILTINSWAP(uint32_t); break;
+	case PTL_DOUBLE: BUILTINSWAP(uint64_t); break;
     }
 }
 
