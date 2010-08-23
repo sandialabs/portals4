@@ -327,10 +327,10 @@ int API_FUNC PtlPut(
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (length == 0) {
+    /*if (length == 0) {
 	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
@@ -433,10 +433,10 @@ int API_FUNC PtlGet(
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (length == 0) {
+    /*if (length == 0) {
 	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
@@ -511,10 +511,10 @@ int API_FUNC PtlAtomic(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (length == 0) {
+    /*if (length == 0) {
 	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
@@ -648,10 +648,10 @@ int API_FUNC PtlFetchAtomic(
 	VERBOSE_ERROR("Invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (length == 0) {
+    /*if (length == 0) {
 	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
@@ -797,10 +797,10 @@ int API_FUNC PtlSwap(
 	VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (length == 0) {
+    /*if (length == 0) {
 	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
 	return PTL_ARG_INVALID;
-    }
+    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
