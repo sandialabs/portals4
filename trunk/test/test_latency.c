@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#define LOOPS 1000
+
 #define CHECK_RETURNVAL(x) do { switch (x) { \
 	    case PTL_OK: break; \
 	    case PTL_FAIL: fprintf(stderr, "=> " #x " returned PTL_FAIL (line %u)\n", (unsigned int)__LINE__); abort(); break; \
@@ -46,7 +48,7 @@ int main(
     ptl_handle_md_t md_handle;
     /* used in logical test */
     struct timeval start, stop;
-    double accumulated = 0.0;
+    double accumulate = 0.0;
     ptl_le_t potato_catcher;
     ptl_handle_le_t potato_catcher_handle;
     ptl_md_t potato_launcher;
@@ -118,10 +120,10 @@ int main(
 		     &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    potato_catcher.start = &accumulated;
+    potato_catcher.start = &accumulate;
     potato_catcher.length = sizeof(double);
     potato_catcher.ac_id.uid = PTL_UID_ANY;
-    potato_catcher.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_ATOMIC;
+    potato_catcher.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_catcher.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend
 		    (ni_logical, 0, potato_catcher, PTL_PRIORITY_LIST, NULL,
@@ -136,50 +138,66 @@ int main(
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the potato launcher */
-    potato_launcher.start = &accumulator;
+    potato_launcher.start = &accumulate;
     potato_launcher.length = sizeof(double);
-    potato_launcher.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_REPLY;
+    potato_launcher.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_SEND;
     potato_launcher.eq_handle = PTL_EQ_NONE;	// i.e. don't queue send events
-    potato_launcher.ct_handle = PTL_CT_NONE;	// i.e. don't count sends
+    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_launcher.ct_handle));
     CHECK_RETURNVAL(PtlMDBind
 		    (ni_logical, &potato_launcher, &potato_launcher_handle));
 
     /* rank 0 starts the potato going */
     if (myself.rank == 0) {
-	CHECK_RETURNVAL(PtlPut
-			(potato_launcher_handle, 0, sizeof(double),
-			 PTL_OC_ACK_REQ,
-			 amapping[(myself.rank + 1) % maxrank],
-			 logical_pt_index, 0, 0, NULL, 0));
+	ptl_process_t nextrank;
+	nextrank.rank = myself.rank + 1;
+	nextrank.rank *= (nextrank.rank <= maxrank);
+	assert(PtlPut
+	       (potato_launcher_handle, 0, sizeof(double), PTL_OC_ACK_REQ,
+		nextrank, logical_pt_index, 0, 0, NULL, 1) == PTL_OK);
     }
 
     {				       /* the potato-passing loop */
 	size_t waitfor = 1;
 	ptl_ct_event_t ctc;
-	ptl_process_t nextguy = amapping[(myself.rank + 1) % maxrank];
-	while (waitfor < 100) {
+	ptl_process_t nextrank;
+	nextrank.rank = myself.rank + 1;
+	nextrank.rank *= (nextrank.rank <= maxrank);
+	while (waitfor < LOOPS) {
 	    assert(gettimeofday(&start, NULL) == 0);
-	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, 1, &ctc));	// wait for potato
+	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor, &ctc));	// wait for potato
 	    assert(gettimeofday(&stop, NULL) == 0);
 	    assert(ctc.failure == 0);
 	    ++waitfor;
 	    accumulate +=
-		(stop.tv_sec + stop.tv_usec * 1e-6) - (start.tz_sec +
+		(stop.tv_sec + stop.tv_usec * 1e-6) - (start.tv_sec +
 						       start.tv_usec * 1e-6);
 	    /* I have the potato! Bomb's away! */
 	    CHECK_RETURNVAL(PtlPut
-			    (potato_launcher_handle, 0, sizeof(uint64_t),
-			     PTL_OC_ACK_REQ, nextguy, logical_pt_index, 0, 0,
-			     NULL, 0));
+			    (potato_launcher_handle, 0,
+			     potato_launcher.length, PTL_OC_ACK_REQ, nextrank,
+			     logical_pt_index, 0, 0, NULL, 2));
+	}
+	// make sure that last send completed before exiting
+	CHECK_RETURNVAL(PtlCTWait
+			(potato_launcher.ct_handle, waitfor - 1, &ctc));
+	assert(ctc.failure == 0);
+	if (myself.rank == 0) {
+	    // wait for the last potato (untimed)
+	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, 1, &ctc));
+	    assert(ctc.failure == 0);
 	}
     }
 
     /* calculate the average time waiting */
-    accumulate /= 100*maxrank;
-    printf("Average time spent waiting: %f\n", accumulate);
+    if (myself.rank == 0) {
+	printf("Total time spent waiting: %f secs\n", accumulate);
+	accumulate /= LOOPS * (maxrank + 1);
+	printf("Average time spent waiting: %f secs\n", accumulate);
+    }
 
     /* cleanup */
     CHECK_RETURNVAL(PtlMDRelease(potato_launcher_handle));
+    CHECK_RETURNVAL(PtlCTFree(potato_launcher.ct_handle));
     CHECK_RETURNVAL(PtlLEUnlink(potato_catcher_handle));
     CHECK_RETURNVAL(PtlCTFree(potato_catcher.ct_handle));
 
