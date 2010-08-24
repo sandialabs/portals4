@@ -29,8 +29,14 @@
 
 typedef union {
     struct {
+	char * moredata;
+	size_t remaining;
+	ptl_process_t target_id;
+	ptl_internal_handle_converter_t md_handle;
     } put;
     struct {
+	char * moredata;
+	size_t remaining;
 	ptl_internal_handle_converter_t md_handle;
 	ptl_size_t local_offset;
     } get;
@@ -143,8 +149,25 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	switch(hdr->type) {
 	    case HDR_TYPE_PUT:
 		ack_printf("it's an ACK for a PUT\n");
-		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		einfo = hdr->src_data_ptr;
+		md_handle = einfo->put.md_handle.a.md;
 		mdptr = PtlInternalMDFetch(md_handle);
+		if (einfo->put.moredata) {
+		    size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+		    if (payload > einfo->put.remaining) {
+			payload = einfo->put.remaining;
+		    }
+		    memcpy(hdr->data, einfo->put.moredata, payload);
+		    einfo->put.moredata += payload;
+		    einfo->put.remaining -= payload;
+		    switch (hdr->ni) {
+			case 0: case 1: // Logical
+			    PtlInternalFragmentToss(hdr, einfo->put.target_id.rank); break;
+			case 2: case 3: // Physical
+			    PtlInternalFragmentToss(hdr, einfo->put.target_id.phys.pid); break;
+		    }
+		    continue;
+		}
 		break;
 	    case HDR_TYPE_GET:
 		ack_printf("it's an ACK for a GET\n");
@@ -327,6 +350,7 @@ int API_FUNC PtlPut(
     void *user_ptr,
     ptl_hdr_data_t hdr_data)
 {
+    ptl_internal_srcdata_t *extra_info;
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
@@ -338,10 +362,6 @@ int API_FUNC PtlPut(
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    /*if (length == 0) {
-	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
-	return PTL_ARG_INVALID;
-    }*/
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
@@ -377,17 +397,24 @@ int API_FUNC PtlPut(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
+    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
+    assert(extra_info);
+    extra_info->put.md_handle.a.md = md_handle;
+    hdr->src_data_ptr = extra_info;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
     /* step 3: load up the data */
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
 	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset, length);
+	extra_info->put.moredata = NULL;
+	extra_info->put.remaining = 0;
     } else {
-#warning supersize messages need to be handled
-	fprintf(stderr, "need to implement rendezvous protocol (got a %llu-byte fragment, need to send %llu bytes)\n", (unsigned long long)PtlInternalFragmentSize(hdr), (unsigned long long) length);
-	abort();
+	size_t payload = PtlInternalFragmentSize(hdr)-sizeof(ptl_internal_header_t);
+	char * dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+	memcpy(hdr->data, dataptr, payload);
+	extra_info->put.moredata = dataptr + payload;
+	extra_info->put.remaining = length - payload;
+	extra_info->put.target_id = target_id;
     }
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
@@ -444,10 +471,6 @@ int API_FUNC PtlGet(
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    /*if (length == 0) {
-	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
-	return PTL_ARG_INVALID;
-    }*/
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
@@ -471,7 +494,7 @@ int API_FUNC PtlGet(
 #endif
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
-    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_GET;
     hdr->ni = md.s.ni;
@@ -485,6 +508,8 @@ int API_FUNC PtlGet(
     assert(extra_info);
     extra_info->get.md_handle.a.md = md_handle;
     extra_info->get.local_offset = local_offset;
+    extra_info->get.moredata = PtlInternalMDDataPtr(md_handle) + local_offset;
+    extra_info->get.remaining = length;
     hdr->src_data_ptr = extra_info;
     /* step 3: enqueue the op structure on the target */
     switch (md.s.ni) {
@@ -522,10 +547,6 @@ int API_FUNC PtlAtomic(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    /*if (length == 0) {
-	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
-	return PTL_ARG_INVALID;
-    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
@@ -659,10 +680,6 @@ int API_FUNC PtlFetchAtomic(
 	VERBOSE_ERROR("Invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    /*if (length == 0) {
-	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
-	return PTL_ARG_INVALID;
-    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
@@ -808,10 +825,6 @@ int API_FUNC PtlSwap(
 	VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    /*if (length == 0) {
-	VERBOSE_ERROR("Zero length operations cannot detect errors/success reliably.\n");
-	return PTL_ARG_INVALID;
-    }*/
     if (length > nit_limits.max_atomic_size) {
 	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
