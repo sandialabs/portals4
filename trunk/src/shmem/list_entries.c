@@ -313,12 +313,12 @@ int INTERNAL PtlInternalLEDeliver(
 	// check the permissions on the LE
 	if (le->options & PTL_LE_AUTH_USE_JID) {
 	    if (le->ac_id.jid != PTL_JID_ANY) {
-		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	} else {
 	    if (le->ac_id.uid != PTL_UID_ANY) {
-		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	}
@@ -328,7 +328,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
 		if ((le->options & PTL_LE_OP_PUT) == 0) {
-		    PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
 	}
@@ -337,7 +337,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
 		if ((le->options & PTL_LE_ACK_DISABLE) == 0 && (le->options & PTL_LE_OP_GET) == 0) {
-		    PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
 	}
@@ -506,7 +506,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    e.event.tevent.ni_fail_type = PTL_NI_OK;
 	    PtlInternalEQPush(t->EQ, &e);
 	}
-	PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+	(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
 	return 0; // silent ACK
     }
 }

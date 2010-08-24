@@ -120,7 +120,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 		assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	    } else {
 		/* Invalid PT: increment the dropped counter */
-		PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
 		/* silently ACK */
 		hdr->src = 0;
 		dm_printf("table_entry->status == 0\n");
