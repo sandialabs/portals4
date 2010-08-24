@@ -97,20 +97,25 @@ int API_FUNC PtlPTFree(
     ptl_table_entry_t *pt = NULL;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
+	VERBOSE_ERROR("Not initialized\n");
 	return PTL_NO_INIT;
     }
     if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+	VERBOSE_ERROR("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n", ni.s.ni, ni.s.code);
 	return PTL_ARG_INVALID;
     }
     if (pt_index == PTL_PT_ANY) {
+	VERBOSE_ERROR("pt_index is PTL_PT_ANY\n");
 	return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits.max_pt_index) {
+	VERBOSE_ERROR("pt_index is too big (%u > %u)\n", pt_index, nit_limits.max_pt_index);
 	return PTL_ARG_INVALID;
     }
 #endif
     pt = &(nit.tables[ni.s.ni][pt_index]);
     if (pt->priority.head || pt->priority.tail || pt->overflow.head || pt->overflow.tail) {
+	VERBOSE_ERROR("pt in use (%p,%p)\n", pt->priority.head, pt->overflow.head);
 	return PTL_PT_IN_USE;
     }
     switch (PtlInternalAtomicCas32(&pt->status, PT_ENABLED, PT_FREE)) {
