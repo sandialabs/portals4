@@ -408,7 +408,7 @@ void *collator(
     /*******************************************************
      * Transition point to being a general BARRIER captain *
      *******************************************************/
-    while (1) {
+    do {
 	/* wait for everyone to post to the barrier */
 	ptl_ct_event_t ct_data;
 	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
@@ -427,11 +427,12 @@ void *collator(
 	/* reset the MD's CT */
 	ct_data.success = ct_data.failure = 0;
 	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
-    }
+    } while (0);
     /* cleanup */
-    /*assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
-    assert(PtlNIFini(ni_physical) == PTL_OK);*/
-    UNREACHABLE;
+    assert(PtlLEUnlink(le_handle) == PTL_OK);
+    assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
+    assert(PtlNIFini(ni_physical) == PTL_OK);
+    //UNREACHABLE;
     return NULL;
 }
 
