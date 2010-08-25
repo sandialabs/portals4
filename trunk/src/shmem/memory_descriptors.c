@@ -34,7 +34,7 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
 typedef struct {
     ptl_md_t visible;
-    uint32_t in_use;		// 0=free, 1=in_use
+    volatile uint32_t in_use;		// 0=free, 1=in_use
     uint32_t refcount;
 } ptl_internal_md_t;
 
@@ -81,6 +81,9 @@ void INTERNAL PtlInternalMDNITeardown(
     mds[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
+    for (size_t mdi=0;mdi<nit_limits.max_mds;++mdi) {
+	while (tmp[mdi].refcount != 0) ;
+    }
     free(tmp);
 }
 
@@ -198,10 +201,13 @@ int API_FUNC PtlMDRelease(
 	return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 0)) {
+	VERBOSE_ERROR("MD handle invalid\n");
 	return PTL_ARG_INVALID;
     }
 #endif
     if (mds[md.s.ni][md.s.code].refcount != 0) {
+	VERBOSE_ERROR("%u MD handle in use!\n", (unsigned)proc_number);
+	*(int*)0 = 0;
 	return PTL_IN_USE;
     }
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
@@ -238,6 +244,7 @@ void INTERNAL PtlInternalMDPosted(
 	ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
+    //printf("%u MD %u incremented\n", (unsigned)proc_number, md.s.code);
     PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, 1);
 }
 
@@ -246,7 +253,9 @@ void INTERNAL PtlInternalMDCleared(
 {
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
+    //printf("%u MD %u needs decremented\n", (unsigned)proc_number, md.s.code);
     if (PtlInternalMDHandleValidator(handle, 0) == 0) {
+	//printf("%u MD %u decremented\n", (unsigned)proc_number, md.s.code);
 	PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
 }
