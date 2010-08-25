@@ -27,6 +27,7 @@
 
 ptl_internal_nit_t nit = { {0, 0, 0, 0}
 , {0, 0, 0, 0}
+, {0, 0, 0, 0}
 , {{0, 0}
    , {0, 0}
    , {0, 0}
@@ -168,7 +169,7 @@ int API_FUNC PtlNIInit(
     }
     PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
     PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
-    PtlInternalLENISetup(nit_limits.max_mes);
+    PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
@@ -183,6 +184,7 @@ int API_FUNC PtlNIInit(
 	    PtlInternalPTInit(tmp + e);
 	}
 	nit.tables[ni.s.ni] = tmp;
+	printf("nit.tables[%i] = %p\n", ni.s.ni, tmp);
     }
     assert(nit.tables[ni.s.ni] != NULL);
     __sync_synchronize();	       // full memory fence
@@ -204,8 +206,11 @@ int API_FUNC PtlNIFini(
     }
 #endif
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
+	while (nit.internal_refcount[ni.s.ni] != 0) ;
+	PtlInternalDMTeardown();
 	PtlInternalCTNITeardown(ni.s.ni);
 	PtlInternalMDNITeardown(ni.s.ni);
+	PtlInternalLENITeardown(ni.s.ni);
 	/* deallocate NI */
 	free(nit.tables[ni.s.ni]);
 	nit.tables[ni.s.ni] = NULL;

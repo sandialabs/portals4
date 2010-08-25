@@ -59,7 +59,7 @@ typedef union {
 static uint32_t spawned;
 static pthread_t catcher, ack_catcher;
 
-#if 0
+#if 1
 #define dm_printf(format,...) printf("%u ~> " format, (unsigned int)proc_number, ##__VA_ARGS__)
 #else
 #define dm_printf(format,...)
@@ -74,10 +74,11 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 	dm_printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
 	src = hdr->src;
 	assert(nit.tables != NULL);
+	PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], 1);
 	if (nit.tables[hdr->ni] != NULL) {
 	    ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
-	    if (table_entry->status != 0) {
-		assert(pthread_mutex_lock(&table_entry->lock) == 0);
+	    assert(pthread_mutex_lock(&table_entry->lock) == 0);
+	    if (table_entry->status == 1) {
 		switch (PtlInternalPTValidate(table_entry)) {
 		    case 1: // uninitialized
 			fprintf(stderr, "sent to an uninitialized PT!\n");
@@ -117,7 +118,6 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 			break;
 		}
 		dm_printf("unlocking\n");
-		assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	    } else {
 		/* Invalid PT: increment the dropped counter */
 		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
@@ -125,9 +125,11 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 		hdr->src = 0;
 		dm_printf("table_entry->status == 0\n");
 	    }
+	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
 	} else { // uninitialized NI
 	    hdr->src = 0; // silent ACK
 	}
+	PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], -1);
 	dm_printf("returning fragment\n");
 	/* Now, return the fragment to the sender */
 	PtlInternalFragmentAck(hdr, src);
@@ -135,7 +137,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
     }
 }
 
-#if 0
+#if 1
 #define ack_printf(format,...) printf("%u +> " format, (unsigned int)proc_number, ##__VA_ARGS__)
 #else
 #define ack_printf(format,...)
@@ -144,10 +146,14 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 {
     while (1) {
-	ptl_internal_header_t * hdr = PtlInternalFragmentAckReceive();
+	ptl_internal_header_t * restrict hdr = PtlInternalFragmentAckReceive();
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
 	ptl_internal_srcdata_t *einfo = NULL;
+	ptl_handle_eq_t md_eq;
+	ptl_handle_ct_t md_ct;
+	unsigned int md_opts;
+	int acktype;
 	ack_printf("got an ACK (%p)\n", hdr);
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
@@ -223,6 +229,46 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		UNREACHABLE;
 		*(int*)0 = 0;
 	}
+	/* allow the MD to be deallocated (happens *before* notifying listeners
+	 * that we're done, to avoid race conditions) */
+	if (mdptr != NULL) {
+	    md_eq = mdptr->eq_handle;
+	    md_ct = mdptr->ct_handle;
+	    md_opts = mdptr->options;
+	}
+	switch (hdr->type) {
+	    case HDR_TYPE_GET:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE.md) {
+		    ack_printf("clearing ACK's md_handle\n");
+		    PtlInternalMDCleared(md_handle);
+		}
+	}
+	/* determine desired acktype */
+	acktype = 2; // any acktype
+	if (hdr->type == HDR_TYPE_PUT || hdr->type == HDR_TYPE_ATOMIC) {
+	    ptl_ack_req_t ackreq;
+	    switch(hdr->type) {
+		case HDR_TYPE_PUT:
+		    ackreq = hdr->info.put.ack_req;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		    ackreq = hdr->info.atomic.ack_req;
+		    break;
+	    }
+	    switch (ackreq) {
+		case PTL_ACK_REQ:
+		    acktype = 2;
+		    break;
+		case PTL_NO_ACK_REQ:
+		    hdr->src = 0;
+		    break;
+		case PTL_CT_ACK_REQ:
+		case PTL_OC_ACK_REQ:
+		    acktype = 1;
+	    }
+	}
 	/* Report the ack */
 	switch(hdr->src) {
 	    case 0: // Pretend we didn't recieve an ack
@@ -233,21 +279,21 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
-		    if (hdr->type == HDR_TYPE_PUT) {
-			ct_enabled = mdptr->options & PTL_MD_EVENT_CT_ACK;
+		    if (hdr->type == HDR_TYPE_PUT && acktype != 0) {
+			ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
 		    } else {
-			ct_enabled = mdptr->options & PTL_MD_EVENT_CT_REPLY;
+			ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
 		    }
-		    if (mdptr->ct_handle != PTL_CT_NONE && ct_enabled != 0) {
-			if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
+		    if (md_ct != PTL_CT_NONE && ct_enabled != 0) {
+			if ((md_opts & PTL_MD_EVENT_CT_BYTES) == 0) {
 			    ptl_ct_event_t cte = {1, 0};
-			    PtlCTInc(mdptr->ct_handle, cte);
+			    PtlCTInc(md_ct, cte);
 			} else {
 			    ptl_ct_event_t cte = {hdr->length, 0};
-			    PtlCTInc(mdptr->ct_handle, cte);
+			    PtlCTInc(md_ct, cte);
 			}
 		    }
-		    if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+		    if (md_eq != PTL_EQ_NONE && (md_opts & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0 && acktype > 1) {
 			ptl_event_t e;
 			switch (hdr->type) {
 			    case HDR_TYPE_PUT:
@@ -261,7 +307,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			e.event.ievent.offset = hdr->dest_offset;
 			e.event.ievent.user_ptr = hdr->user_ptr;
 			e.event.ievent.ni_fail_type = PTL_NI_OK;
-			PtlInternalEQPush(mdptr->eq_handle, &e);
+			PtlInternalEQPush(md_eq, &e);
 		    }
 		}
 		ack_printf("finished notification of successful ACK\n");
@@ -275,23 +321,23 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
 		    switch (hdr->type) {
-			case HDR_TYPE_PUT: ct_enabled = mdptr->options & PTL_MD_EVENT_CT_ACK; break;
-			default: ct_enabled = mdptr->options & PTL_MD_EVENT_CT_REPLY; break;
+			case HDR_TYPE_PUT: ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK; break;
+			default: ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY; break;
 		    }
 		    if (ct_enabled) {
-			if (mdptr->ct_handle != PTL_CT_NONE) {
+			if (md_ct != PTL_CT_NONE) {
 			    ptl_ct_event_t cte = {0, 1};
 			    ptl_ct_event_t ctc;
-			    PtlCTGet(mdptr->ct_handle, &ctc);
+			    PtlCTGet(md_ct, &ctc);
 			    ack_printf("ct before inc = {%u,%u}\n", (unsigned int)ctc.success, (unsigned int)ctc.failure);
-			    PtlCTInc(mdptr->ct_handle, cte);
-			    PtlCTGet(mdptr->ct_handle, &ctc);
+			    PtlCTInc(md_ct, cte);
+			    PtlCTGet(md_ct, &ctc);
 			    ack_printf("ct after inc = {%u,%u}\n", (unsigned int)ctc.success, (unsigned int)ctc.failure);
 			} else {
 			    fprintf(stderr, "enabled CT counting, but no CT!\n");
 			}
 		    }
-		    if (mdptr->eq_handle != PTL_EQ_NONE && (mdptr->options & (PTL_MD_EVENT_DISABLE)) == 0) {
+		    if (md_eq != PTL_EQ_NONE && (md_opts & (PTL_MD_EVENT_DISABLE)) == 0) {
 			ptl_event_t e;
 			e.type = PTL_EVENT_ACK;
 			e.event.ievent.mlength = hdr->length;
@@ -304,14 +350,10 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			    default:
 				e.event.ievent.ni_fail_type = PTL_NI_OK;
 			}
-			PtlInternalEQPush(mdptr->eq_handle, &e);
+			PtlInternalEQPush(md_eq, &e);
 		    }
 		}
 		break;
-	}
-	if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE.md) {
-	    ack_printf("clearing ACK's md_handle\n");
-	    PtlInternalMDCleared(md_handle);
 	}
 	if (einfo != NULL) {
 	    free(einfo);
@@ -319,6 +361,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	ack_printf("freeing fragment (%p)\n", hdr);
 	/* now, put the fragment back in the freelist */
 	PtlInternalFragmentFree(hdr);
+	ack_printf("freed\n");
     }
 }
 
@@ -336,8 +379,8 @@ void INTERNAL PtlInternalDMTeardown(
 {
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
 	assert(pthread_cancel(catcher) == 0);
-	assert(pthread_join(catcher, NULL) == 0);
 	assert(pthread_cancel(ack_catcher) == 0);
+	assert(pthread_join(catcher, NULL) == 0);
 	assert(pthread_join(ack_catcher, NULL) == 0);
     }
 }
@@ -354,9 +397,9 @@ int API_FUNC PtlPut(
     void *user_ptr,
     ptl_hdr_data_t hdr_data)
 {
+    int quick_exit = 0;
     ptl_internal_srcdata_t *extra_info;
-    ptl_internal_header_t *hdr;
-    ptl_md_t *mdptr;
+    ptl_internal_header_t *restrict hdr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -412,6 +455,7 @@ int API_FUNC PtlPut(
 	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset, length);
 	extra_info->put.moredata = NULL;
 	extra_info->put.remaining = 0;
+	quick_exit = 1;
     } else {
 	size_t payload = PtlInternalFragmentSize(hdr)-sizeof(ptl_internal_header_t);
 	char * dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
@@ -431,25 +475,42 @@ int API_FUNC PtlPut(
 	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
-    /* step 5: report the send event */
-    mdptr = PtlInternalMDFetch(md_handle);
-    if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
-	if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-	    ptl_ct_event_t cte = {1, 0};
-	    PtlCTInc(mdptr->ct_handle, cte);
-	} else {
-	    ptl_ct_event_t cte = {length, 0};
-	    PtlCTInc(mdptr->ct_handle, cte);
+    if (quick_exit) {
+	unsigned int options;
+	ptl_handle_eq_t eqh;
+	ptl_handle_ct_t cth;
+	/* the send is completed immediately */
+	{
+	    ptl_md_t *mdptr;
+	    mdptr = PtlInternalMDFetch(md_handle);
+	    options = mdptr->options;
+	    eqh = mdptr->eq_handle;
+	    cth = mdptr->ct_handle;
 	}
-    }
-    if ((mdptr->options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
-	ptl_event_t e;
-	e.type = PTL_EVENT_SEND;
-	e.event.ievent.mlength = length;
-	e.event.ievent.offset = local_offset;
-	e.event.ievent.user_ptr = user_ptr;
-	e.event.ievent.ni_fail_type = PTL_NI_OK;
-	PtlInternalEQPush(mdptr->eq_handle, &e);
+	/* allow the MD to be deleted */
+	PtlInternalMDCleared(md_handle);
+	/* step 5: report the send event */
+	if (options & PTL_MD_EVENT_CT_SEND) {
+	    printf("%u incrementing ct\n", (unsigned)proc_number);
+	    if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
+		ptl_ct_event_t cte = {1, 0};
+		PtlCTInc(cth, cte);
+	    } else {
+		ptl_ct_event_t cte = {length, 0};
+		PtlCTInc(cth, cte);
+	    }
+	} else {
+	    printf("%u NOT incrementing ct\n", (unsigned)proc_number);
+	}
+	if ((options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+	    ptl_event_t e;
+	    e.type = PTL_EVENT_SEND;
+	    e.event.ievent.mlength = length;
+	    e.event.ievent.offset = local_offset;
+	    e.event.ievent.user_ptr = user_ptr;
+	    e.event.ievent.ni_fail_type = PTL_NI_OK;
+	    PtlInternalEQPush(eqh, &e);
+	}
     }
     return PTL_OK;
 }
@@ -627,6 +688,9 @@ int API_FUNC PtlAtomic(
 	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
     }
+    /* the send is completed immediately */
+    /* allow the MD to be deleted */
+    PtlInternalMDCleared(md_handle);
     /* step 5: report the send event */
     mdptr = PtlInternalMDFetch(md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
