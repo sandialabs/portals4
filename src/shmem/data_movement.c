@@ -59,7 +59,7 @@ typedef union {
 static uint32_t spawned;
 static pthread_t catcher, ack_catcher;
 
-#if 1
+#if 0
 #define dm_printf(format,...) printf("%u ~> " format, (unsigned int)proc_number, ##__VA_ARGS__)
 #else
 #define dm_printf(format,...)
@@ -97,6 +97,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 		switch (hdr->ni) {
 		    case 0: case 2: // Matching (ME)
 			fprintf(stderr, "Matching delivery not handled yet, sorry\n");
+			abort();
 			break;
 		    case 1: case 3: // Non-matching (LE)
 			dm_printf("delivering to LE table\n");
@@ -137,7 +138,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
     }
 }
 
-#if 1
+#if 0
 #define ack_printf(format,...) printf("%u +> " format, (unsigned int)proc_number, ##__VA_ARGS__)
 #else
 #define ack_printf(format,...)
@@ -468,12 +469,16 @@ int API_FUNC PtlPut(
     switch (md.s.ni) {
 	case 0:
 	case 1:		       // Logical
+	    //printf("%u PtlPut logical toss to %u\n", (unsigned)proc_number, target_id.rank);
 	    PtlInternalFragmentToss(hdr, target_id.rank);
 	    break;
 	case 2:
 	case 3:		       // Physical
+	    //printf("%u PtlPut physical toss to %u\n", (unsigned)proc_number, target_id.phys.pid);
 	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
+	default:
+	    *(int*)0 = 0;
     }
     if (quick_exit) {
 	unsigned int options;
@@ -491,7 +496,7 @@ int API_FUNC PtlPut(
 	PtlInternalMDCleared(md_handle);
 	/* step 5: report the send event */
 	if (options & PTL_MD_EVENT_CT_SEND) {
-	    printf("%u incrementing ct\n", (unsigned)proc_number);
+	    //printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
 	    if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
 		ptl_ct_event_t cte = {1, 0};
 		PtlCTInc(cth, cte);
@@ -500,7 +505,7 @@ int API_FUNC PtlPut(
 		PtlCTInc(cth, cte);
 	    }
 	} else {
-	    printf("%u NOT incrementing ct\n", (unsigned)proc_number);
+	    //printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
 	}
 	if ((options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
 	    ptl_event_t e;
