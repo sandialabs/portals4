@@ -40,6 +40,7 @@ void INTERNAL PtlInternalNEMESISBlockingDestroy(NEMESIS_blocking_queue *q)
     assert(pthread_mutex_destroy(&q->trigger_lock) == 0);
 }
 
+#if 0
 void INTERNAL PtlInternalNEMESISBlockingEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict f)
@@ -64,9 +65,9 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingDequeue(
 	while (q->q.head == NULL) {
 	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
 		assert(pthread_mutex_lock(&q->trigger_lock) == 0);
-		//do { // this loop is unnecessary for only 1 dequeuer
-		assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
-		//} while (q->frustration > 1000);
+		if (q->frustration > 1000) {
+		    assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
+		}
 		assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
 	    }
 	}
@@ -75,6 +76,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingDequeue(
     }
     return retval;
 }
+#endif
 
 void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     NEMESIS_blocking_queue * restrict q,
@@ -101,14 +103,16 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 	while (q->q.head == NULL) {
 	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
 		assert(pthread_mutex_lock(&q->trigger_lock) == 0);
-		//do { // this loop is unnecessary for only 1 dequeuer
-		assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
-		//} while (q->frustration > 1000);
+		if (q->frustration > 1000) {
+		    assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
+		}
 		assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
 	    }
 	}
 	retval = PtlInternalNEMESISOffsetDequeue(&q->q);
 	assert(retval != NULL);
     }
+    assert(retval);
+    assert(retval->next == NULL);
     return retval;
 }
