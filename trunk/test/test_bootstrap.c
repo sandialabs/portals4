@@ -156,5 +156,8 @@ int main(
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
 
+    free(amapping);
+    free(dmapping);
+
     return 0;
 }
