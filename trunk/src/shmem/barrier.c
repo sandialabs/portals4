@@ -38,7 +38,8 @@ void API_FUNC runtime_barrier(void)
     le.ac_id.uid = PTL_UID_ANY;
     le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
     md.options = PTL_MD_EVENT_DISABLE;
-    md.ct_handle = PTL_CT_NONE;
+    le.ct_handle = md.ct_handle = PTL_CT_NONE;
+    md.eq_handle = PTL_EQ_NONE;
     assert(PtlCTAlloc(ni.a.ni, &le.ct_handle) == PTL_OK);
     /* post my sensor */
     assert(PtlLEAppend(ni.a.ni, 0, le, PTL_PRIORITY_LIST, NULL, &leh) == PTL_OK);
