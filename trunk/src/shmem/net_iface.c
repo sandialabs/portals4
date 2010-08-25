@@ -184,7 +184,6 @@ int API_FUNC PtlNIInit(
 	    PtlInternalPTInit(tmp + e);
 	}
 	nit.tables[ni.s.ni] = tmp;
-	printf("nit.tables[%i] = %p\n", ni.s.ni, tmp);
     }
     assert(nit.tables[ni.s.ni] != NULL);
     __sync_synchronize();	       // full memory fence
