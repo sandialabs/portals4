@@ -133,12 +133,14 @@ int API_FUNC PtlInit(
 	 **************************************************************************/
 	comm_pad[proc_number] = 1;
 
-	/* Now, wait for my siblings to get here. */
-	size_t i;
-	for (i = 0; i <= num_siblings; ++i) {
-	    /* oddly enough, this should reduce cache traffic for large numbers
-	     * of siblings */
-	    while (comm_pad[i] == 0) ;
+	if (proc_number != num_siblings) {
+	    /* Now, wait for my siblings to get here, unless I'm the COLLATOR. */
+	    size_t i;
+	    for (i = 0; i < num_siblings; ++i) {
+		/* oddly enough, this should reduce cache traffic for large numbers
+		 * of siblings */
+		while (comm_pad[i] == 0) ;
+	    }
 	}
 
 	/* Release any concurrent initialization calls */
@@ -172,6 +174,7 @@ void API_FUNC PtlFini(
     lastone = PtlInternalAtomicInc(&init_ref_count, -1);
     if (lastone == 1) {
 	/* Clean up */
+	//printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
 	assert(munmap((void *)comm_pad, comm_pad_size) == 0);
 	comm_pad = NULL;
     }
