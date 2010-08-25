@@ -47,14 +47,15 @@ typedef struct {
     ptl_internal_appendLE_t Qentry;
 } ptl_internal_le_t;
 
-static ptl_internal_le_t *les = NULL;
+static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
 void INTERNAL PtlInternalLENISetup(
+	unsigned int ni,
     ptl_size_t limit)
 {
     ptl_internal_le_t *tmp;
     while ((tmp =
-	    PtlInternalAtomicCasPtr(&(les), NULL, (void *)1)) == (void *)1) ;
+	    PtlInternalAtomicCasPtr(&(les[ni]), NULL, (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 #if defined(HAVE_MEMALIGN)
 	tmp = memalign(8, limit * sizeof(ptl_internal_le_t));
@@ -78,18 +79,18 @@ void INTERNAL PtlInternalLENISetup(
 #endif
 	assert((((intptr_t) tmp) & 0x7) == 0);
 	__sync_synchronize();
-	les = tmp;
+	les[ni] = tmp;
 	//assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
     }
 }
 
 void INTERNAL PtlInternalLENITeardown(
-    void)
+    unsigned int ni)
 {
     ptl_internal_le_t *tmp;
     //assert(pthread_cancel(LEthread) == 0);
-    tmp = les;
-    les = NULL;
+    tmp = les[ni];
+    les[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
@@ -137,18 +138,18 @@ int API_FUNC PtlLEAppend(
 	}
     }
 #endif
-    assert(les != NULL);
+    assert(les[ni.s.ni] != NULL);
     leh.ni = ni.s.ni;
     /* find an LE handle */
     for (offset = 0; offset < nit_limits.max_mes; ++offset) {
-	if (les[offset].status == 0) {
+	if (les[ni.s.ni][offset].status == 0) {
 	    if (PtlInternalAtomicCas32
-		(&(les[offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
+		(&(les[ni.s.ni][offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
 		leh.code = offset;
-		les[offset].visible = le;
-		les[offset].pt_index = pt_index;
-		les[offset].ptl_list = ptl_list;
-		Qentry = &(les[offset].Qentry);
+		les[ni.s.ni][offset].visible = le;
+		les[ni.s.ni][offset].pt_index = pt_index;
+		les[ni.s.ni][offset].ptl_list = ptl_list;
+		Qentry = &(les[ni.s.ni][offset].Qentry);
 		break;
 	    }
 	}
@@ -158,6 +159,7 @@ int API_FUNC PtlLEAppend(
     Qentry->le_handle.s = leh;
     memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
     /* append to associated list */
+    assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
     assert(pthread_mutex_lock(&t->lock) == 0);
     switch (ptl_list) {
@@ -206,22 +208,22 @@ int API_FUNC PtlLEUnlink(
 	VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", le.s.ni, le.s.code, nit_limits.max_mds);
 	return PTL_ARG_INVALID;
     }
-    if (les == NULL) {
+    if (les[le.s.ni] == NULL) {
 	VERBOSE_ERROR("LE array uninitialized\n");
 	return PTL_ARG_INVALID;
     }
-    if (les[le.s.code].status == LE_FREE) {
+    if (les[le.s.ni][le.s.code].status == LE_FREE) {
 	VERBOSE_ERROR("LE appears to be free already\n");
 	return PTL_ARG_INVALID;
     }
 #endif
-    t = &(nit.tables[le.s.ni][les[le.s.code].pt_index]);
+    t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
     assert(pthread_mutex_lock(&t->lock) == 0);
-    switch(les[le.s.code].ptl_list) {
+    switch(les[le.s.ni][le.s.code].ptl_list) {
 	case PTL_PRIORITY_LIST:
 	    {
 		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->priority.head);
-		if (dq == &(les[le.s.code].Qentry)) {
+		if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
 		    if (dq->next != NULL) {
 			t->priority.head = dq->next;
 		    } else {
@@ -229,7 +231,7 @@ int API_FUNC PtlLEUnlink(
 		    }
 		} else {
 		    ptl_internal_appendLE_t *prev = NULL;
-		    while (dq != &(les[le.s.code].Qentry) && dq != NULL) {
+		    while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
 			prev = dq;
 			dq = dq->next;
 		    }
@@ -248,7 +250,7 @@ int API_FUNC PtlLEUnlink(
 	case PTL_OVERFLOW:
 	    {
 		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->overflow.head);
-		if (dq == &(les[le.s.code].Qentry)) {
+		if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
 		    if (dq->next != NULL) {
 			t->overflow.head = dq->next;
 		    } else {
@@ -256,7 +258,7 @@ int API_FUNC PtlLEUnlink(
 		    }
 		} else {
 		    ptl_internal_appendLE_t *prev = NULL;
-		    while (dq != &(les[le.s.code].Qentry) && dq != NULL) {
+		    while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
 			prev = dq;
 			dq = dq->next;
 		    }
@@ -278,7 +280,7 @@ int API_FUNC PtlLEUnlink(
 	    break;
     }
     assert(pthread_mutex_unlock(&t->lock) == 0);
-    switch (PtlInternalAtomicCas32(&(les[le.s.code].status), LE_ALLOCATED, LE_FREE)) {
+    switch (PtlInternalAtomicCas32(&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
 	case LE_IN_USE:
 	    return PTL_IN_USE;
 	case LE_ALLOCATED:
@@ -303,9 +305,9 @@ int INTERNAL PtlInternalLEDeliver(
     //printf("t->priority.head = %p, t->overflow.head = %p\n", t->priority.head, t->overflow.head);
     if (t->priority.head) {
 	ptl_internal_appendLE_t *entry = t->priority.head;
-	ptl_le_t *le = &(les[entry->le_handle.s.code].visible);
+	ptl_le_t *le = &(les[hdr->ni][entry->le_handle.s.code].visible);
 	assert(le != NULL);
-	assert(les[entry->le_handle.s.code].status != LE_FREE);
+	assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
 	assert(entry);
 	/*********************************************************
 	 * There is an LE present, and 'entry'/'le' points to it *
@@ -314,12 +316,12 @@ int INTERNAL PtlInternalLEDeliver(
 	if (le->options & PTL_LE_AUTH_USE_JID) {
 	    if (le->ac_id.jid != PTL_JID_ANY) {
 		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
+		return (les[hdr->ni][entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	} else {
 	    if (le->ac_id.uid != PTL_UID_ANY) {
 		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
+		return (les[hdr->ni][entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 	    }
 	}
 	switch (hdr->type) {
@@ -329,7 +331,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_SWAP:
 		if ((le->options & PTL_LE_OP_PUT) == 0) {
 		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
+		    return (les[hdr->ni][entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
 	}
 	switch (hdr->type) {
@@ -338,7 +340,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_SWAP:
 		if ((le->options & PTL_LE_ACK_DISABLE) == 0 && (le->options & PTL_LE_OP_GET) == 0) {
 		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		    return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
+		    return (les[hdr->ni][entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:3;
 		}
 	}
 	/*******************************************************************
@@ -469,7 +471,7 @@ int INTERNAL PtlInternalLEDeliver(
 	    e.event.tevent.ni_fail_type = PTL_NI_OK;
 	    PtlInternalEQPush(t->EQ, &e);
 	}
-	return (les[entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:1;
+	return (les[hdr->ni][entry->le_handle.s.code].visible.options & PTL_LE_ACK_DISABLE)?0:1;
     } else if (t->overflow.head) {
 #warning Overflow LE handling is unimplemented
 	fprintf(stderr, "overflow LE handling is unimplemented\n");
