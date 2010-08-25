@@ -61,6 +61,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(
 	    if (old != retval) {
 		while (retval->next == NULL) ;
 		q->head = retval->next;
+		retval->next = NULL;
 	    }
 	}
     }
@@ -100,6 +101,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
 	    if (old != PTR2OFF(retval)) {
 		while (retval->next == NULL) ;
 		q->head = retval->next;
+		retval->next = NULL;
 	    }
 	}
     }
