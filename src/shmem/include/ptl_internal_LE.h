@@ -2,10 +2,11 @@
 #define PTL_INTERNAL_LE_H
 
 void INTERNAL PtlInternalLENISetup(
+    unsigned int ni,
     ptl_size_t limit);
 
 void INTERNAL PtlInternalLENITeardown(
-    void);
+    unsigned int ni);
 
 int INTERNAL PtlInternalLEDeliver(
     ptl_table_entry_t * restrict t,
