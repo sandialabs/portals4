@@ -154,6 +154,11 @@ int main(
 	assert(PtlPut
 	       (potato_launcher_handle, 0, sizeof(double), PTL_OC_ACK_REQ,
 		nextrank, logical_pt_index, 0, 0, NULL, 1) == PTL_OK);
+	PtlCTWait(potato_launcher.ct_handle, 1, NULL);
+	{
+	    ptl_ct_event_t ctc = { 0, 0 };
+	    PtlCTSet(potato_launcher.ct_handle, ctc);
+	}
     }
 
     {				       /* the potato-passing loop */
@@ -167,6 +172,7 @@ int main(
 	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor, &ctc));	// wait for potato
 	    assert(gettimeofday(&stop, NULL) == 0);
 	    assert(ctc.failure == 0);
+	    assert(ctc.success == waitfor);
 	    ++waitfor;
 	    accumulate +=
 		(stop.tv_sec + stop.tv_usec * 1e-6) - (start.tv_sec +
