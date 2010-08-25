@@ -196,9 +196,9 @@ int main(
 
     /* calculate the average time waiting */
     if (myself.rank == 0) {
-	printf("Total time spent waiting: %f secs\n", accumulate);
+	printf("Total time spent waiting: %g secs\n", accumulate);
 	accumulate /= LOOPS * (maxrank + 1);
-	printf("Average time spent waiting: %f secs\n", accumulate);
+	printf("Average time spent waiting: %g secs\n", accumulate);
     }
 
     /* cleanup */
