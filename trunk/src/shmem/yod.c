@@ -48,6 +48,8 @@
 #endif
 
 static long count = 0;
+static pthread_mutex_t ptl_cleanup_lock;
+static ptl_handle_ct_t collator_ct_handle;
 
 static char shmname[PSHMNAMLEN + 1];
 static void cleanup(
@@ -241,6 +243,18 @@ int main(
     EXPORT_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", small_frag_count);
     EXPORT_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", large_frag_count);
 
+    /*****************************
+     * Provide COLLATOR services *
+     *****************************/
+    assert(pthread_mutex_init(&ptl_cleanup_lock, NULL) == 0);
+    assert(pthread_mutex_lock(&ptl_cleanup_lock) == 0);
+    collator_ct_handle = PTL_CT_NONE;
+    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
+	perror("pthread_create");
+	fprintf(stderr, "yod-> failed to create collator thread\n");
+	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
+    }
+
     /* Launch children */
     for (long c = 0; c < count; ++c) {
 	EXPORT_ENV_NUM("PORTALS4_RANK", c);
@@ -259,18 +273,6 @@ int main(
 	}
     }
 
-    /*****************************
-     * Provide COLLATOR services *
-     *****************************/
-    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
-	perror("pthread_create");
-	fprintf(stderr, "yod-> failed to create collator thread\n");
-	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
-    }
-    if (pthread_detach(collator_thread) != 0) {
-	perror("pthread_detach");      /* failure is not a big deal */
-    }
-
     /* Clean up after Ctrl-C */
     signal(SIGINT, cleanup);
 
@@ -285,8 +287,8 @@ int main(
 	    size_t d;
 	    ++err;
 	    fprintf(stderr,
-		    "yod-> child pid %i died unexpectedly (%i), killing everyone\n",
-		    (int)pids[c], WTERMSIG(status));
+		    "yod-> child pid %i (%u) died unexpectedly (%i), killing everyone\n",
+		    (int)pids[c], (unsigned)c, WTERMSIG(status));
 	    for (d = 0; d < count; ++d) {
 		if (pids[d] != exited) {
 		    if (kill(pids[d], SIGKILL) == -1) {
@@ -297,28 +299,37 @@ int main(
 				    (int)pids[d]);
 			}
 		    }
+		    if (waitpid(pids[d], NULL, 0) == -1) {
+			fprintf(stderr, "yod-> child pid %i could not be waited on\n", pids[d]);
+			perror("yod-> waitpid failed!\n");
+		    }
 		}
 	    }
+	    break;
 	} else if (WIFEXITED(status) && WEXITSTATUS(status) > 0) {
 	    ++err;
 	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c],
 		    WEXITSTATUS(status));
 	}
     }
+    assert(pthread_mutex_unlock(&ptl_cleanup_lock) == 0);
     if (ct_spawned == 1) {
-	switch (pthread_cancel(collator_thread)) {
-	    case 0:		       // success!
-	    case ESRCH:	       // thread already gone
-		break;
-	    default:
-		perror("yod-> pthread_cancel");
-		break;
+	ptl_ct_event_t ctc;
+	memset(&ctc, 0xff, sizeof(ptl_ct_event_t));
+	PtlCTSet(collator_ct_handle, ctc);
+	switch (pthread_join(collator_thread, NULL)) {
+	    case 0: break;
+	    case EDEADLK: fprintf(stderr, "yod-> joining thread would create deadlock!\n"); break;
+	    case EINVAL: fprintf(stderr, "yod-> collator thread not joinable\n"); break;
+	    case ESRCH: fprintf(stderr, "yod-> collator thread missing\n"); break;
+	    default: perror("yod-> pthread_join"); break;
 	}
-	PtlFini();
     }
+    assert(pthread_mutex_destroy(&ptl_cleanup_lock) == 0);
 
     /* Cleanup */
     cleanup(0);
+    free(pids);
     return err;
 }
 
@@ -337,18 +348,17 @@ static void cleanup(
 void *collator(
     void * Q_UNUSED junk) Q_NORETURN
 {
-    char procstr[10];
     ptl_process_t *mapping;
     ptl_pt_index_t pt_index;
-
-    snprintf(procstr, 10, "%li", count);
-    assert(setenv("PORTALS4_RANK", procstr, 1) == 0);
-    assert(PtlInit() == PTL_OK);
     ptl_handle_ni_t ni_physical;
+
+    EXPORT_ENV_NUM("PORTALS4_RANK", count);
+    assert(PtlInit() == PTL_OK);
     assert(PtlNIInit
 	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
     assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     /* set up the landing pad to collect and distribute mapping information */
     mapping = calloc(count, sizeof(ptl_process_t));
     assert(mapping != NULL);
@@ -361,13 +371,16 @@ void *collator(
     le.ac_id.uid = PTL_UID_ANY;
     le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
     assert(PtlCTAlloc(ni_physical, &le.ct_handle) == PTL_OK);
+    collator_ct_handle = le.ct_handle;
     assert(PtlLEAppend
 	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
 	    &le_handle) == PTL_OK);
     /* wait for everyone to post to the mapping */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
+	if (PtlCTWait(le.ct_handle, count, &ct_data) == PTL_INTERRUPTED) {
+	    goto cleanup_phase;
+	}
 	assert(ct_data.failure == 0);  // XXX: should do something useful
 	ct_data.success = ct_data.failure = 0;
 	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
@@ -411,7 +424,9 @@ void *collator(
     do {
 	/* wait for everyone to post to the barrier */
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(le.ct_handle, count, &ct_data) == PTL_OK);
+	if (PtlCTWait(le.ct_handle, count, &ct_data) == PTL_INTERRUPTED) {
+	    goto cleanup_phase;
+	}
 	assert(ct_data.failure == 0);
 	/* reset the LE's CT */
 	ct_data.success = ct_data.failure = 0;
@@ -429,10 +444,13 @@ void *collator(
 	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
     } while (0);
     /* cleanup */
+cleanup_phase:
+    pthread_mutex_lock(&ptl_cleanup_lock);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
     assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
     assert(PtlNIFini(ni_physical) == PTL_OK);
-    //UNREACHABLE;
+    PtlFini();
+    pthread_mutex_unlock(&ptl_cleanup_lock);
     return NULL;
 }
 
