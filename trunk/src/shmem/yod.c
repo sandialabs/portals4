@@ -243,18 +243,6 @@ int main(
     EXPORT_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", small_frag_count);
     EXPORT_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", large_frag_count);
 
-    /*****************************
-     * Provide COLLATOR services *
-     *****************************/
-    assert(pthread_mutex_init(&ptl_cleanup_lock, NULL) == 0);
-    assert(pthread_mutex_lock(&ptl_cleanup_lock) == 0);
-    collator_ct_handle = PTL_CT_NONE;
-    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
-	perror("pthread_create");
-	fprintf(stderr, "yod-> failed to create collator thread\n");
-	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
-    }
-
     /* Launch children */
     for (long c = 0; c < count; ++c) {
 	EXPORT_ENV_NUM("PORTALS4_RANK", c);
@@ -271,6 +259,18 @@ int main(
 	    }
 	    exit(EXIT_FAILURE);
 	}
+    }
+
+    /*****************************
+     * Provide COLLATOR services *
+     *****************************/
+    assert(pthread_mutex_init(&ptl_cleanup_lock, NULL) == 0);
+    assert(pthread_mutex_lock(&ptl_cleanup_lock) == 0);
+    collator_ct_handle = PTL_CT_NONE;
+    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
+	perror("pthread_create");
+	fprintf(stderr, "yod-> failed to create collator thread\n");
+	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
 
     /* Clean up after Ctrl-C */
@@ -358,7 +358,6 @@ void *collator(
 	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
     assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     /* set up the landing pad to collect and distribute mapping information */
     mapping = calloc(count, sizeof(ptl_process_t));
     assert(mapping != NULL);
