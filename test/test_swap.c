@@ -129,6 +129,8 @@ int main(
 			(ni_logical, 0, value_le, PTL_PRIORITY_LIST, NULL,
 			 &value_le_handle));
     }
+    free(amapping);
+    free(dmapping);
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -150,10 +152,11 @@ int main(
     /* twiddle rank 0's value */
     {
 	ptl_ct_event_t ctc;
+	ptl_process_t r0 = {.rank = 0 };
 	CHECK_RETURNVAL(PtlSwap
 			(read_md_handle, 0, read_md_handle, 0,
-			 sizeof(uint64_t), amapping[0], logical_pt_index, 0,
-			 0, NULL, 0, NULL, PTL_SWAP, PTL_ULONG));
+			 sizeof(uint64_t), r0, logical_pt_index, 0, 0, NULL,
+			 0, NULL, PTL_SWAP, PTL_ULONG));
 	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
 	assert(ctc.failure == 0);
     }
