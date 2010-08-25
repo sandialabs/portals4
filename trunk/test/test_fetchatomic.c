@@ -133,6 +133,8 @@ int main(
      * logical interface set up */
     runtime_barrier();
     /* don't need this anymore, so free up resources */
+    free(amapping);
+    free(dmapping);
     CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_physical));
 
@@ -150,9 +152,10 @@ int main(
     /* twiddle rank 0's value */
     {
 	ptl_ct_event_t ctc;
+	ptl_process_t r0 = {.rank=0};
 	CHECK_RETURNVAL(PtlFetchAtomic
 			(read_md_handle, 0, read_md_handle, 0,
-			 sizeof(uint64_t), amapping[0], logical_pt_index, 0,
+			 sizeof(uint64_t), r0, logical_pt_index, 0,
 			 0, NULL, 0, PTL_SUM, PTL_ULONG));
 	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
 	assert(ctc.failure == 0);
