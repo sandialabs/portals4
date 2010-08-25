@@ -47,14 +47,15 @@
 # define PSHMNAMLEN 100
 #endif
 
+/* globals for communicating with the collator thread */
 static long count = 0;
-static pthread_mutex_t ptl_cleanup_lock;
 static ptl_handle_ct_t collator_ct_handle;
+static ptl_handle_ni_t ni_physical;
 
 static char shmname[PSHMNAMLEN + 1];
+
 static void cleanup(
     int s);
-
 static void print_usage(
     int ex);
 static void *collator(
@@ -243,6 +244,26 @@ int main(
     EXPORT_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", small_frag_count);
     EXPORT_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", large_frag_count);
 
+    /*****************************
+     * Provide COLLATOR services *
+     *****************************/
+    EXPORT_ENV_NUM("PORTALS4_RANK", count);
+    assert(PtlInit() == PTL_OK);
+    assert(PtlNIInit
+	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
+    {
+	ptl_pt_index_t pt_index;
+	assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
+	assert(pt_index == 0);
+    }
+    collator_ct_handle = PTL_CT_NONE;
+    if (pthread_create(&collator_thread, NULL, collator, &ni_physical) != 0) {
+	perror("pthread_create");
+	fprintf(stderr, "yod-> failed to create collator thread\n");
+	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
+    }
+
     /* Launch children */
     for (long c = 0; c < count; ++c) {
 	EXPORT_ENV_NUM("PORTALS4_RANK", c);
@@ -259,18 +280,6 @@ int main(
 	    }
 	    exit(EXIT_FAILURE);
 	}
-    }
-
-    /*****************************
-     * Provide COLLATOR services *
-     *****************************/
-    assert(pthread_mutex_init(&ptl_cleanup_lock, NULL) == 0);
-    assert(pthread_mutex_lock(&ptl_cleanup_lock) == 0);
-    collator_ct_handle = PTL_CT_NONE;
-    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
-	perror("pthread_create");
-	fprintf(stderr, "yod-> failed to create collator thread\n");
-	ct_spawned = 0;		       /* technically not fatal, though maybe should be */
     }
 
     /* Clean up after Ctrl-C */
@@ -312,7 +321,6 @@ int main(
 		    WEXITSTATUS(status));
 	}
     }
-    assert(pthread_mutex_unlock(&ptl_cleanup_lock) == 0);
     if (ct_spawned == 1) {
 	ptl_ct_event_t ctc;
 	memset(&ctc, 0xff, sizeof(ptl_ct_event_t));
@@ -325,9 +333,11 @@ int main(
 	    default: perror("yod-> pthread_join"); break;
 	}
     }
-    assert(pthread_mutex_destroy(&ptl_cleanup_lock) == 0);
 
     /* Cleanup */
+    assert(PtlPTFree(ni_physical, 0) == PTL_OK);
+    assert(PtlNIFini(ni_physical) == PTL_OK);
+    PtlFini();
     cleanup(0);
     free(pids);
     return err;
@@ -349,15 +359,7 @@ void *collator(
     void * Q_UNUSED junk) Q_NORETURN
 {
     ptl_process_t *mapping;
-    ptl_pt_index_t pt_index;
-    ptl_handle_ni_t ni_physical;
 
-    EXPORT_ENV_NUM("PORTALS4_RANK", count);
-    assert(PtlInit() == PTL_OK);
-    assert(PtlNIInit
-	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
-    assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
     /* set up the landing pad to collect and distribute mapping information */
     mapping = calloc(count, sizeof(ptl_process_t));
     assert(mapping != NULL);
@@ -444,12 +446,7 @@ void *collator(
     } while (0);
     /* cleanup */
 cleanup_phase:
-    pthread_mutex_lock(&ptl_cleanup_lock);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
-    assert(PtlPTFree(ni_physical, pt_index) == PTL_OK);
-    assert(PtlNIFini(ni_physical) == PTL_OK);
-    PtlFini();
-    pthread_mutex_unlock(&ptl_cleanup_lock);
     return NULL;
 }
 
