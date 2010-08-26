@@ -104,7 +104,7 @@ void INTERNAL *PtlInternalFragmentFetch(
 		newv = NULL;
 	    }
 	    retv = PtlInternalAtomicCasPtr(&small_free_list, oldv, newv);
-	} while (retv != oldv || retv == NULL /* perhaps should yield? */);
+	} while (retv != oldv || retv == NULL /* perhaps should yield? */ );
     } else {
 	retv = large_free_list;
 	do {
@@ -115,7 +115,7 @@ void INTERNAL *PtlInternalFragmentFetch(
 		newv = NULL;
 	    }
 	    retv = PtlInternalAtomicCasPtr(&large_free_list, oldv, newv);
-	} while (retv != oldv || retv == NULL /* perhaps should yield? */);
+	} while (retv != oldv || retv == NULL /* perhaps should yield? */ );
     }
     retv->next = NULL;
     return retv->data;
@@ -128,7 +128,7 @@ void INTERNAL PtlInternalFragmentToss(
 {
     NEMESIS_blocking_queue *destQ =
 	(NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
-			   (per_proc_comm_buf_size * dest));
+				    (per_proc_comm_buf_size * dest));
     frag = ((uint64_t *) frag) - 2;
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }
@@ -177,9 +177,9 @@ void INTERNAL PtlInternalFragmentFree(
 {
     fragment_hdr_t *frag = (fragment_hdr_t *) (((uint64_t *) data) - 2);
     assert(frag->next == NULL);
-    assert((uintptr_t)frag > (uintptr_t)comm_pad);
+    assert((uintptr_t) frag > (uintptr_t) comm_pad);
     if (frag->size == SMALL_FRAG_SIZE) {
-	void * oldv, *newv, *tmpv;
+	void *oldv, *newv, *tmpv;
 	tmpv = small_free_list;
 	do {
 	    oldv = frag->next = tmpv;
@@ -195,7 +195,6 @@ void INTERNAL PtlInternalFragmentFree(
 	    tmpv = PtlInternalAtomicCasPtr(&large_free_list, oldv, newv);
 	} while (tmpv != oldv);
     } else {
-	fprintf(stderr, "corrupt fragment freed! (size=%u)\n", (unsigned int)frag->size);
-	abort();
+	*(int *)0 = 0;
     }
 }
