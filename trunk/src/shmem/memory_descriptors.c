@@ -207,7 +207,6 @@ int API_FUNC PtlMDRelease(
 #endif
     if (mds[md.s.ni][md.s.code].refcount != 0) {
 	VERBOSE_ERROR("%u MD handle in use!\n", (unsigned)proc_number);
-	*(int*)0 = 0;
 	return PTL_IN_USE;
     }
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
@@ -233,7 +232,7 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(
 {
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
-    if (PtlInternalMDHandleValidator(handle, 0) == 0) {
+    if (mds[md.s.ni] != NULL) {
 	return &(mds[md.s.ni][md.s.code].visible);
     } else {
 	return NULL;
@@ -254,7 +253,7 @@ void INTERNAL PtlInternalMDCleared(
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
     //printf("%u MD %u needs decremented\n", (unsigned)proc_number, md.s.code);
-    if (PtlInternalMDHandleValidator(handle, 0) == 0) {
+    if (mds[md.s.ni] != NULL) {
 	//printf("%u MD %u decremented\n", (unsigned)proc_number, md.s.code);
 	PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
