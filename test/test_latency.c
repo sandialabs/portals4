@@ -11,9 +11,9 @@
 
 #define CHECK_RETURNVAL(x) do { switch (x) { \
 	    case PTL_OK: break; \
-	    case PTL_FAIL: fprintf(stderr, "=> " #x " returned PTL_FAIL (line %u)\n", (unsigned int)__LINE__); abort(); break; \
-	    case PTL_ARG_INVALID: fprintf(stderr, "=> " #x " returned PTL_ARG_INVALID (line %u)\n", (unsigned int)__LINE__); abort(); break; \
-	    case PTL_NO_INIT: fprintf(stderr, "=> " #x " returned PTL_NO_INIT (line %u)\n", (unsigned int)__LINE__); abort(); break; \
+	    case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	    case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	    case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
 	} } while (0)
 
 static void noFailures(
@@ -151,13 +151,13 @@ int main(
 	ptl_process_t nextrank;
 	nextrank.rank = myself.rank + 1;
 	nextrank.rank *= (nextrank.rank <= maxrank);
-	assert(PtlPut
+	CHECK_RETURNVAL(PtlPut
 	       (potato_launcher_handle, 0, sizeof(double), PTL_OC_ACK_REQ,
-		nextrank, logical_pt_index, 0, 0, NULL, 1) == PTL_OK);
-	PtlCTWait(potato_launcher.ct_handle, 1, NULL);
+		nextrank, logical_pt_index, 0, 0, NULL, 1));
+	CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
 	{
 	    ptl_ct_event_t ctc = { 0, 0 };
-	    PtlCTSet(potato_launcher.ct_handle, ctc);
+	    CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
 	}
     }
 
