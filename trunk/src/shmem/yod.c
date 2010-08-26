@@ -47,6 +47,9 @@
 # define PSHMNAMLEN 100
 #endif
 
+/* global to allow signal to clean up */
+static pid_t *pids = NULL;
+
 /* globals for communicating with the collator thread */
 static long count = 0;
 static ptl_handle_ct_t collator_ct_handle;
@@ -74,7 +77,6 @@ int main(
     const size_t pagesize = getpagesize();
     size_t commsize;
     size_t buffsize = pagesize;
-    pid_t *pids;
     int shm_fd;
     int err = 0;
     pthread_t collator_thread;
@@ -245,6 +247,7 @@ int main(
     }
 
     pids = malloc(sizeof(pid_t) * (count + 1));
+    assert(pids != NULL);
     EXPORT_ENV_NUM("PORTALS4_COMM_SIZE", commsize);
     EXPORT_ENV_NUM("PORTALS4_NUM_PROCS", count);
     EXPORT_ENV_NUM("PORTALS4_COLLECTOR_NID", 0);
@@ -306,28 +309,43 @@ int main(
 	    size_t d;
 	    ++err;
 	    fprintf(stderr,
-		    "yod-> child pid %i (%u) died unexpectedly (%i), killing everyone\n",
-		    (int)pids[c], (unsigned)c, WTERMSIG(status));
+		    "yod-> child pid %i died unexpectedly (%i), killing everyone\n",
+		    (int)exited, WTERMSIG(status));
 	    for (d = 0; d < count; ++d) {
 		if (pids[d] != exited) {
-		    if (kill(pids[d], SIGKILL) == -1) {
-			if (errno != ESRCH) {
-			    perror("yod-> kill failed!\n");
-			} else {
-			    fprintf(stderr, "yod-> child %i already dead\n",
-				    (int)pids[d]);
+		    int stat;
+		    switch (waitpid(pids[d], &stat, WNOHANG)) {
+			case 0:
+			if (kill(pids[d], SIGKILL) == -1) {
+			    if (errno != ESRCH) {
+				perror("yod-> kill failed!\n");
+			    } else {
+				fprintf(stderr, "yod-> child %i already dead\n",
+					(int)pids[d]);
+			    }
 			}
-		    }
-		    if (waitpid(pids[d], NULL, 0) == -1) {
+			break;
+			case -1:
+			perror("yod-> waitpid NOHANG failed!\n");
 			fprintf(stderr, "yod-> child pid %i could not be waited on\n", pids[d]);
-			perror("yod-> waitpid failed!\n");
+			break;
+			default:
+			++c;
+			if (WIFSIGNALED(stat) && !WIFSTOPPED(stat)) {
+			    ++err;
+			    fprintf(stderr, "yod-> child pid %i (%u) died prematurely (%i)\n",
+				    (int)pids[d], (unsigned)d, WTERMSIG(stat));
+			} else if (WIFEXITED(stat) && WEXITSTATUS(stat) > 0) {
+			    ++err;
+			    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[d], WEXITSTATUS(status));
+			}
 		    }
 		}
 	    }
 	    break;
 	} else if (WIFEXITED(status) && WEXITSTATUS(status) > 0) {
 	    ++err;
-	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[c],
+	    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)exited,
 		    WEXITSTATUS(status));
 	}
     }
@@ -348,7 +366,10 @@ int main(
     assert(PtlPTFree(ni_physical, 0) == PTL_OK);
     assert(PtlNIFini(ni_physical) == PTL_OK);
     PtlFini();
-    cleanup(0);
+    if (shm_unlink(shmname) != 0) {
+	perror("yod-> shm_unlink failed");
+	exit(EXIT_FAILURE);
+    }
     free(pids);
     return err;
 }
@@ -356,12 +377,14 @@ int main(
 static void cleanup(
     int s)
 {
-    if (shm_unlink(shmname) != 0) {
-	perror("yod-> shm_unlink failed");
-	exit(EXIT_FAILURE);
-    }
-    if (s != 0) {
-	exit(EXIT_FAILURE);
+    if (pids != NULL && count > 0) {
+	for (int d = 0; d < count; ++d) {
+	    if (kill(pids[d], SIGKILL) == -1) {
+		if (errno != ESRCH) {
+		    perror("yod-> kill failed!\n");
+		}
+	    }
+	}
     }
 }
 
