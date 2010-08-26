@@ -20,7 +20,7 @@ libportals_la_SOURCES += \
 			 shmem/init.c
 
 yod_SOURCES += shmem/yod.c
-yod_LDADD = $(top_builddir)/src/libportals.la
+yod_LDADD = libportals.la
 
 noinst_HEADERS += \
 		shmem/include/ptl_internal_CT.h \
