@@ -151,9 +151,9 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
 	ptl_internal_srcdata_t *einfo = NULL;
-	ptl_handle_eq_t md_eq;
-	ptl_handle_ct_t md_ct;
-	unsigned int md_opts;
+	ptl_handle_eq_t md_eq = PTL_EQ_NONE;
+	ptl_handle_ct_t md_ct = PTL_CT_NONE;
+	unsigned int md_opts = 0;
 	int acktype;
 	ack_printf("got an ACK (%p)\n", hdr);
 	/* first, figure out what to do with the ack */
@@ -250,13 +250,10 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	acktype = 2; // any acktype
 	if (hdr->type == HDR_TYPE_PUT || hdr->type == HDR_TYPE_ATOMIC) {
 	    ptl_ack_req_t ackreq;
-	    switch(hdr->type) {
-		case HDR_TYPE_PUT:
-		    ackreq = hdr->info.put.ack_req;
-		    break;
-		case HDR_TYPE_ATOMIC:
-		    ackreq = hdr->info.atomic.ack_req;
-		    break;
+	    if (hdr->type == HDR_TYPE_PUT) {
+		ackreq = hdr->info.put.ack_req;
+	    } else {
+		ackreq = hdr->info.atomic.ack_req;
 	    }
 	    switch (ackreq) {
 		case PTL_ACK_REQ:
