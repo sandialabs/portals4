@@ -71,8 +71,9 @@ int main(
     int argc,
     char *argv[])
 {
+    const size_t pagesize = getpagesize();
     size_t commsize;
-    size_t buffsize = getpagesize();
+    size_t buffsize = pagesize;
     pid_t *pids;
     int shm_fd;
     int err = 0;
@@ -223,6 +224,15 @@ int main(
 	    exit(EXIT_FAILURE);
 	}
 	memset(commpad, 0, buffsize);
+#ifndef HAVE_PTHREAD_SHMEM_LOCKS
+	for (size_t i=0; i<=count; ++i) {
+	    char * remote_pad = ((char*)commpad) + pagesize + (commsize * i);
+	    NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue*)remote_pad;
+	    NEMESIS_blocking_queue *q2 = q1 + 1;
+	    assert(pipe(q1->pipe) == 0);
+	    assert(pipe(q2->pipe) == 0);
+	}
+#endif
 	if (munmap(commpad, buffsize) != 0) {
 	    perror("yod-> munmap failed");	/* technically non-fatal */
 	}

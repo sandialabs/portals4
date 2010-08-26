@@ -169,8 +169,7 @@ SANDIA_CHECK_8ALIGNED_CALLOC
 SANDIA_CHECK_16ALIGNED_MALLOC
 SANDIA_CHECK_16ALIGNED_CALLOC
 SANDIA_CHECK_WORKING_VALLOC
-SANDIA_CHECK_PTHREAD_PROCESS_SHARED([],
-									[AC_MSG_ERROR([Currently MUST be able to share mutexes between processes (i.e. mark mutexes with the attribure PTHREAD_PROCESS_SHARED), but this OS does not support it.])])
+SANDIA_CHECK_PTHREAD_PROCESS_SHARED([AC_DEFINE([HAVE_PTHREAD_SHMEM_LOCKS],[1],[Define if PTHREAD_PROCESS_SHARED attribute on mutexes and cond variables works])])
 
 AC_CACHE_SAVE
 
