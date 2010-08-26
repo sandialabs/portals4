@@ -1,8 +1,14 @@
 #ifndef PTL_INTERNAL_NEMESIS_H
 #define PTL_INTERNAL_NEMESIS_H
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 /* System headers */
-#include <pthread.h>		       /* for pthread_*_t */
+#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+# include <pthread.h>		       /* for pthread_*_t */
+#endif
 #include <stdint.h>		       /* for uint32_t */
 
 /* Internal headers */
@@ -21,9 +27,13 @@ typedef struct {
 
 typedef struct {
     NEMESIS_queue q;
+#ifdef HAVE_PTHREAD_SHMEM_LOCKS
     volatile uint32_t frustration;
     pthread_cond_t trigger;
     pthread_mutex_t trigger_lock;
+#else
+    int pipe[2];
+#endif
 } NEMESIS_blocking_queue;
 
 /***********************************************/
