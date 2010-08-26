@@ -424,7 +424,6 @@ void *collator(
     }
     /* cleanup */
     assert(PtlMDRelease(md_handle) == PTL_OK);
-    free(mapping);
     /* prepare for being a barrier captain */
     md.start = NULL;
     md.length = 0;
@@ -456,6 +455,7 @@ void *collator(
     } while (0);
     /* cleanup */
 cleanup_phase:
+    free(mapping);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
     return NULL;
 }
