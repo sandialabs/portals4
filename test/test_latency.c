@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#define LOOPS 1000
+#define LOOPS 1000000
 
 #define CHECK_RETURNVAL(x) do { switch (x) { \
 	    case PTL_OK: break; \
@@ -191,7 +191,7 @@ int main(
 			(potato_launcher.ct_handle, (LOOPS-1)*2, &ctc));
 	assert(ctc.failure == 0);
 	if (myself.rank == 0) {
-	    // wait for the last potato (untimed)
+	    // wait for the last potato
 	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor - 1, &ctc));
 	    assert(ctc.failure == 0);
 	}
