@@ -381,10 +381,10 @@ int main(
     PtlFini();
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
-	int err;
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
 	NEMESIS_blocking_queue *q2 = q1 + 1;
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
+	int err;
 	if ((err = pthread_cond_destroy(&q1->trigger)) != 0) {
 	    char buf[200];
 	    strerror_r(err, buf, 200);
