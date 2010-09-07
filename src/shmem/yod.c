@@ -235,7 +235,7 @@ int main(
 	    assert(pipe(q1->pipe) == 0);
 	    assert(pipe(q2->pipe) == 0);
 	}
-#endif
+#endif /* PTHREAD_SHMEM_LOCKS */
     } else {
 	perror("yod-> shm_open failed");
 	if (shm_unlink(shmname) == -1) {
