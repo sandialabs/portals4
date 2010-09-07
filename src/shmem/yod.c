@@ -384,19 +384,13 @@ int main(
     assert(PtlPTFree(ni_physical, 0) == PTL_OK);
     assert(PtlNIFini(ni_physical) == PTL_OK);
     PtlFini();
-#if 0
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
 	NEMESIS_blocking_queue *q2 = q1 + 1;
-	printf("q1=%p(%u), q2=%p(%u)\n", q1, (unsigned)((uintptr_t)q1 - (uintptr_t)commpad), q2, (unsigned)((uintptr_t)q2 - (uintptr_t)commpad));
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
-	switch(pthread_mutex_destroy(&q1->trigger_lock)) {
-	    case EBUSY: printf("EBUSY\n"); break;
-	    case EINVAL: printf("EINVAL\n"); break;
-	    default: printf("bogus\n"); break;
-	}
 	assert(pthread_cond_destroy(&q1->trigger) == 0);
+	assert(pthread_mutex_destroy(&q1->trigger_lock) == 0);
 	assert(pthread_cond_destroy(&q2->trigger) == 0);
 	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
 #else
@@ -406,7 +400,6 @@ int main(
 	assert(close(q2->pipe[1]) == 0);
 #endif
     }
-#endif
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");
 	exit(EXIT_FAILURE);
