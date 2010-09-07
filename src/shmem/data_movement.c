@@ -635,6 +635,19 @@ int API_FUNC PtlAtomic(
 	VERBOSE_ERROR("Invalid MD\n");
 	return PTL_ARG_INVALID;
     }
+    {
+	int multiple;
+	switch (datatype) {
+	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
+	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
+	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
+	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	}
+	if (length % multiple != 0) {
+	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
+	    return PTL_ARG_INVALID;
+	}
+    }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
 	VERBOSE_ERROR("MD too short for local_offset\n");
 	return PTL_ARG_INVALID;
@@ -774,6 +787,19 @@ int API_FUNC PtlFetchAtomic(
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
 	VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
+    }
+    {
+	int multiple;
+	switch (datatype) {
+	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
+	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
+	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
+	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	}
+	if (length % multiple != 0) {
+	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
+	    return PTL_ARG_INVALID;
+	}
     }
     if (get_md.s.ni != put_md.s.ni) {
 	VERBOSE_ERROR("MDs *must* be on the same NI\n");
@@ -919,6 +945,19 @@ int API_FUNC PtlSwap(
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
 	VERBOSE_ERROR("Swap saw put_md too short for local_offset\n");
 	return PTL_ARG_INVALID;
+    }
+    {
+	int multiple;
+	switch (datatype) {
+	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
+	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
+	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
+	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	}
+	if (length % multiple != 0) {
+	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
+	    return PTL_ARG_INVALID;
+	}
     }
     if (get_md.s.ni != put_md.s.ni) {
 	VERBOSE_ERROR("MDs *must* be on the same NI\n");
