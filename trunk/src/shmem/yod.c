@@ -236,11 +236,6 @@ int main(
 	    assert(pipe(q2->pipe) == 0);
 	}
 #endif
-#if 0
-	if (munmap(commpad, buffsize) != 0) {
-	    perror("yod-> munmap failed");	/* technically non-fatal */
-	}
-#endif
     } else {
 	perror("yod-> shm_open failed");
 	if (shm_unlink(shmname) == -1) {
@@ -386,19 +381,56 @@ int main(
     PtlFini();
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
+	int err;
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
 	NEMESIS_blocking_queue *q2 = q1 + 1;
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
-	assert(pthread_cond_destroy(&q1->trigger) == 0);
-	assert(pthread_mutex_destroy(&q1->trigger_lock) == 0);
-	assert(pthread_cond_destroy(&q2->trigger) == 0);
+	if ((err = pthread_cond_destroy(&q1->trigger)) != 0) {
+	    char buf[200];
+	    strerror_r(err, buf, 200);
+	    fprintf(stderr, "yod-> destroying queue1 trigger: %s\n", buf);
+	    abort();
+	}
+	if ((err = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
+	    char buf[200];
+	    strerror_r(err, buf, 200);
+	    fprintf(stderr, "yod-> destroying queue1 trigger lock: %s\n", buf);
+	    abort();
+	}
+	if ((err = pthread_cond_destroy(&q2->trigger)) != 0) {
+	    char buf[200];
+	    strerror_r(err, buf, 200);
+	    fprintf(stderr, "yod-> destroying queue2 trigger: %s\n", buf);
+	    abort();
+	}
 	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
+	if ((err = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
+	    char buf[200];
+	    strerror_r(err, buf, 200);
+	    fprintf(stderr, "yod-> destroying queue2 trigger lock: %s\n", buf);
+	    abort();
+	}
 #else
-	assert(close(q1->pipe[0]) == 0);
-	assert(close(q1->pipe[1]) == 0);
-	assert(close(q2->pipe[0]) == 0);
-	assert(close(q2->pipe[1]) == 0);
+	if (close(q1->pipe[0]) != 0) {
+	    perror("yod-> closing queue1 pipe[0]");
+	    abort();
+	}
+	if (close(q1->pipe[1]) != 0) {
+	    perror("yod-> closing queue1 pipe[1]");
+	    abort();
+	}
+	if (close(q2->pipe[0]) != 0) {
+	    perror("yod-> closing queue2 pipe[0]");
+	    abort();
+	}
+	if (close(q2->pipe[1]) != 0) {
+	    perror("yod-> closing queue2 pipe[1]");
+	    abort();
+	}
 #endif
+    }
+    if (munmap(commpad, buffsize) != 0) {
+	perror("yod-> munmap failed");	/* technically non-fatal */
     }
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");
