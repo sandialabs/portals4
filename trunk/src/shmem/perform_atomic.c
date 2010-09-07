@@ -175,8 +175,66 @@ void INTERNAL PtlInternalPerformAtomic(
 		abort();
 	}
     } else {
-#warning Handling PtlAtomic with non-unit sizes is unimplemented
-	abort();
+	size_t count = size/sz;
+	switch (op) {
+	    case PTL_MIN:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicMin( dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_MAX:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicMax( dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_SUM:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicSum( dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_PROD:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicProd(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_LOR:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicLor( dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_BOR:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicBor( dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_LAND:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicLand(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_BAND:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicBand(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_LXOR:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicLxor(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_BXOR:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicBxor(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    case PTL_SWAP:
+		for (size_t i=0; i < count; ++i) {
+		    PtlInternalPerformAtomicSwap(dest+i*sz, src+i*sz, dt);
+		}
+		break;
+	    default:
+		abort();
+	}
     }
 }
 
@@ -190,11 +248,16 @@ void INTERNAL PtlInternalPerformAtomicArg(
 {
     switch (op) {
 	case PTL_SWAP:
-	    if (size == datatype_size_table[dt]) {
-		PtlInternalPerformAtomicSwap(dest, src, dt); break;
-	    } else {
-#warning Handling PtlSwap with PTL_SWAP and non-unit sizes is unimplemented
-		abort();
+	    {
+		ptl_size_t sz = datatype_size_table[dt];
+		if (size == sz) {
+		    PtlInternalPerformAtomicSwap(dest, src, dt); break;
+		} else {
+		    size_t count = size/sz;
+		    for (size_t i=0; i<count; ++i) {
+			PtlInternalPerformAtomicSwap(dest+i*sz, src+i*sz, dt);
+		    }
+		}
 	    }
 	    break;
 	case PTL_CSWAP:
