@@ -251,7 +251,7 @@ void INTERNAL PtlInternalPerformAtomicArg(
 	    {
 		ptl_size_t sz = datatype_size_table[dt];
 		if (size == sz) {
-		    PtlInternalPerformAtomicSwap(dest, src, dt); break;
+		    PtlInternalPerformAtomicSwap(dest, src, dt);
 		} else {
 		    size_t count = size/sz;
 		    for (size_t i=0; i<count; ++i) {
