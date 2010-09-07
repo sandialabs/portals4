@@ -160,6 +160,8 @@ AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD fun
 AC_SEARCH_LIBS([shm_open],
 	       [rt], [],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
+AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
+			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 
 ## -------------------------- ##
 ## Check for library behavior ##
