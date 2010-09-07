@@ -206,7 +206,7 @@ int main(
 	accumulate /= LOOPS;
 	printf("Average time around the loop: %g secs\n", accumulate);
 	accumulate /= maxrank + 1;
-	printf("Average latency: %g secs\n", accumulate);
+	printf("Average catch-to-toss latency: %g secs\n", accumulate);
     }
 
     /* cleanup */
