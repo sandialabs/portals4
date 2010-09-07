@@ -152,7 +152,7 @@ void INTERNAL *PtlInternalFragmentReceive(
 {
     fragment_hdr_t *frag =
 	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
-    assert(frag->next == NULL);
+    assert(frag == (void*)1 || frag->next == NULL);
     return frag->data;
 }
 
@@ -162,7 +162,7 @@ void INTERNAL *PtlInternalFragmentAckReceive(
 {
     fragment_hdr_t *frag =
 	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(ackQ);
-    assert(frag->next == NULL);
+    assert(frag == (void*)1 || frag->next == NULL);
     return frag->data;
 }
 

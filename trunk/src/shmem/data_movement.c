@@ -65,12 +65,18 @@ static pthread_t catcher, ack_catcher;
 #define dm_printf(format,...)
 #endif
 
+#define TERMINATION_HDR_VALUE ((void*)(sizeof(uint64_t)*2+1))
+
 static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETURN
 {
     while (1) {
 	ptl_pid_t src;
 	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
+	if (hdr == TERMINATION_HDR_VALUE) { // TERMINATE!
+	    dm_printf("termination command received in DMCatcher!\n");
+	    return NULL;
+	}
 	dm_printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
 	src = hdr->src;
 	assert(nit.tables != NULL);
@@ -156,6 +162,10 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	unsigned int md_opts = 0;
 	int acktype;
 	ack_printf("got an ACK (%p)\n", hdr);
+	if (hdr == TERMINATION_HDR_VALUE) { // TERMINATE!
+	    ack_printf("termination command received in DMAckCatcher!\n");
+	    return NULL;
+	}
 	/* first, figure out what to do with the ack */
 	switch(hdr->type) {
 	    case HDR_TYPE_PUT:
@@ -376,8 +386,11 @@ void INTERNAL PtlInternalDMTeardown(
     void)
 {
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
-	assert(pthread_cancel(catcher) == 0);
-	assert(pthread_cancel(ack_catcher) == 0);
+	/* Using a termination sigil, rather than pthread_cancel(), so that the queues
+	 * are always left in a valid/useable state (e.g. unlocked), so that late sends
+	 * and late acks don't cause hangs. */
+	PtlInternalFragmentToss(TERMINATION_HDR_VALUE, proc_number);
+	PtlInternalFragmentAck(TERMINATION_HDR_VALUE, proc_number);
 	assert(pthread_join(catcher, NULL) == 0);
 	assert(pthread_join(ack_catcher, NULL) == 0);
     }
