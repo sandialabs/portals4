@@ -60,7 +60,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(
     NEMESIS_queue * q)
 {
     NEMESIS_entry *retval = q->head;
-    if (retval != NULL) {
+    if (retval != NULL && retval != (void*)1) {
 	if (retval->next != NULL) {
 	    q->head = retval->next;
 	    retval->next = NULL;
@@ -86,12 +86,14 @@ static inline void PtlInternalNEMESISOffsetEnqueue(
     NEMESIS_entry * restrict f)
 {
     void *offset_f = (void*)PTR2OFF(f);
-    assert(f->next == NULL);
+    assert(f == (void*)1 || f->next == NULL);
     intptr_t offset_prev =
 	(intptr_t)PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), offset_f);
     if (offset_prev == 0) {
 	q->head = offset_f;
-    } else {
+    } else if (offset_prev > 0) {
+	/* less than zero is (almost certainly) the termination sigil;
+	 * we CANNOT lose the termination sigil, but we also cannot dereference it. */
 	OFF2PTR(offset_prev)->next = offset_f;
     }
 }
@@ -100,7 +102,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
     NEMESIS_queue * q)
 {
     NEMESIS_entry *retval = OFF2PTR(q->head);
-    if (retval != NULL) {
+    if (retval != NULL && retval != (void*)1) {
 	if (retval->next != NULL) {
 	    q->head = retval->next;
 	    retval->next = NULL;

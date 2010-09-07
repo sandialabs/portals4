@@ -86,6 +86,7 @@ int main(
     size_t large_frag_size = 4096;
     size_t large_frag_count = 128;
     const size_t max_count = buffsize - 1;
+    void *commpad = NULL;
 
     {
 	int opt;
@@ -207,7 +208,6 @@ int main(
 	    shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     }
     if (shm_fd >= 0) {
-	void *commpad;
 	/* pre-allocate the shared memory ... necessary on BSD */
 	if (ftruncate(shm_fd, buffsize) != 0) {
 	    perror("yod-> ftruncate failed");
@@ -227,17 +227,20 @@ int main(
 	}
 	memset(commpad, 0, buffsize);
 #ifndef HAVE_PTHREAD_SHMEM_LOCKS
-	for (size_t i=0; i<=count; ++i) {
-	    char * remote_pad = ((char*)commpad) + pagesize + (commsize * i);
-	    NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue*)remote_pad;
+	for (size_t i = 0; i <= count; ++i) {
+	    char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
+	    NEMESIS_blocking_queue *q1 =
+		(NEMESIS_blocking_queue *) remote_pad;
 	    NEMESIS_blocking_queue *q2 = q1 + 1;
 	    assert(pipe(q1->pipe) == 0);
 	    assert(pipe(q2->pipe) == 0);
 	}
 #endif
+#if 0
 	if (munmap(commpad, buffsize) != 0) {
 	    perror("yod-> munmap failed");	/* technically non-fatal */
 	}
+#endif
     } else {
 	perror("yod-> shm_open failed");
 	if (shm_unlink(shmname) == -1) {
@@ -267,7 +270,8 @@ int main(
 	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
     {
 	ptl_pt_index_t pt_index;
-	assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) == PTL_OK);
+	assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) ==
+	       PTL_OK);
 	assert(pt_index == 0);
     }
     collator_ct_handle = PTL_CT_NONE;
@@ -286,7 +290,7 @@ int main(
 	    perror("yod-> child execv failed!");
 	    exit(EXIT_FAILURE);
 	} else if (pids[c] == -1) {
-	    perror("yod-> could not launch process!\n");
+	    perror("yod-> could not launch process!");
 	    if (c > 0) {
 		fprintf(stderr,
 			"... I should probably kill any that have been spawned so far. Kick the lazy developer.\n");
@@ -316,29 +320,33 @@ int main(
 		    int stat;
 		    switch (waitpid(pids[d], &stat, WNOHANG)) {
 			case 0:
-			if (kill(pids[d], SIGKILL) == -1) {
-			    if (errno != ESRCH) {
-				perror("yod-> kill failed!\n");
-			    } else {
-				fprintf(stderr, "yod-> child %i already dead\n",
-					(int)pids[d]);
+			    if (kill(pids[d], SIGKILL) == -1) {
+				if (errno != ESRCH) {
+				    perror("yod-> kill failed!");
+				} else {
+				    fprintf(stderr,
+					    "yod-> child %i already dead\n",
+					    (int)pids[d]);
+				}
 			    }
-			}
-			break;
+			    break;
 			case -1:
-			perror("yod-> waitpid NOHANG failed!\n");
-			fprintf(stderr, "yod-> child pid %i could not be waited on\n", pids[d]);
-			break;
+			    break;
 			default:
-			++c;
-			if (WIFSIGNALED(stat) && !WIFSTOPPED(stat)) {
-			    ++err;
-			    fprintf(stderr, "yod-> child pid %i (%u) died prematurely (%i)\n",
-				    (int)pids[d], (unsigned)d, WTERMSIG(stat));
-			} else if (WIFEXITED(stat) && WEXITSTATUS(stat) > 0) {
-			    ++err;
-			    fprintf(stderr, "yod-> child pid %i exited %i\n", (int)pids[d], WEXITSTATUS(status));
-			}
+			    ++c;
+			    if (WIFSIGNALED(stat) && !WIFSTOPPED(stat)) {
+				++err;
+				fprintf(stderr,
+					"yod-> child pid %i (%u) died prematurely (%i)\n",
+					(int)pids[d], (unsigned)d,
+					WTERMSIG(stat));
+			    } else if (WIFEXITED(stat) &&
+				       WEXITSTATUS(stat) > 0) {
+				++err;
+				fprintf(stderr,
+					"yod-> child pid %i exited %i\n",
+					(int)pids[d], WEXITSTATUS(status));
+			    }
 		    }
 		}
 	    }
@@ -354,11 +362,21 @@ int main(
 	memset(&ctc, 0xff, sizeof(ptl_ct_event_t));
 	PtlCTSet(collator_ct_handle, ctc);
 	switch (pthread_join(collator_thread, NULL)) {
-	    case 0: break;
-	    case EDEADLK: fprintf(stderr, "yod-> joining thread would create deadlock!\n"); break;
-	    case EINVAL: fprintf(stderr, "yod-> collator thread not joinable\n"); break;
-	    case ESRCH: fprintf(stderr, "yod-> collator thread missing\n"); break;
-	    default: perror("yod-> pthread_join"); break;
+	    case 0:
+		break;
+	    case EDEADLK:
+		fprintf(stderr,
+			"yod-> joining thread would create deadlock!\n");
+		break;
+	    case EINVAL:
+		fprintf(stderr, "yod-> collator thread not joinable\n");
+		break;
+	    case ESRCH:
+		fprintf(stderr, "yod-> collator thread missing\n");
+		break;
+	    default:
+		perror("yod-> pthread_join");
+		break;
 	}
     }
 
@@ -366,6 +384,29 @@ int main(
     assert(PtlPTFree(ni_physical, 0) == PTL_OK);
     assert(PtlNIFini(ni_physical) == PTL_OK);
     PtlFini();
+#if 0
+    for (size_t i = 0; i <= count; ++i) {
+	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
+	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
+	NEMESIS_blocking_queue *q2 = q1 + 1;
+	printf("q1=%p(%u), q2=%p(%u)\n", q1, (unsigned)((uintptr_t)q1 - (uintptr_t)commpad), q2, (unsigned)((uintptr_t)q2 - (uintptr_t)commpad));
+#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+	switch(pthread_mutex_destroy(&q1->trigger_lock)) {
+	    case EBUSY: printf("EBUSY\n"); break;
+	    case EINVAL: printf("EINVAL\n"); break;
+	    default: printf("bogus\n"); break;
+	}
+	assert(pthread_cond_destroy(&q1->trigger) == 0);
+	assert(pthread_cond_destroy(&q2->trigger) == 0);
+	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
+#else
+	assert(close(q1->pipe[0]) == 0);
+	assert(close(q1->pipe[1]) == 0);
+	assert(close(q2->pipe[0]) == 0);
+	assert(close(q2->pipe[1]) == 0);
+#endif
+    }
+#endif
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");
 	exit(EXIT_FAILURE);
@@ -381,7 +422,7 @@ static void cleanup(
 	for (int d = 0; d < count; ++d) {
 	    if (kill(pids[d], SIGKILL) == -1) {
 		if (errno != ESRCH) {
-		    perror("yod-> kill failed!\n");
+		    perror("yod-> kill failed!");
 		}
 	    }
 	}
@@ -389,7 +430,7 @@ static void cleanup(
 }
 
 void *collator(
-    void * Q_UNUSED junk) Q_NORETURN
+    void *Q_UNUSED junk) Q_NORETURN
 {
     ptl_process_t *mapping;
 
@@ -466,8 +507,9 @@ void *collator(
 	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
 	/* release everyone */
 	for (uint64_t r = 0; r < count; ++r) {
-	    assert(PtlPut(md_handle, 0, 0, PTL_CT_ACK_REQ,
-			mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+	    assert(PtlPut
+		   (md_handle, 0, 0, PTL_CT_ACK_REQ, mapping[r], 0, 0, 0,
+		    NULL, 0) == PTL_OK);
 	}
 	/* wait for the releases to finish */
 	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
@@ -477,7 +519,7 @@ void *collator(
 	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
     } while (0);
     /* cleanup */
-cleanup_phase:
+  cleanup_phase:
     free(mapping);
     assert(PtlLEUnlink(le_handle) == PTL_OK);
     return NULL;
