@@ -10,8 +10,6 @@ extern size_t LARGE_FRAG_COUNT;
 
 void PtlInternalFragmentSetup(
     volatile char *buf);
-void PtlInternalFragmentTeardown(
-    void);
 void *PtlInternalFragmentFetch(
     size_t payload_size);
 void PtlInternalFragmentToss(

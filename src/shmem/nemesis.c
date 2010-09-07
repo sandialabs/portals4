@@ -47,10 +47,6 @@ void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
 #endif
 }
 
-void INTERNAL PtlInternalNEMESISBlockingDestroy(NEMESIS_blocking_queue *q)
-{
-}
-
 void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict f)

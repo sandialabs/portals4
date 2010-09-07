@@ -123,8 +123,6 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
 
 void PtlInternalNEMESISBlockingInit(
     NEMESIS_blocking_queue * q);
-void PtlInternalNEMESISBlockingDestroy(
-    NEMESIS_blocking_queue * q);
 void PtlInternalNEMESISBlockingEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict e);

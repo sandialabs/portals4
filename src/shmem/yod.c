@@ -384,29 +384,29 @@ int main(
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
 	NEMESIS_blocking_queue *q2 = q1 + 1;
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
-	int err;
-	if ((err = pthread_cond_destroy(&q1->trigger)) != 0) {
+	int perr;
+	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
 	    char buf[200];
-	    strerror_r(err, buf, 200);
+	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue1 trigger: %s\n", buf);
 	    abort();
 	}
-	if ((err = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
+	if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
 	    char buf[200];
-	    strerror_r(err, buf, 200);
+	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue1 trigger lock: %s\n", buf);
 	    abort();
 	}
-	if ((err = pthread_cond_destroy(&q2->trigger)) != 0) {
+	if ((perr = pthread_cond_destroy(&q2->trigger)) != 0) {
 	    char buf[200];
-	    strerror_r(err, buf, 200);
+	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue2 trigger: %s\n", buf);
 	    abort();
 	}
 	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
-	if ((err = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
+	if ((perr = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
 	    char buf[200];
-	    strerror_r(err, buf, 200);
+	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue2 trigger lock: %s\n", buf);
 	    abort();
 	}
@@ -441,7 +441,7 @@ int main(
 }
 
 static void cleanup(
-    int s)
+    Q_UNUSED int s)
 {
     if (pids != NULL && count > 0) {
 	for (int d = 0; d < count; ++d) {

@@ -77,13 +77,6 @@ void INTERNAL PtlInternalFragmentSetup(
     }
 }
 
-void INTERNAL PtlInternalFragmentTeardown(
-    void)
-{
-    PtlInternalNEMESISBlockingDestroy(receiveQ);
-    PtlInternalNEMESISBlockingDestroy(ackQ);
-}
-
 /* this pulls a fragment off the free-list(s) big enough to hold the data.
  * Potential data sizes are:
  * <= 112 bytes == a 128 byte fragment
