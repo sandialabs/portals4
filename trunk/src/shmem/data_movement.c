@@ -636,7 +636,7 @@ int API_FUNC PtlAtomic(
 	return PTL_ARG_INVALID;
     }
     {
-	int multiple;
+	int multiple = 1;
 	switch (datatype) {
 	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
 	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
@@ -789,7 +789,7 @@ int API_FUNC PtlFetchAtomic(
 	return PTL_ARG_INVALID;
     }
     {
-	int multiple;
+	int multiple = 1;
 	switch (datatype) {
 	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
 	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
@@ -947,7 +947,7 @@ int API_FUNC PtlSwap(
 	return PTL_ARG_INVALID;
     }
     {
-	int multiple;
+	int multiple = 1;
 	switch (datatype) {
 	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
 	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
