@@ -22,6 +22,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_LE.h"
+#include "ptl_internal_ME.h"
 #include "ptl_internal_DM.h"
 #include "ptl_internal_error.h"
 
@@ -169,7 +170,11 @@ int API_FUNC PtlNIInit(
     }
     PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
     PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
-    PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
+    if (options & PTL_NI_MATCHING) {
+	PtlInternalMENISetup(ni.s.ni, nit_limits.max_mes);
+    } else {
+	PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
+    }
     /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
@@ -209,7 +214,14 @@ int API_FUNC PtlNIFini(
 	PtlInternalDMTeardown();
 	PtlInternalCTNITeardown(ni.s.ni);
 	PtlInternalMDNITeardown(ni.s.ni);
-	PtlInternalLENITeardown(ni.s.ni);
+	switch(ni.s.ni) {
+	    case 0: case 2:
+		PtlInternalLENITeardown(ni.s.ni);
+		break;
+	    case 1: case 3:
+		PtlInternalMENITeardown(ni.s.ni);
+		break;
+	}
 	/* deallocate NI */
 	free(nit.tables[ni.s.ni]);
 	nit.tables[ni.s.ni] = NULL;
