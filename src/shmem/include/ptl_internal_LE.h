@@ -1,14 +1,14 @@
 #ifndef PTL_INTERNAL_LE_H
 #define PTL_INTERNAL_LE_H
 
-void INTERNAL PtlInternalLENISetup(
+void PtlInternalLENISetup(
     unsigned int ni,
     ptl_size_t limit);
 
-void INTERNAL PtlInternalLENITeardown(
+void PtlInternalLENITeardown(
     unsigned int ni);
 
-int INTERNAL PtlInternalLEDeliver(
+int PtlInternalLEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict h);
 
