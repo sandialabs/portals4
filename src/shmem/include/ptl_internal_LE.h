@@ -1,6 +1,9 @@
 #ifndef PTL_INTERNAL_LE_H
 #define PTL_INTERNAL_LE_H
 
+#include "ptl_internal_PT.h"
+#include "ptl_internal_commpad.h"
+
 void PtlInternalLENISetup(
     unsigned int ni,
     ptl_size_t limit);
