@@ -57,30 +57,10 @@ void INTERNAL PtlInternalLENISetup(
     while ((tmp =
 	    PtlInternalAtomicCasPtr(&(les[ni]), NULL, (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-#if defined(HAVE_MEMALIGN)
-	tmp = memalign(8, limit * sizeof(ptl_internal_le_t));
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
-#elif defined(HAVE_POSIX_MEMALIGN)
-	assert(posix_memalign
-	       ((void **)&tmp, 8, limit * sizeof(ptl_internal_le_t)) == 0);
-	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
-#elif defined(HAVE_8ALIGNED_CALLOC)
 	tmp = calloc(limit, sizeof(ptl_internal_le_t));
 	assert(tmp != NULL);
-#elif defined(HAVE_8ALIGNED_MALLOC)
-	tmp = malloc(limit * sizeof(ptl_internal_le_t));
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
-#else
-	tmp = valloc(limit * sizeof(ptl_internal_le_t));	/* cross your fingers */
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_le_t));
-#endif
-	assert((((intptr_t) tmp) & 0x7) == 0);
 	__sync_synchronize();
 	les[ni] = tmp;
-	//assert(pthread_create(&LEthread, NULL, LEprocessor, NULL) == 0);
     }
 }
 
