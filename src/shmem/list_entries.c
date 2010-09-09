@@ -68,7 +68,6 @@ void INTERNAL PtlInternalLENITeardown(
     unsigned int ni)
 {
     ptl_internal_le_t *tmp;
-    //assert(pthread_cancel(LEthread) == 0);
     tmp = les[ni];
     les[ni] = NULL;
     assert(tmp != NULL);
@@ -87,7 +86,6 @@ int API_FUNC PtlLEAppend(
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_handle_encoding_t leh = { HANDLE_LE_CODE, 0, 0 };
     ptl_internal_appendLE_t *Qentry = NULL;
-    uint32_t offset;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -121,7 +119,7 @@ int API_FUNC PtlLEAppend(
     assert(les[ni.s.ni] != NULL);
     leh.ni = ni.s.ni;
     /* find an LE handle */
-    for (offset = 0; offset < nit_limits.max_mes; ++offset) {
+    for (uint32_t offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (les[ni.s.ni][offset].status == 0) {
 	    if (PtlInternalAtomicCas32
 		(&(les[ni.s.ni][offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
@@ -134,7 +132,9 @@ int API_FUNC PtlLEAppend(
 	    }
 	}
     }
-    assert(Qentry != NULL);
+    if (Qentry == NULL) {
+	return PTL_FAIL;
+    }
     Qentry->user_ptr = user_ptr;
     Qentry->le_handle.s = leh;
     memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
@@ -144,7 +144,7 @@ int API_FUNC PtlLEAppend(
     assert(pthread_mutex_lock(&t->lock) == 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
-	    {
+	    if (t->overflow.head == NULL) {
 		ptl_internal_appendLE_t* prev = (ptl_internal_appendLE_t*)(t->priority.tail);
 		t->priority.tail = Qentry;
 		if (prev == NULL) {
@@ -152,6 +152,9 @@ int API_FUNC PtlLEAppend(
 		} else {
 		    prev->next = Qentry;
 		}
+	    } else {
+#warning PtlLEAppend() does not check the overflow receives
+		abort();
 	    }
 	    break;
 	case PTL_OVERFLOW:
@@ -166,6 +169,7 @@ int API_FUNC PtlLEAppend(
 	    }
 	    break;
 	case PTL_PROBE_ONLY:
+#warning PtlLEAppend() does not check the overflow receives
 	    fprintf(stderr, "PTL_PROBE_ONLY not yet implemented\n");
 	    abort();
 	    break;
@@ -184,8 +188,8 @@ int API_FUNC PtlLEUnlink(
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
     }
-    if (le.s.ni > 3 || le.s.code > nit_limits.max_mds || (nit.refcount[le.s.ni] == 0)) {
-	VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", le.s.ni, le.s.code, nit_limits.max_mds);
+    if (le.s.ni > 3 || le.s.code > nit_limits.max_mes || (nit.refcount[le.s.ni] == 0)) {
+	VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", le.s.ni, le.s.code, nit_limits.max_mes);
 	return PTL_ARG_INVALID;
     }
     if (les[le.s.ni] == NULL) {
