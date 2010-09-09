@@ -204,9 +204,9 @@ int main(
 	/* calculate the average time waiting */
 	printf("Total time: %g secs\n", accumulate);
 	accumulate /= LOOPS;
-	printf("Average time around the loop: %g secs\n", accumulate);
+	printf("Average time around the loop: %g microseconds\n", accumulate*1e6);
 	accumulate /= maxrank + 1;
-	printf("Average catch-to-toss latency: %g secs\n", accumulate);
+	printf("Average catch-to-toss latency: %g microseconds\n", accumulate*1e6);
     }
 
     /* cleanup */
