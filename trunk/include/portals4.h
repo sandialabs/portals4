@@ -784,31 +784,31 @@ int PtlGetJid(ptl_handle_ni_t	ni_handle,
  * @addtogroup MD (MD) Memory Descriptors
  * @{ */
 /*! Specifies that this memory descriptor should not generate events. */
-#define PTL_MD_EVENT_DISABLE	     (1)
+#define PTL_MD_EVENT_DISABLE	     (1<<5)
 
 /*! Specifies that this memory descriptor should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<1)
+#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<6)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
-#define PTL_MD_EVENT_CT_SEND	     (1<<2)
+#define PTL_MD_EVENT_CT_SEND	     (1<<1)
 
 /*! Enable the counting of \c PTL_EVENT_REPLY events. */
-#define PTL_MD_EVENT_CT_REPLY	     (1<<3)
+#define PTL_MD_EVENT_CT_REPLY	     (1<<2)
 
 /*! Enable the counting of \c PTL_EVENT_ACK events. */
-#define PTL_MD_EVENT_CT_ACK	     (1<<4)
+#define PTL_MD_EVENT_CT_ACK	     (1<<3)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_MD_EVENT_CT_BYTES	     (1<<5)
+#define PTL_MD_EVENT_CT_BYTES	     (1<<14)
 
 /*! Indicate to the portals implementation that messages sent from this memory
  * descriptor do not have to arrive at the target in order. */
-#define PTL_MD_UNORDERED	     (1<<6)
+#define PTL_MD_UNORDERED	     (1<<4)
 
 /*! Indicate to the portals implementation that failures requiring
  * notification from the target should not be delivered to the local
@@ -1073,6 +1073,61 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  *	operations. */
 #define PTL_ME_OP_GET			(1<<2)
 
+/*! Specifies that the match list entry will only be used once and then
+ * unlinked. If this option is not set, the match list entry persists until
+ * another unlink condition is triggered. */
+#define PTL_ME_USE_ONCE			(1<<3)
+
+/*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
+ * put operations, even if requested. By default, acknowledgments are sent for
+ * put operations that request an acknowledgment. This applies to both standard
+ * and counting type events. Acknowledgments are never sent for \p get
+ * operations. The data sent in the \p reply serves as an implicit
+ * acknowledgment. */
+#define PTL_ME_ACK_DISABLE		(1<<4)
+
+/*! Specifies that this match list entry should not generate events. */
+#define PTL_ME_EVENT_DISABLE		(1<<5)
+
+/*! Specifies that this match list entry should not generate events that
+ * indicate success. This is useful in scenarios where the application does not
+ * need normal events, but does require failure information to enhance
+ * reliability. */
+#define PTL_ME_EVENT_SUCCESS_DISABLE	(1<<6)
+
+/*! Specifies that this match list entry should not generate overflow list
+ * events (\c PTL_EVENT_PUT_OVERFLOW events). */
+#define PTL_ME_EVENT_OVER_DISABLE	(1<<7)
+
+/*! Specifies that this match list entry should not generate unlink (\c
+ * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
+#define PTL_ME_EVENT_UNLINK_DISABLE	(1<<8)
+
+/*! Enable the counting of \c PTL_EVENT_GET events. */
+#define PTL_ME_EVENT_CT_GET		(1<<9)
+
+/*! Enable the counting of \c PTL_EVENT_PUT events. */
+#define PTL_ME_EVENT_CT_PUT		(1<<10)
+
+/*! Enable the counting of \c PTL_EVENT_PUT_OVERFLOW events. */
+#define PTL_ME_EVENT_CT_PUT_OVERFLOW	(1<<11)
+
+/*! Enable the counting of \c PTL_EVENT_ATOMIC events. */
+#define PTL_ME_EVENT_CT_ATOMIC		(1<<12)
+
+/*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events. */
+#define PTL_ME_EVENT_CT_ATOMIC_OVERFLOW	(1<<13)
+
+/*! By default, counting events count events. When set, this option causes
+ * successful bytes to be counted instead. Failures are still counted as
+ * events. */
+#define PTL_ME_EVENT_CT_BYTES		(1<<14)
+
+/*! Use job ID for authentication instead of user ID. By default, the user ID
+ * must match to allow a message to access a match list entry. */
+#define PTL_ME_AUTH_USE_JID		(1<<15)
+
+
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
  * is maintained locally, the offset is incremented by the length of the
@@ -1081,7 +1136,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * @note Only one offset variable exists per match list entry. If both \p put and
  *	\p get operations are performed on a match list entry, the value of that
  *	single variable is updated each time. */
-#define PTL_ME_MANAGE_LOCAL		(1<<3)
+#define PTL_ME_MANAGE_LOCAL		(1<<16)
 
 /*! Specifies that the length provided in the incoming request cannot be
  * reduced to match the memory available in the region. This can cause the
@@ -1089,12 +1144,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * subtracting the offset from the length of the memory region.) By default, if
  * the length in the incoming operation is greater than the amount of memory
  * available, the operation is truncated. */
-#define PTL_ME_NO_TRUNCATE		(1<<4)
-
-/*! Specifies that the match list entry will only be used once and then
- * unlinked. If this option is not set, the match list entry persists until
- * another unlink condition is triggered. */
-#define PTL_ME_USE_ONCE			(1<<5)
+#define PTL_ME_NO_TRUNCATE		(1<<17)
 
 /*! Indicates that messages deposited into this match list entry may be
  * aligned by the implementation to a performance optimizing boundary.
@@ -1102,60 +1152,12 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * that the application does not care about the specific placement of the data.
  * This option is only relevant when the \c PTL_ME_MANAGE_LOCAL option is set.
  * */
-#define PTL_ME_MAY_ALIGN		(1<<6)
-
-/*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
- * put operations, even if requested. By default, acknowledgments are sent for
- * put operations that request an acknowledgment. This applies to both standard
- * and counting type events. Acknowledgments are never sent for \p get
- * operations. The data sent in the \p reply serves as an implicit
- * acknowledgment. */
-#define PTL_ME_ACK_DISABLE		(1<<7)
+#define PTL_ME_MAY_ALIGN		(1<<18)
 
 /*! Specifies that the \a min_free field in the match list entry is to be used.
  * This option is only used if \c PTL_ME_MANAGE_LOCAL is set. */
-#define PTL_ME_MIN_FREE			(1<<8)
+#define PTL_ME_MIN_FREE			(1<<19)
 
-/*! Specifies that this match list entry should not generate events. */
-#define PTL_ME_EVENT_DISABLE		(1<<9)
-
-/*! Specifies that this match list entry should not generate events that
- * indicate success. This is useful in scenarios where the application does not
- * need normal events, but does require failure information to enhance
- * reliability. */
-#define PTL_ME_EVENT_SUCCESS_DISABLE	(1<<10)
-
-/*! Specifies that this match list entry should not generate overflow list
- * events (\c PTL_EVENT_PUT_OVERFLOW events). */
-#define PTL_ME_EVENT_OVER_DISABLE	(1<<11)
-
-/*! Specifies that this match list entry should not generate unlink (\c
- * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_ME_EVENT_UNLINK_DISABLE	(1<<12)
-
-/*! Enable the counting of \c PTL_EVENT_GET events. */
-#define PTL_ME_EVENT_CT_GET		(1<<13)
-
-/*! Enable the counting of \c PTL_EVENT_PUT events. */
-#define PTL_ME_EVENT_CT_PUT		(1<<14)
-
-/*! Enable the counting of \c PTL_EVENT_PUT_OVERFLOW events. */
-#define PTL_ME_EVENT_CT_PUT_OVERFLOW	(1<<15)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC events. */
-#define PTL_ME_EVENT_CT_ATOMIC		(1<<16)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events. */
-#define PTL_ME_EVENT_CT_ATOMIC_OVERFLOW	(1<<17)
-
-/*! By default, counting events count events. When set, this option causes
- * successful bytes to be counted instead. Failures are still counted as
- * events. */
-#define PTL_ME_EVENT_CT_BYTES		(1<<18)
-
-/*! Use job ID for authentication instead of user ID. By default, the user ID
- * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID		(1<<19)
 /*!
  * @struct ptl_me_t
  * @brief Defines the visible parts of a match list entry. Values of this type
