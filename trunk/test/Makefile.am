@@ -12,7 +12,8 @@ TESTS = test_init \
 	test_atomic \
 	test_fetchatomic \
 	test_swap \
-	test_LE_hotpotato
+	test_LE_hotpotato \
+	test_ME_hotpotato
 
 #EXTRA_PROGRAMS = test_bootstrap
 
@@ -54,3 +55,6 @@ test_swap_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_hotpotato_SOURCES = test_LE_hotpotato.c
 test_LE_hotpotato_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_hotpotato_SOURCES = test_ME_hotpotato.c
+test_ME_hotpotato_DEPENDENCIES = $(PORTALSLIB)
