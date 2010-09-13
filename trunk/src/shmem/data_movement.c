@@ -25,17 +25,18 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_LE.h"
+#include "ptl_internal_ME.h"
 #include "ptl_internal_error.h"
 
 typedef union {
     struct {
-	char * moredata;
+	char *moredata;
 	size_t remaining;
 	ptl_process_t target_id;
 	ptl_internal_handle_converter_t md_handle;
     } put;
     struct {
-	char * moredata;
+	char *moredata;
 	size_t remaining;
 	ptl_internal_handle_converter_t md_handle;
 	ptl_size_t local_offset;
@@ -67,13 +68,14 @@ static pthread_t catcher, ack_catcher;
 
 #define TERMINATION_HDR_VALUE ((void*)(sizeof(uint64_t)*2+1))
 
-static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETURN
-{
+static void *PtlInternalDMCatcher(
+    void * __attribute__ ((unused)) junk) Q_NORETURN
+{				       /*{{{ */
     while (1) {
 	ptl_pid_t src;
-	ptl_internal_header_t * hdr = PtlInternalFragmentReceive();
+	ptl_internal_header_t *hdr = PtlInternalFragmentReceive();
 	assert(hdr != NULL);
-	if (hdr == TERMINATION_HDR_VALUE) { // TERMINATE!
+	if (hdr == TERMINATION_HDR_VALUE) {	// TERMINATE!
 	    dm_printf("termination command received in DMCatcher!\n");
 	    return NULL;
 	}
@@ -82,59 +84,75 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 	assert(nit.tables != NULL);
 	PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], 1);
 	if (nit.tables[hdr->ni] != NULL) {
-	    ptl_table_entry_t *table_entry = &(nit.tables[hdr->ni][hdr->pt_index]);
+	    ptl_table_entry_t *table_entry =
+		&(nit.tables[hdr->ni][hdr->pt_index]);
 	    assert(pthread_mutex_lock(&table_entry->lock) == 0);
 	    if (table_entry->status == 1) {
 		switch (PtlInternalPTValidate(table_entry)) {
-		    case 1: // uninitialized
+		    case 1:	       // uninitialized
 			fprintf(stderr, "sent to an uninitialized PT!\n");
 			abort();
 			break;
-		    case 2: // disabled
+		    case 2:	       // disabled
 			fprintf(stderr, "sent to a disabled PT!\n");
 			abort();
 			break;
 		}
 		if (hdr->type == HDR_TYPE_PUT) {
-		    dm_printf("received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, (unsigned)hdr->info.put.hdr_data, table_entry->priority.head, table_entry->overflow.head);
+		    dm_printf
+			("received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
+			 (unsigned int)hdr->ni, hdr->pt_index,
+			 (unsigned)hdr->info.put.hdr_data,
+			 table_entry->priority.head,
+			 table_entry->overflow.head);
 		} else {
-		    dm_printf("received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n", (unsigned int)hdr->ni, hdr->pt_index, (unsigned)hdr->type, table_entry->priority.head, table_entry->overflow.head);
+		    dm_printf
+			("received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
+			 (unsigned int)hdr->ni, hdr->pt_index,
+			 (unsigned)hdr->type, table_entry->priority.head,
+			 table_entry->overflow.head);
 		}
 		switch (hdr->ni) {
-		    case 0: case 2: // Matching (ME)
-			fprintf(stderr, "Matching delivery not handled yet, sorry\n");
-			abort();
+		    case 0:
+		    case 2:	       // Matching (ME)
+			dm_printf("delivering to ME table\n");
+			hdr->src = PtlInternalMEDeliver(table_entry, hdr);
 			break;
-		    case 1: case 3: // Non-matching (LE)
+		    case 1:
+		    case 3:	       // Non-matching (LE)
 			dm_printf("delivering to LE table\n");
-			switch (hdr->src = PtlInternalLEDeliver(table_entry, hdr)) {
-			    case 0: // target said silent ACK (might be no LE posted)
-				dm_printf("not sending an ack\n");
-				break;
-			    case 1: // success
-				dm_printf("LE delivery success!\n");
-				break;
-			    case 2: // overflow
-				dm_printf("LE delivery overflow!\n");
-				break;
-			    case 3: // Permission Violation
-				dm_printf("LE says permission violation!\n");
-				hdr->length = 0;
-				break;
-			}
+			hdr->src =
+				PtlInternalLEDeliver(table_entry, hdr);
+			break;
+		}
+		switch(hdr->src) {
+		    case 0:   // target said silent ACK (might be no ME posted)
+			dm_printf("not sending an ack\n");
+			break;
+		    case 1:   // success
+			dm_printf("delivery success!\n");
+			break;
+		    case 2:   // overflow
+			dm_printf("delivery overflow!\n");
+			break;
+		    case 3:   // Permission Violation
+			dm_printf("permission violation!\n");
+			hdr->length = 0;
 			break;
 		}
 		dm_printf("unlocking\n");
 	    } else {
 		/* Invalid PT: increment the dropped counter */
-		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+		(void)PtlInternalAtomicInc(&nit.
+					   regs[hdr->ni][PTL_SR_DROP_COUNT],
+					   1);
 		/* silently ACK */
 		hdr->src = 0;
 		dm_printf("table_entry->status == 0\n");
 	    }
 	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
-	} else { // uninitialized NI
-	    hdr->src = 0; // silent ACK
+	} else {		       // uninitialized NI
+	    hdr->src = 0;	       // silent ACK
 	}
 	PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], -1);
 	dm_printf("returning fragment\n");
@@ -142,7 +160,7 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 	PtlInternalFragmentAck(hdr, src);
 	dm_printf("back to the beginning\n");
     }
-}
+}				       /*}}} */
 
 #if 0
 #define ack_printf(format,...) printf("%u +> " format, (unsigned int)proc_number, ##__VA_ARGS__)
@@ -150,10 +168,11 @@ static void *PtlInternalDMCatcher(void * __attribute__((unused)) junk) Q_NORETUR
 #define ack_printf(format,...)
 #endif
 
-static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
-{
+static void *PtlInternalDMAckCatcher(
+    void * __attribute__ ((unused)) junk)
+{				       /*{{{ */
     while (1) {
-	ptl_internal_header_t * restrict hdr = PtlInternalFragmentAckReceive();
+	ptl_internal_header_t *restrict hdr = PtlInternalFragmentAckReceive();
 	ptl_md_t *mdptr = NULL;
 	ptl_handle_md_t md_handle = PTL_INVALID_HANDLE.md;
 	ptl_internal_srcdata_t *einfo = NULL;
@@ -162,19 +181,21 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	unsigned int md_opts = 0;
 	int acktype;
 	ack_printf("got an ACK (%p)\n", hdr);
-	if (hdr == TERMINATION_HDR_VALUE) { // TERMINATE!
+	if (hdr == TERMINATION_HDR_VALUE) {	// TERMINATE!
 	    ack_printf("termination command received in DMAckCatcher!\n");
 	    return NULL;
 	}
 	/* first, figure out what to do with the ack */
-	switch(hdr->type) {
+	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
 		ack_printf("it's an ACK for a PUT\n");
 		einfo = hdr->src_data_ptr;
 		md_handle = einfo->put.md_handle.a.md;
 		mdptr = PtlInternalMDFetch(md_handle);
 		if (einfo->put.moredata) {
-		    size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+		    size_t payload =
+			PtlInternalFragmentSize(hdr) -
+			sizeof(ptl_internal_header_t);
 		    if (payload > einfo->put.remaining) {
 			payload = einfo->put.remaining;
 		    }
@@ -182,10 +203,18 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		    einfo->put.moredata += payload;
 		    einfo->put.remaining -= payload;
 		    switch (hdr->ni) {
-			case 0: case 1: // Logical
-			    PtlInternalFragmentToss(hdr, einfo->put.target_id.rank); break;
-			case 2: case 3: // Physical
-			    PtlInternalFragmentToss(hdr, einfo->put.target_id.phys.pid); break;
+			case 0:
+			case 1:       // Logical
+			    PtlInternalFragmentToss(hdr,
+						    einfo->put.target_id.
+						    rank);
+			    break;
+			case 2:
+			case 3:       // Physical
+			    PtlInternalFragmentToss(hdr,
+						    einfo->put.target_id.phys.
+						    pid);
+			    break;
 		    }
 		    continue;
 		}
@@ -198,12 +227,13 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		/* pull the data out of the reply */
 		ack_printf("replied with %i data\n", (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-		    memcpy((uint8_t*)(mdptr->start) + einfo->get.local_offset, hdr->data, hdr->length);
+		    memcpy((uint8_t *) (mdptr->start) +
+			   einfo->get.local_offset, hdr->data, hdr->length);
 		}
 		break;
 	    case HDR_TYPE_ATOMIC:
 		ack_printf("it's an ACK for an ATOMIC\n");
-		md_handle = (ptl_handle_md_t)(uintptr_t)(hdr->src_data_ptr);
+		md_handle = (ptl_handle_md_t) (uintptr_t) (hdr->src_data_ptr);
 		mdptr = PtlInternalMDFetch(md_handle);
 		break;
 	    case HDR_TYPE_FETCHATOMIC:
@@ -211,14 +241,19 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		einfo = hdr->src_data_ptr;
 		assert(einfo != NULL);
 		md_handle = einfo->fetchatomic.get_md_handle.a.md;
-		if (einfo->fetchatomic.put_md_handle.a.md != PTL_INVALID_HANDLE.md && einfo->fetchatomic.put_md_handle.a.md != md_handle) {
-		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.a.md);
+		if (einfo->fetchatomic.put_md_handle.a.md !=
+		    PTL_INVALID_HANDLE.md &&
+		    einfo->fetchatomic.put_md_handle.a.md != md_handle) {
+		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.a.
+					 md);
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
 		ack_printf("replied with %i data\n", (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-		    memcpy((uint8_t*)(mdptr->start) + einfo->fetchatomic.local_get_offset, hdr->data, hdr->length);
+		    memcpy((uint8_t *) (mdptr->start) +
+			   einfo->fetchatomic.local_get_offset, hdr->data,
+			   hdr->length);
 		}
 		break;
 	    case HDR_TYPE_SWAP:
@@ -226,19 +261,22 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		einfo = hdr->src_data_ptr;
 		assert(einfo != NULL);
 		md_handle = einfo->swap.get_md_handle.a.md;
-		if (einfo->swap.put_md_handle.a.md != PTL_INVALID_HANDLE.md && einfo->swap.put_md_handle.a.md != md_handle) {
+		if (einfo->swap.put_md_handle.a.md != PTL_INVALID_HANDLE.md &&
+		    einfo->swap.put_md_handle.a.md != md_handle) {
 		    PtlInternalMDCleared(einfo->swap.put_md_handle.a.md);
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
 		ack_printf("replied with %i data\n", (int)hdr->length);
 		if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-		    memcpy((uint8_t*)(mdptr->start) + einfo->swap.local_get_offset, hdr->data+8, hdr->length);
+		    memcpy((uint8_t *) (mdptr->start) +
+			   einfo->swap.local_get_offset, hdr->data + 8,
+			   hdr->length);
 		}
 		break;
-	    default: // impossible
+	    default:		       // impossible
 		UNREACHABLE;
-		*(int*)0 = 0;
+		*(int *)0 = 0;
 	}
 	/* allow the MD to be deallocated (happens *before* notifying listeners
 	 * that we're done, to avoid race conditions) */
@@ -257,7 +295,7 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 	}
 	/* determine desired acktype */
-	acktype = 2; // any acktype
+	acktype = 2;		       // any acktype
 	if (hdr->type == HDR_TYPE_PUT || hdr->type == HDR_TYPE_ATOMIC) {
 	    ptl_ack_req_t ackreq;
 	    if (hdr->type == HDR_TYPE_PUT) {
@@ -278,12 +316,12 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	    }
 	}
 	/* Report the ack */
-	switch(hdr->src) {
-	    case 0: // Pretend we didn't recieve an ack
+	switch (hdr->src) {
+	    case 0:		       // Pretend we didn't recieve an ack
 		ack_printf("it's a secret ACK\n");
 		break;
-	    case 1: // success
-	    case 2: // overflow
+	    case 1:		       // success
+	    case 2:		       // overflow
 		ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
@@ -294,14 +332,18 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		    }
 		    if (md_ct != PTL_CT_NONE && ct_enabled != 0) {
 			if ((md_opts & PTL_MD_EVENT_CT_BYTES) == 0) {
-			    ptl_ct_event_t cte = {1, 0};
+			    ptl_ct_event_t cte = { 1, 0 };
 			    PtlCTInc(md_ct, cte);
 			} else {
-			    ptl_ct_event_t cte = {hdr->length, 0};
+			    ptl_ct_event_t cte = { hdr->length, 0 };
 			    PtlCTInc(md_ct, cte);
 			}
 		    }
-		    if (md_eq != PTL_EQ_NONE && (md_opts & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0 && acktype > 1) {
+		    if (md_eq != PTL_EQ_NONE &&
+			(md_opts &
+			 (PTL_MD_EVENT_DISABLE |
+			  PTL_MD_EVENT_SUCCESS_DISABLE)) == 0 &&
+			acktype > 1) {
 			ptl_event_t e;
 			switch (hdr->type) {
 			    case HDR_TYPE_PUT:
@@ -320,32 +362,42 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 		}
 		ack_printf("finished notification of successful ACK\n");
 		break;
-	    case 3: // Permission Violation
+	    case 3:		       // Permission Violation
 		ack_printf("ACK says permission violation\n");
 		//goto reporterror;
-	    case 4: // nothing matched, report error
+	    case 4:		       // nothing matched, report error
 //reporterror:
 		ack_printf("ACK says nothing matched!\n");
 		if (mdptr != NULL) {
 		    int ct_enabled = 0;
 		    switch (hdr->type) {
-			case HDR_TYPE_PUT: ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK; break;
-			default: ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY; break;
+			case HDR_TYPE_PUT:
+			    ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
+			    break;
+			default:
+			    ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
+			    break;
 		    }
 		    if (ct_enabled) {
 			if (md_ct != PTL_CT_NONE) {
-			    ptl_ct_event_t cte = {0, 1};
+			    ptl_ct_event_t cte = { 0, 1 };
 			    ptl_ct_event_t ctc;
 			    PtlCTGet(md_ct, &ctc);
-			    ack_printf("ct before inc = {%u,%u}\n", (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			    ack_printf("ct before inc = {%u,%u}\n",
+				       (unsigned int)ctc.success,
+				       (unsigned int)ctc.failure);
 			    PtlCTInc(md_ct, cte);
 			    PtlCTGet(md_ct, &ctc);
-			    ack_printf("ct after inc = {%u,%u}\n", (unsigned int)ctc.success, (unsigned int)ctc.failure);
+			    ack_printf("ct after inc = {%u,%u}\n",
+				       (unsigned int)ctc.success,
+				       (unsigned int)ctc.failure);
 			} else {
-			    fprintf(stderr, "enabled CT counting, but no CT!\n");
+			    fprintf(stderr,
+				    "enabled CT counting, but no CT!\n");
 			}
 		    }
-		    if (md_eq != PTL_EQ_NONE && (md_opts & (PTL_MD_EVENT_DISABLE)) == 0) {
+		    if (md_eq != PTL_EQ_NONE &&
+			(md_opts & (PTL_MD_EVENT_DISABLE)) == 0) {
 			ptl_event_t e;
 			e.type = PTL_EVENT_ACK;
 			e.event.ievent.mlength = hdr->length;
@@ -353,7 +405,8 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 			e.event.ievent.user_ptr = hdr->user_ptr;
 			switch (hdr->src) {
 			    case 3:
-				e.event.ievent.ni_fail_type = PTL_NI_PERM_VIOLATION;
+				e.event.ievent.ni_fail_type =
+				    PTL_NI_PERM_VIOLATION;
 				break;
 			    default:
 				e.event.ievent.ni_fail_type = PTL_NI_OK;
@@ -371,14 +424,16 @@ static void *PtlInternalDMAckCatcher(void * __attribute__((unused)) junk)
 	PtlInternalFragmentFree(hdr);
 	ack_printf("freed\n");
     }
-}
+}				       /*}}} */
 
 void INTERNAL PtlInternalDMSetup(
     void)
 {
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
-	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) == 0);
-	assert(pthread_create(&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL) == 0);
+	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) ==
+	       0);
+	assert(pthread_create
+	       (&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL) == 0);
     }
 }
 
@@ -416,7 +471,7 @@ int API_FUNC PtlPut(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(md_handle,1)) {
+    if (PtlInternalMDHandleValidator(md_handle, 1)) {
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
@@ -428,14 +483,17 @@ int API_FUNC PtlPut(
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n",
+			      (unsigned int)target_id.phys.pid,
+			      (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -462,14 +520,17 @@ int API_FUNC PtlPut(
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
     /* step 3: load up the data */
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
-	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset, length);
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
+	length) {
+	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset,
+	       length);
 	extra_info->put.moredata = NULL;
 	extra_info->put.remaining = 0;
 	quick_exit = 1;
     } else {
-	size_t payload = PtlInternalFragmentSize(hdr)-sizeof(ptl_internal_header_t);
-	char * dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+	size_t payload =
+	    PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+	char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
 	memcpy(hdr->data, dataptr, payload);
 	extra_info->put.moredata = dataptr + payload;
 	extra_info->put.remaining = length - payload;
@@ -488,7 +549,7 @@ int API_FUNC PtlPut(
 	    PtlInternalFragmentToss(hdr, target_id.phys.pid);
 	    break;
 	default:
-	    *(int*)0 = 0;
+	    *(int *)0 = 0;
     }
     if (quick_exit) {
 	unsigned int options;
@@ -508,16 +569,17 @@ int API_FUNC PtlPut(
 	if (options & PTL_MD_EVENT_CT_SEND) {
 	    //printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
 	    if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
-		ptl_ct_event_t cte = {1, 0};
+		ptl_ct_event_t cte = { 1, 0 };
 		PtlCTInc(cth, cte);
 	    } else {
-		ptl_ct_event_t cte = {length, 0};
+		ptl_ct_event_t cte = { length, 0 };
 		PtlCTInc(cth, cte);
 	    }
 	} else {
 	    //printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
 	}
-	if ((options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) == 0) {
+	if ((options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE))
+	    == 0) {
 	    ptl_event_t e;
 	    e.type = PTL_EVENT_SEND;
 	    e.event.ievent.mlength = length;
@@ -547,7 +609,7 @@ int API_FUNC PtlGet(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(md_handle,1)) {
+    if (PtlInternalMDHandleValidator(md_handle, 1)) {
 	VERBOSE_ERROR("Invalid md_handle\n");
 	return PTL_ARG_INVALID;
     }
@@ -559,14 +621,17 @@ int API_FUNC PtlGet(
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n",
+			      (unsigned int)target_id.phys.pid,
+			      (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -628,20 +693,36 @@ int API_FUNC PtlAtomic(
 	return PTL_NO_INIT;
     }
     if (length > nit_limits.max_atomic_size) {
-	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
+		      (unsigned int)length,
+		      (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(md_handle,1)) {
+    if (PtlInternalMDHandleValidator(md_handle, 1)) {
 	VERBOSE_ERROR("Invalid MD\n");
 	return PTL_ARG_INVALID;
     }
     {
 	int multiple = 1;
 	switch (datatype) {
-	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
-	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
-	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
-	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	    case PTL_CHAR:
+	    case PTL_UCHAR:
+		multiple = 1;
+		break;
+	    case PTL_SHORT:
+	    case PTL_USHORT:
+		multiple = 2;
+		break;
+	    case PTL_INT:
+	    case PTL_UINT:
+	    case PTL_FLOAT:
+		multiple = 4;
+		break;
+	    case PTL_LONG:
+	    case PTL_ULONG:
+	    case PTL_DOUBLE:
+		multiple = 8;
+		break;
 	}
 	if (length % multiple != 0) {
 	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
@@ -656,27 +737,39 @@ int API_FUNC PtlAtomic(
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n",
+			      (unsigned int)target_id.phys.pid,
+			      (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
     }
     switch (operation) {
-	case PTL_SWAP: case PTL_CSWAP: case PTL_MSWAP:
-	    VERBOSE_ERROR("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
+	case PTL_SWAP:
+	case PTL_CSWAP:
+	case PTL_MSWAP:
+	    VERBOSE_ERROR
+		("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
 	    return PTL_ARG_INVALID;
-	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
-	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
+	case PTL_LOR:
+	case PTL_LAND:
+	case PTL_LXOR:
+	case PTL_BOR:
+	case PTL_BAND:
+	case PTL_BXOR:
 	    switch (datatype) {
-		case PTL_DOUBLE: case PTL_FLOAT:
-		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+		case PTL_DOUBLE:
+		case PTL_FLOAT:
+		    VERBOSE_ERROR
+			("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
@@ -697,8 +790,8 @@ int API_FUNC PtlAtomic(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    assert(sizeof(void*) >= sizeof(ptl_handle_md_t));
-    hdr->src_data_ptr = (void*)(intptr_t)md_handle;
+    assert(sizeof(void *) >= sizeof(ptl_handle_md_t));
+    hdr->src_data_ptr = (void *)(intptr_t) md_handle;
     hdr->info.atomic.hdr_data = hdr_data;
     hdr->info.atomic.ack_req = ack_req;
     hdr->info.atomic.operation = operation;
@@ -723,10 +816,10 @@ int API_FUNC PtlAtomic(
     mdptr = PtlInternalMDFetch(md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
 	if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-	    ptl_ct_event_t cte = {1, 0};
+	    ptl_ct_event_t cte = { 1, 0 };
 	    PtlCTInc(mdptr->ct_handle, cte);
 	} else {
-	    ptl_ct_event_t cte = {length, 0};
+	    ptl_ct_event_t cte = { length, 0 };
 	    PtlCTInc(mdptr->ct_handle, cte);
 	}
     }
@@ -768,16 +861,18 @@ int API_FUNC PtlFetchAtomic(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(get_md_handle,1)) {
+    if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
 	VERBOSE_ERROR("Invalid get_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(put_md_handle,1)) {
+    if (PtlInternalMDHandleValidator(put_md_handle, 1)) {
 	VERBOSE_ERROR("Invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
     if (length > nit_limits.max_atomic_size) {
-	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
+		      (unsigned int)length,
+		      (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
@@ -791,10 +886,24 @@ int API_FUNC PtlFetchAtomic(
     {
 	int multiple = 1;
 	switch (datatype) {
-	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
-	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
-	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
-	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	    case PTL_CHAR:
+	    case PTL_UCHAR:
+		multiple = 1;
+		break;
+	    case PTL_SHORT:
+	    case PTL_USHORT:
+		multiple = 2;
+		break;
+	    case PTL_INT:
+	    case PTL_UINT:
+	    case PTL_FLOAT:
+		multiple = 4;
+		break;
+	    case PTL_LONG:
+	    case PTL_ULONG:
+	    case PTL_DOUBLE:
+		multiple = 8;
+		break;
 	}
 	if (length % multiple != 0) {
 	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
@@ -809,27 +918,37 @@ int API_FUNC PtlFetchAtomic(
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n", (unsigned int)target_id.phys.pid, (unsigned int)target_id.phys.nid);
+		VERBOSE_ERROR("Invalid target_id (pid=%u, nid=%u)\n",
+			      (unsigned int)target_id.phys.pid,
+			      (unsigned int)target_id.phys.nid);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
     }
     switch (operation) {
-	case PTL_CSWAP: case PTL_MSWAP:
+	case PTL_CSWAP:
+	case PTL_MSWAP:
 	    VERBOSE_ERROR("MSWAP/CSWAP should be performed with PtlSwap\n");
 	    return PTL_ARG_INVALID;
-	case PTL_LOR: case PTL_LAND: case PTL_LXOR:
-	case PTL_BOR: case PTL_BAND: case PTL_BXOR:
+	case PTL_LOR:
+	case PTL_LAND:
+	case PTL_LXOR:
+	case PTL_BOR:
+	case PTL_BAND:
+	case PTL_BXOR:
 	    switch (datatype) {
-		case PTL_DOUBLE: case PTL_FLOAT:
-		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+		case PTL_DOUBLE:
+		case PTL_FLOAT:
+		    VERBOSE_ERROR
+			("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
@@ -881,10 +1000,10 @@ int API_FUNC PtlFetchAtomic(
     mdptr = PtlInternalMDFetch(put_md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
 	if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-	    ptl_ct_event_t cte = {1, 0};
+	    ptl_ct_event_t cte = { 1, 0 };
 	    PtlCTInc(mdptr->ct_handle, cte);
 	} else {
-	    ptl_ct_event_t cte = {length, 0};
+	    ptl_ct_event_t cte = { length, 0 };
 	    PtlCTInc(mdptr->ct_handle, cte);
 	}
     }
@@ -926,16 +1045,18 @@ int API_FUNC PtlSwap(
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (PtlInternalMDHandleValidator(get_md_handle,1)) {
+    if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
 	VERBOSE_ERROR("Swap saw invalid get_md_handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDHandleValidator(put_md_handle,1)) {
+    if (PtlInternalMDHandleValidator(put_md_handle, 1)) {
 	VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
 	return PTL_ARG_INVALID;
     }
     if (length > nit_limits.max_atomic_size) {
-	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length, (unsigned int)nit_limits.max_atomic_size);
+	VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
+		      (unsigned int)length,
+		      (unsigned int)nit_limits.max_atomic_size);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
@@ -949,10 +1070,24 @@ int API_FUNC PtlSwap(
     {
 	int multiple = 1;
 	switch (datatype) {
-	    case PTL_CHAR: case PTL_UCHAR: multiple = 1; break;
-	    case PTL_SHORT: case PTL_USHORT: multiple = 2; break;
-	    case PTL_INT: case PTL_UINT: case PTL_FLOAT: multiple = 4; break;
-	    case PTL_LONG: case PTL_ULONG: case PTL_DOUBLE: multiple = 8; break;
+	    case PTL_CHAR:
+	    case PTL_UCHAR:
+		multiple = 1;
+		break;
+	    case PTL_SHORT:
+	    case PTL_USHORT:
+		multiple = 2;
+		break;
+	    case PTL_INT:
+	    case PTL_UINT:
+	    case PTL_FLOAT:
+		multiple = 4;
+		break;
+	    case PTL_LONG:
+	    case PTL_ULONG:
+	    case PTL_DOUBLE:
+		multiple = 8;
+		break;
 	}
 	if (length % multiple != 0) {
 	    VERBOSE_ERROR("Length not a multiple of datatype size\n");
@@ -967,14 +1102,16 @@ int API_FUNC PtlSwap(
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    if (PtlInternalLogicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
 	case 2:		       // Physical
 	case 3:		       // Physical
 	    if (PtlInternalPhysicalProcessValidator(target_id)) {
-		VERBOSE_ERROR("Invalid target_id (rank=%u)\n", (unsigned int)target_id.rank);
+		VERBOSE_ERROR("Invalid target_id (rank=%u)\n",
+			      (unsigned int)target_id.rank);
 		return PTL_ARG_INVALID;
 	    }
 	    break;
@@ -982,16 +1119,20 @@ int API_FUNC PtlSwap(
     switch (operation) {
 	case PTL_SWAP:
 	    break;
-	case PTL_CSWAP: case PTL_MSWAP:
+	case PTL_CSWAP:
+	case PTL_MSWAP:
 	    switch (datatype) {
-		case PTL_DOUBLE: case PTL_FLOAT:
-		    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
+		case PTL_DOUBLE:
+		case PTL_FLOAT:
+		    VERBOSE_ERROR
+			("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
 		    return PTL_ARG_INVALID;
 		default:
 		    break;
 	    }
 	default:
-	    VERBOSE_ERROR("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
+	    VERBOSE_ERROR
+		("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
 	    return PTL_ARG_INVALID;
     }
 #endif
@@ -1000,7 +1141,8 @@ int API_FUNC PtlSwap(
 	PtlInternalMDPosted(get_md_handle);
     }
     /* step 1: get a local memory fragment */
-    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
+    hdr =
+	PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_SWAP;
     hdr->ni = get_md.s.ni;
@@ -1046,8 +1188,9 @@ int API_FUNC PtlSwap(
 	    }
 	}
 	dataptr += 8;
-	memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
-		length);
+	memcpy(dataptr,
+	       PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
+	       length);
     }
     /* step 4: enqueue the op structure on the target */
     switch (get_md.s.ni) {
@@ -1065,10 +1208,10 @@ int API_FUNC PtlSwap(
 	ptl_md_t *mdptr = PtlInternalMDFetch(put_md_handle);
 	if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
 	    if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-		ptl_ct_event_t cte = {1, 0};
+		ptl_ct_event_t cte = { 1, 0 };
 		PtlCTInc(mdptr->ct_handle, cte);
 	    } else {
-		ptl_ct_event_t cte = {length, 0};
+		ptl_ct_event_t cte = { length, 0 };
 		PtlCTInc(mdptr->ct_handle, cte);
 	    }
 	}
