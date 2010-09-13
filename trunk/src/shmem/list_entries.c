@@ -334,13 +334,11 @@ int INTERNAL PtlInternalLEDeliver(
 	// check the permissions on the LE
 	if (le.options & PTL_LE_AUTH_USE_JID) {
 	    if (le.ac_id.jid != PTL_JID_ANY) {
-		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return (le.options & PTL_LE_ACK_DISABLE)?0:3;
+		goto permission_violation;
 	    }
 	} else {
 	    if (le.ac_id.uid != PTL_UID_ANY) {
-		(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		return (le.options & PTL_LE_ACK_DISABLE)?0:3;
+		goto permission_violation;
 	    }
 	}
 	switch (hdr->type) {
@@ -349,18 +347,21 @@ int INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
 		if ((le.options & PTL_LE_OP_PUT) == 0) {
-		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		    return (le.options & PTL_LE_ACK_DISABLE)?0:3;
+		    goto permission_violation;
 		}
 	}
 	switch (hdr->type) {
 	    case HDR_TYPE_GET:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		if ((le.options & PTL_LE_ACK_DISABLE) == 0 && (le.options & PTL_LE_OP_GET) == 0) {
-		    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-		    return (le.options & PTL_LE_ACK_DISABLE)?0:3;
+		if ((le.options & (PTL_LE_ACK_DISABLE|PTL_LE_OP_GET)) == 0) {
+		    goto permission_violation;
 		}
+	}
+	if (0) {
+permission_violation:
+	    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+	    return (le.options & PTL_LE_ACK_DISABLE)?0:3;
 	}
 	/*******************************************************************
 	 * We have permissions on this LE, now check if it's a use-once LE *
