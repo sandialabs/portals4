@@ -13,6 +13,7 @@
 /* Internals */
 #include "ptl_visibility.h"
 #include "ptl_internal_ME.h"
+#include "ptl_internal_EQ.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_error.h"
@@ -26,14 +27,16 @@ typedef struct {
     void *next;			// for nemesis
     void *user_ptr;
     ptl_internal_handle_converter_t me_handle;
+    size_t local_offset;
+    ptl_match_bits_t dont_ignore_bits;
 } ptl_internal_appendME_t;
 
 typedef struct {
+    ptl_internal_appendME_t Qentry;
     ptl_me_t visible;
     volatile uint32_t status;	// 0=free, 1=allocated, 2=in-use
     ptl_pt_index_t pt_index;
     ptl_list_t ptl_list;
-    ptl_internal_appendME_t Qentry;
 } ptl_internal_me_t;
 
 static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
@@ -129,6 +132,8 @@ int API_FUNC PtlMEAppend(
     }
     Qentry->user_ptr = user_ptr;
     Qentry->me_handle.s = meh;
+    Qentry->local_offset = 0;
+    Qentry->dont_ignore_bits = ~me.ignore_bits;
     memcpy(me_handle, &meh, sizeof(ptl_handle_me_t));
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
@@ -263,7 +268,8 @@ int API_FUNC PtlMEUnlink(
 	    break;
     }
     assert(pthread_mutex_unlock(&t->lock) == 0);
-    switch(PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
+    switch (PtlInternalAtomicCas32
+	    (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
 	case ME_IN_USE:
 	    return PTL_IN_USE;
 	case ME_ALLOCATED:
@@ -277,9 +283,272 @@ int API_FUNC PtlMEUnlink(
     return PTL_OK;
 }
 
+static void PtlInternalWalkMatchList(
+    const unsigned int incoming_bits,
+    const unsigned char ni,
+    const ptl_process_t target,
+    const ptl_size_t length,
+    const ptl_size_t offset,
+    ptl_internal_appendME_t ** matchlist,
+    ptl_internal_appendME_t ** mprev,
+    ptl_me_t ** mme)
+{
+    ptl_internal_appendME_t *current = *matchlist;
+    ptl_internal_appendME_t *prev = *mprev;
+    ptl_me_t *me = *mme;
+
+    for (; current != NULL; prev = current, current = current->next) {
+	me = (ptl_me_t *) (((char *)current) +
+			   offsetof(ptl_internal_me_t, visible));
+
+	/* check the match_bits */
+	if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits))
+	    continue;
+	/* check for forbidden truncation */
+	if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
+	    length > (me->length - offset))
+	    continue;
+	/* check for match_id */
+	if (ni <= 1) {		       // Logical
+	    if (me->match_id.rank != PTL_RANK_ANY &&
+		me->match_id.rank != target.rank)
+		continue;
+	} else {		       // Physical
+	    if (me->match_id.phys.nid != PTL_NID_ANY &&
+		me->match_id.phys.nid != target.phys.nid)
+		continue;
+	    if (me->match_id.phys.pid != PTL_PID_ANY &&
+		me->match_id.phys.pid != target.phys.pid)
+		continue;
+	}
+	break;
+    }
+    *matchlist = current;
+    *mprev = prev;
+    *mme = me;
+}
+
 int INTERNAL PtlInternalMEDeliver(
     ptl_table_entry_t * restrict t,
-    ptl_internal_header_t * restrict h)
+    ptl_internal_header_t * restrict hdr)
 {
-    return PTL_FAIL;
+    assert(t);
+    assert(hdr);
+    enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
+    ptl_internal_appendME_t *prev = NULL, *priority_list = t->priority.head;
+    ptl_me_t *me = NULL;
+    ptl_event_t e = {.event.tevent = {
+				      .pt_index = hdr->pt_index,
+				      .uid = 0,
+				      .jid = PTL_JID_NONE,
+				      .match_bits = hdr->match_bits,
+				      .rlength = hdr->length,
+				      .mlength = 0,
+				      .remote_offset = hdr->dest_offset,
+				      .user_ptr = hdr->user_ptr,
+				      .ni_fail_type = PTL_NI_OK}
+    };
+    if (hdr->ni <= 1) {		       // Logical
+	e.event.tevent.initiator.rank = hdr->src;
+    } else {			       // Physical
+	e.event.tevent.initiator.phys.pid = hdr->src;
+	e.event.tevent.initiator.phys.nid = 0;
+    }
+    switch (hdr->type) {
+	case HDR_TYPE_PUT:
+	    e.type = PTL_EVENT_PUT;
+	    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+	    break;
+	case HDR_TYPE_ATOMIC:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+	    break;
+	case HDR_TYPE_FETCHATOMIC:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+	    break;
+	case HDR_TYPE_SWAP:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+	    break;
+	case HDR_TYPE_GET:
+	    e.type = PTL_EVENT_GET;
+	    break;
+    }
+    /* To match, one must check, in order:
+     * 1. The match_bits (with the ignore_bits) against hdr->match_bits
+     * 2. if notruncate, length
+     * 3. the match_id against hdr->target_id
+     */
+    PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
+			     hdr->length, hdr->dest_offset, &priority_list,
+			     &prev, &me);
+    if (priority_list == NULL && hdr->type != HDR_TYPE_GET) {	// check overflow list
+	prev = NULL;
+	priority_list = t->overflow.head;
+	PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
+				 hdr->length, hdr->dest_offset,
+				 &priority_list, &prev, &me);
+	if (priority_list != NULL) {
+	    foundin = OVERFLOW;
+	}
+    }
+    if (priority_list != NULL) {       // Match
+	/*************************************************************************
+	 * There is a matching ME present, and 'priority_list'/'me' points to it *
+	 *************************************************************************/
+	ptl_size_t mlength = 0;
+	const ptl_me_t mec = *me;
+	// check permissions on the ME
+	if (mec.options & PTL_ME_AUTH_USE_JID) {
+	    if (mec.ac_id.jid != PTL_JID_ANY) {
+		goto permission_violation;
+	    }
+	} else {
+	    if (mec.ac_id.uid != PTL_UID_ANY) {
+		goto permission_violation;
+	    }
+	}
+	switch (hdr->type) {
+	    case HDR_TYPE_PUT:
+	    case HDR_TYPE_ATOMIC:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		if ((mec.options & PTL_ME_OP_PUT) == 0) {
+		    goto permission_violation;
+		}
+	}
+	switch (hdr->type) {
+	    case HDR_TYPE_GET:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		if ((mec.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
+		    goto permission_violation;
+		}
+	}
+	if (0) {
+	  permission_violation:
+	    (void)PtlInternalAtomicInc(&nit.
+				       regs[hdr->
+					    ni]
+				       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+	    return (mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3;
+	}
+	/*******************************************************************
+	 * We have permissions on this ME, now check if it's a use-once ME *
+	 *******************************************************************/
+	if ((mec.options & PTL_ME_USE_ONCE) ||
+	    ((mec.options & (PTL_ME_MIN_FREE | PTL_ME_MANAGE_LOCAL)) &&
+	     (mec.length - priority_list->local_offset < mec.min_free))) {
+	    // unlink ME
+	    if (prev != NULL) {
+		prev->next = priority_list->next;
+	    } else {
+		if (foundin == PRIORITY) {	// priority_list
+		    t->priority.head = priority_list->next;
+		} else {
+		    t->overflow.head = priority_list->next;
+		}
+	    }
+	    if (t->EQ != PTL_EQ_NONE &&
+		(mec.
+		 options & (PTL_ME_EVENT_DISABLE |
+			    PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
+		e.type = PTL_EVENT_UNLINK;
+		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
+		PtlInternalEQPush(t->EQ, &e);
+	    }
+	}
+	/* check lengths */
+	if (hdr->length > (mec.length - hdr->dest_offset)) {
+	    mlength = mec.length - hdr->dest_offset;	// truncate
+	} else {
+	    mlength = hdr->length;
+	}
+	/*************************
+	 * Perform the Operation *
+	 *************************/
+	switch (hdr->type) {
+	    case HDR_TYPE_PUT:
+		memcpy((char *)mec.start + hdr->dest_offset, hdr->data,
+		       mlength);
+		break;
+	    case HDR_TYPE_ATOMIC:
+		PtlInternalPerformAtomic((char *)mec.start + hdr->dest_offset,
+					 hdr->data, mlength,
+					 hdr->info.atomic.operation,
+					 hdr->info.atomic.datatype);
+		break;
+	    case HDR_TYPE_FETCHATOMIC:
+		PtlInternalPerformAtomic((char *)mec.start + hdr->dest_offset,
+					 hdr->data, mlength,
+					 hdr->info.fetchatomic.operation,
+					 hdr->info.fetchatomic.datatype);
+		break;
+	    case HDR_TYPE_GET:
+		memcpy(hdr->data, (char *)mec.start + hdr->dest_offset,
+		       mlength);
+		break;
+	    case HDR_TYPE_SWAP:
+		PtlInternalPerformAtomic((char *)mec.start + hdr->dest_offset,
+					 hdr->data, mlength,
+					 hdr->info.swap.operation,
+					 hdr->info.swap.datatype);
+		break;
+	    default:
+		UNREACHABLE;
+		*(int *)0 = 0;
+	}
+	{
+	    const ptl_handle_eq_t t_eq = t->EQ;
+	    int ct_announce = mec.ct_handle != PTL_CT_NONE;
+	    if (ct_announce != 0) {
+		switch (hdr->type) {
+		    case HDR_TYPE_PUT:
+			ct_announce = mec.options & PTL_ME_EVENT_CT_PUT;
+			break;
+		    case HDR_TYPE_GET:
+			ct_announce = mec.options & PTL_ME_EVENT_CT_GET;
+			break;
+		    case HDR_TYPE_ATOMIC:
+		    case HDR_TYPE_FETCHATOMIC:
+		    case HDR_TYPE_SWAP:
+			ct_announce = mec.options & PTL_ME_EVENT_CT_ATOMIC;
+			break;
+		}
+	    }
+	    if (ct_announce != 0) {
+		// increment counter
+		if ((mec.options & PTL_ME_EVENT_CT_BYTES) == 0) {
+		    ptl_ct_event_t cte = { 1, 0 };
+		    PtlCTInc(mec.ct_handle, cte);
+		} else {
+		    ptl_ct_event_t cte = { mlength, 0 };
+		    PtlCTInc(mec.ct_handle, cte);
+		}
+	    } else {
+		//printf("NOT incrementing CT\n");
+	    }
+	    /* PT has EQ & msg/ME has events enabled? */
+	    if (t_eq != PTL_EQ_NONE &&
+		(mec.
+		 options & (PTL_ME_EVENT_DISABLE |
+			    PTL_ME_EVENT_SUCCESS_DISABLE)) == 0) {
+		// record event
+		e.event.tevent.mlength = mlength;
+		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
+		PtlInternalEQPush(t_eq, &e);
+	    }
+	}
+	return (mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1;
+    }
+  discard_message:
+    // post dropped message event
+    if (t->EQ != PTL_EQ_NONE) {
+	e.type = PTL_EVENT_DROPPED;
+	e.event.tevent.start = NULL;
+	PtlInternalEQPush(t->EQ, &e);
+    }
+    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+    return 0;			       // silent ack
 }
