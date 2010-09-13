@@ -302,7 +302,7 @@ static void PtlInternalWalkMatchList(
 			   offsetof(ptl_internal_me_t, visible));
 
 	/* check the match_bits */
-	if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits))
+	if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits) != 0)
 	    continue;
 	/* check for forbidden truncation */
 	if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&

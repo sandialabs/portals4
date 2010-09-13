@@ -50,8 +50,8 @@ int main(
     struct timeval start, stop;
     double accumulate = 0.0;
     int potato = 0;
-    ptl_le_t potato_catcher;
-    ptl_handle_le_t potato_catcher_handle;
+    ptl_me_t potato_catcher;
+    ptl_handle_me_t potato_catcher_handle;
     ptl_md_t potato_launcher;
     ptl_handle_md_t potato_launcher_handle;
 
@@ -112,7 +112,7 @@ int main(
     /* feed the accumulated mapping into NIInit to create the rank-based
      * interface */
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
+		    (PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_LOGICAL,
 		     PTL_PID_ANY, NULL, NULL, maxrank + 1, dmapping, amapping,
 		     &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
@@ -124,9 +124,12 @@ int main(
     potato_catcher.start = &potato;
     potato_catcher.length = sizeof(potato);
     potato_catcher.ac_id.uid = PTL_UID_ANY;
-    potato_catcher.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
+    potato_catcher.options = PTL_ME_OP_PUT | PTL_ME_EVENT_CT_PUT | PTL_ME_EVENT_DISABLE;
+    potato_catcher.match_id.rank = PTL_RANK_ANY;
+    potato_catcher.match_bits = 1;
+    potato_catcher.ignore_bits = ~potato_catcher.match_bits;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_catcher.ct_handle));
-    CHECK_RETURNVAL(PtlLEAppend
+    CHECK_RETURNVAL(PtlMEAppend
 		    (ni_logical, logical_pt_index, potato_catcher, PTL_PRIORITY_LIST, NULL,
 		     &potato_catcher_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
@@ -154,7 +157,7 @@ int main(
 	nextrank.rank *= (nextrank.rank <= maxrank);
 	CHECK_RETURNVAL(PtlPut
 			(potato_launcher_handle, 0, sizeof(double),
-			 PTL_OC_ACK_REQ, nextrank, logical_pt_index, 0, 0,
+			 PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
 			 NULL, 1));
 	CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
 	{
@@ -183,7 +186,7 @@ int main(
 		CHECK_RETURNVAL(PtlPut
 			(potato_launcher_handle, 0,
 			 potato_launcher.length, PTL_OC_ACK_REQ, nextrank,
-			 logical_pt_index, 0, 0, NULL, 2));
+			 logical_pt_index, 3, 0, NULL, 2));
 	    }
 	}
 	// make sure that last send completed before exiting
@@ -213,7 +216,7 @@ int main(
     /* cleanup */
     CHECK_RETURNVAL(PtlMDRelease(potato_launcher_handle));
     CHECK_RETURNVAL(PtlCTFree(potato_launcher.ct_handle));
-    CHECK_RETURNVAL(PtlLEUnlink(potato_catcher_handle));
+    CHECK_RETURNVAL(PtlMEUnlink(potato_catcher_handle));
     CHECK_RETURNVAL(PtlCTFree(potato_catcher.ct_handle));
 
     /* major cleanup */
