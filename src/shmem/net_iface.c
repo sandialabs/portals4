@@ -216,10 +216,10 @@ int API_FUNC PtlNIFini(
 	PtlInternalMDNITeardown(ni.s.ni);
 	switch(ni.s.ni) {
 	    case 0: case 2:
-		PtlInternalLENITeardown(ni.s.ni);
+		PtlInternalMENITeardown(ni.s.ni);
 		break;
 	    case 1: case 3:
-		PtlInternalMENITeardown(ni.s.ni);
+		PtlInternalLENITeardown(ni.s.ni);
 		break;
 	}
 	/* deallocate NI */
