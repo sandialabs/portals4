@@ -15,6 +15,7 @@
  *****************/
 /*! The set of all possible return codes. */
 enum ptl_retvals {
+    PTL_OK=0,		/*!< Indicates success */
     PTL_ARG_INVALID,	/*!< One of the arguments is invalid. */
     PTL_CT_NONE_REACHED, /*!< Timeout reached before any counting event reached
 			   the test. */
@@ -27,7 +28,6 @@ enum ptl_retvals {
     PTL_NI_NOT_LOGICAL, /*!< Not a logically addressed network interface handle. */
     PTL_NO_INIT,	/*!< Init has not yet completed successfully. */
     PTL_NO_SPACE,	/*!< Sufficient memory for action was not available. */
-    PTL_OK=0,		/*!< Indicates success */
     PTL_PID_IN_USE,	/*!< PID is in use. */
     PTL_PT_FULL,	/*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,	/*!< Flow control is enabled and there is no EQ provided. */
