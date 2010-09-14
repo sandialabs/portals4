@@ -330,7 +330,7 @@ extern const ptl_rank_t PTL_RANK_ANY;
 #define PTL_SR_PERMISSIONS_VIOLATIONS ((ptl_sr_index_t) 1)
 
 /*! Enables an infinite timeout. */
-#define PTL_TiME_FOREVER ((ptl_time_t) 0xffffffff)
+#define PTL_TIME_FOREVER ((ptl_time_t) 0xffffffff)
 
 /******************************
  * Initialization and Cleanup *
@@ -1473,12 +1473,12 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
  *			    counting event handle.
  * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
  *			    called by another thread while this thread was
- *			    in PtlCTWait()
+ *			    in PtlCTGet()
  * @note PtlCTGet() must be as close to the speed of a simple variable
  *	access as possible; hence, PtlCTGet() is not atomic relative to
  *	PtlCTSet() or PtlCTInc() and is undefined if PtlCTFree() or PtlNIFini()
  *	is called during the execution of the function.
- * @see PtlCTWait()
+ * @see PtlCTWait(), PtlCTPoll()
  */
 int PtlCTGet(ptl_handle_ct_t	ct_handle,
 	     ptl_ct_event_t *	event);
@@ -1512,7 +1512,7 @@ int PtlCTGet(ptl_handle_ct_t	ct_handle,
  *	necessary to be able to interrupt waiting functions for the sake of
  *	applications that need to tolerate failures. Hence, this approach to
  *	dealing with the conflict of reading and freeing events was chosen.
- * @see PtlCTGet()
+ * @see PtlCTGet(), PtlCTPoll()
  */
 int PtlCTWait(ptl_handle_ct_t	ct_handle,
 	      ptl_size_t	test,
@@ -1578,6 +1578,7 @@ int PtlCTWait(ptl_handle_ct_t	ct_handle,
  *	necessary to be able to interrupt waiting functions for the sake of
  *	applications that need to tolerate failures. Hence, this approach to
  *	dealing with the conflict of reading and freeing events was chosen.
+ * @see PtlCTWait(), PtlCTGet()
  */
 int PtlCTPoll(ptl_handle_ct_t *	ct_handles,
 	      ptl_size_t *	tests,
