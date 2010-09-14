@@ -88,6 +88,12 @@ int API_FUNC PtlNIInit(
     if (map_size > 0 && (desired_mapping == NULL && actual_mapping == NULL)) {
 	return PTL_ARG_INVALID;
     }
+    if ((options & PTL_NI_LOGICAL) != 0 && map_size != num_siblings) {
+	return PTL_SIZE_INVALID;
+    }
+    if ((options & PTL_NI_LOGICAL) == 0 && (map_size > 0 && (desired_mapping != NULL || actual_mapping != NULL))) {
+	return PTL_NI_NOT_LOGICAL;
+    }
 #endif
     if (iface == PTL_IFACE_DEFAULT) {
 	iface = 0;
