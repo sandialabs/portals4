@@ -15,6 +15,8 @@
 
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff;	/* (1<<29) & 0x1fffffff */
 
+/* implement as a circular buffer with atomic insert/remove */
+
 int INTERNAL PtlInternalEQHandleValidator(
     ptl_handle_eq_t handle,
     int none_ok)
