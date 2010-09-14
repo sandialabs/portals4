@@ -323,6 +323,71 @@ int API_FUNC PtlCTWait(
     } while (1);
 }
 
+int API_FUNC PtlCTPoll(
+    ptl_handle_ct_t * ct_handles,
+    ptl_size_t * tests,
+    int size,
+    ptl_time_t timeout,
+    ptl_ct_event_t * event,
+    int *which)
+{
+    size_t ctidx;
+    ptl_ct_event_t *ctes[size];
+    volatile uint64_t *rcs[size];
+    size_t nstart;
+    struct timespec tp;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	return PTL_NO_INIT;
+    }
+    if (ct_handles == NULL || tests == NULL || size == 0) {
+	return PTL_ARG_INVALID;
+    }
+    for (ctidx = 0; ctidx < size; ++ctidx) {
+	if (PtlInternalCTHandleValidator(ct_handles[ctidx], 0)) {
+	    return PTL_ARG_INVALID;
+	}
+    }
+#endif
+    for (ctidx = 0; ctidx < size; ++ctidx) {
+	const ptl_internal_handle_converter_t ct = { ct_handles[ctidx] };
+	ctes[ctidx] = &(ct_events[ct.s.ni][ct.s.code]);
+	rcs[ctidx] =
+	    &(ct_event_refcounts[ct.s.ni][ct.s.code]);
+	PtlInternalAtomicInc(rcs[ctidx], 1);
+    }
+    {
+	struct timespec start;
+	assert(clock_gettime(CLOCK_MONOTONIC, &start) == 0);
+	nstart = start.tv_sec * 1000000000 + start.tv_nsec;
+    }
+    if (timeout != PTL_TIME_FOREVER) { // convert from milliseconds to nanoseconds
+	timeout *= 1000000;
+    }
+    do {
+	for (ctidx = 0; ctidx < size; ++ctidx) {
+	    ptl_ct_event_t tmpread;
+	    PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
+	    if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
+		for (size_t idx = 0; idx < size; ++idx)
+		    PtlInternalAtomicInc(rcs[idx], -1);
+		return PTL_INTERRUPTED;
+	    } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
+		if (event != NULL)
+		    *event = tmpread;
+		if (which != NULL)
+		    *which = (int)ctidx;
+		for (size_t idx = 0; idx < size; ++idx)
+		    PtlInternalAtomicInc(rcs[idx], -1);
+		return PTL_OK;
+	    }
+	}
+	assert(clock_gettime(CLOCK_MONOTONIC, &tp) == 0);
+    } while (timeout == PTL_TIME_FOREVER ||
+	     ((tp.tv_sec * 1000000000 + tp.tv_nsec) - nstart) < timeout);
+    return PTL_CT_NONE_REACHED;
+}
+
 int API_FUNC PtlCTSet(
     ptl_handle_ct_t ct_handle,
     ptl_ct_event_t test)
