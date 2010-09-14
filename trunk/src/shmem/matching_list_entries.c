@@ -18,6 +18,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_performatomic.h"
 
 #define ME_FREE		0
 #define ME_ALLOCATED	1
@@ -542,7 +543,6 @@ int INTERNAL PtlInternalMEDeliver(
 	}
 	return (mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1;
     }
-  discard_message:
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
 	e.type = PTL_EVENT_DROPPED;
