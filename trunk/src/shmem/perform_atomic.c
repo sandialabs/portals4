@@ -146,6 +146,51 @@ static void inline PtlInternalPerformAtomicSwap(
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
+#define CAS_NE(type) do { \
+    type curv; \
+    const type newv = *(type*)src; \
+    do { \
+	curv = *(volatile type*)dest; \
+	if (curv == newv) break; \
+    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    *(type*)src = curv; \
+} while (0)
+#define CAS_LE(type) do { \
+    type curv; \
+    const type newv = *(type*)src; \
+    do { \
+	curv = *(volatile type*)dest; \
+	if (curv > newv) break; \
+    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    *(type*)src = curv; \
+} while (0)
+#define CAS_LT(type) do { \
+    type curv; \
+    const type newv = *(type*)src; \
+    do { \
+	curv = *(volatile type*)dest; \
+	if (curv >= newv) break; \
+    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    *(type*)src = curv; \
+} while (0)
+#define CAS_GE(type) do { \
+    type curv; \
+    const type newv = *(type*)src; \
+    do { \
+	curv = *(volatile type*)dest; \
+	if (curv < newv) break; \
+    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    *(type*)src = curv; \
+} while (0)
+#define CAS_GT(type) do { \
+    type curv; \
+    const type newv = *(type*)src; \
+    do { \
+	curv = *(volatile type*)dest; \
+	if (curv <= newv) break; \
+    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    *(type*)src = curv; \
+} while (0)
 
 
 static unsigned char datatype_size_table[] = {1,1,2,2,4,4,8,8,4,8};
@@ -279,6 +324,116 @@ void INTERNAL PtlInternalPerformAtomicArg(
 		case PTL_ULONG:
 		case PTL_DOUBLE:
 		    CAS(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_CSWAP_NE:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS_NE(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS_NE(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS_NE(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS_NE(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_CSWAP_LE:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS_LE(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS_LE(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS_LE(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS_LE(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_CSWAP_LT:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS_LT(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS_LT(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS_LT(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS_LT(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_CSWAP_GE:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS_GE(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS_GE(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS_GE(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS_GE(uint64_t);
+		    break;
+	    }
+	    break;
+	case PTL_CSWAP_GT:
+	    switch (dt) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+		    CAS_GT(uint8_t);
+		    break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+		    CAS_GT(uint16_t);
+		    break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+		    CAS_GT(uint32_t);
+		    break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+		    CAS_GT(uint64_t);
 		    break;
 	    }
 	    break;
