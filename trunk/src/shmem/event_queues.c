@@ -22,7 +22,9 @@
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff;	/* (1<<29) & 0x1fffffff */
 
 typedef struct {
-    ptl_event_t *ring, *head, *tail, *written_tail;
+    ptl_event_t *ring;
+    uint32_t size;
+    volatile uint32_t head, tail, written_tail;
 } ptl_internal_eq_t;
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
@@ -133,7 +135,9 @@ int API_FUNC PtlEQAlloc(
 			return PTL_NO_SPACE;
 		    }
 		    eqh.s.code = offset;
-		    ni_eqs[offset].head = ni_eqs[offset].tail = ni_eqs[offset].written_tail = ni_eqs[offset].ring = tmp;
+		    ni_eqs[offset].head = ni_eqs[offset].tail = ni_eqs[offset].written_tail = 0;
+		    ni_eqs[offset].size = count;
+		    ni_eqs[offset].ring = tmp;
 		    break;
 		}
 	    }
@@ -146,13 +150,44 @@ int API_FUNC PtlEQAlloc(
 int API_FUNC PtlEQFree(
     ptl_handle_eq_t eq_handle)
 {
-    return PTL_FAIL;
+    const ptl_internal_handle_converter_t eqh = { eq_handle };
+    ptl_event_t *tmp;
+    ptl_internal_eq_t *eq;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
+	return PTL_NO_INIT;
+    }
+    if (PtlInternalEQHandleValidator(eq_handle, 0)) {
+	VERBOSE_ERROR("invalid EQ handle\n");
+	return PTL_ARG_INVALID;
+    }
+#endif
+    eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    assert(eq->head == eq->tail && eq->tail == eq->written_tail);
+    if (eq->head != eq->tail || eq->tail != eq->written_tail) { // this EQ is busy
+	return PTL_ARG_INVALID;
+    }
+    tmp = eq->ring;
+    eq->ring = NULL;
+    free(tmp);
+    return PTL_OK;
 }
 
 int API_FUNC PtlEQGet(
     ptl_handle_eq_t eq_handle,
     ptl_event_t * event)
 {
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
+	return PTL_NO_INIT;
+    }
+    if (PtlInternalEQHandleValidator(eq_handle, 0)) {
+	VERBOSE_ERROR("invalid EQ handle\n");
+	return PTL_ARG_INVALID;
+    }
+#endif
     return PTL_FAIL;
 }
 
