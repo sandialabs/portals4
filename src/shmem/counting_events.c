@@ -38,6 +38,21 @@ static const ptl_ct_event_t CTERR =
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)	    (a.success == b.success && a.failure == b.failure)
 
+#ifdef HAVE_MACH_TIMER
+#include <mach/mach_time.h>
+#define TIMER_TYPE uint64_t
+#define MARK_TIMER(x) do { x = mach_absolute_time(); } while (0)
+#define TIMER_INTS(x) (x)
+#define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
+#elif defined(HAVE_GETTIME_TIMER)
+#define TIMER_TYPE struct timespec
+#define MARK_TIMER(x) assert(clock_gettime(CLOCK_MONOTONIC, &x) == 0)
+#define TIMER_INTS(x) (x.tv_sec * 1000000000 + x.tv_nsec)
+#define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
+#else
+#error No other timers are defined!
+#endif
+
 /* 128-bit Atomics */
 static inline int PtlInternalAtomicCasCT(
     volatile ptl_ct_event_t * addr,
@@ -331,11 +346,11 @@ int API_FUNC PtlCTPoll(
     ptl_ct_event_t * event,
     int *which)
 {
-    size_t ctidx;
+    ptl_size_t ctidx, offset;
     ptl_ct_event_t *ctes[size];
     volatile uint64_t *rcs[size];
     size_t nstart;
-    struct timespec tp;
+    TIMER_TYPE tp;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -357,34 +372,36 @@ int API_FUNC PtlCTPoll(
 	PtlInternalAtomicInc(rcs[ctidx], 1);
     }
     {
-	struct timespec start;
-	assert(clock_gettime(CLOCK_MONOTONIC, &start) == 0);
-	nstart = start.tv_sec * 1000000000 + start.tv_nsec;
+	TIMER_TYPE start;
+	MARK_TIMER(start);
+	nstart = TIMER_INTS(start);
     }
-    if (timeout != PTL_TIME_FOREVER) { // convert from milliseconds to nanoseconds
-	timeout *= 1000000;
+    if (timeout != PTL_TIME_FOREVER) { // convert from milliseconds to timer units
+	MILLI_TO_TIMER_INTS(timeout);
     }
+    offset = random() % size;
     do {
 	for (ctidx = 0; ctidx < size; ++ctidx) {
+	    const ptl_size_t ridx = (ctidx + offset) % size;
 	    ptl_ct_event_t tmpread;
-	    PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
+	    PtlInternalAtomicReadCT(&tmpread, ctes[ridx]);
 	    if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
 		for (size_t idx = 0; idx < size; ++idx)
 		    PtlInternalAtomicInc(rcs[idx], -1);
 		return PTL_INTERRUPTED;
-	    } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
+	    } else if ((tmpread.success + tmpread.failure) >= tests[ridx]) {
 		if (event != NULL)
 		    *event = tmpread;
 		if (which != NULL)
-		    *which = (int)ctidx;
+		    *which = (int)ridx;
 		for (size_t idx = 0; idx < size; ++idx)
 		    PtlInternalAtomicInc(rcs[idx], -1);
 		return PTL_OK;
 	    }
 	}
-	assert(clock_gettime(CLOCK_MONOTONIC, &tp) == 0);
+	MARK_TIMER(tp);
     } while (timeout == PTL_TIME_FOREVER ||
-	     ((tp.tv_sec * 1000000000 + tp.tv_nsec) - nstart) < timeout);
+	     (TIMER_INTS(tp) - nstart) < timeout);
     return PTL_CT_NONE_REACHED;
 }
 
