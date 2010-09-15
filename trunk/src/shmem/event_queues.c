@@ -65,6 +65,31 @@ int INTERNAL PtlInternalEQHandleValidator(
     ptl_handle_eq_t handle,
     int none_ok)
 {
+#ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t eq = { handle };
+    if (eq.s.selector != HANDLE_EQ_CODE) {
+	VERBOSE_ERROR("Expected EQ handle, but it's not one\n");
+	return PTL_ARG_INVALID;
+    }
+    if (none_ok == 1 && handle == PTL_EQ_NONE) {
+	return PTL_OK;
+    }
+    if (eq.s.ni > 3 || eq.s.code > nit_limits.max_eqs ||
+	(nit.refcount[eq.s.ni] == 0)) {
+	VERBOSE_ERROR
+	    ("EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+	     eq.s.ni, eq.s.code, nit_limits.max_cts);
+	return PTL_ARG_INVALID;
+    }
+    if (eqs[eq.s.ni] == NULL) {
+	VERBOSE_ERROR("EQ table for NI uninitialized\n");
+	return PTL_ARG_INVALID;
+    }
+    if (eqs[eq.s.ni][eq.s.code].ring == NULL) {
+	VERBOSE_ERROR("EQ appears to be deallocated\n");
+	return PTL_ARG_INVALID;
+    }
+#endif
     return PTL_OK;
 }
 
