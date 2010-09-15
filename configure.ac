@@ -162,6 +162,7 @@ AC_SEARCH_LIBS([shm_open],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
 AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
+SANDIA_CHOOSE_TIMER
 
 ## -------------------------- ##
 ## Check for library behavior ##
