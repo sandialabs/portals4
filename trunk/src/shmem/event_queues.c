@@ -119,9 +119,25 @@ int API_FUNC PtlEQAlloc(
 	VERBOSE_ERROR("passed in a NULL for eq_handle");
 	return PTL_ARG_INVALID;
     }
+    if (count > 0xffffffff) {
+	VERBOSE_ERROR("insanely large count");
+	return PTL_ARG_INVALID;
+    }
 #endif
     assert(eqs[ni.s.ni] != NULL);
     eqh.s.ni = ni.s.ni;
+    /* make count the next highest power of two (fast algorithm modified from
+     * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2) */
+    if (count == 0) count = 2;
+    else {
+	count--;
+	count |= count >> 1;
+	count |= count >> 2;
+	count |= count >> 4;
+	count |= count >> 8;
+	count |= count >> 16;
+	count++;
+    }
     /* find an EQ handle */
     {
 	ptl_internal_eq_t *ni_eqs = eqs[ni.s.ni];
@@ -187,8 +203,25 @@ int API_FUNC PtlEQGet(
 	VERBOSE_ERROR("invalid EQ handle\n");
 	return PTL_ARG_INVALID;
     }
+    if (event == NULL) {
+	VERBOSE_ERROR("null event\n");
+	return PTL_ARG_INVALID;
+    }
 #endif
-    return PTL_FAIL;
+    const ptl_internal_handle_converter_t eqh = { eq_handle };
+    ptl_internal_eq_t *eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    uint32_t mask = eq->size - 1;
+    uint32_t readidx, curidx;
+
+    curidx = eq->head;
+    do {
+	readidx = curidx;
+	if (readidx == eq->tail) {
+	    return PTL_EQ_EMPTY;
+	}
+	*event = eq->ring[readidx];
+    } while ((curidx = PtlInternalAtomicCas32(&eq->head, readidx, (readidx+1)&mask)) != readidx);
+    return PTL_OK;
 }
 
 int API_FUNC PtlEQWait(
