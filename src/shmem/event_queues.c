@@ -33,7 +33,7 @@ typedef union {
 typedef struct {
     ptl_event_t *ring;
     uint32_t size;
-    volatile eq_off_t head, tail, written_tail;
+    volatile eq_off_t head, leading_tail, lagging_tail;
 } ptl_internal_eq_t;
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
@@ -162,11 +162,10 @@ int API_FUNC PtlEQAlloc(
 		    }
 		    eqh.s.code = offset;
 		    ni_eqs[offset].head.s.offset =
-			ni_eqs[offset].tail.s.offset =
-			ni_eqs[offset].written_tail.s.offset = 0;
+			ni_eqs[offset].leading_tail.s.offset = 0;
 		    ni_eqs[offset].head.s.sequence += 7;
-		    ni_eqs[offset].tail.s.sequence += 11;
-		    ni_eqs[offset].written_tail.s.sequence += 13;
+		    ni_eqs[offset].leading_tail.s.sequence += 11;
+		    ni_eqs[offset].lagging_tail = ni_eqs[offset].leading_tail;
 		    ni_eqs[offset].size = count;
 		    ni_eqs[offset].ring = tmp;
 		    break;
@@ -195,9 +194,9 @@ int API_FUNC PtlEQFree(
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    assert(eq->head.s.offset == eq->tail.s.offset &&
-	   eq->tail.s.offset == eq->written_tail.s.offset);
-    if (eq->head.s.offset != eq->tail.s.offset || eq->tail.s.offset != eq->written_tail.s.offset) {	// this EQ is busy
+    assert(eq->head.s.offset == eq->leading_tail.s.offset &&
+	   eq->leading_tail.s.offset == eq->lagging_tail.s.offset);
+    if (eq->head.s.offset != eq->leading_tail.s.offset || eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {	// this EQ is busy
 	return PTL_ARG_INVALID;
     }
     tmp = eq->ring;
@@ -232,7 +231,7 @@ int API_FUNC PtlEQGet(
     curidx = eq->head;
     do {
 	readidx = curidx;
-	if (readidx.s.offset == eq->tail.s.offset) {
+	if (readidx.s.offset == eq->lagging_tail.s.offset) {
 	    return PTL_EQ_EMPTY;
 	}
 	*event = eq->ring[readidx.s.offset];
@@ -270,7 +269,7 @@ int API_FUNC PtlEQWait(
     curidx = eq->head;
     do {
 	readidx = curidx;
-	if (readidx.s.offset == eq->tail.s.offset) {
+	if (readidx.s.offset == eq->lagging_tail.s.offset) {
 	    curidx = eq->head;
 	    continue;
 	}
@@ -347,7 +346,7 @@ int API_FUNC PtlEQPoll(
 	    curidx = eq->head;
 	    do {
 		readidx = curidx;
-		if (readidx.s.offset == eq->tail.s.offset) {
+		if (readidx.s.offset == eq->lagging_tail.s.offset) {
 		    break;
 		}
 		*event = eq->ring[readidx.s.offset];
@@ -367,4 +366,22 @@ void INTERNAL PtlInternalEQPush(
     ptl_handle_eq_t eq_handle,
     ptl_event_t * event)
 {
+    const ptl_internal_handle_converter_t eqh = { eq_handle };
+    ptl_internal_eq_t * const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    const uint32_t mask = eq->size - 1;
+    eq_off_t writeidx, curidx, newidx;
+
+    // first, get a location from the leading_tail
+    curidx = eq->leading_tail;
+    do {
+	writeidx = curidx;
+	newidx.s.sequence = writeidx.s.sequence + 23;
+	newidx.s.offset = (writeidx.s.offset + 1) & mask;
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u, newidx.u)) != writeidx.u);
+    // at this point, we have a writeidx offset to fill
+    eq->ring[writeidx.s.offset] = *event;
+    // now, wait for our neighbor to finish
+    while (eq->lagging_tail.u != writeidx.u) ;
+    // now, update the lagging_tail
+    eq->lagging_tail = newidx;
 }
