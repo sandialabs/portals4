@@ -39,11 +39,12 @@ typedef struct {
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
 
 void INTERNAL PtlInternalEQNISetup(
-	unsigned int ni)
+    unsigned int ni)
 {
     ptl_internal_eq_t *tmp;
     while ((tmp =
-	    PtlInternalAtomicCasPtr(&(eqs[ni]), NULL, (void *)1)) == (void *)1) ;
+	    PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
+				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_eqs, sizeof(ptl_internal_eq_t));
 	assert(tmp != NULL);
@@ -60,9 +61,9 @@ void INTERNAL PtlInternalEQNITeardown(
     eqs[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    for (size_t i=0; i<nit_limits.max_eqs; ++i) {
+    for (size_t i = 0; i < nit_limits.max_eqs; ++i) {
 	if (tmp[i].ring != NULL) {
-	    while (tmp[i].ring == (void*)1) ; // just in case (this should never, realistically happen)
+	    while (tmp[i].ring == (void *)1) ;	// just in case (this should never, realistically happen)
 #warning need to deal with allocated EQs at Teardown
 	    free(tmp[i].ring);
 	    tmp[i].ring = NULL;
@@ -110,7 +111,7 @@ int API_FUNC PtlEQAlloc(
     ptl_handle_eq_t * eq_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t eqh = { .s.selector = HANDLE_EQ_CODE };
+    ptl_internal_handle_converter_t eqh = {.s.selector = HANDLE_EQ_CODE };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");
@@ -137,7 +138,8 @@ int API_FUNC PtlEQAlloc(
     eqh.s.ni = ni.s.ni;
     /* make count the next highest power of two (fast algorithm modified from
      * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2) */
-    if (count == 0) count = 2;
+    if (count == 0)
+	count = 2;
     else {
 	count--;
 	count |= count >> 1;
@@ -152,14 +154,16 @@ int API_FUNC PtlEQAlloc(
 	for (uint32_t offset = 0; offset < nit_limits.max_eqs; ++offset) {
 	    if (ni_eqs[offset].ring == NULL) {
 		if (PtlInternalAtomicCasPtr
-			(&(ni_eqs[offset].ring), NULL, (void *)1) == NULL) {
+		    (&(ni_eqs[offset].ring), NULL, (void *)1) == NULL) {
 		    ptl_event_t *tmp = calloc(count, sizeof(ptl_event_t));
 		    if (tmp == NULL) {
 			ni_eqs[offset].ring = NULL;
 			return PTL_NO_SPACE;
 		    }
 		    eqh.s.code = offset;
-		    ni_eqs[offset].head.s.offset = ni_eqs[offset].tail.s.offset = ni_eqs[offset].written_tail.s.offset = 0;
+		    ni_eqs[offset].head.s.offset =
+			ni_eqs[offset].tail.s.offset =
+			ni_eqs[offset].written_tail.s.offset = 0;
 		    ni_eqs[offset].head.s.sequence += 7;
 		    ni_eqs[offset].tail.s.sequence += 11;
 		    ni_eqs[offset].written_tail.s.sequence += 13;
@@ -191,8 +195,9 @@ int API_FUNC PtlEQFree(
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    assert(eq->head.s.offset == eq->tail.s.offset && eq->tail.s.offset == eq->written_tail.s.offset);
-    if (eq->head.s.offset != eq->tail.s.offset || eq->tail.s.offset != eq->written_tail.s.offset) { // this EQ is busy
+    assert(eq->head.s.offset == eq->tail.s.offset &&
+	   eq->tail.s.offset == eq->written_tail.s.offset);
+    if (eq->head.s.offset != eq->tail.s.offset || eq->tail.s.offset != eq->written_tail.s.offset) {	// this EQ is busy
 	return PTL_ARG_INVALID;
     }
     tmp = eq->ring;
@@ -220,7 +225,7 @@ int API_FUNC PtlEQGet(
     }
 #endif
     const ptl_internal_handle_converter_t eqh = { eq_handle };
-    ptl_internal_eq_t * const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
     eq_off_t readidx, curidx, newidx;
 
@@ -231,9 +236,11 @@ int API_FUNC PtlEQGet(
 	    return PTL_EQ_EMPTY;
 	}
 	*event = eq->ring[readidx.s.offset];
-	newidx.s.sequence = readidx.s.sequence + 23; // a prime number
-	newidx.s.offset = (readidx.s.offset+1)&mask;
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
+	newidx.s.sequence = readidx.s.sequence + 23;	// a prime number
+	newidx.s.offset = (readidx.s.offset + 1) & mask;
+    } while ((curidx.u =
+	      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+				     newidx.u)) != readidx.u);
     return PTL_OK;
 }
 
@@ -268,9 +275,11 @@ int API_FUNC PtlEQWait(
 	    continue;
 	}
 	*event = eq->ring[readidx.s.offset];
-	newidx.s.sequence = readidx.s.sequence + 23; // a prime number
-	newidx.s.offset = (readidx.s.offset+1)&mask;
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
+	newidx.s.sequence = readidx.s.sequence + 23;	// a prime number
+	newidx.s.offset = (readidx.s.offset + 1) & mask;
+    } while ((curidx.u =
+	      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+				     newidx.u)) != readidx.u);
     return PTL_OK;
 }
 
@@ -297,7 +306,7 @@ int API_FUNC PtlEQPoll(
 	VERBOSE_ERROR("null event or null which\n");
 	return PTL_ARG_INVALID;
     }
-    for (eqidx=0; eqidx<size; ++eqidx) {
+    for (eqidx = 0; eqidx < size; ++eqidx) {
 	if (PtlInternalEQHandleValidator(eq_handles[eqidx], 0)) {
 	    VERBOSE_ERROR("invalid EQ handle\n");
 	    return PTL_ARG_INVALID;
@@ -326,7 +335,7 @@ int API_FUNC PtlEQPoll(
 	t |= t >> 2;
 	t |= t >> 4;
 	t |= t >> 8;
-	offset = nstart & t; // pseudo-random
+	offset = nstart & t;	       // pseudo-random
     }
     do {
 	for (eqidx = 0; eqidx < size; ++eqidx) {
@@ -342,12 +351,15 @@ int API_FUNC PtlEQPoll(
 		    break;
 		}
 		*event = eq->ring[readidx.s.offset];
-		newidx.s.sequence = readidx.s.sequence + 23; // a prime number
-		newidx.s.offset = (readidx.s.offset+1)&mask;
-	    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
+		newidx.s.sequence = readidx.s.sequence + 23;	// a prime number
+		newidx.s.offset = (readidx.s.offset + 1) & mask;
+	    } while ((curidx.u =
+		      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+					     newidx.u)) != readidx.u);
 	}
 	MARK_TIMER(tp);
-    } while (timeout == PTL_TIME_FOREVER || (TIMER_INTS(tp) - nstart) < timeout);
+    } while (timeout == PTL_TIME_FOREVER ||
+	     (TIMER_INTS(tp) - nstart) < timeout);
     return PTL_EQ_EMPTY;
 }
 
