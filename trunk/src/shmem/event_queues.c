@@ -15,6 +15,7 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_error.h"
+#include "ptl_internal_timer.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_commpad.h"
 #endif
@@ -280,7 +281,74 @@ int API_FUNC PtlEQPoll(
     ptl_event_t * event,
     int *which)
 {
-    return PTL_FAIL;
+    ptl_size_t eqidx, offset;
+    size_t nstart;
+    TIMER_TYPE tp;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
+	return PTL_NO_INIT;
+    }
+    if (size < 0) {
+	VERBOSE_ERROR("nonsensical size (%i)", size);
+	return PTL_ARG_INVALID;
+    }
+    if (event == NULL && which == NULL) {
+	VERBOSE_ERROR("null event or null which\n");
+	return PTL_ARG_INVALID;
+    }
+    for (eqidx=0; eqidx<size; ++eqidx) {
+	if (PtlInternalEQHandleValidator(eq_handles[eqidx], 0)) {
+	    VERBOSE_ERROR("invalid EQ handle\n");
+	    return PTL_ARG_INVALID;
+	}
+    }
+#endif
+    ptl_internal_eq_t *eqs[size];
+    uint32_t masks[size];
+    for (eqidx = 0; eqidx < size; ++eqidx) {
+	const ptl_internal_handle_converter_t eqh = { eq_handles[eqidx] };
+	eqs[eqidx] = &(eqs[eqh.s.ni][eqh.s.code]);
+	masks[eqidx] = eqs[eqidx]->size - 1;
+    }
+
+    {
+	TIMER_TYPE start;
+	MARK_TIMER(start);
+	nstart = TIMER_INTS(start);
+    }
+    if (timeout != PTL_TIME_FOREVER) { // convert from milliseconds to timer units
+	MILLI_TO_TIMER_INTS(timeout);
+    }
+    {
+	uint16_t t = size - 1;
+	t |= t >> 1;
+	t |= t >> 2;
+	t |= t >> 4;
+	t |= t >> 8;
+	offset = nstart & t; // pseudo-random
+    }
+    do {
+	for (eqidx = 0; eqidx < size; ++eqidx) {
+	    const ptl_size_t ridx = (eqidx + offset) % size;
+	    ptl_internal_eq_t *const eq = eqs[ridx];
+	    const uint32_t mask = masks[ridx];
+	    eq_off_t readidx, curidx, newidx;
+
+	    curidx = eq->head;
+	    do {
+		readidx = curidx;
+		if (readidx.s.offset == eq->tail.s.offset) {
+		    break;
+		}
+		*event = eq->ring[readidx.s.offset];
+		newidx.s.sequence = readidx.s.sequence + 23; // a prime number
+		newidx.s.offset = (readidx.s.offset+1)&mask;
+	    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
+	}
+	MARK_TIMER(tp);
+    } while (timeout == PTL_TIME_FOREVER || (TIMER_INTS(tp) - nstart) < timeout);
+    return PTL_EQ_EMPTY;
 }
 
 void INTERNAL PtlInternalEQPush(
