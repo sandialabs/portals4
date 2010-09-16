@@ -80,7 +80,7 @@ int main(
 	assert(PtlCTFree(le.ct_handle) == PTL_OK);
 	assert(PtlLEUnlink(le_handle) == PTL_OK);
 	/* now distribute the mapping */
-	md.options = PTL_MD_EVENT_CT_ACK;
+	md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK;
 	md.eq_handle = PTL_EQ_NONE;
 	assert(PtlCTAlloc(ni_physical, &md.ct_handle) ==
 	       PTL_OK);
