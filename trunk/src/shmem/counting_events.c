@@ -21,6 +21,7 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
 #include "ptl_internal_error.h"
+#include "ptl_internal_timer.h"
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff;	/* (2<<29) & 0x1fffffff */
 
@@ -37,21 +38,6 @@ static const ptl_ct_event_t CTERR =
 
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)	    (a.success == b.success && a.failure == b.failure)
-
-#ifdef HAVE_MACH_TIMER
-#include <mach/mach_time.h>
-#define TIMER_TYPE uint64_t
-#define MARK_TIMER(x) do { x = mach_absolute_time(); } while (0)
-#define TIMER_INTS(x) (x)
-#define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
-#elif defined(HAVE_GETTIME_TIMER)
-#define TIMER_TYPE struct timespec
-#define MARK_TIMER(x) assert(clock_gettime(CLOCK_MONOTONIC, &x) == 0)
-#define TIMER_INTS(x) (x.tv_sec * 1000000000 + x.tv_nsec)
-#define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
-#else
-#error No other timers are defined!
-#endif
 
 /* 128-bit Atomics */
 static inline int PtlInternalAtomicCasCT(
@@ -379,7 +365,15 @@ int API_FUNC PtlCTPoll(
     if (timeout != PTL_TIME_FOREVER) { // convert from milliseconds to timer units
 	MILLI_TO_TIMER_INTS(timeout);
     }
-    offset = random() % size;
+    {
+	uint32_t t = size - 1;
+	t |= t >> 1;
+	t |= t >> 2;
+	t |= t >> 4;
+	t |= t >> 8;
+	t |= t >> 16;
+	offset = nstart & t; // pseudo-random
+    }
     do {
 	for (ctidx = 0; ctidx < size; ++ctidx) {
 	    const ptl_size_t ridx = (ctidx + offset) % size;
