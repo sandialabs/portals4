@@ -40,7 +40,7 @@ enum ptl_retvals {
  **************/
 typedef uint64_t	ptl_size_t; /*!< Unsigned 64-bit integral type used for
 				      representing sizes. */
-typedef unsigned int	ptl_pt_index_t; /*!< Integral type used for
+typedef unsigned char	ptl_pt_index_t; /*!< Integral type used for
 					  representing portal table indices. */
 typedef uint64_t	ptl_match_bits_t; /*!< Capable of holding unsigned
 					    64-bit integer values. */
@@ -50,19 +50,19 @@ typedef unsigned int	ptl_time_t; /*!< Time in milliseconds (used for timeout
 typedef unsigned int	ptl_interface_t; /*!< Integral type used for
 					   identifying different network
 					   interfaces. */
-typedef unsigned int	ptl_nid_t; /*!< Integral type used for representing
+typedef uint16_t	ptl_nid_t; /*!< Integral type used for representing
 				     node identifiers. */
-typedef unsigned int	ptl_pid_t; /*!< Integral type used for representing
+typedef uint16_t	ptl_pid_t; /*!< Integral type used for representing
 				     process identifiers when physical
 				     addressing is used in the network
 				     interface (PTL_NI_PHYSICAL is set). */
-typedef unsigned int	ptl_rank_t; /*!< Integral type used for representing
+typedef uint32_t	ptl_rank_t; /*!< Integral type used for representing
 				      process identifiers when logical
 				      addressing is used in the network
 				      interface (PTL_NI_LOGICAL is set). */
-typedef unsigned int	ptl_uid_t; /*!< Integral type for representing user
+typedef uint32_t	ptl_uid_t; /*!< Integral type for representing user
 				     identifiers. */
-typedef unsigned int	ptl_jid_t; /*!< Integral type for representing job
+typedef uint32_t	ptl_jid_t; /*!< Integral type for representing job
 				     identifiers. */
 typedef unsigned int	ptl_sr_index_t; /*!< Defines the types of indexes that
 					  can be used to access the status
@@ -301,13 +301,13 @@ extern const ptl_handle_any_t PTL_INVALID_HANDLE;
 extern const ptl_interface_t PTL_IFACE_DEFAULT;
 
 /*! Match any process identifier. */
-extern const ptl_pid_t PTL_PID_ANY;
+#define PTL_PID_ANY ((ptl_pid_t) 0xffff)
 
 /*! Match any node identifier. */
-extern const ptl_nid_t PTL_NID_ANY;
+#define PTL_NID_ANY ((ptl_nid_t) 0xffff)
 
 /*! Match any user identifier. */
-extern const ptl_uid_t PTL_UID_ANY;
+#define PTL_UID_ANY ((ptl_uid_t) 0xffffffff)
 
 /*! Match any job identifier. */
 #define PTL_JID_ANY ((ptl_jid_t) 0xffffffff)
@@ -316,10 +316,10 @@ extern const ptl_uid_t PTL_UID_ANY;
 #define PTL_JID_NONE ((ptl_jid_t) 0)
 
 /*! Wildcard for portal table entry identifier fields. */
-#define PTL_PT_ANY ((ptl_pt_index_t) 0xffffffff)
+#define PTL_PT_ANY ((ptl_pt_index_t) 0xff)
 
 /*! Match any rank. */
-extern const ptl_rank_t PTL_RANK_ANY;
+#define PTL_RANK_ANY ((ptl_rank_t) 0xffffffff)
 
 /*! Specifies the status register that counts the dropped requests for the
  * interface. */
@@ -383,7 +383,7 @@ void PtlFini(void);
 /*! @typedef ptl_ni_fail_t
  * A network interface can use this integral type to define specific
  * information regarding the failure of an operation. */
-typedef int ptl_ni_fail_t;
+typedef unsigned char ptl_ni_fail_t;
 
 /*! Request that the interface specified in \a iface be opened with matching
  * enabled. */
@@ -2286,19 +2286,6 @@ typedef enum {
  *	list entry modified, the initiator of the operation and the operation
  *	itself. These fields are included in a structure. */
 typedef struct {
-    /*! The identifier of the \e initiator. */
-    ptl_process_t	    initiator;
-
-    /*! The portal table index where the message arrived. */
-    ptl_pt_index_t	    pt_index;
-
-    /*! The user identifier of the initiator. */
-    ptl_uid_t		    uid;
-
-    /*! The job identifier of the initiator. May be \c PTL_JID_NONE in
-     * implementations that do not support job identifiers. */
-    ptl_jid_t		    jid;
-
     /*! The match bits specified by the \e initiator. */
     ptl_match_bits_t	    match_bits;
 
@@ -2334,17 +2321,32 @@ typedef struct {
     /*! 64 bits of out-of-band user data. */
     ptl_hdr_data_t	    hdr_data;
 
+    /*! The identifier of the \e initiator. */
+    ptl_process_t	    initiator;
+
+    /*! The user identifier of the initiator. */
+    ptl_uid_t		    uid;
+
+    /*! The job identifier of the initiator. May be \c PTL_JID_NONE in
+     * implementations that do not support job identifiers. */
+    ptl_jid_t		    jid;
+
     /*! Used to convey the failure of an operation. Success is indicated by \c
      * PTL_NI_OK. */
     ptl_ni_fail_t	    ni_fail_type;
 
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t	    pt_index;
+
     /*! If this event corresponds to an atomic operation, this indicates the
      * atomic operation that was performed. */
-    ptl_op_t		    atomic_operation;
+    //ptl_op_t		    atomic_operation;
+    unsigned char	    atomic_operation;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * data type of the atomic operation that was performed. */
-    ptl_datatype_t	    atomic_type;
+    //ptl_datatype_t	    atomic_type;
+    unsigned char	    atomic_type;
 } ptl_target_event_t;
 /*!
  * @struct ptl_initiator_event_t
@@ -2371,11 +2373,11 @@ typedef struct {
  *	type and a union of the \e target specific event structure and the \e
  *	initiator specific event structure. */
 typedef struct {
-    ptl_event_kind_t		type; /*!< Indicates the type of the event. */
     union {
 	ptl_target_event_t	tevent;
 	ptl_initiator_event_t	ievent;
     } event; /*!< Contains the event information. */
+    ptl_event_kind_t		type; /*!< Indicates the type of the event. */
 } ptl_event_t;
 /*!
  * @fn PtlEQAlloc(ptl_handle_ni_t   ni_handle,

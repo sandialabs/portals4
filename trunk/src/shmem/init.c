@@ -30,8 +30,6 @@ size_t proc_number = 0;
 size_t per_proc_comm_buf_size = 0;
 size_t firstpagesize = 0;
 
-const ptl_pid_t PTL_PID_ANY = UINT_MAX;
-
 static unsigned int init_ref_count = 0;
 static size_t comm_pad_size = 0;
 static const char *comm_pad_shm_name = NULL;
