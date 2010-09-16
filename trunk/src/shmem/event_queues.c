@@ -21,10 +21,18 @@
 
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff;	/* (1<<29) & 0x1fffffff */
 
+typedef union {
+    struct {
+	uint16_t sequence;
+	uint16_t offset;
+    } s;
+    uint32_t u;
+} eq_off_t;
+
 typedef struct {
     ptl_event_t *ring;
     uint32_t size;
-    volatile uint32_t head, tail, written_tail;
+    volatile eq_off_t head, tail, written_tail;
 } ptl_internal_eq_t;
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
@@ -119,7 +127,7 @@ int API_FUNC PtlEQAlloc(
 	VERBOSE_ERROR("passed in a NULL for eq_handle");
 	return PTL_ARG_INVALID;
     }
-    if (count > 0xffffffff) {
+    if (count > 0xffff) {
 	VERBOSE_ERROR("insanely large count");
 	return PTL_ARG_INVALID;
     }
@@ -135,7 +143,6 @@ int API_FUNC PtlEQAlloc(
 	count |= count >> 2;
 	count |= count >> 4;
 	count |= count >> 8;
-	count |= count >> 16;
 	count++;
     }
     /* find an EQ handle */
@@ -151,7 +158,10 @@ int API_FUNC PtlEQAlloc(
 			return PTL_NO_SPACE;
 		    }
 		    eqh.s.code = offset;
-		    ni_eqs[offset].head = ni_eqs[offset].tail = ni_eqs[offset].written_tail = 0;
+		    ni_eqs[offset].head.s.offset = ni_eqs[offset].tail.s.offset = ni_eqs[offset].written_tail.s.offset = 0;
+		    ni_eqs[offset].head.s.sequence += 7;
+		    ni_eqs[offset].tail.s.sequence += 11;
+		    ni_eqs[offset].written_tail.s.sequence += 13;
 		    ni_eqs[offset].size = count;
 		    ni_eqs[offset].ring = tmp;
 		    break;
@@ -180,8 +190,8 @@ int API_FUNC PtlEQFree(
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    assert(eq->head == eq->tail && eq->tail == eq->written_tail);
-    if (eq->head != eq->tail || eq->tail != eq->written_tail) { // this EQ is busy
+    assert(eq->head.s.offset == eq->tail.s.offset && eq->tail.s.offset == eq->written_tail.s.offset);
+    if (eq->head.s.offset != eq->tail.s.offset || eq->tail.s.offset != eq->written_tail.s.offset) { // this EQ is busy
 	return PTL_ARG_INVALID;
     }
     tmp = eq->ring;
@@ -209,18 +219,20 @@ int API_FUNC PtlEQGet(
     }
 #endif
     const ptl_internal_handle_converter_t eqh = { eq_handle };
-    ptl_internal_eq_t *eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    uint32_t mask = eq->size - 1;
-    uint32_t readidx, curidx;
+    ptl_internal_eq_t * const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    const uint32_t mask = eq->size - 1;
+    eq_off_t readidx, curidx, newidx;
 
     curidx = eq->head;
     do {
 	readidx = curidx;
-	if (readidx == eq->tail) {
+	if (readidx.s.offset == eq->tail.s.offset) {
 	    return PTL_EQ_EMPTY;
 	}
-	*event = eq->ring[readidx];
-    } while ((curidx = PtlInternalAtomicCas32(&eq->head, readidx, (readidx+1)&mask)) != readidx);
+	*event = eq->ring[readidx.s.offset];
+	newidx.s.sequence = readidx.s.sequence + 23; // a prime number
+	newidx.s.offset = (readidx.s.offset+1)&mask;
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
     return PTL_OK;
 }
 
@@ -228,7 +240,37 @@ int API_FUNC PtlEQWait(
     ptl_handle_eq_t eq_handle,
     ptl_event_t * event)
 {
-    return PTL_FAIL;
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
+	return PTL_NO_INIT;
+    }
+    if (PtlInternalEQHandleValidator(eq_handle, 0)) {
+	VERBOSE_ERROR("invalid EQ handle\n");
+	return PTL_ARG_INVALID;
+    }
+    if (event == NULL) {
+	VERBOSE_ERROR("null event\n");
+	return PTL_ARG_INVALID;
+    }
+#endif
+    const ptl_internal_handle_converter_t eqh = { eq_handle };
+    ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    const uint32_t mask = eq->size - 1;
+    eq_off_t readidx, curidx, newidx;
+
+    curidx = eq->head;
+    do {
+	readidx = curidx;
+	if (readidx.s.offset == eq->tail.s.offset) {
+	    curidx = eq->head;
+	    continue;
+	}
+	*event = eq->ring[readidx.s.offset];
+	newidx.s.sequence = readidx.s.sequence + 23; // a prime number
+	newidx.s.offset = (readidx.s.offset+1)&mask;
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->head.u, readidx.u, newidx.u)) != readidx.u);
+    return PTL_OK;
 }
 
 int API_FUNC PtlEQPoll(
