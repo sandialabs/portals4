@@ -353,8 +353,7 @@ int API_FUNC PtlCTPoll(
     for (ctidx = 0; ctidx < size; ++ctidx) {
 	const ptl_internal_handle_converter_t ct = { ct_handles[ctidx] };
 	ctes[ctidx] = &(ct_events[ct.s.ni][ct.s.code]);
-	rcs[ctidx] =
-	    &(ct_event_refcounts[ct.s.ni][ct.s.code]);
+	rcs[ctidx] = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
 	PtlInternalAtomicInc(rcs[ctidx], 1);
     }
     {
@@ -372,7 +371,7 @@ int API_FUNC PtlCTPoll(
 	t |= t >> 4;
 	t |= t >> 8;
 	t |= t >> 16;
-	offset = nstart & t; // pseudo-random
+	offset = nstart & t;	       // pseudo-random
     }
     do {
 	for (ctidx = 0; ctidx < size; ++ctidx) {
