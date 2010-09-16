@@ -371,22 +371,41 @@ int API_FUNC PtlCTPoll(
 	t |= t >> 4;
 	t |= t >> 8;
 	t |= t >> 16;
-	offset = nstart & t;	       // pseudo-random
+	offset = nstart & t;	       // pseudo-random, guarantees offset < size
     }
+    assert(offset < size);
     do {
-	for (ctidx = 0; ctidx < size; ++ctidx) {
-	    const ptl_size_t ridx = (ctidx + offset) % size;
+	/* these two for loops MUST be identical (except for the bounds);
+	 * doing two loops to avoid a modulo operation in every iteration */
+	for (ctidx = offset; ctidx < size; ++ctidx) {
 	    ptl_ct_event_t tmpread;
-	    PtlInternalAtomicReadCT(&tmpread, ctes[ridx]);
+	    PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
 	    if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
 		for (size_t idx = 0; idx < size; ++idx)
 		    PtlInternalAtomicInc(rcs[idx], -1);
 		return PTL_INTERRUPTED;
-	    } else if ((tmpread.success + tmpread.failure) >= tests[ridx]) {
+	    } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
 		if (event != NULL)
 		    *event = tmpread;
 		if (which != NULL)
-		    *which = (int)ridx;
+		    *which = (int)ctidx;
+		for (size_t idx = 0; idx < size; ++idx)
+		    PtlInternalAtomicInc(rcs[idx], -1);
+		return PTL_OK;
+	    }
+	}
+	for (ctidx = 0; ctidx < offset; ++ctidx) {
+	    ptl_ct_event_t tmpread;
+	    PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
+	    if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
+		for (size_t idx = 0; idx < size; ++idx)
+		    PtlInternalAtomicInc(rcs[idx], -1);
+		return PTL_INTERRUPTED;
+	    } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
+		if (event != NULL)
+		    *event = tmpread;
+		if (which != NULL)
+		    *which = (int)ctidx;
 		for (size_t idx = 0; idx < size; ++idx)
 		    PtlInternalAtomicInc(rcs[idx], -1);
 		return PTL_OK;
