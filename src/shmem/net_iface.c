@@ -39,8 +39,6 @@ ptl_ni_limits_t nit_limits = { 0 };
 
 static volatile uint32_t nit_limits_init = 0;
 
-const ptl_nid_t PTL_NID_ANY = UINT_MAX;
-const ptl_rank_t PTL_RANK_ANY = UINT_MAX;
 const ptl_interface_t PTL_IFACE_DEFAULT = UINT_MAX;
 const ptl_handle_any_t PTL_INVALID_HADLE = { UINT_MAX };
 
