@@ -194,7 +194,6 @@ int API_FUNC PtlEQFree(
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    printf("head:%i leading_tail:%i lagging_tail:%i\n", (int)eq->head.s.offset, (int)eq->leading_tail.s.offset, (int)eq->lagging_tail.s.offset);
     assert(eq->leading_tail.s.offset == eq->lagging_tail.s.offset);
     if (eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {	// this EQ is busy
 	return PTL_ARG_INVALID;
