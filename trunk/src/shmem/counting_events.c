@@ -8,7 +8,7 @@
 /* System headers */
 #include <assert.h>
 #include <stdlib.h>		       /* for calloc() */
-#include <string.h>		       /* for memcpy() */
+#include <string.h>		       /* for memset() */
 #if defined(HAVE_MALLOC_H)
 # include <malloc.h>		       /* for memalign() */
 #endif
@@ -32,7 +32,7 @@ const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff;	/* (2<<29) & 0x1fffffff */
 volatile uint64_t global_generation = 0;
 
 static ptl_ct_event_t *ct_events[4] = { NULL, NULL, NULL, NULL };
-static uint64_t *ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
+static volatile uint64_t *ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
 static const ptl_ct_event_t CTERR =
     { 0xffffffffffffffffULL, 0xffffffffffffffffULL };
 
@@ -213,25 +213,26 @@ int API_FUNC PtlCTAlloc(
     ptl_size_t offset;
     volatile uint64_t *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_handle_encoding_t ct = {.selector = HANDLE_CT_CODE,
-	.ni = 0,
-	.code = 0
-    };
+    ptl_internal_handle_converter_t ct = { .s.selector = HANDLE_CT_CODE };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
+	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
     }
     if (PtlInternalNIValidator(ni)) {
+	VERBOSE_ERROR("ni code wrong\n");
 	return PTL_ARG_INVALID;
     }
     if (ct_events[ni.s.ni] == NULL) {
+	assert(ct_events[ni.s.ni] != NULL);
 	return PTL_ARG_INVALID;
     }
     if (ct_handle == NULL) {
+	VERBOSE_ERROR("passed in a NULL for ct_handle\n");
 	return PTL_ARG_INVALID;
     }
 #endif
-    ct.ni = ni.s.ni;
+    ct.s.ni = ni.s.ni;
     cts = ct_events[ni.s.ni];
     rc = ct_event_refcounts[ni.s.ni];
     for (offset = 0; offset < nit_limits.max_cts; ++offset) {
@@ -239,18 +240,14 @@ int API_FUNC PtlCTAlloc(
 	    if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
 		cts[offset].success = 0;
 		cts[offset].failure = 0;
-		ct.code = offset;
-		break;
+		ct.s.code = offset;
+		*ct_handle = ct.a.ct;
+		return PTL_OK;
 	    }
 	}
     }
-    if (offset >= nit_limits.max_cts) {
-	*ct_handle = PTL_INVALID_HANDLE.ct;
-	return PTL_NO_SPACE;
-    } else {
-	memcpy(ct_handle, &ct, sizeof(ptl_handle_ct_t));
-	return PTL_OK;
-    }
+    *ct_handle = PTL_INVALID_HANDLE.ct;
+    return PTL_NO_SPACE;
 }
 
 int API_FUNC PtlCTFree(

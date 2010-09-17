@@ -78,7 +78,7 @@ int API_FUNC PtlMEAppend(
     ptl_handle_me_t * me_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_handle_encoding_t meh = { HANDLE_ME_CODE, 0, 0 };
+    ptl_internal_handle_converter_t meh = { .s.selector = HANDLE_ME_CODE };
     ptl_internal_appendME_t *Qentry = NULL;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -112,14 +112,14 @@ int API_FUNC PtlMEAppend(
     }
 #endif
     assert(mes[ni.s.ni] != NULL);
-    meh.ni = ni.s.ni;
+    meh.s.ni = ni.s.ni;
     /* find an ME handle */
     for (uint32_t offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (mes[ni.s.ni][offset].status == 0) {
 	    if (PtlInternalAtomicCas32
 		(&(mes[ni.s.ni][offset].status), ME_FREE,
 		 ME_ALLOCATED) == ME_FREE) {
-		meh.code = offset;
+		meh.s.code = offset;
 		mes[ni.s.ni][offset].visible = me;
 		mes[ni.s.ni][offset].pt_index = pt_index;
 		mes[ni.s.ni][offset].ptl_list = ptl_list;
@@ -132,10 +132,10 @@ int API_FUNC PtlMEAppend(
 	return PTL_FAIL;
     }
     Qentry->user_ptr = user_ptr;
-    Qentry->me_handle.s = meh;
+    Qentry->me_handle = meh;
     Qentry->local_offset = 0;
     Qentry->dont_ignore_bits = ~me.ignore_bits;
-    memcpy(me_handle, &meh, sizeof(ptl_handle_me_t));
+    *me_handle = meh.a.me;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);

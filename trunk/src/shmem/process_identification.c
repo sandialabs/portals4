@@ -7,7 +7,6 @@
 
 /* System headers */
 #include <assert.h>
-#include <string.h>		       /* for memcpy() */
 
 /* Internals */
 #include "ptl_internal_commpad.h"
@@ -31,8 +30,7 @@ int API_FUNC PtlGetId(
     ptl_handle_ni_t ni_handle,
     ptl_process_t * id)
 {
-    ptl_handle_encoding_t ni;
-    memcpy(&ni, &ni_handle, sizeof(ptl_handle_ni_t));
+    ptl_handle_encoding_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;

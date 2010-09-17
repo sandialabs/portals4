@@ -84,7 +84,7 @@ int API_FUNC PtlLEAppend(
     ptl_handle_le_t * le_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_handle_encoding_t leh = { HANDLE_LE_CODE, 0, 0 };
+    ptl_internal_handle_converter_t leh = { .s.selector = HANDLE_LE_CODE };
     ptl_internal_appendLE_t *Qentry = NULL;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -117,13 +117,13 @@ int API_FUNC PtlLEAppend(
     }
 #endif
     assert(les[ni.s.ni] != NULL);
-    leh.ni = ni.s.ni;
+    leh.s.ni = ni.s.ni;
     /* find an LE handle */
     for (uint32_t offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (les[ni.s.ni][offset].status == 0) {
 	    if (PtlInternalAtomicCas32
 		(&(les[ni.s.ni][offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
-		leh.code = offset;
+		leh.s.code = offset;
 		les[ni.s.ni][offset].visible = le;
 		les[ni.s.ni][offset].pt_index = pt_index;
 		les[ni.s.ni][offset].ptl_list = ptl_list;
@@ -136,8 +136,8 @@ int API_FUNC PtlLEAppend(
 	return PTL_FAIL;
     }
     Qentry->user_ptr = user_ptr;
-    Qentry->le_handle.s = leh;
-    memcpy(le_handle, &leh, sizeof(ptl_handle_le_t));
+    Qentry->le_handle = leh;
+    *le_handle = leh.a.le;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
