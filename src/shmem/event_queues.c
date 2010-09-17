@@ -37,6 +37,7 @@ typedef struct {
 } ptl_internal_eq_t;
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
+static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
 
 void INTERNAL PtlInternalEQNISetup(
     unsigned int ni)
@@ -48,6 +49,9 @@ void INTERNAL PtlInternalEQNISetup(
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_eqs, sizeof(ptl_internal_eq_t));
 	assert(tmp != NULL);
+	assert(eq_refcounts[ni] == NULL);
+	eq_refcounts[ni] = calloc(nit_limits.max_eqs, sizeof(uint64_t));
+	assert(eq_refcounts[ni] != NULL);
 	__sync_synchronize();
 	eqs[ni] = tmp;
     }
@@ -56,20 +60,24 @@ void INTERNAL PtlInternalEQNISetup(
 void INTERNAL PtlInternalEQNITeardown(
     unsigned int ni)
 {
-    ptl_internal_eq_t *tmp;
-    tmp = eqs[ni];
-    eqs[ni] = NULL;
+    ptl_internal_eq_t * restrict tmp;
+    volatile uint64_t * restrict rc;
+    while (eqs[ni] == (void*)1) ; // just in case (should never happen in sane code)
+    tmp = PtlInternalAtomicSwapPtr((void *volatile*)&eqs[ni], NULL);
+    rc = PtlInternalAtomicSwapPtr((void *volatile*)&eq_refcounts[ni], NULL);
     assert(tmp != NULL);
     assert(tmp != (void *)1);
+    assert(rc != NULL);
     for (size_t i = 0; i < nit_limits.max_eqs; ++i) {
-	if (tmp[i].ring != NULL) {
-	    while (tmp[i].ring == (void *)1) ;	// just in case (this should never, realistically happen)
-#warning need to deal with allocated EQs at Teardown
+	if (rc[i] != 0) {
+	    PtlInternalAtomicInc(&(rc[i]), -1);
+	    while (rc[i] != 0) ;
 	    free(tmp[i].ring);
 	    tmp[i].ring = NULL;
 	}
     }
     free(tmp);
+    free((void*)rc);
 }
 
 
@@ -97,7 +105,7 @@ int INTERNAL PtlInternalEQHandleValidator(
 	VERBOSE_ERROR("EQ table for NI uninitialized\n");
 	return PTL_ARG_INVALID;
     }
-    if (eqs[eq.s.ni][eq.s.code].ring == NULL) {
+    if (eq_refcounts[eq.s.ni][eq.s.code] == 0) {
 	VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni, (int)eq.s.code);
 	return PTL_ARG_INVALID;
     }
@@ -117,7 +125,7 @@ int API_FUNC PtlEQAlloc(
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
     }
-    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+    if (PtlInternalNIValidator(ni)) {
 	VERBOSE_ERROR("ni code wrong\n");
 	return PTL_ARG_INVALID;
     }
@@ -151,13 +159,13 @@ int API_FUNC PtlEQAlloc(
     /* find an EQ handle */
     {
 	ptl_internal_eq_t *ni_eqs = eqs[ni.s.ni];
+	volatile uint64_t *rc = eq_refcounts[ni.s.ni];
 	for (uint32_t offset = 0; offset < nit_limits.max_eqs; ++offset) {
-	    if (ni_eqs[offset].ring == NULL) {
-		if (PtlInternalAtomicCasPtr
-		    (&(ni_eqs[offset].ring), NULL, (void *)1) == NULL) {
+	    if (rc[offset] == 0) {
+		if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
 		    ptl_event_t *tmp = calloc(count, sizeof(ptl_event_t));
 		    if (tmp == NULL) {
-			ni_eqs[offset].ring = NULL;
+			rc[offset] = 0;
 			return PTL_NO_SPACE;
 		    }
 		    eqh.s.code = offset;
@@ -173,8 +181,9 @@ int API_FUNC PtlEQAlloc(
 		}
 	    }
 	}
+	*eq_handle = PTL_INVALID_HANDLE.eq;
+	return PTL_NO_SPACE;
     }
-    return PTL_NO_SPACE;
 }
 
 int API_FUNC PtlEQFree(
@@ -198,9 +207,12 @@ int API_FUNC PtlEQFree(
     if (eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {	// this EQ is busy
 	return PTL_ARG_INVALID;
     }
+    // should probably enqueue a death-event
+    while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1) ;
     tmp = eq->ring;
     eq->ring = NULL;
     free(tmp);
+    PtlInternalAtomicInc(&(eq_refcounts[eqh.s.ni][eqh.s.code]), -1);
     return PTL_OK;
 }
 
@@ -263,12 +275,17 @@ int API_FUNC PtlEQWait(
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
+    volatile uint64_t *rc = &(eq_refcounts[eqh.s.ni][eqh.s.code]);
     eq_off_t readidx, curidx, newidx;
 
+    PtlInternalAtomicInc(rc, 1);
     curidx = eq->head;
     do {
 	readidx = curidx;
-	if (readidx.s.offset == eq->lagging_tail.s.offset) {
+	if (readidx.s.offset >= eq->size) {
+	    PtlInternalAtomicInc(rc, -1);
+	    return PTL_INTERRUPTED;
+	} else if (readidx.s.offset == eq->lagging_tail.s.offset) {
 	    curidx = eq->head;
 	    continue;
 	}
@@ -278,6 +295,7 @@ int API_FUNC PtlEQWait(
     } while ((curidx.u =
 	      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
 				     newidx.u)) != readidx.u);
+    PtlInternalAtomicInc(rc, -1);
     return PTL_OK;
 }
 
@@ -313,10 +331,13 @@ int API_FUNC PtlEQPoll(
 #endif
     ptl_internal_eq_t *eqs[size];
     uint32_t masks[size];
+    volatile uint64_t *rcs[size];
     for (eqidx = 0; eqidx < size; ++eqidx) {
 	const ptl_internal_handle_converter_t eqh = { eq_handles[eqidx] };
 	eqs[eqidx] = &(eqs[eqh.s.ni][eqh.s.code]);
 	masks[eqidx] = eqs[eqidx]->size - 1;
+	rcs[eqidx] = &(eq_refcounts[eqh.s.ni][eqh.s.code]);
+	PtlInternalAtomicInc(rcs[eqidx], 1);
     }
 
     {
@@ -341,11 +362,17 @@ int API_FUNC PtlEQPoll(
 	    ptl_internal_eq_t *const eq = eqs[ridx];
 	    const uint32_t mask = masks[ridx];
 	    eq_off_t readidx, curidx, newidx;
+	    int found = 1;
 
 	    curidx = eq->head;
 	    do {
 		readidx = curidx;
-		if (readidx.s.offset == eq->lagging_tail.s.offset) {
+		if (readidx.s.offset >= eq->size) {
+		    for (size_t idx = 0; idx < size; ++idx)
+			PtlInternalAtomicInc(rcs[idx], -1);
+		    return PTL_INTERRUPTED;
+		} else if (readidx.s.offset == eq->lagging_tail.s.offset) {
+		    found = 0;
 		    break;
 		}
 		*event = eq->ring[readidx.s.offset];
@@ -354,10 +381,17 @@ int API_FUNC PtlEQPoll(
 	    } while ((curidx.u =
 		      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
 					     newidx.u)) != readidx.u);
+	    if (found) {
+		for (size_t idx = 0; idx < size; ++idx)
+		    PtlInternalAtomicInc(rcs[idx], -1);
+		return PTL_OK;
+	    }
 	}
 	MARK_TIMER(tp);
     } while (timeout == PTL_TIME_FOREVER ||
 	     (TIMER_INTS(tp) - nstart) < timeout);
+    for (size_t idx = 0; idx < size; ++idx)
+	PtlInternalAtomicInc(rcs[idx], -1);
     return PTL_EQ_EMPTY;
 }
 
