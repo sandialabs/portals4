@@ -24,6 +24,7 @@
 #include "ptl_internal_LE.h"
 #include "ptl_internal_ME.h"
 #include "ptl_internal_DM.h"
+#include "ptl_internal_EQ.h"
 #include "ptl_internal_error.h"
 
 ptl_internal_nit_t nit = { {0, 0, 0, 0}
@@ -174,6 +175,7 @@ int API_FUNC PtlNIInit(
     }
     PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
     PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
+    PtlInternalEQNISetup(ni.s.ni);
     if (options & PTL_NI_MATCHING) {
 	PtlInternalMENISetup(ni.s.ni, nit_limits.max_mes);
     } else {
@@ -218,6 +220,7 @@ int API_FUNC PtlNIFini(
 	PtlInternalDMTeardown();
 	PtlInternalCTNITeardown(ni.s.ni);
 	PtlInternalMDNITeardown(ni.s.ni);
+	PtlInternalEQNITeardown(ni.s.ni);
 	switch(ni.s.ni) {
 	    case 0: case 2:
 		PtlInternalMENITeardown(ni.s.ni);
