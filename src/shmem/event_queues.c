@@ -98,7 +98,7 @@ int INTERNAL PtlInternalEQHandleValidator(
 	return PTL_ARG_INVALID;
     }
     if (eqs[eq.s.ni][eq.s.code].ring == NULL) {
-	VERBOSE_ERROR("EQ appears to be deallocated\n");
+	VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni, (int)eq.s.code);
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -168,13 +168,13 @@ int API_FUNC PtlEQAlloc(
 		    ni_eqs[offset].lagging_tail = ni_eqs[offset].leading_tail;
 		    ni_eqs[offset].size = count;
 		    ni_eqs[offset].ring = tmp;
-		    break;
+		    *eq_handle = eqh.a.eq;
+		    return PTL_OK;
 		}
 	    }
 	}
     }
-    *eq_handle = eqh.a.eq;
-    return PTL_OK;
+    return PTL_NO_SPACE;
 }
 
 int API_FUNC PtlEQFree(
@@ -194,9 +194,9 @@ int API_FUNC PtlEQFree(
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
-    assert(eq->head.s.offset == eq->leading_tail.s.offset &&
-	   eq->leading_tail.s.offset == eq->lagging_tail.s.offset);
-    if (eq->head.s.offset != eq->leading_tail.s.offset || eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {	// this EQ is busy
+    printf("head:%i leading_tail:%i lagging_tail:%i\n", (int)eq->head.s.offset, (int)eq->leading_tail.s.offset, (int)eq->lagging_tail.s.offset);
+    assert(eq->leading_tail.s.offset == eq->lagging_tail.s.offset);
+    if (eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {	// this EQ is busy
 	return PTL_ARG_INVALID;
     }
     tmp = eq->ring;
