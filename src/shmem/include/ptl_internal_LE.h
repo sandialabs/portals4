@@ -11,7 +11,7 @@ void PtlInternalLENISetup(
 void PtlInternalLENITeardown(
     unsigned int ni);
 
-int PtlInternalLEDeliver(
+ptl_pid_t PtlInternalLEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict h);
 

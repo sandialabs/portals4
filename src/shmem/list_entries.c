@@ -278,7 +278,7 @@ int API_FUNC PtlLEUnlink(
     return PTL_OK;
 }
 
-int INTERNAL PtlInternalLEDeliver(
+ptl_pid_t INTERNAL PtlInternalLEDeliver(
     ptl_table_entry_t *restrict t,
     ptl_internal_header_t *restrict hdr)
 {
@@ -361,7 +361,7 @@ int INTERNAL PtlInternalLEDeliver(
 	if (0) {
 permission_violation:
 	    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-	    return (le.options & PTL_LE_ACK_DISABLE)?0:3;
+	    return (ptl_pid_t)((le.options & PTL_LE_ACK_DISABLE)?0:3);
 	}
 	/*******************************************************************
 	 * We have permissions on this LE, now check if it's a use-once LE *
@@ -445,12 +445,12 @@ permission_violation:
 		PtlInternalEQPush(t_eq, &e);
 	    }
 	}
-	return (le.options & PTL_LE_ACK_DISABLE)?0:1;
+	return (ptl_pid_t)((le.options & PTL_LE_ACK_DISABLE)?0:1);
     } else if (t->overflow.head) {
 #warning Overflow LE handling is unimplemented
 	fprintf(stderr, "overflow LE handling is unimplemented\n");
 	abort();
-	return 2; // check for ACK_DISABLE
+	return (ptl_pid_t)2; // check for ACK_DISABLE
     } else { // nothing posted *at all!*
 	if (t->EQ != PTL_EQ_NONE) {
 	    e.type = PTL_EVENT_DROPPED;

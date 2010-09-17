@@ -169,7 +169,7 @@ int API_FUNC PtlNIInit(
 		actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
 	    } else {
 		actual_mapping[i].phys.nid = 0;
-		actual_mapping[i].phys.pid = i;
+		actual_mapping[i].phys.pid = (ptl_pid_t)i;
 	    }
 	}
     }
