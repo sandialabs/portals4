@@ -476,7 +476,7 @@ int API_FUNC PtlPut(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset\n");
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -614,7 +614,7 @@ int API_FUNC PtlGet(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset\n");
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -730,7 +730,7 @@ int API_FUNC PtlAtomic(
 	}
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset\n");
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -876,11 +876,11 @@ int API_FUNC PtlFetchAtomic(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-	VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset\n");
+	VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(get_md_handle), local_get_offset + length);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-	VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset\n");
+	VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(put_md_handle), local_put_offset + length);
 	return PTL_ARG_INVALID;
     }
     {
@@ -1060,11 +1060,11 @@ int API_FUNC PtlSwap(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-	VERBOSE_ERROR("Swap saw get_md too short for local_offset\n");
+	VERBOSE_ERROR("Swap saw get_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(get_md_handle), local_get_offset + length);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-	VERBOSE_ERROR("Swap saw put_md too short for local_offset\n");
+	VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(put_md_handle), local_put_offset + length);
 	return PTL_ARG_INVALID;
     }
     {
