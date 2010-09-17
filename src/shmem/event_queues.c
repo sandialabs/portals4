@@ -435,7 +435,7 @@ int API_FUNC PtlEQPoll(
     ptl_internal_eq_t *eqs[size];
     uint32_t masks[size];
     volatile uint64_t *rcs[size];
-    int ni;
+    int ni = 0;
     for (eqidx = 0; eqidx < size; ++eqidx) {
 	const ptl_internal_handle_converter_t eqh = { eq_handles[eqidx] };
 	ni = eqh.s.ni;
