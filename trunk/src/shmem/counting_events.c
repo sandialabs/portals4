@@ -1,9 +1,13 @@
-/* The API definition */
-#include <portals4.h>
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+
+#if defined(HAVE_GETTIME_TIMER)
+#define _POSIX_C_SOURCE 199309L
+#endif
+
+/* The API definition */
+#include <portals4.h>
 
 /* System headers */
 #include <assert.h>

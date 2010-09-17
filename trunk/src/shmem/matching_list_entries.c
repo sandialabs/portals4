@@ -329,7 +329,7 @@ static void PtlInternalWalkMatchList(
     *mme = me;
 }
 
-int INTERNAL PtlInternalMEDeliver(
+ptl_pid_t INTERNAL PtlInternalMEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict hdr)
 {
@@ -433,7 +433,7 @@ int INTERNAL PtlInternalMEDeliver(
 				       regs[hdr->
 					    ni]
 				       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-	    return (mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3;
+	    return (ptl_pid_t)((mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3);
 	}
 	/*******************************************************************
 	 * We have permissions on this ME, now check if it's a use-once ME *
@@ -541,7 +541,7 @@ int INTERNAL PtlInternalMEDeliver(
 		PtlInternalEQPush(t_eq, &e);
 	    }
 	}
-	return (mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1;
+	return (ptl_pid_t)((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {

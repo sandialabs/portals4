@@ -11,7 +11,7 @@ void PtlInternalMENISetup(
 void PtlInternalMENITeardown(
     unsigned int ni);
 
-int PtlInternalMEDeliver(
+ptl_pid_t PtlInternalMEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict h);
 

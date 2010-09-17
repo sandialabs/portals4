@@ -14,33 +14,8 @@
 	case PTL_NO_SPACE: fprintf(stderr, "=> %s returned PTL_NO_SPACE (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
 	case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
 	case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
-	default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, x, (unsigned int)__LINE__); abort(); break; \
+	default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, ret, (unsigned int)__LINE__); abort(); break; \
     } } while (0)
-
-static int notdone = 1;
-
-static void print_events(void * arg)
-{
-    ptl_handle_eq_t eqh = *(ptl_handle_eq_t*)arg;
-    while (notdone) {
-	int which = 9;
-	ptl_event_t event;
-
-	switch (PtlEQPoll(&eqh, 1, 1000, &event, &which)) {
-	    case PTL_OK:
-		assert(which == 0);
-		printf("received event!\n");
-		break;
-	    case PTL_EQ_EMPTY:
-		printf("timeout!\n");
-		break;
-	    default:
-		printf("bad return code\n");
-		abort();
-		break;
-	}
-    }
-}
 
 static void noFailures(
     ptl_handle_ct_t ct,
@@ -201,9 +176,9 @@ int main(
 	int fetched = 0;
 	do {
 	    ptl_event_t event;
-	    int ret;
+	    int retval;
 	    fetched = 0;
-	    switch (ret = PtlEQGet(pt_eq_handle, &event)) {
+	    switch (retval = PtlEQGet(pt_eq_handle, &event)) {
 		case PTL_OK:
 		    fetched = 1;
 		    if (verb == 1) {
@@ -249,10 +224,10 @@ int main(
 				    (unsigned)event.event.tevent.initiator.rank,
 				    event.event.tevent.uid,
 				    event.event.tevent.jid,
-				    event.event.tevent.ni_fail_type,
-				    event.event.tevent.pt_index,
-				    event.event.tevent.atomic_operation,
-				    event.event.tevent.atomic_type);
+				    (unsigned)event.event.tevent.ni_fail_type,
+				    (unsigned)event.event.tevent.pt_index,
+				    (unsigned)event.event.tevent.atomic_operation,
+				    (unsigned)event.event.tevent.atomic_type);
 			    }
 			    assert(event.event.tevent.match_bits == 0); // since this is a non-matching NI
 			    assert(((char*)event.event.tevent.start)-event.event.tevent.remote_offset == (char*)&value);
@@ -273,7 +248,7 @@ int main(
 				    (unsigned)event.event.ievent.mlength,
 				    (unsigned)event.event.ievent.offset,
 				    event.event.ievent.user_ptr,
-				    event.event.ievent.ni_fail_type);
+				    (unsigned)event.event.ievent.ni_fail_type);
 			    }
 			    assert(event.event.ievent.mlength == sizeof(uint64_t)-(myself.rank%sizeof(uint64_t)));
 			    assert(event.event.ievent.offset == myself.rank%sizeof(uint64_t));
@@ -287,7 +262,7 @@ int main(
 		case PTL_EQ_EMPTY:
 		    break;
 		default:
-		    CHECK_RETURNVAL(ret);
+		    CHECK_RETURNVAL(retval);
 		    break;
 	    }
 	} while (fetched == 1);

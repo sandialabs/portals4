@@ -50,9 +50,9 @@ typedef unsigned int	ptl_time_t; /*!< Time in milliseconds (used for timeout
 typedef unsigned int	ptl_interface_t; /*!< Integral type used for
 					   identifying different network
 					   interfaces. */
-typedef uint16_t	ptl_nid_t; /*!< Integral type used for representing
+typedef uint32_t	ptl_nid_t; /*!< Integral type used for representing
 				     node identifiers. */
-typedef uint16_t	ptl_pid_t; /*!< Integral type used for representing
+typedef uint32_t	ptl_pid_t; /*!< Integral type used for representing
 				     process identifiers when physical
 				     addressing is used in the network
 				     interface (PTL_NI_PHYSICAL is set). */
