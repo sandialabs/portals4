@@ -34,7 +34,7 @@
 #define LE_IN_USE	2
 
 typedef struct {
-    void *next; // for nemesis
+    void *next;			// for nemesis
     void *user_ptr;
     ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
@@ -50,12 +50,13 @@ typedef struct {
 static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
 void INTERNAL PtlInternalLENISetup(
-	unsigned int ni,
+    unsigned int ni,
     ptl_size_t limit)
 {
     ptl_internal_le_t *tmp;
     while ((tmp =
-	    PtlInternalAtomicCasPtr(&(les[ni]), NULL, (void *)1)) == (void *)1) ;
+	    PtlInternalAtomicCasPtr(&(les[ni]), NULL,
+				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
 	tmp = calloc(limit, sizeof(ptl_internal_le_t));
 	assert(tmp != NULL);
@@ -84,7 +85,7 @@ int API_FUNC PtlLEAppend(
     ptl_handle_le_t * le_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t leh = { .s.selector = HANDLE_LE_CODE };
+    ptl_internal_handle_converter_t leh = {.s.selector = HANDLE_LE_CODE };
     ptl_internal_appendLE_t *Qentry = NULL;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -105,12 +106,13 @@ int API_FUNC PtlLEAppend(
 	return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits.max_pt_index) {
-	VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index, nit_limits.max_pt_index);
+	VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index,
+		      nit_limits.max_pt_index);
 	return PTL_ARG_INVALID;
     }
     {
 	int ptv = PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index]);
-	if (ptv == 1 || ptv == 3) { // Unallocated or bad EQ (enabled/disabled both allowed)
+	if (ptv == 1 || ptv == 3) {    // Unallocated or bad EQ (enabled/disabled both allowed)
 	    VERBOSE_ERROR("LEAppend sees an invalid PT\n");
 	    return PTL_ARG_INVALID;
 	}
@@ -122,7 +124,8 @@ int API_FUNC PtlLEAppend(
     for (uint32_t offset = 0; offset < nit_limits.max_mes; ++offset) {
 	if (les[ni.s.ni][offset].status == 0) {
 	    if (PtlInternalAtomicCas32
-		(&(les[ni.s.ni][offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
+		(&(les[ni.s.ni][offset].status), LE_FREE,
+		 LE_ALLOCATED) == LE_FREE) {
 		leh.s.code = offset;
 		les[ni.s.ni][offset].visible = le;
 		les[ni.s.ni][offset].pt_index = pt_index;
@@ -145,7 +148,8 @@ int API_FUNC PtlLEAppend(
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
 	    if (t->overflow.head == NULL) {
-		ptl_internal_appendLE_t* prev = (ptl_internal_appendLE_t*)(t->priority.tail);
+		ptl_internal_appendLE_t *prev =
+		    (ptl_internal_appendLE_t *) (t->priority.tail);
 		t->priority.tail = Qentry;
 		if (prev == NULL) {
 		    t->priority.head = Qentry;
@@ -158,15 +162,16 @@ int API_FUNC PtlLEAppend(
 	    }
 	    break;
 	case PTL_OVERFLOW:
-	    {
-		ptl_internal_appendLE_t* prev = (ptl_internal_appendLE_t*)(t->overflow.tail);
-		t->overflow.tail = Qentry;
-		if (prev == NULL) {
-		    t->overflow.head = Qentry;
-		} else {
-		    prev->next = Qentry;
-		}
+	{
+	    ptl_internal_appendLE_t *prev =
+		(ptl_internal_appendLE_t *) (t->overflow.tail);
+	    t->overflow.tail = Qentry;
+	    if (prev == NULL) {
+		t->overflow.head = Qentry;
+	    } else {
+		prev->next = Qentry;
 	    }
+	}
 	    break;
 	case PTL_PROBE_ONLY:
 #warning PtlLEAppend() does not check the overflow receives
@@ -188,8 +193,11 @@ int API_FUNC PtlLEUnlink(
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
     }
-    if (le.s.ni > 3 || le.s.code > nit_limits.max_mes || (nit.refcount[le.s.ni] == 0)) {
-	VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", le.s.ni, le.s.code, nit_limits.max_mes);
+    if (le.s.ni > 3 || le.s.code > nit_limits.max_mes ||
+	(nit.refcount[le.s.ni] == 0)) {
+	VERBOSE_ERROR
+	    ("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
+	     le.s.ni, le.s.code, nit_limits.max_mes);
 	return PTL_ARG_INVALID;
     }
     if (les[le.s.ni] == NULL) {
@@ -203,60 +211,62 @@ int API_FUNC PtlLEUnlink(
 #endif
     t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
     assert(pthread_mutex_lock(&t->lock) == 0);
-    switch(les[le.s.ni][le.s.code].ptl_list) {
+    switch (les[le.s.ni][le.s.code].ptl_list) {
 	case PTL_PRIORITY_LIST:
-	    {
-		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->priority.head);
-		if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
-		    if (dq->next != NULL) {
-			t->priority.head = dq->next;
-		    } else {
-			t->priority.head = t->priority.tail = NULL;
-		    }
+	{
+	    ptl_internal_appendLE_t *dq =
+		(ptl_internal_appendLE_t *) (t->priority.head);
+	    if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
+		if (dq->next != NULL) {
+		    t->priority.head = dq->next;
 		} else {
-		    ptl_internal_appendLE_t *prev = NULL;
-		    while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
-			prev = dq;
-			dq = dq->next;
-		    }
-		    if (dq == NULL) {
-			fprintf(stderr, "attempted to unlink an un-queued LE\n");
-			abort();
-		    }
-		    prev->next = dq->next;
-		    if (dq->next == NULL) {
-			assert(t->priority.tail == dq);
-			t->priority.tail = prev;
-		    }
+		    t->priority.head = t->priority.tail = NULL;
+		}
+	    } else {
+		ptl_internal_appendLE_t *prev = NULL;
+		while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
+		    prev = dq;
+		    dq = dq->next;
+		}
+		if (dq == NULL) {
+		    fprintf(stderr, "attempted to unlink an un-queued LE\n");
+		    abort();
+		}
+		prev->next = dq->next;
+		if (dq->next == NULL) {
+		    assert(t->priority.tail == dq);
+		    t->priority.tail = prev;
 		}
 	    }
+	}
 	    break;
 	case PTL_OVERFLOW:
-	    {
-		ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t*)(t->overflow.head);
-		if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
-		    if (dq->next != NULL) {
-			t->overflow.head = dq->next;
-		    } else {
-			t->overflow.head = t->overflow.tail = NULL;
-		    }
+	{
+	    ptl_internal_appendLE_t *dq =
+		(ptl_internal_appendLE_t *) (t->overflow.head);
+	    if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
+		if (dq->next != NULL) {
+		    t->overflow.head = dq->next;
 		} else {
-		    ptl_internal_appendLE_t *prev = NULL;
-		    while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
-			prev = dq;
-			dq = dq->next;
-		    }
-		    if (dq == NULL) {
-			fprintf(stderr, "attempted to unlink an un-queued LE\n");
-			abort();
-		    }
-		    prev->next = dq->next;
-		    if (dq->next == NULL) {
-			assert(t->overflow.tail == dq);
-			t->overflow.tail = prev;
-		    }
+		    t->overflow.head = t->overflow.tail = NULL;
+		}
+	    } else {
+		ptl_internal_appendLE_t *prev = NULL;
+		while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
+		    prev = dq;
+		    dq = dq->next;
+		}
+		if (dq == NULL) {
+		    fprintf(stderr, "attempted to unlink an un-queued LE\n");
+		    abort();
+		}
+		prev->next = dq->next;
+		if (dq->next == NULL) {
+		    assert(t->overflow.tail == dq);
+		    t->overflow.tail = prev;
 		}
 	    }
+	}
 	    break;
 	case PTL_PROBE_ONLY:
 	    fprintf(stderr, "how on earth did this happen?\n");
@@ -264,7 +274,8 @@ int API_FUNC PtlLEUnlink(
 	    break;
     }
     assert(pthread_mutex_unlock(&t->lock) == 0);
-    switch (PtlInternalAtomicCas32(&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
+    switch (PtlInternalAtomicCas32
+	    (&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
 	case LE_IN_USE:
 	    return PTL_IN_USE;
 	case LE_ALLOCATED:
@@ -279,26 +290,26 @@ int API_FUNC PtlLEUnlink(
 }
 
 ptl_pid_t INTERNAL PtlInternalLEDeliver(
-    ptl_table_entry_t *restrict t,
-    ptl_internal_header_t *restrict hdr)
+    ptl_table_entry_t * restrict t,
+    ptl_internal_header_t * restrict hdr)
 {
     ptl_size_t mlength;
     assert(t);
     assert(hdr);
-    ptl_event_t e = { .event.tevent = {
-	.pt_index = hdr->pt_index,
-	.uid = 0,
-	.jid = PTL_JID_NONE,
-	.match_bits = 0,
-	.mlength = 0,
-	.rlength = hdr->length,
-	.remote_offset = hdr->dest_offset,
-	.user_ptr = hdr->user_ptr,
-	.ni_fail_type = PTL_NI_OK
-    } };
-    if (hdr->ni <= 1) { // Logical
+    ptl_event_t e = {.event.tevent = {
+				      .pt_index = hdr->pt_index,
+				      .uid = 0,
+				      .jid = PTL_JID_NONE,
+				      .match_bits = 0,
+				      .mlength = 0,
+				      .rlength = hdr->length,
+				      .remote_offset = hdr->dest_offset,
+				      .user_ptr = hdr->user_ptr,
+				      .ni_fail_type = PTL_NI_OK}
+    };
+    if (hdr->ni <= 1) {		       // Logical
 	e.event.tevent.initiator.rank = hdr->src;
-    } else { // Physical
+    } else {			       // Physical
 	e.event.tevent.initiator.phys.pid = hdr->src;
 	e.event.tevent.initiator.phys.nid = 0;
     }
@@ -325,7 +336,9 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     //printf("%u ~~> t->priority.head = %p, t->overflow.head = %p\n", (unsigned)proc_number, t->priority.head, t->overflow.head);
     if (t->priority.head) {
 	ptl_internal_appendLE_t *entry = t->priority.head;
-	const ptl_le_t le = *(ptl_le_t*)(((char*)entry) + offsetof(ptl_internal_le_t, visible));
+	const ptl_le_t le =
+	    *(ptl_le_t *) (((char *)entry) +
+			   offsetof(ptl_internal_le_t, visible));
 	assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
 	assert(entry);
 	/*********************************************************
@@ -354,14 +367,17 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
 	    case HDR_TYPE_GET:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		if ((le.options & (PTL_LE_ACK_DISABLE|PTL_LE_OP_GET)) == 0) {
+		if ((le.options & (PTL_LE_ACK_DISABLE | PTL_LE_OP_GET)) == 0) {
 		    goto permission_violation;
 		}
 	}
 	if (0) {
-permission_violation:
-	    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-	    return (ptl_pid_t)((le.options & PTL_LE_ACK_DISABLE)?0:3);
+	  permission_violation:
+	    (void)PtlInternalAtomicInc(&nit.
+				       regs[hdr->
+					    ni]
+				       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+	    return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 : 3);
 	}
 	/*******************************************************************
 	 * We have permissions on this LE, now check if it's a use-once LE *
@@ -372,9 +388,12 @@ permission_violation:
 	    } else {
 		t->priority.head = t->priority.tail = NULL;
 	    }
-	    if (t->EQ != PTL_EQ_NONE && (le.options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
+	    if (t->EQ != PTL_EQ_NONE &&
+		(le.
+		 options & (PTL_LE_EVENT_DISABLE |
+			    PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
 		e.type = PTL_EVENT_UNLINK;
-		e.event.tevent.start = (char*)le.start + hdr->dest_offset;
+		e.event.tevent.start = (char *)le.start + hdr->dest_offset;
 		PtlInternalEQPush(t->EQ, &e);
 	    }
 	}
@@ -389,23 +408,35 @@ permission_violation:
 	 *************************/
 	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
-		memcpy((char*)le.start + hdr->dest_offset, hdr->data, mlength);
+		memcpy((char *)le.start + hdr->dest_offset, hdr->data,
+		       mlength);
 		break;
 	    case HDR_TYPE_ATOMIC:
-		PtlInternalPerformAtomic((char*)le.start + hdr->dest_offset, hdr->data, mlength, hdr->info.atomic.operation, hdr->info.atomic.datatype);
+		PtlInternalPerformAtomic((char *)le.start + hdr->dest_offset,
+					 hdr->data, mlength,
+					 hdr->info.atomic.operation,
+					 hdr->info.atomic.datatype);
 		break;
 	    case HDR_TYPE_FETCHATOMIC:
-		PtlInternalPerformAtomic((char*)le.start + hdr->dest_offset, hdr->data, mlength, hdr->info.fetchatomic.operation, hdr->info.fetchatomic.datatype);
+		PtlInternalPerformAtomic((char *)le.start + hdr->dest_offset,
+					 hdr->data, mlength,
+					 hdr->info.fetchatomic.operation,
+					 hdr->info.fetchatomic.datatype);
 		break;
 	    case HDR_TYPE_GET:
-		memcpy(hdr->data, (char*)le.start + hdr->dest_offset, mlength);
+		memcpy(hdr->data, (char *)le.start + hdr->dest_offset,
+		       mlength);
 		break;
 	    case HDR_TYPE_SWAP:
-		PtlInternalPerformAtomicArg((char*)le.start + hdr->dest_offset, hdr->data+8, *(uint64_t*)hdr->data, mlength, hdr->info.swap.operation, hdr->info.swap.datatype);
+		PtlInternalPerformAtomicArg((char *)le.start +
+					    hdr->dest_offset, hdr->data + 8,
+					    *(uint64_t *) hdr->data, mlength,
+					    hdr->info.swap.operation,
+					    hdr->info.swap.datatype);
 		break;
 	    default:
 		UNREACHABLE;
-		*(int*)0 = 0;
+		*(int *)0 = 0;
 	}
 	/* now announce it */
 	//printf("%u ~~> announcing delivery...\n", (unsigned)proc_number);
@@ -430,34 +461,37 @@ permission_violation:
 	    if (ct_announce != 0) {
 		//printf("%u ~~> incrementing CT %u...\n", (unsigned)proc_number, le_ct);
 		if ((le.options & PTL_LE_EVENT_CT_BYTES) == 0) {
-		    ptl_ct_event_t cte = {1, 0};
+		    ptl_ct_event_t cte = { 1, 0 };
 		    PtlCTInc(le.ct_handle, cte);
 		} else {
-		    ptl_ct_event_t cte = {mlength, 0};
+		    ptl_ct_event_t cte = { mlength, 0 };
 		    PtlCTInc(le.ct_handle, cte);
 		}
 	    } else {
 		//printf("%u ~~> NOT incrementing CT \n", (unsigned)proc_number);
 	    }
-	    if (t_eq != PTL_EQ_NONE && (le.options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+	    if (t_eq != PTL_EQ_NONE &&
+		(le.
+		 options & (PTL_LE_EVENT_DISABLE |
+			    PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
 		e.event.tevent.mlength = mlength;
-		e.event.tevent.start = (char*)le.start + hdr->dest_offset;
+		e.event.tevent.start = (char *)le.start + hdr->dest_offset;
 		PtlInternalEQPush(t_eq, &e);
 	    }
 	}
-	return (ptl_pid_t)((le.options & PTL_LE_ACK_DISABLE)?0:1);
+	return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 : 1);
     } else if (t->overflow.head) {
 #warning Overflow LE handling is unimplemented
 	fprintf(stderr, "overflow LE handling is unimplemented\n");
 	abort();
-	return (ptl_pid_t)2; // check for ACK_DISABLE
-    } else { // nothing posted *at all!*
+	return (ptl_pid_t) 2;	       // check for ACK_DISABLE
+    } else {			       // nothing posted *at all!*
 	if (t->EQ != PTL_EQ_NONE) {
 	    e.type = PTL_EVENT_DROPPED;
 	    e.event.tevent.start = NULL;
 	    PtlInternalEQPush(t->EQ, &e);
 	}
 	(void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
-	return 0; // silent ACK
+	return 0;		       // silent ACK
     }
 }

@@ -54,7 +54,7 @@ int API_FUNC PtlNIInit(
     ptl_process_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {
-    ptl_internal_handle_converter_t ni = { .s={ HANDLE_NI_CODE, 0, 0 } };
+    ptl_internal_handle_converter_t ni = {.s = {HANDLE_NI_CODE, 0, 0} };
     ptl_table_entry_t *tmp;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -77,7 +77,8 @@ int API_FUNC PtlNIInit(
 	return PTL_ARG_INVALID;
     }
     if (pid > num_siblings && pid != PTL_PID_ANY) {
-	VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid, (int)num_siblings);
+	VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid,
+		      (int)num_siblings);
 	return PTL_ARG_INVALID;
     }
     if (ni_handle == NULL) {
@@ -90,7 +91,9 @@ int API_FUNC PtlNIInit(
     if ((options & PTL_NI_LOGICAL) != 0 && map_size != num_siblings) {
 	return PTL_SIZE_INVALID;
     }
-    if ((options & PTL_NI_LOGICAL) == 0 && (map_size > 0 && (desired_mapping != NULL || actual_mapping != NULL))) {
+    if ((options & PTL_NI_LOGICAL) == 0 &&
+	(map_size > 0 &&
+	 (desired_mapping != NULL || actual_mapping != NULL))) {
 	return PTL_NI_NOT_LOGICAL;
     }
 #endif
@@ -169,7 +172,7 @@ int API_FUNC PtlNIInit(
 		actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
 	    } else {
 		actual_mapping[i].phys.nid = 0;
-		actual_mapping[i].phys.pid = (ptl_pid_t)i;
+		actual_mapping[i].phys.pid = (ptl_pid_t) i;
 	    }
 	}
     }
@@ -221,11 +224,13 @@ int API_FUNC PtlNIFini(
 	PtlInternalCTNITeardown(ni.s.ni);
 	PtlInternalMDNITeardown(ni.s.ni);
 	PtlInternalEQNITeardown(ni.s.ni);
-	switch(ni.s.ni) {
-	    case 0: case 2:
+	switch (ni.s.ni) {
+	    case 0:
+	    case 2:
 		PtlInternalMENITeardown(ni.s.ni);
 		break;
-	    case 1: case 3:
+	    case 1:
+	    case 3:
 		PtlInternalLENITeardown(ni.s.ni);
 		break;
 	}

@@ -90,7 +90,8 @@ int API_FUNC PtlInit(
 	PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", LARGE_FRAG_COUNT, 0);
 	assert(((SMALL_FRAG_COUNT * SMALL_FRAG_SIZE) +
 		(LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
-		(sizeof(NEMESIS_blocking_queue) * 2)) == per_proc_comm_buf_size);
+		(sizeof(NEMESIS_blocking_queue) * 2)) ==
+	       per_proc_comm_buf_size);
 
 	comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));	// the one extra is for the collator
 
@@ -104,7 +105,7 @@ int API_FUNC PtlInit(
 	nit_limits.max_iovecs = 0;     // XXX: ???
 	nit_limits.max_me_list = 128;  // Arbitrary
 	nit_limits.max_msg_size = 0xffffffffffffffffULL;	// may need to be smaller
-	nit_limits.max_atomic_size = LARGE_FRAG_SIZE - sizeof(void*) - sizeof(uint64_t); // single payload
+	nit_limits.max_atomic_size = LARGE_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);	// single payload
 
 	/* Open the communication pad */
 	assert(comm_pad == NULL);

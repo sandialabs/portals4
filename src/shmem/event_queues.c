@@ -34,7 +34,7 @@ typedef union {
     uint32_t u;
 } eq_off_t;
 
-typedef ptl_event_t ptl_internal_event_t; // XXX should change for speed
+typedef ptl_event_t ptl_internal_event_t;	// XXX should change for speed
 
 typedef struct {
     ptl_internal_event_t *ring;
@@ -66,11 +66,11 @@ void INTERNAL PtlInternalEQNISetup(
 void INTERNAL PtlInternalEQNITeardown(
     unsigned int ni)
 {
-    ptl_internal_eq_t * restrict tmp;
-    volatile uint64_t * restrict rc;
-    while (eqs[ni] == (void*)1) ; // just in case (should never happen in sane code)
-    tmp = PtlInternalAtomicSwapPtr((void *volatile*)&eqs[ni], NULL);
-    rc = PtlInternalAtomicSwapPtr((void *volatile*)&eq_refcounts[ni], NULL);
+    ptl_internal_eq_t *restrict tmp;
+    volatile uint64_t *restrict rc;
+    while (eqs[ni] == (void *)1) ;     // just in case (should never happen in sane code)
+    tmp = PtlInternalAtomicSwapPtr((void *volatile *)&eqs[ni], NULL);
+    rc = PtlInternalAtomicSwapPtr((void *volatile *)&eq_refcounts[ni], NULL);
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
@@ -83,7 +83,7 @@ void INTERNAL PtlInternalEQNITeardown(
 	}
     }
     free(tmp);
-    free((void*)rc);
+    free((void *)rc);
 }
 
 
@@ -112,7 +112,8 @@ int INTERNAL PtlInternalEQHandleValidator(
 	return PTL_ARG_INVALID;
     }
     if (eq_refcounts[eq.s.ni][eq.s.code] == 0) {
-	VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni, (int)eq.s.code);
+	VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni,
+		      (int)eq.s.code);
 	return PTL_ARG_INVALID;
     }
 #endif
@@ -252,8 +253,8 @@ int API_FUNC PtlEQGet(
 	    return PTL_EQ_EMPTY;
 	}
 	*event = eq->ring[readidx.s.offset];
-	newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);	// a prime number
-	newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+	newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);	// a prime number
+	newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
     } while ((curidx.u =
 	      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
 				     newidx.u)) != readidx.u);
@@ -296,8 +297,8 @@ int API_FUNC PtlEQWait(
 	    continue;
 	}
 	*event = eq->ring[readidx.s.offset];
-	newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);	// a prime number
-	newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+	newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);	// a prime number
+	newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
     } while ((curidx.u =
 	      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
 				     newidx.u)) != readidx.u);
@@ -355,11 +356,11 @@ int API_FUNC PtlEQPoll(
 	MILLI_TO_TIMER_INTS(timeout);
     }
     {
-	uint16_t t = (uint16_t)(size - 1);
-	t = (uint16_t)(t | (t >> 1));
-	t = (uint16_t)(t | (t >> 2));
-	t = (uint16_t)(t | (t >> 4));
-	t = (uint16_t)(t | (t >> 8));
+	uint16_t t = (uint16_t) (size - 1);
+	t = (uint16_t) (t | (t >> 1));
+	t = (uint16_t) (t | (t >> 2));
+	t = (uint16_t) (t | (t >> 4));
+	t = (uint16_t) (t | (t >> 8));
 	offset = nstart & t;	       // pseudo-random
     }
     do {
@@ -382,8 +383,8 @@ int API_FUNC PtlEQPoll(
 		    break;
 		}
 		*event = eq->ring[readidx.s.offset];
-		newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);	// a prime number
-		newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+		newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);	// a prime number
+		newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
 	    } while ((curidx.u =
 		      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
 					     newidx.u)) != readidx.u);
@@ -406,7 +407,7 @@ void INTERNAL PtlInternalEQPush(
     ptl_event_t * event)
 {
     const ptl_internal_handle_converter_t eqh = { eq_handle };
-    ptl_internal_eq_t * const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
     eq_off_t writeidx, curidx, newidx;
 
@@ -414,9 +415,11 @@ void INTERNAL PtlInternalEQPush(
     curidx = eq->leading_tail;
     do {
 	writeidx = curidx;
-	newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
-	newidx.s.offset = (uint16_t)((writeidx.s.offset + 1) & mask);
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u, newidx.u)) != writeidx.u);
+	newidx.s.sequence = (uint16_t) (writeidx.s.sequence + 23);
+	newidx.s.offset = (uint16_t) ((writeidx.s.offset + 1) & mask);
+    } while ((curidx.u =
+	      PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
+				     newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish

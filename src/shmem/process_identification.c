@@ -15,12 +15,14 @@
 #include "ptl_visibility.h"
 #include "ptl_internal_handles.h"
 
-int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
+int INTERNAL PtlInternalLogicalProcessValidator(
+    ptl_process_t p)
 {
     return (p.rank >= num_siblings);
 }
 
-int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
+int INTERNAL PtlInternalPhysicalProcessValidator(
+    ptl_process_t p)
 {
     /* pid == num_siblings is the COLLECTOR */
     return (p.phys.pid > num_siblings || p.phys.nid != 0);
@@ -40,12 +42,12 @@ int API_FUNC PtlGetId(
     }
 #endif
     switch (ni.ni) {
-	case 0: // Logical
-	case 1: // Logical
+	case 0:		       // Logical
+	case 1:		       // Logical
 	    id->rank = proc_number;    // heh
 	    break;
-	case 2: // Physical
-	case 3: // Physical
+	case 2:		       // Physical
+	case 3:		       // Physical
 	    id->phys.pid = proc_number;
 	    id->phys.nid = 0;
 	    break;
