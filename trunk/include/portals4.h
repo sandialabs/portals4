@@ -2452,7 +2452,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  * @retval PTL_NO_INIT	    Indicates that the portals API has not been
  *			    successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a eq_handle is not a valid event
- *			    queue handle.
+ *			    queue handle or \a event is \c NULL.
  * @retval PTL_EQ_EMPTY	    Indicates that \a eq_handle is empty or another
  *			    thread is waiting in PtlEQWait().
  * @retval PTL_EQ_DROPPED   Indicates success (i.e., an event is returned) and
@@ -2461,9 +2461,6 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  *			    PtlEQWait(), or PtlEQPoll() -- from this event
  *			    queue has been dropped due to limited space in the
  *			    event queue.
- * @retval PTL_INTERRUPTED  Indicates that PtlEQFree() or PtlNIFini() was
- *			    called by another thread while this thread was in
- *			    PtlEQGet().
  * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree of
  *	complexity to the PtlEQGet(), PtlEQWait(), and PtlEQPoll() functions;
  *	however, it was deemed necessary to be able to interrupt waiting
@@ -2494,15 +2491,16 @@ int PtlEQGet(ptl_handle_eq_t	eq_handle,
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
  * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
- *				event queue handle.
- * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
- *				thread is waiting in PtlEQWait().
+ *				event queue handle or that \a event is \c NULL.
  * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
  *				and that at least one event between this event
  *				and the last event obtained -- using
  *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
  *				this event queue has been dropped due to
  *				limited space in the event queue.
+ * @retval PTL_INTERRUPTED	Indicates that PtlEQFree() or PtlNIFini() was
+ *				called by another thread while this thread was
+ *				waiting in PtlEQWait().
  * @see PtlEQGet(), PtlEQPoll()
  */
 int PtlEQWait(ptl_handle_eq_t	eq_handle,
@@ -2542,16 +2540,19 @@ int PtlEQWait(ptl_handle_eq_t	eq_handle,
  * @retval PTL_OK		Indicates success
  * @retval PTL_NO_INIT		Indicates that the portals API has not been
  *				successfully initialized.
- * @retval PTL_ARG_INVALID	Indicates that \a eq_handle is not a valid
- *				event queue handle.
- * @retval PTL_EQ_EMPTY		Indicates that \a eq_handle is empty or another
- *				thread is waiting in PtlEQWait().
+ * @retval PTL_ARG_INVALID	Indicates that an invalid argument was passed.
+ *				The definition of which arguments are checked
+ *				is implementation dependent.
+ * @retval PTL_EQ_EMPTY		Indicates that the timeout has been reached and
+ *				all of the event queues are empty.
  * @retval PTL_EQ_DROPPED	Indicates success (i.e., an event is returned)
  *				and that at least one event between this event
- *				and the last event obtained -- using
- *				PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
- *				this event queue has been dropped due to
- *				limited space in the event queue.
+ *				and the last event obtained from the event
+ *				queue indicated by \a which has been dropped
+ *				due to limited space in the event queue.
+ * @retval PTL_INTERRUPTED	Indicates that PtlEQFree() or PtlNIFini() was
+ *				called by another thread while this thread was
+ *				waiting in PtlEQPoll().
  * @implnote Implementations are free to provide macros for PtlEQGet() and
  *	PtlEQWait() that use PtlEQPoll() instead of providing these functions.
  * @implnote All of the members of the ptl_event_t structure (and corresponding
