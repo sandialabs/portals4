@@ -34,8 +34,10 @@ typedef union {
     uint32_t u;
 } eq_off_t;
 
+typedef ptl_event_t ptl_internal_event_t; // XXX should change for speed
+
 typedef struct {
-    ptl_event_t *ring;
+    ptl_internal_event_t *ring;
     uint32_t size;
     volatile eq_off_t head, leading_tail, lagging_tail;
 } ptl_internal_eq_t;
