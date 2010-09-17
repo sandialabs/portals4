@@ -14,6 +14,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_visibility.h"
 #include "ptl_internal_handles.h"
+#include "ptl_internal_error.h"
 
 int INTERNAL PtlInternalLogicalProcessValidator(
     ptl_process_t p)
@@ -32,16 +33,17 @@ int API_FUNC PtlGetId(
     ptl_handle_ni_t ni_handle,
     ptl_process_t * id)
 {
-    ptl_handle_encoding_t ni = { ni_handle };
+    ptl_internal_handle_converter_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
     }
-    if (ni.ni > 3 || nit.refcount[ni.ni] == 0) {
+    if (PtlInternalNIValidator(ni)) {
+	VERBOSE_ERROR("bad NI\n");
 	return PTL_ARG_INVALID;
     }
 #endif
-    switch (ni.ni) {
+    switch (ni.s.ni) {
 	case 0:		       // Logical
 	case 1:		       // Logical
 	    id->rank = proc_number;    // heh
@@ -52,6 +54,7 @@ int API_FUNC PtlGetId(
 	    id->phys.nid = 0;
 	    break;
 	default:
+	    UNREACHABLE;
 	    *(int *)0 = 0;	       // should never happen
     }
     return PTL_OK;
