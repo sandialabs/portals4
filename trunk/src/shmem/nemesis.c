@@ -19,7 +19,8 @@
  * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
  * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
  * with multiple enqueuers and a single de-queuer. */
-void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
+void INTERNAL PtlInternalNEMESISBlockingInit(
+    NEMESIS_blocking_queue * q)
 {
     PtlInternalNEMESISInit(&q->q);
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
@@ -27,7 +28,8 @@ void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
     {
 	pthread_mutexattr_t ma;
 	assert(pthread_mutexattr_init(&ma) == 0);
-	assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) == 0);
+	assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) ==
+	       0);
 	assert(pthread_mutex_init(&q->trigger_lock, &ma) == 0);
 	assert(pthread_mutexattr_destroy(&ma) == 0);
     }
@@ -51,7 +53,7 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict f)
 {
-    assert((f == (void*)1) || (f->next == NULL));
+    assert((f == (void *)1) || (f->next == NULL));
     PtlInternalNEMESISOffsetEnqueue(&q->q, f);
     /* awake waiter */
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
@@ -78,7 +80,8 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
 		assert(pthread_mutex_lock(&q->trigger_lock) == 0);
 		if (q->frustration > 1000) {
-		    assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) == 0);
+		    assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) ==
+			   0);
 		}
 		assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
 	    }
@@ -91,6 +94,6 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 	assert(retval != NULL);
     }
     assert(retval);
-    assert(retval == (void*)1 || retval->next == NULL);
+    assert(retval == (void *)1 || retval->next == NULL);
     return retval;
 }

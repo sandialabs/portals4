@@ -388,26 +388,30 @@ int main(
 	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr, buf);
+	    fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr,
+		    buf);
 	    abort();
 	}
 	if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n", perr, buf);
+	    fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n",
+		    perr, buf);
 	    abort();
 	}
 	if ((perr = pthread_cond_destroy(&q2->trigger)) != 0) {
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue2 trigger(%i): %s\n", perr, buf);
+	    fprintf(stderr, "yod-> destroying queue2 trigger(%i): %s\n", perr,
+		    buf);
 	    abort();
 	}
 	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
 	if ((perr = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue2 trigger lock(%i): %s\n", perr, buf);
+	    fprintf(stderr, "yod-> destroying queue2 trigger lock(%i): %s\n",
+		    perr, buf);
 	    abort();
 	}
 #else
@@ -430,7 +434,7 @@ int main(
 #endif
     }
     if (munmap(commpad, buffsize) != 0) {
-	perror("yod-> munmap failed");	/* technically non-fatal */
+	perror("yod-> munmap failed"); /* technically non-fatal */
     }
     if (shm_unlink(shmname) != 0) {
 	perror("yod-> shm_unlink failed");

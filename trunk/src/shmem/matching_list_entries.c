@@ -78,7 +78,7 @@ int API_FUNC PtlMEAppend(
     ptl_handle_me_t * me_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t meh = { .s.selector = HANDLE_ME_CODE };
+    ptl_internal_handle_converter_t meh = {.s.selector = HANDLE_ME_CODE };
     ptl_internal_appendME_t *Qentry = NULL;
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -303,7 +303,8 @@ static void PtlInternalWalkMatchList(
 			   offsetof(ptl_internal_me_t, visible));
 
 	/* check the match_bits */
-	if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits) != 0)
+	if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits) !=
+	    0)
 	    continue;
 	/* check for forbidden truncation */
 	if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
@@ -429,11 +430,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	}
 	if (0) {
 	  permission_violation:
-	    (void)PtlInternalAtomicInc(&nit.
-				       regs[hdr->
-					    ni]
+	    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
 				       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-	    return (ptl_pid_t)((mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3);
+	    return (ptl_pid_t) ((mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3);
 	}
 	/*******************************************************************
 	 * We have permissions on this ME, now check if it's a use-once ME *
@@ -452,9 +451,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 		}
 	    }
 	    if (t->EQ != PTL_EQ_NONE &&
-		(mec.
-		 options & (PTL_ME_EVENT_DISABLE |
-			    PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
+		(mec.options &
+		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
 		e.type = PTL_EVENT_UNLINK;
 		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
 		PtlInternalEQPush(t->EQ, &e);
@@ -532,16 +530,16 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    }
 	    /* PT has EQ & msg/ME has events enabled? */
 	    if (t_eq != PTL_EQ_NONE &&
-		(mec.
-		 options & (PTL_ME_EVENT_DISABLE |
-			    PTL_ME_EVENT_SUCCESS_DISABLE)) == 0) {
+		(mec.options &
+		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) ==
+		0) {
 		// record event
 		e.event.tevent.mlength = mlength;
 		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
 		PtlInternalEQPush(t_eq, &e);
 	    }
 	}
-	return (ptl_pid_t)((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
+	return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {

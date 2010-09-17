@@ -121,21 +121,20 @@ static void *PtlInternalDMCatcher(
 		    case 1:
 		    case 3:	       // Non-matching (LE)
 			dm_printf("delivering to LE table\n");
-			hdr->src =
-				PtlInternalLEDeliver(table_entry, hdr);
+			hdr->src = PtlInternalLEDeliver(table_entry, hdr);
 			break;
 		}
-		switch(hdr->src) {
-		    case 0:   // target said silent ACK (might be no ME posted)
+		switch (hdr->src) {
+		    case 0:	       // target said silent ACK (might be no ME posted)
 			dm_printf("not sending an ack\n");
 			break;
-		    case 1:   // success
+		    case 1:	       // success
 			dm_printf("delivery success!\n");
 			break;
-		    case 2:   // overflow
+		    case 2:	       // overflow
 			dm_printf("delivery overflow!\n");
 			break;
-		    case 3:   // Permission Violation
+		    case 3:	       // Permission Violation
 			dm_printf("permission violation!\n");
 			hdr->length = 0;
 			break;
@@ -143,9 +142,9 @@ static void *PtlInternalDMCatcher(
 		dm_printf("unlocking\n");
 	    } else {
 		/* Invalid PT: increment the dropped counter */
-		(void)PtlInternalAtomicInc(&nit.
-					   regs[hdr->ni][PTL_SR_DROP_COUNT],
-					   1);
+		(void)
+		    PtlInternalAtomicInc(&nit.regs[hdr->ni]
+					 [PTL_SR_DROP_COUNT], 1);
 		/* silently ACK */
 		hdr->src = 0;
 		dm_printf("table_entry->status == 0\n");
@@ -206,14 +205,14 @@ static void *PtlInternalDMAckCatcher(
 			case 0:
 			case 1:       // Logical
 			    PtlInternalFragmentToss(hdr,
-						    einfo->put.target_id.
-						    rank);
+						    einfo->put.
+						    target_id.rank);
 			    break;
 			case 2:
 			case 3:       // Physical
 			    PtlInternalFragmentToss(hdr,
-						    einfo->put.target_id.phys.
-						    pid);
+						    einfo->put.target_id.
+						    phys.pid);
 			    break;
 		    }
 		    continue;
@@ -244,8 +243,8 @@ static void *PtlInternalDMAckCatcher(
 		if (einfo->fetchatomic.put_md_handle.a.md !=
 		    PTL_INVALID_HANDLE.md &&
 		    einfo->fetchatomic.put_md_handle.a.md != md_handle) {
-		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.a.
-					 md);
+		    PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.
+					 a.md);
 		}
 		mdptr = PtlInternalMDFetch(md_handle);
 		/* pull the data out of the reply */
@@ -476,7 +475,8 @@ int API_FUNC PtlPut(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
+		      PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -614,7 +614,8 @@ int API_FUNC PtlGet(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
+		      PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -730,7 +731,8 @@ int API_FUNC PtlAtomic(
 	}
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
-	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", PtlInternalMDLength(md_handle), local_offset + length);
+	VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
+		      PtlInternalMDLength(md_handle), local_offset + length);
 	return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {
@@ -876,11 +878,15 @@ int API_FUNC PtlFetchAtomic(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-	VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(get_md_handle), local_get_offset + length);
+	VERBOSE_ERROR
+	    ("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
+	     PtlInternalMDLength(get_md_handle), local_get_offset + length);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-	VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(put_md_handle), local_put_offset + length);
+	VERBOSE_ERROR
+	    ("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
+	     PtlInternalMDLength(put_md_handle), local_put_offset + length);
 	return PTL_ARG_INVALID;
     }
     {
@@ -1060,11 +1066,15 @@ int API_FUNC PtlSwap(
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-	VERBOSE_ERROR("Swap saw get_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(get_md_handle), local_get_offset + length);
+	VERBOSE_ERROR
+	    ("Swap saw get_md too short for local_offset (%u < %u)\n",
+	     PtlInternalMDLength(get_md_handle), local_get_offset + length);
 	return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-	VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n", PtlInternalMDLength(put_md_handle), local_put_offset + length);
+	VERBOSE_ERROR
+	    ("Swap saw put_md too short for local_offset (%u < %u)\n",
+	     PtlInternalMDLength(put_md_handle), local_put_offset + length);
 	return PTL_ARG_INVALID;
     }
     {

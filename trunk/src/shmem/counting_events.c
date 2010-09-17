@@ -217,7 +217,7 @@ int API_FUNC PtlCTAlloc(
     ptl_size_t offset;
     volatile uint64_t *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t ct = { .s.selector = HANDLE_CT_CODE };
+    ptl_internal_handle_converter_t ct = {.s.selector = HANDLE_CT_CODE };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");

@@ -38,7 +38,7 @@ int API_FUNC PtlPTAlloc(
 	return PTL_ARG_INVALID;
     }
     if (eq_handle == PTL_EQ_NONE && options & PTL_PT_FLOW_CONTROL) {
-        return PTL_PT_EQ_NEEDED;
+	return PTL_PT_EQ_NEEDED;
     }
     if (PtlInternalEQHandleValidator(eq_handle, 1)) {
 	return PTL_ARG_INVALID;
@@ -47,36 +47,36 @@ int API_FUNC PtlPTAlloc(
 	return PTL_ARG_INVALID;
     }
     if (pt_index == NULL) {
-        return PTL_ARG_INVALID;
+	return PTL_ARG_INVALID;
     }
 #endif
     if (pt_index_req != PTL_PT_ANY) {
-        pt = &(nit.tables[ni.s.ni][pt_index_req]);
-        assert(pthread_mutex_lock(&pt->lock) == 0);
-        if (pt->status != PT_FREE) {
-            assert(pthread_mutex_unlock(&pt->lock) == 0);
-            return PTL_PT_IN_USE;
-        }
-        pt->status = PT_DISABLED;
-        *pt_index = pt_index_req;
+	pt = &(nit.tables[ni.s.ni][pt_index_req]);
+	assert(pthread_mutex_lock(&pt->lock) == 0);
+	if (pt->status != PT_FREE) {
+	    assert(pthread_mutex_unlock(&pt->lock) == 0);
+	    return PTL_PT_IN_USE;
+	}
+	pt->status = PT_DISABLED;
+	*pt_index = pt_index_req;
     } else {
-        ptl_pt_index_t pti;
-        for (pti=0;pti<=nit_limits.max_pt_index;++pti) {
-            if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
-                pt = &(nit.tables[ni.s.ni][pti]);
-                assert(pthread_mutex_lock(&pt->lock) == 0);
-                if (pt->status == PT_FREE) {
-                    *pt_index = pti;
-                    pt->status = PT_DISABLED;
-                    break;
-                }
-                assert(pthread_mutex_unlock(&pt->lock) == 0);
-                pt = NULL;
-            }
-        }
-        if (pt == NULL) {
-            return PTL_PT_FULL;
-        }
+	ptl_pt_index_t pti;
+	for (pti = 0; pti <= nit_limits.max_pt_index; ++pti) {
+	    if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
+		pt = &(nit.tables[ni.s.ni][pti]);
+		assert(pthread_mutex_lock(&pt->lock) == 0);
+		if (pt->status == PT_FREE) {
+		    *pt_index = pti;
+		    pt->status = PT_DISABLED;
+		    break;
+		}
+		assert(pthread_mutex_unlock(&pt->lock) == 0);
+		pt = NULL;
+	    }
+	}
+	if (pt == NULL) {
+	    return PTL_PT_FULL;
+	}
     }
     assert(pt->priority.head == NULL);
     assert(pt->priority.tail == NULL);
@@ -101,7 +101,9 @@ int API_FUNC PtlPTFree(
 	return PTL_NO_INIT;
     }
     if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
-	VERBOSE_ERROR("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n", ni.s.ni, ni.s.code);
+	VERBOSE_ERROR
+	    ("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n",
+	     ni.s.ni, ni.s.code);
 	return PTL_ARG_INVALID;
     }
     if (pt_index == PTL_PT_ANY) {
@@ -109,26 +111,29 @@ int API_FUNC PtlPTFree(
 	return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits.max_pt_index) {
-	VERBOSE_ERROR("pt_index is too big (%u > %u)\n", pt_index, nit_limits.max_pt_index);
+	VERBOSE_ERROR("pt_index is too big (%u > %u)\n", pt_index,
+		      nit_limits.max_pt_index);
 	return PTL_ARG_INVALID;
     }
 #endif
     pt = &(nit.tables[ni.s.ni][pt_index]);
-    if (pt->priority.head || pt->priority.tail || pt->overflow.head || pt->overflow.tail) {
-	VERBOSE_ERROR("pt in use (%p,%p)\n", pt->priority.head, pt->overflow.head);
+    if (pt->priority.head || pt->priority.tail || pt->overflow.head ||
+	pt->overflow.tail) {
+	VERBOSE_ERROR("pt in use (%p,%p)\n", pt->priority.head,
+		      pt->overflow.head);
 	return PTL_PT_IN_USE;
     }
     switch (PtlInternalAtomicCas32(&pt->status, PT_ENABLED, PT_FREE)) {
 	default:
-	case PT_FREE: // already free'd (double-free)
+	case PT_FREE:		       // already free'd (double-free)
 	    return PTL_ARG_INVALID;
-	case PT_ENABLED: // success!
+	case PT_ENABLED:	       // success!
 	    return PTL_OK;
-	case PT_DISABLED: // OK, it was disabled, so...
-	    switch(PtlInternalAtomicCas32(&pt->status, PT_DISABLED, PT_FREE)) {
+	case PT_DISABLED:	       // OK, it was disabled, so...
+	    switch (PtlInternalAtomicCas32(&pt->status, PT_DISABLED, PT_FREE)) {
 		default:
-		case PT_FREE: // already free'd (double-free)
-		case PT_ENABLED: // if this happens, someone else is monkeying with this PT
+		case PT_FREE:	       // already free'd (double-free)
+		case PT_ENABLED:      // if this happens, someone else is monkeying with this PT
 		    return PTL_ARG_INVALID;
 		case PT_DISABLED:
 		    return PTL_OK;
@@ -166,21 +171,21 @@ int INTERNAL PtlInternalPTValidate(
     ptl_table_entry_t * t)
 {
     if (PtlInternalEQHandleValidator(t->EQ, 1)) {
-        VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
-        return 3;
+	VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
+	return 3;
     }
     switch (t->status) {
-        case PT_FREE:
-            VERBOSE_ERROR("PT has not been allocated\n");
-            return 1;
-        case PT_DISABLED:
-            VERBOSE_ERROR("PT has been disabled\n");
-            return 2;
-        case PT_ENABLED:
-            return 0;
-        default:
-            // should never happen
-            *(int*)0 = 0;
-            return 3;
+	case PT_FREE:
+	    VERBOSE_ERROR("PT has not been allocated\n");
+	    return 1;
+	case PT_DISABLED:
+	    VERBOSE_ERROR("PT has been disabled\n");
+	    return 2;
+	case PT_ENABLED:
+	    return 0;
+	default:
+	    // should never happen
+	    *(int *)0 = 0;
+	    return 3;
     }
 }

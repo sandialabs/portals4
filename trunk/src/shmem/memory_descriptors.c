@@ -34,7 +34,7 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
 typedef struct {
     ptl_md_t visible;
-    volatile uint32_t in_use;		// 0=free, 1=in_use
+    volatile uint32_t in_use;	// 0=free, 1=in_use
     uint32_t refcount;
 } ptl_internal_md_t;
 
@@ -81,14 +81,15 @@ void INTERNAL PtlInternalMDNITeardown(
     mds[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    for (size_t mdi=0;mdi<nit_limits.max_mds;++mdi) {
+    for (size_t mdi = 0; mdi < nit_limits.max_mds; ++mdi) {
 	while (tmp[mdi].refcount != 0) ;
     }
     free(tmp);
 }
 
 int INTERNAL PtlInternalMDHandleValidator(
-    ptl_handle_md_t handle, int care_about_ct)
+    ptl_handle_md_t handle,
+    int care_about_ct)
 {
     const ptl_internal_handle_converter_t md = { handle };
     ptl_internal_md_t *mdptr;
@@ -97,8 +98,11 @@ int INTERNAL PtlInternalMDHandleValidator(
 	VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
 	return PTL_ARG_INVALID;
     }
-    if (md.s.ni > 3 || md.s.code > nit_limits.max_mds || (nit.refcount[md.s.ni] == 0)) {
-	VERBOSE_ERROR("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n", md.s.ni, md.s.code, nit_limits.max_mds);
+    if (md.s.ni > 3 || md.s.code > nit_limits.max_mds ||
+	(nit.refcount[md.s.ni] == 0)) {
+	VERBOSE_ERROR
+	    ("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
+	     md.s.ni, md.s.code, nit_limits.max_mds);
 	return PTL_ARG_INVALID;
     }
     if (mds[md.s.ni] == NULL) {
@@ -119,12 +123,13 @@ int INTERNAL PtlInternalMDHandleValidator(
     }
     if (care_about_ct) {
 	int ct_optional = 1;
-	if (mdptr->visible.
-		options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-		    PTL_MD_EVENT_CT_ACK)) {
+	if (mdptr->
+	    visible.options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+			       PTL_MD_EVENT_CT_ACK)) {
 	    ct_optional = 0;
 	}
-	if (PtlInternalCTHandleValidator(mdptr->visible.ct_handle, ct_optional)) {
+	if (PtlInternalCTHandleValidator
+	    (mdptr->visible.ct_handle, ct_optional)) {
 	    VERBOSE_ERROR("MD has a bad CT handle\n");
 	    return PTL_ARG_INVALID;
 	}
@@ -147,13 +152,15 @@ int API_FUNC PtlMDBind(
 	return PTL_NO_INIT;
     }
     if (ni.s.ni > 3 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
-	VERBOSE_ERROR("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n", ni.s.ni, ni.s.code);
+	VERBOSE_ERROR
+	    ("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n",
+	     ni.s.ni, ni.s.code);
 	return PTL_ARG_INVALID;
     }
     /*if (md->start == NULL || md->length == 0) {
-	VERBOSE_ERROR("start is NULL (%p) or length is 0 (%u); cannot detect failures!\n", md->start, (unsigned int)md->length);
-	return PTL_ARG_INVALID;
-    }*/
+     * VERBOSE_ERROR("start is NULL (%p) or length is 0 (%u); cannot detect failures!\n", md->start, (unsigned int)md->length);
+     * return PTL_ARG_INVALID;
+     * } */
     if (md->options & PTL_MD_EVENT_DISABLE) {
 	eq_optional = 1;
     }
@@ -161,7 +168,8 @@ int API_FUNC PtlMDBind(
 	VERBOSE_ERROR("MD saw invalid EQ\n");
 	return PTL_ARG_INVALID;
     }
-    if (md->options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+    if (md->
+	options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
 		   PTL_MD_EVENT_CT_ACK)) {
 	ct_optional = 0;
     }
@@ -240,7 +248,7 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(
 }
 
 void INTERNAL PtlInternalMDPosted(
-	ptl_handle_md_t handle)
+    ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
     //printf("%u MD %u incremented\n", (unsigned)proc_number, md.s.code);
@@ -248,7 +256,7 @@ void INTERNAL PtlInternalMDPosted(
 }
 
 void INTERNAL PtlInternalMDCleared(
-	ptl_handle_md_t handle)
+    ptl_handle_md_t handle)
 {
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
