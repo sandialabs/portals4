@@ -99,8 +99,8 @@ int API_FUNC PtlInit(
 	nit_limits.max_over = 128;     // Arbitrary
 	nit_limits.max_mds = 128;      // Arbitrary
 	nit_limits.max_cts = 128;      // Arbitrary
-	nit_limits.max_eqs = 0;
-	nit_limits.max_pt_index = 63;
+	nit_limits.max_eqs = 128;      // Arbitrary
+	nit_limits.max_pt_index = 63;  // Minimum required by spec
 	nit_limits.max_iovecs = 0;     // XXX: ???
 	nit_limits.max_me_list = 128;  // Arbitrary
 	nit_limits.max_msg_size = 0xffffffffffffffffULL;	// may need to be smaller
