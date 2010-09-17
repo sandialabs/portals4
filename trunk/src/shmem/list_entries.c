@@ -439,7 +439,7 @@ permission_violation:
 	    } else {
 		//printf("%u ~~> NOT incrementing CT \n", (unsigned)proc_number);
 	    }
-	    if ((le.options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+	    if (t_eq != PTL_EQ_NONE && (le.options & (PTL_LE_EVENT_DISABLE|PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
 		e.event.tevent.mlength = mlength;
 		e.event.tevent.start = (char*)le.start + hdr->dest_offset;
 		PtlInternalEQPush(t_eq, &e);
