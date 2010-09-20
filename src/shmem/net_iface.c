@@ -127,8 +127,7 @@ int API_FUNC PtlNIInit(
 	    desired->max_mes < (1 << HANDLE_CODE_BITS)) {
 	    nit_limits.max_mes = desired->max_mes;
 	}
-	if (desired->max_over > 0 &&
-	    desired->max_over < (1 << HANDLE_CODE_BITS)) {
+	if (desired->max_over > 0) {
 	    nit_limits.max_over = desired->max_over;
 	}
 	if (desired->max_mds > 0 &&
@@ -191,6 +190,12 @@ int API_FUNC PtlNIInit(
     if (tmp == NULL) {
 	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
 	if (tmp == NULL) {
+	    nit.tables[ni.s.ni] = NULL;
+	    return PTL_NO_SPACE;
+	}
+	nit.unexpecteds[ni.s.ni] = calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
+	if (nit.unexpecteds[ni.s.ni] == NULL) {
+	    free(tmp);
 	    nit.tables[ni.s.ni] = NULL;
 	    return PTL_NO_SPACE;
 	}
