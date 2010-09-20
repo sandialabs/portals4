@@ -4,6 +4,7 @@
 #include <stdint.h>		       /* for uint32_t */
 
 #include "ptl_internal_handles.h"
+#include "ptl_internal_commpad.h"
 #include "ptl_internal_PT.h"
 
 typedef struct {
@@ -11,6 +12,7 @@ typedef struct {
     uint32_t refcount[4];
     volatile uint32_t internal_refcount[4];
     ptl_sr_value_t regs[4][2];
+    ptl_internal_header_t *unexpecteds[4];
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;

@@ -9,7 +9,8 @@ typedef struct {
     struct PTqueue {
 	void *head, *tail;
     } priority,
-            overflow;
+            overflow,
+            buffered_headers;
     ptl_handle_eq_t EQ;
     uint32_t status;
     unsigned int options;
