@@ -69,7 +69,7 @@ void INTERNAL PtlInternalMENITeardown(
     free(tmp);
 }
 
-static void PtlInternalPerformDeliver(
+static void PtlInternalPerformDelivery(
 	const unsigned char type,
 	void * const restrict src,
 	void * const restrict dest,
@@ -96,6 +96,26 @@ static void PtlInternalPerformDeliver(
 	    UNREACHABLE;
 	    *(int*)0=0;
     }
+}
+
+static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * restrict Qentry, char * restrict lstart, ptl_size_t llength, unsigned int loptions, ptl_size_t mlength, ptl_internal_header_t *restrict hdr)
+{
+    void * retval = NULL;
+    if (loptions & PTL_ME_MANAGE_LOCAL) {
+	assert(hdr->length + Qentry->local_offset <= llength);
+	if (mlength > 0) {
+	    retval = lstart + Qentry->local_offset;
+	    memcpy(retval, hdr->data, mlength);
+	    Qentry->local_offset += mlength;
+	}
+    } else {
+	assert(hdr->length + hdr->dest_offset <= llength);
+	if (mlength > 0) {
+	    retval = lstart + hdr->dest_offset;
+	    memcpy(retval, hdr->data, mlength);
+	}
+    }
+    return retval;
 }
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr) do { \
@@ -370,7 +390,7 @@ permission_violation:
 			} else {
 			    mlength = cur->length;
 			}
-			PtlInternalPerformDeliver(cur->type, (char*)me.start + cur->dest_offset, cur->data, mlength, cur);
+			PtlInternalPerformDelivery(cur->type, (char*)me.start + cur->dest_offset, cur->data, mlength, cur);
 			// notify
 			if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
 			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->type, me.options, mlength, (uintptr_t)me.start + cur->dest_offset, 0, cur);
@@ -544,7 +564,7 @@ static void PtlInternalWalkMatchList(
 	    continue;
 	/* check for forbidden truncation */
 	if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
-	    (length + offset) > me->length)
+	    (length + offset) > (me->length - current->local_offset))
 	    continue;
 	/* check for match_id */
 	if (ni <= 1) {		       // Logical
@@ -671,20 +691,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	/*************************
 	 * Perform the Operation *
 	 *************************/
+	void * report_this_start = (char*)mec.start + hdr->dest_offset;
 	if (foundin == PRIORITY) {
-	    PtlInternalPerformDeliver(hdr->type, (char*)mec.start + hdr->dest_offset, hdr->data, mlength, hdr);
+	    PtlInternalPerformDelivery(hdr->type, report_this_start, hdr->data, mlength, hdr);
 	} else {
-	    ptl_internal_header_t *bhdr = PtlInternalAllocUnexpectedHeader(hdr->ni);
-	    memcpy(bhdr, hdr, sizeof(ptl_internal_header_t));
-	    bhdr->next = NULL;
-	    if (t->buffered_headers.head == NULL) {
-		t->buffered_headers.head = bhdr;
-	    } else {
-		((ptl_internal_header_t*)(t->buffered_headers.tail))->next = bhdr;
-	    }
-	    t->buffered_headers.tail = bhdr;
+	    PtlInternalPTBufferUnexpectedHeader(t, hdr);
+	    report_this_start = PtlInternalPerformOverflowDelivery(priority_list, mec.start, mec.length, mec.options, mlength, hdr);
 	}
-	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)mec.start + hdr->dest_offset, foundin == OVERFLOW, hdr);
+	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
 	return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
     }
     // post dropped message event
