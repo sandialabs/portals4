@@ -21,4 +21,10 @@ void PtlInternalPTInit(
 int PtlInternalPTValidate(
     ptl_table_entry_t * t);
 
+#include "ptl_internal_commpad.h"
+
+void PtlInternalPTBufferUnexpectedHeader(
+	ptl_table_entry_t *restrict const t,
+	const ptl_internal_header_t *restrict const hdr);
+
 #endif
