@@ -98,48 +98,38 @@ static void PtlInternalPerformDeliver(
     }
 }
 
-static ptl_event_t PtlInternalInitTevent(ptl_internal_header_t *hdr)
-{
-    ptl_event_t e = {.event.tevent = {
-	.pt_index = hdr->pt_index,
-	.uid = 0,
-	.jid = PTL_JID_NONE,
-	.match_bits = hdr->match_bits,
-	.rlength = hdr->length,
-	.mlength = 0,
-	.remote_offset = hdr->dest_offset,
-	.user_ptr = hdr->user_ptr,
-	.ni_fail_type = PTL_NI_OK}
-    };
-    if (hdr->ni <= 1) {		       // Logical
-	e.event.tevent.initiator.rank = hdr->src;
-    } else {			       // Physical
-	e.event.tevent.initiator.phys.pid = hdr->src;
-	e.event.tevent.initiator.phys.nid = 0;
-    }
-    switch (hdr->type) {
-	case HDR_TYPE_PUT:
-	    e.type = PTL_EVENT_PUT;
-	    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
-	    break;
-	case HDR_TYPE_ATOMIC:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
-	    break;
-	case HDR_TYPE_FETCHATOMIC:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
-	    break;
-	case HDR_TYPE_SWAP:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
-	    break;
-	case HDR_TYPE_GET:
-	    e.type = PTL_EVENT_GET;
-	    break;
-    }
-    return e;
-}
+#define PTL_INTERNAL_INIT_TEVENT(e,hdr) do { \
+    e.event.tevent.pt_index = hdr->pt_index; \
+    e.event.tevent.uid = 0; \
+    e.event.tevent.jid = PTL_JID_NONE; \
+    e.event.tevent.match_bits = hdr->match_bits; \
+    e.event.tevent.rlength = hdr->length; \
+    e.event.tevent.mlength = 0; \
+    e.event.tevent.remote_offset = hdr->dest_offset; \
+    e.event.tevent.user_ptr = hdr->user_ptr; \
+    e.event.tevent.ni_fail_type = PTL_NI_OK; \
+    if (hdr->ni <= 1) {		       /* Logical */ \
+	e.event.tevent.initiator.rank = hdr->src; \
+    } else {			       /* Physical */ \
+	e.event.tevent.initiator.phys.pid = hdr->src; \
+	e.event.tevent.initiator.phys.nid = 0; \
+    } \
+    switch (hdr->type) { \
+	case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
+	    e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
+	    break; \
+	case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
+	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
+	    break; \
+	case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
+	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
+	    break; \
+	case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
+	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
+	    break; \
+	case HDR_TYPE_GET: e.type = PTL_EVENT_GET; break; \
+    } \
+} while (0)
 
 static void PtlInternalAnnounceMEDelivery(
 	const ptl_handle_eq_t eq_handle,
@@ -191,7 +181,8 @@ static void PtlInternalAnnounceMEDelivery(
 	}
     }
     if (eq_handle != PTL_EQ_NONE && (options & (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) == 0) {
-	ptl_event_t e = PtlInternalInitTevent(hdr);
+	ptl_event_t e;
+	PTL_INTERNAL_INIT_TEVENT(e, hdr);
 	if (overflow) {
 	    switch(e.type) {
 		case HDR_TYPE_PUT:
@@ -660,7 +651,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    if (t->EQ != PTL_EQ_NONE &&
 		(mec.options &
 		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
-		ptl_event_t e = PtlInternalInitTevent(hdr);
+		ptl_event_t e;
+		PTL_INTERNAL_INIT_TEVENT(e, hdr);
 		e.type = PTL_EVENT_UNLINK;
 		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
 		PtlInternalEQPush(t->EQ, &e);
@@ -697,7 +689,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
-	ptl_event_t e = PtlInternalInitTevent(hdr);
+	ptl_event_t e;
+	PTL_INTERNAL_INIT_TEVENT(e, hdr);
 	e.type = PTL_EVENT_DROPPED;
 	e.event.tevent.start = NULL;
 	PtlInternalEQPush(t->EQ, &e);
