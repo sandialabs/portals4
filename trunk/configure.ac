@@ -109,7 +109,7 @@ AS_IF([test "x$enable_picky" == xyes],
    CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"
    ;;
    Intel)
-   CFLAGS="-Wall $CFLAGS"
+   CFLAGS="-Wall -wd981 $CFLAGS"
    ;;
    SunStudio)
    # This compiler defaults to enabling all warnings
