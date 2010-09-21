@@ -98,30 +98,87 @@ static void PtlInternalPerformDeliver(
     }
 }
 
+static ptl_event_t PtlInternalInitTevent(ptl_internal_header_t *hdr)
+{
+    ptl_event_t e = {.event.tevent = {
+	.pt_index = hdr->pt_index,
+	.uid = 0,
+	.jid = PTL_JID_NONE,
+	.match_bits = hdr->match_bits,
+	.rlength = hdr->length,
+	.mlength = 0,
+	.remote_offset = hdr->dest_offset,
+	.user_ptr = hdr->user_ptr,
+	.ni_fail_type = PTL_NI_OK}
+    };
+    if (hdr->ni <= 1) {		       // Logical
+	e.event.tevent.initiator.rank = hdr->src;
+    } else {			       // Physical
+	e.event.tevent.initiator.phys.pid = hdr->src;
+	e.event.tevent.initiator.phys.nid = 0;
+    }
+    switch (hdr->type) {
+	case HDR_TYPE_PUT:
+	    e.type = PTL_EVENT_PUT;
+	    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
+	    break;
+	case HDR_TYPE_ATOMIC:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
+	    break;
+	case HDR_TYPE_FETCHATOMIC:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
+	    break;
+	case HDR_TYPE_SWAP:
+	    e.type = PTL_EVENT_ATOMIC;
+	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
+	    break;
+	case HDR_TYPE_GET:
+	    e.type = PTL_EVENT_GET;
+	    break;
+    }
+    return e;
+}
+
 static void PtlInternalAnnounceMEDelivery(
 	const ptl_handle_eq_t eq_handle,
 	const ptl_handle_ct_t ct_handle,
 	const unsigned char type,
 	const unsigned int options,
 	const uint64_t mlength,
-	void * start,
-	ptl_event_t *e
+	const uintptr_t start,
+	const int overflow,
+	ptl_internal_header_t *hdr
 	)
 {
     int ct_announce = ct_handle != PTL_CT_NONE;
     if (ct_announce != 0) {
-	switch (type) {
-	    case HDR_TYPE_PUT:
-		ct_announce = options & PTL_ME_EVENT_CT_PUT;
-		break;
-	    case HDR_TYPE_GET:
-		ct_announce = options & PTL_ME_EVENT_CT_GET;
-		break;
-	    case HDR_TYPE_ATOMIC:
-	    case HDR_TYPE_FETCHATOMIC:
-	    case HDR_TYPE_SWAP:
-		ct_announce = options & PTL_ME_EVENT_CT_ATOMIC;
-		break;
+	if (overflow) {
+	    switch (type) {
+		case HDR_TYPE_PUT:
+		    ct_announce = options & PTL_ME_EVENT_CT_PUT_OVERFLOW;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		case HDR_TYPE_FETCHATOMIC:
+		case HDR_TYPE_SWAP:
+		    ct_announce = options & PTL_ME_EVENT_CT_ATOMIC_OVERFLOW;
+		    break;
+	    }
+	} else {
+	    switch (type) {
+		case HDR_TYPE_PUT:
+		    ct_announce = options & PTL_ME_EVENT_CT_PUT;
+		    break;
+		case HDR_TYPE_GET:
+		    ct_announce = options & PTL_ME_EVENT_CT_GET;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		case HDR_TYPE_FETCHATOMIC:
+		case HDR_TYPE_SWAP:
+		    ct_announce = options & PTL_ME_EVENT_CT_ATOMIC;
+		    break;
+	    }
 	}
     }
     if (ct_announce != 0) {
@@ -134,9 +191,23 @@ static void PtlInternalAnnounceMEDelivery(
 	}
     }
     if (eq_handle != PTL_EQ_NONE && (options & (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) == 0) {
-	e->event.tevent.mlength = mlength;
-	e->event.tevent.start = start;
-	PtlInternalEQPush(eq_handle, e);
+	ptl_event_t e = PtlInternalInitTevent(hdr);
+	if (overflow) {
+	    switch(e.type) {
+		case HDR_TYPE_PUT:
+		    e.type = PTL_EVENT_PUT_OVERFLOW;
+		    break;
+		case HDR_TYPE_ATOMIC:
+		    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+		    break;
+		default:
+		    UNREACHABLE;
+		    *(int*)0 = 0;
+	    }
+	}
+	e.event.tevent.mlength = mlength;
+	e.event.tevent.start = (void*)start;
+	PtlInternalEQPush(eq_handle, &e);
     }
 }
 
@@ -311,18 +382,7 @@ permission_violation:
 			PtlInternalPerformDeliver(cur->type, (char*)me.start + cur->dest_offset, cur->data, mlength, cur);
 			// notify
 			if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-			    ptl_event_t e = {.event.tevent = {
-				.pt_index = pt_index,
-				.uid = 0,
-				.jid = PTL_JID_NONE,
-				.match_bits = cur->match_bits,
-				.rlength = cur->length,
-				.mlength = 0,
-				.remote_offset = cur->dest_offset,
-				.user_ptr = cur->user_ptr,
-				.ni_fail_type = PTL_NI_OK}
-			    };
-			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->type, me.options, mlength, (char*)me.start + cur->dest_offset, &e);
+			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->type, me.options, mlength, (uintptr_t)me.start + cur->dest_offset, 0, cur);
 			}
 			// return
 			PtlInternalDeallocUnexpectedHeader(cur);
@@ -524,44 +584,6 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendME_t *prev = NULL, *priority_list = t->priority.head;
     ptl_me_t *me = NULL;
-    ptl_event_t e = {.event.tevent = {
-				      .pt_index = hdr->pt_index,
-				      .uid = 0,
-				      .jid = PTL_JID_NONE,
-				      .match_bits = hdr->match_bits,
-				      .rlength = hdr->length,
-				      .mlength = 0,
-				      .remote_offset = hdr->dest_offset,
-				      .user_ptr = hdr->user_ptr,
-				      .ni_fail_type = PTL_NI_OK}
-    };
-    if (hdr->ni <= 1) {		       // Logical
-	e.event.tevent.initiator.rank = hdr->src;
-    } else {			       // Physical
-	e.event.tevent.initiator.phys.pid = hdr->src;
-	e.event.tevent.initiator.phys.nid = 0;
-    }
-    switch (hdr->type) {
-	case HDR_TYPE_PUT:
-	    e.type = PTL_EVENT_PUT;
-	    e.event.tevent.hdr_data = hdr->info.put.hdr_data;
-	    break;
-	case HDR_TYPE_ATOMIC:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data;
-	    break;
-	case HDR_TYPE_FETCHATOMIC:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data;
-	    break;
-	case HDR_TYPE_SWAP:
-	    e.type = PTL_EVENT_ATOMIC;
-	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data;
-	    break;
-	case HDR_TYPE_GET:
-	    e.type = PTL_EVENT_GET;
-	    break;
-    }
     /* To match, one must check, in order:
      * 1. The match_bits (with the ignore_bits) against hdr->match_bits
      * 2. if notruncate, length
@@ -638,6 +660,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    if (t->EQ != PTL_EQ_NONE &&
 		(mec.options &
 		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
+		ptl_event_t e = PtlInternalInitTevent(hdr);
 		e.type = PTL_EVENT_UNLINK;
 		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
 		PtlInternalEQPush(t->EQ, &e);
@@ -656,12 +679,25 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	/*************************
 	 * Perform the Operation *
 	 *************************/
-	PtlInternalPerformDeliver(hdr->type, (char*)mec.start + hdr->dest_offset, hdr->data, mlength, hdr);
-	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (char*)mec.start + hdr->dest_offset, &e);
+	if (foundin == PRIORITY) {
+	    PtlInternalPerformDeliver(hdr->type, (char*)mec.start + hdr->dest_offset, hdr->data, mlength, hdr);
+	} else {
+	    ptl_internal_header_t *bhdr = PtlInternalAllocUnexpectedHeader(hdr->ni);
+	    memcpy(bhdr, hdr, sizeof(ptl_internal_header_t));
+	    bhdr->next = NULL;
+	    if (t->buffered_headers.head == NULL) {
+		t->buffered_headers.head = bhdr;
+	    } else {
+		((ptl_internal_header_t*)(t->buffered_headers.tail))->next = bhdr;
+	    }
+	    t->buffered_headers.tail = bhdr;
+	}
+	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)mec.start + hdr->dest_offset, foundin == OVERFLOW, hdr);
 	return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
+	ptl_event_t e = PtlInternalInitTevent(hdr);
 	e.type = PTL_EVENT_DROPPED;
 	e.event.tevent.start = NULL;
 	PtlInternalEQPush(t->EQ, &e);
