@@ -142,16 +142,18 @@ int API_FUNC PtlPTFree(
 }
 
 int API_FUNC PtlPTDisable(
-    ptl_handle_ni_t ni_handle,
-    ptl_pt_index_t pt_index)
+    Q_UNUSED ptl_handle_ni_t ni_handle,
+    Q_UNUSED ptl_pt_index_t pt_index)
 {
+#warning PtlPTDisable() unimplemented
     return PTL_FAIL;
 }
 
 int API_FUNC PtlPTEnable(
-    ptl_handle_ni_t ni_handle,
-    ptl_pt_index_t pt_index)
+    Q_UNUSED ptl_handle_ni_t ni_handle,
+    Q_UNUSED ptl_pt_index_t pt_index)
 {
+#warning PtlPTEnable() unimplemented
     return PTL_FAIL;
 }
 
