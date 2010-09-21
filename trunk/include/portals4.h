@@ -2340,13 +2340,11 @@ typedef struct {
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * atomic operation that was performed. */
-    //ptl_op_t		    atomic_operation;
-    unsigned char	    atomic_operation;
+    ptl_op_t		    atomic_operation;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * data type of the atomic operation that was performed. */
-    //ptl_datatype_t	    atomic_type;
-    unsigned char	    atomic_type;
+    ptl_datatype_t	    atomic_type;
 } ptl_target_event_t;
 /*!
  * @struct ptl_initiator_event_t
