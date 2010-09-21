@@ -297,20 +297,20 @@ int API_FUNC PtlMEAppend(
 	case PTL_PRIORITY_LIST:
 	    if (t->buffered_headers.head != NULL) {
 		/* If there are buffered headers, then they get first priority on matching this priority append. */
-		ptl_internal_header_t *cur = (ptl_internal_header_t *)(t->buffered_headers.head);
-		ptl_internal_header_t *prev = NULL;
+		ptl_internal_buffered_header_t *cur = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
+		ptl_internal_buffered_header_t *prev = NULL;
 		const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
-		for (; cur != NULL; prev = cur, cur = cur->next) {
+		for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
 		    /* check the match_bits */
-		    if (((cur->match_bits ^ me.match_bits) & dont_ignore_bits) != 0) continue;
+		    if (((cur->hdr.match_bits ^ me.match_bits) & dont_ignore_bits) != 0) continue;
 		    /* check for forbidden truncation */
-		    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 && (cur->length + cur->dest_offset) > me.length) continue;
+		    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 && (cur->hdr.length + cur->hdr.dest_offset) > me.length) continue;
 		    /* check for match_id */
 		    if (ni.s.ni <= 1) { // Logical
-			if (me.match_id.rank != PTL_RANK_ANY && me.match_id.rank != cur->target_id.rank) continue;
+			if (me.match_id.rank != PTL_RANK_ANY && me.match_id.rank != cur->hdr.target_id.rank) continue;
 		    } else { // Physical
-			if (me.match_id.phys.nid != PTL_NID_ANY && me.match_id.phys.nid != cur->target_id.phys.nid) continue;
-			if (me.match_id.phys.pid != PTL_PID_ANY && me.match_id.phys.pid != cur->target_id.phys.pid) continue;
+			if (me.match_id.phys.nid != PTL_NID_ANY && me.match_id.phys.nid != cur->hdr.target_id.phys.nid) continue;
+			if (me.match_id.phys.pid != PTL_PID_ANY && me.match_id.phys.pid != cur->hdr.target_id.phys.pid) continue;
 		    }
 		    /* now, act like there was a delivery;
 		     * 1. Dequeue header
@@ -321,9 +321,9 @@ int API_FUNC PtlMEAppend(
 		     * ... else: deliver and return */
 		    // dequeue header
 		    if (prev != NULL) {
-			prev->next = cur->next;
+			prev->hdr.next = cur->hdr.next;
 		    } else {
-			t->buffered_headers.head = cur->next;
+			t->buffered_headers.head = cur->hdr.next;
 		    }
 		    // check permissions
 		    if (me.options & PTL_ME_AUTH_USE_JID) {
@@ -335,7 +335,7 @@ int API_FUNC PtlMEAppend(
 			    goto permission_violation;
 			}
 		    }
-		    switch (cur->type) {
+		    switch (cur->hdr.type) {
 			case HDR_TYPE_PUT:
 			case HDR_TYPE_ATOMIC:
 			case HDR_TYPE_FETCHATOMIC:
@@ -344,7 +344,7 @@ int API_FUNC PtlMEAppend(
 				goto permission_violation;
 			    }
 		    }
-		    switch (cur->type) {
+		    switch (cur->hdr.type) {
 			case HDR_TYPE_GET:
 			case HDR_TYPE_FETCHATOMIC:
 			case HDR_TYPE_SWAP:
@@ -353,11 +353,11 @@ int API_FUNC PtlMEAppend(
 			    }
 		    }
 		    if (0) {
-			ptl_internal_header_t *tmp;
+			ptl_internal_buffered_header_t *tmp;
 permission_violation:
-			(void)PtlInternalAtomicInc(&nit.regs[cur->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+			(void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
 			tmp = cur;
-			prev->next = cur->next;
+			prev->hdr.next = cur->hdr.next;
 			cur = prev;
 			PtlInternalDeallocUnexpectedHeader(tmp);
 			continue;
@@ -381,19 +381,24 @@ permission_violation:
 			// deliver
 			if (me.length == 0) {
 			    mlength = 0;
-			} else if (cur->length + cur->dest_offset > me.length) {
-			    if (me.length > cur->dest_offset) {
-				mlength = me.length - cur->dest_offset;
+			} else if (cur->hdr.length + cur->hdr.dest_offset > me.length) {
+			    if (me.length > cur->hdr.dest_offset) {
+				mlength = me.length - cur->hdr.dest_offset;
 			    } else {
 				mlength = 0;
 			    }
 			} else {
-			    mlength = cur->length;
+			    mlength = cur->hdr.length;
 			}
-			PtlInternalPerformDelivery(cur->type, (char*)me.start + cur->dest_offset, cur->data, mlength, cur);
+			if (cur->buffered_data != NULL) {
+			    PtlInternalPerformDelivery(cur->hdr.type, (char*)me.start + cur->hdr.dest_offset, cur->buffered_data, mlength, &(cur->hdr));
+			} else {
+#warning PtlMEAppend() cannot deliver buffered messages without local data (no retransmit protocol yet implemented)
+			    abort();
+			}
 			// notify
 			if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->type, me.options, mlength, (uintptr_t)me.start + cur->dest_offset, 0, cur);
+			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->hdr.type, me.options, mlength, (uintptr_t)me.start + cur->hdr.dest_offset, 0, &(cur->hdr));
 			}
 			// return
 			PtlInternalDeallocUnexpectedHeader(cur);
@@ -695,8 +700,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	if (foundin == PRIORITY) {
 	    PtlInternalPerformDelivery(hdr->type, report_this_start, hdr->data, mlength, hdr);
 	} else {
-	    PtlInternalPTBufferUnexpectedHeader(t, hdr);
 	    report_this_start = PtlInternalPerformOverflowDelivery(priority_list, mec.start, mec.length, mec.options, mlength, hdr);
+	    PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)report_this_start);
 	}
 	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
 	return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
