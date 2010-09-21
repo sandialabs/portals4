@@ -316,15 +316,15 @@ int INTERNAL PtlInternalNIValidator(
     return PTL_OK;
 }
 
-ptl_internal_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
+ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
     const unsigned int ni)
 {
-    ptl_internal_header_t *hdr = nit.unexpecteds[ni];
+    ptl_internal_buffered_header_t *hdr = nit.unexpecteds[ni];
     if (hdr != NULL) {
-	ptl_internal_header_t *foundhdr;
+	ptl_internal_buffered_header_t *foundhdr;
 	while ((foundhdr =
 		PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], hdr,
-					hdr->next)) != hdr) {
+					hdr->hdr.next)) != hdr) {
 	    hdr = foundhdr;
 	}
     }
@@ -332,15 +332,15 @@ ptl_internal_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
 }
 
 void INTERNAL PtlInternalDeallocUnexpectedHeader(
-    ptl_internal_header_t * const hdr)
+    ptl_internal_buffered_header_t * const hdr)
 {
-    const unsigned int ni = hdr->ni;
-    ptl_internal_header_t *expectednext, *foundnext;
+    ptl_internal_buffered_header_t **const ni_unex = &nit.unexpecteds[hdr->hdr.ni];
+    ptl_internal_buffered_header_t *expectednext, *foundnext;
 
-    expectednext = hdr->next = nit.unexpecteds[ni];
+    expectednext = hdr->hdr.next = *ni_unex;
     while ((foundnext =
-	    PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], expectednext,
+	    PtlInternalAtomicCasPtr(ni_unex, expectednext,
 				    hdr)) != expectednext) {
-	expectednext = hdr->next = foundnext;
+	expectednext = hdr->hdr.next = foundnext;
     }
 }
