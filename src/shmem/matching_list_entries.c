@@ -213,8 +213,8 @@ int API_FUNC PtlMEAppend(
     assert(pthread_mutex_lock(&t->lock) == 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
-	    if (t->overflow.head != NULL && t->buffered_headers.head != NULL) {
-#warning PtlMEAppend() does not check the buffered_headers list
+	    if (t->buffered_headers.head != NULL) {
+		/* If there are buffered headers, then they get first priority on matching this priority append. */
 		ptl_internal_header_t *cur = (ptl_internal_header_t *)(t->buffered_headers.head);
 		ptl_internal_header_t *prev = NULL;
 		const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
@@ -271,18 +271,26 @@ int API_FUNC PtlMEAppend(
 			    }
 		    }
 		    if (0) {
-			void * tmp1, *tmp2;
+			ptl_internal_header_t *tmp;
 permission_violation:
 			(void)PtlInternalAtomicInc(&nit.regs[cur->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-			tmp1 = cur->next = nit.unexpecteds[cur->ni];
-			while ((tmp2 = PtlInternalAtomicCasPtr(&nit.unexpecteds[cur->ni], cur->next, cur)) != tmp1) {
-			    tmp1 = cur->next = tmp2;
-			}
+			tmp = cur;
+			prev->next = cur->next;
+			cur = prev;
+			PtlInternalDeallocUnexpectedHeader(tmp);
 			continue;
 		    }
 		    // iff ME is persistent...
 		    if ((me.options & PTL_ME_USE_ONCE) != 0) {
 #warning PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)
+			/* suggested plan: put an ME-specific buffered header
+			 * list on each ME, and when the ME is persistent, it
+			 * gets the buffered headers that it mached, in order.
+			 * Then, this list can be used to start reworking (e.g.
+			 * retransmitting/restarting) the original order of
+			 * deliveries. While this list exists on the ME, new
+			 * packets get added to that list. Once the list is
+			 * empty, the ME becomes a normal persistent ME. */
 			abort();
 			// Queue buffered header to ME buffer
 			// etc.
@@ -317,6 +325,7 @@ permission_violation:
 			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->type, me.options, mlength, (char*)me.start + cur->dest_offset, &e);
 			}
 			// return
+			PtlInternalDeallocUnexpectedHeader(cur);
 			goto done_appending;
 		    }
 		}
