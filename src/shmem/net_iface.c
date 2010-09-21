@@ -240,7 +240,9 @@ int API_FUNC PtlNIFini(
 		break;
 	}
 	/* deallocate NI */
+	free(nit.unexpecteds[ni.s.ni]);
 	free(nit.tables[ni.s.ni]);
+	nit.unexpecteds[ni.s.ni] = NULL;
 	nit.tables[ni.s.ni] = NULL;
     }
     return PTL_OK;
@@ -312,4 +314,33 @@ int INTERNAL PtlInternalNIValidator(
     }
 #endif
     return PTL_OK;
+}
+
+ptl_internal_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
+    const unsigned int ni)
+{
+    ptl_internal_header_t *hdr = nit.unexpecteds[ni];
+    if (hdr != NULL) {
+	ptl_internal_header_t *foundhdr;
+	while ((foundhdr =
+		PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], hdr,
+					hdr->next)) != hdr) {
+	    hdr = foundhdr;
+	}
+    }
+    return hdr;
+}
+
+void INTERNAL PtlInternalDeallocUnexpectedHeader(
+    ptl_internal_header_t * const hdr)
+{
+    const unsigned int ni = hdr->ni;
+    ptl_internal_header_t *expectednext, *foundnext;
+
+    expectednext = hdr->next = nit.unexpecteds[ni];
+    while ((foundnext =
+	    PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], expectednext,
+				    hdr)) != expectednext) {
+	expectednext = hdr->next = foundnext;
+    }
 }

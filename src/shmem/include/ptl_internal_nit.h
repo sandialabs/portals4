@@ -20,5 +20,8 @@ extern ptl_ni_limits_t nit_limits;
 
 int PtlInternalNIValidator(
     const ptl_internal_handle_converter_t ni);
-
+void PtlInternalDeallocUnexpectedHeader(
+    ptl_internal_header_t * const hdr);
+ptl_internal_header_t *PtlInternalAllocUnexpectedHeader(
+    const unsigned int ni);
 #endif
