@@ -255,7 +255,7 @@ int API_FUNC PtlEQFree(
 }
 
 #define ASSIGN_EVENT(e,ie,ni) do { \
-    e->type = ie.type; \
+    e->type = (ptl_event_kind_t)(ie.type); \
     switch (e->type) { \
 	case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
 	case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
@@ -284,37 +284,6 @@ int API_FUNC PtlEQFree(
 	    break; \
 	case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
 	    e->event.ievent = ie.event.ievent; \
-	    break; \
-    } \
-} while (0)
-#define ASSIGN_INTERNAL_EVENT(ie,e,ni) do { \
-    ie.type = e->type; \
-    switch (e->type) { \
-	case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
-	case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
-	case PTL_EVENT_UNLINK: case PTL_EVENT_FREE: case PTL_EVENT_PROBE: /* target */ \
-	    ie.event.tevent.match_bits = e->event.tevent.match_bits; \
-	    ie.event.tevent.start = e->event.tevent.start; \
-	    ie.event.tevent.user_ptr = e->event.tevent.user_ptr; \
-	    ie.event.tevent.hdr_data = e->event.tevent.hdr_data; \
-	    ie.event.tevent.rlength = e->event.tevent.rlength; \
-	    ie.event.tevent.mlength = e->event.tevent.mlength; \
-	    if (ni <= 1) { /* logical */ \
-		ie.event.tevent.initiator.rank = e->event.tevent.initiator.rank; \
-	    } else { /* physical */ \
-		ie.event.tevent.initiator.phys.pid = e->event.tevent.initiator.phys.pid; \
-		ie.event.tevent.initiator.phys.nid = e->event.tevent.initiator.phys.nid; \
-	    } \
-	    ie.event.tevent.uid = e->event.tevent.uid; \
-	    ie.event.tevent.jid = e->event.tevent.jid; \
-	    ie.event.tevent.remote_offset = e->event.tevent.remote_offset; \
-	    ie.event.tevent.pt_index = e->event.tevent.pt_index; \
-	    ie.event.tevent.ni_fail_type = e->event.tevent.ni_fail_type; \
-	    ie.event.tevent.atomic_operation = e->event.tevent.atomic_operation; \
-	    ie.event.tevent.atomic_type = e->event.tevent.atomic_type; \
-	    break; \
-	case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
-	    ie.event.ievent = e->event.ievent; \
 	    break; \
     } \
 } while (0)
@@ -519,7 +488,60 @@ void INTERNAL PtlInternalEQPush(
 	      PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
 				     newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
-    ASSIGN_INTERNAL_EVENT(eq->ring[writeidx.s.offset], event, eqh.s.ni);
+    eq->ring[writeidx.s.offset].type = (uint8_t) (event->type);
+    switch (event->type) {
+	case PTL_EVENT_GET:
+	case PTL_EVENT_PUT:
+	case PTL_EVENT_PUT_OVERFLOW:
+	case PTL_EVENT_ATOMIC:
+	case PTL_EVENT_ATOMIC_OVERFLOW:
+	case PTL_EVENT_DROPPED:
+	case PTL_EVENT_PT_DISABLED:
+	case PTL_EVENT_UNLINK:
+	case PTL_EVENT_FREE:
+	case PTL_EVENT_PROBE:	       /* target */
+	    eq->ring[writeidx.s.offset].event.tevent.match_bits =
+		event->event.tevent.match_bits;
+	    eq->ring[writeidx.s.offset].event.tevent.start =
+		event->event.tevent.start;
+	    eq->ring[writeidx.s.offset].event.tevent.user_ptr =
+		event->event.tevent.user_ptr;
+	    eq->ring[writeidx.s.offset].event.tevent.hdr_data =
+		event->event.tevent.hdr_data;
+	    eq->ring[writeidx.s.offset].event.tevent.rlength =
+		event->event.tevent.rlength;
+	    eq->ring[writeidx.s.offset].event.tevent.mlength =
+		event->event.tevent.mlength;
+	    if (eqh.s.ni <= 1) {       /* logical */
+		eq->ring[writeidx.s.offset].event.tevent.initiator.rank =
+		    event->event.tevent.initiator.rank;
+	    } else {		       /* physical */
+		eq->ring[writeidx.s.offset].event.tevent.initiator.phys.pid =
+		    (uint16_t) event->event.tevent.initiator.phys.pid;
+		eq->ring[writeidx.s.offset].event.tevent.initiator.phys.nid =
+		    (uint16_t) event->event.tevent.initiator.phys.nid;
+	    }
+	    eq->ring[writeidx.s.offset].event.tevent.uid =
+		(uint16_t) event->event.tevent.uid;
+	    eq->ring[writeidx.s.offset].event.tevent.jid =
+		(uint16_t) event->event.tevent.jid;
+	    eq->ring[writeidx.s.offset].event.tevent.remote_offset =
+		event->event.tevent.remote_offset;
+	    eq->ring[writeidx.s.offset].event.tevent.pt_index =
+		event->event.tevent.pt_index;
+	    eq->ring[writeidx.s.offset].event.tevent.ni_fail_type =
+		event->event.tevent.ni_fail_type;
+	    eq->ring[writeidx.s.offset].event.tevent.atomic_operation =
+		event->event.tevent.atomic_operation;
+	    eq->ring[writeidx.s.offset].event.tevent.atomic_type =
+		event->event.tevent.atomic_type;
+	    break;
+	case PTL_EVENT_REPLY:
+	case PTL_EVENT_SEND:
+	case PTL_EVENT_ACK:	       /* initiator */
+	    eq->ring[writeidx.s.offset].event.ievent = event->event.ievent;
+	    break;
+    }
     // now, wait for our neighbor to finish
     while (eq->lagging_tail.u != writeidx.u) ;
     // now, update the lagging_tail
