@@ -56,4 +56,9 @@ typedef struct {
     char data[];
 } ptl_internal_header_t;
 
+typedef struct {
+    ptl_internal_header_t hdr;
+    void * buffered_data;
+} ptl_internal_buffered_header_t;
+
 #endif
