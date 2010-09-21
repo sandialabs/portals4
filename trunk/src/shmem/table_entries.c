@@ -6,6 +6,7 @@
 
 /* System headers */
 #include <assert.h>
+#include <string.h>		       /* for memcpy() */
 
 /* Internal headers */
 #include "ptl_internal_PT.h"
@@ -190,4 +191,20 @@ int INTERNAL PtlInternalPTValidate(
 	    *(int *)0 = 0;
 	    return 3;
     }
+}
+
+void INTERNAL PtlInternalPTBufferUnexpectedHeader(
+    ptl_table_entry_t * restrict const t,
+    const ptl_internal_header_t * restrict const hdr)
+{
+    ptl_internal_header_t *restrict bhdr =
+	PtlInternalAllocUnexpectedHeader(hdr->ni);
+    memcpy(bhdr, hdr, sizeof(ptl_internal_header_t));
+    bhdr->next = NULL;
+    if (t->buffered_headers.head == NULL) {
+	t->buffered_headers.head = bhdr;
+    } else {
+	((ptl_internal_header_t *) (t->buffered_headers.tail))->next = bhdr;
+    }
+    t->buffered_headers.tail = bhdr;
 }
