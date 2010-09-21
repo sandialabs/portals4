@@ -1155,7 +1155,6 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * must match to allow a message to access a match list entry. */
 #define PTL_ME_AUTH_USE_JID		(1<<15)
 
-
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
  * is maintained locally, the offset is incremented by the length of the
