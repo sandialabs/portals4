@@ -8,7 +8,8 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 TESTS = test_init \
 	test_NIInit \
 	test_bootstrap \
-	test_get \
+	test_LE_get \
+	test_ME_get \
 	test_atomic \
 	test_fetchatomic \
 	test_swap \
@@ -42,8 +43,13 @@ test_NIInit_DEPENDENCIES = $(PORTALSLIB)
 test_bootstrap_SOURCES = test_bootstrap.c
 test_bootstrap_DEPENDENCIES = $(PORTALSLIB)
 
-test_get_SOURCES = test_get.c
-test_get_DEPENDENCIES = $(PORTALSLIB)
+test_LE_get_SOURCES = test_get.c
+test_LE_get_CPPFLAGS = -DINTERFACE=0
+test_LE_get_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_get_SOURCES = test_get.c
+test_ME_get_CPPFLAGS = -DINTERFACE=1
+test_ME_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_atomic_SOURCES = test_atomic.c
 test_atomic_DEPENDENCIES = $(PORTALSLIB)
