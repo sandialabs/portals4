@@ -27,7 +27,8 @@ void API_FUNC runtime_barrier(
     ptl_md_t md;
     ptl_ct_event_t ctc;
     const ptl_internal_handle_converter_t ni = {.s =
-	    {HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0} };
+	    {HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0}
+    };
 
     if (barrier_inited == 0) {
 	assert(getenv("PORTALS4_COLLECTOR_NID") != NULL);

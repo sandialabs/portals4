@@ -35,27 +35,27 @@ typedef union {
 } eq_off_t;
 
 typedef struct {
-    ptl_match_bits_t match_bits;    // 8 bytes
-    void * start;		    // 8 bytes (16)
-    void * user_ptr;		    // 8 bytes (24)
-    ptl_hdr_data_t hdr_data;	    // 8 bytes (32)
-    uint32_t rlength;		    // 4 bytes (36)
-    uint32_t mlength;		    // 4 bytes (40)
+    ptl_match_bits_t match_bits;	// 8 bytes
+    void *start;		// 8 bytes (16)
+    void *user_ptr;		// 8 bytes (24)
+    ptl_hdr_data_t hdr_data;	// 8 bytes (32)
+    uint32_t rlength;		// 4 bytes (36)
+    uint32_t mlength;		// 4 bytes (40)
     union {
 	uint32_t rank;
 	struct {
 	    uint16_t nid;
 	    uint16_t pid;
 	} phys;
-    } initiator;		    // 4 bytes (44)
-    uint16_t uid;		    // 2 bytes (46)
-    uint16_t jid;		    // 2 bytes (48)
-    uint64_t remote_offset : 40;    // 5 bytes (53)
-    uint8_t pt_index: 5;
-    uint8_t ni_fail_type : 2;
-    uint8_t atomic_operation : 5;
-    uint8_t atomic_type : 4;
-} ptl_internal_target_event_t; // grand total: 56 bytes
+    } initiator;		// 4 bytes (44)
+    uint16_t uid;		// 2 bytes (46)
+    uint16_t jid;		// 2 bytes (48)
+    uint64_t remote_offset:40;	// 5 bytes (53)
+    uint8_t pt_index:5;
+    uint8_t ni_fail_type:2;
+    uint8_t atomic_operation:5;
+    uint8_t atomic_type:4;
+} ptl_internal_target_event_t;	// grand total: 56 bytes
 
 typedef struct {
     union {
@@ -201,7 +201,8 @@ int API_FUNC PtlEQAlloc(
 	for (uint32_t offset = 0; offset < nit_limits.max_eqs; ++offset) {
 	    if (rc[offset] == 0) {
 		if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
-		    ptl_internal_event_t *tmp = calloc(count, sizeof(ptl_internal_event_t));
+		    ptl_internal_event_t *tmp =
+			calloc(count, sizeof(ptl_internal_event_t));
 		    if (tmp == NULL) {
 			rc[offset] = 0;
 			return PTL_NO_SPACE;

@@ -105,9 +105,15 @@ static void PtlInternalPerformDelivery(
     }
 }
 
-static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * const restrict Qentry, char * const restrict lstart, const ptl_size_t llength, const unsigned int loptions, const ptl_size_t mlength, ptl_internal_header_t *const restrict hdr)
+static void *PtlInternalPerformOverflowDelivery(
+    ptl_internal_appendME_t * const restrict Qentry,
+    char *const restrict lstart,
+    const ptl_size_t llength,
+    const unsigned int loptions,
+    const ptl_size_t mlength,
+    ptl_internal_header_t * const restrict hdr)
 {
-    void * retval = NULL;
+    void *retval = NULL;
     if (loptions & PTL_ME_MANAGE_LOCAL) {
 	assert(hdr->length + Qentry->local_offset <= llength);
 	if (mlength > 0) {
@@ -161,15 +167,14 @@ static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * const
 } while (0)
 
 static void PtlInternalAnnounceMEDelivery(
-	const ptl_handle_eq_t eq_handle,
-	const ptl_handle_ct_t ct_handle,
-	const unsigned char type,
-	const unsigned int options,
-	const uint64_t mlength,
-	const uintptr_t start,
-	const int overflow,
-	ptl_internal_header_t *const restrict hdr
-	)
+    const ptl_handle_eq_t eq_handle,
+    const ptl_handle_ct_t ct_handle,
+    const unsigned char type,
+    const unsigned int options,
+    const uint64_t mlength,
+    const uintptr_t start,
+    const int overflow,
+    ptl_internal_header_t * const restrict hdr)
 {
     int ct_announce = ct_handle != PTL_CT_NONE;
     if (ct_announce != 0) {
@@ -209,11 +214,13 @@ static void PtlInternalAnnounceMEDelivery(
 	    PtlCTInc(ct_handle, cte);
 	}
     }
-    if (eq_handle != PTL_EQ_NONE && (options & (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) == 0) {
+    if (eq_handle != PTL_EQ_NONE &&
+	(options & (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) ==
+	0) {
 	ptl_event_t e;
 	PTL_INTERNAL_INIT_TEVENT(e, hdr);
 	if (overflow) {
-	    switch(e.type) {
+	    switch (e.type) {
 		case PTL_EVENT_PUT:
 		    e.type = PTL_EVENT_PUT_OVERFLOW;
 		    break;
@@ -222,11 +229,11 @@ static void PtlInternalAnnounceMEDelivery(
 		    break;
 		default:
 		    UNREACHABLE;
-		    *(int*)0 = 0;
+		    *(int *)0 = 0;
 	    }
 	}
 	e.event.tevent.mlength = mlength;
-	e.event.tevent.start = (void*)start;
+	e.event.tevent.start = (void *)start;
 	PtlInternalEQPush(eq_handle, &e);
     }
 }
@@ -304,22 +311,36 @@ int API_FUNC PtlMEAppend(
     assert(pthread_mutex_lock(&t->lock) == 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
-	    if (t->buffered_headers.head != NULL) { // implies that overflow.head != NULL
+	    if (t->buffered_headers.head != NULL) {	// implies that overflow.head != NULL
 		/* If there are buffered headers, then they get first priority on matching this priority append. */
-		ptl_internal_buffered_header_t *cur = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
+		ptl_internal_buffered_header_t *cur =
+		    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+							head);
 		ptl_internal_buffered_header_t *prev = NULL;
 		const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
 		for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
 		    /* check the match_bits */
-		    if (((cur->hdr.match_bits ^ me.match_bits) & dont_ignore_bits) != 0) continue;
+		    if (((cur->hdr.match_bits ^ me.
+			  match_bits) & dont_ignore_bits) != 0)
+			continue;
 		    /* check for forbidden truncation */
-		    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 && (cur->hdr.length + cur->hdr.dest_offset) > me.length) continue;
+		    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 &&
+			(cur->hdr.length + cur->hdr.dest_offset) > me.length)
+			continue;
 		    /* check for match_id */
-		    if (ni.s.ni <= 1) { // Logical
-			if (me.match_id.rank != PTL_RANK_ANY && me.match_id.rank != cur->hdr.target_id.rank) continue;
-		    } else { // Physical
-			if (me.match_id.phys.nid != PTL_NID_ANY && me.match_id.phys.nid != cur->hdr.target_id.phys.nid) continue;
-			if (me.match_id.phys.pid != PTL_PID_ANY && me.match_id.phys.pid != cur->hdr.target_id.phys.pid) continue;
+		    if (ni.s.ni <= 1) {	// Logical
+			if (me.match_id.rank != PTL_RANK_ANY &&
+			    me.match_id.rank != cur->hdr.target_id.rank)
+			    continue;
+		    } else {	       // Physical
+			if (me.match_id.phys.nid != PTL_NID_ANY &&
+			    me.match_id.phys.nid !=
+			    cur->hdr.target_id.phys.nid)
+			    continue;
+			if (me.match_id.phys.pid != PTL_PID_ANY &&
+			    me.match_id.phys.pid !=
+			    cur->hdr.target_id.phys.pid)
+			    continue;
 		    }
 		    /* now, act like there was a delivery;
 		     * 1. Dequeue header
@@ -363,8 +384,12 @@ int API_FUNC PtlMEAppend(
 		    }
 		    if (0) {
 			ptl_internal_buffered_header_t *tmp;
-permission_violation:
-			(void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+		      permission_violation:
+			(void)PtlInternalAtomicInc(&nit.
+						   regs[cur->hdr.
+							ni]
+						   [PTL_SR_PERMISSIONS_VIOLATIONS],
+						   1);
 			tmp = cur;
 			prev->hdr.next = cur->hdr.next;
 			cur = prev;
@@ -390,7 +415,8 @@ permission_violation:
 			// deliver
 			if (me.length == 0) {
 			    mlength = 0;
-			} else if (cur->hdr.length + cur->hdr.dest_offset > me.length) {
+			} else if (cur->hdr.length + cur->hdr.dest_offset >
+				   me.length) {
 			    if (me.length > cur->hdr.dest_offset) {
 				mlength = me.length - cur->hdr.dest_offset;
 			    } else {
@@ -400,14 +426,26 @@ permission_violation:
 			    mlength = cur->hdr.length;
 			}
 			if (cur->buffered_data != NULL) {
-			    PtlInternalPerformDelivery(cur->hdr.type, (char*)me.start + cur->hdr.dest_offset, cur->buffered_data, mlength, &(cur->hdr));
+			    PtlInternalPerformDelivery(cur->hdr.type,
+						       (char *)me.start +
+						       cur->hdr.dest_offset,
+						       cur->buffered_data,
+						       mlength, &(cur->hdr));
 			} else {
 #warning PtlMEAppend() cannot deliver buffered messages without local data (no retransmit protocol yet implemented)
 			    abort();
 			}
 			// notify
-			if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, cur->hdr.type, me.options, mlength, (uintptr_t)me.start + cur->hdr.dest_offset, 0, &(cur->hdr));
+			if (t->EQ != PTL_EQ_NONE ||
+			    me.ct_handle != PTL_CT_NONE) {
+			    PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle,
+							  cur->hdr.type,
+							  me.options, mlength,
+							  (uintptr_t) me.
+							  start +
+							  cur->hdr.
+							  dest_offset, 0,
+							  &(cur->hdr));
 			}
 			// return
 			PtlInternalDeallocUnexpectedHeader(cur);
@@ -421,7 +459,8 @@ permission_violation:
 	    if (t->priority.tail == NULL) {
 		t->priority.head = Qentry;
 	    } else {
-		((ptl_internal_appendME_t *) (t->priority.tail))->next = Qentry;
+		((ptl_internal_appendME_t *) (t->priority.tail))->next =
+		    Qentry;
 	    }
 	    t->priority.tail = Qentry;
 	    break;
@@ -429,7 +468,8 @@ permission_violation:
 	    if (t->overflow.tail == NULL) {
 		t->overflow.head = Qentry;
 	    } else {
-		((ptl_internal_appendME_t *) (t->overflow.tail))->next = Qentry;
+		((ptl_internal_appendME_t *) (t->overflow.tail))->next =
+		    Qentry;
 	    }
 	    t->overflow.tail = Qentry;
 	    break;
@@ -438,7 +478,7 @@ permission_violation:
 	    abort();
 	    break;
     }
-done_appending:
+  done_appending:
     assert(pthread_mutex_unlock(&t->lock) == 0);
     return PTL_OK;
 }
@@ -610,26 +650,26 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
      * 3. the match_id against hdr->target_id
      */
     PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
-			     hdr->length, hdr->dest_offset, &entry,
-			     &prev, &me_ptr);
+			     hdr->length, hdr->dest_offset, &entry, &prev,
+			     &me_ptr);
     if (entry == NULL && hdr->type != HDR_TYPE_GET) {	// check overflow list
 	prev = NULL;
 	entry = t->overflow.head;
 	PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
-				 hdr->length, hdr->dest_offset,
-				 &entry, &prev, &me_ptr);
+				 hdr->length, hdr->dest_offset, &entry, &prev,
+				 &me_ptr);
 	if (entry != NULL) {
 	    foundin = OVERFLOW;
 	}
     }
-    if (entry != NULL) {       // Match
+    if (entry != NULL) {	       // Match
 	/*************************************************************************
 	 * There is a matching ME present, and 'entry'/'me_ptr' points to it *
 	 *************************************************************************/
 	ptl_size_t mlength = 0;
 	const ptl_me_t me =
 	    *(ptl_me_t *) (((char *)entry) +
-			  offsetof(ptl_internal_me_t, visible));
+			   offsetof(ptl_internal_me_t, visible));
 	assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
 	// check permissions on the ME
 	if (me.options & PTL_ME_AUTH_USE_JID) {
@@ -685,8 +725,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 		}
 	    }
 	    if (t->EQ != PTL_EQ_NONE &&
-		(me.options &
-		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
+		(me.
+		 options & (PTL_ME_EVENT_DISABLE |
+			    PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
 		ptl_event_t e;
 		PTL_INTERNAL_INIT_TEVENT(e, hdr);
 		e.type = PTL_EVENT_UNLINK;
@@ -707,20 +748,29 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	/*************************
 	 * Perform the Operation *
 	 *************************/
-	void * report_this_start = (char*)me.start + hdr->dest_offset;
+	void *report_this_start = (char *)me.start + hdr->dest_offset;
 	if (foundin == PRIORITY) {
-	    PtlInternalPerformDelivery(hdr->type, report_this_start, hdr->data, mlength, hdr);
+	    PtlInternalPerformDelivery(hdr->type, report_this_start,
+				       hdr->data, mlength, hdr);
 	} else {
-	    report_this_start = PtlInternalPerformOverflowDelivery(entry, me.start, me.length, me.options, mlength, hdr);
-	    PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)report_this_start);
+	    report_this_start =
+		PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
+						   me.options, mlength, hdr);
+	    PtlInternalPTBufferUnexpectedHeader(t, hdr,
+						(uintptr_t)
+						report_this_start);
 	}
-	PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type, me.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
+	PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type,
+				      me.options, mlength,
+				      (uintptr_t) report_this_start,
+				      foundin == OVERFLOW, hdr);
 	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
 	    case HDR_TYPE_ATOMIC:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
+		return (ptl_pid_t) ((me.
+				     options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
 	}
 	return (ptl_pid_t) 1;
     }

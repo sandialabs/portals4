@@ -123,9 +123,9 @@ int INTERNAL PtlInternalMDHandleValidator(
     }
     if (care_about_ct) {
 	int ct_optional = 1;
-	if (mdptr->
-	    visible.options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-			       PTL_MD_EVENT_CT_ACK)) {
+	if (mdptr->visible.
+	    options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+		       PTL_MD_EVENT_CT_ACK)) {
 	    ct_optional = 0;
 	}
 	if (PtlInternalCTHandleValidator
@@ -168,9 +168,9 @@ int API_FUNC PtlMDBind(
 	VERBOSE_ERROR("MD saw invalid EQ\n");
 	return PTL_ARG_INVALID;
     }
-    if (md->
-	options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-		   PTL_MD_EVENT_CT_ACK)) {
+    if (md->options &
+	(PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY | PTL_MD_EVENT_CT_ACK))
+    {
 	ct_optional = 0;
     }
     if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {

@@ -193,7 +193,8 @@ int API_FUNC PtlNIInit(
 	    nit.tables[ni.s.ni] = NULL;
 	    return PTL_NO_SPACE;
 	}
-	nit.unexpecteds[ni.s.ni] = calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
+	nit.unexpecteds[ni.s.ni] =
+	    calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
 	if (nit.unexpecteds[ni.s.ni] == NULL) {
 	    free(tmp);
 	    nit.tables[ni.s.ni] = NULL;
@@ -334,7 +335,8 @@ ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
 void INTERNAL PtlInternalDeallocUnexpectedHeader(
     ptl_internal_buffered_header_t * const hdr)
 {
-    ptl_internal_buffered_header_t **const ni_unex = &nit.unexpecteds[hdr->hdr.ni];
+    ptl_internal_buffered_header_t **const ni_unex =
+	&nit.unexpecteds[hdr->hdr.ni];
     ptl_internal_buffered_header_t *expectednext, *foundnext;
 
     expectednext = hdr->hdr.next = *ni_unex;

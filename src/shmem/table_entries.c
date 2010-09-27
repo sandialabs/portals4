@@ -201,12 +201,13 @@ void INTERNAL PtlInternalPTBufferUnexpectedHeader(
     ptl_internal_buffered_header_t *restrict bhdr =
 	PtlInternalAllocUnexpectedHeader(hdr->ni);
     memcpy(&(bhdr->hdr), hdr, sizeof(ptl_internal_header_t));
-    bhdr->buffered_data = (void*)data;
+    bhdr->buffered_data = (void *)data;
     bhdr->hdr.next = NULL;
     if (t->buffered_headers.head == NULL) {
 	t->buffered_headers.head = bhdr;
     } else {
-	((ptl_internal_buffered_header_t *) (t->buffered_headers.tail))->hdr.next = bhdr;
+	((ptl_internal_buffered_header_t *) (t->buffered_headers.tail))->hdr.
+	    next = bhdr;
     }
     t->buffered_headers.tail = bhdr;
 }
