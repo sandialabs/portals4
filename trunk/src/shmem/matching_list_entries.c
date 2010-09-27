@@ -295,7 +295,7 @@ int API_FUNC PtlMEAppend(
     assert(pthread_mutex_lock(&t->lock) == 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
-	    if (t->buffered_headers.head != NULL) {
+	    if (t->buffered_headers.head != NULL) { // implies that overflow.head != NULL
 		/* If there are buffered headers, then they get first priority on matching this priority append. */
 		ptl_internal_buffered_header_t *cur = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
 		ptl_internal_buffered_header_t *prev = NULL;
@@ -348,7 +348,7 @@ int API_FUNC PtlMEAppend(
 			case HDR_TYPE_GET:
 			case HDR_TYPE_FETCHATOMIC:
 			case HDR_TYPE_SWAP:
-			    if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
+			    if ((me.options & PTL_ME_OP_GET) == 0) {
 				goto permission_violation;
 			    }
 		    }
@@ -647,7 +647,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    case HDR_TYPE_GET:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		if ((mec.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
+		if ((mec.options & PTL_ME_OP_GET) == 0) {
 		    goto permission_violation;
 		}
 	}
@@ -655,7 +655,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	  permission_violation:
 	    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
 				       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-	    return (ptl_pid_t) ((mec.options & PTL_ME_ACK_DISABLE) ? 0 : 3);
+	    return (ptl_pid_t) 3;
 	}
 	/*******************************************************************
 	 * We have permissions on this ME, now check if it's a use-once ME *
@@ -704,7 +704,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)report_this_start);
 	}
 	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
-	return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
+	switch (hdr->type) {
+	    case HDR_TYPE_PUT:
+	    case HDR_TYPE_ATOMIC:
+	    case HDR_TYPE_FETCHATOMIC:
+	    case HDR_TYPE_SWAP:
+		return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
+	}
+	return (ptl_pid_t) 1;
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
