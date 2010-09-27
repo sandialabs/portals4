@@ -14,12 +14,14 @@
 // This lock-free algorithm borrowed from qthreads, which borrowed it from
 // http://www.research.ibm.com/people/m/michael/podc-1996.pdf
 
-void INTERNAL PtlInternalQueueInit(ptl_internal_q_t * q)
+void INTERNAL PtlInternalQueueInit(
+    ptl_internal_q_t * q)
 {
     q->head = q->tail = calloc(1, sizeof(ptl_internal_qnode_t));
 }
 
-void INTERNAL PtlInternalQueueDestroy(ptl_internal_q_t * q)
+void INTERNAL PtlInternalQueueDestroy(
+    ptl_internal_q_t * q)
 {
     assert(q->head == q->tail);
     assert(q->head != NULL);
@@ -27,7 +29,9 @@ void INTERNAL PtlInternalQueueDestroy(ptl_internal_q_t * q)
     q->head = q->tail = NULL;
 }
 
-void INTERNAL PtlInternalQueueAppend(ptl_internal_q_t * q, void *t)
+void INTERNAL PtlInternalQueueAppend(
+    ptl_internal_q_t * q,
+    void *t)
 {
     volatile ptl_internal_qnode_t *tail;
     volatile ptl_internal_qnode_t *next;
@@ -61,7 +65,8 @@ void INTERNAL PtlInternalQueueAppend(ptl_internal_q_t * q, void *t)
     (void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(node, tail));
 }
 
-void INTERNAL *PtlInternalQueuePop(ptl_internal_q_t * q)
+void INTERNAL *PtlInternalQueuePop(
+    ptl_internal_q_t * q)
 {
     void *p;
     volatile ptl_internal_qnode_t *head;
