@@ -34,6 +34,22 @@ static void noFailures(
     }
 }
 
+#if INTERFACE == 1
+#define ENTRY_T ptl_me_t
+#define HANDLE_T ptl_handle_me_t
+#define NI_TYPE PTL_NI_MATCHING
+#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_PUT | PTL_ME_EVENT_DISABLE)
+#define APPEND PtlMEAppend
+#define UNLINK PtlMEUnlink
+#else
+#define ENTRY_T ptl_le_t
+#define HANDLE_T ptl_handle_le_t
+#define NI_TYPE PTL_NI_NO_MATCHING
+#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT | PTL_LE_EVENT_DISABLE)
+#define APPEND PtlLEAppend
+#define UNLINK PtlLEUnlink
+#endif
+
 int main(
     int argc,
     char *argv[])
@@ -53,8 +69,8 @@ int main(
     struct timeval start, stop;
     double accumulate = 0.0;
     int potato = 0;
-    ptl_me_t potato_catcher;
-    ptl_handle_me_t potato_catcher_handle;
+    ENTRY_T potato_catcher;
+    HANDLE_T potato_catcher_handle;
     ptl_md_t potato_launcher;
     ptl_handle_md_t potato_launcher_handle;
 
@@ -115,7 +131,7 @@ int main(
     /* feed the accumulated mapping into NIInit to create the rank-based
      * interface */
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_LOGICAL,
+		    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
 		     PTL_PID_ANY, NULL, NULL, maxrank + 1, dmapping, amapping,
 		     &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
@@ -127,12 +143,14 @@ int main(
     potato_catcher.start = &potato;
     potato_catcher.length = sizeof(potato);
     potato_catcher.ac_id.uid = PTL_UID_ANY;
-    potato_catcher.options = PTL_ME_OP_PUT | PTL_ME_EVENT_CT_PUT | PTL_ME_EVENT_DISABLE;
+    potato_catcher.options = OPTIONS;
+#if INTERFACE == 1
     potato_catcher.match_id.rank = PTL_RANK_ANY;
     potato_catcher.match_bits = 1;
     potato_catcher.ignore_bits = ~potato_catcher.match_bits;
+#endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_catcher.ct_handle));
-    CHECK_RETURNVAL(PtlMEAppend
+    CHECK_RETURNVAL(APPEND
 		    (ni_logical, logical_pt_index, potato_catcher, PTL_PRIORITY_LIST, NULL,
 		     &potato_catcher_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
@@ -219,7 +237,7 @@ int main(
     /* cleanup */
     CHECK_RETURNVAL(PtlMDRelease(potato_launcher_handle));
     CHECK_RETURNVAL(PtlCTFree(potato_launcher.ct_handle));
-    CHECK_RETURNVAL(PtlMEUnlink(potato_catcher_handle));
+    CHECK_RETURNVAL(UNLINK(potato_catcher_handle));
     CHECK_RETURNVAL(PtlCTFree(potato_catcher.ct_handle));
 
     /* major cleanup */
