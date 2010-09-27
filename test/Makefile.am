@@ -10,9 +10,12 @@ TESTS = test_init \
 	test_bootstrap \
 	test_LE_get \
 	test_ME_get \
-	test_atomic \
-	test_fetchatomic \
-	test_swap \
+	test_LE_atomic \
+	test_ME_atomic \
+	test_LE_fetchatomic \
+	test_ME_fetchatomic \
+	test_LE_swap \
+	test_ME_swap \
 	test_LE_hotpotato \
 	test_ME_hotpotato \
 	test_event
@@ -51,19 +54,36 @@ test_ME_get_SOURCES = test_get.c
 test_ME_get_CPPFLAGS = -DINTERFACE=1
 test_ME_get_DEPENDENCIES = $(PORTALSLIB)
 
-test_atomic_SOURCES = test_atomic.c
-test_atomic_DEPENDENCIES = $(PORTALSLIB)
+test_LE_atomic_SOURCES = test_atomic.c
+test_LE_atomic_CPPFLAGS = -DINTERFACE=0
+test_LE_atomic_DEPENDENCIES = $(PORTALSLIB)
 
-test_fetchatomic_SOURCES = test_fetchatomic.c
-test_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
+test_ME_atomic_SOURCES = test_atomic.c
+test_ME_atomic_CPPFLAGS = -DINTERFACE=1
+test_ME_atomic_DEPENDENCIES = $(PORTALSLIB)
 
-test_swap_SOURCES = test_swap.c
-test_swap_DEPENDENCIES = $(PORTALSLIB)
+test_LE_fetchatomic_SOURCES = test_fetchatomic.c
+test_LE_fetchatomic_CPPFLAGS = -DINTERFACE=0
+test_LE_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
 
-test_LE_hotpotato_SOURCES = test_LE_hotpotato.c
+test_ME_fetchatomic_SOURCES = test_fetchatomic.c
+test_ME_fetchatomic_CPPFLAGS = -DINTERFACE=1
+test_ME_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_swap_SOURCES = test_swap.c
+test_LE_swap_CPPFLAGS = -DINTERFACE=0
+test_LE_swap_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_swap_SOURCES = test_swap.c
+test_ME_swap_CPPFLAGS = -DINTERFACE=1
+test_ME_swap_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_hotpotato_SOURCES = test_hotpotato.c
+test_LE_hotpotato_CPPFLAGS = -DINTERFACE=0
 test_LE_hotpotato_DEPENDENCIES = $(PORTALSLIB)
 
-test_ME_hotpotato_SOURCES = test_ME_hotpotato.c
+test_ME_hotpotato_SOURCES = test_hotpotato.c
+test_ME_hotpotato_CPPFLAGS = -DINTERFACE=1
 test_ME_hotpotato_DEPENDENCIES = $(PORTALSLIB)
 
 test_event_SOURCES = test_event.c

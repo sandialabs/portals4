@@ -7,12 +7,15 @@
 #include <stdio.h>
 #include <sched.h>
 
-#define CHECK_RETURNVAL(x) do { switch (x) { \
-	    case PTL_OK: break; \
-	    case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
-	    case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
-	    case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
-	} } while (0)
+#define CHECK_RETURNVAL(x) do { int ret; \
+    switch (ret = x) { \
+	case PTL_OK: break; \
+	case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	case PTL_NO_SPACE: fprintf(stderr, "=> %s returned PTL_NO_SPACE (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", #x, (unsigned int)__LINE__); abort(); break; \
+	default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, ret, (unsigned int)__LINE__); abort(); break; \
+    } } while (0)
 
 static void noFailures(
     ptl_handle_ct_t ct,
@@ -28,6 +31,22 @@ static void noFailures(
 	abort();
     }
 }
+
+#if INTERFACE == 1
+#define ENTRY_T ptl_me_t
+#define HANDLE_T ptl_handle_me_t
+#define NI_TYPE PTL_NI_MATCHING
+#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_ATOMIC)
+#define APPEND PtlMEAppend
+#define UNLINK PtlMEUnlink
+#else
+#define ENTRY_T ptl_le_t
+#define HANDLE_T ptl_handle_le_t
+#define NI_TYPE PTL_NI_NO_MATCHING
+#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_ATOMIC)
+#define APPEND PtlLEAppend
+#define UNLINK PtlLEUnlink
+#endif
 
 int main(
     int argc,
@@ -46,8 +65,8 @@ int main(
     ptl_handle_md_t md_handle;
     /* used in logical test */
     uint64_t value, readval;
-    ptl_le_t value_le;
-    ptl_handle_le_t value_le_handle;
+    ENTRY_T value_e;
+    HANDLE_T value_e_handle;
     ptl_md_t read_md;
     ptl_handle_md_t read_md_handle;
 
@@ -108,7 +127,7 @@ int main(
     /* feed the accumulated mapping into NIInit to create the rank-based
      * interface */
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
+		    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
 		     PTL_PID_ANY, NULL, NULL, maxrank + 1, dmapping, amapping,
 		     &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
@@ -119,22 +138,26 @@ int main(
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeef;
     if (myself.rank == 0) {
-	value_le.start = &value;
-	value_le.length = sizeof(value);
-	value_le.ac_id.uid = PTL_UID_ANY;
-	value_le.options =
-	    PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_ATOMIC;
-	CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
-	CHECK_RETURNVAL(PtlLEAppend
-			(ni_logical, 0, value_le, PTL_PRIORITY_LIST, NULL,
-			 &value_le_handle));
+	value_e.start = &value;
+	value_e.length = sizeof(value);
+	value_e.ac_id.uid = PTL_UID_ANY;
+	value_e.options = OPTIONS;
+#if INTERFACE == 1
+	value_e.match_id.rank = PTL_RANK_ANY;
+	value_e.match_bits = 1;
+	value_e.ignore_bits = 0;
+#endif
+	CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
+	CHECK_RETURNVAL(APPEND
+			(ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
+			 &value_e_handle));
     }
-    free(amapping);
-    free(dmapping);
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
     /* don't need this anymore, so free up resources */
+    free(amapping);
+    free(dmapping);
     CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_physical));
 
@@ -155,7 +178,7 @@ int main(
 	ptl_process_t r0 = {.rank = 0 };
 	CHECK_RETURNVAL(PtlSwap
 			(read_md_handle, 0, read_md_handle, 0,
-			 sizeof(uint64_t), r0, logical_pt_index, 0, 0, NULL,
+			 sizeof(uint64_t), r0, logical_pt_index, 1, 0, NULL,
 			 0, NULL, PTL_SWAP, PTL_ULONG));
 	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
 	assert(ctc.failure == 0);
@@ -164,10 +187,10 @@ int main(
 	   (unsigned long long)readval);
 
     if (myself.rank == 0) {
-	noFailures(value_le.ct_handle, maxrank + 1, __LINE__);
+	noFailures(value_e.ct_handle, maxrank + 1, __LINE__);
 	printf("0 value: %llx\n", (unsigned long long)value);
-	CHECK_RETURNVAL(PtlLEUnlink(value_le_handle));
-	CHECK_RETURNVAL(PtlCTFree(value_le.ct_handle));
+	CHECK_RETURNVAL(UNLINK(value_e_handle));
+	CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
     CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
