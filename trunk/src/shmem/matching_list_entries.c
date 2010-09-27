@@ -70,35 +70,42 @@ void INTERNAL PtlInternalMENITeardown(
 }
 
 static void PtlInternalPerformDelivery(
-	const unsigned char type,
-	void * const restrict src,
-	void * const restrict dest,
-	size_t nbytes,
-	ptl_internal_header_t *hdr)
+    const unsigned char type,
+    void *const restrict src,
+    void *const restrict dest,
+    size_t nbytes,
+    ptl_internal_header_t * hdr)
 {
-    switch(type) {
+    switch (type) {
 	case HDR_TYPE_PUT:
 	    memcpy(src, dest, nbytes);
 	    break;
 	case HDR_TYPE_ATOMIC:
-	    PtlInternalPerformAtomic(src, dest, nbytes, hdr->info.atomic.operation, hdr->info.atomic.datatype);
+	    PtlInternalPerformAtomic(src, dest, nbytes,
+				     hdr->info.atomic.operation,
+				     hdr->info.atomic.datatype);
 	    break;
 	case HDR_TYPE_FETCHATOMIC:
-	    PtlInternalPerformAtomic(src, dest, nbytes, hdr->info.fetchatomic.operation, hdr->info.fetchatomic.datatype);
+	    PtlInternalPerformAtomic(src, dest, nbytes,
+				     hdr->info.fetchatomic.operation,
+				     hdr->info.fetchatomic.datatype);
 	    break;
 	case HDR_TYPE_GET:
 	    memcpy(dest, src, nbytes);
 	    break;
 	case HDR_TYPE_SWAP:
-	    PtlInternalPerformAtomic(src, dest, nbytes, hdr->info.swap.operation, hdr->info.swap.datatype);
+	    PtlInternalPerformAtomicArg(src, dest + 8,
+					*(uint64_t *) hdr->data, nbytes,
+					hdr->info.swap.operation,
+					hdr->info.swap.datatype);
 	    break;
 	default:
 	    UNREACHABLE;
-	    *(int*)0=0;
+	    *(int *)0 = 0;
     }
 }
 
-static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * restrict Qentry, char * restrict lstart, ptl_size_t llength, unsigned int loptions, ptl_size_t mlength, ptl_internal_header_t *restrict hdr)
+static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * const restrict Qentry, char * const restrict lstart, const ptl_size_t llength, const unsigned int loptions, const ptl_size_t mlength, ptl_internal_header_t *const restrict hdr)
 {
     void * retval = NULL;
     if (loptions & PTL_ME_MANAGE_LOCAL) {
@@ -147,7 +154,9 @@ static void * PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t * restr
 	case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
 	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
 	    break; \
-	case HDR_TYPE_GET: e.type = PTL_EVENT_GET; break; \
+	case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
+	    e.event.tevent.hdr_data = 0; \
+	    break; \
     } \
 } while (0)
 
@@ -159,7 +168,7 @@ static void PtlInternalAnnounceMEDelivery(
 	const uint64_t mlength,
 	const uintptr_t start,
 	const int overflow,
-	ptl_internal_header_t *hdr
+	ptl_internal_header_t *const restrict hdr
 	)
 {
     int ct_announce = ct_handle != PTL_CT_NONE;
@@ -205,10 +214,10 @@ static void PtlInternalAnnounceMEDelivery(
 	PTL_INTERNAL_INIT_TEVENT(e, hdr);
 	if (overflow) {
 	    switch(e.type) {
-		case HDR_TYPE_PUT:
+		case PTL_EVENT_PUT:
 		    e.type = PTL_EVENT_PUT_OVERFLOW;
 		    break;
-		case HDR_TYPE_ATOMIC:
+		case PTL_EVENT_ATOMIC:
 		    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
 		    break;
 		default:
@@ -367,7 +376,7 @@ permission_violation:
 #warning PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)
 			/* suggested plan: put an ME-specific buffered header
 			 * list on each ME, and when the ME is persistent, it
-			 * gets the buffered headers that it mached, in order.
+			 * gets the buffered headers that it matched, in order.
 			 * Then, this list can be used to start reworking (e.g.
 			 * retransmitting/restarting) the original order of
 			 * deliveries. While this list exists on the ME, new
@@ -406,8 +415,8 @@ permission_violation:
 		    }
 		}
 		/* either nothing matched in the buffered_headers, or something
-		 * did but its a persistent ME, so go on and append to the
-		 * priority list */
+		 * did but we're appending a persistent ME, so go on and append
+		 * to the priority list */
 	    }
 	    if (t->priority.tail == NULL) {
 		t->priority.head = Qentry;
@@ -417,20 +426,15 @@ permission_violation:
 	    t->priority.tail = Qentry;
 	    break;
 	case PTL_OVERFLOW:
-	{
-	    ptl_internal_appendME_t *prev =
-		(ptl_internal_appendME_t *) (t->overflow.tail);
-	    t->overflow.tail = Qentry;
-	    if (prev == NULL) {
+	    if (t->overflow.tail == NULL) {
 		t->overflow.head = Qentry;
 	    } else {
-		prev->next = Qentry;
+		((ptl_internal_appendME_t *) (t->overflow.tail))->next = Qentry;
 	    }
-	}
+	    t->overflow.tail = Qentry;
 	    break;
 	case PTL_PROBE_ONLY:
-#warning PTL_PROBE_ONLY not implemented
-	    fprintf(stderr, "PTL_PROBE_ONLY not yet implemented\n");
+#warning PTL_PROBE_ONLY not implemented in PtlMEAppend()
 	    abort();
 	    break;
     }
@@ -598,39 +602,42 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     assert(t);
     assert(hdr);
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
-    ptl_internal_appendME_t *prev = NULL, *priority_list = t->priority.head;
-    ptl_me_t *me = NULL;
+    ptl_internal_appendME_t *prev = NULL, *entry = t->priority.head;
+    ptl_me_t *me_ptr = NULL;
     /* To match, one must check, in order:
      * 1. The match_bits (with the ignore_bits) against hdr->match_bits
      * 2. if notruncate, length
      * 3. the match_id against hdr->target_id
      */
     PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
-			     hdr->length, hdr->dest_offset, &priority_list,
-			     &prev, &me);
-    if (priority_list == NULL && hdr->type != HDR_TYPE_GET) {	// check overflow list
+			     hdr->length, hdr->dest_offset, &entry,
+			     &prev, &me_ptr);
+    if (entry == NULL && hdr->type != HDR_TYPE_GET) {	// check overflow list
 	prev = NULL;
-	priority_list = t->overflow.head;
+	entry = t->overflow.head;
 	PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
 				 hdr->length, hdr->dest_offset,
-				 &priority_list, &prev, &me);
-	if (priority_list != NULL) {
+				 &entry, &prev, &me_ptr);
+	if (entry != NULL) {
 	    foundin = OVERFLOW;
 	}
     }
-    if (priority_list != NULL) {       // Match
+    if (entry != NULL) {       // Match
 	/*************************************************************************
-	 * There is a matching ME present, and 'priority_list'/'me' points to it *
+	 * There is a matching ME present, and 'entry'/'me_ptr' points to it *
 	 *************************************************************************/
 	ptl_size_t mlength = 0;
-	const ptl_me_t mec = *me;
+	const ptl_me_t me =
+	    *(ptl_me_t *) (((char *)entry) +
+			  offsetof(ptl_internal_me_t, visible));
+	assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
 	// check permissions on the ME
-	if (mec.options & PTL_ME_AUTH_USE_JID) {
-	    if (mec.ac_id.jid != PTL_JID_ANY) {
+	if (me.options & PTL_ME_AUTH_USE_JID) {
+	    if (me.ac_id.jid != PTL_JID_ANY) {
 		goto permission_violation;
 	    }
 	} else {
-	    if (mec.ac_id.uid != PTL_UID_ANY) {
+	    if (me.ac_id.uid != PTL_UID_ANY) {
 		goto permission_violation;
 	    }
 	}
@@ -639,7 +646,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    case HDR_TYPE_ATOMIC:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		if ((mec.options & PTL_ME_OP_PUT) == 0) {
+		if ((me.options & PTL_ME_OP_PUT) == 0) {
 		    goto permission_violation;
 		}
 	}
@@ -647,7 +654,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	    case HDR_TYPE_GET:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		if ((mec.options & PTL_ME_OP_GET) == 0) {
+		if ((me.options & PTL_ME_OP_GET) == 0) {
 		    goto permission_violation;
 		}
 	}
@@ -660,33 +667,37 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	/*******************************************************************
 	 * We have permissions on this ME, now check if it's a use-once ME *
 	 *******************************************************************/
-	if ((mec.options & PTL_ME_USE_ONCE) ||
-	    ((mec.options & (PTL_ME_MIN_FREE | PTL_ME_MANAGE_LOCAL)) &&
-	     (mec.length - priority_list->local_offset < mec.min_free))) {
+	if ((me.options & PTL_ME_USE_ONCE) ||
+	    ((me.options & (PTL_ME_MIN_FREE | PTL_ME_MANAGE_LOCAL)) &&
+	     (me.length - entry->local_offset < me.min_free))) {
 	    // unlink ME
 	    if (prev != NULL) {
-		prev->next = priority_list->next;
+		prev->next = entry->next;
 	    } else {
-		if (foundin == PRIORITY) {	// priority_list
-		    t->priority.head = priority_list->next;
+		if (foundin == PRIORITY) {
+		    t->priority.head = entry->next;
+		    if (entry->next == NULL)
+			t->priority.tail = NULL;
 		} else {
-		    t->overflow.head = priority_list->next;
+		    t->overflow.head = entry->next;
+		    if (entry->next == NULL)
+			t->overflow.tail = NULL;
 		}
 	    }
 	    if (t->EQ != PTL_EQ_NONE &&
-		(mec.options &
+		(me.options &
 		 (PTL_ME_EVENT_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)) == 0) {
 		ptl_event_t e;
 		PTL_INTERNAL_INIT_TEVENT(e, hdr);
 		e.type = PTL_EVENT_UNLINK;
-		e.event.tevent.start = (char *)mec.start + hdr->dest_offset;
+		e.event.tevent.start = (char *)me.start + hdr->dest_offset;
 		PtlInternalEQPush(t->EQ, &e);
 	    }
 	}
 	/* check lengths */
-	if (hdr->length + hdr->dest_offset > mec.length) {
-	    if (mec.length > hdr->dest_offset) {
-		mlength = mec.length - hdr->dest_offset;	// truncate
+	if (hdr->length + hdr->dest_offset > me.length) {
+	    if (me.length > hdr->dest_offset) {
+		mlength = me.length - hdr->dest_offset;
 	    } else {
 		mlength = 0;
 	    }
@@ -696,20 +707,20 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	/*************************
 	 * Perform the Operation *
 	 *************************/
-	void * report_this_start = (char*)mec.start + hdr->dest_offset;
+	void * report_this_start = (char*)me.start + hdr->dest_offset;
 	if (foundin == PRIORITY) {
 	    PtlInternalPerformDelivery(hdr->type, report_this_start, hdr->data, mlength, hdr);
 	} else {
-	    report_this_start = PtlInternalPerformOverflowDelivery(priority_list, mec.start, mec.length, mec.options, mlength, hdr);
+	    report_this_start = PtlInternalPerformOverflowDelivery(entry, me.start, me.length, me.options, mlength, hdr);
 	    PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)report_this_start);
 	}
-	PtlInternalAnnounceMEDelivery(t->EQ, mec.ct_handle, hdr->type, mec.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
+	PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type, me.options, mlength, (uintptr_t)report_this_start, foundin == OVERFLOW, hdr);
 	switch (hdr->type) {
 	    case HDR_TYPE_PUT:
 	    case HDR_TYPE_ATOMIC:
 	    case HDR_TYPE_FETCHATOMIC:
 	    case HDR_TYPE_SWAP:
-		return (ptl_pid_t) ((mec.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
+		return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
 	}
 	return (ptl_pid_t) 1;
     }
@@ -722,5 +733,5 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 	PtlInternalEQPush(t->EQ, &e);
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
-    return 0;			       // silent ack
+    return 0;			       // silent ACK
 }
