@@ -176,6 +176,7 @@ int main(
 	ptl_process_t nextrank;
 	nextrank.rank = myself.rank + 1;
 	nextrank.rank *= (nextrank.rank <= maxrank);
+	assert(gettimeofday(&start, NULL) == 0);
 	CHECK_RETURNVAL(PtlPut
 			(potato_launcher_handle, 0, sizeof(double),
 			 PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
@@ -187,9 +188,6 @@ int main(
 	}
     }
 
-    if (myself.rank == 0) {
-	assert(gettimeofday(&start, NULL) == 0);
-    }
     {				       /* the potato-passing loop */
 	size_t waitfor;
 	ptl_ct_event_t ctc;
