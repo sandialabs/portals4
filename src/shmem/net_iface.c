@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <assert.h>
 #include <stdlib.h>
 #include <limits.h>		       /* for UINT_MAX */
 #include <string.h>		       /* for memcpy() */
@@ -15,6 +14,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_atomic.h"

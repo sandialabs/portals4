@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <assert.h>
 
 /* Internals */
 #include "ptl_internal_commpad.h"

@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <assert.h>
 #include <limits.h>		       /* for UINT_MAX */
 #include <stdlib.h>		       /* for calloc() */
 #include <string.h>		       /* for memset() */
@@ -18,6 +17,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_atomic.h"
@@ -49,27 +49,8 @@ void INTERNAL PtlInternalMDNISetup(
 	    PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
 				    (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-#if defined(HAVE_MEMALIGN)
-	tmp = memalign(8, limit * sizeof(ptl_internal_md_t));
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_md_t));
-#elif defined(HAVE_POSIX_MEMALIGN)
-	assert(posix_memalign
-	       ((void **)&tmp, 8, limit * sizeof(ptl_internal_md_t)) == 0);
-	memset(tmp, 0, limit * sizeof(ptl_internal_md_t));
-#elif defined(HAVE_8ALIGNED_CALLOC)
 	tmp = calloc(limit, sizeof(ptl_internal_md_t));
 	assert(tmp != NULL);
-#elif defined(HAVE_8ALIGNED_MALLOC)
-	tmp = malloc(limit * sizeof(ptl_internal_md_t));
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_md_t));
-#else
-	tmp = valloc(limit * sizeof(ptl_internal_md_t));	/* cross your fingers */
-	assert(tmp != NULL);
-	memset(tmp, 0, limit * sizeof(ptl_internal_md_t));
-#endif
-	assert((((intptr_t) tmp) & 0x7) == 0);
 	mds[ni] = tmp;
     }
 }

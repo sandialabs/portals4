@@ -8,9 +8,9 @@
 #else
 # include <unistd.h>
 #endif
-#include <assert.h>
 
 /* Internal headers */
+#include "ptl_internal_assert.h"
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_visibility.h"
@@ -27,18 +27,18 @@ void INTERNAL PtlInternalNEMESISBlockingInit(
     q->frustration = 0;
     {
 	pthread_mutexattr_t ma;
-	assert(pthread_mutexattr_init(&ma) == 0);
-	assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) ==
+	ptl_assert(pthread_mutexattr_init(&ma), 0);
+	ptl_assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED),
 	       0);
-	assert(pthread_mutex_init(&q->trigger_lock, &ma) == 0);
-	assert(pthread_mutexattr_destroy(&ma) == 0);
+	ptl_assert(pthread_mutex_init(&q->trigger_lock, &ma), 0);
+	ptl_assert(pthread_mutexattr_destroy(&ma), 0);
     }
     {
 	pthread_condattr_t ca;
-	assert(pthread_condattr_init(&ca) == 0);
-	assert(pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) == 0);
-	assert(pthread_cond_init(&q->trigger, &ca) == 0);
-	assert(pthread_condattr_destroy(&ca) == 0);
+	ptl_assert(pthread_condattr_init(&ca), 0);
+	ptl_assert(pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED), 0);
+	ptl_assert(pthread_cond_init(&q->trigger, &ca), 0);
+	ptl_assert(pthread_condattr_destroy(&ca), 0);
     }
     //printf("init q=%p(%u)\n", q, (unsigned)((uintptr_t)q - (uintptr_t)comm_pad));
 #else
@@ -58,15 +58,15 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     /* awake waiter */
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
     if (q->frustration) {
-	assert(pthread_mutex_lock(&q->trigger_lock) == 0);
+	ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
 	if (q->frustration) {
 	    q->frustration = 0;
-	    assert(pthread_cond_signal(&q->trigger) == 0);
+	    ptl_assert(pthread_cond_signal(&q->trigger), 0);
 	}
-	assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
+	ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
     }
 #else
-    assert(write(q->pipe[1], "", 1) == 1);
+    ptl_assert(write(q->pipe[1], "", 1), 1);
 #endif
 }
 
@@ -78,16 +78,16 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 	while (q->q.head == NULL) {
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
-		assert(pthread_mutex_lock(&q->trigger_lock) == 0);
+		ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
 		if (q->frustration > 1000) {
-		    assert(pthread_cond_wait(&q->trigger, &q->trigger_lock) ==
+		    ptl_assert(pthread_cond_wait(&q->trigger, &q->trigger_lock),
 			   0);
 		}
-		assert(pthread_mutex_unlock(&q->trigger_lock) == 0);
+		ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
 	    }
 #else
 	    char junk;
-	    assert(read(q->pipe[0], &junk, 1) == 1);
+	    ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
 	}
 	retval = PtlInternalNEMESISOffsetDequeue(&q->q);

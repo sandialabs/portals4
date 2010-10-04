@@ -6,12 +6,12 @@
 
 /* System headers */
 #include <stdlib.h>		       /* for size_t */
-#include <assert.h>		       /* for assert() and abort() */
 
 //#include <sys/types.h> // for getpid()
 //#include <unistd.h> // for getpid()
 
 /* Internal headers */
+#include "ptl_internal_assert.h"
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
@@ -137,6 +137,15 @@ void INTERNAL PtlInternalFragmentAck(
 				    sizeof(NEMESIS_blocking_queue));
     frag = ((uint64_t *) frag) - 2;
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
+}
+
+void INTERNAL *PtlInternalAnyFragmentReceive(
+	int *type)
+{
+    fragment_hdr_t *frag =
+	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
+    assert(frag == (void *)1 || frag->next == NULL);
+    return frag->data;
 }
 
 /* this dequeues a fragment from my receive queue */

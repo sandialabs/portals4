@@ -7,13 +7,13 @@
 
 /* System headers */
 #include <stdlib.h>		       /* for malloc() */
-#include <assert.h>		       /* for assert() */
 #include <string.h>		       /* for memcpy() */
 
 #include <stdio.h>
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_queues.h"
 #include "ptl_internal_DM.h"
 #include "ptl_internal_MD.h"
@@ -86,7 +86,7 @@ static void *PtlInternalDMCatcher(
 	if (nit.tables[hdr->ni] != NULL) {
 	    ptl_table_entry_t *table_entry =
 		&(nit.tables[hdr->ni][hdr->pt_index]);
-	    assert(pthread_mutex_lock(&table_entry->lock) == 0);
+	    ptl_assert(pthread_mutex_lock(&table_entry->lock), 0);
 	    if (table_entry->status == 1) {
 		switch (PtlInternalPTValidate(table_entry)) {
 		    case 1:	       // uninitialized
@@ -149,7 +149,7 @@ static void *PtlInternalDMCatcher(
 		hdr->src = 0;
 		dm_printf("table_entry->status == 0\n");
 	    }
-	    assert(pthread_mutex_unlock(&table_entry->lock) == 0);
+	    ptl_assert(pthread_mutex_unlock(&table_entry->lock), 0);
 	} else {		       // uninitialized NI
 	    hdr->src = 0;	       // silent ACK
 	}
@@ -429,10 +429,10 @@ void INTERNAL PtlInternalDMSetup(
     void)
 {
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
-	assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL) ==
+	ptl_assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL),
 	       0);
-	assert(pthread_create
-	       (&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL) == 0);
+	ptl_assert(pthread_create
+	       (&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL), 0);
     }
 }
 
@@ -445,8 +445,8 @@ void INTERNAL PtlInternalDMTeardown(
 	 * and late acks don't cause hangs. */
 	PtlInternalFragmentToss(TERMINATION_HDR_VALUE, proc_number);
 	PtlInternalFragmentAck(TERMINATION_HDR_VALUE, proc_number);
-	assert(pthread_join(catcher, NULL) == 0);
-	assert(pthread_join(ack_catcher, NULL) == 0);
+	ptl_assert(pthread_join(catcher, NULL), 0);
+	ptl_assert(pthread_join(ack_catcher, NULL), 0);
     }
 }
 

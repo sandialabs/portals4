@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 #include <getopt.h>		       /* for getopt() */
 #include <unistd.h>		       /* for fork() and ftruncate() */
 
@@ -42,6 +41,7 @@
 #endif
 
 #include "ptl_internal_nemesis.h"
+#include "ptl_internal_assert.h"
 
 #ifndef PSHMNAMLEN
 # define PSHMNAMLEN 100
@@ -67,7 +67,7 @@ static void *collator(
 #define EXPORT_ENV_NUM(env_str, val) do { \
     char str[21]; \
     snprintf(str, 21, "%lu", (unsigned long)val); \
-    assert(setenv(env_str, str, 1) == 0); \
+    ptl_assert(setenv(env_str, str, 1), 0); \
 } while (0)
 
 int main(
@@ -190,7 +190,7 @@ int main(
 	memset(shmname, 0, PSHMNAMLEN + 1);
 	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
     }
-    assert(setenv("PORTALS4_SHM_NAME", shmname, 0) == 0);
+    ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
     commsize =
 	(small_frag_count * small_frag_size) +
 	(large_frag_count * large_frag_size) +
@@ -232,8 +232,8 @@ int main(
 	    NEMESIS_blocking_queue *q1 =
 		(NEMESIS_blocking_queue *) remote_pad;
 	    NEMESIS_blocking_queue *q2 = q1 + 1;
-	    assert(pipe(q1->pipe) == 0);
-	    assert(pipe(q2->pipe) == 0);
+	    ptl_assert(pipe(q1->pipe), 0);
+	    ptl_assert(pipe(q2->pipe), 0);
 	}
 #endif /* PTHREAD_SHMEM_LOCKS */
     } else {
@@ -259,13 +259,13 @@ int main(
      * Provide COLLATOR services *
      *****************************/
     EXPORT_ENV_NUM("PORTALS4_RANK", count);
-    assert(PtlInit() == PTL_OK);
-    assert(PtlNIInit
+    ptl_assert(PtlInit(), PTL_OK);
+    ptl_assert(PtlNIInit
 	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical) == PTL_OK);
+	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical), PTL_OK);
     {
 	ptl_pt_index_t pt_index;
-	assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index) ==
+	ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index),
 	       PTL_OK);
 	assert(pt_index == 0);
     }
@@ -376,8 +376,8 @@ int main(
     }
 
     /* Cleanup */
-    assert(PtlPTFree(ni_physical, 0) == PTL_OK);
-    assert(PtlNIFini(ni_physical) == PTL_OK);
+    ptl_assert(PtlPTFree(ni_physical, 0), PTL_OK);
+    ptl_assert(PtlNIFini(ni_physical), PTL_OK);
     PtlFini();
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
@@ -406,7 +406,7 @@ int main(
 		    buf);
 	    abort();
 	}
-	assert(pthread_mutex_destroy(&q2->trigger_lock) == 0);
+	ptl_assert(pthread_mutex_destroy(&q2->trigger_lock), 0);
 	if ((perr = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
@@ -474,11 +474,11 @@ void *collator(
     md.length = le.length = count * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
     le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
-    assert(PtlCTAlloc(ni_physical, &le.ct_handle) == PTL_OK);
+    ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle), PTL_OK);
     collator_ct_handle = le.ct_handle;
-    assert(PtlLEAppend
+    ptl_assert(PtlLEAppend
 	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
-	    &le_handle) == PTL_OK);
+	    &le_handle), PTL_OK);
     /* wait for everyone to post to the mapping */
     {
 	ptl_ct_event_t ct_data;
@@ -487,40 +487,40 @@ void *collator(
 	}
 	assert(ct_data.failure == 0);  // XXX: should do something useful
 	ct_data.success = ct_data.failure = 0;
-	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
+	ptl_assert(PtlCTSet(le.ct_handle, ct_data), PTL_OK);
     }
     /* cleanup */
-    assert(PtlLEUnlink(le_handle) == PTL_OK);
+    ptl_assert(PtlLEUnlink(le_handle), PTL_OK);
     /* prepare for being a barrier captain */
     le.start = NULL;
     le.length = 0;
-    assert(PtlLEAppend
-	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle)
-	   == PTL_OK);
+    ptl_assert(PtlLEAppend
+	   (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle),
+	   PTL_OK);
     /* now distribute the mapping */
     md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK;
     md.eq_handle = PTL_EQ_NONE;
-    assert(PtlCTAlloc(ni_physical, &md.ct_handle) == PTL_OK);
-    assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
+    ptl_assert(PtlCTAlloc(ni_physical, &md.ct_handle), PTL_OK);
+    ptl_assert(PtlMDBind(ni_physical, &md, &md_handle), PTL_OK);
     for (uint64_t r = 0; r < count; ++r) {
-	assert(PtlPut
+	ptl_assert(PtlPut
 	       (md_handle, 0, count * sizeof(ptl_process_t), PTL_CT_ACK_REQ,
-		mapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
+		mapping[r], 0, 0, 0, NULL, 0), PTL_OK);
     }
     /* wait for the puts to finish */
     {
 	ptl_ct_event_t ct_data;
-	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
+	ptl_assert(PtlCTWait(md.ct_handle, count, &ct_data), PTL_OK);
 	assert(ct_data.failure == 0);
 	ct_data.success = ct_data.failure = 0;
-	assert(PtlCTSet(md.ct_handle, ct_data) == PTL_OK);
+	ptl_assert(PtlCTSet(md.ct_handle, ct_data), PTL_OK);
     }
     /* cleanup */
-    assert(PtlMDRelease(md_handle) == PTL_OK);
+    ptl_assert(PtlMDRelease(md_handle), PTL_OK);
     /* prepare for being a barrier captain */
     md.start = NULL;
     md.length = 0;
-    assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
+    ptl_assert(PtlMDBind(ni_physical, &md, &md_handle), PTL_OK);
     /*******************************************************
      * Transition point to being a general BARRIER captain *
      *******************************************************/
@@ -533,24 +533,24 @@ void *collator(
 	assert(ct_data.failure == 0);
 	/* reset the LE's CT */
 	ct_data.success = ct_data.failure = 0;
-	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
+	ptl_assert(PtlCTSet(le.ct_handle, ct_data), PTL_OK);
 	/* release everyone */
 	for (uint64_t r = 0; r < count; ++r) {
-	    assert(PtlPut
+	    ptl_assert(PtlPut
 		   (md_handle, 0, 0, PTL_CT_ACK_REQ, mapping[r], 0, 0, 0,
-		    NULL, 0) == PTL_OK);
+		    NULL, 0), PTL_OK);
 	}
 	/* wait for the releases to finish */
-	assert(PtlCTWait(md.ct_handle, count, &ct_data) == PTL_OK);
+	ptl_assert(PtlCTWait(md.ct_handle, count, &ct_data), PTL_OK);
 	assert(ct_data.failure == 0);
 	/* reset the MD's CT */
 	ct_data.success = ct_data.failure = 0;
-	assert(PtlCTSet(le.ct_handle, ct_data) == PTL_OK);
+	ptl_assert(PtlCTSet(le.ct_handle, ct_data), PTL_OK);
     } while (0);
     /* cleanup */
   cleanup_phase:
     free(mapping);
-    assert(PtlLEUnlink(le_handle) == PTL_OK);
+    ptl_assert(PtlLEUnlink(le_handle), PTL_OK);
     return NULL;
 }
 

@@ -11,8 +11,8 @@ int main()
 	if (pthread_mutexattr_init(&ma) != 0) return 1;
 	if (pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) != 0) return 1;
 	if (pthread_mutexattr_destroy(&ma) != 0) return 1;
-        if (pthread_condattr_init(&ca) != 0) return 1;
-        if (pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) != 0) return 1;
+	if (pthread_condattr_init(&ca) != 0) return 1;
+	if (pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) != 0) return 1;
 	if (pthread_condattr_destroy(&ma) != 0) return 1;
 	return 0;
 }

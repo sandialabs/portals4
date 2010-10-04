@@ -12,6 +12,7 @@
 #include <stdint.h>		       /* for uint32_t */
 
 /* Internal headers */
+#include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
 
