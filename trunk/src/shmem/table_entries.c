@@ -5,10 +5,11 @@
 #include <portals4.h>
 
 /* System headers */
-#include <assert.h>
 #include <string.h>		       /* for memcpy() */
 
 /* Internal headers */
+#include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_PT.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_handles.h"
@@ -16,7 +17,6 @@
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_error.h"
-#include "ptl_visibility.h"
 
 #define PT_FREE     0
 #define PT_ENABLED  1
@@ -53,9 +53,9 @@ int API_FUNC PtlPTAlloc(
 #endif
     if (pt_index_req != PTL_PT_ANY) {
 	pt = &(nit.tables[ni.s.ni][pt_index_req]);
-	assert(pthread_mutex_lock(&pt->lock) == 0);
+	ptl_assert(pthread_mutex_lock(&pt->lock), 0);
 	if (pt->status != PT_FREE) {
-	    assert(pthread_mutex_unlock(&pt->lock) == 0);
+	    ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
 	    return PTL_PT_IN_USE;
 	}
 	pt->status = PT_DISABLED;
@@ -65,13 +65,13 @@ int API_FUNC PtlPTAlloc(
 	for (pti = 0; pti <= nit_limits.max_pt_index; ++pti) {
 	    if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
 		pt = &(nit.tables[ni.s.ni][pti]);
-		assert(pthread_mutex_lock(&pt->lock) == 0);
+		ptl_assert(pthread_mutex_lock(&pt->lock), 0);
 		if (pt->status == PT_FREE) {
 		    *pt_index = pti;
 		    pt->status = PT_DISABLED;
 		    break;
 		}
-		assert(pthread_mutex_unlock(&pt->lock) == 0);
+		ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
 		pt = NULL;
 	    }
 	}
@@ -86,7 +86,7 @@ int API_FUNC PtlPTAlloc(
     pt->EQ = eq_handle;
     pt->options = options;
     pt->status = PT_ENABLED;
-    assert(pthread_mutex_unlock(&pt->lock) == 0);
+    ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
     return PTL_OK;
 }
 
@@ -161,7 +161,7 @@ int API_FUNC PtlPTEnable(
 void INTERNAL PtlInternalPTInit(
     ptl_table_entry_t * t)
 {
-    assert(pthread_mutex_init(&t->lock, NULL) == 0);
+    ptl_assert(pthread_mutex_init(&t->lock, NULL), 0);
     t->priority.head = NULL;
     t->priority.tail = NULL;
     t->overflow.head = NULL;

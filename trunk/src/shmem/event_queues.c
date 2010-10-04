@@ -10,11 +10,11 @@
 #include <portals4.h>
 
 /* System headers */
-#include <assert.h>
 #include <stdlib.h>
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_nit.h"
@@ -24,6 +24,7 @@
 #include "ptl_internal_commpad.h"
 #endif
 
+const ptl_internal_handle_converter_t eq_none = { .s = { .selector=HANDLE_EQ_CODE, .ni=((1<<HANDLE_NI_BITS)-1), .code=((1<<HANDLE_CODE_BITS)-1) } };
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff;	/* (1<<29) & 0x1fffffff */
 
 typedef union {
@@ -125,7 +126,7 @@ int INTERNAL PtlInternalEQHandleValidator(
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t eq = { handle };
     if (eq.s.selector != HANDLE_EQ_CODE) {
-	VERBOSE_ERROR("Expected EQ handle, but it's not one\n");
+	VERBOSE_ERROR("Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n", eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
 	return PTL_ARG_INVALID;
     }
     if (none_ok == 1 && handle == PTL_EQ_NONE) {

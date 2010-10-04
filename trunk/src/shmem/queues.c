@@ -1,8 +1,8 @@
 #include <stdlib.h>		       /* for calloc() */
-#include <assert.h>
 #include <stdint.h>		       /* for uintptr_t (C99) */
 
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_queues.h"
 #include "ptl_internal_atomic.h"
 

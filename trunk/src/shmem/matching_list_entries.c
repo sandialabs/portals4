@@ -6,12 +6,12 @@
 #endif
 
 /* System headers */
-#include <assert.h>
 #include <stdlib.h>		       /* for NULL & calloc() */
 #include <string.h>		       /* for memcpy() */
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_ME.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_handles.h"
@@ -308,7 +308,7 @@ int API_FUNC PtlMEAppend(
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
-    assert(pthread_mutex_lock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
 	    if (t->buffered_headers.head != NULL) {	// implies that overflow.head != NULL
@@ -479,7 +479,7 @@ int API_FUNC PtlMEAppend(
 	    break;
     }
   done_appending:
-    assert(pthread_mutex_unlock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return PTL_OK;
 }
 
@@ -510,7 +510,7 @@ int API_FUNC PtlMEUnlink(
     }
 #endif
     t = &(nit.tables[me.s.ni][mes[me.s.ni][me.s.code].pt_index]);
-    assert(pthread_mutex_lock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (mes[me.s.ni][me.s.code].ptl_list) {
 	case PTL_PRIORITY_LIST:
 	{
@@ -573,7 +573,7 @@ int API_FUNC PtlMEUnlink(
 	    abort();
 	    break;
     }
-    assert(pthread_mutex_unlock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     switch (PtlInternalAtomicCas32
 	    (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
 	case ME_IN_USE:

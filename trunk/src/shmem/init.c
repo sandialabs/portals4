@@ -6,7 +6,6 @@
 #endif
 
 /* System libraries */
-#include <assert.h>
 #include <stddef.h>		       /* for NULL */
 #include <sys/mman.h>		       /* for mmap() and shm_open() */
 #include <sys/stat.h>		       /* for S_IRUSR and friends */
@@ -18,6 +17,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
@@ -122,7 +122,7 @@ int API_FUNC PtlInit(
 	    //perror("PtlInit: mmap failed");
 	    goto exit_fail;
 	}
-	assert(close(shm_fd) == 0);
+	ptl_assert(close(shm_fd), 0);
 	/* Locate and initialize my fragments memory (beginning with a pointer to headers) */
 	PtlInternalFragmentSetup((comm_pad + firstpagesize +
 				  (per_proc_comm_buf_size * proc_number)));
@@ -174,7 +174,7 @@ void API_FUNC PtlFini(
     if (lastone == 1) {
 	/* Clean up */
 	//printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
-	assert(munmap((void *)comm_pad, comm_pad_size) == 0);
+	ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
 	comm_pad = NULL;
     }
 }

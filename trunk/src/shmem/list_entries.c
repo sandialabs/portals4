@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <assert.h>
 #include <stdlib.h>		       /* for malloc() */
 #include <string.h>		       /* for memset() */
 #if defined(HAVE_MALLOC_H)
@@ -17,6 +16,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_atomic.h"
@@ -287,7 +287,7 @@ int API_FUNC PtlLEAppend(
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
-    assert(pthread_mutex_lock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (ptl_list) {
 	case PTL_PRIORITY_LIST:
 	    if (t->buffered_headers.head != NULL) {	// implies that overflow.head != NULL
@@ -434,7 +434,7 @@ int API_FUNC PtlLEAppend(
 	    break;
     }
   done_appending:
-    assert(pthread_mutex_unlock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return PTL_OK;
 }
 
@@ -465,7 +465,7 @@ int API_FUNC PtlLEUnlink(
     }
 #endif
     t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
-    assert(pthread_mutex_lock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (les[le.s.ni][le.s.code].ptl_list) {
 	case PTL_PRIORITY_LIST:
 	{
@@ -528,7 +528,7 @@ int API_FUNC PtlLEUnlink(
 	    abort();
 	    break;
     }
-    assert(pthread_mutex_unlock(&t->lock) == 0);
+    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     switch (PtlInternalAtomicCas32
 	    (&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
 	case LE_IN_USE:

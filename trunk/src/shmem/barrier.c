@@ -7,9 +7,9 @@
 
 /* System headers */
 #include <stdlib.h>
-#include <assert.h>
 
 /* Internal headers */
+#include "ptl_internal_assert.h"
 #include "ptl_internal_handles.h"
 #include "ptl_visibility.h"
 
@@ -45,18 +45,18 @@ void API_FUNC runtime_barrier(
     md.options = PTL_MD_EVENT_DISABLE;
     le.ct_handle = md.ct_handle = PTL_CT_NONE;
     md.eq_handle = PTL_EQ_NONE;
-    assert(PtlCTAlloc(ni.a.ni, &le.ct_handle) == PTL_OK);
+    ptl_assert(PtlCTAlloc(ni.a.ni, &le.ct_handle), PTL_OK);
     /* post my sensor */
-    assert(PtlLEAppend(ni.a.ni, 0, le, PTL_PRIORITY_LIST, NULL, &leh) ==
+    ptl_assert(PtlLEAppend(ni.a.ni, 0, le, PTL_PRIORITY_LIST, NULL, &leh),
 	   PTL_OK);
     /* prepare my messenger */
-    assert(PtlMDBind(ni.a.ni, &md, &mdh) == PTL_OK);
+    ptl_assert(PtlMDBind(ni.a.ni, &md, &mdh), PTL_OK);
     /* alert COLLECTOR of my presence */
-    assert(PtlPut(mdh, 0, 0, PTL_CT_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0) ==
+    ptl_assert(PtlPut(mdh, 0, 0, PTL_CT_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0),
 	   PTL_OK);
     /* wait for COLLECTOR to respond */
-    assert(PtlCTWait(le.ct_handle, 1, &ctc) == PTL_OK);
+    ptl_assert(PtlCTWait(le.ct_handle, 1, &ctc), PTL_OK);
     assert(ctc.failure == 0);
-    assert(PtlMDRelease(mdh) == PTL_OK);
-    assert(PtlCTFree(le.ct_handle) == PTL_OK);
+    ptl_assert(PtlMDRelease(mdh), PTL_OK);
+    ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
 }

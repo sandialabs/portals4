@@ -10,7 +10,6 @@
 #include <portals4.h>
 
 /* System headers */
-#include <assert.h>
 #include <stdlib.h>		       /* for calloc() */
 #include <string.h>		       /* for memset() */
 #if defined(HAVE_MALLOC_H)
@@ -19,6 +18,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_assert.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_nit.h"
@@ -129,8 +129,8 @@ void INTERNAL PtlInternalCTNISetup(
 	assert(tmp != NULL);
 	memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
 #elif defined(HAVE_POSIX_MEMALIGN)
-	assert(posix_memalign
-	       ((void **)&tmp, 16, limit * sizeof(ptl_ct_event_t)) == 0);
+	ptl_assert(posix_memalign
+	       ((void **)&tmp, 16, limit * sizeof(ptl_ct_event_t)), 0);
 	memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
 #elif defined(HAVE_16ALIGNED_CALLOC)
 	tmp = calloc(limit, sizeof(ptl_ct_event_t));
@@ -187,8 +187,13 @@ int INTERNAL PtlInternalCTHandleValidator(
 	VERBOSE_ERROR("Expected CT handle, but it's not a CT handle\n");
 	return PTL_ARG_INVALID;
     }
-    if (none_ok == 1 && handle == PTL_CT_NONE) {
-	return PTL_OK;
+    if (handle == PTL_CT_NONE) {
+	if (none_ok == 1) {
+	    return PTL_OK;
+	} else {
+	    VERBOSE_ERROR("PTL_CT_NONE not allowed here\n");
+	    return PTL_ARG_INVALID;
+	}
     }
     if (ct.s.ni > 3 || ct.s.code > nit_limits.max_cts ||
 	(nit.refcount[ct.s.ni] == 0)) {
