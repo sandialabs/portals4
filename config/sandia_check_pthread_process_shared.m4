@@ -3,18 +3,17 @@ AC_DEFUN([SANDIA_CHECK_PTHREAD_PROCESS_SHARED],
   [sandia_cv_working_pthread_process_shared],
   [AC_TRY_RUN([
 #include <pthread.h>
-#include <assert.h>
 
 int main()
 {
 	pthread_mutexattr_t ma;
 	pthread_condattr_t ca;
-	assert(pthread_mutexattr_init(&ma) == 0);
-	assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) == 0);
-	assert(pthread_mutexattr_destroy(&ma) == 0);
-	assert(pthread_condattr_init(&ca) == 0);
-	assert(pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) == 0);
-	assert(pthread_condattr_destroy(&ma) == 0);
+	if (pthread_mutexattr_init(&ma) != 0) return 1;
+	if (pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) != 0) return 1;
+	if (pthread_mutexattr_destroy(&ma) != 0) return 1;
+        if (pthread_condattr_init(&ca) != 0) return 1;
+        if (pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) != 0) return 1;
+	if (pthread_condattr_destroy(&ma) != 0) return 1;
 	return 0;
 }
               ],
