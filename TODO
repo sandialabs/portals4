@@ -1,0 +1,17 @@
+Shared Memory Unimplemented Features:
+
+- Ptl{LE,ME}Append() does not work with persistent LEs and buffered headers
+- Ptl{LE,ME}Append() cannot deliver buffered messages without local data (no
+  retransmit protocol yet implemented)
+- PTL_PROBE_ONLY in Ptl{LE,ME}Append()
+- Triggered Operations
+- Oversized Messages (> large frag size)
+- PtlPTEnable()
+- PtlPTDisable()
+
+Shared Memory Performance Needs:
+
+- Add PAPI counters
+- Add MPI-like benchmark tests
+  + Message rate
+  + Message latency (hotpotato is nice, but not an exact MPI duplicate)
