@@ -20,6 +20,8 @@ TESTS = test_init \
 	test_ME_hotpotato \
 	test_event
 
+EXTRA_DIST = numawrapper.sh
+
 #EXTRA_PROGRAMS = test_bootstrap
 
 all: $(TESTS)
