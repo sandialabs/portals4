@@ -10,7 +10,6 @@ AC_CACHE_CHECK([bitfield ordering],
     [sandia_cv_bitfield_order],
     [AC_RUN_IFELSE(
 	   [AC_LANG_PROGRAM([[
-#include <assert.h>
 union foo {
 	unsigned int w;
 	struct bar {
@@ -22,7 +21,7 @@ union foo {
 [[
 fb.w = 0;
 fb.s.c = 1;
-assert(fb.w == 1);]])],
+if (fb.w == 1) { return 0; } else { return 1; }]])],
 	[sandia_cv_bitfield_order="forward"],
 	[sandia_cv_bitfield_order="reverse"],
 	[sandia_cv_ucstack_ssflags="assuming reverse"])])
