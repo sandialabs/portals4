@@ -48,8 +48,16 @@ AS_IF([test "x$enable_picky" == x],
 AC_ARG_ENABLE([arg-checking],
 			  [AS_HELP_STRING([--disable-arg-checking],
 							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
-AS_IF([test "x$enable_arg_checking" = xno],
+AC_ARG_ENABLE([fast],
+			  [AS_HELP_STRING([--enable-fast],
+							  [Sets the available configuration options to run as quickly as possible. This makes the assumption and CAN result in bad things happening.])])
+AS_IF([test "x$enable_fast" == xyes],
+	  [CFLAGS="-O3"
+	   CPPFLAGS="-DNDEBUG"
+	   enable_arg_checking=no])
+AS_IF([test "x$enable_arg_checking" == xno],
 	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
+
 
 ## ------------------- ##
 ## Checks for programs ##
