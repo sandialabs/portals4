@@ -67,7 +67,6 @@ int main(
     ptl_handle_md_t md_handle;
     /* used in logical test */
     struct timeval start, stop;
-    double accumulate = 0.0;
     int potato = 0;
     ENTRY_T potato_catcher;
     HANDLE_T potato_catcher_handle;
@@ -164,7 +163,7 @@ int main(
 
     /* set up the potato launcher */
     potato_launcher.start = &potato;
-    potato_launcher.length = sizeof(double);
+    potato_launcher.length = sizeof(potato);
     potato_launcher.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK | PTL_MD_EVENT_CT_SEND;
     potato_launcher.eq_handle = PTL_EQ_NONE;	// i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_launcher.ct_handle));
@@ -178,7 +177,7 @@ int main(
 	nextrank.rank *= (nextrank.rank <= maxrank);
 	gettimeofday(&start, NULL);
 	CHECK_RETURNVAL(PtlPut
-			(potato_launcher_handle, 0, sizeof(double),
+			(potato_launcher_handle, 0, potato_launcher.length,
 			 PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
 			 NULL, 1));
 	CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
@@ -220,6 +219,7 @@ int main(
 	}
     }
     if (myself.rank == 0) {
+	double accumulate = 0.0;
 	gettimeofday(&stop, NULL);
 	accumulate =
 	    (stop.tv_sec + stop.tv_usec * 1e-6) - (start.tv_sec +

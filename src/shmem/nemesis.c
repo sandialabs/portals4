@@ -73,6 +73,10 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
 NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_blocking_queue * q)
 {
+#ifndef HAVE_PTHREAD_SHMEM_LOCKS
+    char junk;
+    ptl_assert(read(q->pipe[0], &junk, 1), 1);
+#endif
     NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
     if (retval == NULL) {
 	while (q->q.head == NULL) {
@@ -86,7 +90,6 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 		ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
 	    }
 #else
-	    char junk;
 	    ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
 	}

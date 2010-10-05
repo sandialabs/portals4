@@ -194,7 +194,7 @@ int main(
     commsize =
 	(small_frag_count * small_frag_size) +
 	(large_frag_count * large_frag_size) +
-	(sizeof(NEMESIS_blocking_queue) * 2);
+	sizeof(NEMESIS_blocking_queue);
     buffsize += commsize * (count + 1);	// the one extra is for the collator
 
     /* Establish the communication pad */
@@ -231,9 +231,7 @@ int main(
 	    char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
 	    NEMESIS_blocking_queue *q1 =
 		(NEMESIS_blocking_queue *) remote_pad;
-	    NEMESIS_blocking_queue *q2 = q1 + 1;
 	    ptl_assert(pipe(q1->pipe), 0);
-	    ptl_assert(pipe(q2->pipe), 0);
 	}
 #endif /* PTHREAD_SHMEM_LOCKS */
     } else {
@@ -382,7 +380,6 @@ int main(
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
-	NEMESIS_blocking_queue *q2 = q1 + 1;
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	int perr;
 	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
@@ -399,21 +396,6 @@ int main(
 		    perr, buf);
 	    abort();
 	}
-	if ((perr = pthread_cond_destroy(&q2->trigger)) != 0) {
-	    char buf[200];
-	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue2 trigger(%i): %s\n", perr,
-		    buf);
-	    abort();
-	}
-	ptl_assert(pthread_mutex_destroy(&q2->trigger_lock), 0);
-	if ((perr = pthread_mutex_destroy(&q2->trigger_lock)) != 0) {
-	    char buf[200];
-	    strerror_r(perr, buf, 200);
-	    fprintf(stderr, "yod-> destroying queue2 trigger lock(%i): %s\n",
-		    perr, buf);
-	    abort();
-	}
 #else
 	if (close(q1->pipe[0]) != 0) {
 	    perror("yod-> closing queue1 pipe[0]");
@@ -421,14 +403,6 @@ int main(
 	}
 	if (close(q1->pipe[1]) != 0) {
 	    perror("yod-> closing queue1 pipe[1]");
-	    abort();
-	}
-	if (close(q2->pipe[0]) != 0) {
-	    perror("yod-> closing queue2 pipe[0]");
-	    abort();
-	}
-	if (close(q2->pipe[1]) != 0) {
-	    perror("yod-> closing queue2 pipe[1]");
 	    abort();
 	}
 #endif

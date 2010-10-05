@@ -10,20 +10,17 @@ extern size_t LARGE_FRAG_COUNT;
 
 void PtlInternalFragmentSetup(
     volatile char *buf);
+
 void *PtlInternalFragmentFetch(
     size_t payload_size);
+void PtlInternalFragmentFree(
+    void *data);
+
 void PtlInternalFragmentToss(
-    void *frag,
-    ptl_pid_t dest);
-void PtlInternalFragmentAck(
     void *frag,
     ptl_pid_t dest);
 void *PtlInternalFragmentReceive(
     void);
-void *PtlInternalFragmentAckReceive(
-    void);
-void PtlInternalFragmentFree(
-    void *data);
 
 uint64_t PtlInternalFragmentSize(
     void *frag);
