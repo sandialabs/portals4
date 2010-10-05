@@ -41,7 +41,6 @@ typedef struct {
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
 static NEMESIS_blocking_queue *receiveQ = NULL;
-static NEMESIS_blocking_queue *ackQ = NULL;
 
 void INTERNAL PtlInternalFragmentSetup(
     volatile char *buf)
@@ -56,12 +55,8 @@ void INTERNAL PtlInternalFragmentSetup(
     receiveQ = (NEMESIS_blocking_queue *) buf;
     PtlInternalNEMESISBlockingInit(receiveQ);
     //printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
-    /* next, initialize the ack queue */
-    ackQ = receiveQ + 1;
-    PtlInternalNEMESISBlockingInit(ackQ);
-    //printf("%i(%u)==========> ackQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, ackQ);
     /* now, initialize the small fragment free-list */
-    fptr = (fragment_hdr_t *) (ackQ + 1);
+    fptr = (fragment_hdr_t *) (buf + sizeof(NEMESIS_blocking_queue));
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
 	fptr->next = small_free_list;
 	fptr->size = SMALL_FRAG_SIZE;
@@ -126,44 +121,12 @@ void INTERNAL PtlInternalFragmentToss(
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }
 
-/* this enqueues a fragment in the specified ack queue */
-void INTERNAL PtlInternalFragmentAck(
-    void *frag,
-    ptl_pid_t dest)
-{
-    NEMESIS_blocking_queue *destQ =
-	(NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
-				    (per_proc_comm_buf_size * dest) +
-				    sizeof(NEMESIS_blocking_queue));
-    frag = ((uint64_t *) frag) - 2;
-    PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
-}
-
-void INTERNAL *PtlInternalAnyFragmentReceive(
-	int *type)
-{
-    fragment_hdr_t *frag =
-	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
-    assert(frag == (void *)1 || frag->next == NULL);
-    return frag->data;
-}
-
 /* this dequeues a fragment from my receive queue */
 void INTERNAL *PtlInternalFragmentReceive(
     void)
 {
     fragment_hdr_t *frag =
 	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
-    assert(frag == (void *)1 || frag->next == NULL);
-    return frag->data;
-}
-
-/* this dequeues a fragment from my ack queue */
-void INTERNAL *PtlInternalFragmentAckReceive(
-    void)
-{
-    fragment_hdr_t *frag =
-	(fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(ackQ);
     assert(frag == (void *)1 || frag->next == NULL);
     return frag->data;
 }

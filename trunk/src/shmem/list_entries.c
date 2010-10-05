@@ -22,7 +22,6 @@
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_LE.h"
-#include "ptl_internal_nemesis.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_CT.h"
 #include "ptl_internal_PT.h"
@@ -34,7 +33,7 @@
 #define LE_IN_USE	2
 
 typedef struct {
-    void *next;			// for nemesis
+    void *next;
     void *user_ptr;
     ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;

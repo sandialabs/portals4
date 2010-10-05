@@ -90,7 +90,7 @@ int API_FUNC PtlInit(
 	PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_COUNT", LARGE_FRAG_COUNT, 0);
 	assert(((SMALL_FRAG_COUNT * SMALL_FRAG_SIZE) +
 		(LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
-		(sizeof(NEMESIS_blocking_queue) * 2)) ==
+		sizeof(NEMESIS_blocking_queue)) ==
 	       per_proc_comm_buf_size);
 
 	comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));	// the one extra is for the collator
