@@ -157,7 +157,7 @@ int API_FUNC PtlNIInit(
 	*actual = nit_limits;
     }
     if ((options & PTL_NI_LOGICAL) != 0 && actual_mapping != NULL) {
-	for (int i = 0; i < map_size && i < num_siblings ; ++i) {
+	for (int i = 0; i < map_size ; ++i) {
 	    if (i >= num_siblings) {
 		actual_mapping[i].phys.nid = PTL_NID_ANY;	// aka "invalid"
 		actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
