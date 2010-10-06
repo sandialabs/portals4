@@ -30,6 +30,9 @@
 #include <signal.h>		       /* for kill() */
 #include <errno.h>		       /* for errno */
 
+#include <sys/types.h>
+#include <pwd.h>
+
 #ifdef HAVE_SYS_POSIX_SHM_H
 /* this is getting kinda idiotic */
 # define _DARWIN_C_SOURCE
@@ -183,12 +186,19 @@ int main(
 
     srandom(time(NULL));
     {
+        struct passwd* pw = getpwuid(geteuid());
+        if (NULL == pw) {
+            /* fix me */
+            perror("yod-> getpwuid()");
+            exit(EXIT_FAILURE);
+        }
+
 	long int r1 = random();
 	long int r2 = random();
 	long int r3 = random();
 	r1 = r2 = r3 = 0;	       // for testing
 	memset(shmname, 0, PSHMNAMLEN + 1);
-	snprintf(shmname, PSHMNAMLEN, "ptl4_%lx%lx%lx", r1, r2, r3);
+	snprintf(shmname, PSHMNAMLEN, "ptl4_%s_%lx%lx%lx", pw->pw_name, r1, r2, r3);
     }
     ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
     commsize =
@@ -200,6 +210,7 @@ int main(
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (shm_fd < 0) {
+        perror("yod-> shm_open");
 	if (shm_unlink(shmname) == -1) {
 	    perror("yod-> attempting to clean up; shm_unlink failed");
 	    exit(EXIT_FAILURE);
