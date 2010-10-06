@@ -85,16 +85,8 @@ int API_FUNC PtlNIInit(
 	VERBOSE_ERROR("ni_handle == NULL\n");
 	return PTL_ARG_INVALID;
     }
-    if (map_size > 0 && (desired_mapping == NULL && actual_mapping == NULL)) {
+    if (map_size > 0 && (actual_mapping == NULL)) {
 	return PTL_ARG_INVALID;
-    }
-    if ((options & PTL_NI_LOGICAL) != 0 && map_size != num_siblings) {
-	return PTL_SIZE_INVALID;
-    }
-    if ((options & PTL_NI_LOGICAL) == 0 &&
-	(map_size > 0 &&
-	 (desired_mapping != NULL || actual_mapping != NULL))) {
-	return PTL_NI_NOT_LOGICAL;
     }
 #endif
     if (iface == PTL_IFACE_DEFAULT) {
@@ -165,7 +157,7 @@ int API_FUNC PtlNIInit(
 	*actual = nit_limits;
     }
     if ((options & PTL_NI_LOGICAL) != 0 && actual_mapping != NULL) {
-	for (int i = 0; i < map_size; ++i) {
+	for (int i = 0; i < map_size && i < num_siblings ; ++i) {
 	    if (i >= num_siblings) {
 		actual_mapping[i].phys.nid = PTL_NID_ANY;	// aka "invalid"
 		actual_mapping[i].phys.pid = PTL_PID_ANY;	// aka "invalid"
