@@ -31,6 +31,4 @@ noinst_HEADERS =
 
 if BACKEND_IMPL_SHMEM
 include shmem/Makefile.inc
-else
-libportals_la_SOURCES += ib/main.c
 endif

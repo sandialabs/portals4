@@ -27,13 +27,19 @@ noinst_HEADERS += \
 		shmem/include/ptl_internal_DM.h \
 		shmem/include/ptl_internal_EQ.h \
 		shmem/include/ptl_internal_LE.h \
+		shmem/include/ptl_internal_ME.h \
 		shmem/include/ptl_internal_MD.h \
 		shmem/include/ptl_internal_PT.h \
+		shmem/include/ptl_internal_assert.h \
 		shmem/include/ptl_internal_atomic.h \
 		shmem/include/ptl_internal_commpad.h \
+		shmem/include/ptl_internal_error.h \
+		shmem/include/ptl_internal_fragments.h \
 		shmem/include/ptl_internal_handles.h \
+		shmem/include/ptl_internal_nemesis.h \
 		shmem/include/ptl_internal_nit.h \
+		shmem/include/ptl_internal_performatomic.h \
 		shmem/include/ptl_internal_pid.h \
 		shmem/include/ptl_internal_queues.h \
-		shmem/include/ptl_internal_nemesis.h \
+		shmem/include/ptl_internal_timer.h \
 		shmem/include/ptl_visibility.h

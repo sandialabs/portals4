@@ -5,8 +5,7 @@
 
 EXTRA_DIST = autogen.sh
 
-#SUBDIRS = doc include src test
-SUBDIRS = include src test
+SUBDIRS = doc include src test
 
 ACLOCAL_AMFLAGS = -I config
 
