@@ -167,40 +167,42 @@ int API_FUNC PtlNIInit(
 	    }
 	}
     }
-    PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
-    PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
-    PtlInternalEQNISetup(ni.s.ni);
-    if (options & PTL_NI_MATCHING) {
-	PtlInternalMENISetup(ni.s.ni, nit_limits.max_mes);
-    } else {
-	PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
+    /* BWB: FIX ME: This isn't thread safe */
+    if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1) == 0) {
+        PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
+        PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
+        PtlInternalEQNISetup(ni.s.ni);
+        if (options & PTL_NI_MATCHING) {
+            PtlInternalMENISetup(ni.s.ni, nit_limits.max_mes);
+        } else {
+            PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
+        }
+        /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
+        while ((tmp =
+                PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
+                                        (void *)1)) == (void *)1) ;
+        if (tmp == NULL) {
+            tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
+            if (tmp == NULL) {
+                nit.tables[ni.s.ni] = NULL;
+                return PTL_NO_SPACE;
+            }
+            nit.unexpecteds[ni.s.ni] =
+                calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
+            if (nit.unexpecteds[ni.s.ni] == NULL) {
+                free(tmp);
+                nit.tables[ni.s.ni] = NULL;
+                return PTL_NO_SPACE;
+            }
+            for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
+                PtlInternalPTInit(tmp + e);
+            }
+            nit.tables[ni.s.ni] = tmp;
+        }
+        assert(nit.tables[ni.s.ni] != NULL);
+        __sync_synchronize();	       // full memory fence
+        PtlInternalDMSetup();	       // This MUST happen AFTER the tables are set up
     }
-    /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
-    while ((tmp =
-	    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
-				    (void *)1)) == (void *)1) ;
-    if (tmp == NULL) {
-	tmp = calloc(nit_limits.max_pt_index + 1, sizeof(ptl_table_entry_t));
-	if (tmp == NULL) {
-	    nit.tables[ni.s.ni] = NULL;
-	    return PTL_NO_SPACE;
-	}
-	nit.unexpecteds[ni.s.ni] =
-	    calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
-	if (nit.unexpecteds[ni.s.ni] == NULL) {
-	    free(tmp);
-	    nit.tables[ni.s.ni] = NULL;
-	    return PTL_NO_SPACE;
-	}
-	for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
-	    PtlInternalPTInit(tmp + e);
-	}
-	nit.tables[ni.s.ni] = tmp;
-    }
-    assert(nit.tables[ni.s.ni] != NULL);
-    __sync_synchronize();	       // full memory fence
-    PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1);
-    PtlInternalDMSetup();	       // This MUST happen AFTER the tables are set up
     return PTL_OK;
 }
 

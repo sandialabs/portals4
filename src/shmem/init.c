@@ -16,6 +16,7 @@
 #include <string.h>		       /* for memset() */
 
 /* Internals */
+#include "portals4_runtime.h"
 #include "ptl_visibility.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
@@ -145,12 +146,13 @@ int API_FUNC PtlInit(
 	/* Release any concurrent initialization calls */
 	__sync_synchronize();
 	done_initializing = 1;
-	return PTL_OK;
+        runtime_init();
+        return PTL_OK;
     } else {
 	/* Should block until other inits finish. */
 	while (!done_initializing) ;
 	if (!failure)
-	    return PTL_OK;
+            return PTL_OK;
 	else
 	    goto exit_fail_fast;
     }
@@ -167,6 +169,8 @@ void API_FUNC PtlFini(
     void)
 {
     unsigned int lastone;
+
+    runtime_finalize();
     assert(init_ref_count > 0);
     if (init_ref_count == 0)
 	return;
