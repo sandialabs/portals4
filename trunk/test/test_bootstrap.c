@@ -1,4 +1,5 @@
 #include <portals4.h>
+#include <portals4_runtime.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -15,141 +16,45 @@
 	default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, ret, (unsigned int)__LINE__); abort(); break; \
     } } while (0)
 
-static void noFailures(
-    ptl_handle_ct_t ct,
-    ptl_size_t threshold)
-{
-    ptl_ct_event_t ct_data;
-    CHECK_RETURNVAL(PtlCTWait(ct, threshold, &ct_data));
-    assert(ct_data.failure == 0);
-}
-
 int main(
     int argc,
     char *argv[])
 {
-    ptl_handle_ni_t ni_physical, ni_logical;
+    ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
-    ptl_process_t COLLECTOR;
-    uint64_t rank, maxrank;
-    ptl_pt_index_t phys_pt_index, logical_pt_index;
+    ptl_pt_index_t logical_pt_index;
     ptl_process_t *dmapping, *amapping;
-    ptl_le_t le;
-    ptl_handle_le_t le_handle;
-    ptl_md_t md;
-    ptl_handle_md_t md_handle;
+    int my_rank, num_procs, i;
+    struct runtime_proc_t *rtprocs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    CHECK_RETURNVAL(PtlNIInit
-	   (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-	    PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical));
-    CHECK_RETURNVAL(PtlGetId(ni_physical, &myself));
-    CHECK_RETURNVAL(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &phys_pt_index));
-    assert(phys_pt_index == 0);
-    /* \begin{runtime_stuff} */
-    assert(getenv("PORTALS4_COLLECTOR_NID") != NULL);
-    assert(getenv("PORTALS4_COLLECTOR_PID") != NULL);
-    COLLECTOR.phys.nid = atoi(getenv("PORTALS4_COLLECTOR_NID"));
-    COLLECTOR.phys.pid = atoi(getenv("PORTALS4_COLLECTOR_PID"));
-    assert(getenv("PORTALS4_RANK") != NULL);
-    rank = atoi(getenv("PORTALS4_RANK"));
-    assert(getenv("PORTALS4_NUM_PROCS") != NULL);
-    maxrank = atoi(getenv("PORTALS4_NUM_PROCS")) - 1;
-    /* \end{runtime_stuff} */
-    dmapping = calloc(maxrank + 1, sizeof(ptl_process_t));
-    assert(dmapping != NULL);
-    amapping = calloc(maxrank + 1, sizeof(ptl_process_t));
-    assert(amapping != NULL);
-    if (myself.phys.pid == COLLECTOR.phys.pid) {
-	/* this will never happen in user code, because the collector stuff is
-	 * handled by Yod, I'm just putting the code here to show both sides */
+    my_rank = runtime_get_rank();
+    num_procs = runtime_get_size();
+    runtime_get_nidpid_map(&rtprocs);
 
-	/* set up a landing pad to collect & distribute everyone's information. */
-	md.start = le.start = dmapping;
-	md.length = le.length = (maxrank + 1) * sizeof(ptl_process_t);
-	le.ac_id.uid = PTL_UID_ANY;
-	le.options =
-	    PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_PUT |
-	    PTL_LE_EVENT_CT_GET | PTL_LE_EVENT_DISABLE;
-	assert(PtlCTAlloc(ni_physical, &le.ct_handle)
-	       == PTL_OK);
-	assert(PtlLEAppend
-	       (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
-		&le_handle) == PTL_OK);
-	/* wait for everyone to post to the mapping */
-	noFailures(le.ct_handle, maxrank + 1);
-	/* cleanup */
-	assert(PtlCTFree(le.ct_handle) == PTL_OK);
-	assert(PtlLEUnlink(le_handle) == PTL_OK);
-	/* now distribute the mapping */
-	md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK;
-	md.eq_handle = PTL_EQ_NONE;
-	assert(PtlCTAlloc(ni_physical, &md.ct_handle) ==
-	       PTL_OK);
-	assert(PtlMDBind(ni_physical, &md, &md_handle) == PTL_OK);
-	for (uint64_t r = 0; r <= maxrank; ++r) {
-	    assert(PtlPut
-		   (md_handle, 0, (maxrank + 1) * sizeof(ptl_process_t),
-		    PTL_CT_ACK_REQ, dmapping[r], 0, 0, 0, NULL, 0) == PTL_OK);
-	}
-	/* wait for the puts to finish */
-	noFailures(md.ct_handle, maxrank + 1);
-	/* cleanup */
-	assert(PtlCTFree(md.ct_handle) == PTL_OK);
-	assert(PtlMDRelease(md_handle) == PTL_OK);
-	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index));
-	assert(PtlNIFini(ni_physical) == PTL_OK);
-    } else {
-	/* for distributing my ID */
-	md.start = &myself;
-	md.length = sizeof(ptl_process_t);
-	md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_SEND;	// count sends, but don't trigger events
-	md.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
-	CHECK_RETURNVAL(PtlCTAlloc
-			(ni_physical, &md.ct_handle));
-	/* for receiving the mapping */
-	le.start = dmapping;
-	le.length = (maxrank + 1) * sizeof(ptl_process_t);
-	le.ac_id.uid = PTL_UID_ANY;
-	le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
-	CHECK_RETURNVAL(PtlCTAlloc
-			(ni_physical, &le.ct_handle));
-	/* post this now to avoid a race condition later */
-	CHECK_RETURNVAL(PtlLEAppend
-			(ni_physical, 0, le, PTL_PRIORITY_LIST, NULL,
-			 &le_handle));
-	/* now send my ID to the collector */
-	CHECK_RETURNVAL(PtlMDBind(ni_physical, &md, &md_handle));
-	CHECK_RETURNVAL(PtlPut
-			(md_handle, 0, sizeof(ptl_process_t),
-			 PTL_OC_ACK_REQ, COLLECTOR, phys_pt_index, 0,
-			 rank * sizeof(ptl_process_t), NULL, 0));
-	/* wait for the send to finish */
-	noFailures(md.ct_handle, 1);
-	/* cleanup */
-	CHECK_RETURNVAL(PtlMDRelease(md_handle));
-	CHECK_RETURNVAL(PtlCTFree(md.ct_handle));
-	/* wait to receive the mapping from the COLLECTOR */
-	noFailures(le.ct_handle, 1);
-	/* cleanup the counter */
-	CHECK_RETURNVAL(PtlCTFree(le.ct_handle));
-	/* feed the accumulated mapping into NIInit to create the rank-based
-	 * interface */
-	CHECK_RETURNVAL(PtlNIInit
-	       (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
-		PTL_PID_ANY, NULL, NULL, maxrank+1, dmapping, amapping,
-		&ni_logical));
-	CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-	for (int i=0; i<maxrank+1; ++i) {
-	    printf("%u's mapping[%i] = {%u,%u}\n", (unsigned int)myself.rank, i, amapping[i].phys.pid, amapping[i].phys.nid);
-	}
-	CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
-	assert(logical_pt_index == 0);
-	/* don't need this anymore, so free up resources */
-	CHECK_RETURNVAL(PtlPTFree(ni_physical, phys_pt_index));
-	CHECK_RETURNVAL(PtlNIFini(ni_physical));
+    dmapping = malloc(sizeof(ptl_process_t) * num_procs);
+    amapping = malloc(sizeof(ptl_process_t) * num_procs);
+
+    /* ask for inverse of what the runtime gave us (not that we'll get it) */
+    for (i = 0 ; i < num_procs ; ++i) {
+        dmapping[i].phys.nid = rtprocs[num_procs - i - 1].nid;
+        dmapping[i].phys.pid = rtprocs[num_procs - i - 1].pid;
     }
+
+    CHECK_RETURNVAL(PtlNIInit
+                    (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
+                     PTL_PID_ANY, NULL, NULL, num_procs, dmapping, amapping,
+                     &ni_logical));
+    CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
+    for (int i=0; i<num_procs; ++i) {
+        printf("%3u's requested[%03i] = {%3u,%3u} actual[%03i] = {%3u,%3u}\n",
+               (unsigned int)myself.rank, 
+               i, dmapping[i].phys.nid, dmapping[i].phys.pid,
+               i, amapping[i].phys.nid, amapping[i].phys.pid);
+    }
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
+    assert(logical_pt_index == 0);
 
     /* now I can communicate between ranks with ni_logical */
     /* ... do stuff ... */

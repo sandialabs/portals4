@@ -16,7 +16,7 @@ libportals_la_SOURCES += \
 			 shmem/nemesis.c \
 			 shmem/queues.c \
 			 shmem/perform_atomic.c \
-			 shmem/barrier.c \
+			 shmem/runtime.c \
 			 shmem/init.c
 
 yod_SOURCES += shmem/yod.c
