@@ -210,13 +210,14 @@ int main(
     /* Establish the communication pad */
     shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (shm_fd < 0) {
-        perror("yod-> shm_open");
-	if (shm_unlink(shmname) == -1) {
-	    perror("yod-> attempting to clean up; shm_unlink failed");
-	    exit(EXIT_FAILURE);
-	}
-	shm_fd =
-	    shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        if (EEXIST == errno) {
+            if (shm_unlink(shmname) == -1) {
+                perror("yod-> shm_unlink of existing file failed");
+                exit(EXIT_FAILURE);
+            }
+            shm_fd =
+                shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        }
     }
     if (shm_fd >= 0) {
 	/* pre-allocate the shared memory ... necessary on BSD */
@@ -290,7 +291,7 @@ int main(
 	EXPORT_ENV_NUM("PORTALS4_RANK", c);
 	if ((pids[c] = fork()) == 0) {
 	    /* child */
-	    execv(argv[optind], argv + optind);
+	    execvp(argv[optind], argv + optind);
 	    perror("yod-> child execv failed!");
 	    exit(EXIT_FAILURE);
 	} else if (pids[c] == -1) {
@@ -394,17 +395,13 @@ int main(
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	int perr;
 	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
-	    char buf[200];
-	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr,
-		    buf);
+                    strerror(perr));
 	    abort();
 	}
 	if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
-	    char buf[200];
-	    strerror_r(perr, buf, 200);
 	    fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n",
-		    perr, buf);
+		    perr, strerror(perr));
 	    abort();
 	}
 #else
