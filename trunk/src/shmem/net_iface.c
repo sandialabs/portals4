@@ -50,7 +50,7 @@ int API_FUNC PtlNIInit(
     ptl_ni_limits_t * desired,
     ptl_ni_limits_t * actual,
     ptl_size_t map_size,
-    ptl_process_t * desired_mapping,
+    Q_UNUSED ptl_process_t * desired_mapping,
     ptl_process_t * actual_mapping,
     ptl_handle_ni_t * ni_handle)
 {

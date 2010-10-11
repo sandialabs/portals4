@@ -281,8 +281,8 @@ int API_FUNC PtlEQFree(
 	    e->event.tevent.remote_offset = ie.event.tevent.remote_offset; \
 	    e->event.tevent.pt_index = ie.event.tevent.pt_index; \
 	    e->event.tevent.ni_fail_type = ie.event.tevent.ni_fail_type; \
-	    e->event.tevent.atomic_operation = ie.event.tevent.atomic_operation; \
-	    e->event.tevent.atomic_type = ie.event.tevent.atomic_type; \
+	    e->event.tevent.atomic_operation = (ptl_op_t) ie.event.tevent.atomic_operation; \
+	    e->event.tevent.atomic_type = (ptl_datatype_t) ie.event.tevent.atomic_type; \
 	    break; \
 	case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
 	    e->event.ievent = ie.event.ievent; \
@@ -534,9 +534,9 @@ void INTERNAL PtlInternalEQPush(
 	    eq->ring[writeidx.s.offset].event.tevent.ni_fail_type =
 		event->event.tevent.ni_fail_type;
 	    eq->ring[writeidx.s.offset].event.tevent.atomic_operation =
-		event->event.tevent.atomic_operation;
+		(uint8_t) event->event.tevent.atomic_operation;
 	    eq->ring[writeidx.s.offset].event.tevent.atomic_type =
-		event->event.tevent.atomic_type;
+		(uint8_t) event->event.tevent.atomic_type;
 	    break;
 	case PTL_EVENT_REPLY:
 	case PTL_EVENT_SEND:
