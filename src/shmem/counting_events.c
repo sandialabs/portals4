@@ -148,6 +148,7 @@ void INTERNAL PtlInternalCTNISetup(
 	assert(ct_event_refcounts[ni] == NULL);
 	ct_event_refcounts[ni] = calloc(limit, sizeof(uint64_t));
 	assert(ct_event_refcounts[ni] != NULL);
+	__sync_synchronize();
 	ct_events[ni] = tmp;
     }
 }
