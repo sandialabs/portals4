@@ -94,7 +94,7 @@ static void PtlInternalPerformDelivery(
 	    memcpy(dest, src, nbytes);
 	    break;
 	case HDR_TYPE_SWAP:
-	    PtlInternalPerformAtomicArg(src, dest + 8,
+	    PtlInternalPerformAtomicArg(src, ((char*)dest) + 8,
 					*(uint64_t *) hdr->data, nbytes,
 					hdr->info.swap.operation,
 					hdr->info.swap.datatype);

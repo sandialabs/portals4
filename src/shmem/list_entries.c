@@ -100,7 +100,7 @@ static void PtlInternalPerformDelivery(
 	    memcpy(dest, src, nbytes);
 	    break;
 	case HDR_TYPE_SWAP:
-	    PtlInternalPerformAtomicArg(src, dest + 8,
+	    PtlInternalPerformAtomicArg(src, ((char*) dest) + 8,
 					*(uint64_t *) hdr->data, nbytes,
 					hdr->info.swap.operation,
 					hdr->info.swap.datatype);
@@ -645,7 +645,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
 	} else {
 	    assert(hdr->length + hdr->dest_offset <= mlength);
 	    if (mlength > 0) {
-		report_this_start = le.start + hdr->dest_offset;
+		report_this_start = (char*)le.start + hdr->dest_offset;
 		memcpy(report_this_start, hdr->data, mlength);
 	    } else {
 		report_this_start = NULL;
