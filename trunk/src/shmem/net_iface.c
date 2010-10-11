@@ -167,7 +167,7 @@ int API_FUNC PtlNIInit(
 	    }
 	}
     }
-    /* BWB: FIX ME: This isn't thread safe */
+    /* BWB: FIX ME: This isn't thread safe (parallel NIInit calls may return too quickly) */
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1) == 0) {
         PtlInternalCTNISetup(ni.s.ni, nit_limits.max_cts);
         PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
@@ -197,10 +197,10 @@ int API_FUNC PtlNIInit(
             for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
                 PtlInternalPTInit(tmp + e);
             }
+	    __sync_synchronize();	       // full memory fence
             nit.tables[ni.s.ni] = tmp;
         }
         assert(nit.tables[ni.s.ni] != NULL);
-        __sync_synchronize();	       // full memory fence
         PtlInternalDMSetup();	       // This MUST happen AFTER the tables are set up
     }
     return PTL_OK;
