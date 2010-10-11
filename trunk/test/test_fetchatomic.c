@@ -75,6 +75,7 @@ int main(
 		     PTL_PID_ANY, NULL, NULL, num_procs, NULL, amapping,
 		     &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
+    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc
 		    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
 		     &logical_pt_index));

@@ -47,7 +47,8 @@ int main(
                      PTL_PID_ANY, NULL, NULL, num_procs, dmapping, amapping,
                      &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    for (int i=0; i<num_procs; ++i) {
+    assert(myself.rank == my_rank);
+    for (i=0; i<num_procs; ++i) {
         printf("%3u's requested[%03i] = {%3u,%3u} actual[%03i] = {%3u,%3u}\n",
                (unsigned int)myself.rank, 
                i, dmapping[i].phys.nid, dmapping[i].phys.pid,
