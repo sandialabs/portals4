@@ -51,6 +51,7 @@ void INTERNAL PtlInternalMDNISetup(
     if (tmp == NULL) {
 	tmp = calloc(limit, sizeof(ptl_internal_md_t));
 	assert(tmp != NULL);
+	__sync_synchronize();
 	mds[ni] = tmp;
     }
 }
