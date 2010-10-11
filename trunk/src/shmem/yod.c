@@ -395,13 +395,27 @@ int main(
 #ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	int perr;
 	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
+#ifdef _GNU_SOURCE
+	    char optional_buf[200];
+	    char * buf = strerror_r(perr, optional_buf, 200);
+#else
+	    char buf[200];
+	    strerror_r(perr, buf, 200);
+#endif
 	    fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr,
-                    strerror(perr));
+                    buf);
 	    abort();
 	}
 	if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
+#ifdef _GNU_SOURCE
+	    char optional_buf[200];
+	    char * buf = strerror_r(perr, optional_buf, 200);
+#else
+	    char buf[200];
+	    strerror_r(perr, buf, 200);
+#endif
 	    fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n",
-		    perr, strerror(perr));
+		    perr, buf);
 	    abort();
 	}
 #else
