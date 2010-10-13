@@ -28,12 +28,14 @@ typedef struct {
 
 typedef struct {
     NEMESIS_queue q;
-#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+#ifndef USE_HARD_POLLING
+# ifdef HAVE_PTHREAD_SHMEM_LOCKS
     volatile uint32_t frustration;
     pthread_cond_t trigger;
     pthread_mutex_t trigger_lock;
-#else
+# else
     int pipe[2];
+# endif
 #endif
 } NEMESIS_blocking_queue;
 

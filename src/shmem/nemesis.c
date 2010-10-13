@@ -23,7 +23,7 @@ void INTERNAL PtlInternalNEMESISBlockingInit(
     NEMESIS_blocking_queue * q)
 {
     PtlInternalNEMESISInit(&q->q);
-#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+#if defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
     q->frustration = 0;
     {
 	pthread_mutexattr_t ma;
@@ -56,7 +56,8 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     assert((f == (void *)1) || (f->next == NULL));
     PtlInternalNEMESISOffsetEnqueue(&q->q, f);
     /* awake waiter */
-#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+#ifndef USE_HARD_POLLING
+# ifdef HAVE_PTHREAD_SHMEM_LOCKS
     if (q->frustration) {
 	ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
 	if (q->frustration) {
@@ -65,22 +66,24 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
 	}
 	ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
     }
-#else
+# else
     ptl_assert(write(q->pipe[1], "", 1), 1);
+# endif
 #endif
 }
 
 NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_blocking_queue * q)
 {
-#ifndef HAVE_PTHREAD_SHMEM_LOCKS
+#if ! defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
     char junk;
     ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
     NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
     if (retval == NULL) {
 	while (q->q.head == NULL) {
-#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+#ifndef USE_HARD_POLLING
+# ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	    if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
 		ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
 		if (q->frustration > 1000) {
@@ -89,8 +92,9 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 		}
 		ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
 	    }
-#else
+# else
 	    ptl_assert(read(q->pipe[0], &junk, 1), 1);
+# endif
 #endif
 	}
 	retval = PtlInternalNEMESISOffsetDequeue(&q->q);
