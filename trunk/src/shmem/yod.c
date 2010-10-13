@@ -238,7 +238,7 @@ int main(
 	    exit(EXIT_FAILURE);
 	}
 	memset(commpad, 0, buffsize);
-#ifndef HAVE_PTHREAD_SHMEM_LOCKS
+#if ! defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
 	for (size_t i = 0; i <= count; ++i) {
 	    char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
 	    NEMESIS_blocking_queue *q1 =
@@ -389,36 +389,37 @@ int main(
     ptl_assert(PtlPTFree(ni_physical, 0), PTL_OK);
     ptl_assert(PtlNIFini(ni_physical), PTL_OK);
     PtlFini();
+#ifndef USE_HARD_POLLING
     for (size_t i = 0; i <= count; ++i) {
 	char *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
 	NEMESIS_blocking_queue *q1 = (NEMESIS_blocking_queue *) remote_pad;
-#ifdef HAVE_PTHREAD_SHMEM_LOCKS
+# ifdef HAVE_PTHREAD_SHMEM_LOCKS
 	int perr;
 	if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
-#ifdef _GNU_SOURCE
+#  ifdef _GNU_SOURCE
 	    char optional_buf[200];
 	    char * buf = strerror_r(perr, optional_buf, 200);
-#else
+#  else
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-#endif
+#  endif
 	    fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr,
                     buf);
 	    abort();
 	}
 	if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
-#ifdef _GNU_SOURCE
+#  ifdef _GNU_SOURCE
 	    char optional_buf[200];
 	    char * buf = strerror_r(perr, optional_buf, 200);
-#else
+#  else
 	    char buf[200];
 	    strerror_r(perr, buf, 200);
-#endif
+#  endif
 	    fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n",
 		    perr, buf);
 	    abort();
 	}
-#else
+# else
 	if (close(q1->pipe[0]) != 0) {
 	    perror("yod-> closing queue1 pipe[0]");
 	    abort();
@@ -427,8 +428,9 @@ int main(
 	    perror("yod-> closing queue1 pipe[1]");
 	    abort();
 	}
-#endif
+# endif
     }
+#endif
     if (munmap(commpad, buffsize) != 0) {
 	perror("yod-> munmap failed"); /* technically non-fatal */
     }

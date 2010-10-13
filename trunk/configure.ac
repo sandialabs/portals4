@@ -48,9 +48,14 @@ AS_IF([test "x$enable_picky" == x],
 AC_ARG_ENABLE([arg-checking],
 			  [AS_HELP_STRING([--disable-arg-checking],
 							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
+AC_ARG_ENABLE([hard-polling],
+			  [AS_HELP_STRING([--enable-hard-polling],
+							  [Forces hard polls on inter-process communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
 AC_ARG_ENABLE([fast],
 			  [AS_HELP_STRING([--enable-fast],
 							  [Sets the available configuration options to run as quickly as possible. This makes the assumption and CAN result in bad things happening.])])
+AS_IF([test "x$enable_hard_polling" == xyes],
+	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
 AS_IF([test "x$enable_fast" == xyes],
 	  [CFLAGS="-O3"
 	   CPPFLAGS="-DNDEBUG"
@@ -180,7 +185,10 @@ SANDIA_CHECK_8ALIGNED_CALLOC
 SANDIA_CHECK_16ALIGNED_MALLOC
 SANDIA_CHECK_16ALIGNED_CALLOC
 SANDIA_CHECK_WORKING_VALLOC
-SANDIA_CHECK_PTHREAD_PROCESS_SHARED([AC_DEFINE([HAVE_PTHREAD_SHMEM_LOCKS],[1],[Define if PTHREAD_PROCESS_SHARED attribute on mutexes and cond variables works])])
+AS_IF([test "x$enable_hard_polling" != xyes],
+	  [SANDIA_CHECK_PTHREAD_PROCESS_SHARED([AC_DEFINE([HAVE_PTHREAD_SHMEM_LOCKS],
+										   			  [1],
+													  [Define if PTHREAD_PROCESS_SHARED attribute on mutexes and cond variables works])])])
 
 AC_CACHE_SAVE
 
