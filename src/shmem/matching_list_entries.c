@@ -304,7 +304,7 @@ int API_FUNC PtlMEAppend(
     Qentry->me_handle = meh;
     Qentry->local_offset = 0;
     Qentry->dont_ignore_bits = ~me.ignore_bits;
-    *me_handle = meh.a.me;
+    *me_handle = meh.a;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);

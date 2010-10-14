@@ -111,7 +111,7 @@ int API_FUNC PtlNIInit(
 	    return PTL_ARG_INVALID;
 #endif
     }
-    *ni_handle = ni.a.ni;
+    *ni_handle = ni.a;
     if (desired != NULL &&
 	PtlInternalAtomicCas32(&nit_limits_init, 0, 1) == 0) {
 	/* nit_limits_init now marked as "being initialized" */

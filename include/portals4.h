@@ -8,7 +8,7 @@
 #ifndef PORTALS4_H
 #define PORTALS4_H
 
-#include <stdint.h> // assume C99, for uint64_t
+#include <stdint.h> /* assume C99, for uint64_t */
 
 /*****************
  * Return Values *
@@ -32,7 +32,7 @@ enum ptl_retvals {
     PTL_PT_FULL,	/*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,	/*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE,	/*!< Portal table index is busy. */
-    PTL_SIZE_INVALID,	/*!< The requested map size is invalid. */
+    PTL_SIZE_INVALID	/*!< The requested map size is invalid. */
 };
 
 /**************
@@ -71,25 +71,14 @@ typedef int		ptl_sr_value_t; /*!< Signed integral type that defines
 					  the types of values held in status
 					  registers. */
 /* Handles */
-typedef uint32_t	ptl_handle_ni_t; /*!< A network interface handle */
-typedef uint32_t	ptl_handle_eq_t; /*!< An event queue handle */
-typedef uint32_t	ptl_handle_ct_t; /*!< A counting type event handle */
-typedef uint32_t	ptl_handle_md_t; /*!< A memory descriptor handle */
-typedef uint32_t	ptl_handle_le_t; /*!< A list entry handle */
-typedef uint32_t	ptl_handle_me_t; /*!< A match list entry handle */
-/*!
- * @union ptl_handle_any_t
- * @brief The generic handle type.
- * This union can represent any type of handle.
- */
-typedef union {
-    ptl_handle_ni_t ni; /*!< A network interface handle */
-    ptl_handle_eq_t eq; /*!< An event queue handle */
-    ptl_handle_ct_t ct; /*!< A counting type event handle */
-    ptl_handle_md_t md; /*!< A memory descriptor handle */
-    ptl_handle_le_t le; /*!< A list entry handle */
-    ptl_handle_me_t me; /*!< A match list entry handle */
-}			ptl_handle_any_t;
+typedef uint32_t        ptl_handle_any_t; /*!< generic handle */
+typedef ptl_handle_any_t	ptl_handle_ni_t; /*!< A network interface handle */
+typedef ptl_handle_any_t	ptl_handle_eq_t; /*!< An event queue handle */
+typedef ptl_handle_any_t	ptl_handle_ct_t; /*!< A counting type event handle */
+typedef ptl_handle_any_t	ptl_handle_md_t; /*!< A memory descriptor handle */
+typedef ptl_handle_any_t	ptl_handle_le_t; /*!< A list entry handle */
+typedef ptl_handle_any_t	ptl_handle_me_t; /*!< A match list entry handle */
+
 /*!
  * @union ptl_process_t
  * @brief A union for representing processes either physically or logically.
@@ -921,7 +910,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
     PTL_OVERFLOW, /*!< The overflow list associated with a portal table entry. */
-    PTL_PROBE_ONLY, /*!< Do not attach to a list. Use the LE to probe the
+    PTL_PROBE_ONLY /*!< Do not attach to a list. Use the LE to probe the
 		      overflow list, without consuming an item in the list and
 		      without being attached anywhere. */
 } ptl_list_t;

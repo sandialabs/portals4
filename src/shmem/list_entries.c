@@ -282,7 +282,7 @@ int API_FUNC PtlLEAppend(
     }
     Qentry->user_ptr = user_ptr;
     Qentry->le_handle = leh;
-    *le_handle = leh.a.le;
+    *le_handle = leh.a;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
