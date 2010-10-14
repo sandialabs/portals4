@@ -192,12 +192,12 @@ void API_FUNC runtime_barrier(
     md.options = PTL_MD_EVENT_DISABLE;
     le.ct_handle = md.ct_handle = PTL_CT_NONE;
     md.eq_handle = PTL_EQ_NONE;
-    ptl_assert(PtlCTAlloc(ni.a.ni, &le.ct_handle), PTL_OK);
+    ptl_assert(PtlCTAlloc(ni.a, &le.ct_handle), PTL_OK);
     /* post my sensor */
-    ptl_assert(PtlLEAppend(ni.a.ni, 0, le, PTL_PRIORITY_LIST, NULL, &leh),
+    ptl_assert(PtlLEAppend(ni.a, 0, le, PTL_PRIORITY_LIST, NULL, &leh),
 	   PTL_OK);
     /* prepare my messenger */
-    ptl_assert(PtlMDBind(ni.a.ni, &md, &mdh), PTL_OK);
+    ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
     /* alert COLLECTOR of my presence */
     ptl_assert(PtlPut(mdh, 0, 0, PTL_CT_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0),
 	   PTL_OK);

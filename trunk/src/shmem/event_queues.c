@@ -216,12 +216,12 @@ int API_FUNC PtlEQAlloc(
 		    ni_eqs[offset].lagging_tail = ni_eqs[offset].leading_tail;
 		    ni_eqs[offset].size = count;
 		    ni_eqs[offset].ring = tmp;
-		    *eq_handle = eqh.a.eq;
+		    *eq_handle = eqh.a;
 		    return PTL_OK;
 		}
 	    }
 	}
-	*eq_handle = PTL_INVALID_HANDLE.eq;
+	*eq_handle = PTL_INVALID_HANDLE;
 	return PTL_NO_SPACE;
     }
 }

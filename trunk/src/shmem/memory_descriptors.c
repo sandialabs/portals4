@@ -174,10 +174,10 @@ int API_FUNC PtlMDBind(
 	}
     }
     if (offset >= nit_limits.max_mds) {
-	*md_handle = PTL_INVALID_HANDLE.md;
+	*md_handle = PTL_INVALID_HANDLE;
 	return PTL_NO_SPACE;
     } else {
-	*md_handle = mdh.a.md;
+	*md_handle = mdh.a;
 	return PTL_OK;
     }
 }

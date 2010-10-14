@@ -251,12 +251,12 @@ int API_FUNC PtlCTAlloc(
 		cts[offset].success = 0;
 		cts[offset].failure = 0;
 		ct.s.code = offset;
-		*ct_handle = ct.a.ct;
+		*ct_handle = ct.a;
 		return PTL_OK;
 	    }
 	}
     }
-    *ct_handle = PTL_INVALID_HANDLE.ct;
+    *ct_handle = PTL_INVALID_HANDLE;
     return PTL_NO_SPACE;
 }
 
