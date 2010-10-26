@@ -1,4 +1,4 @@
-# vim:ft=make
+# vim:ft=automake
 
 AM_CPPFLAGS += -I$(top_srcdir)/src/shmem/include
 
@@ -18,6 +18,11 @@ libportals_la_SOURCES += \
 			 shmem/perform_atomic.c \
 			 shmem/runtime.c \
 			 shmem/init.c
+
+if USE_PAPI
+libportals_la_SOURCES += \
+			 shmem/papi.c
+endif
 
 yod_SOURCES += shmem/yod.c
 yod_LDADD = libportals.la

@@ -24,6 +24,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_nemesis.h"
+#include "ptl_internal_papi.h"
 
 volatile char *comm_pad = NULL;
 size_t num_siblings = 0;
@@ -127,6 +128,9 @@ int API_FUNC PtlInit(
 	/* Locate and initialize my fragments memory (beginning with a pointer to headers) */
 	PtlInternalFragmentSetup((comm_pad + firstpagesize +
 				  (per_proc_comm_buf_size * proc_number)));
+#ifdef HAVE_LIBPAPI
+	PtlInternalPAPIInit();
+#endif
 
 	/**************************************************************************
 	 * Can Now Announce My Presence
@@ -177,6 +181,9 @@ void API_FUNC PtlFini(
     lastone = PtlInternalAtomicInc(&init_ref_count, -1);
     if (lastone == 1) {
 	/* Clean up */
+#ifdef HAVE_LIBPAPI
+	PtlInternalPAPITeardown();
+#endif
 	//printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
 	ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
 	comm_pad = NULL;
