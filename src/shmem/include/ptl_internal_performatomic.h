@@ -17,3 +17,4 @@ void PtlInternalPerformAtomicArg(
     ptl_datatype_t dt);
 
 #endif
+/* vim:set expandtab */

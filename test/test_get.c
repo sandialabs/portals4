@@ -25,10 +25,10 @@ static void noFailures(
     ptl_ct_event_t ct_data;
     CHECK_RETURNVAL(PtlCTWait(ct, threshold, &ct_data));
     if (ct_data.failure != 0) {
-	fprintf(stderr, "ct_data reports failure!!!!!!! {%u, %u} line %u\n",
-		(unsigned int)ct_data.success, (unsigned int)ct_data.failure,
-		(unsigned int)line);
-	abort();
+        fprintf(stderr, "ct_data reports failure!!!!!!! {%u, %u} line %u\n",
+                (unsigned int)ct_data.success, (unsigned int)ct_data.failure,
+                (unsigned int)line);
+        abort();
     }
 }
 
@@ -71,14 +71,13 @@ int main(
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-		     PTL_PID_ANY, NULL, NULL, num_procs, NULL, amapping,
-		     &ni_logical));
+                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
+                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc
-		    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-		     &logical_pt_index));
+                    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                     &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeef;
@@ -93,8 +92,8 @@ int main(
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
     CHECK_RETURNVAL(APPEND
-		    (ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
-		     &value_e_handle));
+                    (ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
+                     &value_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -113,18 +112,18 @@ int main(
 
     /* read rank 0's value */
     {
-	ptl_ct_event_t ctc;
-	ptl_process_t r0 = {.rank=0};
-	CHECK_RETURNVAL(PtlGet
-			(read_md_handle, 0, sizeof(uint64_t), r0,
-			 logical_pt_index, 1, NULL, 0));
-	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
-	assert(ctc.failure == 0);
+        ptl_ct_event_t ctc;
+        ptl_process_t r0 = {.rank = 0 };
+        CHECK_RETURNVAL(PtlGet
+                        (read_md_handle, 0, sizeof(uint64_t), r0,
+                         logical_pt_index, 1, NULL, 0));
+        CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
+        assert(ctc.failure == 0);
     }
     printf("%i readval: %llx\n", (int)myself.rank,
-	   (unsigned long long)readval);
+           (unsigned long long)readval);
     if (myself.rank == 0) {
-	noFailures(value_e.ct_handle, num_procs, __LINE__);
+        noFailures(value_e.ct_handle, num_procs, __LINE__);
     }
     CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
@@ -138,3 +137,4 @@ int main(
 
     return 0;
 }
+/* vim:set expandtab */

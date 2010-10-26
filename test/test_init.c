@@ -2,7 +2,9 @@
 
 #include <assert.h>
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     assert(PtlInit() == PTL_OK);
     assert(PtlInit() == PTL_OK);
@@ -10,3 +12,4 @@ int main(int argc, char *argv[])
     PtlFini();
     return 0;
 }
+/* vim:set expandtab */

@@ -539,3 +539,4 @@ void INTERNAL PtlInternalPerformAtomicArg(
             *(int *)0 = 0;
     }
 }
+/* vim:set expandtab */

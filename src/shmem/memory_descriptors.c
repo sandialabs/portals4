@@ -248,3 +248,4 @@ void INTERNAL PtlInternalMDCleared(
         PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
 }
+/* vim:set expandtab */

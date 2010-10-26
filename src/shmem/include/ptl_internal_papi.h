@@ -17,3 +17,4 @@ void INTERNAL PtlInternalPAPIDoneC(
     int savept);
 
 #endif
+/* vim:set expandtab */

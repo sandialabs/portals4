@@ -37,7 +37,7 @@ int main(
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     /* ask for inverse of what the runtime gave us (not that we'll get it) */
-    for (i = 0 ; i < num_procs ; ++i) {
+    for (i = 0; i < num_procs; ++i) {
         dmapping[i].phys.nid = rtprocs[num_procs - i - 1].nid;
         dmapping[i].phys.pid = rtprocs[num_procs - i - 1].pid;
     }
@@ -48,13 +48,14 @@ int main(
                      &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(myself.rank == my_rank);
-    for (i=0; i<num_procs; ++i) {
+    for (i = 0; i < num_procs; ++i) {
         printf("%3u's requested[%03i] = {%3u,%3u} actual[%03i] = {%3u,%3u}\n",
-               (unsigned int)myself.rank, 
-               i, dmapping[i].phys.nid, dmapping[i].phys.pid,
-               i, amapping[i].phys.nid, amapping[i].phys.pid);
+               (unsigned int)myself.rank, i, dmapping[i].phys.nid,
+               dmapping[i].phys.pid, i, amapping[i].phys.nid,
+               amapping[i].phys.pid);
     }
-    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
+    CHECK_RETURNVAL(PtlPTAlloc
+                    (ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
     assert(logical_pt_index == 0);
 
     /* now I can communicate between ranks with ni_logical */
@@ -70,3 +71,4 @@ int main(
 
     return 0;
 }
+/* vim:set expandtab */
