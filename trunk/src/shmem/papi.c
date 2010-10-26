@@ -321,3 +321,4 @@ void INTERNAL PtlInternalPAPIDoneC(
     }
     ++papi_measurements[func][savept];
 }
+/* vim:set expandtab */

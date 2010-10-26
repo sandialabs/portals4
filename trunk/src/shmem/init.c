@@ -188,3 +188,4 @@ void API_FUNC PtlFini(
         comm_pad = NULL;
     }
 }
+/* vim:set expandtab */

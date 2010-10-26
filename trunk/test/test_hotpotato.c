@@ -59,14 +59,13 @@ int main(
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-		     PTL_PID_ANY, NULL, NULL, num_procs, NULL, amapping,
-		     &ni_logical));
+                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
+                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc
-		    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-		     &logical_pt_index));
+                    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                     &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     potato_catcher.start = &potato;
@@ -80,8 +79,8 @@ int main(
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_catcher.ct_handle));
     CHECK_RETURNVAL(APPEND
-		    (ni_logical, logical_pt_index, potato_catcher, PTL_PRIORITY_LIST, NULL,
-		     &potato_catcher_handle));
+                    (ni_logical, logical_pt_index, potato_catcher,
+                     PTL_PRIORITY_LIST, NULL, &potato_catcher_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -91,72 +90,76 @@ int main(
     /* set up the potato launcher */
     potato_launcher.start = &potato;
     potato_launcher.length = sizeof(potato);
-    potato_launcher.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK | PTL_MD_EVENT_CT_SEND;
-    potato_launcher.eq_handle = PTL_EQ_NONE;	// i.e. don't queue send events
+    potato_launcher.options =
+        PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK | PTL_MD_EVENT_CT_SEND;
+    potato_launcher.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_launcher.ct_handle));
     CHECK_RETURNVAL(PtlMDBind
-		    (ni_logical, &potato_launcher, &potato_launcher_handle));
+                    (ni_logical, &potato_launcher, &potato_launcher_handle));
 
     /* rank 0 starts the potato going */
     if (myself.rank == 0) {
-	ptl_process_t nextrank;
-	nextrank.rank = myself.rank + 1;
-	nextrank.rank *= (nextrank.rank <= num_procs - 1);
-	gettimeofday(&start, NULL);
-	CHECK_RETURNVAL(PtlPut
-			(potato_launcher_handle, 0, potato_launcher.length,
-			 PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
-			 NULL, 1));
-	CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
-	{
-	    ptl_ct_event_t ctc = { 0, 0 };
-	    CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
-	}
+        ptl_process_t nextrank;
+        nextrank.rank = myself.rank + 1;
+        nextrank.rank *= (nextrank.rank <= num_procs - 1);
+        gettimeofday(&start, NULL);
+        CHECK_RETURNVAL(PtlPut
+                        (potato_launcher_handle, 0, potato_launcher.length,
+                         PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
+                         NULL, 1));
+        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
+        {
+            ptl_ct_event_t ctc = { 0, 0 };
+            CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
+        }
     }
 
-    {				       /* the potato-passing loop */
-	size_t waitfor;
-	ptl_ct_event_t ctc;
-	ptl_process_t nextrank;
-	nextrank.rank = myself.rank + 1;
-	nextrank.rank *= (nextrank.rank <= num_procs - 1);
-	for (waitfor = 1; waitfor <= LOOPS; ++waitfor) {
-	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor, &ctc));	// wait for potato
-	    assert(ctc.failure == 0);
-	    assert(ctc.success == waitfor);
-	    /* I have the potato! */
-	    ++potato;
-	    if (potato < LOOPS*(num_procs)) { // otherwise, the recipient may have exited
-		/* Bomb's away! */
-		CHECK_RETURNVAL(PtlPut
-			(potato_launcher_handle, 0,
-			 potato_launcher.length, PTL_OC_ACK_REQ, nextrank,
-			 logical_pt_index, 3, 0, NULL, 2));
-	    }
-	}
-	// make sure that last send completed before exiting
-	CHECK_RETURNVAL(PtlCTWait
-			(potato_launcher.ct_handle, (LOOPS-1)*2, &ctc));
-	assert(ctc.failure == 0);
-	if (myself.rank == 0) {
-	    // wait for the last potato
-	    CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor - 1, &ctc));
-	    assert(ctc.failure == 0);
-	    printf("Final value of potato = %i\n", potato);
-	}
+    {                                  /* the potato-passing loop */
+        size_t waitfor;
+        ptl_ct_event_t ctc;
+        ptl_process_t nextrank;
+        nextrank.rank = myself.rank + 1;
+        nextrank.rank *= (nextrank.rank <= num_procs - 1);
+        for (waitfor = 1; waitfor <= LOOPS; ++waitfor) {
+            CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor, &ctc));        // wait for potato
+            assert(ctc.failure == 0);
+            assert(ctc.success == waitfor);
+            /* I have the potato! */
+            ++potato;
+            if (potato < LOOPS * (num_procs)) { // otherwise, the recipient may have exited
+                /* Bomb's away! */
+                CHECK_RETURNVAL(PtlPut
+                                (potato_launcher_handle, 0,
+                                 potato_launcher.length, PTL_OC_ACK_REQ,
+                                 nextrank, logical_pt_index, 3, 0, NULL, 2));
+            }
+        }
+        // make sure that last send completed before exiting
+        CHECK_RETURNVAL(PtlCTWait
+                        (potato_launcher.ct_handle, (LOOPS - 1) * 2, &ctc));
+        assert(ctc.failure == 0);
+        if (myself.rank == 0) {
+            // wait for the last potato
+            CHECK_RETURNVAL(PtlCTWait
+                            (potato_catcher.ct_handle, waitfor - 1, &ctc));
+            assert(ctc.failure == 0);
+            printf("Final value of potato = %i\n", potato);
+        }
     }
     if (myself.rank == 0) {
-	double accumulate = 0.0;
-	gettimeofday(&stop, NULL);
-	accumulate =
-	    (stop.tv_sec + stop.tv_usec * 1e-6) - (start.tv_sec +
-		    start.tv_usec * 1e-6);
-	/* calculate the average time waiting */
-	printf("Total time: %g secs\n", accumulate);
-	accumulate /= LOOPS;
-	printf("Average time around the loop: %g microseconds\n", accumulate*1e6);
-	accumulate /= num_procs;
-	printf("Average catch-to-toss latency: %g microseconds\n", accumulate*1e6);
+        double accumulate = 0.0;
+        gettimeofday(&stop, NULL);
+        accumulate =
+            (stop.tv_sec + stop.tv_usec * 1e-6) - (start.tv_sec +
+                                                   start.tv_usec * 1e-6);
+        /* calculate the average time waiting */
+        printf("Total time: %g secs\n", accumulate);
+        accumulate /= LOOPS;
+        printf("Average time around the loop: %g microseconds\n",
+               accumulate * 1e6);
+        accumulate /= num_procs;
+        printf("Average catch-to-toss latency: %g microseconds\n",
+               accumulate * 1e6);
     }
 
     /* cleanup */
@@ -172,3 +175,4 @@ int main(
 
     return 0;
 }
+/* vim:set expandtab */

@@ -25,10 +25,10 @@ static void noFailures(
     ptl_ct_event_t ct_data;
     CHECK_RETURNVAL(PtlCTWait(ct, threshold, &ct_data));
     if (ct_data.failure != 0) {
-	fprintf(stderr, "ct_data reports failure!!!!!!! {%u, %u} line %u\n",
-		(unsigned int)ct_data.success, (unsigned int)ct_data.failure,
-		(unsigned int)line);
-	abort();
+        fprintf(stderr, "ct_data reports failure!!!!!!! {%u, %u} line %u\n",
+                (unsigned int)ct_data.success, (unsigned int)ct_data.failure,
+                (unsigned int)line);
+        abort();
     }
 }
 
@@ -71,31 +71,30 @@ int main(
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     CHECK_RETURNVAL(PtlNIInit
-		    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-		     PTL_PID_ANY, NULL, NULL, num_procs, NULL, amapping,
-		     &ni_logical));
+                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
+                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc
-		    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-		     &logical_pt_index));
+                    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                     &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeef;
     if (myself.rank == 0) {
-	value_e.start = &value;
-	value_e.length = sizeof(value);
-	value_e.ac_id.uid = PTL_UID_ANY;
-	value_e.options = OPTIONS;
+        value_e.start = &value;
+        value_e.length = sizeof(value);
+        value_e.ac_id.uid = PTL_UID_ANY;
+        value_e.options = OPTIONS;
 #if INTERFACE == 1
-	value_e.match_id.rank = PTL_RANK_ANY;
-	value_e.match_bits = 1;
-	value_e.ignore_bits = 0;
+        value_e.match_id.rank = PTL_RANK_ANY;
+        value_e.match_bits = 1;
+        value_e.ignore_bits = 0;
 #endif
-	CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-	CHECK_RETURNVAL(APPEND
-			(ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
-			 &value_e_handle));
+        CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
+        CHECK_RETURNVAL(APPEND
+                        (ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
+                         &value_e_handle));
     }
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
@@ -116,23 +115,23 @@ int main(
 
     /* twiddle rank 0's value */
     {
-	ptl_ct_event_t ctc;
-	ptl_process_t r0 = {.rank=0};
-	CHECK_RETURNVAL(PtlAtomic
-			(read_md_handle, 0, sizeof(uint64_t), PTL_OC_ACK_REQ,
-			 r0, logical_pt_index, 1, 0, NULL, 0,
-			 PTL_SUM, PTL_ULONG));
-	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
-	assert(ctc.failure == 0);
+        ptl_ct_event_t ctc;
+        ptl_process_t r0 = {.rank = 0 };
+        CHECK_RETURNVAL(PtlAtomic
+                        (read_md_handle, 0, sizeof(uint64_t), PTL_OC_ACK_REQ,
+                         r0, logical_pt_index, 1, 0, NULL, 0, PTL_SUM,
+                         PTL_ULONG));
+        CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
+        assert(ctc.failure == 0);
     }
     printf("%i readval: %llx\n", (int)myself.rank,
-	   (unsigned long long)readval);
+           (unsigned long long)readval);
 
     if (myself.rank == 0) {
-	noFailures(value_e.ct_handle, num_procs, __LINE__);
-	printf("0 value: %llx\n", (unsigned long long)value);
-	CHECK_RETURNVAL(UNLINK(value_e_handle));
-	CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
+        noFailures(value_e.ct_handle, num_procs, __LINE__);
+        printf("0 value: %llx\n", (unsigned long long)value);
+        CHECK_RETURNVAL(UNLINK(value_e_handle));
+        CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
     CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
@@ -144,3 +143,4 @@ int main(
 
     return 0;
 }
+/* vim:set expandtab */

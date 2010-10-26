@@ -342,3 +342,4 @@ void INTERNAL PtlInternalDeallocUnexpectedHeader(
         expectednext = hdr->hdr.next = foundnext;
     }
 }
+/* vim:set expandtab */

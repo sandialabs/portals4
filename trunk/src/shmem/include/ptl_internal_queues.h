@@ -23,3 +23,4 @@ void *PtlInternalQueuePop(
 
 
 #endif
+/* vim:set expandtab */

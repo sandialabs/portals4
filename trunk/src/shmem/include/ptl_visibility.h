@@ -28,3 +28,4 @@
 #endif
 
 #endif
+/* vim:set expandtab */

@@ -555,3 +555,4 @@ void INTERNAL PtlInternalEQPush(
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
 }
+/* vim:set expandtab */

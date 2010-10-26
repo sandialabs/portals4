@@ -98,3 +98,4 @@ typedef struct {
 } ptl_internal_buffered_header_t;
 
 #endif
+/* vim:set expandtab */

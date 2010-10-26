@@ -781,3 +781,4 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
     return 0;                          // silent ACK
 }
+/* vim:set expandtab */

@@ -230,3 +230,4 @@ void API_FUNC runtime_barrier(
     ptl_assert(PtlMDRelease(mdh), PTL_OK);
     ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
 }
+/* vim:set expandtab */

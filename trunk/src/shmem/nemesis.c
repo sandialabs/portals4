@@ -105,3 +105,4 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     assert(retval == (void *)1 || retval->next == NULL);
     return retval;
 }
+/* vim:set expandtab */

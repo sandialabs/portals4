@@ -98,3 +98,4 @@ void INTERNAL *PtlInternalQueuePop(
     free((void *)QPTR(head));
     return p;
 }
+/* vim:set expandtab */
