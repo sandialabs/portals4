@@ -1,7 +1,7 @@
 #include <portals4.h>
 
 /* System headers */
-#include <stdlib.h> /* for abort() */
+#include <stdlib.h>                    /* for abort() */
 
 /* Internal headers */
 #include "ptl_internal_performatomic.h"
@@ -71,36 +71,58 @@
 
 
 PERFORM_UNIVERSAL_DATATYPE_FUNC(Min, MIN_OP)
-PERFORM_UNIVERSAL_DATATYPE_FUNC(Max, MAX_OP)
-PERFORM_UNIVERSAL_DATATYPE_FUNC(Prod,PROD_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Lor, LOR_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Land, LAND_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Lxor, LXOR_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Bor, BOR_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Band, BAND_OP)
-PERFORM_INTEGER_DATATYPE_FUNC(Bxor, BXOR_OP)
-
+    PERFORM_UNIVERSAL_DATATYPE_FUNC(Max, MAX_OP)
+    PERFORM_UNIVERSAL_DATATYPE_FUNC(Prod, PROD_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Lor, LOR_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Land, LAND_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Lxor, LXOR_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Bor, BOR_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Band, BAND_OP)
+    PERFORM_INTEGER_DATATYPE_FUNC(Bxor, BXOR_OP)
 #define INT_BUILTIN(int_type, builtin) do { \
     int_type before = builtin((int_type*)dest, *(int_type*)src); \
     *(int_type*)src = before; \
 } while (0)
-
-static void inline PtlInternalPerformAtomicSum(
+    static void inline PtlInternalPerformAtomicSum(
     volatile char *dest,
     char *src,
     ptl_datatype_t dt)
 {
     switch (dt) {
-	case PTL_CHAR:   INT_BUILTIN(  int8_t, __sync_fetch_and_add); break;
-	case PTL_UCHAR:  INT_BUILTIN( uint8_t, __sync_fetch_and_add); break;
-	case PTL_SHORT:  INT_BUILTIN( int16_t, __sync_fetch_and_add); break;
-	case PTL_USHORT: INT_BUILTIN(uint16_t, __sync_fetch_and_add); break;
-	case PTL_INT:    INT_BUILTIN( int32_t, __sync_fetch_and_add); break;
-	case PTL_UINT:   INT_BUILTIN(uint32_t, __sync_fetch_and_add); break;
-	case PTL_LONG:   INT_BUILTIN( int64_t, __sync_fetch_and_add); break;
-	case PTL_ULONG:  INT_BUILTIN(uint64_t, __sync_fetch_and_add); break;
-	case PTL_FLOAT:  NONBUILTIN_CAS( float, uint32_t, ADD_OP); break;
-	case PTL_DOUBLE: NONBUILTIN_CAS(double, uint64_t, ADD_OP); break;
+        case PTL_CHAR:
+            INT_BUILTIN(int8_t, __sync_fetch_and_add);
+            break;
+        case PTL_UCHAR:
+            INT_BUILTIN(uint8_t, __sync_fetch_and_add);
+            break;
+        case PTL_SHORT:
+            INT_BUILTIN(int16_t, __sync_fetch_and_add);
+            break;
+        case PTL_USHORT:
+            INT_BUILTIN(uint16_t, __sync_fetch_and_add);
+            break;
+        case PTL_INT:
+            INT_BUILTIN(int32_t, __sync_fetch_and_add);
+            break;
+        case PTL_UINT:
+            INT_BUILTIN(uint32_t, __sync_fetch_and_add);
+            break;
+        case PTL_LONG:
+            INT_BUILTIN(int64_t, __sync_fetch_and_add);
+            break;
+        case PTL_ULONG:
+            INT_BUILTIN(uint64_t, __sync_fetch_and_add);
+            break;
+        case PTL_FLOAT:
+            NONBUILTIN_CAS(float,
+                           uint32_t,
+                           ADD_OP);
+            break;
+        case PTL_DOUBLE:
+            NONBUILTIN_CAS(double,
+                           uint64_t,
+                           ADD_OP);
+            break;
     }
 }
 
@@ -117,16 +139,36 @@ static void inline PtlInternalPerformAtomicSwap(
     ptl_datatype_t dt)
 {
     switch (dt) {
-	case PTL_CHAR:   BUILTINSWAP(int8_t); break;
-	case PTL_UCHAR:  BUILTINSWAP(uint8_t); break;
-	case PTL_SHORT:  BUILTINSWAP(int16_t); break;
-	case PTL_USHORT: BUILTINSWAP(uint16_t); break;
-	case PTL_INT:    BUILTINSWAP(int32_t); break;
-	case PTL_UINT:   BUILTINSWAP(uint32_t); break;
-	case PTL_LONG:   BUILTINSWAP(int64_t); break;
-	case PTL_ULONG:  BUILTINSWAP(uint64_t); break;
-	case PTL_FLOAT:  BUILTINSWAP(uint32_t); break;
-	case PTL_DOUBLE: BUILTINSWAP(uint64_t); break;
+        case PTL_CHAR:
+            BUILTINSWAP(int8_t);
+            break;
+        case PTL_UCHAR:
+            BUILTINSWAP(uint8_t);
+            break;
+        case PTL_SHORT:
+            BUILTINSWAP(int16_t);
+            break;
+        case PTL_USHORT:
+            BUILTINSWAP(uint16_t);
+            break;
+        case PTL_INT:
+            BUILTINSWAP(int32_t);
+            break;
+        case PTL_UINT:
+            BUILTINSWAP(uint32_t);
+            break;
+        case PTL_LONG:
+            BUILTINSWAP(int64_t);
+            break;
+        case PTL_ULONG:
+            BUILTINSWAP(uint64_t);
+            break;
+        case PTL_FLOAT:
+            BUILTINSWAP(uint32_t);
+            break;
+        case PTL_DOUBLE:
+            BUILTINSWAP(uint64_t);
+            break;
     }
 }
 
@@ -193,7 +235,7 @@ static void inline PtlInternalPerformAtomicSwap(
 } while (0)
 
 
-static unsigned char datatype_size_table[] = {1,1,2,2,4,4,8,8,4,8};
+static unsigned char datatype_size_table[] = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8 };
 
 void INTERNAL PtlInternalPerformAtomic(
     char *dest,
@@ -204,262 +246,296 @@ void INTERNAL PtlInternalPerformAtomic(
 {
     ptl_size_t sz = datatype_size_table[dt];
     if (sz == size) {
-	switch (op) {
-	    case PTL_MIN:  PtlInternalPerformAtomicMin( dest, src, dt); break;
-	    case PTL_MAX:  PtlInternalPerformAtomicMax( dest, src, dt); break;
-	    case PTL_SUM:  PtlInternalPerformAtomicSum( dest, src, dt); break;
-	    case PTL_PROD: PtlInternalPerformAtomicProd(dest, src, dt); break;
-	    case PTL_LOR:  PtlInternalPerformAtomicLor( dest, src, dt); break;
-	    case PTL_BOR:  PtlInternalPerformAtomicBor( dest, src, dt); break;
-	    case PTL_LAND: PtlInternalPerformAtomicLand(dest, src, dt); break;
-	    case PTL_BAND: PtlInternalPerformAtomicBand(dest, src, dt); break;
-	    case PTL_LXOR: PtlInternalPerformAtomicLxor(dest, src, dt); break;
-	    case PTL_BXOR: PtlInternalPerformAtomicBxor(dest, src, dt); break;
-	    case PTL_SWAP: PtlInternalPerformAtomicSwap(dest, src, dt); break;
-	    default:
-		abort();
-	}
+        switch (op) {
+            case PTL_MIN:
+                PtlInternalPerformAtomicMin(dest, src, dt);
+                break;
+            case PTL_MAX:
+                PtlInternalPerformAtomicMax(dest, src, dt);
+                break;
+            case PTL_SUM:
+                PtlInternalPerformAtomicSum(dest, src, dt);
+                break;
+            case PTL_PROD:
+                PtlInternalPerformAtomicProd(dest, src, dt);
+                break;
+            case PTL_LOR:
+                PtlInternalPerformAtomicLor(dest, src, dt);
+                break;
+            case PTL_BOR:
+                PtlInternalPerformAtomicBor(dest, src, dt);
+                break;
+            case PTL_LAND:
+                PtlInternalPerformAtomicLand(dest, src, dt);
+                break;
+            case PTL_BAND:
+                PtlInternalPerformAtomicBand(dest, src, dt);
+                break;
+            case PTL_LXOR:
+                PtlInternalPerformAtomicLxor(dest, src, dt);
+                break;
+            case PTL_BXOR:
+                PtlInternalPerformAtomicBxor(dest, src, dt);
+                break;
+            case PTL_SWAP:
+                PtlInternalPerformAtomicSwap(dest, src, dt);
+                break;
+            default:
+                abort();
+        }
     } else {
-	size_t count = size/sz;
-	switch (op) {
-	    case PTL_MIN:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicMin( dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_MAX:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicMax( dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_SUM:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicSum( dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_PROD:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicProd(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_LOR:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicLor( dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_BOR:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicBor( dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_LAND:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicLand(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_BAND:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicBand(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_LXOR:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicLxor(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_BXOR:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicBxor(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    case PTL_SWAP:
-		for (size_t i=0; i < count; ++i) {
-		    PtlInternalPerformAtomicSwap(dest+i*sz, src+i*sz, dt);
-		}
-		break;
-	    default:
-		abort();
-	}
+        size_t count = size / sz;
+        switch (op) {
+            case PTL_MIN:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicMin(dest + i * sz, src + i * sz,
+                                                dt);
+                }
+                break;
+            case PTL_MAX:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicMax(dest + i * sz, src + i * sz,
+                                                dt);
+                }
+                break;
+            case PTL_SUM:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicSum(dest + i * sz, src + i * sz,
+                                                dt);
+                }
+                break;
+            case PTL_PROD:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicProd(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            case PTL_LOR:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicLor(dest + i * sz, src + i * sz,
+                                                dt);
+                }
+                break;
+            case PTL_BOR:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicBor(dest + i * sz, src + i * sz,
+                                                dt);
+                }
+                break;
+            case PTL_LAND:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicLand(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            case PTL_BAND:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicBand(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            case PTL_LXOR:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicLxor(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            case PTL_BXOR:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicBxor(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            case PTL_SWAP:
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicSwap(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+                break;
+            default:
+                abort();
+        }
     }
 }
 
 void INTERNAL PtlInternalPerformAtomicArg(
-	char *dest,
-	char *src,
-	uint64_t operand,
-	ptl_size_t size,
-	ptl_op_t op,
-	ptl_datatype_t dt)
+    char *dest,
+    char *src,
+    uint64_t operand,
+    ptl_size_t size,
+    ptl_op_t op,
+    ptl_datatype_t dt)
 {
     switch (op) {
-	case PTL_SWAP:
-	    {
-		ptl_size_t sz = datatype_size_table[dt];
-		if (size == sz) {
-		    PtlInternalPerformAtomicSwap(dest, src, dt);
-		} else {
-		    size_t count = size/sz;
-		    for (size_t i=0; i<count; ++i) {
-			PtlInternalPerformAtomicSwap(dest+i*sz, src+i*sz, dt);
-		    }
-		}
-	    }
-	    break;
-	case PTL_CSWAP:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_CSWAP_NE:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS_NE(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS_NE(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS_NE(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS_NE(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_CSWAP_LE:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS_LE(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS_LE(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS_LE(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS_LE(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_CSWAP_LT:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS_LT(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS_LT(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS_LT(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS_LT(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_CSWAP_GE:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS_GE(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS_GE(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS_GE(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS_GE(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_CSWAP_GT:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    CAS_GT(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    CAS_GT(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		case PTL_FLOAT:
-		    CAS_GT(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		case PTL_DOUBLE:
-		    CAS_GT(uint64_t);
-		    break;
-	    }
-	    break;
-	case PTL_MSWAP:
-	    switch (dt) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
-		    MAS(uint8_t);
-		    break;
-		case PTL_SHORT:
-		case PTL_USHORT:
-		    MAS(uint16_t);
-		    break;
-		case PTL_INT:
-		case PTL_UINT:
-		    MAS(uint32_t);
-		    break;
-		case PTL_LONG:
-		case PTL_ULONG:
-		    MAS(uint64_t);
-		    break;
-		default: /* should never happen */
-		    *(int*)0 = 0;
-	    }
-			break;
-	default: /* should never happen */
-	    *(int*)0 = 0;
+        case PTL_SWAP:
+        {
+            ptl_size_t sz = datatype_size_table[dt];
+            if (size == sz) {
+                PtlInternalPerformAtomicSwap(dest, src, dt);
+            } else {
+                size_t count = size / sz;
+                for (size_t i = 0; i < count; ++i) {
+                    PtlInternalPerformAtomicSwap(dest + i * sz, src + i * sz,
+                                                 dt);
+                }
+            }
+        }
+            break;
+        case PTL_CSWAP:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_CSWAP_NE:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS_NE(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS_NE(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS_NE(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS_NE(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_CSWAP_LE:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS_LE(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS_LE(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS_LE(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS_LE(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_CSWAP_LT:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS_LT(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS_LT(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS_LT(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS_LT(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_CSWAP_GE:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS_GE(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS_GE(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS_GE(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS_GE(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_CSWAP_GT:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    CAS_GT(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    CAS_GT(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                case PTL_FLOAT:
+                    CAS_GT(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                case PTL_DOUBLE:
+                    CAS_GT(uint64_t);
+                    break;
+            }
+            break;
+        case PTL_MSWAP:
+            switch (dt) {
+                case PTL_CHAR:
+                case PTL_UCHAR:
+                    MAS(uint8_t);
+                    break;
+                case PTL_SHORT:
+                case PTL_USHORT:
+                    MAS(uint16_t);
+                    break;
+                case PTL_INT:
+                case PTL_UINT:
+                    MAS(uint32_t);
+                    break;
+                case PTL_LONG:
+                case PTL_ULONG:
+                    MAS(uint64_t);
+                    break;
+                default:              /* should never happen */
+                    *(int *)0 = 0;
+            }
+            break;
+        default:                      /* should never happen */
+            *(int *)0 = 0;
     }
 }

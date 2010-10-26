@@ -35,26 +35,26 @@ int API_FUNC PtlGetId(
     ptl_internal_handle_converter_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
-	return PTL_NO_INIT;
+        return PTL_NO_INIT;
     }
     if (PtlInternalNIValidator(ni)) {
-	VERBOSE_ERROR("bad NI\n");
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("bad NI\n");
+        return PTL_ARG_INVALID;
     }
 #endif
     switch (ni.s.ni) {
-	case 0:		       // Logical
-	case 1:		       // Logical
-	    id->rank = proc_number;    // heh
-	    break;
-	case 2:		       // Physical
-	case 3:		       // Physical
-	    id->phys.pid = proc_number;
-	    id->phys.nid = 0;
-	    break;
-	default:
-	    UNREACHABLE;
-	    *(int *)0 = 0;	       // should never happen
+        case 0:                       // Logical
+        case 1:                       // Logical
+            id->rank = proc_number;    // heh
+            break;
+        case 2:                       // Physical
+        case 3:                       // Physical
+            id->phys.pid = proc_number;
+            id->phys.nid = 0;
+            break;
+        default:
+            UNREACHABLE;
+            *(int *)0 = 0;             // should never happen
     }
     return PTL_OK;
 }
