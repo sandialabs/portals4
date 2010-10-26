@@ -187,7 +187,7 @@ static void display_events(
 
 void INTERNAL PtlInternalPAPIInit(
     void)
-{
+{				       /*{{{ */
     int papi_ret;
     char errstring[PAPI_MAX_STR_LEN];
     /* first, initialize the library (compare the versions to make sure it will work) */
@@ -263,11 +263,11 @@ void INTERNAL PtlInternalPAPIInit(
 	papi_out = fopen(fname, "w");
 	assert(papi_out);
     }
-}
+}				       /*}}} */
 
 void INTERNAL PtlInternalPAPITeardown(
     void)
-{
+{				       /*{{{ */
     for (int func = 0; func < NUM_INSTRUMENTED_FUNCS; ++func) {
 	for (int savept = 0; savept < NUM_SAVE_POINTS; ++savept) {
 	    if (papi_measurements[func][savept] == 0) {
@@ -275,10 +275,13 @@ void INTERNAL PtlInternalPAPITeardown(
 		continue;
 	    }
 	    fprintf(papi_out, "func%i pt%i ", func, savept);
-	    for (int ctr=0; ctr < numCounters; ++ctr) {
-		fprintf(papi_out, "%i: %f ", ctr, ((double)papi_sums[func][savept][ctr])/((double)papi_measurements[func][savept]));
+	    for (int ctr = 0; ctr < numCounters; ++ctr) {
+		fprintf(papi_out, "%i: %f ", ctr,
+			((double)papi_sums[func][savept][ctr]) /
+			((double)papi_measurements[func][savept]));
 	    }
-	    fprintf(papi_out, "measured %lli\n", papi_measurements[func][savept]);
+	    fprintf(papi_out, "measured %lli\n",
+		    papi_measurements[func][savept]);
 	    free(papi_sums[func][savept]);
 	}
 	free(papi_sums[func]);
@@ -288,7 +291,7 @@ void INTERNAL PtlInternalPAPITeardown(
     free(papi_sums);
     free(papi_ctrs);
     fclose(papi_out);
-}
+}				       /*}}} */
 
 void INTERNAL PtlInternalPAPIStartC(
     void)
@@ -301,7 +304,7 @@ void INTERNAL PtlInternalPAPISaveC(
     int savept)
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
-    for (int i=0;i<numCounters;++i) {
+    for (int i = 0; i < numCounters; ++i) {
 	papi_sums[func][savept][i] += papi_ctrs[func][i];
     }
     ++papi_measurements[func][savept];
@@ -313,7 +316,7 @@ void INTERNAL PtlInternalPAPIDoneC(
     int savept)
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
-    for (int i=0;i<numCounters;++i) {
+    for (int i = 0; i < numCounters; ++i) {
 	papi_sums[func][savept][i] += papi_ctrs[func][i];
     }
     ++papi_measurements[func][savept];
