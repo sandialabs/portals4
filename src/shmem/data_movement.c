@@ -26,6 +26,7 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_LE.h"
 #include "ptl_internal_ME.h"
+#include "ptl_internal_papi.h"
 #include "ptl_internal_error.h"
 
 typedef union {
@@ -75,7 +76,7 @@ static pthread_t catcher;
 #define TERMINATION_HDR_VALUE ((void*)(sizeof(uint64_t)*2+1))
 
 static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
-{
+{/*{{{*/
     ptl_md_t *mdptr = NULL;
     ptl_handle_md_t md_handle = PTL_INVALID_HANDLE;
     ptl_internal_srcdata_t *einfo = NULL;
@@ -323,7 +324,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
     /* now, put the fragment back in the freelist */
     PtlInternalFragmentFree(hdr);
     ack_printf("freed\n");
-}
+}/*}}}*/
 
 static void *PtlInternalDMCatcher(
     void * __attribute__ ((unused)) junk) Q_NORETURN
@@ -426,18 +427,16 @@ static void *PtlInternalDMCatcher(
 
 void INTERNAL PtlInternalDMSetup(
     void)
-{
+{				       /*{{{ */
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
 	ptl_assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL),
-	       0);
-	/*ptl_assert(pthread_create
-	       (&ack_catcher, NULL, PtlInternalDMAckCatcher, NULL), 0);*/
+		   0);
     }
-}
+}				       /*}}} */
 
 void INTERNAL PtlInternalDMTeardown(
     void)
-{
+{				       /*{{{ */
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
 	/* Using a termination sigil, rather than pthread_cancel(), so that the queues
 	 * are always left in a valid/useable state (e.g. unlocked), so that late sends
@@ -445,7 +444,7 @@ void INTERNAL PtlInternalDMTeardown(
 	PtlInternalFragmentToss(TERMINATION_HDR_VALUE, proc_number);
 	ptl_assert(pthread_join(catcher, NULL), 0);
     }
-}
+}				       /*}}} */
 
 int API_FUNC PtlPut(
     ptl_handle_md_t md_handle,
@@ -496,6 +495,9 @@ int API_FUNC PtlPut(
 	    break;
     }
 #endif
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPIStartC();
+#endif
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
@@ -516,23 +518,31 @@ int API_FUNC PtlPut(
     hdr->src_data_ptr = extra_info;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPISaveC(0, 0);
+#endif
+    char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPISaveC(0, 1);
+#endif
     /* step 3: load up the data */
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
 	length) {
-	memcpy(hdr->data, PtlInternalMDDataPtr(md_handle) + local_offset,
-	       length);
+	memcpy(hdr->data, dataptr, length);
 	extra_info->put.moredata = NULL;
 	extra_info->put.remaining = 0;
 	quick_exit = 1;
     } else {
 	size_t payload =
 	    PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
-	char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
 	memcpy(hdr->data, dataptr, payload);
 	extra_info->put.moredata = dataptr + payload;
 	extra_info->put.remaining = length - payload;
 	extra_info->put.target_id = target_id;
     }
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPISaveC(0, 2);
+#endif
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
@@ -548,6 +558,9 @@ int API_FUNC PtlPut(
 	default:
 	    *(int *)0 = 0;
     }
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPISaveC(0, 3);
+#endif
     if (quick_exit) {
 	unsigned int options;
 	ptl_handle_eq_t eqh;
@@ -586,6 +599,9 @@ int API_FUNC PtlPut(
 	    PtlInternalEQPush(eqh, &e);
 	}
     }
+#ifdef HAVE_LIBPAPI
+    PtlInternalPAPIDoneC(0, 4);
+#endif
     return PTL_OK;
 }
 

@@ -54,6 +54,9 @@ AC_ARG_ENABLE([hard-polling],
 AC_ARG_ENABLE([fast],
 			  [AS_HELP_STRING([--enable-fast],
 							  [Sets the available configuration options to run as quickly as possible. This makes the assumption and CAN result in bad things happening.])])
+AC_ARG_ENABLE([papi],
+			  [AS_HELP_STRING([--enable-papi],
+							  [Enables PAPI performance counters support])])
 AS_IF([test "x$enable_hard_polling" == xyes],
 	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
 AS_IF([test "x$enable_fast" == xyes],
@@ -170,6 +173,9 @@ AC_CHECK_FUNCS([getpagesize]) # not mandatory
 AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD functions like ftruncate
+AS_IF([test "x$enable_papi" != x],
+	  [AC_CHECK_LIB([papi], [PAPI_library_init], [],
+					[AC_MSG_ERROR([Cannot find libpapi])])])
 AC_SEARCH_LIBS([shm_open],
 	       [rt], [],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
@@ -197,6 +203,7 @@ AC_CACHE_SAVE
 ## --------------- ##
 
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
+AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
