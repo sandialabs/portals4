@@ -5,19 +5,17 @@
 #define HANDLE_NI_BITS		2
 #define HANDLE_CODE_BITS	27
 
-typedef union
-{
+typedef union {
     uint32_t i;
-    struct
-    {
+    struct {
 #ifdef BITFIELD_ORDER_FORWARD
-	unsigned int selector:HANDLE_SELECTOR_BITS;
-	unsigned char ni:HANDLE_NI_BITS;
-	unsigned int code:HANDLE_CODE_BITS;
+        unsigned int selector:HANDLE_SELECTOR_BITS;
+        unsigned char ni:HANDLE_NI_BITS;
+        unsigned int code:HANDLE_CODE_BITS;
 #else
-	unsigned int code:HANDLE_CODE_BITS;
-	unsigned char ni:HANDLE_NI_BITS;
-	unsigned int selector:HANDLE_SELECTOR_BITS;
+        unsigned int code:HANDLE_CODE_BITS;
+        unsigned char ni:HANDLE_NI_BITS;
+        unsigned int selector:HANDLE_SELECTOR_BITS;
 #endif
     } s;
     ptl_handle_any_t a;

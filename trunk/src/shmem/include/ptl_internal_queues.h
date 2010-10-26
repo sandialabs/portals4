@@ -18,7 +18,7 @@ void PtlInternalQueueDestroy(
 void PtlInternalQueueAppend(
     ptl_internal_q_t * q,
     void *t);
-void * PtlInternalQueuePop(
+void *PtlInternalQueuePop(
     ptl_internal_q_t * q);
 
 

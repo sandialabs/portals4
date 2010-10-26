@@ -1,7 +1,7 @@
 #ifndef PTL_INTERNAL_NIT_H
 #define PTL_INTERNAL_NIT_H
 
-#include <stdint.h>		       /* for uint32_t */
+#include <stdint.h>                    /* for uint32_t */
 
 #include "ptl_internal_handles.h"
 #include "ptl_internal_commpad.h"

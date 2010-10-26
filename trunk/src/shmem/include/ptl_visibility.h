@@ -7,13 +7,13 @@
 #  ifdef __GNUC__
 #   define API_FUNC __attribute__((dllexport))
 #  else
-#   define API_FUNC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+#   define API_FUNC __declspec(dllexport)       // Note: actually gcc seems to also supports this syntax.
 #  endif
 # else
 #  ifdef __GNUC__
 #   define API_FUNC __attribute__((dllimport))
 #  else
-#   define API_FUNC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+#   define API_FUNC __declspec(dllimport)       // Note: actually gcc seems to also supports this syntax.
 #  endif
 # endif
 # define INTERNAL
