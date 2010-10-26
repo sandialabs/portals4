@@ -1,5 +1,5 @@
-#include <stdlib.h>		       /* for calloc() */
-#include <stdint.h>		       /* for uintptr_t (C99) */
+#include <stdlib.h>                    /* for calloc() */
+#include <stdint.h>                    /* for uintptr_t (C99) */
 
 #include "ptl_visibility.h"
 #include "ptl_internal_assert.h"
@@ -42,25 +42,25 @@ void INTERNAL PtlInternalQueueAppend(
 
     node = malloc(sizeof(ptl_internal_qnode_t));
     assert(node != NULL);
-    assert(QCTR(node) == 0);	       // node MUST be aligned
+    assert(QCTR(node) == 0);           // node MUST be aligned
 
     node->value = t;
     // set to NULL without disturbing the ctr
     node->next = (ptl_internal_qnode_t *) (uintptr_t) QCTR(node->next);
 
     while (1) {
-	tail = q->tail;
-	next = QPTR(tail)->next;
-	if (tail == q->tail) {	       // are tail and next consistent?
-	    if (QPTR(next) == NULL) {  // was tail pointing to the last node ?
-		if (PtlInternalAtomicCasPtr
-		    (&(QPTR(tail)->next), next, QCOMPOSE(node, next)) == next)
-		    break;	       // success!
-	    } else {
-		(void)PtlInternalAtomicCasPtr(&(q->tail), tail,
-					      QCOMPOSE(next, tail));
-	    }
-	}
+        tail = q->tail;
+        next = QPTR(tail)->next;
+        if (tail == q->tail) {         // are tail and next consistent?
+            if (QPTR(next) == NULL) {  // was tail pointing to the last node ?
+                if (PtlInternalAtomicCasPtr
+                    (&(QPTR(tail)->next), next, QCOMPOSE(node, next)) == next)
+                    break;             // success!
+            } else {
+                (void)PtlInternalAtomicCasPtr(&(q->tail), tail,
+                                              QCOMPOSE(next, tail));
+            }
+        }
     }
     (void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(node, tail));
 }
@@ -75,25 +75,25 @@ void INTERNAL *PtlInternalQueuePop(
 
     assert(q != NULL);
     while (1) {
-	head = q->head;
-	tail = q->tail;
-	next_ptr = QPTR(QPTR(head)->next);
-	if (head == q->head) {	       // are head, tail, and next consistent?
-	    if (head == tail) {	       // is queue empty or tail falling behind?
-		if (next_ptr == NULL) {	// is queue empty?
-		    return NULL;
-		}
-		(void)PtlInternalAtomicCasPtr(&(q->tail), tail,
-					      QCOMPOSE(next_ptr, tail));
-	    } else {		       // no need to deal with the tail
-		// read value before CAS, otherwise another dequeue might free the next node
-		p = next_ptr->value;
-		if (PtlInternalAtomicCasPtr
-		    (&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
-		    break;	       // success!
-		}
-	    }
-	}
+        head = q->head;
+        tail = q->tail;
+        next_ptr = QPTR(QPTR(head)->next);
+        if (head == q->head) {         // are head, tail, and next consistent?
+            if (head == tail) {        // is queue empty or tail falling behind?
+                if (next_ptr == NULL) { // is queue empty?
+                    return NULL;
+                }
+                (void)PtlInternalAtomicCasPtr(&(q->tail), tail,
+                                              QCOMPOSE(next_ptr, tail));
+            } else {                   // no need to deal with the tail
+                // read value before CAS, otherwise another dequeue might free the next node
+                p = next_ptr->value;
+                if (PtlInternalAtomicCasPtr
+                    (&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
+                    break;             // success!
+                }
+            }
+        }
     }
     free((void *)QPTR(head));
     return p;

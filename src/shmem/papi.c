@@ -3,9 +3,9 @@
 #endif
 
 /* System headers */
-#include <stdlib.h>		       /* for malloc() */
-#include <string.h>		       /* for memcpy() */
-#include <stdio.h>		       /* for FILE, fopen(), etc. */
+#include <stdlib.h>                    /* for malloc() */
+#include <string.h>                    /* for memcpy() */
+#include <stdio.h>                     /* for FILE, fopen(), etc. */
 #include <assert.h>
 #include <papi.h>
 
@@ -147,97 +147,97 @@ static const event_disc_t event_lookup[] = {
     {PAPI_TLB_SD, "TLB_SD", "TBSD", "TLB_SHOOTDOWNS"},
     {PAPI_TLB_TL, "TLB_TL", "TBM", "TLB_MISSES"},
     {0, NULL, NULL}
-};				       /*}}} */
+};                                     /*}}} */
 
 static int lookup_event_by_str(
     char *str)
-{				       /*{{{ */
+{                                      /*{{{ */
     size_t off;
 
     for (off = 0;
-	 event_lookup[off].papi != NULL &&
-	 strcasecmp(str, event_lookup[off].papi)
-	 && strcasecmp(str, event_lookup[off].nick)
-	 && strcasecmp(str, event_lookup[off].shortnick); ++off) ;
+         event_lookup[off].papi != NULL &&
+         strcasecmp(str, event_lookup[off].papi)
+         && strcasecmp(str, event_lookup[off].nick)
+         && strcasecmp(str, event_lookup[off].shortnick); ++off) ;
     return event_lookup[off].id;
-}				       /*}}} */
+}                                      /*}}} */
 
 static char *lookup_event_by_num(
     size_t num)
-{				       /*{{{ */
+{                                      /*{{{ */
     size_t off;
 
     for (off = 0;
-	 event_lookup[off].papi != NULL && event_lookup[off].id != num;
-	 ++off) ;
+         event_lookup[off].papi != NULL && event_lookup[off].id != num;
+         ++off) ;
     return event_lookup[off].shortnick;
-}				       /*}}} */
+}                                      /*}}} */
 
 static void display_events(
     void)
-{				       /*{{{ */
+{                                      /*{{{ */
     size_t i;
 
     printf("%-16s%-16s%-25s\n", "PAPI-name", "Short-Nickname", "Nickname");
     for (i = 0; event_lookup[i].papi != NULL; ++i) {
-	printf("%-16s%-16s%-25s\n", event_lookup[i].papi,
-	       event_lookup[i].shortnick, event_lookup[i].nick);
+        printf("%-16s%-16s%-25s\n", event_lookup[i].papi,
+               event_lookup[i].shortnick, event_lookup[i].nick);
     }
-}				       /*}}} */
+}                                      /*}}} */
 
 void INTERNAL PtlInternalPAPIInit(
     void)
-{				       /*{{{ */
+{                                      /*{{{ */
     int papi_ret;
     char errstring[PAPI_MAX_STR_LEN];
     /* first, initialize the library (compare the versions to make sure it will work) */
     if ((papi_ret = PAPI_library_init(PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-	PAPI_perror(papi_ret, errstring, PAPI_MAX_STR_LEN);
-	fprintf(stderr, "~%i~ Error initializing PAPI: %d reason: %s\n",
-		(int)proc_number, papi_ret, errstring);
-	exit(EXIT_FAILURE);
+        PAPI_perror(papi_ret, errstring, PAPI_MAX_STR_LEN);
+        fprintf(stderr, "~%i~ Error initializing PAPI: %d reason: %s\n",
+                (int)proc_number, papi_ret, errstring);
+        exit(EXIT_FAILURE);
     }
     if (PAPI_num_counters() < PAPI_OK) {
-	fprintf(stderr, "~%i~ There are no PAPI counters available.\n",
-		(int)proc_number);
-	exit(EXIT_FAILURE);
+        fprintf(stderr, "~%i~ There are no PAPI counters available.\n",
+                (int)proc_number);
+        exit(EXIT_FAILURE);
     }
     /* figure out what counters we will be using */
     memset(papi_events, 0, sizeof(int) * MAX_PAPI_EVENTS);
     for (int i = 1; i <= MAX_PAPI_EVENTS; ++i) {
-	char envariable[50];
-	char *value;
+        char envariable[50];
+        char *value;
 
-	snprintf(envariable, 50, "PAPI_CTR_%i", i);
-	value = getenv(envariable);
-	if (value == NULL)
-	    break;
-	if ((papi_events[i - 1] = lookup_event_by_str(value)) == 0) {
-	    fprintf(stderr, "~%i~ There is no event by the name \"%s\"\n",
-		    (int)proc_number, value);
-	    numCounters = 0;
-	    break;
-	}
-	if (PAPI_query_event(papi_events[i - 1]) != PAPI_OK) {
-	    fprintf(stderr,
-		    "~%i~ Event \"%s\" is unavailable on this machine.\n",
-		    (int)proc_number, value);
-	    exit(EXIT_FAILURE);
-	}
-	numCounters = i;
+        snprintf(envariable, 50, "PAPI_CTR_%i", i);
+        value = getenv(envariable);
+        if (value == NULL)
+            break;
+        if ((papi_events[i - 1] = lookup_event_by_str(value)) == 0) {
+            fprintf(stderr, "~%i~ There is no event by the name \"%s\"\n",
+                    (int)proc_number, value);
+            numCounters = 0;
+            break;
+        }
+        if (PAPI_query_event(papi_events[i - 1]) != PAPI_OK) {
+            fprintf(stderr,
+                    "~%i~ Event \"%s\" is unavailable on this machine.\n",
+                    (int)proc_number, value);
+            exit(EXIT_FAILURE);
+        }
+        numCounters = i;
     }
     if (numCounters == 0 && NULL != getenv("PAPI_CTR_HELP")) {
-	display_events();
-	fprintf(stderr,
-		"~%i~ Counters may be specified in one of three styles:\n",
-		(int)proc_number);
-	fprintf(stderr, "~%i~ \t      Nickname: PAPI_CTR_1=CYCLES\n",
-		(int)proc_number);
-	fprintf(stderr, "~%i~ \tShort Nickname: PAPI_CTR_1=CYC\n",
-		(int)proc_number);
-	fprintf(stderr, "~%i~ \t     PAPI-name: PAPI_CTR_1=TOT_CYC\n",
-		(int)proc_number);
-	exit(EXIT_FAILURE);
+        display_events();
+        fprintf(stderr,
+                "~%i~ Counters may be specified in one of three styles:\n",
+                (int)proc_number);
+        fprintf(stderr, "~%i~ \t      Nickname: PAPI_CTR_1=CYCLES\n",
+                (int)proc_number);
+        fprintf(stderr, "~%i~ \tShort Nickname: PAPI_CTR_1=CYC\n",
+                (int)proc_number);
+        fprintf(stderr, "~%i~ \t     PAPI-name: PAPI_CTR_1=TOT_CYC\n",
+                (int)proc_number);
+        exit(EXIT_FAILURE);
     }
     papi_ctrs = malloc(sizeof(long long *) * NUM_INSTRUMENTED_FUNCS);
     assert(papi_ctrs);
@@ -246,52 +246,52 @@ void INTERNAL PtlInternalPAPIInit(
     papi_sums = malloc(sizeof(long long **) * NUM_INSTRUMENTED_FUNCS);
     assert(papi_sums);
     for (int i = 0; i < NUM_INSTRUMENTED_FUNCS; ++i) {
-	papi_ctrs[i] = calloc(numCounters, sizeof(long long));
-	assert(papi_ctrs[i]);
-	papi_measurements[i] = calloc(NUM_SAVE_POINTS, sizeof(long long));
-	assert(papi_measurements[i]);
-	papi_sums[i] = malloc(sizeof(long long *) * NUM_SAVE_POINTS);
-	assert(papi_sums[i]);
-	for (int j = 0; j < NUM_SAVE_POINTS; ++j) {
-	    papi_sums[i][j] = calloc(numCounters, sizeof(long long));
-	    assert(papi_sums[i][j]);
-	}
+        papi_ctrs[i] = calloc(numCounters, sizeof(long long));
+        assert(papi_ctrs[i]);
+        papi_measurements[i] = calloc(NUM_SAVE_POINTS, sizeof(long long));
+        assert(papi_measurements[i]);
+        papi_sums[i] = malloc(sizeof(long long *) * NUM_SAVE_POINTS);
+        assert(papi_sums[i]);
+        for (int j = 0; j < NUM_SAVE_POINTS; ++j) {
+            papi_sums[i][j] = calloc(numCounters, sizeof(long long));
+            assert(papi_sums[i][j]);
+        }
     }
     {
-	char fname[50];
-	snprintf(fname, 50, "papi.r%i.out", (int)proc_number);
-	papi_out = fopen(fname, "w");
-	assert(papi_out);
+        char fname[50];
+        snprintf(fname, 50, "papi.r%i.out", (int)proc_number);
+        papi_out = fopen(fname, "w");
+        assert(papi_out);
     }
-}				       /*}}} */
+}                                      /*}}} */
 
 void INTERNAL PtlInternalPAPITeardown(
     void)
-{				       /*{{{ */
+{                                      /*{{{ */
     for (int func = 0; func < NUM_INSTRUMENTED_FUNCS; ++func) {
-	for (int savept = 0; savept < NUM_SAVE_POINTS; ++savept) {
-	    if (papi_measurements[func][savept] == 0) {
-		free(papi_sums[func][savept]);
-		continue;
-	    }
-	    fprintf(papi_out, "func%i pt%i ", func, savept);
-	    for (int ctr = 0; ctr < numCounters; ++ctr) {
-		fprintf(papi_out, "%i: %f ", ctr,
-			((double)papi_sums[func][savept][ctr]) /
-			((double)papi_measurements[func][savept]));
-	    }
-	    fprintf(papi_out, "measured %lli\n",
-		    papi_measurements[func][savept]);
-	    free(papi_sums[func][savept]);
-	}
-	free(papi_sums[func]);
-	free(papi_ctrs[func]);
-	free(papi_measurements[func]);
+        for (int savept = 0; savept < NUM_SAVE_POINTS; ++savept) {
+            if (papi_measurements[func][savept] == 0) {
+                free(papi_sums[func][savept]);
+                continue;
+            }
+            fprintf(papi_out, "func%i pt%i ", func, savept);
+            for (int ctr = 0; ctr < numCounters; ++ctr) {
+                fprintf(papi_out, "%i: %f ", ctr,
+                        ((double)papi_sums[func][savept][ctr]) /
+                        ((double)papi_measurements[func][savept]));
+            }
+            fprintf(papi_out, "measured %lli\n",
+                    papi_measurements[func][savept]);
+            free(papi_sums[func][savept]);
+        }
+        free(papi_sums[func]);
+        free(papi_ctrs[func]);
+        free(papi_measurements[func]);
     }
     free(papi_sums);
     free(papi_ctrs);
     fclose(papi_out);
-}				       /*}}} */
+}                                      /*}}} */
 
 void INTERNAL PtlInternalPAPIStartC(
     void)
@@ -305,7 +305,7 @@ void INTERNAL PtlInternalPAPISaveC(
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
     for (int i = 0; i < numCounters; ++i) {
-	papi_sums[func][savept][i] += papi_ctrs[func][i];
+        papi_sums[func][savept][i] += papi_ctrs[func][i];
     }
     ++papi_measurements[func][savept];
     PAPI_start_counters(papi_events, numCounters);
@@ -317,7 +317,7 @@ void INTERNAL PtlInternalPAPIDoneC(
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
     for (int i = 0; i < numCounters; ++i) {
-	papi_sums[func][savept][i] += papi_ctrs[func][i];
+        papi_sums[func][savept][i] += papi_ctrs[func][i];
     }
     ++papi_measurements[func][savept];
 }
