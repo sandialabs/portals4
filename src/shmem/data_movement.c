@@ -29,35 +29,6 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_error.h"
 
-typedef union {
-    struct {
-	char *moredata;
-	size_t remaining;
-	ptl_process_t target_id;
-	ptl_internal_handle_converter_t md_handle;
-    } put;
-    struct {
-	char *moredata;
-	size_t remaining;
-	ptl_internal_handle_converter_t md_handle;
-	ptl_size_t local_offset;
-    } get;
-    struct {
-    } atomic;
-    struct {
-	ptl_internal_handle_converter_t get_md_handle;
-	ptl_size_t local_get_offset;
-	ptl_internal_handle_converter_t put_md_handle;
-	ptl_size_t local_put_offset;
-    } fetchatomic;
-    struct {
-	ptl_internal_handle_converter_t get_md_handle;
-	ptl_size_t local_get_offset;
-	ptl_internal_handle_converter_t put_md_handle;
-	ptl_size_t local_put_offset;
-    } swap;
-} ptl_internal_srcdata_t;
-
 static uint32_t spawned;
 static pthread_t catcher;
 
@@ -79,7 +50,6 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
 {/*{{{*/
     ptl_md_t *mdptr = NULL;
     ptl_handle_md_t md_handle = PTL_INVALID_HANDLE;
-    ptl_internal_srcdata_t *einfo = NULL;
     ptl_handle_eq_t md_eq = PTL_EQ_NONE;
     ptl_handle_ct_t md_ct = PTL_CT_NONE;
     unsigned int md_opts = 0;
@@ -90,30 +60,29 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
     switch (hdr->type) {
 	case HDR_TYPE_PUT:
 	    ack_printf("it's an ACK for a PUT\n");
-	    einfo = hdr->src_data_ptr;
-	    md_handle = einfo->put.md_handle.a;
+	    md_handle = hdr->src_data.put.md_handle.a;
 	    mdptr = PtlInternalMDFetch(md_handle);
-	    if (einfo->put.moredata) {
+	    if (hdr->src_data.put.moredata) {
 		size_t payload =
 		    PtlInternalFragmentSize(hdr) -
 		    sizeof(ptl_internal_header_t);
-		if (payload > einfo->put.remaining) {
-		    payload = einfo->put.remaining;
+		if (payload > hdr->src_data.put.remaining) {
+		    payload = hdr->src_data.put.remaining;
 		}
-		memcpy(hdr->data, einfo->put.moredata, payload);
-		einfo->put.moredata += payload;
-		einfo->put.remaining -= payload;
+		memcpy(hdr->data, hdr->src_data.put.moredata, payload);
+		hdr->src_data.put.moredata += payload;
+		hdr->src_data.put.remaining -= payload;
 		switch (hdr->ni) {
 		    case 0:
 		    case 1:       // Logical
 			PtlInternalFragmentToss(hdr,
-				einfo->put.
+				hdr->src_data.put.
 				target_id.rank);
 			break;
 		    case 2:
 		    case 3:       // Physical
 			PtlInternalFragmentToss(hdr,
-				einfo->put.target_id.
+				hdr->src_data.put.target_id.
 				phys.pid);
 			break;
 		}
@@ -122,30 +91,27 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
 	    break;
 	case HDR_TYPE_GET:
 	    ack_printf("it's an ACK for a GET\n");
-	    einfo = hdr->src_data_ptr;
-	    md_handle = einfo->get.md_handle.a;
+	    md_handle = hdr->src_data.get.md_handle.a;
 	    mdptr = PtlInternalMDFetch(md_handle);
 	    /* pull the data out of the reply */
 	    ack_printf("replied with %i data\n", (int)hdr->length);
 	    if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		memcpy((uint8_t *) (mdptr->start) +
-			einfo->get.local_offset, hdr->data, hdr->length);
+			hdr->src_data.get.local_offset, hdr->data, hdr->length);
 	    }
 	    break;
 	case HDR_TYPE_ATOMIC:
 	    ack_printf("it's an ACK for an ATOMIC\n");
-	    md_handle = (ptl_handle_md_t) (uintptr_t) (hdr->src_data_ptr);
+	    md_handle = hdr->src_data.atomic.md_handle.a;
 	    mdptr = PtlInternalMDFetch(md_handle);
 	    break;
 	case HDR_TYPE_FETCHATOMIC:
 	    ack_printf("it's an ACK for a FETCHATOMIC\n");
-	    einfo = hdr->src_data_ptr;
-	    assert(einfo != NULL);
-	    md_handle = einfo->fetchatomic.get_md_handle.a;
-	    if (einfo->fetchatomic.put_md_handle.a !=
+	    md_handle = hdr->src_data.fetchatomic.get_md_handle.a;
+	    if (hdr->src_data.fetchatomic.put_md_handle.a !=
 		    PTL_INVALID_HANDLE &&
-		    einfo->fetchatomic.put_md_handle.a != md_handle) {
-		PtlInternalMDCleared(einfo->fetchatomic.put_md_handle.
+		    hdr->src_data.fetchatomic.put_md_handle.a != md_handle) {
+		PtlInternalMDCleared(hdr->src_data.fetchatomic.put_md_handle.
 			a);
 	    }
 	    mdptr = PtlInternalMDFetch(md_handle);
@@ -153,25 +119,23 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
 	    ack_printf("replied with %i data\n", (int)hdr->length);
 	    if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		memcpy((uint8_t *) (mdptr->start) +
-			einfo->fetchatomic.local_get_offset, hdr->data,
+			hdr->src_data.fetchatomic.local_get_offset, hdr->data,
 			hdr->length);
 	    }
 	    break;
 	case HDR_TYPE_SWAP:
 	    ack_printf("it's an ACK for a SWAP\n");
-	    einfo = hdr->src_data_ptr;
-	    assert(einfo != NULL);
-	    md_handle = einfo->swap.get_md_handle.a;
-	    if (einfo->swap.put_md_handle.a != PTL_INVALID_HANDLE &&
-		    einfo->swap.put_md_handle.a != md_handle) {
-		PtlInternalMDCleared(einfo->swap.put_md_handle.a);
+	    md_handle = hdr->src_data.swap.get_md_handle.a;
+	    if (hdr->src_data.swap.put_md_handle.a != PTL_INVALID_HANDLE &&
+		    hdr->src_data.swap.put_md_handle.a != md_handle) {
+		PtlInternalMDCleared(hdr->src_data.swap.put_md_handle.a);
 	    }
 	    mdptr = PtlInternalMDFetch(md_handle);
 	    /* pull the data out of the reply */
 	    ack_printf("replied with %i data\n", (int)hdr->length);
 	    if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
 		memcpy((uint8_t *) (mdptr->start) +
-			einfo->swap.local_get_offset, hdr->data + 8,
+			hdr->src_data.swap.local_get_offset, hdr->data + 8,
 			hdr->length);
 	    }
 	    break;
@@ -317,9 +281,6 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
 	    }
 	    break;
     }
-    if (einfo != NULL) {
-	free(einfo);
-    }
     ack_printf("freeing fragment (%p)\n", hdr);
     /* now, put the fragment back in the freelist */
     PtlInternalFragmentFree(hdr);
@@ -459,7 +420,6 @@ int API_FUNC PtlPut(
     ptl_hdr_data_t hdr_data)
 {
     int quick_exit = 0;
-    ptl_internal_srcdata_t *extra_info;
     ptl_internal_header_t *restrict hdr;
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
@@ -512,10 +472,7 @@ int API_FUNC PtlPut(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
-    assert(extra_info);
-    extra_info->put.md_handle.a = md_handle;
-    hdr->src_data_ptr = extra_info;
+    hdr->src_data.put.md_handle.a = md_handle;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
 #ifdef HAVE_LIBPAPI
@@ -529,16 +486,16 @@ int API_FUNC PtlPut(
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
 	length) {
 	memcpy(hdr->data, dataptr, length);
-	extra_info->put.moredata = NULL;
-	extra_info->put.remaining = 0;
+	hdr->src_data.put.moredata = NULL;
+	hdr->src_data.put.remaining = 0;
 	quick_exit = 1;
     } else {
 	size_t payload =
 	    PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
 	memcpy(hdr->data, dataptr, payload);
-	extra_info->put.moredata = dataptr + payload;
-	extra_info->put.remaining = length - payload;
-	extra_info->put.target_id = target_id;
+	hdr->src_data.put.moredata = dataptr + payload;
+	hdr->src_data.put.remaining = length - payload;
+	hdr->src_data.put.target_id = target_id;
     }
 #ifdef HAVE_LIBPAPI
     PtlInternalPAPISaveC(0, 2);
@@ -616,7 +573,6 @@ int API_FUNC PtlGet(
     ptl_size_t remote_offset)
 {
     const ptl_internal_handle_converter_t md = { md_handle };
-    ptl_internal_srcdata_t *extra_info;
     ptl_internal_header_t *hdr;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -663,13 +619,10 @@ int API_FUNC PtlGet(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
-    assert(extra_info);
-    extra_info->get.md_handle.a = md_handle;
-    extra_info->get.local_offset = local_offset;
-    extra_info->get.moredata = PtlInternalMDDataPtr(md_handle) + local_offset;
-    extra_info->get.remaining = length;
-    hdr->src_data_ptr = extra_info;
+    hdr->src_data.get.md_handle.a = md_handle;
+    hdr->src_data.get.local_offset = local_offset;
+    hdr->src_data.get.moredata = PtlInternalMDDataPtr(md_handle) + local_offset;
+    hdr->src_data.get.remaining = length;
     /* step 3: enqueue the op structure on the target */
     switch (md.s.ni) {
 	case 0:
@@ -805,8 +758,7 @@ int API_FUNC PtlAtomic(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    assert(sizeof(void *) >= sizeof(ptl_handle_md_t));
-    hdr->src_data_ptr = (void *)(intptr_t) md_handle;
+    hdr->src_data.atomic.md_handle.a = md_handle;
     hdr->info.atomic.hdr_data = hdr_data;
     hdr->info.atomic.ack_req = ack_req;
     hdr->info.atomic.operation = operation;
@@ -869,7 +821,6 @@ int API_FUNC PtlFetchAtomic(
 {
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
-    ptl_internal_srcdata_t *extra_info;
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
 #ifndef NO_ARG_VALIDATION
@@ -991,13 +942,10 @@ int API_FUNC PtlFetchAtomic(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
-    assert(extra_info);
-    extra_info->fetchatomic.get_md_handle.a = get_md_handle;
-    extra_info->fetchatomic.local_get_offset = local_get_offset;
-    extra_info->fetchatomic.put_md_handle.a = put_md_handle;
-    extra_info->fetchatomic.local_put_offset = local_put_offset;
-    hdr->src_data_ptr = extra_info;
+    hdr->src_data.fetchatomic.get_md_handle.a = get_md_handle;
+    hdr->src_data.fetchatomic.local_get_offset = local_get_offset;
+    hdr->src_data.fetchatomic.put_md_handle.a = put_md_handle;
+    hdr->src_data.fetchatomic.local_put_offset = local_put_offset;
     hdr->info.fetchatomic.hdr_data = hdr_data;
     hdr->info.fetchatomic.operation = operation;
     hdr->info.fetchatomic.datatype = datatype;
@@ -1059,7 +1007,6 @@ int API_FUNC PtlSwap(
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
     ptl_internal_header_t *hdr;
-    ptl_internal_srcdata_t *extra_info;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
 	return PTL_NO_INIT;
@@ -1175,13 +1122,10 @@ int API_FUNC PtlSwap(
     hdr->dest_offset = remote_offset;
     hdr->length = length;
     hdr->user_ptr = user_ptr;
-    extra_info = malloc(sizeof(ptl_internal_srcdata_t));
-    assert(extra_info);
-    extra_info->swap.get_md_handle.a = get_md_handle;
-    extra_info->swap.local_get_offset = local_get_offset;
-    extra_info->swap.put_md_handle.a = put_md_handle;
-    extra_info->swap.local_put_offset = local_put_offset;
-    hdr->src_data_ptr = extra_info;
+    hdr->src_data.swap.get_md_handle.a = get_md_handle;
+    hdr->src_data.swap.local_get_offset = local_get_offset;
+    hdr->src_data.swap.put_md_handle.a = put_md_handle;
+    hdr->src_data.swap.local_put_offset = local_put_offset;
     hdr->info.swap.hdr_data = hdr_data;
     hdr->info.swap.operation = operation;
     hdr->info.swap.datatype = datatype;
