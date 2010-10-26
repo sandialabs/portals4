@@ -3,10 +3,17 @@
 
 #include "ptl_visibility.h"
 
-void INTERNAL PtlInternalPAPIInit(void);
-void INTERNAL PtlInternalPAPITeardown(void);
-void INTERNAL PtlInternalPAPIStartC(void);
-void INTERNAL PtlInternalPAPISaveC(int func, int savept);
-void INTERNAL PtlInternalPAPIDoneC(int func, int savept);
+void INTERNAL PtlInternalPAPIInit(
+    void);
+void INTERNAL PtlInternalPAPITeardown(
+    void);
+void INTERNAL PtlInternalPAPIStartC(
+    void);
+void INTERNAL PtlInternalPAPISaveC(
+    int func,
+    int savept);
+void INTERNAL PtlInternalPAPIDoneC(
+    int func,
+    int savept);
 
 #endif

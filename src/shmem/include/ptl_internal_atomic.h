@@ -26,12 +26,12 @@ static inline unsigned long PtlInternalAtomicIncXX(
     const size_t length)
 {
     switch (length) {
-	case 4:
-	    return PtlInternalAtomicInc32((volatile uint32_t *)addr, incr);
-	case 8:
-	    return PtlInternalAtomicInc64((volatile uint64_t *)addr, incr);
-	default:
-	    *(int *)(0) = 0;
+        case 4:
+            return PtlInternalAtomicInc32((volatile uint32_t *)addr, incr);
+        case 8:
+            return PtlInternalAtomicInc64((volatile uint64_t *)addr, incr);
+        default:
+            *(int *)(0) = 0;
     }
     return 0;
 }
@@ -67,22 +67,24 @@ static inline void *PtlInternalAtomicCasPtr(
 {
 #if (SIZEOF_VOIDP == 4)
     PtlInternalAtomicCas32((volatile uint32_t *)addr, (uint32_t) oldval,
-			   (uint32_t) newval);
+                           (uint32_t) newval);
 #elif (SIZEOF_VOIDP == 8)
     PtlInternalAtomicCas64((volatile uint64_t *)addr, (uint64_t) oldval,
-			   (uint64_t) newval);
+                           (uint64_t) newval);
 #else
 #error unknown size of void*
 #endif
 }
 #endif /* SANDIA_BUILTIN_CAS */
 
-static inline void *PtlInternalAtomicSwapPtr(void *volatile*addr, void*newval)
+static inline void *PtlInternalAtomicSwapPtr(
+    void *volatile *addr,
+    void *newval)
 {
     void *oldval = *addr;
     void *tmp;
     while ((tmp = PtlInternalAtomicCasPtr(addr, oldval, newval)) != oldval) {
-	oldval = tmp;
+        oldval = tmp;
     }
     return oldval;
 }
