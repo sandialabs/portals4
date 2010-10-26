@@ -5,6 +5,8 @@
 
 #include <stddef.h>		       /* for size_t */
 
+#include "ptl_internal_handles.h"
+
 extern volatile char *comm_pad;
 extern size_t num_siblings;
 extern size_t proc_number;
@@ -19,6 +21,37 @@ extern size_t firstpagesize;
 #define HDR_TYPE_ACKFLAG	8  /* 1___ */
 #define HDR_TYPE_ACKMASK	7  /* _111 */
 
+typedef union {
+    struct {
+	char *moredata;
+	size_t remaining;
+	ptl_process_t target_id;
+	ptl_internal_handle_converter_t md_handle;
+    } put;
+    struct {
+	char *moredata;
+	size_t remaining;
+	ptl_internal_handle_converter_t md_handle;
+	ptl_size_t local_offset;
+    } get;
+    struct {
+	ptl_internal_handle_converter_t md_handle;
+    } atomic;
+    struct {
+	ptl_internal_handle_converter_t get_md_handle;
+	ptl_size_t local_get_offset;
+	ptl_internal_handle_converter_t put_md_handle;
+	ptl_size_t local_put_offset;
+    } fetchatomic;
+    struct {
+	ptl_internal_handle_converter_t get_md_handle;
+	ptl_size_t local_get_offset;
+	ptl_internal_handle_converter_t put_md_handle;
+	ptl_size_t local_put_offset;
+    } swap;
+} ptl_internal_srcdata_t;
+
+
 typedef struct {
     void *volatile next;
     unsigned char type;		// 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
@@ -30,7 +63,8 @@ typedef struct {
     ptl_size_t dest_offset;
     ptl_size_t length;
     void *user_ptr;
-    void *src_data_ptr;
+    //void *src_data_ptr;
+    ptl_internal_srcdata_t src_data;
     union {
 	struct {
 	    ptl_hdr_data_t hdr_data;
