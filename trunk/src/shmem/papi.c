@@ -302,11 +302,7 @@ void INTERNAL PtlInternalPAPITeardown(
 void INTERNAL PtlInternalPAPIStartC(
     void)
 {
-    int ret;
-    if ((ret = PAPI_start_counters(papi_events, numCounters)) != PAPI_OK) {
-        fprintf(stderr, "PAPI_start_counters returned({%i,%i}, %i) ... %i\n", (int)papi_events[0], (int)papi_events[1], (int)numCounters, ret);
-        abort();
-    }
+    PAPI_start_counters(papi_events, numCounters);
 }
 
 void INTERNAL PtlInternalPAPISaveC(
