@@ -19,10 +19,11 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_performatomic.h"
+#include "ptl_internal_papi.h"
 
-#define ME_FREE		0
-#define ME_ALLOCATED	1
-#define ME_IN_USE	2
+#define ME_FREE         0
+#define ME_ALLOCATED    1
+#define ME_IN_USE       2
 
 typedef struct {
     void *next;                 // for nemesis
@@ -141,28 +142,28 @@ static void *PtlInternalPerformOverflowDelivery(
     e.event.tevent.remote_offset = hdr->dest_offset; \
     e.event.tevent.user_ptr = hdr->user_ptr; \
     e.event.tevent.ni_fail_type = PTL_NI_OK; \
-    if (hdr->ni <= 1) {		       /* Logical */ \
-	e.event.tevent.initiator.rank = hdr->src; \
-    } else {			       /* Physical */ \
-	e.event.tevent.initiator.phys.pid = hdr->src; \
-	e.event.tevent.initiator.phys.nid = 0; \
+    if (hdr->ni <= 1) {                /* Logical */ \
+        e.event.tevent.initiator.rank = hdr->src; \
+    } else {                           /* Physical */ \
+        e.event.tevent.initiator.phys.pid = hdr->src; \
+        e.event.tevent.initiator.phys.nid = 0; \
     } \
     switch (hdr->type) { \
-	case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-	    e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
-	    break; \
-	case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
-	    break; \
-	case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
-	    break; \
-	case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
-	    break; \
-	case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
-	    e.event.tevent.hdr_data = 0; \
-	    break; \
+        case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
+            e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
+            break; \
+        case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
+            break; \
+        case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
+            break; \
+        case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
+            break; \
+        case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
+            e.event.tevent.hdr_data = 0; \
+            break; \
     } \
 } while (0)
 
@@ -280,6 +281,7 @@ int API_FUNC PtlMEAppend(
         }
     }
 #endif
+    PtlInternalPAPIStartC();
     assert(mes[ni.s.ni] != NULL);
     meh.s.ni = ni.s.ni;
     /* find an ME handle */
@@ -308,6 +310,7 @@ int API_FUNC PtlMEAppend(
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
+    PtlInternalPAPISaveC(PTL_ME_APPEND, 0);
     ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (ptl_list) {
         case PTL_PRIORITY_LIST:
@@ -478,6 +481,7 @@ int API_FUNC PtlMEAppend(
     }
   done_appending:
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+    PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
     return PTL_OK;
 }
 
@@ -642,6 +646,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendME_t *prev = NULL, *entry = t->priority.head;
     ptl_me_t *me_ptr = NULL;
+
+    PtlInternalPAPIStartC();
     /* To match, one must check, in order:
      * 1. The match_bits (with the ignore_bits) against hdr->match_bits
      * 2. if notruncate, length
@@ -662,8 +668,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     }
     if (entry != NULL) {               // Match
         /*************************************************************************
-	 * There is a matching ME present, and 'entry'/'me_ptr' points to it *
-	 *************************************************************************/
+         * There is a matching ME present, and 'entry'/'me_ptr' points to it *
+         *************************************************************************/
         ptl_size_t mlength = 0;
         const ptl_me_t me =
             *(ptl_me_t *) (((char *)entry) +
@@ -703,8 +709,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             return (ptl_pid_t) 3;
         }
         /*******************************************************************
-	 * We have permissions on this ME, now check if it's a use-once ME *
-	 *******************************************************************/
+         * We have permissions on this ME, now check if it's a use-once ME *
+         *******************************************************************/
         if ((me.options & PTL_ME_USE_ONCE) ||
             ((me.options & (PTL_ME_MIN_FREE | PTL_ME_MANAGE_LOCAL)) &&
              (me.length - entry->local_offset < me.min_free))) {
@@ -743,8 +749,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             mlength = hdr->length;
         }
         /*************************
-	 * Perform the Operation *
-	 *************************/
+         * Perform the Operation *
+         *************************/
         void *report_this_start = (char *)me.start + hdr->dest_offset;
         if (foundin == PRIORITY) {
             PtlInternalPerformDelivery(hdr->type, report_this_start,
@@ -779,6 +785,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         PtlInternalEQPush(t->EQ, &e);
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+    PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
     return 0;                          // silent ACK
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
