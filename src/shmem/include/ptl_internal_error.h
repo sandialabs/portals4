@@ -34,4 +34,4 @@ static void VERBOSE_ERROR(
 }
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

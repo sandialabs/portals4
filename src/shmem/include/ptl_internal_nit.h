@@ -26,4 +26,4 @@ void PtlInternalDeallocUnexpectedHeader(
 ptl_internal_buffered_header_t *PtlInternalAllocUnexpectedHeader(
     const unsigned int ni);
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

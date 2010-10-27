@@ -29,4 +29,4 @@ void PtlInternalPTBufferUnexpectedHeader(
     const uintptr_t data);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

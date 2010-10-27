@@ -29,7 +29,7 @@
 
 const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
-#define MD_FREE	    0
+#define MD_FREE     0
 #define MD_IN_USE   1
 
 typedef struct {
@@ -248,4 +248,4 @@ void INTERNAL PtlInternalMDCleared(
         PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */

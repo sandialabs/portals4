@@ -13,4 +13,4 @@ void PtlInternalEQNITeardown(
     unsigned int ni);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

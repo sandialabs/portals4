@@ -40,13 +40,13 @@ static const char *comm_pad_shm_name = NULL;
     char * strerr; \
     const char *str = getenv(env_str); \
     if (str == NULL) { \
-	if (reqd == 1) goto exit_fail; \
+        if (reqd == 1) goto exit_fail; \
     } else { \
-	size_t tmp = strtol(str, &strerr, 10); \
-	if (strerr == NULL || strerr == str || *strerr != 0) { \
-	    goto exit_fail; \
-	} \
-	var = tmp; \
+        size_t tmp = strtol(str, &strerr, 10); \
+        if (strerr == NULL || strerr == str || *strerr != 0) { \
+            goto exit_fail; \
+        } \
+        var = tmp; \
     } \
 } while (0)
 
@@ -132,8 +132,8 @@ int API_FUNC PtlInit(
 #endif
 
         /**************************************************************************
-	 * Can Now Announce My Presence
-	 **************************************************************************/
+         * Can Now Announce My Presence
+         **************************************************************************/
         comm_pad[proc_number] = 1;
 
         if (proc_number != num_siblings) {
@@ -188,4 +188,4 @@ void API_FUNC PtlFini(
         comm_pad = NULL;
     }
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */

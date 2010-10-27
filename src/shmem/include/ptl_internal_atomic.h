@@ -90,4 +90,4 @@ static inline void *PtlInternalAtomicSwapPtr(
 }
 
 #endif /* PTL_INTERNAL_ATOMIC_H */
-/* vim:set expandtab */
+/* vim:set expandtab: */

@@ -11,4 +11,4 @@ int PtlInternalCTHandleValidator(
     int none_ok);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

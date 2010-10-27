@@ -7,4 +7,4 @@ int PtlInternalPhysicalProcessValidator(
     ptl_process_t p);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

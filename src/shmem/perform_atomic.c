@@ -20,16 +20,16 @@
 #define NONBUILTIN_INT_CAS(Type, Op) do { \
     Type first, second; \
     do { \
-	first = *(volatile Type*)dest; \
-	Op(Type, second, first, *(Type*)src); \
+        first = *(volatile Type*)dest; \
+        Op(Type, second, first, *(Type*)src); \
     } while (__sync_bool_compare_and_swap((volatile Type*)dest, first, second)); \
     *(Type*)src = second; \
 } while (0)
 #define NONBUILTIN_CAS(Type, EqIntType, Op) do { \
     union { Type t; EqIntType i; } first, second; \
     do { \
-	first.i = *(volatile EqIntType*)dest; \
-	Op(Type, second.t, first.t, *(Type*)src); \
+        first.i = *(volatile EqIntType*)dest; \
+        Op(Type, second.t, first.t, *(Type*)src); \
     } while (__sync_bool_compare_and_swap((volatile EqIntType*)dest, first.i, second.i)); \
     *(Type*)src = second.t; \
 } while (0)
@@ -39,16 +39,16 @@
     ptl_datatype_t dt) \
 { \
     switch (dt) { \
-	case PTL_CHAR:   NONBUILTIN_INT_CAS(   int8_t, op); break; \
-	case PTL_UCHAR:  NONBUILTIN_INT_CAS(  uint8_t, op); break; \
-	case PTL_SHORT:  NONBUILTIN_INT_CAS(  int16_t, op); break; \
-	case PTL_USHORT: NONBUILTIN_INT_CAS( uint16_t, op); break; \
-	case PTL_INT:    NONBUILTIN_INT_CAS(  int32_t, op); break; \
-	case PTL_UINT:   NONBUILTIN_INT_CAS( uint32_t, op); break; \
-	case PTL_LONG:   NONBUILTIN_INT_CAS(  int64_t, op); break; \
-	case PTL_ULONG:  NONBUILTIN_INT_CAS( uint64_t, op); break; \
-	case PTL_FLOAT:  NONBUILTIN_CAS(   float, uint32_t, op); break; \
-	case PTL_DOUBLE: NONBUILTIN_CAS(  double, uint64_t, op); break; \
+        case PTL_CHAR:   NONBUILTIN_INT_CAS(   int8_t, op); break; \
+        case PTL_UCHAR:  NONBUILTIN_INT_CAS(  uint8_t, op); break; \
+        case PTL_SHORT:  NONBUILTIN_INT_CAS(  int16_t, op); break; \
+        case PTL_USHORT: NONBUILTIN_INT_CAS( uint16_t, op); break; \
+        case PTL_INT:    NONBUILTIN_INT_CAS(  int32_t, op); break; \
+        case PTL_UINT:   NONBUILTIN_INT_CAS( uint32_t, op); break; \
+        case PTL_LONG:   NONBUILTIN_INT_CAS(  int64_t, op); break; \
+        case PTL_ULONG:  NONBUILTIN_INT_CAS( uint64_t, op); break; \
+        case PTL_FLOAT:  NONBUILTIN_CAS(   float, uint32_t, op); break; \
+        case PTL_DOUBLE: NONBUILTIN_CAS(  double, uint64_t, op); break; \
     } \
 }
 #define PERFORM_INTEGER_DATATYPE_FUNC(fname,op) static void inline PtlInternalPerformAtomic##fname( \
@@ -57,15 +57,15 @@
     ptl_datatype_t dt) \
 { \
     switch (dt) { \
-	case PTL_CHAR:   NONBUILTIN_INT_CAS(   int8_t, op); break; \
-	case PTL_UCHAR:  NONBUILTIN_INT_CAS(  uint8_t, op); break; \
-	case PTL_SHORT:  NONBUILTIN_INT_CAS(  int16_t, op); break; \
-	case PTL_USHORT: NONBUILTIN_INT_CAS( uint16_t, op); break; \
-	case PTL_INT:    NONBUILTIN_INT_CAS(  int32_t, op); break; \
-	case PTL_UINT:   NONBUILTIN_INT_CAS( uint32_t, op); break; \
-	case PTL_LONG:   NONBUILTIN_INT_CAS(  int64_t, op); break; \
-	case PTL_ULONG:  NONBUILTIN_INT_CAS( uint64_t, op); break; \
-	default: abort(); \
+        case PTL_CHAR:   NONBUILTIN_INT_CAS(   int8_t, op); break; \
+        case PTL_UCHAR:  NONBUILTIN_INT_CAS(  uint8_t, op); break; \
+        case PTL_SHORT:  NONBUILTIN_INT_CAS(  int16_t, op); break; \
+        case PTL_USHORT: NONBUILTIN_INT_CAS( uint16_t, op); break; \
+        case PTL_INT:    NONBUILTIN_INT_CAS(  int32_t, op); break; \
+        case PTL_UINT:   NONBUILTIN_INT_CAS( uint32_t, op); break; \
+        case PTL_LONG:   NONBUILTIN_INT_CAS(  int64_t, op); break; \
+        case PTL_ULONG:  NONBUILTIN_INT_CAS( uint64_t, op); break; \
+        default: abort(); \
     } \
 }
 
@@ -129,7 +129,7 @@ PERFORM_UNIVERSAL_DATATYPE_FUNC(Min, MIN_OP)
 #define BUILTINSWAP(int_type) do { \
     int_type before = *(volatile int_type *)dest, tmp; \
     while ((tmp = __sync_val_compare_and_swap((volatile int_type*)dest, before, *(int_type*)src)) != before) { \
-	before = tmp; \
+        before = tmp; \
     } \
     *(int_type*)src = before; \
 } while (0)
@@ -183,8 +183,8 @@ static void inline PtlInternalPerformAtomicSwap(
     const type mask = *(type*)&operand; \
     const type srcv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	newv = (type)((curv & ~mask) | (srcv & mask)); \
+        curv = *(volatile type*)dest; \
+        newv = (type)((curv & ~mask) | (srcv & mask)); \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -192,8 +192,8 @@ static void inline PtlInternalPerformAtomicSwap(
     type curv; \
     const type newv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	if (curv == newv) break; \
+        curv = *(volatile type*)dest; \
+        if (curv == newv) break; \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -201,8 +201,8 @@ static void inline PtlInternalPerformAtomicSwap(
     type curv; \
     const type newv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	if (curv > newv) break; \
+        curv = *(volatile type*)dest; \
+        if (curv > newv) break; \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -210,8 +210,8 @@ static void inline PtlInternalPerformAtomicSwap(
     type curv; \
     const type newv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	if (curv >= newv) break; \
+        curv = *(volatile type*)dest; \
+        if (curv >= newv) break; \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -219,8 +219,8 @@ static void inline PtlInternalPerformAtomicSwap(
     type curv; \
     const type newv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	if (curv < newv) break; \
+        curv = *(volatile type*)dest; \
+        if (curv < newv) break; \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -228,8 +228,8 @@ static void inline PtlInternalPerformAtomicSwap(
     type curv; \
     const type newv = *(type*)src; \
     do { \
-	curv = *(volatile type*)dest; \
-	if (curv <= newv) break; \
+        curv = *(volatile type*)dest; \
+        if (curv <= newv) break; \
     } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
@@ -539,4 +539,4 @@ void INTERNAL PtlInternalPerformAtomicArg(
             *(int *)0 = 0;
     }
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
