@@ -7,6 +7,7 @@
 #include <string.h>                    /* for memcpy() */
 #include <stdio.h>                     /* for FILE, fopen(), etc. */
 #include <assert.h>
+#include <pthread.h>
 #include <papi.h>
 
 /* Internals */
@@ -161,6 +162,7 @@ static int lookup_event_by_str(
     return event_lookup[off].id;
 }                                      /*}}} */
 
+#if 0
 static char *lookup_event_by_num(
     size_t num)
 {                                      /*{{{ */
@@ -171,6 +173,7 @@ static char *lookup_event_by_num(
          ++off) ;
     return event_lookup[off].shortnick;
 }                                      /*}}} */
+#endif
 
 static void display_events(
     void)
@@ -194,6 +197,9 @@ void INTERNAL PtlInternalPAPIInit(
         PAPI_perror(papi_ret, errstring, PAPI_MAX_STR_LEN);
         fprintf(stderr, "~%i~ Error initializing PAPI: %d reason: %s\n",
                 (int)proc_number, papi_ret, errstring);
+        exit(EXIT_FAILURE);
+    }
+    if (PAPI_thread_init(pthread_self) != PAPI_OK) {
         exit(EXIT_FAILURE);
     }
     if (PAPI_num_counters() < PAPI_OK) {
@@ -267,6 +273,7 @@ void INTERNAL PtlInternalPAPIInit(
 void INTERNAL PtlInternalPAPITeardown(
     void)
 {                                      /*{{{ */
+    PAPI_shutdown();
     for (int func = 0; func < NUM_INSTRUMENTED_FUNCS; ++func) {
         for (int savept = 0; savept < NUM_SAVE_POINTS; ++savept) {
             if (papi_measurements[func][savept] == 0) {
@@ -295,11 +302,15 @@ void INTERNAL PtlInternalPAPITeardown(
 void INTERNAL PtlInternalPAPIStartC(
     void)
 {
-    PAPI_start_counters(papi_events, numCounters);
+    int ret;
+    if ((ret = PAPI_start_counters(papi_events, numCounters)) != PAPI_OK) {
+        fprintf(stderr, "PAPI_start_counters returned({%i,%i}, %i) ... %i\n", (int)papi_events[0], (int)papi_events[1], (int)numCounters, ret);
+        abort();
+    }
 }
 
 void INTERNAL PtlInternalPAPISaveC(
-    int func,
+    enum ptl_internal_papi_func func,
     int savept)
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
@@ -311,7 +322,7 @@ void INTERNAL PtlInternalPAPISaveC(
 }
 
 void INTERNAL PtlInternalPAPIDoneC(
-    int func,
+    enum ptl_internal_papi_func func,
     int savept)
 {
     PAPI_stop_counters(papi_ctrs[func], numCounters);
