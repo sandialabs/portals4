@@ -706,6 +706,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
           permission_violation:
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+            PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
             return (ptl_pid_t) 3;
         }
         /*******************************************************************
@@ -771,9 +772,11 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
+                PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
                 return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
                                     1);
         }
+        PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
         return (ptl_pid_t) 1;
     }
     // post dropped message event
