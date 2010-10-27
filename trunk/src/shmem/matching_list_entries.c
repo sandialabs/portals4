@@ -779,9 +779,10 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
                                     1);
+            default:
+                PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
+                return (ptl_pid_t) 1;
         }
-        PtlInternalPAPIDoneC(PTL_ME_PROCESS, 4);
-        return (ptl_pid_t) 1;
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
@@ -789,12 +790,12 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         PTL_INTERNAL_INIT_TEVENT(e, hdr);
         e.type = PTL_EVENT_DROPPED;
         e.event.tevent.start = NULL;
-        PtlInternalPAPIDoneC(PTL_ME_PROCESS, 5);
+        PtlInternalPAPIDoneC(PTL_ME_PROCESS, 4);
         PtlInternalEQPush(t->EQ, &e);
         PtlInternalPAPIStartC();
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
-    PtlInternalPAPIDoneC(PTL_ME_PROCESS, 6);
+    PtlInternalPAPIDoneC(PTL_ME_PROCESS, 5);
     return 0;                          // silent ACK
 }
 /* vim:set expandtab: */
