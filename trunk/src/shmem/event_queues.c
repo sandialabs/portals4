@@ -20,6 +20,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_timer.h"
+#include "ptl_internal_papi.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_commpad.h"
 #endif
@@ -29,6 +30,7 @@ const ptl_internal_handle_converter_t eq_none = {.s = {
     .ni = ((1 << HANDLE_NI_BITS) - 1),
     .code = ((1 << HANDLE_CODE_BITS) - 1)}
 };
+
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff; /* (1<<29) & 0x1fffffff */
 
 typedef union {
@@ -78,8 +80,6 @@ typedef struct {
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
-
-#define PSIZE(x) printf("\t%s @%lu\n", #x, offsetof(ptl_internal_target_event_t,x))
 
 void INTERNAL PtlInternalEQNISetup(
     unsigned int ni)
@@ -265,34 +265,34 @@ int API_FUNC PtlEQFree(
 #define ASSIGN_EVENT(e,ie,ni) do { \
     e->type = (ptl_event_kind_t)(ie.type); \
     switch (e->type) { \
-	case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
-	case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
-	case PTL_EVENT_UNLINK: case PTL_EVENT_FREE: case PTL_EVENT_PROBE: /* target */ \
-	    e->event.tevent.match_bits = ie.event.tevent.match_bits; \
-	    e->event.tevent.start = ie.event.tevent.start; \
-	    e->event.tevent.user_ptr = ie.event.tevent.user_ptr; \
-	    e->event.tevent.hdr_data = ie.event.tevent.hdr_data; \
-	    e->event.tevent.rlength = ie.event.tevent.rlength; \
-	    e->event.tevent.mlength = ie.event.tevent.mlength; \
-	    if (ni <= 1) { /* logical */ \
-		e->event.tevent.initiator.rank = ie.event.tevent.initiator.rank; \
-	    } else { /* physical */ \
-		e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
-		e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; \
-	    } \
-	    e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; /* this handles rank too */ \
-	    e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
-	    e->event.tevent.uid = ie.event.tevent.uid; \
-	    e->event.tevent.jid = ie.event.tevent.jid; \
-	    e->event.tevent.remote_offset = ie.event.tevent.remote_offset; \
-	    e->event.tevent.pt_index = ie.event.tevent.pt_index; \
-	    e->event.tevent.ni_fail_type = ie.event.tevent.ni_fail_type; \
-	    e->event.tevent.atomic_operation = (ptl_op_t) ie.event.tevent.atomic_operation; \
-	    e->event.tevent.atomic_type = (ptl_datatype_t) ie.event.tevent.atomic_type; \
-	    break; \
-	case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
-	    e->event.ievent = ie.event.ievent; \
-	    break; \
+        case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
+        case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
+        case PTL_EVENT_UNLINK: case PTL_EVENT_FREE: case PTL_EVENT_PROBE: /* target */ \
+            e->event.tevent.match_bits = ie.event.tevent.match_bits; \
+            e->event.tevent.start = ie.event.tevent.start; \
+            e->event.tevent.user_ptr = ie.event.tevent.user_ptr; \
+            e->event.tevent.hdr_data = ie.event.tevent.hdr_data; \
+            e->event.tevent.rlength = ie.event.tevent.rlength; \
+            e->event.tevent.mlength = ie.event.tevent.mlength; \
+            if (ni <= 1) { /* logical */ \
+                e->event.tevent.initiator.rank = ie.event.tevent.initiator.rank; \
+            } else { /* physical */ \
+                e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
+                e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; \
+            } \
+            e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; /* this handles rank too */ \
+            e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
+            e->event.tevent.uid = ie.event.tevent.uid; \
+            e->event.tevent.jid = ie.event.tevent.jid; \
+            e->event.tevent.remote_offset = ie.event.tevent.remote_offset; \
+            e->event.tevent.pt_index = ie.event.tevent.pt_index; \
+            e->event.tevent.ni_fail_type = ie.event.tevent.ni_fail_type; \
+            e->event.tevent.atomic_operation = (ptl_op_t) ie.event.tevent.atomic_operation; \
+            e->event.tevent.atomic_type = (ptl_datatype_t) ie.event.tevent.atomic_type; \
+            break; \
+        case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
+            e->event.ievent = ie.event.ievent; \
+            break; \
     } \
 } while (0)
 
@@ -319,6 +319,7 @@ int API_FUNC PtlEQGet(
     const uint32_t mask = eq->size - 1;
     eq_off_t readidx, curidx, newidx;
 
+    PtlInternalPAPIStartC();
     curidx = eq->head;
     do {
         readidx = curidx;
@@ -331,6 +332,7 @@ int API_FUNC PtlEQGet(
     } while ((curidx.u =
               PtlInternalAtomicCas32(&eq->head.u, readidx.u,
                                      newidx.u)) != readidx.u);
+    PtlInternalPAPIDoneC(PTL_EQ_GET, 0);
     return PTL_OK;
 }
 
@@ -361,13 +363,14 @@ int API_FUNC PtlEQWait(
     PtlInternalAtomicInc(rc, 1);
     curidx = eq->head;
     do {
+loopstart:
         readidx = curidx;
         if (readidx.s.offset >= eq->size) {
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
         } else if (readidx.s.offset == eq->lagging_tail.s.offset) {
             curidx = eq->head;
-            continue;
+            goto loopstart;
         }
         ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
         newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);       // a prime number
@@ -486,6 +489,7 @@ void INTERNAL PtlInternalEQPush(
     const uint32_t mask = eq->size - 1;
     eq_off_t writeidx, curidx, newidx;
 
+    PtlInternalPAPIStartC();
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
@@ -554,5 +558,7 @@ void INTERNAL PtlInternalEQPush(
     while (eq->lagging_tail.u != writeidx.u) ;
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
+    PtlInternalPAPIDoneC(PTL_EQ_PUSH, 0);
 }
-/* vim:set expandtab */
+
+/* vim:set expandtab: */
