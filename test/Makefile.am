@@ -18,6 +18,8 @@ TESTS = test_init \
 	test_ME_swap \
 	test_LE_hotpotato \
 	test_ME_hotpotato \
+	test_LE_hotpotato_events \
+	test_ME_hotpotato_events \
 	test_event
 
 #test_LE_hotpotato_events
@@ -93,5 +95,10 @@ test_ME_hotpotato_DEPENDENCIES = $(PORTALSLIB)
 test_event_SOURCES = test_event.c
 test_event_DEPENDENCIES = $(PORTALSLIB)
 
-#test_LE_hotpotato_events_SOURCES = test_LE_hotpotato_events.c
-#test_LE_hotpotato_events_DEPENDENCIES = $(PORTALSLIB)
+test_LE_hotpotato_events_SOURCES = test_hotpotato_events.c
+test_LE_hotpotato_events_CPPFLAGS = -DINTERFACE=0
+test_LE_hotpotato_events_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_hotpotato_events_SOURCES = test_hotpotato_events.c
+test_ME_hotpotato_events_CPPFLAGS = -DINTERFACE=1
+test_ME_hotpotato_events_DEPENDENCIES = $(PORTALSLIB)
