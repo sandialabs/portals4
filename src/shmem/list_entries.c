@@ -27,10 +27,11 @@
 #include "ptl_internal_PT.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_performatomic.h"
+#include "ptl_internal_papi.h"
 
-#define LE_FREE		0
-#define LE_ALLOCATED	1
-#define LE_IN_USE	2
+#define LE_FREE         0
+#define LE_ALLOCATED    1
+#define LE_IN_USE       2
 
 typedef struct {
     void *next;
@@ -122,27 +123,27 @@ static void PtlInternalPerformDelivery(
     e.event.tevent.user_ptr = hdr->user_ptr; \
     e.event.tevent.ni_fail_type = PTL_NI_OK; \
     if (hdr->ni <= 1) { /* Logical */ \
-	e.event.tevent.initiator.rank = hdr->src; \
+        e.event.tevent.initiator.rank = hdr->src; \
     } else { /* Physical */ \
-	e.event.tevent.initiator.phys.pid = hdr->src; \
-	e.event.tevent.initiator.phys.nid = 0; \
+        e.event.tevent.initiator.phys.pid = hdr->src; \
+        e.event.tevent.initiator.phys.nid = 0; \
     } \
     switch (hdr->type) { \
-	case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-	    e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
-	    break; \
-	case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
-	    break; \
-	case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
-	    break; \
-	case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-	    e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
-	    break; \
-	case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
-	    e.event.tevent.hdr_data = 0; \
-	    break; \
+        case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
+            e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
+            break; \
+        case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
+            break; \
+        case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
+            break; \
+        case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
+            e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
+            break; \
+        case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
+            e.event.tevent.hdr_data = 0; \
+            break; \
     } \
 } while (0)
 
@@ -425,8 +426,83 @@ int API_FUNC PtlLEAppend(
             t->overflow.tail = Qentry;
             break;
         case PTL_PROBE_ONLY:
-#warning PTL_PROBE_ONLY not implemented in PtlLEAppend()
-            abort();
+            if (t->buffered_headers.head != NULL && (le.options & (PTL_LE_EVENT_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+                ptl_internal_buffered_header_t *cur =
+                    (ptl_internal_buffered_header_t *) (t->
+                                                        buffered_headers.head);
+                ptl_internal_buffered_header_t *prev = NULL;
+                for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
+                    /* act like there was a delivery;
+                     * 1. Check permissions
+                     * 2. Iff LE is persistent...
+                     * 3a. Queue buffered header to ME buffer
+                     * 4a. When done processing entire unexpected header list, send retransmit request
+                     * ... else: deliver and return */
+                    // (1) check permissions
+                    if (le.options & PTL_LE_AUTH_USE_JID) {
+                        if (le.ac_id.jid != PTL_JID_ANY) {
+                            goto permission_violationPO;
+                        }
+                    } else {
+                        if (le.ac_id.uid != PTL_UID_ANY) {
+                            goto permission_violationPO;
+                        }
+                    }
+                    switch (cur->hdr.type) {
+                        case HDR_TYPE_PUT:
+                        case HDR_TYPE_ATOMIC:
+                        case HDR_TYPE_FETCHATOMIC:
+                        case HDR_TYPE_SWAP:
+                            if ((le.options & PTL_LE_OP_PUT) == 0) {
+                                goto permission_violationPO;
+                            }
+                    }
+                    switch (cur->hdr.type) {
+                        case HDR_TYPE_GET:
+                        case HDR_TYPE_FETCHATOMIC:
+                        case HDR_TYPE_SWAP:
+                            if ((le.options & PTL_LE_OP_GET) == 0) {
+                                goto permission_violationPO;
+                            }
+                    }
+                    if (0) {
+                      permission_violationPO:
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni]
+                                                   [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                        continue;
+                    }
+                    // (2) iff LE is persistent
+                    if ((le.options & PTL_LE_USE_ONCE) != 0) {
+#warning PtlLEAppend() PTL_PROBE_ONLY does not work with persistent LEs (implementation needs to be fleshed out)
+                        abort();
+                    } else {
+                        size_t mlength;
+                        // deliver
+                        if (le.length == 0) {
+                            mlength = 0;
+                        } else if (cur->hdr.length + cur->hdr.dest_offset >
+                                   le.length) {
+                            if (le.length > cur->hdr.dest_offset) {
+                                mlength = le.length - cur->hdr.dest_offset;
+                            } else {
+                                mlength = 0;
+                            }
+                        } else {
+                            mlength = cur->hdr.length;
+                        }
+                        // notify
+                        if (t->EQ != PTL_EQ_NONE) {
+                            ptl_event_t e;
+                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)));
+                            e.type = PTL_EVENT_PROBE;
+                            e.event.tevent.mlength = mlength;
+                            e.event.tevent.start = cur->buffered_data;
+                            PtlInternalEQPush(t->EQ, &e);
+                        }
+                    }
+                    goto done_appending;
+                }
+            }
             break;
     }
   done_appending:
@@ -547,6 +623,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendLE_t *entry = NULL;
 
+    PtlInternalPAPIStartC();
     assert(t);
     assert(hdr);
     /* Find an entry */
@@ -558,8 +635,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     }
     if (entry != NULL) {
         /*********************************************************
-	 * There is an LE present, and 'entry' points to it *
-	 *********************************************************/
+         * There is an LE present, and 'entry' points to it *
+         *********************************************************/
         ptl_size_t mlength = 0;
         const ptl_le_t le =
             *(ptl_le_t *) (((char *)entry) +
@@ -599,8 +676,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 : 3);
         }
         /*******************************************************************
-	 * We have permissions on this LE, now check if it's a use-once LE *
-	 *******************************************************************/
+         * We have permissions on this LE, now check if it's a use-once LE *
+         *******************************************************************/
         if (le.options & PTL_LE_USE_ONCE) {
             // unlink LE
             if (foundin == PRIORITY) {
@@ -634,8 +711,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             mlength = hdr->length;
         }
         /*************************
-	 * Perform the Operation *
-	 *************************/
+         * Perform the Operation *
+         *************************/
         void *report_this_start = (char *)le.start + hdr->dest_offset;
         if (foundin == PRIORITY) {
             PtlInternalPerformDelivery(hdr->type, report_this_start,
@@ -674,6 +751,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
         PtlInternalEQPush(t->EQ, &e);
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+    PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
     return 0;                          // silent ACK
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
