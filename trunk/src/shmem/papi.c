@@ -14,7 +14,6 @@
 #include "ptl_internal_commpad.h"      /* for proc_number */
 
 #define MAX_PAPI_EVENTS 100
-#define NUM_INSTRUMENTED_FUNCS 1
 #define NUM_SAVE_POINTS 10
 
 static unsigned int numCounters = 0;
@@ -321,4 +320,4 @@ void INTERNAL PtlInternalPAPIDoneC(
     }
     ++papi_measurements[func][savept];
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
