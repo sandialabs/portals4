@@ -16,4 +16,4 @@ ptl_pid_t PtlInternalMEDeliver(
     ptl_internal_header_t * restrict h);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */
