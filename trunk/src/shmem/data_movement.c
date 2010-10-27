@@ -455,9 +455,7 @@ int API_FUNC PtlPut(
             break;
     }
 #endif
-#ifdef HAVE_LIBPAPI
     PtlInternalPAPIStartC();
-#endif
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
@@ -475,13 +473,9 @@ int API_FUNC PtlPut(
     hdr->src_data.put.md_handle.a = md_handle;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
-#ifdef HAVE_LIBPAPI
-    PtlInternalPAPISaveC(0, 0);
-#endif
+    PtlInternalPAPISaveC(PTL_PUT, 0);
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
-#ifdef HAVE_LIBPAPI
-    PtlInternalPAPISaveC(0, 1);
-#endif
+    PtlInternalPAPISaveC(PTL_PUT, 1);
     /* step 3: load up the data */
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
@@ -497,9 +491,7 @@ int API_FUNC PtlPut(
         hdr->src_data.put.remaining = length - payload;
         hdr->src_data.put.target_id = target_id;
     }
-#ifdef HAVE_LIBPAPI
-    PtlInternalPAPISaveC(0, 2);
-#endif
+    PtlInternalPAPISaveC(PTL_PUT, 2);
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
         case 0:
@@ -515,9 +507,7 @@ int API_FUNC PtlPut(
         default:
             *(int *)0 = 0;
     }
-#ifdef HAVE_LIBPAPI
-    PtlInternalPAPISaveC(0, 3);
-#endif
+    PtlInternalPAPISaveC(PTL_PUT, 3);
     if (quick_exit) {
         unsigned int options;
         ptl_handle_eq_t eqh;
@@ -556,9 +546,7 @@ int API_FUNC PtlPut(
             PtlInternalEQPush(eqh, &e);
         }
     }
-#ifdef HAVE_LIBPAPI
-    PtlInternalPAPIDoneC(0, 4);
-#endif
+    PtlInternalPAPIDoneC(PTL_PUT, 4);
     return PTL_OK;
 }
 
@@ -1197,4 +1185,4 @@ int API_FUNC PtlSwap(
     }
     return PTL_OK;
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
