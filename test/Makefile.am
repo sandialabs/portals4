@@ -22,11 +22,7 @@ TESTS = test_init \
 	test_ME_hotpotato_events \
 	test_event
 
-#test_LE_hotpotato_events
-
 EXTRA_DIST = numawrapper.sh
-
-#EXTRA_PROGRAMS = test_bootstrap
 
 all: $(TESTS)
 buildall: $(TESTS)
