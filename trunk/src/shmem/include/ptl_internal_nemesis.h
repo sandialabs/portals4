@@ -144,4 +144,4 @@ NEMESIS_entry *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_blocking_queue * q);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

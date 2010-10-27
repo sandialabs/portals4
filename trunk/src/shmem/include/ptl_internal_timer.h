@@ -23,4 +23,4 @@
 #endif
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

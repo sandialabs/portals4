@@ -7,4 +7,4 @@ void PtlInternalDMTeardown(
     void);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

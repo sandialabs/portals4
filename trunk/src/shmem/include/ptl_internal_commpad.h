@@ -13,13 +13,13 @@ extern size_t proc_number;
 extern size_t per_proc_comm_buf_size;
 extern size_t firstpagesize;
 
-#define HDR_TYPE_PUT		0      /* ____ */
-#define HDR_TYPE_GET		1      /* ___1 */
-#define HDR_TYPE_ATOMIC		2      /* __1_ */
-#define HDR_TYPE_FETCHATOMIC	3      /* __11 */
-#define HDR_TYPE_SWAP		4      /* _1__ */
-#define HDR_TYPE_ACKFLAG	8      /* 1___ */
-#define HDR_TYPE_ACKMASK	7      /* _111 */
+#define HDR_TYPE_PUT            0      /* ____ */
+#define HDR_TYPE_GET            1      /* ___1 */
+#define HDR_TYPE_ATOMIC         2      /* __1_ */
+#define HDR_TYPE_FETCHATOMIC    3      /* __11 */
+#define HDR_TYPE_SWAP           4      /* _1__ */
+#define HDR_TYPE_ACKFLAG        8      /* 1___ */
+#define HDR_TYPE_ACKMASK        7      /* _111 */
 
 typedef union {
     struct {
@@ -98,4 +98,4 @@ typedef struct {
 } ptl_internal_buffered_header_t;
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

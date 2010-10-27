@@ -29,8 +29,8 @@
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
-#define CT_FREE	    0
-#define CT_BUSY	    1
+#define CT_FREE     0
+#define CT_BUSY     1
 #define CT_READY    2
 
 volatile uint64_t global_generation = 0;
@@ -41,7 +41,7 @@ static const ptl_ct_event_t CTERR =
     { 0xffffffffffffffffULL, 0xffffffffffffffffULL };
 
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
-#define CT_EQUAL(a,b)	    (a.success == b.success && a.failure == b.failure)
+#define CT_EQUAL(a,b)       (a.success == b.success && a.failure == b.failure)
 
 /* 128-bit Atomics */
 static inline int PtlInternalAtomicCasCT(
@@ -53,7 +53,7 @@ static inline int PtlInternalAtomicCasCT(
     register unsigned char ret;
     assert(((uintptr_t) addr & 0xf) == 0);
     __asm__ __volatile__(
-    "lock cmpxchg16b %1\n\t" "sete	     %0":"=q"(ret),
+    "lock cmpxchg16b %1\n\t" "sete           %0":"=q"(ret),
     "+m"    (*addr)
     :"a"    (oldval.success),
     "d"     (oldval.failure),
@@ -473,4 +473,4 @@ int API_FUNC PtlCTInc(
     }
     return PTL_OK;
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */

@@ -22,4 +22,4 @@ void PtlInternalMDCleared(
     ptl_handle_md_t handle);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

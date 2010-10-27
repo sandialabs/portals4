@@ -26,4 +26,4 @@ uint64_t PtlInternalFragmentSize(
     void *frag);
 
 #endif
-/* vim:set expandtab */
+/* vim:set expandtab: */

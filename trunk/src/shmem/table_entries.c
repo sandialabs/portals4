@@ -211,4 +211,4 @@ void INTERNAL PtlInternalPTBufferUnexpectedHeader(
     }
     t->buffered_headers.tail = bhdr;
 }
-/* vim:set expandtab */
+/* vim:set expandtab: */
