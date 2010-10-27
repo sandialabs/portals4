@@ -4,16 +4,16 @@
 #ifdef HAVE_LIBPAPI
 # include "ptl_visibility.h"
 
-enum {
-    PTL_PUT,
-    PTL_ME_APPEND,
-    PTL_EQ_GET,
-    PTL_EQ_PUSH,
-    PTL_LE_PROCESS,
-    PTL_ME_PROCESS,
+enum ptl_internal_papi_func {
+    PTL_PUT,			/* 0 */
+    PTL_ME_APPEND,		/* 1 */
+    PTL_EQ_GET,			/* 2 */
+    PTL_EQ_PUSH,		/* 3 */
+    PTL_LE_PROCESS,		/* 4 */
+    PTL_ME_PROCESS,		/* 5 */
 
-    NUM_INSTRUMENTED_PROCS // must be last entry
-} ptl_internal_papi_func;
+    NUM_INSTRUMENTED_FUNCS	// must be last entry
+};
 
 void INTERNAL PtlInternalPAPIInit(
     void);
@@ -22,10 +22,10 @@ void INTERNAL PtlInternalPAPITeardown(
 void INTERNAL PtlInternalPAPIStartC(
     void);
 void INTERNAL PtlInternalPAPISaveC(
-    ptl_internal_papi_func func,
+    enum ptl_internal_papi_func func,
     int savept);
 void INTERNAL PtlInternalPAPIDoneC(
-    ptl_internal_papi_func func,
+    enum ptl_internal_papi_func func,
     int savept);
 #else
 # define PtlInternalPAPIInit()
