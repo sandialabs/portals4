@@ -16,24 +16,22 @@ TESTS = test_init \
 	test_ME_fetchatomic \
 	test_LE_swap \
 	test_ME_swap \
-	test_LE_hotpotato \
-	test_ME_hotpotato \
-	test_LE_hotpotato_events \
-	test_ME_hotpotato_events \
 	test_event
-
-EXTRA_DIST = numawrapper.sh
-
-all: $(TESTS)
-buildall: $(TESTS)
-.PHONY: buildall
-
-check_PROGRAMS = $(TESTS)
+BENCHMARKS =
 
 INCLUDES = -I$(top_srcdir)/include
 OUTPUTDIR = $(top_builddir)/src
 PORTALSLIB = $(OUTPUTDIR)/libportals.la
 LDADD = $(PORTALSLIB)
+
+include benchmarks/rtt_latency/Makefile.inc
+
+EXTRA_DIST = numawrapper.sh
+EXTRA_PROGRAMS = $(BENCHMARKS)
+
+all: $(TESTS) $(BENCHMARKS)
+
+check_PROGRAMS = $(TESTS)
 
 THREADS ?= 1
 
@@ -80,21 +78,5 @@ test_ME_swap_SOURCES = test_swap.c
 test_ME_swap_CPPFLAGS = -DINTERFACE=1
 test_ME_swap_DEPENDENCIES = $(PORTALSLIB)
 
-test_LE_hotpotato_SOURCES = test_hotpotato.c
-test_LE_hotpotato_CPPFLAGS = -DINTERFACE=0
-test_LE_hotpotato_DEPENDENCIES = $(PORTALSLIB)
-
-test_ME_hotpotato_SOURCES = test_hotpotato.c
-test_ME_hotpotato_CPPFLAGS = -DINTERFACE=1
-test_ME_hotpotato_DEPENDENCIES = $(PORTALSLIB)
-
 test_event_SOURCES = test_event.c
 test_event_DEPENDENCIES = $(PORTALSLIB)
-
-test_LE_hotpotato_events_SOURCES = test_hotpotato_events.c
-test_LE_hotpotato_events_CPPFLAGS = -DINTERFACE=0
-test_LE_hotpotato_events_DEPENDENCIES = $(PORTALSLIB)
-
-test_ME_hotpotato_events_SOURCES = test_hotpotato_events.c
-test_ME_hotpotato_events_CPPFLAGS = -DINTERFACE=1
-test_ME_hotpotato_events_DEPENDENCIES = $(PORTALSLIB)
