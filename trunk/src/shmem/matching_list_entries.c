@@ -180,30 +180,9 @@ static void PtlInternalAnnounceMEDelivery(
     int ct_announce = ct_handle != PTL_CT_NONE;
     if (ct_announce != 0) {
         if (overflow) {
-            switch (type) {
-                case HDR_TYPE_PUT:
-                    ct_announce = options & PTL_ME_EVENT_CT_PUT_OVERFLOW;
-                    break;
-                case HDR_TYPE_ATOMIC:
-                case HDR_TYPE_FETCHATOMIC:
-                case HDR_TYPE_SWAP:
-                    ct_announce = options & PTL_ME_EVENT_CT_ATOMIC_OVERFLOW;
-                    break;
-            }
+            ct_announce = options & PTL_ME_EVENT_CT_OVERFLOW;
         } else {
-            switch (type) {
-                case HDR_TYPE_PUT:
-                    ct_announce = options & PTL_ME_EVENT_CT_PUT;
-                    break;
-                case HDR_TYPE_GET:
-                    ct_announce = options & PTL_ME_EVENT_CT_GET;
-                    break;
-                case HDR_TYPE_ATOMIC:
-                case HDR_TYPE_FETCHATOMIC:
-                case HDR_TYPE_SWAP:
-                    ct_announce = options & PTL_ME_EVENT_CT_ATOMIC;
-                    break;
-            }
+            ct_announce = options & PTL_ME_EVENT_CT_COMM;
         }
     }
     if (ct_announce != 0) {

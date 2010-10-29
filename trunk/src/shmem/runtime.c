@@ -105,7 +105,7 @@ void runtime_init(
     le.ac_id.uid = PTL_UID_ANY;
     le.options =
         PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_COMM_DISABLE |
-        PTL_LE_EVENT_CT_PUT;
+        PTL_LE_EVENT_CT_COMM;
     ret = PtlCTAlloc(ni_physical, &le.ct_handle);
     if (ret != PTL_OK)
         abort();
@@ -211,7 +211,7 @@ void API_FUNC runtime_barrier(
     le.start = md.start = NULL;
     le.length = md.length = 0;
     le.ac_id.uid = PTL_UID_ANY;
-    le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_PUT;
+    le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_COMM;
     md.options = PTL_MD_EVENT_DISABLE;
     le.ct_handle = md.ct_handle = PTL_CT_NONE;
     md.eq_handle = PTL_EQ_NONE;

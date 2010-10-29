@@ -36,14 +36,14 @@ static void noFailures(
 #define ENTRY_T ptl_me_t
 #define HANDLE_T ptl_handle_me_t
 #define NI_TYPE PTL_NI_MATCHING
-#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_ATOMIC)
+#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
 #define APPEND PtlMEAppend
 #define UNLINK PtlMEUnlink
 #else
 #define ENTRY_T ptl_le_t
 #define HANDLE_T ptl_handle_le_t
 #define NI_TYPE PTL_NI_NO_MATCHING
-#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_ATOMIC)
+#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
 #define APPEND PtlLEAppend
 #define UNLINK PtlLEUnlink
 #endif

@@ -253,11 +253,8 @@ typedef struct {
  - \c PTL_LE_EVENT_SUCCESS_DISABLE
  - \c PTL_LE_EVENT_OVER_DISABLE
  - \c PTL_LE_EVENT_UNLINK_DISABLE
- - \c PTL_LE_EVENT_CT_GET
- - \c PTL_LE_EVENT_CT_PUT
- - \c PTL_LE_EVENT_CT_PUT_OVERFLOW
- - \c PTL_LE_EVENT_CT_ATOMIC
- - \c PTL_LE_EVENT_CT_ATOMIC_OVERFLOW
+ - \c PTL_LE_EVENT_CT_COMM
+ - \c PTL_LE_EVENT_CT_OVERFLOW
  - \c PTL_LE_EVENT_CT_BYTES
  - \c PTL_LE_AUTH_USE_JID
  */
@@ -967,29 +964,22 @@ typedef enum {
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
 #define PTL_LE_EVENT_UNLINK_DISABLE     (1<<9)
 
-/*! Enable the counting of \c PTL_EVENT_GET events */
-#define PTL_LE_EVENT_CT_GET             (1<<10)
+/*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
+ * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
+#define PTL_LE_EVENT_CT_COMM            (1<<10)
 
-/*! Enable the counting of \c PTL_EVENT_PUT events */
-#define PTL_LE_EVENT_CT_PUT             (1<<11)
-
-/*! Enable the counting of \c PTL_EVENT_PUT_OVERFLOW events */
-#define PTL_LE_EVENT_CT_PUT_OVERFLOW    (1<<12)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC events */
-#define PTL_LE_EVENT_CT_ATOMIC          (1<<13)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events */
-#define PTL_LE_EVENT_CT_ATOMIC_OVERFLOW (1<<14)
+/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
+ * PTL_EVENT_ATOMIC_OVERFLOW). */
+#define PTL_LE_EVENT_CT_OVERFLOW        (1<<11)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failure events always increment the
  * count by one. */
-#define PTL_LE_EVENT_CT_BYTES           (1<<15)
+#define PTL_LE_EVENT_CT_BYTES           (1<<12)
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a list entry. */
-#define PTL_LE_AUTH_USE_JID             (1<<16)
+#define PTL_LE_AUTH_USE_JID             (1<<13)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
@@ -1127,29 +1117,22 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
 #define PTL_ME_EVENT_UNLINK_DISABLE     (1<<9)
 
-/*! Enable the counting of \c PTL_EVENT_GET events. */
-#define PTL_ME_EVENT_CT_GET             (1<<10)
+/*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
+ * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
+#define PTL_ME_EVENT_CT_COMM            (1<<10)
 
-/*! Enable the counting of \c PTL_EVENT_PUT events. */
-#define PTL_ME_EVENT_CT_PUT             (1<<11)
-
-/*! Enable the counting of \c PTL_EVENT_PUT_OVERFLOW events. */
-#define PTL_ME_EVENT_CT_PUT_OVERFLOW    (1<<12)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC events. */
-#define PTL_ME_EVENT_CT_ATOMIC          (1<<13)
-
-/*! Enable the counting of \c PTL_EVENT_ATOMIC_OVERFLOW events. */
-#define PTL_ME_EVENT_CT_ATOMIC_OVERFLOW (1<<14)
+/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
+ * PTL_EVENT_ATOMIC_OVERFLOW). */
+#define PTL_ME_EVENT_CT_OVERFLOW        (1<<11)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_ME_EVENT_CT_BYTES           (1<<15)
+#define PTL_ME_EVENT_CT_BYTES           (1<<12)
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID             (1<<16)
+#define PTL_ME_AUTH_USE_JID             (1<<13)
 
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
@@ -1253,11 +1236,8 @@ typedef struct {
      - \c PTL_ME_EVENT_SUCCESS_DISABLE
      - \c PTL_ME_EVENT_OVER_DISABLE
      - \c PTL_ME_EVENT_UNLINK_DISABLE
-     - \c PTL_ME_EVENT_CT_GET
-     - \c PTL_ME_EVENT_CT_PUT
-     - \c PTL_ME_EVENT_CT_PUT_OVERFLOW
-     - \c PTL_ME_EVENT_CT_ATOMIC
-     - \c PTL_ME_EVENT_CT_ATOMIC_OVERFLOW
+     - \c PTL_ME_EVENT_CT_COMM
+     - \c PTL_ME_EVENT_CT_OVERFLOW
      - \c PTL_ME_EVENT_CT_BYTES
      - \c PTL_ME_AUTH_USE_JID
      */
