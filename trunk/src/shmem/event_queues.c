@@ -384,7 +384,7 @@ loopstart:
 
 int API_FUNC PtlEQPoll(
     ptl_handle_eq_t * eq_handles,
-    int size,
+    unsigned int size,
     ptl_time_t timeout,
     ptl_event_t * event,
     int *which)

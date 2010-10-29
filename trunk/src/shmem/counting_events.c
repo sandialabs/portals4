@@ -334,7 +334,7 @@ int API_FUNC PtlCTWait(
 int API_FUNC PtlCTPoll(
     ptl_handle_ct_t * ct_handles,
     ptl_size_t * tests,
-    int size,
+    unsigned int size,
     ptl_time_t timeout,
     ptl_ct_event_t * event,
     int *which)
