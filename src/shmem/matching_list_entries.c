@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <stdlib.h>                    /* for NULL & calloc() */
 #include <string.h>                    /* for memcpy() */
 
 /* Internals */
