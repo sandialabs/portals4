@@ -72,7 +72,7 @@ int main(
     value_le.start = &value;
     value_le.length = sizeof(uint64_t);
     value_le.ac_id.uid = PTL_UID_ANY;
-    value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_GET;
+    value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend
                     (ni_logical, 0, value_le, PTL_PRIORITY_LIST, NULL,

@@ -473,7 +473,7 @@ void *collator(
     md.start = le.start = mapping;
     md.length = le.length = count * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
-    le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_PUT;
+    le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
     ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle), PTL_OK);
     collator_ct_handle = le.ct_handle;
     ptl_assert(PtlLEAppend
