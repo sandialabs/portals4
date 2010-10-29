@@ -715,9 +715,10 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
          * We have permissions on this ME, now check if it's a use-once ME *
          *******************************************************************/
         if ((me.options & PTL_ME_USE_ONCE) ||
-            ((me.options & (PTL_ME_MIN_FREE | PTL_ME_MANAGE_LOCAL)) &&
-             (me.length - entry->local_offset < me.min_free))) {
-            // unlink ME
+            ((me.options & (PTL_ME_MANAGE_LOCAL)) &&
+             (me.min_free != 0) &&
+             (me.length - entry->local_offset < me.min_free))) { /* XXX: fix this math */
+            /* unlink ME */
             if (prev != NULL) {
                 prev->next = entry->next;
             } else {

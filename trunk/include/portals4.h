@@ -1170,10 +1170,6 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  * */
 #define PTL_ME_MAY_ALIGN		(1<<18)
 
-/*! Specifies that the \a min_free field in the match list entry is to be used.
- * This option is only used if \c PTL_ME_MANAGE_LOCAL is set. */
-#define PTL_ME_MIN_FREE			(1<<19)
-
 /*!
  * @struct ptl_me_t
  * @brief Defines the visible parts of a match list entry. Values of this type
