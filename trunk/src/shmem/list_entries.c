@@ -196,7 +196,7 @@ static void PtlInternalAnnounceLEDelivery(
         }
     }
     if (eq_handle != PTL_EQ_NONE &&
-        (options & (PTL_LE_EVENT_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE)) ==
+        (options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE)) ==
         0) {
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr);
@@ -690,8 +690,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             }
             if (t->EQ != PTL_EQ_NONE &&
                 (le.
-                 options & (PTL_LE_EVENT_DISABLE |
-                            PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
+                 options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
                 ptl_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr);
                 e.type = PTL_EVENT_UNLINK;

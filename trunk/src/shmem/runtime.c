@@ -104,7 +104,7 @@ void runtime_init(
     le.length = (maxrank + 1) * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
     le.options =
-        PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_DISABLE |
+        PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_COMM_DISABLE |
         PTL_LE_EVENT_CT_PUT;
     ret = PtlCTAlloc(ni_physical, &le.ct_handle);
     if (ret != PTL_OK)
