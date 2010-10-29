@@ -1500,7 +1500,7 @@ int PtlCTWait(ptl_handle_ct_t   ct_handle,
 /*!
  * @fn PtlCTPoll(ptl_handle_ct_t *  ct_handles,
  *               ptl_size_t *       tests,
- *               int                size,
+ *               unsigned int       size,
  *               ptl_time_t         timeout,
  *               ptl_ct_event_t *   event,
  *               int *              which)
@@ -1562,7 +1562,7 @@ int PtlCTWait(ptl_handle_ct_t   ct_handle,
  */
 int PtlCTPoll(ptl_handle_ct_t * ct_handles,
               ptl_size_t *      tests,
-              int               size,
+              unsigned int      size,
               ptl_time_t        timeout,
               ptl_ct_event_t *  event,
               int *             which);
@@ -2485,7 +2485,7 @@ int PtlEQWait(ptl_handle_eq_t   eq_handle,
               ptl_event_t *     event);
 /*!
  * @fn PtlEQPoll(ptl_handle_eq_t *  eq_handles,
- *               int                size,
+ *               unsigned int       size,
  *               ptl_time_t         timeout,
  *               ptl_event_t *      event,
  *               int *              which)
@@ -2541,7 +2541,7 @@ int PtlEQWait(ptl_handle_eq_t   eq_handle,
  * @see PtlEQGet(), PtlEQWait()
  */
 int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
-              int                   size,
+              unsigned int          size,
               ptl_time_t            timeout,
               ptl_event_t *         event,
               int *                 which);
