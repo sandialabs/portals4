@@ -205,45 +205,44 @@ typedef union {
  *      list entry, which does not provide matching.
  */
 typedef struct {
-    void*           start; /*!< Specify the starting address of the memory
-                             region associated with the match list entry. Can
-                             be \c NULL provided that \a length is zero.
-                             Zero-length buffers (NULL LE) are useful to record
-                             events. There are no alignment restrictions on
-                             buffer alignment, the starting address, or the
-                             length of the region; although messages that are
-                             not natively aligned (e.g. to a four byte or eight
-                             byte boundary) may be slower (i.e. lower bandwidth
-                             and/or longer latency) on some implementations. */
-    ptl_size_t      length; /*!< Specify the length of the memory region
-                              associated with the match list entry. */
-    ptl_handle_ct_t ct_handle; /*!< A handle for counting type events
-                                 associated with the memory region. If this
-                                 argument is \c PTL_CT_NONE, operations
-                                 performed on this list entry are not counted.
-                                 */
-    ptl_ac_id_t     ac_id; /*!< Specifies either the user ID or job ID (as
-                             selected by the \a options) that may access this
-                             list entry. Either the user ID or job ID may be
-                             set to a wildcard (\c PTL_UID_ANY or \c
-                             PTL_JID_ANY). If the access control check fails,
-                             then the message is dropped without modifying
-                             Portals state. This is treated as a permissions
-                             failure and the PtlNIStatus() register indexed by
-                             \c PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
-                             This failure is also indicated to the initiator
-                             through the \a ni_fail_type in the \c
-                             PTL_EVENT_SEND event, unless the \c
-                             PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
-    unsigned int    options; /*!< Specifies the behavior of the list entry. The
-                               following options can be selected: enable put
-                               operations (yes or no), enable get operations
-                               (yes or no), offset management (local or
-                               remote), message truncation (yes or no),
-                               acknowledgment (yes or no), use scatter/gather
-                               vectors and disable events. Values for this
-                               argument can be constructed using a bitwise OR
-                               of the following values:
+    /*! Specify the starting address of the memory region associated with the
+     *  match list entry. Can be \c NULL provided that \a length is zero.
+     *  Zero-length buffers (NULL LE) are useful to record events. Messages
+     *  that are outside the bounds of the LE are truncated to zero bytes (e.g.
+     *  zero-length buffers or an offset beyond the length of the LE). There
+     *  are no alignment restrictions on buffer alignment, the starting
+     *  address, or the length of the region; although messages that are not
+     *  natively aligned (e.g. to a four byte or eight byte boundary) may be
+     *  slower (i.e. lower bandwidth and/or longer latency) on some
+     *  implementations. */
+    void*           start;
+
+    /*! Specify the length of the memory region associated with the match list
+     *  entry. */
+    ptl_size_t      length;
+
+    /*! A handle for counting type events associated with the memory region. If
+     *  this argument is \c PTL_CT_NONE, operations performed on this list
+     *  entry are not counted. */
+    ptl_handle_ct_t ct_handle;
+
+    /*! Specifies either the user ID or job ID (as selected by the \a options)
+     *  that may access this list entry. Either the user ID or job ID may be
+     *  set to a wildcard (\c PTL_UID_ANY or \c PTL_JID_ANY). If the access
+     *  control check fails, then the message is dropped without modifying
+     *  Portals state. This is treated as a permissions failure and the
+     *  PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
+     *  incremented. This failure is also indicated to the initiator through
+     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
+     *  PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+    ptl_ac_id_t     ac_id;
+
+    /*! Specifies the behavior of the list entry. The following options can be
+     *  selected: enable put operations (yes or no), enable get operations (yes
+     *  or no), offset management (local or remote), message truncation (yes or
+     *  no), acknowledgment (yes or no), use scatter/gather vectors and disable
+     *  events. Values for this argument can be constructed using a bitwise OR
+     *  of the following values:
  - \c PTL_LE_OP_PUT
  - \c PTL_LE_OP_GET
  - \c PTL_LE_USE_ONCE
@@ -261,6 +260,7 @@ typedef struct {
  - \c PTL_LE_EVENT_CT_BYTES
  - \c PTL_LE_AUTH_USE_JID
  */
+    unsigned int    options;
 } ptl_le_t;
 
 /****************************
@@ -1188,10 +1188,12 @@ typedef struct {
     /*! Specify the starting address of the memory region associated with the
      * match list entry. The \a start member can be \c NULL provided that the
      * \a length member is zero. Zero-length buffers (NULL ME) are useful to
-     * record events. There are no alignment restrictions on buffer alignment,
-     * the starting address or the length of the region; although unaligned
-     * messages may be slower (i.e., lower bandwidth and/or longer latency) on
-     * some implementations. */
+     * record events.Messages that are outside the bounds of the ME are
+     * truncated to zero bytes (e.g. zero-length buffers or an offset beyond
+     * the length of the ME). There are no alignment restrictions on buffer
+     * alignment, the starting address or the length of the region; although
+     * unaligned messages may be slower (i.e., lower bandwidth and/or longer
+     * latency) on some implementations. */
     void *              start;
 
     /*! Specify the length of the memory region associated with the match list
