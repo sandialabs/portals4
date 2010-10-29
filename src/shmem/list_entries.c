@@ -426,12 +426,11 @@ int API_FUNC PtlLEAppend(
             t->overflow.tail = Qentry;
             break;
         case PTL_PROBE_ONLY:
-            if (t->buffered_headers.head != NULL && (le.options & (PTL_LE_EVENT_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE)) == 0) {
+            if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
                     (ptl_internal_buffered_header_t *) (t->
                                                         buffered_headers.head);
-                ptl_internal_buffered_header_t *prev = NULL;
-                for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
+                for (; cur != NULL; cur = cur->hdr.next) {
                     /* act like there was a delivery;
                      * 1. Check permissions
                      * 2. Iff LE is persistent...
@@ -472,10 +471,7 @@ int API_FUNC PtlLEAppend(
                         continue;
                     }
                     // (2) iff LE is persistent
-                    if ((le.options & PTL_LE_USE_ONCE) != 0) {
-#warning PtlLEAppend() PTL_PROBE_ONLY does not work with persistent LEs (implementation needs to be fleshed out)
-                        abort();
-                    } else {
+                    {
                         size_t mlength;
                         // deliver
                         if (le.length == 0) {
@@ -500,7 +496,9 @@ int API_FUNC PtlLEAppend(
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
-                    goto done_appending;
+                    if (le.options & PTL_LE_USE_ONCE) {
+                        goto done_appending;
+                    }
                 }
             }
             break;
