@@ -57,6 +57,9 @@ AC_ARG_ENABLE([fast],
 AC_ARG_ENABLE([papi],
 			  [AS_HELP_STRING([--enable-papi],
 							  [Enables PAPI performance counters support])])
+AC_ARG_ENABLE([forced-overflow-events],
+			  [AS_HELP_STRING([--enable-forced-overflow-events],
+							  [Forces overflow events to be triggered rather than performing deliveries when unexpected messages have been buffered and then matched.])])
 AS_IF([test "x$enable_hard_polling" == xyes],
 	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
 AS_IF([test "x$enable_fast" == xyes],
@@ -65,6 +68,8 @@ AS_IF([test "x$enable_fast" == xyes],
 	   enable_arg_checking=no])
 AS_IF([test "x$enable_arg_checking" == xno],
 	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
+AS_IF([test "x$enable_forced_overflow_events" == xyes],
+	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
 
 
 ## ------------------- ##
