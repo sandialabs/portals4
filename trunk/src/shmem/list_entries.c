@@ -358,21 +358,31 @@ int API_FUNC PtlLEAppend(
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
+                            // notify
+                            if (t->EQ != PTL_EQ_NONE || le.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceLEDelivery(
+                                        t->EQ,
+                                        le.ct_handle,
+                                        cur->hdr.type,
+                                        le.options,
+                                        mlength,
+                                        (uintptr_t) le.start + cur-> hdr.dest_offset,
+                                        0,
+                                        &(cur->hdr));
+                            }
                         } else {
-#warning PtlLEAppend() cannot deliver buffered messages without local data (no retransmit protocol yet implemented)
-                            abort();
-                        }
-                        // notify
-                        if (t->EQ != PTL_EQ_NONE ||
-                            le.ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(t->EQ, le.ct_handle,
-                                                          cur->hdr.type,
-                                                          le.options, mlength,
-                                                          (uintptr_t) le.start
-                                                          +
-                                                          cur->
-                                                          hdr.dest_offset, 0,
-                                                          &(cur->hdr));
+                            /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
+                            if (t->EQ != PTL_EQ_NONE || le.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceLEDelivery(
+                                        t->EQ,
+                                        le.ct_handle,
+                                        cur->hdr.type,
+                                        le.options,
+                                        mlength,
+                                        (uintptr_t) 0,
+                                        1,
+                                        &(cur->hdr));
+                            }
                         }
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
@@ -445,7 +455,6 @@ int API_FUNC PtlLEAppend(
                                                    [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         continue;
                     }
-                    // (2) iff LE is persistent
                     {
                         size_t mlength;
                         // deliver
@@ -471,6 +480,7 @@ int API_FUNC PtlLEAppend(
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
+                    // (2) iff LE is persistent
                     if (le.options & PTL_LE_USE_ONCE) {
                         goto done_appending;
                     }
@@ -494,7 +504,7 @@ int API_FUNC PtlLEUnlink(
         return PTL_NO_INIT;
     }
     if (le.s.ni > 3 || le.s.code > nit_limits.max_mes ||
-        (nit.refcount[le.s.ni] == 0)) {
+        nit.refcount[le.s.ni] == 0) {
         VERBOSE_ERROR
             ("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
              le.s.ni, le.s.code, nit_limits.max_mes);
@@ -647,7 +657,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
-            return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 : 3);
+            return (ptl_pid_t) 3;
         }
         /*******************************************************************
          * We have permissions on this LE, now check if it's a use-once LE *
@@ -690,6 +700,10 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
         if (foundin == PRIORITY) {
             PtlInternalPerformDelivery(hdr->type, report_this_start,
                                        hdr->data, mlength, hdr);
+            PtlInternalAnnounceLEDelivery(t->EQ, le.ct_handle, hdr->type,
+                                      le.options, mlength,
+                                      (uintptr_t) report_this_start,
+                                      0, hdr);
         } else {
             assert(hdr->length + hdr->dest_offset <= mlength);
             if (mlength > 0) {
@@ -701,10 +715,6 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
-        PtlInternalAnnounceLEDelivery(t->EQ, le.ct_handle, hdr->type,
-                                      le.options, mlength,
-                                      (uintptr_t) report_this_start,
-                                      foundin == OVERFLOW, hdr);
         switch (hdr->type) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
@@ -713,9 +723,10 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
                 return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 :
                                     1);
+            default:
+                PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
+                return (ptl_pid_t) 1;
         }
-        PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
-        return (ptl_pid_t) 1;
     }
     // post dropped message event
     if (t->EQ != PTL_EQ_NONE) {
