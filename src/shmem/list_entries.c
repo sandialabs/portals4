@@ -352,6 +352,7 @@ int API_FUNC PtlLEAppend(
                         } else {
                             mlength = cur->hdr.length;
                         }
+#ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
                             PtlInternalPerformDelivery(cur->hdr.type,
                                                        (char *)le.start +
@@ -384,6 +385,19 @@ int API_FUNC PtlLEAppend(
                                         &(cur->hdr));
                             }
                         }
+#else
+                        if (t->EQ != PTL_EQ_NONE || le.ct_handle != PTL_CT_NONE) {
+                            PtlInternalAnnounceLEDelivery(
+                                    t->EQ,
+                                    le.ct_handle,
+                                    cur->hdr.type,
+                                    le.options,
+                                    mlength,
+                                    (uintptr_t) cur->buffered_data,
+                                    1,
+                                    &(cur->hdr));
+                        }
+#endif
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
                         goto done_appending;
