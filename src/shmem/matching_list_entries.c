@@ -199,7 +199,7 @@ static void PtlInternalAnnounceMEDelivery(
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr);
         if (overflow) {
-            switch (e.type) {
+            switch (type) {
                 case PTL_EVENT_PUT:
                     e.type = PTL_EVENT_PUT_OVERFLOW;
                     break;
@@ -412,21 +412,31 @@ int API_FUNC PtlMEAppend(
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
+                            // notify
+                            if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceMEDelivery(
+                                        t->EQ,
+                                        me.ct_handle,
+                                        cur->hdr.type,
+                                        me.options,
+                                        mlength,
+                                        (uintptr_t) me.start + cur->hdr.dest_offset,
+                                        0,
+                                        &(cur->hdr));
+                            }
                         } else {
-#warning PtlMEAppend() cannot deliver buffered messages without local data (no retransmit protocol yet implemented)
-                            abort();
-                        }
-                        // notify
-                        if (t->EQ != PTL_EQ_NONE ||
-                            me.ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle,
-                                                          cur->hdr.type,
-                                                          me.options, mlength,
-                                                          (uintptr_t) me.start
-                                                          +
-                                                          cur->
-                                                          hdr.dest_offset, 0,
-                                                          &(cur->hdr));
+                            /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
+                            if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceMEDelivery(
+                                        t->EQ,
+                                        me.ct_handle,
+                                        cur->hdr.type,
+                                        me.options,
+                                        mlength,
+                                        (uintptr_t) 0,
+                                        1,
+                                        &(cur->hdr));
+                            }
                         }
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
@@ -738,6 +748,10 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         if (foundin == PRIORITY) {
             PtlInternalPerformDelivery(hdr->type, report_this_start,
                                        hdr->data, mlength, hdr);
+            PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type,
+                                      me.options, mlength,
+                                      (uintptr_t) report_this_start,
+                                      0, hdr);
         } else {
             report_this_start =
                 PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
@@ -745,10 +759,6 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
-        PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type,
-                                      me.options, mlength,
-                                      (uintptr_t) report_this_start,
-                                      foundin == OVERFLOW, hdr);
         switch (hdr->type) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
