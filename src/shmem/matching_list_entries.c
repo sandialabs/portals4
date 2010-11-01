@@ -194,8 +194,8 @@ static void PtlInternalAnnounceMEDelivery(
         }
     }
     if (eq_handle != PTL_EQ_NONE &&
-        (options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) ==
-        0) {
+        (options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE))
+        == 0) {
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr);
         if (overflow) {
@@ -297,15 +297,14 @@ int API_FUNC PtlMEAppend(
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->
-                                                        buffered_headers.head);
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* check the match_bits */
-                    if (((cur->hdr.
-                          match_bits ^ me.match_bits) & dont_ignore_bits) !=
-                        0)
+                    if (((cur->hdr.match_bits ^ me.
+                          match_bits) & dont_ignore_bits) != 0)
                         continue;
                     /* check for forbidden truncation */
                     if ((me.options & PTL_ME_NO_TRUNCATE) != 0 &&
@@ -414,42 +413,41 @@ int API_FUNC PtlMEAppend(
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
                             // notify
-                            if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-                                PtlInternalAnnounceMEDelivery(
-                                        t->EQ,
-                                        me.ct_handle,
-                                        cur->hdr.type,
-                                        me.options,
-                                        mlength,
-                                        (uintptr_t) me.start + cur->hdr.dest_offset,
-                                        0,
-                                        &(cur->hdr));
+                            if (t->EQ != PTL_EQ_NONE ||
+                                me.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceMEDelivery(t->EQ,
+                                                              me.ct_handle,
+                                                              cur->hdr.type,
+                                                              me.options,
+                                                              mlength,
+                                                              (uintptr_t) me.
+                                                              start +
+                                                              cur->hdr.
+                                                              dest_offset, 0,
+                                                              &(cur->hdr));
                             }
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
-                            if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-                                PtlInternalAnnounceMEDelivery(
-                                        t->EQ,
-                                        me.ct_handle,
-                                        cur->hdr.type,
-                                        me.options,
-                                        mlength,
-                                        (uintptr_t) 0,
-                                        1,
-                                        &(cur->hdr));
+                            if (t->EQ != PTL_EQ_NONE ||
+                                me.ct_handle != PTL_CT_NONE) {
+                                PtlInternalAnnounceMEDelivery(t->EQ,
+                                                              me.ct_handle,
+                                                              cur->hdr.type,
+                                                              me.options,
+                                                              mlength,
+                                                              (uintptr_t) 0,
+                                                              1, &(cur->hdr));
                             }
                         }
 #else
-                        if (t->EQ != PTL_EQ_NONE || me.ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(
-                                    t->EQ,
-                                    me.ct_handle,
-                                    cur->hdr.type,
-                                    me.options,
-                                    mlength,
-                                    (uintptr_t) cur->buffered_data,
-                                    1,
-                                    &(cur->hdr));
+                        if (t->EQ != PTL_EQ_NONE ||
+                            me.ct_handle != PTL_CT_NONE) {
+                            PtlInternalAnnounceLEDelivery(t->EQ, me.ct_handle,
+                                                          cur->hdr.type,
+                                                          me.options, mlength,
+                                                          (uintptr_t) cur->
+                                                          buffered_data, 1,
+                                                          &(cur->hdr));
                         }
 #endif
                         // return
@@ -479,8 +477,104 @@ int API_FUNC PtlMEAppend(
             t->overflow.tail = Qentry;
             break;
         case PTL_PROBE_ONLY:
-#warning PTL_PROBE_ONLY not implemented in PtlMEAppend()
-            abort();
+            if (t->buffered_headers.head != NULL) {
+                ptl_internal_buffered_header_t *cur =
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
+                ptl_internal_buffered_header_t *prev = NULL;
+                const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
+                for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
+                    /* check the match_bits */
+                    if (((cur->hdr.match_bits ^ me.
+                          match_bits) & dont_ignore_bits) != 0)
+                        continue;
+                    /* check for forbidden truncation */
+                    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 &&
+                        (cur->hdr.length + cur->hdr.dest_offset) > me.length)
+                        continue;
+                    /* check for match_id */
+                    if (ni.s.ni <= 1) { // Logical
+                        if (me.match_id.rank != PTL_RANK_ANY &&
+                            me.match_id.rank != cur->hdr.target_id.rank)
+                            continue;
+                    } else {           // Physical
+                        if (me.match_id.phys.nid != PTL_NID_ANY &&
+                            me.match_id.phys.nid !=
+                            cur->hdr.target_id.phys.nid)
+                            continue;
+                        if (me.match_id.phys.pid != PTL_PID_ANY &&
+                            me.match_id.phys.pid !=
+                            cur->hdr.target_id.phys.pid)
+                            continue;
+                    }
+                    /* now, act like there was a delivery;
+                     * 1. Check permissions
+                     * 2. Queue buffered header to ME buffer
+                     * 4a. When done processing entire unexpected header list, send retransmit request
+                     * ... else: deliver and return */
+                    // (1) check permissions
+                    if (me.options & PTL_ME_AUTH_USE_JID) {
+                        if (me.ac_id.jid != PTL_JID_ANY) {
+                            goto permission_violationPO;
+                        }
+                    } else {
+                        if (me.ac_id.uid != PTL_UID_ANY) {
+                            goto permission_violationPO;
+                        }
+                    }
+                    switch (cur->hdr.type) {
+                        case HDR_TYPE_PUT:
+                        case HDR_TYPE_ATOMIC:
+                        case HDR_TYPE_FETCHATOMIC:
+                        case HDR_TYPE_SWAP:
+                            if ((me.options & PTL_ME_OP_PUT) == 0) {
+                                goto permission_violationPO;
+                            }
+                    }
+                    switch (cur->hdr.type) {
+                        case HDR_TYPE_GET:
+                        case HDR_TYPE_FETCHATOMIC:
+                        case HDR_TYPE_SWAP:
+                            if ((me.options & PTL_ME_OP_GET) == 0) {
+                                goto permission_violationPO;
+                            }
+                    }
+                    if (0) {
+                      permission_violationPO:
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni]
+                                                   [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                        continue;
+                    }
+                    {
+                        size_t mlength;
+                        // deliver
+                        if (me.length == 0) {
+                            mlength = 0;
+                        } else if (cur->hdr.length + cur->hdr.dest_offset >
+                                   me.length) {
+                            if (me.length > cur->hdr.dest_offset) {
+                                mlength = me.length - cur->hdr.dest_offset;
+                            } else {
+                                mlength = 0;
+                            }
+                        } else {
+                            mlength = cur->hdr.length;
+                        }
+                        // notify
+                        if (t->EQ != PTL_EQ_NONE) {
+                            ptl_event_t e;
+                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)));
+                            e.type = PTL_EVENT_PROBE;
+                            e.event.tevent.mlength = mlength;
+                            e.event.tevent.start = cur->buffered_data;
+                            PtlInternalEQPush(t->EQ, &e);
+                        }
+                    }
+                    if (me.options & PTL_ME_USE_ONCE) {
+                        goto done_appending;
+                    }
+                }
+            }
             break;
     }
   done_appending:
@@ -716,10 +810,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         /*******************************************************************
          * We have permissions on this ME, now check if it's a use-once ME *
          *******************************************************************/
-        if ((me.options & PTL_ME_USE_ONCE) ||
-            ((me.options & (PTL_ME_MANAGE_LOCAL)) &&
-             (me.min_free != 0) &&
-             (me.length - entry->local_offset < me.min_free))) { /* XXX: fix this math */
+        if ((me.options & PTL_ME_USE_ONCE) || ((me.options & (PTL_ME_MANAGE_LOCAL)) && (me.min_free != 0) && (me.length - entry->local_offset < me.min_free))) {        /* XXX: fix this math */
             /* unlink ME */
             if (prev != NULL) {
                 prev->next = entry->next;
@@ -763,9 +854,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             PtlInternalPerformDelivery(hdr->type, report_this_start,
                                        hdr->data, mlength, hdr);
             PtlInternalAnnounceMEDelivery(t->EQ, me.ct_handle, hdr->type,
-                                      me.options, mlength,
-                                      (uintptr_t) report_this_start,
-                                      0, hdr);
+                                          me.options, mlength,
+                                          (uintptr_t) report_this_start, 0,
+                                          hdr);
         } else {
             report_this_start =
                 PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
@@ -779,8 +870,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
-                return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
-                                    1);
+                return (ptl_pid_t) ((me.
+                                     options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 return (ptl_pid_t) 1;
@@ -800,4 +891,5 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     PtlInternalPAPIDoneC(PTL_ME_PROCESS, 5);
     return 0;                          // silent ACK
 }
+
 /* vim:set expandtab: */
