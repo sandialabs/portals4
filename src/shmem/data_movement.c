@@ -472,9 +472,8 @@ int API_FUNC PtlPut(
     hdr->src_data.put.md_handle.a = md_handle;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;
-    PtlInternalPAPISaveC(PTL_PUT, 0);
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
-    PtlInternalPAPISaveC(PTL_PUT, 1);
+    //PtlInternalPAPISaveC(PTL_PUT, 0);
     /* step 3: load up the data */
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
@@ -490,7 +489,6 @@ int API_FUNC PtlPut(
         hdr->src_data.put.remaining = length - payload;
         hdr->src_data.put.target_id = target_id;
     }
-    PtlInternalPAPISaveC(PTL_PUT, 2);
     /* step 4: enqueue the op structure on the target */
     switch (md.s.ni) {
         case 0:
@@ -506,7 +504,7 @@ int API_FUNC PtlPut(
         default:
             *(int *)0 = 0;
     }
-    PtlInternalPAPISaveC(PTL_PUT, 3);
+    //PtlInternalPAPISaveC(PTL_PUT, 1);
     if (quick_exit) {
         unsigned int options;
         ptl_handle_eq_t eqh;
@@ -545,7 +543,7 @@ int API_FUNC PtlPut(
             PtlInternalEQPush(eqh, &e);
         }
     }
-    PtlInternalPAPIDoneC(PTL_PUT, 4);
+    PtlInternalPAPIDoneC(PTL_PUT, 2);
     return PTL_OK;
 }
 
