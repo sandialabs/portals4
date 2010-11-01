@@ -6,7 +6,6 @@
 #endif
 
 /* System headers */
-#include <stdlib.h>                    /* for malloc() */
 #include <string.h>                    /* for memcpy() */
 
 #include <stdio.h>
