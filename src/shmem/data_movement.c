@@ -339,11 +339,13 @@ static void *PtlInternalDMCatcher(
                     case 0:
                     case 2:           // Matching (ME)
                         dm_printf("delivering to ME table\n");
+                        /* this will unlock the table_entry */
                         hdr->src = PtlInternalMEDeliver(table_entry, hdr);
                         break;
                     case 1:
                     case 3:           // Non-matching (LE)
                         dm_printf("delivering to LE table\n");
+                        /* this will unlock the table_entry */
                         hdr->src = PtlInternalLEDeliver(table_entry, hdr);
                         break;
                 }
@@ -362,7 +364,6 @@ static void *PtlInternalDMCatcher(
                         hdr->length = 0;
                         break;
                 }
-                dm_printf("unlocking\n");
             } else {
                 /* Invalid PT: increment the dropped counter */
                 (void)
@@ -370,9 +371,9 @@ static void *PtlInternalDMCatcher(
                                          [PTL_SR_DROP_COUNT], 1);
                 /* silently ACK */
                 hdr->src = 0;
-                dm_printf("table_entry->status == 0\n");
+                dm_printf("table_entry->status == 0 ... unlocking\n");
+                ptl_assert(pthread_mutex_unlock(&table_entry->lock), 0);
             }
-            ptl_assert(pthread_mutex_unlock(&table_entry->lock), 0);
         } else {                       // uninitialized NI
             hdr->src = 0;              // silent ACK
         }

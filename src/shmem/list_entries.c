@@ -618,6 +618,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
 {
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendLE_t *entry = NULL;
+    ptl_handle_eq_t tEQ = t->EQ;
+    char need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalPAPIStartC();
     assert(t);
@@ -670,6 +672,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
+            ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             return (ptl_pid_t) 3;
         }
         /*******************************************************************
@@ -686,13 +689,18 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 if (entry->next == NULL)
                     t->overflow.tail = NULL;
             }
-            if (t->EQ != PTL_EQ_NONE &&
+            /* now that the LE has been unlinked, we can unlock the portal
+             * table, thus allowing deliveries and/or appends on the PT while
+             * we do this delivery */
+            need_to_unlock = 0;
+            ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+            if (tEQ != PTL_EQ_NONE &&
                 (le.options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
                 ptl_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr);
                 e.type = PTL_EVENT_UNLINK;
                 e.event.tevent.start = (char *)le.start + hdr->dest_offset;
-                PtlInternalEQPush(t->EQ, &e);
+                PtlInternalEQPush(tEQ, &e);
             }
         }
         /* check lengths */
@@ -712,7 +720,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
         if (foundin == PRIORITY) {
             PtlInternalPerformDelivery(hdr->type, report_this_start,
                                        hdr->data, mlength, hdr);
-            PtlInternalAnnounceLEDelivery(t->EQ, le.ct_handle, hdr->type,
+            PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
                                           le.options, mlength,
                                           (uintptr_t) report_this_start, 0,
                                           hdr);
@@ -733,23 +741,29 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
                 PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
+                if (need_to_unlock)
+                    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
                 return (ptl_pid_t) ((le.
                                      options & PTL_LE_ACK_DISABLE) ? 0 : 1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
+                if (need_to_unlock)
+                    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
                 return (ptl_pid_t) 1;
         }
     }
     // post dropped message event
-    if (t->EQ != PTL_EQ_NONE) {
+    if (tEQ != PTL_EQ_NONE) {
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr);
         e.type = PTL_EVENT_DROPPED;
         e.event.tevent.start = NULL;
-        PtlInternalEQPush(t->EQ, &e);
+        PtlInternalEQPush(tEQ, &e);
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
     PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
+    if (need_to_unlock)
+        ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return 0;                          // silent ACK
 }
 
