@@ -875,6 +875,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                                           (uintptr_t) report_this_start, 0,
                                           hdr);
         } else {
+#warning Sending a PtlGet to the overflow list probably doesn't work
             report_this_start =
                 PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
                                                    me.options, mlength, hdr);
