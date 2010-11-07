@@ -2338,12 +2338,11 @@ typedef struct {
 typedef struct {
     ptl_size_t      mlength; /*!< @see ptl_target_event_t::mlength */
     ptl_size_t      offset; /*!< The displacement (in bytes) into the memory
-                              region that the operation used. The offset can be
-                              determined by the operation for a remote managed
-                              memory descriptor or by the local memory
-                              descriptor. The offset and the length of the
-                              memory descriptor can be used to determine if \a
-                              min_free has been exceeded. */
+			      region that the operation used at the target. The
+			      offset can be determined by the operation for a
+			      remote managed offset in a match list entry or by
+			      the match list entry at the target for a locally
+			      managed offset. */
     void *          user_ptr; /*!< @see ptl_target_event_t::user_ptr */
     ptl_ni_fail_t   ni_fail_type; /*!< @see ptl_target_event_t::ni_fail_type */
 } ptl_initiator_event_t;
