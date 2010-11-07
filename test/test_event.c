@@ -159,10 +159,10 @@ int main(
                             case PTL_EVENT_PT_DISABLED:
                                 printf("PT DISABLED: ");
                                 break;
-                            case PTL_EVENT_UNLINK:
+                            case PTL_EVENT_AUTO_UNLINK:
                                 printf("UNLINK: ");
                                 break;
-                            case PTL_EVENT_FREE:
+                            case PTL_EVENT_AUTO_FREE:
                                 printf("FREE: ");
                                 break;
                             case PTL_EVENT_PROBE:
@@ -178,8 +178,8 @@ int main(
                         case PTL_EVENT_ATOMIC_OVERFLOW:
                         case PTL_EVENT_DROPPED:
                         case PTL_EVENT_PT_DISABLED:
-                        case PTL_EVENT_UNLINK:
-                        case PTL_EVENT_FREE:
+                        case PTL_EVENT_AUTO_UNLINK:
+                        case PTL_EVENT_AUTO_FREE:
                         case PTL_EVENT_PROBE:
                             /* target */
                             assert(myself.rank == 0);

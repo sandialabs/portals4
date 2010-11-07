@@ -854,7 +854,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 (me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
                 ptl_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr);
-                e.type = PTL_EVENT_UNLINK;
+                e.type = PTL_EVENT_AUTO_UNLINK;
                 e.event.tevent.start = (char *)me.start + hdr->dest_offset;
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
                 PtlInternalEQPush(tEQ, &e);

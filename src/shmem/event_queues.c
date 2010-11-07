@@ -267,7 +267,7 @@ int API_FUNC PtlEQFree(
     switch (e->type) { \
         case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
         case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
-        case PTL_EVENT_UNLINK: case PTL_EVENT_FREE: case PTL_EVENT_PROBE: /* target */ \
+        case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: case PTL_EVENT_PROBE: /* target */ \
             e->event.tevent.match_bits = ie.event.tevent.match_bits; \
             e->event.tevent.start = ie.event.tevent.start; \
             e->event.tevent.user_ptr = ie.event.tevent.user_ptr; \
@@ -509,8 +509,8 @@ void INTERNAL PtlInternalEQPush(
         case PTL_EVENT_ATOMIC_OVERFLOW:
         case PTL_EVENT_DROPPED:
         case PTL_EVENT_PT_DISABLED:
-        case PTL_EVENT_UNLINK:
-        case PTL_EVENT_FREE:
+        case PTL_EVENT_AUTO_UNLINK:
+        case PTL_EVENT_AUTO_FREE:
         case PTL_EVENT_PROBE:         /* target */
             eq->ring[writeidx.s.offset].event.tevent.match_bits =
                 event->event.tevent.match_bits;
