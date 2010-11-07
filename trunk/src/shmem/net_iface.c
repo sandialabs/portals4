@@ -25,6 +25,7 @@
 #include "ptl_internal_ME.h"
 #include "ptl_internal_DM.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_fragments.h"
 #include "ptl_internal_error.h"
 
 ptl_internal_nit_t nit = { {0, 0, 0, 0}
@@ -146,11 +147,11 @@ int API_FUNC PtlNIInit(
             desired->max_list_size < nit_limits.max_list_size) {
             nit_limits.max_list_size = desired->max_list_size;
         }
-        if (desired->max_atomic_size > 0 && desired->max_atomic_size <= 8) {
+        if (desired->max_atomic_size >= 8 && desired->max_atomic_size <= SMALL_FRAG_SIZE) {
             nit_limits.max_atomic_size = desired->max_atomic_size;
         }
-        if (desired->max_ordered_size >= 8 && desired->max_ordered_size <= 8) {
-            nit_limits.max_atomic_size = desired->max_atomic_size;
+        if (desired->max_ordered_size >= 8 && desired->max_ordered_size <= SMALL_FRAG_SIZE) {
+            nit_limits.max_ordered_size = desired->max_ordered_size;
         }
         nit_limits_init = 2;           // mark it as done being initialized
     }

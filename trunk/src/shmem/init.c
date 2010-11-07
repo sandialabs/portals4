@@ -106,8 +106,8 @@ int API_FUNC PtlInit(
         nit_limits.max_iovecs = 0;     // XXX: ???
         nit_limits.max_list_size = 128;  // Arbitrary
         nit_limits.max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
-        nit_limits.max_atomic_size = LARGE_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
-        nit_limits.max_ordered_size = LARGE_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
+        nit_limits.max_atomic_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
+        nit_limits.max_ordered_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
 
         /* Open the communication pad */
         assert(comm_pad == NULL);
