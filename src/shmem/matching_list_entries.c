@@ -265,7 +265,7 @@ int API_FUNC PtlMEAppend(
     assert(mes[ni.s.ni] != NULL);
     meh.s.ni = ni.s.ni;
     /* find an ME handle */
-    for (uint32_t offset = 0; offset < nit_limits.max_mes; ++offset) {
+    for (uint32_t offset = 0; offset < nit_limits.max_entries; ++offset) {
         if (mes[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32
                 (&(mes[ni.s.ni][offset].status), ME_FREE,
@@ -593,11 +593,11 @@ int API_FUNC PtlMEUnlink(
         VERBOSE_ERROR("communication pad not initialized");
         return PTL_NO_INIT;
     }
-    if (me.s.ni > 3 || me.s.code > nit_limits.max_mes ||
+    if (me.s.ni > 3 || me.s.code > nit_limits.max_entries ||
         nit.refcount[me.s.ni] == 0) {
         VERBOSE_ERROR
             ("ME Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-             me.s.ni, me.s.code, nit_limits.max_mes);
+             me.s.ni, me.s.code, nit_limits.max_entries);
         return PTL_ARG_INVALID;
     }
     if (mes[me.s.ni] == NULL) {

@@ -396,21 +396,24 @@ typedef unsigned char ptl_ni_fail_t;
 /*! Indicates a system failure that prevents message delivery. */
 #define PTL_NI_UNDELIVERABLE    ((ptl_ni_fail_t) 1)
 
+/*! Indicates that a message was dropped for some reason. */
+#define PTL_NI_DROPPED		((ptl_ni_fail_t) 2)
+
 /*! Indicates that the remote node has exhausted its resources, enabled flow
  * control, and dropped this message. */
-#define PTL_NI_FLOW_CTRL        ((ptl_ni_fail_t) 2)
+#define PTL_NI_FLOW_CTRL        ((ptl_ni_fail_t) 3)
 
 /*! Indicates that the remote Portals addressing indicated a permissions
  * violation for this message. */
-#define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 3)
+#define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
 
 /*!
  * @struct ptl_ni_limits_t
  * @brief The network interface (NI) limits type */
 typedef struct {
-    int max_mes;                /*!< Maximum number of match list entries that
+    int max_entries;            /*!< Maximum number of match list entries that
                                   can be allocated at any one time. */
-    int max_over;               /*!< Maximum number of overflow list entries
+    int max_overflow_entries;   /*!< Maximum number of overflow list entries
                                   that can be queued at any one time. */
     int max_mds;                /*!< Maximum number of memory descriptors that
                                   can be allocated at any one time. */
@@ -424,12 +427,17 @@ typedef struct {
                                   have a max_pt_index of at least 63. */
     int max_iovecs;             /*!< Maximum number of I/O vectors for a single
                                   memory descriptor for this interface. */
-    int max_me_list;            /*!< Maximum number of match list entries that
+    int max_list_size;          /*!< Maximum number of match list entries that
                                   can be attached to any portal table index. */
     ptl_size_t max_msg_size;    /*!< Maximum size (in bytes) of a message (put,
                                   get, or reply). */
     ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) that can be passed
                                   to an atomic operation. */
+    ptl_size_t max_ordered_size; /*!< Maximum size (in bytes) of a message
+				   (put, get, reply, or atomic) that will
+				   buarantee "per-address" data ordering. An
+				   interface must provide a \a max_ordered_size
+				   of at least 8 bytes. */
 } ptl_ni_limits_t;
 
 /*!
