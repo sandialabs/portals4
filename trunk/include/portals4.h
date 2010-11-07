@@ -2535,11 +2535,14 @@ int PtlEQWait(ptl_handle_eq_t   eq_handle,
  *                              waiting in PtlEQPoll().
  * @implnote Implementations are free to provide macros for PtlEQGet() and
  *      PtlEQWait() that use PtlEQPoll() instead of providing these functions.
- * @implnote All of the members of the ptl_event_t structure (and corresponding
- *      ptl_initiator_event_t or ptl_target_event_t sub-field) returned from
- *      PtlEQGet(), PtlEQWait(), and PtlEQPoll() must be filled in with valid
- *      information. An implementation may not leave any field in an event
- *      unset.
+ * @implnote Not all of the members of the ptl_event_t structure (and
+ *	corresponding ptl_initiator_event_t or ptl_target_event_t sub-fields)
+ *	are relevant to all operations. The offset and mlength fields of a
+ *	ptl_initiator_event_t are undefined for a \c PTL_EVENT_SEND event. The
+ *	atomic_operation and atomic_type fields of a ptl_target_event_t are
+ *	undefined for operations other than atomic operations. The match_bits
+ *	field is undefined for a non-matching NI. All other fields must be
+ *	filled in with valid information.
  * @see PtlEQGet(), PtlEQWait()
  */
 int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
