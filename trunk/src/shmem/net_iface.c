@@ -115,12 +115,12 @@ int API_FUNC PtlNIInit(
     if (desired != NULL &&
         PtlInternalAtomicCas32(&nit_limits_init, 0, 1) == 0) {
         /* nit_limits_init now marked as "being initialized" */
-        if (desired->max_mes > 0 &&
-            desired->max_mes < (1 << HANDLE_CODE_BITS)) {
-            nit_limits.max_mes = desired->max_mes;
+        if (desired->max_entries > 0 &&
+            desired->max_entries < (1 << HANDLE_CODE_BITS)) {
+            nit_limits.max_entries = desired->max_entries;
         }
-        if (desired->max_over > 0) {
-            nit_limits.max_over = desired->max_over;
+        if (desired->max_overflow_entries > 0) {
+            nit_limits.max_overflow_entries = desired->max_overflow_entries;
         }
         if (desired->max_mds > 0 &&
             desired->max_mds < (1 << HANDLE_CODE_BITS)) {
@@ -138,15 +138,18 @@ int API_FUNC PtlNIInit(
             nit_limits.max_pt_index = desired->max_pt_index;
         }
         //nit_limits.max_iovecs = INT_MAX;      // ???
-        if (desired->max_me_list > 0 &&
-            desired->max_me_list < (1ULL << (sizeof(uint32_t) * 8))) {
-            nit_limits.max_me_list = desired->max_me_list;
+        if (desired->max_list_size > 0 &&
+            desired->max_list_size < (1ULL << (sizeof(uint32_t) * 8))) {
+            nit_limits.max_list_size = desired->max_list_size;
         }
-        if (desired->max_msg_size > 0 &&
-            desired->max_msg_size < nit_limits.max_msg_size) {
-            nit_limits.max_msg_size = desired->max_msg_size;
+        if (desired->max_list_size > 0 &&
+            desired->max_list_size < nit_limits.max_list_size) {
+            nit_limits.max_list_size = desired->max_list_size;
         }
         if (desired->max_atomic_size > 0 && desired->max_atomic_size <= 8) {
+            nit_limits.max_atomic_size = desired->max_atomic_size;
+        }
+        if (desired->max_ordered_size >= 8 && desired->max_ordered_size <= 8) {
             nit_limits.max_atomic_size = desired->max_atomic_size;
         }
         nit_limits_init = 2;           // mark it as done being initialized
@@ -173,9 +176,9 @@ int API_FUNC PtlNIInit(
         PtlInternalMDNISetup(ni.s.ni, nit_limits.max_mds);
         PtlInternalEQNISetup(ni.s.ni);
         if (options & PTL_NI_MATCHING) {
-            PtlInternalMENISetup(ni.s.ni, nit_limits.max_mes);
+            PtlInternalMENISetup(ni.s.ni, nit_limits.max_entries);
         } else {
-            PtlInternalLENISetup(ni.s.ni, nit_limits.max_mes);
+            PtlInternalLENISetup(ni.s.ni, nit_limits.max_entries);
         }
         /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
         while ((tmp =
@@ -190,7 +193,7 @@ int API_FUNC PtlNIInit(
                 return PTL_NO_SPACE;
             }
             nit.unexpecteds[ni.s.ni] =
-                calloc(nit_limits.max_over, sizeof(ptl_internal_header_t));
+                calloc(nit_limits.max_overflow_entries, sizeof(ptl_internal_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
