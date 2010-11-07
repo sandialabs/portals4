@@ -2239,11 +2239,11 @@ typedef enum {
     PTL_EVENT_PT_DISABLED,
 
     /*! A match list entry was unlinked. */
-    PTL_EVENT_UNLINK,
+    PTL_EVENT_AUTO_UNLINK,
 
     /*! A match list entry in the overflow list that was previously unlinked is
      * now free to be reused by the application. */
-    PTL_EVENT_FREE,
+    PTL_EVENT_AUTO_FREE,
 
     /*! A previously initiated PtlMEAppend() call that was set to "probe only"
      * completed. If a match message was found in the overflow list, \c
