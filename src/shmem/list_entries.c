@@ -197,7 +197,7 @@ static void PtlInternalAnnounceLEDelivery(
 int API_FUNC PtlLEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
-    ptl_le_t le,
+    ptl_le_t *le,
     ptl_list_t ptl_list,
     void *user_ptr,
     ptl_handle_le_t * le_handle)
@@ -245,7 +245,7 @@ int API_FUNC PtlLEAppend(
                 (&(les[ni.s.ni][offset].status), LE_FREE,
                  LE_ALLOCATED) == LE_FREE) {
                 leh.s.code = offset;
-                les[ni.s.ni][offset].visible = le;
+                les[ni.s.ni][offset].visible = *le;
                 les[ni.s.ni][offset].pt_index = pt_index;
                 les[ni.s.ni][offset].ptl_list = ptl_list;
                 Qentry = &(les[ni.s.ni][offset].Qentry);
@@ -286,12 +286,12 @@ int API_FUNC PtlLEAppend(
                         t->buffered_headers.head = cur->hdr.next;
                     }
                     // (1) check permissions
-                    if (le.options & PTL_LE_AUTH_USE_JID) {
-                        if (le.ac_id.jid != PTL_JID_ANY) {
+                    if (le->options & PTL_LE_AUTH_USE_JID) {
+                        if (le->ac_id.jid != PTL_JID_ANY) {
                             goto permission_violation;
                         }
                     } else {
-                        if (le.ac_id.uid != PTL_UID_ANY) {
+                        if (le->ac_id.uid != PTL_UID_ANY) {
                             goto permission_violation;
                         }
                     }
@@ -300,7 +300,7 @@ int API_FUNC PtlLEAppend(
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((le.options & PTL_LE_OP_PUT) == 0) {
+                            if ((le->options & PTL_LE_OP_PUT) == 0) {
                                 goto permission_violation;
                             }
                     }
@@ -308,7 +308,7 @@ int API_FUNC PtlLEAppend(
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((le.options & PTL_LE_OP_GET) == 0) {
+                            if ((le->options & PTL_LE_OP_GET) == 0) {
                                 goto permission_violation;
                             }
                     }
@@ -324,7 +324,7 @@ int API_FUNC PtlLEAppend(
                         continue;
                     }
                     // (2) iff LE is persistent
-                    if ((le.options & PTL_LE_USE_ONCE) != 0) {
+                    if ((le->options & PTL_LE_USE_ONCE) != 0) {
 #warning PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
@@ -340,12 +340,12 @@ int API_FUNC PtlLEAppend(
                     } else {
                         size_t mlength;
                         // deliver
-                        if (le.length == 0) {
+                        if (le->length == 0) {
                             mlength = 0;
                         } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   le.length) {
-                            if (le.length > cur->hdr.dest_offset) {
-                                mlength = le.length - cur->hdr.dest_offset;
+                                   le->length) {
+                            if (le->length > cur->hdr.dest_offset) {
+                                mlength = le->length - cur->hdr.dest_offset;
                             } else {
                                 mlength = 0;
                             }
@@ -355,19 +355,19 @@ int API_FUNC PtlLEAppend(
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
                             PtlInternalPerformDelivery(cur->hdr.type,
-                                                       (char *)le.start +
+                                                       (char *)le->start +
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
                             // notify
                             if (t->EQ != PTL_EQ_NONE ||
-                                le.ct_handle != PTL_CT_NONE) {
+                                le->ct_handle != PTL_CT_NONE) {
                                 PtlInternalAnnounceLEDelivery(t->EQ,
-                                                              le.ct_handle,
+                                                              le->ct_handle,
                                                               cur->hdr.type,
-                                                              le.options,
+                                                              le->options,
                                                               mlength,
-                                                              (uintptr_t) le.
+                                                              (uintptr_t) le->
                                                               start +
                                                               cur->hdr.
                                                               dest_offset, 0,
@@ -376,11 +376,11 @@ int API_FUNC PtlLEAppend(
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if (t->EQ != PTL_EQ_NONE ||
-                                le.ct_handle != PTL_CT_NONE) {
+                                le->ct_handle != PTL_CT_NONE) {
                                 PtlInternalAnnounceLEDelivery(t->EQ,
-                                                              le.ct_handle,
+                                                              le->ct_handle,
                                                               cur->hdr.type,
-                                                              le.options,
+                                                              le->options,
                                                               mlength,
                                                               (uintptr_t) 0,
                                                               1, &(cur->hdr));
@@ -388,10 +388,10 @@ int API_FUNC PtlLEAppend(
                         }
 #else
                         if (t->EQ != PTL_EQ_NONE ||
-                            le.ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(t->EQ, le.ct_handle,
+                            le->ct_handle != PTL_CT_NONE) {
+                            PtlInternalAnnounceLEDelivery(t->EQ, le->ct_handle,
                                                           cur->hdr.type,
-                                                          le.options, mlength,
+                                                          le->options, mlength,
                                                           (uintptr_t) cur->
                                                           buffered_data, 1,
                                                           &(cur->hdr));
@@ -436,12 +436,12 @@ int API_FUNC PtlLEAppend(
                      * 4a. When done processing entire unexpected header list, send retransmit request
                      * ... else: deliver and return */
                     // (1) check permissions
-                    if (le.options & PTL_LE_AUTH_USE_JID) {
-                        if (le.ac_id.jid != PTL_JID_ANY) {
+                    if (le->options & PTL_LE_AUTH_USE_JID) {
+                        if (le->ac_id.jid != PTL_JID_ANY) {
                             goto permission_violationPO;
                         }
                     } else {
-                        if (le.ac_id.uid != PTL_UID_ANY) {
+                        if (le->ac_id.uid != PTL_UID_ANY) {
                             goto permission_violationPO;
                         }
                     }
@@ -450,7 +450,7 @@ int API_FUNC PtlLEAppend(
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((le.options & PTL_LE_OP_PUT) == 0) {
+                            if ((le->options & PTL_LE_OP_PUT) == 0) {
                                 goto permission_violationPO;
                             }
                     }
@@ -458,7 +458,7 @@ int API_FUNC PtlLEAppend(
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((le.options & PTL_LE_OP_GET) == 0) {
+                            if ((le->options & PTL_LE_OP_GET) == 0) {
                                 goto permission_violationPO;
                             }
                     }
@@ -471,12 +471,12 @@ int API_FUNC PtlLEAppend(
                     {
                         size_t mlength;
                         // deliver
-                        if (le.length == 0) {
+                        if (le->length == 0) {
                             mlength = 0;
                         } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   le.length) {
-                            if (le.length > cur->hdr.dest_offset) {
-                                mlength = le.length - cur->hdr.dest_offset;
+                                   le->length) {
+                            if (le->length > cur->hdr.dest_offset) {
+                                mlength = le->length - cur->hdr.dest_offset;
                             } else {
                                 mlength = 0;
                             }
@@ -494,7 +494,7 @@ int API_FUNC PtlLEAppend(
                         }
                     }
                     // (2) iff LE is persistent
-                    if (le.options & PTL_LE_USE_ONCE) {
+                    if (le->options & PTL_LE_USE_ONCE) {
                         goto done_appending;
                     }
                 }

@@ -81,7 +81,7 @@ int main(
 #endif
     potato_catcher.ct_handle = PTL_CT_NONE;
     CHECK_RETURNVAL(APPEND
-                    (ni_logical, logical_pt_index, potato_catcher,
+                    (ni_logical, logical_pt_index, &potato_catcher,
                      PTL_PRIORITY_LIST, NULL, &potato_catcher_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */

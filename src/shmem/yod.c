@@ -477,7 +477,7 @@ void *collator(
     ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle), PTL_OK);
     collator_ct_handle = le.ct_handle;
     ptl_assert(PtlLEAppend
-               (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle),
+               (ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle),
                PTL_OK);
     /* wait for everyone to post to the mapping */
     {
@@ -495,7 +495,7 @@ void *collator(
     le.start = NULL;
     le.length = 0;
     ptl_assert(PtlLEAppend
-               (ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle),
+               (ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle),
                PTL_OK);
     /* now distribute the mapping */
     md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK;

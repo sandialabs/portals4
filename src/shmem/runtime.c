@@ -112,7 +112,7 @@ void runtime_init(
 
     /* post this now to avoid a race condition later */
     ret =
-        PtlLEAppend(ni_physical, 0, le, PTL_PRIORITY_LIST, NULL, &le_handle);
+        PtlLEAppend(ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle);
     if (ret != PTL_OK)
         abort();
 
@@ -217,7 +217,7 @@ void API_FUNC runtime_barrier(
     md.eq_handle = PTL_EQ_NONE;
     ptl_assert(PtlCTAlloc(ni.a, &le.ct_handle), PTL_OK);
     /* post my sensor */
-    ptl_assert(PtlLEAppend(ni.a, 0, le, PTL_PRIORITY_LIST, NULL, &leh),
+    ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &leh),
                PTL_OK);
     /* prepare my messenger */
     ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
