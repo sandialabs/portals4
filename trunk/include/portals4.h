@@ -157,6 +157,11 @@ typedef struct {
  * @note Performance conscious users should not mix offsets (local or remote)
  *      with ptl_iovec_t. While this is a supported operation, it is unlikely
  *      to perform well in most implementations.
+ * @note When a ptl_iovec_t is passed to a Portals operation (as part of a
+ *	memory descriptor, list entry, or match list entry), it must be treated
+ *	exactly like a data buffer. That is, it cannot be modified or freed
+ *	until Portals indicates that it has completed the operations on that
+ *	buffer.
  * @implnote The implementation is required to support the mixing of the
  *      ptl_iovec_t type with offsets (local and remote); however, it will be
  *      difficult to make this perform well in the general case. The correct
@@ -164,6 +169,10 @@ typedef struct {
  *      ptl_iovec_t type as if it were a single contiguous region. In some
  *      cases, this may require walking the entire scatter/gather list to find
  *      the correct location for depositing the data.
+ * @implnote The implementation may choose to copy the ptl_iovec_t to prevent
+ *	the application from corrupting it; however, the implementation is also
+ *	free to use the buffer in place. The implementation is not allowed to
+ *	modify the ptl_iovec_t.
  */
 typedef struct {
     void* iov_base; /*!< The byte aligned start address of the vector element. */
@@ -991,7 +1000,7 @@ typedef enum {
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
- *                 ptl_le_t         le,
+ *                 ptl_le_t *       le,
  *                 ptl_list_t       ptl_list,
  *                 void*            user_ptr,
  *                 ptl_handle_le_t* le_handle)
@@ -1038,7 +1047,7 @@ typedef enum {
  */
 int PtlLEAppend(ptl_handle_ni_t     ni_handle,
                 ptl_pt_index_t      pt_index,
-                ptl_le_t            le,
+                ptl_le_t *          le,
                 ptl_list_t          ptl_list,
                 void*               user_ptr,
                 ptl_handle_le_t*    le_handle);
@@ -1272,7 +1281,7 @@ typedef struct {
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t      ni_handle,
  *                 ptl_pt_index_t       pt_index,
- *                 ptl_me_t             me,
+ *                 ptl_me_t *           me,
  *                 ptl_list_t           ptl_list,
  *                 void *               user_ptr,
  *                 ptl_handle_me_t *    me_handle)
@@ -1336,7 +1345,7 @@ typedef struct {
  */
 int PtlMEAppend(ptl_handle_ni_t     ni_handle,
                 ptl_pt_index_t      pt_index,
-                ptl_me_t            me,
+                ptl_me_t *          me,
                 ptl_list_t          ptl_list,
                 void *              user_ptr,
                 ptl_handle_me_t *   me_handle);

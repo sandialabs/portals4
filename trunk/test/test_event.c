@@ -75,7 +75,7 @@ int main(
     value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend
-                    (ni_logical, 0, value_le, PTL_PRIORITY_LIST, NULL,
+                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST, NULL,
                      &value_le_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */

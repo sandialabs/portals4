@@ -222,7 +222,7 @@ static void PtlInternalAnnounceMEDelivery(
 int API_FUNC PtlMEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
-    ptl_me_t me,
+    ptl_me_t *me,
     ptl_list_t ptl_list,
     void *user_ptr,
     ptl_handle_me_t * me_handle)
@@ -271,7 +271,7 @@ int API_FUNC PtlMEAppend(
                 (&(mes[ni.s.ni][offset].status), ME_FREE,
                  ME_ALLOCATED) == ME_FREE) {
                 meh.s.code = offset;
-                mes[ni.s.ni][offset].visible = me;
+                mes[ni.s.ni][offset].visible = *me;
                 mes[ni.s.ni][offset].pt_index = pt_index;
                 mes[ni.s.ni][offset].ptl_list = ptl_list;
                 Qentry = &(mes[ni.s.ni][offset].Qentry);
@@ -285,7 +285,7 @@ int API_FUNC PtlMEAppend(
     Qentry->user_ptr = user_ptr;
     Qentry->me_handle = meh;
     Qentry->local_offset = 0;
-    Qentry->dont_ignore_bits = ~me.ignore_bits;
+    Qentry->dont_ignore_bits = ~(me->ignore_bits);
     *me_handle = meh.a;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
@@ -300,28 +300,28 @@ int API_FUNC PtlMEAppend(
                     (ptl_internal_buffered_header_t *) (t->buffered_headers.
                                                         head);
                 ptl_internal_buffered_header_t *prev = NULL;
-                const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
+                const ptl_match_bits_t dont_ignore_bits = ~(me->ignore_bits);
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* check the match_bits */
-                    if (((cur->hdr.match_bits ^ me.
+                    if (((cur->hdr.match_bits ^ me->
                           match_bits) & dont_ignore_bits) != 0)
                         continue;
                     /* check for forbidden truncation */
-                    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 &&
-                        (cur->hdr.length + cur->hdr.dest_offset) > me.length)
+                    if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
+                        (cur->hdr.length + cur->hdr.dest_offset) > me->length)
                         continue;
                     /* check for match_id */
                     if (ni.s.ni <= 1) { // Logical
-                        if (me.match_id.rank != PTL_RANK_ANY &&
-                            me.match_id.rank != cur->hdr.target_id.rank)
+                        if (me->match_id.rank != PTL_RANK_ANY &&
+                            me->match_id.rank != cur->hdr.target_id.rank)
                             continue;
                     } else {           // Physical
-                        if (me.match_id.phys.nid != PTL_NID_ANY &&
-                            me.match_id.phys.nid !=
+                        if (me->match_id.phys.nid != PTL_NID_ANY &&
+                            me->match_id.phys.nid !=
                             cur->hdr.target_id.phys.nid)
                             continue;
-                        if (me.match_id.phys.pid != PTL_PID_ANY &&
-                            me.match_id.phys.pid !=
+                        if (me->match_id.phys.pid != PTL_PID_ANY &&
+                            me->match_id.phys.pid !=
                             cur->hdr.target_id.phys.pid)
                             continue;
                     }
@@ -339,12 +339,12 @@ int API_FUNC PtlMEAppend(
                         t->buffered_headers.head = cur->hdr.next;
                     }
                     // check permissions
-                    if (me.options & PTL_ME_AUTH_USE_JID) {
-                        if (me.ac_id.jid != PTL_JID_ANY) {
+                    if (me->options & PTL_ME_AUTH_USE_JID) {
+                        if (me->ac_id.jid != PTL_JID_ANY) {
                             goto permission_violation;
                         }
                     } else {
-                        if (me.ac_id.uid != PTL_UID_ANY) {
+                        if (me->ac_id.uid != PTL_UID_ANY) {
                             goto permission_violation;
                         }
                     }
@@ -353,7 +353,7 @@ int API_FUNC PtlMEAppend(
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me.options & PTL_ME_OP_PUT) == 0) {
+                            if ((me->options & PTL_ME_OP_PUT) == 0) {
                                 goto permission_violation;
                             }
                     }
@@ -361,7 +361,7 @@ int API_FUNC PtlMEAppend(
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me.options & PTL_ME_OP_GET) == 0) {
+                            if ((me->options & PTL_ME_OP_GET) == 0) {
                                 goto permission_violation;
                             }
                     }
@@ -377,7 +377,7 @@ int API_FUNC PtlMEAppend(
                         continue;
                     }
                     // iff ME is persistent...
-                    if ((me.options & PTL_ME_USE_ONCE) != 0) {
+                    if ((me->options & PTL_ME_USE_ONCE) != 0) {
 #warning PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)
                         /* suggested plan: put an ME-specific buffered header
                          * list on each ME, and when the ME is persistent, it
@@ -393,12 +393,12 @@ int API_FUNC PtlMEAppend(
                     } else {
                         size_t mlength;
                         // deliver
-                        if (me.length == 0) {
+                        if (me->length == 0) {
                             mlength = 0;
                         } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   me.length) {
-                            if (me.length > cur->hdr.dest_offset) {
-                                mlength = me.length - cur->hdr.dest_offset;
+                                   me->length) {
+                            if (me->length > cur->hdr.dest_offset) {
+                                mlength = me->length - cur->hdr.dest_offset;
                             } else {
                                 mlength = 0;
                             }
@@ -408,19 +408,19 @@ int API_FUNC PtlMEAppend(
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
                             PtlInternalPerformDelivery(cur->hdr.type,
-                                                       (char *)me.start +
+                                                       (char *)me->start +
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
                             // notify
                             if (t->EQ != PTL_EQ_NONE ||
-                                me.ct_handle != PTL_CT_NONE) {
+                                me->ct_handle != PTL_CT_NONE) {
                                 PtlInternalAnnounceMEDelivery(t->EQ,
-                                                              me.ct_handle,
+                                                              me->ct_handle,
                                                               cur->hdr.type,
-                                                              me.options,
+                                                              me->options,
                                                               mlength,
-                                                              (uintptr_t) me.
+                                                              (uintptr_t) me->
                                                               start +
                                                               cur->hdr.
                                                               dest_offset, 0,
@@ -429,11 +429,11 @@ int API_FUNC PtlMEAppend(
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if (t->EQ != PTL_EQ_NONE ||
-                                me.ct_handle != PTL_CT_NONE) {
+                                me->ct_handle != PTL_CT_NONE) {
                                 PtlInternalAnnounceMEDelivery(t->EQ,
-                                                              me.ct_handle,
+                                                              me->ct_handle,
                                                               cur->hdr.type,
-                                                              me.options,
+                                                              me->options,
                                                               mlength,
                                                               (uintptr_t) 0,
                                                               1, &(cur->hdr));
@@ -441,10 +441,10 @@ int API_FUNC PtlMEAppend(
                         }
 #else
                         if (t->EQ != PTL_EQ_NONE ||
-                            me.ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(t->EQ, me.ct_handle,
+                            me->ct_handle != PTL_CT_NONE) {
+                            PtlInternalAnnounceLEDelivery(t->EQ, me->ct_handle,
                                                           cur->hdr.type,
-                                                          me.options, mlength,
+                                                          me->options, mlength,
                                                           (uintptr_t) cur->
                                                           buffered_data, 1,
                                                           &(cur->hdr));
@@ -482,28 +482,28 @@ int API_FUNC PtlMEAppend(
                     (ptl_internal_buffered_header_t *) (t->buffered_headers.
                                                         head);
                 ptl_internal_buffered_header_t *prev = NULL;
-                const ptl_match_bits_t dont_ignore_bits = ~me.ignore_bits;
+                const ptl_match_bits_t dont_ignore_bits = ~(me->ignore_bits);
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* check the match_bits */
-                    if (((cur->hdr.match_bits ^ me.
+                    if (((cur->hdr.match_bits ^ me->
                           match_bits) & dont_ignore_bits) != 0)
                         continue;
                     /* check for forbidden truncation */
-                    if ((me.options & PTL_ME_NO_TRUNCATE) != 0 &&
-                        (cur->hdr.length + cur->hdr.dest_offset) > me.length)
+                    if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
+                        (cur->hdr.length + cur->hdr.dest_offset) > me->length)
                         continue;
                     /* check for match_id */
                     if (ni.s.ni <= 1) { // Logical
-                        if (me.match_id.rank != PTL_RANK_ANY &&
-                            me.match_id.rank != cur->hdr.target_id.rank)
+                        if (me->match_id.rank != PTL_RANK_ANY &&
+                            me->match_id.rank != cur->hdr.target_id.rank)
                             continue;
                     } else {           // Physical
-                        if (me.match_id.phys.nid != PTL_NID_ANY &&
-                            me.match_id.phys.nid !=
+                        if (me->match_id.phys.nid != PTL_NID_ANY &&
+                            me->match_id.phys.nid !=
                             cur->hdr.target_id.phys.nid)
                             continue;
-                        if (me.match_id.phys.pid != PTL_PID_ANY &&
-                            me.match_id.phys.pid !=
+                        if (me->match_id.phys.pid != PTL_PID_ANY &&
+                            me->match_id.phys.pid !=
                             cur->hdr.target_id.phys.pid)
                             continue;
                     }
@@ -513,12 +513,12 @@ int API_FUNC PtlMEAppend(
                      * 4a. When done processing entire unexpected header list, send retransmit request
                      * ... else: deliver and return */
                     // (1) check permissions
-                    if (me.options & PTL_ME_AUTH_USE_JID) {
-                        if (me.ac_id.jid != PTL_JID_ANY) {
+                    if (me->options & PTL_ME_AUTH_USE_JID) {
+                        if (me->ac_id.jid != PTL_JID_ANY) {
                             goto permission_violationPO;
                         }
                     } else {
-                        if (me.ac_id.uid != PTL_UID_ANY) {
+                        if (me->ac_id.uid != PTL_UID_ANY) {
                             goto permission_violationPO;
                         }
                     }
@@ -527,7 +527,7 @@ int API_FUNC PtlMEAppend(
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me.options & PTL_ME_OP_PUT) == 0) {
+                            if ((me->options & PTL_ME_OP_PUT) == 0) {
                                 goto permission_violationPO;
                             }
                     }
@@ -535,7 +535,7 @@ int API_FUNC PtlMEAppend(
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me.options & PTL_ME_OP_GET) == 0) {
+                            if ((me->options & PTL_ME_OP_GET) == 0) {
                                 goto permission_violationPO;
                             }
                     }
@@ -548,12 +548,12 @@ int API_FUNC PtlMEAppend(
                     {
                         size_t mlength;
                         // deliver
-                        if (me.length == 0) {
+                        if (me->length == 0) {
                             mlength = 0;
                         } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   me.length) {
-                            if (me.length > cur->hdr.dest_offset) {
-                                mlength = me.length - cur->hdr.dest_offset;
+                                   me->length) {
+                            if (me->length > cur->hdr.dest_offset) {
+                                mlength = me->length - cur->hdr.dest_offset;
                             } else {
                                 mlength = 0;
                             }
@@ -570,7 +570,7 @@ int API_FUNC PtlMEAppend(
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
-                    if (me.options & PTL_ME_USE_ONCE) {
+                    if (me->options & PTL_ME_USE_ONCE) {
                         goto done_appending;
                     }
                 }

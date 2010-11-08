@@ -93,7 +93,7 @@ int main(
 #endif
         CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
         CHECK_RETURNVAL(APPEND
-                        (ni_logical, 0, value_e, PTL_PRIORITY_LIST, NULL,
+                        (ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                          &value_e_handle));
     }
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
