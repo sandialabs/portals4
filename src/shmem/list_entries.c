@@ -671,7 +671,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
           permission_violation:
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-            PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
+            //PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
             ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             return (ptl_pid_t) 3;
         }
