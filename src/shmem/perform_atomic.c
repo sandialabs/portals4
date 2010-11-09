@@ -22,16 +22,16 @@
     do { \
         first = *(volatile Type*)dest; \
         Op(Type, second, first, *(Type*)src); \
-    } while (__sync_bool_compare_and_swap((volatile Type*)dest, first, second)); \
-    *(Type*)src = second; \
+    } while (!__sync_bool_compare_and_swap((volatile Type*)dest, first, second)); \
+    *(Type*)src = first; \
 } while (0)
 #define NONBUILTIN_CAS(Type, EqIntType, Op) do { \
     union { Type t; EqIntType i; } first, second; \
     do { \
         first.i = *(volatile EqIntType*)dest; \
         Op(Type, second.t, first.t, *(Type*)src); \
-    } while (__sync_bool_compare_and_swap((volatile EqIntType*)dest, first.i, second.i)); \
-    *(Type*)src = second.t; \
+    } while (!__sync_bool_compare_and_swap((volatile EqIntType*)dest, first.i, second.i)); \
+    *(Type*)src = first.t; \
 } while (0)
 #define PERFORM_UNIVERSAL_DATATYPE_FUNC(fname,op) static void inline PtlInternalPerformAtomic##fname( \
     volatile char *dest, \
@@ -185,7 +185,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         newv = (type)((curv & ~mask) | (srcv & mask)); \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 #define CAS_NE(type) do { \
@@ -194,7 +194,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         if (curv == newv) break; \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 #define CAS_LE(type) do { \
@@ -203,7 +203,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         if (curv > newv) break; \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 #define CAS_LT(type) do { \
@@ -212,7 +212,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         if (curv >= newv) break; \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 #define CAS_GE(type) do { \
@@ -221,7 +221,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         if (curv < newv) break; \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 #define CAS_GT(type) do { \
@@ -230,7 +230,7 @@ static void inline PtlInternalPerformAtomicSwap(
     do { \
         curv = *(volatile type*)dest; \
         if (curv <= newv) break; \
-    } while (__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
+    } while (!__sync_bool_compare_and_swap((volatile type*)dest, curv, newv)); \
     *(type*)src = curv; \
 } while (0)
 
