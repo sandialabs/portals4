@@ -290,7 +290,7 @@ int API_FUNC PtlMEAppend(
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
-    PtlInternalPAPISaveC(PTL_ME_APPEND, 0);
+    //PtlInternalPAPISaveC(PTL_ME_APPEND, 0);
     ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (ptl_list) {
         case PTL_PRIORITY_LIST:
