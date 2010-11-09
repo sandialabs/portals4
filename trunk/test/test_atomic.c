@@ -56,7 +56,8 @@ int main(
     ptl_process_t myself;
     ptl_pt_index_t logical_pt_index;
     ptl_process_t *amapping;
-    uint64_t value, readval;
+    //uint64_t value, readval;
+    double value, readval;
     ENTRY_T value_e;
     HANDLE_T value_e_handle;
     ptl_md_t read_md;
@@ -80,7 +81,8 @@ int main(
                      &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    value = myself.rank + 0xdeadbeefc0d1f1ed;
+    //value = myself.rank + 0xdeadbeefc0d1f1ed;
+    value = 77.5;
     if (myself.rank == 0) {
         value_e.start = &value;
         value_e.length = sizeof(value);
@@ -105,9 +107,10 @@ int main(
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    readval = 1;
+    readval = 1.1;
     read_md.start = &readval;
-    read_md.length = sizeof(uint64_t);
+    //read_md.length = sizeof(uint64_t);
+    read_md.length = sizeof(double);
     read_md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_REPLY;
     read_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
@@ -118,18 +121,18 @@ int main(
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
         CHECK_RETURNVAL(PtlAtomic
-                        (read_md_handle, 0, sizeof(uint64_t), PTL_OC_ACK_REQ,
+                        (read_md_handle, 0, sizeof(double), PTL_OC_ACK_REQ,
                          r0, logical_pt_index, 1, 0, NULL, 0, PTL_SUM,
-                         PTL_ULONG));
+                         PTL_DOUBLE));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
-    printf("%i readval: %llx\n", (int)myself.rank,
-           (unsigned long long)readval);
+    printf("%i readval: %g\n", (int)myself.rank,
+           readval);
 
     if (myself.rank == 0) {
         noFailures(value_e.ct_handle, num_procs, __LINE__);
-        printf("0 value: %llx\n", (unsigned long long)value);
+        printf("0 value: %g\n", value);
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
