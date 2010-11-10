@@ -75,7 +75,7 @@ int main(
     value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend
-                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST, NULL,
+                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST, (void*)(0xcafecafe00UL + myself.rank),
                      &value_le_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
@@ -103,9 +103,12 @@ int main(
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
         CHECK_RETURNVAL(PtlGet
-                        (read_md_handle, myself.rank % sizeof(uint64_t),
+                        (read_md_handle,
+                         myself.rank % sizeof(uint64_t),
                          sizeof(uint64_t) - (myself.rank % sizeof(uint64_t)),
-                         r0, logical_pt_index, myself.rank,
+                         r0,
+                         logical_pt_index,
+                         myself.rank,
                          (void *)(uintptr_t) (myself.rank + 1),
                          myself.rank % sizeof(uint64_t)));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
@@ -221,8 +224,7 @@ int main(
                                    event.event.tevent.initiator.rank %
                                    sizeof(uint64_t));
                             assert(event.event.tevent.user_ptr ==
-                                   (void *)(uintptr_t) (event.event.tevent.
-                                                        initiator.rank + 1));
+                                   (void *) (0xcafecafe00UL + myself.rank));
                             assert(event.event.tevent.hdr_data == 0);
                             break;
                         case PTL_EVENT_REPLY:
