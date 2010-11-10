@@ -441,11 +441,15 @@ int API_FUNC PtlMEAppend(
 #else
                         if (t->EQ != PTL_EQ_NONE ||
                             me->ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(t->EQ, me->ct_handle,
+                            PtlInternalAnnounceMEDelivery(t->EQ, 
+                                                          me->ct_handle,
                                                           cur->hdr.type,
-                                                          me->options, mlength,
-                                                          (uintptr_t) cur->
-                                                          buffered_data, 1,
+                                                          me->options, 
+                                                          mlength,
+                                                          (uintptr_t) me->start + 
+                                                          cur->hdr.dest_offset,
+                                                          1,
+                                                          user_ptr,
                                                           &(cur->hdr));
                         }
 #endif
