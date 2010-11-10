@@ -147,10 +147,12 @@ int API_FUNC PtlNIInit(
             desired->max_list_size < nit_limits.max_list_size) {
             nit_limits.max_list_size = desired->max_list_size;
         }
-        if (desired->max_atomic_size >= 8 && desired->max_atomic_size <= SMALL_FRAG_SIZE) {
+        if (desired->max_atomic_size >= 8 &&
+            desired->max_atomic_size <= SMALL_FRAG_SIZE) {
             nit_limits.max_atomic_size = desired->max_atomic_size;
         }
-        if (desired->max_ordered_size >= 8 && desired->max_ordered_size <= SMALL_FRAG_SIZE) {
+        if (desired->max_ordered_size >= 8 &&
+            desired->max_ordered_size <= SMALL_FRAG_SIZE) {
             nit_limits.max_ordered_size = desired->max_ordered_size;
         }
         nit_limits_init = 2;           // mark it as done being initialized
@@ -194,11 +196,16 @@ int API_FUNC PtlNIInit(
                 return PTL_NO_SPACE;
             }
             nit.unexpecteds[ni.s.ni] =
-                calloc(nit_limits.max_overflow_entries, sizeof(ptl_internal_header_t));
+                calloc(nit_limits.max_overflow_entries,
+                       sizeof(ptl_internal_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;
+            }
+            for (size_t u = 0; u < nit_limits.max_overflow_entries - 1; ++u) {
+                nit.unexpecteds[ni.s.ni][u].hdr.next =
+                    &(nit.unexpecteds[ni.s.ni][u + 1]);
             }
             for (size_t e = 0; e <= nit_limits.max_pt_index; ++e) {
                 PtlInternalPTInit(tmp + e);
@@ -346,4 +353,5 @@ void INTERNAL PtlInternalDeallocUnexpectedHeader(
         expectednext = hdr->hdr.next = foundnext;
     }
 }
+
 /* vim:set expandtab: */
