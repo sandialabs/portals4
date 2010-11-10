@@ -108,7 +108,7 @@ static void PtlInternalPerformDelivery(
     }
 }
 
-#define PTL_INTERNAL_INIT_TEVENT(e,hdr) do { \
+#define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
     e.event.tevent.pt_index = hdr->pt_index; \
     e.event.tevent.uid = 0; \
     e.event.tevent.jid = PTL_JID_NONE; \
@@ -116,7 +116,7 @@ static void PtlInternalPerformDelivery(
     e.event.tevent.rlength = hdr->length; \
     e.event.tevent.mlength = 0; \
     e.event.tevent.remote_offset = hdr->dest_offset; \
-    e.event.tevent.user_ptr = hdr->user_ptr; \
+    e.event.tevent.user_ptr = uptr; \
     e.event.tevent.ni_fail_type = PTL_NI_OK; \
     if (hdr->ni <= 1) { /* Logical */ \
         e.event.tevent.initiator.rank = hdr->src; \
@@ -151,6 +151,7 @@ static void PtlInternalAnnounceLEDelivery(
     const uint64_t mlength,
     const uintptr_t start,
     const int overflow,
+    void *const user_ptr,
     ptl_internal_header_t * const restrict hdr)
 {
     int ct_announce = ct_handle != PTL_CT_NONE;
@@ -174,7 +175,7 @@ static void PtlInternalAnnounceLEDelivery(
         (options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))
         == 0) {
         ptl_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr);
+        PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
         if (overflow) {
             switch (type) {
                 case HDR_TYPE_PUT:
@@ -197,7 +198,7 @@ static void PtlInternalAnnounceLEDelivery(
 int API_FUNC PtlLEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
-    ptl_le_t *le,
+    ptl_le_t * le,
     ptl_list_t ptl_list,
     void *user_ptr,
     ptl_handle_le_t * le_handle)
@@ -268,8 +269,8 @@ int API_FUNC PtlLEAppend(
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
-                                                        head);
+                    (ptl_internal_buffered_header_t *) (t->
+                                                        buffered_headers.head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* act like there was a delivery;
@@ -367,10 +368,11 @@ int API_FUNC PtlLEAppend(
                                                               cur->hdr.type,
                                                               le->options,
                                                               mlength,
-                                                              (uintptr_t) le->
-                                                              start +
-                                                              cur->hdr.
-                                                              dest_offset, 0,
+                                                              (uintptr_t)
+                                                              le->start +
+                                                              cur->
+                                                              hdr.dest_offset,
+                                                              0, user_ptr,
                                                               &(cur->hdr));
                             }
                         } else {
@@ -383,17 +385,20 @@ int API_FUNC PtlLEAppend(
                                                               le->options,
                                                               mlength,
                                                               (uintptr_t) 0,
-                                                              1, &(cur->hdr));
+                                                              1, user_ptr,
+                                                              &(cur->hdr));
                             }
                         }
 #else
                         if (t->EQ != PTL_EQ_NONE ||
                             le->ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceLEDelivery(t->EQ, le->ct_handle,
+                            PtlInternalAnnounceLEDelivery(t->EQ,
+                                                          le->ct_handle,
                                                           cur->hdr.type,
-                                                          le->options, mlength,
-                                                          (uintptr_t) cur->
-                                                          buffered_data, 1,
+                                                          le->options,
+                                                          mlength, (uintptr_t)
+                                                          cur->buffered_data,
+                                                          1, user_ptr,
                                                           &(cur->hdr));
                         }
 #endif
@@ -426,8 +431,8 @@ int API_FUNC PtlLEAppend(
         case PTL_PROBE_ONLY:
             if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
-                                                        head);
+                    (ptl_internal_buffered_header_t *) (t->
+                                                        buffered_headers.head);
                 for (; cur != NULL; cur = cur->hdr.next) {
                     /* act like there was a delivery;
                      * 1. Check permissions
@@ -486,7 +491,8 @@ int API_FUNC PtlLEAppend(
                         // notify
                         if (t->EQ != PTL_EQ_NONE) {
                             ptl_event_t e;
-                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)));
+                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
+                                                     user_ptr);
                             e.type = PTL_EVENT_PROBE;
                             e.event.tevent.mlength = mlength;
                             e.event.tevent.start = cur->buffered_data;
@@ -619,7 +625,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendLE_t *entry = NULL;
     ptl_handle_eq_t tEQ = t->EQ;
-    char need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
+    char need_to_unlock = 1;    // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalPAPIStartC();
     assert(t);
@@ -697,7 +703,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             if (tEQ != PTL_EQ_NONE &&
                 (le.options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
                 ptl_event_t e;
-                PTL_INTERNAL_INIT_TEVENT(e, hdr);
+                PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type = PTL_EVENT_AUTO_UNLINK;
                 e.event.tevent.start = (char *)le.start + hdr->dest_offset;
                 PtlInternalEQPush(tEQ, &e);
@@ -723,7 +729,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
                                           le.options, mlength,
                                           (uintptr_t) report_this_start, 0,
-                                          hdr);
+                                          entry->user_ptr, hdr);
         } else {
             assert(hdr->length + hdr->dest_offset <= mlength);
             if (mlength > 0) {
@@ -743,8 +749,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
                 if (need_to_unlock)
                     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
-                return (ptl_pid_t) ((le.
-                                     options & PTL_LE_ACK_DISABLE) ? 0 : 1);
+                return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 :
+                                    1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
                 if (need_to_unlock)
@@ -755,7 +761,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     // post dropped message event
     if (tEQ != PTL_EQ_NONE) {
         ptl_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr);
+        PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
         e.type = PTL_EVENT_DROPPED;
         e.event.tevent.start = NULL;
         PtlInternalEQPush(tEQ, &e);
