@@ -101,7 +101,7 @@ static void PtlInternalPerformDelivery(
             break;
         default:
             UNREACHABLE;
-            *(int *)0 = 0;
+            abort();
     }
 }
 
@@ -200,7 +200,7 @@ static void PtlInternalAnnounceMEDelivery(
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
         if (overflow) {
-            switch (type) {
+            switch (e.type) {
                 case PTL_EVENT_PUT:
                     e.type = PTL_EVENT_PUT_OVERFLOW;
                     break;
@@ -209,7 +209,7 @@ static void PtlInternalAnnounceMEDelivery(
                     break;
                 default:
                     UNREACHABLE;
-                    *(int *)0 = 0;
+                    abort();
             }
         }
         e.event.tevent.mlength = mlength;
