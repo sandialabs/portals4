@@ -25,6 +25,7 @@ PORTALSLIB = $(OUTPUTDIR)/libportals.la
 LDADD = $(PORTALSLIB)
 
 include benchmarks/rtt_latency/Makefile.inc
+include benchmarks/msg_rate/Makefile.inc
 
 EXTRA_DIST = numawrapper.sh
 EXTRA_PROGRAMS = $(BENCHMARKS)
