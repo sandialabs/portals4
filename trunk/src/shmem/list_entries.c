@@ -324,7 +324,7 @@ int API_FUNC PtlLEAppend(
                         continue;
                     }
                     // (2) iff LE is persistent
-                    if ((le->options & PTL_LE_USE_ONCE) != 0) {
+                    if ((le->options & PTL_LE_USE_ONCE) == 0) {
 #warning PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
@@ -493,7 +493,7 @@ int API_FUNC PtlLEAppend(
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
-                    // (2) iff LE is persistent
+                    // (2) iff LE is NOT persistent
                     if (le->options & PTL_LE_USE_ONCE) {
                         goto done_appending;
                     }

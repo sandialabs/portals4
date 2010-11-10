@@ -377,7 +377,7 @@ int API_FUNC PtlMEAppend(
                         continue;
                     }
                     // iff ME is persistent...
-                    if ((me->options & PTL_ME_USE_ONCE) != 0) {
+                    if ((me->options & PTL_ME_USE_ONCE) == 0) {
 #warning PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)
                         /* suggested plan: put an ME-specific buffered header
                          * list on each ME, and when the ME is persistent, it
@@ -570,6 +570,7 @@ int API_FUNC PtlMEAppend(
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
+                    // IFF ME is *not* persistent...
                     if (me->options & PTL_ME_USE_ONCE) {
                         goto done_appending;
                     }
