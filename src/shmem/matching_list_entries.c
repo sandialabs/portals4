@@ -314,16 +314,14 @@ int API_FUNC PtlMEAppend(
                     /* check for match_id */
                     if (ni.s.ni <= 1) { // Logical
                         if (me->match_id.rank != PTL_RANK_ANY &&
-                            me->match_id.rank != cur->hdr.target_id.rank)
+                            me->match_id.rank != cur->hdr.src)
                             continue;
                     } else {           // Physical
                         if (me->match_id.phys.nid != PTL_NID_ANY &&
-                            me->match_id.phys.nid !=
-                            cur->hdr.target_id.phys.nid)
+                            me->match_id.phys.nid != 0)
                             continue;
                         if (me->match_id.phys.pid != PTL_PID_ANY &&
-                            me->match_id.phys.pid !=
-                            cur->hdr.target_id.phys.pid)
+                            me->match_id.phys.pid != cur->hdr.src)
                             continue;
                     }
                     /* now, act like there was a delivery;
@@ -496,16 +494,14 @@ int API_FUNC PtlMEAppend(
                     /* check for match_id */
                     if (ni.s.ni <= 1) { // Logical
                         if (me->match_id.rank != PTL_RANK_ANY &&
-                            me->match_id.rank != cur->hdr.target_id.rank)
+                            me->match_id.rank != cur->hdr.src)
                             continue;
                     } else {           // Physical
                         if (me->match_id.phys.nid != PTL_NID_ANY &&
-                            me->match_id.phys.nid !=
-                            cur->hdr.target_id.phys.nid)
+                            me->match_id.phys.nid != 0)
                             continue;
                         if (me->match_id.phys.pid != PTL_PID_ANY &&
-                            me->match_id.phys.pid !=
-                            cur->hdr.target_id.phys.pid)
+                            me->match_id.phys.pid != cur->hdr.src)
                             continue;
                     }
                     /* now, act like there was a delivery;
@@ -694,7 +690,7 @@ int API_FUNC PtlMEUnlink(
 static void PtlInternalWalkMatchList(
     const ptl_match_bits_t incoming_bits,
     const unsigned char ni,
-    const ptl_process_t target,
+    const ptl_pid_t src,
     const ptl_size_t length,
     const ptl_size_t offset,
     ptl_internal_appendME_t ** matchlist,
@@ -720,14 +716,14 @@ static void PtlInternalWalkMatchList(
         /* check for match_id */
         if (ni <= 1) {                 // Logical
             if (me->match_id.rank != PTL_RANK_ANY &&
-                me->match_id.rank != target.rank)
+                me->match_id.rank != src)
                 continue;
         } else {                       // Physical
             if (me->match_id.phys.nid != PTL_NID_ANY &&
-                me->match_id.phys.nid != target.phys.nid)
+                me->match_id.phys.nid != 0)
                 continue;
             if (me->match_id.phys.pid != PTL_PID_ANY &&
-                me->match_id.phys.pid != target.phys.pid)
+                me->match_id.phys.pid != src)
                 continue;
         }
         break;
@@ -753,15 +749,15 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     /* To match, one must check, in order:
      * 1. The match_bits (with the ignore_bits) against hdr->match_bits
      * 2. if notruncate, length
-     * 3. the match_id against hdr->target_id
+     * 3. the match_id against src
      */
-    PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
+    PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
                              hdr->length, hdr->dest_offset, &entry, &prev,
                              &me_ptr);
     if (entry == NULL && hdr->type != HDR_TYPE_GET) {   // check overflow list
         prev = NULL;
         entry = t->overflow.head;
-        PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->target_id,
+        PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
                                  hdr->length, hdr->dest_offset, &entry, &prev,
                                  &me_ptr);
         if (entry != NULL) {
