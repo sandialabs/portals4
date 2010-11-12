@@ -397,10 +397,6 @@ int API_FUNC PtlEQPoll(
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if (size < 0) {
-        VERBOSE_ERROR("nonsensical size (%i)", size);
-        return PTL_ARG_INVALID;
-    }
     if (event == NULL && which == NULL) {
         VERBOSE_ERROR("null event or null which\n");
         return PTL_ARG_INVALID;
