@@ -96,7 +96,8 @@ static char *PtlInternalPerformDelivery(
             memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:
-            PtlInternalPerformAtomicArg(local_data, ((char *)message_data) + 8,
+            PtlInternalPerformAtomicArg(local_data,
+                                        ((char *)message_data) + 8,
                                         *(uint64_t *) message_data, nbytes,
                                         info->swap.operation,
                                         info->swap.datatype);
@@ -120,7 +121,7 @@ static void *PtlInternalPerformOverflowDelivery(
     if (loptions & PTL_ME_MANAGE_LOCAL) {
         assert(hdr->length + Qentry->local_offset <= llength);
         if (mlength > 0) {
-            ++(Qentry->messages); // safe because the PT is locked
+            ++(Qentry->messages);      // safe because the PT is locked
             retval = lstart + Qentry->local_offset;
             memcpy(retval, hdr->data, mlength);
             Qentry->local_offset += mlength;
@@ -304,15 +305,14 @@ int API_FUNC PtlMEAppend(
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->
-                                                        buffered_headers.head);
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 const ptl_match_bits_t dont_ignore_bits = ~(me->ignore_bits);
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* check the match_bits */
-                    if (((cur->hdr.
-                          match_bits ^ me->match_bits) & dont_ignore_bits) !=
-                        0)
+                    if (((cur->hdr.match_bits ^ me->
+                          match_bits) & dont_ignore_bits) != 0)
                         continue;
                     /* check for forbidden truncation */
                     if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
@@ -417,7 +417,8 @@ int API_FUNC PtlMEAppend(
                                                        (char *)me->start +
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
-                                                       mlength, &(cur->hdr.info));
+                                                       mlength,
+                                                       &(cur->hdr.info));
                             // notify
                             if (t->EQ != PTL_EQ_NONE ||
                                 me->ct_handle != PTL_CT_NONE) {
@@ -428,9 +429,9 @@ int API_FUNC PtlMEAppend(
                                                               mlength,
                                                               (uintptr_t)
                                                               me->start +
-                                                              cur->
-                                                              hdr.dest_offset,
-                                                              0, user_ptr,
+                                                              cur->hdr.
+                                                              dest_offset, 0,
+                                                              user_ptr,
                                                               &(cur->hdr));
                             }
                         } else {
@@ -455,10 +456,10 @@ int API_FUNC PtlMEAppend(
                                                           cur->hdr.type,
                                                           me->options,
                                                           mlength,
-                                                          (uintptr_t) me->
-                                                          start +
-                                                          cur->hdr.
-                                                          dest_offset, 1,
+                                                          (uintptr_t)
+                                                          me->start +
+                                                          cur->
+                                                          hdr.dest_offset, 1,
                                                           user_ptr,
                                                           &(cur->hdr));
                         }
@@ -492,15 +493,14 @@ int API_FUNC PtlMEAppend(
         case PTL_PROBE_ONLY:
             if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->
-                                                        buffered_headers.head);
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 const ptl_match_bits_t dont_ignore_bits = ~(me->ignore_bits);
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* check the match_bits */
-                    if (((cur->hdr.
-                          match_bits ^ me->match_bits) & dont_ignore_bits) !=
-                        0)
+                    if (((cur->hdr.match_bits ^ me->
+                          match_bits) & dont_ignore_bits) != 0)
                         continue;
                     /* check for forbidden truncation */
                     if ((me->options & PTL_ME_NO_TRUNCATE) != 0 &&
@@ -888,8 +888,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
          *************************/
         void *report_this_start = (char *)me.start + hdr->dest_offset;
         if (foundin == PRIORITY) {
-            report_this_start = PtlInternalPerformDelivery(hdr->type, report_this_start,
-                                       hdr->data, mlength, &hdr->info);
+            report_this_start =
+                PtlInternalPerformDelivery(hdr->type, report_this_start,
+                                           hdr->data, mlength, &hdr->info);
             PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
                                           me.options, mlength,
                                           (uintptr_t) report_this_start, 0,
@@ -910,8 +911,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 if (need_to_unlock)
                     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
-                return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
-                                    1);
+                return (ptl_pid_t) ((me.
+                                     options & (PTL_ME_ACK_DISABLE)) ? 0 : 1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 if (need_to_unlock)
