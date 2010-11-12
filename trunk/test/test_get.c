@@ -105,7 +105,7 @@ int main(
     /* set up the landing pad so that I can read others' values */
     read_md.start = &readval;
     read_md.length = sizeof(uint64_t);
-    read_md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_REPLY;
+    read_md.options = PTL_MD_EVENT_CT_REPLY;
     read_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &read_md, &read_md_handle));

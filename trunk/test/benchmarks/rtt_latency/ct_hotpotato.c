@@ -91,7 +91,7 @@ int main(
     potato_launcher.start = &potato;
     potato_launcher.length = sizeof(potato);
     potato_launcher.options =
-        PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_ACK | PTL_MD_EVENT_CT_SEND;
+        PTL_MD_EVENT_CT_ACK | PTL_MD_EVENT_CT_SEND;
     potato_launcher.eq_handle = PTL_EQ_NONE;    // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &potato_launcher.ct_handle));
     CHECK_RETURNVAL(PtlMDBind

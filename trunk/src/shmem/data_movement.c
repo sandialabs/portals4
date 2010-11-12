@@ -76,14 +76,14 @@ static void PtlInternalHandleAck(
                     case 0:
                     case 1:           // Logical
                         PtlInternalFragmentToss(hdr,
-                                                hdr->src_data.put.target_id.
-                                                rank);
+                                                hdr->src_data.put.
+                                                target_id.rank);
                         break;
                     case 2:
                     case 3:           // Physical
                         PtlInternalFragmentToss(hdr,
-                                                hdr->src_data.put.
-                                                target_id.phys.pid);
+                                                hdr->src_data.put.target_id.
+                                                phys.pid);
                         break;
                 }
                 return;
@@ -112,8 +112,8 @@ static void PtlInternalHandleAck(
             if (hdr->src_data.fetchatomic.put_md_handle.a !=
                 PTL_INVALID_HANDLE &&
                 hdr->src_data.fetchatomic.put_md_handle.a != md_handle) {
-                PtlInternalMDCleared(hdr->src_data.fetchatomic.
-                                     put_md_handle.a);
+                PtlInternalMDCleared(hdr->src_data.fetchatomic.put_md_handle.
+                                     a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
@@ -206,9 +206,8 @@ static void PtlInternalHandleAck(
                     }
                 }
                 if (md_eq != PTL_EQ_NONE &&
-                    (md_opts &
-                     (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE)) ==
-                    0 && acktype > 1) {
+                    (md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0 &&
+                    acktype > 1) {
                     ptl_event_t e;
                     switch (hdr->type) {
                         case HDR_TYPE_PUT:
@@ -260,8 +259,7 @@ static void PtlInternalHandleAck(
                         fprintf(stderr, "enabled CT counting, but no CT!\n");
                     }
                 }
-                if (md_eq != PTL_EQ_NONE &&
-                    (md_opts & (PTL_MD_EVENT_DISABLE)) == 0) {
+                if (md_eq != PTL_EQ_NONE) {
                     ptl_event_t e;
                     e.type = PTL_EVENT_ACK;
                     e.event.ievent.mlength = hdr->length;
@@ -533,7 +531,7 @@ int API_FUNC PtlPut(
         } else {
             //printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
         }
-        if ((options & (PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_SUCCESS_DISABLE))
+        if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE)
             == 0) {
             ptl_event_t e;
             e.type = PTL_EVENT_SEND;
@@ -777,16 +775,15 @@ int API_FUNC PtlAtomic(
             PtlCTInc(mdptr->ct_handle, cte);
         }
     }
-    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
-        if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-            ptl_event_t e;
-            e.type = PTL_EVENT_SEND;
-            e.event.ievent.mlength = length;
-            e.event.ievent.offset = local_offset;
-            e.event.ievent.user_ptr = user_ptr;
-            e.event.ievent.ni_fail_type = PTL_NI_OK;
-            PtlInternalEQPush(mdptr->eq_handle, &e);
-        }
+    if (mdptr->eq_handle != PTL_EQ_NONE &&
+        (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+        ptl_event_t e;
+        e.type = PTL_EVENT_SEND;
+        e.event.ievent.mlength = length;
+        e.event.ievent.offset = local_offset;
+        e.event.ievent.user_ptr = user_ptr;
+        e.event.ievent.ni_fail_type = PTL_NI_OK;
+        PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
 }
@@ -961,16 +958,15 @@ int API_FUNC PtlFetchAtomic(
             PtlCTInc(mdptr->ct_handle, cte);
         }
     }
-    if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
-        if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-            ptl_event_t e;
-            e.type = PTL_EVENT_SEND;
-            e.event.ievent.mlength = length;
-            e.event.ievent.offset = local_put_offset;
-            e.event.ievent.user_ptr = user_ptr;
-            e.event.ievent.ni_fail_type = PTL_NI_OK;
-            PtlInternalEQPush(mdptr->eq_handle, &e);
-        }
+    if (mdptr->eq_handle != PTL_EQ_NONE &&
+        (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+        ptl_event_t e;
+        e.type = PTL_EVENT_SEND;
+        e.event.ievent.mlength = length;
+        e.event.ievent.offset = local_put_offset;
+        e.event.ievent.user_ptr = user_ptr;
+        e.event.ievent.ni_fail_type = PTL_NI_OK;
+        PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
 }
@@ -1169,18 +1165,18 @@ int API_FUNC PtlSwap(
                 PtlCTInc(mdptr->ct_handle, cte);
             }
         }
-        if ((mdptr->options & PTL_MD_EVENT_DISABLE) == 0) {
-            if ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-                ptl_event_t e;
-                e.type = PTL_EVENT_SEND;
-                e.event.ievent.mlength = length;
-                e.event.ievent.offset = local_put_offset;
-                e.event.ievent.user_ptr = user_ptr;
-                e.event.ievent.ni_fail_type = PTL_NI_OK;
-                PtlInternalEQPush(mdptr->eq_handle, &e);
-            }
+        if (mdptr->eq_handle != PTL_EQ_NONE &&
+            (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+            ptl_event_t e;
+            e.type = PTL_EVENT_SEND;
+            e.event.ievent.mlength = length;
+            e.event.ievent.offset = local_put_offset;
+            e.event.ievent.user_ptr = user_ptr;
+            e.event.ievent.ni_fail_type = PTL_NI_OK;
+            PtlInternalEQPush(mdptr->eq_handle, &e);
         }
     }
     return PTL_OK;
 }
+
 /* vim:set expandtab: */

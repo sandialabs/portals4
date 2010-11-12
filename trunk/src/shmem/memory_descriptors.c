@@ -75,7 +75,6 @@ int INTERNAL PtlInternalMDHandleValidator(
 {
     const ptl_internal_handle_converter_t md = { handle };
     ptl_internal_md_t *mdptr;
-    int eq_optional = 0;
     if (md.s.selector != HANDLE_MD_CODE) {
         VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
         return PTL_ARG_INVALID;
@@ -96,18 +95,15 @@ int INTERNAL PtlInternalMDHandleValidator(
         return PTL_ARG_INVALID;
     }
     mdptr = &(mds[md.s.ni][md.s.code]);
-    if (mdptr->visible.options & PTL_MD_EVENT_DISABLE) {
-        eq_optional = 1;
-    }
-    if (PtlInternalEQHandleValidator(mdptr->visible.eq_handle, eq_optional)) {
+    if (PtlInternalEQHandleValidator(mdptr->visible.eq_handle, 1)) {
         VERBOSE_ERROR("MD has a bad EQ handle\n");
         return PTL_ARG_INVALID;
     }
     if (care_about_ct) {
         int ct_optional = 1;
-        if (mdptr->
-            visible.options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-                               PTL_MD_EVENT_CT_ACK)) {
+        if (mdptr->visible.
+            options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+                       PTL_MD_EVENT_CT_ACK)) {
             ct_optional = 0;
         }
         if (PtlInternalCTHandleValidator
@@ -129,7 +125,6 @@ int API_FUNC PtlMDBind(
     size_t offset;
 #ifndef NO_ARG_VALIDATION
     int ct_optional = 1;
-    int eq_optional = 0;
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
@@ -143,16 +138,13 @@ int API_FUNC PtlMDBind(
      * VERBOSE_ERROR("start is NULL (%p) or length is 0 (%u); cannot detect failures!\n", md->start, (unsigned int)md->length);
      * return PTL_ARG_INVALID;
      * } */
-    if (md->options & PTL_MD_EVENT_DISABLE) {
-        eq_optional = 1;
-    }
-    if (PtlInternalEQHandleValidator(md->eq_handle, eq_optional)) {
+    if (PtlInternalEQHandleValidator(md->eq_handle, 1)) {
         VERBOSE_ERROR("MD saw invalid EQ\n");
         return PTL_ARG_INVALID;
     }
-    if (md->
-        options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-                   PTL_MD_EVENT_CT_ACK)) {
+    if (md->options &
+        (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY | PTL_MD_EVENT_CT_ACK))
+    {
         ct_optional = 0;
     }
     if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {
@@ -248,4 +240,5 @@ void INTERNAL PtlInternalMDCleared(
         PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
 }
+
 /* vim:set expandtab: */
