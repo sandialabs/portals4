@@ -93,7 +93,7 @@ void runtime_init(
     /* for distributing my ID */
     md.start = &myself;
     md.length = sizeof(ptl_process_t);
-    md.options = PTL_MD_EVENT_DISABLE | PTL_MD_EVENT_CT_SEND;   // count sends, but don't trigger events
+    md.options = PTL_MD_EVENT_CT_SEND; // count sends
     md.eq_handle = PTL_EQ_NONE;        // i.e. don't queue send events
     ret = PtlCTAlloc(ni_physical, &md.ct_handle);
     if (ret != PTL_OK)
@@ -212,9 +212,9 @@ void API_FUNC runtime_barrier(
     le.length = md.length = 0;
     le.ac_id.uid = PTL_UID_ANY;
     le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_COMM;
-    md.options = PTL_MD_EVENT_DISABLE;
-    le.ct_handle = md.ct_handle = PTL_CT_NONE;
+    md.options = 0;
     md.eq_handle = PTL_EQ_NONE;
+    md.ct_handle = PTL_CT_NONE;
     ptl_assert(PtlCTAlloc(ni.a, &le.ct_handle), PTL_OK);
     /* post my sensor */
     ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &leh),
@@ -230,4 +230,5 @@ void API_FUNC runtime_barrier(
     ptl_assert(PtlMDRelease(mdh), PTL_OK);
     ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
 }
+
 /* vim:set expandtab: */

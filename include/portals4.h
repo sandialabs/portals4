@@ -126,7 +126,6 @@ typedef struct {
     scatter/gather vectors and disabling of end events associated with this
     memory descriptor. Values for this argument can be constructed using a
     bitwise OR of the following values:
-    - \c PTL_MD_EVENT_DISABLE
     - \c PTL_MD_EVENT_SUCCESS_DISABLE
     - \c PTL_MD_EVENT_CT_SEND
     - \c PTL_MD_EVENT_CT_REPLY
@@ -813,14 +812,11 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
 /*!
  * @addtogroup MD (MD) Memory Descriptors
  * @{ */
-/*! Specifies that this memory descriptor should not generate events. */
-#define PTL_MD_EVENT_DISABLE         (1<<5)
-
 /*! Specifies that this memory descriptor should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<6)
+#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<5)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
 #define PTL_MD_EVENT_CT_SEND         (1<<1)
@@ -844,7 +840,7 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * notification from the target should not be delivered to the local
  * application. This prevents the local events (e.g. \c PTL_EVENT_SEND) from
  * having to wait for a round-trip notification before delivery. */
-#define PTL_MD_REMOTE_FAILURE_DISABLE (1<<7)
+#define PTL_MD_REMOTE_FAILURE_DISABLE (1<<6)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
