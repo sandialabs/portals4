@@ -51,6 +51,30 @@ typedef union {
     } swap;
 } ptl_internal_srcdata_t;
 
+typedef union {
+    struct {
+        ptl_hdr_data_t hdr_data;
+        ptl_ack_req_t ack_req;
+    } put;
+    struct {
+    } get;
+    struct {
+        ptl_hdr_data_t hdr_data;
+        ptl_ack_req_t ack_req;
+        ptl_op_t operation;
+        ptl_datatype_t datatype;
+    } atomic;
+    struct {
+        ptl_hdr_data_t hdr_data;
+        ptl_op_t operation;
+        ptl_datatype_t datatype;
+    } fetchatomic;
+    struct {
+        ptl_hdr_data_t hdr_data;
+        ptl_op_t operation;
+        ptl_datatype_t datatype;
+    } swap;
+} ptl_internal_typeinfo_t;
 
 typedef struct {
     void *volatile next;
@@ -65,30 +89,7 @@ typedef struct {
     void *user_ptr;
     //void *src_data_ptr;
     ptl_internal_srcdata_t src_data;
-    union {
-        struct {
-            ptl_hdr_data_t hdr_data;
-            ptl_ack_req_t ack_req;
-        } put;
-        struct {
-        } get;
-        struct {
-            ptl_hdr_data_t hdr_data;
-            ptl_ack_req_t ack_req;
-            ptl_op_t operation;
-            ptl_datatype_t datatype;
-        } atomic;
-        struct {
-            ptl_hdr_data_t hdr_data;
-            ptl_op_t operation;
-            ptl_datatype_t datatype;
-        } fetchatomic;
-        struct {
-            ptl_hdr_data_t hdr_data;
-            ptl_op_t operation;
-            ptl_datatype_t datatype;
-        } swap;
-    } info;
+    ptl_internal_typeinfo_t info;
     char data[];
 } ptl_internal_header_t;
 
