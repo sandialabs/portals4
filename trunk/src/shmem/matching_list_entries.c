@@ -73,14 +73,13 @@ void INTERNAL PtlInternalMENITeardown(
     free(tmp);
 }
 
-static char *PtlInternalPerformDelivery(
+static void PtlInternalPerformDelivery(
     const unsigned char type,
     void *const restrict local_data,
     void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_typeinfo_t * info)
+    ptl_internal_typeinfo_t * restrict info)
 {
-#warning MEs do not handle locally managed offsets in the priority list correctly
     switch (type) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
@@ -109,7 +108,6 @@ static char *PtlInternalPerformDelivery(
             UNREACHABLE;
             abort();
     }
-    return local_data;
 }
 
 static void *PtlInternalPerformOverflowDelivery(
@@ -224,7 +222,9 @@ static void PtlInternalAnnounceMEDelivery(
         e.event.tevent.start = (void *)start;
         PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
         PtlInternalEQPush(eq_handle, &e);
-        ++(entry->announced);
+        if (mlength > 0) {
+            ++(entry->announced);
+        }
         if (foundin == OVERFLOW && entry->unlinked == 1 &&
             entry->announced == entry->messages) {
             e.type = PTL_EVENT_AUTO_FREE;
@@ -423,9 +423,17 @@ int API_FUNC PtlMEAppend(
                         }
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
+                            char * realstart = (char *)me->start + cur->hdr.dest_offset;
+                            if (cur->hdr.type == HDR_TYPE_PUT && (me->options & PTL_ME_MANAGE_LOCAL) != 0) {
+                                assert(cur->hdr.length + Qentry->local_offset <= mlength);
+                                if (mlength > 0) {
+                                    ++(Qentry->messages);      // safe because the PT is locked
+                                    realstart = me->start + Qentry->local_offset;
+                                    Qentry->local_offset += mlength;
+                                }
+                            }
                             PtlInternalPerformDelivery(cur->hdr.type,
-                                                       (char *)me->start +
-                                                       cur->hdr.dest_offset,
+                                                       realstart,
                                                        cur->buffered_data,
                                                        mlength,
                                                        &(cur->hdr.info));
@@ -438,9 +446,7 @@ int API_FUNC PtlMEAppend(
                                                               me->options,
                                                               mlength,
                                                               (uintptr_t)
-                                                              me->start +
-                                                              cur->hdr.
-                                                              dest_offset,
+                                                              realstart,
                                                               PRIORITY,
                                                               user_ptr,
                                                               &(cur->hdr));
@@ -900,8 +906,15 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
          *************************/
         void *report_this_start = (char *)me.start + hdr->dest_offset;
         if (foundin == PRIORITY) {
-            report_this_start =
-                PtlInternalPerformDelivery(hdr->type, report_this_start,
+            if (hdr->type == HDR_TYPE_PUT && (me.options & PTL_ME_MANAGE_LOCAL) != 0) {
+                assert(hdr->length + entry->local_offset <= mlength);
+                if (mlength > 0) {
+                    ++(entry->messages);      // safe because the PT is locked
+                    report_this_start = me.start + entry->local_offset;
+                    entry->local_offset += mlength;
+                }
+            }
+            PtlInternalPerformDelivery(hdr->type, report_this_start,
                                            hdr->data, mlength, &hdr->info);
             PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
                                           me.options, mlength,
