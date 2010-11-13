@@ -257,7 +257,7 @@ typedef struct {
  - \c PTL_LE_ACK_DISABLE
  - \c PTL_IOVEC
  - \c PTL_LE_EVENT_COMM_DISABLE
- - \c PTL_LE_EVENT_FLOW_DISABLE
+ - \c PTL_LE_EVENT_FLOWCTRL_DISABLE
  - \c PTL_LE_EVENT_SUCCESS_DISABLE
  - \c PTL_LE_EVENT_OVER_DISABLE
  - \c PTL_LE_EVENT_UNLINK_DISABLE
@@ -607,7 +607,7 @@ int PtlNIHandle(ptl_handle_any_t    handle,
 #define PTL_PT_ONLY_USE_ONCE    (1)
 
 /*! Enable flow control on this portal table entry. */
-#define PTL_PT_FLOW_CONTROL     (1<<1)
+#define PTL_PT_FLOWCTRL		(1<<1)
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
  *                unsigned int      options,
@@ -621,7 +621,7 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  * @param[in] options       This field contains options that are requested for
  *                          the portal index. Values for this argument can be
  *                          constructed using a bitwise OR of the values \c
- *                          PTL_PT_ONLY_USE_ONCE and \c PTL_PT_FLOW_CONTROL.
+ *                          PTL_PT_ONLY_USE_ONCE and \c PTL_PT_FLOWCTRL.
  * @param[in] eq_handle     The event queue handle used to log the operations
  *                          performed on match list entries attached to the
  *                          portal table entry. The \a eq_handle attached to a
@@ -961,7 +961,7 @@ typedef enum {
 
 /*! Specifies that this list entry should not generate events that indicate a
  * flow control failure. */
-#define PTL_LE_EVENT_FLOW_DISABLE       (1<<6)
+#define PTL_LE_EVENT_FLOWCTRL_DISABLE   (1<<6)
 
 /*! Specifies that this list entry should not generate events that indicate
  * success. This is useful in scenarios where the application does not need
@@ -1114,7 +1114,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a flow control failure. */
-#define PTL_ME_EVENT_FLOW_DISABLE       (1<<6)
+#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<6)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate success. This is useful in scenarios where the application does not
@@ -1245,7 +1245,7 @@ typedef struct {
      - \c PTL_IOVEC
      - \c PTL_ME_MIN_FREE
      - \c PTL_ME_EVENT_COMM_DISABLE
-     - \c PTL_ME_EVENT_FLOW_DISABLE
+     - \c PTL_ME_EVENT_FLOWCTRL_DISABLE
      - \c PTL_ME_EVENT_SUCCESS_DISABLE
      - \c PTL_ME_EVENT_OVER_DISABLE
      - \c PTL_ME_EVENT_UNLINK_DISABLE
@@ -2268,26 +2268,47 @@ typedef enum {
     PTL_EVENT_PROBE
 } ptl_event_kind_t;
 /*!
- * @struct ptl_target_event_t
- * @brief An operation on the \e target needs information about the local match
- *      list entry modified, the initiator of the operation and the operation
- *      itself. These fields are included in a structure. */
+ * @struct ptl_event_t
+ * @brief An event queue contains ptl_event_t structures, which contain a \a
+ *      type and a union of the \e target specific event structure and the \e
+ *      initiator specific event structure. */
 typedef struct {
+    /*! Indicates the type of the event. */
+    ptl_event_kind_t    type;
+
+    /*! The identifier of the \e initiator. */
+    ptl_process_t	initiator;
+
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t	pt_index;
+
+    /*! The user identifier of the \e initiator. */
+    ptl_uid_t		uid;
+
+    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
+     * implementations that do not support job identifiers. */
+    ptl_jid_t		jid;
+
     /*! The match bits specified by the \e initiator. */
-    ptl_match_bits_t        match_bits;
+    ptl_match_bits_t	match_bits;
 
     /*! The length (in bytes) specified in the request. */
-    ptl_size_t              rlength;
+    ptl_size_t		rlength;
 
     /*! The length (in bytes) of the data that was manipulated by the
      * operation. For truncated operations, the manipulated length will be the
      * number of bytes specified by the memory descriptor operation (possibly
      * with an offset). For all other operations, the manipulated length will
      * be the length of the requested operation. */
-    ptl_size_t              mlength;
+    ptl_size_t		mlength;
 
-    /*! The offset requested by the initiator. */
-    ptl_size_t              remote_offset;
+    /*! The offset requested/used by the other end of the link. At the
+     * initiator, this is the displacement (in bytes) into the memory region
+     * that the operation used at the target. The offset can be determined by
+     * the operation for a remote managed offset in a match list entry or by
+     * the match list entry at the target for a locally managed offset. At the
+     * target, this is the offset requested by th initiator. */
+    ptl_size_t		remote_offset;
 
     /*! The starting location (virtual, byte address) where the message has
      * been placed. The \a start variable is the sum of the \a start variable
@@ -2296,72 +2317,30 @@ typedef struct {
      * list entry or by the local memory descriptor.
      *
      * When the PtlMEAppend() call matches a message that has arrived in the
-     * overflow list, the start address points to the address in the overflow
+     * overflow list, the start address points to the addres in the overflow
      * list where the matching message resides. This may require the
-     * application to copy the message to the desired buffer. */
-    void *                  start;
+     * application to copy the message to the desired buffer.
+     */
+    void *		start;
 
     /*! A user-specified value that is associated with each command that can
-     * generate an event. The \a user_ptr is placed in the event. */
-    void *                  user_ptr;
+     * generate an event. */
+    void *		user_ptr;
 
     /*! 64 bits of out-of-band user data. */
-    ptl_hdr_data_t          hdr_data;
+    ptl_hdr_data_t	hdr_data;
 
-    /*! The identifier of the \e initiator. */
-    ptl_process_t           initiator;
-
-    /*! The user identifier of the initiator. */
-    ptl_uid_t               uid;
-
-    /*! The job identifier of the initiator. May be \c PTL_JID_NONE in
-     * implementations that do not support job identifiers. */
-    ptl_jid_t               jid;
-
-    /*! Used to convey the failure of an operation. Success is indicated by \c
-     * PTL_NI_OK. */
-    ptl_ni_fail_t           ni_fail_type;
-
-    /*! The portal table index where the message arrived. */
-    ptl_pt_index_t          pt_index;
+    /*! Is used to convey the failure of an operation. Success is indicated by
+     * \c PTL_NI_OK. */
+    ptl_ni_fail_t	ni_fail_type;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * atomic operation that was performed. */
-    ptl_op_t                atomic_operation;
+    ptl_op_t		atomic_operation;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * data type of the atomic operation that was performed. */
-    ptl_datatype_t          atomic_type;
-} ptl_target_event_t;
-/*!
- * @struct ptl_initiator_event_t
- * @brief The \e initiator can track all information about the attempted
- *      operation, but in order to do so needs the result of the operation and
- *      a pointer to resolve back to the local structure tracking the
- *      information about the operation.
- */
-typedef struct {
-    ptl_size_t      mlength; /*!< @see ptl_target_event_t::mlength */
-    ptl_size_t      offset; /*!< The displacement (in bytes) into the memory
-			      region that the operation used at the target. The
-			      offset can be determined by the operation for a
-			      remote managed offset in a match list entry or by
-			      the match list entry at the target for a locally
-			      managed offset. */
-    void *          user_ptr; /*!< @see ptl_target_event_t::user_ptr */
-    ptl_ni_fail_t   ni_fail_type; /*!< @see ptl_target_event_t::ni_fail_type */
-} ptl_initiator_event_t;
-/*!
- * @struct ptl_event_t
- * @brief An event queue contains ptl_event_t structures, which contain a \a
- *      type and a union of the \e target specific event structure and the \e
- *      initiator specific event structure. */
-typedef struct {
-    union {
-        ptl_target_event_t      tevent;
-        ptl_initiator_event_t   ievent;
-    } event; /*!< Contains the event information. */
-    ptl_event_kind_t            type; /*!< Indicates the type of the event. */
+    ptl_datatype_t	atomic_type;
 } ptl_event_t;
 /*!
  * @fn PtlEQAlloc(ptl_handle_ni_t   ni_handle,
@@ -2910,6 +2889,84 @@ int PtlTriggeredCTSet(ptl_handle_ct_t   ct_handle,
                       ptl_ct_event_t    new_ct,
                       ptl_handle_ct_t   trig_ct_handle,
                       ptl_size_t        threshold);
+/*! @} */
+
+/*************************************
+ * Deferred Communication Operations *
+ *************************************/
+/*!
+ * @addtogroup DCO Deferred Communication Operations
+ * @{
+ * In many cases, the application has knowledge of its intended usage model
+ * that could be used to improve the performance of the implementation if there
+ * was a way to convey that knowledge. When an application informs the
+ * implementation of an intended usage model, it is binding on the application:
+ * the application cannot violate the usage model conveyed to the
+ * implementation. In contrast, such information is only a hint to the
+ * implementation: the implementation is not required to change its behavior
+ * based on the usage model the application describes. One prevalent usage
+ * model that many implementations could optimize for is a stream of operations
+ * in close temporal proximity. Informing the implementation of an impending
+ * stream of operations may allow it to optimize the conveyance of those
+ * operations through the messaging system (e.g. across the host bus or even
+ * across the network).
+ *
+ * @fn PtlStartBundle(ptl_handle_ni_t ni_handle)
+ * @brief Indicates a group of communication operations is about to start.
+ * @details The PtlStartBundle() function is used by the application to
+ *	indicate to the implementation that a group of communication operations
+ *	is about to start. PtlStartBundle() takes an \a ni_handle as an
+ *	argument and only impacts operations on that \a ni_handle.
+ *	PtlStartBundle() can be called multiple times, and each call to
+ *	PtlStartBundle() increments a reference count and must be matched by a
+ *	call to PtlEndBundle(). After a call to PtlStartBundle(), the
+ *	implementation may begin deferring communication operations until a
+ *	call to PtlEndBundle().
+ * @param[in] ni_handle	    An interface handle to start bundling operations.
+ * @retval PTL_OK	    Indicates success.
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. The
+ *			    definition of which arguments are checked is
+ *			    implementation dependent.
+ * @note Layered libraries and heavily nested PtlStartBundle() calls can yield
+ *	unexpected results. The PtlStartBundle() and PtlEndBundle() interface
+ *	was designed for use in short periods of high activity (e.g. during the
+ *	setup of a collective operation or duing an inner loop for PGAS
+ *	languages). The interval between PtlStartBundle() and the corresponding
+ *	PtlEndBundle() should be kept short.
+ * @implnote The PtlStartBundle() and PtlEndBundle() interface was designed to
+ *	allow the implementation to avoid unnecessary sfence()/memory barrier
+ *	operations during periods that the application expects high message
+ *	rate usage. A quality implementation will attempt to minimize latency
+ *	while maximizing message rate. For example, an implementation that
+ *	requires writes into “write-combining” space may require sfence()
+ *	operations with every message to have relatively deterministic latency.
+ *	Between a PtlStartBundle() and PtlEndBundle(), the implementation might
+ *	simply omit the sfence() operations.
+ */
+int PtlStartBundle(ptl_handle_ni_t ni_handle);
+
+/*!
+ * @fn PtlEndBundle(ptl_handle_ni_t ni_handle)
+ * @brief Indicates a group of communication operations has ended.
+ * @details The PtlEndBundle() function is used by the application to indicate
+ *	to the implementation that a group of communication operations has
+ *	ended. PtlEndBundle() takes an ni_handle as an argument and only
+ *	impacts operations on that ni_handle. PtlEndBundle() must be called
+ *	once for each PtlStartBundle() call. At each call to PtlEndBundle(),
+ *	the implementation must initiate all communication operations that have
+ *	been deferred; however, the implementation is not required to cease
+ *	bundling future operations until the reference count reaches zero.
+ * @param[in] ni_handle	    An interface handle to end bundling operations.
+ * @retval PTL_OK	    Indicates success.
+ * @retval PTL_NO_INIT	    Indicates that the portals API has not been
+ *			    successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. The
+ *			    definition of which arguments are checked is
+ *			    implementation dependent.
+ */
+int PtlEndBundle(ptl_handle_ni_t ni_handle);
 /*! @} */
 
 /*************************

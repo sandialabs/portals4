@@ -38,7 +38,7 @@ int API_FUNC PtlPTAlloc(
     if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
-    if (eq_handle == PTL_EQ_NONE && options & PTL_PT_FLOW_CONTROL) {
+    if (eq_handle == PTL_EQ_NONE && options & PTL_PT_FLOWCTRL) {
         return PTL_PT_EQ_NEEDED;
     }
     if (PtlInternalEQHandleValidator(eq_handle, 1)) {

@@ -217,10 +217,10 @@ static void PtlInternalHandleAck(
                             e.type = PTL_EVENT_REPLY;
                             break;
                     }
-                    e.event.ievent.mlength = hdr->length;
-                    e.event.ievent.offset = hdr->dest_offset;
-                    e.event.ievent.user_ptr = hdr->user_ptr;
-                    e.event.ievent.ni_fail_type = PTL_NI_OK;
+                    e.mlength = hdr->length;
+                    e.remote_offset = hdr->dest_offset;
+                    e.user_ptr = hdr->user_ptr;
+                    e.ni_fail_type = PTL_NI_OK;
                     PtlInternalEQPush(md_eq, &e);
                 }
             }
@@ -262,16 +262,16 @@ static void PtlInternalHandleAck(
                 if (md_eq != PTL_EQ_NONE) {
                     ptl_event_t e;
                     e.type = PTL_EVENT_ACK;
-                    e.event.ievent.mlength = hdr->length;
-                    e.event.ievent.offset = hdr->dest_offset;
-                    e.event.ievent.user_ptr = hdr->user_ptr;
+                    e.mlength = hdr->length;
+                    e.remote_offset = hdr->dest_offset;
+                    e.user_ptr = hdr->user_ptr;
                     switch (hdr->src) {
                         case 3:
-                            e.event.ievent.ni_fail_type =
+                            e.ni_fail_type =
                                 PTL_NI_PERM_VIOLATION;
                             break;
                         default:
-                            e.event.ievent.ni_fail_type = PTL_NI_OK;
+                            e.ni_fail_type = PTL_NI_OK;
                     }
                     PtlInternalEQPush(md_eq, &e);
                 }
@@ -535,10 +535,10 @@ int API_FUNC PtlPut(
             == 0) {
             ptl_event_t e;
             e.type = PTL_EVENT_SEND;
-            e.event.ievent.mlength = length;
-            e.event.ievent.offset = local_offset;
-            e.event.ievent.user_ptr = user_ptr;
-            e.event.ievent.ni_fail_type = PTL_NI_OK;
+            e.mlength = length;
+            e.remote_offset = local_offset;
+            e.user_ptr = user_ptr;
+            e.ni_fail_type = PTL_NI_OK;
             PtlInternalEQPush(eqh, &e);
         }
     }
@@ -779,10 +779,10 @@ int API_FUNC PtlAtomic(
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
         ptl_event_t e;
         e.type = PTL_EVENT_SEND;
-        e.event.ievent.mlength = length;
-        e.event.ievent.offset = local_offset;
-        e.event.ievent.user_ptr = user_ptr;
-        e.event.ievent.ni_fail_type = PTL_NI_OK;
+        e.mlength = length;
+        e.remote_offset = local_offset;
+        e.user_ptr = user_ptr;
+        e.ni_fail_type = PTL_NI_OK;
         PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
@@ -962,10 +962,10 @@ int API_FUNC PtlFetchAtomic(
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
         ptl_event_t e;
         e.type = PTL_EVENT_SEND;
-        e.event.ievent.mlength = length;
-        e.event.ievent.offset = local_put_offset;
-        e.event.ievent.user_ptr = user_ptr;
-        e.event.ievent.ni_fail_type = PTL_NI_OK;
+        e.mlength = length;
+        e.remote_offset = local_put_offset;
+        e.user_ptr = user_ptr;
+        e.ni_fail_type = PTL_NI_OK;
         PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
@@ -1169,10 +1169,10 @@ int API_FUNC PtlSwap(
             (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
             ptl_event_t e;
             e.type = PTL_EVENT_SEND;
-            e.event.ievent.mlength = length;
-            e.event.ievent.offset = local_put_offset;
-            e.event.ievent.user_ptr = user_ptr;
-            e.event.ievent.ni_fail_type = PTL_NI_OK;
+            e.mlength = length;
+            e.remote_offset = local_put_offset;
+            e.user_ptr = user_ptr;
+            e.ni_fail_type = PTL_NI_OK;
             PtlInternalEQPush(mdptr->eq_handle, &e);
         }
     }
