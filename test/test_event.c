@@ -75,7 +75,8 @@ int main(
     value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend
-                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST, (void*)(0xcafecafe00UL + myself.rank),
+                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST,
+                     (void *)(0xcafecafe00UL + myself.rank),
                      &value_le_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
@@ -103,12 +104,9 @@ int main(
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
         CHECK_RETURNVAL(PtlGet
-                        (read_md_handle,
-                         myself.rank % sizeof(uint64_t),
+                        (read_md_handle, myself.rank % sizeof(uint64_t),
                          sizeof(uint64_t) - (myself.rank % sizeof(uint64_t)),
-                         r0,
-                         logical_pt_index,
-                         myself.rank,
+                         r0, logical_pt_index, myself.rank,
                          (void *)(uintptr_t) (myself.rank + 1),
                          myself.rank % sizeof(uint64_t)));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
@@ -189,43 +187,32 @@ int main(
                             if (verb) {
                                 printf
                                     ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
-                                     (unsigned)event.event.tevent.match_bits,
-                                     (unsigned)event.event.tevent.rlength,
-                                     (unsigned)event.event.tevent.mlength,
-                                     (unsigned)event.event.tevent.
-                                     remote_offset, event.event.tevent.start,
-                                     &value, event.event.tevent.user_ptr,
-                                     (unsigned)event.event.tevent.hdr_data,
-                                     (unsigned)event.event.tevent.initiator.
-                                     rank, event.event.tevent.uid,
-                                     event.event.tevent.jid,
-                                     (unsigned)event.event.tevent.
-                                     ni_fail_type,
-                                     (unsigned)event.event.tevent.pt_index,
-                                     (unsigned)event.event.tevent.
-                                     atomic_operation,
-                                     (unsigned)event.event.tevent.
-                                     atomic_type);
+                                     (unsigned)event.match_bits,
+                                     (unsigned)event.rlength,
+                                     (unsigned)event.mlength,
+                                     (unsigned)event.remote_offset,
+                                     event.start, &value, event.user_ptr,
+                                     (unsigned)event.hdr_data,
+                                     (unsigned)event.initiator.rank,
+                                     event.uid, event.jid,
+                                     (unsigned)event.ni_fail_type,
+                                     (unsigned)event.pt_index,
+                                     (unsigned)event.atomic_operation,
+                                     (unsigned)event.atomic_type);
                             }
-                            assert(event.event.tevent.match_bits == 0); // since this is a non-matching NI
-                            assert(((char *)event.event.tevent.start) -
-                                   event.event.tevent.remote_offset ==
-                                   (char *)&value);
-                            assert(event.event.tevent.pt_index ==
-                                   logical_pt_index);
-                            assert(event.event.tevent.ni_fail_type ==
-                                   PTL_NI_OK);
-                            assert(event.event.tevent.mlength ==
-                                   event.event.tevent.rlength);
-                            assert(event.event.tevent.rlength ==
-                                   sizeof(uint64_t) -
-                                   event.event.tevent.remote_offset);
-                            assert(event.event.tevent.remote_offset ==
-                                   event.event.tevent.initiator.rank %
-                                   sizeof(uint64_t));
-                            assert(event.event.tevent.user_ptr ==
-                                   (void *) (0xcafecafe00UL + myself.rank));
-                            assert(event.event.tevent.hdr_data == 0);
+                            assert(event.match_bits == 0);      // since this is a non-matching NI
+                            assert(((char *)event.start) -
+                                   event.remote_offset == (char *)&value);
+                            assert(event.pt_index == logical_pt_index);
+                            assert(event.ni_fail_type == PTL_NI_OK);
+                            assert(event.mlength == event.rlength);
+                            assert(event.rlength ==
+                                   sizeof(uint64_t) - event.remote_offset);
+                            assert(event.remote_offset ==
+                                   event.initiator.rank % sizeof(uint64_t));
+                            assert(event.user_ptr ==
+                                   (void *)(0xcafecafe00UL + myself.rank));
+                            assert(event.hdr_data == 0);
                             break;
                         case PTL_EVENT_REPLY:
                         case PTL_EVENT_SEND:
@@ -234,21 +221,19 @@ int main(
                             if (verb) {
                                 printf
                                     ("mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
-                                     (unsigned)event.event.ievent.mlength,
-                                     (unsigned)event.event.ievent.offset,
-                                     event.event.ievent.user_ptr,
-                                     (unsigned)event.event.ievent.
-                                     ni_fail_type);
+                                     (unsigned)event.mlength,
+                                     (unsigned)event.remote_offset,
+                                     event.user_ptr,
+                                     (unsigned)event.ni_fail_type);
                             }
-                            assert(event.event.ievent.mlength ==
+                            assert(event.mlength ==
                                    sizeof(uint64_t) -
                                    (myself.rank % sizeof(uint64_t)));
-                            assert(event.event.ievent.offset ==
+                            assert(event.remote_offset ==
                                    myself.rank % sizeof(uint64_t));
-                            assert(event.event.ievent.user_ptr ==
+                            assert(event.user_ptr ==
                                    (void *)(uintptr_t) (myself.rank + 1));
-                            assert(event.event.ievent.ni_fail_type ==
-                                   PTL_NI_OK);
+                            assert(event.ni_fail_type == PTL_NI_OK);
                             break;
                     }
                     if (verb)
@@ -276,4 +261,5 @@ int main(
 
     return 0;
 }
+
 /* vim:set expandtab: */

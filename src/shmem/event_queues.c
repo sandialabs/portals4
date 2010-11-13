@@ -42,6 +42,9 @@ typedef union {
 } eq_off_t;
 
 typedef struct {
+} ptl_internal_target_event_t;  // grand total: 56 bytes
+
+typedef struct {
     ptl_match_bits_t match_bits;        // 8 bytes
     void *start;                // 8 bytes (16)
     void *user_ptr;             // 8 bytes (24)
@@ -62,13 +65,6 @@ typedef struct {
     uint8_t ni_fail_type:2;
     uint8_t atomic_operation:5;
     uint8_t atomic_type:4;
-} ptl_internal_target_event_t;  // grand total: 56 bytes
-
-typedef struct {
-    union {
-        ptl_internal_target_event_t tevent;
-        ptl_initiator_event_t ievent;
-    } event;
     uint8_t type;
 } ptl_internal_event_t;
 
@@ -268,30 +264,33 @@ int API_FUNC PtlEQFree(
         case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
         case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
         case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: case PTL_EVENT_PROBE: /* target */ \
-            e->event.tevent.match_bits = ie.event.tevent.match_bits; \
-            e->event.tevent.start = ie.event.tevent.start; \
-            e->event.tevent.user_ptr = ie.event.tevent.user_ptr; \
-            e->event.tevent.hdr_data = ie.event.tevent.hdr_data; \
-            e->event.tevent.rlength = ie.event.tevent.rlength; \
-            e->event.tevent.mlength = ie.event.tevent.mlength; \
+            e->match_bits = ie.match_bits; \
+            e->start = ie.start; \
+            e->user_ptr = ie.user_ptr; \
+            e->hdr_data = ie.hdr_data; \
+            e->rlength = ie.rlength; \
+            e->mlength = ie.mlength; \
             if (ni <= 1) { /* logical */ \
-                e->event.tevent.initiator.rank = ie.event.tevent.initiator.rank; \
+                e->initiator.rank = ie.initiator.rank; \
             } else { /* physical */ \
-                e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
-                e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; \
+                e->initiator.phys.pid = ie.initiator.phys.pid; \
+                e->initiator.phys.nid = ie.initiator.phys.nid; \
             } \
-            e->event.tevent.initiator.phys.nid = ie.event.tevent.initiator.phys.nid; /* this handles rank too */ \
-            e->event.tevent.initiator.phys.pid = ie.event.tevent.initiator.phys.pid; \
-            e->event.tevent.uid = ie.event.tevent.uid; \
-            e->event.tevent.jid = ie.event.tevent.jid; \
-            e->event.tevent.remote_offset = ie.event.tevent.remote_offset; \
-            e->event.tevent.pt_index = ie.event.tevent.pt_index; \
-            e->event.tevent.ni_fail_type = ie.event.tevent.ni_fail_type; \
-            e->event.tevent.atomic_operation = (ptl_op_t) ie.event.tevent.atomic_operation; \
-            e->event.tevent.atomic_type = (ptl_datatype_t) ie.event.tevent.atomic_type; \
+            e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */ \
+            e->initiator.phys.pid = ie.initiator.phys.pid; \
+            e->uid = ie.uid; \
+            e->jid = ie.jid; \
+            e->remote_offset = ie.remote_offset; \
+            e->pt_index = ie.pt_index; \
+            e->ni_fail_type = ie.ni_fail_type; \
+            e->atomic_operation = (ptl_op_t) ie.atomic_operation; \
+            e->atomic_type = (ptl_datatype_t) ie.atomic_type; \
             break; \
         case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
-            e->event.ievent = ie.event.ievent; \
+            e->mlength = ie.mlength; \
+            e->remote_offset = ie.remote_offset; \
+            e->user_ptr = ie.user_ptr; \
+            e->ni_fail_type = ie.ni_fail_type; \
             break; \
     } \
 } while (0)
@@ -508,46 +507,49 @@ void INTERNAL PtlInternalEQPush(
         case PTL_EVENT_AUTO_UNLINK:
         case PTL_EVENT_AUTO_FREE:
         case PTL_EVENT_PROBE:         /* target */
-            eq->ring[writeidx.s.offset].event.tevent.match_bits =
-                event->event.tevent.match_bits;
-            eq->ring[writeidx.s.offset].event.tevent.start =
-                event->event.tevent.start;
-            eq->ring[writeidx.s.offset].event.tevent.user_ptr =
-                event->event.tevent.user_ptr;
-            eq->ring[writeidx.s.offset].event.tevent.hdr_data =
-                event->event.tevent.hdr_data;
-            eq->ring[writeidx.s.offset].event.tevent.rlength =
-                event->event.tevent.rlength;
-            eq->ring[writeidx.s.offset].event.tevent.mlength =
-                event->event.tevent.mlength;
+            eq->ring[writeidx.s.offset].match_bits =
+                event->match_bits;
+            eq->ring[writeidx.s.offset].start =
+                event->start;
+            eq->ring[writeidx.s.offset].user_ptr =
+                event->user_ptr;
+            eq->ring[writeidx.s.offset].hdr_data =
+                event->hdr_data;
+            eq->ring[writeidx.s.offset].rlength =
+                event->rlength;
+            eq->ring[writeidx.s.offset].mlength =
+                event->mlength;
             if (eqh.s.ni <= 1) {       /* logical */
-                eq->ring[writeidx.s.offset].event.tevent.initiator.rank =
-                    event->event.tevent.initiator.rank;
+                eq->ring[writeidx.s.offset].initiator.rank =
+                    event->initiator.rank;
             } else {                   /* physical */
-                eq->ring[writeidx.s.offset].event.tevent.initiator.phys.pid =
-                    (uint16_t) event->event.tevent.initiator.phys.pid;
-                eq->ring[writeidx.s.offset].event.tevent.initiator.phys.nid =
-                    (uint16_t) event->event.tevent.initiator.phys.nid;
+                eq->ring[writeidx.s.offset].initiator.phys.pid =
+                    (uint16_t) event->initiator.phys.pid;
+                eq->ring[writeidx.s.offset].initiator.phys.nid =
+                    (uint16_t) event->initiator.phys.nid;
             }
-            eq->ring[writeidx.s.offset].event.tevent.uid =
-                (uint16_t) event->event.tevent.uid;
-            eq->ring[writeidx.s.offset].event.tevent.jid =
-                (uint16_t) event->event.tevent.jid;
-            eq->ring[writeidx.s.offset].event.tevent.remote_offset =
-                event->event.tevent.remote_offset;
-            eq->ring[writeidx.s.offset].event.tevent.pt_index =
-                event->event.tevent.pt_index;
-            eq->ring[writeidx.s.offset].event.tevent.ni_fail_type =
-                event->event.tevent.ni_fail_type;
-            eq->ring[writeidx.s.offset].event.tevent.atomic_operation =
-                (uint8_t) event->event.tevent.atomic_operation;
-            eq->ring[writeidx.s.offset].event.tevent.atomic_type =
-                (uint8_t) event->event.tevent.atomic_type;
+            eq->ring[writeidx.s.offset].uid =
+                (uint16_t) event->uid;
+            eq->ring[writeidx.s.offset].jid =
+                (uint16_t) event->jid;
+            eq->ring[writeidx.s.offset].remote_offset =
+                event->remote_offset;
+            eq->ring[writeidx.s.offset].pt_index =
+                event->pt_index;
+            eq->ring[writeidx.s.offset].ni_fail_type =
+                event->ni_fail_type;
+            eq->ring[writeidx.s.offset].atomic_operation =
+                (uint8_t) event->atomic_operation;
+            eq->ring[writeidx.s.offset].atomic_type =
+                (uint8_t) event->atomic_type;
             break;
         case PTL_EVENT_REPLY:
         case PTL_EVENT_SEND:
         case PTL_EVENT_ACK:           /* initiator */
-            eq->ring[writeidx.s.offset].event.ievent = event->event.ievent;
+            eq->ring[writeidx.s.offset].mlength = event->mlength;
+            eq->ring[writeidx.s.offset].remote_offset = event->remote_offset;
+            eq->ring[writeidx.s.offset].user_ptr = event->user_ptr;
+            eq->ring[writeidx.s.offset].ni_fail_type = event->ni_fail_type;
             break;
     }
     // now, wait for our neighbor to finish

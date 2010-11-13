@@ -138,36 +138,36 @@ static void *PtlInternalPerformOverflowDelivery(
 }
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
-    e.event.tevent.pt_index = hdr->pt_index; \
-    e.event.tevent.uid = 0; \
-    e.event.tevent.jid = PTL_JID_NONE; \
-    e.event.tevent.match_bits = hdr->match_bits; \
-    e.event.tevent.rlength = hdr->length; \
-    e.event.tevent.mlength = 0; \
-    e.event.tevent.remote_offset = hdr->dest_offset; \
-    e.event.tevent.user_ptr = uptr; \
-    e.event.tevent.ni_fail_type = PTL_NI_OK; \
+    e.pt_index = hdr->pt_index; \
+    e.uid = 0; \
+    e.jid = PTL_JID_NONE; \
+    e.match_bits = hdr->match_bits; \
+    e.rlength = hdr->length; \
+    e.mlength = 0; \
+    e.remote_offset = hdr->dest_offset; \
+    e.user_ptr = uptr; \
+    e.ni_fail_type = PTL_NI_OK; \
     if (hdr->ni <= 1) {                /* Logical */ \
-        e.event.tevent.initiator.rank = hdr->src; \
+        e.initiator.rank = hdr->src; \
     } else {                           /* Physical */ \
-        e.event.tevent.initiator.phys.pid = hdr->src; \
-        e.event.tevent.initiator.phys.nid = 0; \
+        e.initiator.phys.pid = hdr->src; \
+        e.initiator.phys.nid = 0; \
     } \
     switch (hdr->type) { \
         case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-            e.event.tevent.hdr_data = hdr->info.put.hdr_data; \
+            e.hdr_data = hdr->info.put.hdr_data; \
             break; \
         case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-            e.event.tevent.hdr_data = hdr->info.atomic.hdr_data; \
+            e.hdr_data = hdr->info.atomic.hdr_data; \
             break; \
         case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-            e.event.tevent.hdr_data = hdr->info.fetchatomic.hdr_data; \
+            e.hdr_data = hdr->info.fetchatomic.hdr_data; \
             break; \
         case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-            e.event.tevent.hdr_data = hdr->info.swap.hdr_data; \
+            e.hdr_data = hdr->info.swap.hdr_data; \
             break; \
         case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
-            e.event.tevent.hdr_data = 0; \
+            e.hdr_data = 0; \
             break; \
     } \
 } while (0)
@@ -218,8 +218,8 @@ static void PtlInternalAnnounceMEDelivery(
                     abort();
             }
         }
-        e.event.tevent.mlength = mlength;
-        e.event.tevent.start = (void *)start;
+        e.mlength = mlength;
+        e.start = (void *)start;
         PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
         PtlInternalEQPush(eq_handle, &e);
         if (mlength > 0) {
@@ -409,6 +409,7 @@ int API_FUNC PtlMEAppend(
                         // etc.
                     } else {
                         size_t mlength;
+                        ptl_handle_eq_t tEQ = t->EQ;
                         // deliver
                         if (me->length == 0) {
                             mlength = 0;
@@ -444,9 +445,9 @@ int API_FUNC PtlMEAppend(
                                                        mlength,
                                                        &(cur->hdr.info));
                             // notify
-                            if (t->EQ != PTL_EQ_NONE ||
+                            if (tEQ != PTL_EQ_NONE ||
                                 me->ct_handle != PTL_CT_NONE) {
-                                PtlInternalAnnounceMEDelivery(t->EQ,
+                                PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
                                                               cur->hdr.type,
                                                               me->options,
@@ -459,9 +460,9 @@ int API_FUNC PtlMEAppend(
                             }
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
-                            if (t->EQ != PTL_EQ_NONE ||
+                            if (tEQ != PTL_EQ_NONE ||
                                 me->ct_handle != PTL_CT_NONE) {
-                                PtlInternalAnnounceMEDelivery(t->EQ,
+                                PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
                                                               cur->hdr.type,
                                                               me->options,
@@ -473,9 +474,9 @@ int API_FUNC PtlMEAppend(
                             }
                         }
 #else
-                        if (t->EQ != PTL_EQ_NONE ||
+                        if (tEQ != PTL_EQ_NONE ||
                             me->ct_handle != PTL_CT_NONE) {
-                            PtlInternalAnnounceMEDelivery(t->EQ,
+                            PtlInternalAnnounceMEDelivery(tEQ,
                                                           me->ct_handle,
                                                           cur->hdr.type,
                                                           me->options,
@@ -487,9 +488,21 @@ int API_FUNC PtlMEAppend(
                                                           &(cur->hdr));
                         }
 #endif
+                        ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+                        /* technically, the ME was never actually *linked*, but
+                         * for symmetry of the interface, we need to pretend
+                         * like it was linked and announce the unlink */
+                        if (tEQ != PTL_EQ_NONE &&
+                            (me->options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
+                            ptl_event_t e;
+                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                            e.type = PTL_EVENT_AUTO_UNLINK;
+                            e.start = (char *)me->start + cur->hdr.dest_offset;
+                            PtlInternalEQPush(tEQ, &e);
+                        }
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
-                        goto done_appending;
+                        goto done_appending_unlocked;
                     }
                 }
                 /* either nothing matched in the buffered_headers, or something
@@ -602,8 +615,8 @@ int API_FUNC PtlMEAppend(
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
                                                      user_ptr);
                             e.type = PTL_EVENT_PROBE;
-                            e.event.tevent.mlength = mlength;
-                            e.event.tevent.start = cur->buffered_data;
+                            e.mlength = mlength;
+                            e.start = cur->buffered_data;
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
@@ -617,6 +630,7 @@ int API_FUNC PtlMEAppend(
     }
   done_appending:
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+  done_appending_unlocked:
     PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
     return PTL_OK;
 }
@@ -882,7 +896,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 }
             }
             entry->unlinked = 1;
-            /* now that the LE has been unlinked, we can unlock the portal
+            /* now that the ME has been unlinked, we can unlock the portal
              * table, thus allowing deliveries and/or appends on the PT while
              * we do this delivery */
             need_to_unlock = 0;
@@ -892,7 +906,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 ptl_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type = PTL_EVENT_AUTO_UNLINK;
-                e.event.tevent.start = (char *)me.start + hdr->dest_offset;
+                e.start = (char *)me.start + hdr->dest_offset;
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
                 PtlInternalEQPush(tEQ, &e);
                 PtlInternalPAPIStartC();
@@ -959,7 +973,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         ptl_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
         e.type = PTL_EVENT_DROPPED;
-        e.event.tevent.start = NULL;
+        e.start = NULL;
         PtlInternalPAPIDoneC(PTL_ME_PROCESS, 4);
         PtlInternalEQPush(tEQ, &e);
         PtlInternalPAPIStartC();
