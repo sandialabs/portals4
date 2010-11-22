@@ -91,7 +91,7 @@ ptl_handle_md_t md_handle;
     /* Setup the MD */
     md.start= start;
     md.length= length;
-    md.options= PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE | PTL_MD_EVENT_DISABLE;
+    md.options= PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
     md.eq_handle= PTL_EQ_NONE;
     md.ct_handle= PTL_CT_NONE;
 
@@ -127,8 +127,7 @@ ptl_md_t md;
     /* Setup the MD */
     md.start= start;
     md.length= length;
-    md.options= PTL_MD_EVENT_CT_SEND | PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE |
-		    PTL_MD_EVENT_DISABLE;
+    md.options= PTL_MD_EVENT_CT_SEND | PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
     md.eq_handle= PTL_EQ_NONE;
     md.ct_handle= *ch;
 
