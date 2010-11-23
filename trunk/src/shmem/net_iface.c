@@ -197,7 +197,7 @@ int API_FUNC PtlNIInit(
             }
             nit.unexpecteds[ni.s.ni] =
                 calloc(nit_limits.max_overflow_entries,
-                       sizeof(ptl_internal_header_t));
+                       sizeof(ptl_internal_buffered_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
