@@ -22,6 +22,7 @@ BENCHMARKS =
 INCLUDES = -I$(top_srcdir)/include
 OUTPUTDIR = $(top_builddir)/src
 PORTALSLIB = $(OUTPUTDIR)/libportals.la
+P4SUPPORTLIB = $(OUTPUTDIR)/libP4support.la
 LDADD = $(PORTALSLIB)
 
 include benchmarks/rtt_latency/Makefile.inc
