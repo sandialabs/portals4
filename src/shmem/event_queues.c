@@ -484,7 +484,6 @@ void INTERNAL PtlInternalEQPush(
     const uint32_t mask = eq->size - 1;
     eq_off_t writeidx, curidx, newidx;
 
-    PtlInternalPAPIStartC();
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
@@ -556,7 +555,6 @@ void INTERNAL PtlInternalEQPush(
     while (eq->lagging_tail.u != writeidx.u) ;
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
-    PtlInternalPAPIDoneC(PTL_EQ_PUSH, 0);
 }
 
 /* vim:set expandtab: */
