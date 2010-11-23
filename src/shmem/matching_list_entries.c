@@ -172,6 +172,24 @@ static void *PtlInternalPerformOverflowDelivery(
     } \
 } while (0)
 
+static int PtlInternalMarkMEReusable(
+        const ptl_handle_me_t me_handle)
+{
+    const ptl_internal_handle_converter_t me = { me_handle };
+    switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
+        case ME_ALLOCATED:
+            /* success! */
+            return PTL_OK;
+        case ME_IN_USE:
+            return PTL_IN_USE;
+#ifndef NO_ARG_VALIDATION
+        case ME_FREE:
+            VERBOSE_ERROR("ME unexpectedly became free");
+            return PTL_ARG_INVALID;
+#endif
+    }
+}
+
 static void PtlInternalAnnounceMEDelivery(
     const ptl_handle_eq_t eq_handle,
     const ptl_handle_ct_t ct_handle,
@@ -181,7 +199,8 @@ static void PtlInternalAnnounceMEDelivery(
     const uintptr_t start,
     const ptl_internal_listtype_t foundin,
     ptl_internal_appendME_t * const restrict entry,
-    ptl_internal_header_t * const restrict hdr)
+    ptl_internal_header_t * const restrict hdr,
+    const ptl_handle_me_t me_handle)
 {
     int ct_announce = ct_handle != PTL_CT_NONE;
     if (ct_announce != 0) {
@@ -220,7 +239,7 @@ static void PtlInternalAnnounceMEDelivery(
         }
         e.mlength = mlength;
         e.start = (void *)start;
-        PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
+        //PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
         PtlInternalEQPush(eq_handle, &e);
         if (mlength > 0) {
             ++(entry->announced);
@@ -229,8 +248,11 @@ static void PtlInternalAnnounceMEDelivery(
             entry->announced == entry->messages) {
             e.type = PTL_EVENT_AUTO_FREE;
             PtlInternalEQPush(eq_handle, &e);
+            if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
+                abort();
+            }
         }
-        PtlInternalPAPIStartC();
+        //PtlInternalPAPIStartC();
     }
 }
 
@@ -456,7 +478,8 @@ int API_FUNC PtlMEAppend(
                                                               realstart,
                                                               PRIORITY,
                                                               user_ptr,
-                                                              &(cur->hdr));
+                                                              &(cur->hdr),
+                                                              meh.a);
                             }
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
@@ -470,7 +493,8 @@ int API_FUNC PtlMEAppend(
                                                               (uintptr_t) 0,
                                                               OVERFLOW,
                                                               user_ptr,
-                                                              &(cur->hdr));
+                                                              &(cur->hdr),
+                                                              meh.a);
                             }
                         }
 #else
@@ -485,7 +509,8 @@ int API_FUNC PtlMEAppend(
                                                           cur->hdr.
                                                           dest_offset,
                                                           OVERFLOW, user_ptr,
-                                                          &(cur->hdr));
+                                                          &(cur->hdr),
+                                                          meh.a);
                         }
 #endif
                         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
@@ -942,7 +967,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
                                           me.options, mlength,
                                           (uintptr_t) report_this_start,
-                                          PRIORITY, entry, hdr);
+                                          PRIORITY, entry, hdr,
+                                          entry->me_handle.a);
         } else {
 #warning Sending a PtlGet to the overflow list probably doesn't work
             report_this_start =
