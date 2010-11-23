@@ -1,33 +1,57 @@
 #!/bin/bash
-#nodecount=$(numactl --hardware | awk '/^available:/{print $2}')
+hardwareoutput="$(numactl --hardware)"
+nodecount=$(awk '/^available:/{print $2}' <<<"$hardwareoutput")
+node0nodes=( $(grep "node 0 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
+node1nodes=( $(grep "node 1 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
+node0cores=${#node0nodes[*]}
+node1cores=${#node1nodes[*]}
 case "$1" in
 	--socket-dyn)
 	shift
-	arg="--cpunodebind=$PORTALS4_RANK"
+	arg="--cpunodebind="$((${PORTALS4_RANK}%${nodecount}))
 	;;
 	--socket-static)
 	shift
-	case "$PORTALS4_RANK" in
+	if [ "$PORTALS4_NUM_PROCS" == 2 ] ; then
+	    case "$PORTALS4_RANK" in
 		0)
-		base=2
-		;;
+		    base=2
+		    ;;
 		1)
-		base=3
-		;;
-	esac
-	arg="--physcpubind="$base,$(($base+2))
+		    base=3
+		    ;;
+	    esac
+	    arg="--physcpubind="$base,$(($base+2))
+	else
+	    totcores=$(($node0cores+$node1cores))
+	    idx=$(($PORTALS4_RANK%$totcores))
+	    if [ $idx -ge $node0cores ] ; then
+		base=${node1nodes[$(($idx-$node0cores))]}
+	    else
+		base=${node0nodes[$idx]}
+	    fi
+	    arg="--physcpubind=$base"
+	fi
 	;;
 	--core-static)
 	shift
-	case "$PORTALS4_RANK" in
+	if [ "$PORTALS4_NUM_PROCS" == 2 ] ; then
+	    case "$PORTALS4_RANK" in
 		0)
-		base=4
-		;;
+		    base=4
+		    ;;
 		1)
-		base=8
-		;;
-	esac
-	arg="--physcpubind="$base,$(($base+2))
+		    base=8
+		    ;;
+	    esac
+	    arg="--physcpubind="$base,$(($base+2))
+	elif [ "$PORTALS4_NUM_PROCS" -lt $node1cores ] ; then
+	    base=${node1nodes[$(($PORTALS4_RANK%${#node1nodes[*]}))]}
+	    arg="--physcpubind=$base"
+	else
+	    echo "Too many ranks! Max for core-static is $node1cores"
+	    exit
+	fi
 	;;
 	--core-dyn)
 	shift
