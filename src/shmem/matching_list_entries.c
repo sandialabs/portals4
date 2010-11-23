@@ -295,7 +295,7 @@ int API_FUNC PtlMEAppend(
         }
     }
     if (Qentry == NULL) {
-        return PTL_FAIL;
+        return PTL_NO_SPACE;
     }
     Qentry->user_ptr = user_ptr;
     Qentry->me_handle = meh;
