@@ -5,7 +5,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-lib_LTLIBRARIES = libportals.la
+lib_LTLIBRARIES = libportals.la libP4support.la
 bin_PROGRAMS = yod
 
 # version-info fields are:
@@ -25,6 +25,9 @@ bin_PROGRAMS = yod
 libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
 libportals_la_SOURCES =
 
+libP4support_la_LDFLAGS = -version-info 4:0:0 -no-undefined
+libP4support_la_SOURCES =
+
 yod_SOURCES =
 
 noinst_HEADERS =
@@ -32,3 +35,5 @@ noinst_HEADERS =
 if BACKEND_IMPL_SHMEM
 include shmem/Makefile.inc
 endif
+
+include support/Makefile.inc
