@@ -23,6 +23,10 @@ static struct runtime_proc_t *ranks;
 static ptl_handle_ni_t ni_physical;
 static ptl_pt_index_t phys_pt_index;
 
+static long barrier_count = 0;
+static ptl_handle_le_t barrier_le_h;
+static ptl_handle_ct_t barrier_ct_h;
+
 #define NI_PHYS_NOMATCH 3
 
 static void noFailures(
@@ -161,6 +165,12 @@ void runtime_finalize(
     if (runtime_inited == 0 || COLLECTOR.phys.pid == my_rank)
         return;
     runtime_inited = 0;
+
+    if (barrier_count > 0) {
+        ptl_assert(PtlCTFree(barrier_ct_h), PTL_OK);
+        ptl_assert(PtlLEUnlink(barrier_le_h), PTL_OK);
+    }
+
     PtlPTFree(ni_physical, phys_pt_index);
     PtlNIFini(ni_physical);
 }
@@ -196,39 +206,76 @@ int API_FUNC runtime_get_nidpid_map(
 void API_FUNC runtime_barrier(
     void)
 {
-    ptl_handle_le_t leh;
-    ptl_le_t le;
-    ptl_handle_md_t mdh;
-    ptl_md_t md;
-    ptl_ct_event_t ctc;
-    const ptl_internal_handle_converter_t ni = {.s =
-            {HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0}
-    };
+    const ptl_internal_handle_converter_t ni = {.s = {HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0} };
 
     if (runtime_inited == 0)
         runtime_init();
 
-    le.start = md.start = NULL;
-    le.length = md.length = 0;
-    le.ac_id.uid = PTL_UID_ANY;
-    le.options = PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_CT_COMM;
-    md.options = 0;
-    md.eq_handle = PTL_EQ_NONE;
-    md.ct_handle = PTL_CT_NONE;
-    ptl_assert(PtlCTAlloc(ni.a, &le.ct_handle), PTL_OK);
-    /* post my sensor */
-    ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &leh),
-               PTL_OK);
-    /* prepare my messenger */
-    ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
-    /* alert COLLECTOR of my presence */
-    ptl_assert(PtlPut(mdh, 0, 0, PTL_CT_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0),
-               PTL_OK);
-    /* wait for COLLECTOR to respond */
-    ptl_assert(PtlCTWait(le.ct_handle, 1, &ctc), PTL_OK);
-    assert(ctc.failure == 0);
-    ptl_assert(PtlMDRelease(mdh), PTL_OK);
-    ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
+    if (0 == barrier_count++) {
+        /* first barrier calls to yod to make sure everyone is present */
+        ptl_le_t le;
+        ptl_handle_md_t mdh;
+        ptl_md_t md;
+        ptl_ct_event_t ctc;
+
+        le.start = md.start = NULL;
+        le.length = md.length = 0;
+        le.ac_id.uid = PTL_UID_ANY;
+        le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
+        md.options = 0;
+        md.eq_handle = PTL_EQ_NONE;
+        md.ct_handle = PTL_CT_NONE;
+        ptl_assert(PtlCTAlloc(ni.a, &barrier_ct_h), PTL_OK);
+        le.ct_handle = barrier_ct_h;
+        /* post my receive */
+        ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h),
+                   PTL_OK);
+        /* prepare my messenger */
+        ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
+        /* alert COLLECTOR of my presence */
+        ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0),
+                   PTL_OK);
+        /* wait for COLLECTOR to respond */
+        ptl_assert(PtlCTWait(barrier_ct_h, 1, &ctc), PTL_OK);
+        assert(ctc.failure == 0);
+        ptl_assert(PtlMDRelease(mdh), PTL_OK);
+
+        if (0 == my_rank) {
+            /* to make counting easier */
+            ptl_ct_event_t incr = { num_procs - 2, 0 };
+            PtlCTInc(barrier_ct_h, incr);
+        }
+
+    } else {
+        /* follow-on barrier calls only within user space */
+        ptl_handle_md_t mdh;
+        ptl_md_t md;
+        int i;
+        ptl_process_t id;
+        ptl_ct_event_t ctc;
+
+        md.options = 0;
+        md.eq_handle = PTL_EQ_NONE;
+        md.ct_handle = PTL_CT_NONE;
+        ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
+
+        if (0 == my_rank) {
+            /* wait for size - 1 events, then send size -1 events */
+            ptl_assert(PtlCTWait(barrier_ct_h, barrier_count * (num_procs - 1), &ctc), PTL_OK);
+            for (i = 1 ; i < num_procs ; ++i) {
+                id.phys.nid = 0;
+                id.phys.pid = i;
+                ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, id, 0, 0, 0, NULL, 0), PTL_OK);
+            }
+        } else {
+            id.phys.nid = 0;
+            id.phys.pid = 0;
+            ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, id, 0, 0, 0, NULL, 0), PTL_OK);
+            ptl_assert(PtlCTWait(barrier_ct_h, barrier_count, &ctc), PTL_OK);
+            assert(ctc.failure == 0);
+            ptl_assert(PtlMDRelease(mdh), PTL_OK);
+        }
+    }
 }
 
 /* vim:set expandtab: */
