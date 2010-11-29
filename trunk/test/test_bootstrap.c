@@ -58,6 +58,9 @@ int main(
                     (ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
     assert(logical_pt_index == 0);
 
+    runtime_barrier();
+    runtime_barrier();
+
     /* now I can communicate between ranks with ni_logical */
     /* ... do stuff ... */
 
