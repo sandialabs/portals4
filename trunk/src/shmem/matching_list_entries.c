@@ -477,7 +477,7 @@ int API_FUNC PtlMEAppend(
                                                               (uintptr_t)
                                                               realstart,
                                                               PRIORITY,
-                                                              user_ptr,
+                                                              Qentry,
                                                               &(cur->hdr),
                                                               meh.a);
                             }
@@ -492,7 +492,7 @@ int API_FUNC PtlMEAppend(
                                                               mlength,
                                                               (uintptr_t) 0,
                                                               OVERFLOW,
-                                                              user_ptr,
+                                                              Qentry,
                                                               &(cur->hdr),
                                                               meh.a);
                             }
@@ -504,11 +504,11 @@ int API_FUNC PtlMEAppend(
                                                           me->ct_handle,
                                                           cur->hdr.type,
                                                           me->options,
-                                                          mlength, (uintptr_t)
-                                                          me->start +
-                                                          cur->hdr.
-                                                          dest_offset,
-                                                          OVERFLOW, user_ptr,
+                                                          mlength, 
+                                                          (uintptr_t) me->start +
+                                                          cur->hdr.dest_offset,
+                                                          OVERFLOW, 
+                                                          Qentry,
                                                           &(cur->hdr),
                                                           meh.a);
                         }
