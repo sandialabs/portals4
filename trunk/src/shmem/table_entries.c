@@ -146,7 +146,7 @@ int API_FUNC PtlPTDisable(
     Q_UNUSED ptl_handle_ni_t ni_handle,
     Q_UNUSED ptl_pt_index_t pt_index)
 {
-#warning PtlPTDisable() unimplemented
+    fprintf(stderr, "PtlPTDisable() unimplemented\n");
     return PTL_FAIL;
 }
 
@@ -154,7 +154,7 @@ int API_FUNC PtlPTEnable(
     Q_UNUSED ptl_handle_ni_t ni_handle,
     Q_UNUSED ptl_pt_index_t pt_index)
 {
-#warning PtlPTEnable() unimplemented
+    fprintf(stderr, "PtlPTEnable() unimplemented\n");
     return PTL_FAIL;
 }
 

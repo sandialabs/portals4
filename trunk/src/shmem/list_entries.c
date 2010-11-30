@@ -326,7 +326,7 @@ int API_FUNC PtlLEAppend(
                     }
                     // (2) iff LE is persistent
                     if ((le->options & PTL_LE_USE_ONCE) == 0) {
-#warning PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)
+                        fprintf(stderr, "PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
                          * gets the buffered headers that it matched, in order.
