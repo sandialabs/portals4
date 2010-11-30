@@ -49,7 +49,7 @@ static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
 void INTERNAL PtlInternalMENISetup(
     unsigned int ni,
     ptl_size_t limit)
-{
+{/*{{{*/
     ptl_internal_me_t *tmp;
     while ((tmp =
             PtlInternalAtomicCasPtr(&(mes[ni]), NULL,
@@ -60,18 +60,18 @@ void INTERNAL PtlInternalMENISetup(
         __sync_synchronize();
         mes[ni] = tmp;
     }
-}
+}/*}}}*/
 
 void INTERNAL PtlInternalMENITeardown(
     unsigned int ni)
-{
+{/*{{{*/
     ptl_internal_me_t *tmp;
     tmp = mes[ni];
     mes[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
-}
+}/*}}}*/
 
 static void PtlInternalPerformDelivery(
     const unsigned char type,
@@ -79,7 +79,7 @@ static void PtlInternalPerformDelivery(
     void *const restrict message_data,
     size_t nbytes,
     ptl_internal_typeinfo_t * restrict info)
-{
+{/*{{{*/
     switch (type) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
@@ -108,7 +108,7 @@ static void PtlInternalPerformDelivery(
             UNREACHABLE;
             abort();
     }
-}
+}/*}}}*/
 
 static void *PtlInternalPerformOverflowDelivery(
     ptl_internal_appendME_t * const restrict Qentry,
@@ -117,7 +117,7 @@ static void *PtlInternalPerformOverflowDelivery(
     const unsigned int loptions,
     const ptl_size_t mlength,
     ptl_internal_header_t * const restrict hdr)
-{
+{/*{{{*/
     void *retval = NULL;
     if (loptions & PTL_ME_MANAGE_LOCAL) {
         assert(hdr->length + Qentry->local_offset <= llength);
@@ -135,7 +135,7 @@ static void *PtlInternalPerformOverflowDelivery(
         }
     }
     return retval;
-}
+}/*}}}*/
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
     e.pt_index = hdr->pt_index; \
@@ -174,7 +174,7 @@ static void *PtlInternalPerformOverflowDelivery(
 
 static int PtlInternalMarkMEReusable(
         const ptl_handle_me_t me_handle)
-{
+{/*{{{*/
     const ptl_internal_handle_converter_t me = { me_handle };
     switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_ALLOCATED:
@@ -187,8 +187,10 @@ static int PtlInternalMarkMEReusable(
             VERBOSE_ERROR("ME unexpectedly became free");
             return PTL_ARG_INVALID;
 #endif
+        default:
+            return PTL_FAIL;
     }
-}
+}/*}}}*/
 
 static void PtlInternalAnnounceMEDelivery(
     const ptl_handle_eq_t eq_handle,
@@ -201,7 +203,7 @@ static void PtlInternalAnnounceMEDelivery(
     ptl_internal_appendME_t * const restrict entry,
     ptl_internal_header_t * const restrict hdr,
     const ptl_handle_me_t me_handle)
-{
+{/*{{{*/
     int ct_announce = ct_handle != PTL_CT_NONE;
     if (ct_announce != 0) {
         if (foundin == OVERFLOW) {
@@ -244,17 +246,14 @@ static void PtlInternalAnnounceMEDelivery(
         if (mlength > 0) {
             ++(entry->announced);
         }
-        if (foundin == OVERFLOW && entry->unlinked == 1 &&
-            entry->announced == entry->messages) {
+        if (foundin == OVERFLOW && entry->unlinked == 1 && entry->announced ==
+                entry->messages) {
             e.type = PTL_EVENT_AUTO_FREE;
             PtlInternalEQPush(eq_handle, &e);
-            if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
-                abort();
-            }
         }
         //PtlInternalPAPIStartC();
     }
-}
+}/*}}}*/
 
 int API_FUNC PtlMEAppend(
     ptl_handle_ni_t ni_handle,
@@ -263,7 +262,7 @@ int API_FUNC PtlMEAppend(
     ptl_list_t ptl_list,
     void *user_ptr,
     ptl_handle_me_t * me_handle)
-{
+{/*{{{*/
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t meh = {.s.selector = HANDLE_ME_CODE };
     ptl_internal_appendME_t *Qentry = NULL;
@@ -417,7 +416,7 @@ int API_FUNC PtlMEAppend(
                     }
                     // iff ME is persistent...
                     if ((me->options & PTL_ME_USE_ONCE) == 0) {
-#warning PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)
+                        fprintf(stderr, "PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an ME-specific buffered header
                          * list on each ME, and when the ME is persistent, it
                          * gets the buffered headers that it matched, in order.
@@ -447,6 +446,9 @@ int API_FUNC PtlMEAppend(
                         }
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
+                            /* we're assuming that this buffered_data includes
+                             * ALLLLL of the necessary data; partial data is
+                             * not supported. Bad things will happen. */
                             char *realstart =
                                 ((char *)me->start) + cur->hdr.dest_offset;
                             if (cur->hdr.type == HDR_TYPE_PUT &&
@@ -481,6 +483,9 @@ int API_FUNC PtlMEAppend(
                                                               &(cur->hdr),
                                                               meh.a);
                             }
+                            if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
+                                abort();
+                            }
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if (tEQ != PTL_EQ_NONE ||
@@ -495,6 +500,9 @@ int API_FUNC PtlMEAppend(
                                                               Qentry,
                                                               &(cur->hdr),
                                                               meh.a);
+                            }
+                            if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
+                                abort();
                             }
                         }
 #else
@@ -511,6 +519,9 @@ int API_FUNC PtlMEAppend(
                                                           Qentry,
                                                           &(cur->hdr),
                                                           meh.a);
+                        }
+                        if (PtlInternalMarkMEReusable(meh.a) != PTL_OK) {
+                            abort();
                         }
 #endif
                         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
@@ -658,11 +669,11 @@ int API_FUNC PtlMEAppend(
   done_appending_unlocked:
     PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
     return PTL_OK;
-}
+}/*}}}*/
 
 int API_FUNC PtlMEUnlink(
     ptl_handle_me_t me_handle)
-{
+{/*{{{*/
     const ptl_internal_handle_converter_t me = { me_handle };
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -764,7 +775,7 @@ int API_FUNC PtlMEUnlink(
 #endif
     }
     return PTL_OK;
-}
+}/*}}}*/
 
 static void PtlInternalWalkMatchList(
     const ptl_match_bits_t incoming_bits,
@@ -775,7 +786,7 @@ static void PtlInternalWalkMatchList(
     ptl_internal_appendME_t ** matchlist,
     ptl_internal_appendME_t ** mprev,
     ptl_me_t ** mme)
-{
+{/*{{{*/
     ptl_internal_appendME_t *current = *matchlist;
     ptl_internal_appendME_t *prev = *mprev;
     ptl_me_t *me = *mme;
@@ -809,12 +820,12 @@ static void PtlInternalWalkMatchList(
     *matchlist = current;
     *mprev = prev;
     *mme = me;
-}
+}/*}}}*/
 
 ptl_pid_t INTERNAL PtlInternalMEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict hdr)
-{
+{/*{{{*/
     assert(t);
     assert(hdr);
     ptl_internal_listtype_t foundin = PRIORITY;
@@ -969,8 +980,17 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                                           (uintptr_t) report_this_start,
                                           PRIORITY, entry, hdr,
                                           entry->me_handle.a);
+            if (entry->unlinked == 1) {
+                if (PtlInternalMarkMEReusable(entry->me_handle.a) != PTL_OK) {
+                    fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
+                    abort();
+                }
+            }
         } else {
-#warning Sending a PtlGet to the overflow list probably doesn't work
+            if (hdr->type == HDR_TYPE_GET) {
+                fprintf(stderr, "Sending a PtlGet to the overflow list doesn't work.\n");
+                abort();
+            }
             report_this_start =
                 PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
                                                    me.options, mlength, hdr);
@@ -1009,6 +1029,6 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     if (need_to_unlock)
         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return 0;                          // silent ACK
-}
+}/*}}}*/
 
 /* vim:set expandtab: */
