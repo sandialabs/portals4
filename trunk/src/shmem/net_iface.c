@@ -195,7 +195,7 @@ int API_FUNC PtlNIInit(
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;
             }
-            nit.unexpecteds[ni.s.ni] =
+            nit.unexpecteds[ni.s.ni] = nit.unexpecteds_buf[ni.s.ni] =
                 calloc(nit_limits.max_overflow_entries,
                        sizeof(ptl_internal_buffered_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
@@ -248,9 +248,10 @@ int API_FUNC PtlNIFini(
                 break;
         }
         /* deallocate NI */
-        free(nit.unexpecteds[ni.s.ni]);
+        free(nit.unexpecteds_buf[ni.s.ni]);
         free(nit.tables[ni.s.ni]);
         nit.unexpecteds[ni.s.ni] = NULL;
+        nit.unexpecteds_buf[ni.s.ni] = NULL;
         nit.tables[ni.s.ni] = NULL;
     }
     return PTL_OK;

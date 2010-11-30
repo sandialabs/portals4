@@ -13,6 +13,7 @@ typedef struct {
     volatile uint32_t internal_refcount[4];
     ptl_sr_value_t regs[4][2];
     ptl_internal_buffered_header_t *unexpecteds[4];
+    ptl_internal_buffered_header_t *unexpecteds_buf[4];
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;
