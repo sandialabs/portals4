@@ -4,3 +4,4 @@ AM_CPPFLAGS += -I$(top_srcdir)/src/support/include
 
 libP4support_la_SOURCES += \
 			 support/libP4support.c
+libP4support_la_LIBADD = $(top_builddir)/src/libportals.la
