@@ -2863,7 +2863,7 @@ int PtlTriggeredSwap(ptl_handle_md_t    get_md_handle,
  */
 int PtlTriggeredCTInc(ptl_handle_ct_t   ct_handle,
                       ptl_ct_event_t    increment,
-                      ptl_handle_ct_t   trig_ct_threshold,
+                      ptl_handle_ct_t   trig_ct_handle,
                       ptl_size_t        threshold);
 /*!
  * @fn PtlTriggeredCTSet(ptl_handle_ct_t    ct_handle,
