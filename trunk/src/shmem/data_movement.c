@@ -452,6 +452,10 @@ int API_FUNC PtlPut(
             }
             break;
     }
+    if (pt_index > nit_limits.max_pt_index) {
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
+	return PTL_ARG_INVALID;
+    }
 #endif
     PtlInternalPAPIStartC();
     PtlInternalMDPosted(md_handle);
@@ -589,6 +593,10 @@ int API_FUNC PtlGet(
                 return PTL_ARG_INVALID;
             }
             break;
+    }
+    if (pt_index > nit_limits.max_pt_index) {
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
+	return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(md_handle);
@@ -729,6 +737,10 @@ int API_FUNC PtlAtomic(
             }
         default:
             break;
+    }
+    if (pt_index > nit_limits.max_pt_index) {
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
+	return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(md_handle);
@@ -910,6 +922,10 @@ int API_FUNC PtlFetchAtomic(
         default:
             break;
     }
+    if (pt_index > nit_limits.max_pt_index) {
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
+	return PTL_ARG_INVALID;
+    }
 #endif
     PtlInternalMDPosted(put_md_handle);
     if (get_md_handle != put_md_handle) {
@@ -1087,6 +1103,10 @@ int API_FUNC PtlSwap(
             VERBOSE_ERROR
                 ("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
+    }
+    if (pt_index > nit_limits.max_pt_index) {
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
+	return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(put_md_handle);
