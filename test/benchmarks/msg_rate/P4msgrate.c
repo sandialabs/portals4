@@ -395,7 +395,7 @@ ptl_handle_le_t le_handle;
     PTL_CHECK(rc, "PtlPTFree in test_same_direction");
 
     tmp= __PtlAllreduceDouble(total, PTL_SUM);
-    display_result("pair-based", (niters * npeers * nmsgs * 2) / (tmp / world_size));
+    display_result("pre-post", (niters * npeers * nmsgs * 2) / (tmp / world_size));
 
 }  /* end of test_prepost() */
 
@@ -562,11 +562,11 @@ int *cache_buf;
 		fprintf(stderr, "Must run on an even number of ranks.\n");
 	    }
 	    start_err= 1;
-	} else if (world_size < 3)   {
+	/*} else if (world_size < 3)   {
 	    if (0 == rank)   {
 		fprintf(stderr, "Error: At least three processes are required\n");
 	    }
-	    start_err= 1;
+	    start_err= 1;*/
 	} else if (world_size <= npeers)   {
 	    if (0 == rank)   {
 		fprintf(stderr, "Error: job size (%d) <= number of peers (%d)\n",
