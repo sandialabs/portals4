@@ -80,10 +80,14 @@ static inline void PtlInternalAtomicReadCT(
     :"xmm0");
 #elif defined(HAVE_CMPXCHG16B)
     __asm__ __volatile__(
-    "xor %%rax, %%rax\n\t"      // zeroing these out to avoid affecting *addr
-    "xor %%rbx, %%rbx\n\t" "xor %%rcx, %%rcx\n\t" "xor %%rdx, %%rdx\n\t"
-    "lock cmpxchg16b (%2)\n\t" "mov %%rax, %0\n\t"
-    "mov %%rdx, %1\n\t":"=m"(dest->success),
+    "xor %%rax, %%rax\n\t"      // zero rax out to avoid affecting *addr
+    "xor %%rbx, %%rbx\n\t"      // zero rbx out to avoid affecting *addr
+    "xor %%rcx, %%rcx\n\t"      // zero rcx out to avoid affecting *addr
+    "xor %%rdx, %%rdx\n\t"      // zero rdx out to avoid affecting *addr
+    "lock cmpxchg16b (%2)\n\t"  // atomic swap
+    "mov %%rax, %0\n\t"         // put rax into dest->success
+    "mov %%rdx, %1\n\t"         // put rdx into dest->failure
+    :"=m"   (dest->success),
     "=m"    (dest->failure)
     :"r"    (src)
     :"cc",
@@ -473,4 +477,5 @@ int API_FUNC PtlCTInc(
     }
     return PTL_OK;
 }
+
 /* vim:set expandtab: */
