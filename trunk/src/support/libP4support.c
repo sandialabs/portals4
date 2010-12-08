@@ -158,7 +158,7 @@ void __PtlCreateLECT(
     ptl_le_t le;
 
 
-    /* If a user wants to resue a CT handle, it will not be PTL_INVALID_HANDLE */
+    /* If a user wants to reuse a CT handle, it will not be PTL_INVALID_HANDLE */
     if (*ch == PTL_INVALID_HANDLE) {
         rc = PtlCTAlloc(ni, ch);
         PTL_CHECK(rc, "Error in __PtlCreateLECT(): PtlCTAlloc");
@@ -252,30 +252,46 @@ void __PtlBarrier(
     void)
 {                                      /*{{{ */
     int rc;
-    ptl_process_t neighbor;
+    ptl_process_t parent, leftchild, rightchild;
     ptl_size_t test;
     ptl_ct_event_t cnt_value;
 
+    parent.rank = ((__my_rank+1) >> 1) - 1;
+    leftchild.rank = ((__my_rank+1) << 1) - 1;
+    rightchild.rank = leftchild.rank + 1;
 
-    /* Tell my right neighbor that I have entered the barrier */
-    neighbor.rank = (__my_rank + 1) % __nproc;
-    rc = __PtlPut(__md_handle_barrier, 0, neighbor, __PtlBarrierIndex);
-    PTL_CHECK(rc, "1st PtlPut in __PtlBarrier");
+    if (leftchild.rank < __nproc) {
+	/* Wait for my children to enter the barrier */
+	test = __barrier_cnt++;
+	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+	PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
+	if (rightchild.rank < __nproc) {
+	    test = __barrier_cnt++;
+	    rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+	    PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
+	}
+    }
 
-    /* Wait for my left neighbor to enter the barrier */
-    test = __barrier_cnt++;
-    rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-    PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
+    if (__my_rank > 0) {
+	/* Tell my parent that I have entered the barrier */
+	rc = __PtlPut(__md_handle_barrier, 0, parent, __PtlBarrierIndex);
+	PTL_CHECK(rc, "1st PtlPut in __PtlBarrier");
 
-    /* Tell my right neighbor that my left neighbor has entered.  */
-    rc = __PtlPut(__md_handle_barrier, 0, neighbor, __PtlBarrierIndex);
-    PTL_CHECK(rc, "2nd PtlPut in __PtlBarrier");
+	/* Wait for my parent to wake me up */
+	test = __barrier_cnt++;
+	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+	PTL_CHECK(rc, "3rd PtlCTWait in __PtlBarrier");
+    }
 
-    /* Wait until my left neighbor is leaving barrier */
-    test = __barrier_cnt++;
-    rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-    PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
-
+    /* Wake my children */
+    if (leftchild.rank < __nproc) {
+	rc = __PtlPut(__md_handle_barrier, 0, leftchild, __PtlBarrierIndex);
+	PTL_CHECK(rc, "2nd PtlPut in __PtlBarrier");
+	if (rightchild.rank < __nproc) {
+	    rc = __PtlPut(__md_handle_barrier, 0, rightchild, __PtlBarrierIndex);
+	    PTL_CHECK(rc, "3rd PtlPut in __PtlBarrier");
+	}
+    }
 }                                      /* end of __PtlBarrier() *//*}}} */
 
 
@@ -337,9 +353,9 @@ double __PtlAllreduceDouble(
     ptl_process_t neighbor;
     ptl_size_t test;
     ptl_ct_event_t cnt_value;
-    static int even = 0;
+    static int even = 0; // XXX not thread-safe
 
-
+    assert(__my_rank >= 0);
     /* Send my value to my right neighbor if I am rank 0 to get things started */
     neighbor.rank = (__my_rank + 1) % __nproc;
     if (__my_rank == 0) {
