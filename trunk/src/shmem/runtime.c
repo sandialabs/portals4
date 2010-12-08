@@ -273,8 +273,8 @@ void API_FUNC runtime_barrier(
             ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, id, 0, 0, 0, NULL, 0), PTL_OK);
             ptl_assert(PtlCTWait(barrier_ct_h, barrier_count, &ctc), PTL_OK);
             assert(ctc.failure == 0);
-            ptl_assert(PtlMDRelease(mdh), PTL_OK);
         }
+        ptl_assert(PtlMDRelease(mdh), PTL_OK);
     }
 }
 
