@@ -7,6 +7,8 @@
 /* for Darwin definitions (getpagesize) on Darwin;
  * only necessary because _POSIX_SOURCE conflicts */
 #define _DARWIN_C_SOURCE
+/* for GNU definitions (strsignal) */
+#define _GNU_SOURCE
 
 #include <portals4.h>
 
@@ -319,9 +321,14 @@ int main(
         if (WIFSIGNALED(status) && !WIFSTOPPED(status)) {
             size_t d;
             ++err;
+            for (d = 0; d < count; ++d) {
+                if (pids[d] == exited)
+                    break;
+            }
             fprintf(stderr,
-                    "yod-> child pid %i died unexpectedly (%i), killing everyone\n",
-                    (int)exited, WTERMSIG(status));
+                    "yod-> child pid %i (rank %lu) died unexpectedly (%i: %s), killing everyone\n",
+                    (int)exited, (unsigned long)d, WTERMSIG(status),
+                    strsignal(WTERMSIG(status)));
             for (d = 0; d < count; ++d) {
                 if (pids[d] != exited) {
                     int stat;
@@ -344,9 +351,10 @@ int main(
                             if (WIFSIGNALED(stat) && !WIFSTOPPED(stat)) {
                                 ++err;
                                 fprintf(stderr,
-                                        "yod-> child pid %i (%u) died prematurely (%i)\n",
-                                        (int)pids[d], (unsigned)d,
-                                        WTERMSIG(stat));
+                                        "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
+                                        (int)pids[d], (unsigned long)d,
+                                        WTERMSIG(stat),
+                                        strsignal(WTERMSIG(status)));
                             } else if (WIFEXITED(stat) &&
                                        WEXITSTATUS(stat) > 0) {
                                 ++err;
@@ -405,9 +413,12 @@ int main(
             char buf[200];
             strerror_r(perr, buf, 200);
 #  endif
-            fprintf(stderr, "yod-> destroying queue1 trigger(%i): %s\n", perr,
-                    buf);
-            abort();
+            fprintf(stderr,
+                    "yod-> destroying rank %lu's queue trigger(%i): %s\n",
+                    (unsigned long)i, perr, buf);
+            if (perr != EBUSY) {
+                abort();
+            }
         }
         if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
 #  ifdef _GNU_SOURCE
@@ -417,9 +428,12 @@ int main(
             char buf[200];
             strerror_r(perr, buf, 200);
 #  endif
-            fprintf(stderr, "yod-> destroying queue1 trigger lock(%i): %s\n",
-                    perr, buf);
-            abort();
+            fprintf(stderr,
+                    "yod-> destroying rank %lu's queue trigger lock(%i): %s\n",
+                    (unsigned long)i, perr, buf);
+            if (perr != EBUSY) {
+                abort();
+            }
         }
 # else
         if (close(q1->pipe[0]) != 0) {
