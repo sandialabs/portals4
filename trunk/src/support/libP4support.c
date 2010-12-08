@@ -240,6 +240,7 @@ void __PtlBarrierInit(
 
     /* We want a specific Portals table entry */
     index = __PtlPTAlloc(ni, __PtlBarrierIndex);
+    assert(index == __PtlBarrierIndex);
 
     /* Create a counter and attach an LE to the Portal table */
     __PtlCreateLECT(ni, index, NULL, 0, &le_handle, &__ct_handle_barrier);
