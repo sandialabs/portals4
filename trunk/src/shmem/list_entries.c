@@ -758,6 +758,13 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 return (ptl_pid_t) 1;
         }
     }
+#ifdef LOUD_DROPS
+    fprintf(stderr,
+            "Rank %u dropped a message from rank %u, no LEs posted on PT %u on NI %u\n",
+            (unsigned)proc_number, (unsigned)hdr->src,
+            (unsigned)hdr->pt_index, (unsigned)hdr->ni);
+    fflush(stderr);
+#endif
     // post dropped message event
     if (tEQ != PTL_EQ_NONE) {
         ptl_event_t e;
