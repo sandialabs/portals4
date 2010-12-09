@@ -295,7 +295,7 @@ test_prepost(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int
 	int nbytes, int niters, int verbose)
 {
 
-int i, j, k, nreqs;
+int i, j, k;
 double tmp, total;
 int rc;
 
@@ -361,24 +361,21 @@ ptl_handle_le_t le_handle;
         __PtlBarrier();
 
         tmp= timer();
-        for (j= 0; j < npeers; j++)   {
-            nreqs= nmsgs;
-            for (k= 0; k < nmsgs; k++)   {
+        for (j= 0; j < npeers; ++j)   {
+            for (k= 0; k < nmsgs; ++k)   {
 		offset= (nbytes * (k + j * nmsgs));
 		dest.rank= send_peers[npeers - j - 1];
-		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, TestSameDirectionIndex, offset);
+		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, index, offset);
 		PTL_CHECK(rc, "PtlPut in test_same_direction");
-		nreqs++;
             }
-
-	    rc= PtlCTWait(ct_handle, (j + 1) * nreqs, &cnt_value);
-	    PTL_CHECK(rc, "PtlCTWait in test_same_direction");
-	    if (cnt_value.failure != 0)   {
-		fprintf(stderr, "test_same_direction() %d PtlPut failed (%d/%d succeeded)\n",
-		   (int)cnt_value.failure, (int)cnt_value.success, (j + 1) * nreqs);
-	    }
-
-        }
+	}
+	/* MPI_Waitall */
+	rc= PtlCTWait(ct_handle, 2*((i+1)*nmsgs*npeers), &cnt_value);
+	PTL_CHECK(rc, "1st PtlCTWait in test_same_direction");
+	if (cnt_value.failure != 0)   {
+	    fprintf(stderr, "test_same_direction() %d PtlPut send failed (%d/%d succeeded)\n",
+		    i, (int)cnt_value.failure, (int)cnt_value.success);
+	}
         total += (timer() - tmp);
     }
 
