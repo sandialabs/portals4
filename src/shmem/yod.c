@@ -200,7 +200,7 @@ int main(
         long int r3 = random();
         r1 = r2 = r3 = 0;              // for testing
         memset(shmname, 0, PSHMNAMLEN + 1);
-        snprintf(shmname, PSHMNAMLEN, "ptl4_%s_%lx%lx%lx", pw->pw_name, r1,
+        snprintf(shmname, PSHMNAMLEN, "ptl4_%lx_%s_%lx%lx%lx", (long)getpid(), pw->pw_name, r1,
                  r2, r3);
     }
     ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
@@ -326,8 +326,8 @@ int main(
                     break;
             }
             fprintf(stderr,
-                    "yod-> child pid %i (rank %lu) died unexpectedly (%i: %s), killing everyone\n",
-                    (int)exited, (unsigned long)d, WTERMSIG(status),
+                    "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
+                    (int)exited, (unsigned long)d,
                     strsignal(WTERMSIG(status)));
             for (d = 0; d < count; ++d) {
                 if (pids[d] != exited) {
