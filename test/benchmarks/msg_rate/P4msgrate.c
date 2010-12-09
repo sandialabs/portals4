@@ -81,14 +81,14 @@ abort_app(const char *msg)
 static void
 cache_invalidate(int cache_size, int *cache_buf)
 {
+    int i;
 
-int i;
-
-    cache_buf[0]= 1;
-    for (i= 1 ; i < cache_size; i++)   {
-        cache_buf[i]= cache_buf[i - 1];
+    if (cache_size != 0) {
+	cache_buf[0]= 1;
+	for (i= 1 ; i < cache_size; i++)   {
+	    cache_buf[i]= cache_buf[i - 1];
+	}
     }
-
 }  /* end of cache_invalidate() */
 
 
