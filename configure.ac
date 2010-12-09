@@ -60,6 +60,9 @@ AC_ARG_ENABLE([debug-symbols],
 AC_ARG_ENABLE([papi],
 			  [AS_HELP_STRING([--enable-papi],
 							  [Enables PAPI performance counters support])])
+AC_ARG_ENABLE([loud-drops],
+			  [AS_HELP_STRING([--enable-loud-drops],
+							  [Makes dropped messages print an error to the console])])
 AC_ARG_ENABLE([internal-overflow],
 	      [AS_HELP_STRING([--enable-internal-overflow],
 			      [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
@@ -75,6 +78,8 @@ AS_IF([test "x$enable_arg_checking" == xno],
 	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
 AS_IF([test "x$enable_internal_overflow" != xyes],
 	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
+AS_IF([test "x$enable_loud_drops" == xyes],
+	  [AC_DEFINE([LOUD_DROPS], [1], [Define to make dropped messages print an error to the console])])
 
 
 ## ------------------- ##

@@ -311,11 +311,11 @@ static void *PtlInternalDMCatcher(
             if (table_entry->status == 1) {
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
-                        fprintf(stderr, "sent to an uninitialized PT!\n");
+                        fprintf(stderr, "rank %u sent to an uninitialized PT! (%u)\n", (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                     case 2:           // disabled
-                        fprintf(stderr, "sent to a disabled PT!\n");
+                        fprintf(stderr, "rank %u sent to a disabled PT! (%u)\n", (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                 }
@@ -367,12 +367,26 @@ static void *PtlInternalDMCatcher(
                 (void)
                     PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                          [PTL_SR_DROP_COUNT], 1);
+#ifdef LOUD_DROPS
+                fprintf(stderr,
+                        "Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
+                        (unsigned)proc_number, (unsigned)hdr->src,
+                        (unsigned)hdr->pt_index, (unsigned)hdr->ni);
+                fflush(stderr);
+#endif
                 /* silently ACK */
                 hdr->src = 0;
                 dm_printf("table_entry->status == 0 ... unlocking\n");
                 ptl_assert(pthread_mutex_unlock(&table_entry->lock), 0);
             }
         } else {                       // uninitialized NI
+#ifdef DEBUG
+            fprintf(stderr,
+                    "Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
+                    (unsigned)proc_number, (unsigned)hdr->src,
+                    (unsigned)hdr->ni);
+            fflush(stderr);
+#endif
             hdr->src = 0;              // silent ACK
         }
         PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], -1);
