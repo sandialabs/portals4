@@ -22,13 +22,17 @@
 #define PT_ENABLED  1
 #define PT_DISABLED 2
 
+/**************************************************************************************************
+ * API Functions
+ */
+
 int API_FUNC PtlPTAlloc(
     ptl_handle_ni_t ni_handle,
     unsigned int options,
     ptl_handle_eq_t eq_handle,
     ptl_pt_index_t pt_index_req,
     ptl_pt_index_t * pt_index)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_table_entry_t *pt = NULL;
 #ifndef NO_ARG_VALIDATION
@@ -88,12 +92,12 @@ int API_FUNC PtlPTAlloc(
     pt->status = PT_ENABLED;
     ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlPTFree(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_table_entry_t *pt = NULL;
 #ifndef NO_ARG_VALIDATION
@@ -140,27 +144,31 @@ int API_FUNC PtlPTFree(
                     return PTL_OK;
             }
     }
-}
+}                                      /*}}} */
 
 int API_FUNC PtlPTDisable(
     Q_UNUSED ptl_handle_ni_t ni_handle,
     Q_UNUSED ptl_pt_index_t pt_index)
-{
+{                                      /*{{{ */
     fprintf(stderr, "PtlPTDisable() unimplemented\n");
     return PTL_FAIL;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlPTEnable(
     Q_UNUSED ptl_handle_ni_t ni_handle,
     Q_UNUSED ptl_pt_index_t pt_index)
-{
+{                                      /*{{{ */
     fprintf(stderr, "PtlPTEnable() unimplemented\n");
     return PTL_FAIL;
-}
+}                                      /*}}} */
+
+/**************************************************************************************************
+ * Internal Functions
+ */
 
 void INTERNAL PtlInternalPTInit(
     ptl_table_entry_t * t)
-{
+{                                      /*{{{ */
     ptl_assert(pthread_mutex_init(&t->lock, NULL), 0);
     t->priority.head = NULL;
     t->priority.tail = NULL;
@@ -168,11 +176,11 @@ void INTERNAL PtlInternalPTInit(
     t->overflow.tail = NULL;
     t->EQ = PTL_EQ_NONE;
     t->status = PT_FREE;
-}
+}                                      /*}}} */
 
 int INTERNAL PtlInternalPTValidate(
     ptl_table_entry_t * t)
-{
+{                                      /*{{{ */
     if (PtlInternalEQHandleValidator(t->EQ, 1)) {
         VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
         return 3;
@@ -191,13 +199,13 @@ int INTERNAL PtlInternalPTValidate(
             *(int *)0 = 0;
             return 3;
     }
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalPTBufferUnexpectedHeader(
     ptl_table_entry_t * restrict const t,
     const ptl_internal_header_t * restrict const hdr,
     const uintptr_t data)
-{
+{                                      /*{{{ */
     ptl_internal_buffered_header_t *restrict bhdr =
         PtlInternalAllocUnexpectedHeader(hdr->ni);
     memcpy(&(bhdr->hdr), hdr, sizeof(ptl_internal_header_t));
@@ -206,9 +214,10 @@ void INTERNAL PtlInternalPTBufferUnexpectedHeader(
     if (t->buffered_headers.head == NULL) {
         t->buffered_headers.head = bhdr;
     } else {
-        ((ptl_internal_buffered_header_t *) (t->buffered_headers.tail))->
-            hdr.next = bhdr;
+        ((ptl_internal_buffered_header_t *) (t->buffered_headers.tail))->hdr.
+            next = bhdr;
     }
     t->buffered_headers.tail = bhdr;
-}
+}                                      /*}}} */
+
 /* vim:set expandtab: */
