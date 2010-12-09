@@ -264,13 +264,11 @@ void __PtlBarrier(
     if (leftchild.rank < __nproc) {
 	/* Wait for my children to enter the barrier */
 	test = __barrier_cnt++;
-	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-	PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
 	if (rightchild.rank < __nproc) {
 	    test = __barrier_cnt++;
-	    rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-	    PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
 	}
+	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+	PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
     }
 
     if (__my_rank > 0) {
@@ -281,7 +279,7 @@ void __PtlBarrier(
 	/* Wait for my parent to wake me up */
 	test = __barrier_cnt++;
 	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-	PTL_CHECK(rc, "3rd PtlCTWait in __PtlBarrier");
+	PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
     }
 
     /* Wake my children */
