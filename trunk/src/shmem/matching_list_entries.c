@@ -513,8 +513,7 @@ int API_FUNC PtlMEAppend(
                                                           cur->hdr.type,
                                                           me->options,
                                                           mlength, 
-                                                          (uintptr_t) me->start +
-                                                          cur->hdr.dest_offset,
+                                                          cur->buffered_data,
                                                           OVERFLOW, 
                                                           Qentry,
                                                           &(cur->hdr),
