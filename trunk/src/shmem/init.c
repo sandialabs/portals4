@@ -85,6 +85,10 @@ int API_FUNC PtlInit(
         /* Parse the official yod-provided environment variables */
         comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
         if (comm_pad_shm_name == NULL) {
+#ifdef LOUD_DROPS
+            fprintf(stderr, "PORTALS4-> Environment variable PORTALS4_SHM_NAME missing!\n");
+            fflush(stderr);
+#endif
             goto exit_fail;
         }
         PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 1);
@@ -118,14 +122,20 @@ int API_FUNC PtlInit(
         shm_fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
         assert(shm_fd >= 0);
         if (shm_fd < 0) {
-            //perror("PtlInit: shm_open failed");
+#ifdef LOUD_DROPS
+            fprintf(stderr, "PORTALS4-> PtlInit: shm_open failed:");
+            perror("");
+#endif
             goto exit_fail;
         }
         comm_pad =
             (char *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
                          MAP_SHARED, shm_fd, 0);
         if (comm_pad == MAP_FAILED) {
-            //perror("PtlInit: mmap failed");
+#ifdef LOUD_DROPS
+            fprintf(stderr, "PORTALS4-> PtlInit: mmap failed:");
+            perror("");
+#endif
             goto exit_fail;
         }
         ptl_assert(close(shm_fd), 0);
@@ -181,7 +191,7 @@ void API_FUNC PtlFini(
     runtime_finalize();
 #ifdef PARANOID
     if (init_ref_count <= 0) {
-        fprintf(stderr, "init_ref_count = %u\n", init_ref_count);
+        fprintf(stderr, "PORTALS4-> init_ref_count = %u\n", init_ref_count);
     }
     assert(init_ref_count > 0);
 #endif
