@@ -19,6 +19,9 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"
+#ifdef PARANOID
+# include "ptl_internal_PT.h"
+#endif
 
 #define ME_FREE         0
 #define ME_ALLOCATED    1
@@ -45,6 +48,12 @@ typedef struct {
 } ptl_internal_me_t;
 
 static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
+
+#ifdef PARANOID
+static void PtlInternalValidateMEPTs(unsigned int ni);
+#else
+# define PtlInternalValidateMEPTs(x)
+#endif
 
 void INTERNAL PtlInternalMENISetup(
     unsigned int ni,
@@ -486,6 +495,7 @@ int API_FUNC PtlMEAppend(
                             if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
                                 abort();
                             }
+                            PtlInternalValidateMEPTs(me.s.ni);
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if (tEQ != PTL_EQ_NONE ||
@@ -504,6 +514,7 @@ int API_FUNC PtlMEAppend(
                             if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
                                 abort();
                             }
+                            PtlInternalValidateMEPTs(me.s.ni);
                         }
 #else
                         if (tEQ != PTL_EQ_NONE ||
@@ -522,6 +533,7 @@ int API_FUNC PtlMEAppend(
                         if (PtlInternalMarkMEReusable(meh.a) != PTL_OK) {
                             abort();
                         }
+                        PtlInternalValidateMEPTs(meh.s.ni);
 #endif
                         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
                         /* technically, the ME was never actually *linked*, but
@@ -764,12 +776,15 @@ int API_FUNC PtlMEUnlink(
     switch (PtlInternalAtomicCas32
             (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_IN_USE:
+            PtlInternalValidateMEPTs(me.s.ni);
             return PTL_IN_USE;
         case ME_ALLOCATED:
+            PtlInternalValidateMEPTs(me.s.ni);
             return PTL_OK;
 #ifndef NO_ARG_VALIDATION
         case ME_FREE:
             VERBOSE_ERROR("ME unexpectedly became free");
+            PtlInternalValidateMEPTs(me.s.ni);
             return PTL_ARG_INVALID;
 #endif
     }
@@ -793,6 +808,8 @@ static void PtlInternalWalkMatchList(
     for (; current != NULL; prev = current, current = current->next) {
         me = (ptl_me_t *) (((char *)current) +
                            offsetof(ptl_internal_me_t, visible));
+
+        assert(((ptl_internal_me_t*)current)->status != ME_FREE); // Sanity checking (Brian's bug)
 
         /* check the match_bits */
         if (((incoming_bits ^ me->match_bits) & current->dont_ignore_bits) !=
@@ -820,6 +837,28 @@ static void PtlInternalWalkMatchList(
     *mprev = prev;
     *mme = me;
 }/*}}}*/
+
+#ifdef PARANOID
+static void PtlInternalValidateMEPTs(unsigned int ni)
+{
+    ptl_table_entry_t *table = nit.tables[ni];
+    for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits.max_pt_index; ++pt_idx) {
+        ptl_table_entry_t *entry = &table[pt_idx];
+        ptl_assert(pthread_mutex_lock(&entry->lock), 0);
+        ptl_internal_appendME_t *ME = entry->priority.head;
+        while (ME != NULL) {
+            assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+            ME = ME->next;
+        }
+        ME = entry->overflow.head;
+        while (ME != NULL) {
+            assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+            ME = ME->next;
+        }
+        ptl_assert(pthread_mutex_unlock(&entry->lock), 0);
+    }
+}
+#endif
 
 ptl_pid_t INTERNAL PtlInternalMEDeliver(
     ptl_table_entry_t * restrict t,
@@ -984,6 +1023,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                     fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
                     abort();
                 }
+                PtlInternalValidateMEPTs(entry->me_handle.s.ni);
             }
         } else {
             if (hdr->type == HDR_TYPE_GET) {
