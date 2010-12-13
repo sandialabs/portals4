@@ -523,9 +523,9 @@ int API_FUNC PtlMEAppend(
                                                           me->ct_handle,
                                                           cur->hdr.type,
                                                           me->options,
-                                                          mlength, 
-                                                          cur->buffered_data,
-                                                          OVERFLOW, 
+                                                          mlength,
+                                                          (uintptr_t)cur->buffered_data,
+                                                          OVERFLOW,
                                                           Qentry,
                                                           &(cur->hdr),
                                                           meh.a);
