@@ -322,6 +322,7 @@ int API_FUNC PtlMEAppend(
                 mes[ni.s.ni][offset].pt_index = pt_index;
                 mes[ni.s.ni][offset].ptl_list = ptl_list;
                 Qentry = &(mes[ni.s.ni][offset].Qentry);
+                assert(Qentry->next == NULL);
                 break;
             }
         }
