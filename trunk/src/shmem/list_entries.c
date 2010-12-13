@@ -45,10 +45,28 @@ typedef struct {
 
 static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
+/* Static functions */
+static void PtlInternalPerformDelivery(
+    const unsigned char type,
+    void *const restrict src,
+    void *const restrict dest,
+    size_t nbytes,
+    ptl_internal_header_t * hdr);
+static void PtlInternalAnnounceLEDelivery(
+    const ptl_handle_eq_t eq_handle,
+    const ptl_handle_ct_t ct_handle,
+    const unsigned char type,
+    const unsigned int options,
+    const uint64_t mlength,
+    const uintptr_t start,
+    const int overflow,
+    void *const user_ptr,
+    ptl_internal_header_t * const restrict hdr);
+
 void INTERNAL PtlInternalLENISetup(
     unsigned int ni,
     ptl_size_t limit)
-{
+{                                      /*{{{ */
     ptl_internal_le_t *tmp;
     while ((tmp =
             PtlInternalAtomicCasPtr(&(les[ni]), NULL,
@@ -59,54 +77,18 @@ void INTERNAL PtlInternalLENISetup(
         __sync_synchronize();
         les[ni] = tmp;
     }
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalLENITeardown(
     unsigned int ni)
-{
+{                                      /*{{{ */
     ptl_internal_le_t *tmp;
     tmp = les[ni];
     les[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     free(tmp);
-}
-
-static void PtlInternalPerformDelivery(
-    const unsigned char type,
-    void *const restrict src,
-    void *const restrict dest,
-    size_t nbytes,
-    ptl_internal_header_t * hdr)
-{
-    switch (type) {
-        case HDR_TYPE_PUT:
-            memcpy(src, dest, nbytes);
-            break;
-        case HDR_TYPE_ATOMIC:
-            PtlInternalPerformAtomic(src, dest, nbytes,
-                                     hdr->info.atomic.operation,
-                                     hdr->info.atomic.datatype);
-            break;
-        case HDR_TYPE_FETCHATOMIC:
-            PtlInternalPerformAtomic(src, dest, nbytes,
-                                     hdr->info.fetchatomic.operation,
-                                     hdr->info.fetchatomic.datatype);
-            break;
-        case HDR_TYPE_GET:
-            memcpy(dest, src, nbytes);
-            break;
-        case HDR_TYPE_SWAP:
-            PtlInternalPerformAtomicArg(src, ((char *)dest) + 8,
-                                        *(uint64_t *) hdr->data, nbytes,
-                                        hdr->info.swap.operation,
-                                        hdr->info.swap.datatype);
-            break;
-        default:
-            UNREACHABLE;
-            *(int *)0 = 0;
-    }
-}
+}                                      /*}}} */
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
     e.pt_index = hdr->pt_index; \
@@ -143,58 +125,6 @@ static void PtlInternalPerformDelivery(
     } \
 } while (0)
 
-static void PtlInternalAnnounceLEDelivery(
-    const ptl_handle_eq_t eq_handle,
-    const ptl_handle_ct_t ct_handle,
-    const unsigned char type,
-    const unsigned int options,
-    const uint64_t mlength,
-    const uintptr_t start,
-    const int overflow,
-    void *const user_ptr,
-    ptl_internal_header_t * const restrict hdr)
-{
-    int ct_announce = ct_handle != PTL_CT_NONE;
-    if (ct_announce != 0) {
-        if (overflow) {
-            ct_announce = options & PTL_LE_EVENT_CT_OVERFLOW;
-        } else {
-            ct_announce = options & PTL_LE_EVENT_CT_COMM;
-        }
-    }
-    if (ct_announce != 0) {
-        if ((options & PTL_LE_EVENT_CT_BYTES) == 0) {
-            const ptl_ct_event_t cte = { 1, 0 };
-            PtlCTInc(ct_handle, cte);
-        } else {
-            const ptl_ct_event_t cte = { mlength, 0 };
-            PtlCTInc(ct_handle, cte);
-        }
-    }
-    if (eq_handle != PTL_EQ_NONE &&
-        (options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))
-        == 0) {
-        ptl_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
-        if (overflow) {
-            switch (type) {
-                case HDR_TYPE_PUT:
-                    e.type = PTL_EVENT_PUT_OVERFLOW;
-                    break;
-                case HDR_TYPE_ATOMIC:
-                    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
-                    break;
-                default:
-                    UNREACHABLE;
-                    *(int *)0 = 0;
-            }
-        }
-        e.mlength = mlength;
-        e.start = (void *)start;
-        PtlInternalEQPush(eq_handle, &e);
-    }
-}
-
 int API_FUNC PtlLEAppend(
     ptl_handle_ni_t ni_handle,
     ptl_pt_index_t pt_index,
@@ -202,7 +132,7 @@ int API_FUNC PtlLEAppend(
     ptl_list_t ptl_list,
     void *user_ptr,
     ptl_handle_le_t * le_handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t leh = {.s.selector = HANDLE_LE_CODE };
     ptl_internal_appendLE_t *Qentry = NULL;
@@ -326,7 +256,8 @@ int API_FUNC PtlLEAppend(
                     }
                     // (2) iff LE is persistent
                     if ((le->options & PTL_LE_USE_ONCE) == 0) {
-                        fprintf(stderr, "PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
+                        fprintf(stderr,
+                                "PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
                          * gets the buffered headers that it matched, in order.
@@ -510,11 +441,11 @@ int API_FUNC PtlLEAppend(
   done_appending:
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t le = { le_handle };
     ptl_table_entry_t *t;
 #ifndef NO_ARG_VALIDATION
@@ -616,12 +547,12 @@ int API_FUNC PtlLEUnlink(
 #endif
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 ptl_pid_t INTERNAL PtlInternalLEDeliver(
     ptl_table_entry_t * restrict t,
     ptl_internal_header_t * restrict hdr)
-{
+{                                      /*{{{ */
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendLE_t *entry = NULL;
     ptl_handle_eq_t tEQ = t->EQ;
@@ -724,8 +655,10 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
          *************************/
         void *report_this_start = (char *)le.start + hdr->dest_offset;
         if (foundin == PRIORITY) {
-            PtlInternalPerformDelivery(hdr->type, report_this_start,
-                                       hdr->data, mlength, hdr);
+            if (mlength > 0) {
+                PtlInternalPerformDelivery(hdr->type, report_this_start,
+                                           hdr->data, mlength, hdr);
+            }
             PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
                                           le.options, mlength,
                                           (uintptr_t) report_this_start, 0,
@@ -778,6 +711,94 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     if (need_to_unlock)
         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     return 0;                          // silent ACK
-}
+}                                      /*}}} */
+
+static void PtlInternalPerformDelivery(
+    const unsigned char type,
+    void *const restrict src,
+    void *const restrict dest,
+    size_t nbytes,
+    ptl_internal_header_t * hdr)
+{                                      /*{{{ */
+    switch (type) {
+        case HDR_TYPE_PUT:
+            memcpy(src, dest, nbytes);
+            break;
+        case HDR_TYPE_ATOMIC:
+            PtlInternalPerformAtomic(src, dest, nbytes,
+                                     hdr->info.atomic.operation,
+                                     hdr->info.atomic.datatype);
+            break;
+        case HDR_TYPE_FETCHATOMIC:
+            PtlInternalPerformAtomic(src, dest, nbytes,
+                                     hdr->info.fetchatomic.operation,
+                                     hdr->info.fetchatomic.datatype);
+            break;
+        case HDR_TYPE_GET:
+            memcpy(dest, src, nbytes);
+            break;
+        case HDR_TYPE_SWAP:
+            PtlInternalPerformAtomicArg(src, ((char *)dest) + 8,
+                                        *(uint64_t *) hdr->data, nbytes,
+                                        hdr->info.swap.operation,
+                                        hdr->info.swap.datatype);
+            break;
+        default:
+            UNREACHABLE;
+            *(int *)0 = 0;
+    }
+}                                      /*}}} */
+
+static void PtlInternalAnnounceLEDelivery(
+    const ptl_handle_eq_t eq_handle,
+    const ptl_handle_ct_t ct_handle,
+    const unsigned char type,
+    const unsigned int options,
+    const uint64_t mlength,
+    const uintptr_t start,
+    const int overflow,
+    void *const user_ptr,
+    ptl_internal_header_t * const restrict hdr)
+{                                      /*{{{ */
+    int ct_announce = ct_handle != PTL_CT_NONE;
+    if (ct_announce != 0) {
+        if (overflow) {
+            ct_announce = options & PTL_LE_EVENT_CT_OVERFLOW;
+        } else {
+            ct_announce = options & PTL_LE_EVENT_CT_COMM;
+        }
+    }
+    if (ct_announce != 0) {
+        if ((options & PTL_LE_EVENT_CT_BYTES) == 0) {
+            const ptl_ct_event_t cte = { 1, 0 };
+            PtlCTInc(ct_handle, cte);
+        } else {
+            const ptl_ct_event_t cte = { mlength, 0 };
+            PtlCTInc(ct_handle, cte);
+        }
+    }
+    if (eq_handle != PTL_EQ_NONE &&
+        (options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))
+        == 0) {
+        ptl_event_t e;
+        PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
+        if (overflow) {
+            switch (type) {
+                case HDR_TYPE_PUT:
+                    e.type = PTL_EVENT_PUT_OVERFLOW;
+                    break;
+                case HDR_TYPE_ATOMIC:
+                    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                    break;
+                default:
+                    UNREACHABLE;
+                    *(int *)0 = 0;
+            }
+        }
+        e.mlength = mlength;
+        e.start = (void *)start;
+        PtlInternalEQPush(eq_handle, &e);
+    }
+}                                      /*}}} */
 
 /* vim:set expandtab: */
