@@ -151,7 +151,7 @@ ptl_handle_le_t le_handle;
 	__PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
 
 	/* Run the test */
-	for (i= 0; i < niters; i++)   {
+	for (i= 0; i < niters; ++i)   {
 	    cache_invalidate(cache_size, cache_buf);
 
 	    __PtlBarrier();
