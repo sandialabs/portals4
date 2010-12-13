@@ -626,6 +626,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 if (entry->next == NULL)
                     t->overflow.tail = NULL;
             }
+            entry->next = NULL;
             /* now that the LE has been unlinked, we can unlock the portal
              * table, thus allowing deliveries and/or appends on the PT while
              * we do this delivery */
