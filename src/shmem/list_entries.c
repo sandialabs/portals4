@@ -257,7 +257,7 @@ int API_FUNC PtlLEAppend(
                     // (2) iff LE is persistent
                     if ((le->options & PTL_LE_USE_ONCE) == 0) {
                         fprintf(stderr,
-                                "PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
+                                "PORTALS4-> PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
                          * gets the buffered headers that it matched, in order.
@@ -489,7 +489,7 @@ int API_FUNC PtlLEUnlink(
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "attempted to unlink an un-queued LE\n");
+                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
                     abort();
                 }
                 prev->next = dq->next;
@@ -517,7 +517,7 @@ int API_FUNC PtlLEUnlink(
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "attempted to unlink an un-queued LE\n");
+                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
                     abort();
                 }
                 prev->next = dq->next;
@@ -529,7 +529,7 @@ int API_FUNC PtlLEUnlink(
         }
             break;
         case PTL_PROBE_ONLY:
-            fprintf(stderr, "how on earth did this happen?\n");
+            fprintf(stderr, "PORTALS4-> how on earth did this happen?\n");
             abort();
             break;
     }
@@ -693,7 +693,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     }
 #ifdef LOUD_DROPS
     fprintf(stderr,
-            "Rank %u dropped a message from rank %u, no LEs posted on PT %u on NI %u\n",
+            "PORTALS4-> Rank %u dropped a message from rank %u, no LEs posted on PT %u on NI %u\n",
             (unsigned)proc_number, (unsigned)hdr->src,
             (unsigned)hdr->pt_index, (unsigned)hdr->ni);
     fflush(stderr);

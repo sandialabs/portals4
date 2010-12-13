@@ -256,7 +256,9 @@ static void PtlInternalHandleAck(
                                    (unsigned int)ctc.success,
                                    (unsigned int)ctc.failure);
                     } else {
+                        /* this should never happen */
                         fprintf(stderr, "enabled CT counting, but no CT!\n");
+                        abort();
                     }
                 }
                 if (md_eq != PTL_EQ_NONE) {
@@ -314,13 +316,13 @@ static void *PtlInternalDMCatcher(
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
                         fprintf(stderr,
-                                "rank %u sent to an uninitialized PT! (%u)\n",
+                                "PORTALS4-> rank %u sent to an uninitialized PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                     case 2:           // disabled
                         fprintf(stderr,
-                                "rank %u sent to a disabled PT! (%u)\n",
+                                "PORTALS4-> rank %u sent to a disabled PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
@@ -375,7 +377,7 @@ static void *PtlInternalDMCatcher(
                                          [PTL_SR_DROP_COUNT], 1);
 #ifdef LOUD_DROPS
                 fprintf(stderr,
-                        "Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
+                        "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
                         (unsigned)proc_number, (unsigned)hdr->src,
                         (unsigned)hdr->pt_index, (unsigned)hdr->ni);
                 fflush(stderr);
@@ -386,9 +388,9 @@ static void *PtlInternalDMCatcher(
                 ptl_assert(pthread_mutex_unlock(&table_entry->lock), 0);
             }
         } else {                       // uninitialized NI
-#ifdef DEBUG
+#ifdef LOUD_DROPS
             fprintf(stderr,
-                    "Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
+                    "PORTALS4-> Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
                     (unsigned)proc_number, (unsigned)hdr->src,
                     (unsigned)hdr->ni);
             fflush(stderr);
