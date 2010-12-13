@@ -81,6 +81,9 @@ typedef struct {
     unsigned char type;         // 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
     unsigned char ni;
     ptl_pid_t src;
+#ifdef PARANOID
+    ptl_pid_t dest;
+#endif
     ptl_process_t target_id;
     ptl_pt_index_t pt_index;
     ptl_match_bits_t match_bits;
