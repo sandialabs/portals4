@@ -301,6 +301,9 @@ static void *PtlInternalDMCatcher(
         }
         dm_printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
         src = hdr->src;
+#ifdef PARANOID
+        assert(hdr->dest == proc_number);
+#endif
         assert(nit.tables != NULL);
         PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], 1);
         if (nit.tables[hdr->ni] != NULL) {
@@ -486,6 +489,18 @@ int API_FUNC PtlPut(
     hdr->ni = md.s.ni;
     //printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
     hdr->src = proc_number;
+#ifdef PARANOID
+    switch (md.s.ni) {
+        case 0:
+        case 1:
+            hdr->dest = target_id.rank;
+            break;
+        case 2:
+        case 3:
+            hdr->dest = target_id.phys.pid;
+            break;
+    }
+#endif
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
@@ -627,6 +642,18 @@ int API_FUNC PtlGet(
     hdr->type = HDR_TYPE_GET;
     hdr->ni = md.s.ni;
     hdr->src = proc_number;
+#ifdef PARANOID
+    switch (md.s.ni) {
+        case 0:
+        case 1:
+            hdr->dest = target_id.rank;
+            break;
+        case 2:
+        case 3:
+            hdr->dest = target_id.phys.pid;
+            break;
+    }
+#endif
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
@@ -773,6 +800,18 @@ int API_FUNC PtlAtomic(
     hdr->type = HDR_TYPE_ATOMIC;
     hdr->ni = md.s.ni;
     hdr->src = proc_number;
+#ifdef PARANOID
+    switch (md.s.ni) {
+        case 0:
+        case 1:
+            hdr->dest = target_id.rank;
+            break;
+        case 2:
+        case 3:
+            hdr->dest = target_id.phys.pid;
+            break;
+    }
+#endif
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
@@ -962,6 +1001,18 @@ int API_FUNC PtlFetchAtomic(
     hdr->type = HDR_TYPE_FETCHATOMIC;
     hdr->ni = get_md.s.ni;
     hdr->src = proc_number;
+#ifdef PARANOID
+    switch (put_md.s.ni) {
+        case 0:
+        case 1:
+            hdr->dest = target_id.rank;
+            break;
+        case 2:
+        case 3:
+            hdr->dest = target_id.phys.pid;
+            break;
+    }
+#endif
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
@@ -1147,6 +1198,18 @@ int API_FUNC PtlSwap(
     hdr->type = HDR_TYPE_SWAP;
     hdr->ni = get_md.s.ni;
     hdr->src = proc_number;
+#ifdef PARANOID
+    switch (put_md.s.ni) {
+        case 0:
+        case 1:
+            hdr->dest = target_id.rank;
+            break;
+        case 2:
+        case 3:
+            hdr->dest = target_id.phys.pid;
+            break;
+    }
+#endif
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
