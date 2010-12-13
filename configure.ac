@@ -63,6 +63,9 @@ AC_ARG_ENABLE([papi],
 AC_ARG_ENABLE([loud-drops],
 			  [AS_HELP_STRING([--enable-loud-drops],
 							  [Makes dropped messages print an error to the console])])
+AC_ARG_ENABLE([paranoia],
+			  [AS_HELP_STRING([--enable-paranoia],
+							  [Adds additional checks that are slow, occasionally painful, and should be entirely unnecessary, just to validate that nothing has gone wrong.])])
 AC_ARG_ENABLE([internal-overflow],
 	      [AS_HELP_STRING([--enable-internal-overflow],
 			      [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
@@ -80,6 +83,8 @@ AS_IF([test "x$enable_internal_overflow" != xyes],
 	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
 AS_IF([test "x$enable_loud_drops" == xyes],
 	  [AC_DEFINE([LOUD_DROPS], [1], [Define to make dropped messages print an error to the console])])
+AS_IF([test "x$enable_paranoia" == xyes],
+	  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
 
 
 ## ------------------- ##
