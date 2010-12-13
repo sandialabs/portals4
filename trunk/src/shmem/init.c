@@ -15,6 +15,10 @@
 #include <limits.h>                    /* for UINT_MAX */
 #include <string.h>                    /* for memset() */
 
+#ifdef PARANOID
+# include <stdio.h>
+#endif
+
 /* Internals */
 #include "portals4_runtime.h"
 #include "ptl_visibility.h"
@@ -175,7 +179,12 @@ void API_FUNC PtlFini(
     unsigned int lastone;
 
     runtime_finalize();
+#ifdef PARANOID
+    if (init_ref_count <= 0) {
+        fprintf(stderr, "init_ref_count = %u\n", init_ref_count);
+    }
     assert(init_ref_count > 0);
+#endif
     if (init_ref_count == 0)
         return;
     lastone = PtlInternalAtomicInc(&init_ref_count, -1);
