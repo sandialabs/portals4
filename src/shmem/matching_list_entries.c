@@ -51,8 +51,10 @@ static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
 
 #ifdef PARANOID
 static void PtlInternalValidateMEPTs(unsigned int ni);
+static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #else
 # define PtlInternalValidateMEPTs(x)
+# define PtlInternalValidateMEPT(x)
 #endif
 
 void INTERNAL PtlInternalMENISetup(
@@ -340,6 +342,7 @@ int API_FUNC PtlMEAppend(
     t = &(nit.tables[ni.s.ni][pt_index]);
     //PtlInternalPAPISaveC(PTL_ME_APPEND, 0);
     ptl_assert(pthread_mutex_lock(&t->lock), 0);
+    PtlInternalValidateMEPT(t);
     switch (ptl_list) {
         case PTL_PRIORITY_LIST:
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
@@ -495,7 +498,7 @@ int API_FUNC PtlMEAppend(
                             if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
                                 abort();
                             }
-                            PtlInternalValidateMEPTs(me.s.ni);
+                            PtlInternalValidateMEPT(t);
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if (tEQ != PTL_EQ_NONE ||
@@ -514,7 +517,7 @@ int API_FUNC PtlMEAppend(
                             if (PtlInternalMarkMEReusable(me_handle) != PTL_OK) {
                                 abort();
                             }
-                            PtlInternalValidateMEPTs(me.s.ni);
+                            PtlInternalValidateMEPT(t);
                         }
 #else
                         if (tEQ != PTL_EQ_NONE ||
@@ -533,8 +536,8 @@ int API_FUNC PtlMEAppend(
                         if (PtlInternalMarkMEReusable(meh.a) != PTL_OK) {
                             abort();
                         }
-                        PtlInternalValidateMEPTs(meh.s.ni);
 #endif
+                        PtlInternalValidateMEPT(t);
                         ptl_assert(pthread_mutex_unlock(&t->lock), 0);
                         /* technically, the ME was never actually *linked*, but
                          * for symmetry of the interface, we need to pretend
@@ -676,6 +679,7 @@ int API_FUNC PtlMEAppend(
             break;
     }
   done_appending:
+    PtlInternalValidateMEPT(t);
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
   done_appending_unlocked:
     PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
@@ -710,6 +714,7 @@ int API_FUNC PtlMEUnlink(
 #endif
     t = &(nit.tables[me.s.ni][mes[me.s.ni][me.s.code].pt_index]);
     ptl_assert(pthread_mutex_lock(&t->lock), 0);
+    PtlInternalValidateMEPT(t);
     switch (mes[me.s.ni][me.s.code].ptl_list) {
         case PTL_PRIORITY_LIST:
         {
@@ -772,6 +777,7 @@ int API_FUNC PtlMEUnlink(
             abort();
             break;
     }
+    PtlInternalValidateMEPT(t);
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
     switch (PtlInternalAtomicCas32
             (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
@@ -839,22 +845,27 @@ static void PtlInternalWalkMatchList(
 }/*}}}*/
 
 #ifdef PARANOID
+static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
+{
+    ptl_internal_appendME_t *ME = t->priority.head;
+    while (ME != NULL) {
+        assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+        ME = ME->next;
+    }
+    ME = t->overflow.head;
+    while (ME != NULL) {
+        assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+        ME = ME->next;
+    }
+}
+
 static void PtlInternalValidateMEPTs(unsigned int ni)
 {
     ptl_table_entry_t *table = nit.tables[ni];
     for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits.max_pt_index; ++pt_idx) {
         ptl_table_entry_t *entry = &table[pt_idx];
         ptl_assert(pthread_mutex_lock(&entry->lock), 0);
-        ptl_internal_appendME_t *ME = entry->priority.head;
-        while (ME != NULL) {
-            assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
-            ME = ME->next;
-        }
-        ME = entry->overflow.head;
-        while (ME != NULL) {
-            assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
-            ME = ME->next;
-        }
+        PtlInternalValidateMEPT(entry);
         ptl_assert(pthread_mutex_unlock(&entry->lock), 0);
     }
 }
@@ -872,6 +883,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     ptl_handle_eq_t tEQ = t->EQ;
     char need_to_unlock = 1;    // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
+    PtlInternalValidateMEPT(t);
     PtlInternalPAPIStartC();
     /* To match, one must check, in order:
      * 1. The match_bits (with the ignore_bits) against hdr->match_bits
@@ -969,6 +981,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                         t->overflow.tail = NULL;
                 }
             }
+            PtlInternalValidateMEPT(t);
+            entry->next = NULL;
             entry->unlinked = 1;
             /* now that the ME has been unlinked, we can unlock the portal
              * table, thus allowing deliveries and/or appends on the PT while
@@ -1023,7 +1037,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                     fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
                     abort();
                 }
-                PtlInternalValidateMEPTs(entry->me_handle.s.ni);
+                PtlInternalValidateMEPT(t);
             }
         } else {
             if (hdr->type == HDR_TYPE_GET) {
