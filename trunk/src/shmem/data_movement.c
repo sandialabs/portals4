@@ -76,14 +76,14 @@ static void PtlInternalHandleAck(
                     case 0:
                     case 1:           // Logical
                         PtlInternalFragmentToss(hdr,
-                                                hdr->src_data.put.
-                                                target_id.rank);
+                                                hdr->src_data.put.target_id.
+                                                rank);
                         break;
                     case 2:
                     case 3:           // Physical
                         PtlInternalFragmentToss(hdr,
-                                                hdr->src_data.put.target_id.
-                                                phys.pid);
+                                                hdr->src_data.put.
+                                                target_id.phys.pid);
                         break;
                 }
                 return;
@@ -112,8 +112,8 @@ static void PtlInternalHandleAck(
             if (hdr->src_data.fetchatomic.put_md_handle.a !=
                 PTL_INVALID_HANDLE &&
                 hdr->src_data.fetchatomic.put_md_handle.a != md_handle) {
-                PtlInternalMDCleared(hdr->src_data.fetchatomic.put_md_handle.
-                                     a);
+                PtlInternalMDCleared(hdr->src_data.fetchatomic.
+                                     put_md_handle.a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
@@ -267,8 +267,7 @@ static void PtlInternalHandleAck(
                     e.user_ptr = hdr->user_ptr;
                     switch (hdr->src) {
                         case 3:
-                            e.ni_fail_type =
-                                PTL_NI_PERM_VIOLATION;
+                            e.ni_fail_type = PTL_NI_PERM_VIOLATION;
                             break;
                         default:
                             e.ni_fail_type = PTL_NI_OK;
@@ -311,11 +310,15 @@ static void *PtlInternalDMCatcher(
             if (table_entry->status == 1) {
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
-                        fprintf(stderr, "rank %u sent to an uninitialized PT! (%u)\n", (unsigned)src, (unsigned)hdr->pt_index);
+                        fprintf(stderr,
+                                "rank %u sent to an uninitialized PT! (%u)\n",
+                                (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                     case 2:           // disabled
-                        fprintf(stderr, "rank %u sent to a disabled PT! (%u)\n", (unsigned)src, (unsigned)hdr->pt_index);
+                        fprintf(stderr,
+                                "rank %u sent to a disabled PT! (%u)\n",
+                                (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                 }
@@ -430,7 +433,7 @@ int API_FUNC PtlPut(
     ptl_size_t remote_offset,
     void *user_ptr,
     ptl_hdr_data_t hdr_data)
-{
+{                                      /*{{{ */
     int quick_exit = 0;
     ptl_internal_header_t *restrict hdr;
     const ptl_internal_handle_converter_t md = { md_handle };
@@ -467,8 +470,10 @@ int API_FUNC PtlPut(
             break;
     }
     if (pt_index > nit_limits.max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits.max_pt_index);
+        return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalPAPIStartC();
@@ -562,7 +567,7 @@ int API_FUNC PtlPut(
     }
     PtlInternalPAPIDoneC(PTL_PUT, 2);
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlGet(
     ptl_handle_md_t md_handle,
@@ -573,7 +578,7 @@ int API_FUNC PtlGet(
     ptl_match_bits_t match_bits,
     void *user_ptr,
     ptl_size_t remote_offset)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { md_handle };
     ptl_internal_header_t *hdr;
 #ifndef NO_ARG_VALIDATION
@@ -609,8 +614,10 @@ int API_FUNC PtlGet(
             break;
     }
     if (pt_index > nit_limits.max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits.max_pt_index);
+        return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(md_handle);
@@ -643,7 +650,7 @@ int API_FUNC PtlGet(
     }
     /* no send event to report */
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlAtomic(
     ptl_handle_md_t md_handle,
@@ -658,7 +665,7 @@ int API_FUNC PtlAtomic(
     ptl_hdr_data_t hdr_data,
     ptl_op_t operation,
     ptl_datatype_t datatype)
-{
+{                                      /*{{{ */
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
@@ -753,8 +760,10 @@ int API_FUNC PtlAtomic(
             break;
     }
     if (pt_index > nit_limits.max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits.max_pt_index);
+        return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(md_handle);
@@ -812,7 +821,7 @@ int API_FUNC PtlAtomic(
         PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlFetchAtomic(
     ptl_handle_md_t get_md_handle,
@@ -828,7 +837,7 @@ int API_FUNC PtlFetchAtomic(
     ptl_hdr_data_t hdr_data,
     ptl_op_t operation,
     ptl_datatype_t datatype)
-{
+{                                      /*{{{ */
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -937,8 +946,10 @@ int API_FUNC PtlFetchAtomic(
             break;
     }
     if (pt_index > nit_limits.max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits.max_pt_index);
+        return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(put_md_handle);
@@ -999,7 +1010,7 @@ int API_FUNC PtlFetchAtomic(
         PtlInternalEQPush(mdptr->eq_handle, &e);
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlSwap(
     ptl_handle_md_t get_md_handle,
@@ -1016,7 +1027,7 @@ int API_FUNC PtlSwap(
     void *operand,
     ptl_op_t operation,
     ptl_datatype_t datatype)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
     ptl_internal_header_t *hdr;
@@ -1119,8 +1130,10 @@ int API_FUNC PtlSwap(
             return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits.max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits.max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits.max_pt_index);
+        return PTL_ARG_INVALID;
     }
 #endif
     PtlInternalMDPosted(put_md_handle);
@@ -1211,6 +1224,6 @@ int API_FUNC PtlSwap(
         }
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 /* vim:set expandtab: */
