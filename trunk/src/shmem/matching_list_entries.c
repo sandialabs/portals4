@@ -1070,7 +1070,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     }
 #ifdef LOUD_DROPS
     fprintf(stderr,
-            "Rank %u dropped a message from rank %u, no MEs posted on PT %u on NI %u\n",
+            "PORTALS4-> Rank %u dropped a message from rank %u, no MEs posted on PT %u on NI %u\n",
             (unsigned)proc_number, (unsigned)hdr->src,
             (unsigned)hdr->pt_index, (unsigned)hdr->ni);
     fflush(stderr);
