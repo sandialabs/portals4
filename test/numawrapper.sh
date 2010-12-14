@@ -5,8 +5,13 @@ node0nodes=( $(grep "node 0 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
 node1nodes=( $(grep "node 1 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
 node0cores=${#node0nodes[*]}
 node1cores=${#node1nodes[*]}
+verbose="no"
+if [ "$1" == "--verbose" ] ; then
+	shift
+	verbose="yes"
+fi
 case "$1" in
-	--socket-dyn)
+	--socket-dyn*)
 	shift
 	arg="--cpunodebind="$((${PORTALS4_RANK}%${nodecount}))
 	;;
@@ -45,7 +50,10 @@ case "$1" in
 		    ;;
 	    esac
 	    arg="--physcpubind="$base,$(($base+2))
-	elif [ "$PORTALS4_NUM_PROCS" -lt $node1cores ] ; then
+	elif [ "$PORTALS4_NUM_PROCS" -lt $(($node1cores/2)) ] ; then
+		base=${node1nodes[$(($PORTALS4_RANK%${#node1nodes[*]}))]}
+		arg="--physcpubind=$base,"$(($base+2))
+	elif [ "$PORTALS4_NUM_PROCS" -le $node1cores ] ; then
 	    base=${node1nodes[$(($PORTALS4_RANK%${#node1nodes[*]}))]}
 	    arg="--physcpubind=$base"
 	else
@@ -53,9 +61,9 @@ case "$1" in
 	    exit
 	fi
 	;;
-	--core-dyn)
+	--core-dyn*)
 	shift
-	arg="--cpunodebind=0"
+	arg="--cpunodebind=1"
 	;;
 	*)
 	echo "Valid flags: --socket-dyn    (socket-to-socket, dynamic core assignment)"
@@ -65,5 +73,5 @@ case "$1" in
 	exit
 	;;
 esac
-echo RANK $PORTALS4_RANK: $arg
+[ $verbose == "yes" ] && echo RANK $PORTALS4_RANK: $arg
 exec numactl $arg "$@"
