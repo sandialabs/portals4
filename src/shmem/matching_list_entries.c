@@ -850,12 +850,12 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
 {
     ptl_internal_appendME_t *ME = t->priority.head;
     while (ME != NULL) {
-        assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+        assert(((ptl_internal_me_t*)ME)->status == ME_ALLOCATED);
         ME = ME->next;
     }
     ME = t->overflow.head;
     while (ME != NULL) {
-        assert(((ptl_internal_me_t*)ME)->status == ME_IN_USE);
+        assert(((ptl_internal_me_t*)ME)->status == ME_ALLOCATED);
         ME = ME->next;
     }
 }
