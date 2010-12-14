@@ -16,7 +16,9 @@ TESTS = test_init \
 	test_ME_fetchatomic \
 	test_LE_swap \
 	test_ME_swap \
-	test_event
+	test_event \
+	test_LE_oversize_get \
+	test_ME_oversize_get
 BENCHMARKS =
 
 INCLUDES = -I$(top_srcdir)/include
@@ -82,3 +84,11 @@ test_ME_swap_DEPENDENCIES = $(PORTALSLIB)
 
 test_event_SOURCES = test_event.c
 test_event_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_oversize_get_SOURCES = test_oversize_get.c
+test_LE_oversize_get_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_get_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_oversize_get_SOURCES = test_oversize_get.c
+test_ME_oversize_get_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_get_DEPENDENCIES = $(PORTALSLIB)
