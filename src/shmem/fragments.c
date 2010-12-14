@@ -80,7 +80,7 @@ void INTERNAL PtlInternalFragmentSetup(
  */
 void INTERNAL *PtlInternalFragmentFetch(
     size_t payload_size)
-{
+{                                      /*{{{ */
     fragment_hdr_t *oldv, *newv, *retv;
     if (payload_size <= SMALL_FRAG_PAYLOAD) {
         retv = small_free_list;
@@ -107,39 +107,39 @@ void INTERNAL *PtlInternalFragmentFetch(
     }
     retv->next = NULL;
     return retv->data;
-}
+}                                      /*}}} */
 
 /* this enqueues a fragment in the specified receive queue */
 void INTERNAL PtlInternalFragmentToss(
     void *frag,
     ptl_pid_t dest)
-{
+{                                      /*{{{ */
     NEMESIS_blocking_queue *destQ =
         (NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
                                     (per_proc_comm_buf_size * dest));
     frag = ((uint64_t *) frag) - 2;
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
-}
+}                                      /*}}} */
 
 /* this dequeues a fragment from my receive queue */
 void INTERNAL *PtlInternalFragmentReceive(
     void)
-{
+{                                      /*{{{ */
     fragment_hdr_t *frag =
         (fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
     assert(frag == (void *)1 || frag->next == NULL);
     return frag->data;
-}
+}                                      /*}}} */
 
 uint64_t INTERNAL PtlInternalFragmentSize(
     void *frag)
-{
+{                                      /*{{{ */
     return *(((uint64_t *) frag) - 1);
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalFragmentFree(
     void *data)
-{
+{                                      /*{{{ */
     fragment_hdr_t *frag = (fragment_hdr_t *) (((uint64_t *) data) - 2);
     assert(frag->next == NULL);
     assert((uintptr_t) frag > (uintptr_t) comm_pad);
@@ -160,7 +160,9 @@ void INTERNAL PtlInternalFragmentFree(
             tmpv = PtlInternalAtomicCasPtr(&large_free_list, oldv, newv);
         } while (tmpv != oldv);
     } else {
+        abort();
         *(int *)0 = 0;
     }
-}
+}                                      /*}}} */
+
 /* vim:set expandtab: */
