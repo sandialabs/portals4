@@ -177,18 +177,80 @@ void __PtlCreateLECT(
 
 
 /*
+** Create "count" (persistent) MEs with an event queue attached to it
+** Each ME points to a "length" size chunk in a buffer starting at "start".
+** Right now used for puts only...
+*/
+void __PtlCreateME(
+    ptl_handle_ni_t ni,
+    ptl_pt_index_t index,
+    void *start,
+    ptl_size_t length,
+    ptl_size_t count,
+    ptl_handle_me_t *mh)
+{                                      /*{{{ */
+    int rc;
+    int i;
+    ptl_me_t me;
+    ptl_process_t src;
+
+
+    src.rank= PTL_RANK_ANY;
+    for (i= 0; i < count; i++)   {
+	me.start = start + i * length;
+	me.length = length;
+	me.ct_handle = PTL_CT_NONE;
+	me.min_free = 0;
+	me.ac_id.uid = PTL_UID_ANY;
+	me.options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
+	me.match_id = src;
+	me.match_bits = i;
+	me.ignore_bits = 0;
+
+	rc = PtlMEAppend(ni, index, &me, PTL_PRIORITY_LIST, NULL, &mh[i]);
+	PTL_CHECK(rc, "Error in __PtlCreateME(): PtlMEAppend");
+    }
+
+}                                      /* end of __PtlCreateME() *//*}}} */
+
+
+
+/*
+** Create "count" (persistent) MEs with an event queue attached to it
+** Each ME points to a "length" size chunk in a buffer starting at "start".
+** Right now used for puts only...
+*/
+void __PtlFreeME(
+    ptl_size_t count,
+    ptl_handle_me_t *mh)
+{                                      /*{{{ */
+    int rc;
+    int i;
+
+
+    for (i= 0; i < count; i++)   {
+	rc = PtlMEUnlink(mh[i]);
+	PTL_CHECK(rc, "Error in __PtlFreeME(): PtlMEUnlink");
+    }
+
+}                                      /* end of __PtlFreeME() *//*}}} */
+
+
+
+/*
 ** Create a Portal table entry. Use PTL_PT_ANY if you don't need
 ** a specific table entry.
 */
 ptl_pt_index_t __PtlPTAlloc(
     ptl_handle_ni_t ni,
-    ptl_pt_index_t request)
+    ptl_pt_index_t request,
+    ptl_handle_eq_t eq)
 {                                      /*{{{ */
     int rc;
     ptl_pt_index_t index;
 
 
-    rc = PtlPTAlloc(ni, 0, PTL_EQ_NONE, request, &index);
+    rc = PtlPTAlloc(ni, 0, eq, request, &index);
     PTL_CHECK(rc, "Error in __PtlPTAlloc(): PtlPTAlloc");
     if ((index != request) && (request != PTL_PT_ANY)) {
         fprintf(stderr, "Did not get the Ptl index I requested!\n");
@@ -239,7 +301,7 @@ void __PtlBarrierInit(
     __md_handle_barrier = __PtlCreateMD(ni, NULL, 0);
 
     /* We want a specific Portals table entry */
-    index = __PtlPTAlloc(ni, __PtlBarrierIndex);
+    index = __PtlPTAlloc(ni, __PtlBarrierIndex, PTL_EQ_NONE);
     assert(index == __PtlBarrierIndex);
 
     /* Create a counter and attach an LE to the Portal table */
@@ -320,8 +382,8 @@ void __PtlAllreduceDouble_init(
     __ct_handle_allreduce = PTL_INVALID_HANDLE;
 
     /* We use two specific Portals table entry and alternate between them */
-    index[0] = __PtlPTAlloc(ni, __PtlAllreduceIndex[0]);
-    index[1] = __PtlPTAlloc(ni, __PtlAllreduceIndex[1]);
+    index[0] = __PtlPTAlloc(ni, __PtlAllreduceIndex[0], PTL_EQ_NONE);
+    index[1] = __PtlPTAlloc(ni, __PtlAllreduceIndex[1], PTL_EQ_NONE);
 
     /* Create a counter and attach an LE to each of the two Portal table entries */
     __PtlCreateLECT(ni, index[0], &__allreduce_value[0], sizeof(double),
