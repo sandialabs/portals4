@@ -44,6 +44,8 @@
 #define TestSameDirectionIndex	(2)
 #define SEND_BUF_SIZE	(npeers * nmsgs * nbytes)
 #define RECV_BUF_SIZE	(SEND_BUF_SIZE)
+#define LEwithCT	(0)
+#define MEwithEQ	(1)
 
 
 /* configuration parameters - setable by command line arguments */
@@ -121,10 +123,10 @@ display_result(const char *test, const double result)
 
 static void
 test_one_way(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
-	int nbytes, int niters, int verbose)
+	int nbytes, int niters, int test_type, int verbose)
 {
 
-int i, k;
+int i, j, k;
 int rc;
 double tmp, total;
 ptl_pt_index_t index;
@@ -134,10 +136,21 @@ ptl_handle_md_t md_handle;
 ptl_handle_ct_t ct_handle;
 ptl_ct_event_t cnt_value;
 ptl_handle_le_t le_handle;
+ptl_handle_me_t me_handles[nmsgs];
+ptl_handle_eq_t eq_handle;
+ptl_match_bits_t match;
+ptl_event_t event;
 
+
+    if ((test_type != LEwithCT) && (test_type != MEwithEQ))   {
+	/* Invalid test type */
+	return;
+    }
 
     total= 0;
+    match= 0;
     ct_handle= PTL_INVALID_HANDLE;
+    eq_handle= PTL_INVALID_HANDLE;
     __PtlBarrier();
 
     if (rank < (world_size / 2))   {
@@ -158,9 +171,17 @@ ptl_handle_le_t le_handle;
 
 	    tmp= timer();
 	    for (k= 0; k < nmsgs; k++)   {
-		offset= nbytes * k;
+		if (test_type == MEwithEQ)   {
+		    offset= 0;
+		} else if (test_type == LEwithCT)   {
+		    offset= nbytes * k;
+		}
+
 		dest.rank= rank + (world_size / 2);
-		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, TestOneWayIndex, offset);
+		/* For the MEwithEQ case, we ignore the offset at the destination */
+		/* For the LEwithCT case, we ignore the match bits */
+		match= k;
+		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, TestOneWayIndex, match, offset);
 		PTL_CHECK(rc, "PtlPut in test_one_way");
 	    }
 
@@ -192,11 +213,26 @@ ptl_handle_le_t le_handle;
 		world_size / 2, world_size - 1, nmsgs, nbytes, niters);
 	}
 
-	/* Allocate the Portal to send to */
-	index= __PtlPTAlloc(ni, TestOneWayIndex);
+	if (test_type == MEwithEQ)   {
+	    /* Create an event queue */
+	    if (eq_handle == PTL_INVALID_HANDLE) {
+		rc = PtlEQAlloc(ni, 2 * nmsgs, &eq_handle);
+		PTL_CHECK(rc, "PtlEQAlloc in test_one_way");
+	    }
+	} else   {
+	    eq_handle= PTL_EQ_NONE;
+	}
 
-	/* Create a persistent LE to receive into */
-	__PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
+	/* Allocate the Portal to send to */
+	index= __PtlPTAlloc(ni, TestOneWayIndex, eq_handle);
+
+	if (test_type == LEwithCT)   {
+	    /* Create a persistent LE to receive into */
+	    __PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
+	} else if (test_type == MEwithEQ)   {
+	    /* Create "nmsgs" persistent MEs to receive into */
+	    __PtlCreateME(ni, index, recv_buf, nbytes, nmsgs, me_handles);
+	}
 
 	/*
 	** In the MPI version of this benchmark, the MPI_Irecv() are
@@ -213,21 +249,44 @@ ptl_handle_le_t le_handle;
 	    __PtlBarrier();
 
 	    tmp= timer();
-	    rc= PtlCTWait(ct_handle, (i + 1) * nmsgs, &cnt_value);
+	    if (test_type == LEwithCT)   {
+		rc= PtlCTWait(ct_handle, (i + 1) * nmsgs, &cnt_value);
+	    } else if (test_type == MEwithEQ)   {
+		/* Pull each event off as it comes in */
+		for (j= 0; j < nmsgs; j++)   {
+		    rc= PtlEQWait(eq_handle, &event);
+		    PTL_CHECK(rc, "PtlEQWait in test_one_way");
+		    if (event.type != PTL_EVENT_PUT)   {
+			fprintf(stderr, "Got event %d instead of PTL_EVENT_PUT with msg %d\n",
+			    event.type, j);
+		    }
+		    if (event.ni_fail_type != PTL_NI_OK)   {
+			fprintf(stderr, "Got event %d with fail type %d\n",
+			    j, event.ni_fail_type);
+		    }
+		}
+	    }
 	    total += (timer() - tmp);
 
-	    PTL_CHECK(rc, "PtlCTWait in test_one_way");
-	    if (cnt_value.failure != 0)   {
-		fprintf(stderr, "test_one_way() %d PtlPut failed (%d/%d succeeded)\n",
-		   (int)cnt_value.failure, (int)cnt_value.success, (i + 1) * nmsgs);
+	    if (test_type == LEwithCT)   {
+		PTL_CHECK(rc, "PtlCTWait in test_one_way");
+		if (cnt_value.failure != 0)   {
+		    fprintf(stderr, "test_one_way() %d PtlPut failed (%d/%d succeeded)\n",
+		       (int)cnt_value.failure, (int)cnt_value.success, (i + 1) * nmsgs);
+		}
 	    }
 	}
 
 	/* Clean up the receive side */
-	rc= PtlCTFree(ct_handle);
-	PTL_CHECK(rc, "PtlCTFree in test_one_way");
-	rc= PtlLEUnlink(le_handle);
-	PTL_CHECK(rc, "PtlLEUnlink in test_one_way");
+	if (test_type == LEwithCT)   {
+	    rc= PtlCTFree(ct_handle);
+	    PTL_CHECK(rc, "PtlCTFree in test_one_way");
+	    rc= PtlLEUnlink(le_handle);
+	    PTL_CHECK(rc, "PtlLEUnlink in test_one_way");
+	} else if (test_type == MEwithEQ)   {
+	    __PtlFreeME(nmsgs, me_handles);
+	    PtlEQFree(eq_handle);
+	}
 	rc= PtlPTFree(ni, index);
 	PTL_CHECK(rc, "PtlPTFree in test_one_way");
     }
@@ -292,7 +351,7 @@ double tmp, total;
 
 static void
 test_prepost(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
-	int nbytes, int niters, int verbose)
+	int nbytes, int niters, int test_type, int verbose)
 {
 
 int i, j, k;
@@ -306,6 +365,9 @@ ptl_handle_md_t md_handle;
 ptl_handle_ct_t ct_handle;
 ptl_ct_event_t cnt_value;
 ptl_handle_le_t le_handle;
+ptl_handle_me_t me_handles[nmsgs];
+ptl_match_bits_t match;
+ptl_handle_eq_t eq_handle= PTL_EQ_NONE;
 
 
     total= 0;
@@ -335,6 +397,7 @@ ptl_handle_le_t le_handle;
     /*
     ** Setup the send side
     */
+    match= 0;
 
     /* Set up the MD to send from */
     __PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
@@ -346,10 +409,19 @@ ptl_handle_le_t le_handle;
     */
 
     /* Allocate the Portal to send to */
-    index= __PtlPTAlloc(ni, TestSameDirectionIndex);
+    index= __PtlPTAlloc(ni, TestSameDirectionIndex, PTL_EQ_NONE);
 
-    /* Create a persistent LE to receive into */
-    __PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
+    if (test_type == LEwithCT)   {
+	/* Create a persistent LE to receive into */
+	__PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
+    } else if (test_type == MEwithEQ)   {
+	/* Create "nmsgs" persistent MEs to receive into */
+if (rank == 0)   {
+    fprintf(stderr, "Can't do MEwithEQ in test_same_direction yet.\n");
+}
+return;
+	__PtlCreateME(ni, index, recv_buf, nbytes, nmsgs, me_handles);
+    }
 
     /* Sync everybody */
     __PtlBarrier();
@@ -365,7 +437,7 @@ ptl_handle_le_t le_handle;
             for (k= 0; k < nmsgs; ++k)   {
 		offset= (nbytes * (k + j * nmsgs));
 		dest.rank= send_peers[npeers - j - 1];
-		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, index, offset);
+		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, index, match, offset);
 		PTL_CHECK(rc, "PtlPut in test_same_direction");
             }
 	}
@@ -386,8 +458,13 @@ ptl_handle_le_t le_handle;
     PTL_CHECK(rc, "PtlMDRelease in test_same_direction");
 
     /* Clean up the receive side */
-    rc= PtlLEUnlink(le_handle);
-    PTL_CHECK(rc, "PtlLEUnlink in test_same_direction");
+    if (test_type == LEwithCT)   {
+	rc= PtlLEUnlink(le_handle);
+	PTL_CHECK(rc, "PtlLEUnlink in test_same_direction");
+    } else if (test_type == MEwithEQ)   {
+	__PtlFreeME(nmsgs, me_handles);
+	PtlEQFree(eq_handle);
+    }
     rc= PtlPTFree(ni, index);
     PTL_CHECK(rc, "PtlPTFree in test_same_direction");
 
@@ -458,6 +535,7 @@ usage(void)
     fprintf(stderr, "  -s <size>    Number of bytes per message\n");
     fprintf(stderr, "  -c <size>    Cache size in bytes\n");
     fprintf(stderr, "  -n <ppn>     Number of procs per node\n");
+    fprintf(stderr, "  -t <test>    0 for LE and CT, 1 for ME and full events\n");
     fprintf(stderr, "  -o           Format output to be machine readable\n");
     fprintf(stderr, "  -v           Increase verbosity. Using -v -v or more may impact test results!\n");
     fprintf(stderr, "\nReport bugs to <bwbarre@sandia.gov>\n");
@@ -479,8 +557,10 @@ int nmsgs;
 int nbytes;
 ptl_process_t *amapping;
 ptl_handle_ni_t ni_logical;
+ptl_handle_ni_t ni_collectives;
 int cache_size;
 int *cache_buf;
+int test_type;
 
 
     /* Set some defaults */
@@ -494,6 +574,7 @@ int *cache_buf;
     nbytes= 8;
     ppn= -1;
     machine_output= 0;
+    test_type= LEwithCT;
 
 
     /* Initialize Portals and get some runtime info */
@@ -509,14 +590,9 @@ int *cache_buf;
 	exit(2);
     }
 
-    rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-	    NULL, world_size, NULL, amapping, &ni_logical);
-    PTL_CHECK(rc, "PtlNIInit");
-
-
     /* Handle command line arguments */
     while (start_err != 1 && 
-	   (ch= getopt(argc, argv, "p:i:m:s:c:n:ohv")) != -1)   {
+	   (ch= getopt(argc, argv, "p:i:m:s:c:n:ohvt:")) != -1)   {
 	switch (ch)   {
 	    case 'p':
 		npeers= strtol(optarg, (char **)NULL, 0);
@@ -529,6 +605,19 @@ int *cache_buf;
 		break;
 	    case 's':
 		nbytes= strtol(optarg, (char **)NULL, 0);
+		break;
+	    case 't':
+		if (strcmp("0", optarg) == 0)   {
+		    test_type= LEwithCT;
+		} else if (strcmp("1", optarg) == 0)   {
+		    test_type= MEwithEQ;
+		} else   {
+		    if (rank == 0)   {
+			fprintf(stderr, "Unknown test! Use -t 0 for LE with couting events test, and\n");
+			fprintf(stderr, "                  -t 1 for ME with event queue test.\n");
+		    }
+		    start_err= 1;
+		}
 		break;
 	    case 'c':
 		cache_size= strtol(optarg, (char **)NULL, 0) / sizeof(int);
@@ -584,10 +673,29 @@ int *cache_buf;
     }
 
     if (0 != start_err)   {
-        PtlNIFini(ni_logical);
 	PtlFini();
         exit(1);
     }
+
+    /*
+    ** We need an ni to do barriers and allreduces on.
+    ** It needs to be a non-matching ni, so we can't share it
+    ** in the MEwithEQ case.
+    */
+    rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
+	    NULL, world_size, NULL, amapping, &ni_collectives);
+
+    if (test_type == LEwithCT)   {
+	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
+		NULL, world_size, NULL, amapping, &ni_logical);
+    } else if (test_type == MEwithEQ)   {
+	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
+		NULL, world_size, NULL, amapping, &ni_logical);
+    } else   {
+	rc= PTL_NO_INIT;
+    }
+    PTL_CHECK(rc, "PtlNIInit");
+
 
     if (0 == rank)   {
         if (!machine_output)   {
@@ -598,6 +706,13 @@ int *cache_buf;
             printf("nbytes:     %d\n", nbytes);
             printf("cache size: %d\n", cache_size * (int)sizeof(int));
             printf("ppn:        %d\n", ppn);
+	    if (test_type == LEwithCT)   {
+		printf("test:       LE with counting events\n");
+	    } else if (test_type == MEwithEQ)   {
+		printf("test:       ME with event queue\n");
+	    } else   {
+		printf("test:       Invalid\n");
+	    }
         } else   {
             printf("%d %d %d %d %d %d %d ", 
                    world_size, npeers, niters, nmsgs, nbytes,
@@ -668,8 +783,8 @@ int *cache_buf;
     ** The sync everybody before testing and calls to the PTL barrier and allreduce
     ** begin.
     */
-    __PtlBarrierInit(ni_logical, rank, world_size);
-    __PtlAllreduceDouble_init(ni_logical);
+    __PtlBarrierInit(ni_collectives, rank, world_size);
+    __PtlAllreduceDouble_init(ni_collectives);
     runtime_barrier();
     free(amapping);  /* Not needed anymore */
 
@@ -678,7 +793,8 @@ int *cache_buf;
 	printf("Rank %3d: Starting test_one_way(nmsgs %d, nbytes %d, niters %d)\n", rank,
 	    nmsgs, nbytes, niters);
     }
-    test_one_way(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters, verbose);
+    test_one_way(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters,
+	    test_type, verbose);
 
     if (verbose > 0)   {
 	printf("Rank %3d: Starting test_same_direction(nmsgs %d, nbytes %d, niters %d)\n", rank,
@@ -690,7 +806,8 @@ int *cache_buf;
 	printf("Rank %3d: Starting test_prepost(nmsgs %d, nbytes %d, niters %d)\n", rank,
 	    nmsgs, nbytes, niters);
     }
-    test_prepost(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters, verbose);
+    test_prepost(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters,
+	    test_type, verbose);
 
     if (verbose > 0)   {
 	printf("Rank %3d: Starting test_allstart(nmsgs %d, nbytes %d, niters %d)\n", rank,
@@ -704,6 +821,7 @@ int *cache_buf;
 
     /* done */
     PtlNIFini(ni_logical);
+    PtlNIFini(ni_collectives);
     PtlFini();
     return 0;
 

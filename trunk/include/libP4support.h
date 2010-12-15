@@ -38,8 +38,8 @@
 	PtlPut(handle, 0, size, PTL_NO_ACK_REQ, dest, index, 0, 0, NULL, 0)
 
 /* Same as above, but with local and remote offsets */
-#define __PtlPut_offset(handle, local_offset, size, dest, index, remote_offset) \
-	PtlPut(handle, local_offset, size, PTL_NO_ACK_REQ, dest, index, 0, remote_offset, NULL, 0)
+#define __PtlPut_offset(handle, local_offset, size, dest, index, match, remote_offset) \
+	PtlPut(handle, local_offset, size, PTL_NO_ACK_REQ, dest, index, match, remote_offset, NULL, 0)
 
 
 /* Use these to setup MDs and LEs, with and without an attached counter */
@@ -49,10 +49,14 @@ void __PtlCreateMDCT(ptl_handle_ni_t ni, void *start, ptl_size_t length, ptl_han
 void __PtlCreateLECT(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_size_t length,
 	ptl_handle_le_t *lh, ptl_handle_ct_t *ch);
 
+void __PtlCreateME(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_size_t length,
+	ptl_size_t count, ptl_handle_me_t *mh);
+void __PtlFreeME(ptl_size_t count, ptl_handle_me_t *mh);
+
 char *__StrPtlError(int error_code);
 
 /* Use this to get a Portal table entry */
-ptl_pt_index_t __PtlPTAlloc(ptl_handle_ni_t ni, ptl_pt_index_t request);
+ptl_pt_index_t __PtlPTAlloc(ptl_handle_ni_t ni, ptl_pt_index_t request, ptl_handle_eq_t eq);
 
 void __PtlBarrierInit(ptl_handle_ni_t ni, int rank, int nproc);
 void __PtlBarrier(void);
