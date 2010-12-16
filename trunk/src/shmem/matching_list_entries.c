@@ -187,10 +187,10 @@ static int PtlInternalMarkMEReusable(
         const ptl_handle_me_t me_handle)
 {/*{{{*/
     const ptl_internal_handle_converter_t me = { me_handle };
+    assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
     switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_ALLOCATED:
             /* success! */
-            assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
             return PTL_OK;
         case ME_IN_USE:
             return PTL_IN_USE;
@@ -781,13 +781,13 @@ int API_FUNC PtlMEUnlink(
     }
     PtlInternalValidateMEPT(t);
     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+    assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
     switch (PtlInternalAtomicCas32
             (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_IN_USE:
             PtlInternalValidateMEPTs(me.s.ni);
             return PTL_IN_USE;
         case ME_ALLOCATED:
-            assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
             PtlInternalValidateMEPTs(me.s.ni);
             return PTL_OK;
 #ifndef NO_ARG_VALIDATION
