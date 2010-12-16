@@ -190,6 +190,7 @@ static int PtlInternalMarkMEReusable(
     switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_ALLOCATED:
             /* success! */
+            assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
             return PTL_OK;
         case ME_IN_USE:
             return PTL_IN_USE;
@@ -786,6 +787,7 @@ int API_FUNC PtlMEUnlink(
             PtlInternalValidateMEPTs(me.s.ni);
             return PTL_IN_USE;
         case ME_ALLOCATED:
+            assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
             PtlInternalValidateMEPTs(me.s.ni);
             return PTL_OK;
 #ifndef NO_ARG_VALIDATION
