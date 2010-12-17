@@ -447,7 +447,8 @@ int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t le = { le_handle };
-    ptl_table_entry_t *t;
+    ptl_table_entry_t *restrict const t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
+    const ptl_internal_appendLE_t *restrict const dq_target = &(les[le.s.ni][le.s.code].Qentry);
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -469,33 +470,35 @@ int API_FUNC PtlLEUnlink(
         return PTL_ARG_INVALID;
     }
 #endif
-    t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
     ptl_assert(pthread_mutex_lock(&t->lock), 0);
     switch (les[le.s.ni][le.s.code].ptl_list) {
         case PTL_PRIORITY_LIST:
         {
             ptl_internal_appendLE_t *dq =
                 (ptl_internal_appendLE_t *) (t->priority.head);
-            if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
+            if (dq == dq_target) {
                 if (dq->next != NULL) {
                     t->priority.head = dq->next;
                 } else {
                     t->priority.head = t->priority.tail = NULL;
                 }
+                dq->next = NULL;
             } else {
                 ptl_internal_appendLE_t *prev = NULL;
-                while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
+                while (dq != dq_target && dq != NULL) {
                     prev = dq;
                     dq = dq->next;
                 }
                 if (dq == NULL) {
                     fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
-                    abort();
+                    return PTL_FAIL;
                 }
                 prev->next = dq->next;
                 if (dq->next == NULL) {
                     assert(t->priority.tail == dq);
                     t->priority.tail = prev;
+                } else {
+                    dq->next = NULL;
                 }
             }
         }
@@ -510,6 +513,7 @@ int API_FUNC PtlLEUnlink(
                 } else {
                     t->overflow.head = t->overflow.tail = NULL;
                 }
+                dq->next = NULL;
             } else {
                 ptl_internal_appendLE_t *prev = NULL;
                 while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
@@ -518,12 +522,14 @@ int API_FUNC PtlLEUnlink(
                 }
                 if (dq == NULL) {
                     fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
-                    abort();
+                    return PTL_FAIL;
                 }
                 prev->next = dq->next;
                 if (dq->next == NULL) {
                     assert(t->overflow.tail == dq);
                     t->overflow.tail = prev;
+                } else {
+                    dq->next = NULL;
                 }
             }
         }
