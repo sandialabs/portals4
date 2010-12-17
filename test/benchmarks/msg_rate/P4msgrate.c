@@ -114,7 +114,7 @@ display_result(const char *test, const double result)
         if (machine_output)   {
             printf("%.2f ", result);
         } else   {
-            printf("%10s: %.2f\n", test, result);
+            printf("%20s: %.2f\n", test, result);
         }
     }
 
@@ -306,7 +306,7 @@ double tmp, total;
     total= 0;
     __PtlBarrier();
     if (rank == 0)   {
-	printf("pair-based not implemented yet\n");
+	printf("%20s: not implemented yet\n", "pair-based");
     }
     return;
 
@@ -519,7 +519,7 @@ double tmp, total;
     total= 0;
     __PtlBarrier();
     if (rank == 0)   {
-	printf("all-start not implemented yet\n");
+	printf("%20s: not implemented yet\n", "all-start");
     }
     return;
 
