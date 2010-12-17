@@ -105,14 +105,14 @@ int API_FUNC PtlInit(
         comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));  // the one extra is for the collator
 
         memset(&nit, 0, sizeof(ptl_internal_nit_t));
-        nit_limits.max_entries = 128 * 4;  // Thus, the ME/LE list for each NI can be maxed out
+        nit_limits.max_entries = 16384 * 4;  // Thus, the ME/LE list for each NI can be maxed out
         nit_limits.max_overflow_entries = 128;     // Arbitrary
         nit_limits.max_mds = 128;      // Arbitrary
         nit_limits.max_cts = 128;      // Arbitrary
         nit_limits.max_eqs = 128;      // Arbitrary
         nit_limits.max_pt_index = 63;  // Minimum required by spec
         nit_limits.max_iovecs = 0;     // XXX: ???
-        nit_limits.max_list_size = 128;  // Arbitrary
+        nit_limits.max_list_size = 16384;  // Arbitrary
         nit_limits.max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
         nit_limits.max_atomic_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
         nit_limits.max_ordered_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
