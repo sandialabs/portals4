@@ -692,7 +692,8 @@ int API_FUNC PtlMEUnlink(
     ptl_handle_me_t me_handle)
 {/*{{{*/
     const ptl_internal_handle_converter_t me = { me_handle };
-    ptl_table_entry_t *t;
+    ptl_table_entry_t *restrict t;
+    const ptl_internal_appendME_t *restrict const dq_target = &(mes[me.s.ni][me.s.code].Qentry);
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized");
@@ -722,26 +723,29 @@ int API_FUNC PtlMEUnlink(
         {
             ptl_internal_appendME_t *dq =
                 (ptl_internal_appendME_t *) (t->priority.head);
-            if (dq == &(mes[me.s.ni][me.s.code].Qentry)) {
+            if (dq == dq_target) {
                 if (dq->next != NULL) {
                     t->priority.head = dq->next;
                 } else {
                     t->priority.head = t->priority.tail = NULL;
                 }
+                dq->next = NULL;
             } else {
                 ptl_internal_appendME_t *prev = NULL;
-                while (dq != &(mes[me.s.ni][me.s.code].Qentry) && dq != NULL) {
+                while (dq != dq_target && dq != NULL) {
                     prev = dq;
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "attempted to link an un-queued ME\n");
-                    abort();
+                    fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                    return PTL_FAIL;
                 }
                 prev->next = dq->next;
                 if (dq->next == NULL) {
                     assert(t->priority.tail == dq);
                     t->priority.tail = prev;
+                } else {
+                    dq->next = NULL;
                 }
             }
         }
@@ -756,6 +760,7 @@ int API_FUNC PtlMEUnlink(
                 } else {
                     t->overflow.head = t->overflow.tail = NULL;
                 }
+                dq->next = NULL;
             } else {
                 ptl_internal_appendME_t *prev = NULL;
                 while (dq != &(mes[me.s.ni][me.s.code].Qentry) && dq != NULL) {
@@ -763,13 +768,15 @@ int API_FUNC PtlMEUnlink(
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "attempted to link an un-queued ME\n");
-                    abort();
+                    fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                    return PTL_FAIL;
                 }
                 prev->next = dq->next;
                 if (dq->next == NULL) {
                     assert(t->overflow.tail == dq);
                     t->overflow.tail = prev;
+                } else {
+                    dq->next = NULL;
                 }
             }
         }
