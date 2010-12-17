@@ -150,7 +150,6 @@ ptl_event_t event;
     total= 0;
     match= 0;
     ct_handle= PTL_INVALID_HANDLE;
-    eq_handle= PTL_INVALID_HANDLE;
     __PtlBarrier();
 
     if (rank < (world_size / 2))   {
@@ -178,7 +177,6 @@ ptl_event_t event;
 		}
 
 		dest.rank= rank + (world_size / 2);
-		/* For the MEwithEQ case, we ignore the offset at the destination */
 		/* For the LEwithCT case, we ignore the match bits */
 		match= k;
 		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, TestOneWayIndex, match, offset);
@@ -215,10 +213,8 @@ ptl_event_t event;
 
 	if (test_type == MEwithEQ)   {
 	    /* Create an event queue */
-	    if (eq_handle == PTL_INVALID_HANDLE) {
-		rc = PtlEQAlloc(ni, 2 * nmsgs, &eq_handle);
-		PTL_CHECK(rc, "PtlEQAlloc in test_one_way");
-	    }
+	    rc = PtlEQAlloc(ni, 2 * nmsgs, &eq_handle);
+	    PTL_CHECK(rc, "PtlEQAlloc in test_one_way");
 	} else   {
 	    eq_handle= PTL_EQ_NONE;
 	}
@@ -257,11 +253,11 @@ ptl_event_t event;
 		    rc= PtlEQWait(eq_handle, &event);
 		    PTL_CHECK(rc, "PtlEQWait in test_one_way");
 		    if (event.type != PTL_EVENT_PUT)   {
-			fprintf(stderr, "Got event %d instead of PTL_EVENT_PUT with msg %d\n",
+			fprintf(stderr, "test_prepost() Got event %d instead of PTL_EVENT_PUT with msg %d\n",
 			    event.type, j);
 		    }
 		    if (event.ni_fail_type != PTL_NI_OK)   {
-			fprintf(stderr, "Got event %d with fail type %d\n",
+			fprintf(stderr, "test_prepost() Got event %d with fail type %d\n",
 			    j, event.ni_fail_type);
 		    }
 		}
@@ -365,9 +361,10 @@ ptl_handle_md_t md_handle;
 ptl_handle_ct_t ct_handle;
 ptl_ct_event_t cnt_value;
 ptl_handle_le_t le_handle;
-ptl_handle_me_t me_handles[nmsgs];
+ptl_handle_me_t me_handles[npeers * nmsgs];
 ptl_match_bits_t match;
-ptl_handle_eq_t eq_handle= PTL_EQ_NONE;
+ptl_handle_eq_t eq_handle;
+ptl_event_t event;
 
 
     total= 0;
@@ -408,19 +405,23 @@ ptl_handle_eq_t eq_handle= PTL_EQ_NONE;
     ** have to check in one place for completion.
     */
 
+    if (test_type == MEwithEQ)   {
+	/* Create an event queue */
+	rc = PtlEQAlloc(ni, 2 * nmsgs * npeers, &eq_handle);
+	PTL_CHECK(rc, "PtlEQAlloc in test_prepost");
+    } else   {
+	eq_handle= PTL_EQ_NONE;
+    }
+
     /* Allocate the Portal to send to */
-    index= __PtlPTAlloc(ni, TestSameDirectionIndex, PTL_EQ_NONE);
+    index= __PtlPTAlloc(ni, TestSameDirectionIndex, eq_handle);
 
     if (test_type == LEwithCT)   {
 	/* Create a persistent LE to receive into */
 	__PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
     } else if (test_type == MEwithEQ)   {
-	/* Create "nmsgs" persistent MEs to receive into */
-if (rank == 0)   {
-    fprintf(stderr, "Can't do MEwithEQ in test_same_direction yet.\n");
-}
-return;
-	__PtlCreateME(ni, index, recv_buf, nbytes, nmsgs, me_handles);
+	/* Create "npeers * nmsgs" persistent MEs to receive into */
+	__PtlCreateME(ni, index, recv_buf, nbytes, npeers * nmsgs, me_handles);
     }
 
     /* Sync everybody */
@@ -435,18 +436,51 @@ return;
         tmp= timer();
         for (j= 0; j < npeers; ++j)   {
             for (k= 0; k < nmsgs; ++k)   {
+		if (test_type == MEwithEQ)   {
+		    offset= 0;
+		} else if (test_type == LEwithCT)   {
+		    offset= nbytes * k;
+		}
+
 		offset= (nbytes * (k + j * nmsgs));
 		dest.rank= send_peers[npeers - j - 1];
+		/* For the LEwithCT case, we ignore the match bits */
+		match= (npeers - j - 1) * nmsgs + k;
 		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, index, match, offset);
 		PTL_CHECK(rc, "PtlPut in test_same_direction");
             }
 	}
+
 	/* MPI_Waitall */
-	rc= PtlCTWait(ct_handle, 2*((i+1)*nmsgs*npeers), &cnt_value);
-	PTL_CHECK(rc, "1st PtlCTWait in test_same_direction");
-	if (cnt_value.failure != 0)   {
-	    fprintf(stderr, "test_same_direction() %d PtlPut send failed (%d/%d succeeded)\n",
-		    i, (int)cnt_value.failure, (int)cnt_value.success);
+	if (test_type == LEwithCT)   {
+	    rc= PtlCTWait(ct_handle, 2*((i+1)*nmsgs*npeers), &cnt_value);
+	    PTL_CHECK(rc, "1st PtlCTWait in test_same_direction");
+	    if (cnt_value.failure != 0)   {
+		fprintf(stderr, "test_same_direction() PtlCTWait failed (%d failure, %d success)\n",
+			(int)cnt_value.failure, (int)cnt_value.success);
+	    }
+	} else if (test_type == MEwithEQ)   {
+	    /* We also have to wait for the send count */
+	    rc= PtlCTWait(ct_handle, 1*((i+1)*nmsgs*npeers), &cnt_value);
+	    PTL_CHECK(rc, "2nd PtlCTWait in test_same_direction");
+	    if (cnt_value.failure != 0)   {
+		fprintf(stderr, "test_same_direction() PtlPut send failed (%d/%d succeeded)\n",
+			(int)cnt_value.failure, (int)cnt_value.success);
+	    }
+
+	    /* Pull each event off as it comes in */
+	    for (j= 0; j < npeers * nmsgs; j++)   {
+		rc= PtlEQWait(eq_handle, &event);
+		PTL_CHECK(rc, "PtlEQWait in test_one_way");
+		if (event.type != PTL_EVENT_PUT)   {
+		    fprintf(stderr, "test_prepost() Got event %d instead of PTL_EVENT_PUT with msg %d\n",
+			event.type, j);
+		}
+		if (event.ni_fail_type != PTL_NI_OK)   {
+		    fprintf(stderr, "test_prepost() Got event %d with fail type %d\n",
+			j, event.ni_fail_type);
+		}
+	    }
 	}
         total += (timer() - tmp);
     }
@@ -462,7 +496,7 @@ return;
 	rc= PtlLEUnlink(le_handle);
 	PTL_CHECK(rc, "PtlLEUnlink in test_same_direction");
     } else if (test_type == MEwithEQ)   {
-	__PtlFreeME(nmsgs, me_handles);
+	__PtlFreeME(npeers * nmsgs, me_handles);
 	PtlEQFree(eq_handle);
     }
     rc= PtlPTFree(ni, index);
@@ -682,15 +716,17 @@ int test_type;
     ** It needs to be a non-matching ni, so we can't share it
     ** in the MEwithEQ case.
     */
+    ptl_ni_limits_t actual;
+
     rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
 	    NULL, world_size, NULL, amapping, &ni_collectives);
 
     if (test_type == LEwithCT)   {
 	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-		NULL, world_size, NULL, amapping, &ni_logical);
+		&actual, world_size, NULL, amapping, &ni_logical);
     } else if (test_type == MEwithEQ)   {
 	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-		NULL, world_size, NULL, amapping, &ni_logical);
+		&actual, world_size, NULL, amapping, &ni_logical);
     } else   {
 	rc= PTL_NO_INIT;
     }
@@ -699,6 +735,21 @@ int test_type;
 
     if (0 == rank)   {
         if (!machine_output)   {
+	    if (verbose > 0)   {
+		printf("NI actual limits\n");
+		printf("  max_entries:          %d\n", actual.max_entries);
+		printf("  max_overflow_entries: %d\n", actual.max_overflow_entries);
+		printf("  max_mds:              %d\n", actual.max_mds);
+		printf("  max_cts:              %d\n", actual.max_cts);
+		printf("  max_eqs:              %d\n", actual.max_eqs);
+		printf("  max_pt_index:         %d\n", actual.max_pt_index);
+		printf("  max_iovecs:           %d\n", actual.max_iovecs);
+		printf("  max_list_size:        %d\n", actual.max_list_size);
+		printf("  max_msg_size:         %d\n", (int)actual.max_msg_size);
+		printf("  max_atomic_size:      %d\n", (int)actual.max_atomic_size);
+		printf("  max_ordered_size:     %d\n", (int)actual.max_ordered_size);
+	    }
+
             printf("job size:   %d\n", world_size);
             printf("npeers:     %d\n", npeers);
             printf("niters:     %d\n", niters);
@@ -718,6 +769,14 @@ int test_type;
                    world_size, npeers, niters, nmsgs, nbytes,
                    cache_size * (int)sizeof(int), ppn);
         }
+    }
+
+    if (nmsgs * npeers > actual.max_list_size)   {
+	if (rank == 0)   {
+	    fprintf(stderr, "Not enough max match list entries. Need %d.\n",
+		nmsgs * npeers);
+	}
+	exit(-1);
     }
 
     /* allocate buffers */
