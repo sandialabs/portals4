@@ -63,7 +63,7 @@ void INTERNAL PtlInternalMDNITeardown(
     mds[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    for (size_t mdi = 0; mdi < nit_limits.max_mds; ++mdi) {
+    for (size_t mdi = 0; mdi < nit_limits[ni].max_mds; ++mdi) {
         while (tmp[mdi].refcount != 0) ;
     }
     free(tmp);
@@ -79,11 +79,11 @@ int INTERNAL PtlInternalMDHandleValidator(
         VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
         return PTL_ARG_INVALID;
     }
-    if (md.s.ni > 3 || md.s.code > nit_limits.max_mds ||
+    if (md.s.ni > 3 || md.s.code > nit_limits[md.s.ni].max_mds ||
         (nit.refcount[md.s.ni] == 0)) {
         VERBOSE_ERROR
             ("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-             md.s.ni, md.s.code, nit_limits.max_mds);
+             md.s.ni, md.s.code, nit_limits[md.s.ni].max_mds);
         return PTL_ARG_INVALID;
     }
     if (mds[md.s.ni] == NULL) {
@@ -154,7 +154,7 @@ int API_FUNC PtlMDBind(
 #endif
     mdh.s.selector = HANDLE_MD_CODE;
     mdh.s.ni = ni.s.ni;
-    for (offset = 0; offset < nit_limits.max_mds; ++offset) {
+    for (offset = 0; offset < nit_limits[ni.s.ni].max_mds; ++offset) {
         if (mds[ni.s.ni][offset].in_use == MD_FREE) {
             if (PtlInternalAtomicCas32
                 (&(mds[ni.s.ni][offset].in_use), MD_FREE,
@@ -165,7 +165,7 @@ int API_FUNC PtlMDBind(
             }
         }
     }
-    if (offset >= nit_limits.max_mds) {
+    if (offset >= nit_limits[ni.s.ni].max_mds) {
         *md_handle = PTL_INVALID_HANDLE;
         return PTL_NO_SPACE;
     } else {

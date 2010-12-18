@@ -85,10 +85,10 @@ void INTERNAL PtlInternalEQNISetup(
             PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        tmp = calloc(nit_limits.max_eqs, sizeof(ptl_internal_eq_t));
+        tmp = calloc(nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
         assert(tmp != NULL);
         assert(eq_refcounts[ni] == NULL);
-        eq_refcounts[ni] = calloc(nit_limits.max_eqs, sizeof(uint64_t));
+        eq_refcounts[ni] = calloc(nit_limits[ni].max_eqs, sizeof(uint64_t));
         assert(eq_refcounts[ni] != NULL);
         __sync_synchronize();
         eqs[ni] = tmp;
@@ -106,7 +106,7 @@ void INTERNAL PtlInternalEQNITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
-    for (size_t i = 0; i < nit_limits.max_eqs; ++i) {
+    for (size_t i = 0; i < nit_limits[ni].max_eqs; ++i) {
         if (rc[i] != 0) {
             PtlInternalAtomicInc(&(rc[i]), -1);
             while (rc[i] != 0) ;
@@ -134,11 +134,11 @@ int INTERNAL PtlInternalEQHandleValidator(
     if (none_ok == 1 && handle == PTL_EQ_NONE) {
         return PTL_OK;
     }
-    if (eq.s.ni > 3 || eq.s.code > nit_limits.max_eqs ||
+    if (eq.s.ni > 3 || eq.s.code > nit_limits[eq.s.ni].max_eqs ||
         (nit.refcount[eq.s.ni] == 0)) {
         VERBOSE_ERROR
             ("EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
-             eq.s.ni, eq.s.code, nit_limits.max_cts);
+             eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }
     if (eqs[eq.s.ni] == NULL) {
@@ -201,7 +201,7 @@ int API_FUNC PtlEQAlloc(
     {
         ptl_internal_eq_t *ni_eqs = eqs[ni.s.ni];
         volatile uint64_t *rc = eq_refcounts[ni.s.ni];
-        for (uint32_t offset = 0; offset < nit_limits.max_eqs; ++offset) {
+        for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_eqs; ++offset) {
             if (rc[offset] == 0) {
                 if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                     ptl_internal_event_t *tmp =

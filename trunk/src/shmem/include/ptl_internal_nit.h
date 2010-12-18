@@ -17,7 +17,7 @@ typedef struct {
 } ptl_internal_nit_t;
 
 extern ptl_internal_nit_t nit;
-extern ptl_ni_limits_t nit_limits;
+extern ptl_ni_limits_t nit_limits[4];
 
 int PtlInternalNIValidator(
     const ptl_internal_handle_converter_t ni);

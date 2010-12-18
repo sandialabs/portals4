@@ -296,9 +296,9 @@ int API_FUNC PtlMEAppend(
         assert(nit.tables[ni.s.ni] != NULL);
         return PTL_ARG_INVALID;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[ni.s.ni].max_pt_index) {
         VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index,
-                      nit_limits.max_pt_index);
+                      nit_limits[ni.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
     {
@@ -313,7 +313,7 @@ int API_FUNC PtlMEAppend(
     assert(mes[ni.s.ni] != NULL);
     meh.s.ni = ni.s.ni;
     /* find an ME handle */
-    for (uint32_t offset = 0; offset < nit_limits.max_entries; ++offset) {
+    for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_entries; ++offset) {
         if (mes[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32
                 (&(mes[ni.s.ni][offset].status), ME_FREE,
@@ -699,11 +699,11 @@ int API_FUNC PtlMEUnlink(
         VERBOSE_ERROR("communication pad not initialized");
         return PTL_NO_INIT;
     }
-    if (me.s.ni > 3 || me.s.code > nit_limits.max_entries ||
+    if (me.s.ni > 3 || me.s.code > nit_limits[me.s.ni].max_entries ||
         nit.refcount[me.s.ni] == 0) {
         VERBOSE_ERROR
             ("ME Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-             me.s.ni, me.s.code, nit_limits.max_entries);
+             me.s.ni, me.s.code, nit_limits[me.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
     if (mes[me.s.ni] == NULL) {
@@ -872,7 +872,7 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
 static void PtlInternalValidateMEPTs(unsigned int ni)
 {
     ptl_table_entry_t *table = nit.tables[ni];
-    for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits.max_pt_index; ++pt_idx) {
+    for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits[ni].max_pt_index; ++pt_idx) {
         ptl_table_entry_t *entry = &table[pt_idx];
         ptl_assert(pthread_mutex_lock(&entry->lock), 0);
         PtlInternalValidateMEPT(entry);
