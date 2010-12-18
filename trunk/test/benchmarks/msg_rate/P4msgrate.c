@@ -38,6 +38,9 @@
 #include <portals4_runtime.h>
 #include <libP4support.h>
 
+#ifdef __APPLE__
+# include <sys/time.h>
+#endif
 
 
 #define TestOneWayIndex	(1)
@@ -97,13 +100,16 @@ cache_invalidate(int cache_size, int *cache_buf)
 static inline double
 timer(void)
 {
-
-struct timespec tm;
-
+#ifdef __APPLE__
+    struct timeval tm;
+    gettimeofday(&tm, NULL);
+    return tm.tv_sec + tm.tv_usec * 1e-6;
+#else
+    struct timespec tm;
 
     clock_gettime(CLOCK_REALTIME, &tm);
     return tm.tv_sec + tm.tv_nsec / 1000000000.0;
-
+#endif
 }  /* end of timer() */
 
 
