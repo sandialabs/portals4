@@ -48,7 +48,7 @@ int API_FUNC PtlPTAlloc(
     if (PtlInternalEQHandleValidator(eq_handle, 1)) {
         return PTL_ARG_INVALID;
     }
-    if (pt_index_req > nit_limits.max_pt_index && pt_index_req != PTL_PT_ANY) {
+    if (pt_index_req > nit_limits[ni.s.ni].max_pt_index && pt_index_req != PTL_PT_ANY) {
         return PTL_ARG_INVALID;
     }
     if (pt_index == NULL) {
@@ -66,7 +66,7 @@ int API_FUNC PtlPTAlloc(
         *pt_index = pt_index_req;
     } else {
         ptl_pt_index_t pti;
-        for (pti = 0; pti <= nit_limits.max_pt_index; ++pti) {
+        for (pti = 0; pti <= nit_limits[ni.s.ni].max_pt_index; ++pti) {
             if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
                 pt = &(nit.tables[ni.s.ni][pti]);
                 ptl_assert(pthread_mutex_lock(&pt->lock), 0);
@@ -115,9 +115,9 @@ int API_FUNC PtlPTFree(
         VERBOSE_ERROR("pt_index is PTL_PT_ANY\n");
         return PTL_ARG_INVALID;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[ni.s.ni].max_pt_index) {
         VERBOSE_ERROR("pt_index is too big (%u > %u)\n", pt_index,
-                      nit_limits.max_pt_index);
+                      nit_limits[ni.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif

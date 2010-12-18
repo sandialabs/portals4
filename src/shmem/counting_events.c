@@ -169,13 +169,13 @@ void INTERNAL PtlInternalCTNITeardown(
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
-    for (size_t i = 0; i < nit_limits.max_cts; ++i) {
+    for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
         if (rc[i] != 0) {
             PtlInternalAtomicWriteCT(&(tmp[i]), CTERR);
             PtlInternalAtomicInc(&(rc[i]), -1);
         }
     }
-    for (size_t i = 0; i < nit_limits.max_cts; ++i) {
+    for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
         while (rc[i] != 0) ;
     }
     free(tmp);
@@ -200,11 +200,11 @@ int INTERNAL PtlInternalCTHandleValidator(
             return PTL_ARG_INVALID;
         }
     }
-    if (ct.s.ni > 3 || ct.s.code > nit_limits.max_cts ||
+    if (ct.s.ni > 3 || ct.s.code > nit_limits[ct.s.ni].max_cts ||
         (nit.refcount[ct.s.ni] == 0)) {
         VERBOSE_ERROR
             ("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
-             ct.s.ni, ct.s.code, nit_limits.max_cts);
+             ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }
     if (ct_events[ct.s.ni] == NULL) {
@@ -249,7 +249,7 @@ int API_FUNC PtlCTAlloc(
     ct.s.ni = ni.s.ni;
     cts = ct_events[ni.s.ni];
     rc = ct_event_refcounts[ni.s.ni];
-    for (offset = 0; offset < nit_limits.max_cts; ++offset) {
+    for (offset = 0; offset < nit_limits[ct.s.ni].max_cts; ++offset) {
         if (rc[offset] == 0) {
             if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                 cts[offset].success = 0;

@@ -474,10 +474,10 @@ int API_FUNC PtlPut(
             }
             break;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits.max_pt_index);
+                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif
@@ -630,10 +630,10 @@ int API_FUNC PtlGet(
             }
             break;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits.max_pt_index);
+                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif
@@ -702,10 +702,10 @@ int API_FUNC PtlAtomic(
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if (length > nit_limits.max_atomic_size) {
+    if (length > nit_limits[md.s.ni].max_atomic_size) {
         VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
                       (unsigned int)length,
-                      (unsigned int)nit_limits.max_atomic_size);
+                      (unsigned int)nit_limits[md.s.ni].max_atomic_size);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
@@ -788,10 +788,10 @@ int API_FUNC PtlAtomic(
         default:
             break;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits.max_pt_index);
+                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif
@@ -895,10 +895,10 @@ int API_FUNC PtlFetchAtomic(
         VERBOSE_ERROR("Invalid put_md_handle\n");
         return PTL_ARG_INVALID;
     }
-    if (length > nit_limits.max_atomic_size) {
+    if (length > nit_limits[get_md.s.ni].max_atomic_size) {
         VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
                       (unsigned int)length,
-                      (unsigned int)nit_limits.max_atomic_size);
+                      (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
@@ -986,10 +986,10 @@ int API_FUNC PtlFetchAtomic(
         default:
             break;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits.max_pt_index);
+                      (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif
@@ -1096,10 +1096,10 @@ int API_FUNC PtlSwap(
         VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
         return PTL_ARG_INVALID;
     }
-    if (length > nit_limits.max_atomic_size) {
+    if (length > nit_limits[get_md.s.ni].max_atomic_size) {
         VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
                       (unsigned int)length,
-                      (unsigned int)nit_limits.max_atomic_size);
+                      (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
@@ -1182,10 +1182,10 @@ int API_FUNC PtlSwap(
                 ("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
     }
-    if (pt_index > nit_limits.max_pt_index) {
+    if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits.max_pt_index);
+                      (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
 #endif
