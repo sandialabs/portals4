@@ -43,7 +43,7 @@ static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
 void INTERNAL PtlInternalMDNISetup(
     unsigned int ni,
     ptl_size_t limit)
-{
+{                                      /*{{{ */
     ptl_internal_md_t *tmp;
     while ((tmp =
             PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
@@ -54,11 +54,11 @@ void INTERNAL PtlInternalMDNISetup(
         __sync_synchronize();
         mds[ni] = tmp;
     }
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalMDNITeardown(
     unsigned int ni)
-{
+{                                      /*{{{ */
     ptl_internal_md_t *tmp = mds[ni];
     mds[ni] = NULL;
     assert(tmp != NULL);
@@ -67,12 +67,12 @@ void INTERNAL PtlInternalMDNITeardown(
         while (tmp[mdi].refcount != 0) ;
     }
     free(tmp);
-}
+}                                      /*}}} */
 
 int INTERNAL PtlInternalMDHandleValidator(
     ptl_handle_md_t handle,
     int care_about_ct)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     ptl_internal_md_t *mdptr;
     if (md.s.selector != HANDLE_MD_CODE) {
@@ -101,9 +101,9 @@ int INTERNAL PtlInternalMDHandleValidator(
     }
     if (care_about_ct) {
         int ct_optional = 1;
-        if (mdptr->visible.
-            options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-                       PTL_MD_EVENT_CT_ACK)) {
+        if (mdptr->
+            visible.options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+                               PTL_MD_EVENT_CT_ACK)) {
             ct_optional = 0;
         }
         if (PtlInternalCTHandleValidator
@@ -113,13 +113,13 @@ int INTERNAL PtlInternalMDHandleValidator(
         }
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlMDBind(
     ptl_handle_ni_t ni_handle,
     ptl_md_t * md,
     ptl_handle_md_t * md_handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t mdh;
     size_t offset;
@@ -142,9 +142,9 @@ int API_FUNC PtlMDBind(
         VERBOSE_ERROR("MD saw invalid EQ\n");
         return PTL_ARG_INVALID;
     }
-    if (md->options &
-        (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY | PTL_MD_EVENT_CT_ACK))
-    {
+    if (md->
+        options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+                   PTL_MD_EVENT_CT_ACK)) {
         ct_optional = 0;
     }
     if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {
@@ -172,11 +172,11 @@ int API_FUNC PtlMDBind(
         *md_handle = mdh.a;
         return PTL_OK;
     }
-}
+}                                      /*}}} */
 
 int API_FUNC PtlMDRelease(
     ptl_handle_md_t md_handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -193,25 +193,25 @@ int API_FUNC PtlMDRelease(
     }
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
     return PTL_OK;
-}
+}                                      /*}}} */
 
 char INTERNAL *PtlInternalMDDataPtr(
     ptl_handle_md_t handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     return mds[md.s.ni][md.s.code].visible.start;
-}
+}                                      /*}}} */
 
 ptl_size_t INTERNAL PtlInternalMDLength(
     ptl_handle_md_t handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     return mds[md.s.ni][md.s.code].visible.length;
-}
+}                                      /*}}} */
 
 ptl_md_t INTERNAL *PtlInternalMDFetch(
     ptl_handle_md_t handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
     if (mds[md.s.ni] != NULL) {
@@ -219,19 +219,19 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(
     } else {
         return NULL;
     }
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalMDPosted(
     ptl_handle_md_t handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     //printf("%u MD %u incremented\n", (unsigned)proc_number, md.s.code);
     PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, 1);
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalMDCleared(
     ptl_handle_md_t handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     /* this check allows us to process acks from/to dead NI's */
     //printf("%u MD %u needs decremented\n", (unsigned)proc_number, md.s.code);
@@ -239,6 +239,6 @@ void INTERNAL PtlInternalMDCleared(
         //printf("%u MD %u decremented\n", (unsigned)proc_number, md.s.code);
         PtlInternalAtomicInc(&mds[md.s.ni][md.s.code].refcount, -1);
     }
-}
+}                                      /*}}} */
 
 /* vim:set expandtab: */
