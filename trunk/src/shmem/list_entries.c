@@ -24,6 +24,7 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"
+#include "ptl_internal_fragments.h"
 
 #define LE_FREE         0
 #define LE_ALLOCATED    1
@@ -562,25 +563,34 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     enum { PRIORITY, OVERFLOW } foundin = PRIORITY;
     ptl_internal_appendLE_t *entry = NULL;
     ptl_handle_eq_t tEQ = t->EQ;
+    ptl_le_t le;
+    ptl_size_t msg_mlength = 0, fragment_mlength = 0;
+    char need_more_data = 0;
     char need_to_unlock = 1;    // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalPAPIStartC();
     assert(t);
     assert(hdr);
-    /* Find an entry */
-    if (t->priority.head) {
-        entry = t->priority.head;
-    } else if (t->overflow.head) {
-        entry = t->overflow.head;
-        foundin = OVERFLOW;
+    if (hdr->src_data.entry == NULL) {
+        /* Find an entry */
+        if (t->priority.head) {
+            entry = t->priority.head;
+        } else if (t->overflow.head) {
+            entry = t->overflow.head;
+            foundin = OVERFLOW;
+        }
+        hdr->src_data.entry = entry;
+    } else {
+        entry = hdr->src_data.entry;
+        le = *(ptl_le_t *) (((char *)entry) +
+                           offsetof(ptl_internal_le_t, visible));
+        goto check_lengths;
     }
     if (entry != NULL) {
         /*********************************************************
          * There is an LE present, and 'entry' points to it *
          *********************************************************/
-        ptl_size_t mlength = 0;
-        const ptl_le_t le =
-            *(ptl_le_t *) (((char *)entry) +
+        le = *(ptl_le_t *) (((char *)entry) +
                            offsetof(ptl_internal_le_t, visible));
         assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
         // check the permissions on the LE
@@ -634,8 +644,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             }
             entry->next = NULL;
             /* now that the LE has been unlinked, we can unlock the portal
-             * table, thus allowing deliveries and/or appends on the PT while
-             * we do this delivery */
+             * table, thus allowing appends on the PT while we do this delivery
+             */
             need_to_unlock = 0;
             ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             if (tEQ != PTL_EQ_NONE &&
@@ -648,33 +658,80 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             }
         }
         /* check lengths */
-        if (hdr->length + hdr->dest_offset > le.length) {
-            if (le.length > hdr->dest_offset) {
-                mlength = le.length - hdr->dest_offset;
+check_lengths:
+        {
+            const size_t max_payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+            /* msg_mlength is the total number of bytes that will be modified by this message */
+            /* fragment_mlength is the total number of bytes that will by modified by this fragment */
+            if (hdr->length + hdr->dest_offset > le.length) {
+                if (le.length > hdr->dest_offset) {
+                    msg_mlength = le.length - hdr->dest_offset;
+                } else {
+                    msg_mlength = 0;
+                }
             } else {
-                mlength = 0;
+                msg_mlength = hdr->length;
             }
-        } else {
-            mlength = hdr->length;
+            if (max_payload >= msg_mlength) {
+                /* the entire operation fits into a single fragment */
+                fragment_mlength = msg_mlength;
+                need_more_data = 0;
+            } else {
+                /* the operation requires multiple fragments */
+                if (hdr->src_data.remaining > max_payload) {
+                    /* this is NOT the last fragment */
+                    fragment_mlength = max_payload;
+                    need_more_data = 1;
+                } else {
+                    /* this IS the last fragment */
+                    fragment_mlength = hdr->src_data.remaining;
+                    need_more_data = 0;
+                }
+            }
         }
         /*************************
          * Perform the Operation *
          *************************/
+        /*
+         * msg_mlength is the total bytecount of the message
+         * fragment_mlength is the total bytecount of this packet
+         * src_data.remaining is the total bytecount that has not been transmitted yet
+         * Thus, the offset from the beginning of the message that this fragment refers to is...
+         * me.start + dest_offset + (msg_mlength - fragment_mlength - src_data.remaining)
+         * >_____+--------####====+____<
+         * |     |        |   |   |    `--> le.start + le.length
+         * |     |        |   |   `-------> le.start + hdr->dest_offset + ( msg_mlength )
+         * |     |        |   `-----------> le.start + hdr->dest_offset + ( msg_mlength - ( src_data.remaining - fragment_mlength ) )
+         * |     |        `---------------> le.start + hdr->dest_offset + ( msg_mlength - src_data.remaining )
+         * |     `------------------------> le.start + hdr->dest_offset
+         * `------------------------------> le.start
+         */
         void *report_this_start = (char *)le.start + hdr->dest_offset;
+        void *effective_start;
+        if (hdr->src_data.moredata) {
+            effective_start = (char *)le.start + hdr->dest_offset + (msg_mlength - hdr->src_data.remaining);
+        } else {
+            effective_start = report_this_start;
+        }
         if (foundin == PRIORITY) {
-            if (mlength > 0) {
-                PtlInternalPerformDelivery(hdr->type, report_this_start,
-                                           hdr->data, mlength, hdr);
+            if (fragment_mlength > 0) {
+                PtlInternalPerformDelivery(hdr->type, effective_start,
+                                           hdr->data, fragment_mlength, hdr);
             }
-            PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
-                                          le.options, mlength,
+            if (need_more_data == 0) {
+                PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
+                                          le.options, msg_mlength,
                                           (uintptr_t) report_this_start, 0,
                                           entry->user_ptr, hdr);
+            }
         } else {
-            assert(hdr->length + hdr->dest_offset <= mlength);
-            if (mlength > 0) {
-                report_this_start = (char *)le.start + hdr->dest_offset;
-                memcpy(report_this_start, hdr->data, mlength);
+            if (fragment_mlength != msg_mlength) {
+                fprintf(stderr, "multi-fragment (oversize) messages into the overflow list doesn't work\n");
+                abort();
+            }
+            assert(hdr->length + hdr->dest_offset <= fragment_mlength);
+            if (fragment_mlength > 0) {
+                memcpy(report_this_start, hdr->data, fragment_mlength);
             } else {
                 report_this_start = NULL;
             }

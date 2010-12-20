@@ -19,6 +19,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"
+#include "ptl_internal_fragments.h"
 #ifdef PARANOID
 # include "ptl_internal_PT.h"
 #endif
@@ -856,7 +857,7 @@ static void PtlInternalWalkMatchList(
 
 #ifdef PARANOID
 static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
-{
+{/*{{{*/
     ptl_internal_appendME_t *ME = t->priority.head;
     while (ME != NULL) {
         assert(((ptl_internal_me_t*)ME)->status == ME_ALLOCATED);
@@ -867,10 +868,10 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
         assert(((ptl_internal_me_t*)ME)->status == ME_ALLOCATED);
         ME = ME->next;
     }
-}
+}/*}}}*/
 
 static void PtlInternalValidateMEPTs(unsigned int ni)
-{
+{/*{{{*/
     ptl_table_entry_t *table = nit.tables[ni];
     for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits[ni].max_pt_index; ++pt_idx) {
         ptl_table_entry_t *entry = &table[pt_idx];
@@ -878,7 +879,7 @@ static void PtlInternalValidateMEPTs(unsigned int ni)
         PtlInternalValidateMEPT(entry);
         ptl_assert(pthread_mutex_unlock(&entry->lock), 0);
     }
-}
+}/*}}}*/
 #endif
 
 ptl_pid_t INTERNAL PtlInternalMEDeliver(
@@ -891,34 +892,43 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     ptl_internal_appendME_t *prev = NULL, *entry = t->priority.head;
     ptl_me_t *me_ptr = NULL;
     ptl_handle_eq_t tEQ = t->EQ;
+    ptl_me_t me;
+    ptl_size_t msg_mlength = 0, fragment_mlength = 0;
+    char need_more_data = 0;
     char need_to_unlock = 1;    // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalValidateMEPT(t);
     PtlInternalPAPIStartC();
-    /* To match, one must check, in order:
-     * 1. The match_bits (with the ignore_bits) against hdr->match_bits
-     * 2. if notruncate, length
-     * 3. the match_id against src
-     */
-    PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src, hdr->length,
-                             hdr->dest_offset, &entry, &prev, &me_ptr);
-    if (entry == NULL && hdr->type != HDR_TYPE_GET) {   // check overflow list
-        prev = NULL;
-        entry = t->overflow.head;
-        PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
-                                 hdr->length, hdr->dest_offset, &entry, &prev,
-                                 &me_ptr);
-        if (entry != NULL) {
-            foundin = OVERFLOW;
+    if (hdr->src_data.entry == NULL) {
+        /* To match, one must check, in order:
+         * 1. The match_bits (with the ignore_bits) against hdr->match_bits
+         * 2. if notruncate, length
+         * 3. the match_id against src
+         */
+        PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src, hdr->length,
+                hdr->dest_offset, &entry, &prev, &me_ptr);
+        if (entry == NULL && hdr->type != HDR_TYPE_GET) {   // check overflow list
+            prev = NULL;
+            entry = t->overflow.head;
+            PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
+                    hdr->length, hdr->dest_offset, &entry, &prev,
+                    &me_ptr);
+            if (entry != NULL) {
+                foundin = OVERFLOW;
+            }
         }
+        hdr->src_data.entry = entry;
+    } else {
+        entry = hdr->src_data.entry;
+        me = *(ptl_me_t *) (((char *)entry) +
+                           offsetof(ptl_internal_me_t, visible));
+        goto check_lengths;
     }
     if (entry != NULL) {               // Match
         /*************************************************************************
          * There is a matching ME present, and 'entry'/'me_ptr' points to it *
          *************************************************************************/
-        ptl_size_t mlength = 0;
-        const ptl_me_t me =
-            *(ptl_me_t *) (((char *)entry) +
+        me = *(ptl_me_t *) (((char *)entry) +
                            offsetof(ptl_internal_me_t, visible));
         assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
         // check permissions on the ME
@@ -995,8 +1005,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             entry->next = NULL;
             entry->unlinked = 1;
             /* now that the ME has been unlinked, we can unlock the portal
-             * table, thus allowing deliveries and/or appends on the PT while
-             * we do this delivery */
+             * table, thus allowing appends on the PT while we do this delivery
+             */
             need_to_unlock = 0;
             ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             if (tEQ != PTL_EQ_NONE &&
@@ -1010,53 +1020,103 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 PtlInternalPAPIStartC();
             }
         }
+check_lengths:
         /* check lengths */
-        if (hdr->length + hdr->dest_offset > me.length) {
-            if (me.length > hdr->dest_offset) {
-                mlength = me.length - hdr->dest_offset;
+        {
+            const size_t max_payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+            /* msg_mlength is the total number of bytes that will be modified by this message */
+            /* fragment_mlength is the total number of bytes that will be modified by this fragment */
+            if (hdr->length + hdr->dest_offset > me.length) {
+                if (me.length > hdr->dest_offset) {
+                    msg_mlength = me.length - hdr->dest_offset;
+                } else {
+                    msg_mlength = 0;
+                }
             } else {
-                mlength = 0;
+                msg_mlength = hdr->length;
             }
-        } else {
-            mlength = hdr->length;
+            if (max_payload >= msg_mlength) {
+                /* the entire operation fits into a single fragment */
+                fragment_mlength = msg_mlength;
+                need_more_data = 0;
+            } else {
+                /* the operation requires multiple fragments */
+                if (hdr->src_data.remaining > max_payload) {
+                    /* this is NOT the last fragment */
+                    fragment_mlength = max_payload;
+                    need_more_data = 1;
+                } else {
+                    /* this IS the last fragment */
+                    fragment_mlength = hdr->src_data.remaining;
+                    need_more_data = 0;
+                }
+            }
         }
         /*************************
          * Perform the Operation *
          *************************/
+        /*
+         * msg_mlength is the total bytecount of the message
+         * fragment_mlength is the total bytecount of this packet
+         * src_data.remaining is the total bytecount that has not been transmitted yet
+         * Thus, the offset from the beginning of the message that this fragment refers to is...
+         * me.start + dest_offset + (msg_mlength - fragment_mlength - src_data.remaining)
+         * >_____+--------####====+____<
+         * |     |        |   |   |    `--> me.start + me.length
+         * |     |        |   |   `-------> me.start + hdr->dest_offset + ( msg_mlength )
+         * |     |        |   `-----------> me.start + hdr->dest_offset + ( msg_mlength - ( src_data.remaining - fragment_mlength ) )
+         * |     |        `---------------> me.start + hdr->dest_offset + ( msg_mlength - src_data.remaining )
+         * |     `------------------------> me.start + hdr->dest_offset
+         * `------------------------------> me.start
+         */
         void *report_this_start = ((char *)me.start) + hdr->dest_offset;
+        void *effective_start = ((char *)me.start) + hdr->dest_offset + (msg_mlength - hdr->src_data.remaining);
         if (foundin == PRIORITY) {
             if (hdr->type == HDR_TYPE_PUT &&
                 (me.options & PTL_ME_MANAGE_LOCAL) != 0) {
-                assert(hdr->length + entry->local_offset <= mlength);
-                if (mlength > 0) {
+                if (fragment_mlength != msg_mlength) {
+                    fprintf(stderr, "multi-fragment (oversize) messages do not work safely with locally managed offsets\n");
+                    abort();
+                }
+                assert(hdr->length + entry->local_offset <= fragment_mlength);
+                if (fragment_mlength > 0) {
                     ++(entry->messages);        // safe because the PT is locked
                     report_this_start =
                         ((char *)me.start) + entry->local_offset;
-                    entry->local_offset += mlength;
+                    effective_start = (char*)report_this_start + (msg_mlength - hdr->src_data.remaining);
+                    entry->local_offset += fragment_mlength;
                 }
             }
-            PtlInternalPerformDelivery(hdr->type, report_this_start,
-                                       hdr->data, mlength, &hdr->info);
-            PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
-                                          me.options, mlength,
-                                          (uintptr_t) report_this_start,
-                                          PRIORITY, entry, hdr,
-                                          entry->me_handle.a);
-            if (entry->unlinked == 1) {
-                if (PtlInternalMarkMEReusable(entry->me_handle.a) != PTL_OK) {
-                    fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
-                    abort();
+            if (fragment_mlength > 0) {
+                PtlInternalPerformDelivery(hdr->type, effective_start,
+                        hdr->data, fragment_mlength, &hdr->info);
+            }
+            if (need_more_data == 0) {
+                PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
+                        me.options, msg_mlength,
+                        (uintptr_t) report_this_start,
+                        PRIORITY, entry, hdr,
+                        entry->me_handle.a);
+                if (entry->unlinked == 1) {
+                    if (PtlInternalMarkMEReusable(entry->me_handle.a) != PTL_OK) {
+                        fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
+                        abort();
+                    }
+                    PtlInternalValidateMEPT(t);
                 }
-                PtlInternalValidateMEPT(t);
             }
         } else {
+            if (fragment_mlength > msg_mlength) {
+                fprintf(stderr, "Sending oversize messages into the overflow list doesn't work\n");
+                abort();
+            }
             if (hdr->type == HDR_TYPE_GET) {
                 fprintf(stderr, "Sending a PtlGet to the overflow list doesn't work.\n");
                 abort();
             }
             report_this_start =
                 PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
-                                                   me.options, mlength, hdr);
+                                                   me.options, fragment_mlength, hdr);
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
