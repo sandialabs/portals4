@@ -42,33 +42,6 @@ typedef union {
 } eq_off_t;
 
 typedef struct {
-} ptl_internal_target_event_t;  // grand total: 56 bytes
-
-typedef struct {
-    ptl_match_bits_t match_bits;        // 8 bytes
-    void *start;                // 8 bytes (16)
-    void *user_ptr;             // 8 bytes (24)
-    ptl_hdr_data_t hdr_data;    // 8 bytes (32)
-    uint32_t rlength;           // 4 bytes (36)
-    uint32_t mlength;           // 4 bytes (40)
-    union {
-        uint32_t rank;
-        struct {
-            uint16_t nid;
-            uint16_t pid;
-        } phys;
-    } initiator;                // 4 bytes (44)
-    uint16_t uid;               // 2 bytes (46)
-    uint16_t jid;               // 2 bytes (48)
-    uint64_t remote_offset:40;  // 5 bytes (53)
-    uint8_t pt_index:5;
-    uint8_t ni_fail_type:2;
-    uint8_t atomic_operation:5;
-    uint8_t atomic_type:4;
-    uint8_t type;
-} ptl_internal_event_t;
-
-typedef struct {
     ptl_internal_event_t *ring;
     uint32_t size;
     volatile eq_off_t head, leading_tail, lagging_tail;
@@ -477,7 +450,7 @@ int API_FUNC PtlEQPoll(
 
 void INTERNAL PtlInternalEQPush(
     ptl_handle_eq_t eq_handle,
-    ptl_event_t * event)
+    ptl_internal_event_t * event)
 {
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
@@ -551,6 +524,38 @@ void INTERNAL PtlInternalEQPush(
             eq->ring[writeidx.s.offset].ni_fail_type = event->ni_fail_type;
             break;
     }
+    // now, wait for our neighbor to finish
+    while (eq->lagging_tail.u != writeidx.u) ;
+    // now, update the lagging_tail
+    eq->lagging_tail = newidx;
+}
+
+void PtlInternalEQPushESEND(
+    const ptl_handle_eq_t eq_handle,
+    const uint32_t length,
+    const uint64_t roffset,
+    void * const user_ptr)
+{
+    const ptl_internal_handle_converter_t eqh = { eq_handle };
+    ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    const uint32_t mask = eq->size - 1;
+    eq_off_t writeidx, curidx, newidx;
+
+    // first, get a location from the leading_tail
+    curidx = eq->leading_tail;
+    do {
+        writeidx = curidx;
+        newidx.s.sequence = (uint16_t) (writeidx.s.sequence + 23);
+        newidx.s.offset = (uint16_t) ((writeidx.s.offset + 1) & mask);
+    } while ((curidx.u =
+              PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
+                                     newidx.u)) != writeidx.u);
+    // at this point, we have a writeidx offset to fill
+    eq->ring[writeidx.s.offset].type = PTL_EVENT_SEND;
+    eq->ring[writeidx.s.offset].mlength = length;
+    eq->ring[writeidx.s.offset].remote_offset = roffset;
+    eq->ring[writeidx.s.offset].user_ptr = user_ptr;
+    eq->ring[writeidx.s.offset].ni_fail_type = PTL_NI_OK;
     // now, wait for our neighbor to finish
     while (eq->lagging_tail.u != writeidx.u) ;
     // now, update the lagging_tail
