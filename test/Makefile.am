@@ -18,7 +18,9 @@ TESTS = test_init \
 	test_ME_swap \
 	test_event \
 	test_LE_oversize_get \
-	test_ME_oversize_get
+	test_ME_oversize_get \
+	test_LE_oversize_put \
+	test_ME_oversize_put
 BENCHMARKS =
 
 INCLUDES = -I$(top_srcdir)/include
@@ -92,3 +94,11 @@ test_LE_oversize_get_DEPENDENCIES = $(PORTALSLIB)
 test_ME_oversize_get_SOURCES = test_oversize_get.c
 test_ME_oversize_get_CPPFLAGS = -DINTERFACE=1
 test_ME_oversize_get_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_oversize_put_SOURCES = test_oversize_put.c
+test_LE_oversize_put_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_put_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_oversize_put_SOURCES = test_oversize_put.c
+test_ME_oversize_put_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_put_DEPENDENCIES = $(PORTALSLIB)

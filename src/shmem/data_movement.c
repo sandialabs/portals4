@@ -63,26 +63,64 @@ static void PtlInternalHandleAck(
             md_handle = hdr->src_data.type.put.md_handle.a;
             mdptr = PtlInternalMDFetch(md_handle);
             if (hdr->src_data.moredata) {
+                /* we only sent partial data; need to refill the fragment and toss it back */
                 size_t payload =
                     PtlInternalFragmentSize(hdr) -
                     sizeof(ptl_internal_header_t);
+                /* update the value of remaining... */
                 if (payload > hdr->src_data.remaining) {
-                    payload = hdr->src_data.remaining;
+                    hdr->src_data.remaining = 0;
+                } else {
+                    hdr->src_data.remaining -= payload;
                 }
-                memcpy(hdr->data, hdr->src_data.moredata, payload);
-                hdr->src_data.moredata += payload;
-                hdr->src_data.remaining -= payload;
-                switch (hdr->ni) {
-                    case 0:
-                    case 1:           // Logical
-                        PtlInternalFragmentToss(hdr,
-                                                hdr->target_id.rank);
-                        break;
-                    case 2:
-                    case 3:           // Physical
-                        PtlInternalFragmentToss(hdr,
-                                                hdr->target_id.phys.pid);
-                        break;
+                if (hdr->src_data.remaining > 0) {
+                    /* there are more fragments to go */
+                    if (hdr->src_data.remaining < payload) {
+                        /* this will be the last fragment */
+                        payload = hdr->src_data.remaining;
+                    }
+                    ack_printf("refilling with %i data\n", (int)payload);
+                    memcpy(hdr->data, hdr->src_data.moredata, payload);
+                    hdr->src_data.moredata += payload;
+                    if (hdr->src_data.remaining == payload) {
+                        /* this will be the last fragment */
+                        /* announce that we're done with the send-buffer */
+                        const ptl_handle_eq_t eqh = mdptr->eq_handle;
+                        const ptl_handle_ct_t cth = mdptr->ct_handle;
+                        const unsigned int options = mdptr->options;
+                        ack_printf("announce that we're done with the send-buffer\n");
+                        PtlInternalMDCleared(md_handle);
+                        if (options & PTL_MD_EVENT_CT_SEND) {
+                            if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
+                                ptl_ct_event_t cte = { 1, 0 };
+                                PtlCTInc(cth, cte);
+                            } else {
+                                ptl_ct_event_t cte = { hdr->length, 0 };
+                                PtlCTInc(cth, cte);
+                            }
+                        }
+                        if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                            ptl_event_t e;
+                            e.type = PTL_EVENT_SEND;
+                            e.mlength = hdr->length;
+                            e.remote_offset = hdr->src_data.type.put.local_offset;
+                            e.user_ptr = hdr->user_ptr;
+                            e.ni_fail_type = PTL_NI_OK;
+                            PtlInternalEQPush(eqh, &e);
+                        }
+                    }
+                    switch (hdr->ni) {
+                        case 0:
+                        case 1:           // Logical
+                            PtlInternalFragmentToss(hdr,
+                                    hdr->target_id.rank);
+                            break;
+                        case 2:
+                        case 3:           // Physical
+                            PtlInternalFragmentToss(hdr,
+                                    hdr->target_id.phys.pid);
+                            break;
+                    }
                 }
                 return;
             }
@@ -94,7 +132,7 @@ static void PtlInternalHandleAck(
             if (hdr->src_data.moredata) {
                 /* this ack contains partial data */
                 size_t reply_size = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
-                if (hdr->src_data.remaining < reply_size) {
+                if (reply_size > hdr->src_data.remaining) {
                     reply_size = hdr->src_data.remaining;
                 }
                 ack_printf("replied with %i data\n", (int)reply_size);
@@ -531,6 +569,7 @@ int API_FUNC PtlPut(
     hdr->user_ptr = user_ptr;
     hdr->src_data.entry = NULL;
     hdr->src_data.type.put.md_handle.a = md_handle;
+    hdr->src_data.type.put.local_offset = local_offset;
     hdr->src_data.remaining = length;
     hdr->info.put.hdr_data = hdr_data;
     hdr->info.put.ack_req = ack_req;

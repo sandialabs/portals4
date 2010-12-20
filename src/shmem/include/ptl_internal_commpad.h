@@ -28,6 +28,7 @@ typedef struct {
     union {
         struct {
             ptl_internal_handle_converter_t md_handle;
+            ptl_size_t local_offset;
         } put;
         struct {
             ptl_internal_handle_converter_t md_handle;
