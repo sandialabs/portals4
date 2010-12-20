@@ -32,19 +32,42 @@ size_t LARGE_FRAG_PAYLOAD = 4080;
 size_t LARGE_FRAG_SIZE = 4096;
 size_t LARGE_FRAG_COUNT = 128;
 
-typedef struct {
-    void *next;                 // for NEMESIS_entry
+typedef struct fragment_hdr_s fragment_hdr_t;
+
+struct fragment_hdr_s {
+    fragment_hdr_t *next;                 // for NEMESIS_entry
     uint64_t size;
     char data[];
-} fragment_hdr_t;
+};
 
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
 static NEMESIS_blocking_queue *receiveQ = NULL;
 
+#ifdef PARANOID
+static uintptr_t small_bufstart, small_bufend;
+static uintptr_t large_bufstart, large_bufend;
+# define VALIDPTR(x,t) assert(((uintptr_t)(x)) >= t##_bufstart && ((uintptr_t)(x)) < t##_bufend)
+static void PtlInternalValidateFragmentLists(void)
+{
+    fragment_hdr_t *cursor = small_free_list;
+    while (cursor != NULL) {
+        VALIDPTR(cursor,small);
+        cursor = cursor->next;
+    }
+    cursor = large_free_list;
+    while (cursor != NULL) {
+        VALIDPTR(cursor,large);
+        cursor = cursor->next;
+    }
+}
+#else
+# define PtlInternalValidateFragmentLists()
+#endif
+
 void INTERNAL PtlInternalFragmentSetup(
     volatile char *buf)
-{
+{                                      /*{{{ */
     size_t i;
     fragment_hdr_t *fptr;
 
@@ -57,20 +80,30 @@ void INTERNAL PtlInternalFragmentSetup(
     //printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *) (buf + sizeof(NEMESIS_blocking_queue));
+#ifdef PARANOID
+    small_bufstart = (uintptr_t)fptr;
+#endif
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
         fptr->next = small_free_list;
-        fptr->size = SMALL_FRAG_SIZE;
+        fptr->size = SMALL_FRAG_PAYLOAD;
         small_free_list = fptr;
         fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
     }
     /* and finally, initialize the large fragment free-list */
+#ifdef PARANOID
+    large_bufstart = small_bufend = (uintptr_t)fptr;
+#endif
     for (i = 0; i < LARGE_FRAG_COUNT; ++i) {
         fptr->next = large_free_list;
-        fptr->size = LARGE_FRAG_SIZE;
+        fptr->size = LARGE_FRAG_PAYLOAD;
         large_free_list = fptr;
         fptr = (fragment_hdr_t *) (fptr->data + LARGE_FRAG_PAYLOAD);
     }
-}
+#ifdef PARANOID
+    large_bufend = (uintptr_t)fptr;
+    PtlInternalValidateFragmentLists();
+#endif
+}                                      /*}}} */
 
 /* this pulls a fragment off the free-list(s) big enough to hold the data.
  * Potential data sizes are:
@@ -82,6 +115,7 @@ void INTERNAL *PtlInternalFragmentFetch(
     size_t payload_size)
 {                                      /*{{{ */
     fragment_hdr_t *oldv, *newv, *retv;
+    PtlInternalValidateFragmentLists();
     if (payload_size <= SMALL_FRAG_PAYLOAD) {
         retv = small_free_list;
         do {
@@ -106,6 +140,7 @@ void INTERNAL *PtlInternalFragmentFetch(
         } while (retv != oldv || retv == NULL /* perhaps should yield? */ );
     }
     retv->next = NULL;
+    PtlInternalValidateFragmentLists();
     return retv->data;
 }                                      /*}}} */
 
@@ -143,7 +178,8 @@ void INTERNAL PtlInternalFragmentFree(
     fragment_hdr_t *frag = (fragment_hdr_t *) (((uint64_t *) data) - 2);
     assert(frag->next == NULL);
     assert((uintptr_t) frag > (uintptr_t) comm_pad);
-    if (frag->size == SMALL_FRAG_SIZE) {
+    PtlInternalValidateFragmentLists();
+    if (frag->size == SMALL_FRAG_PAYLOAD) {
         void *oldv, *newv, *tmpv;
         tmpv = small_free_list;
         do {
@@ -151,7 +187,7 @@ void INTERNAL PtlInternalFragmentFree(
             newv = frag;
             tmpv = PtlInternalAtomicCasPtr(&small_free_list, oldv, newv);
         } while (tmpv != oldv);
-    } else if (frag->size == LARGE_FRAG_SIZE) {
+    } else if (frag->size == LARGE_FRAG_PAYLOAD) {
         void *oldv, *newv, *tmpv;
         tmpv = large_free_list;
         do {
@@ -163,6 +199,7 @@ void INTERNAL PtlInternalFragmentFree(
         abort();
         *(int *)0 = 0;
     }
+    PtlInternalValidateFragmentLists();
 }                                      /*}}} */
 
 /* vim:set expandtab: */
