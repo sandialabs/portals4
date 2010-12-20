@@ -59,7 +59,7 @@ int main(
     ptl_process_t myself;
     ptl_pt_index_t logical_pt_index;
     ptl_process_t *amapping;
-    unsigned char value[BUFSIZE], readval[BUFSIZE];
+    unsigned char *value, *readval;
     ENTRY_T value_e;
     HANDLE_T value_e_handle;
     ptl_md_t read_md;
@@ -72,6 +72,12 @@ int main(
     num_procs = runtime_get_size();
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
+    value = malloc(sizeof(unsigned char) * BUFSIZE);
+    readval = malloc(sizeof(unsigned char) * BUFSIZE);
+
+    assert(amapping);
+    assert(value);
+    assert(readval);
 
     CHECK_RETURNVAL(PtlNIInit
                     (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
