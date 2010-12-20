@@ -100,13 +100,7 @@ static void PtlInternalHandleAck(
                             }
                         }
                         if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-                            ptl_event_t e;
-                            e.type = PTL_EVENT_SEND;
-                            e.mlength = hdr->length;
-                            e.remote_offset = hdr->src_data.type.put.local_offset;
-                            e.user_ptr = hdr->user_ptr;
-                            e.ni_fail_type = PTL_NI_OK;
-                            PtlInternalEQPush(eqh, &e);
+                            PtlInternalEQPushESEND(eqh, hdr->length, hdr->src_data.type.put.local_offset, hdr->user_ptr);
                         }
                     }
                     switch (hdr->ni) {
@@ -269,7 +263,7 @@ static void PtlInternalHandleAck(
                 if (md_eq != PTL_EQ_NONE &&
                     (md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0 &&
                     acktype > 1) {
-                    ptl_event_t e;
+                    ptl_internal_event_t e;
                     switch (hdr->type) {
                         case HDR_TYPE_PUT:
                             e.type = PTL_EVENT_ACK;
@@ -323,7 +317,7 @@ static void PtlInternalHandleAck(
                     }
                 }
                 if (md_eq != PTL_EQ_NONE) {
-                    ptl_event_t e;
+                    ptl_internal_event_t e;
                     e.type = PTL_EVENT_ACK;
                     e.mlength = hdr->length;
                     e.remote_offset = hdr->dest_offset;
@@ -632,13 +626,7 @@ int API_FUNC PtlPut(
         }
         if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE)
             == 0) {
-            ptl_event_t e;
-            e.type = PTL_EVENT_SEND;
-            e.mlength = length;
-            e.remote_offset = local_offset;
-            e.user_ptr = user_ptr;
-            e.ni_fail_type = PTL_NI_OK;
-            PtlInternalEQPush(eqh, &e);
+            PtlInternalEQPushESEND(eqh, length, local_offset, user_ptr);
         }
     }
     PtlInternalPAPIDoneC(PTL_PUT, 2);
@@ -906,13 +894,7 @@ int API_FUNC PtlAtomic(
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-        ptl_event_t e;
-        e.type = PTL_EVENT_SEND;
-        e.mlength = length;
-        e.remote_offset = local_offset;
-        e.user_ptr = user_ptr;
-        e.ni_fail_type = PTL_NI_OK;
-        PtlInternalEQPush(mdptr->eq_handle, &e);
+        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_offset, user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
@@ -1105,13 +1087,7 @@ int API_FUNC PtlFetchAtomic(
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-        ptl_event_t e;
-        e.type = PTL_EVENT_SEND;
-        e.mlength = length;
-        e.remote_offset = local_put_offset;
-        e.user_ptr = user_ptr;
-        e.ni_fail_type = PTL_NI_OK;
-        PtlInternalEQPush(mdptr->eq_handle, &e);
+        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset, user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
@@ -1320,13 +1296,7 @@ int API_FUNC PtlSwap(
         }
         if (mdptr->eq_handle != PTL_EQ_NONE &&
             (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-            ptl_event_t e;
-            e.type = PTL_EVENT_SEND;
-            e.mlength = length;
-            e.remote_offset = local_put_offset;
-            e.user_ptr = user_ptr;
-            e.ni_fail_type = PTL_NI_OK;
-            PtlInternalEQPush(mdptr->eq_handle, &e);
+            PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset, user_ptr);
         }
     }
     return PTL_OK;

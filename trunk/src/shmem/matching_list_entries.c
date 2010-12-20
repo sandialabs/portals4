@@ -237,7 +237,7 @@ static void PtlInternalAnnounceMEDelivery(
     if (eq_handle != PTL_EQ_NONE &&
         (options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE))
         == 0) {
-        ptl_event_t e;
+        ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
         if (foundin == OVERFLOW) {
             switch (e.type) {
@@ -547,7 +547,7 @@ int API_FUNC PtlMEAppend(
                          * like it was linked and announce the unlink */
                         if (tEQ != PTL_EQ_NONE &&
                             (me->options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
-                            ptl_event_t e;
+                            ptl_internal_event_t e;
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
                             e.type = PTL_EVENT_AUTO_UNLINK;
                             e.start = (char *)me->start + cur->hdr.dest_offset;
@@ -664,7 +664,7 @@ int API_FUNC PtlMEAppend(
                         }
                         // notify
                         if (t->EQ != PTL_EQ_NONE) {
-                            ptl_event_t e;
+                            ptl_internal_event_t e;
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
                                                      user_ptr);
                             e.type = PTL_EVENT_PROBE;
@@ -1011,7 +1011,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             if (tEQ != PTL_EQ_NONE &&
                 (me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
-                ptl_event_t e;
+                ptl_internal_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type = PTL_EVENT_AUTO_UNLINK;
                 e.start = (char *)me.start + hdr->dest_offset;
@@ -1146,7 +1146,7 @@ check_lengths:
 #endif
     // post dropped message event
     if (tEQ != PTL_EQ_NONE) {
-        ptl_event_t e;
+        ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
         e.type = PTL_EVENT_DROPPED;
         e.start = NULL;

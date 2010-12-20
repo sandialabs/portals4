@@ -422,7 +422,7 @@ int API_FUNC PtlLEAppend(
                         }
                         // notify
                         if (t->EQ != PTL_EQ_NONE) {
-                            ptl_event_t e;
+                            ptl_internal_event_t e;
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
                                                      user_ptr);
                             e.type = PTL_EVENT_PROBE;
@@ -650,7 +650,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             ptl_assert(pthread_mutex_unlock(&t->lock), 0);
             if (tEQ != PTL_EQ_NONE &&
                 (le.options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
-                ptl_event_t e;
+                ptl_internal_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type = PTL_EVENT_AUTO_UNLINK;
                 e.start = (char *)le.start + hdr->dest_offset;
@@ -764,7 +764,7 @@ check_lengths:
 #endif
     // post dropped message event
     if (tEQ != PTL_EQ_NONE) {
-        ptl_event_t e;
+        ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
         e.type = PTL_EVENT_DROPPED;
         e.start = NULL;
@@ -844,7 +844,7 @@ static void PtlInternalAnnounceLEDelivery(
     if (eq_handle != PTL_EQ_NONE &&
         (options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))
         == 0) {
-        ptl_event_t e;
+        ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
         if (overflow) {
             switch (type) {
