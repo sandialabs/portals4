@@ -15,7 +15,7 @@
 #include <limits.h>                    /* for UINT_MAX */
 #include <string.h>                    /* for memset() */
 
-#ifdef PARANOID
+#if defined(PARANOID) || defined(LOUD_DROPS)
 # include <stdio.h>
 #endif
 
