@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>                    /* for getenv() */
 
+#include "ptl_internal_commpad.h"
+
 static int verbose_error_flag = 0;
 
 static void VERBOSE_ERROR(
@@ -24,6 +26,7 @@ static void VERBOSE_ERROR(
           print_error:
         {
             va_list ap;
+            printf("PORTALS4-> (%lu) ERROR: ", (unsigned long)proc_number);
             va_start(ap, format);
             vprintf(format, ap);
             fflush(stdout);
