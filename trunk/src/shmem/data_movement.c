@@ -43,8 +43,6 @@ static pthread_t catcher;
 #define ack_printf(format,...)
 #endif
 
-#define TERMINATION_HDR_VALUE ((void*)(sizeof(uint64_t)*2+1))
-
 static void PtlInternalHandleAck(
     ptl_internal_header_t * restrict hdr)
 {                                      /*{{{ */
@@ -103,6 +101,7 @@ static void PtlInternalHandleAck(
                             PtlInternalEQPushESEND(eqh, hdr->length, hdr->src_data.type.put.local_offset, hdr->user_ptr);
                         }
                     }
+                    hdr->src = proc_number;
                     switch (hdr->ni) {
                         case 0:
                         case 1:           // Logical
@@ -115,8 +114,8 @@ static void PtlInternalHandleAck(
                                     hdr->target_id.phys.pid);
                             break;
                     }
+                    return; // do not free fragment, because we just sent it
                 }
-                return;
             }
             break;
         case HDR_TYPE_GET:
@@ -144,7 +143,7 @@ static void PtlInternalHandleAck(
                             PtlInternalFragmentToss(hdr, hdr->target_id.phys.pid);
                             break;
                     }
-                    return;
+                    return; // do not free fragment, because we just sent it
                 }
             } else {
                 /* pull the data out of the reply */
