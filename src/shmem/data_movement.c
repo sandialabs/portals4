@@ -1233,6 +1233,7 @@ int API_FUNC PtlSwap(
     hdr->length = length;
     hdr->user_ptr = user_ptr;
     hdr->src_data.entry = NULL;
+    hdr->src_data.remaining = length;
     hdr->src_data.type.swap.get_md_handle.a = get_md_handle;
     hdr->src_data.type.swap.local_get_offset = local_get_offset;
     hdr->src_data.type.swap.put_md_handle.a = put_md_handle;
