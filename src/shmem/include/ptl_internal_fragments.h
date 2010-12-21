@@ -7,6 +7,7 @@ extern size_t SMALL_FRAG_COUNT;
 extern size_t LARGE_FRAG_SIZE;
 extern size_t LARGE_FRAG_PAYLOAD;
 extern size_t LARGE_FRAG_COUNT;
+extern void * TERMINATION_HDR_VALUE;
 
 void PtlInternalFragmentSetup(
     volatile char *buf);
