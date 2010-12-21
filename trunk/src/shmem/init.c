@@ -104,21 +104,6 @@ int API_FUNC PtlInit(
 
         comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));  // the one extra is for the collator
 
-        memset(&nit, 0, sizeof(ptl_internal_nit_t));
-        for (int ni = 0; ni < 4; ++ni) {
-            nit_limits[ni].max_list_size = 16384;  // Arbitrary
-            nit_limits[ni].max_pt_index = 63;  // Minimum required by spec
-            nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;  // Maybe this should be max_pt_index+1 instead of 4
-            nit_limits[ni].max_overflow_entries = 128;     // Arbitrary
-            nit_limits[ni].max_mds = 128;      // Arbitrary
-            nit_limits[ni].max_cts = 128;      // Arbitrary
-            nit_limits[ni].max_eqs = 128;      // Arbitrary
-            nit_limits[ni].max_iovecs = 0;     // XXX: ???
-            nit_limits[ni].max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
-            nit_limits[ni].max_atomic_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
-            nit_limits[ni].max_ordered_size = SMALL_FRAG_SIZE - sizeof(void *) - sizeof(uint64_t);       // single payload
-        }
-
         /* Open the communication pad */
         assert(comm_pad == NULL);
         shm_fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
@@ -144,6 +129,21 @@ int API_FUNC PtlInit(
         /* Locate and initialize my fragments memory (beginning with a pointer to headers) */
         PtlInternalFragmentSetup((comm_pad + firstpagesize +
                                   (per_proc_comm_buf_size * proc_number)));
+
+        memset(&nit, 0, sizeof(ptl_internal_nit_t));
+        for (int ni = 0; ni < 4; ++ni) {
+            nit_limits[ni].max_list_size = 16384;  // Arbitrary
+            nit_limits[ni].max_pt_index = 63;  // Minimum required by spec
+            nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;  // Maybe this should be max_pt_index+1 instead of 4
+            nit_limits[ni].max_overflow_entries = 128;     // Arbitrary
+            nit_limits[ni].max_mds = 128;      // Arbitrary
+            nit_limits[ni].max_cts = 128;      // Arbitrary
+            nit_limits[ni].max_eqs = 128;      // Arbitrary
+            nit_limits[ni].max_iovecs = 0;     // XXX: ???
+            nit_limits[ni].max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
+            nit_limits[ni].max_atomic_size = SMALL_FRAG_PAYLOAD;       // single payload
+            nit_limits[ni].max_ordered_size = SMALL_FRAG_PAYLOAD;       // single payload
+        }
 #ifdef HAVE_LIBPAPI
         PtlInternalPAPIInit();
 #endif
