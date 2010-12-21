@@ -86,7 +86,7 @@ int main(
     int err = 0;
     pthread_t collator_thread;
     int ct_spawned = 1;
-    size_t small_frag_size = 128;
+    size_t small_frag_size = 256;
     size_t small_frag_count = 512;
     size_t large_frag_size = 4096;
     size_t large_frag_count = 128;
@@ -577,7 +577,7 @@ void print_usage(
     printf
         ("\t-l [large_fragment_size]  The size in bytes of large message buffers (default: 4k).\n");
     printf
-        ("\t-s [small_fragment_size]  The size in bytes of small message buffers (default: 128)\n");
+        ("\t-s [small_fragment_size]  The size in bytes of small message buffers (default: 256)\n");
     printf("\t-h                        Print this help.\n");
     printf
         ("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
