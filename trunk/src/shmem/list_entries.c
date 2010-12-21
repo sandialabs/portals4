@@ -49,10 +49,10 @@ static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 /* Static functions */
 static void PtlInternalPerformDelivery(
     const unsigned char type,
-    void *const restrict src,
-    void *const restrict dest,
+    void *const restrict local_data,
+    void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_header_t * hdr);
+    ptl_internal_typeinfo_t *const restrict info);
 static void PtlInternalAnnounceLEDelivery(
     const ptl_handle_eq_t eq_handle,
     const ptl_handle_ct_t ct_handle,
@@ -291,7 +291,7 @@ int API_FUNC PtlLEAppend(
                                                        (char *)le->start +
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
-                                                       mlength, &(cur->hdr));
+                                                       mlength, &(cur->hdr.info));
                             // notify
                             if (t->EQ != PTL_EQ_NONE ||
                                 le->ct_handle != PTL_CT_NONE) {
@@ -707,16 +707,11 @@ check_lengths:
          * `------------------------------> le.start
          */
         void *report_this_start = (char *)le.start + hdr->dest_offset;
-        void *effective_start;
-        if (hdr->src_data.moredata) {
-            effective_start = (char *)le.start + hdr->dest_offset + (msg_mlength - hdr->src_data.remaining);
-        } else {
-            effective_start = report_this_start;
-        }
+        void *effective_start = (char *)le.start + hdr->dest_offset + (msg_mlength - hdr->src_data.remaining);
         if (foundin == PRIORITY) {
             if (fragment_mlength > 0) {
                 PtlInternalPerformDelivery(hdr->type, effective_start,
-                                           hdr->data, fragment_mlength, hdr);
+                                           hdr->data, fragment_mlength, &hdr->info);
             }
             if (need_more_data == 0) {
                 PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
@@ -779,37 +774,38 @@ check_lengths:
 
 static void PtlInternalPerformDelivery(
     const unsigned char type,
-    void *const restrict src,
-    void *const restrict dest,
+    void *const restrict local_data,
+    void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_header_t * hdr)
+    ptl_internal_typeinfo_t * restrict info)
 {                                      /*{{{ */
     switch (type) {
         case HDR_TYPE_PUT:
-            memcpy(src, dest, nbytes);
+            memcpy(local_data, message_data, nbytes);
             break;
         case HDR_TYPE_ATOMIC:
-            PtlInternalPerformAtomic(src, dest, nbytes,
-                                     hdr->info.atomic.operation,
-                                     hdr->info.atomic.datatype);
+            PtlInternalPerformAtomic(local_data, message_data, nbytes,
+                                     info->atomic.operation,
+                                     info->atomic.datatype);
             break;
         case HDR_TYPE_FETCHATOMIC:
-            PtlInternalPerformAtomic(src, dest, nbytes,
-                                     hdr->info.fetchatomic.operation,
-                                     hdr->info.fetchatomic.datatype);
+            PtlInternalPerformAtomic(local_data, message_data, nbytes,
+                                     info->fetchatomic.operation,
+                                     info->fetchatomic.datatype);
             break;
         case HDR_TYPE_GET:
-            memcpy(dest, src, nbytes);
+            memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:
-            PtlInternalPerformAtomicArg(src, ((char *)dest) + 8,
-                                        *(uint64_t *) hdr->data, nbytes,
-                                        hdr->info.swap.operation,
-                                        hdr->info.swap.datatype);
+            PtlInternalPerformAtomicArg(local_data,
+                                        ((char *)message_data) + 8,
+                                        *(uint64_t *) message_data, nbytes,
+                                        info->swap.operation,
+                                        info->swap.datatype);
             break;
         default:
             UNREACHABLE;
-            *(int *)0 = 0;
+            abort();
     }
 }                                      /*}}} */
 
