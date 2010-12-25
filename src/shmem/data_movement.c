@@ -52,10 +52,11 @@ static void PtlInternalHandleAck(
     ptl_handle_ct_t md_ct = PTL_CT_NONE;
     unsigned int md_opts = 0;
     int acktype;
+    int truncated = hdr->type & HDR_TYPE_TRUNCFLAG;
 
     ack_printf("got an ACK (%p)\n", hdr);
     /* first, figure out what to do with the ack */
-    switch (hdr->type) {
+    switch (hdr->type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
             ack_printf("it's an ACK for a PUT\n");
             md_handle = hdr->src_data.type.put.md_handle.a;
@@ -115,6 +116,25 @@ static void PtlInternalHandleAck(
                             break;
                     }
                     return; // do not free fragment, because we just sent it
+                } else if (truncated) {
+                    /* announce that we're done with the send-buffer */
+                    const ptl_handle_eq_t eqh = mdptr->eq_handle;
+                    const ptl_handle_ct_t cth = mdptr->ct_handle;
+                    const unsigned int options = mdptr->options;
+                    ack_printf("announce that we're done with the send-buffer\n");
+                    PtlInternalMDCleared(md_handle);
+                    if (options & PTL_MD_EVENT_CT_SEND) {
+                        if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
+                            ptl_ct_event_t cte = { 1, 0 };
+                            PtlCTInc(cth, cte);
+                        } else {
+                            ptl_ct_event_t cte = { hdr->length, 0 };
+                            PtlCTInc(cth, cte);
+                        }
+                    }
+                    if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                        PtlInternalEQPushESEND(eqh, hdr->length, hdr->src_data.type.put.local_offset, hdr->user_ptr);
+                    }
                 }
             }
             break;
