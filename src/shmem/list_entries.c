@@ -107,7 +107,7 @@ void INTERNAL PtlInternalLENITeardown(
         e.initiator.phys.pid = hdr->src; \
         e.initiator.phys.nid = 0; \
     } \
-    switch (hdr->type) { \
+    switch (hdr->type & HDR_TYPE_BASICMASK) { \
         case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
             e.hdr_data = hdr->info.put.hdr_data; \
             break; \
@@ -603,7 +603,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 goto permission_violation;
             }
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
@@ -612,7 +612,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                     goto permission_violation;
                 }
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
@@ -672,6 +672,10 @@ check_lengths:
             } else {
                 msg_mlength = hdr->length;
             }
+            if (msg_mlength < hdr->length) {
+                hdr->src_data.remaining = msg_mlength;
+                hdr->type |= HDR_TYPE_TRUNCFLAG;
+            }
             if (max_payload >= msg_mlength) {
                 /* the entire operation fits into a single fragment */
                 fragment_mlength = msg_mlength;
@@ -720,7 +724,7 @@ check_lengths:
                                           entry->user_ptr, hdr);
             }
         } else {
-            if (fragment_mlength != msg_mlength) {
+            if (fragment_mlength != msg_mlength && le.length > 0) {
                 fprintf(stderr, "multi-fragment (oversize) messages into the overflow list doesn't work\n");
                 abort();
             }
@@ -733,7 +737,7 @@ check_lengths:
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
@@ -779,7 +783,7 @@ static void PtlInternalPerformDelivery(
     size_t nbytes,
     ptl_internal_typeinfo_t * restrict info)
 {                                      /*{{{ */
-    switch (type) {
+    switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
             break;

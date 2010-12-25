@@ -147,7 +147,7 @@ static void *PtlInternalPerformOverflowDelivery(
         e.initiator.phys.pid = hdr->src; \
         e.initiator.phys.nid = 0; \
     } \
-    switch (hdr->type) { \
+    switch (hdr->type & HDR_TYPE_BASICMASK) { \
         case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
             e.hdr_data = hdr->info.put.hdr_data; \
             break; \
@@ -871,7 +871,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 goto permission_violation;
             }
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
@@ -880,7 +880,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                     goto permission_violation;
                 }
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
@@ -966,6 +966,15 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             } else {
                 msg_mlength = hdr->length;
             }
+            if (msg_mlength < hdr->length) {
+                if ((me.options & PTL_ME_NO_TRUNCATE) != 0) {
+                    fprintf(stderr, "PORTALS4-> attempt to deliver a big message to a little ME with NO_TRUNCATE set\n");
+                    abort();
+                } else {
+                    hdr->src_data.remaining = msg_mlength;
+                    hdr->type |= HDR_TYPE_TRUNCFLAG;
+                }
+            }
             if (max_payload >= msg_mlength) {
                 /* the entire operation fits into a single fragment */
                 fragment_mlength = msg_mlength;
@@ -1007,7 +1016,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         if (foundin == PRIORITY) {
             if (hdr->type == HDR_TYPE_PUT &&
                 (me.options & PTL_ME_MANAGE_LOCAL) != 0) {
-                if (fragment_mlength != msg_mlength) {
+                if (fragment_mlength != msg_mlength && (me.options & PTL_ME_NO_TRUNCATE) == 0 && me.length > 0) {
                     fprintf(stderr,
                             "multi-fragment (oversize) messages do not work safely with locally managed offsets\n");
                     abort();
@@ -1062,7 +1071,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
-        switch (hdr->type) {
+        switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
@@ -1110,7 +1119,7 @@ static void PtlInternalPerformDelivery(
     size_t nbytes,
     ptl_internal_typeinfo_t * restrict info)
 {                                      /*{{{ */
-    switch (type) {
+    switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
             break;
