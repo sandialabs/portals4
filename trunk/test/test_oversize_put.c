@@ -134,7 +134,7 @@ int main(
         noFailures(value_e.ct_handle, num_procs, __LINE__);
         for (unsigned idx=0; idx<BUFSIZE; ++idx) {
             if (value[idx] != 61) {
-                fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n", idx, idx, readval[idx]);
+                fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n", idx, idx, value[idx]);
                 abort();
             }
         }
