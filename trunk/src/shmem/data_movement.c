@@ -140,6 +140,10 @@ static void PtlInternalHandleAck(
             break;
         case HDR_TYPE_GET:
             ack_printf("it's an ACK for a GET\n");
+            if (truncated) {
+                fprintf(stderr, "PORTALS4-> truncated GETs not yet supported\n");
+                abort();
+            }
             md_handle = hdr->src_data.type.get.md_handle.a;
             mdptr = PtlInternalMDFetch(md_handle);
             if (hdr->src_data.moredata) {
@@ -177,11 +181,19 @@ static void PtlInternalHandleAck(
             break;
         case HDR_TYPE_ATOMIC:
             ack_printf("it's an ACK for an ATOMIC\n");
+            if (truncated) {
+                fprintf(stderr, "PORTALS4-> truncated ATOMICs not yet supported\n");
+                abort();
+            }
             md_handle = hdr->src_data.type.atomic.md_handle.a;
             mdptr = PtlInternalMDFetch(md_handle);
             break;
         case HDR_TYPE_FETCHATOMIC:
             ack_printf("it's an ACK for a FETCHATOMIC\n");
+            if (truncated) {
+                fprintf(stderr, "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
+                abort();
+            }
             md_handle = hdr->src_data.type.fetchatomic.get_md_handle.a;
             if (hdr->src_data.type.fetchatomic.put_md_handle.a !=
                 PTL_INVALID_HANDLE &&
@@ -200,6 +212,10 @@ static void PtlInternalHandleAck(
             break;
         case HDR_TYPE_SWAP:
             ack_printf("it's an ACK for a SWAP\n");
+            if (truncated) {
+                fprintf(stderr, "PORTALS4-> truncated SWAPs not yet supported\n");
+                abort();
+            }
             md_handle = hdr->src_data.type.swap.get_md_handle.a;
             if (hdr->src_data.type.swap.put_md_handle.a != PTL_INVALID_HANDLE &&
                 hdr->src_data.type.swap.put_md_handle.a != md_handle) {
