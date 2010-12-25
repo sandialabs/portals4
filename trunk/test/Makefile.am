@@ -17,6 +17,8 @@ TESTS = test_init \
 	test_LE_swap \
 	test_ME_swap \
 	test_event \
+	test_LE_put_truncate \
+	test_ME_put_truncate \
 	test_LE_oversize_get \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
@@ -102,3 +104,11 @@ test_LE_oversize_put_DEPENDENCIES = $(PORTALSLIB)
 test_ME_oversize_put_SOURCES = test_oversize_put.c
 test_ME_oversize_put_CPPFLAGS = -DINTERFACE=1
 test_ME_oversize_put_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_put_truncate_SOURCES = test_put_truncate.c
+test_LE_put_truncate_CPPFLAGS = -DINTERFACE=0
+test_LE_put_truncate_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_put_truncate_SOURCES = test_put_truncate.c
+test_ME_put_truncate_CPPFLAGS = -DINTERFACE=1
+test_ME_put_truncate_DEPENDENCIES = $(PORTALSLIB)
