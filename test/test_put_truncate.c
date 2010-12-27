@@ -115,7 +115,7 @@ int main(
     memset(readval, 61, BUFSIZE);
     write_md.start = readval;
     write_md.length = BUFSIZE;
-    write_md.options = PTL_MD_EVENT_CT_SEND;
+    write_md.options = PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_BYTES;
     write_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
@@ -129,6 +129,7 @@ int main(
                          logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
+        assert(ctc.success == BUFSIZE/2);
     }
     if (myself.rank == 0) {
         noFailures(value_e.ct_handle, num_procs, __LINE__);
