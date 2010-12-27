@@ -32,13 +32,14 @@ const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 #define CT_FREE     0
 #define CT_BUSY     1
 #define CT_READY    2
+#define CT_ERR_VAL  0xffffffffffffffffULL
 
 volatile uint64_t global_generation = 0;
 
 static ptl_ct_event_t *ct_events[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
 static const ptl_ct_event_t CTERR =
-    { 0xffffffffffffffffULL, 0xffffffffffffffffULL };
+    { CT_ERR_VAL, CT_ERR_VAL };
 
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)       (a.success == b.success && a.failure == b.failure)
@@ -332,6 +333,7 @@ int API_FUNC PtlCTWait(
             PtlInternalAtomicInc(rc, -1);
             return PTL_OK;
         }
+        while (tmpread.success == cte->success && tmpread.failure == cte->failure) ;
     } while (1);
 }
 
