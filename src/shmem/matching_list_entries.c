@@ -971,6 +971,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                     fprintf(stderr, "PORTALS4-> attempt to deliver a big message to a little ME with NO_TRUNCATE set\n");
                     abort();
                 } else {
+                    hdr->length = msg_mlength;
                     hdr->src_data.remaining = msg_mlength;
                     hdr->type |= HDR_TYPE_TRUNCFLAG;
                 }

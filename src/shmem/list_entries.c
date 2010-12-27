@@ -673,6 +673,7 @@ check_lengths:
                 msg_mlength = hdr->length;
             }
             if (msg_mlength < hdr->length) {
+                hdr->length = msg_mlength;
                 hdr->src_data.remaining = msg_mlength;
                 hdr->type |= HDR_TYPE_TRUNCFLAG;
             }
