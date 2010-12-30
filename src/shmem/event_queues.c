@@ -234,8 +234,17 @@ int API_FUNC PtlEQFree(
 #define ASSIGN_EVENT(e,ie,ni) do { \
     e->type = (ptl_event_kind_t)(ie.type); \
     switch (e->type) { \
-        case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: case PTL_EVENT_ATOMIC: \
-        case PTL_EVENT_ATOMIC_OVERFLOW: case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
+        case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
+            e->atomic_operation = (ptl_op_t) ie.atomic_operation; \
+            e->atomic_type = (ptl_datatype_t) ie.atomic_type; \
+        default: \
+            e->atomic_operation = 0; \
+            e->atomic_type = 0; \
+    } \
+    switch (e->type) { \
+        case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
+        case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: \
+        case PTL_EVENT_DROPPED: case PTL_EVENT_PT_DISABLED: \
         case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: case PTL_EVENT_PROBE: /* target */ \
             e->match_bits = ie.match_bits; \
             e->start = ie.start; \
@@ -256,8 +265,6 @@ int API_FUNC PtlEQFree(
             e->remote_offset = ie.remote_offset; \
             e->pt_index = ie.pt_index; \
             e->ni_fail_type = ie.ni_fail_type; \
-            e->atomic_operation = (ptl_op_t) ie.atomic_operation; \
-            e->atomic_type = (ptl_datatype_t) ie.atomic_type; \
             break; \
         case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
             e->mlength = ie.mlength; \
