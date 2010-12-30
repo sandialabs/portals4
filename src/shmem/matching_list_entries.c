@@ -1015,7 +1015,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             ((char *)me.start) + hdr->dest_offset + (msg_mlength -
                                                      hdr->src_data.remaining);
         if (foundin == PRIORITY) {
-            if (hdr->type == HDR_TYPE_PUT &&
+            if ((hdr->type & HDR_TYPE_BASICMASK) == HDR_TYPE_PUT &&
                 (me.options & PTL_ME_MANAGE_LOCAL) != 0) {
                 if (fragment_mlength != msg_mlength && (me.options & PTL_ME_NO_TRUNCATE) == 0 && me.length > 0) {
                     fprintf(stderr,
