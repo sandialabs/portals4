@@ -19,6 +19,8 @@ TESTS = test_init \
 	test_event \
 	test_LE_put_truncate \
 	test_ME_put_truncate \
+	test_LE_get_truncate \
+	test_ME_get_truncate \
 	test_LE_oversize_get \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
@@ -34,7 +36,7 @@ LDADD = $(PORTALSLIB)
 include benchmarks/rtt_latency/Makefile.inc
 include benchmarks/msg_rate/Makefile.inc
 
-EXTRA_DIST = numawrapper.sh
+EXTRA_DIST = numawrapper.sh testing.h
 EXTRA_PROGRAMS = $(BENCHMARKS)
 
 all: $(TESTS) $(BENCHMARKS)
@@ -112,3 +114,11 @@ test_LE_put_truncate_DEPENDENCIES = $(PORTALSLIB)
 test_ME_put_truncate_SOURCES = test_put_truncate.c
 test_ME_put_truncate_CPPFLAGS = -DINTERFACE=1
 test_ME_put_truncate_DEPENDENCIES = $(PORTALSLIB)
+
+test_LE_get_truncate_SOURCES = test_get_truncate.c
+test_LE_get_truncate_CPPFLAGS = -DINTERFACE=0
+test_LE_get_truncate_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_get_truncate_SOURCES = test_get_truncate.c
+test_ME_get_truncate_CPPFLAGS = -DINTERFACE=1
+test_ME_get_truncate_DEPENDENCIES = $(PORTALSLIB)
