@@ -134,7 +134,6 @@ int API_FUNC PtlPTFree(
             VERBOSE_ERROR("pt_index(%i) already free'd\n", pt_index);
             return PTL_ARG_INVALID;
         case PT_ENABLED:              // success!
-            VERBOSE_ERROR("pt_index(%i) being free'd\n", pt_index);
             return PTL_OK;
         case PT_DISABLED:             // OK, it was disabled, so...
             switch (PtlInternalAtomicCas32(&pt->status, PT_DISABLED, PT_FREE)) {
