@@ -18,7 +18,7 @@
     if (ct_data.failure != 0) { \
         fprintf(stderr, "ct_data reports failure!!!!!!! {%u, %u} line %u\n", \
                 (unsigned int)ct_data.success, (unsigned int)ct_data.failure, \
-                (unsigned int)line); \
+                (unsigned int)__LINE__); \
         abort(); \
     } \
 } while (0)
