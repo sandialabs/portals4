@@ -87,7 +87,8 @@ static void PtlInternalHandleAck(
                         const ptl_handle_eq_t eqh = mdptr->eq_handle;
                         const ptl_handle_ct_t cth = mdptr->ct_handle;
                         const unsigned int options = mdptr->options;
-                        ack_printf("announce that we're done with the send-buffer\n");
+                        ack_printf
+                            ("announce that we're done with the send-buffer\n");
                         PtlInternalMDCleared(md_handle);
                         if (options & PTL_MD_EVENT_CT_SEND) {
                             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -98,30 +99,34 @@ static void PtlInternalHandleAck(
                                 PtlCTInc(cth, cte);
                             }
                         }
-                        if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-                            PtlInternalEQPushESEND(eqh, hdr->length, hdr->src_data.type.put.local_offset, hdr->user_ptr);
+                        if (eqh != PTL_EQ_NONE &&
+                            (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                            PtlInternalEQPushESEND(eqh, hdr->length,
+                                                   hdr->src_data.type.put.
+                                                   local_offset,
+                                                   hdr->user_ptr);
                         }
                     }
                     hdr->src = proc_number;
                     switch (hdr->ni) {
                         case 0:
-                        case 1:           // Logical
-                            PtlInternalFragmentToss(hdr,
-                                    hdr->target_id.rank);
+                        case 1:       // Logical
+                            PtlInternalFragmentToss(hdr, hdr->target_id.rank);
                             break;
                         case 2:
-                        case 3:           // Physical
+                        case 3:       // Physical
                             PtlInternalFragmentToss(hdr,
-                                    hdr->target_id.phys.pid);
+                                                    hdr->target_id.phys.pid);
                             break;
                     }
-                    return; // do not free fragment, because we just sent it
+                    return;            // do not free fragment, because we just sent it
                 } else if (truncated) {
                     /* announce that we're done with the send-buffer */
                     const ptl_handle_eq_t eqh = mdptr->eq_handle;
                     const ptl_handle_ct_t cth = mdptr->ct_handle;
                     const unsigned int options = mdptr->options;
-                    ack_printf("announce that we're done with the send-buffer\n");
+                    ack_printf
+                        ("announce that we're done with the send-buffer\n");
                     PtlInternalMDCleared(md_handle);
                     if (options & PTL_MD_EVENT_CT_SEND) {
                         if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -132,23 +137,24 @@ static void PtlInternalHandleAck(
                             PtlCTInc(cth, cte);
                         }
                     }
-                    if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-                        PtlInternalEQPushESEND(eqh, hdr->length, hdr->src_data.type.put.local_offset, hdr->user_ptr);
+                    if (eqh != PTL_EQ_NONE &&
+                        (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                        PtlInternalEQPushESEND(eqh, hdr->length,
+                                               hdr->src_data.type.put.
+                                               local_offset, hdr->user_ptr);
                     }
                 }
             }
             break;
         case HDR_TYPE_GET:
             ack_printf("it's an ACK for a GET\n");
-            if (truncated) {
-                fprintf(stderr, "PORTALS4-> truncated GETs not yet supported\n");
-                abort();
-            }
             md_handle = hdr->src_data.type.get.md_handle.a;
             mdptr = PtlInternalMDFetch(md_handle);
             if (hdr->src_data.moredata) {
                 /* this ack contains partial data */
-                size_t reply_size = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+                size_t reply_size =
+                    PtlInternalFragmentSize(hdr) -
+                    sizeof(ptl_internal_header_t);
                 if (reply_size > hdr->src_data.remaining) {
                     reply_size = hdr->src_data.remaining;
                 }
@@ -160,29 +166,33 @@ static void PtlInternalHandleAck(
                 if (hdr->src_data.remaining > 0) {
                     hdr->src = proc_number;
                     switch (hdr->ni) {
-                        case 0: case 1: // Logical
+                        case 0:
+                        case 1:       // Logical
                             PtlInternalFragmentToss(hdr, hdr->target_id.rank);
                             break;
-                        case 2: case 3: // Physical
-                            PtlInternalFragmentToss(hdr, hdr->target_id.phys.pid);
+                        case 2:
+                        case 3:       // Physical
+                            PtlInternalFragmentToss(hdr,
+                                                    hdr->target_id.phys.pid);
                             break;
                     }
-                    return; // do not free fragment, because we just sent it
+                    return;            // do not free fragment, because we just sent it
                 }
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
                 if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
                     memcpy((uint8_t *) (mdptr->start) +
-                            hdr->src_data.type.get.local_offset, hdr->data,
-                            hdr->length);
+                           hdr->src_data.type.get.local_offset, hdr->data,
+                           hdr->length);
                 }
             }
             break;
         case HDR_TYPE_ATOMIC:
             ack_printf("it's an ACK for an ATOMIC\n");
             if (truncated) {
-                fprintf(stderr, "PORTALS4-> truncated ATOMICs not yet supported\n");
+                fprintf(stderr,
+                        "PORTALS4-> truncated ATOMICs not yet supported\n");
                 abort();
             }
             md_handle = hdr->src_data.type.atomic.md_handle.a;
@@ -191,34 +201,36 @@ static void PtlInternalHandleAck(
         case HDR_TYPE_FETCHATOMIC:
             ack_printf("it's an ACK for a FETCHATOMIC\n");
             if (truncated) {
-                fprintf(stderr, "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
+                fprintf(stderr,
+                        "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
                 abort();
             }
             md_handle = hdr->src_data.type.fetchatomic.get_md_handle.a;
             if (hdr->src_data.type.fetchatomic.put_md_handle.a !=
                 PTL_INVALID_HANDLE &&
                 hdr->src_data.type.fetchatomic.put_md_handle.a != md_handle) {
-                PtlInternalMDCleared(hdr->src_data.type.fetchatomic.
-                                     put_md_handle.a);
+                PtlInternalMDCleared(hdr->src_data.type.
+                                     fetchatomic.put_md_handle.a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
             ack_printf("replied with %i data\n", (int)hdr->length);
             if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
                 memcpy((uint8_t *) (mdptr->start) +
-                       hdr->src_data.type.fetchatomic.local_get_offset, hdr->data,
-                       hdr->length);
+                       hdr->src_data.type.fetchatomic.local_get_offset,
+                       hdr->data, hdr->length);
             }
             break;
         case HDR_TYPE_SWAP:
             ack_printf("it's an ACK for a SWAP\n");
             if (truncated) {
-                fprintf(stderr, "PORTALS4-> truncated SWAPs not yet supported\n");
+                fprintf(stderr,
+                        "PORTALS4-> truncated SWAPs not yet supported\n");
                 abort();
             }
             md_handle = hdr->src_data.type.swap.get_md_handle.a;
-            if (hdr->src_data.type.swap.put_md_handle.a != PTL_INVALID_HANDLE &&
-                hdr->src_data.type.swap.put_md_handle.a != md_handle) {
+            if (hdr->src_data.type.swap.put_md_handle.a != PTL_INVALID_HANDLE
+                && hdr->src_data.type.swap.put_md_handle.a != md_handle) {
                 PtlInternalMDCleared(hdr->src_data.type.swap.put_md_handle.a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
@@ -226,8 +238,8 @@ static void PtlInternalHandleAck(
             ack_printf("replied with %i data\n", (int)hdr->length);
             if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
                 memcpy((uint8_t *) (mdptr->start) +
-                       hdr->src_data.type.swap.local_get_offset, hdr->data + 8,
-                       hdr->length);
+                       hdr->src_data.type.swap.local_get_offset,
+                       hdr->data + 8, hdr->length);
             }
             break;
         default:                      // impossible
@@ -241,7 +253,7 @@ static void PtlInternalHandleAck(
         md_ct = mdptr->ct_handle;
         md_opts = mdptr->options;
     }
-    switch (hdr->type) {
+    switch (hdr->type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_GET:
         case HDR_TYPE_FETCHATOMIC:
         case HDR_TYPE_SWAP:
@@ -252,24 +264,26 @@ static void PtlInternalHandleAck(
     }
     /* determine desired acktype */
     acktype = 2;                       // any acktype
-    if (hdr->type == HDR_TYPE_PUT || hdr->type == HDR_TYPE_ATOMIC) {
-        ptl_ack_req_t ackreq;
-        if (hdr->type == HDR_TYPE_PUT) {
-            ackreq = hdr->info.put.ack_req;
-        } else {
-            ackreq = hdr->info.atomic.ack_req;
-        }
-        switch (ackreq) {
-            case PTL_ACK_REQ:
-                acktype = 2;
-                break;
-            case PTL_NO_ACK_REQ:
-                hdr->src = 0;
-                break;
-            case PTL_CT_ACK_REQ:
-            case PTL_OC_ACK_REQ:
-                acktype = 1;
-        }
+    switch (hdr->type & HDR_TYPE_BASICMASK) {
+            ptl_ack_req_t ackreq;
+        case HDR_TYPE_PUT:
+        case HDR_TYPE_ATOMIC:
+            if (hdr->type == HDR_TYPE_PUT) {
+                ackreq = hdr->info.put.ack_req;
+            } else {
+                ackreq = hdr->info.atomic.ack_req;
+            }
+            switch (ackreq) {
+                case PTL_ACK_REQ:
+                    acktype = 2;
+                    break;
+                case PTL_NO_ACK_REQ:
+                    hdr->src = 0;
+                    break;
+                case PTL_CT_ACK_REQ:
+                case PTL_OC_ACK_REQ:
+                    acktype = 1;
+            }
     }
     /* Report the ack */
     switch (hdr->src) {
@@ -394,13 +408,13 @@ static void *PtlInternalDMCatcher(
         dm_printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
         src = hdr->src;
 #ifdef PARANOID
-        switch(hdr->ni) {
-            case 0:                       // Logical
-            case 1:                       // Logical
+        switch (hdr->ni) {
+            case 0:                   // Logical
+            case 1:                   // Logical
                 assert(hdr->target_id.rank == proc_number);
                 break;
-            case 2: // Physical
-            case 3: // Physical
+            case 2:                   // Physical
+            case 3:                   // Physical
                 assert(hdr->target_id.phys.pid == proc_number);
                 break;
         }
@@ -721,7 +735,7 @@ int API_FUNC PtlGet(
 #endif
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
-    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_GET;
     hdr->ni = md.s.ni;
@@ -737,7 +751,8 @@ int API_FUNC PtlGet(
     hdr->src_data.type.get.local_offset = local_offset;
     hdr->src_data.entry = NULL;
     hdr->src_data.remaining = length;
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
+        length) {
         hdr->src_data.moredata = NULL;
     } else {
         hdr->src_data.moredata =
@@ -894,11 +909,13 @@ int API_FUNC PtlAtomic(
     hdr->src_data.remaining = length;
     /* step 3: load up the data */
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
+        length) {
         memcpy(hdr->data, dataptr, length);
         hdr->src_data.moredata = NULL;
     } else {
-        size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+        size_t payload =
+            PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
         memcpy(hdr->data, dataptr, payload);
         hdr->src_data.moredata = dataptr + payload;
     }
@@ -929,7 +946,8 @@ int API_FUNC PtlAtomic(
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_offset, user_ptr);
+        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_offset,
+                               user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
@@ -1090,11 +1108,13 @@ int API_FUNC PtlFetchAtomic(
     hdr->src_data.remaining = length;
     /* step 3: load up the data */
     char *dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
+        length) {
         memcpy(hdr->data, dataptr, length);
         hdr->src_data.moredata = NULL;
     } else {
-        size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+        size_t payload =
+            PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
         memcpy(hdr->data, dataptr, payload);
         hdr->src_data.moredata = dataptr + payload;
     }
@@ -1122,7 +1142,8 @@ int API_FUNC PtlFetchAtomic(
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
         (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset, user_ptr);
+        PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset,
+                               user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
@@ -1332,7 +1353,8 @@ int API_FUNC PtlSwap(
         }
         if (mdptr->eq_handle != PTL_EQ_NONE &&
             (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
-            PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset, user_ptr);
+            PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset,
+                                   user_ptr);
         }
     }
     return PTL_OK;
