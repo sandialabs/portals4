@@ -101,12 +101,14 @@ int main(
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
-    printf("%i readval: %llx\n", (int)myself.rank,
-           (unsigned long long)readval);
+    /*printf("%i readval: %llx\n", (int)myself.rank,
+           (unsigned long long)readval);*/
+    assert(readval >= 0xdeadbeefc0d1f1ed && readval < 0xdeadbeefc0d1f1ed + num_procs);
 
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        printf("0 value: %llx\n", (unsigned long long)value);
+        //printf("0 value: %llx\n", (unsigned long long)value);
+        assert(value == 0xdeadbeefc0d1f1ed + num_procs);
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
