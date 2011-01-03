@@ -104,12 +104,14 @@ int main(
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
-    printf("%i readval: %g\n", (int)myself.rank,
-           readval);
+    /*printf("%i readval: %g\n", (int)myself.rank,
+           readval);*/
+    assert(readval == 1.1);
 
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        printf("0 value: %g\n", value);
+        /*printf("0 value: %g\n", value);*/
+        assert(value == 77.5 + (1.1 * num_procs));
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }

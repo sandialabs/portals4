@@ -40,12 +40,12 @@ int main(
                      &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(myself.rank == my_rank);
-    for (i = 0; i < num_procs; ++i) {
+    /*for (i = 0; i < num_procs; ++i) {
         printf("%3u's requested[%03i] = {%3u,%3u} actual[%03i] = {%3u,%3u}\n",
                (unsigned int)myself.rank, i, dmapping[i].phys.nid,
                dmapping[i].phys.pid, i, amapping[i].phys.nid,
                amapping[i].phys.pid);
-    }
+    }*/
     CHECK_RETURNVAL(PtlPTAlloc
                     (ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
     assert(logical_pt_index == 0);

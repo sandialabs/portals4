@@ -89,8 +89,6 @@ int main(
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
-    printf("%i readval: %llx\n", (int)myself.rank,
-           (unsigned long long)readval);
     if (myself.rank == 0) {
         NO_FAILURES(value_le.ct_handle, num_procs);
     }
