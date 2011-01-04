@@ -137,7 +137,7 @@ int rc;
 double tmp, total;
 ptl_pt_index_t index;
 ptl_process_t dest;
-ptl_size_t offset;
+ptl_size_t offset = 0;
 ptl_handle_md_t md_handle;
 ptl_handle_ct_t ct_handle;
 ptl_ct_event_t cnt_value;
