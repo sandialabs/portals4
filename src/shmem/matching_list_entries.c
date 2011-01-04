@@ -1065,10 +1065,12 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                         "Sending a PtlGet to the overflow list doesn't work.\n");
                 abort();
             }
-            report_this_start =
-                PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
-                                                   me.options,
-                                                   fragment_mlength, hdr);
+            if (me.length > 0 && me.start != NULL) {
+                report_this_start =
+                    PtlInternalPerformOverflowDelivery(entry, me.start, me.length,
+                            me.options,
+                            fragment_mlength, hdr);
+            }
             PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
                                                 report_this_start);
         }
