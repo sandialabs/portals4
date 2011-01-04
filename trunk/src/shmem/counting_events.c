@@ -306,7 +306,7 @@ int API_FUNC PtlCTWait(
     ptl_ct_event_t * event)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t *cte;
+    volatile ptl_ct_event_t *cte;
     volatile uint64_t *rc;
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
