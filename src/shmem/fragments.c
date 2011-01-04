@@ -6,6 +6,7 @@
 
 /* System headers */
 #include <stdlib.h>                    /* for size_t */
+#include <string.h>                    /* for memset() */
 
 //#include <sys/types.h> // for getpid()
 //#include <unistd.h> // for getpid()
@@ -128,6 +129,7 @@ void INTERNAL *PtlInternalFragmentFetch(
             }
             retv = PtlInternalAtomicCasPtr(&small_free_list, oldv, newv);
         } while (retv != oldv || retv == NULL /* perhaps should yield? */ );
+        PARANOID_STEP(memset(retv->data, 0x77, SMALL_FRAG_PAYLOAD));
     } else {
         retv = large_free_list;
         do {
@@ -139,6 +141,7 @@ void INTERNAL *PtlInternalFragmentFetch(
             }
             retv = PtlInternalAtomicCasPtr(&large_free_list, oldv, newv);
         } while (retv != oldv || retv == NULL /* perhaps should yield? */ );
+        PARANOID_STEP(memset(retv->data, 0x77, LARGE_FRAG_PAYLOAD));
     }
     retv->next = NULL;
     PtlInternalValidateFragmentLists();
