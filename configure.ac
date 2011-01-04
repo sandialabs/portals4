@@ -73,10 +73,10 @@ AS_IF([test "x$enable_hard_polling" == xyes],
 	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
 AS_IF([test "x$enable_fast" == xyes],
 	  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
-	   CFLAGS="$CFLAGS -O3"
+	   CFLAGS="-O3 $CFLAGS"
 	   enable_arg_checking=no
 	   AS_IF([test "x$enable_debug_symbols" == xyes],
-			 [CFLAGS="$CFLAGS -g"])])
+			 [CFLAGS="-g $CFLAGS"])])
 AS_IF([test "x$enable_arg_checking" == xno],
 	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
 AS_IF([test "x$enable_internal_overflow" != xyes],
