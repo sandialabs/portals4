@@ -52,7 +52,7 @@ static void PtlInternalPerformDelivery(
     void *const restrict local_data,
     void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_header_t *const restrict hdr);
+    ptl_internal_header_t * const restrict hdr);
 static void PtlInternalAnnounceLEDelivery(
     const ptl_handle_eq_t eq_handle,
     const ptl_handle_ct_t ct_handle,
@@ -171,7 +171,8 @@ int API_FUNC PtlLEAppend(
     assert(les[ni.s.ni] != NULL);
     leh.s.ni = ni.s.ni;
     /* find an LE handle */
-    for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_entries; ++offset) {
+    for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_entries;
+         ++offset) {
         if (les[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32
                 (&(les[ni.s.ni][offset].status), LE_FREE,
@@ -200,8 +201,8 @@ int API_FUNC PtlLEAppend(
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->
-                                                        buffered_headers.head);
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* act like there was a delivery;
@@ -302,9 +303,9 @@ int API_FUNC PtlLEAppend(
                                                               mlength,
                                                               (uintptr_t)
                                                               le->start +
-                                                              cur->
-                                                              hdr.dest_offset,
-                                                              0, user_ptr,
+                                                              cur->hdr.
+                                                              dest_offset, 0,
+                                                              user_ptr,
                                                               &(cur->hdr));
                             }
                         } else {
@@ -363,8 +364,8 @@ int API_FUNC PtlLEAppend(
         case PTL_PROBE_ONLY:
             if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *) (t->
-                                                        buffered_headers.head);
+                    (ptl_internal_buffered_header_t *) (t->buffered_headers.
+                                                        head);
                 for (; cur != NULL; cur = cur->hdr.next) {
                     /* act like there was a delivery;
                      * 1. Check permissions
@@ -448,8 +449,10 @@ int API_FUNC PtlLEUnlink(
     ptl_handle_le_t le_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t le = { le_handle };
-    ptl_table_entry_t *restrict const t = &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
-    const ptl_internal_appendLE_t *restrict const dq_target = &(les[le.s.ni][le.s.code].Qentry);
+    ptl_table_entry_t *restrict const t =
+        &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
+    const ptl_internal_appendLE_t *restrict const dq_target =
+        &(les[le.s.ni][le.s.code].Qentry);
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -491,7 +494,8 @@ int API_FUNC PtlLEUnlink(
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
+                    fprintf(stderr,
+                            "PORTALS4-> attempted to unlink an un-queued LE\n");
                     return PTL_FAIL;
                 }
                 prev->next = dq->next;
@@ -522,7 +526,8 @@ int API_FUNC PtlLEUnlink(
                     dq = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
+                    fprintf(stderr,
+                            "PORTALS4-> attempted to unlink an un-queued LE\n");
                     return PTL_FAIL;
                 }
                 prev->next = dq->next;
@@ -583,7 +588,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     } else {
         entry = hdr->entry;
         le = *(ptl_le_t *) (((char *)entry) +
-                           offsetof(ptl_internal_le_t, visible));
+                            offsetof(ptl_internal_le_t, visible));
         goto check_lengths;
     }
     if (entry != NULL) {
@@ -591,7 +596,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
          * There is an LE present, and 'entry' points to it *
          *********************************************************/
         le = *(ptl_le_t *) (((char *)entry) +
-                           offsetof(ptl_internal_le_t, visible));
+                            offsetof(ptl_internal_le_t, visible));
         assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
         // check the permissions on the LE
         if (le.options & PTL_LE_AUTH_USE_JID) {
@@ -658,9 +663,10 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             }
         }
         /* check lengths */
-check_lengths:
+      check_lengths:
         {
-            const size_t max_payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+            const size_t max_payload =
+                PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
             /* msg_mlength is the total number of bytes that will be modified by this message */
             /* fragment_mlength is the total number of bytes that will by modified by this fragment */
             if (hdr->length + hdr->dest_offset > le.length) {
@@ -712,7 +718,9 @@ check_lengths:
          * `------------------------------> le.start
          */
         void *report_this_start = (char *)le.start + hdr->dest_offset;
-        void *effective_start = (char *)le.start + hdr->dest_offset + (msg_mlength - hdr->remaining);
+        void *effective_start =
+            (char *)le.start + hdr->dest_offset + (msg_mlength -
+                                                   hdr->remaining);
         if (foundin == PRIORITY) {
             if (fragment_mlength > 0) {
                 PtlInternalPerformDelivery(hdr->type, effective_start,
@@ -720,13 +728,14 @@ check_lengths:
             }
             if (need_more_data == 0) {
                 PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
-                                          le.options, msg_mlength,
-                                          (uintptr_t) report_this_start, 0,
-                                          entry->user_ptr, hdr);
+                                              le.options, msg_mlength,
+                                              (uintptr_t) report_this_start,
+                                              0, entry->user_ptr, hdr);
             }
         } else {
             if (fragment_mlength != msg_mlength && le.length > 0) {
-                fprintf(stderr, "multi-fragment (oversize) messages into the overflow list doesn't work\n");
+                fprintf(stderr,
+                        "multi-fragment (oversize) messages into the overflow list doesn't work\n");
                 abort();
             }
             assert(hdr->length + hdr->dest_offset <= fragment_mlength);
@@ -746,8 +755,8 @@ check_lengths:
                 PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
                 if (need_to_unlock)
                     ptl_assert(pthread_mutex_unlock(&t->lock), 0);
-                return (ptl_pid_t) ((le.options & PTL_LE_ACK_DISABLE) ? 0 :
-                                    1);
+                return (ptl_pid_t) ((le.
+                                     options & PTL_LE_ACK_DISABLE) ? 0 : 1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
                 if (need_to_unlock)
@@ -791,8 +800,8 @@ static void PtlInternalPerformDelivery(
         case HDR_TYPE_ATOMIC:
         case HDR_TYPE_FETCHATOMIC:
             PtlInternalPerformAtomic(local_data, message_data, nbytes,
-                                     hdr->atomic_operation,
-                                     hdr->atomic_datatype);
+                                     (ptl_op_t) hdr->atomic_operation,
+                                     (ptl_datatype_t) hdr->atomic_datatype);
             break;
         case HDR_TYPE_GET:
             memcpy(message_data, local_data, nbytes);
@@ -801,8 +810,9 @@ static void PtlInternalPerformDelivery(
             PtlInternalPerformAtomicArg(local_data,
                                         ((char *)message_data) + 8,
                                         *(uint64_t *) message_data, nbytes,
-                                        hdr->atomic_operation,
-                                        hdr->atomic_datatype);
+                                        (ptl_op_t) hdr->atomic_operation,
+                                        (ptl_datatype_t) hdr->
+                                        atomic_datatype);
             break;
         default:
             UNREACHABLE;
