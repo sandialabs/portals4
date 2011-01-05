@@ -238,8 +238,8 @@ int API_FUNC PtlEQFree(
             e->atomic_operation = (ptl_op_t) ie.atomic_operation; \
             e->atomic_type = (ptl_datatype_t) ie.atomic_type; \
         default: \
-            e->atomic_operation = 0; \
-            e->atomic_type = 0; \
+            e->atomic_operation = (ptl_op_t) 0; \
+            e->atomic_type = (ptl_datatype_t) 0; \
     } \
     switch (e->type) { \
         case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
