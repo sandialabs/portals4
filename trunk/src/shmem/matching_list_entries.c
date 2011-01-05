@@ -64,7 +64,7 @@ static void PtlInternalPerformDelivery(
     void *const restrict local_data,
     void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_typeinfo_t *const restrict info);
+    ptl_internal_header_t *const restrict hdr);
 static void PtlInternalAnnounceMEDelivery(
     const ptl_handle_eq_t eq_handle,
     const ptl_handle_ct_t ct_handle,
@@ -149,16 +149,16 @@ static void *PtlInternalPerformOverflowDelivery(
     } \
     switch (hdr->type & HDR_TYPE_BASICMASK) { \
         case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-            e.hdr_data = hdr->info.put.hdr_data; \
+            e.hdr_data = hdr->hdr_data; \
             break; \
         case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-            e.hdr_data = hdr->info.atomic.hdr_data; \
+            e.hdr_data = hdr->hdr_data; \
             break; \
         case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-            e.hdr_data = hdr->info.fetchatomic.hdr_data; \
+            e.hdr_data = hdr->hdr_data; \
             break; \
         case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-            e.hdr_data = hdr->info.swap.hdr_data; \
+            e.hdr_data = hdr->hdr_data; \
             break; \
         case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
             e.hdr_data = 0; \
@@ -403,7 +403,7 @@ int API_FUNC PtlMEAppend(
                                                        realstart,
                                                        cur->buffered_data,
                                                        mlength,
-                                                       &(cur->hdr.info));
+                                                       &(cur->hdr));
                             // notify
                             if (tEQ != PTL_EQ_NONE ||
                                 me->ct_handle != PTL_CT_NONE) {
@@ -828,7 +828,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
 
     PtlInternalValidateMEPT(t);
     PtlInternalPAPIStartC();
-    if (hdr->src_data.entry == NULL) {
+    if (hdr->entry == NULL) {
         /* To match, one must check, in order:
          * 1. The match_bits (with the ignore_bits) against hdr->match_bits
          * 2. if notruncate, length
@@ -847,9 +847,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 foundin = OVERFLOW;
             }
         }
-        hdr->src_data.entry = entry;
+        hdr->entry = entry;
     } else {
-        entry = hdr->src_data.entry;
+        entry = hdr->entry;
         me = *(ptl_me_t *) (((char *)entry) +
                             offsetof(ptl_internal_me_t, visible));
         goto check_lengths;
@@ -972,7 +972,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                     abort();
                 } else {
                     hdr->length = msg_mlength;
-                    hdr->src_data.remaining = msg_mlength;
+                    hdr->remaining = msg_mlength;
                     hdr->type |= HDR_TYPE_TRUNCFLAG;
                 }
             }
@@ -982,13 +982,13 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                 need_more_data = 0;
             } else {
                 /* the operation requires multiple fragments */
-                if (hdr->src_data.remaining > max_payload) {
+                if (hdr->remaining > max_payload) {
                     /* this is NOT the last fragment */
                     fragment_mlength = max_payload;
                     need_more_data = 1;
                 } else {
                     /* this IS the last fragment */
-                    fragment_mlength = hdr->src_data.remaining;
+                    fragment_mlength = hdr->remaining;
                     need_more_data = 0;
                 }
             }
@@ -999,21 +999,21 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         /*
          * msg_mlength is the total bytecount of the message
          * fragment_mlength is the total bytecount of this packet
-         * src_data.remaining is the total bytecount that has not been transmitted yet
+         * remaining is the total bytecount that has not been transmitted yet
          * Thus, the offset from the beginning of the message that this fragment refers to is...
-         * me.start + dest_offset + (msg_mlength - fragment_mlength - src_data.remaining)
+         * me.start + dest_offset + (msg_mlength - fragment_mlength - remaining)
          * >_____+--------####====+____<
          * |     |        |   |   |    `--> me.start + me.length
          * |     |        |   |   `-------> me.start + hdr->dest_offset + ( msg_mlength )
-         * |     |        |   `-----------> me.start + hdr->dest_offset + ( msg_mlength - ( src_data.remaining - fragment_mlength ) )
-         * |     |        `---------------> me.start + hdr->dest_offset + ( msg_mlength - src_data.remaining )
+         * |     |        |   `-----------> me.start + hdr->dest_offset + ( msg_mlength - ( remaining - fragment_mlength ) )
+         * |     |        `---------------> me.start + hdr->dest_offset + ( msg_mlength - remaining )
          * |     `------------------------> me.start + hdr->dest_offset
          * `------------------------------> me.start
          */
         void *report_this_start = ((char *)me.start) + hdr->dest_offset;
         void *effective_start =
             ((char *)me.start) + hdr->dest_offset + (msg_mlength -
-                                                     hdr->src_data.remaining);
+                                                     hdr->remaining);
         if (foundin == PRIORITY) {
             if ((hdr->type & HDR_TYPE_BASICMASK) == HDR_TYPE_PUT &&
                 (me.options & PTL_ME_MANAGE_LOCAL) != 0) {
@@ -1029,14 +1029,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                         ((char *)me.start) + entry->local_offset;
                     effective_start =
                         (char *)report_this_start + (msg_mlength -
-                                                     hdr->src_data.remaining);
+                                                     hdr->remaining);
                     entry->local_offset += fragment_mlength;
                 }
             }
             if (fragment_mlength > 0) {
                 PtlInternalPerformDelivery(hdr->type, effective_start,
                                            hdr->data, fragment_mlength,
-                                           &hdr->info);
+                                           hdr);
             }
             if (need_more_data == 0) {
                 PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
@@ -1120,21 +1120,17 @@ static void PtlInternalPerformDelivery(
     void *const restrict local_data,
     void *const restrict message_data,
     size_t nbytes,
-    ptl_internal_typeinfo_t * restrict info)
+    ptl_internal_header_t * restrict hdr)
 {                                      /*{{{ */
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
             break;
         case HDR_TYPE_ATOMIC:
-            PtlInternalPerformAtomic(local_data, message_data, nbytes,
-                                     info->atomic.operation,
-                                     info->atomic.datatype);
-            break;
         case HDR_TYPE_FETCHATOMIC:
             PtlInternalPerformAtomic(local_data, message_data, nbytes,
-                                     info->fetchatomic.operation,
-                                     info->fetchatomic.datatype);
+                                     hdr->atomic_operation,
+                                     hdr->atomic_datatype);
             break;
         case HDR_TYPE_GET:
             memcpy(message_data, local_data, nbytes);
@@ -1143,8 +1139,8 @@ static void PtlInternalPerformDelivery(
             PtlInternalPerformAtomicArg(local_data,
                                         ((char *)message_data) + 8,
                                         *(uint64_t *) message_data, nbytes,
-                                        info->swap.operation,
-                                        info->swap.datatype);
+                                        hdr->atomic_operation,
+                                        hdr->atomic_datatype);
             break;
         default:
             UNREACHABLE;
