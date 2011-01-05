@@ -312,7 +312,9 @@ double tmp, total;
     total= 0;
     __PtlBarrier();
     if (rank == 0)   {
-	printf("%20s: not implemented yet\n", "pair-based");
+	if (! machine_output) {
+	    printf("%20s: not implemented yet\n", "pair-based");
+	}
     }
     return;
 
@@ -525,7 +527,9 @@ double tmp, total;
     total= 0;
     __PtlBarrier();
     if (rank == 0)   {
-	printf("%20s: not implemented yet\n", "all-start");
+	if (! machine_output) {
+	    printf("%20s: not implemented yet\n", "all-start");
+	}
     }
     return;
 
