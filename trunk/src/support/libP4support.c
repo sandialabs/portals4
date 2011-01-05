@@ -197,7 +197,7 @@ void __PtlCreateME(
 
     src.rank= PTL_RANK_ANY;
     for (i= 0; i < count; i++)   {
-	me.start = start + i * length;
+	me.start = (char *)start + i * length;
 	me.length = length;
 	me.ct_handle = PTL_CT_NONE;
 	me.min_free = 0;
