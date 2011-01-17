@@ -749,17 +749,17 @@ int test_type;
         if (!machine_output)   {
 	    if (verbose > 0)   {
 		printf("NI actual limits\n");
-		printf("  max_entries:          %d\n", actual.max_entries);
-		printf("  max_overflow_entries: %d\n", actual.max_overflow_entries);
-		printf("  max_mds:              %d\n", actual.max_mds);
-		printf("  max_cts:              %d\n", actual.max_cts);
-		printf("  max_eqs:              %d\n", actual.max_eqs);
-		printf("  max_pt_index:         %d\n", actual.max_pt_index);
-		printf("  max_iovecs:           %d\n", actual.max_iovecs);
-		printf("  max_list_size:        %d\n", actual.max_list_size);
-		printf("  max_msg_size:         %d\n", (int)actual.max_msg_size);
-		printf("  max_atomic_size:      %d\n", (int)actual.max_atomic_size);
-		printf("  max_ordered_size:     %d\n", (int)actual.max_ordered_size);
+		printf("  max_entries:            %d\n", actual.max_entries);
+		printf("  max_unexpected_headers: %d\n", actual.max_unexpected_headers);
+		printf("  max_mds:                %d\n", actual.max_mds);
+		printf("  max_cts:                %d\n", actual.max_cts);
+		printf("  max_eqs:                %d\n", actual.max_eqs);
+		printf("  max_pt_index:           %d\n", actual.max_pt_index);
+		printf("  max_iovecs:             %d\n", actual.max_iovecs);
+		printf("  max_list_size:          %d\n", actual.max_list_size);
+		printf("  max_msg_size:           %d\n", (int)actual.max_msg_size);
+		printf("  max_atomic_size:        %d\n", (int)actual.max_atomic_size);
+		printf("  max_ordered_size:       %d\n", (int)actual.max_ordered_size);
 	    }
 
             printf("job size:   %d\n", world_size);
