@@ -8,8 +8,12 @@
 #include <stdlib.h>                    /* for size_t */
 #include <string.h>                    /* for memset() */
 
-//#include <sys/types.h> // for getpid()
-//#include <unistd.h> // for getpid()
+#ifdef PARANOID
+# include <stdio.h>
+#endif
+
+# include <sys/mman.h> /* for mprotect */
+# include <unistd.h> /* for getpagesize */
 
 /* Internal headers */
 #include "ptl_internal_assert.h"
@@ -50,23 +54,43 @@ static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
 static NEMESIS_blocking_queue *receiveQ = NULL;
 
+#define C_VALIDPTR(x) assert(((uintptr_t)(x)) == 1 || (((uintptr_t)(x)) >= (uintptr_t)comm_pad && ((uintptr_t)(x)) < ((uintptr_t)comm_pad + per_proc_comm_buf_size * (num_siblings+1))))
 #ifdef PARANOID
 static uintptr_t small_bufstart, small_bufend;
 static uintptr_t large_bufstart, large_bufend;
 # define PARANOID_STEP(x) x
 # define VALIDPTR(x,t) assert(((uintptr_t)(x)) >= t##_bufstart && ((uintptr_t)(x)) < t##_bufend)
-static void PtlInternalValidateFragmentLists(void)
+static void PtlInternalValidateFragmentLists(
+    void)
 {
+    unsigned long count = 0;
     fragment_hdr_t *cursor = small_free_list;
+    fragment_hdr_t *prev = NULL;
     while (cursor != NULL) {
+        count++;
+        VALIDPTR(cursor, small);
+        if (cursor->size != SMALL_FRAG_PAYLOAD) {
+            fprintf(stderr,
+                    "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
+                    count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD, prev);
+        }
         assert(cursor->size == SMALL_FRAG_PAYLOAD);
-        VALIDPTR(cursor,small);
+        prev = cursor;
         cursor = cursor->next;
     }
     cursor = large_free_list;
+    count = 0;
+    prev = NULL;
     while (cursor != NULL) {
+        count++;
+        VALIDPTR(cursor, large);
+        if (cursor->size != LARGE_FRAG_PAYLOAD) {
+            fprintf(stderr,
+                    "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
+                    count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD, prev);
+        }
         assert(cursor->size == LARGE_FRAG_PAYLOAD);
-        VALIDPTR(cursor,large);
+        prev = cursor;
         cursor = cursor->next;
     }
 }
@@ -80,6 +104,7 @@ void INTERNAL PtlInternalFragmentSetup(
 {                                      /*{{{ */
     size_t i;
     fragment_hdr_t *fptr;
+    char *bptr;
 
     /* init metadata */
     SMALL_FRAG_PAYLOAD = SMALL_FRAG_SIZE - sizeof(fragment_hdr_t);
@@ -90,13 +115,15 @@ void INTERNAL PtlInternalFragmentSetup(
     //printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *) (buf + sizeof(NEMESIS_blocking_queue));
+    bptr = (char*)fptr;
     PARANOID_STEP(small_bufstart = (uintptr_t)fptr);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
         fptr->next = small_free_list;
         fptr->size = SMALL_FRAG_PAYLOAD;
         PARANOID_STEP(fptr->owner_rank = proc_number);
         small_free_list = fptr;
-        fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
+        fptr = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i+1)));
+        //fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
     }
     /* and finally, initialize the large fragment free-list */
     PARANOID_STEP(large_bufstart = small_bufend = (uintptr_t)fptr);
@@ -156,7 +183,9 @@ void INTERNAL PtlInternalFragmentToss(
     NEMESIS_blocking_queue *destQ =
         (NEMESIS_blocking_queue *) (comm_pad + firstpagesize +
                                     (per_proc_comm_buf_size * dest));
+    PtlInternalValidateFragmentLists();
     frag = ((fragment_hdr_t *)frag)-1;
+    C_VALIDPTR(frag);
     PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *) frag);
 }                                      /*}}} */
 
@@ -166,13 +195,16 @@ void INTERNAL *PtlInternalFragmentReceive(
 {                                      /*{{{ */
     fragment_hdr_t *frag =
         (fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
+    PtlInternalValidateFragmentLists();
     assert(frag == (void *)1 || frag->next == NULL);
+    C_VALIDPTR(frag);
     return frag->data;
 }                                      /*}}} */
 
 uint64_t INTERNAL PtlInternalFragmentSize(
     void *frag)
 {                                      /*{{{ */
+    PtlInternalValidateFragmentLists();
     return (((fragment_hdr_t *) frag) - 1)->size;
 }                                      /*}}} */
 
