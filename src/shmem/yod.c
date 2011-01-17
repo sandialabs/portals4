@@ -87,11 +87,18 @@ int main(
     pthread_t collator_thread;
     int ct_spawned = 1;
     size_t small_frag_size = 256;
+    size_t small_frag_payload = 0;
     size_t small_frag_count = 512;
     size_t large_frag_size = 4096;
+    size_t large_frag_payload = 0;
     size_t large_frag_count = 128;
     const size_t max_count = buffsize - 1;
     void *commpad = NULL;
+
+#ifdef PARANOID
+    small_frag_payload = small_frag_size - (3*sizeof(void*));
+    large_frag_payload = large_frag_size - (3*sizeof(void*));
+#endif
 
     {
         int opt;
@@ -121,10 +128,10 @@ int main(
                 case 's':
                 {
                     char *opterr = NULL;
-                    small_frag_size = strtol(optarg, &opterr, 0);
-                    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+                    small_frag_payload = strtol(optarg, &opterr, 0);
+                    if (opterr == NULL || opterr == optarg || *opterr != 0) {
                         fprintf(stderr,
-                                "Error: Unparseable small fragment size! (%s)\n",
+                                "Error: Unparseable small fragment payload! (%s)\n",
                                 optarg);
                         print_usage(1);
                     }
@@ -133,8 +140,8 @@ int main(
                 case 'l':
                 {
                     char *opterr = NULL;
-                    large_frag_size = strtol(optarg, &opterr, 0);
-                    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+                    large_frag_payload = strtol(optarg, &opterr, 0);
+                    if (opterr == NULL || opterr == optarg || *opterr != 0) {
                         fprintf(stderr,
                                 "Error: Unparseable large fragment size! (%s)\n",
                                 optarg);
@@ -146,7 +153,7 @@ int main(
                 {
                     char *opterr = NULL;
                     small_frag_count = strtol(optarg, &opterr, 0);
-                    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+                    if (opterr == NULL || opterr == optarg || *opterr != 0) {
                         fprintf(stderr,
                                 "Error: Unparseable small fragment count! (%s)\n",
                                 optarg);
@@ -158,7 +165,7 @@ int main(
                 {
                     char *opterr = NULL;
                     large_frag_count = strtol(optarg, &opterr, 0);
-                    if (opterr == NULL || opterr == optarg || *opterr == 0) {
+                    if (opterr == NULL || opterr == optarg || *opterr != 0) {
                         fprintf(stderr,
                                 "Error: Unparseable large fragment count! (%s)\n",
                                 optarg);
@@ -204,6 +211,12 @@ int main(
                  r2, r3);
     }
     ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
+    large_frag_size = large_frag_payload + (2*sizeof(void*));
+    small_frag_size = small_frag_payload + (2*sizeof(void*));
+#ifdef PARANOID
+    small_frag_size += sizeof(uint64_t);
+    large_frag_size += sizeof(uint64_t);
+#endif
     commsize =
         (small_frag_count * small_frag_size) +
         (large_frag_count * large_frag_size) + sizeof(NEMESIS_blocking_queue);
