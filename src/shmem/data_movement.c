@@ -657,8 +657,8 @@ int API_FUNC PtlGet(
     ptl_process_t target_id,
     ptl_pt_index_t pt_index,
     ptl_match_bits_t match_bits,
-    void *user_ptr,
-    ptl_size_t remote_offset)
+    ptl_size_t remote_offset,
+    void *user_ptr)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { md_handle };
     ptl_internal_header_t *hdr;

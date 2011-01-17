@@ -1753,8 +1753,8 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *            ptl_process_t     target_id,
  *            ptl_pt_index_t    pt_index,
  *            ptl_match_bits_t  match_bits,
- *            void *            user_ptr,
- *            ptl_size_t        remote_offset)
+ *            ptl_size_t	remote_offset,
+ *            void *            user_ptr)
  * @brief Perform a \e get operation.
  * @details Initiates a remote read operation. There are two events associated
  *      with a get operation. When the data is sent from the \e target node, a
@@ -1778,10 +1778,10 @@ int PtlPut(ptl_handle_md_t  md_handle,
  * @param[in] pt_index      The index in the \e target portal table.
  * @param[in] match_bits    The match bits to use for message selection at the
  *                          \e target process.
- * @param[in] user_ptr      See the discussion for PtlPut().
  * @param[in] remote_offset The offset into the target match list entry (used
  *                          unless the target match list entry has the \c
  *                          PTL_ME_MANAGE_LOCAL option set.
+ * @param[in] user_ptr      See the discussion for PtlPut().
  * @retval PTL_OK               Indicates success
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -1796,8 +1796,8 @@ int PtlGet(ptl_handle_md_t  md_handle,
            ptl_process_t    target_id,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
-           void *           user_ptr,
-           ptl_size_t       remote_offset);
+	   ptl_size_t	    remote_offset,
+           void *           user_ptr);
 
 /************************
  * Atomic Operations *
