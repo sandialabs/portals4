@@ -98,6 +98,9 @@ int main(
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3*sizeof(void*));
     large_frag_payload = large_frag_size - (3*sizeof(void*));
+#else
+    small_frag_payload = small_frag_size - (2*sizeof(void*));
+    large_frag_payload = large_frag_size - (2*sizeof(void*));
 #endif
 
     {
