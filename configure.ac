@@ -78,7 +78,7 @@ AS_IF([test "x$enable_fast" == xyes],
 	   AS_IF([test "x$enable_debug_symbols" == xyes],
 			 [CFLAGS="-g $CFLAGS"])])
 AS_IF([test "x$enable_arg_checking" == xno],
-	  [AC_DEFINE([NO_ARG_CHECKING], [1], [Define to disable argument checking])])
+	  [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 AS_IF([test "x$enable_internal_overflow" != xyes],
 	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
 AS_IF([test "x$enable_loud_drops" == xyes],
