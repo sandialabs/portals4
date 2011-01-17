@@ -421,7 +421,7 @@ typedef unsigned char ptl_ni_fail_t;
 typedef struct {
     int max_entries;            /*!< Maximum number of match list entries that
                                   can be allocated at any one time. */
-    int max_overflow_entries;   /*!< Maximum number of overflow list entries
+    int max_unexpected_headers; /*!< Maximum number of unexpected headers
                                   that can be queued at any one time. */
     int max_mds;                /*!< Maximum number of memory descriptors that
                                   can be allocated at any one time. */
@@ -441,6 +441,9 @@ typedef struct {
                                   get, or reply). */
     ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) that can be passed
                                   to an atomic operation. */
+    ptl_size_t max_fetch_atomic_size; /*!< Maximum size (in bytes) that can be passed
+				  to an atomic operation that returns the prior
+				  value to the initiator. */
     ptl_size_t max_ordered_size; /*!< Maximum size (in bytes) of a message
 				   (put, get, reply, or atomic) that will
 				   buarantee "per-address" data ordering. An
@@ -876,6 +879,11 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  *                          valid.
  * @retval PTL_NO_SPACE     Indicates that there is insufficient memory to
  *                          allocate the memory descriptor.
+ * @implnote Because the \a eq_handle and \a ct_handle are bound to the memory
+ *	descriptor on the initiator, there are usage models where it is
+ *	necessary to create numerous memory descriptors that only differ in
+ *	their eq_handle or ct_handle field. Implementations should support this
+ *	usage model and may desire to optimize for it.
  * @see PtlMDRelease()
  */
 int PtlMDBind(ptl_handle_ni_t   ni_handle,

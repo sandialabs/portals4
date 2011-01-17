@@ -125,8 +125,8 @@ int API_FUNC PtlNIInit(
             desired->max_entries < (1 << HANDLE_CODE_BITS)) {
             nit_limits[ni.s.ni].max_entries = desired->max_entries;
         }
-        if (desired->max_overflow_entries > 0) {
-            nit_limits[ni.s.ni].max_overflow_entries = desired->max_overflow_entries;
+        if (desired->max_unexpected_headers > 0) {
+            nit_limits[ni.s.ni].max_unexpected_headers = desired->max_unexpected_headers;
         }
         if (desired->max_mds > 0 &&
             desired->max_mds < (1 << HANDLE_CODE_BITS)) {
@@ -155,6 +155,10 @@ int API_FUNC PtlNIInit(
         if (desired->max_atomic_size >= 8 &&
             desired->max_atomic_size <= SMALL_FRAG_SIZE) {
             nit_limits[ni.s.ni].max_atomic_size = desired->max_atomic_size;
+        }
+        if (desired->max_fetch_atomic_size >= 8 &&
+            desired->max_fetch_atomic_size <= SMALL_FRAG_SIZE) {
+            nit_limits[ni.s.ni].max_fetch_atomic_size = desired->max_fetch_atomic_size;
         }
         if (desired->max_ordered_size >= 8 &&
             desired->max_ordered_size <= SMALL_FRAG_SIZE) {
@@ -201,14 +205,14 @@ int API_FUNC PtlNIInit(
                 return PTL_NO_SPACE;
             }
             nit.unexpecteds[ni.s.ni] = nit.unexpecteds_buf[ni.s.ni] =
-                calloc(nit_limits[ni.s.ni].max_overflow_entries,
+                calloc(nit_limits[ni.s.ni].max_unexpected_headers,
                        sizeof(ptl_internal_buffered_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;
             }
-            for (size_t u = 0; u < nit_limits[ni.s.ni].max_overflow_entries - 1; ++u) {
+            for (size_t u = 0; u < nit_limits[ni.s.ni].max_unexpected_headers - 1; ++u) {
                 nit.unexpecteds[ni.s.ni][u].hdr.next =
                     &(nit.unexpecteds[ni.s.ni][u + 1]);
             }

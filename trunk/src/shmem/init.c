@@ -135,13 +135,14 @@ int API_FUNC PtlInit(
             nit_limits[ni].max_list_size = 16384;  // Arbitrary
             nit_limits[ni].max_pt_index = 63;  // Minimum required by spec
             nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;  // Maybe this should be max_pt_index+1 instead of 4
-            nit_limits[ni].max_overflow_entries = 128;     // Arbitrary
+            nit_limits[ni].max_unexpected_headers = 128;     // Arbitrary
             nit_limits[ni].max_mds = 128;      // Arbitrary
             nit_limits[ni].max_cts = 128;      // Arbitrary
             nit_limits[ni].max_eqs = 128;      // Arbitrary
             nit_limits[ni].max_iovecs = 0;     // XXX: ???
             nit_limits[ni].max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
             nit_limits[ni].max_atomic_size = SMALL_FRAG_PAYLOAD;       // single payload
+            nit_limits[ni].max_fetch_atomic_size = SMALL_FRAG_PAYLOAD;  // single payload
             nit_limits[ni].max_ordered_size = SMALL_FRAG_PAYLOAD;       // single payload
         }
 #ifdef HAVE_LIBPAPI
