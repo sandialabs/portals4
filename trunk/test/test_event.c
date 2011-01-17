@@ -84,8 +84,8 @@ int main(
                         (read_md_handle, myself.rank % sizeof(uint64_t),
                          sizeof(uint64_t) - (myself.rank % sizeof(uint64_t)),
                          r0, logical_pt_index, myself.rank,
-                         (void *)(uintptr_t) (myself.rank + 1),
-                         myself.rank % sizeof(uint64_t)));
+                         myself.rank % sizeof(uint64_t),
+                         (void *)(uintptr_t) (myself.rank + 1)));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }

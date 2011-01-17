@@ -99,7 +99,7 @@ int main(
 	ptl_process_t r0 = {.rank = 0 };
 	CHECK_RETURNVAL(PtlGet
 			(read_md_handle, 0, read_md.length, r0,
-			 logical_pt_index, 1, NULL, 0));
+			 logical_pt_index, 1, 0, NULL));
 	CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
 	assert(ctc.failure == 0);
     }
