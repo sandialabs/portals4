@@ -474,7 +474,6 @@ void INTERNAL PtlInternalEQPush(
               PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
                                      newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
-    eq->ring[writeidx.s.offset].type = (uint8_t) (event->type);
     switch (event->type) {
         case PTL_EVENT_GET:
         case PTL_EVENT_PUT:
@@ -515,6 +514,8 @@ void INTERNAL PtlInternalEQPush(
                 event->remote_offset;
             eq->ring[writeidx.s.offset].pt_index =
                 event->pt_index;
+            eq->ring[writeidx.s.offset].type = 
+                (uint8_t) (event->type);
             eq->ring[writeidx.s.offset].ni_fail_type =
                 event->ni_fail_type;
             eq->ring[writeidx.s.offset].atomic_operation =
@@ -528,11 +529,13 @@ void INTERNAL PtlInternalEQPush(
             eq->ring[writeidx.s.offset].mlength = event->mlength;
             eq->ring[writeidx.s.offset].remote_offset = event->remote_offset;
             eq->ring[writeidx.s.offset].user_ptr = event->user_ptr;
+            eq->ring[writeidx.s.offset].type = (uint8_t) (event->type);
             eq->ring[writeidx.s.offset].ni_fail_type = event->ni_fail_type;
             break;
     }
     // now, wait for our neighbor to finish
     while (eq->lagging_tail.u != writeidx.u) ;
+
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
 }
