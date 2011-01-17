@@ -1,0 +1,252 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test PtlCTAlloc without init</desc>
+    <ptl_ct_alloc ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTFree without init</desc>
+    <ptl_ct_free ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet without init</desc>
+    <ptl_ct_get ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait without init</desc>
+    <ptl_ct_wait ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTSet without init</desc>
+    <ptl_ct_set ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTInc without init</desc>
+    <ptl_ct_inc ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTAlloc with NULL ct_handle pointer</desc>
+    <ptl>
+      <ptl_ct_alloc ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTAlloc with bad ct_handle pointer</desc>
+    <ptl>
+      <ptl_ct_alloc ptr="BAD" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet with NULL event pointer</desc>
+    <ptl>
+      <ptl_ct_get ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet with bad event pointer</desc>
+    <ptl>
+      <ptl_ct_get ptr="BAD" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTAlloc with ni_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_alloc ni_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTAlloc with bad ni_handle</desc>
+    <ptl>
+      <ptl_ct_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTFree with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_free ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTFree with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_free ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_get ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_get ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_wait ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_wait ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTSet with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_set ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTSet with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_set ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTInc with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_inc ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTInc with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_inc ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTAlloc/Free with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTGet with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_get>
+	    <check ct_event_success="0" ct_event_failure="0"/>
+	  </ptl_ct_get>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTSet with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+	  <ptl_ct_get>
+	    <check ct_event_success="7" ct_event_failure="3"/>
+	  </ptl_ct_get>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTInc with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_inc ct_event_success="7" ct_event_failure="3"/>
+	  <ptl_ct_get>
+	    <check ct_event_success="7" ct_event_failure="3"/>
+	  </ptl_ct_get>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTSet and Inc with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+	  <ptl_ct_inc ct_event_success="1" ct_event_failure="3"/>
+	  <ptl_ct_get>
+	    <check ct_event_success="8" ct_event_failure="6"/>
+	  </ptl_ct_get>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait with test already satisfied</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+	  <ptl_ct_wait ct_test="10"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait until Inc</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <threads count="2">
+	  <if thread_id="0">
+	    <ptl_ct_wait ct_test="10"/>
+	  </if>
+	  <if thread_id="1">
+	    <msleep count="10"/>
+	    <repeat count="10">
+	      <ptl_ct_inc ct_event_success="1"/>
+	    </repeat>
+	  </if>
+	  </threads>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait until Set</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <threads count="2">
+	  <if thread_id="0">
+	    <ptl_ct_wait ct_test="10"/>
+	  </if>
+	  <if thread_id="1">
+	    <msleep count="10"/>
+	    <ptl_ct_set ct_event_success="5" ct_event_failure="5"/>
+	  </if>
+	  </threads>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTWait until Free</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct_alloc>
+	  <threads count="2">
+	  <if thread_id="0">
+	    <ptl_ct_wait ct_test="10" ret="INTERRUPTED"/>
+	  </if>
+	  <if thread_id="1">
+	    <msleep count="10"/>
+	    <ptl_ct_free/>
+	  </if>
+	  </threads>
+        </ptl_ct_alloc>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>

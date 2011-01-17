@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<test>
+  <subtest>
+    <desc>Test PtlHandleIsEqual with different handles</desc>
+    <ptl_handle_is_equal handle1="0xfffffffffffffff" handle2="0xeeeeeeeeeeeeeee" ret="FAIL"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlHandleIsEqual with identical handles</desc>
+    <ptl_handle_is_equal handle1="0xfffffffffffffff" handle2="0xfffffffffffffff"/>
+  </subtest>
+</test>

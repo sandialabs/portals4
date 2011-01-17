@@ -1,0 +1,41 @@
+#!/bin/bash
+echo "===== test_basic_init.xml ====="
+./ptl_test -f test_basic_init.xml
+echo "===== test_basic_ni.xml ====="
+./ptl_test -f test_basic_ni.xml
+echo "===== test_basic_handle.xml ====="
+./ptl_test -f test_basic_handle.xml
+echo "===== test_basic_pt.xml ====="
+./ptl_test -f test_basic_pt.xml
+echo "===== test_basic_eq.xml ====="
+./ptl_test -f test_basic_eq.xml
+echo "===== test_basic_ct.xml ====="
+./ptl_test -f test_basic_ct.xml
+echo "===== test_basic_id.xml ====="
+./ptl_test -f test_basic_id.xml
+echo "===== test_basic_md.xml ====="
+./ptl_test -f test_basic_md.xml
+echo "===== test_basic_le.xml ====="
+./ptl_test -f test_basic_le.xml
+echo "===== test_basic_me.xml ====="
+./ptl_test -f test_basic_me.xml
+echo "===== test_basic_move.xml ====="
+./ptl_test -f test_basic_move.xml
+echo "===== test_rdma_move.xml ====="
+./ptl_test -f test_rdma_move.xml
+echo "===== test_basic_trig.xml ====="
+./ptl_test -f test_basic_trig.xml
+echo "===== test_limits.xml ====="
+./ptl_test -f test_limits.xml
+echo "===== test_events.xml ====="
+./ptl_test -f test_events.xml
+echo "===== test_ct_events.xml ====="
+./ptl_test -f test_ct_events.xml
+echo "===== test_unlink.xml ====="
+./ptl_test -f test_unlink.xml
+echo "===== test_short.xml ====="
+./ptl_test -f test_short.xml
+echo "===== test_atomic.xml ====="
+./ptl_test -f test_atomic.xml
+echo "===== test_swap.xml ====="
+./ptl_test -f test_swap.xml

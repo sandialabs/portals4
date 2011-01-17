@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test PtlMEAppend without init</desc>
+    <ptl_me_append ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEUnlink without init</desc>
+    <ptl_me_unlink ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me_handle = NULL pointer</desc>
+    <ptl>
+      <ptl_me_append ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me_handle = BAD pointer</desc>
+    <ptl>
+      <ptl_me_append ptr="BAD" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with unsupported options</desc>
+    <ptl>
+      <ptl_me_append me_opt="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with ni_handle = NONE</desc>
+    <ptl>
+      <ptl_me_append ni_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with ni_handle = INVALID</desc>
+    <ptl>
+      <ptl_me_append ni_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with no-match ni</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with ct_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append ct_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with ct from wrong ni</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+	<ptl_ct>
+          <ptl_ni>
+            <ptl_me_append ret="ARG_INVALID"/>
+          </ptl_ni>
+	</ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with bad ptl_list(1)</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append list="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with bad ptl_list(2)</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append list="3" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with bad ptl_list(3)</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append list="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me.start = NULL</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_start="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me.start = BAD</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_start="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me.opt = IOVEC me.start = NULL</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_opt="IOVEC" me_start="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with me.opt = IOVEC me.start = BAD</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_opt="IOVEC" me_start="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with iov_base = NULL</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_opt="IOVEC" iov_base="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with iov_base = BAD</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append me_opt="IOVEC" iov_base="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with invalid pt_index = 0</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append pt_index="0" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend with invalid pt_index = out of range</desc>
+    <ptl>
+      <ptl_ni desired_max_pt_index="4">
+	<check actual_max_pt_index="4"/>
+        <ptl_me_append pt_index="5" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlMEAppend/Unlink with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt pt_index="3">
+          <ptl_me pt_index="3"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>

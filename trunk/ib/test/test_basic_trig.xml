@@ -1,0 +1,266 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test PtlTriggeredPut without init</desc>
+    <ptl_trig_put ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredGet without init</desc>
+    <ptl_trig_get ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredAtomic without init</desc>
+    <ptl_trig_atomic ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic without init</desc>
+    <ptl_trig_fetch ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap without init</desc>
+    <ptl_trig_swap ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredPut with md_handle = NONE</desc>
+    <ptl>
+      <ptl_trig_put md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredPut with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_trig_put md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredGet with md_handle = NONE</desc>
+    <ptl>
+      <ptl_trig_get md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredGet with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_trig_get md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredAtomic with md_handle = NONE</desc>
+    <ptl>
+      <ptl_trig_atomic md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredAtomic with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_trig_atomic md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic with get_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_fetch get_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic with get_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_fetch get_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic with put_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_fetch put_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic with put_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_fetch put_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap with get_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_swap get_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap with get_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_swap get_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap with put_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_swap put_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap with put_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_trig_swap put_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredPut with ack_req = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_trig_put ack_req="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredAtomic with ack_req = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_trig_atomic ack_req="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredPut with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT">
+            <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_put/>
+	        <msleep count="10"/>
+	      </ptl_ct>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredGet with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_GET">
+            <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_get/>
+	        <msleep count="10"/>
+	      </ptl_ct>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredAtomic with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_atomic/>
+	        <msleep count="10"/>
+	      </ptl_ct>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredFetchAtomic with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_md>
+	        <ptl_ct>
+                  <ptl_trig_fetch/>
+	          <msleep count="10"/>
+	        </ptl_ct>
+	      </ptl_md>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlTriggeredSwap with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_md>
+	        <ptl_ct>
+                  <ptl_trig_swap/>
+	          <msleep count="10"/>
+	        </ptl_ct>
+              </ptl_md>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>
