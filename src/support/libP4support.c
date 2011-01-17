@@ -177,23 +177,23 @@ void __PtlCreateLECT(
 
 
 /*
-** Create "count" (persistent) MEs with an event queue attached to it
+** Create "count" MEs with an event queue attached to it
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-void __PtlCreateME(
+static void __PtlCreateME(
     ptl_handle_ni_t ni,
     ptl_pt_index_t index,
     void *start,
     ptl_size_t length,
     ptl_size_t count,
+    unsigned int options,
     ptl_handle_me_t *mh)
 {                                      /*{{{ */
     int rc;
     int i;
     ptl_me_t me;
     ptl_process_t src;
-
 
     src.rank= PTL_RANK_ANY;
     for (i= 0; i < count; i++)   {
@@ -202,7 +202,7 @@ void __PtlCreateME(
 	me.ct_handle = PTL_CT_NONE;
 	me.min_free = 0;
 	me.ac_id.uid = PTL_UID_ANY;
-	me.options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
+	me.options = options;
 	me.match_id = src;
 	me.match_bits = i;
 	me.ignore_bits = 0;
@@ -213,7 +213,40 @@ void __PtlCreateME(
 
 }                                      /* end of __PtlCreateME() *//*}}} */
 
+/*
+** Create "count" (persistent) MEs with an event queue attached to it
+** Each ME points to a "length" size chunk in a buffer starting at "start".
+** Right now used for puts only...
+*/
+void __PtlCreateMEPersistent(
+    ptl_handle_ni_t ni,
+    ptl_pt_index_t index,
+    void *start,
+    ptl_size_t length,
+    ptl_size_t count,
+    ptl_handle_me_t *mh)
+{
+    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
+    __PtlCreateME(ni,index,start,length,count,options,mh);
+}                                /* end of __PtlCreateMEPersistent() *//*}}} */
 
+/*
+** Create "count" UseOnce MEs with an event queue attached to it
+** Each ME points to a "length" size chunk in a buffer starting at "start".
+** Right now used for puts only...
+*/
+void __PtlCreateMEUseOnce(
+    ptl_handle_ni_t ni,
+    ptl_pt_index_t index,
+    void *start,
+    ptl_size_t length,
+    ptl_size_t count,
+    ptl_handle_me_t *mh)
+{
+    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE | 
+                    PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE;
+    __PtlCreateME(ni,index,start,length,count,options,mh);
+}                                /* end of __PtlCreateMEUseONe() *//*}}} */
 
 /*
 ** Create "count" (persistent) MEs with an event queue attached to it
