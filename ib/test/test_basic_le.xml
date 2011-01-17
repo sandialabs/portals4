@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test PtlLEAppend without init</desc>
+    <ptl_le_append ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEUnlink without init</desc>
+    <ptl_le_unlink ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le_handle pointer = NULL pointer</desc>
+    <ptl>
+    <ptl_le_append ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le_handle pointer = BAD</desc>
+    <ptl>
+      <ptl_le_append ptr="BAD" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with unsupported options</desc>
+    <ptl>
+      <ptl_le_append le_opt="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with ni_handle = NONE</desc>
+    <ptl>
+      <ptl_le_append ni_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with ni_handle = INVALID</desc>
+    <ptl>
+      <ptl_le_append ni_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with matching ni</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_le_append ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with ct_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append ct_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with ct from wrong ni</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+	<ptl_ct>
+          <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+            <ptl_le_append ret="ARG_INVALID"/>
+          </ptl_ni>
+	</ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with bad ptl_list(1)</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append list="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with bad ptl_list(2)</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append list="3" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with bad ptl_list(3)</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append list="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.start = NULL</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_start="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.start = BAD</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_start="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.opt = IOVEC le.start = NULL</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_opt="IOVEC" le_start="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.opt = IOVEC le.start = BAD</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_opt="IOVEC" le_start="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.opt = IOVEC iov_base = NULL</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_opt="IOVEC" iov_base="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend with le.opt = IOVEC iov_base = BAD</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append le_opt="IOVEC" iov_base="BAD" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend/Unlink with invalid pt_index = 0</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_le_append pt_index="0" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend/Unlink with invalid pt_index = out of range</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_pt_index="4">
+	<check actual_max_pt_index="4"/>
+        <ptl_le_append pt_index="5" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlLEAppend/Unlink with good parameters</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+	<ptl_pt pt_index="3">
+          <ptl_le pt_index="3"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>

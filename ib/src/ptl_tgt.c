@@ -1,0 +1,1306 @@
+#include "ptl_loc.h"
+
+/*
+ * tgt_state_name
+ *	for debugging output
+ */
+static char *tgt_state_name[] = {
+	[STATE_TGT_START]		= "tgt_start",
+	[STATE_TGT_DROP]		= "tgt_drop",
+	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
+	[STATE_TGT_NO_MATCH]		= "tgt_no_match",
+	[STATE_TGT_GET_PERM]		= "tgt_get_perm",
+	[STATE_TGT_NO_PERM]		= "tgt_no_perm",
+	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
+	[STATE_TGT_DATA_IN]		= "tgt_data_in",
+	[STATE_TGT_RDMA]		= "tgt_rdma",
+	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
+	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
+	[STATE_TGT_DATA_OUT]		= "tgt_data_out",
+	[STATE_TGT_RDMA_DESC]		= "tgt_rdma_desc",
+	[STATE_TGT_UNLINK]	        = "tgt_unlink",
+	[STATE_TGT_SEND_ACK]		= "tgt_send_ack",
+	[STATE_TGT_SEND_REPLY]		= "tgt_send_reply",
+	[STATE_TGT_COMM_EVENT]		= "tgt_comm_event",
+	[STATE_TGT_CLEANUP]		= "tgt_cleanup",
+	[STATE_TGT_ERROR]		= "tgt_error",
+	[STATE_TGT_DONE]		= "tgt_done",
+};
+
+/*
+ * make_comm_event
+ */
+int make_comm_event(xt_t *xt)
+{
+	int err = PTL_OK;
+	ptl_event_kind_t type;
+
+	if (xt->operation == OP_PUT)
+		type = PTL_EVENT_PUT;
+	else if (xt->operation == OP_GET)
+		type = PTL_EVENT_GET;
+	else if (xt->operation == OP_ATOMIC || xt->operation == OP_FETCH ||
+		 xt->operation == OP_SWAP)
+		type = PTL_EVENT_ATOMIC;
+	else {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
+		err = make_target_event(xt, xt->pt->eq, type, NULL);
+		if (err)
+			WARN();
+	}
+
+	xt->event_mask &= ~XT_COMM_EVENT;
+
+	return err;
+}
+
+/*
+ * make_ct_comm_event
+ */
+static void make_ct_comm_event(xt_t *xt)
+{
+	le_t *le = xt->le;
+	int bytes = le->options & PTL_LE_EVENT_CT_BYTES;
+
+	make_ct_event(le->ct, xt->ni_fail, xt->mlength, bytes);
+}
+
+/*
+ * init_events
+ *	decide whether comm eq/ct events will happen
+ *	for this message
+ */
+static void init_events(xt_t *xt)
+{
+	if (xt->pt->eq && !(xt->le->options &
+			    PTL_LE_EVENT_COMM_DISABLE))
+		xt->event_mask |= XT_COMM_EVENT;
+
+	if (xt->le->ct && (xt->le->options &
+			   PTL_LE_EVENT_CT_COMM))
+		xt->event_mask |= XT_CT_COMM_EVENT;
+
+	switch (xt->operation) {
+	case OP_PUT:
+	case OP_ATOMIC:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_ACK_EVENT;
+		break;
+	case OP_GET:
+	case OP_FETCH:
+	case OP_SWAP:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_REPLY_EVENT;
+		break;
+	}
+}
+
+/*
+ * copy_in
+ *	copy data from data segment into le/me
+ */
+static int copy_in(xt_t *xt, me_t *me, void *data)
+{
+	int err;
+	ptl_size_t offset = xt->moffset;
+	ptl_size_t length = xt->mlength;
+
+	if (me->num_iov) {
+		err = iov_copy_in(data, (ptl_iovec_t *)me->start,
+				  me->num_iov, offset, length);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	} else
+		memcpy(me->start + offset, data, length);
+
+	return PTL_OK;
+}
+
+/*
+ * atomic_in
+ *	TODO have to do better on IOVEC boundaries
+ */
+static int atomic_in(xt_t *xt, me_t *me, void *data)
+{
+	int err;
+	ptl_size_t offset = xt->moffset;
+	ptl_size_t length = xt->mlength;
+	atom_op_t op;
+
+	op = atom_op[xt->atom_op][xt->atom_type];
+	if (!op) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	if (me->num_iov) {
+		err = iov_atomic_in(op, data, (ptl_iovec_t *)me->start,
+				  me->num_iov, offset, length);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	} else {
+		(*op)(me->start + offset, data, length);
+	}
+
+	return PTL_OK;
+}
+
+
+/*
+ * copy_out
+ *	copy data to data segment from le/me
+ */
+static int copy_out(xt_t *xt, me_t *me, void *data)
+{
+	int err;
+	ptl_size_t offset = xt->moffset;
+	ptl_size_t length = xt->mlength;
+
+	if (me->num_iov) {
+		err = iov_copy_out(data, (ptl_iovec_t *)me->start,
+				  me->num_iov, offset, length);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	} else
+		memcpy(data, me->start + offset, length);
+
+	return PTL_OK;
+}
+
+/*
+ * tgt_start
+ *	get portals table entry from request
+ */
+static int tgt_start(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+
+	xt->recv_buf = xx_dequeue_recv_buf((xi_t *)xt);
+
+	if (xt->pt_index >= ni->limits.max_pt_index) {
+		WARN();
+		return STATE_TGT_DROP;
+	}
+
+	xt->pt = &ni->pt[xt->pt_index];
+	if (!xt->pt->in_use) {
+		WARN();
+		return STATE_TGT_DROP;
+	}
+
+	if (!xt->pt->enable) {
+		WARN();
+		return STATE_TGT_DROP;
+	}
+
+	return STATE_TGT_GET_MATCH;
+}
+
+/*
+ * request_drop
+ *	drop a request
+ */
+static int request_drop(xt_t *xt)
+{
+	/* logging ? */
+
+	return STATE_TGT_CLEANUP;
+}
+
+static int check_match(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+	ptl_size_t offset;
+	ptl_size_t length;
+
+	if (ni->options & PTL_NI_LOGICAL) {
+		if (!(xt->me->rank == PTL_RANK_ANY ||
+		     (xt->me->rank == xt->initiator.rank)))
+			return 0;
+	} else {
+		if (!(xt->me->nid == PTL_NID_ANY ||
+		     (xt->me->nid == xt->initiator.phys.nid)))
+			return 0;
+		if (!(xt->me->pid == PTL_PID_ANY ||
+		     (xt->me->pid == xt->initiator.phys.pid)))
+			return 0;
+	}
+
+	length = xt->rlength;
+	offset = (xt->me->options & PTL_ME_MANAGE_LOCAL) ?
+			xt->me->offset : xt->roffset;
+
+	if ((xt->me->options & PTL_ME_NO_TRUNCATE) &&
+	    ((offset + length) > xt->me->length))
+			return 0;
+
+	return (xt->match_bits | xt->me->ignore_bits) ==
+		(xt->me->match_bits | xt->me->ignore_bits);
+}
+
+/*
+ * tgt_get_match
+ *	get matching entry from PT
+ */
+static int tgt_get_match(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+	struct list_head *l;
+
+	list_for_each(l, &xt->pt->priority_list) {
+		xt->le = list_entry(l, le_t, list);
+		if (ni->options & PTL_NI_NO_MATCHING) {
+			le_ref(xt->le);
+			goto done;
+		}
+
+		if (check_match(xt)) {
+			me_ref((me_t *)xt->le);
+			goto done;
+		}
+	}
+
+	list_for_each(l, &xt->pt->overflow_list) {
+		xt->le = list_entry(l, le_t, list);
+		if (ni->options & PTL_NI_NO_MATCHING) {
+			le_ref(xt->le);
+			goto done;
+		}
+
+		if (check_match(xt)) {
+			me_ref((me_t *)xt->le);
+			goto done;
+		}
+	}
+
+	WARN();
+	xt->le = NULL;
+	return STATE_TGT_NO_MATCH;
+
+done:
+	return STATE_TGT_GET_PERM;
+}
+
+/*
+ * tgt_get_perm
+ *	check permission on incoming request packet
+ */
+static int tgt_get_perm(xt_t *xt)
+{
+	/* just a handy place to do this
+	 * nothing to do with permissions */
+	init_events(xt);
+
+	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
+		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
+			WARN();
+			return STATE_TGT_NO_PERM;
+		}
+		if (!(xt->le->uid == PTL_UID_ANY || (xt->le->uid == xt->uid))) {
+			WARN();
+			return STATE_TGT_NO_PERM;
+		}
+	}
+
+	switch (xt->operation) {
+	case OP_ATOMIC:
+	case OP_PUT:
+		if (!(xt->le->options & PTL_ME_OP_PUT)) {
+			WARN();
+			return STATE_TGT_NO_PERM;
+		}
+		break;
+
+	case OP_GET:
+		if (!(xt->le->options & PTL_ME_OP_GET)) {
+			WARN();
+			return STATE_TGT_NO_PERM;
+		}
+		break;
+
+	case OP_FETCH:
+	case OP_SWAP:
+		if ((xt->le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
+		    != (PTL_ME_OP_PUT | PTL_ME_OP_GET)) {
+			WARN();
+			return STATE_TGT_NO_PERM;
+		}
+		break;
+
+	default:
+		return STATE_TGT_ERROR;
+	}
+
+	return STATE_TGT_GET_LENGTH;
+}
+
+/*
+ * tgt_get_length
+ *	determine the data in/out transfer lengths
+ */
+static int tgt_get_length(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+	me_t *me = xt->me;
+	ptl_size_t room;
+	ptl_size_t offset;
+	ptl_size_t length;
+
+	/* note le->options & PTL_ME_MANAGE_LOCAL is always zero */
+	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : xt->roffset;
+	room = me->length - offset;
+	length = (room >= xt->rlength) ? xt->rlength : room;
+
+	switch (xt->operation) {
+	case OP_PUT:
+		if (length > ni->limits.max_msg_size)
+			length = ni->limits.max_msg_size;
+		xt->put_resid = length;
+		break;
+
+	case OP_GET:
+		if (length > ni->limits.max_msg_size)
+		length = ni->limits.max_msg_size;
+		xt->get_resid = length;
+		break;
+
+	case OP_ATOMIC:
+		if (length > ni->limits.max_atomic_size)
+			length = ni->limits.max_atomic_size;
+		xt->put_resid = length;
+		break;
+
+	case OP_FETCH:
+		if (length > ni->limits.max_atomic_size)
+			length = ni->limits.max_atomic_size;
+		xt->put_resid = length;
+		xt->get_resid = length;
+		break;
+
+	case OP_SWAP:
+		if (xt->atom_op == PTL_SWAP) {
+			if (length > ni->limits.max_atomic_size)
+				length = ni->limits.max_atomic_size;
+		} else {
+			if (length > atom_type_size[xt->atom_type])
+				length = atom_type_size[xt->atom_type];
+		}
+		xt->put_resid = length;
+		xt->get_resid = length;
+		break;
+	}
+
+	xt->mlength = length;
+	xt->moffset = offset;
+
+	switch (xt->operation) {
+	case OP_PUT:
+		return STATE_TGT_DATA_IN;
+
+	case OP_ATOMIC:
+		return STATE_TGT_ATOMIC_DATA_IN;
+
+	case OP_GET:
+	case OP_FETCH:
+	case OP_SWAP:
+		return STATE_TGT_DATA_OUT;
+		
+	default:
+		return STATE_TGT_ERROR;
+	}
+}
+
+static void tgt_unlink(xt_t *xt)
+{
+	if (xt->me->type == TYPE_ME)
+		me_unlink(xt->me);
+	else
+		le_unlink(xt->le);
+}
+
+static int tgt_data_out(xt_t *xt)
+{
+	me_t *me = xt->me;
+	data_t *data = xt->data_out;
+	int next;
+
+	if (!data) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	switch (data->data_fmt) {
+	case DATA_FMT_DMA:
+		/* Write to SG list provided directly in request */
+		xt->cur_rem_sge = &data->sge_list[0];
+		xt->cur_rem_off = 0;
+		xt->num_rem_sge = be32_to_cpu(data->num_sge);
+
+		if (debug)
+			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
+				xt->cur_rem_sge, (int)xt->num_rem_sge);
+		/*
+		 * RDMA data from le/me  memory, determine starting vector
+		 * and vector offset for le/me.
+		 */
+		xt->cur_loc_iov_index = 0;
+		xt->cur_loc_iov_off = 0;
+
+		if (debug)
+			printf("me->num_iov(%d), xt->moffset(%d)\n",
+				me->num_iov, (int)xt->moffset);
+
+		if (me->num_iov) {
+			ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
+			ptl_size_t i = 0;
+			ptl_size_t loc_offset = 0;
+			ptl_size_t iov_offset = 0;
+
+			if (debug)
+				printf("*iov(%p)\n", (void *)iov);
+
+			for (i = 0; i < me->num_iov && loc_offset < xt->moffset;
+				i++, iov++) {
+				iov_offset = xt->moffset - loc_offset;
+				if (iov_offset > iov->iov_len)
+					iov_offset = iov->iov_len;
+				loc_offset += iov_offset;
+				if (debug)
+					printf("In loop: loc_offset(%d),"
+ 						"moffset(%d)\n",
+						(int)loc_offset,
+						(int)xt->moffset);
+			}
+			if (loc_offset < xt->moffset) {
+				WARN();
+				return STATE_TGT_ERROR;
+			}
+
+			xt->cur_loc_iov_index = i;
+			xt->cur_loc_iov_off = iov_offset;
+		} else {
+			xt->cur_loc_iov_off = xt->moffset;
+		}
+		if (debug)
+			printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
+				(int)xt->cur_loc_iov_index,
+				(int)xt->cur_loc_iov_off);
+
+		xt->rdma_dir = DATA_DIR_OUT;
+		next = STATE_TGT_RDMA;
+		break;
+	case DATA_FMT_INDIRECT:
+//printf("TODO handle tgt indirect data out\n");
+		next = STATE_TGT_RDMA;
+		break;
+	default:
+		WARN();
+		return STATE_TGT_ERROR;
+		break;
+	}
+
+	if (xt->operation == OP_FETCH) {
+		if (xt->atom_op >= PTL_MIN && xt->atom_op <= PTL_BXOR) {
+			return STATE_TGT_ATOMIC_DATA_IN;
+		} else {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	}
+
+	if (xt->operation == OP_SWAP) {
+		if (xt->atom_op == PTL_SWAP) {
+			return STATE_TGT_DATA_IN;
+		} else if (xt->atom_op >= PTL_CSWAP && xt->atom_op <= PTL_MSWAP) {
+			return STATE_TGT_SWAP_DATA_IN;
+		} else {
+			WARN();
+			return STATE_TGT_ERROR;
+	
+		}
+	}
+
+	/*
+	 * If locally managed update to reserve space for the
+	 * associated RDMA data.
+	 */
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += xt->mlength;
+
+	/*
+	 * Unlink if required to prevent further use of this 
+	 * ME/LE.
+	 */
+	if (me->options & PTL_ME_USE_ONCE)
+		tgt_unlink(xt);
+	else if  ((me->options & PTL_ME_MANAGE_LOCAL) &&
+	    ((me->length - me->offset) < me->min_free))
+		tgt_unlink(xt);
+
+	return next;
+}
+
+static int tgt_rdma(xt_t *xt)
+{
+	int err;
+	ni_t *ni = to_ni(xt);
+	buf_t *buf;
+	ptl_size_t *resid = xt->rdma_dir == DATA_DIR_IN ?
+		&xt->put_resid : &xt->get_resid;
+
+	if (debug) printf("tgt_rdma - data_dir(%d) resid(%d), rdma_out(%d)\n",
+		(int) xt->rdma_dir, (int) xt->put_resid, (int) xt->rdma_out);
+
+	/*
+	 * Allocate a rdma_buf to handle any completions we take for
+	 * RDMA read operations (preferably just on the last one).
+	 */
+	if (!xt->rdma_buf) {
+		if (debug)
+			printf("tgt_rdma - alloc rdma buf\n");
+
+		err = buf_alloc(ni, &buf);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+		buf->type = BUF_RDMA;
+		buf->xt = xt;
+		xt->rdma_buf = buf;
+	}
+
+	/*
+	 * Issue as many RDMA requests as we can.  We may have to take
+	 * intermediate completions if we run out send queue resources;
+	 * We will always take at least one on the last work request
+	 * associated with a portals transfer.
+	 */
+	if (*resid) {
+		if (debug)
+			printf("tgt_rdma - post rdma\n");
+
+		err = post_tgt_rdma(xt, xt->rdma_dir);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	}
+
+	/*
+	 * If all RDMA have been issued and there is not a completion
+	 * outstanding, release the rdma buf and advance.
+	 */
+	if (!*resid && !xt->rdma_out) {
+		if (debug)
+			printf("tgt_rdma - release rdma buf\n");
+
+		buf_put(xt->rdma_buf);
+		xt->rdma_buf = NULL;
+		return STATE_TGT_COMM_EVENT;
+	}
+
+	if (debug)
+		printf("tgt_rdma - return\n");
+
+	return STATE_TGT_RDMA;
+}
+
+static int tgt_rdma_desc(xt_t *xt)
+{
+	/* XXX not yet */
+	return STATE_TGT_COMM_EVENT;
+}
+
+static int tgt_data_in(xt_t *xt)
+{
+	int err;
+	me_t *me = xt->me;
+	data_t *data = xt->data_in;
+	int next;
+
+	switch (data->data_fmt) {
+	case DATA_FMT_IMMEDIATE:
+		err = copy_in(xt, me, data->data);
+		if (err)
+			return STATE_TGT_ERROR;
+		next = STATE_TGT_COMM_EVENT;
+		break;
+	case DATA_FMT_DMA:
+		/* Read from SG list provided directly in request */
+		xt->cur_rem_sge = &data->sge_list[0];
+		xt->cur_rem_off = 0;
+		xt->num_rem_sge = be32_to_cpu(data->num_sge);
+
+		if (debug)
+			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
+				xt->cur_rem_sge, (int)xt->num_rem_sge);
+		/*
+		 * RDMA data to MR back region for le/me memory, determine
+		 * starting vector and vector offset for le/me.
+		 */
+		xt->cur_loc_iov_index = 0;
+		xt->cur_loc_iov_off = 0;
+
+		if (debug)
+			printf("me->num_iov(%d), xt->moffset(%d)\n",
+				me->num_iov, (int)xt->moffset);
+
+		if (me->num_iov) {
+			ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
+			ptl_size_t i = 0;
+			ptl_size_t loc_offset = 0;
+			ptl_size_t iov_offset = 0;
+
+			if (debug)
+				printf("*iov(%p)\n", (void *)iov);
+
+			for (i = 0; i < me->num_iov && loc_offset < xt->moffset;
+				i++, iov++) {
+				iov_offset = xt->moffset - loc_offset;
+				if (iov_offset > iov->iov_len)
+					iov_offset = iov->iov_len;
+				loc_offset += iov_offset;
+				if (debug)
+					printf("In loop: loc_offset(%d),"
+ 						"moffset(%d)\n",
+						(int)loc_offset,
+						(int)xt->moffset);
+			}
+			if (loc_offset < xt->moffset) {
+				WARN();
+				return STATE_TGT_ERROR;
+			}
+
+			xt->cur_loc_iov_index = i;
+			xt->cur_loc_iov_off = iov_offset;
+		} else {
+			xt->cur_loc_iov_off = xt->moffset;
+		}
+		if (debug)
+			printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
+				(int)xt->cur_loc_iov_index,
+				(int)xt->cur_loc_iov_off);
+
+		xt->rdma_dir = DATA_DIR_IN;
+		next = STATE_TGT_RDMA;
+		break;
+	case DATA_FMT_INDIRECT:
+		/*
+		 * XXXX Assign page for reading indirect descriptors and
+		 * XXXX go to RDMA descriptor state.
+		 */
+		//printf("TODO handle tgt indirect data in\n");
+		next = STATE_TGT_COMM_EVENT;
+		break;
+	default:
+		WARN();
+	}
+
+	/*
+	 * If locally managed update to reserve space for the
+	 * associated RDMA data.
+	 */
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += xt->mlength;
+
+	/*
+	 * Unlink if required to prevent further use of this 
+	 * ME/LE.
+	 */
+	if (me->options & PTL_ME_USE_ONCE)
+		tgt_unlink(xt);
+	else if  ((me->options & PTL_ME_MANAGE_LOCAL) &&
+	    ((me->length - me->offset) < me->min_free))
+		tgt_unlink(xt);
+
+	return next;
+}
+
+static int tgt_atomic_data_in(xt_t *xt)
+{
+	int err;
+	data_t *data = xt->data_in;
+	me_t *me = xt->me;
+
+	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
+	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	err = atomic_in(xt, me, data->data);
+	if (err)
+		return STATE_TGT_ERROR;
+
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += xt->mlength;
+
+	if (me->options & PTL_ME_USE_ONCE)
+		return STATE_TGT_UNLINK;
+
+	if ((me->options & PTL_ME_MANAGE_LOCAL) &&
+	    ((me->length - me->offset) < me->min_free))
+		return STATE_TGT_UNLINK;
+
+	return STATE_TGT_COMM_EVENT;
+}
+
+static int tgt_swap_data_in(xt_t *xt)
+{
+	int err;
+	data_t *data = xt->data_in;
+	me_t *me = xt->me;
+	datatype_t opr, src, dst, *d;
+
+	opr.u64 = xt->operand;
+	dst.u64 = 0;
+	d = (union datatype *)data->data;
+
+	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
+	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	err = copy_out(xt, me, &src);
+	if (err)
+		return STATE_TGT_ERROR;
+
+	switch (xt->atom_op) {
+	case PTL_CSWAP:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 == src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 == src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 == src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 == src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 == src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 == src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 == src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 == src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f == src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d == src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_CSWAP_NE:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 != src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 != src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 != src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 != src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 != src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 != src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 != src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 != src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f != src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d != src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_CSWAP_LE:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 <= src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 <= src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 <= src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 <= src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 <= src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 <= src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 <= src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 <= src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f <= src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d <= src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_CSWAP_LT:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 < src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 < src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 < src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 < src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 < src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 < src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 < src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 < src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f < src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d < src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_CSWAP_GE:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 >= src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 >= src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 >= src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 >= src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 >= src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 >= src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 >= src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 >= src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f >= src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d >= src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_CSWAP_GT:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+			dst.s8 = (opr.s8 > src.s8) ? d->s8 : src.s8;
+			break;
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 > src.u8) ? d->u8 : src.u8;
+			break;
+		case PTL_SHORT:
+			dst.s16 = (opr.s16 > src.s16) ? d->s16 : src.s16;
+			break;
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 > src.u16) ? d->u16 : src.u16;
+			break;
+		case PTL_INT:
+			dst.s32 = (opr.s32 > src.s32) ? d->s32 : src.s32;
+			break;
+		case PTL_UINT:
+			dst.u32 = (opr.u32 > src.u32) ? d->u32 : src.u32;
+			break;
+		case PTL_LONG:
+			dst.s64 = (opr.s64 > src.s64) ? d->s64 : src.s64;
+			break;
+		case PTL_ULONG:
+			dst.u64 = (opr.u64 > src.u64) ? d->u64 : src.u64;
+			break;
+		case PTL_FLOAT:
+			dst.f = (opr.f > src.f) ? d->f : src.f;
+			break;
+		case PTL_DOUBLE:
+			dst.d = (opr.d > src.d) ? d->d : src.d;
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	case PTL_MSWAP:
+		switch (xt->atom_type) {
+		case PTL_CHAR:
+		case PTL_UCHAR:
+			dst.u8 = (opr.u8 & d->u8) | (~opr.u8 & src.u8);
+			break;
+		case PTL_SHORT:
+		case PTL_USHORT:
+			dst.u16 = (opr.u16 & d->u16) | (~opr.u16 & src.u16);
+			break;
+		case PTL_INT:
+		case PTL_UINT:
+		case PTL_FLOAT:
+			dst.u32 = (opr.u32 & d->u32) | (~opr.u32 & src.u32);
+			break;
+		case PTL_LONG:
+		case PTL_ULONG:
+		case PTL_DOUBLE:
+			dst.u64 = (opr.u64 & d->u64) | (~opr.u64 & src.u64);
+			break;
+		default:
+			return STATE_TGT_ERROR;
+		}
+		break;
+	default:
+		return STATE_TGT_ERROR;
+	}
+
+	err = copy_in(xt, me, &dst);
+	if (err)
+		return STATE_TGT_ERROR;
+
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += xt->mlength;
+
+	if (me->options & PTL_ME_USE_ONCE)
+		return STATE_TGT_UNLINK;
+
+	if ((me->options & PTL_ME_MANAGE_LOCAL) &&
+	    ((me->length - me->offset) < me->min_free))
+		return STATE_TGT_UNLINK;
+
+	return STATE_TGT_COMM_EVENT;
+}
+
+int tgt_comm_event(xt_t *xt)
+{
+	int err = PTL_OK;
+
+	if (debug)
+		printf("tgt_comm_event\n");
+
+	if (xt->event_mask & XT_COMM_EVENT)
+		err = make_comm_event(xt);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+
+	if (xt->event_mask & XT_CT_COMM_EVENT)
+		make_ct_comm_event(xt);
+
+	if (xt->event_mask & XT_REPLY_EVENT)
+		return STATE_TGT_SEND_REPLY;
+
+	if (xt->event_mask & XT_ACK_EVENT)
+		return STATE_TGT_SEND_ACK;
+
+	return STATE_TGT_CLEANUP;
+}
+
+static int tgt_send_ack(xt_t *xt)
+{
+	int err;
+	ni_t *ni = to_ni(xt);
+	buf_t *buf;
+	hdr_t *hdr;
+
+	xt->event_mask &= ~XT_ACK_EVENT;
+
+	err = buf_alloc(ni, &buf);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	buf->xt = xt;
+	xt->send_buf = buf;
+
+	hdr = (hdr_t *)buf->data;
+
+	xport_hdr_from_xt(hdr, xt);
+	base_hdr_from_xt(hdr, xt);
+
+	switch (xt->ack_req) {
+	case PTL_NO_ACK_REQ:
+		WARN();
+		return STATE_TGT_ERROR;
+	case PTL_ACK_REQ:
+		hdr->operation = OP_ACK;
+		break;
+	case PTL_CT_ACK_REQ:
+		hdr->operation = OP_CT_ACK;
+		break;
+	case PTL_OC_ACK_REQ:
+		hdr->operation = OP_OC_ACK;
+		break;
+	default:
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	buf->length = sizeof(*hdr);
+
+	if (debug) buf_dump(buf);
+
+	err = send_message(buf);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	return STATE_TGT_CLEANUP;
+}
+
+static int tgt_send_reply(xt_t *xt)
+{
+	int err;
+	ni_t *ni = to_ni(xt);
+	buf_t *buf;
+	hdr_t *hdr;
+
+	xt->event_mask &= ~XT_REPLY_EVENT;
+
+	err = buf_alloc(ni, &buf);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	buf->xt = xt;
+	xt->send_buf = buf;
+
+	hdr = (hdr_t *)buf->data;
+
+	xport_hdr_from_xt(hdr, xt);
+	base_hdr_from_xt(hdr, xt);
+
+	hdr->operation = OP_REPLY;
+	buf->length = sizeof(*hdr);
+
+	err = send_message(buf);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	return STATE_TGT_CLEANUP;
+}
+
+static int tgt_cleanup(xt_t *xt)
+{
+	/* tgt must release reference to any LE/ME */
+	if (xt->le) {
+		if (xt->le->type == TYPE_ME)
+			me_put(xt->me);
+		else
+			le_put(xt->le);
+		xt->le = NULL;
+	}
+
+	/* tgt responsible to cleanup all received buffers */
+	if (xt->recv_buf) {
+if (debug) printf("cleanup recv buf %p\n", xt->recv_buf);
+		buf_put(xt->recv_buf);
+		xt->recv_buf = NULL;
+	}
+
+	pthread_spin_lock(&xt->recv_lock);
+	while (!list_empty(&xt->recv_list)) {
+		struct list_head *l;
+		buf_t *buf;
+
+		l = xt->recv_list.next;
+		list_del(l);
+		buf = list_entry(l, buf_t, list);
+if (debug) printf("cleanup xi recv list @ %p\n", buf);
+		buf_put(buf);
+		// TODO count these as dropped packets??
+	}
+	pthread_spin_unlock(&xt->recv_lock);
+
+	xt_put(xt);
+	return STATE_TGT_DONE;
+}
+
+/*
+ * process_tgt
+ *	process incoming request message
+ */
+int process_tgt(xt_t *xt)
+{
+	int err = PTL_OK;
+	int state;
+	ni_t *ni = to_ni(xt);
+
+	if(debug) printf("process_tgt: called xt = %p\n", xt);
+
+	xt->state_again = 1;
+
+	do {
+		err = pthread_spin_trylock(&xt->state_lock);
+		if (err) {
+			if (err == EBUSY) {
+				return PTL_OK;
+			} else {
+				WARN();
+				return PTL_FAIL;
+			}
+		}
+
+		xt->state_again = 0;
+
+		if (xt->state_waiting) {
+			if (debug) printf("remove from xt_wait_list\n");
+			pthread_spin_lock(&ni->xt_wait_list_lock);
+			list_del(&xt->list);
+			pthread_spin_unlock(&ni->xt_wait_list_lock);
+			xt->state_waiting = 0;
+		}
+
+		state = xt->state;
+
+		while(1) {
+			if (debug) printf("tgt state = %s\n", tgt_state_name[state]);
+			switch (state) {
+			case STATE_TGT_START:
+				state = tgt_start(xt);
+				break;
+			case STATE_TGT_GET_MATCH:
+				state = tgt_get_match(xt);
+				break;
+			case STATE_TGT_NO_MATCH:
+				WARN();
+				state = STATE_TGT_DROP;
+				break;
+			case STATE_TGT_GET_PERM:
+				state = tgt_get_perm(xt);
+				break;
+			case STATE_TGT_NO_PERM:
+				WARN();
+				state = STATE_TGT_DROP;
+				break;
+			case STATE_TGT_GET_LENGTH:
+				state = tgt_get_length(xt);
+				break;
+			case STATE_TGT_DATA_IN:
+				state = tgt_data_in(xt);
+				break;
+			case STATE_TGT_RDMA_DESC:
+				state = tgt_rdma_desc(xt);
+				break;
+			case STATE_TGT_RDMA:
+				state = tgt_rdma(xt);
+				if (state == STATE_TGT_RDMA)
+					goto exit;
+				break;
+			case STATE_TGT_ATOMIC_DATA_IN:
+				state = tgt_atomic_data_in(xt);
+				break;
+			case STATE_TGT_SWAP_DATA_IN:
+				state = tgt_swap_data_in(xt);
+				break;
+			case STATE_TGT_DATA_OUT:
+				state = tgt_data_out(xt);
+				break;
+			case STATE_TGT_UNLINK:
+				tgt_unlink(xt);
+				state = STATE_TGT_COMM_EVENT;
+				break;
+			case STATE_TGT_COMM_EVENT:
+				state = tgt_comm_event(xt);
+				break;
+			case STATE_TGT_SEND_ACK:
+				state = tgt_send_ack(xt);
+				break;
+			case STATE_TGT_SEND_REPLY:
+				state = tgt_send_reply(xt);
+				break;
+			case STATE_TGT_DROP:
+				state = request_drop(xt);
+				break;
+			case STATE_TGT_CLEANUP:
+				state = tgt_cleanup(xt);
+				break;
+			case STATE_TGT_ERROR:
+				tgt_cleanup(xt);
+				err = PTL_FAIL;
+				goto exit;
+			case STATE_TGT_DONE:
+				goto exit;
+			}
+		}
+
+exit:
+		xt->state = state;
+		pthread_spin_unlock(&xt->state_lock);
+	} while(xt->state_again);
+
+	return err;
+}

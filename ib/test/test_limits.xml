@@ -1,0 +1,637 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test max_entries up to limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_entries="4">
+	<check actual_max_entries="4"/>
+	<ptl_pt>
+          <ptl_le count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_entries over limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_entries="4">
+	<check actual_max_entries="4"/>
+	<ptl_pt>
+          <ptl_le count="4">
+            <ptl_le_append ret="NO_SPACE"/>
+          </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_entries up to limit for me</desc>
+    <ptl>
+      <ptl_ni desired_max_entries="4">
+	<check actual_max_entries="4"/>
+	<ptl_pt>
+          <ptl_me count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_entries over limit for me</desc>
+    <ptl>
+      <ptl_ni desired_max_entries="4">
+	<check actual_max_entries="4"/>
+	<ptl_pt>
+          <ptl_me count="4">
+            <ptl_me_append ret="NO_SPACE"/>
+          </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_mds up to limit</desc>
+    <ptl>
+      <ptl_ni desired_max_mds="4">
+	<check actual_max_mds="4"/>
+        <ptl_md count="4"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_mds over limit</desc>
+    <ptl>
+      <ptl_ni desired_max_mds="4">
+	<check actual_max_mds="4"/>
+        <ptl_md count="4">
+          <ptl_md_bind ret="NO_SPACE"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_eqs up to limit</desc>
+    <ptl>
+      <ptl_ni desired_max_eqs="4">
+	<check actual_max_eqs="4"/>
+        <ptl_eq count="4"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_eqs over limit</desc>
+    <ptl>
+      <ptl_ni desired_max_eqs="4">
+	<check actual_max_eqs="4"/>
+        <ptl_eq count="4">
+          <ptl_eq_alloc ret="NO_SPACE"/>
+        </ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_cts up to limit</desc>
+    <ptl>
+      <ptl_ni desired_max_cts="4">
+	<check actual_max_cts="4"/>
+        <ptl_ct count="4"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_cts over limit</desc>
+    <ptl>
+      <ptl_ni desired_max_cts="4">
+	<check actual_max_cts="4"/>
+        <ptl_ct count="4">
+          <ptl_ct_alloc ret="NO_SPACE"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_pt_index up to limit</desc>
+    <ptl>
+      <ptl_ni desired_max_pt_index="4">
+	<check actual_max_pt_index="4"/>
+        <ptl_pt count="4" pt_index="ANY"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_pt_index over limit</desc>
+    <ptl>
+      <ptl_ni desired_max_pt_index="4">
+	<check actual_max_pt_index="4"/>
+        <ptl_pt count="4" pt_index="ANY">
+          <ptl_pt_alloc pt_index="ANY" ret="PT_FULL"/>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs up to limit for md</desc>
+    <ptl>
+      <ptl_ni desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+        <ptl_md md_length="4" md_opt="IOVEC"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs over limit for md</desc>
+    <ptl>
+      <ptl_ni desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+        <ptl_md_bind md_length="5"  md_opt="IOVEC" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs up to limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+	<ptl_pt>
+          <ptl_le le_length="4" le_opt="IOVEC"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs over limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+	<ptl_pt>
+          <ptl_le_append le_length="5"  le_opt="IOVEC" ret="ARG_INVALID"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs up to limit for me</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL" desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+	<ptl_pt>
+          <ptl_me me_length="4" me_opt="IOVEC"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_iovecs over limit for me</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL" desired_max_iovecs="4">
+	<check actual_max_iovecs="4"/>
+	<ptl_pt>
+          <ptl_me_append me_length="5"  me_opt="IOVEC" ret="ARG_INVALID"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size up to limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_le count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size over limit for le</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_le count="4">
+            <ptl_le_append ret="NO_SPACE"/>
+          </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size up to limit for me</desc>
+    <ptl>
+      <ptl_ni desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_me count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size over limit for me</desc>
+    <ptl>
+      <ptl_ni desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_me count="4">
+            <ptl_me_append ret="NO_SPACE"/>
+          </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size up to limit for le in overflow</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_le list="OVERFLOW" count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size over limit for le in overflow</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_le list="OVERFLOW" count="4">
+            <ptl_le_append list="OVERFLOW" ret="NO_SPACE"/>
+          </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size up to limit for me in overflow</desc>
+    <ptl>
+      <ptl_ni desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_me list="OVERFLOW" count="4"/>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_list_size over limit for me in overflow</desc>
+    <ptl>
+      <ptl_ni desired_max_list_size="4">
+	<check actual_max_list_size="4"/>
+	<ptl_pt>
+          <ptl_me list="OVERFLOW" count="4">
+            <ptl_me_append list="OVERFLOW" ret="NO_SPACE"/>
+          </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size up to limit for put</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+            <ptl_put length="4"/>
+	    <msleep count="10"/>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size over limit for put</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+            <ptl_put length="5" ret="ARG_INVALID"/>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size up to limit for get</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+            <ptl_get length="4"/>
+	    <msleep count="10"/>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size over limit for get</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+            <ptl_get length="5" ret="ARG_INVALID"/>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size up to limit for trig put</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_put length="4"/>
+	      <msleep count="10"/>
+	    </ptl_ct>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size over limit for trig put</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_put length="5" ret="ARG_INVALID"/>
+	    </ptl_ct>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size up to limit for trig get</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_get length="4"/>
+	      <msleep count="10"/>
+	    </ptl_ct>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_msg_size over limit for trig get</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4">
+	<check actual_max_msg_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_get length="5" ret="ARG_INVALID"/>
+	    </ptl_ct>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for atomic</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+	  <ptl_md>
+            <ptl_atomic length="4"/>
+	    <msleep count="10"/>
+	  </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for atomic</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+	  <ptl_md>
+            <ptl_atomic length="5" ret="ARG_INVALID"/>
+	  </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for fetch</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+              <ptl_fetch length="4"/>
+	      <msleep count="10"/>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for fetch</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+              <ptl_fetch length="5" ret="ARG_INVALID"/>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for swap</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+              <ptl_swap length="4"/>
+	      <msleep count="10"/>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for swap</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+              <ptl_swap length="5" ret="ARG_INVALID"/>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for trig atomic</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+	  <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_atomic length="4"/>
+	      <msleep count="10"/>
+	    </ptl_ct>
+	  </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for trig atomic</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+	  <ptl_md>
+	    <ptl_ct>
+              <ptl_trig_atomic length="5" ret="ARG_INVALID"/>
+	    </ptl_ct>
+	  </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for trig fetch</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_fetch length="4"/>
+	        <msleep count="10"/>
+	      </ptl_ct>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for trig fetch</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_fetch length="5" ret="ARG_INVALID"/>
+	      </ptl_ct>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size up to limit for trig swap</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_swap length="4"/>
+	        <msleep count="10"/>
+	      </ptl_ct>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test max_atomic_size over limit for trig swap</desc>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+	<check actual_max_atomic_size="4"/>
+	<ptl_pt>
+	  <ptl_me>
+          <ptl_md>
+	    <ptl_md>
+	      <ptl_ct>
+                <ptl_trig_swap length="5" ret="ARG_INVALID"/>
+	      </ptl_ct>
+	    </ptl_md>
+          </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>

@@ -1,0 +1,375 @@
+<?xml version="1.0"?>
+<test>
+  <repeat count="2">
+  <subtest>
+    <desc>Test PtlPut without init</desc>
+    <ptl_put ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet without init</desc>
+    <ptl_get ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic without init</desc>
+    <ptl_atomic ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic without init</desc>
+    <ptl_fetch ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap without init</desc>
+    <ptl_swap ret="NO_INIT"/>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with md_handle = NONE</desc>
+    <ptl>
+      <ptl_put md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_put md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with md_handle = NONE</desc>
+    <ptl>
+      <ptl_get md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_get md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with md_handle = NONE</desc>
+    <ptl>
+      <ptl_atomic md_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with md_handle = INVALID</desc>
+    <ptl>
+      <ptl_atomic md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with get_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_fetch get_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with get_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_fetch get_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with put_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_fetch put_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with put_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_fetch put_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with get_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_swap get_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with get_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_swap get_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with put_md_handle = NONE</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_swap put_md_handle="NONE" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with put_md_handle = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_md>
+            <ptl_swap put_md_handle="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with bad operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_atomic atom_op="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with swap operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_atomic atom_op="CSWAP" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with bad operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_fetch atom_op="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with swap operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_fetch atom_op="CSWAP" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with bad operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_swap atom_op="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with non swap operation</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_swap atom_op="XOR" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with ack_req = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_eq>
+          <ptl_md>
+            <ptl_put ack_req="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with ack_req = ACK and no eq</desc>
+    <ptl>
+      <ptl_ni>
+          <ptl_md>
+            <ptl_put ack_req="ACK" ret="ARG_INVALID"/>
+          </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with ack_req = CT_ACK and no ct</desc>
+    <ptl>
+      <ptl_ni>
+          <ptl_md>
+            <ptl_put ack_req="CT_ACK" ret="ARG_INVALID"/>
+          </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with ack_req = INVALID</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_eq>
+          <ptl_md>
+            <ptl_atomic ack_req="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with ack_req = ACK and no EQ</desc>
+    <ptl>
+      <ptl_ni>
+          <ptl_md>
+            <ptl_atomic ack_req="ACK" ret="ARG_INVALID"/>
+          </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with ack_req = CT_ACK and no CT</desc>
+    <ptl>
+      <ptl_ni>
+          <ptl_md>
+            <ptl_atomic ack_req="INVALID" ret="ARG_INVALID"/>
+          </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT">
+            <ptl_md>
+              <ptl_put/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters length=1024</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT" me_length="2048">
+            <ptl_md md_length="1024">
+              <ptl_put length="1024"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_GET">
+            <ptl_md>
+              <ptl_get/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlAtomic with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_atomic/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlFetchAtomic with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_md>
+                <ptl_fetch/>
+	        <msleep count="10"/>
+              </ptl_md>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_md>
+                <ptl_swap/>
+	        <msleep count="10"/>
+              </ptl_md>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  </repeat>
+</test>
