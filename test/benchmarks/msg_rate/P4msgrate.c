@@ -231,9 +231,6 @@ ptl_event_t event;
 	if (test_type == LEwithCT)   {
 	    /* Create a persistent LE to receive into */
 	    __PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
-	} else if (test_type == MEwithEQ)   {
-	    /* Create "nmsgs" persistent MEs to receive into */
-	    __PtlCreateMEPersistent(ni, index, recv_buf, nbytes, nmsgs, me_handles);
 	}
 
 	/*
@@ -247,6 +244,12 @@ ptl_event_t event;
 	/* Run the test */
 	for (i= 0; i < niters; i++)   {
 	    cache_invalidate(cache_size, cache_buf);
+
+	    if (test_type == MEwithEQ)   {
+		/* Create "nmsgs" MEs to receive into */
+		__PtlCreateMEUseOnce(ni, index, recv_buf, nbytes,
+							nmsgs, me_handles);
+	    }
 
 	    __PtlBarrier();
 
@@ -286,7 +289,6 @@ ptl_event_t event;
 	    rc= PtlLEUnlink(le_handle);
 	    PTL_CHECK(rc, "PtlLEUnlink in test_one_way");
 	} else if (test_type == MEwithEQ)   {
-	    __PtlFreeME(nmsgs, me_handles);
 	    PtlEQFree(eq_handle);
 	}
 	rc= PtlPTFree(ni, index);
