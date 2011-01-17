@@ -233,7 +233,7 @@ ptl_event_t event;
 	    __PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
 	} else if (test_type == MEwithEQ)   {
 	    /* Create "nmsgs" persistent MEs to receive into */
-	    __PtlCreateME(ni, index, recv_buf, nbytes, nmsgs, me_handles);
+	    __PtlCreateMEPersistent(ni, index, recv_buf, nbytes, nmsgs, me_handles);
 	}
 
 	/*
@@ -429,7 +429,7 @@ ptl_event_t event;
 	__PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
     } else if (test_type == MEwithEQ)   {
 	/* Create "npeers * nmsgs" persistent MEs to receive into */
-	__PtlCreateME(ni, index, recv_buf, nbytes, npeers * nmsgs, me_handles);
+	__PtlCreateMEPersistent(ni, index, recv_buf, nbytes, npeers * nmsgs, me_handles);
     }
 
     /* Sync everybody */
