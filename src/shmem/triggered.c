@@ -31,8 +31,8 @@ int API_FUNC PtlTriggeredPut(
     ptl_handle_ct_t trig_ct_handle,
     ptl_size_t threshold)
 {
-    const ptl_internal_handle_converter_t mdh = { md_handle };
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t mdh = { md_handle };
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
@@ -89,8 +89,8 @@ int API_FUNC PtlTriggeredGet(
     ptl_handle_ct_t trig_ct_handle,
     ptl_size_t threshold)
 {
-    const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
@@ -150,8 +150,8 @@ int API_FUNC PtlTriggeredAtomic(
     ptl_handle_ct_t trig_ct_handle,
     ptl_size_t threshold)
 {
-    const ptl_internal_handle_converter_t md = { md_handle };
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
 	VERBOSE_ERROR("communication pad not initialized\n");
 	return PTL_NO_INIT;
@@ -264,9 +264,9 @@ int API_FUNC PtlTriggeredFetchAtomic(
     ptl_handle_ct_t trig_ct_handle,
     ptl_size_t threshold)
 {
+#ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-#ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
@@ -398,9 +398,9 @@ int API_FUNC PtlTriggeredSwap(
     ptl_handle_ct_t trig_ct_handle,
     ptl_size_t threshold)
 {
+#ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-#ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
