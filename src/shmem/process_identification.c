@@ -13,7 +13,9 @@
 #include "ptl_internal_nit.h"
 #include "ptl_visibility.h"
 #include "ptl_internal_handles.h"
+#ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
+#endif
 
 int INTERNAL PtlInternalLogicalProcessValidator(
     ptl_process_t p)
