@@ -261,12 +261,10 @@ int test_ptl_md_bind(struct node_info *info)
 	info->md.ct_handle = info->ct_handle;
 	info->md.eq_handle = info->eq_handle;
 
-#if 1
 	if (debug) {
 		printf("test_ptl_md_bind - start(%p), length(%d)\n",
 			info->md.start, (int)info->md.length);
 	}
-#endif
 	ret = PtlMDBind(info->ni_handle, &info->md, info->ptr);
 
 	if (ret == PTL_OK) {
