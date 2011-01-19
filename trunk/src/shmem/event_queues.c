@@ -18,11 +18,11 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_nit.h"
-#include "ptl_internal_error.h"
 #include "ptl_internal_timer.h"
 #include "ptl_internal_papi.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_commpad.h"
+#include "ptl_internal_error.h"
 #endif
 
 const ptl_internal_handle_converter_t eq_none = {.s = {

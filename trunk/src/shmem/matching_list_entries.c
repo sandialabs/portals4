@@ -7,6 +7,8 @@
 
 /* System headers */
 #include <string.h>                    /* for memcpy() */
+#include <stdlib.h>
+#include <stdio.h>
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -15,7 +17,9 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_atomic.h"
+#ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
+#endif
 #include "ptl_internal_nit.h"
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"

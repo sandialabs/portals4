@@ -9,6 +9,7 @@
 #include <string.h>                    /* for memcpy() */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -26,7 +27,9 @@
 #include "ptl_internal_LE.h"
 #include "ptl_internal_ME.h"
 #include "ptl_internal_papi.h"
+#ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
+#endif
 
 static uint32_t spawned;
 static pthread_t catcher;

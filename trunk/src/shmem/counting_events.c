@@ -24,7 +24,9 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
+#ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
+#endif
 #include "ptl_internal_timer.h"
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */

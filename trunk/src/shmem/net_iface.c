@@ -26,7 +26,9 @@
 #include "ptl_internal_DM.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_fragments.h"
+#ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
+#endif
 
 ptl_internal_nit_t nit = { {0, 0, 0, 0}
 , {0, 0, 0, 0}
