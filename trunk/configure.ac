@@ -60,6 +60,9 @@ AC_ARG_ENABLE([debug-symbols],
 AC_ARG_ENABLE([papi],
 			  [AS_HELP_STRING([--enable-papi],
 							  [Enables PAPI performance counters support])])
+AC_ARG_ENABLE([rdtsc],
+                          [AS_HELP_STRING([--enable-rdtsc],
+                                                          [Enables rdtsc performance counters support])])
 AC_ARG_ENABLE([loud-drops],
 			  [AS_HELP_STRING([--enable-loud-drops],
 							  [Makes dropped messages print an error to the console])])
@@ -85,6 +88,8 @@ AS_IF([test "x$enable_loud_drops" == xyes],
 	  [AC_DEFINE([LOUD_DROPS], [1], [Define to make dropped messages print an error to the console])])
 AS_IF([test "x$enable_paranoia" == xyes],
 	  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
+AS_IF([test "x$enable_rdtsc" == xyes],
+	  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
 
 
 ## ------------------- ##
@@ -224,6 +229,7 @@ AC_CACHE_SAVE
 
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
 AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
+AM_CONDITIONAL([USE_RDTSC], [test "x$enable_rdtsc" == xyes])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile

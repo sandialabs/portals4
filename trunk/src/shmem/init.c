@@ -145,9 +145,7 @@ int API_FUNC PtlInit(
             nit_limits[ni].max_fetch_atomic_size = SMALL_FRAG_PAYLOAD;  // single payload
             nit_limits[ni].max_ordered_size = SMALL_FRAG_PAYLOAD;       // single payload
         }
-#ifdef HAVE_LIBPAPI
         PtlInternalPAPIInit();
-#endif
 
         /**************************************************************************
          * Can Now Announce My Presence
@@ -203,9 +201,7 @@ void API_FUNC PtlFini(
     lastone = PtlInternalAtomicInc(&init_ref_count, -1);
     if (lastone == 1) {
         /* Clean up */
-#ifdef HAVE_LIBPAPI
         PtlInternalPAPITeardown();
-#endif
         //printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
         ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
         comm_pad = NULL;
