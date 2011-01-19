@@ -26,6 +26,11 @@ libportals_la_SOURCES += \
 			 shmem/papi.c
 endif
 
+if USE_RDTSC
+libportals_la_SOURCES += \
+			 shmem/rdtsc.c
+endif
+
 yod_SOURCES += shmem/yod.c
 yod_LDADD = libportals.la
 

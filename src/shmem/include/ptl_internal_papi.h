@@ -1,7 +1,7 @@
 #ifndef PTL_INTERNAL_PAPI_H
 #define PTL_INTERNAL_PAPI_H
 
-#ifdef HAVE_LIBPAPI
+#if defined( HAVE_LIBPAPI ) || defined( USE_RDTSC )
 # include "ptl_visibility.h"
 
 enum ptl_internal_papi_func {
@@ -14,6 +14,8 @@ enum ptl_internal_papi_func {
 
     NUM_INSTRUMENTED_FUNCS	// must be last entry
 };
+
+#define NUM_SAVE_POINTS 10
 
 void INTERNAL PtlInternalPAPIInit(
     void);
