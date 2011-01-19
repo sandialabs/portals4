@@ -202,6 +202,8 @@ struct node_info *push_info(struct node_info *head, int tok)
 		return NULL;
 	}
 
+	get_maps();
+
 	*info = *head;
 	info->next = head;
 	head->prev = info;
