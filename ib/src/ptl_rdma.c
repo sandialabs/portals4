@@ -199,7 +199,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	rseg_length = be32_to_cpu(xt->cur_rem_sge->length);
 	rkey  = be32_to_cpu(xt->cur_rem_sge->lkey);
 
-	while (*resid > 0) {
+	while (*resid > 0 && !xt->rdma_comp) {
 		raddr = be64_to_cpu(xt->cur_rem_sge->addr) + xt->cur_rem_off;
 		rlength = rseg_length - xt->cur_rem_off;
 
@@ -214,9 +214,14 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			WARN();
 			return PTL_FAIL;
 		}
-		if (*resid == bytes) {
+
+		xt->interim_rdma++;
+		/* XXX todo: we could throttle WR on a QP bases instead of xt */
+
+		if (*resid == bytes || xt->interim_rdma >= MAX_RDMA_WR_OUT) {
 			/* XXX todo: if write w/ immediate fold that in */
 			comp = 1;
+			xt->interim_rdma = 0;
 		}
 
 		if (dir == DATA_DIR_IN)
@@ -232,7 +237,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		}
 
 		if (comp)
-			xt->rdma_out++;
+			xt->rdma_comp++;
 
 		*resid -= bytes;
 		xt->cur_loc_iov_index = iov_index;
@@ -255,8 +260,8 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	}
 
 	if (debug)
-		printf("RDMA posted, resid(%d), rdma_out(%d)\n",
-			(int) *resid, (int) xt->rdma_out);
+		printf("RDMA posted, resid(%d), rdma_comp(%d)\n",
+			(int) *resid, (int) xt->rdma_comp);
 
 	return PTL_OK;
 }

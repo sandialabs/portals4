@@ -141,7 +141,7 @@ static int rdma_comp(buf_t *rdma_buf)
 	pthread_spin_unlock(&ni->send_list_lock);
 
 	if (rdma_buf->xt) {
-		rdma_buf->xt->rdma_out--;
+		rdma_buf->xt->rdma_comp--;
 		err = process_tgt(rdma_buf->xt);
 		if (err) {
 			WARN();

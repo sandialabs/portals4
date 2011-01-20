@@ -558,8 +558,10 @@ static int tgt_rdma(xt_t *xt)
 	ptl_size_t *resid = xt->rdma_dir == DATA_DIR_IN ?
 		&xt->put_resid : &xt->get_resid;
 
-	if (debug) printf("tgt_rdma - data_dir(%d) resid(%d), rdma_out(%d)\n",
-		(int) xt->rdma_dir, (int) xt->put_resid, (int) xt->rdma_out);
+	if (debug) printf("tgt_rdma - data_dir(%d), resid(%d), "
+		"interim_rdma(%d), rdma_comp(%d)\n",
+		(int) xt->rdma_dir, (int) xt->put_resid,
+		 (int) xt->interim_rdma, (int) xt->rdma_comp);
 
 	/*
 	 * Allocate a rdma_buf to handle any completions we take for
@@ -600,7 +602,7 @@ static int tgt_rdma(xt_t *xt)
 	 * If all RDMA have been issued and there is not a completion
 	 * outstanding, release the rdma buf and advance.
 	 */
-	if (!*resid && !xt->rdma_out) {
+	if (!*resid && !xt->rdma_comp) {
 		if (debug)
 			printf("tgt_rdma - release rdma buf\n");
 

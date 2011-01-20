@@ -5,6 +5,8 @@
 #ifndef PTL_XX_H
 #define PTL_XX_H
 
+#define MAX_RDMA_WR_OUT		(4)
+
 struct buf;
 typedef ptl_handle_any_t ptl_handle_xi_t;
 typedef ptl_handle_any_t ptl_handle_xt_t;
@@ -45,7 +47,8 @@ enum {
 	ptl_size_t		cur_loc_iov_index;	\
 	ptl_size_t		cur_loc_iov_off;	\
 	uint32_t  		rdma_dir;		\
-	int			rdma_out;		\
+	int			rdma_comp;		\
+	int			interim_rdma;		\
 	pthread_spinlock_t	state_lock;		\
 	int			state;			\
 	int			next_state;		\
