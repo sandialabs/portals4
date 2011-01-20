@@ -15,17 +15,40 @@ case "$1" in
 	shift
 	arg="--cpunodebind="$((${PORTALS4_RANK}%${nodecount}))
 	;;
+	--socket-static2)
+	shift
+	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
+		case "$PORTALS4_RANK" in
+		0) base=0 ;; # 0 + 2
+		1) base=4 ;; # 4 + 6
+		2) base=1 ;; # 1 + 3
+		3) base=5 ;; # 5 + 7
+		4) base=8 ;; # 8 + 10
+		5) base=9 ;; # 9 + 11
+		esac
+	    arg="--physcpubind="$base,$(($base+2))
+	else
+	    totcores=$(($node0cores+$node1cores))
+	    idx=$(($PORTALS4_RANK%$totcores))
+	    if [ $idx -ge $node0cores ] ; then
+		base=${node1nodes[$(($idx-$node0cores))]}
+	    else
+		base=${node0nodes[$idx]}
+	    fi
+	    arg="--physcpubind=$base"
+	fi
+	;;
 	--socket-static)
 	shift
-	if [ "$PORTALS4_NUM_PROCS" == 2 ] ; then
-	    case "$PORTALS4_RANK" in
-		0)
-		    base=2
-		    ;;
-		1)
-		    base=3
-		    ;;
-	    esac
+	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
+		case "$PORTALS4_RANK" in
+		0) base=0 ;; # 0 + 2
+		1) base=1 ;; # 1 + 3
+		2) base=4 ;; # 4 + 6
+		3) base=5 ;; # 5 + 7
+		4) base=8 ;; # 8 + 10
+		5) base=9 ;; # 9 + 11
+		esac
 	    arg="--physcpubind="$base,$(($base+2))
 	else
 	    totcores=$(($node0cores+$node1cores))
