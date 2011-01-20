@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <test>
   <subtest>
-    <desc>Test PtlPut with good parameters length=1024</desc>
+    <desc>Test PtlPut with good parameters to ME</desc>
     <ptl>
       <ptl_ni desired_max_msg_size="4096">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_PUT" me_length="1024">
-            <ptl_md md_length="1024">
-              <ptl_put length="1024"/>
+	  <ptl_me me_opt="OP_PUT" me_length="4096">
+            <ptl_md md_length="4096">
+              <ptl_put length="4096"/>
 	      <msleep count="10"/>
             </ptl_md>
 	  </ptl_me>
@@ -16,16 +16,46 @@
     </ptl>
   </subtest>
   <subtest>
-    <desc>Test PtlGet with good parameters length=1024</desc>
+    <desc>Test PtlGet with good parameters from ME</desc>
     <ptl>
       <ptl_ni desired_max_msg_size="4096">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_GET" me_length="1024">
-            <ptl_md md_length="1024">
-              <ptl_get length="1024"/>
+	  <ptl_me me_opt="OP_GET" me_length="4096">
+            <ptl_md md_length="4096">
+              <ptl_get length="4096"/>
 	      <msleep count="10"/>
             </ptl_md>
 	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters to LE</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="OP_PUT" le_length="4096">
+            <ptl_md md_length="4096">
+              <ptl_put length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters from LE</desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="OP_GET" le_length="4096">
+            <ptl_md md_length="4096">
+              <ptl_put length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
 	</ptl_pt>
       </ptl_ni>
     </ptl>
@@ -36,11 +66,56 @@
       <ptl_ni desired_max_msg_size="4096">
 	<ptl_pt>
 	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8">
-            <ptl_md md_length="1024">
-              <ptl_put length="1024"/>
+            <ptl_md md_length="4096">
+              <ptl_put length="4096"/>
 	      <msleep count="10"/>
             </ptl_md>
 	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters ME IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8">
+            <ptl_md md_length="4096">
+              <ptl_get length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters LE IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8">
+            <ptl_md md_length="4096">
+              <ptl_put length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters LE IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8">
+            <ptl_md md_length="4096">
+              <ptl_get length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
 	</ptl_pt>
       </ptl_ni>
     </ptl>
@@ -50,12 +125,87 @@
     <ptl>
       <ptl_ni desired_max_msg_size="4096">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_PUT" me_length="1024">
+	  <ptl_me me_opt="OP_PUT" me_length="4096">
             <ptl_md md_opt="IOVEC" md_length="8">
-              <ptl_put length="1024"/>
+              <ptl_put length="4096"/>
 	      <msleep count="10"/>
             </ptl_md>
 	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters MD IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="OP_GET" me_length="4096">
+            <ptl_md md_opt="IOVEC" md_length="8">
+              <ptl_get length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters ME and MD IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8">
+            <ptl_md md_opt="IOVEC" md_length="8">
+              <ptl_put length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters ME and MD IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8">
+            <ptl_md md_opt="IOVEC" md_length="8">
+              <ptl_get length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut with good parameters LE and MD IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8">
+            <ptl_md md_opt="IOVEC" md_length="8">
+              <ptl_put length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters LE and MD IOVEC of 8 </desc>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8">
+            <ptl_md md_opt="IOVEC" md_length="8">
+              <ptl_get length="4096"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_le>
 	</ptl_pt>
       </ptl_ni>
     </ptl>
