@@ -7,6 +7,9 @@
 
 #include "ptl_internal_commpad.h"
 
+#ifdef NO_ARG_VALIDATION
+#define VERBOSE_ERROR(...)
+#else
 static int verbose_error_flag = 0;
 
 static void VERBOSE_ERROR(
@@ -35,6 +38,7 @@ static void VERBOSE_ERROR(
         }
     }
 }
+#endif /* NO_ARG_VALIDATION */
 
 #endif
 /* vim:set expandtab: */
