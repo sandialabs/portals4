@@ -1160,11 +1160,9 @@ int API_FUNC PtlSwap(
     ptl_datatype_t datatype)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
-#ifndef NO_ARG_VALIDATION
-    const ptl_internal_handle_converter_t put_md = { put_md_handle };
-#endif
     ptl_internal_header_t *hdr;
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t put_md = { put_md_handle };
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
