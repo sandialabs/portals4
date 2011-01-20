@@ -21,7 +21,7 @@
  * with multiple enqueuers and a single de-queuer. */
 void INTERNAL PtlInternalNEMESISBlockingInit(
     NEMESIS_blocking_queue * q)
-{
+{                                      /*{{{ */
     PtlInternalNEMESISInit(&q->q);
 #if defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
     q->frustration = 0;
@@ -48,13 +48,13 @@ void INTERNAL PtlInternalNEMESISBlockingInit(
     /* I'm leaving open both ends of the pipe, so that I can both receive
      * messages AND send myself messages */
 #endif
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     NEMESIS_blocking_queue * restrict q,
     NEMESIS_entry * restrict f)
-{
-    assert((f == (void *)1) || (f->next == NULL));
+{                                      /*{{{ */
+    assert(f->next == NULL);
     PtlInternalNEMESISOffsetEnqueue(&q->q, f);
     /* awake waiter */
 #ifndef USE_HARD_POLLING
@@ -71,11 +71,11 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
     ptl_assert(write(q->pipe[1], "", 1), 1);
 # endif
 #endif
-}
+}                                      /*}}} */
 
 NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_blocking_queue * q)
-{
+{                                      /*{{{ */
 #if ! defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
     char junk;
     ptl_assert(read(q->pipe[0], &junk, 1), 1);
@@ -83,7 +83,9 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
     if (retval == NULL) {
         while (q->q.head == NULL) {
-#ifndef USE_HARD_POLLING
+#ifdef USE_HARD_POLLING
+            __asm__ __volatile__( "":::"memory");
+#else
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
                 ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
@@ -102,7 +104,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
         assert(retval != NULL);
     }
     assert(retval);
-    assert(retval == (void *)1 || retval->next == NULL);
+    assert(retval->next == NULL);
     return retval;
-}
+}                                      /*}}} */
 /* vim:set expandtab: */

@@ -22,6 +22,7 @@ extern size_t firstpagesize;
 #define HDR_TYPE_ACKMASK        23     /* 1_111 */
 #define HDR_TYPE_TRUNCFLAG      16     /* 1____ */
 #define HDR_TYPE_BASICMASK      7      /* __111 */
+#define HDR_TYPE_TERM           31     /* 11111 */
 
 typedef struct {
     void *volatile next;

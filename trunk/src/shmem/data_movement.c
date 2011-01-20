@@ -371,7 +371,7 @@ static void *PtlInternalDMCatcher(
         ptl_pid_t src;
         ptl_internal_header_t *hdr = PtlInternalFragmentReceive();
         assert(hdr != NULL);
-        if (hdr == TERMINATION_HDR_VALUE) {     // TERMINATE!
+        if (hdr->type == HDR_TYPE_TERM) { // TERMINATE!
             dm_printf("termination command received in DMCatcher!\n");
             return NULL;
         }
@@ -496,10 +496,13 @@ void INTERNAL PtlInternalDMTeardown(
     void)
 {                                      /*{{{ */
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
+        ptl_internal_header_t *restrict hdr;
         /* Using a termination sigil, rather than pthread_cancel(), so that the queues
          * are always left in a valid/useable state (e.g. unlocked), so that late sends
          * and late acks don't cause hangs. */
-        PtlInternalFragmentToss(TERMINATION_HDR_VALUE, proc_number);
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+        hdr->type = HDR_TYPE_TERM;
+        PtlInternalFragmentToss(hdr, proc_number);
         ptl_assert(pthread_join(catcher, NULL), 0);
     }
 }                                      /*}}} */

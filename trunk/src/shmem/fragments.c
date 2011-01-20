@@ -48,13 +48,12 @@ size_t SMALL_FRAG_COUNT = 512;
 size_t LARGE_FRAG_PAYLOAD = 0;
 size_t LARGE_FRAG_SIZE = 4096;
 size_t LARGE_FRAG_COUNT = 128;
-void * TERMINATION_HDR_VALUE = (void*)(sizeof(fragment_hdr_t)+1);
 
 static fragment_hdr_t *small_free_list = NULL;
 static fragment_hdr_t *large_free_list = NULL;
 static NEMESIS_blocking_queue *receiveQ = NULL;
 
-#define C_VALIDPTR(x) assert(((uintptr_t)(x)) == 1 || (((uintptr_t)(x)) >= (uintptr_t)comm_pad && ((uintptr_t)(x)) < ((uintptr_t)comm_pad + per_proc_comm_buf_size * (num_siblings+1))))
+#define C_VALIDPTR(x) assert(((uintptr_t)(x)) >= (uintptr_t)comm_pad && ((uintptr_t)(x)) < ((uintptr_t)comm_pad + per_proc_comm_buf_size * (num_siblings+1)))
 #ifdef PARANOID
 static uintptr_t small_bufstart, small_bufend;
 static uintptr_t large_bufstart, large_bufend;
@@ -62,7 +61,7 @@ static uintptr_t large_bufstart, large_bufend;
 # define VALIDPTR(x,t) assert(((uintptr_t)(x)) >= t##_bufstart && ((uintptr_t)(x)) < t##_bufend)
 static void PtlInternalValidateFragmentLists(
     void)
-{
+{                                      /*{{{ */
     unsigned long count = 0;
     fragment_hdr_t *cursor = small_free_list;
     fragment_hdr_t *prev = NULL;
@@ -72,7 +71,8 @@ static void PtlInternalValidateFragmentLists(
         if (cursor->size != SMALL_FRAG_PAYLOAD) {
             fprintf(stderr,
                     "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
-                    count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD, prev);
+                    count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD,
+                    prev);
         }
         assert(cursor->size == SMALL_FRAG_PAYLOAD);
         prev = cursor;
@@ -87,13 +87,14 @@ static void PtlInternalValidateFragmentLists(
         if (cursor->size != LARGE_FRAG_PAYLOAD) {
             fprintf(stderr,
                     "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
-                    count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD, prev);
+                    count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD,
+                    prev);
         }
         assert(cursor->size == LARGE_FRAG_PAYLOAD);
         prev = cursor;
         cursor = cursor->next;
     }
-}
+}                                      /*}}} */
 #else
 # define PARANOID_STEP(x)
 # define PtlInternalValidateFragmentLists()
@@ -196,7 +197,7 @@ void INTERNAL *PtlInternalFragmentReceive(
     fragment_hdr_t *frag =
         (fragment_hdr_t *) PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
     PtlInternalValidateFragmentLists();
-    assert(frag == (void *)1 || frag->next == NULL);
+    assert(frag->next == NULL);
     C_VALIDPTR(frag);
     return frag->data;
 }                                      /*}}} */
