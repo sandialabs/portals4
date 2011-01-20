@@ -364,7 +364,7 @@ int main(
                             break;
                         default:
                             ++c;
-                            if (WIFSIGNALED(stat) && !WIFSTOPPED(stat)) {
+                            if (WIFSIGNALED(stat) && !WIFSTOPPED(stat) && ((WTERMSIG(status) == SIGINT && WTERMSIG(stat) != SIGINT) || WTERMSIG(stat) != SIGINT)) {
                                 ++err;
                                 fprintf(stderr,
                                         "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
@@ -429,10 +429,10 @@ int main(
             char buf[200];
             strerror_r(perr, buf, 200);
 #  endif
-            fprintf(stderr,
+            if (perr != EBUSY) {
+                fprintf(stderr,
                     "yod-> destroying rank %lu's queue trigger(%i): %s\n",
                     (unsigned long)i, perr, buf);
-            if (perr != EBUSY) {
                 abort();
             }
         }
@@ -444,10 +444,10 @@ int main(
             char buf[200];
             strerror_r(perr, buf, 200);
 #  endif
-            fprintf(stderr,
+            if (perr != EBUSY) {
+                fprintf(stderr,
                     "yod-> destroying rank %lu's queue trigger lock(%i): %s\n",
                     (unsigned long)i, perr, buf);
-            if (perr != EBUSY) {
                 abort();
             }
         }
