@@ -214,12 +214,12 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->type = PTL_UCHAR;
 
 	for (i = 0; i < 8; i++) {
-		info->md_iov[i].iov_base	= info->md_buf + 128*i;
-		info->md_iov[i].iov_len	= 128;
-		info->le_iov[i].iov_base	= info->le_buf + 128*i;
-		info->le_iov[i].iov_len	= 128;
-		info->me_iov[i].iov_base	= info->me_buf + 128*i;
-		info->me_iov[i].iov_len	= 128;
+		info->md_iov[i].iov_base	= info->md_buf + 512*i;
+		info->md_iov[i].iov_len	= 512;
+		info->le_iov[i].iov_base	= info->le_buf + 512*i;
+		info->le_iov[i].iov_len	= 512;
+		info->me_iov[i].iov_base	= info->me_buf + 512*i;
+		info->me_iov[i].iov_len	= 512;
 	}
 
 	info->md.start			= info->md_buf;
