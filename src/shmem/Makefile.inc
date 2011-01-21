@@ -16,6 +16,7 @@ libportals_la_SOURCES += \
 			 shmem/nemesis.c \
 			 shmem/queues.c \
 			 shmem/perform_atomic.c \
+			 shmem/handle.c \
 			 shmem/triggered.c \
 			 shmem/bundling.c \
 			 shmem/runtime.c \
