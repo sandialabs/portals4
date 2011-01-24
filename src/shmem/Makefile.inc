@@ -55,4 +55,5 @@ noinst_HEADERS += \
 		shmem/include/ptl_internal_pid.h \
 		shmem/include/ptl_internal_queues.h \
 		shmem/include/ptl_internal_timer.h \
+		shmem/include/ptl_internal_locks.h \
 		shmem/include/ptl_visibility.h
