@@ -388,7 +388,7 @@ static void *PtlInternalDMCatcher(
         if (nit.tables[hdr->ni] != NULL) {
             ptl_table_entry_t *table_entry =
                 &(nit.tables[hdr->ni][hdr->pt_index]);
-            ptl_assert(PTL_LOCK_LOCK(table_entry->lock), 0);
+            PTL_LOCK_LOCK(table_entry->lock);
             if (table_entry->status == 1) {
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
@@ -462,7 +462,7 @@ static void *PtlInternalDMCatcher(
                 /* silently ACK */
                 hdr->src = 0;
                 dm_printf("table_entry->status == 0 ... unlocking\n");
-                ptl_assert(PTL_LOCK_UNLOCK(table_entry->lock), 0);
+                PTL_LOCK_UNLOCK(table_entry->lock);
             }
         } else {                       // uninitialized NI
 #ifdef LOUD_DROPS

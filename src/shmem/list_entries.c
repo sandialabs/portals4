@@ -198,7 +198,7 @@ int API_FUNC PtlLEAppend(
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
-    ptl_assert(PTL_LOCK_LOCK(t->lock), 0);
+    PTL_LOCK_LOCK(t->lock);
     switch (ptl_list) {
         case PTL_PRIORITY_LIST:
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
@@ -444,7 +444,7 @@ int API_FUNC PtlLEAppend(
             break;
     }
   done_appending:
-    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+    PTL_LOCK_UNLOCK(t->lock);
     return PTL_OK;
 }                                      /*}}} */
 
@@ -477,7 +477,7 @@ int API_FUNC PtlLEUnlink(
         return PTL_ARG_INVALID;
     }
 #endif
-    ptl_assert(PTL_LOCK_LOCK(t->lock), 0);
+    PTL_LOCK_LOCK(t->lock);
     switch (les[le.s.ni][le.s.code].ptl_list) {
         case PTL_PRIORITY_LIST:
         {
@@ -548,7 +548,7 @@ int API_FUNC PtlLEUnlink(
             abort();
             break;
     }
-    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+    PTL_LOCK_UNLOCK(t->lock);
     switch (PtlInternalAtomicCas32
             (&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
         case LE_IN_USE:
@@ -633,7 +633,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             //PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
-            ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+            PTL_LOCK_UNLOCK(t->lock);
             return (ptl_pid_t) 3;
         }
         /*******************************************************************
@@ -655,7 +655,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
              * table, thus allowing appends on the PT while we do this delivery
              */
             need_to_unlock = 0;
-            ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+            PTL_LOCK_UNLOCK(t->lock);
             if (tEQ != PTL_EQ_NONE &&
                 (le.options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0) {
                 ptl_internal_event_t e;
@@ -757,13 +757,13 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
             case HDR_TYPE_SWAP:
                 PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
                 if (need_to_unlock)
-                    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+                    PTL_LOCK_UNLOCK(t->lock);
                 return (ptl_pid_t) ((le.
                                      options & PTL_LE_ACK_DISABLE) ? 0 : 1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
                 if (need_to_unlock)
-                    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+                    PTL_LOCK_UNLOCK(t->lock);
                 return (ptl_pid_t) 1;
         }
     }
@@ -785,7 +785,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
     PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
     if (need_to_unlock)
-        ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
+        PTL_LOCK_UNLOCK(t->lock);
     return 0;                          // silent ACK
 }                                      /*}}} */
 
