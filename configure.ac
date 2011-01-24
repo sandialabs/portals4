@@ -194,7 +194,9 @@ AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
 AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
-AC_CHECK_FUNCS([getpagesize pthread_spin_init]) # not mandatory
+AC_CHECK_FUNCS([getpagesize]) # not mandatory
+AC_SEARCH_LIBS([pthread_spin_init],[pthread],
+			   [AC_DEFINE([HAVE_PTHREAD_SPIN_INIT], [1], [Define if pthread supports spinlocks])]) # not mandatory either, just faster
 AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD functions like ftruncate
