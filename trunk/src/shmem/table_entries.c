@@ -57,9 +57,9 @@ int API_FUNC PtlPTAlloc(
 #endif
     if (pt_index_req != PTL_PT_ANY) {
         pt = &(nit.tables[ni.s.ni][pt_index_req]);
-        ptl_assert(pthread_mutex_lock(&pt->lock), 0);
+        ptl_assert(PTL_LOCK_LOCK(pt->lock), 0);
         if (pt->status != PT_FREE) {
-            ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
+            ptl_assert(PTL_LOCK_UNLOCK(pt->lock), 0);
             return PTL_PT_IN_USE;
         }
         pt->status = PT_DISABLED;
@@ -69,13 +69,13 @@ int API_FUNC PtlPTAlloc(
         for (pti = 0; pti <= nit_limits[ni.s.ni].max_pt_index; ++pti) {
             if (nit.tables[ni.s.ni][pti].status == PT_FREE) {
                 pt = &(nit.tables[ni.s.ni][pti]);
-                ptl_assert(pthread_mutex_lock(&pt->lock), 0);
+                ptl_assert(PTL_LOCK_LOCK(pt->lock), 0);
                 if (pt->status == PT_FREE) {
                     *pt_index = pti;
                     pt->status = PT_DISABLED;
                     break;
                 }
-                ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
+                ptl_assert(PTL_LOCK_UNLOCK(pt->lock), 0);
                 pt = NULL;
             }
         }
@@ -90,7 +90,7 @@ int API_FUNC PtlPTAlloc(
     pt->EQ = eq_handle;
     pt->options = options;
     pt->status = PT_ENABLED;
-    ptl_assert(pthread_mutex_unlock(&pt->lock), 0);
+    ptl_assert(PTL_LOCK_UNLOCK(pt->lock), 0);
     return PTL_OK;
 }                                      /*}}} */
 
@@ -171,7 +171,7 @@ int API_FUNC PtlPTEnable(
 void INTERNAL PtlInternalPTInit(
     ptl_table_entry_t * t)
 {                                      /*{{{ */
-    ptl_assert(pthread_mutex_init(&t->lock, NULL), 0);
+    ptl_assert(PTL_LOCK_INIT(t->lock), 0);
     t->priority.head = NULL;
     t->priority.tail = NULL;
     t->overflow.head = NULL;

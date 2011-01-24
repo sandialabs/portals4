@@ -271,7 +271,7 @@ int API_FUNC PtlMEAppend(
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
     //PtlInternalPAPISaveC(PTL_ME_APPEND, 0);
-    ptl_assert(pthread_mutex_lock(&t->lock), 0);
+    ptl_assert(PTL_LOCK_LOCK(t->lock), 0);
     PtlInternalValidateMEPT(t);
     switch (ptl_list) {
         case PTL_PRIORITY_LIST:
@@ -468,7 +468,7 @@ int API_FUNC PtlMEAppend(
                         }
 #endif
                         PtlInternalValidateMEPT(t);
-                        ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+                        ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
                         /* technically, the ME was never actually *linked*, but
                          * for symmetry of the interface, we need to pretend
                          * like it was linked and announce the unlink */
@@ -613,7 +613,7 @@ int API_FUNC PtlMEAppend(
     }
   done_appending:
     PtlInternalValidateMEPT(t);
-    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
   done_appending_unlocked:
     PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
     return PTL_OK;
@@ -648,7 +648,7 @@ int API_FUNC PtlMEUnlink(
     }
 #endif
     t = &(nit.tables[me.s.ni][mes[me.s.ni][me.s.code].pt_index]);
-    ptl_assert(pthread_mutex_lock(&t->lock), 0);
+    ptl_assert(PTL_LOCK_LOCK(t->lock), 0);
     PtlInternalValidateMEPT(t);
     switch (mes[me.s.ni][me.s.code].ptl_list) {
         case PTL_PRIORITY_LIST:
@@ -721,7 +721,7 @@ int API_FUNC PtlMEUnlink(
             break;
     }
     PtlInternalValidateMEPT(t);
-    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
     assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
     switch (PtlInternalAtomicCas32
             (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
@@ -811,9 +811,9 @@ static void PtlInternalValidateMEPTs(
     for (ptl_pt_index_t pt_idx = 0; pt_idx < nit_limits[ni].max_pt_index;
          ++pt_idx) {
         ptl_table_entry_t *entry = &table[pt_idx];
-        ptl_assert(pthread_mutex_lock(&entry->lock), 0);
+        ptl_assert(PTL_LOCK_LOCK(entry->lock), 0);
         PtlInternalValidateMEPT(entry);
-        ptl_assert(pthread_mutex_unlock(&entry->lock), 0);
+        ptl_assert(PTL_LOCK_UNLOCK(entry->lock), 0);
     }
 }                                      /*}}} */
 #endif
@@ -900,7 +900,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                        [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
-            ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+            ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
             return (ptl_pid_t) 3;
         }
         /*******************************************************************
@@ -945,7 +945,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
              * table, thus allowing appends on the PT while we do this delivery
              */
             need_to_unlock = 0;
-            ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+            ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
             if (tEQ != PTL_EQ_NONE &&
                 (me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
                 ptl_internal_event_t e;
@@ -1089,13 +1089,13 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
             case HDR_TYPE_SWAP:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 if (need_to_unlock)
-                    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+                    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
                 return (ptl_pid_t) ((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
                                     1);
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 if (need_to_unlock)
-                    ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+                    ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
                 return (ptl_pid_t) 1;
         }
     }
@@ -1119,7 +1119,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
     PtlInternalPAPIDoneC(PTL_ME_PROCESS, 5);
     if (need_to_unlock)
-        ptl_assert(pthread_mutex_unlock(&t->lock), 0);
+        ptl_assert(PTL_LOCK_UNLOCK(t->lock), 0);
     return 0;                          // silent ACK
 }                                      /*}}} */
 

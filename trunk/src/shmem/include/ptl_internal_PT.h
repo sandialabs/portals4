@@ -4,8 +4,10 @@
 #include <pthread.h>
 #include <stdint.h>                    /* for uint32_t */
 
+#include "ptl_internal_locks.h"
+
 typedef struct {
-    pthread_mutex_t lock;
+    PTL_LOCK_TYPE lock;
     struct PTqueue {
         void *head, *tail;
     } priority,
