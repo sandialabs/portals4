@@ -79,7 +79,7 @@ static void PtlInternalAnnounceMEDelivery(
     const uint64_t mlength,
     const uintptr_t start,
     const ptl_internal_listtype_t foundin,
-    ptl_internal_appendME_t * const restrict entry,
+    ptl_internal_appendME_t * const restrict priority_entry,
     ptl_internal_header_t * const restrict hdr,
     const ptl_handle_me_t me_handle);
 
@@ -482,6 +482,22 @@ int API_FUNC PtlMEAppend(
                             e.start =
                                 (char *)me->start + cur->hdr.dest_offset;
                             PtlInternalEQPush(tEQ, &e);
+#ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS
+                            ptl_internal_appendME_t * const restrict
+                                overflow_entry = (ptl_internal_appendME_t *)
+                                cur->unexpected_entry;
+                            if (overflow_entry != NULL) {
+                                if (mlength > 0) {
+                                    ++(overflow_entry->announced);
+                                }
+                                if (overflow_entry->unlinked == 1 &&
+                                        overflow_entry->announced == overflow_entry->messages) {
+                                    e.type = PTL_EVENT_AUTO_FREE;
+                                    e.user_ptr = overflow_entry->user_ptr;
+                                    PtlInternalEQPush(tEQ, &e);
+                                }
+                            }
+#endif
                         }
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
@@ -907,7 +923,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
          * We have permissions on this ME, now check if it's a use-once ME *
          *******************************************************************/
         if ((me.options & PTL_ME_USE_ONCE) ||
-            ((me.options & (PTL_ME_MANAGE_LOCAL)) && (me.min_free != 0) &&
+            ((me.options & PTL_ME_MANAGE_LOCAL) && (me.min_free != 0) &&
              ((me.length - entry->local_offset) - me.min_free <=
               hdr->length))) {
             /* that last bit of math only works because we already know that
@@ -1079,8 +1095,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
                                                        me.length, me.options,
                                                        fragment_mlength, hdr);
             }
-            PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)
-                                                report_this_start);
+            PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t) entry,
+                    (uintptr_t) report_this_start);
         }
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
@@ -1165,7 +1181,7 @@ static void PtlInternalAnnounceMEDelivery(
     const uint64_t mlength,
     const uintptr_t start,
     const ptl_internal_listtype_t foundin,
-    ptl_internal_appendME_t * const restrict entry,
+    ptl_internal_appendME_t * const restrict priority_entry,
     ptl_internal_header_t * const restrict hdr,
     const ptl_handle_me_t me_handle)
 {                                      /*{{{ */
@@ -1190,7 +1206,7 @@ static void PtlInternalAnnounceMEDelivery(
         (options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE))
         == 0) {
         ptl_internal_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
+        PTL_INTERNAL_INIT_TEVENT(e, hdr, priority_entry->user_ptr);
         if (foundin == OVERFLOW) {
             switch (e.type) {
                 case PTL_EVENT_PUT:
@@ -1208,14 +1224,6 @@ static void PtlInternalAnnounceMEDelivery(
         e.start = (void *)start;
         //PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
         PtlInternalEQPush(eq_handle, &e);
-        if (mlength > 0) {
-            ++(entry->announced);
-        }
-        if (foundin == OVERFLOW && entry->unlinked == 1 &&
-            entry->announced == entry->messages) {
-            e.type = PTL_EVENT_AUTO_FREE;
-            PtlInternalEQPush(eq_handle, &e);
-        }
         //PtlInternalPAPIStartC();
     }
 }                                      /*}}} */

@@ -206,12 +206,14 @@ int INTERNAL PtlInternalPTValidate(
 void INTERNAL PtlInternalPTBufferUnexpectedHeader(
     ptl_table_entry_t * restrict const t,
     const ptl_internal_header_t * restrict const hdr,
+    const uintptr_t entry_ptr,
     const uintptr_t data)
 {                                      /*{{{ */
     ptl_internal_buffered_header_t *restrict bhdr =
         PtlInternalAllocUnexpectedHeader(hdr->ni);
     memcpy(&(bhdr->hdr), hdr, sizeof(ptl_internal_header_t));
     bhdr->buffered_data = (void *)data;
+    bhdr->unexpected_entry = (void *)entry_ptr;
     bhdr->hdr.next = NULL;
     if (t->buffered_headers.head == NULL) {
         t->buffered_headers.head = bhdr;
