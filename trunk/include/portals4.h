@@ -1221,9 +1221,10 @@ typedef struct {
     ptl_handle_ct_t     ct_handle;
 
     /*! When the unused portion of a match list entry (length - local offset)
-     * falls below this value, the match list entry automatically unlinks. This
-     * value is only used if the \c PTL_ME_MIN_FREE option is specified and \c
-     * PTL_ME_MANAGE_LOCAL is set. */
+     * falls below this value, the match list entry automatically unlinks. A \a
+     * min_free value of 0 disables the \a min_free capability (thre free space
+     * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
+     * is set. */
     ptl_size_t          min_free;
 
     /*! Specifies either the user ID or job ID (as selected by the options)
@@ -1251,7 +1252,6 @@ typedef struct {
      - \c PTL_ME_MAY_ALIGN
      - \c PTL_ME_ACK_DISABLE
      - \c PTL_IOVEC
-     - \c PTL_ME_MIN_FREE
      - \c PTL_ME_EVENT_COMM_DISABLE
      - \c PTL_ME_EVENT_FLOWCTRL_DISABLE
      - \c PTL_ME_EVENT_SUCCESS_DISABLE
