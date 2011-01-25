@@ -19,12 +19,12 @@ case "$1" in
 	shift
 	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
 		case "$PORTALS4_RANK" in
-		0) base=0 ;; # 0 + 2
-		1) base=4 ;; # 4 + 6
-		2) base=1 ;; # 1 + 3
-		3) base=5 ;; # 5 + 7
-		4) base=8 ;; # 8 + 10
-		5) base=9 ;; # 9 + 11
+		4) base=0 ;; # 0 + 2  [socket 0]
+		5) base=1 ;; # 1 + 3  [socket 1]
+		0) base=4 ;; # 4 + 6  [socket 0]
+		2) base=5 ;; # 5 + 7  [socket 1]
+		1) base=8 ;; # 8 + 10 [socket 0]
+		3) base=9 ;; # 9 + 11 [socket 1]
 		esac
 	    arg="--physcpubind="$base,$(($base+2))
 	else
@@ -42,21 +42,21 @@ case "$1" in
 	shift
 	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
 		case "$PORTALS4_RANK" in
-		0) base=0 ;; # 0 + 2
-		1) base=1 ;; # 1 + 3
-		2) base=4 ;; # 4 + 6
-		3) base=5 ;; # 5 + 7
-		4) base=8 ;; # 8 + 10
-		5) base=9 ;; # 9 + 11
+		0) base=0 ;; # 0 + 2  [socket 0]
+		1) base=1 ;; # 1 + 3  [socket 1]
+		2) base=4 ;; # 4 + 6  [socket 0]
+		3) base=5 ;; # 5 + 7  [socket 1]
+		4) base=8 ;; # 8 + 10 [socket 0]
+		5) base=9 ;; # 9 + 11 [socket 1]
 		esac
 	    arg="--physcpubind="$base,$(($base+2))
 	else
 	    totcores=$(($node0cores+$node1cores))
 	    idx=$(($PORTALS4_RANK%$totcores))
 	    if [ $idx -ge $node0cores ] ; then
-		base=${node1nodes[$(($idx-$node0cores))]}
+			base=${node1nodes[$(($idx-$node0cores))]}
 	    else
-		base=${node0nodes[$idx]}
+			base=${node0nodes[$idx]}
 	    fi
 	    arg="--physcpubind=$base"
 	fi
