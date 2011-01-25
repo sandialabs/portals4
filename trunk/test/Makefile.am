@@ -24,7 +24,8 @@ TESTS = test_init \
 	test_LE_oversize_get \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
-	test_ME_oversize_put
+	test_ME_oversize_put \
+	test_ME_unexpected_put
 BENCHMARKS =
 
 INCLUDES = -I$(top_srcdir)/include
@@ -122,3 +123,7 @@ test_LE_get_truncate_DEPENDENCIES = $(PORTALSLIB)
 test_ME_get_truncate_SOURCES = test_get_truncate.c
 test_ME_get_truncate_CPPFLAGS = -DINTERFACE=1
 test_ME_get_truncate_DEPENDENCIES = $(PORTALSLIB)
+
+test_ME_unexpected_put_SOURCES = test_unexpected_put.c
+test_ME_unexpected_put_CPPFLAGS = -DINTERFACE=1
+test_ME_unexpected_put_DEPENDENCIES = $(PORTALSLIB)
