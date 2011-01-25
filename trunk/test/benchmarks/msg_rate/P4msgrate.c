@@ -354,169 +354,12 @@ double tmp, total;
 
 }  /* end of test_same_direction() */
 
-
-static void
-test_prepost(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
-	int nbytes, int niters, int test_type, int verbose)
-{
-
-int i, j, k;
-double tmp, total;
-int rc;
-
-ptl_pt_index_t index;
-ptl_process_t dest;
-ptl_size_t offset;
-ptl_handle_md_t md_handle;
-ptl_handle_ct_t ct_handle;
-ptl_ct_event_t cnt_value;
-ptl_handle_le_t le_handle;
-ptl_handle_me_t me_handles[npeers * nmsgs];
-ptl_match_bits_t match;
-ptl_handle_eq_t eq_handle;
-ptl_event_t event;
-
-
-    total= 0;
-    ct_handle= PTL_INVALID_HANDLE;
-    if (verbose > 1)    {
-	/* Some info, if desired. */
-	for (i= 0; i < world_size; i++)   {
-	    if (i == rank)   {
-		printf("Rank %d will send %d %d-byte messages %d times to rank(s) ",
-		    rank, nmsgs, nbytes, niters);
-		for (j= 0; j < npeers; j++)   {
-		    printf("%d, ", send_peers[npeers - j - 1]);
-		}
-		printf("and receive from ");
-		for (j= 0; j < npeers; j++)   {
-		    printf("%d", recv_peers[j]);
-		    if (j < (npeers - 1))   {
-			printf(", ");
-		    }
-		}
-		printf("\n");
-	    }
-	    __PtlBarrier();
-	}
-    }
-
-    /*
-    ** Setup the send side
-    */
-    match= 0;
-
-    /* Set up the MD to send from */
-    __PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
-
-    /*
-    ** Setup the receive side
-    ** We use the same counter as for the sends, so we only
-    ** have to check in one place for completion.
-    */
-
-    if (test_type == MEwithEQ)   {
-	/* Create an event queue */
-	rc = PtlEQAlloc(ni, 2 * nmsgs * npeers, &eq_handle);
-	PTL_CHECK(rc, "PtlEQAlloc in test_prepost");
-    } else   {
-	eq_handle= PTL_EQ_NONE;
-    }
-
-    /* Allocate the Portal to send to */
-    index= __PtlPTAlloc(ni, TestSameDirectionIndex, eq_handle);
-
-    if (test_type == LEwithCT)   {
-	/* Create a persistent LE to receive into */
-	__PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
-    } else if (test_type == MEwithEQ)   {
-	/* Create "npeers * nmsgs" persistent MEs to receive into */
-	__PtlCreateMEPersistent(ni, index, recv_buf, nbytes, npeers * nmsgs, me_handles);
-    }
-
-    /* Sync everybody */
-    __PtlBarrier();
-
-    /* Run the test */
-    for (i= 0; i < niters; i++)   {
-        cache_invalidate(cache_size, cache_buf);
-
-        __PtlBarrier();
-
-        tmp= timer();
-        for (j= 0; j < npeers; ++j)   {
-            for (k= 0; k < nmsgs; ++k)   {
-		if (test_type == MEwithEQ)   {
-		    offset= 0;
-		} else if (test_type == LEwithCT)   {
-		    offset= nbytes * k;
-		}
-
-		offset= (nbytes * (k + j * nmsgs));
-		dest.rank= send_peers[npeers - j - 1];
-		/* For the LEwithCT case, we ignore the match bits */
-		match= (npeers - j - 1) * nmsgs + k;
-		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, index, match, offset);
-		PTL_CHECK(rc, "PtlPut in test_same_direction");
-            }
-	}
-
-	/* MPI_Waitall */
-	if (test_type == LEwithCT)   {
-	    rc= PtlCTWait(ct_handle, 2*((i+1)*nmsgs*npeers), &cnt_value);
-	    PTL_CHECK(rc, "1st PtlCTWait in test_same_direction");
-	    if (cnt_value.failure != 0)   {
-		fprintf(stderr, "test_same_direction() PtlCTWait failed (%d failure, %d success)\n",
-			(int)cnt_value.failure, (int)cnt_value.success);
-	    }
-	} else if (test_type == MEwithEQ)   {
-	    /* We also have to wait for the send count */
-	    rc= PtlCTWait(ct_handle, 1*((i+1)*nmsgs*npeers), &cnt_value);
-	    PTL_CHECK(rc, "2nd PtlCTWait in test_same_direction");
-	    if (cnt_value.failure != 0)   {
-		fprintf(stderr, "test_same_direction() PtlPut send failed (%d/%d succeeded)\n",
-			(int)cnt_value.failure, (int)cnt_value.success);
-	    }
-
-	    /* Pull each event off as it comes in */
-	    for (j= 0; j < npeers * nmsgs; j++)   {
-		rc= PtlEQWait(eq_handle, &event);
-		PTL_CHECK(rc, "PtlEQWait in test_one_way");
-		if (event.type != PTL_EVENT_PUT)   {
-		    fprintf(stderr, "test_prepost() Got event %d instead of PTL_EVENT_PUT with msg %d\n",
-			event.type, j);
-		}
-		if (event.ni_fail_type != PTL_NI_OK)   {
-		    fprintf(stderr, "test_prepost() Got event %d with fail type %d\n",
-			j, event.ni_fail_type);
-		}
-	    }
-	}
-        total += (timer() - tmp);
-    }
-
-    /* Clean up the send side */
-    rc= PtlCTFree(ct_handle);
-    PTL_CHECK(rc, "PtlCTFree in test_same_direction");
-    PtlMDRelease(md_handle);
-    PTL_CHECK(rc, "PtlMDRelease in test_same_direction");
-
-    /* Clean up the receive side */
-    if (test_type == LEwithCT)   {
-	rc= PtlLEUnlink(le_handle);
-	PTL_CHECK(rc, "PtlLEUnlink in test_same_direction");
-    } else if (test_type == MEwithEQ)   {
-	__PtlFreeME(npeers * nmsgs, me_handles);
-	PtlEQFree(eq_handle);
-    }
-    rc= PtlPTFree(ni, index);
-    PTL_CHECK(rc, "PtlPTFree in test_same_direction");
-
-    tmp= __PtlAllreduceDouble(total, PTL_SUM);
-    display_result("pre-post", (niters * npeers * nmsgs * 2) / (tmp / world_size));
-
-}  /* end of test_prepost() */
-
+void
+test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
+                int nmsgs, int nbytes, int niters );
+void
+test_prepostLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
+                int nmsgs, int nbytes, int niters );
 
 static void
 test_allstart(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
@@ -877,8 +720,12 @@ int test_type;
 	printf("Rank %3d: Starting test_prepost(nmsgs %d, nbytes %d, niters %d)\n", rank,
 	    nmsgs, nbytes, niters);
     }
-    test_prepost(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters,
-	    test_type, verbose);
+    if ( test_type == LEwithCT )
+	test_prepostLE(cache_size, cache_buf, ni_logical, npeers, nmsgs, 
+		nbytes, niters );
+    else 
+	test_prepostME(cache_size, cache_buf, ni_logical, npeers, nmsgs, 
+		nbytes, niters );
 
     if (verbose > 0)   {
 	printf("Rank %3d: Starting test_allstart(nmsgs %d, nbytes %d, niters %d)\n", rank,
