@@ -129,9 +129,6 @@ int main(
                             case PTL_EVENT_ACK:
                                 printf("ACK: ");
                                 break;
-                            case PTL_EVENT_DROPPED:
-                                printf("DROPPED: ");
-                                break;
                             case PTL_EVENT_PT_DISABLED:
                                 printf("PT DISABLED: ");
                                 break;
@@ -152,7 +149,6 @@ int main(
                         case PTL_EVENT_PUT_OVERFLOW:
                         case PTL_EVENT_ATOMIC:
                         case PTL_EVENT_ATOMIC_OVERFLOW:
-                        case PTL_EVENT_DROPPED:
                         case PTL_EVENT_PT_DISABLED:
                         case PTL_EVENT_AUTO_UNLINK:
                         case PTL_EVENT_AUTO_FREE:

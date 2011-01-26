@@ -17,6 +17,21 @@
 #include "ptl_internal_commpad.h"
 #endif
 
+/*
+ * Serialized functions:
+ *   CTSet
+ * Sometimes serialized functions:
+ *   Triggered* - only out-of-order thresholds
+ *   CTFree - only if there are triggered ops
+ * The progress thread is the only one that can trigger a triggered event
+ * Triggered events happen on:
+ *   1. message delivery
+ *   2. message ack/frame-return
+ *   3. serialized functions
+ * CT triggered list is a modified nemesis queue to allow safe threshold append
+ *   (relies on 128-bit atomics)
+ */
+
 int API_FUNC PtlTriggeredPut(
     ptl_handle_md_t md_handle,
     ptl_size_t local_offset,

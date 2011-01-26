@@ -778,8 +778,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
     if (tEQ != PTL_EQ_NONE) {
         ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
-        e.type = PTL_EVENT_DROPPED;
         e.start = NULL;
+        e.ni_fail_type = PTL_NI_DROPPED;
         PtlInternalEQPush(tEQ, &e);
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);

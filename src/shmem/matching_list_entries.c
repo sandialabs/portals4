@@ -1126,8 +1126,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
     if (tEQ != PTL_EQ_NONE) {
         ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
-        e.type = PTL_EVENT_DROPPED;
         e.start = NULL;
+        e.ni_fail_type = PTL_NI_DROPPED;
         PtlInternalPAPIDoneC(PTL_ME_PROCESS, 4);
         PtlInternalEQPush(tEQ, &e);
         PtlInternalPAPIStartC();

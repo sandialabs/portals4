@@ -68,9 +68,6 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself)
                         case PTL_EVENT_ACK:
                             printf("ACK: ");
                             break;
-                        case PTL_EVENT_DROPPED:
-                            printf("DROPPED: ");
-                            break;
                         case PTL_EVENT_PT_DISABLED:
                             printf("PT-DISABLED: ");
                             break;
@@ -106,7 +103,6 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself)
                             printf("ni_fail_type(%u)",(unsigned)event.ni_fail_type);
                         }
                         break;
-                    case PTL_EVENT_DROPPED:
                     case PTL_EVENT_ATOMIC:
                     case PTL_EVENT_ATOMIC_OVERFLOW:
                         /* target */
