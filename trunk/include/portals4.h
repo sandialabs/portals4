@@ -2252,10 +2252,6 @@ typedef enum {
      * acknowledgment is received. */
     PTL_EVENT_ACK,
 
-    /*! A message arrived, but did not match the priority list and the overflow
-     * list was out of space. Thus, the message had to be dropped. */
-    PTL_EVENT_DROPPED,
-
     /*! Resource exhaustion has occurred on this portal table entry. */
     PTL_EVENT_PT_DISABLED,
 
