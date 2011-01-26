@@ -38,8 +38,8 @@ typedef ptl_handle_any_t	ptl_handle_eq_t;
 typedef ptl_handle_any_t	ptl_handle_ct_t;
 
 enum {
-	PTL_HANDLE_NONE		= 0xff00000000000000UL,
-	PTL_INVALID_HANDLE	= 0xffffffffffffffffUL,
+	PTL_HANDLE_NONE		= 0xff00000000000000ULL,
+	PTL_INVALID_HANDLE	= 0xffffffffffffffffULL,
 	PTL_EQ_NONE		= PTL_HANDLE_NONE,
 	PTL_CT_NONE		= PTL_HANDLE_NONE,
 };

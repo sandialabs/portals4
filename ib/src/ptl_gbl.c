@@ -100,7 +100,8 @@ static int get_vars(gbl_t *gbl)
 
 	if (getenv_val("PORTALS4_JIB", &jid) ||
 		getenv_val("PORTALS4_NID", &gbl->nid)) {
-		ptl_warn("PORTALS4_JIB or PORTALS4_NID environment variables not set\n");
+		ptl_warn("PORTALS4_JIB or PORTALS4_NID environment variables "
+			"not set\n");
 		return PTL_FAIL;
 	}
 
@@ -329,7 +330,8 @@ int PtlInit(void)
 		if (gbl->ref.ref_cnt > 0)
 			usleep(10000);
 		if (gbl->ref.ref_cnt > 0) {
-			ptl_warn("still cleaning up, ref.ref_cnt = %d\n", gbl->ref.ref_cnt);
+			ptl_warn("still cleaning up, ref.ref_cnt = %d\n",
+				gbl->ref.ref_cnt);
 			ret = PTL_FAIL;
 			goto err1;
 		} else {

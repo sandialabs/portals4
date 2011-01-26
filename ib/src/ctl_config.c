@@ -44,7 +44,8 @@ int load_nid_table(const char *name)
 		if (inet_pton(AF_INET, str, &entry.addr_in.sin_addr) == 1) {
 			entry.addr_in.sin_family = AF_INET;
 		}
-		else if (inet_pton(AF_INET6, str, &entry.addr_in6.sin6_addr) == 1) {
+		else if (inet_pton(AF_INET6, str,
+		    &entry.addr_in6.sin6_addr) == 1) {
 			entry.addr_in6.sin6_family = AF_INET6;
 		}
 		else {
@@ -54,7 +55,7 @@ int load_nid_table(const char *name)
 		if (table->size == nb_alloc) {
 			nb_alloc += table_elem_wm;
 			table = realloc(table, sizeof(struct nid_table) + 
-							nb_alloc * sizeof(struct nid_entry));
+					nb_alloc * sizeof(struct nid_entry));
 			if (!table)
 				return 1;
 		}
@@ -112,7 +113,7 @@ int load_rank_table(const char *name)
 		if (table->size == nb_alloc) {
 			nb_alloc += table_elem_wm;
 			table = realloc(table, sizeof(struct rank_table) + 
-							nb_alloc * sizeof(struct rank_entry));
+					nb_alloc * sizeof(struct rank_entry));
 			if (!table)
 				return 1;
 		}
@@ -146,13 +147,15 @@ int create_shared_memory(void)
 	total_size = size;
 
 	/* Compute the sizes and offsets. */
-	size = sizeof(struct rank_table) + conf.rank_table->size * sizeof(struct rank_entry);
+	size = sizeof(struct rank_table) + conf.rank_table->size *
+			sizeof(struct rank_entry);
 	size = (size + pmask) & ~pmask;
 	sc.rank_table_offset = total_size;
 	sc.rank_table_size = size;
 	total_size += size;
 
-	size = sizeof(struct nid_table) + conf.nid_table->size * sizeof(struct nid_entry);
+	size = sizeof(struct nid_table) + conf.nid_table->size *
+			sizeof(struct nid_entry);
 	size = (size + pmask) & ~pmask;
 	sc.nid_table_offset = total_size;
 	sc.nid_table_size = size;
@@ -173,7 +176,7 @@ int create_shared_memory(void)
 	}
 
 	m = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED,
-			 conf.shmem.fd, 0);
+		conf.shmem.fd, 0);
 	if (m == MAP_FAILED)
 		return 1;
 

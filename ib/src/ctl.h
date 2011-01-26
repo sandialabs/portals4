@@ -52,7 +52,7 @@ struct ib_intf {
 struct net_intf {
 	struct list_head list;
 	char name[IF_NAMESIZE];
-	int index;		 /* interface index, returned by if_nameindex() */
+	int index;	/* interface index, returned by if_nameindex() */
 	struct ib_intf *ib_intf;
 };
 
@@ -88,7 +88,7 @@ extern struct p4oibd_config conf;
 
 /* RDMA CM private data */
 struct cm_priv_request {
-	uint32_t src_rank;			/* rank requesting that connection */
+	uint32_t src_rank;	/* rank requesting that connection */
 };
 
 struct cm_priv_response {

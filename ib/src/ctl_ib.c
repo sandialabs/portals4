@@ -39,7 +39,8 @@ static int process_connect_request(struct rdma_cm_event *event)
 	struct cm_priv_response resp;
 
 	if (!event->param.conn.private_data ||
-		(event->param.conn.private_data_len < sizeof(struct cm_priv_request)))
+		(event->param.conn.private_data_len <
+		sizeof(struct cm_priv_request)))
 		return 1;
 
 	priv = event->param.conn.private_data;
@@ -119,7 +120,8 @@ static void *cm_task(void *arg)
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 1000000;
 
-		nfd = select(cm_channel->fd + 1, &readfds, NULL, NULL, &timeout);
+		nfd = select(cm_channel->fd + 1, &readfds, NULL, NULL,
+				&timeout);
 		if (nfd < 0) {
 			perror("select");
 			break;
@@ -236,19 +238,26 @@ int create_ib_resources(void)
 
 	/* match ib and network devices to see if they match */
 	for (i = 0; i < num_ib_device; i++) {
-		for(j = 0; net_device_list[j].if_index != 0 && net_device_list[j].if_name != NULL; j++) {
+		for(j = 0; net_device_list[j].if_index != 0 &&
+			net_device_list[j].if_name != NULL; j++) {
 
 			/* infiniband transport (e.g. ib0) */
-			dev_name = net_to_ibdev(net_device_list[j].if_name, name_buf, sizeof(name_buf));
-			if (dev_name && !strcmp(dev_name, ib_device_list[i]->name)) {
-				ptl_info("%s -> %s\n", ib_device_list[i]->name, net_device_list[j].if_name);
+			dev_name = net_to_ibdev(net_device_list[j].if_name,
+					name_buf, sizeof(name_buf));
+			if (dev_name &&
+				!strcmp(dev_name, ib_device_list[i]->name)) {
+				ptl_info("%s -> %s\n", ib_device_list[i]->name,
+					 net_device_list[j].if_name);
 				goto found_one;
 			}
 
 			/* ethernet transport (e.g. rxe0) */
-			dev_name = ib_to_netdev(ib_device_list[i]->ibdev_path, name_buf, sizeof(name_buf));
-			if (dev_name && !strcmp(dev_name, net_device_list[j].if_name)) {
-				ptl_info("%s -> %s\n", ib_device_list[i]->name, net_device_list[j].if_name);
+			dev_name = ib_to_netdev(ib_device_list[i]->ibdev_path,
+					name_buf, sizeof(name_buf));
+			if (dev_name &&
+				!strcmp(dev_name, net_device_list[j].if_name)) {
+				ptl_info("%s -> %s\n", ib_device_list[i]->name,
+					 net_device_list[j].if_name);
 				goto found_one;
 			}
 
@@ -257,7 +266,8 @@ found_one:
 			/* build net_intf struct */
 			net_intf = calloc(1, sizeof(*net_intf));
 			if (!net_intf) {
-				ptl_fatal("Unable to allocate memory for net_intf\n");
+				ptl_fatal("Unable to allocate memory for "
+					"net_intf\n");
 				goto err;
 			}
 
@@ -273,7 +283,8 @@ found_one:
 
 			ib_intf = calloc(1, sizeof(*ib_intf));
 			if (!ib_intf) {
-				ptl_fatal("Unable to allocate memory for ib_intf\n");
+				ptl_fatal("Unable to allocate memory for "
+					"ib_intf\n");
 				free(net_intf);
 				goto err;
 			}
@@ -282,26 +293,33 @@ found_one:
 			strcpy(ib_intf->name, ib_device_list[i]->name);
 			ib_intf->xrc_domain_fd = -1;
 
-			ib_intf->ibv_context = ibv_open_device(ib_device_list[i]);
+			ib_intf->ibv_context =
+					ibv_open_device(ib_device_list[i]);
 			if (!ib_intf->ibv_context) {
-				ptl_fatal("Unable to open %s\n", ib_device_list[i]->name);
+				ptl_fatal("Unable to open %s\n",
+					ib_device_list[i]->name);
 				free(ib_intf);
 				free(net_intf);
 				goto err;
 			}
 
-			sprintf(ib_intf->xrc_domain_fname, "/tmp/p4oibd-%d-XXXXXX", getpid());
-			ib_intf->xrc_domain_fd = mkstemp(ib_intf->xrc_domain_fname);
+			sprintf(ib_intf->xrc_domain_fname,
+				"/tmp/p4oibd-%d-XXXXXX", getpid());
+			ib_intf->xrc_domain_fd =
+				mkstemp(ib_intf->xrc_domain_fname);
 			if (ib_intf->xrc_domain_fd < 0) {
-				ptl_fatal("Unable to create xrc fd for %s\n", ib_intf->xrc_domain_fname);
+				ptl_fatal("Unable to create xrc fd for %s\n",
+					ib_intf->xrc_domain_fname);
 				ibv_close_device(ib_intf->ibv_context);
 				free(ib_intf);
 				free(net_intf);
 				goto err;
 			}
 
-			ib_intf->xrc_domain = ibv_open_xrc_domain(ib_intf->ibv_context,
-				ib_intf->xrc_domain_fd, O_CREAT | O_EXCL);
+			ib_intf->xrc_domain =
+				ibv_open_xrc_domain(ib_intf->ibv_context,
+					ib_intf->xrc_domain_fd,
+					O_CREAT | O_EXCL);
 			if (!ib_intf->xrc_domain) {
 				ptl_fatal("Unable to open xrc domain\n");
 				close(ib_intf->xrc_domain_fd);
@@ -343,7 +361,8 @@ found_ib_intf:
 		sin.sin_addr.s_addr = 0;
 		sin.sin_family = AF_INET;
 		sin.sin_port = htons(conf.ctl_port);
-		if (rdma_bind_addr(ib_intf->listen_id, (struct sockaddr *)&sin)) {
+		if (rdma_bind_addr(ib_intf->listen_id,
+			(struct sockaddr *)&sin)) {
 			rdma_destroy_id(ib_intf->listen_id);
 			continue;
 		}

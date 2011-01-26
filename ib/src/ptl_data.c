@@ -193,7 +193,8 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		} else {
 			data->data_fmt = DATA_FMT_DMA;
 			data->num_sge = cpu_to_be32(num_sge);
-			buf->length += sizeof(*data) + num_sge * sizeof(struct ibv_sge);
+			buf->length += sizeof(*data) + num_sge *
+					sizeof(struct ibv_sge);
 
 			err = iov_to_sge(md->mr_list, data->sge_list,
 					 (ptl_iovec_t *)md->start, md->num_iov,

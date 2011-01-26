@@ -18,8 +18,8 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 	if (debug) {
 		printf("send RDMA message, buf(%p)\n", rdma_buf);
-		printf("radd(%lx), loc_sge->addr(%lx), num_sge(%d)\n",
-			raddr, loc_sge[0].addr, num_loc_sge);
+		printf("radd(%" PRIx64 "), loc_sge->addr(%" PRIx64 "), "
+			"num_sge(%d)\n", raddr, loc_sge[0].addr, num_loc_sge);
 	}
 
 	if (num_loc_sge > MAX_INLINE_SGE)
@@ -70,8 +70,8 @@ int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 	if (debug) {
 		printf("post RDMA work, buf(%p)\n", rdma_buf);
-		printf("radd(%lx), loc_sge->addr(%lx), num_sge(%d)\n",
-			raddr, loc_sge[0].addr, num_loc_sge);
+		printf("radd(%" PRIx64 "), loc_sge->addr(%" PRIx64 "), "
+			"num_sge(%d)\n", raddr, loc_sge[0].addr, num_loc_sge);
 	}
 
 	if (num_loc_sge > MAX_INLINE_SGE)
@@ -204,7 +204,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		rlength = rseg_length - xt->cur_rem_off;
 
 		if (debug)
-			printf("raddr(0x%lx), rlen(%d), rkey(0x%x)\n",
+			printf("raddr(0x%" PRIx64 "), rlen(%d), rkey(0x%x)\n",
 			raddr, rlength, rkey);
 
 		bytes = build_rdma_sge(xt, rlength, sge, MAX_INLINE_SGE,
