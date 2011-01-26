@@ -37,7 +37,7 @@ ptl_handle_eq_t eq_get_handle(struct node_info *info, char *val)
 	if (sscanf(val, "[%d]", &n) == 1) {
 		if (n < 0 || n >= STACK_SIZE) {
 			printf("invalid eq, n = %d\n", n);
-			return 0xffffffffffffffffUL;
+			return 0xffffffffffffffffULL;
 		}
 		return info->eq_stack[n];
 	} else

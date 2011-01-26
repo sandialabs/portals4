@@ -12,7 +12,7 @@ static int get_pt_index(ni_t *ni, ptl_pt_index_t req,
 	ptl_pt_index_t index;
 
 	if (req != PTL_PT_ANY) {
-		if (req >= 0 && req < max) {
+		if (req < max) {
 			if (!ni->pt[req].in_use) {
 				index = req;
 				goto done;
