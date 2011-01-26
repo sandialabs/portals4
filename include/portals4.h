@@ -437,6 +437,8 @@ typedef struct {
                                   memory descriptor for this interface. */
     int max_list_size;          /*!< Maximum number of match list entries that
                                   can be attached to any portal table index. */
+    int max_triggered_ops;	/*!< Maximum number of triggered operations
+				  that can be outstanding. */
     ptl_size_t max_msg_size;    /*!< Maximum size (in bytes) of a message (put,
                                   get, or reply). */
     ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) that can be passed
