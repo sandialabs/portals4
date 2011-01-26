@@ -150,9 +150,13 @@ int API_FUNC PtlNIInit(
             desired->max_list_size < (1ULL << (sizeof(uint32_t) * 8))) {
             nit_limits[ni.s.ni].max_list_size = desired->max_list_size;
         }
-        if (desired->max_list_size > 0 &&
-            desired->max_list_size < nit_limits[ni.s.ni].max_list_size) {
-            nit_limits[ni.s.ni].max_list_size = desired->max_list_size;
+        if (desired->max_triggered_ops >= 0 &&
+            desired->max_triggered_ops < (1ULL << (sizeof(uint32_t) * 8))) {
+            nit_limits[ni.s.ni].max_triggered_ops = desired->max_list_size;
+        }
+        if (desired->max_msg_size > 0 &&
+            desired->max_msg_size < UINT32_MAX) {
+            nit_limits[ni.s.ni].max_msg_size = desired->max_msg_size;
         }
         if (desired->max_atomic_size >= 8 &&
             desired->max_atomic_size <= SMALL_FRAG_SIZE) {

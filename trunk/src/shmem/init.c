@@ -86,7 +86,8 @@ int API_FUNC PtlInit(
         comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
         if (comm_pad_shm_name == NULL) {
 #ifdef LOUD_DROPS
-            fprintf(stderr, "PORTALS4-> Environment variable PORTALS4_SHM_NAME missing!\n");
+            fprintf(stderr,
+                    "PORTALS4-> Environment variable PORTALS4_SHM_NAME missing!\n");
             fflush(stderr);
 #endif
             goto exit_fail;
@@ -132,16 +133,17 @@ int API_FUNC PtlInit(
 
         memset(&nit, 0, sizeof(ptl_internal_nit_t));
         for (int ni = 0; ni < 4; ++ni) {
-            nit_limits[ni].max_list_size = 16384;  // Arbitrary
-            nit_limits[ni].max_pt_index = 63;  // Minimum required by spec
-            nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;  // Maybe this should be max_pt_index+1 instead of 4
-            nit_limits[ni].max_unexpected_headers = 128;     // Arbitrary
-            nit_limits[ni].max_mds = 128;      // Arbitrary
-            nit_limits[ni].max_cts = 128;      // Arbitrary
-            nit_limits[ni].max_eqs = 128;      // Arbitrary
-            nit_limits[ni].max_iovecs = 0;     // XXX: ???
-            nit_limits[ni].max_msg_size = 0xffffffffffffffffULL;        // may need to be smaller
-            nit_limits[ni].max_atomic_size = SMALL_FRAG_PAYLOAD;       // single payload
+            nit_limits[ni].max_list_size = 16384;       // Arbitrary
+            nit_limits[ni].max_pt_index = 63;   // Minimum required by spec
+            nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;      // Maybe this should be max_pt_index+1 instead of 4
+            nit_limits[ni].max_unexpected_headers = 128;        // Arbitrary
+            nit_limits[ni].max_mds = 128;       // Arbitrary
+            nit_limits[ni].max_cts = 128;       // Arbitrary
+            nit_limits[ni].max_eqs = 128;       // Arbitrary
+            nit_limits[ni].max_iovecs = 0;      // XXX: ???
+            nit_limits[ni].max_triggered_ops = 128;     // Arbitrary
+            nit_limits[ni].max_msg_size = UINT32_MAX;
+            nit_limits[ni].max_atomic_size = SMALL_FRAG_PAYLOAD;        // single payload
             nit_limits[ni].max_fetch_atomic_size = SMALL_FRAG_PAYLOAD;  // single payload
             nit_limits[ni].max_ordered_size = SMALL_FRAG_PAYLOAD;       // single payload
         }
