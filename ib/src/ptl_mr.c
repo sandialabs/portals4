@@ -82,7 +82,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	mr_t *mr;
 	struct list_head *l;
 
-	if (debug) printf("mr_lookup: start = %p, length = %ld\n", start, length);
+	if (debug)
+		printf("mr_lookup: start = %p, length = %" PRIu64 "\n",
+			start, length);
 
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_for_each(l, &ni->mr_list) {
