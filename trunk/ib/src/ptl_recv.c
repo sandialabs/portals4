@@ -64,7 +64,7 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 		ibv_ack_cq_events(ni->cq, 1);
 	}
 
-	buf = (buf_t *)wc.wr_id;
+	buf = (buf_t *)(uintptr_t)wc.wr_id;
 	*buf_p = buf;
 
 	if (debug)

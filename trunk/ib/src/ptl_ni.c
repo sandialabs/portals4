@@ -114,7 +114,7 @@ static int ni_rcqp_cleanup(ni_t *ni)
 		if (n != 1)
 			break;
 
-		buf = (buf_t *)wc.wr_id;
+		buf = (buf_t *)(uintptr_t)wc.wr_id;
 		buf_put(buf);
 	}
 
@@ -139,8 +139,9 @@ int ni_rcqp_init(ni_t *ni)
 	init.send_cq			= ni->cq;
 	init.recv_cq			= ni->cq;
 	init.srq			= NULL;
-	init.cap.max_send_wr		= 10;
-	init.cap.max_recv_wr		= 10;
+	/* Temporary values for wr entries, will use SRQ eventually */
+	init.cap.max_send_wr		= MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
+	init.cap.max_recv_wr		= MAX_QP_RECV_WR;
 	init.cap.max_send_sge		= MAX_INLINE_SGE;
 	init.cap.max_recv_sge		= 10;
 	init.cap.max_inline_data	= 0;
@@ -380,7 +381,8 @@ static int init_ib(ni_t *ni)
 		goto err1;
 	}
 
-	ni->cq = ibv_create_cq(ni->ibv_context, 10, ni, ni->ch, 0);
+	ni->cq = ibv_create_cq(ni->ibv_context, MAX_QP_SEND_WR + MAX_QP_RECV_WR,
+		ni, ni->ch, 0);
 	if (!ni->cq) {
 		WARN();
 		ptl_warn("unable to create cq\n");
@@ -396,7 +398,8 @@ static int init_ib(ni_t *ni)
 	/* Create XRC QP. */
 
 	/* Open XRC domain. */
-	ni->xrc_domain = ibv_open_xrc_domain(ni->ibv_context, ni->xrc_domain_fd, O_CREAT);
+	ni->xrc_domain = ibv_open_xrc_domain(ni->ibv_context,
+		ni->xrc_domain_fd, O_CREAT);
 	if (!ni->xrc_domain) {
 		ptl_warn("unable to open xrc domain\n");
 		goto err1;

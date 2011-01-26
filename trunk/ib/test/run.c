@@ -23,7 +23,7 @@ ptl_handle_md_t md_get_handle(struct node_info *info, char *val)
 	if (sscanf(val, "[%d]", &n) == 1) {
 		if (n < 0 || n >= STACK_SIZE) {
 			printf("invalid md, n = %d\n", n);
-			return 0xffffffffffffffffUL;
+			return 0xffffffffffffffffULL;
 		}
 		return info->md_stack[n];
 	} else
@@ -51,7 +51,7 @@ ptl_handle_ct_t ct_get_handle(struct node_info *info, char *val)
 	if (sscanf(val, "[%d]", &n) == 1) {
 		if (n < 0 || n >= STACK_SIZE) {
 			printf("invalid eq, n = %d\n", n);
-			return 0xffffffffffffffffUL;
+			return 0xffffffffffffffffULL;
 		}
 		return info->ct_stack[n];
 	} else
@@ -214,12 +214,12 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->type = PTL_UCHAR;
 
 	for (i = 0; i < 8; i++) {
-		info->md_iov[i].iov_base	= info->md_buf + 512*i;
-		info->md_iov[i].iov_len	= 512;
-		info->le_iov[i].iov_base	= info->le_buf + 512*i;
-		info->le_iov[i].iov_len	= 512;
-		info->me_iov[i].iov_base	= info->me_buf + 512*i;
-		info->me_iov[i].iov_len	= 512;
+		info->md_iov[i].iov_base	= info->md_buf + 2048*i;
+		info->md_iov[i].iov_len	= 2048;
+		info->le_iov[i].iov_base	= info->le_buf + 2048*i;
+		info->le_iov[i].iov_len	= 2048;
+		info->me_iov[i].iov_base	= info->me_buf + 2048*i;
+		info->me_iov[i].iov_len	= 2048;
 	}
 
 	info->md.start			= info->md_buf;
@@ -782,7 +782,9 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 		for (i = 0; i < length/8; i++, p_64++)
 			if (*p_64 != num.s64) {
 				if (debug)
-					printf("check_data long failed expected %lx got %lx at i = %d\n",
+					printf("check_data long failed "
+						"expected %" PRIx64 "got %"
+						PRIx64 " at i = %d\n",
 						num.s64, *p_64, i);
 				return 1;
 			}
@@ -792,7 +794,9 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 		for (i = 0; i < length/8; i++, p_u64++)
 			if (*p_u64 != num.u64) {
 				if (debug)
-					printf("check_data ulong failed expected %lx got %lx at i = %d\n",
+					printf("check_data ulong failed "
+						"expected %" PRIx64 " got %"
+						PRIx64 " at i = %d\n",
 						num.u64, *p_u64, i);
 				return 1;
 			}

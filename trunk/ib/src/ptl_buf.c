@@ -50,7 +50,7 @@ void buf_dump(buf_t *buf)
 	printf("hdr->operation	= %d\n", hdr->operation);
 	printf("hdr->ni_type	= %d\n", hdr->ni_type);
 	printf("hdr->pkt_fmt	= %d\n", hdr->pkt_fmt);
-	printf("hdr->length	= %ld\n", hdr->length);
+	printf("hdr->length	= %" PRId64 "\n", be64_to_cpu(hdr->length));
 	printf("\n");
 }
 

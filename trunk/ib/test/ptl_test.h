@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,7 +112,7 @@ struct node_info {
 	ptl_handle_md_t		md_handle;
 	ptl_iovec_t		md_iov[IOV_SIZE];
 	datatype_t		md_data;
-	unsigned char		md_buf[4096];
+	unsigned char		md_buf[16384];
 
 
 	/*
@@ -122,7 +123,7 @@ struct node_info {
 	ptl_list_t		list;
 	ptl_iovec_t		le_iov[IOV_SIZE];
 	datatype_t		le_data;
-	unsigned char		le_buf[4096];
+	unsigned char		le_buf[16384];
 
 	/*
 	 * me_append, me_release
@@ -131,7 +132,7 @@ struct node_info {
 	ptl_handle_me_t		me_handle;
 	ptl_iovec_t		me_iov[IOV_SIZE];
 	datatype_t		me_data;
-	unsigned char		me_buf[4096];
+	unsigned char		me_buf[16384];
 
 	/*
 	 * eq_alloc, eq_free, eq_get, eq_wait, eq_poll

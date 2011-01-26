@@ -34,12 +34,17 @@ static void rpc_callback(struct session *session)
 		break;
 
 	case QUERY_XRC_DOMAIN:
-		//printf("FZ- got query for intf %s\n", session->rpc_msg.query_xrc_domain.net_name);
-		net_intf = find_net_intf(session->rpc_msg.query_xrc_domain.net_name);
+#if 0
+		printf("FZ- got query for intf %s\n",
+			session->rpc_msg.query_xrc_domain.net_name);
+#endif
+		net_intf = find_net_intf(
+				session->rpc_msg.query_xrc_domain.net_name);
 		msg.type = REPLY_XRC_DOMAIN;
 		if (net_intf) {
 			ib_intf = net_intf->ib_intf;
-			strcpy(msg.reply_xrc_domain.xrc_domain_fname, ib_intf->xrc_domain_fname);
+			strcpy(msg.reply_xrc_domain.xrc_domain_fname,
+				ib_intf->xrc_domain_fname);
 			strcpy(msg.reply_xrc_domain.ib_name, ib_intf->name);
 		} else {
 			strcpy(msg.reply_xrc_domain.xrc_domain_fname, "");
@@ -49,7 +54,8 @@ static void rpc_callback(struct session *session)
 		break;
 
 	default:
-		fprintf(stderr, "Got unhandled RPC message id %d\n", session->rpc_msg.type);
+		fprintf(stderr, "Got unhandled RPC message id %d\n",
+			session->rpc_msg.type);
 		break;
 	}
 }
@@ -84,7 +90,8 @@ static void usage(char *argv[])
 	printf("OPTIONS: (default)\n");
 	printf("    -h | --help         print this message\n");
 	printf("    -v | --verbose      increase quantity of output\n");
-	printf("    -p | --port         control port (default = %d)\n", PTL_CTL_PORT);
+	printf("    -p | --port         control port (default = %d)\n",
+		PTL_CTL_PORT);
 	printf("    -x | --xrc          XRC port (default = %d)\n", XRC_PORT);
 	printf("    -n | --nid-table    NID table\n");
 	printf("    -r | --rank-table   rank table\n");
@@ -200,13 +207,15 @@ int main(int argc, char *argv[])
 
 	err = load_nid_table(nid_table_fname);
 	if (err) {
-		fprintf(stderr, "Couldn't load the NID table at %s\n", nid_table_fname);
+		fprintf(stderr, "Couldn't load the NID table at %s\n",
+			nid_table_fname);
 		return 1;
 	}
 
 	err = load_rank_table(rank_table_fname);
 	if (err) {
-		fprintf(stderr, "Couldn't load the RANK table at %s\n", rank_table_fname);
+		fprintf(stderr, "Couldn't load the RANK table at %s\n",
+			rank_table_fname);
 		return 1;
 	}
 
@@ -226,7 +235,8 @@ int main(int argc, char *argv[])
 	if (err) {
 		switch (err) {
 		case EADDRINUSE:
-			fprintf(stderr, "it appears that %s is already running\n",
+			fprintf(stderr,
+				"it appears that %s is already running\n",
 				progname);
 		default:
 			fprintf(stderr, "unable to start %s\n", progname);
@@ -236,7 +246,9 @@ int main(int argc, char *argv[])
 
 	printf("%s started\n", progname);
 
-	// daemon(0, 0);
+#if 0
+	daemon(0, 0);
+#endif
 
 	sleep(99999);
 

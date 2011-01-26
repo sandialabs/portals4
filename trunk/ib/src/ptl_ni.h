@@ -5,6 +5,11 @@
 #ifndef PTL_NI_H
 #define PTL_NI_H
 
+/* These values will need to come from runtime environment */
+#define MAX_QP_SEND_WR		(10)
+#define MAX_QP_RECV_WR		(10)
+#define MAX_SRQ_RECV_WR		(100)
+
 extern obj_type_t *type_ni;
 
 typedef struct ni {
