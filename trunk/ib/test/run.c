@@ -214,24 +214,20 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->type = PTL_UCHAR;
 
 	for (i = 0; i < 8; i++) {
-		info->md_iov[i].iov_base	= info->md_buf + 2048*i;
-		info->md_iov[i].iov_len	= 2048;
-		info->le_iov[i].iov_base	= info->le_buf + 2048*i;
-		info->le_iov[i].iov_len	= 2048;
-		info->me_iov[i].iov_base	= info->me_buf + 2048*i;
-		info->me_iov[i].iov_len	= 2048;
+		info->iov[i].iov_base	= info->buf + 4096*i;
+		info->iov[i].iov_len	= 4096;
 	}
 
-	info->md.start			= info->md_buf;
-	info->md.length			= sizeof(info->md_buf);
+	info->md.start			= info->buf;
+	info->md.length			= sizeof(info->buf);
 	info->md.options		= 0;
 
-	info->le.start			= info->le_buf;
-	info->le.length			= sizeof(info->le_buf);
+	info->le.start			= info->buf;
+	info->le.length			= sizeof(info->buf);
 	info->le.options		= 0;
 
-	info->me.start			= info->me_buf;
-	info->me.length			= sizeof(info->me_buf);
+	info->me.start			= info->buf;
+	info->me.length			= sizeof(info->buf);
 	info->me.options		= 0;
 	info->me.min_free		= 0;
 
@@ -516,7 +512,7 @@ int get_attr(struct node_info *info, xmlNode *node)
 			break;
 
 		case ATTR_IOV_BASE:
-			info->md_iov[0].iov_base = get_ptr(val);
+			info->iov[0].iov_base = get_ptr(val);
 			break;
 
 		/* md */
@@ -664,38 +660,37 @@ int get_attr(struct node_info *info, xmlNode *node)
 
 	if (info->md.options & PTL_IOVEC) {
 		if (!set_md_start)
-			info->md.start = (void *)&info->md_iov[0];
+			info->md.start = (void *)&info->iov[0];
 		if (!set_md_len)
 			info->md.length = 8;
 	}
 
 	if (info->le.options & PTL_IOVEC) {
 		if (!set_le_start)
-			info->le.start = (void *)&info->le_iov[0];
+			info->le.start = (void *)&info->iov[0];
 		if (!set_le_len)
 			info->le.length = 8;
 	}
 
 	if (info->me.options & PTL_IOVEC) {
 		if (!set_me_start)
-			info->me.start = (void *)&info->me_iov[0];
+			info->me.start = (void *)&info->iov[0];
 		if (!set_me_len)
 			info->me.length = 8;
 	}
 
-	
+
 	if (set_md_data) {
-		set_data(info->md_data, info->md_buf, info->type, sizeof(info->md_buf));
+		set_data(info->md_data, info->buf, info->type, sizeof(info->buf));
 	}
 
 	if (set_le_data) {
-		set_data(info->le_data, info->le_buf, info->type, sizeof(info->le_buf));
+		set_data(info->le_data, info->buf, info->type, sizeof(info->buf));
 	}
 
 	if (set_me_data) {
-		set_data(info->me_data, info->me_buf, info->type, sizeof(info->me_buf));
+		set_data(info->me_data, info->buf, info->type, sizeof(info->buf));
 	}
-
 	return 0;
 }
 
@@ -1037,18 +1032,17 @@ int check_attr(struct node_info *info, xmlNode *node)
 			type = get_atom_type(val);
 			break;
 		case ATTR_MD_DATA:
-			if (check_data(info, val, &info->md_buf[offset], type, length))
+			if (check_data(info, val, &info->buf[offset], type, length))
 				return 1;
 			break;
 		case ATTR_LE_DATA:
-			if (check_data(info, val, &info->le_buf[offset], type, length))
+			if (check_data(info, val, &info->buf[offset], type, length))
 				return 1;
 			break;
 		case ATTR_ME_DATA:
-			if (check_data(info, val, &info->me_buf[offset], type, length))
+			if (check_data(info, val, &info->buf[offset], type, length))
 				return 1;
 			break;
-
 		default:
 			printf("unexpected check attribute: %s\n", e->name);
 			return 1;
