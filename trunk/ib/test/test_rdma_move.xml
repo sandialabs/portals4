@@ -3,14 +3,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters to ME</desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="8192">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_PUT" me_length="8192" type="UINT" me_data="0x00000000">
-            <ptl_md md_length="8192" type="UINT" md_data="0xa5a5a5a5">
-              <ptl_put length="8192"/>
+	  <ptl_me me_opt="OP_PUT" me_length="32768" type="UINT" me_data="0x00000000">
+            <ptl_md md_length="32768" type="UINT" md_data="0xa5a5a5a5">
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="8192" type="UINT" me_data="0xa5a5a5a5"/>
+	    <check length="32768" type="UINT" me_data="0xa5a5a5a5"/>
 	  </ptl_me>
 	</ptl_pt>
       </ptl_ni>
@@ -67,14 +67,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters ME IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" type="UINT" me_data="0xa5a5a5a5">
-            <ptl_md md_length="16384" type="UINT" md_data="0x5a5a5a5a">
-              <ptl_put length="16384"/>
+            <ptl_md md_length="32768" type="UINT" md_data="0x5a5a5a5a">
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="16384" type="UINT" me_data="0x5a5a5a5a"/>
+	    <check length="32768" type="UINT" me_data="0x5a5a5a5a"/>
 	  </ptl_me>
 	</ptl_pt>
       </ptl_ni>
@@ -83,13 +83,13 @@
   <subtest>
     <desc>Test PtlGet with good parameters ME IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" type="UINT" me_data="0x12481248">
-            <ptl_md md_length="16384" type="UINT" md_data="0x00000000">
-              <ptl_get length="16384"/>
+            <ptl_md md_length="32768" type="UINT" md_data="0x00000000">
+              <ptl_get length="32768"/>
 	      <msleep count="10"/>
-	      <check length="16384" type="UINT" md_data="0x12481248"/>
+	      <check length="32768" type="UINT" md_data="0x12481248"/>
             </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -99,14 +99,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters LE IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="16384">
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0xffff0000">
-            <ptl_md md_length="16384" type="UINT" md_data="0x0000ffff">
-              <ptl_put length="16384"/>
+            <ptl_md md_length="32768" type="UINT" md_data="0x0000ffff">
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="16384" type="UINT" le_data="0x0000ffff"/>
+	    <check length="32768" type="UINT" le_data="0x0000ffff"/>
 	  </ptl_le>
 	</ptl_pt>
       </ptl_ni>
@@ -115,13 +115,13 @@
   <subtest>
     <desc>Test PtlGet with good parameters LE IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="16384">
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x12345678">
-            <ptl_md md_length="16384" type="UINT" md_data="0x00000000">
-              <ptl_get length="16384"/>
+            <ptl_md md_length="32768" type="UINT" md_data="0x00000000">
+              <ptl_get length="32768"/>
 	      <msleep count="10"/>
-	      <check length="16384" type="UINT" md_data="0x12345678"/>
+	      <check length="32768" type="UINT" md_data="0x12345678"/>
             </ptl_md>
 	  </ptl_le>
 	</ptl_pt>
@@ -131,14 +131,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_PUT" me_length="16384" type="UINT" me_data="0xffffffff">
+	  <ptl_me me_opt="OP_PUT" me_length="32768" type="UINT" me_data="0xffffffff">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x00000000">
-              <ptl_put length="16384"/>
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="16384" type="UINT" me_data="0x00000000"/>
+	    <check length="32768" type="UINT" me_data="0x00000000"/>
 	  </ptl_me>
 	</ptl_pt>
       </ptl_ni>
@@ -147,13 +147,13 @@
   <subtest>
     <desc>Test PtlGet with good parameters MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
-	  <ptl_me me_opt="OP_GET" me_length="16384" type="UINT" me_data="0x0a5f0a5f">
+	  <ptl_me me_opt="OP_GET" me_length="32768" type="UINT" me_data="0x0a5f0a5f">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0xffffffff">
-              <ptl_get length="16384"/>
+              <ptl_get length="32768"/>
 	      <msleep count="10"/>
-	      <check length="16384" type="UINT" md_data="0x0a5f0a5f"/>
+	      <check length="32768" type="UINT" md_data="0x0a5f0a5f"/>
             </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -163,14 +163,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" type="UINT" me_data="0x00000000">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0xa5a5a5a5">
-              <ptl_put length="16384"/>
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="16384" type="UINT" me_data="0xa5a5a5a5"/>
+	    <check length="32768" type="UINT" me_data="0xa5a5a5a5"/>
 	  </ptl_me>
 	</ptl_pt>
       </ptl_ni>
@@ -179,13 +179,13 @@
   <subtest>
     <desc>Test PtlGet with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="16384">
+      <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" type="UINT" me_data="0x5555aaaa">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINIT" md_data="0x0000ffff">
-              <ptl_get length="16384"/>
+              <ptl_get length="32768"/>
 	      <msleep count="10"/>
-	      <check length="16384" type="UINT" md_data="0x5555aaaa"/>
+	      <check length="32768" type="UINT" md_data="0x5555aaaa"/>
             </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -195,14 +195,14 @@
   <subtest>
     <desc>Test PtlPut with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="16384">
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x00000000">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x01234567">
-              <ptl_put length="16384"/>
+              <ptl_put length="32768"/>
 	      <msleep count="10"/>
             </ptl_md>
-	    <check length="16384" type="UINT" le_data="0x01234567"/>
+	    <check length="32768" type="UINT" le_data="0x01234567"/>
 	  </ptl_le>
 	</ptl_pt>
       </ptl_ni>
@@ -211,13 +211,13 @@
   <subtest>
     <desc>Test PtlGet with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="16384">
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_max_msg_size="32768">
 	<ptl_pt>
 	  <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x84218421">
             <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x00000000">
-              <ptl_get length="16384"/>
+              <ptl_get length="32768"/>
 	      <msleep count="10"/>
-	      <check length="16384" type="UINT" md_data="0x84218421"/>
+	      <check length="32768" type="UINT" md_data="0x84218421"/>
             </ptl_md>
 	  </ptl_le>
 	</ptl_pt>
