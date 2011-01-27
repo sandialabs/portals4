@@ -106,10 +106,16 @@ struct node_info {
 	ptl_jid_t		jid;
 
 	/*
-	 * Node buffer - can be buffer for MD/LE/ME
 	 */
 	ptl_iovec_t		iov[IOV_SIZE];
-	unsigned char		buf[32768];
+
+	/*
+	 * Node buffer - can be buffer for MD/LE/ME.  A non-zero
+	 * flag indicates this node allocated buffer, otherwise node has
+	 * access to the previous nodes buffer from shallow copy.
+	 */
+	unsigned int		buf_alloc;
+	unsigned char		*buf;
 
 	/*
 	 * md_bind, md_release

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <test>
   <subtest>
-    <desc>Test PtlPut with good parameters to ME</desc>
+    <desc>Test PtlPut 32K with good parameters to ME</desc>
     <ptl>
       <ptl_ni desired_max_msg_size="32768">
 	<ptl_pt>
@@ -11,6 +11,22 @@
 	      <msleep count="10"/>
             </ptl_md>
 	    <check length="32768" type="UINT" me_data="0xa5a5a5a5"/>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlPut 64K with good parameters to ME</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="65536">
+	<ptl_pt>
+	  <ptl_me me_opt="OP_PUT" me_length="65536" type="UINT" me_data="0x00000000">
+            <ptl_md md_length="65536" type="UINT" md_data="0xa5a5a5a5">
+              <ptl_put length="65536"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	    <check length="65536" type="UINT" me_data="0xa5a5a5a5"/>
 	  </ptl_me>
 	</ptl_pt>
       </ptl_ni>

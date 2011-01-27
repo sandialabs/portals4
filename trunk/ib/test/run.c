@@ -202,9 +202,9 @@ struct node_info *push_info(struct node_info *head, int tok)
 		return NULL;
 	}
 
-	get_maps();
-
 	*info = *head;
+	info->buf_alloc = 0;
+
 	info->next = head;
 	head->prev = info;
 
@@ -213,21 +213,42 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->ret = PTL_OK;
 	info->type = PTL_UCHAR;
 
+	/* If token is MD/LE/ME then allocate current largest buffer */
+	switch(tok) {
+	case NODE_PTL_MD:
+	case NODE_PTL_MD_BIND:
+	case NODE_PTL_ME:
+	case NODE_PTL_ME_APPEND:
+	case NODE_PTL_LE:
+	case NODE_PTL_LE_APPEND:
+		info->buf = calloc(1, info->actual.max_msg_size);
+		if (!info) {
+			printf("unable to allocate md/me/le buffer\n");
+			free(info);
+			return NULL;
+		}
+		info->buf_alloc = 1;
+		break;
+	default:
+		break;
+	}
+	get_maps();
+
 	for (i = 0; i < 8; i++) {
 		info->iov[i].iov_base	= info->buf + 4096*i;
 		info->iov[i].iov_len	= 4096;
 	}
 
 	info->md.start			= info->buf;
-	info->md.length			= sizeof(info->buf);
+	info->md.length			= info->actual.max_msg_size;
 	info->md.options		= 0;
 
 	info->le.start			= info->buf;
-	info->le.length			= sizeof(info->buf);
+	info->le.length			= info->actual.max_msg_size;
 	info->le.options		= 0;
 
 	info->me.start			= info->buf;
-	info->me.length			= sizeof(info->buf);
+	info->me.length			= info->actual.max_msg_size;
 	info->me.options		= 0;
 	info->me.min_free		= 0;
 
@@ -320,6 +341,9 @@ struct node_info *pop_node(struct node_info *info)
 
 	head = info->next;
 	head->prev = NULL;
+
+	if (info->buf_alloc)
+		free(info->buf);
 	free(info);
 
 	return head;
@@ -681,15 +705,18 @@ int get_attr(struct node_info *info, xmlNode *node)
 
 
 	if (set_md_data) {
-		set_data(info->md_data, info->buf, info->type, sizeof(info->buf));
+		set_data(info->md_data, info->buf, info->type,
+			info->actual.max_msg_size);
 	}
 
 	if (set_le_data) {
-		set_data(info->le_data, info->buf, info->type, sizeof(info->buf));
+		set_data(info->le_data, info->buf, info->type,
+			info->actual.max_msg_size);
 	}
 
 	if (set_me_data) {
-		set_data(info->me_data, info->buf, info->type, sizeof(info->buf));
+		set_data(info->me_data, info->buf, info->type,
+			info->actual.max_msg_size);
 	}
 	return 0;
 }
@@ -1478,7 +1505,7 @@ void set_default_info(struct node_info *info)
 	info->desired.max_pt_index		= 10;
 	info->desired.max_iovecs		= 8;
 	info->desired.max_list_size		= 10;
-	info->desired.max_msg_size		= 10;
+	info->desired.max_msg_size		= 64;
 	info->desired.max_atomic_size		= 64;
 	info->map_size				= 10;
 	info->ni_handle				= PTL_INVALID_HANDLE;
