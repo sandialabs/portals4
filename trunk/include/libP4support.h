@@ -51,7 +51,7 @@ void __PtlCreateLECT(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_
 
 void __PtlCreateMEPersistent(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_size_t length,
 	ptl_size_t count, ptl_handle_me_t *mh);
-void __PtlCreateMEUseOnce(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_size_t length,
+int __PtlCreateMEUseOnce(ptl_handle_ni_t ni, ptl_pt_index_t index, void *start, ptl_size_t length,
 	ptl_size_t count, ptl_handle_me_t *mh);
 void __PtlFreeME(ptl_size_t count, ptl_handle_me_t *mh);
 
