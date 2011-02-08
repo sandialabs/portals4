@@ -218,7 +218,7 @@ static int __PtlCreateME(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-int__PtlCreateMEPersistent(
+int __PtlCreateMEPersistent(
     ptl_handle_ni_t ni,
     ptl_pt_index_t index,
     void *start,
