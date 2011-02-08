@@ -296,6 +296,15 @@ ptl_event_t event;
     }
 
     tmp= __PtlAllreduceDouble(total, PTL_SUM);
+
+#if 0
+    printf("%s %.1f ns\n",rank==0?"send":"recv", 
+			total/(double)(niters*nmsgs) * 1000000000.0);
+
+    if ( rank == 0 )
+        printf("avg %.1f ns\n",tmp/(double)(niters*nmsgs) * 1000000000.0/2.0);
+#endif
+
     display_result("single direction", (niters * nmsgs) / (tmp / world_size));
 
     __PtlBarrier();
@@ -359,6 +368,13 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
                 int nmsgs, int nbytes, int niters );
 void
 test_prepostLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
+                int nmsgs, int nbytes, int niters );
+
+void
+test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
+                int nmsgs, int nbytes, int niters );
+void
+test_one_wayLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
                 int nmsgs, int nbytes, int niters );
 
 static void
@@ -709,6 +725,13 @@ int test_type;
     }
     test_one_way(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters,
 	    test_type, verbose);
+
+    if ( test_type == LEwithCT )
+	test_one_wayLE(cache_size, cache_buf, ni_logical, npeers, nmsgs, 
+		nbytes, niters );
+    else 
+	test_one_wayME(cache_size, cache_buf, ni_logical, npeers, nmsgs, 
+		nbytes, niters );
 
     if (verbose > 0)   {
 	printf("Rank %3d: Starting test_same_direction(nmsgs %d, nbytes %d, niters %d)\n", rank,
