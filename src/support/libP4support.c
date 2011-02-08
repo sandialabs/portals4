@@ -181,7 +181,7 @@ void __PtlCreateLECT(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-static void __PtlCreateME(
+static int __PtlCreateME(
     ptl_handle_ni_t ni,
     ptl_pt_index_t index,
     void *start,
@@ -210,7 +210,7 @@ static void __PtlCreateME(
 	rc = PtlMEAppend(ni, index, &me, PTL_PRIORITY_LIST, NULL, &mh[i]);
 	PTL_CHECK(rc, "Error in __PtlCreateME(): PtlMEAppend");
     }
-
+    return rc;
 }                                      /* end of __PtlCreateME() *//*}}} */
 
 /*
@@ -218,7 +218,7 @@ static void __PtlCreateME(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-void __PtlCreateMEPersistent(
+int__PtlCreateMEPersistent(
     ptl_handle_ni_t ni,
     ptl_pt_index_t index,
     void *start,
@@ -227,7 +227,7 @@ void __PtlCreateMEPersistent(
     ptl_handle_me_t *mh)
 {
     unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
-    __PtlCreateME(ni,index,start,length,count,options,mh);
+    return __PtlCreateME(ni,index,start,length,count,options,mh);
 }                                /* end of __PtlCreateMEPersistent() *//*}}} */
 
 /*
@@ -235,7 +235,7 @@ void __PtlCreateMEPersistent(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-void __PtlCreateMEUseOnce(
+int __PtlCreateMEUseOnce(
     ptl_handle_ni_t ni,
     ptl_pt_index_t index,
     void *start,
@@ -245,7 +245,7 @@ void __PtlCreateMEUseOnce(
 {
     unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE | 
                     PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE;
-    __PtlCreateME(ni,index,start,length,count,options,mh);
+    return __PtlCreateME(ni,index,start,length,count,options,mh);
 }                                /* end of __PtlCreateMEUseONe() *//*}}} */
 
 /*
