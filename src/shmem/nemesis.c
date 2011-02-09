@@ -84,7 +84,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     if (retval == NULL) {
         while (q->q.head == NULL) {
 #ifdef USE_HARD_POLLING
-            __asm__ __volatile__( "":::"memory");
+            __asm__ __volatile__( "pause":::"memory");
 #else
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
