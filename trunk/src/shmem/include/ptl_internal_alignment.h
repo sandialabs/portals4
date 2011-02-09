@@ -24,6 +24,7 @@
 # define ALIGNED_MALLOC(ret,align,size) do { \
     (ret) = memalign((align), (size)); \
 } while (0)
+# define ALIGNED_FREE(x,align) free((x))
 #elif defined(HAVE_POSIX_MEMALIGN)
 /* may have to define _XOPEN_SOURCE 600 */
 # include <stdlib.h>
@@ -34,6 +35,7 @@
 # define ALIGNED_MALLOC(ret,align,size) do { \
     posix_memalign(&(ret), (align), (size)); \
 } while (0)
+# define ALIGNED_FREE(x,align) free((x))
 #else
 # define ALIGNED_CALLOC(ret,align,count,size) do { \
     uintptr_t tmp1 = (uintptr_t) malloc((count)*(size)+64); \
@@ -48,6 +50,7 @@
     tmp1 += align; \
     (ret) = tmp1; \
 } while (0)
+# define ALIGNED_FREE(x,align) free(((char*)(x))-(align))
 #endif
 
 #endif
