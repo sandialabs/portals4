@@ -26,6 +26,7 @@
 #include "ptl_internal_DM.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_alignment.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
 #endif
@@ -203,9 +204,7 @@ int API_FUNC PtlNIInit(
                 PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
                                         (void *)1)) == (void *)1) ;
         if (tmp == NULL) {
-            tmp =
-                calloc(nit_limits[ni.s.ni].max_pt_index + 1,
-                       sizeof(ptl_table_entry_t));
+            ALIGNED_CALLOC(tmp, 64, nit_limits[ni.s.ni].max_pt_index + 1, sizeof(ptl_table_entry_t));
             if (tmp == NULL) {
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;

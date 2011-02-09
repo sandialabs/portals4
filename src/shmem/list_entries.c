@@ -28,6 +28,7 @@
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_alignment.h"
 
 #define LE_FREE         0
 #define LE_ALLOCATED    1
@@ -76,7 +77,7 @@ void INTERNAL PtlInternalLENISetup(
             PtlInternalAtomicCasPtr(&(les[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        tmp = calloc(limit, sizeof(ptl_internal_le_t));
+        ALIGNED_CALLOC(tmp, 64, limit, sizeof(ptl_internal_le_t));
         assert(tmp != NULL);
         __sync_synchronize();
         les[ni] = tmp;

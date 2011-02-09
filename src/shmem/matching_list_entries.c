@@ -24,6 +24,7 @@
 #include "ptl_internal_performatomic.h"
 #include "ptl_internal_papi.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_alignment.h"
 #ifdef PARANOID
 # include "ptl_internal_PT.h"
 #endif
@@ -92,7 +93,7 @@ void INTERNAL PtlInternalMENISetup(
             PtlInternalAtomicCasPtr(&(mes[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        tmp = calloc(limit, sizeof(ptl_internal_me_t));
+        ALIGNED_CALLOC(tmp, 64, limit, sizeof(ptl_internal_me_t));
         assert(tmp != NULL);
         __sync_synchronize();
         mes[ni] = tmp;
