@@ -88,7 +88,7 @@ void INTERNAL PtlInternalEQNITeardown(
             tmp[i].ring = NULL;
         }
     }
-    free(tmp);
+    ALIGNED_FREE(tmp, 64);
     free((void *)rc);
 }
 
@@ -226,7 +226,7 @@ int API_FUNC PtlEQFree(
     while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1) ;
     tmp = eq->ring;
     eq->ring = NULL;
-    free(tmp);
+    ALIGNED_FREE(tmp, 64);
     PtlInternalAtomicInc(&(eq_refcounts[eqh.s.ni][eqh.s.code]), -1);
     return PTL_OK;
 }

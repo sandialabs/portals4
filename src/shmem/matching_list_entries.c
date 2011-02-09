@@ -108,7 +108,7 @@ void INTERNAL PtlInternalMENITeardown(
     mes[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    free(tmp);
+    ALIGNED_FREE(tmp, 64);
 }                                      /*}}} */
 
 static void *PtlInternalPerformOverflowDelivery(
