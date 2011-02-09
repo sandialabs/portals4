@@ -183,10 +183,12 @@ void INTERNAL PtlInternalPTInit(
 int INTERNAL PtlInternalPTValidate(
     ptl_table_entry_t * t)
 {                                      /*{{{ */
+#ifndef NO_ARG_VALIDATION
     if (PtlInternalEQHandleValidator(t->EQ, 1)) {
         VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
         return 3;
     }
+#endif
     switch (t->status) {
         case PT_FREE:
             VERBOSE_ERROR("PT has not been allocated\n");

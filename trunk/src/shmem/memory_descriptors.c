@@ -69,6 +69,7 @@ void INTERNAL PtlInternalMDNITeardown(
     free(tmp);
 }                                      /*}}} */
 
+#ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalMDHandleValidator(
     ptl_handle_md_t handle,
     int care_about_ct)
@@ -114,6 +115,7 @@ int INTERNAL PtlInternalMDHandleValidator(
     }
     return PTL_OK;
 }                                      /*}}} */
+#endif
 
 int API_FUNC PtlMDBind(
     ptl_handle_ni_t ni_handle,

@@ -6,9 +6,12 @@ void PtlInternalMDNISetup(
     ptl_size_t limit);
 void PtlInternalMDNITeardown(
     unsigned int ni_num);
+
+#ifndef NO_ARG_VALIDATION
 int PtlInternalMDHandleValidator(
     ptl_handle_md_t handle,
     int care_about_ct);
+#endif
 
 char *PtlInternalMDDataPtr(
     ptl_handle_md_t handle);
