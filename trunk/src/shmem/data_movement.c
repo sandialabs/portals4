@@ -605,20 +605,7 @@ int API_FUNC PtlPut(
         hdr->moredata = dataptr + payload;
     }
     /* step 4: enqueue the op structure on the target */
-    switch (md.s.ni) {
-        case 0:
-        case 1:                       // Logical
-            //printf("%u PtlPut logical toss to %u\n", (unsigned)proc_number, target_id.rank);
-            PtlInternalFragmentToss(hdr, target_id.rank);
-            break;
-        case 2:
-        case 3:                       // Physical
-            //printf("%u PtlPut physical toss to %u\n", (unsigned)proc_number, target_id.phys.pid);
-            PtlInternalFragmentToss(hdr, target_id.phys.pid);
-            break;
-        default:
-            *(int *)0 = 0;
-    }
+    PtlInternalFragmentToss(hdr, hdr->target);
     //PtlInternalPAPISaveC(PTL_PUT, 1);
     if (quick_exit) {
         unsigned int options;
