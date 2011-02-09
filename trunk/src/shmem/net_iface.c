@@ -263,7 +263,7 @@ int API_FUNC PtlNIFini(
         }
         /* deallocate NI */
         free(nit.unexpecteds_buf[ni.s.ni]);
-        free(nit.tables[ni.s.ni]);
+        ALIGNED_FREE(nit.tables[ni.s.ni], 64);
         nit.unexpecteds[ni.s.ni] = NULL;
         nit.unexpecteds_buf[ni.s.ni] = NULL;
         nit.tables[ni.s.ni] = NULL;
