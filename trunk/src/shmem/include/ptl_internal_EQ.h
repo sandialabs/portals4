@@ -1,6 +1,8 @@
 #ifndef PTL_INTERNAL_EQ_H
 #define PTL_INTERNAL_EQ_H
 
+#include "ptl_internal_alignment.h"
+
 typedef struct {
     ptl_match_bits_t match_bits;        // 8 bytes
     void *start;                // 8 bytes (16)
@@ -23,7 +25,7 @@ typedef struct {
     uint8_t atomic_operation:5;
     uint8_t ni_fail_type:3;
     uint8_t atomic_type:4;      // 2-ish bytes (55)
-} ptl_internal_event_t;
+} ptl_internal_event_t ALIGNED(64);
 
 int PtlInternalEQHandleValidator(
     ptl_handle_eq_t handle,
