@@ -92,12 +92,11 @@ void INTERNAL PtlInternalEQNITeardown(
     free((void *)rc);
 }
 
-
+#ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalEQHandleValidator(
     ptl_handle_eq_t handle,
     int none_ok)
 {
-#ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t eq = { handle };
     if (eq.s.selector != HANDLE_EQ_CODE) {
         VERBOSE_ERROR
@@ -124,9 +123,9 @@ int INTERNAL PtlInternalEQHandleValidator(
                       (int)eq.s.code);
         return PTL_ARG_INVALID;
     }
-#endif
     return PTL_OK;
 }
+#endif
 
 int API_FUNC PtlEQAlloc(
     ptl_handle_ni_t ni_handle,

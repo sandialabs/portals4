@@ -27,9 +27,11 @@ typedef struct {
     uint8_t atomic_type:4;      // 2-ish bytes (55)
 } ptl_internal_event_t ALIGNED(64);
 
+#ifndef NO_ARG_VALIDATION
 int PtlInternalEQHandleValidator(
     ptl_handle_eq_t handle,
     int none_ok);
+#endif
 void PtlInternalEQPush(
     ptl_handle_eq_t handle,
     ptl_internal_event_t * event);
