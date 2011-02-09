@@ -475,64 +475,7 @@ void INTERNAL PtlInternalEQPush(
               PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
                                      newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
-    switch (event->type) {
-        case PTL_EVENT_GET:
-        case PTL_EVENT_PUT:
-        case PTL_EVENT_PUT_OVERFLOW:
-        case PTL_EVENT_ATOMIC:
-        case PTL_EVENT_ATOMIC_OVERFLOW:
-        case PTL_EVENT_PT_DISABLED:
-        case PTL_EVENT_AUTO_UNLINK:
-        case PTL_EVENT_AUTO_FREE:
-        case PTL_EVENT_PROBE:         /* target */
-            eq->ring[writeidx.s.offset].match_bits =
-                event->match_bits;
-            eq->ring[writeidx.s.offset].start =
-                event->start;
-            eq->ring[writeidx.s.offset].user_ptr =
-                event->user_ptr;
-            eq->ring[writeidx.s.offset].hdr_data =
-                event->hdr_data;
-            eq->ring[writeidx.s.offset].rlength =
-                event->rlength;
-            eq->ring[writeidx.s.offset].mlength =
-                event->mlength;
-            if (eqh.s.ni <= 1) {       /* logical */
-                eq->ring[writeidx.s.offset].initiator.rank =
-                    event->initiator.rank;
-            } else {                   /* physical */
-                eq->ring[writeidx.s.offset].initiator.phys.pid =
-                    (uint16_t) event->initiator.phys.pid;
-                eq->ring[writeidx.s.offset].initiator.phys.nid =
-                    (uint16_t) event->initiator.phys.nid;
-            }
-            eq->ring[writeidx.s.offset].uid =
-                (uint16_t) event->uid;
-            eq->ring[writeidx.s.offset].jid =
-                (uint16_t) event->jid;
-            eq->ring[writeidx.s.offset].remote_offset =
-                event->remote_offset;
-            eq->ring[writeidx.s.offset].pt_index =
-                event->pt_index;
-            eq->ring[writeidx.s.offset].type = 
-                (uint8_t) (event->type);
-            eq->ring[writeidx.s.offset].ni_fail_type =
-                event->ni_fail_type;
-            eq->ring[writeidx.s.offset].atomic_operation =
-                (uint8_t) event->atomic_operation;
-            eq->ring[writeidx.s.offset].atomic_type =
-                (uint8_t) event->atomic_type;
-            break;
-        case PTL_EVENT_REPLY:
-        case PTL_EVENT_SEND:
-        case PTL_EVENT_ACK:           /* initiator */
-            eq->ring[writeidx.s.offset].mlength = event->mlength;
-            eq->ring[writeidx.s.offset].remote_offset = event->remote_offset;
-            eq->ring[writeidx.s.offset].user_ptr = event->user_ptr;
-            eq->ring[writeidx.s.offset].type = (uint8_t) (event->type);
-            eq->ring[writeidx.s.offset].ni_fail_type = event->ni_fail_type;
-            break;
-    }
+    eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish
     while (eq->lagging_tail.u != writeidx.u) ;
 
