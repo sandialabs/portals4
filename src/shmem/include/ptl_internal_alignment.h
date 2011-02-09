@@ -11,6 +11,8 @@
 # define ALIGNED(x)
 #endif
 
+#include <string.h>                    /* for memset() */
+
 #if defined(HAVE_MEMALIGN)
 # ifdef HAVE_MALLOC_H
 #  include <malloc.h>

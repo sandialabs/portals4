@@ -20,6 +20,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_timer.h"
 #include "ptl_internal_papi.h"
+#include "ptl_internal_alignment.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_error.h"
@@ -45,7 +46,7 @@ typedef struct {
     ptl_internal_event_t *ring;
     uint32_t size;
     volatile eq_off_t head, leading_tail, lagging_tail;
-} ptl_internal_eq_t;
+} ptl_internal_eq_t ALIGNED(64);
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
@@ -58,7 +59,7 @@ void INTERNAL PtlInternalEQNISetup(
             PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        tmp = calloc(nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
+        ALIGNED_CALLOC(tmp, 64, nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
         assert(tmp != NULL);
         assert(eq_refcounts[ni] == NULL);
         eq_refcounts[ni] = calloc(nit_limits[ni].max_eqs, sizeof(uint64_t));
@@ -177,8 +178,8 @@ int API_FUNC PtlEQAlloc(
         for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_eqs; ++offset) {
             if (rc[offset] == 0) {
                 if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
-                    ptl_internal_event_t *tmp =
-                        calloc(count, sizeof(ptl_internal_event_t));
+                    ptl_internal_event_t *tmp;
+                    ALIGNED_CALLOC(tmp, 64, count, sizeof(ptl_internal_event_t));
                     if (tmp == NULL) {
                         rc[offset] = 0;
                         return PTL_NO_SPACE;
