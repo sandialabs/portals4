@@ -26,6 +26,7 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_error.h"
+#include "ptl_internal_alignment.h"
 
 const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
@@ -33,10 +34,12 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 #define MD_IN_USE   1
 
 typedef struct {
-    ptl_md_t visible;
     volatile uint32_t in_use;   // 0=free, 1=in_use
     uint32_t refcount;
-} ptl_internal_md_t;
+    char pad1[8];
+    ptl_md_t visible;
+    char pad2[64 - (8 + sizeof(uint32_t)*2 + sizeof(ptl_md_t))];
+} ptl_internal_md_t ALIGNED(64);
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
 
@@ -45,12 +48,14 @@ void INTERNAL PtlInternalMDNISetup(
     ptl_size_t limit)
 {                                      /*{{{ */
     ptl_internal_md_t *tmp;
+    assert(sizeof(ptl_internal_md_t) == 64);
     while ((tmp =
             PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        tmp = calloc(limit, sizeof(ptl_internal_md_t));
+        ALIGNED_CALLOC(tmp, 64, limit+1, sizeof(ptl_internal_md_t));
         assert(tmp != NULL);
+        tmp = (ptl_internal_md_t*)(((char*) tmp) + 32);
         __sync_synchronize();
         mds[ni] = tmp;
     }
@@ -66,7 +71,7 @@ void INTERNAL PtlInternalMDNITeardown(
     for (size_t mdi = 0; mdi < nit_limits[ni].max_mds; ++mdi) {
         while (tmp[mdi].refcount != 0) ;
     }
-    free(tmp);
+    ALIGNED_FREE(((char*)tmp) - 32, 64);
 }                                      /*}}} */
 
 #ifndef NO_ARG_VALIDATION
