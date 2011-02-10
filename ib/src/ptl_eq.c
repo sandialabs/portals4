@@ -16,6 +16,9 @@ void eq_release(void *arg)
 	if (eq->eqe_list)
 		free(eq->eqe_list);
 	eq->eqe_list = NULL;
+
+	pthread_mutex_destroy(&eq->mutex);
+	pthread_cond_destroy(&eq->cond);
 }
 
 /* can return
@@ -67,6 +70,8 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq->consumer = 0;
 	eq->prod_gen = 0;
 	eq->cons_gen = 0;
+	pthread_mutex_init(&eq->mutex, NULL);
+	pthread_cond_init(&eq->cond, NULL);
 
 	pthread_spin_lock(&ni->obj_lock);
 	ni->current.max_eqs++;
@@ -119,6 +124,13 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 		goto err1;
 	}
 
+	if (eq->waiting) {
+		eq->interrupt = 1;
+		pthread_mutex_lock(&eq->mutex);
+		pthread_cond_broadcast(&eq->cond);
+		pthread_mutex_unlock(&eq->mutex);
+	}
+
 	eq_put(eq);
 	eq_put(eq);
 	gbl_put(gbl);
@@ -129,12 +141,11 @@ err1:
 	return err;
 }
 
+/* Must hold eq->mutex outside of this call */
 int get_event(eq_t *eq, ptl_event_t *event)
 {
-	pthread_spin_lock(&eq->obj_lock);
 	if ((eq->producer == eq->consumer) &&
 	    (eq->prod_gen == eq->cons_gen)) {
-		pthread_spin_unlock(&eq->obj_lock);
 		return PTL_EQ_EMPTY;
 	}
 
@@ -144,7 +155,6 @@ int get_event(eq_t *eq, ptl_event_t *event)
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
 	return PTL_OK;
 }
 
@@ -173,7 +183,9 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 
+	pthread_mutex_lock(&eq->mutex);
 	err = get_event(eq, event);
+	pthread_mutex_unlock(&eq->mutex);
 
 	eq_put(eq);
 	gbl_put(gbl);
@@ -190,7 +202,6 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	int err;
 	gbl_t *gbl;
 	eq_t *eq;
-	int i;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -210,16 +221,20 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 
-	// TODO replace with pthread_cond event
-	i = 0;
+	pthread_mutex_lock(&eq->mutex);
 	while((err = get_event(eq, event)) == PTL_EQ_EMPTY) {
-		sched_yield();
-		if (i++ > 1000) {
-			printf("giving up waiting\n");
-			break;
+		eq->waiting++;
+		pthread_cond_wait(&eq->cond, &eq->mutex);
+		eq->waiting--;
+		if (eq->interrupt) {
+			pthread_mutex_unlock(&eq->mutex);
+			err = PTL_INTERRUPTED;
+			goto err2;
 		}
 	}
+	pthread_mutex_unlock(&eq->mutex);
 
+err2:
 	eq_put(eq);
 	gbl_put(gbl);
 	return err;
@@ -266,11 +281,14 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 			goto err1;
 		}
 
+		pthread_mutex_lock(&eq->mutex);
 		if (get_event(eq, event) == PTL_OK) {
+			pthread_mutex_unlock(&eq->mutex);
 			*which = i;
 			eq_put(eq);
 			goto done;
 		}
+		pthread_mutex_unlock(&eq->mutex);
 
 		eq_put(eq);
 	}
@@ -300,7 +318,7 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 
 	/* TODO check to see if there is room in the eq */
 
-	pthread_spin_lock(&eq->obj_lock);
+	pthread_mutex_lock(&eq->mutex);
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
@@ -325,7 +343,10 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
+	if (eq->waiting)
+		pthread_cond_broadcast(&eq->cond);
+
+	pthread_mutex_unlock(&eq->mutex);
 
 	if (debug) event_dump(ev);
 
@@ -338,7 +359,7 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 
 	/* TODO check to see if there is room in the eq */
 
-	pthread_spin_lock(&eq->obj_lock);
+	pthread_mutex_lock(&eq->mutex);
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
@@ -363,7 +384,10 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
+	if (eq->waiting)
+		pthread_cond_broadcast(&eq->cond);
+
+	pthread_mutex_unlock(&eq->mutex);
 
 	if (debug) event_dump(ev);
 
