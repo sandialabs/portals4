@@ -16,9 +16,6 @@ void eq_release(void *arg)
 	if (eq->eqe_list)
 		free(eq->eqe_list);
 	eq->eqe_list = NULL;
-
-	pthread_mutex_destroy(&eq->mutex);
-	pthread_cond_destroy(&eq->cond);
 }
 
 /* can return
@@ -70,8 +67,6 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq->consumer = 0;
 	eq->prod_gen = 0;
 	eq->cons_gen = 0;
-	pthread_mutex_init(&eq->mutex, NULL);
-	pthread_cond_init(&eq->cond, NULL);
 
 	pthread_spin_lock(&ni->obj_lock);
 	ni->current.max_eqs++;
@@ -110,6 +105,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	int err;
 	gbl_t *gbl;
 	eq_t *eq;
+	ni_t *ni;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -124,11 +120,17 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 		goto err1;
 	}
 
-	if (eq->waiting) {
+	ni = to_ni(eq);
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+
+	if (ni->eq_waiting) {
 		eq->interrupt = 1;
-		pthread_mutex_lock(&eq->mutex);
-		pthread_cond_broadcast(&eq->cond);
-		pthread_mutex_unlock(&eq->mutex);
+		pthread_mutex_lock(&ni->eq_wait_mutex);
+		pthread_cond_broadcast(&ni->eq_wait_cond);
+		pthread_mutex_unlock(&ni->eq_wait_mutex);
 	}
 
 	eq_put(eq);
@@ -141,11 +143,12 @@ err1:
 	return err;
 }
 
-/* Must hold eq->mutex outside of this call */
 int get_event(eq_t *eq, ptl_event_t *event)
 {
+	pthread_spin_lock(&eq->obj_lock);
 	if ((eq->producer == eq->consumer) &&
 	    (eq->prod_gen == eq->cons_gen)) {
+		pthread_spin_unlock(&eq->obj_lock);
 		return PTL_EQ_EMPTY;
 	}
 
@@ -155,6 +158,7 @@ int get_event(eq_t *eq, ptl_event_t *event)
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
+	pthread_spin_unlock(&eq->obj_lock);
 	return PTL_OK;
 }
 
@@ -183,10 +187,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 
-	pthread_mutex_lock(&eq->mutex);
 	err = get_event(eq, event);
-	pthread_mutex_unlock(&eq->mutex);
-
 	eq_put(eq);
 	gbl_put(gbl);
 	return err;
@@ -202,6 +203,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	int err;
 	gbl_t *gbl;
 	eq_t *eq;
+	ni_t *ni;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -221,18 +223,30 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 
-	pthread_mutex_lock(&eq->mutex);
+	ni = to_ni(eq);
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+
+	/* First try with just spining */
+	err = get_event(eq, event);
+	if (err != PTL_EQ_EMPTY)
+		goto err2;
+
+	/* Serialize for blocking on empty */
+	pthread_mutex_lock(&ni->eq_wait_mutex);
 	while((err = get_event(eq, event)) == PTL_EQ_EMPTY) {
-		eq->waiting++;
-		pthread_cond_wait(&eq->cond, &eq->mutex);
-		eq->waiting--;
+		ni->eq_waiting++;
+		pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
+		ni->eq_waiting--;
 		if (eq->interrupt) {
-			pthread_mutex_unlock(&eq->mutex);
+			pthread_mutex_unlock(&ni->eq_wait_mutex);
 			err = PTL_INTERRUPTED;
 			goto err2;
 		}
 	}
-	pthread_mutex_unlock(&eq->mutex);
+	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
 err2:
 	eq_put(eq);
@@ -281,14 +295,11 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 			goto err1;
 		}
 
-		pthread_mutex_lock(&eq->mutex);
 		if (get_event(eq, event) == PTL_OK) {
-			pthread_mutex_unlock(&eq->mutex);
 			*which = i;
 			eq_put(eq);
 			goto done;
 		}
-		pthread_mutex_unlock(&eq->mutex);
 
 		eq_put(eq);
 	}
@@ -315,10 +326,11 @@ void event_dump(ptl_event_t *ev)
 int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 {
 	ptl_event_t *ev;
+	ni_t *ni;
 
 	/* TODO check to see if there is room in the eq */
 
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->obj_lock);
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
@@ -343,10 +355,14 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	if (eq->waiting)
-		pthread_cond_broadcast(&eq->cond);
+	pthread_spin_unlock(&eq->obj_lock);
 
-	pthread_mutex_unlock(&eq->mutex);
+	/* Handle case where waiters have blocked */
+	ni = to_ni(eq);
+	pthread_mutex_lock(&ni->eq_wait_mutex);
+	if (ni->eq_waiting)
+		pthread_cond_broadcast(&ni->eq_wait_cond);
+	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
 	if (debug) event_dump(ev);
 
@@ -356,10 +372,11 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 {
 	ptl_event_t *ev;
+	ni_t *ni;
 
 	/* TODO check to see if there is room in the eq */
 
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->obj_lock);
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
@@ -384,10 +401,14 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	if (eq->waiting)
-		pthread_cond_broadcast(&eq->cond);
+	pthread_spin_unlock(&eq->obj_lock);
 
-	pthread_mutex_unlock(&eq->mutex);
+	/* Handle case where waiters have blocked */
+	ni = to_ni(eq);
+	pthread_mutex_lock(&ni->eq_wait_mutex);
+	if (ni->eq_waiting)
+		pthread_cond_broadcast(&ni->eq_wait_cond);
+	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
 	if (debug) event_dump(ev);
 
