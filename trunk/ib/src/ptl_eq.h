@@ -17,6 +17,10 @@ typedef struct eq {
 	unsigned int		consumer;
 	unsigned int		prod_gen;
 	unsigned int		cons_gen;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		cond;
+	int			waiting;
+	int			interrupt;
 } eq_t;
 
 void eq_release(void *arg);
