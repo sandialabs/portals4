@@ -546,6 +546,8 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_spin_init(&ni->mr_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->send_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
+	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
+	pthread_cond_init(&ni->eq_wait_cond, NULL);
 
 	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
@@ -661,6 +663,8 @@ void ni_cleanup(ni_t *ni)
 		ni->map = NULL;
 	}
 
+	pthread_mutex_destroy(&ni->eq_wait_mutex);
+	pthread_cond_destroy(&ni->eq_wait_cond);
 	pthread_mutex_destroy(&ni->pt_mutex);
 	pthread_spin_destroy(&ni->md_list_lock);
 	pthread_spin_destroy(&ni->ct_list_lock);
