@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <time.h>
+#include <inttypes.h>
 #include "../include/portals4.h"
 #include "data.h"
 
@@ -392,7 +393,7 @@ int main(int argc, char *argv[])
 		printf("        <ptl_pt>\n");
 
 		if (match)
-			printf("          <ptl_me me_opt=\"OP_PUT OP_GET\" type=\"%s\" me_data=\"%s\" me_match=\"0x%lx\">\n",
+			printf("          <ptl_me me_opt=\"OP_PUT OP_GET\" type=\"%s\" me_data=\"%s\" me_match=\"0x%" PRIu64 "\">\n",
 				atom_type[type].name, datatype_str(type, tgt), match_bits);
 		else
 			printf("          <ptl_le le_opt=\"OP_PUT OP_GET\" type=\"%s\" le_data=\"%s\">\n",
@@ -406,7 +407,7 @@ int main(int argc, char *argv[])
 		printf("                <ptl_swap atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" operand=\"%s\"",
 			atom_op_name[op], atom_type[type].name, length, datatype_str(type, opr));
 		if (match)
-			printf(" match=\"0x%lx\"/>\n", match_bits);
+			printf(" match=\"0x%" PRIu64 "\"/>\n", match_bits);
 		else
 			printf("/>\n");
 
