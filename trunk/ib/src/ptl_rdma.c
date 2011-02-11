@@ -126,9 +126,9 @@ ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 	ptl_iovec_t *iov;
 	ptl_size_t tot_len = 0;
 	ptl_size_t len;
-	int i;
+	int i = 0;
 
-	for (i = 0; i < num_sge && tot_len < rem_len; i++, sge++) {
+	while (i < num_sge && tot_len < rem_len) {
 		len = rem_len - tot_len;
 		if (me->num_iov) {
 			if (*loc_index >= max_loc_index) {
@@ -167,6 +167,11 @@ ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 				break;
 		}
 
+		/* Do not send 0 length segments. */
+		if (len > 0) {
+			i++;
+			sge++;
+		}
 	}
 	*entries = i;
 	return tot_len;

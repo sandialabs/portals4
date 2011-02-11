@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include <inttypes.h>
 #include "../include/portals4.h"
 #include "data.h"
 
@@ -95,10 +96,10 @@ char *datatype_str(int type, datatype_t data)
 		sprintf(str, "0x%08x", data.u32);
 		break;
 	case PTL_LONG:
-		sprintf(str, "%ld", data.s64);
+		sprintf(str, "%" PRId64 , data.s64);
 		break;
 	case PTL_ULONG:
-		sprintf(str, "0x%016lx", data.u64);
+		sprintf(str, "0x%016" PRIx64 , data.u64);
 		break;
 	case PTL_FLOAT:
 		sprintf(str, "%12.10f", data.f);
