@@ -311,13 +311,19 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 		}
 	}
 
-	/* Serialize for blocking, note all EQ are from same NI */
-	gettimeofday(&time, NULL);
-	expire.tv_sec = time.tv_sec + (timeout/1000);
-	expire.tv_nsec = time.tv_usec * 1000 + (timeout % 1000) * 1000 * 1000;
 	ni = to_ni(eq[0]);
+
+	if (timeout != PTL_TIME_FOREVER) {	
+		gettimeofday(&time, NULL);
+		expire.tv_sec = time.tv_sec + (timeout/1000);
+		expire.tv_nsec = time.tv_usec * 1000 +
+					(timeout % 1000) * 1000 * 1000;
+	}
+
+	/* Serialize for blocking, note all EQ are from same NI */
 	pthread_mutex_lock(&ni->eq_wait_mutex);
-	while (1) {
+	err = 0;
+	while (!err) {
 		for (i = 0; i < size; i++) {
 			if (eq[i]->interrupt) {
 				pthread_mutex_unlock(&ni->eq_wait_mutex);
@@ -332,11 +338,13 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 		}
 
 		ni->eq_waiting++;
-		err = pthread_cond_timedwait(&ni->eq_wait_cond,
-			&ni->eq_wait_mutex, &expire);
+		if (timeout == PTL_TIME_FOREVER)
+			pthread_cond_wait(&ni->eq_wait_cond,
+				&ni->eq_wait_mutex);
+		else
+			err = pthread_cond_timedwait(&ni->eq_wait_cond,
+				&ni->eq_wait_mutex, &expire);
 		ni->eq_waiting--;
-		if (err == ETIMEDOUT)
-			break;
 	}
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 	err = PTL_EQ_EMPTY;

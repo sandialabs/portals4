@@ -84,6 +84,10 @@ typedef int			ptl_sr_value_t;
 typedef uint64_t		ptl_hdr_data_t;
 typedef unsigned int		ptl_time_t;
 
+enum {							/* 3.13, 3.14 */
+	PTL_TIME_FOREVER	= 0xffffffff
+};
+
 enum ptl_retvals {					/* 3.3 */
 	PTL_OK			= 0,
 	PTL_FAIL		= 1,
