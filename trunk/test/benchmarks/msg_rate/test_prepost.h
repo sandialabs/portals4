@@ -10,6 +10,24 @@
 # include <sys/time.h>
 #endif
 
+#if 0 
+#define Debug(fmt, args... ) \
+    printf( "%d:%s():%d: "fmt, rank, __FUNCTION__,__LINE__, ## args )
+#else
+#define Debug(fmt, args... )
+#endif
+
+#include <assert.h>
+
+#ifndef NDEBUG 
+#define ptl_assert(x,y) assert((x) == (y))
+#define ptl_assert_not(x,y) assert((x) != (y))
+#else
+#define ptl_assert(x,y) (void)x
+#define ptl_assert_not(x,y) (void)x
+#endif
+
+
 #define TestOneWayIndex (1)
 #define TestSameDirectionIndex  (2)
 #define SEND_BUF_SIZE   (npeers * nmsgs * nbytes)
