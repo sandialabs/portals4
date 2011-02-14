@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "portals4.h"
