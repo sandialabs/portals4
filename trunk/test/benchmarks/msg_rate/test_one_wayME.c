@@ -53,11 +53,11 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 	int i;
 	ptl_pt_index_t  index;
 	ptl_handle_me_t me_handles[nmsgs];
-	ptl_md_t        md;
+	ptl_handle_eq_t eq_handle;
 
-	ptl_assert( PtlEQAlloc(ni, 2 * nmsgs, &md.eq_handle), PTL_OK );
+	ptl_assert( PtlEQAlloc(ni, 2 * nmsgs, &eq_handle), PTL_OK );
 
-	ptl_assert( PtlPTAlloc( ni, 0, md.eq_handle, TestOneWayIndex, 
+	ptl_assert( PtlPTAlloc( ni, 0, eq_handle, TestOneWayIndex, 
 							&index ), PTL_OK );
 	ptl_assert( index, TestOneWayIndex );
 
@@ -74,14 +74,14 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 
 	    for (k= 0; k < nmsgs; k++)   {
 		ptl_event_t event;
-                ptl_assert( PtlEQWait(md.eq_handle, &event), PTL_OK );
+                ptl_assert( PtlEQWait(eq_handle, &event), PTL_OK );
 		ptl_assert( event.type, PTL_EVENT_PUT ); 
             }
 
 	    total += (timer() - tmp);
 	}
 
-	ptl_assert( PtlEQFree( md.eq_handle ), PTL_OK );
+	ptl_assert( PtlEQFree( eq_handle ), PTL_OK );
         ptl_assert( PtlPTFree( ni, index ), PTL_OK );
     }
 
