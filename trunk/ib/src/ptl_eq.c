@@ -200,62 +200,62 @@ err1:
 int PtlEQWait(ptl_handle_eq_t eq_handle,
 	      ptl_event_t *event)
 {
-	int err;
+	int ret;
 	gbl_t *gbl;
 	eq_t *eq;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
-	if (unlikely(err))
-		return err;
+	ret = get_gbl(&gbl);
+	if (unlikely(ret))
+		return ret;
 
 	if (unlikely(CHECK_POINTER(event, ptl_event_t))) {
-		err = PTL_ARG_INVALID;
+		ret = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	err = eq_get(eq_handle, &eq);
-	if (unlikely(err))
+	ret = eq_get(eq_handle, &eq);
+	if (unlikely(ret))
 		goto err1;
 
 	if (!eq) {
-		err = PTL_ARG_INVALID;
+		ret = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	ni = to_ni(eq);
 	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err2;
+		ret = PTL_ARG_INVALID;
+		goto done;
 	}
 
 	/* First try with just spining */
-	err = get_event(eq, event);
-	if (err != PTL_EQ_EMPTY)
-		goto err2;
+	ret = get_event(eq, event);
+	if (ret != PTL_EQ_EMPTY)
+		goto done;
 
 	/* Serialize for blocking on empty */
 	pthread_mutex_lock(&ni->eq_wait_mutex);
-	while((err = get_event(eq, event)) == PTL_EQ_EMPTY) {
+	while((ret = get_event(eq, event)) == PTL_EQ_EMPTY) {
 		ni->eq_waiting++;
 		pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
 		ni->eq_waiting--;
 		if (eq->interrupt) {
 			pthread_mutex_unlock(&ni->eq_wait_mutex);
-			err = PTL_INTERRUPTED;
-			goto err2;
+			ret = PTL_INTERRUPTED;
+			goto done;
 		}
 	}
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
-err2:
+done:
 	eq_put(eq);
 	gbl_put(gbl);
-	return err;
+	return ret;
 
 err1:
 	gbl_put(gbl);
-	return err;
+	return ret;
 }
 
 int PtlEQPoll(ptl_handle_eq_t *eq_handles,
@@ -266,7 +266,10 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 {
 	int err;
 	gbl_t *gbl;
-	eq_t *eq;
+	ni_t *ni;
+	struct timeval time;
+	struct timespec expire;
+	eq_t *eq[size];
 	int i;
 
 	err = get_gbl(&gbl);
@@ -275,43 +278,74 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 
 	if (unlikely(CHECK_POINTER(event, ptl_event_t))) {
 		err = PTL_ARG_INVALID;
-		goto err1;
+		goto done;
 	}
 
 	if (unlikely(CHECK_POINTER(which, int))) {
 		err = PTL_ARG_INVALID;
-		goto err1;
+		goto done;
 	}
 
-	// TODO try harder
-
+	/* First try with just spinning */
+	/* Todo - look at being fair */
 	for (i = 0; i < size; i++) {
-		err = eq_get(eq_handles[i], &eq);
-		if (unlikely(err))
-			goto err1;
-
-		if (!eq) {
+		err = eq_get(eq_handles[i], &eq[i]);
+		if (unlikely(err)) {
 			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
-		if (get_event(eq, event) == PTL_OK) {
-			*which = i;
-			eq_put(eq);
 			goto done;
 		}
 
-		eq_put(eq);
+		if (!eq[i]) {
+			err = PTL_ARG_INVALID;
+			goto done;
+		}
+
+		err = get_event(eq[i], event);
+		if (err == PTL_OK) {
+			int j;
+
+			*which = i;
+			for (j=0; j <= i; j++)
+				eq_put(eq[j]);
+			goto done;
+		}
 	}
 
+	/* Serialize for blocking, note all EQ are from same NI */
+	gettimeofday(&time, NULL);
+	expire.tv_sec = time.tv_sec + (timeout/1000);
+	expire.tv_nsec = time.tv_usec * 1000 + (timeout % 1000) * 1000 * 1000;
+	ni = to_ni(eq[0]);
+	pthread_mutex_lock(&ni->eq_wait_mutex);
+	while (1) {
+		for (i = 0; i < size; i++) {
+			if (eq[i]->interrupt) {
+				pthread_mutex_unlock(&ni->eq_wait_mutex);
+				err = PTL_INTERRUPTED;
+				goto done2;
+			}
+			err = get_event(eq[i], event);
+			if (err != PTL_EQ_EMPTY) {
+				pthread_mutex_unlock(&ni->eq_wait_mutex);
+				goto done2;
+			}
+		}
+
+		ni->eq_waiting++;
+		err = pthread_cond_timedwait(&ni->eq_wait_cond,
+			&ni->eq_wait_mutex, &expire);
+		ni->eq_waiting--;
+		if (err == ETIMEDOUT)
+			break;
+	}
+	pthread_mutex_unlock(&ni->eq_wait_mutex);
 	err = PTL_EQ_EMPTY;
-	goto err1;
+
+done2:
+	for (i = 0; i < size; i++) 
+		eq_put(eq[i]);
 
 done:
-	gbl_put(gbl);
-	return PTL_OK;
-
-err1:
 	gbl_put(gbl);
 	return err;
 }
