@@ -16,23 +16,32 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
 {               
     int i, j, k;
     double tmp, total = 0;    
-    int rc;
 
-    ptl_handle_md_t md_handle;
+    ptl_handle_md_t send_md_handle;
+    ptl_md_t send_md;
     ptl_process_t dest;
     ptl_size_t offset;
     ptl_pt_index_t index;
-    ptl_handle_eq_t eq_handle;
-    ptl_handle_ct_t send_ct_handle = PTL_INVALID_HANDLE;
+    ptl_handle_eq_t recv_eq_handle;
     ptl_handle_me_t me_handles[npeers * nmsgs];
-    ptl_ct_event_t cnt_value;
     ptl_event_t event;
 
-    __PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &send_ct_handle);
+    ptl_assert( PtlEQAlloc( ni, nmsgs * npeers + 1,
+                                &send_md.eq_handle ), PTL_OK );
 
-    rc = PtlEQAlloc(ni, nmsgs * npeers + 1, &eq_handle);
+    send_md.start     = send_buf;
+    send_md.length    = SEND_BUF_SIZE;
+    send_md.options   = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
+    send_md.ct_handle = PTL_CT_NONE;
 
-    index= __PtlPTAlloc(ni, TestSameDirectionIndex, eq_handle);
+    ptl_assert( PtlMDBind(ni, &send_md, &send_md_handle), PTL_OK );
+
+    ptl_assert( PtlEQAlloc( ni, nmsgs * npeers + 1, &recv_eq_handle), PTL_OK );
+
+    ptl_assert( PtlPTAlloc(ni,  0, recv_eq_handle, TestSameDirectionIndex, 
+			&index ), PTL_OK );
+
+    ptl_assert( TestSameDirectionIndex, index );
                 
     tmp = timer();
     for (j = 0 ; j < npeers ; ++j) {
@@ -56,17 +65,20 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
 
 	    	offset= (nbytes * (k + j * nmsgs));
 		dest.rank = send_peers[npeers - j - 1],
-		__PtlPut_offset(md_handle, offset, nbytes, dest,
-					index, magic_tag, offset);
+		ptl_assert( __PtlPut_offset(send_md_handle, offset, nbytes,
+				dest, index, magic_tag, offset), PTL_OK );
             }
         }
 
 	/* wait for sends */
-        PtlCTWait(send_ct_handle, (i+1)*nmsgs*npeers, &cnt_value);
+        for (j = 0 ; j < npeers * nmsgs; ++j) {
+            ptl_assert( PtlEQWait(send_md.eq_handle, &event), PTL_OK );
+            ptl_assert( event.type, PTL_EVENT_SEND );
+        }
 
 	/* wait for receives */
 	for (j= 0; j < npeers * nmsgs; j++)   {
-            PtlEQWait(eq_handle, &event);
+            PtlEQWait(recv_eq_handle, &event);
 	}
 
 
@@ -78,7 +90,6 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
                         nbytes, src, magic_tag, &me_handles[k + j * nmsgs] );
             }
         }           
-
         total += (timer() - tmp);
     }
 
@@ -89,31 +100,30 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
         for (k = 0 ; k < nmsgs ; ++k) {
 	    offset= (nbytes * (k + j * nmsgs));
 	    dest.rank = send_peers[npeers - j - 1],
-	    __PtlPut_offset(md_handle, offset, nbytes, dest,
-					index, magic_tag, offset);
+	    ptl_assert( __PtlPut_offset(send_md_handle, offset, nbytes, dest,
+					index, magic_tag, offset), PTL_OK );
         }
     }
     /* wait for sends */
-    PtlCTWait(send_ct_handle, (i+1)*nmsgs*npeers, &cnt_value);
+    for (j = 0 ; j < npeers * nmsgs; ++j) {
+        ptl_assert( PtlEQWait(send_md.eq_handle, &event), PTL_OK );
+        ptl_assert( event.type, PTL_EVENT_SEND );
+    }
 
     /* wait for receives */
     for (j= 0; j < npeers * nmsgs; j++)   {
-	PtlEQWait(eq_handle, &event);
+	PtlEQWait(recv_eq_handle, &event);
     }
 
     total += (timer() - tmp);
 
-    rc = PtlCTFree(send_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree in test_prepostME");
+    ptl_assert( PtlEQFree( send_md.eq_handle ), PTL_OK );
 
-    rc = PtlMDRelease(md_handle);
-    PTL_CHECK(rc, "PtlMDRelease in test_prepostME");
+    ptl_assert( PtlMDRelease(send_md_handle), PTL_OK );
 
-    rc = PtlEQFree(eq_handle);
-    PTL_CHECK(rc, "PtlEQFree in test_prepostME");
+    ptl_assert( PtlEQFree(recv_eq_handle), PTL_OK );
 
-    rc= PtlPTFree(ni, index);
-    PTL_CHECK(rc, "PtlPTFree in test_prepostME");
+    ptl_assert(PtlPTFree(ni, index), PTL_OK );
 
     tmp= __PtlAllreduceDouble(total, PTL_SUM);
     display_result("pre-post", (niters * npeers * nmsgs * 2) / (tmp / world_size));
