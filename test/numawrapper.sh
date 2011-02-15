@@ -5,6 +5,10 @@ node0nodes=( $(grep "node 0 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
 node1nodes=( $(grep "node 1 cpus:" <<<"$hardwareoutput" | cut -d: -f2) )
 node0cores=${#node0nodes[*]}
 node1cores=${#node1nodes[*]}
+nodearray=()
+for ((i=0;$i<$nodecount;i=$i+1)) ; do
+	nodearray[$i]=$(grep "node $i cpus:" <<<"$hardwareoutput" | cut -d: -f2)
+done
 verbose="no"
 if [ "$1" == "--verbose" ] ; then
 	shift
@@ -15,30 +19,42 @@ case "$1" in
 	shift
 	arg="--cpunodebind="$((${PORTALS4_RANK}%${nodecount}))
 	;;
-	--socket-static2)
-	shift
-	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
-		case "$PORTALS4_RANK" in
-		4) base=0 ;; # 0 + 2  [socket 0]
-		5) base=1 ;; # 1 + 3  [socket 1]
-		0) base=4 ;; # 4 + 6  [socket 0]
-		2) base=5 ;; # 5 + 7  [socket 1]
-		1) base=8 ;; # 8 + 10 [socket 0]
-		3) base=9 ;; # 9 + 11 [socket 1]
-		esac
-	    arg="--physcpubind="$base,$(($base+2))
-	else
-	    totcores=$(($node0cores+$node1cores))
-	    idx=$(($PORTALS4_RANK%$totcores))
-	    if [ $idx -ge $node0cores ] ; then
-		base=${node1nodes[$(($idx-$node0cores))]}
-	    else
-		base=${node0nodes[$idx]}
-	    fi
-	    arg="--physcpubind=$base"
-	fi
-	;;
 	--socket-static)
+	shift
+	cursocket=0
+	cursocketcores=( ${nodearray[$cursocket]} )
+	for ((i=0;$i<=$PORTALS4_RANK;i=$i+1)) ; do
+		if [ ${#cursocketcores[@]} -ge 2 ] ; then
+			if [ $i == $PORTALS4_RANK ] ; then
+				base1=${cursocketcores[$((${#cursocketcores[@]}-1))]}
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				base2=${cursocketcores[$((${#cursocketcores[@]}-1))]}
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				arg="--physcpubind=$base1,$base2"
+				break
+			else
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				if [ ${#cursocketcores[@]} == 0 ] ; then
+					cursocket=$(($cursocket+1))
+					cursocketcores=( ${nodearray[$cursocket]} )
+				fi
+				if [ ${#cursocketcores[@]} == 0 ] ; then
+					arg="--cpunodebind="$(($PORTALS4_RANK%$nodecount))
+					break
+				fi
+			fi
+		else
+			cursocket=$(($cursocket+1))
+			cursocketcores=( ${nodearray[$cursocket]} )
+			if [ ${#cursocketcores[@]} == 0 ] ; then
+				arg="--cpunodebind="$(($PORTALS4_RANK%$nodecount))
+				break
+			fi
+		fi
+	done
+	;;
+	--socket-static2)
 	shift
 	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
 		case "$PORTALS4_RANK" in
@@ -49,7 +65,7 @@ case "$1" in
 		4) base=8 ;; # 8 + 10 [socket 0]
 		5) base=9 ;; # 9 + 11 [socket 1]
 		esac
-	    arg="--physcpubind="$base,$(($base+2))
+	    arg="--physcpubind="$base,$(($base+$nodecount))
 	else
 	    totcores=$(($node0cores+$node1cores))
 	    idx=$(($PORTALS4_RANK%$totcores))
@@ -72,10 +88,10 @@ case "$1" in
 		    base=8
 		    ;;
 	    esac
-	    arg="--physcpubind="$base,$(($base+2))
-	elif [ "$PORTALS4_NUM_PROCS" -lt $(($node1cores/2)) ] ; then
+	    arg="--physcpubind="$base,$(($base+$nodecount))
+	elif [ "$PORTALS4_NUM_PROCS" -lt $(($node1cores/$nodecount)) ] ; then
 		base=${node1nodes[$(($PORTALS4_RANK%${#node1nodes[*]}))]}
-		arg="--physcpubind=$base,"$(($base+2))
+		arg="--physcpubind=$base,"$(($base+$nodecount))
 	elif [ "$PORTALS4_NUM_PROCS" -le $node1cores ] ; then
 	    base=${node1nodes[$(($PORTALS4_RANK%${#node1nodes[*]}))]}
 	    arg="--physcpubind=$base"
