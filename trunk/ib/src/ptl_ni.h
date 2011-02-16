@@ -63,6 +63,11 @@ typedef struct ni {
 	pthread_cond_t		eq_wait_cond;
 	int			eq_waiting;
 
+	/*Can be held outside of CT object lock */
+	pthread_mutex_t		ct_wait_mutex;
+	pthread_cond_t		ct_wait_cond;
+	int			ct_waiting;
+
 	/* simulation code */
 	struct list_head	send_list;
 	pthread_spinlock_t	send_list_lock;

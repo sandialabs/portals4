@@ -9,9 +9,6 @@ typedef struct ct {
 	ptl_ct_event_t		event;
 	struct list_head	xi_list;
 	struct list_head        list;
-	pthread_mutex_t		mutex;
-	pthread_cond_t		cond;
-	int			waiting;
 	int			interrupt;
 } ct_t;
 

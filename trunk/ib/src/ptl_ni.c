@@ -548,6 +548,8 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
+	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
+	pthread_cond_init(&ni->ct_wait_cond, NULL);
 
 	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
@@ -606,16 +608,15 @@ static void interrupt_cts(ni_t *ni)
 	struct list_head *l;
 	ct_t *ct;
 
+
 	pthread_spin_lock(&ni->ct_list_lock);
+	pthread_mutex_lock(&ni->ct_wait_mutex);
 	list_for_each(l, &ni->ct_list) {
 		ct = list_entry(l, ct_t, list);
-		if (ct->waiting) {
-			ct->interrupt = 1;
-			pthread_mutex_lock(&ct->mutex);
-			pthread_cond_broadcast(&ct->cond);
-			pthread_mutex_unlock(&ct->mutex);
-		}
+		ct->interrupt = 1;
 	}
+	pthread_cond_broadcast(&ni->ct_wait_cond);
+	pthread_mutex_unlock(&ni->ct_wait_mutex);
 	pthread_spin_unlock(&ni->ct_list_lock);
 }
 
@@ -663,6 +664,8 @@ void ni_cleanup(ni_t *ni)
 		ni->map = NULL;
 	}
 
+	pthread_mutex_destroy(&ni->ct_wait_mutex);
+	pthread_cond_destroy(&ni->ct_wait_cond);
 	pthread_mutex_destroy(&ni->eq_wait_mutex);
 	pthread_cond_destroy(&ni->eq_wait_cond);
 	pthread_mutex_destroy(&ni->pt_mutex);
