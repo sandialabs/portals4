@@ -11,19 +11,13 @@ void test_one_wayLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
     if (rank < (world_size / 2))   {
 	int i;	
 	ptl_handle_md_t md_handle;
-	ptl_md_t        md;
+        ptl_handle_ct_t ct_handle = PTL_INVALID_HANDLE;
 
-	ptl_assert( PtlEQAlloc( ni, nmsgs + 1, &md.eq_handle ), PTL_OK );
-
-        md.start     = send_buf;
-        md.length    = SEND_BUF_SIZE;
-        md.options   = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
-        md.ct_handle = PTL_CT_NONE;
-            
-        ptl_assert( PtlMDBind(ni, &md, &md_handle), PTL_OK );
+        __PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
 
         for (i= 0; i < niters; ++i)   {
 	    int k;
+	    ptl_ct_event_t  cnt_value;
 
             cache_invalidate(cache_size, cache_buf);
 
@@ -37,16 +31,13 @@ void test_one_wayLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 			TestOneWayIndex, magic_tag, offset), PTL_OK );
             }
 
-	    for (k= 0; k < nmsgs; k++)   {
-		ptl_event_t event;
-                ptl_assert( PtlEQWait(md.eq_handle, &event), PTL_OK );
-		ptl_assert( event.type, PTL_EVENT_SEND ); 
-            }
+	    ptl_assert( PtlCTWait(ct_handle, (i + 1) * nmsgs, &cnt_value), 
+							PTL_OK );
 
 	    total += (timer() - tmp);
         }
 
-        ptl_assert( PtlEQFree( md.eq_handle ), PTL_OK );
+	ptl_assert( PtlCTFree( ct_handle ), PTL_OK );
         ptl_assert( PtlMDRelease(md_handle) , PTL_OK );
 
     } else {
@@ -99,7 +90,7 @@ void test_one_wayLE(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
         printf("avg %.1f ns\n",tmp/(double)(niters*nmsgs) * 1000000000.0/2.0);
 #endif
 
-    display_result("single direction w/EQ",
+    display_result("single direction",
 				(niters * nmsgs) / (tmp / world_size));
 
     __PtlBarrier();
