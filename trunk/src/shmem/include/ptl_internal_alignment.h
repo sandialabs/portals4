@@ -19,7 +19,7 @@
 # endif
 # define ALIGNED_CALLOC(ret,align,count,size) do { \
     (ret) = memalign((align), (count)*(size)); \
-    memset((ret), 0, (count)*(size)); \
+    memset((void*)(ret), 0, (count)*(size)); \
 } while (0)
 # define ALIGNED_MALLOC(ret,align,size) do { \
     (ret) = memalign((align), (size)); \
@@ -30,7 +30,7 @@
 # include <stdlib.h>
 # define ALIGNED_CALLOC(ret,align,count,size) do { \
     posix_memalign(&(ret), (align), (count)*(size)); \
-    memset((ret), 0, (count)*(size)); \
+    memset((void*)(ret), 0, (count)*(size)); \
 } while (0)
 # define ALIGNED_MALLOC(ret,align,size) do { \
     posix_memalign(&(ret), (align), (size)); \
@@ -38,14 +38,14 @@
 # define ALIGNED_FREE(x,align) free((x))
 #else
 # define ALIGNED_CALLOC(ret,align,count,size) do { \
-    uintptr_t tmp1 = (uintptr_t) malloc((count)*(size)+64); \
+    uintptr_t tmp1 = (uintptr_t) malloc((count)*(size)+(align)); \
     tmp1 &= ~(uintptr_t)(align-1); \
     tmp1 += align; \
     (ret) = tmp1; \
-    memset((ret), 0, (count)*(size)); \
+    memset((void*)(ret), 0, (count)*(size)); \
 } while (0)
 # define ALIGNED_MALLOC(ret,align,size) do { \
-    uintptr_t tmp1 = (uintptr_t) malloc((size)+64); \
+    uintptr_t tmp1 = (uintptr_t) malloc((size)+(align)); \
     tmp1 &= ~(uintptr_t)(align-1); \
     tmp1 += align; \
     (ret) = tmp1; \
