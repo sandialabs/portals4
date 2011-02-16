@@ -910,6 +910,7 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 	int err;
 	gbl_t *gbl;
 	ct_t *ct;
+	ni_t *ni;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -922,11 +923,11 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 	/* TODO see PtlCTSet */
 	ct->event = new_ct;
 
-	if (ct->waiting) {
-		pthread_mutex_lock(&ct->mutex);
-		pthread_cond_broadcast(&ct->cond);
-		pthread_mutex_unlock(&ct->mutex);
-	}
+	ni = to_ni(ct);
+	pthread_mutex_lock(&ni->ct_wait_mutex);
+	if (ni->ct_waiting)
+		pthread_cond_broadcast(&ni->ct_wait_cond);
+	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
 	gbl_put(gbl);
@@ -945,6 +946,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 	int err;
 	gbl_t *gbl;
 	ct_t *ct;
+	ni_t *ni;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -953,16 +955,15 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 	err = ct_get(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
-
 	(void)__sync_fetch_and_add(&ct->event.success, increment.success);
 	(void)__sync_fetch_and_add(&ct->event.failure, increment.failure);
 
 	/* TODO see PtlCTSet */
-	if (ct->waiting) {
-		pthread_mutex_lock(&ct->mutex);
-		pthread_cond_broadcast(&ct->cond);
-		pthread_mutex_unlock(&ct->mutex);
-	}
+	ni = to_ni(ct);
+	pthread_mutex_lock(&ni->ct_wait_mutex);
+	if (ni->ct_waiting)
+		pthread_cond_broadcast(&ni->ct_wait_cond);
+	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
 	gbl_put(gbl);
