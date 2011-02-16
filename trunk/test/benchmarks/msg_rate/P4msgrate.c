@@ -126,192 +126,6 @@ display_result(const char *test, const double result)
 
 }  /* end of display_result() */
 
-
-static void
-test_one_way(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
-	int nbytes, int niters, int test_type, int verbose)
-{
-
-int i, j, k;
-int rc;
-double tmp, total;
-ptl_pt_index_t index;
-ptl_process_t dest;
-ptl_size_t offset = 0;
-ptl_handle_md_t md_handle;
-ptl_handle_ct_t ct_handle;
-ptl_ct_event_t cnt_value;
-ptl_handle_le_t le_handle;
-ptl_handle_me_t me_handles[nmsgs];
-ptl_handle_eq_t eq_handle;
-ptl_match_bits_t match;
-ptl_event_t event;
-
-
-    if ((test_type != LEwithCT) && (test_type != MEwithEQ))   {
-	/* Invalid test type */
-	return;
-    }
-
-    total= 0;
-    match= 0;
-    ct_handle= PTL_INVALID_HANDLE;
-    __PtlBarrier();
-
-    if (rank < (world_size / 2))   {
-	/* The first half of the ranks are senders */
-	if ((verbose > 1) && (rank == 0))   {
-	    printf("Ranks 0..%d will send %d %d-byte messages %d times\n",
-		world_size / 2 - 1, nmsgs, nbytes, niters);
-	}
-
-	/* Set up the MD to send from */
-	__PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
-
-	/* Run the test */
-	for (i= 0; i < niters; ++i)   {
-	    cache_invalidate(cache_size, cache_buf);
-
-	    __PtlBarrier();
-
-	    tmp= timer();
-	    for (k= 0; k < nmsgs; k++)   {
-		if (test_type == MEwithEQ)   {
-		    offset= 0;
-		} else if (test_type == LEwithCT)   {
-		    offset= nbytes * k;
-		}
-
-		dest.rank= rank + (world_size / 2);
-		/* For the LEwithCT case, we ignore the match bits */
-		match= k;
-		rc= __PtlPut_offset(md_handle, offset, nbytes, dest, TestOneWayIndex, match, offset);
-		PTL_CHECK(rc, "PtlPut in test_one_way");
-	    }
-
-	    rc= PtlCTWait(ct_handle, (i + 1) * nmsgs, &cnt_value);
-	    total += (timer() - tmp);
-
-	    PTL_CHECK(rc, "PtlCTWait in test_one_way");
-	    if (cnt_value.failure != 0)   {
-		fprintf(stderr, "test_one_way() %d PtlPut failed (%d/%d succeeded)\n",
-		   (int)cnt_value.failure, (int)cnt_value.success, (i + 1) * nmsgs);
-	    }
-
-	    if ((verbose > 3) && (rank == 0))   {
-		printf("test_one_way() iteration %d done\n", i);
-	    }
-	}
-
-	/* Clean up the send side */
-	rc= PtlCTFree(ct_handle);
-	PTL_CHECK(rc, "PtlCTFree in test_one_way");
-	PtlMDRelease(md_handle);
-	PTL_CHECK(rc, "PtlMDRelease in test_one_way");
-
-    } else   {
-
-	/* The second half of the ranks are receivers */
-	if ((verbose > 1) && (rank == (world_size / 2)))   {
-	    printf("Ranks %d..%d will receive %d %d-byte messages %d times\n",
-		world_size / 2, world_size - 1, nmsgs, nbytes, niters);
-	}
-
-	if (test_type == MEwithEQ)   {
-	    /* Create an event queue */
-	    rc = PtlEQAlloc(ni, 2 * nmsgs, &eq_handle);
-	    PTL_CHECK(rc, "PtlEQAlloc in test_one_way");
-	} else   {
-	    eq_handle= PTL_EQ_NONE;
-	}
-
-	/* Allocate the Portal to send to */
-	index= __PtlPTAlloc(ni, TestOneWayIndex, eq_handle);
-
-	if (test_type == LEwithCT)   {
-	    /* Create a persistent LE to receive into */
-	    __PtlCreateLECT(ni, index, recv_buf, RECV_BUF_SIZE, &le_handle, &ct_handle);
-	}
-
-	/*
-	** In the MPI version of this benchmark, the MPI_Irecv() are
-	** posted inside a loop as the sends are going on. This can cause
-	** unexpected messages.
-	** For the Portals version, a large LE is posted and then all
-	** we do is wait for the data to arrive.
-	*/
-
-	/* Run the test */
-	for (i= 0; i < niters; i++)   {
-	    cache_invalidate(cache_size, cache_buf);
-
-	    if (test_type == MEwithEQ)   {
-		/* Create "nmsgs" MEs to receive into */
-		__PtlCreateMEUseOnce(ni, index, recv_buf, nbytes,
-							nmsgs, me_handles);
-	    }
-
-	    __PtlBarrier();
-
-	    tmp= timer();
-	    if (test_type == LEwithCT)   {
-		rc= PtlCTWait(ct_handle, (i + 1) * nmsgs, &cnt_value);
-	    } else if (test_type == MEwithEQ)   {
-		/* Pull each event off as it comes in */
-		for (j= 0; j < nmsgs; j++)   {
-		    rc= PtlEQWait(eq_handle, &event);
-		    PTL_CHECK(rc, "PtlEQWait in test_one_way");
-		    if (event.type != PTL_EVENT_PUT)   {
-			fprintf(stderr, "test_prepost() Got event %d instead of PTL_EVENT_PUT with msg %d\n",
-			    event.type, j);
-		    }
-		    if (event.ni_fail_type != PTL_NI_OK)   {
-			fprintf(stderr, "test_prepost() Got event %d with fail type %d\n",
-			    j, event.ni_fail_type);
-		    }
-		}
-	    }
-	    total += (timer() - tmp);
-
-	    if (test_type == LEwithCT)   {
-		PTL_CHECK(rc, "PtlCTWait in test_one_way");
-		if (cnt_value.failure != 0)   {
-		    fprintf(stderr, "test_one_way() %d PtlPut failed (%d/%d succeeded)\n",
-		       (int)cnt_value.failure, (int)cnt_value.success, (i + 1) * nmsgs);
-		}
-	    }
-	}
-
-	/* Clean up the receive side */
-	if (test_type == LEwithCT)   {
-	    rc= PtlCTFree(ct_handle);
-	    PTL_CHECK(rc, "PtlCTFree in test_one_way");
-	    rc= PtlLEUnlink(le_handle);
-	    PTL_CHECK(rc, "PtlLEUnlink in test_one_way");
-	} else if (test_type == MEwithEQ)   {
-	    PtlEQFree(eq_handle);
-	}
-	rc= PtlPTFree(ni, index);
-	PTL_CHECK(rc, "PtlPTFree in test_one_way");
-    }
-
-    tmp= __PtlAllreduceDouble(total, PTL_SUM);
-
-#if 0
-    printf("%s %.1f ns\n",rank==0?"send":"recv", 
-			total/(double)(niters*nmsgs) * 1000000000.0);
-
-    if ( rank == 0 )
-        printf("avg %.1f ns\n",tmp/(double)(niters*nmsgs) * 1000000000.0/2.0);
-#endif
-
-    display_result("single direction", (niters * nmsgs) / (tmp / world_size));
-
-    __PtlBarrier();
-
-}  /* end of test_one_way() */
-
-
 static void
 test_same_direction(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, int nmsgs,
 	int nbytes, int niters, int verbose)
@@ -445,6 +259,7 @@ usage(void)
     fprintf(stderr, "  -v           Increase verbosity. Using -v -v or more may impact test results!\n");
     fprintf(stderr, "\nReport bugs to <bwbarre@sandia.gov>\n");
 }
+
 
 
 int
@@ -723,8 +538,6 @@ int test_type;
 	printf("Rank %3d: Starting test_one_way(nmsgs %d, nbytes %d, niters %d)\n", rank,
 	    nmsgs, nbytes, niters);
     }
-    test_one_way(cache_size, cache_buf, ni_logical, npeers, nmsgs, nbytes, niters,
-	    test_type, verbose);
 
     if ( test_type == LEwithCT )
 	test_one_wayLE(cache_size, cache_buf, ni_logical, npeers, nmsgs, 

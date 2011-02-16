@@ -95,7 +95,7 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
         printf("avg %.1f ns\n",tmp/(double)(niters*nmsgs) * 1000000000.0/2.0);
 #endif
 
-    display_result("single direction w/EQ",
+    display_result("single direction",
 				(niters * nmsgs) / (tmp / world_size));
 
     __PtlBarrier();

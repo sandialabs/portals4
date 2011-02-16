@@ -88,7 +88,7 @@ display_result(const char *test, const double result)
         if (machine_output)   {
             printf("%.2f ", result);
         } else   {
-            printf("%25s: %.2f\n", test, result);
+            printf("%20s: %.2f\n", test, result);
         }
     }
 
