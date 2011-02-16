@@ -25,7 +25,7 @@ typedef struct {
     uint8_t atomic_operation:5;
     uint8_t ni_fail_type:3;
     uint8_t atomic_type:4;      // 2-ish bytes (55)
-} ptl_internal_event_t ALIGNED(64);
+} ptl_internal_event_t ALIGNED(CACHELINE_WIDTH);
 
 #ifndef NO_ARG_VALIDATION
 int PtlInternalEQHandleValidator(

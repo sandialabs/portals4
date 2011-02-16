@@ -12,6 +12,7 @@
 #include <stdint.h>                    /* for uint32_t */
 
 /* Internal headers */
+#include "ptl_internal_alignment.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
@@ -23,8 +24,10 @@ typedef struct {
 
 typedef struct {
     void *volatile head;
+    char pad1[CACHELINE_WIDTH-sizeof(void*)];
     void *volatile tail;
-} NEMESIS_queue;
+    char pad2[CACHELINE_WIDTH-sizeof(void*)];
+} NEMESIS_queue ALIGNED(CACHELINE_WIDTH);
 
 typedef struct {
     NEMESIS_queue q;
