@@ -40,12 +40,7 @@ ptl_internal_nit_t nit = { {0, 0, 0, 0}
    , {0, 0}
    }
 };
-ptl_ni_limits_t nit_limits[4] = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-};
+ptl_ni_limits_t nit_limits[4];
 
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
@@ -204,7 +199,7 @@ int API_FUNC PtlNIInit(
                 PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
                                         (void *)1)) == (void *)1) ;
         if (tmp == NULL) {
-            ALIGNED_CALLOC(tmp, 64, nit_limits[ni.s.ni].max_pt_index + 1, sizeof(ptl_table_entry_t));
+            ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni.s.ni].max_pt_index + 1, sizeof(ptl_table_entry_t));
             if (tmp == NULL) {
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;
@@ -263,7 +258,7 @@ int API_FUNC PtlNIFini(
         }
         /* deallocate NI */
         free(nit.unexpecteds_buf[ni.s.ni]);
-        ALIGNED_FREE(nit.tables[ni.s.ni], 64);
+        ALIGNED_FREE(nit.tables[ni.s.ni], CACHELINE_WIDTH);
         nit.unexpecteds[ni.s.ni] = NULL;
         nit.unexpecteds_buf[ni.s.ni] = NULL;
         nit.tables[ni.s.ni] = NULL;

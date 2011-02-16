@@ -46,7 +46,7 @@ typedef struct {
     ptl_internal_event_t *ring;
     uint32_t size;
     volatile eq_off_t head, leading_tail, lagging_tail;
-} ptl_internal_eq_t ALIGNED(64);
+} ptl_internal_eq_t ALIGNED(CACHELINE_WIDTH);
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
@@ -59,10 +59,10 @@ void INTERNAL PtlInternalEQNISetup(
             PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        ALIGNED_CALLOC(tmp, 64, nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
+        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
         assert(tmp != NULL);
         assert(eq_refcounts[ni] == NULL);
-        eq_refcounts[ni] = calloc(nit_limits[ni].max_eqs, sizeof(uint64_t));
+        ALIGNED_CALLOC(eq_refcounts[ni], CACHELINE_WIDTH, nit_limits[ni].max_eqs, sizeof(uint64_t));
         assert(eq_refcounts[ni] != NULL);
         __sync_synchronize();
         eqs[ni] = tmp;
@@ -88,8 +88,8 @@ void INTERNAL PtlInternalEQNITeardown(
             tmp[i].ring = NULL;
         }
     }
-    ALIGNED_FREE(tmp, 64);
-    free((void *)rc);
+    ALIGNED_FREE(tmp, CACHELINE_WIDTH);
+    ALIGNED_FREE((void *)rc, CACHELINE_WIDTH);
 }
 
 #ifndef NO_ARG_VALIDATION
@@ -178,7 +178,7 @@ int API_FUNC PtlEQAlloc(
             if (rc[offset] == 0) {
                 if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                     ptl_internal_event_t *tmp;
-                    ALIGNED_CALLOC(tmp, 64, count, sizeof(ptl_internal_event_t));
+                    ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, count, sizeof(ptl_internal_event_t));
                     if (tmp == NULL) {
                         rc[offset] = 0;
                         return PTL_NO_SPACE;
@@ -226,7 +226,7 @@ int API_FUNC PtlEQFree(
     while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1) ;
     tmp = eq->ring;
     eq->ring = NULL;
-    ALIGNED_FREE(tmp, 64);
+    ALIGNED_FREE(tmp, CACHELINE_WIDTH);
     PtlInternalAtomicInc(&(eq_refcounts[eqh.s.ni][eqh.s.code]), -1);
     return PTL_OK;
 }

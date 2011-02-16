@@ -7,11 +7,6 @@
 
 /* System headers */
 #include <limits.h>                    /* for UINT_MAX */
-#include <stdlib.h>                    /* for calloc() */
-#include <string.h>                    /* for memset() */
-#if defined(HAVE_MALLOC_H)
-# include <malloc.h>                   /* for memalign() */
-#endif
 
 #include <stdio.h>
 
@@ -38,8 +33,8 @@ typedef struct {
     uint32_t refcount;
     char pad1[8];
     ptl_md_t visible;
-    char pad2[64 - (8 + sizeof(uint32_t)*2 + sizeof(ptl_md_t))];
-} ptl_internal_md_t ALIGNED(64);
+    char pad2[CACHELINE_WIDTH - (8 + sizeof(uint32_t)*2 + sizeof(ptl_md_t))];
+} ptl_internal_md_t ALIGNED(CACHELINE_WIDTH);
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
 
@@ -48,14 +43,14 @@ void INTERNAL PtlInternalMDNISetup(
     ptl_size_t limit)
 {                                      /*{{{ */
     ptl_internal_md_t *tmp;
-    assert(sizeof(ptl_internal_md_t) == 64);
+    assert(sizeof(ptl_internal_md_t) == CACHELINE_WIDTH);
     while ((tmp =
             PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        ALIGNED_CALLOC(tmp, 64, limit+1, sizeof(ptl_internal_md_t));
+        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit+1, sizeof(ptl_internal_md_t));
         assert(tmp != NULL);
-        tmp = (ptl_internal_md_t*)(((char*) tmp) + 32);
+        tmp = (ptl_internal_md_t*)(((char*) tmp) + (CACHELINE_WIDTH/2));
         __sync_synchronize();
         mds[ni] = tmp;
     }
@@ -71,7 +66,7 @@ void INTERNAL PtlInternalMDNITeardown(
     for (size_t mdi = 0; mdi < nit_limits[ni].max_mds; ++mdi) {
         while (tmp[mdi].refcount != 0) ;
     }
-    ALIGNED_FREE(((char*)tmp) - 32, 64);
+    ALIGNED_FREE(((char*)tmp) - (CACHELINE_WIDTH/2), CACHELINE_WIDTH);
 }                                      /*}}} */
 
 #ifndef NO_ARG_VALIDATION
