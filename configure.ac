@@ -66,6 +66,14 @@ AC_ARG_ENABLE([rdtsc],
 AC_ARG_ENABLE([loud-drops],
 			  [AS_HELP_STRING([--enable-loud-drops],
 							  [Makes dropped messages print an error to the console])])
+AC_ARG_WITH([cacheline-width],
+			[AS_HELP_STRING([--with-cacheline-width=bytes],
+							[Specify the cacheline width for the target machine. Defaults to 64.])],
+			[],
+			[with_cacheline_width=64])
+AC_MSG_CHECKING([cacheline width])
+AC_MSG_RESULT([$with_cacheline_width])
+AC_DEFINE_UNQUOTED([CACHELINE_WIDTH],[$with_cacheline_width],[The cacheline width])
 AC_ARG_ENABLE([paranoia],
 			  [AS_HELP_STRING([--enable-paranoia],
 							  [Adds additional checks that are slow, occasionally painful, and should be entirely unnecessary, just to validate that nothing has gone wrong.])])
