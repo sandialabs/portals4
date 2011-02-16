@@ -93,7 +93,7 @@ void INTERNAL PtlInternalMENISetup(
             PtlInternalAtomicCasPtr(&(mes[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        ALIGNED_CALLOC(tmp, 64, limit, sizeof(ptl_internal_me_t));
+        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit, sizeof(ptl_internal_me_t));
         assert(tmp != NULL);
         __sync_synchronize();
         mes[ni] = tmp;
@@ -108,7 +108,7 @@ void INTERNAL PtlInternalMENITeardown(
     mes[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    ALIGNED_FREE(tmp, 64);
+    ALIGNED_FREE(tmp, CACHELINE_WIDTH);
 }                                      /*}}} */
 
 static void *PtlInternalPerformOverflowDelivery(

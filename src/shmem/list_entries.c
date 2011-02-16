@@ -77,7 +77,7 @@ void INTERNAL PtlInternalLENISetup(
             PtlInternalAtomicCasPtr(&(les[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        ALIGNED_CALLOC(tmp, 64, limit, sizeof(ptl_internal_le_t));
+        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit, sizeof(ptl_internal_le_t));
         assert(tmp != NULL);
         __sync_synchronize();
         les[ni] = tmp;
@@ -92,7 +92,7 @@ void INTERNAL PtlInternalLENITeardown(
     les[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
-    ALIGNED_FREE(tmp, 64);
+    ALIGNED_FREE(tmp, CACHELINE_WIDTH);
 }                                      /*}}} */
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
