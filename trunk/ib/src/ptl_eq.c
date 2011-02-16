@@ -290,12 +290,11 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	/* Todo - look at being fair */
 	for (i = 0; i < size; i++) {
 		err = eq_get(eq_handles[i], &eq[i]);
-		if (unlikely(err)) {
-			err = PTL_ARG_INVALID;
-			goto done;
-		}
+		if (unlikely(err) || !eq[i]) {
+			int j;
 
-		if (!eq[i]) {
+			for (j=0; j <= i; j++)
+				eq_put(eq[j]);
 			err = PTL_ARG_INVALID;
 			goto done;
 		}
