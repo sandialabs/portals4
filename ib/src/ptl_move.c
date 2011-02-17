@@ -973,3 +973,51 @@ err1:
 	gbl_put(gbl);
 	return err;
 }
+
+int PtlStartBundle(ptl_handle_ni_t ni_handle)
+{
+	int ret;
+	gbl_t *gbl;
+	ni_t *ni;
+
+	ret = get_gbl(&gbl);
+	if (unlikely(ret)) {
+		WARN();
+		goto done;
+	}
+
+	ret = ni_get(ni_handle, &ni);
+	if (unlikely(ret)) {
+		WARN();
+		gbl_put(gbl);
+		goto done;
+	}
+
+	ni_put(ni);
+done:
+	return ret;
+}
+
+int PtlEndBundle(ptl_handle_ni_t ni_handle)
+{
+	int ret;
+	gbl_t *gbl;
+	ni_t *ni;
+
+	ret = get_gbl(&gbl);
+	if (unlikely(ret)) {
+		WARN();
+		goto done;
+	}
+
+	ret = ni_get(ni_handle, &ni);
+	if (unlikely(ret)) {
+		WARN();
+		gbl_put(gbl);
+		goto done;
+	}
+
+	ni_put(ni);
+done:
+	return ret;
+}
