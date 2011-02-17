@@ -284,7 +284,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	struct timeval time;
 	struct timespec expire;
 	ct_t *ct[size];
-	int i;
+	int i = 0;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -301,7 +301,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		if (unlikely(err) || !ct[i]) {
 			int j;
 
-			for (j = 0; j <= i; j++)
+			for (j = 0; j < i; j++)
 				ct_put(ct[j]);
 			err = PTL_ARG_INVALID;
 			goto done;

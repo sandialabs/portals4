@@ -270,7 +270,7 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	struct timeval time;
 	struct timespec expire;
 	eq_t *eq[size];
-	int i;
+	int i = 0;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -293,7 +293,7 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 		if (unlikely(err) || !eq[i]) {
 			int j;
 
-			for (j=0; j <= i; j++)
+			for (j=0; j < i; j++)
 				eq_put(eq[j]);
 			err = PTL_ARG_INVALID;
 			goto done;
