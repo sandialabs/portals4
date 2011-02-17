@@ -983,18 +983,18 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	ret = get_gbl(&gbl);
 	if (unlikely(ret)) {
 		WARN();
-		goto done;
+		return ret;
 	}
 
 	ret = ni_get(ni_handle, &ni);
 	if (unlikely(ret)) {
 		WARN();
-		gbl_put(gbl);
 		goto done;
 	}
 
 	ni_put(ni);
 done:
+	gbl_put(gbl);
 	return ret;
 }
 
@@ -1007,17 +1007,17 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	ret = get_gbl(&gbl);
 	if (unlikely(ret)) {
 		WARN();
-		goto done;
+		return ret;
 	}
 
 	ret = ni_get(ni_handle, &ni);
 	if (unlikely(ret)) {
 		WARN();
-		gbl_put(gbl);
 		goto done;
 	}
 
 	ni_put(ni);
 done:
+	gbl_put(gbl);
 	return ret;
 }
