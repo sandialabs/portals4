@@ -18,6 +18,10 @@
     <ptl_ct_wait ret="NO_INIT"/>
   </subtest>
   <subtest>
+    <desc>Test PtlCTPoll without init</desc>
+    <ptl_ct_poll ret="NO_INIT"/>
+  </subtest>
+  <subtest>
     <desc>Test PtlCTSet without init</desc>
     <ptl_ct_set ret="NO_INIT"/>
   </subtest>
@@ -95,6 +99,42 @@
     <desc>Test PtlCTWait with bad ct_handle</desc>
     <ptl>
       <ptl_ct_wait ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with ct_handle = NONE</desc>
+    <ptl>
+      <ptl_ct_poll ct_handle="NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with bad ct_handle</desc>
+    <ptl>
+      <ptl_ct_poll ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with NULL event pointer</desc>
+    <ptl>
+      <ptl_ct_poll ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with BAD event pointer</desc>
+    <ptl>
+      <ptl_ct_poll ptr="BAD" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with NULL which pointer</desc>
+    <ptl>
+      <ptl_ct_poll which_ptr="NULL" ret="ARG_INVALID"/>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with BAD which pointer</desc>
+    <ptl>
+      <ptl_ct_poll which_ptr="BAD" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
   <subtest>
@@ -245,6 +285,37 @@
 	  </if>
 	  </threads>
         </ptl_ct_alloc>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll with test already satisfied</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+	  <ptl_ct_poll ct_test="10"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll until Inc</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <threads count="2">
+	  <if thread_id="0">
+	    <ptl_ct_poll time="30" ct_test="10"/>
+	  </if>
+	  <if thread_id="1">
+	    <msleep count="10"/>
+	    <repeat count="10">
+	      <ptl_ct_inc ct_event_success="1"/>
+	    </repeat>
+	  </if>
+	  </threads>
+        </ptl_ct>
       </ptl_ni>
     </ptl>
   </subtest>

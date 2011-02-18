@@ -303,6 +303,11 @@ struct node_info *push_info(struct node_info *head, int tok)
 	case NODE_PTL_CT_WAIT:
 		info->ptr = &info->ct_event;
 		break;
+	case NODE_PTL_CT_POLL:
+		info->ptr = &info->ct_event;
+		info->which_ptr = &info->which;
+		info->which = -1;
+		break;
 	case NODE_PTL_MD:
 	case NODE_PTL_MD_BIND:
 		info->ptr = &info->md_handle;
@@ -1411,10 +1416,10 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_ct_wait(info);
 				errs += walk_tree(info, node->children);
 				break;
-			//case NODE_PTL_CT_POLL:
-				//errs = test_ptl_ct_poll(info);
-				//errs += walk_tree(info, node->children);
-				//break;
+			case NODE_PTL_CT_POLL:
+				errs = test_ptl_ct_poll(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL_CT_SET:
 				errs = test_ptl_ct_set(info);
 				errs += walk_tree(info, node->children);
@@ -1514,6 +1519,7 @@ void set_default_info(struct node_info *info)
 	info->eq_count				= 10;
 	info->eq_size				= 1;
 	info->eq_handle				= PTL_EQ_NONE;
+	info->ct_size				= 1;
 	info->ct_handle				= PTL_CT_NONE;
 	info->atom_op				= PTL_SUM;
 	info->list				= PTL_PRIORITY_LIST;
