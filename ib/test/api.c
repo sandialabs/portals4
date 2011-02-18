@@ -235,14 +235,16 @@ int test_ptl_ct_get(struct node_info *info)
 
 int test_ptl_ct_wait(struct node_info *info)
 {
-	return info->ret != PtlCTWait(info->ct_handle, info->ct_test, info->ptr);
+	return info->ret != PtlCTWait(info->ct_handle, info->ct_test,
+				      info->ptr);
 }
 
-//int test_ptl_ct_poll(struct node_info *info)
-//{
-	//return info->ret != PtlEQPoll(&info->ct_handle, info->ct_size,
-				      //info->timeout, info->ptr, info->which_ptr);
-//}
+int test_ptl_ct_poll(struct node_info *info)
+{
+	return info->ret != PtlCTPoll(&info->ct_handle, &info->ct_test,
+			              info->ct_size, info->timeout, info->ptr,
+				      info->which_ptr);
+}
 
 int test_ptl_ct_set(struct node_info *info)
 {

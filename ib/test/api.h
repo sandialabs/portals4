@@ -53,6 +53,8 @@ int test_ptl_ct_get(struct node_info *info);
 
 int test_ptl_ct_wait(struct node_info *info);
 
+int test_ptl_ct_poll(struct node_info *info);
+
 int test_ptl_ct_set(struct node_info *info);
 
 int test_ptl_ct_inc(struct node_info *info);

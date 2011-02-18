@@ -59,7 +59,7 @@ struct dict_init {
 	{"ptl_ct_free",			TYPE_NODE,		NODE_PTL_CT_FREE},
 	{"ptl_ct_get",			TYPE_NODE,		NODE_PTL_CT_GET},
 	{"ptl_ct_wait",			TYPE_NODE,		NODE_PTL_CT_WAIT},
-	//{"ptl_ct_poll",		TYPE_NODE,		NODE_PTL_CT_POLL},
+	{"ptl_ct_poll",			TYPE_NODE,		NODE_PTL_CT_POLL},
 	{"ptl_ct_set",			TYPE_NODE,		NODE_PTL_CT_SET},
 	{"ptl_ct_inc",			TYPE_NODE,		NODE_PTL_CT_INC},
 	{"ptl_put",			TYPE_NODE,		NODE_PTL_PUT},
