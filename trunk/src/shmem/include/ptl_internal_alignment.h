@@ -29,11 +29,11 @@
 /* may have to define _XOPEN_SOURCE 600 */
 # include <stdlib.h>
 # define ALIGNED_CALLOC(ret,align,count,size) do { \
-    posix_memalign(&(ret), (align), (count)*(size)); \
+    posix_memalign((void**)&(ret), (align), (count)*(size)); \
     memset((void*)(ret), 0, (count)*(size)); \
 } while (0)
 # define ALIGNED_MALLOC(ret,align,size) do { \
-    posix_memalign(&(ret), (align), (size)); \
+    posix_memalign((void**)&(ret), (align), (size)); \
 } while (0)
 # define ALIGNED_FREE(x,align) free((x))
 #else
