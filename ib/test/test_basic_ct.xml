@@ -300,6 +300,17 @@
     </ptl>
   </subtest>
   <subtest>
+    <desc>Test PtlCTPoll until timeout</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <ptl_ct_set ct_event_success="5" ct_event_failure="2"/>
+	  <ptl_ct_poll time="10" ct_test="10" ret="CT_NONE_REACHED"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
     <desc>Test PtlCTPoll until Inc</desc>
     <ptl>
       <ptl_ni>
