@@ -313,10 +313,12 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	ni = to_ni(eq[0]);
 
 	if (timeout != PTL_TIME_FOREVER) {	
+		long usec;
+
 		gettimeofday(&time, NULL);
-		expire.tv_sec = time.tv_sec + (timeout/1000);
-		expire.tv_nsec = time.tv_usec * 1000 +
-					(timeout % 1000) * 1000 * 1000;
+		usec = time.tv_usec + (timeout % 1000) * 1000;
+		expire.tv_sec = time.tv_sec + usec/1000000;
+		expire.tv_nsec = (usec % 1000000) * 1000;
 	}
 
 	/* Serialize for blocking, note all EQ are from same NI */
