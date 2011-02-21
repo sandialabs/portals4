@@ -223,7 +223,8 @@ int API_FUNC PtlEQFree(
         return PTL_ARG_INVALID;
     }
     // should probably enqueue a death-event
-    while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1) ;
+    while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1)
+        __asm__ __volatile__ ("pause":::"memory");
     tmp = eq->ring;
     eq->ring = NULL;
     ALIGNED_FREE(tmp, CACHELINE_WIDTH);
@@ -476,7 +477,8 @@ void INTERNAL PtlInternalEQPush(
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish
-    while (eq->lagging_tail.u != writeidx.u) ;
+    while (eq->lagging_tail.u != writeidx.u)
+        __asm__ __volatile__ ("pause":::"memory");
 
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
@@ -509,7 +511,8 @@ void PtlInternalEQPushESEND(
     eq->ring[writeidx.s.offset].user_ptr = user_ptr;
     eq->ring[writeidx.s.offset].ni_fail_type = PTL_NI_OK;
     // now, wait for our neighbor to finish
-    while (eq->lagging_tail.u != writeidx.u) ;
+    while (eq->lagging_tail.u != writeidx.u)
+        __asm__ __volatile__ ("pause":::"memory");
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
 }
