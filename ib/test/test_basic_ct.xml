@@ -317,7 +317,7 @@
         <ptl_ct>
 	  <threads count="2">
 	  <if thread_id="0">
-	    <ptl_ct_poll time="30" ct_test="10"/>
+	    <ptl_ct_poll time="130" ct_test="10"/>
 	  </if>
 	  <if thread_id="1">
 	    <msleep count="10"/>
