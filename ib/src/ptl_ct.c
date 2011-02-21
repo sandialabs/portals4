@@ -312,7 +312,6 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		if ((ct[i]->event.success +
 			ct[i]->event.failure) >= tests[i]) {
 			int j;
-
 			*event = ct[i]->event;
 			*which = i;
 			pthread_spin_unlock(&ct[i]->obj_lock);
@@ -330,10 +329,12 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	ni = to_ni(ct[0]);
 
 	if (timeout != PTL_TIME_FOREVER) {
+		long usec;
+
 		gettimeofday(&time, NULL);
-		expire.tv_sec = time.tv_sec + (timeout/1000);
-		expire.tv_nsec = time.tv_usec * 1000 +
-				(timeout % 1000) * 1000 * 1000;
+		usec = time.tv_usec + (timeout % 1000) * 1000;
+		expire.tv_sec = time.tv_sec + usec/1000000;
+		expire.tv_nsec = (usec % 1000000) * 1000;
 	}
 
 	pthread_mutex_lock(&ni->ct_wait_mutex);
