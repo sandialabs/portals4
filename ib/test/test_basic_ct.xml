@@ -330,5 +330,28 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <subtest>
+    <desc>Test PtlCTPoll two callers same test count</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+	  <threads count="3">
+	  <if thread_id="0">
+	    <ptl_ct_poll time="130" ct_test="10"/>
+	  </if>
+	  <if thread_id="1">
+	    <ptl_ct_poll time="130" ct_test="10"/>
+	  </if>
+	  <if thread_id="2">
+	    <msleep count="10"/>
+	    <repeat count="10">
+	      <ptl_ct_inc ct_event_success="1"/>
+	    </repeat>
+	  </if>
+	  </threads>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </subtest>
   </repeat>
 </test>

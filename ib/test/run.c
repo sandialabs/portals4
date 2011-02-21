@@ -306,7 +306,6 @@ struct node_info *push_info(struct node_info *head, int tok)
 	case NODE_PTL_CT_POLL:
 		info->ptr = &info->ct_event;
 		info->which_ptr = &info->which;
-		info->which = -1;
 		break;
 	case NODE_PTL_MD:
 	case NODE_PTL_MD_BIND:
