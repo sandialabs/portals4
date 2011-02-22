@@ -23,9 +23,12 @@ typedef struct {
 } NEMESIS_entry;
 
 typedef struct {
+    /* The First Cacheline */
     void *volatile head;
-    char pad1[CACHELINE_WIDTH-sizeof(void*)];
     void *volatile tail;
+    char pad1[CACHELINE_WIDTH-(2*sizeof(void*))];
+    /* The Second Cacheline */
+    void *volatile shadow_head;
     char pad2[CACHELINE_WIDTH-sizeof(void*)];
 } NEMESIS_queue ALIGNED(CACHELINE_WIDTH);
 
@@ -48,6 +51,7 @@ static inline void PtlInternalNEMESISInit(
     NEMESIS_queue * q)
 {
     q->head = q->tail = NULL;
+    q->shadow_head = NULL;
 }
 
 static inline void PtlInternalNEMESISEnqueue(
@@ -100,9 +104,7 @@ static inline int PtlInternalNEMESISOffsetEnqueue(
     if (offset_prev == 0) {
         q->head = offset_f;
         return 0;
-    } else if (offset_prev > 0) {
-        /* less than zero is (almost certainly) the termination sigil;
-         * we CANNOT lose the termination sigil, but we also cannot dereference it. */
+    } else {
         OFF2PTR(offset_prev)->next = offset_f;
     }
     return 1;
@@ -111,20 +113,28 @@ static inline int PtlInternalNEMESISOffsetEnqueue(
 static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
     NEMESIS_queue * q)
 {
-    NEMESIS_entry *retval = OFF2PTR(q->head);
-    if (retval != NULL && retval != (void *)1) {
+    if (! q->shadow_head) {
+        if (! q->head) {
+            return NULL;
+        }
+        q->shadow_head = q->head;
+        q->head = NULL;
+    }
+    NEMESIS_entry *retval = OFF2PTR(q->shadow_head);
+
+    if (retval != NULL) {
         if (retval->next != NULL) {
-            q->head = retval->next;
+            q->shadow_head = retval->next;
             retval->next = NULL;
         } else {
             uintptr_t old;
-            q->head = NULL;
+            q->shadow_head = NULL;
             old =
                 (uintptr_t) PtlInternalAtomicCasPtr(&(q->tail),
                                                    PTR2OFF(retval), NULL);
             if (old != PTR2OFF(retval)) {
                 while (retval->next == NULL) ;
-                q->head = retval->next;
+                q->shadow_head = retval->next;
                 retval->next = NULL;
             }
         }
