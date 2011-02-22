@@ -82,7 +82,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
 #endif
     NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
     if (retval == NULL) {
-        while (q->q.head == NULL) {
+        while (q->q.shadow_head == NULL && q->q.head == NULL) {
 #ifdef USE_HARD_POLLING
             __asm__ __volatile__( "pause":::"memory");
 #else
