@@ -99,7 +99,9 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->in_use = 1;
 	pthread_mutex_unlock(&ni->pt_mutex);
 
-	pt->enable = 1;
+	pt->disable = 0;
+	pt->enabled = 1;
+	pt->num_xt_active = 0;
 	pt->options = options;
 	pt->eq = eq;
 
@@ -107,6 +109,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->obj_parent = (obj_t *)ni;
 	pt->obj_ni = ni;
 	pt->obj_type = type_pt;
+	pthread_spin_init(&pt->obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	pthread_spin_init(&pt->list_lock, PTHREAD_PROCESS_PRIVATE);
 	INIT_LIST_HEAD(&pt->priority_list);
@@ -166,11 +169,12 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	pthread_spin_destroy(&pt->list_lock);
+	pthread_spin_destroy(&pt->obj_lock);
 	pt->obj_parent = NULL;
 	pt->obj_ni = NULL;
 
 	pt->in_use = 0;
-	pt->enable = 0;
+	pt->enabled = 0;
 
 	if (pt->eq)
 		eq_put(pt->eq);
@@ -216,7 +220,17 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 		goto err2;
 	}
 
-	pt->enable = 0;
+	/* Serialize with progress to let active target processing complete */
+	pthread_spin_lock(&pt->obj_lock);
+	pt->disable |= PT_API_DISABLE;
+	while(pt->num_xt_active) {
+		pthread_spin_unlock(&pt->obj_lock);
+		sched_yield();
+		pthread_spin_lock(&pt->obj_lock);
+	}
+	pt->enabled = 0;
+	pt->disable &= ~PT_API_DISABLE;
+	pthread_spin_unlock(&pt->obj_lock);
 
 	ni_put(ni);
 	gbl_put(gbl);
@@ -257,7 +271,15 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 		goto err2;
 	}
 
-	pt->enable = 1;
+	/* Serialize with disable operations */
+	pthread_spin_lock(&pt->obj_lock);
+	if (pt->disable) {
+		pthread_spin_unlock(&pt->obj_lock);
+		sched_yield();
+		pthread_spin_lock(&pt->obj_lock);
+	}
+	pt->enabled = 1;
+	pthread_spin_unlock(&pt->obj_lock);
 
 	ni_put(ni);
 	gbl_put(gbl);

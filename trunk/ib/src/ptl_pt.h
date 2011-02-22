@@ -9,6 +9,11 @@ struct eq;
 
 extern obj_type_t *type_pt;
 
+enum {
+	PT_API_DISABLE	= 1,
+	PT_AUTO_DISABLE = 1 << 1
+};
+
 /* we are trying to make pt look like the other objects
  * but it is not exactly the same since it is just a table
  * entry in the ni while the other objects are allocated
@@ -19,7 +24,9 @@ typedef struct pt {
 
 	unsigned int		options;
 	int			in_use;
-	int			enable;
+	int			enabled;
+	int			disable;
+	int			num_xt_active;
 	struct eq		*eq;
 	unsigned int		priority_size;
 	struct list_head	priority_list;
