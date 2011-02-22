@@ -198,10 +198,14 @@ static int tgt_start(xt_t *xt)
 		return STATE_TGT_DROP;
 	}
 
-	if (!xt->pt->enable) {
-		WARN();
+	/* Serialize between progress and API */
+	pthread_spin_lock(&xt->pt->obj_lock);
+	if (!xt->pt->enabled || xt->pt->disable) {
+		pthread_spin_unlock(&xt->pt->obj_lock);
 		return STATE_TGT_DROP;
 	}
+	xt->pt->num_xt_active++;
+	pthread_spin_unlock(&xt->pt->obj_lock);
 
 	return STATE_TGT_GET_MATCH;
 }
@@ -257,6 +261,16 @@ static int tgt_get_match(xt_t *xt)
 	ni_t *ni = to_ni(xt);
 	struct list_head *l;
 
+	if (xt->pt->options & PTL_PT_FLOWCTRL) {
+		if (list_empty(&xt->pt->priority_list) &&
+		    list_empty(&xt->pt->overflow_list)) {
+			pthread_spin_lock(&xt->pt->obj_lock);
+			xt->pt->disable |= PT_AUTO_DISABLE;
+			pthread_spin_unlock(&xt->pt->obj_lock);
+			goto no_match;
+		}
+	}
+
 	list_for_each(l, &xt->pt->priority_list) {
 		xt->le = list_entry(l, le_t, list);
 		if (ni->options & PTL_NI_NO_MATCHING) {
@@ -283,6 +297,7 @@ static int tgt_get_match(xt_t *xt)
 		}
 	}
 
+no_match:
 	WARN();
 	xt->le = NULL;
 	return STATE_TGT_NO_MATCH;
@@ -1186,6 +1201,19 @@ if (debug) printf("cleanup xi recv list @ %p\n", buf);
 		// TODO count these as dropped packets??
 	}
 	pthread_spin_unlock(&xt->recv_lock);
+
+	pthread_spin_lock(&xt->pt->obj_lock);
+	xt->pt->num_xt_active--;
+	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
+		xt->pt->enabled = 0;
+		xt->pt->disable &= ~PT_AUTO_DISABLE;
+		pthread_spin_unlock(&xt->pt->obj_lock);
+		if (make_target_event(xt, xt->pt->eq,
+				      PTL_EVENT_PT_DISABLED, NULL))
+			WARN();
+		
+	} else
+		pthread_spin_unlock(&xt->pt->obj_lock);
 
 	xt_put(xt);
 	return STATE_TGT_DONE;
