@@ -433,7 +433,7 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	ev->mlength		= xt->mlength;
 	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
-	ev->user_ptr		= xt->le->user_ptr;
+	ev->user_ptr		=  xt->le ? xt->le->user_ptr : NULL;
 	ev->hdr_data		= xt->hdr_data;
 	ev->ni_fail_type	= xt->ni_fail;
 	ev->atomic_operation	= xt->atom_op;
