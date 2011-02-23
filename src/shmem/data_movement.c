@@ -12,7 +12,6 @@
 #include <stdlib.h>
 
 /* Internals */
-#include "ptl_visibility.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_queues.h"
 #include "ptl_internal_DM.h"
@@ -492,10 +491,12 @@ void INTERNAL PtlInternalDMSetup(
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalDMTeardown(
+void PtlInternalDMStop(
     void)
 {                                      /*{{{ */
-    if (PtlInternalAtomicInc(&spawned, -1) == 1) {
+    static int already_stopped = 0;
+    if (already_stopped == 0) {
+        already_stopped = 1;
         ptl_internal_header_t *restrict hdr;
         /* Using a termination sigil, rather than pthread_cancel(), so that the queues
          * are always left in a valid/useable state (e.g. unlocked), so that late sends
@@ -503,6 +504,14 @@ void INTERNAL PtlInternalDMTeardown(
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         hdr->type = HDR_TYPE_TERM;
         PtlInternalFragmentToss(hdr, proc_number);
+    }
+}                                      /*}}} */
+
+void INTERNAL PtlInternalDMTeardown(
+    void)
+{                                      /*{{{ */
+    if (PtlInternalAtomicInc(&spawned, -1) == 1) {
+        PtlInternalDMStop();
         ptl_assert(pthread_join(catcher, NULL), 0);
     }
 }                                      /*}}} */
