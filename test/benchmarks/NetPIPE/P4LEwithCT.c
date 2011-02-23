@@ -182,6 +182,8 @@ int rc;
     le_size= -1;
     le_buf= NULL;
 
+    runtime_barrier();
+
 }  /* end of Init() */
 
 
