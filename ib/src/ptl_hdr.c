@@ -30,6 +30,7 @@ void xport_hdr_from_xt(hdr_t *hdr, xt_t *xt)
 {
 	xport_hdr_from_xx(hdr, (xi_t *)xt);
 
+	hdr->ni_fail = xt->ni_fail;
 	hdr->pkt_fmt = PKT_FMT_REPLY;
 	hdr->dst_nid = cpu_to_be32(xt->initiator.phys.nid);
 	hdr->dst_pid = cpu_to_be32(xt->initiator.phys.pid);
