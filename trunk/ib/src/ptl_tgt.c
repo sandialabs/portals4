@@ -100,6 +100,28 @@ static void init_events(xt_t *xt)
 }
 
 /*
+ * init_disabled_events
+ *	Set events for messages that have no target match.
+ */
+static void init_disabled_events(xt_t *xt)
+{
+	switch (xt->operation) {
+	case OP_PUT:
+	case OP_ATOMIC:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_ACK_EVENT;
+		break;
+	case OP_GET:
+	case OP_FETCH:
+	case OP_SWAP:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_REPLY_EVENT;
+		break;
+	}
+}
+
+
+/*
  * copy_in
  *	copy data from data segment into le/me
  */
@@ -264,10 +286,14 @@ static int tgt_get_match(xt_t *xt)
 	if (xt->pt->options & PTL_PT_FLOWCTRL) {
 		if (list_empty(&xt->pt->priority_list) &&
 		    list_empty(&xt->pt->overflow_list)) {
+			WARN();
 			pthread_spin_lock(&xt->pt->obj_lock);
 			xt->pt->disable |= PT_AUTO_DISABLE;
 			pthread_spin_unlock(&xt->pt->obj_lock);
-			goto no_match;
+			xt->ni_fail = PTL_NI_FLOW_CTRL;
+			xt->le = NULL;
+			init_disabled_events(xt);
+			return STATE_TGT_COMM_EVENT;
 		}
 	}
 
@@ -297,7 +323,6 @@ static int tgt_get_match(xt_t *xt)
 		}
 	}
 
-no_match:
 	WARN();
 	xt->le = NULL;
 	return STATE_TGT_NO_MATCH;
