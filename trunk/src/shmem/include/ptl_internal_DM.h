@@ -1,9 +1,13 @@
 #ifndef PTL_INTERNAL_DM_H
 #define PTL_INTERNAL_DM_H
 
-void PtlInternalDMSetup(
+#include "ptl_visibility.h"
+
+void INTERNAL PtlInternalDMSetup(
     void);
-void PtlInternalDMTeardown(
+void INTERNAL PtlInternalDMTeardown(
+    void);
+void PtlInternalDMStop(
     void);
 
 #endif
