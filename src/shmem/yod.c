@@ -47,6 +47,7 @@
 
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_assert.h"
+#include "ptl_internal_DM.h"
 
 #ifndef PSHMNAMLEN
 # define PSHMNAMLEN 100
@@ -581,6 +582,7 @@ void *collator(
   cleanup_phase:
     free(mapping);
     ptl_assert(PtlLEUnlink(le_handle), PTL_OK);
+    PtlInternalDMStop();
     return NULL;
 }
 
