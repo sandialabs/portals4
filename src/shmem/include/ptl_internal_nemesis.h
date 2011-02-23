@@ -97,7 +97,7 @@ static inline int PtlInternalNEMESISOffsetEnqueue(
     NEMESIS_entry * restrict f)
 {
     void *offset_f = (void *)PTR2OFF(f);
-    assert(f == (void *)1 || f->next == NULL);
+    assert(f != NULL && f->next == NULL);
     uintptr_t offset_prev =
         (uintptr_t) PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail),
                                             offset_f);
@@ -133,7 +133,9 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(
                 (uintptr_t) PtlInternalAtomicCasPtr(&(q->tail),
                                                    PTR2OFF(retval), NULL);
             if (old != PTR2OFF(retval)) {
-                while (retval->next == NULL) ;
+                while (retval->next == NULL) {
+                    __asm__ __volatile__ ("pause":::"memory");
+                }
                 q->shadow_head = retval->next;
                 retval->next = NULL;
             }
