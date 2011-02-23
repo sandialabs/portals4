@@ -53,7 +53,8 @@ typedef enum {
 	unsigned		data_in:1;		\
 	unsigned		data_out:1;		\
 	unsigned		pkt_reserved:1;		\
-	__be32			reserved_1;		\
+	unsigned		ni_fail:4;		\
+	unsigned		reserved_1:28;		\
 	union {						\
 	__be32			dst_nid;		\
 	__be32			dst_rank;		\

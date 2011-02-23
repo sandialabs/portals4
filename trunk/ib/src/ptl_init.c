@@ -338,6 +338,7 @@ static int handle_recv(xi_t *xi)
 	hdr = (hdr_t *)buf->data;
 
 	/* get returned fields */
+	xi->ni_fail = hdr->ni_fail;
 	xi->mlength = be64_to_cpu(hdr->length);
 	xi->moffset = be64_to_cpu(hdr->offset);
 
