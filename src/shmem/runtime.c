@@ -211,13 +211,14 @@ void API_FUNC runtime_barrier(
     if (runtime_inited == 0)
         runtime_init();
 
-    if (0 == barrier_count++) {
+    if (0 == barrier_count) {
         /* first barrier calls to yod to make sure everyone is present */
         ptl_le_t le;
         ptl_handle_md_t mdh;
         ptl_md_t md;
         ptl_ct_event_t ctc;
 
+        barrier_count = 1;
         le.start = md.start = NULL;
         le.length = md.length = 0;
         le.ac_id.uid = PTL_UID_ANY;
