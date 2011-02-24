@@ -212,14 +212,14 @@ static int tgt_start(xt_t *xt)
 
 	if (xt->pt_index >= ni->limits.max_pt_index) {
 		WARN();
-		xt->ni_fail = PTL_NI_UNDELIVERABLE;
+		xt->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 
 	xt->pt = &ni->pt[xt->pt_index];
 	if (!xt->pt->in_use) {
 		WARN();
-		xt->ni_fail = PTL_NI_UNDELIVERABLE;
+		xt->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 
@@ -227,7 +227,7 @@ static int tgt_start(xt_t *xt)
 	pthread_spin_lock(&xt->pt->obj_lock);
 	if (!xt->pt->enabled || xt->pt->disable) {
 		pthread_spin_unlock(&xt->pt->obj_lock);
-		xt->ni_fail = PTL_NI_UNDELIVERABLE;
+		xt->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 	xt->pt->num_xt_active++;
