@@ -11,7 +11,7 @@ ptl_handle_any_t get_handle(char *val)
 	else if (!strcmp("NONE", val))
 		handle = PTL_HANDLE_NONE;
 	else
-		handle = (ptl_handle_any_t)strtoul(val, NULL, 0);
+		handle = (ptl_handle_any_t)strtoull(val, NULL, 0);
 
 	return handle;
 }
@@ -118,10 +118,10 @@ datatype_t get_datatype(ptl_datatype_t type, char *val)
 		num.u32 = strtoul(val, NULL, 0);
 		break;
 	case PTL_LONG:
-		num.s64 = strtol(val, NULL, 0);
+		num.s64 = strtoll(val, NULL, 0);
 		break;
 	case PTL_ULONG:
-		num.u64 = strtoul(val, NULL, 0);
+		num.u64 = strtoull(val, NULL, 0);
 		break;
 	case PTL_FLOAT:
 		num.f = strtof(val, NULL);
@@ -180,7 +180,7 @@ void *get_ptr(char *val)
 	else if (!strcmp("BAD", val))
 		ptr = (void *)0x0123;
 	else
-		ptr = (void *)strtol(val, NULL, 0);
+		ptr = (void *)(uintptr_t)strtoll(val, NULL, 0);
 
 	return ptr;
 }

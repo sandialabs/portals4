@@ -134,6 +134,8 @@ int ni_rcqp_init(ni_t *ni)
 	struct ibv_qp_attr attr;
 	int mask;
 	int i;
+	const uint8_t port_num = 1;
+	struct ibv_port_attr port_attr;
 
 	init.qp_context			= ni;
 	init.send_cq			= ni->cq;
@@ -192,18 +194,19 @@ int ni_rcqp_init(ni_t *ni)
 	attr.dest_qp_num		= ni->qp->qp_num;
 
 	/* loop back to ourselves */
-	ibv_query_gid(ni->ibv_context, 1, 0, &attr.ah_attr.grh.dgid);
+	ibv_query_gid(ni->ibv_context, port_num, 0, &attr.ah_attr.grh.dgid);
+	ibv_query_port(ni->ibv_context, port_num, &port_attr);
 
 	attr.ah_attr.grh.flow_label	= 0;
 	attr.ah_attr.grh.sgid_index	= 0;
 	attr.ah_attr.grh.hop_limit	= 1;
 	attr.ah_attr.grh.traffic_class	= 0;
-	attr.ah_attr.dlid		= 0;
+	attr.ah_attr.dlid		= port_attr.lid;
 	attr.ah_attr.sl			= 0;
 	attr.ah_attr.src_path_bits	= 0;
 	attr.ah_attr.static_rate	= IBV_RATE_10_GBPS;
 	attr.ah_attr.is_global		= 1;
-	attr.ah_attr.port_num		= 1;
+	attr.ah_attr.port_num		= port_num;
 	attr.max_dest_rd_atomic		= 4;
 	attr.min_rnr_timer		= 3;
 
