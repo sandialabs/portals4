@@ -100,10 +100,11 @@ static void init_events(xt_t *xt)
 }
 
 /*
- * init_disabled_events
- *	Set events for messages that have no target match.
+ * init_drop_events
+ *	Set events for messages that are dropped.  xt->ni_fail
+ * should be set to failure type.
  */
-static void init_disabled_events(xt_t *xt)
+static void init_drop_events(xt_t *xt)
 {
 	switch (xt->operation) {
 	case OP_PUT:
@@ -211,12 +212,14 @@ static int tgt_start(xt_t *xt)
 
 	if (xt->pt_index >= ni->limits.max_pt_index) {
 		WARN();
+		xt->ni_fail = PTL_NI_UNDELIVERABLE;
 		return STATE_TGT_DROP;
 	}
 
 	xt->pt = &ni->pt[xt->pt_index];
 	if (!xt->pt->in_use) {
 		WARN();
+		xt->ni_fail = PTL_NI_UNDELIVERABLE;
 		return STATE_TGT_DROP;
 	}
 
@@ -224,6 +227,7 @@ static int tgt_start(xt_t *xt)
 	pthread_spin_lock(&xt->pt->obj_lock);
 	if (!xt->pt->enabled || xt->pt->disable) {
 		pthread_spin_unlock(&xt->pt->obj_lock);
+		xt->ni_fail = PTL_NI_UNDELIVERABLE;
 		return STATE_TGT_DROP;
 	}
 	xt->pt->num_xt_active++;
@@ -240,7 +244,8 @@ static int request_drop(xt_t *xt)
 {
 	/* logging ? */
 
-	return STATE_TGT_CLEANUP;
+	init_drop_events(xt);
+	return STATE_TGT_COMM_EVENT;
 }
 
 static int check_match(xt_t *xt)
@@ -292,8 +297,7 @@ static int tgt_get_match(xt_t *xt)
 			pthread_spin_unlock(&xt->pt->obj_lock);
 			xt->ni_fail = PTL_NI_FLOW_CTRL;
 			xt->le = NULL;
-			init_disabled_events(xt);
-			return STATE_TGT_COMM_EVENT;
+			return STATE_TGT_DROP;
 		}
 	}
 
@@ -1292,6 +1296,7 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_NO_MATCH:
 				WARN();
+				xt->ni_fail = PTL_NI_DROPPED;
 				state = STATE_TGT_DROP;
 				break;
 			case STATE_TGT_GET_PERM:
@@ -1299,6 +1304,7 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_NO_PERM:
 				WARN();
+				xt->ni_fail = PTL_NI_PERM_VIOLATION;
 				state = STATE_TGT_DROP;
 				break;
 			case STATE_TGT_GET_LENGTH:
