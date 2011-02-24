@@ -136,7 +136,7 @@ static void *cm_task(void *arg)
 
 static int net_dir_filter(const struct dirent *entry)
 {
-	return !(strncmp(entry->d_name, "infiniband:", 11));
+	return strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..");
 }
 
 static char *net_to_ibdev(const char *netdev, char *name_buf, int name_buf_size)
@@ -146,12 +146,12 @@ static char *net_to_ibdev(const char *netdev, char *name_buf, int name_buf_size)
 	int num_entries;
 	int i;
 
-	snprintf(dirname, sizeof(dirname), "/sys/class/net/%s/device", netdev);
+	snprintf(dirname, sizeof(dirname), "/sys/class/net/%s/device/infiniband", netdev);
 
 	num_entries = scandir(dirname, &namelist, net_dir_filter, alphasort);
-	
+
 	if (num_entries > 0)
-		strncpy(name_buf, &namelist[0]->d_name[11], name_buf_size);
+		strncpy(name_buf, namelist[0]->d_name, name_buf_size);
 	
 	for (i=0; i < num_entries; i++)
 		if (namelist && namelist[i])
