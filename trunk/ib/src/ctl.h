@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "portals4.h"
 
@@ -56,7 +57,6 @@ struct net_intf {
 	struct ib_intf *ib_intf;
 };
 
-extern int load_nid_table(const char *name);
 extern int load_rank_table(const char *name);
 extern int create_ib_resources(void);
 extern void destroy_ib_resources(void);
@@ -72,8 +72,23 @@ struct p4oibd_config {
 	struct rpc *rpc;
 
 	/* From configuration files */
-	struct nid_table *nid_table;
-	struct rank_table *rank_table;
+	struct rank_table *local_rank_table;  /* local, not shared */
+	struct rank_table *master_rank_table; /* in shared memory */
+
+	unsigned int local_nranks;	/* number of ranks on that node */
+	unsigned int nranks;		/* total number of rank for job */
+
+	ptl_jid_t jobid;
+	ptl_nid_t nid;				/* Local NID */
+	ptl_nid_t master_nid;		/* NID of master control */
+
+	/* Session from ranks. One per local rank. */
+	struct session **sessions;
+	int num_sessions;
+
+	unsigned int recv_nranks;	/* number of rank waiting. When this
+								   number is nranks, then the rank
+								   table is complete. */
 
 	/* Shared memory. */
 	struct {

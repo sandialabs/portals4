@@ -36,11 +36,18 @@ typedef struct gbl {
 	ptl_jid_t		jid;
 	ptl_nid_t		nid;
 
+	ptl_nid_t		main_ctl_nid; /* NID of the main control process */
+
+	ptl_rank_t rank;
+	unsigned int nranks;		/* total number of rank for job */
+
+	ptl_rank_t local_rank;
+	unsigned int local_nranks;	/* number of ranks on that node */
+
 	/* shared memory. */
 	struct {
 		int fd;
 		struct shared_config *m; /* mmaped memory */
-		struct nid_table *nid_table;
 		struct rank_table *rank_table;
 	} shmem;
 

@@ -45,10 +45,10 @@ static int process_connect_request(struct rdma_cm_event *event)
 
 	priv = event->param.conn.private_data;
 
-	if (priv->src_rank >= conf.rank_table->size)
+	if (priv->src_rank >= conf.nranks)
 		return 1;
 
-	entry = &conf.rank_table->elem[priv->src_rank];
+	entry = &conf.master_rank_table->elem[priv->src_rank];
 	ib_intf = event->listen_id->context;
 
 	memset(&init_attr, 0, sizeof(struct ibv_qp_init_attr));
@@ -244,6 +244,7 @@ int create_ib_resources(void)
 			/* infiniband transport (e.g. ib0) */
 			dev_name = net_to_ibdev(net_device_list[j].if_name,
 					name_buf, sizeof(name_buf));
+
 			if (dev_name &&
 				!strcmp(dev_name, ib_device_list[i]->name)) {
 				ptl_info("%s -> %s\n", ib_device_list[i]->name,

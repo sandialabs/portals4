@@ -4,6 +4,11 @@
 
 #include "ptl_loc.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <sys/wait.h>
+
 /* Default control port. This could be overridden by an environment
  * variable. */
 unsigned int ctl_port = PTL_CTL_PORT;
@@ -13,7 +18,11 @@ unsigned int ctl_port = PTL_CTL_PORT;
  * acquire proc_gbl_mutex before making changes
  * that require atomicity
  */
-static gbl_t per_proc_gbl;
+static gbl_t per_proc_gbl = {
+	.shmem = {
+		.fd = -1,
+	},
+};
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void gbl_release(ref_t *ref)
@@ -73,8 +82,9 @@ static long getenv_val(const char *name, unsigned int *val)
 	str = getenv(name);
 	if (!str)
 		return PTL_FAIL;
-
+	errno = 0;
 	myval = strtoul(str, &endptr, 10);
+
 	if ((errno == ERANGE && myval == ULONG_MAX) ||
 		(errno != 0 && myval == 0))
 		return PTL_FAIL;
@@ -88,24 +98,84 @@ static long getenv_val(const char *name, unsigned int *val)
 	return PTL_OK;
 }
 
-/* The job launcher gives some parameters through environment
+/* Given a string such as "1107361792.0;tcp://10.0.2.91:53189",
+ * extract the IP adress and return it as a 32 bits number. 
+ * 0 means error.
+ */
+static uint32_t get_node_id_from_tcp(const char *str)
+{
+	char *p, *q;
+	const char *to_find = "tcp://";
+	char ipaddr[20];
+	struct in_addr inp;
+
+	p = strstr(str, to_find);
+	if (!p)
+		return 0;
+
+	/* Copy the ip address up to : */
+	p += strlen(to_find);
+	q = ipaddr;
+	while(*p && *p != ':') {
+		*q = *p;
+		p++;
+		q++;
+	}
+
+	*q = 0;
+
+	if (!inet_aton(ipaddr, &inp))
+		return 0;
+
+	return ntohl(inp.s_addr);
+}
+
+
+/* The job launcher (mpirun) gives some parameters through environment
  * variables:
  *
- * - PORTALS4_JIB : job ID
- * - PORTALS4_NID : Node ID
+ * - OMPI_MCA_orte_ess_jobid : job ID
+ * - OMPI_COMM_WORLD_RANK : Node ID   (TODO: not correct)
  */
 static int get_vars(gbl_t *gbl)
 {
 	ptl_jid_t jid;
+	char *env;
 
-	if (getenv_val("PORTALS4_JIB", &jid) ||
-		getenv_val("PORTALS4_NID", &gbl->nid)) {
-		ptl_warn("PORTALS4_JIB or PORTALS4_NID environment variables "
-			"not set\n");
+	if (getenv_val("OMPI_MCA_orte_ess_jobid", &jid) ||
+		getenv_val("OMPI_COMM_WORLD_RANK", &gbl->rank) ||
+		getenv_val("OMPI_COMM_WORLD_SIZE", &gbl->nranks) ||
+		getenv_val("OMPI_COMM_WORLD_LOCAL_RANK", &gbl->local_rank) ||
+		getenv_val("OMPI_COMM_WORLD_LOCAL_SIZE", &gbl->local_nranks)) {
+		ptl_warn("some variables are not set or invalid\n");
 		return PTL_FAIL;
 	}
 
 	gbl->jid = jid;
+
+	/* Extract the node ID. It is the local IP address put back into a 32 bits number. */
+	env = getenv("OMPI_MCA_orte_local_daemon_uri");
+	if (!env) {
+		ptl_warn("OMPI_MCA_orte_local_daemon_uri not found\n");
+		return PTL_FAIL;
+	}
+	gbl->nid = get_node_id_from_tcp(env);
+	if (!gbl->nid) {
+		ptl_warn("Can't extract node id\n");
+		return PTL_FAIL;
+	}
+
+	/* Extract the Node ID for the main control process. */
+	env = getenv("OMPI_MCA_orte_hnp_uri");
+	if (!env) {
+		ptl_warn("OMPI_MCA_orte_hnp_uri not found\n");
+		return PTL_FAIL;
+	}
+	gbl->main_ctl_nid = get_node_id_from_tcp(env);
+	if (!gbl->main_ctl_nid) {
+		ptl_warn("Can't extract node id\n");
+		return PTL_FAIL;
+	}
 
 	return PTL_OK;
 }
@@ -118,64 +188,51 @@ static int start_daemon(gbl_t *gbl)
 	pid = fork();
 	if (pid == 0) {
 		char jobid[10];
+		char local_nranks[10];
+		char nranks[10];
+		char nid[10];
+		char master_nid[10];
+		int i;
+
+		/* Close all the file descriptors, except the standard ones. */
+		for (i=getdtablesize()-1; i>=3; i--) {
+			close(i);
+		}
 
 		sprintf(jobid, "%d", gbl->jid);
+		sprintf(local_nranks, "%u", gbl->local_nranks);
+		sprintf(nranks, "%u", gbl->nranks);
+		sprintf(nid, "%u", gbl->nid);
+		sprintf(master_nid, "%u", gbl->main_ctl_nid);
 
-		execl("./src/p4oibd",
-			  "./src/p4oibd",
-			  "-n", "nid_sample.csv", 
-			  "-r", "rank_sample.csv",
+		/* Change the session. */
+		if (setsid() == -1) {
+			perror("Couldn't change session id\n");
+			return 1;
+		}
+
+		execl("../src/control",
+			  "../src/control",
+			  "-n", nid, 
+			  "-m", master_nid,
 			  "-j", jobid,
+			  "-t", local_nranks,
+			  "-s", nranks,
+			  //			  "-v",
+			  //			  "-l", "100",
 			  NULL);
 
 		_exit(0);
 	}
 
-	/* Hack: leave some time for the process to start. Ideally we
-	   should retry connect()'ing a few times instead. */
-	usleep(1000);
+	if (pid > 0) {
+		/* The daemon will fork again, so the process we just exec'ed
+		 * will die pretty quickly in any case. */
+		int status;
+		waitpid(pid, &status, 0);
+	}
 
 	return 0;
-}
-
-/* Retrieve the shared memory filename, and mmap it. */
-static int get_init_data(gbl_t *gbl)
-{
-	struct rpc_msg rpc_msg;
-	int err;
-	void *m;
-
-	memset(&rpc_msg, 0, sizeof(rpc_msg));
-	rpc_msg.type = QUERY_INIT_DATA;
-	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
-	if (err)
-		goto err;
-
-	if (rpc_msg.reply_init_data.shmem_filesize == 0)
-		goto err;
-
-	gbl->shmem.fd = open(rpc_msg.reply_init_data.shmem_filename, O_RDONLY);
-	if (gbl->shmem.fd == -1)
-		goto err;
-
-	m = mmap(NULL, rpc_msg.reply_init_data.shmem_filesize,
-			 PROT_READ, MAP_SHARED, gbl->shmem.fd, 0);
-	if (m == MAP_FAILED)
-		goto err;
-
-	gbl->shmem.m = (struct shared_config *)m;
-
-	gbl->shmem.rank_table = m + gbl->shmem.m->rank_table_offset;
-	gbl->shmem.nid_table = m + gbl->shmem.m->nid_table_offset;
-
-	return PTL_OK;
-
- err:
-	if (gbl->shmem.fd != -1) {
-		close(gbl->shmem.fd);
-		gbl->shmem.fd = -1;
-	}
-	return PTL_FAIL;
 }
 
 static void rpc_callback(struct session *session)
@@ -195,7 +252,7 @@ static int gbl_init(gbl_t *gbl)
 
 	start_daemon(gbl);
 
-	err = rpc_init(rpc_type_client, ctl_port, &gbl->rpc, rpc_callback);
+	err = rpc_init(rpc_type_client, gbl->nid, ctl_port, &gbl->rpc, rpc_callback);
 	if (unlikely(err)) {
 		ptl_warn("rpc_init failed\n");
 		goto err1;
@@ -209,11 +266,13 @@ static int gbl_init(gbl_t *gbl)
 		goto err2;
 	}
 
+#if 0
 	err = get_init_data(gbl);
 	if (err) {
 		ptl_warn("get_init_data failed\n");
 		goto err2;
 	}
+#endif
 
 	/* init the object allocator */
 	err = obj_init();

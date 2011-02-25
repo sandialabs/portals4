@@ -13,27 +13,31 @@
 struct rpc_msg {
 	enum {
 		INVALID,
-		QUERY_INIT_DATA = 1,
-		QUERY_XRC_DOMAIN = 2,
+		QUERY_XRC_DOMAIN = 1,
+		QUERY_RANK_TABLE = 2,
+
 
 		/* 8th bit indicate a reply. */
-		REPLY_INIT_DATA = 128,
+		REPLY_RANK_TABLE = 128,
 		REPLY_XRC_DOMAIN = 129,
 	} type;
 
 	uint32_t sequence;
 
 	union {
-		/* QUERY_INIT_DATA */
+		/* QUERY_RANK_TABLE */
 		struct {
-		} query_init_data;
+			ptl_rank_t local_rank; /* message from local rank */
+			ptl_rank_t rank;	   /* (world) rank */
+			uint32_t xrc_srq_num;
+		} query_rank_table;
 
-		/* REPLY_INIT_DATA */
+		/* REPLY_RANK_TABLE */
 		struct {
 			/* Shared memory */
 			char shmem_filename[1024];
 			size_t shmem_filesize;
-		} reply_init_data;
+		} reply_rank_table;
 
 		/* QUERY_XRC_DOMAIN */
 		struct {
@@ -46,6 +50,15 @@ struct rpc_msg {
 			char xrc_domain_fname[1024];
 			char ib_name[50];
 		} reply_xrc_domain;
+
+		/* LOCAL RANK TABLE */
+		struct {
+			ptl_nid_t nid;
+			struct {
+				ptl_rank_t rank;
+				uint32_t xrc_srq_num;
+			} ranks[64];
+		} local_rank_table;
 	};
 };
 
@@ -87,7 +100,8 @@ struct rpc {
 	void (*callback)(struct session *session);
 };
 
-int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
+int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
+			 struct rpc **rpc_p,
 			 void (*callback)(struct session *session));
 int rpc_fini(struct rpc *rpc);
 //int rpc_get_pid(gbl_t *gbl);

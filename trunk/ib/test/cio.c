@@ -11,7 +11,7 @@
 
 void cio_init()
 {
-	LIBXML_TEST_VERSION
+//	LIBXML_TEST_VERSION
 }
 
 void cio_cleanup()
