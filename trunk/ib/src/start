@@ -1,4 +1,0 @@
-rm -f /tmp/p4oib*
-export PORTALS4_JIB=1234
-export PORTALS4_NID=1
-./control -n nid_sample.csv -r rank_sample.csv -j 1234 -l 2
