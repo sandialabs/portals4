@@ -46,6 +46,48 @@ done:
 	return iface;
 }
 
+/* Retrieve the shared memory filename, and mmap it. */
+static int get_rank_table(gbl_t *gbl, ni_t *ni)
+{
+	struct rpc_msg rpc_msg;
+	int err;
+	void *m;
+
+	memset(&rpc_msg, 0, sizeof(rpc_msg));
+	rpc_msg.type = QUERY_RANK_TABLE;
+	rpc_msg.query_rank_table.rank = gbl->rank;
+	rpc_msg.query_rank_table.local_rank = gbl->local_rank;
+	rpc_msg.query_rank_table.xrc_srq_num  = ni->xrc_srq->xrc_srq_num;
+	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
+	if (err)
+		goto err;
+
+	if (rpc_msg.reply_rank_table.shmem_filesize == 0)
+		goto err;
+
+	gbl->shmem.fd = open(rpc_msg.reply_rank_table.shmem_filename, O_RDONLY);
+	if (gbl->shmem.fd == -1)
+		goto err;
+
+	m = mmap(NULL, rpc_msg.reply_rank_table.shmem_filesize,
+			 PROT_READ, MAP_SHARED, gbl->shmem.fd, 0);
+	if (m == MAP_FAILED)
+		goto err;
+
+	gbl->shmem.m = (struct shared_config *)m;
+
+	gbl->shmem.rank_table = m + gbl->shmem.m->rank_table_offset;
+
+	return PTL_OK;
+
+ err:
+	if (gbl->shmem.fd != -1) {
+		close(gbl->shmem.fd);
+		gbl->shmem.fd = -1;
+	}
+	return PTL_FAIL;
+}
+
 /* TODO finish this */
 static ptl_ni_limits_t default_ni_limits = {
 	.max_entries		= 123,
@@ -272,7 +314,7 @@ static int cleanup_ib(ni_t *ni)
 
 	if (ni->xrc_domain_fd) {
 		close(ni->xrc_domain_fd);
-		ni->xrc_domain_fd = 0;
+		ni->xrc_domain_fd = -1;
 	}
 
 	if (ni->xrc_domain) {
@@ -580,6 +622,13 @@ int PtlNIInit(ptl_interface_t iface,
 	err = gbl_add_ni(gbl, ni);
 	if (unlikely(err)) {
 		goto err3;
+	}
+
+	if (gbl->shmem.fd == -1) {
+		err = get_rank_table(gbl, ni);
+		if (err) {
+			goto err3;
+		}
 	}
 
 done:

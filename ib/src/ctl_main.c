@@ -12,9 +12,6 @@
 int verbose;
 int ptl_log_level;
 static char *progname;
-static char *nid_table_fname;
-static char *rank_table_fname;
-static unsigned int jobid;
 static char lock_filename [1024];
 
 struct p4oibd_config conf;
@@ -24,20 +21,87 @@ static void rpc_callback(struct session *session)
 	struct rpc_msg msg;
 	struct net_intf *net_intf;
 	struct ib_intf *ib_intf;
+	struct rpc_msg *m = &session->rpc_msg;
+	ptl_rank_t local_rank;
 
 	switch(session->rpc_msg.type) {
-	case QUERY_INIT_DATA:
-		msg.type = REPLY_INIT_DATA;
-		strcpy(msg.reply_init_data.shmem_filename, conf.shmem.filename);
-		msg.reply_init_data.shmem_filesize = conf.shmem.filesize;
+	case QUERY_RANK_TABLE:
+		printf("FZ- got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf.local_nranks);
+		local_rank = m->query_rank_table.local_rank;
+
+		if (conf.local_rank_table->size <= m->query_rank_table.local_rank) {
+			/* Bad rank. Should not happen */
+			assert(0);
+		}
+
+		/* We may already have it. In that case, reply, but don't
+		 * modify the table. */
+		if (conf.local_rank_table->elem[local_rank].nid != conf.nid) {
+			conf.local_rank_table->elem[local_rank].rank = m->query_rank_table.rank;
+			conf.local_rank_table->elem[local_rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
+			conf.local_rank_table->elem[local_rank].nid = conf.nid;
+
+			conf.sessions[local_rank] = session;
+			conf.num_sessions ++;
+		}
+
+		printf("FZ- got another session - %d %d\n", conf.num_sessions, conf.local_nranks);
+		if (conf.num_sessions == conf.local_nranks) {
+			/* All local ranks have reported. Sent the local rank table to the master control. */
+			//	msg.type = LOCAL_RANK_TABLE;
+
+			printf("FZ- got all session\n");
+
+			if (conf.nid == conf.master_nid) {
+				/* Hey, I'm the boss. Copy the local ranks to the
+				 * global rank table if we don't already have it. */
+				if (conf.master_rank_table->elem[conf.local_rank_table->elem[local_rank].rank].nid != conf.local_rank_table->elem[local_rank].nid) {
+					for (local_rank=0; local_rank < conf.local_rank_table->size; local_rank++) {
+						ptl_rank_t rank = conf.local_rank_table->elem[local_rank].rank;
+						conf.master_rank_table->elem[rank].rank = rank;
+						conf.master_rank_table->elem[rank].xrc_srq_num = conf.local_rank_table->elem[local_rank].xrc_srq_num;
+						conf.master_rank_table->elem[rank].pid = 0; /* ??? todo */
+						conf.master_rank_table->elem[rank].nid = conf.local_rank_table->elem[local_rank].nid;
+
+						conf.recv_nranks ++;
+					}
+				}
+
+				if (conf.recv_nranks == conf.nranks) {
+					/* Rank table is complete. */
+
+					/* Give rank table to local nodes. */
+					for (local_rank=0; local_rank<conf.local_nranks; local_rank++) {
+
+						msg.type = REPLY_RANK_TABLE;
+						strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
+						msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
+						rpc_send(session, &msg);
+
+						rpc_send(conf.sessions[local_rank], &msg);
+					}
+
+					/* Give rank table to remote control nodes. */
+					// todo
+				}
+
+			} else {
+				// TODO
+				assert(0);
+			}
+
+
+		}
+		break;
+#if 0
+		msg.type = REPLY_RANK_TABLE;
+		strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
+		msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
 		rpc_send(session, &msg);
+#endif
 		break;
 
 	case QUERY_XRC_DOMAIN:
-#if 0
-		printf("FZ- got query for intf %s\n",
-			session->rpc_msg.query_xrc_domain.net_name);
-#endif
 		net_intf = find_net_intf(
 				session->rpc_msg.query_xrc_domain.net_name);
 		msg.type = REPLY_XRC_DOMAIN;
@@ -54,7 +118,7 @@ static void rpc_callback(struct session *session)
 		break;
 
 	default:
-		fprintf(stderr, "Got unhandled RPC message id %d\n",
+		fprintf(stderr, "Got unhandled RPC message id %x\n",
 			session->rpc_msg.type);
 		break;
 	}
@@ -68,7 +132,7 @@ static int run_once(void)
 	int err;
 
 	/* Create a file and try to lock it. */
-	sprintf(lock_filename, "/tmp/p4oibd-JID-%d.lck", jobid);
+	sprintf(lock_filename, "/tmp/p4oibd-JID-%d.lck", conf.jobid);
 	fd = open(lock_filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
 	if (fd == -1)
@@ -94,7 +158,6 @@ static void usage(char *argv[])
 		PTL_CTL_PORT);
 	printf("    -x | --xrc          XRC port (default = %d)\n", XRC_PORT);
 	printf("    -n | --nid-table    NID table\n");
-	printf("    -r | --rank-table   rank table\n");
 	printf("    -l | --log level    rank table\n");
 }
 
@@ -102,15 +165,17 @@ static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int opt_index = 0;
-	char *opt_string = "hvp:n:r:j:l:";
+	const char *opt_string = "hvp:n:r:j:l:t:s:m:";
 	static const struct option opt_long[] = {
 		{"help", 0, 0, 'h'},
 		{"verbose", 0, 0, 'v'},
 		{"port", 1, 0, 'p'},
-		{"nid-table", 1, 0, 'n'},
-		{"rank-table", 1, 0, 'r'},
+		{"nid", 1, 0, 'n'},
+		{"master-nid", 1, 0, 'm'},
 		{"jid", 1, 0, 'j'},
 		{"log", 1, 0, 'l'},
+		{"local_nranks", 1, 0, 't'},
+		{"nranks", 1, 0, 's'},
 		{0, 0, 0, 0}
 	};
 
@@ -119,6 +184,7 @@ static int arg_process(int argc, char *argv[])
 		progname = argv[0];
 
 	conf.ctl_port = PTL_CTL_PORT;
+	conf.shmem.fd = -1;
 
 	while (1) {
 		c = getopt_long(argc, argv, opt_string, opt_long, &opt_index);
@@ -143,19 +209,27 @@ static int arg_process(int argc, char *argv[])
 			break;
 
 		case 'n':
-			nid_table_fname = optarg;
+			conf.nid = strtol(optarg, NULL, 0);
 			break;
 
-		case 'r':
-			rank_table_fname = optarg;
+		case 'm':
+			conf.master_nid = strtol(optarg, NULL, 0);
 			break;
 
 		case 'j':
-			jobid = strtol(optarg, NULL, 0);
+			conf.jobid = strtol(optarg, NULL, 0);
 			break;
 
 		case 'l':
 			ptl_log_level = strtol(optarg, NULL, 0);
+			break;
+
+		case 't':
+			conf.local_nranks = strtol(optarg, NULL, 0);
+			break;
+
+		case 's':
+			conf.nranks = strtol(optarg, NULL, 0);
 			break;
 
 		default:
@@ -164,17 +238,12 @@ static int arg_process(int argc, char *argv[])
 		}
 	}
 
-	if (!nid_table_fname) {
-		fprintf(stderr, "NID table filename not set\n");
+	if (!conf.nid) {
+		fprintf(stderr, "NID not set\n");
 		return 1;
 	}
 
-	if (!rank_table_fname) {
-		fprintf(stderr, "RANK table filename not set\n");
-		return 1;
-	}
-
-	if (!jobid) {
+	if (!conf.jobid) {
 		fprintf(stderr, "Missing Job ID.\n");
 		return 1;
 	}
@@ -199,39 +268,48 @@ int main(int argc, char *argv[])
 		printf("	port = %d\n", conf.ctl_port);
 	}
 
+	/* Detach the process before continuing. */
+	err = daemon(0,0);
+	if (err) {
+		perror("Couldn't daemonize\n");
+		return 1;
+	}
+
 	err = run_once();
 	if (err) {
 		/* Another process is already running. */
 		return 1;
 	}
 
-	err = load_nid_table(nid_table_fname);
-	if (err) {
-		fprintf(stderr, "Couldn't load the NID table at %s\n",
-			nid_table_fname);
+	/* Create sessions table */
+	conf.sessions = calloc(conf.local_nranks, sizeof(struct session *));
+	if (!conf.sessions) {
+		fprintf(stderr, "Couldn't allocate sessions\n");
 		return 1;
 	}
 
-	err = load_rank_table(rank_table_fname);
-	if (err) {
-		fprintf(stderr, "Couldn't load the RANK table at %s\n",
-			rank_table_fname);
+	/* Create local rank table. */
+	conf.local_rank_table = calloc(1, sizeof(struct rank_table) +
+								   conf.local_nranks * sizeof(struct rank_entry));
+	if (!conf.local_rank_table) {
+		fprintf(stderr, "Couldn't allocate tables\n");
 		return 1;
 	}
+	conf.local_rank_table->size = conf.local_nranks;
 
 	err = create_shared_memory();
 	if (err) {
 		fprintf(stderr, "Couldn't create shared data\n");
 		return 1;
 	}
-	
+
 	err = create_ib_resources();
 	if (err) {
 		fprintf(stderr, "Couldn't create some IB resources\n");
 		return 1;
 	}
 
-	err = rpc_init(rpc_type_server, conf.ctl_port, &conf.rpc, rpc_callback);
+	err = rpc_init(rpc_type_server, -1, conf.ctl_port, &conf.rpc, rpc_callback);
 	if (err) {
 		switch (err) {
 		case EADDRINUSE:
@@ -245,10 +323,6 @@ int main(int argc, char *argv[])
 	}
 
 	printf("%s started\n", progname);
-
-#if 0
-	daemon(0, 0);
-#endif
 
 	sleep(99999);
 
