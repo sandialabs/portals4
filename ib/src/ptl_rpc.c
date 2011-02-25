@@ -104,6 +104,7 @@ err1:
 static void fini_session(struct rpc *rpc, struct session *session)
 {
 	close(session->fd);
+	session->fd = -1;
 
 	pthread_spin_lock(&rpc->session_list_lock);
 	list_del(&session->session_list);
@@ -121,20 +122,21 @@ static int read_one(struct rpc *rpc, struct session *session)
 	int err;
 	char buf[80];
 
-	ret = recv(session->fd, &session->rpc_msg, sizeof(struct rpc_msg), 0);
+	ret = recv(session->fd, &session->rpc_msg, sizeof(struct rpc_msg), MSG_WAITALL);
 	if (ret < 0) {
-		err = errno;
+		err = -errno;
 		if (verbose) {
 			strerror_r(errno, buf, sizeof(buf));
 			printf("unable to recv: %s\n", buf);
 		}
-		goto err1;
+		goto done;
 	}
 
 	if (ret == 0) {
-		printf("session closed\n");
+		printf("session closed, pid=%d\n", getpid());
 		fini_session(rpc, session);
-		goto done;
+
+		err = 1;
 	} else {
 		if (session->rpc_msg.type & 0x80) {
 			/* A reply. */
@@ -145,11 +147,11 @@ static int read_one(struct rpc *rpc, struct session *session)
 			/* A request. */
 			rpc->callback(session);
 		}
-	}
-done:
-	return 0;
 
-err1:
+		err = 0;
+	}
+
+done:
 	return err;
 }
 
@@ -191,7 +193,6 @@ static void *io_task(void *arg)
 {
 	struct rpc *rpc = arg;
 	int err;
-	char buf[80];
 	int maxfd;
 	int nfd;
 	int i;
@@ -199,8 +200,6 @@ static void *io_task(void *arg)
 	struct timeval timeout;
 	struct list_head *l, *t;
 	struct session *session;
-
-	rpc->io_thread_run = 1;
 
 	if (verbose > 1)
 		printf("io_thread started\n");
@@ -230,8 +229,7 @@ static void *io_task(void *arg)
 		if (nfd < 0) {
 			err = errno;
 			if (verbose) {
-				strerror_r(errno, buf, sizeof(buf));
-				printf("select failed: %s\n", buf);
+				perror("select failed: %s\n");
 			}
 			goto err1;
 		}
@@ -240,8 +238,10 @@ static void *io_task(void *arg)
 			if ((rpc->type == rpc_type_server)
 			    && FD_ISSET(rpc->fd, &readfds)) {
 				err = accept_one(rpc);
-				if (err)
+				if (err) {
+					perror("accept failed\n");
 					goto err1;
+				}
 				FD_CLR(rpc->fd, &readfds);
 				nfd--;
 				goto next;
@@ -250,9 +250,12 @@ static void *io_task(void *arg)
 				session = list_entry(l, struct session, session_list);
 				if (FD_ISSET(session->fd, &readfds)) {
 					err = read_one(rpc, session);
-					if (err)
+					if (err < 0) {
+						fprintf(stderr, "read_one error\n");
 						goto err1;
-					FD_CLR(session->fd, &readfds);
+					}
+					if (err == 0)
+						FD_CLR(session->fd, &readfds);
 					nfd--;
 					goto next;
 				}
@@ -276,13 +279,16 @@ next:
 	return NULL;
 
 err1:
+	printf("io_thread STOPPED - %d \n", getpid());
 	return NULL;
 }
 
-int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
+int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
+			 struct rpc **rpc_p,
 			 void (*callback)(struct session *session))
 {
 	int s;
+	int i;
 	int err;
 	char buf[80];
 	struct rpc *rpc;
@@ -303,6 +309,7 @@ int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
 	INIT_LIST_HEAD(&rpc->session_list);
 	pthread_spin_init(&rpc->session_list_lock, 0);
 	rpc->type = type;
+	rpc->fd = -1;
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0) {
@@ -313,12 +320,14 @@ int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
 	}
 
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr.sin_port = htons(ctl_port);
 	addr_len = sizeof(addr);
 
 	if (type == rpc_type_server) {
 		int on = 1;
+
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
 		err = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 		if (err < 0) {
 			strerror_r(errno, buf, sizeof(buf));
@@ -344,11 +353,26 @@ int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
 		rpc->fd = s;
 
 	} else {
-		err = connect(s, (struct sockaddr *)&addr, addr_len);
+
+		addr.sin_addr.s_addr = htonl(nid);
+
+		/* Retry connect()'ing for 5 seconds because the daemon might
+		 * be starting. */
+		for (i=0; i<50; i++) {
+			err = connect(s, (struct sockaddr *)&addr, addr_len);
+			if (err == -1 && errno == ECONNREFUSED) {
+				/* The control daemon has not started yet. */
+				usleep(100000);	/* 1/10 second */
+			} else {
+				/* Some other error. Don't retry. */
+				break;
+			}
+		}
+
 		if (err < 0) {
 			err = errno;
 			strerror_r(errno, buf, sizeof(buf));
-			ptl_fatal("unable to connect to server: %s\n", buf);
+			ptl_error("unable to connect to server: %s\n", buf);
 			goto err3;
 		}
 
@@ -361,10 +385,11 @@ int rpc_init(enum rpc_type type, unsigned int ctl_port, struct rpc **rpc_p,
 		rpc->to_server = session;
 	}
 
-	rpc->io_thread_run = 0;
+	rpc->io_thread_run = 1;
 
 	err = pthread_create(&rpc->io_thread, NULL, io_task, rpc);
 	if (err) {
+		rpc->io_thread_run = 0;
 		err = errno;
 		strerror_r(errno, buf, sizeof(buf));
 		ptl_warn("unable to create io thread: %s\n", buf);
@@ -393,14 +418,20 @@ int rpc_fini(struct rpc *rpc)
 	struct list_head *l, *t;
 	struct session *session;
 
-	rpc->io_thread_run = 0;
+	if (rpc->io_thread_run) {
 
-	err = pthread_join(rpc->io_thread, NULL);
-	if (err) {
-		printf("pthread_join failed\n");
+		rpc->io_thread_run = 0;
+
+		err = pthread_join(rpc->io_thread, NULL);
+		if (err) {
+			printf("pthread_join failed\n");
+		}
 	}
 
-	close(rpc->fd);
+	if (rpc->fd != -1) {
+		close(rpc->fd);
+		rpc->fd = -1;
+	}
 
 	list_for_each_safe(l, t, &rpc->session_list) {
 		session = list_entry(l, struct session, session_list);
