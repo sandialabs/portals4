@@ -54,6 +54,36 @@ case "$1" in
 		fi
 	done
 	;;
+	--socket-static3)
+	shift
+	for ((i=0;$i<=$PORTALS4_RANK;i=$i+1)) ; do
+		cursocket=$(($i%$nodecount))
+		cursocketcores=( ${nodearray[$cursocket]} )
+		if [ ${#cursocketcores[@]} -ge 2 ] ; then
+			if [ $i == $PORTALS4_RANK ] ; then
+				base1=${cursocketcores[$((${#cursocketcores[@]}-1))]}
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				base2=${cursocketcores[$((${#cursocketcores[@]}-1))]}
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				nodearray[$cursocket]="${cursocketcores[*]}"
+				arg="--physcpubind=$base1,$base2"
+				break
+			else
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				unset cursocketcores[$((${#cursocketcores[@]}-1))]
+				nodearray[$cursocket]="${cursocketcores[*]}"
+			fi
+		else
+			cursocket=$(($cursocket+1))
+			cursocketcores=( ${nodearray[$cursocket]} )
+			if [ ${#cursocketcores[@]} == 0 ] ; then
+				echo also blarg!
+				arg="--cpunodebind="$(($PORTALS4_RANK%$nodecount))
+				break
+			fi
+		fi
+	done
+	;;
 	--socket-static2)
 	shift
 	if [ "$PORTALS4_NUM_PROCS" -le 6 ] ; then
