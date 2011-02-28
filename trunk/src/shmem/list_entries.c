@@ -97,9 +97,9 @@ void INTERNAL PtlInternalLENITeardown(
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
     e.pt_index = hdr->pt_index; \
-    e.uid = 0; \
-    e.jid = PTL_JID_NONE; \
-    e.match_bits = 0; \
+    e.uid = hdr->uid; \
+    e.jid = hdr->jid; \
+    e.match_bits = hdr->match_bits; \
     e.rlength = hdr->length; \
     e.mlength = 0; \
     e.remote_offset = hdr->dest_offset; \
@@ -224,11 +224,14 @@ int API_FUNC PtlLEAppend(
                     }
                     // (1) check permissions
                     if (le->options & PTL_LE_AUTH_USE_JID) {
-                        if (le->ac_id.jid != PTL_JID_ANY) {
+                        if (le->ac_id.jid == PTL_JID_NONE) {
+                            goto permission_violation;
+                        }
+                        if (le->ac_id.jid != PTL_JID_ANY && le->ac_id.jid != cur->hdr.jid) {
                             goto permission_violation;
                         }
                     } else {
-                        if (le->ac_id.uid != PTL_UID_ANY) {
+                        if (le->ac_id.uid != PTL_UID_ANY && le->ac_id.uid != cur->hdr.uid) {
                             goto permission_violation;
                         }
                     }
@@ -383,7 +386,7 @@ int API_FUNC PtlLEAppend(
                             goto permission_violationPO;
                         }
                     } else {
-                        if (le->ac_id.uid != PTL_UID_ANY) {
+                        if (le->ac_id.uid != PTL_UID_ANY && le->ac_id.uid != cur->hdr.uid) {
                             goto permission_violationPO;
                         }
                     }
@@ -608,7 +611,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(
                 goto permission_violation;
             }
         } else {
-            if (le.ac_id.uid != PTL_UID_ANY) {
+            if (le.ac_id.uid != PTL_UID_ANY && le.ac_id.uid != hdr->uid) {
                 goto permission_violation;
             }
         }
