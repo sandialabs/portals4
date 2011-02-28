@@ -574,6 +574,7 @@ void *collator(
         /* wait for the releases to finish */
         ptl_assert(PtlCTWait(md.ct_handle, count, &ct_data), PTL_OK);
         assert(ct_data.failure == 0);
+        goto cleanup_phase;
         /* reset the MD's CT */
         ct_data.success = ct_data.failure = 0;
         ptl_assert(PtlCTSet(le.ct_handle, ct_data), PTL_OK);
