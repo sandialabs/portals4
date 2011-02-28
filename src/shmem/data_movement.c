@@ -598,6 +598,12 @@ int API_FUNC PtlPut(
     hdr->local_offset1 = local_offset;
     hdr->remaining = length;
     hdr->hdr_data = hdr_data;
+    {
+        ptl_handle_ni_t ni_handle;
+        PtlNIHandle(md_handle, &ni_handle);
+        PtlGetUid(ni_handle,&(hdr->uid));
+        PtlGetJid(ni_handle,&(hdr->jid));
+    }
     hdr->ack_req = ack_req;
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
     //PtlInternalPAPISaveC(PTL_PUT, 0);
@@ -717,6 +723,12 @@ int API_FUNC PtlGet(
         case 2: case 3: // Physical
             hdr->target = target_id.phys.pid;
             break;
+    }
+    {
+        ptl_handle_ni_t ni_handle;
+        PtlNIHandle(md_handle, &ni_handle);
+        PtlGetUid(ni_handle,&(hdr->uid));
+        PtlGetJid(ni_handle,&(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -878,6 +890,12 @@ int API_FUNC PtlAtomic(
         case 2: case 3: // Physical
             hdr->target = target_id.phys.pid;
             break;
+    }
+    {
+        ptl_handle_ni_t ni_handle;
+        PtlNIHandle(md_handle, &ni_handle);
+        PtlGetUid(ni_handle,&(hdr->uid));
+        PtlGetJid(ni_handle,&(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -1083,6 +1101,12 @@ int API_FUNC PtlFetchAtomic(
             hdr->target = target_id.phys.pid;
             break;
     }
+    {
+        ptl_handle_ni_t ni_handle;
+        PtlNIHandle(get_md_handle, &ni_handle);
+        PtlGetUid(ni_handle,&(hdr->uid));
+        PtlGetJid(ni_handle,&(hdr->jid));
+    }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
     hdr->dest_offset = remote_offset;
@@ -1281,6 +1305,12 @@ int API_FUNC PtlSwap(
         case 2: case 3: // Physical
             hdr->target = target_id.phys.pid;
             break;
+    }
+    {
+        ptl_handle_ni_t ni_handle;
+        PtlNIHandle(get_md_handle, &ni_handle);
+        PtlGetUid(ni_handle,&(hdr->uid));
+        PtlGetJid(ni_handle,&(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
