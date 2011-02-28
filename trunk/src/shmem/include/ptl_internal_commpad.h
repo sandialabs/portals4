@@ -29,6 +29,8 @@ typedef struct {
     ptl_match_bits_t match_bits;
     void *user_ptr;
     ptl_hdr_data_t hdr_data; // not used by GETs
+    ptl_uid_t uid;
+    ptl_jid_t jid;
     /* data used for long & truncated messages */
     char *moredata;
     void *entry;
