@@ -224,7 +224,9 @@ int main(
                                      (unsigned)event.atomic_operation,
                                      (unsigned)event.atomic_type);*/
                             }
+#if INTERFACE == 1
                             assert(event.match_bits == INTERFACE);
+#endif
                             assert(((char *)event.start) -
                                    event.remote_offset == (char *)value);
                             assert(event.pt_index == logical_pt_index);
