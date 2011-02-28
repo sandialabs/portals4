@@ -140,8 +140,8 @@ static void *PtlInternalPerformOverflowDelivery(
 
 #define PTL_INTERNAL_INIT_TEVENT(e,hdr,uptr) do { \
     e.pt_index = hdr->pt_index; \
-    e.uid = 0; \
-    e.jid = PTL_JID_NONE; \
+    e.uid = hdr->uid; \
+    e.jid = hdr->jid; \
     e.match_bits = hdr->match_bits; \
     e.rlength = hdr->length; \
     e.mlength = 0; \
@@ -321,11 +321,14 @@ int API_FUNC PtlMEAppend(
                     }
                     // check permissions
                     if (me->options & PTL_ME_AUTH_USE_JID) {
-                        if (me->ac_id.jid != PTL_JID_ANY) {
+                        if (me->ac_id.jid == PTL_JID_NONE) {
+                            goto permission_violation;
+                        }
+                        if (me->ac_id.jid != PTL_JID_ANY && me->ac_id.jid != cur->hdr.jid) {
                             goto permission_violation;
                         }
                     } else {
-                        if (me->ac_id.uid != PTL_UID_ANY) {
+                        if (me->ac_id.uid != PTL_UID_ANY && me->ac_id.uid != cur->hdr.uid) {
                             goto permission_violation;
                         }
                     }
@@ -563,11 +566,14 @@ int API_FUNC PtlMEAppend(
                      * ... else: deliver and return */
                     // (1) check permissions
                     if (me->options & PTL_ME_AUTH_USE_JID) {
-                        if (me->ac_id.jid != PTL_JID_ANY) {
+                        if (me->ac_id.jid == PTL_JID_NONE) {
+                            goto permission_violationPO;
+                        }
+                        if (me->ac_id.jid != PTL_JID_ANY && me->ac_id.jid != cur->hdr.jid) {
                             goto permission_violationPO;
                         }
                     } else {
-                        if (me->ac_id.uid != PTL_UID_ANY) {
+                        if (me->ac_id.uid != PTL_UID_ANY && me->ac_id.uid != cur->hdr.uid) {
                             goto permission_violationPO;
                         }
                     }
@@ -887,11 +893,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(
         assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
         // check permissions on the ME
         if (me.options & PTL_ME_AUTH_USE_JID) {
-            if (me.ac_id.jid != PTL_JID_ANY) {
+            if (me.ac_id.jid == PTL_JID_NONE) {
+                goto permission_violation;
+            }
+            if (me.ac_id.jid != PTL_JID_ANY && me.ac_id.jid != hdr->jid) {
                 goto permission_violation;
             }
         } else {
-            if (me.ac_id.uid != PTL_UID_ANY) {
+            if (me.ac_id.uid != PTL_UID_ANY && me.ac_id.uid != hdr->uid) {
                 goto permission_violation;
             }
         }
