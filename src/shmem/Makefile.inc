@@ -20,6 +20,8 @@ libportals_la_SOURCES += \
 			 shmem/triggered.c \
 			 shmem/bundling.c \
 			 shmem/runtime.c \
+			 shmem/uid.c \
+			 shmem/jid.c \
 			 shmem/init.c
 
 if USE_PAPI
