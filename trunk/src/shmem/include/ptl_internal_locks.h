@@ -14,11 +14,23 @@
 # define PTL_LOCK_LOCK(x) ptl_assert(pthread_spin_lock(&(x)), 0)
 # define PTL_LOCK_UNLOCK(x) ptl_assert(pthread_spin_unlock(&(x)), 0)
 #else
+# define PTL_LOCK_TYPE uint32_t
+# define PTL_LOCK_INIT(x) (x) = 0
+# define PTL_LOCK_LOCK(x) do { \
+    while ((x) == 1) { \
+	__asm__ __volatile__ ("pause":::"memory"); \
+    } \
+} while (!__sync_bool_compare_and_swap(&(x), 0, 1))
+# define PTL_LOCK_UNLOCK(x) do { \
+    __sync_synchronize(); \
+    (x) = 0; \
+} while (0)
+/*#else
 # include <pthread.h>
 # define PTL_LOCK_TYPE pthread_mutex_t
 # define PTL_LOCK_INIT(x) pthread_mutex_init(&(x), NULL)
 # define PTL_LOCK_LOCK(x) ptl_assert(pthread_mutex_lock(&(x)), 0)
-# define PTL_LOCK_UNLOCK(x) ptl_assert(pthread_mutex_unlock(&(x)), 0)
+# define PTL_LOCK_UNLOCK(x) ptl_assert(pthread_mutex_unlock(&(x)), 0)*/
 #endif
 
 #endif
