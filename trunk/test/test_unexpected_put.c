@@ -29,17 +29,19 @@
 #define BUFSIZE 4096
 static int verb = 0;
 
-static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself)
+static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself, size_t expected)
 {
-    int fetched = 0;
     size_t events = 0;
     do {
         ptl_event_t event;
         int retval;
-        fetched = 0;
-        switch (retval = PtlEQGet(eq_handle, &event)) {
+        if (events == expected) {
+            retval = PtlEQGet(eq_handle, &event);
+        } else {
+            retval = PtlEQWait(eq_handle, &event);
+        }
+        switch (retval) {
             case PTL_OK:
-                fetched = 1;
                 events++;
                 if (verb) {
                     printf("%i ", (int)myself.rank);
@@ -162,7 +164,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself)
             default:
                 abort();
         }
-    } while (fetched == 1);
+    } while (events < expected);
     return events;
 }
 
@@ -256,17 +258,16 @@ int main(
     }
     fflush(NULL);
     {
-        size_t count_events;
         if (verb) {
             printf("Initiator-side EQ:\n");
         }
-        count_events = emptyEQ(write_md.eq_handle, myself);
-        assert(count_events == 1);
+        emptyEQ(write_md.eq_handle, myself, 1);
+        assert(emptyEQ(write_md.eq_handle, myself, 0) == 0);
         if (verb) {
             printf("\nTarget-side EQ:\n");
         }
-        count_events = emptyEQ(recv_eq, myself);
-        assert(count_events == 1);
+        emptyEQ(recv_eq, myself, 1);
+        assert(emptyEQ(recv_eq, myself, 0) == 0);
     }
     if (verb) {
         printf("\nNow... posting the receive:\n");
@@ -291,13 +292,14 @@ int main(
         if (verb) {
             printf("\nInitiator-side EQ:\n");
         }
-        count_events = emptyEQ(write_md.eq_handle, myself);
+        count_events = emptyEQ(write_md.eq_handle, myself, 0);
         assert(count_events == 0);
         if (verb) {
             printf("\nTarget-side EQ:\n");
         }
-        count_events = emptyEQ(recv_eq, myself);
+        count_events = emptyEQ(recv_eq, myself, 3);
         assert(count_events == 3);
+        assert(emptyEQ(recv_eq, myself, 0) == 0);
     }
 
     CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
