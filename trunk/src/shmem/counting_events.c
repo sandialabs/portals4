@@ -52,12 +52,13 @@ static const ptl_ct_event_t CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)       (a.success == b.success && a.failure == b.failure)
 
+#if 0
 /* 128-bit Atomics */
 static inline int PtlInternalAtomicCasCT(
     volatile ptl_ct_event_t * addr,
     const ptl_ct_event_t oldval,
     const ptl_ct_event_t newval)
-{/*{{{*/
+{                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     register unsigned char ret;
     assert(((uintptr_t) addr & 0xf) == 0);
@@ -74,12 +75,12 @@ static inline int PtlInternalAtomicCasCT(
 #else
 #error No known 128-bit atomic CAS operations are available
 #endif
-}/*}}}*/
+}                                      /*}}} */
 
 static inline void PtlInternalAtomicReadCT(
     ptl_ct_event_t * dest,
     volatile ptl_ct_event_t * src)
-{/*{{{*/
+{                                      /*{{{ */
 #if defined(HAVE_READ128_INTRINSIC) && 0        /* potentially (and probably) not atomic */
     *dest = __m128i_mm_load_si128(src);
 #elif defined(HAVE_MOVDQA) && 0        /* not actually atomic */
@@ -107,12 +108,12 @@ static inline void PtlInternalAtomicReadCT(
 #else
 #error No known 128-bit atomic read operations are available
 #endif
-}/*}}}*/
+}                                      /*}}} */
 
 static inline void PtlInternalAtomicWriteCT(
     volatile ptl_ct_event_t * addr,
     const ptl_ct_event_t newval)
-{/*{{{*/
+{                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__(
     "1:\n\t" "lock cmpxchg16b %0\n\t" "jne 1b":"+m"(*addr)
@@ -125,8 +126,8 @@ static inline void PtlInternalAtomicWriteCT(
 #else
 #error No known 128-bit atomic write operations are available
 #endif
-}/*}}}*/
-
+}                                      /*}}} */
+#endif
 
 void INTERNAL PtlInternalCTNISetup(
     unsigned int ni,
@@ -162,7 +163,7 @@ void INTERNAL PtlInternalCTNISetup(
 
 void INTERNAL PtlInternalCTNITeardown(
     int ni)
-{
+{                                      /*{{{ */
     ptl_ct_event_t *restrict tmp;
     volatile uint64_t *restrict rc;
     ptl_internal_trigger_t *ctt;
@@ -172,7 +173,9 @@ void INTERNAL PtlInternalCTNITeardown(
                                   NULL);
     PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_triggers[ni], NULL);
     PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers[ni], NULL);
-    ctt = PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni], NULL);
+    ctt =
+        PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni],
+                                 NULL);
 
     assert(tmp != NULL);
     assert(tmp != (void *)1);
@@ -180,7 +183,8 @@ void INTERNAL PtlInternalCTNITeardown(
     assert(ctt != NULL);
     for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
         if (rc[i] != 0) {
-            PtlInternalAtomicWriteCT(&(tmp[i]), CTERR);
+            tmp[i] = CTERR;
+            __sync_synchronize();
             PtlInternalAtomicInc(&(rc[i]), -1);
         }
     }
@@ -190,12 +194,12 @@ void INTERNAL PtlInternalCTNITeardown(
     free(ctt);
     ALIGNED_FREE(tmp, 16);
     free((void *)rc);
-}
+}                                      /*}}} */
 
 int INTERNAL PtlInternalCTHandleValidator(
     ptl_handle_ct_t handle,
     int none_ok)
-{
+{                                      /*{{{ */
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ct = { handle };
     if (ct.s.selector != HANDLE_CT_CODE) {
@@ -227,12 +231,12 @@ int INTERNAL PtlInternalCTHandleValidator(
     }
 #endif
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTAlloc(
     ptl_handle_ni_t ni_handle,
     ptl_handle_ct_t * ct_handle)
-{
+{                                      /*{{{ */
     ptl_ct_event_t *cts;
     ptl_size_t offset;
     volatile uint64_t *rc;
@@ -272,11 +276,11 @@ int API_FUNC PtlCTAlloc(
     }
     *ct_handle = PTL_INVALID_HANDLE;
     return PTL_NO_SPACE;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTFree(
     ptl_handle_ct_t ct_handle)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -286,16 +290,17 @@ int API_FUNC PtlCTFree(
         return PTL_ARG_INVALID;
     }
 #endif
-    PtlInternalAtomicWriteCT(&(ct_events[ct.s.ni][ct.s.code]), CTERR);
+    ct_events[ct.s.ni][ct.s.code] = CTERR;
+    __sync_synchronize();
     PtlInternalAtomicInc(&(ct_event_refcounts[ct.s.ni][ct.s.code]), -1);
     while (ct_event_refcounts[ct.s.ni][ct.s.code] != 0) ;
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTGet(
     ptl_handle_ct_t ct_handle,
     ptl_ct_event_t * event)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -310,14 +315,15 @@ int API_FUNC PtlCTGet(
 #endif
     *event = ct_events[ct.s.ni][ct.s.code];
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTWait(
     ptl_handle_ct_t ct_handle,
     ptl_size_t test,
     ptl_ct_event_t * event)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
+    uint64_t old_fail_val;
     volatile ptl_ct_event_t *cte;
     volatile uint64_t *rc;
 #ifndef NO_ARG_VALIDATION
@@ -333,21 +339,24 @@ int API_FUNC PtlCTWait(
     //printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long
     //long)ct.i, (unsigned long long)test);
     PtlInternalAtomicInc(rc, 1);
+    old_fail_val = cte->failure;
     do {
-        ptl_ct_event_t tmpread;
-        PtlInternalAtomicReadCT(&tmpread, cte);
-        if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
+        ptl_ct_event_t tmpread = *cte;
+        if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+            __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
-        } else if ((tmpread.success + tmpread.failure) >= test) {
+        } else if ((tmpread.failure != old_fail_val) ||
+                   (tmpread.success + tmpread.failure) >= test) {
             if (event != NULL)
                 *event = tmpread;
             PtlInternalAtomicInc(rc, -1);
             return PTL_OK;
         }
-        while (tmpread.success == cte->success && tmpread.failure == cte->failure) ;
+        while (tmpread.success == cte->success &&
+               tmpread.failure == cte->failure) ;
     } while (1);
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTPoll(
     ptl_handle_ct_t * ct_handles,
@@ -356,7 +365,7 @@ int API_FUNC PtlCTPoll(
     ptl_time_t timeout,
     ptl_ct_event_t * event,
     int *which)
-{
+{                                      /*{{{ */
     ptl_size_t ctidx, offset;
     ptl_ct_event_t *ctes[size];
     volatile uint64_t *rcs[size];
@@ -403,9 +412,9 @@ int API_FUNC PtlCTPoll(
         /* these two for loops MUST be identical (except for the bounds);
          * doing two loops to avoid a modulo operation in every iteration */
         for (ctidx = offset; ctidx < size; ++ctidx) {
-            ptl_ct_event_t tmpread;
-            PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
-            if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
+            ptl_ct_event_t tmpread = *ctes[ctidx];
+            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+                __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx)
                     PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
@@ -420,9 +429,9 @@ int API_FUNC PtlCTPoll(
             }
         }
         for (ctidx = 0; ctidx < offset; ++ctidx) {
-            ptl_ct_event_t tmpread;
-            PtlInternalAtomicReadCT(&tmpread, ctes[ctidx]);
-            if (__builtin_expect(CT_EQUAL(tmpread, CTERR), 0)) {
+            ptl_ct_event_t tmpread = *ctes[ctidx];
+            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+                __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx)
                     PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
@@ -440,12 +449,12 @@ int API_FUNC PtlCTPoll(
     } while (timeout == PTL_TIME_FOREVER ||
              (TIMER_INTS(tp) - nstart) < timeout);
     return PTL_CT_NONE_REACHED;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTSet(
     ptl_handle_ct_t ct_handle,
     ptl_ct_event_t test)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -455,14 +464,15 @@ int API_FUNC PtlCTSet(
         return PTL_ARG_INVALID;
     }
 #endif
-    PtlInternalAtomicWriteCT(&(ct_events[ct.s.ni][ct.s.code]), test);
+    ct_events[ct.s.ni][ct.s.code] = test;
+    __sync_synchronize();
     return PTL_OK;
-}
+}                                      /*}}} */
 
 int API_FUNC PtlCTInc(
     ptl_handle_ct_t ct_handle,
     ptl_ct_event_t increment)
-{
+{                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_ct_event_t *cte;
 #ifndef NO_ARG_VALIDATION
@@ -481,15 +491,9 @@ int API_FUNC PtlCTInc(
         /* cheaper than a 128-bit atomic increment */
         PtlInternalAtomicInc(&(cte->failure), increment.failure);
     } else {
-        /* expensive increment */
-        ptl_ct_event_t old, tmp;
-        do {
-            old = tmp = *cte;
-            tmp.success += increment.success;
-            tmp.failure += increment.failure;
-        } while (PtlInternalAtomicCasCT(cte, old, tmp));
+        return PTL_ARG_INVALID;
     }
     return PTL_OK;
-}
+}                                      /*}}} */
 
 /* vim:set expandtab: */
