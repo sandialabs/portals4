@@ -16,6 +16,7 @@
 #include "ptl_internal_pid.h"
 #include "ptl_internal_commpad.h"
 #endif
+#include "ptl_internal_trigger.h"
 
 /*
  * Serialized functions:
@@ -542,6 +543,9 @@ int API_FUNC PtlTriggeredCTInc(
         return PTL_ARG_INVALID;
     }
 #endif
+    /* build the trigger structure */
+    /* append IFF threshold > max_threshold */
+    /* else send control message to self */
     return PTL_FAIL;
 }
 

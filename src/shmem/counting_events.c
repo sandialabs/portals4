@@ -24,6 +24,8 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_CT.h"
+#include "ptl_internal_trigger.h"
+#include "ptl_internal_alignment.h"
 #ifndef NO_ARG_VALIDATION
 #include "ptl_internal_error.h"
 #endif
@@ -38,10 +40,14 @@ const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
 volatile uint64_t global_generation = 0;
 
-static ptl_ct_event_t *ct_events[4] = { NULL, NULL, NULL, NULL };
-static volatile uint64_t *ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
-static const ptl_ct_event_t CTERR =
-    { CT_ERR_VAL, CT_ERR_VAL };
+static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
+static volatile uint64_t *restrict ct_event_refcounts[4] =
+    { NULL, NULL, NULL, NULL };
+static void *restrict * restrict ct_event_triggers[4] =
+    { NULL, NULL, NULL, NULL };
+static ptl_internal_trigger_t * ct_triggers_alloc[4] = { NULL, NULL, NULL, NULL };
+static ptl_internal_trigger_t * ct_triggers[4] = { NULL, NULL, NULL, NULL };
+static const ptl_ct_event_t CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 
 #define CT_NOT_EQUAL(a,b)   (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a,b)       (a.success == b.success && a.failure == b.failure)
@@ -51,7 +57,7 @@ static inline int PtlInternalAtomicCasCT(
     volatile ptl_ct_event_t * addr,
     const ptl_ct_event_t oldval,
     const ptl_ct_event_t newval)
-{
+{/*{{{*/
 #ifdef HAVE_CMPXCHG16B
     register unsigned char ret;
     assert(((uintptr_t) addr & 0xf) == 0);
@@ -68,12 +74,12 @@ static inline int PtlInternalAtomicCasCT(
 #else
 #error No known 128-bit atomic CAS operations are available
 #endif
-}
+}/*}}}*/
 
 static inline void PtlInternalAtomicReadCT(
     ptl_ct_event_t * dest,
     volatile ptl_ct_event_t * src)
-{
+{/*{{{*/
 #if defined(HAVE_READ128_INTRINSIC) && 0        /* potentially (and probably) not atomic */
     *dest = __m128i_mm_load_si128(src);
 #elif defined(HAVE_MOVDQA) && 0        /* not actually atomic */
@@ -101,12 +107,12 @@ static inline void PtlInternalAtomicReadCT(
 #else
 #error No known 128-bit atomic read operations are available
 #endif
-}
+}/*}}}*/
 
 static inline void PtlInternalAtomicWriteCT(
     volatile ptl_ct_event_t * addr,
     const ptl_ct_event_t newval)
-{
+{/*{{{*/
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__(
     "1:\n\t" "lock cmpxchg16b %0\n\t" "jne 1b":"+m"(*addr)
@@ -119,59 +125,59 @@ static inline void PtlInternalAtomicWriteCT(
 #else
 #error No known 128-bit atomic write operations are available
 #endif
-}
+}/*}}}*/
 
 
 void INTERNAL PtlInternalCTNISetup(
     unsigned int ni,
     ptl_size_t limit)
-{
+{                                      /*{{{ */
     ptl_ct_event_t *tmp;
     while ((tmp =
-            PtlInternalAtomicCasPtr(&(ct_events[ni]), NULL,
+            PtlInternalAtomicCasPtr((void *volatile *)&(ct_events[ni]), NULL,
                                     (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-#if defined(HAVE_MEMALIGN)
-        tmp = memalign(16, limit * sizeof(ptl_ct_event_t));
-        assert(tmp != NULL);
-        memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
-#elif defined(HAVE_POSIX_MEMALIGN)
-        ptl_assert(posix_memalign
-                   ((void **)&tmp, 16, limit * sizeof(ptl_ct_event_t)), 0);
-        memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
-#elif defined(HAVE_16ALIGNED_CALLOC)
-        tmp = calloc(limit, sizeof(ptl_ct_event_t));
-        assert(tmp != NULL);
-#elif defined(HAVE_16ALIGNED_MALLOC)
-        tmp = malloc(limit * sizeof(ptl_ct_event_t));
-        assert(tmp != NULL);
-        memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
-#else
-        tmp = valloc(limit * sizeof(ptl_ct_event_t));   /* cross your fingers */
-        assert(tmp != NULL);
-        memset(tmp, 0, limit * sizeof(ptl_ct_event_t));
-#endif
+        ALIGNED_CALLOC(tmp, 16, limit, sizeof(ptl_ct_event_t));
         assert((((intptr_t) tmp) & 0x7) == 0);
         assert(ct_event_refcounts[ni] == NULL);
         ct_event_refcounts[ni] = calloc(limit, sizeof(uint64_t));
         assert(ct_event_refcounts[ni] != NULL);
+        assert(ct_event_triggers[ni] == NULL);
+        assert(ct_triggers[ni] == NULL);
+        assert(ct_triggers_alloc[ni] == NULL);
+        if (nit_limits[ni].max_triggered_ops > 0) {
+            ct_event_triggers[ni] = calloc(limit, sizeof(void *));
+            assert(ct_event_triggers[ni] != NULL);
+            ct_triggers_alloc[ni] = calloc(nit_limits[ni].max_triggered_ops, sizeof(ptl_internal_trigger_t));
+            assert(ct_triggers_alloc[ni] != NULL);
+            ct_triggers[ni] = ct_triggers_alloc[ni];
+            for (size_t t=0; t<nit_limits[ni].max_triggered_ops-1; ++t) {
+                ct_triggers[ni][t].next = &ct_triggers[ni][t+1];
+            }
+        }
         __sync_synchronize();
         ct_events[ni] = tmp;
     }
-}
+}                                      /*}}} */
 
 void INTERNAL PtlInternalCTNITeardown(
     int ni)
 {
     ptl_ct_event_t *restrict tmp;
     volatile uint64_t *restrict rc;
+    ptl_internal_trigger_t *ctt;
     while (ct_events[ni] == (void *)1) ;        // in case its in the middle of being allocated (this should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
     rc = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
                                   NULL);
+    PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_triggers[ni], NULL);
+    PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers[ni], NULL);
+    ctt = PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni], NULL);
+
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
+    assert(ctt != NULL);
     for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
         if (rc[i] != 0) {
             PtlInternalAtomicWriteCT(&(tmp[i]), CTERR);
@@ -181,7 +187,8 @@ void INTERNAL PtlInternalCTNITeardown(
     for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
         while (rc[i] != 0) ;
     }
-    free(tmp);
+    free(ctt);
+    ALIGNED_FREE(tmp, 16);
     free((void *)rc);
 }
 
@@ -295,6 +302,9 @@ int API_FUNC PtlCTGet(
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
+        return PTL_ARG_INVALID;
+    }
+    if (event == NULL) {
         return PTL_ARG_INVALID;
     }
 #endif
