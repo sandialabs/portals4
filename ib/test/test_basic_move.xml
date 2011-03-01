@@ -308,6 +308,34 @@
     </ptl>
   </subtest>
   <subtest>
+    <desc>Test PtlPut message flow with drop at target</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_eq>
+	  <ptl_pt pt_index="2">
+	    <ptl_eq>
+	      <ptl_md>
+		<ptl_put ack_req="ACK" user_ptr="432" pt_index="2"/>
+		<msleep count="10"/>
+		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_type="SEND"/>
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+	      </ptl_md>
+	    </ptl_eq>
+	  </ptl_pt>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
     <desc>Test PtlGet with good parameters</desc>
     <ptl>
       <ptl_ni>
@@ -319,6 +347,45 @@
             </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet with good parameters length=1024</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="4096">
+	<ptl_pt>
+	  <ptl_me me_opt="OP_GET" me_length="2048">
+            <ptl_md md_length="1024">
+              <ptl_get length="1024"/>
+	      <msleep count="10"/>
+            </ptl_md>
+	  </ptl_me>
+	</ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlGet message flow with drop at target</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_eq>
+	  <ptl_pt pt_index="2">
+	    <ptl_eq>
+	      <ptl_md>
+		<ptl_get user_ptr="432" pt_index="2"/>
+		<msleep count="10"/>
+		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_type="REPLY"/>
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+	      </ptl_md>
+	    </ptl_eq>
+	  </ptl_pt>
+	</ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
