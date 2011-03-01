@@ -240,4 +240,56 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <subtest>
+    <desc>Test PUT using RDMA message flow with drop at target</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="32768">
+	<ptl_eq>
+	  <ptl_pt pt_index="2">
+	    <ptl_eq>
+	      <ptl_md md_length="32768">
+		<ptl_put length="32768" ack_req="ACK" user_ptr="432" pt_index="2"/>
+		<msleep count="10"/>
+		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_type="SEND"/>
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+	      </ptl_md>
+	    </ptl_eq>
+	  </ptl_pt>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test GET using RDMA message flow with drop at target</desc>
+    <ptl>
+      <ptl_ni desired_max_msg_size="32768">
+	<ptl_eq>
+	  <ptl_pt pt_index="2">
+	    <ptl_eq>
+	      <ptl_md md_length="32768">
+		<ptl_get length="32768" user_ptr="432" pt_index="2"/>
+		<msleep count="10"/>
+		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="[1]">
+		  <check event_type="REPLY"/>
+		  <check event_user_ptr="432"/>
+		  <check event_ni_fail="DROPPED"/>
+		</ptl_eq_poll>
+		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+	      </ptl_md>
+	    </ptl_eq>
+	  </ptl_pt>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
 </test>
