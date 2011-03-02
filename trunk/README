@@ -1,0 +1,24 @@
+Limits. The call PtlNIInit() accepts a desired set of limits and returns a set
+of actual limits. The acceptable ranges for these limits are:
+
+	max_entries > 0 && < 134217728
+	max_unexpected_headers > 0
+	max_mds > 0 && < 134217728
+	max_cts > 0 && < 134217728
+	max_eqs > 0 && < 134217728
+	max_pt_index >= 63
+	max_list_size > 0 && < 4294967296
+	max_triggered_ops > 0 && < 4294967296
+	max_msg_size > 0 && < UINT32_MAX
+	max_atomic_size >= 8
+	max_fetch_atomic_size >= 8
+	max_ordered_size >= 8
+
+Status Registers. Portals define a set of status registers (Section 3.2.7). The
+type ptl_sr_index_t defines the mandatory PTL_SR_DROP_COUNT and
+PTL_SR_PERMISSIONS_VIOLATIONS.
+
+Network interfaces. Each portals implementation defines PTL_IFACE_DEFAULT to
+access the default network interface on a system (Sections 3.2.5 and 3.5.2).
+
+Job identifiers. This implementation does not support detection of Job Identifiers.

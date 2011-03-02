@@ -3,7 +3,7 @@
 # Copyright (c)      2008  Sandia Corporation
 #
 
-EXTRA_DIST = autogen.sh
+EXTRA_DIST = autogen.sh README
 
 SUBDIRS = doc include src test
 
