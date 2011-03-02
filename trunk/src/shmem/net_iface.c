@@ -155,15 +155,15 @@ int API_FUNC PtlNIInit(
             nit_limits[ni.s.ni].max_msg_size = desired->max_msg_size;
         }
         if (desired->max_atomic_size >= 8 &&
-            desired->max_atomic_size <= SMALL_FRAG_SIZE) {
+            desired->max_atomic_size <= LARGE_FRAG_SIZE) {
             nit_limits[ni.s.ni].max_atomic_size = desired->max_atomic_size;
         }
         if (desired->max_fetch_atomic_size >= 8 &&
-            desired->max_fetch_atomic_size <= SMALL_FRAG_SIZE) {
+            desired->max_fetch_atomic_size <= LARGE_FRAG_SIZE) {
             nit_limits[ni.s.ni].max_fetch_atomic_size = desired->max_fetch_atomic_size;
         }
         if (desired->max_ordered_size >= 8 &&
-            desired->max_ordered_size <= SMALL_FRAG_SIZE) {
+            desired->max_ordered_size <= LARGE_FRAG_SIZE) {
             nit_limits[ni.s.ni].max_ordered_size = desired->max_ordered_size;
         }
         nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
