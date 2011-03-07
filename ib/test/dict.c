@@ -182,6 +182,9 @@ struct dict_init {
 	{"handle2",			TYPE_ATTR,		ATTR_HANDLE2},
 	{"threshold",			TYPE_ATTR,		ATTR_THRESHOLD},
 
+	{"rank",			TYPE_ATTR,		ATTR_RANK},
+	{"target_id",		TYPE_ATTR,		ATTR_TARGET_ID},
+
 	/* used to mark end of list keep last */
 	{NULL,				0,			0},
 };

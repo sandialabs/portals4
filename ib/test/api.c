@@ -87,7 +87,7 @@ int test_ptl_get_uid(struct node_info *info)
 
 int test_ptl_get_id(struct node_info *info)
 {
-	return info->ret != PtlGetId(info->ni_handle, info->ptr);
+	return info->ret != PtlGetId(info->ni_handle, &info->id);
 }
 
 int test_ptl_get_jid(struct node_info *info)
