@@ -263,13 +263,13 @@ struct node_info *push_info(struct node_info *head, int tok)
 		info->ni_opt = PTL_NI_MATCHING | PTL_NI_PHYSICAL;
 		break;
 	case NODE_PTL_GET_UID:
-                info->ptr = &info->uid;
+		info->ptr = &info->uid;
 		break;
 	case NODE_PTL_GET_ID:
-                info->ptr = &info->id;
+		info->ptr = &info->id;
 		break;
 	case NODE_PTL_GET_JID:
-                info->ptr = &info->jid;
+		info->ptr = &info->jid;
 		break;
 	case NODE_PTL_PT:
 	case NODE_PTL_PT_ALLOC:
@@ -683,6 +683,11 @@ int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_EVENT_TYPE:
 			info->eq_event.type = get_event_type(val);
 			break;
+
+		/* get, put */
+		case ATTR_TARGET_ID:
+			info->target_id.rank = get_number(info, val);
+			break;
 		}
 	}
 
@@ -1074,6 +1079,11 @@ int check_attr(struct node_info *info, xmlNode *node)
 			if (check_data(info, val, &info->buf[offset], type, length))
 				return 1;
 			break;
+		case ATTR_RANK:
+			if (info->id.rank != get_number(info, val)) {
+				return 1;
+			}
+			break;
 		default:
 			printf("unexpected check attribute: %s\n", e->name);
 			return 1;
@@ -1098,7 +1108,7 @@ static void *run_thread(void *arg)
 	info = malloc(sizeof(*info));
 	if (!info) {
 		printf("unable to allocate memory for info\n");
-		t->errs = PTL_NO_SPACE;
+		t->errs++;
 		return NULL;
 	}
 	get_maps();
@@ -1143,7 +1153,6 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_IF:
 				if ((info->cond = (check_attr(info, node) == PTL_OK)))
 					errs = walk_tree(info, node->children);
-
 				goto done;
 			case NODE_ELSE:
 				if (!info->cond)
@@ -1154,6 +1163,11 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				fflush(stdout);
 				goto done;
 			case NODE_COMMENT:
+				goto done;
+
+			case NODE_PTL_GET_ID:
+				errs = test_ptl_get_id(info);
+				errs += walk_tree(info, node->children);
 				goto done;
 			}
 
@@ -1275,10 +1289,6 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				break;
 			case NODE_PTL_GET_UID:
 				errs = test_ptl_get_uid(info);
-				errs += walk_tree(info, node->children);
-				break;
-			case NODE_PTL_GET_ID:
-				errs = test_ptl_get_id(info);
 				errs += walk_tree(info, node->children);
 				break;
 			case NODE_PTL_GET_JID:
