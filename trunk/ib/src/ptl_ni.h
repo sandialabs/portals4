@@ -7,7 +7,9 @@
 
 /* These values will need to come from runtime environment */
 #define MAX_QP_SEND_WR		(10)
+#define MAX_QP_SEND_SGE		(16) // Best if >= MAX_INLINE_SGE
 #define MAX_QP_RECV_WR		(10)
+#define MAX_QP_RECV_SGE		(10)
 #define MAX_SRQ_RECV_WR		(100)
 
 extern obj_type_t *type_ni;
