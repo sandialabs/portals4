@@ -26,9 +26,9 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	struct ibv_mr *ibmr;
 	int access;
 
-	start = (void *)((uintptr_t)start & ~(pagesize - 1));
+	start = (void *)((uintptr_t)start & ~((uintptr_t)pagesize - 1));
 	end = (void *)(((uintptr_t)end + pagesize - 1) &
-			~(pagesize - 1));
+			~((uintptr_t)pagesize - 1));
 	length = end - start;
 
 	/*
