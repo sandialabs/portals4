@@ -644,19 +644,10 @@ static int tgt_rdma(xt_t *xt)
 
 	/*
 	 * If all RDMA have been issued and there is not a completion
-	 * outstanding, release the rdma buf and advance.
+	 * outstanding advance state.
 	 */
-	if (!*resid && !xt->rdma_comp) {
-		if (debug)
-			printf("tgt_rdma - release rdma buf\n");
-
-		buf_put(xt->rdma_buf);
-		xt->rdma_buf = NULL;
+	if (!*resid && !xt->rdma_comp)
 		return STATE_TGT_COMM_EVENT;
-	}
-
-	if (debug)
-		printf("tgt_rdma - return\n");
 
 	return STATE_TGT_RDMA;
 }
@@ -673,6 +664,7 @@ static int tgt_data_in(xt_t *xt)
 	me_t *me = xt->me;
 	data_t *data = xt->data_in;
 	int next;
+	uint32_t indir_len;
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
@@ -742,10 +734,12 @@ static int tgt_data_in(xt_t *xt)
 		break;
 	case DATA_FMT_INDIRECT:
 		/*
-		 * XXXX Assign page for reading indirect descriptors and
-		 * XXXX go to RDMA descriptor state.
+		 * Allocate and map indirect buffer and setup to read
+		 * descriptor list from initiator memory.
 		 */
-		//printf("TODO handle tgt indirect data in\n");
+		indir_len = be32_to_cpu(data->sge_list[0].length);
+		printf("DATA_FMT_INDIRECT, indir_len(%d)\n", indir_len);
+		printf("TODO handle tgt indirect data in\n");
 		next = STATE_TGT_COMM_EVENT;
 		break;
 	default:
@@ -1210,6 +1204,12 @@ static int tgt_cleanup(xt_t *xt)
 		xt->le = NULL;
 	}
 
+	/* tgt must release RDMA acquired resources */
+	if (xt->rdma_buf) {
+		buf_put(xt->rdma_buf);
+		xt->rdma_buf = NULL;
+	}
+	
 	/* tgt responsible to cleanup all received buffers */
 	if (xt->recv_buf) {
 if (debug) printf("cleanup recv buf %p\n", xt->recv_buf);
