@@ -22,7 +22,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 			"num_sge(%d)\n", raddr, loc_sge[0].addr, num_loc_sge);
 	}
 
-	if (num_loc_sge > MAX_INLINE_SGE)
+	if (num_loc_sge > MAX_QP_SEND_SGE)
 		return PTL_FAIL;
 
 	/* XXXX Todo: handle throttle case and return EBUSY */
@@ -74,7 +74,7 @@ int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 			"num_sge(%d)\n", raddr, loc_sge[0].addr, num_loc_sge);
 	}
 
-	if (num_loc_sge > MAX_INLINE_SGE)
+	if (num_loc_sge > MAX_QP_SEND_SGE)
 		return PTL_FAIL;
 
 	/* XXXX Todo: handle throttle case and return EBUSY */
@@ -190,7 +190,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	uint64_t raddr;
 	uint32_t rkey;
 	ptl_size_t bytes;
-	struct ibv_sge sge[MAX_INLINE_SGE];
+	struct ibv_sge sge[MAX_QP_SEND_SGE];
 	int entries = 0;
 	ptl_size_t iov_index = xt->cur_loc_iov_index;
 	ptl_size_t iov_off = xt->cur_loc_iov_off;;
@@ -212,7 +212,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			printf("raddr(0x%" PRIx64 "), rlen(%d), rkey(0x%x)\n",
 			raddr, rlength, rkey);
 
-		bytes = build_rdma_sge(xt, rlength, sge, MAX_INLINE_SGE,
+		bytes = build_rdma_sge(xt, rlength, sge, MAX_QP_SEND_SGE,
 				&entries, &iov_index,  &iov_off,
 				xt->le->num_iov);
 		if (!bytes) {

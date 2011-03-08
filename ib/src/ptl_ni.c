@@ -186,8 +186,8 @@ int ni_rcqp_init(ni_t *ni)
 	/* Temporary values for wr entries, will use SRQ eventually */
 	init.cap.max_send_wr		= MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
 	init.cap.max_recv_wr		= MAX_QP_RECV_WR;
-	init.cap.max_send_sge		= MAX_INLINE_SGE;
-	init.cap.max_recv_sge		= 10;
+	init.cap.max_send_sge		= MAX_QP_SEND_SGE;
+	init.cap.max_recv_sge		= MAX_QP_RECV_SGE;
 	init.cap.max_inline_data	= 0;
 	init.qp_type			= IBV_QPT_RC;
 	init.sq_sig_all			= 0;
