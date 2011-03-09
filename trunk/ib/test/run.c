@@ -695,21 +695,21 @@ int get_attr(struct node_info *info, xmlNode *node)
 		if (!set_md_start)
 			info->md.start = (void *)&info->iov[0];
 		if (!set_md_len)
-			info->md.length = 8;
+			info->md.length = IOV_SIZE;
 	}
 
 	if (info->le.options & PTL_IOVEC) {
 		if (!set_le_start)
 			info->le.start = (void *)&info->iov[0];
 		if (!set_le_len)
-			info->le.length = 8;
+			info->le.length = IOV_SIZE;
 	}
 
 	if (info->me.options & PTL_IOVEC) {
 		if (!set_me_start)
 			info->me.start = (void *)&info->iov[0];
 		if (!set_me_len)
-			info->me.length = 8;
+			info->me.length = IOV_SIZE;
 	}
 
 
@@ -1517,7 +1517,7 @@ void set_default_info(struct node_info *info)
 	info->desired.max_cts			= 10;
 	info->desired.max_eqs			= 10;
 	info->desired.max_pt_index		= 10;
-	info->desired.max_iovecs		= 32;
+	info->desired.max_iovecs		= IOV_SIZE;
 	info->desired.max_list_size		= 10;
 	info->desired.max_msg_size		= 64;
 	info->desired.max_atomic_size		= 64;
