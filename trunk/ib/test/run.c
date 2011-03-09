@@ -234,9 +234,9 @@ struct node_info *push_info(struct node_info *head, int tok)
 	}
 	get_maps();
 
-	for (i = 0; i < 8; i++) {
-		info->iov[i].iov_base	= info->buf + 4096*i;
-		info->iov[i].iov_len	= 4096;
+	for (i = 0; i < IOV_SIZE; i++) {
+		info->iov[i].iov_base	= info->buf + 1024*i;
+		info->iov[i].iov_len	= 1024;
 	}
 
 	info->md.start			= info->buf;
@@ -1517,7 +1517,7 @@ void set_default_info(struct node_info *info)
 	info->desired.max_cts			= 10;
 	info->desired.max_eqs			= 10;
 	info->desired.max_pt_index		= 10;
-	info->desired.max_iovecs		= 8;
+	info->desired.max_iovecs		= 32;
 	info->desired.max_list_size		= 10;
 	info->desired.max_msg_size		= 64;
 	info->desired.max_atomic_size		= 64;
