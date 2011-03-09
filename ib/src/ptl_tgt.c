@@ -723,22 +723,15 @@ done:
 	return next;
 }
 
-static int tgt_rdma_wait_desc(xt_t *xt)
+static int tgt_rdma_init_loc_off(xt_t *xt)
 {
-	data_t *data;
 	me_t *me = xt->me;
 
-	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
-
-	xt->cur_rem_sge = xt->indir_sge;
-	xt->cur_rem_off = 0;
-	xt->num_rem_sge = (be32_to_cpu(data->sge_list[0].length)) /
-			  sizeof(struct ibv_sge);
-
 	if (debug)
-		printf("Wait Desc:cur_rem_sge(%p), num_rem_sge(%d)\n",
-			xt->cur_rem_sge, (int)xt->num_rem_sge);
+		printf("me->num_iov(%d), xt->moffset(%d)\n",
+			me->num_iov, (int)xt->moffset);
 
+	/* Determine starting vector and vector offset for local le/me */
 	xt->cur_loc_iov_index = 0;
 	xt->cur_loc_iov_off = 0;
 
@@ -763,7 +756,7 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 		}
 		if (loc_offset < xt->moffset) {
 			WARN();
-			return STATE_TGT_ERROR;
+			return PTL_FAIL;
 		}
 
 		xt->cur_loc_iov_index = i;
@@ -776,6 +769,26 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 		printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
 			(int)xt->cur_loc_iov_index,
 			(int)xt->cur_loc_iov_off);
+	return PTL_OK;
+}
+
+static int tgt_rdma_wait_desc(xt_t *xt)
+{
+	data_t *data;
+
+	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
+
+	xt->cur_rem_sge = xt->indir_sge;
+	xt->cur_rem_off = 0;
+	xt->num_rem_sge = (be32_to_cpu(data->sge_list[0].length)) /
+			  sizeof(struct ibv_sge);
+
+	if (debug)
+		printf("Wait Desc:cur_rem_sge(%p), num_rem_sge(%d)\n",
+			xt->cur_rem_sge, (int)xt->num_rem_sge);
+
+	if (tgt_rdma_init_loc_off(xt)) 
+		return STATE_TGT_ERROR;
 
 	return STATE_TGT_RDMA;
 }
@@ -806,52 +819,9 @@ static int tgt_data_in(xt_t *xt)
 		if (debug)
 			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
 				xt->cur_rem_sge, (int)xt->num_rem_sge);
-		/*
-		 * RDMA data to MR back region for le/me memory, determine
-		 * starting vector and vector offset for le/me.
-		 */
-		xt->cur_loc_iov_index = 0;
-		xt->cur_loc_iov_off = 0;
 
-		if (debug)
-			printf("me->num_iov(%d), xt->moffset(%d)\n",
-				me->num_iov, (int)xt->moffset);
-
-		if (me->num_iov) {
-			ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
-			ptl_size_t i = 0;
-			ptl_size_t loc_offset = 0;
-			ptl_size_t iov_offset = 0;
-
-			if (debug)
-				printf("*iov(%p)\n", (void *)iov);
-
-			for (i = 0; i < me->num_iov && loc_offset < xt->moffset;
-				i++, iov++) {
-				iov_offset = xt->moffset - loc_offset;
-				if (iov_offset > iov->iov_len)
-					iov_offset = iov->iov_len;
-				loc_offset += iov_offset;
-				if (debug)
-					printf("In loop: loc_offset(%d),"
- 						"moffset(%d)\n",
-						(int)loc_offset,
-						(int)xt->moffset);
-			}
-			if (loc_offset < xt->moffset) {
-				WARN();
-				return STATE_TGT_ERROR;
-			}
-
-			xt->cur_loc_iov_index = i;
-			xt->cur_loc_iov_off = iov_offset;
-		} else {
-			xt->cur_loc_iov_off = xt->moffset;
-		}
-		if (debug)
-			printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
-				(int)xt->cur_loc_iov_index,
-				(int)xt->cur_loc_iov_off);
+		if (tgt_rdma_init_loc_off(xt)) 
+			return STATE_TGT_ERROR;
 
 		xt->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA;
