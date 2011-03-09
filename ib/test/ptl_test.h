@@ -43,7 +43,7 @@ typedef union datatype {
 #define PTL_TEST_RETURN_EXIT	(2)
 
 #define MAP_SIZE		(10)
-#define IOV_SIZE		(8)
+#define IOV_SIZE		(32)
 #define EQ_LIST_SIZE		(10)
 #define CT_LIST_SIZE		(10)
 #define STACK_SIZE		(20)
