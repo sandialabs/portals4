@@ -125,6 +125,8 @@ typedef struct xt {
 	le_t			*le;
 	me_t			*me;
 	};
+	struct ibv_sge		*indir_sge;
+	mr_t			*indir_mr;
 } xt_t;
 
 extern obj_type_t *type_xt;

@@ -153,6 +153,7 @@ enum {
 	STATE_TGT_SWAP_DATA_IN,
 	STATE_TGT_DATA_OUT,
 	STATE_TGT_RDMA_DESC,
+	STATE_TGT_RDMA_WAIT_DESC,
 	STATE_TGT_SHORT_DATA_IN,
 	STATE_TGT_SHORT_DATA_OUT,
 	STATE_TGT_UNLINK,
@@ -192,6 +193,9 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 
 int iov_atomic_in(atom_op_t op, void *src, ptl_iovec_t *iov,
 		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length);
+
+int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
+	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
 
 int post_tgt_rdma(xt_t *xt, data_dir_t dir);
 
