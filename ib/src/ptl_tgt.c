@@ -472,6 +472,34 @@ static void tgt_unlink(xt_t *xt)
 		le_unlink(xt->le);
 }
 
+static int tgt_alloc_rdma_buf(xt_t *xt)
+{
+	buf_t *buf;
+	int err;
+
+	if (debug)
+		printf("tgt_alloc_rdma_buf\n");
+
+	err = buf_alloc(to_ni(xt), &buf);
+	if (err) {
+		WARN();
+		return err;
+	}
+	buf->type = BUF_RDMA;
+	buf->xt = xt;
+	xt->rdma_buf = buf;
+
+	return 0;
+}
+
+static void tgt_free_rdma_buf(xt_t *xt)
+{
+	if (xt->rdma_buf) {
+		buf_put(xt->rdma_buf);
+		xt->rdma_buf = NULL;
+	}
+}
+
 static int tgt_data_out(xt_t *xt)
 {
 	me_t *me = xt->me;
@@ -485,6 +513,9 @@ static int tgt_data_out(xt_t *xt)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_DMA:
+		if (tgt_alloc_rdma_buf(xt))
+			return STATE_TGT_ERROR;
+
 		/* Write to SG list provided directly in request */
 		xt->cur_rem_sge = &data->sge_list[0];
 		xt->cur_rem_off = 0;
@@ -544,8 +575,11 @@ static int tgt_data_out(xt_t *xt)
 		next = STATE_TGT_RDMA;
 		break;
 	case DATA_FMT_INDIRECT:
-//printf("TODO handle tgt indirect data out\n");
-		next = STATE_TGT_RDMA;
+		if (tgt_alloc_rdma_buf(xt))
+			return STATE_TGT_ERROR;
+
+		xt->rdma_dir = DATA_DIR_OUT;
+		next = STATE_TGT_RDMA_DESC;
 		break;
 	default:
 		WARN();
@@ -597,8 +631,6 @@ static int tgt_data_out(xt_t *xt)
 static int tgt_rdma(xt_t *xt)
 {
 	int err;
-	ni_t *ni = to_ni(xt);
-	buf_t *buf;
 	ptl_size_t *resid = xt->rdma_dir == DATA_DIR_IN ?
 		&xt->put_resid : &xt->get_resid;
 
@@ -606,24 +638,6 @@ static int tgt_rdma(xt_t *xt)
 		"interim_rdma(%d), rdma_comp(%d)\n",
 		(int) xt->rdma_dir, (int) xt->put_resid,
 		 (int) xt->interim_rdma, (int) xt->rdma_comp);
-
-	/*
-	 * Allocate a rdma_buf to handle any completions we take for
-	 * RDMA read operations (preferably just on the last one).
-	 */
-	if (!xt->rdma_buf) {
-		if (debug)
-			printf("tgt_rdma - alloc rdma buf\n");
-
-		err = buf_alloc(ni, &buf);
-		if (err) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-		buf->type = BUF_RDMA;
-		buf->xt = xt;
-		xt->rdma_buf = buf;
-	}
 
 	/*
 	 * Issue as many RDMA requests as we can.  We may have to take
@@ -654,8 +668,116 @@ static int tgt_rdma(xt_t *xt)
 
 static int tgt_rdma_desc(xt_t *xt)
 {
-	/* XXX not yet */
-	return STATE_TGT_COMM_EVENT;
+	data_t *data;
+	uint64_t raddr;
+	uint32_t rkey;
+	uint32_t rlen;
+	struct ibv_sge sge;
+	int err;
+	int next;
+
+	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
+
+	/*
+	 * Allocate and map indirect buffer and setup to read
+	 * descriptor list from initiator memory.
+	 */
+	raddr = be64_to_cpu(data->sge_list[0].addr);
+	rkey = be32_to_cpu(data->sge_list[0].lkey);
+	rlen = be32_to_cpu(data->sge_list[0].length);
+
+	if (debug)
+		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
+		       " rkey(0x%x), len(%d)\n", raddr, rkey, rlen);
+
+	xt->indir_sge = calloc(1, rlen);
+	if (!xt->indir_sge) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	if (mr_lookup(to_ni(xt), xt->indir_sge, rlen,
+		      &xt->indir_mr)) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	/*
+	 * Post RDMA read
+	 */
+	sge.addr = (uintptr_t)xt->indir_sge;
+	sge.lkey = xt->indir_mr->ibmr->lkey;
+	sge.length = rlen;
+
+	xt->rdma_comp++;
+	err = rdma_read(xt->rdma_buf, raddr, rkey, &sge, 1, 1);
+	if (err) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+	next = STATE_TGT_RDMA_WAIT_DESC;
+done:
+	return next;
+}
+
+static int tgt_rdma_wait_desc(xt_t *xt)
+{
+	data_t *data;
+	me_t *me = xt->me;
+
+	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
+
+	xt->cur_rem_sge = xt->indir_sge;
+	xt->cur_rem_off = 0;
+	xt->num_rem_sge = (be32_to_cpu(data->sge_list[0].length)) /
+			  sizeof(struct ibv_sge);
+
+	if (debug)
+		printf("Wait Desc:cur_rem_sge(%p), num_rem_sge(%d)\n",
+			xt->cur_rem_sge, (int)xt->num_rem_sge);
+
+	xt->cur_loc_iov_index = 0;
+	xt->cur_loc_iov_off = 0;
+
+	if (me->num_iov) {
+		ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
+		ptl_size_t i = 0;
+		ptl_size_t loc_offset = 0;
+		ptl_size_t iov_offset = 0;
+
+		if (debug)
+			printf("*iov(%p)\n", (void *)iov);
+
+		for (i = 0; i < me->num_iov && loc_offset < xt->moffset;
+			i++, iov++) {
+			iov_offset = xt->moffset - loc_offset;
+			if (iov_offset > iov->iov_len)
+				iov_offset = iov->iov_len;
+			loc_offset += iov_offset;
+			if (debug)
+				printf("In loop: loc_offset(%d) moffset(%d)\n",
+					(int)loc_offset, (int)xt->moffset);
+		}
+		if (loc_offset < xt->moffset) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+
+		xt->cur_loc_iov_index = i;
+		xt->cur_loc_iov_off = iov_offset;
+	} else {
+		xt->cur_loc_iov_off = xt->moffset;
+	}
+
+	if (debug)
+		printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
+			(int)xt->cur_loc_iov_index,
+			(int)xt->cur_loc_iov_off);
+
+	return STATE_TGT_RDMA;
 }
 
 static int tgt_data_in(xt_t *xt)
@@ -664,7 +786,6 @@ static int tgt_data_in(xt_t *xt)
 	me_t *me = xt->me;
 	data_t *data = xt->data_in;
 	int next;
-	uint32_t indir_len;
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
@@ -674,6 +795,9 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_COMM_EVENT;
 		break;
 	case DATA_FMT_DMA:
+		if (tgt_alloc_rdma_buf(xt))
+			return STATE_TGT_ERROR;
+
 		/* Read from SG list provided directly in request */
 		xt->cur_rem_sge = &data->sge_list[0];
 		xt->cur_rem_off = 0;
@@ -733,14 +857,11 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_RDMA;
 		break;
 	case DATA_FMT_INDIRECT:
-		/*
-		 * Allocate and map indirect buffer and setup to read
-		 * descriptor list from initiator memory.
-		 */
-		indir_len = be32_to_cpu(data->sge_list[0].length);
-		printf("DATA_FMT_INDIRECT, indir_len(%d)\n", indir_len);
-		printf("TODO handle tgt indirect data in\n");
-		next = STATE_TGT_COMM_EVENT;
+		if (tgt_alloc_rdma_buf(xt))
+			return STATE_TGT_ERROR;
+
+		xt->rdma_dir = DATA_DIR_IN;
+		next = STATE_TGT_RDMA_DESC;
 		break;
 	default:
 		WARN();
@@ -1205,14 +1326,21 @@ static int tgt_cleanup(xt_t *xt)
 	}
 
 	/* tgt must release RDMA acquired resources */
-	if (xt->rdma_buf) {
-		buf_put(xt->rdma_buf);
-		xt->rdma_buf = NULL;
+	tgt_free_rdma_buf(xt);
+
+	if (xt->indir_sge) {
+		if (xt->indir_mr) {
+			mr_put(xt->indir_mr);
+			xt->indir_mr = NULL;
+		}
+		free(xt->indir_sge);
+		xt->indir_sge = NULL;
 	}
 	
 	/* tgt responsible to cleanup all received buffers */
 	if (xt->recv_buf) {
-if (debug) printf("cleanup recv buf %p\n", xt->recv_buf);
+		if (debug)
+			printf("cleanup recv buf %p\n", xt->recv_buf);
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
 	}
@@ -1225,7 +1353,8 @@ if (debug) printf("cleanup recv buf %p\n", xt->recv_buf);
 		l = xt->recv_list.next;
 		list_del(l);
 		buf = list_entry(l, buf_t, list);
-if (debug) printf("cleanup xi recv list @ %p\n", buf);
+		if (debug)
+			printf("cleanup xi recv list @ %p\n", buf);
 		buf_put(buf);
 		// TODO count these as dropped packets??
 	}
@@ -1258,7 +1387,8 @@ int process_tgt(xt_t *xt)
 	int state;
 	ni_t *ni = to_ni(xt);
 
-	if(debug) printf("process_tgt: called xt = %p\n", xt);
+	if(debug)
+		printf("process_tgt: called xt = %p\n", xt);
 
 	xt->state_again = 1;
 
@@ -1276,7 +1406,8 @@ int process_tgt(xt_t *xt)
 		xt->state_again = 0;
 
 		if (xt->state_waiting) {
-			if (debug) printf("remove from xt_wait_list\n");
+			if (debug)
+				printf("remove from xt_wait_list\n");
 			pthread_spin_lock(&ni->xt_wait_list_lock);
 			list_del(&xt->list);
 			pthread_spin_unlock(&ni->xt_wait_list_lock);
@@ -1286,7 +1417,9 @@ int process_tgt(xt_t *xt)
 		state = xt->state;
 
 		while(1) {
-			if (debug) printf("tgt state = %s\n", tgt_state_name[state]);
+			if (debug)
+				printf("tgt state = %s\n",
+					tgt_state_name[state]);
 			switch (state) {
 			case STATE_TGT_START:
 				state = tgt_start(xt);
@@ -1315,6 +1448,11 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_RDMA_DESC:
 				state = tgt_rdma_desc(xt);
+				if (state == STATE_TGT_RDMA_WAIT_DESC)
+					goto exit;
+				break;
+			case STATE_TGT_RDMA_WAIT_DESC:
+				state = tgt_rdma_wait_desc(xt);
 				break;
 			case STATE_TGT_RDMA:
 				state = tgt_rdma(xt);
