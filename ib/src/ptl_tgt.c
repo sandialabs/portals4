@@ -487,6 +487,7 @@ static int tgt_alloc_rdma_buf(xt_t *xt)
 	}
 	buf->type = BUF_RDMA;
 	buf->xt = xt;
+	buf->dest = &xt->dest;
 	xt->rdma_buf = buf;
 
 	return 0;
@@ -628,6 +629,45 @@ static int tgt_data_out(xt_t *xt)
 	return next;
 }
 
+/* Start a connection if not connected already. Return -1 on error, 1
+   if the connection is pending, and 0 if connected. */
+static int check_conn(xt_t *xt)
+{
+	struct nid_connect *connect;
+	int ret;
+	ni_t *ni = to_ni(xt);
+
+	/* Ensure we are already connected. */
+	connect = ni->rank_to_nid_table[xt->initiator.rank].connect;
+	pthread_mutex_lock(&connect->mutex);
+	if (unlikely(connect->state != GBLN_CONNECTED)) {
+		/* Not connected. Add the xi on the pending list. It will be
+		 * flushed once connected/disconnected. */
+		if (connect->state == GBLN_DISCONNECTED) {
+			/* Initiate connection. */
+			list_add_tail(&xt->connect_pending_list, &connect->xt_list);
+
+			if (init_connect(ni, connect)) {
+				list_del(&xt->connect_pending_list);
+				ret = -1;
+			} else
+				ret = 1;
+		} else {
+			/* Connection in already in progress. */
+			ret = 1;
+		}
+
+	} else {
+		set_xt_dest(xt, connect);
+		ret = 0;
+	}
+
+	pthread_mutex_unlock(&connect->mutex);
+
+	return ret;
+}
+
+
 static int tgt_rdma(xt_t *xt)
 {
 	int err;
@@ -638,6 +678,13 @@ static int tgt_rdma(xt_t *xt)
 		"interim_rdma(%d), rdma_comp(%d)\n",
 		(int) xt->rdma_dir, (int) xt->put_resid,
 		 (int) xt->interim_rdma, (int) xt->rdma_comp);
+
+	err = check_conn(xt);
+	if (err == -1)
+		return STATE_TGT_ERROR;
+	else if (err == 1)
+		/* Not connected yet. */
+		return STATE_TGT_RDMA;
 
 	/*
 	 * Issue as many RDMA requests as we can.  We may have to take
@@ -1202,6 +1249,13 @@ static int tgt_send_ack(xt_t *xt)
 	buf_t *buf;
 	hdr_t *hdr;
 
+	err = check_conn(xt);
+	if (err == -1)
+		return STATE_TGT_ERROR;
+	else if (err == 1)
+		/* Not connected yet. */
+		return STATE_TGT_SEND_ACK;
+
 	xt->event_mask &= ~XT_ACK_EVENT;
 
 	err = buf_alloc(ni, &buf);
@@ -1211,6 +1265,7 @@ static int tgt_send_ack(xt_t *xt)
 	}
 
 	buf->xt = xt;
+	buf->dest = &xt->dest;
 	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
@@ -1256,6 +1311,13 @@ static int tgt_send_reply(xt_t *xt)
 	buf_t *buf;
 	hdr_t *hdr;
 
+	err = check_conn(xt);
+	if (err == -1)
+		return STATE_TGT_ERROR;
+	else if (err == 1)
+		/* Not connected yet. */
+		return STATE_TGT_SEND_REPLY;
+
 	xt->event_mask &= ~XT_REPLY_EVENT;
 
 	err = buf_alloc(ni, &buf);
@@ -1265,6 +1327,7 @@ static int tgt_send_reply(xt_t *xt)
 	}
 
 	buf->xt = xt;
+	buf->dest = &xt->dest;
 	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
@@ -1447,9 +1510,13 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_SEND_ACK:
 				state = tgt_send_ack(xt);
+				if (state == STATE_TGT_SEND_ACK)
+					goto exit;
 				break;
 			case STATE_TGT_SEND_REPLY:
 				state = tgt_send_reply(xt);
+				if (state == STATE_TGT_SEND_REPLY)
+					goto exit;
 				break;
 			case STATE_TGT_DROP:
 				state = request_drop(xt);

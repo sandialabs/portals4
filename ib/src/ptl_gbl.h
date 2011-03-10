@@ -13,7 +13,6 @@ struct rpc;
 typedef struct iface {
 	struct ni		*ni;
 	char			if_name[IF_NAMESIZE];
-	unsigned int		if_index;
 } iface_t;
 
 typedef struct gbl {
@@ -22,8 +21,8 @@ typedef struct gbl {
 	pthread_mutex_t		gbl_mutex;
 
 	int			init_once;
-	int			ref_cnt;
-	ref_t			ref;
+	int			ref_cnt;		/* PtlInit/PtlFini */
+	ref_t			ref;		/* sub objects references */
 	
 	int			fd;
 	struct sockaddr_in	addr;
@@ -44,12 +43,7 @@ typedef struct gbl {
 	ptl_rank_t local_rank;
 	unsigned int local_nranks;	/* number of ranks on that node */
 
-	/* shared memory. */
-	struct {
-		int fd;
-		struct shared_config *m; /* mmaped memory */
-		struct rank_table *rank_table;
-	} shmem;
+	unsigned int num_nids;		/* number of nodes */
 
 } gbl_t;
 

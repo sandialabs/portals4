@@ -26,6 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
+#include <poll.h>
 
 #include "portals4.h"
 
@@ -63,10 +64,19 @@ extern void destroy_ib_resources(void);
 extern struct net_intf *find_net_intf(const char *name);
 extern int create_shared_memory(void);
 
-/* Port on which RDMA listen wait for incoming XRC connection. */
-#define XRC_PORT 7694
+struct ctl_connect {
+	enum {
+		PTL_CONNECT_DISCONNECTED,
+		PTL_CONNECT_CONNECTING,
+		PTL_CONNECT_CONNECTED,
+		PTL_CONNECT_DISCONNECTING,
+	} state;
+	struct rdma_cm_id *cm_id;
+};
 
 struct p4oibd_config {
+	pthread_mutex_t		mutex;
+
 	/* Listening socket */
 	unsigned int ctl_port;
 	struct rpc *rpc;
@@ -97,16 +107,17 @@ struct p4oibd_config {
 		int fd;
 		struct shared_config *m; /* mmaped memory */
 	} shmem;
+
+	/* XRC port to listen to */
+	int xrc_port;
+
+	/* Connection table from remote rank to control process.
+	 * nranks elements, protected by mutex. */
+	struct ctl_connect *connect;
 };
+
+#define MAX_QP_RECV_WR		(10)
 
 extern struct p4oibd_config conf;
-
-/* RDMA CM private data */
-struct cm_priv_request {
-	uint32_t src_rank;	/* rank requesting that connection */
-};
-
-struct cm_priv_response {
-};
 
 #endif /* CTL_H */

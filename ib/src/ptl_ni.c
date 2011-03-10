@@ -4,42 +4,54 @@
 
 #include "ptl_loc.h"
 
+#include <sys/ioctl.h>
+
 unsigned short ptl_ni_port(ni_t *ni)
 {
 	return PTL_NI_PORT + ni->ni_type;
 }
 
+/* Get the default interface index. Returns PTL_IFACE_DEFAULT if none
+ * is found. */
 static int get_default_iface(gbl_t *gbl)
 {
 	int iface;
+
+	pthread_mutex_lock(&gbl->gbl_mutex);
+
+	/* Default interface is ib0 (iface==0). */
+	if (if_nametoindex("ib0") > 0) {
+		iface = 0;
+		goto done;
+	}
+
+#if 0
+	/* This code is not right anymore. */
+
 	char file_name[64];
 	FILE *fd;
 	char if_name[16];
 	int n;
 
-	pthread_mutex_lock(&gbl->gbl_mutex);
-
-	iface = if_nametoindex("ib0");
-	if (iface) {
-		goto done;
-	}
-
 	snprintf(file_name, sizeof(file_name), "/sys/class/infiniband/rxe0/parent");
 	fd = fopen(file_name, "r");
 	if (!fd) {
 		pthread_mutex_unlock(&gbl->gbl_mutex);
-		return 0;
+		return PTL_IFACE_DEFAULT;
 	}
 
 	n = fread(if_name, 1, 16, fd);
 	fclose(fd);
 	if (n <= 0) {
 		pthread_mutex_unlock(&gbl->gbl_mutex);
-		return 0;
+		return PTL_IFACE_DEFAULT;
 	}
 
 	if_name[n-1] = 0;
 	iface = if_nametoindex(if_name);
+#endif
+
+	iface = PTL_IFACE_DEFAULT;
 
 done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
@@ -47,17 +59,19 @@ done:
 }
 
 /* Retrieve the shared memory filename, and mmap it. */
-static int get_rank_table(gbl_t *gbl, ni_t *ni)
+static int get_rank_table(ni_t *ni)
 {
 	struct rpc_msg rpc_msg;
 	int err;
 	void *m;
+	gbl_t *gbl = ni->gbl;
 
 	memset(&rpc_msg, 0, sizeof(rpc_msg));
 	rpc_msg.type = QUERY_RANK_TABLE;
 	rpc_msg.query_rank_table.rank = gbl->rank;
 	rpc_msg.query_rank_table.local_rank = gbl->local_rank;
 	rpc_msg.query_rank_table.xrc_srq_num  = ni->xrc_srq->xrc_srq_num;
+	rpc_msg.query_rank_table.addr = ni->addr;
 	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
 	if (err)
 		goto err;
@@ -65,26 +79,106 @@ static int get_rank_table(gbl_t *gbl, ni_t *ni)
 	if (rpc_msg.reply_rank_table.shmem_filesize == 0)
 		goto err;
 
-	gbl->shmem.fd = open(rpc_msg.reply_rank_table.shmem_filename, O_RDONLY);
-	if (gbl->shmem.fd == -1)
+	ni->shmem.fd = open(rpc_msg.reply_rank_table.shmem_filename, O_RDONLY);
+	if (ni->shmem.fd == -1)
 		goto err;
 
 	m = mmap(NULL, rpc_msg.reply_rank_table.shmem_filesize,
-			 PROT_READ, MAP_SHARED, gbl->shmem.fd, 0);
+			 PROT_READ, MAP_SHARED, ni->shmem.fd, 0);
 	if (m == MAP_FAILED)
 		goto err;
 
-	gbl->shmem.m = (struct shared_config *)m;
+	ni->shmem.m = (struct shared_config *)m;
 
-	gbl->shmem.rank_table = m + gbl->shmem.m->rank_table_offset;
+	ni->shmem.rank_table = m + ni->shmem.m->rank_table_offset;
 
 	return PTL_OK;
 
  err:
-	if (gbl->shmem.fd != -1) {
-		close(gbl->shmem.fd);
-		gbl->shmem.fd = -1;
+	if (ni->shmem.fd != -1) {
+		close(ni->shmem.fd);
+		ni->shmem.fd = -1;
 	}
+	return PTL_FAIL;
+}
+
+static int compar_nid(const void *a, const void *b)
+{
+	const struct rank_to_nid *nid1 = a;
+	const struct rank_to_nid *nid2 = b;
+
+	return(nid1->nid - nid2->nid);
+}
+
+static int compar_rank(const void *a, const void *b)
+{
+	const struct rank_to_nid *nid1 = a;
+	const struct rank_to_nid *nid2 = b;
+
+	return(nid1->rank - nid2->rank);
+}
+
+/* Create a mapping from rank to NID. We needs this because the rank
+ * table is in shared memory, and we need one cmi_id per remote
+ * node. */
+static int create_rank_to_nid_table(ni_t *ni)
+{
+	gbl_t *gbl = ni->gbl;
+	int i;
+	ptl_nid_t prev_nid;
+	struct nid_connect *connect;
+
+	ni->rank_to_nid_table = calloc(gbl->nranks, sizeof(struct rank_to_nid));
+	if (ni->rank_to_nid_table == NULL)
+		goto error;
+
+	ni->nid_table = calloc(gbl->num_nids, sizeof(struct nid_connect));
+	if (ni->nid_table == NULL)
+		goto error;
+
+	for (i=0; i<gbl->nranks; i++) {
+		struct rank_to_nid *elem1 = &ni->rank_to_nid_table[i];
+		struct rank_entry *elem2 = &ni->shmem.rank_table->elem[i];
+		elem1->nid = elem2->nid;
+		elem1->rank = elem2->rank;
+	}
+
+	/* Sort the rank_to_nid table to find the unique nids, and build the nid table. */
+	prev_nid = ni->rank_to_nid_table[0].nid + 1;
+	connect = ni->nid_table;
+	connect --;
+	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compar_nid);
+	for (i=0; i<gbl->nranks; i++) {
+		struct rank_to_nid *rtn = &ni->rank_to_nid_table[i];
+		
+		if (rtn->nid != prev_nid) {
+			/* New NID. */
+			connect ++;
+
+			pthread_mutex_init(&connect->mutex, NULL);
+			connect->state = GBLN_DISCONNECTED;
+			INIT_LIST_HEAD(&connect->xi_list);
+			INIT_LIST_HEAD(&connect->xt_list);
+			connect->nid = rtn->nid;
+
+			/* Get the IP address from the rank table for that NID. */
+			connect->addr = ni->shmem.rank_table->elem[rtn->rank].addr;
+
+			prev_nid = rtn->nid;
+		}
+
+		rtn->connect = connect;
+	}
+
+	/* Ensure we got the algo right. */
+	assert(connect == &ni->nid_table[gbl->num_nids-1]);
+
+	/* Sort the rank_to_nid table based on the rank. */
+	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compar_rank);
+
+	return 0;
+
+ error:
 	return PTL_FAIL;
 }
 
@@ -123,27 +217,23 @@ static int ni_map(gbl_t *gbl, ni_t *ni,
 	return PTL_OK;
 }
 
-static int ni_rcqp_stop(ni_t *ni)
+static void ni_rcqp_stop(ni_t *ni)
 {
-	int err;
-	struct ibv_qp_attr attr;
-	int mask;
+	int i;
 
-	attr.qp_state			= IBV_QPS_ERR;
-	mask				= IBV_QP_STATE;
-
-	err = ibv_modify_qp(ni->qp, &attr, mask);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
+	for (i=0; i<ni->gbl->num_nids; i++) {
+		struct nid_connect *connect = &ni->nid_table[i];
+		
+		pthread_mutex_lock(&connect->mutex);
+		if (connect->state != GBLN_DISCONNECTED) {
+			rdma_disconnect(connect->cm_id);
+		}
+		pthread_mutex_unlock(&connect->mutex);
 	}
-
-	return PTL_OK;
 }
 
 static int ni_rcqp_cleanup(ni_t *ni)
 {
-	int err;
 	struct ibv_wc wc;
 	int n;
 	buf_t *buf;
@@ -160,135 +250,12 @@ static int ni_rcqp_cleanup(ni_t *ni)
 		buf_put(buf);
 	}
 
-	err = ibv_destroy_qp(ni->qp);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
-
 	return PTL_OK;
 }
 
-int ni_rcqp_init(ni_t *ni)
+static int ni_rcqp_init(ni_t *ni)
 {
 	int err;
-	struct ibv_qp_init_attr init;
-	struct ibv_qp_attr attr;
-	int mask;
-	int i;
-	const uint8_t port_num = 1;
-	struct ibv_port_attr port_attr;
-
-	init.qp_context			= ni;
-	init.send_cq			= ni->cq;
-	init.recv_cq			= ni->cq;
-	init.srq			= NULL;
-	/* Temporary values for wr entries, will use SRQ eventually */
-	init.cap.max_send_wr		= MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
-	init.cap.max_recv_wr		= MAX_QP_RECV_WR;
-	init.cap.max_send_sge		= MAX_QP_SEND_SGE;
-	init.cap.max_recv_sge		= MAX_QP_RECV_SGE;
-	init.cap.max_inline_data	= 0;
-	init.qp_type			= IBV_QPT_RC;
-	init.sq_sig_all			= 0;
-	init.xrc_domain			= NULL;
-
-	ni->qp = ibv_create_qp(ni->pd, &init);
-	if (!ni->qp) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	attr.qp_state			= IBV_QPS_INIT;
-	attr.qp_access_flags		= IBV_ACCESS_REMOTE_WRITE
-					| IBV_ACCESS_REMOTE_READ
-					| IBV_ACCESS_REMOTE_ATOMIC
-					;
-	attr.pkey_index			= 0;
-	attr.port_num			= 1;
-
-	mask				= IBV_QP_STATE
-					| IBV_QP_ACCESS_FLAGS
-					| IBV_QP_PKEY_INDEX
-					| IBV_QP_PORT
-					;
-
-	err = ibv_modify_qp(ni->qp, &attr, mask);
-	if (err) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	for (i = 0; i < 10; i++) {
-		err = post_recv(ni);
-		if (err) {
-			WARN();
-			err = PTL_FAIL;
-			goto err1;
-		}
-	}
-
-	attr.qp_state			= IBV_QPS_RTR;
-	attr.path_mtu			= IBV_MTU_2048;
-	attr.rq_psn			= 1;
-	attr.dest_qp_num		= ni->qp->qp_num;
-
-	/* loop back to ourselves */
-	ibv_query_gid(ni->ibv_context, port_num, 0, &attr.ah_attr.grh.dgid);
-	ibv_query_port(ni->ibv_context, port_num, &port_attr);
-
-	attr.ah_attr.grh.flow_label	= 0;
-	attr.ah_attr.grh.sgid_index	= 0;
-	attr.ah_attr.grh.hop_limit	= 1;
-	attr.ah_attr.grh.traffic_class	= 0;
-	attr.ah_attr.dlid		= port_attr.lid;
-	attr.ah_attr.sl			= 0;
-	attr.ah_attr.src_path_bits	= 0;
-	attr.ah_attr.static_rate	= IBV_RATE_10_GBPS;
-	attr.ah_attr.is_global		= 1;
-	attr.ah_attr.port_num		= port_num;
-	attr.max_dest_rd_atomic		= 4;
-	attr.min_rnr_timer		= 3;
-
-	mask				= IBV_QP_STATE
-					| IBV_QP_AV
-					| IBV_QP_PATH_MTU
-					| IBV_QP_DEST_QPN
-					| IBV_QP_RQ_PSN
-					| IBV_QP_MAX_DEST_RD_ATOMIC
-					| IBV_QP_MIN_RNR_TIMER
-					;
-
-	err = ibv_modify_qp(ni->qp, &attr, mask);
-	if (err) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	attr.qp_state			= IBV_QPS_RTS;
-	attr.sq_psn			= 1;
-	attr.max_rd_atomic		= 4;
-	attr.timeout			= 12;	/* 4usec * 2^n */
-	attr.retry_cnt			= 3;
-	attr.rnr_retry			= 3;
-
-	mask				= IBV_QP_STATE
-					| IBV_QP_SQ_PSN
-					| IBV_QP_MAX_QP_RD_ATOMIC
-					| IBV_QP_RETRY_CNT
-					| IBV_QP_RNR_RETRY
-					| IBV_QP_TIMEOUT
-					;
-
-	err = ibv_modify_qp(ni->qp, &attr, mask);
-	if (err) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
-	}
 
 	ni->recv_run = 1;
 	err = pthread_create(&ni->recv_thread, NULL, recv_thread, ni);
@@ -302,7 +269,186 @@ int ni_rcqp_init(ni_t *ni)
 	return PTL_OK;
 
 err1:
+	assert(0);
 	return err;
+}
+
+/* Establish a new connection. connect is already locked. */
+int init_connect(ni_t *ni, struct nid_connect *connect)
+{
+    struct sockaddr_in sin;
+
+	assert(connect->state == GBLN_DISCONNECTED);
+
+	connect->retry_resolve_addr = 3;
+	connect->retry_resolve_route = 3;
+	connect->retry_connect = 3;
+
+	if (rdma_create_id(ni->cm_channel, &connect->cm_id,
+					   connect, RDMA_PS_TCP)) {
+		return 1;
+	}
+
+	connect->state = GBLN_RESOLVING_ADDR;
+
+	memset(&sin, 0, sizeof(struct sockaddr_in));
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = connect->addr;
+	sin.sin_port = htons(PTL_XRC_PORT);
+
+	if (rdma_resolve_addr(connect->cm_id, NULL,
+						  (struct sockaddr *)&sin, 2000)) {
+		ptl_warn("rdma_resolve_addr failed for NID %x\n",
+				 connect->nid);
+		connect->state = GBLN_DISCONNECTED;
+		return 1;
+	}
+
+	return 0;
+}
+
+static void process_cm_event(void *data)
+{
+	ni_t *ni = data;
+	struct rdma_cm_event *event;
+	struct nid_connect *connect;
+    struct rdma_conn_param conn_param;
+	struct cm_priv_request priv;
+	struct ibv_qp_init_attr init;
+
+	if (debug)
+		printf("Rank got a CM event\n");
+
+	if (rdma_get_cm_event(ni->cm_channel, &event)) 
+		return;
+
+	connect = event->id->context;
+
+	if (debug)
+		printf("Rank got CM event %d for id %p\n", event->event, event->id);
+
+	switch(event->event) {
+	case RDMA_CM_EVENT_ADDR_RESOLVED:
+		pthread_mutex_lock(&connect->mutex);
+		assert(connect->cm_id == event->id);
+		if (rdma_resolve_route(connect->cm_id, 2000)) {
+			//todo 
+			abort();
+		} else {
+			connect->state = GBLN_RESOLVING_ROUTE;
+		}
+		pthread_mutex_unlock(&connect->mutex);
+		break;
+
+	case RDMA_CM_EVENT_ROUTE_RESOLVED:
+		assert(connect->cm_id == event->id);
+
+		/* Create the QP. */
+		memset(&init, 0, sizeof(init));
+		init.qp_context			= ni;
+		init.send_cq			= ni->cq;
+		init.recv_cq			= ni->cq; /* can't receive, but libverbs crashes if not present ("cmd->recv_cq_handle  = attr->recv_cq->handle;")*/
+		init.cap.max_send_wr		= MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
+		init.cap.max_recv_wr		= 0;
+		init.cap.max_send_sge		= MAX_INLINE_SGE;
+		init.cap.max_recv_sge		= 10;
+		init.qp_type			= IBV_QPT_XRC;
+		init.xrc_domain			= ni->xrc_domain;
+
+		pthread_mutex_lock(&connect->mutex);
+
+		if (rdma_create_qp(connect->cm_id, NULL, &init)) {
+			WARN();
+			//todo
+			abort();
+			//err = PTL_FAIL;
+			//goto err1;
+		}
+
+        memset(&conn_param, 0, sizeof conn_param);
+        conn_param.responder_resources = 1;
+        conn_param.initiator_depth = 1;
+        conn_param.retry_count = 5;
+		conn_param.private_data = &priv;
+		conn_param.private_data_len = sizeof(priv);
+
+		priv.src_rank = ni->gbl->rank;
+		
+		if (rdma_connect(connect->cm_id, &conn_param)) {
+			//todo 
+			abort();
+		} else {
+			connect->state = GBLN_CONNECTING;
+		}
+
+		pthread_mutex_unlock(&connect->mutex);
+
+		break;
+
+	case RDMA_CM_EVENT_ESTABLISHED: {
+		connect->state = GBLN_CONNECTED;
+		struct list_head *elem;
+		xi_t *xi;
+		xt_t *xt;
+
+		pthread_mutex_lock(&connect->mutex);
+
+		while(!list_empty(&connect->xi_list)) {
+			elem = connect->xi_list.next;
+			list_del(elem);
+			xi = list_entry(elem, xi_t, connect_pending_list);
+			pthread_mutex_unlock(&connect->mutex);
+			process_init(xi);
+			
+			pthread_mutex_lock(&connect->mutex);
+		}
+
+		while(!list_empty(&connect->xt_list)) {
+			elem = connect->xt_list.next;
+			list_del(elem);
+			xt = list_entry(elem, xt_t, connect_pending_list);
+			pthread_mutex_unlock(&connect->mutex);
+			process_tgt(xt);
+
+			pthread_mutex_lock(&connect->mutex);
+		}
+
+		pthread_mutex_unlock(&connect->mutex);
+	}
+		break;
+
+	default:
+		ptl_warn("Got unknown CM event: %d\n", event->event);
+		break;
+	};
+
+	rdma_ack_cm_event(event);
+
+	return;
+}
+
+/* Get the first IPv4 address for a device. returns INADDR_ANY on
+ * error or if none exist. */
+static in_addr_t get_ip_address(const char *ifname)
+{
+	int fd;
+	struct ifreq devinfo;
+	struct sockaddr_in *sin = (struct sockaddr_in*)&devinfo.ifr_addr;
+	in_addr_t addr;
+
+	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
+
+	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0 &&
+		sin->sin_family == AF_INET) {
+		addr = sin->sin_addr.s_addr;
+	} else {
+		addr = htonl(INADDR_ANY);
+	}
+
+	close(fd);
+
+	return addr;
 }
 
 static int cleanup_ib(ni_t *ni)
@@ -332,41 +478,40 @@ static int cleanup_ib(ni_t *ni)
 		ni->ch = NULL;
 	}
 
-	if (ni->pd) {
-		ibv_dealloc_pd(ni->pd);
-		ni->pd = NULL;
-	}
-
-	if (ni->ibv_context) {
-		ibv_close_device(ni->ibv_context);
-		ni->ibv_context = NULL;
-	}
-
 	return PTL_OK;
 }
 
 static int init_ib(ni_t *ni)
 {
-	char ifname[IF_NAMESIZE];
-	char *str;
-	struct ibv_device **dev_list;
-	struct ibv_device **dev;
 	struct ibv_srq_init_attr srq_init_attr;
 	gbl_t *gbl = ni->gbl;
 	struct rpc_msg rpc_msg;
 	int err;
+	struct rdma_cm_id *cm_id;
+	struct sockaddr_in sin;
+	int i;
+	int flags;
 
-	/* Retrieve the interface name */
-	str = if_indextoname(ni->iface, ifname);
-	if (!str) {
-		ptl_warn("unable to get ifname from ifindex\n");
+	/* Currently the interface name is ib followed by the interface
+	 * number. In the future we may have a system to override that,
+	 * for instance, by having a table or environment variable
+	 * (PORTALS4_INTERFACE_0=10.2.0.0/16) */
+	sprintf(ni->ifname, "ib%d", ni->iface);
+	if (if_nametoindex(ni->ifname) == 0) {
+		ptl_warn("The interface %s doesn't exist\n", ni->ifname);
+		return PTL_FAIL;
+	}
+
+	ni->addr = get_ip_address(ni->ifname);
+	if (ni->addr == htonl(INADDR_ANY)) {
+		ptl_warn("The interface %s doesn't have an IPv4 address\n", ni->ifname);
 		return PTL_FAIL;
 	}
 
 	/* Retrieve the IB interface and the XRC domain name. */
 	memset(&rpc_msg, 0, sizeof(rpc_msg));
 	rpc_msg.type = QUERY_XRC_DOMAIN;
-	strcpy(rpc_msg.query_xrc_domain.net_name, str);
+	strcpy(rpc_msg.query_xrc_domain.net_name, ni->ifname);
 	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
 	if (err) {
 		ptl_warn("rpc_get(QUERY_XRC_DOMAIN) failed\n");
@@ -384,45 +529,45 @@ static int init_ib(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	/* Find the interface name in the IB device list and open it. */
-	dev_list = ibv_get_device_list(NULL);
-	if (!dev_list) {
-		ptl_warn("unable to get rdma device list\n");
-		return PTL_FAIL;
-	}
-
-	dev = dev_list;
-	while(*dev) {
-		if (!strcmp(ibv_get_device_name(*dev), rpc_msg.reply_xrc_domain.ib_name))
-			break;
-		dev ++;
-	}
-
-	if (!*dev) {
-		ptl_warn("unable to find rdma device for rxe domain\n");
-		ibv_free_device_list(dev_list);
+	ni->cm_channel = rdma_create_event_channel();
+	if (!ni->cm_channel) {
+		ptl_warn("unable to create CM event channel\n");
 		goto err1;
 	}
 
-	ni->ibv_context = ibv_open_device(*dev);
-
-	ibv_free_device_list(dev_list);
-
-	if (!ni->ibv_context) {
-		ptl_warn("unable to open rdma device\n");
+	/* Create a RDMA CM ID and bind it to retrieve the context and
+	 * PD. These will be valid for as long as librdmacm is not
+	 * unloaded, ie. when the program exits. */
+	if (rdma_create_id(ni->cm_channel, &cm_id, NULL, RDMA_PS_TCP)) {
+		ptl_warn("unable to create CM ID\n");
 		goto err1;
 	}
 
-	/* Create PD, CC, CQ, SRQ. */
-	ni->pd = ibv_alloc_pd(ni->ibv_context);
-	if (!ni->pd) {
-		ptl_warn("unable to alloc pd\n");
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = ni->addr;
+
+	if (rdma_bind_addr(cm_id, (struct sockaddr *)&sin)) {
+		ptl_warn("unable to bind to local address %x\n", ni->addr);
 		goto err1;
 	}
 
+	rdma_query_id(cm_id, &ni->ibv_context, &ni->pd);
+	if (ni->ibv_context == NULL || ni->pd == NULL) {
+		ptl_warn("unable to get the CM ID context or PD\n");
+		goto err1;
+	}
+	rdma_destroy_id(cm_id);
+
+	/* Create CC, CQ, SRQ. */
 	ni->ch = ibv_create_comp_channel(ni->ibv_context);
 	if (!ni->ch) {
 		ptl_warn("unable to create comp channel\n");
+		goto err1;
+	}
+
+	flags = fcntl(ni->ch->fd, F_GETFL);
+	if (fcntl(ni->ch->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		ptl_warn("Cannot set completion event channel to non blocking\n");
 		goto err1;
 	}
 
@@ -451,22 +596,51 @@ static int init_ib(ni_t *ni)
 	}
 
 	srq_init_attr.srq_context = ni;
-	srq_init_attr.attr.max_wr = 1;
+	srq_init_attr.attr.max_wr = 100; /* todo: adjust */
 	srq_init_attr.attr.max_sge = 1;
-	srq_init_attr.attr.srq_limit = 30; /* should be ignored */
-	
+	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
+
 	ni->xrc_srq = ibv_create_xrc_srq(ni->pd, ni->xrc_domain,
-					 ni->cq, &srq_init_attr);
+									 ni->cq, &srq_init_attr);
 	if (!ni->xrc_srq) {
 		ptl_fatal("unable to create xrc srq\n");
 		goto err1;
 	}
+
+	for (i = 0; i < srq_init_attr.attr.max_wr; i++) {
+        err = post_recv(ni);
+        if (err) {
+            WARN();
+            err = PTL_FAIL;
+            goto err1;
+        }
+    }
 
 	return PTL_OK;
 
  err1:
 	cleanup_ib(ni);
 	return PTL_FAIL;
+}
+
+/* Release the buffers still on the send_list and recv_list. */
+static void release_buffers(ni_t *ni)
+{
+	buf_t *buf;
+
+	while(!list_empty(&ni->send_list)) {
+		struct list_head *entry = ni->send_list.next;
+		list_del(entry);
+		buf = list_entry(entry, buf_t, list);
+		buf_put(buf);
+	}
+
+	while(!list_empty(&ni->recv_list)) {
+		struct list_head *entry = ni->recv_list.next;
+		list_del(entry);
+		buf = list_entry(entry, buf_t, list);
+		buf_put(buf);
+	}
 }
 
 /* convert ni option flags to a 2 bit type */
@@ -498,7 +672,7 @@ int PtlNIInit(ptl_interface_t iface,
 
 	if (iface == PTL_IFACE_DEFAULT) {
 		iface = get_default_iface(gbl);
-		if (!iface) {
+		if (iface == PTL_IFACE_DEFAULT) {
 			goto err1;
 		}
 	}
@@ -560,7 +734,7 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	ni = gbl_lookup_ni(gbl, iface, ni_type);
 	if (ni) {
-		ni->ref_cnt++;
+		__sync_add_and_fetch(&ni->ref_cnt, 1);
 		goto done;
 	}
 
@@ -584,12 +758,14 @@ int PtlNIInit(ptl_interface_t iface,
 	INIT_LIST_HEAD(&ni->xt_wait_list);
 	INIT_LIST_HEAD(&ni->mr_list);
 	INIT_LIST_HEAD(&ni->send_list);
+	INIT_LIST_HEAD(&ni->recv_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->send_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&ni->recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
@@ -603,16 +779,22 @@ int PtlNIInit(ptl_interface_t iface,
 	}
 
 	if (options & PTL_NI_LOGICAL) {
+		ni->id.rank = gbl->rank;
+
 		err = ni_map(gbl, ni, map_size, desired_mapping);
 		if (unlikely(err)) {
 			goto err3;
 		}
+	} else {
+		/* TODO: set ni->id.phys.xxx. */
 	}
 
 	err = init_ib(ni);
 	if (err) {
 		goto err3;
 	}
+
+	rpc_add_extra_fd(gbl->rpc, ni->cm_channel->fd, process_cm_event, ni);
 
 	err = ni_rcqp_init(ni);
 	if (err) {
@@ -624,11 +806,14 @@ int PtlNIInit(ptl_interface_t iface,
 		goto err3;
 	}
 
-	if (gbl->shmem.fd == -1) {
-		err = get_rank_table(gbl, ni);
-		if (err) {
-			goto err3;
-		}
+	err = get_rank_table(ni);
+	if (err) {
+		goto err3;
+	}
+
+	err = create_rank_to_nid_table(ni);
+	if (err) {
+		goto err3;
 	}
 
 done:
@@ -660,7 +845,6 @@ static void interrupt_cts(ni_t *ni)
 	struct list_head *l;
 	ct_t *ct;
 
-
 	pthread_spin_lock(&ni->ct_list_lock);
 	pthread_mutex_lock(&ni->ct_wait_mutex);
 	list_for_each(l, &ni->ct_list) {
@@ -686,7 +870,7 @@ static void cleanup_mr_list(ni_t *ni)
         pthread_spin_unlock(&ni->mr_list_lock);
 }
 
-void ni_cleanup(ni_t *ni)
+static void ni_cleanup(ni_t *ni)
 {
 	void *notused;
 
@@ -706,6 +890,8 @@ void ni_cleanup(ni_t *ni)
 
 	cleanup_ib(ni);
 
+	release_buffers(ni);
+
 	if (ni->pt) {
 		free(ni->pt);
 		ni->pt = NULL;
@@ -714,6 +900,11 @@ void ni_cleanup(ni_t *ni)
 	if (ni->map) {
 		free(ni->map);
 		ni->map = NULL;
+	}
+
+	if (ni->shmem.fd != -1) {
+		close(ni->shmem.fd);
+		ni->shmem.fd = -1;
 	}
 
 	pthread_mutex_destroy(&ni->ct_wait_mutex);
@@ -745,7 +936,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 		goto err1;
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
-	if (--ni->ref_cnt <= 0) {
+	if (__sync_sub_and_fetch(&ni->ref_cnt, 1) <= 0) {
 		err = gbl_remove_ni(gbl, ni);
 		if (err) {
 			pthread_mutex_unlock(&gbl->gbl_mutex);

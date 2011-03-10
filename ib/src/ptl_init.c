@@ -4,7 +4,7 @@
 #include "ptl_loc.h"
 
 static char *init_state_name[] = {
-	[STATE_INIT_START]		= "init_start",
+	[STATE_INIT_START]			= "init_start",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
 	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
 	[STATE_INIT_HANDLE_COMP]	= "init_handle_comp",
@@ -167,6 +167,45 @@ static int init_start(xi_t *xi)
 	data_t *get_data = NULL;
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
+	gbl_t *gbl = ni->gbl;
+	struct nid_connect *connect;
+
+	if (unlikely(xi->target.rank >= gbl->nranks)) {
+		ptl_warn("Invalid rank (%d >= %d\n",
+				 xi->target.rank, gbl->nranks);
+		return STATE_INIT_ERROR;
+	}
+
+	/* Ensure we are already connected. */
+	connect = ni->rank_to_nid_table[xi->target.rank].connect;
+	pthread_mutex_lock(&connect->mutex);
+	if (unlikely(connect->state != GBLN_CONNECTED)) {
+		/* Not connected. Add the xi on the pending list. It will be
+		 * flushed once connected/disconnected. */
+		int ret;
+
+		if (connect->state == GBLN_DISCONNECTED) {
+			/* Initiate connection. */
+			list_add_tail(&xi->connect_pending_list, &connect->xi_list);
+
+			if (init_connect(ni, connect)) {
+				list_del(&xi->connect_pending_list);
+				ret = STATE_INIT_ERROR;
+			} else
+				ret = STATE_INIT_START;
+		} else {
+			/* Connection in already in progress. */
+			ret = STATE_INIT_START;
+		}
+
+		pthread_mutex_unlock(&connect->mutex);
+
+		return ret;
+	} else {
+		set_xi_dest(xi, connect);
+	}
+
+	pthread_mutex_unlock(&connect->mutex);
 
 	err = buf_alloc(ni, &buf);
 	if (err) {
@@ -183,6 +222,7 @@ static int init_start(xi_t *xi)
 	hdr->operation = xi->operation;
 	buf->length = sizeof(req_hdr_t);
 	buf->xi = xi;
+	buf->dest = &xi->dest;
 
 	switch (xi->operation) {
 	case OP_PUT:
@@ -470,6 +510,8 @@ int process_init(xi_t *xi)
 			switch (state) {
 			case STATE_INIT_START:
 				state = init_start(xi);
+				if (state == STATE_INIT_START)
+					goto exit;
 				break;
 			case STATE_INIT_SEND_ERROR:
 				state = init_send_error(xi);

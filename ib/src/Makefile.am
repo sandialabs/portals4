@@ -3,39 +3,64 @@ libportals_la_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_CHECK_POI
 libportals_la_LIBADD = -libverbs -lpthread -lrt
 libportals_la_SOURCES = \
 	ptl.c \
-	ptl_ct.c \
-	ptl_eq.c \
-	ptl_gbl.c \
-	ptl_handle.c \
-	ptl_id.c \
-	ptl_le.c \
-	ptl_maps.c \
-	ptl_mr.c \
-	ptl_md.c \
-	ptl_me.c \
-	ptl_move.c \
-	ptl_ni.c \
-	ptl_obj.c \
-	ptl_index.c \
-	ptl_pt.c \
-	ptl_ref.c \
-	ptl_rpc.c \
-	ptl_xx.c \
+	ptl_atomic.c \
 	ptl_buf.c \
+	ptl_buf.h \
+	ptl_ct.c \
+	ptl_ct.h \
+	ptl_data.c \
+	ptl_data.h \
+	ptl_eq.c \
+	ptl_eq.h \
+	ptl_gbl.c \
+	ptl_gbl.h \
+	ptl_handle.c \
+	ptl_handle.h \
 	ptl_hdr.c \
-	ptl_send.c \
+	ptl_hdr.h \
+	ptl_id.c \
+	ptl_index.c \
+	ptl_index.h \
+	ptl_init.c \
+	ptl_le.c \
+	ptl_le.h \
+	ptl_loc.h \
+	ptl_log.h \
+	ptl_maps.c \
+	ptl_maps.h \
+	ptl_md.c \
+	ptl_md.h \
+	ptl_me.c \
+	ptl_me.h \
+	ptl_move.c \
+	ptl_mr.c \
+	ptl_mr.h \
+	ptl_ni.c \
+	ptl_ni.h \
+	ptl_obj.c \
+	ptl_obj.h \
+	ptl_pt.c \
+	ptl_pt.h \
 	ptl_rdma.c \
 	ptl_recv.c \
-	ptl_init.c \
-	ptl_data.c \
-	ptl_atomic.c \
-	ptl_tgt.c
+	ptl_ref.c \
+	ptl_ref.h \
+	ptl_rpc.c \
+	ptl_rpc.h \
+	ptl_send.c \
+	ptl_shared.h \
+	ptl_tgt.c \
+	ptl_types.h \
+	ptl_xx.c \
+	ptl_xx.h
 
 bin_PROGRAMS = control
 control_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
 control_LDADD = -libverbs -lrdmacm -lpthread
 control_SOURCES =  \
-	ctl_main.c \
+	ctl.h \
 	ctl_config.c \
 	ctl_ib.c \
-	ptl_rpc.c
+	ctl_main.c \
+	ptl_rpc.c \
+	ptl_rpc.h

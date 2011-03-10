@@ -21,9 +21,13 @@ typedef enum {
 typedef struct buf {
 	PTL_BASE_OBJ
 
+	/* To hang on NI's send_list or recv_list. */
 	struct list_head	list;
+
 	struct xi		*xi;
 	struct xt		*xt;
+
+	struct xremote *dest;
 
 	unsigned int		size;
 	unsigned int		length;
@@ -31,8 +35,8 @@ typedef struct buf {
 	mr_t			*mr;
 
 	union {
-	struct ibv_send_wr	send_wr;
-	struct ibv_recv_wr	recv_wr;
+		struct ibv_send_wr	send_wr;
+		struct ibv_recv_wr	recv_wr;
 	};
 
 	buf_type_t		type;

@@ -18,11 +18,7 @@ unsigned int ctl_port = PTL_CTL_PORT;
  * acquire proc_gbl_mutex before making changes
  * that require atomicity
  */
-static gbl_t per_proc_gbl = {
-	.shmem = {
-		.fd = -1,
-	},
-};
+static gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void gbl_release(ref_t *ref)
@@ -143,6 +139,7 @@ static int get_vars(gbl_t *gbl)
 	char *env;
 
 	if (getenv_val("OMPI_MCA_orte_ess_jobid", &jid) ||
+		getenv_val("OMPI_UNIVERSE_SIZE", &gbl->num_nids) ||
 		getenv_val("OMPI_COMM_WORLD_RANK", &gbl->rank) ||
 		getenv_val("OMPI_COMM_WORLD_SIZE", &gbl->nranks) ||
 		getenv_val("OMPI_COMM_WORLD_LOCAL_RANK", &gbl->local_rank) ||
@@ -218,8 +215,11 @@ static int start_daemon(gbl_t *gbl)
 			  "-j", jobid,
 			  "-t", local_nranks,
 			  "-s", nranks,
-			  //			  "-v",
-			  //			  "-l", "100",
+#if 0
+			  //todo: pass existing params instead
+			  "-v",
+			  "-l", "100",
+#endif
 			  NULL);
 
 		_exit(0);
@@ -237,7 +237,7 @@ static int start_daemon(gbl_t *gbl)
 
 static void rpc_callback(struct session *session)
 {
-	printf("FZ- got RPC message - dropping it\n");
+	ptl_warn("Got RPC message - dropping it\n");
 }
 
 static int gbl_init(gbl_t *gbl)
@@ -311,62 +311,39 @@ void gbl_put(gbl_t *gbl)
 /* caller must hold global mutex */
 ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
 {
-	int i;
-	ni_t *ni;
+	if (iface > MAX_IFACE)
+		return NULL;
 
-	for (i = 0; i < MAX_IFACE; i++) {
-		if (gbl->iface[i].if_index != iface)
-			continue;
-
-		ni = gbl->iface[i].ni;
-		if (!ni)
-			continue;
-
-		if (ni->ni_type != ni_type)
-			continue;
-
-		return ni;
-	}
-
-	return NULL;
+	return gbl->iface[iface].ni;
 }
 
 /* caller must hold global mutex */
 int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 {
 	ptl_interface_t iface = ni->iface;
-	int slot = -1;
 
-	for (slot = 0; slot < MAX_IFACE; slot++) {
-		if (!gbl->iface[slot].ni)
-			goto found_slot;
-	}
-
-	return PTL_NO_SPACE;
-
-found_slot:
-	if (!if_indextoname(iface, gbl->iface[slot].if_name)) {
+	/* Ensure there's no NI there already. */
+	if (iface >= MAX_IFACE || gbl->iface[iface].ni)
 		return PTL_ARG_INVALID;
-	}
-	gbl->iface[slot].if_index = iface;
-	gbl->iface[slot].ni = ni;
+
+	gbl->iface[iface].ni = ni;
+	sprintf(gbl->iface[iface].if_name, "ib%d", iface);
 
 	ni->iface = iface;
-	ni->slot = slot;
+
 	return PTL_OK;
 }
 
 /* caller must hold global mutex */
 int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
 {
-	int slot = ni->slot;
+	ptl_interface_t iface = ni->iface;
 
-	if (unlikely(ni != gbl->iface[slot].ni))
+	if (unlikely(ni != gbl->iface[iface].ni))
 		return PTL_FAIL;
 
-	gbl->iface[slot].if_index = 0;
-	gbl->iface[slot].if_name[0] = 0;
-	gbl->iface[slot].ni = NULL;
+	gbl->iface[iface].if_name[0] = 0;
+	gbl->iface[iface].ni = NULL;
 
 	return PTL_OK;
 }
@@ -426,6 +403,7 @@ void PtlFini(void)
 	if (ret) {
 		ptl_warn("unable to acquire proc_gbl mutex\n");
 		ptl_test_return = PTL_FAIL;
+		abort();
 		goto err0;
 	}
 

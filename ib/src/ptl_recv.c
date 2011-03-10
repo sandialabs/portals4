@@ -32,10 +32,45 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 	struct ibv_wc wc;
 	int n;
 	buf_t *buf;
+	struct pollfd pollfd;
+	const int timeout = 500;
+	int rc;
 
-	while(1) {
-		err = ibv_req_notify_cq(ni->cq, 0);
+	/* TODO: this function is inefficient. we could probably
+	 * ibv_poll_cq until the queue is empty, then block.*/
+
+	pollfd.fd = ni->ch->fd;
+	pollfd.events  = POLLIN;
+	pollfd.revents = 0;
+
+	while(ni->recv_run) {
+
+		rc = poll(&pollfd, 1, timeout);
+
+		if (rc < 0) {
+			WARN();
+			return STATE_RECV_ERROR;
+		}
+
+		if (rc == 0)
+			continue;
+
+		err = ibv_get_cq_event(ni->ch, &cq, &unused);
 		if (err) {
+			WARN();
+			return STATE_RECV_ERROR;
+		}
+
+		/* todo: coalesce acks. ibv_ack_cq_events is costly. see man page. */
+		ibv_ack_cq_events(ni->cq, 1);
+
+		if (cq != ni->cq) {
+			WARN();
+			return STATE_RECV_ERROR;
+		}
+
+		if (ibv_req_notify_cq(ni->cq, 0)) {
+			ptl_warn("unable to req notify\n");
 			WARN();
 			return STATE_RECV_ERROR;
 		}
@@ -55,13 +90,10 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 				break;
 			}
 		}
-		err = ibv_get_cq_event(ni->ch, &cq, &unused);
-		if (err || cq != ni->cq) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
+	}
 
-		ibv_ack_cq_events(ni->cq, 1);
+	if (!ni->recv_run) {
+		return STATE_RECV_ERROR;
 	}
 
 	buf = (buf_t *)(uintptr_t)wc.wr_id;
@@ -159,6 +191,10 @@ static int recv_packet(buf_t *buf)
 {
 	ni_t *ni = to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
+
+	pthread_spin_lock(&ni->recv_list_lock);
+	list_del(&buf->list);
+	pthread_spin_unlock(&ni->recv_list_lock);
 
 #if 0
 int i;
@@ -362,7 +398,8 @@ void *recv_thread(void *arg)
 	while(ni->recv_run) {
 		err = process_recv(ni);
 		if (err) {
-			WARN();
+			if (ni->recv_run)
+				WARN();
 			break;
 		}
 	}

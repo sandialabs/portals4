@@ -5,7 +5,11 @@
 #ifndef PTL_RPC_H
 #define PTL_RPC_H
 
+/* TCP port for control connections. */
 #define PTL_CTL_PORT		(0x3456)
+
+/* Port on which RDMA listen wait for incoming XRC connection. */
+#define PTL_XRC_PORT (7694)
 
 /*
  * messages 
@@ -30,6 +34,7 @@ struct rpc_msg {
 			ptl_rank_t local_rank; /* message from local rank */
 			ptl_rank_t rank;	   /* (world) rank */
 			uint32_t xrc_srq_num;
+			in_addr_t addr;		/* IPV4 address, in network order */
 		} query_rank_table;
 
 		/* REPLY_RANK_TABLE */
@@ -48,7 +53,6 @@ struct rpc_msg {
 		struct {
 			/* file name for the XRC domain. */
 			char xrc_domain_fname[1024];
-			char ib_name[50];
 		} reply_xrc_domain;
 
 		/* LOCAL RANK TABLE */
@@ -98,6 +102,11 @@ struct rpc {
 	pthread_spinlock_t		session_list_lock;
 
 	void (*callback)(struct session *session);
+
+	/* Extra FD. */
+	int extra_fd;
+	void (*extra_fd_callback)(void *);
+	void *extra_fd_data;
 };
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
@@ -108,5 +117,8 @@ int rpc_fini(struct rpc *rpc);
 int rpc_get(struct session *session,
 			struct rpc_msg *msg_in, struct rpc_msg *msg_out);
 int rpc_send(struct session *session, struct rpc_msg *msg_out);
+
+void rpc_add_extra_fd(struct rpc *rpc, int fd, void (*callback)(void *), void *data);
+void rpc_remove_extra_fd(struct rpc *rpc);
 
 #endif /* RPC_PTL_H */

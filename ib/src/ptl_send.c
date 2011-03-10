@@ -20,12 +20,13 @@ int send_message(buf_t *buf)
 	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 	buf->sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
+	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
 
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	err = ibv_post_send(ni->qp, &buf->send_wr, &bad_wr);
+	err = ibv_post_send(buf->dest->qp, &buf->send_wr, &bad_wr);
 	if (err) {
 		WARN();
 		pthread_spin_lock(&ni->send_list_lock);
@@ -34,7 +35,6 @@ int send_message(buf_t *buf)
 
 		return PTL_FAIL;
 	}
-
 
 	return PTL_OK;
 }
