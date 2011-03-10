@@ -1275,6 +1275,7 @@ int API_FUNC PtlSwap(
                 default:
                     break;
             }
+            break;
         default:
             VERBOSE_ERROR
                 ("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
