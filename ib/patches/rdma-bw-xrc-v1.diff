@@ -1,0 +1,445 @@
+diff -ruw /usr/src/redhat/BUILD/perftest-1.2.3/rdma_bw.c perftest-1.2.3/rdma_bw.c
+--- /usr/src/redhat/BUILD/perftest-1.2.3/rdma_bw.c	2009-12-10 08:33:52.000000000 -0600
++++ perftest-1.2.3/rdma_bw.c	2010-07-30 14:54:05.000000000 -0500
+@@ -52,6 +52,7 @@
+ #include <arpa/inet.h>
+ #include <byteswap.h>
+ #include <time.h>
++#include <fcntl.h>
+ 
+ #include <infiniband/verbs.h>
+ #include <rdma/rdma_cma.h>
+@@ -77,6 +78,11 @@
+ 	int                 tx_depth;
+ 	struct ibv_sge      list;
+ 	struct ibv_send_wr  wr;
++
++	/* XRC support. */
++	struct ibv_xrc_domain *xrc_domain;
++	struct ibv_srq *xrc_srq;
++	uint32_t xrc_rcv_qpn;
+ };
+ 
+ struct pingpong_dest {
+@@ -85,6 +91,7 @@
+ 	int psn;
+ 	unsigned rkey;
+ 	unsigned long long vaddr;
++	uint32_t xrc_srq_num;
+ };
+ 
+ struct pp_data {
+@@ -93,6 +100,7 @@
+ 	unsigned            		size;
+ 	int                 		tx_depth;
+ 	int				use_cma;
++	int				use_xrc;
+ 	int 		    		sockfd;
+ 	char				*servername;
+ 	struct pingpong_dest		my_dest;
+@@ -107,7 +115,7 @@
+ static void pp_wait_for_done(struct pingpong_context *);
+ static void pp_send_done(struct pingpong_context *);
+ static void pp_wait_for_start(struct pingpong_context *);
+-static void pp_send_start(struct pingpong_context *);
++static void pp_send_start(struct pingpong_context *, struct pp_data *);
+ static void pp_close_cma(struct pp_data );
+ static struct pingpong_context *pp_init_ctx(void *, struct pp_data *);
+ 
+@@ -283,13 +291,14 @@
+ 
+ static int pp_client_exch_dest(struct pp_data *data)
+ {
+-	char msg[sizeof "0000:000000:000000:00000000:0000000000000000"];
++	char msg[sizeof "0000:000000:000000:00000000:0000000000000000:000000"];
+ 	int parsed;
+ 	
+ 	if (!data->use_cma) {
+-		sprintf(msg, "%04x:%06x:%06x:%08x:%016Lx", data->my_dest.lid, 
++		sprintf(msg, "%04x:%06x:%06x:%08x:%016Lx:%06x", data->my_dest.lid, 
+ 				data->my_dest.qpn, data->my_dest.psn,
+-				data->my_dest.rkey, data->my_dest.vaddr);
++				data->my_dest.rkey, data->my_dest.vaddr, 0);
++
+ 		if (write(data->sockfd, msg, sizeof msg) != sizeof msg) {
+ 			perror("client write");
+ 			fprintf(stderr, "%d:%s: Couldn't send local address\n", 
+@@ -310,11 +319,12 @@
+ 		if (!data->rem_dest)
+ 			goto err;
+ 	
+-		parsed = sscanf(msg, "%x:%x:%x:%x:%Lx", &data->rem_dest->lid,
++		parsed = sscanf(msg, "%x:%x:%x:%x:%Lx:%x", &data->rem_dest->lid,
+ 				&data->rem_dest->qpn, &data->rem_dest->psn,
+-				&data->rem_dest->rkey, &data->rem_dest->vaddr);
++						&data->rem_dest->rkey, &data->rem_dest->vaddr,
++						&data->rem_dest->xrc_srq_num);
+ 	
+-		if (parsed != 5) {
++		if (parsed != 6) {
+ 			fprintf(stderr, "%d:%s: Couldn't parse line <%.*s>\n",
+ 					pid, __func__, (int)sizeof msg, msg);
+ 			free(data->rem_dest);
+@@ -404,6 +414,11 @@
+ 		conn_param.initiator_depth = 1;
+ 		conn_param.private_data = &data->my_dest;
+ 		conn_param.private_data_len = sizeof(data->my_dest);
++
++		if (data->use_xrc) {
++			data->my_dest.xrc_srq_num = ctx->xrc_srq->xrc_srq_num;
++		}
++
+ 		if (rdma_accept(child_cm_id, &conn_param)) {
+ 			fprintf(stderr, "%d:%s: rdma_accept failed\n", pid, __func__);
+ 			goto err1;
+@@ -476,7 +491,7 @@
+ 
+ static int pp_server_exch_dest(struct pp_data *data)
+ {
+-	char msg[sizeof "0000:000000:000000:00000000:0000000000000000"];
++	char msg[sizeof "0000:000000:000000:00000000:0000000000000000:000000"];
+ 	int parsed;
+ 	int n;
+ 	
+@@ -495,19 +510,22 @@
+ 		if (!data->rem_dest)
+ 			goto err;
+ 	
+-		parsed = sscanf(msg, "%x:%x:%x:%x:%Lx", &data->rem_dest->lid,
++		parsed = sscanf(msg, "%x:%x:%x:%x:%Lx:%x", &data->rem_dest->lid,
+ 			      &data->rem_dest->qpn, &data->rem_dest->psn,
+-			      &data->rem_dest->rkey, &data->rem_dest->vaddr);
+-		if (parsed != 5) {
++						&data->rem_dest->rkey, &data->rem_dest->vaddr,
++						&data->rem_dest->xrc_srq_num);
++		if (parsed != 6) {
+ 			fprintf(stderr, "%d:%s: Couldn't parse line <%.*s>\n", pid,
+ 						 __func__, (int)sizeof msg, msg);
+ 			free(data->rem_dest);
+ 			goto err;
+ 		}
+ 	
+-		sprintf(msg, "%04x:%06x:%06x:%08x:%016Lx", data->my_dest.lid,
++		sprintf(msg, "%04x:%06x:%06x:%08x:%016Lx:%06x", data->my_dest.lid,
+ 					 data->my_dest.qpn, data->my_dest.psn,
+-					 data->my_dest.rkey, data->my_dest.vaddr);
++				data->my_dest.rkey, data->my_dest.vaddr,
++				data->my_dest.xrc_srq_num);
++
+ 		if (write(data->sockfd, msg, sizeof msg) != sizeof msg) {
+ 			perror("server write");
+ 			fprintf(stderr, "%d:%s: Couldn't send local address\n", 
+@@ -522,13 +540,27 @@
+ 	return 1;
+ }
+ 
++static int my_modify_qp(struct pingpong_context *ctx, struct pp_data *data, struct ibv_qp_attr *attr,
++						int attr_mask)
++{
++	int rc;
++
++	if (data->use_xrc && ctx->xrc_rcv_qpn)
++		rc = ibv_modify_xrc_rcv_qp(ctx->xrc_domain, ctx->xrc_rcv_qpn,
++								   attr, attr_mask);
++	else
++		rc = ibv_modify_qp(ctx->qp, attr, attr_mask);
++
++	return rc;
++}
++
+ static struct pingpong_context *pp_init_ctx(void *ptr, struct pp_data *data)
+ {
+ 	struct pingpong_context *ctx;
+ 	struct ibv_device *ib_dev;
+ 	struct rdma_cm_id *cm_id = NULL;
+ 
+-	ctx = malloc(sizeof *ctx);
++	ctx = calloc(1, sizeof *ctx);
+ 	if (!ctx)
+ 		return NULL;
+ 
+@@ -601,8 +633,35 @@
+ 		return NULL;
+ 	}
+ 
++	if (data->use_xrc) {
++		struct ibv_srq_init_attr srq_init_attr;
++
++		/* Open XRC domain. */
++		int fd = -1;
++		ctx->xrc_domain = ibv_open_xrc_domain(ctx->context, fd, O_CREAT);
++		if (!ctx->xrc_domain) {
++			fprintf(stderr, "%d:%s: Couldn't create XRC domain.\n", pid, __func__);
++			return NULL;
++		}
++
++		srq_init_attr.srq_context = data->ib_dev;
++		srq_init_attr.attr.max_wr = 1;
++		srq_init_attr.attr.max_sge = 1;
++		srq_init_attr.attr.srq_limit = 30; /* should be ignored */
++
++		if (!data->servername) {
++			ctx->xrc_srq = ibv_create_xrc_srq(ctx->pd,
++											  ctx->xrc_domain,
++											  ctx->rcq,
++											  &srq_init_attr);
++			if (!ctx->xrc_srq) {
++				fprintf(stderr, "Failed to create SRQ.\n");
++				return NULL;
++			}
++		}
++	}
+ 
+-	struct ibv_qp_init_attr attr = {
++	struct ibv_qp_init_attr init_attr = {
+ 		.send_cq = ctx->scq,
+ 		.recv_cq = ctx->rcq,
+ 		.cap     = {
+@@ -614,32 +673,55 @@
+ 			.max_recv_sge = 1,
+ 			.max_inline_data = 0
+ 		},
+-		.qp_type = IBV_QPT_RC
+ 	};
+ 
++	if (data->use_xrc) {
++		init_attr.qp_type = IBV_QPT_XRC;
++		init_attr.xrc_domain = ctx->xrc_domain;
++
++		if (!data->servername)
++			init_attr.cap.max_send_wr = 0; /* important */
++
++	} else {
++		init_attr.qp_type = IBV_QPT_RC;
++	}
++	
+ 	if (data->use_cma) {
+-		if (rdma_create_qp(cm_id, ctx->pd, &attr)) {
++		if (rdma_create_qp(cm_id, ctx->pd, &init_attr)) {
+ 			fprintf(stderr, "%d:%s: Couldn't create QP\n", pid, __func__);
+ 			return NULL;
+ 		}
++		
+ 		ctx->qp = cm_id->qp;
++		
++		/* Don't post anything on the XRC send side. */
++		if (!(data->use_xrc && data->servername))
+ 		pp_post_recv(ctx);
+-		return ctx;
++
+ 	} else {
+-		ctx->qp = ibv_create_qp(ctx->pd, &attr);
++		if (data->use_xrc && !data->servername) {
++			/* Server. Create XRC receive QP. */
++			if (ibv_create_xrc_rcv_qp(&init_attr, &ctx->xrc_rcv_qpn)) {
++				fprintf(stderr, "%d:%s: Failed to create XRC receive QP.\n", pid, __func__);
++				return NULL;
++			}
++		} else {
++			ctx->qp = ibv_create_qp(ctx->pd, &init_attr);
++
+ 		if (!ctx->qp)  {
+ 			fprintf(stderr, "%d:%s: Couldn't create QP\n", pid, __func__);
+ 			return NULL;
+ 		}
+-		{
+-			struct ibv_qp_attr attr;
++		}
+ 	
+-			attr.qp_state        = IBV_QPS_INIT;
+-			attr.pkey_index      = 0;
+-			attr.port_num        = data->ib_port;
+-			attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE;
++		struct ibv_qp_attr attr = {
++			.qp_state        = IBV_QPS_INIT,
++			.pkey_index      = 0,
++			.port_num        = data->ib_port,
++			.qp_access_flags = IBV_ACCESS_REMOTE_WRITE,
++		};
+ 	
+-			if (ibv_modify_qp(ctx->qp, &attr,
++		if (my_modify_qp(ctx, data, &attr,
+ 					IBV_QP_STATE              |
+ 					IBV_QP_PKEY_INDEX         |
+ 					IBV_QP_PORT               |
+@@ -653,8 +735,6 @@
+ 		return ctx;
+ 	}
+ 	
+-}
+-
+ static int pp_connect_ctx(struct pingpong_context *ctx, struct pp_data data)			  
+ {
+ 	struct ibv_qp_attr attr;
+@@ -671,7 +751,7 @@
+ 	attr.ah_attr.sl         = sl;
+ 	attr.ah_attr.src_path_bits = 0;
+ 	attr.ah_attr.port_num   = data.ib_port;
+-	if (ibv_modify_qp(ctx->qp, &attr,
++	if (my_modify_qp(ctx, &data, &attr,
+ 			  IBV_QP_STATE              |
+ 			  IBV_QP_AV                 |
+ 			  IBV_QP_PATH_MTU           |
+@@ -689,7 +769,7 @@
+ 	attr.rnr_retry 	    = 7;
+ 	attr.sq_psn 	    =  data.my_dest.psn;
+ 	attr.max_rd_atomic  = 1;
+-	if (ibv_modify_qp(ctx->qp, &attr,
++	if (my_modify_qp(ctx, &data, &attr,
+ 			  IBV_QP_STATE              |
+ 			  IBV_QP_TIMEOUT            |
+ 			  IBV_QP_RETRY_CNT          |
+@@ -717,7 +797,11 @@
+         wr.sg_list = &list;
+         wr.num_sge = 1;
+ 
++		if (ctx->xrc_srq) {
++			rc = ibv_post_srq_recv(ctx->xrc_srq, &wr, &bad_wr);
++		} else {
+         rc = ibv_post_recv(ctx->qp, &wr, &bad_wr);
++		}
+         if (rc) {
+                 perror("ibv_post_recv");
+                 fprintf(stderr, "%d:%s: ibv_post_recv failed %d\n", pid,
+@@ -761,6 +845,7 @@
+ 	ctx->wr.opcode     = IBV_WR_SEND;
+ 	ctx->wr.send_flags = IBV_SEND_SIGNALED;
+ 	ctx->wr.next       = NULL;
++
+ 	if (ibv_post_send(ctx->qp, &ctx->wr, &bad_wr)) {
+ 		fprintf(stderr, "%d:%s: ibv_post_send failed\n", pid, __func__);
+ 		return;
+@@ -803,7 +888,7 @@
+ 	pp_post_recv(ctx);
+ }
+ 
+-static void pp_send_start(struct pingpong_context *ctx)
++static void pp_send_start(struct pingpong_context *ctx, struct pp_data *data)
+ {
+ 	struct ibv_send_wr *bad_wr;
+ 	struct ibv_wc wc;
+@@ -818,6 +903,10 @@
+ 	ctx->wr.opcode     = IBV_WR_SEND;
+ 	ctx->wr.send_flags = IBV_SEND_SIGNALED;
+ 	ctx->wr.next       = NULL;
++
++	if (data->use_xrc)
++		ctx->wr.xrc_remote_srq_num = data->rem_dest->xrc_srq_num;
++
+ 	if (ibv_post_send(ctx->qp, &ctx->wr, &bad_wr)) {
+ 		fprintf(stderr, "%d:%s: ibv_post_send failed\n", pid, __func__);
+ 		return;
+@@ -964,10 +1053,11 @@
+ 			{ .name = "sl",             .has_arg = 1, .val = 'S' },
+ 			{ .name = "bidirectional",  .has_arg = 0, .val = 'b' },
+ 			{ .name = "cma", 	    .has_arg = 0, .val = 'c' },
++			{ .name = "xrc", 	    .has_arg = 0, .val = 'x' },
+ 			{ 0 }
+ 		};
+ 
+-		c = getopt_long(argc, argv, "p:d:i:s:n:t:S:bc", long_options, NULL);
++		c = getopt_long(argc, argv, "p:d:i:s:n:t:S:bcx", long_options, NULL);
+ 		if (c == -1)
+ 			break;
+ 
+@@ -1026,6 +1116,11 @@
+ 		case 'c':
+ 			data.use_cma = 1;
+ 			break;
++
++		case 'x':
++			data.use_xrc = 1;
++			break;
++
+ 		default:
+ 			usage(argv[0]);
+ 			return 1;
+@@ -1039,6 +1134,13 @@
+ 		return 1;
+ 	}
+ 
++#if 0
++	if (data.use_cma && data.use_xrc) {
++		fprintf(stderr, "RDMA CM and XRC are not compatible.\n");
++		return 1;
++	}
++#endif
++
+ 	/* Get the PID and prepend it to every output on stdout/stderr
+ 	 * This helps to parse output when multiple client/server are
+ 	 * run from single host
+@@ -1112,7 +1214,16 @@
+ 						pid, __func__);
+ 			return 1;
+ 		}
++
++		if (data.use_xrc && !data.servername) {
++			data.my_dest.qpn = ctx->xrc_rcv_qpn;
++			data.my_dest.xrc_srq_num = ctx->xrc_srq->xrc_srq_num;
++		}
++		else {
+ 		data.my_dest.qpn = ctx->qp->qp_num;
++			data.my_dest.xrc_srq_num = 0;
++		}
++
+ 		data.my_dest.psn = lrand48() & 0xffffff;
+ 		data.my_dest.rkey = ctx->mr->rkey;
+ 		data.my_dest.vaddr = (uintptr_t)ctx->buf + ctx->size;
+@@ -1129,14 +1240,20 @@
+ 	}
+ 
+ 	printf("%d: Local address:  LID %#04x, QPN %#06x, PSN %#06x "
+-			"RKey %#08x VAddr %#016Lx\n", pid, 
++			"RKey %#08x VAddr %#016Lx", pid, 
+ 			data.my_dest.lid, data.my_dest.qpn, data.my_dest.psn,
+ 			data.my_dest.rkey, data.my_dest.vaddr);	
++	if (data.use_xrc && !data.servername)
++		printf(", XRCSRQ %#06x", data.my_dest.xrc_srq_num);
++	printf("\n");
+ 
+ 	printf("%d: Remote address: LID %#04x, QPN %#06x, PSN %#06x, "
+-			"RKey %#08x VAddr %#016Lx\n\n", pid, 
++			"RKey %#08x VAddr %#016Lx", pid, 
+ 			data.rem_dest->lid, data.rem_dest->qpn, data.rem_dest->psn,
+ 			data.rem_dest->rkey, data.rem_dest->vaddr);
++	if (data.use_xrc && data.servername)
++		printf(", XRCSRQ %#06x", data.rem_dest->xrc_srq_num);
++	printf("\n\n");
+ 
+ 	if (data.use_cma) {
+ 		/*
+@@ -1144,7 +1261,7 @@
+ 		 * the first message (MPA requirement).
+ 		 */
+ 		if (data.servername) {			
+-			pp_send_start(ctx);
++			pp_send_start(ctx, &data);
+ 		} else {
+ 			pp_wait_for_start(ctx);
+ 		}
+@@ -1168,6 +1285,7 @@
+ 	if (!data.servername && !duplex) {
+ 		if (data.use_cma) {
+ 			pp_wait_for_done(ctx);
++			if (!data.use_xrc)
+                         pp_send_done(ctx);
+ 			pp_close_cma(data);
+ 		} else {
+@@ -1189,6 +1307,7 @@
+ 	ctx->wr.opcode     = IBV_WR_RDMA_WRITE;
+ 	ctx->wr.send_flags = IBV_SEND_SIGNALED;
+ 	ctx->wr.next       = NULL;
++	ctx->wr.xrc_remote_srq_num = data.rem_dest->xrc_srq_num;
+ 
+ 	scnt = 0;
+ 	ccnt = 0;
+@@ -1254,7 +1373,9 @@
+ 
+ 	if (data.use_cma) {
+ 		/* This is racy when duplex mode is used*/
++		if (!(data.use_xrc && !data.servername))
+ 		pp_send_done(ctx);
++		if (!(data.use_xrc && data.servername))
+                	pp_wait_for_done(ctx);
+ 		pp_close_cma(data);
+ 	} else {
