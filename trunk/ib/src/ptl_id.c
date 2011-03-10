@@ -75,12 +75,7 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 		goto err1;
 	}
 
-	if (ni->options & PTL_NI_LOGICAL) {
-		id->rank = ni->rank;
-	} else {
-		id->phys.nid = ni->nid;
-		id->phys.pid = ni->pid;
-	}
+	*id = ni->id;
 
 	ni_put(ni);
 	gbl_put(gbl);

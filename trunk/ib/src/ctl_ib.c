@@ -33,10 +33,8 @@ static int process_connect_request(struct rdma_cm_event *event)
 	const struct cm_priv_request *priv;
 	struct rdma_conn_param conn_param;
 	struct ibv_qp_init_attr init_attr;
-	struct rank_entry *entry;
 	struct ib_intf *ib_intf;
-	struct ibv_pd pd;
-	struct cm_priv_response resp;
+	struct ctl_connect *connect;
 
 	if (!event->param.conn.private_data ||
 		(event->param.conn.private_data_len <
@@ -45,39 +43,55 @@ static int process_connect_request(struct rdma_cm_event *event)
 
 	priv = event->param.conn.private_data;
 
-	if (priv->src_rank >= conf.nranks)
-		return 1;
+	pthread_mutex_lock(&conf.mutex);
+	if (priv->src_rank >= conf.nranks) {
+		goto err;
+	}
 
-	entry = &conf.master_rank_table->elem[priv->src_rank];
+	connect = &conf.connect[priv->src_rank];
+
+	if (connect->state != PTL_CONNECT_DISCONNECTED) {
+		/* Already connected. Should not get there. */
+		abort();
+		goto err;
+	}
+
+	connect->state = PTL_CONNECT_CONNECTING;
+
 	ib_intf = event->listen_id->context;
 
 	memset(&init_attr, 0, sizeof(struct ibv_qp_init_attr));
 	init_attr.qp_type = IBV_QPT_XRC;
 	init_attr.xrc_domain = ib_intf->xrc_domain;
+	init_attr.cap.max_send_wr = 0; /* means XRC destination */
+	init_attr.cap.max_recv_wr = MAX_QP_RECV_WR;
+	init_attr.cap.max_send_sge = 1;
+	init_attr.cap.max_recv_sge = 1;
 
-	/* FZ: In the case of an XRC QP, PD is unused by rdma_create_qp, but
-	 * some sanity checking is done anyway. This is a hack, and I need
-	 * to fix rdma cm. */
-	pd.context = event->id->verbs;
-
-	if (rdma_create_qp(event->id, &pd, &init_attr)) {
-		return 1;
+	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+		connect->state = PTL_CONNECT_DISCONNECTED;
+		goto err;
 	}
 
-	entry->cm_id = event->id;
-
-	/* todo: fill resp. */
+	connect->cm_id = event->id;
+	event->id->context = connect;
 
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
 	conn_param.initiator_depth = 1;
-	conn_param.private_data = &resp;
-	conn_param.private_data_len = sizeof(resp);
 
 	if (rdma_accept(event->id, &conn_param)) {
+		rdma_destroy_qp(event->id);
+		connect->state = PTL_CONNECT_DISCONNECTED;
+		goto err;
 	}	
 
+	pthread_mutex_unlock(&conf.mutex);
 	return 0;
+
+err:
+	pthread_mutex_unlock(&conf.mutex);
+	return 1;
 }
 
 /* Called when an event happenned on the event channel. 
@@ -85,6 +99,7 @@ static int process_connect_request(struct rdma_cm_event *event)
 static void process_cm_event(void)
 {
 	struct rdma_cm_event *event;
+	struct ctl_connect *connect;
 
 	if (rdma_get_cm_event(cm_channel, &event)) 
 		return;
@@ -94,8 +109,22 @@ static void process_cm_event(void)
 		process_connect_request(event);
 		break;
 
-	case RDMA_CM_EVENT_CONNECT_ERROR:
 	case RDMA_CM_EVENT_ESTABLISHED:
+		connect = event->id->context;
+		assert(connect->state == PTL_CONNECT_CONNECTING);
+		pthread_mutex_lock(&conf.mutex);
+		connect->state = PTL_CONNECT_CONNECTED;
+		pthread_mutex_unlock(&conf.mutex);
+		break;
+
+	case RDMA_CM_EVENT_DISCONNECTED:
+		connect = event->id->context;
+		assert(connect->state == PTL_CONNECT_CONNECTED);
+		pthread_mutex_lock(&conf.mutex);
+		connect->state = PTL_CONNECT_DISCONNECTED;
+		pthread_mutex_unlock(&conf.mutex);
+		break;
+
 	default:
 		break;
 	};
@@ -107,27 +136,25 @@ static void process_cm_event(void)
 
 static void *cm_task(void *arg)
 {
-	int nfd;
-	fd_set readfds;
-	struct timeval timeout;
+	int rc;
+	struct pollfd pollfd;
 
-	FD_ZERO(&readfds);
-	FD_SET(cm_channel->fd, &readfds);
+    pollfd.fd = cm_channel->fd;
+    pollfd.events  = POLLIN;
+    pollfd.revents = 0;
 
 	printf("cm event thread running\n");
 
 	while (!cm_thread_stop) {
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 1000000;
 
-		nfd = select(cm_channel->fd + 1, &readfds, NULL, NULL,
-				&timeout);
-		if (nfd < 0) {
-			perror("select");
+		rc = poll(&pollfd, 1, 1000000);
+
+		if (rc < 0) {
+			perror("poll");
 			break;
 		}
 
-		if (nfd)
+		if (rc)
 			process_cm_event();
 	}
 
@@ -359,9 +386,11 @@ found_ib_intf:
 		}
 
 		/* TODO: bind on the right address. */ 
-		sin.sin_addr.s_addr = 0;
+		memset(&sin, 0, sizeof(struct sockaddr_in));
+		sin.sin_addr.s_addr = htonl(INADDR_ANY);
 		sin.sin_family = AF_INET;
-		sin.sin_port = htons(conf.ctl_port);
+		sin.sin_port = htons(conf.xrc_port);
+
 		if (rdma_bind_addr(ib_intf->listen_id,
 			(struct sockaddr *)&sin)) {
 			rdma_destroy_id(ib_intf->listen_id);
@@ -373,7 +402,7 @@ found_ib_intf:
 			continue;
 		}
 
-		ptl_info("listening on %s\n", ib_intf->name);
+		ptl_info("listening on %s, port %d\n", ib_intf->name, conf.xrc_port);
 	}
 
 	err = pthread_create(&cm_thread, NULL, cm_task, NULL);

@@ -26,7 +26,8 @@ static void rpc_callback(struct session *session)
 
 	switch(session->rpc_msg.type) {
 	case QUERY_RANK_TABLE:
-		printf("FZ- got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf.local_nranks);
+		if (verbose)
+			printf("got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf.local_nranks);
 		local_rank = m->query_rank_table.local_rank;
 
 		if (conf.local_rank_table->size <= m->query_rank_table.local_rank) {
@@ -39,18 +40,21 @@ static void rpc_callback(struct session *session)
 		if (conf.local_rank_table->elem[local_rank].nid != conf.nid) {
 			conf.local_rank_table->elem[local_rank].rank = m->query_rank_table.rank;
 			conf.local_rank_table->elem[local_rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
+			conf.local_rank_table->elem[local_rank].addr = m->query_rank_table.addr;
 			conf.local_rank_table->elem[local_rank].nid = conf.nid;
 
 			conf.sessions[local_rank] = session;
 			conf.num_sessions ++;
 		}
 
-		printf("FZ- got another session - %d %d\n", conf.num_sessions, conf.local_nranks);
+		if (verbose)
+			printf("got another session - %d %d\n", conf.num_sessions, conf.local_nranks);
 		if (conf.num_sessions == conf.local_nranks) {
 			/* All local ranks have reported. Sent the local rank table to the master control. */
 			//	msg.type = LOCAL_RANK_TABLE;
 
-			printf("FZ- got all session\n");
+			if (verbose)
+				printf("got all session\n");
 
 			if (conf.nid == conf.master_nid) {
 				/* Hey, I'm the boss. Copy the local ranks to the
@@ -60,6 +64,7 @@ static void rpc_callback(struct session *session)
 						ptl_rank_t rank = conf.local_rank_table->elem[local_rank].rank;
 						conf.master_rank_table->elem[rank].rank = rank;
 						conf.master_rank_table->elem[rank].xrc_srq_num = conf.local_rank_table->elem[local_rank].xrc_srq_num;
+						conf.master_rank_table->elem[rank].addr = conf.local_rank_table->elem[local_rank].addr;
 						conf.master_rank_table->elem[rank].pid = 0; /* ??? todo */
 						conf.master_rank_table->elem[rank].nid = conf.local_rank_table->elem[local_rank].nid;
 
@@ -109,10 +114,8 @@ static void rpc_callback(struct session *session)
 			ib_intf = net_intf->ib_intf;
 			strcpy(msg.reply_xrc_domain.xrc_domain_fname,
 				ib_intf->xrc_domain_fname);
-			strcpy(msg.reply_xrc_domain.ib_name, ib_intf->name);
 		} else {
 			strcpy(msg.reply_xrc_domain.xrc_domain_fname, "");
-			strcpy(msg.reply_xrc_domain.ib_name, "");
 		}
 		rpc_send(session, &msg);
 		break;
@@ -156,16 +159,20 @@ static void usage(char *argv[])
 	printf("    -v | --verbose      increase quantity of output\n");
 	printf("    -p | --port         control port (default = %d)\n",
 		PTL_CTL_PORT);
-	printf("    -x | --xrc          XRC port (default = %d)\n", XRC_PORT);
-	printf("    -n | --nid-table    NID table\n");
+	printf("    -x | --xrc          XRC port (default = %d)\n", PTL_XRC_PORT);
+	printf("    -n | --nid          NID\n");
 	printf("    -l | --log level    rank table\n");
+	printf("    -j | --jid          job ID\n");
+	printf("    -t | --local_nranks number of local ranks\n");
+	printf("    -s | --nranks       number of ranks\n");
+	printf("    -m | --master-nid   NID of master control daemon\n");
 }
 
 static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int opt_index = 0;
-	const char *opt_string = "hvp:n:r:j:l:t:s:m:";
+	const char *opt_string = "hvp:n:j:l:t:s:m:x:";
 	static const struct option opt_long[] = {
 		{"help", 0, 0, 'h'},
 		{"verbose", 0, 0, 'v'},
@@ -184,6 +191,7 @@ static int arg_process(int argc, char *argv[])
 		progname = argv[0];
 
 	conf.ctl_port = PTL_CTL_PORT;
+	conf.xrc_port = PTL_XRC_PORT;
 	conf.shmem.fd = -1;
 
 	while (1) {
@@ -232,6 +240,10 @@ static int arg_process(int argc, char *argv[])
 			conf.nranks = strtol(optarg, NULL, 0);
 			break;
 
+		case 'x':
+			conf.xrc_port = strtol(optarg, NULL, 0);
+			break;
+
 		default:
 			fprintf(stderr, "unexpected option\n");
 			goto err1;
@@ -265,19 +277,20 @@ int main(int argc, char *argv[])
 
 	if (verbose) {
 		printf("%s starting with:\n", progname);
-		printf("	port = %d\n", conf.ctl_port);
+		printf("	ctl port = %d\n", conf.ctl_port);
+		printf("	XRC port = %d\n", conf.xrc_port);
+	}
+
+	err = run_once();
+	if (err) {
+		/* Another process is already running. */
+		return 1;
 	}
 
 	/* Detach the process before continuing. */
 	err = daemon(0,0);
 	if (err) {
 		perror("Couldn't daemonize\n");
-		return 1;
-	}
-
-	err = run_once();
-	if (err) {
-		/* Another process is already running. */
 		return 1;
 	}
 
@@ -292,7 +305,16 @@ int main(int argc, char *argv[])
 	conf.local_rank_table = calloc(1, sizeof(struct rank_table) +
 								   conf.local_nranks * sizeof(struct rank_entry));
 	if (!conf.local_rank_table) {
-		fprintf(stderr, "Couldn't allocate tables\n");
+		fprintf(stderr, "Couldn't allocate local rank table\n");
+		return 1;
+	}
+	conf.local_rank_table->size = conf.local_nranks;
+
+	/* Create connection table. */
+	conf.connect = calloc(conf.nranks,
+						  sizeof (*conf.connect));
+	if (!conf.connect) {
+		fprintf(stderr, "Couldn't allocate connection table\n");
 		return 1;
 	}
 	conf.local_rank_table->size = conf.local_nranks;

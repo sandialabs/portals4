@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<test>
+  <subtest>
+    <desc>Test short put without offset</desc>
+    <ptl>
+      
+      <mpi_barrier/>
+      
+      <ptl_ni ni_opt="MATCH LOGICAL">
+        <ptl_eq>
+          <ptl_pt>
+            <ptl_get_id/>
+            
+            <if rank="0">
+              <ptl_md md_data="0xaa">
+                
+                <!-- Wait for rank 1 to set up the receiving buffer -->
+                <mpi_barrier/>
+                
+                <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
+                
+                <!-- Wait for the packet containing the ack -->
+                <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                </ptl_eq_wait>
+                
+                <!-- Wait for the ack -->
+                <ptl_eq_wait>
+                  <check event_type="ACK"/>
+                </ptl_eq_wait>
+                
+                <!-- Force rank 1 to wait for us -->
+                <mpi_barrier/>
+              </ptl_md>
+            </if>
+            
+            <if rank="1">
+              <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77">
+                
+                <!-- Force rank 0 to wait for the buffer to be ready -->
+                <mpi_barrier/>
+                
+                <!-- Wait for the PUT from rank 0 -->                
+                <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                </ptl_eq_wait>
+                
+                <check length="4" me_data="0xaa"/>
+                
+                <!-- Wait for rank 0 to receive the ACK -->
+                <mpi_barrier/>
+                
+              </ptl_me>
+            </if>
+            
+          </ptl_pt>
+        </ptl_eq>
+      </ptl_ni>
+    </ptl>
+    
+  </subtest>
+</test>

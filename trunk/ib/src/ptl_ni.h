@@ -14,6 +14,41 @@
 
 extern obj_type_t *type_ni;
 
+struct nid_connect {
+	enum {
+		GBLN_DISCONNECTED,
+		GBLN_RESOLVE_ADDR,
+		GBLN_RESOLVING_ADDR,
+		GBLN_RESOLVE_ROUTE,
+		GBLN_RESOLVING_ROUTE,
+		GBLN_CONNECT,
+		GBLN_CONNECTING,
+		GBLN_CONNECTED,
+	} state;
+
+	/* CM */
+	struct rdma_cm_id *cm_id;
+	in_addr_t addr;				/* IPV4 address, in network order */
+	ptl_nid_t nid;
+
+	int retry_resolve_addr;
+	int retry_resolve_route;
+	int retry_connect;
+
+	pthread_mutex_t	mutex;
+
+	/* xi/xt awaiting connection establishment. */
+	struct list_head xi_list;
+	struct list_head xt_list;
+};
+
+/* Translation table to find a connection from a rank. */
+struct rank_to_nid {
+	ptl_rank_t rank;			/* key */
+	ptl_nid_t nid;
+	struct nid_connect *connect;
+};
+
 typedef struct ni {
 	PTL_BASE_OBJ
 
@@ -25,14 +60,13 @@ typedef struct ni {
 	struct {
 		uint32_t		nid;
 		uint32_t		pid;
-	}			*map;
+	} *map;
 
 	int			ref_cnt;
 
 	unsigned int		iface;
 	unsigned int		options;
 	unsigned int		ni_type;
-	int			slot;
 
 	ptl_sr_value_t		status[_PTL_SR_LAST];
 
@@ -74,18 +108,22 @@ typedef struct ni {
 	struct list_head	send_list;
 	pthread_spinlock_t	send_list_lock;
 
-	union {
-	uint32_t		nid;
-	uint32_t		rank;
-	};
-	uint32_t		pid;
+	struct list_head	recv_list;
+	pthread_spinlock_t	recv_list_lock;
+
+	ptl_process_t id;
 	ptl_uid_t		uid;
+
+	/* Network interface. */
+	char ifname[IF_NAMESIZE];	/* eg "ib0", "ib1", ... */
+	in_addr_t addr;				/* ifname IPV4 address, in network order */
 
 	/* IB */
 	struct ibv_context	*ibv_context;
 	struct ibv_pd		*pd;
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
+	struct rdma_event_channel *cm_channel;
 
 	/* IB XRC support. */
 	int			xrc_domain_fd;
@@ -93,12 +131,19 @@ typedef struct ni {
 	struct ibv_srq		*xrc_srq;
 	uint32_t		xrc_rcv_qpn;
 
-	/* rc simulation code */
-	struct ibv_qp		*qp;
-
 	pthread_t		recv_thread;
 	int			has_recv_thread;
 	int			recv_run;
+
+	/* shared memory. */
+	struct {
+		int fd;
+		struct shared_config *m; /* mmaped memory */
+		struct rank_table *rank_table;
+	} shmem;
+
+	struct rank_to_nid *rank_to_nid_table;
+	struct nid_connect *nid_table;
 
 } ni_t;
 
@@ -156,5 +201,7 @@ static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
 		pthread_spin_unlock(&ni->obj_lock);
 	}
 }
+
+int init_connect(ni_t *ni, struct nid_connect *connect);
 
 #endif /* PTL_NI_H */

@@ -25,6 +25,10 @@ enum {
 	XT_REPLY_EVENT		= (1 << 3),
 } event_mask_t;
 
+struct xremote {
+	struct ibv_qp *qp;					   /* from RDMA CM */
+	uint32_t xrc_remote_srq_num;
+};
 
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
@@ -82,6 +86,12 @@ typedef struct xi {
 	md_t			*get_md;
 	void			*user_ptr;
 	ptl_process_t		target;
+
+	/* This xi is waiting for connection to be established. */
+	struct list_head connect_pending_list;
+
+	struct xremote dest;
+
 } xi_t;
 
 extern obj_type_t *type_xi;
@@ -122,9 +132,15 @@ typedef struct xt {
 	ptl_process_t		initiator;
 	pt_t			*pt;
 	union {
-	le_t			*le;
-	me_t			*me;
+		le_t			*le;
+		me_t			*me;
 	};
+
+	/* This xt is waiting for connection to be established. */
+	struct list_head connect_pending_list;
+
+	struct xremote dest;
+
 	struct ibv_sge		*indir_sge;
 	mr_t			*indir_mr;
 } xt_t;
@@ -156,6 +172,18 @@ static inline int xt_put(xt_t *xt)
 static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
 {
         return (ptl_handle_xt_t)xt->obj_handle;
+}
+
+static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
+{
+	xi->dest.qp = connect->cm_id->qp;
+	xi->dest.xrc_remote_srq_num = xi->obj_ni->shmem.rank_table->elem[xi->target.rank].xrc_srq_num;
+}
+
+static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
+{
+	xt->dest.qp = connect->cm_id->qp;
+	xt->dest.xrc_remote_srq_num = xt->obj_ni->shmem.rank_table->elem[xt->initiator.rank].xrc_srq_num;
 }
 
 #endif /* PTL_XX_H */

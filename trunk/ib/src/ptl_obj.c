@@ -164,6 +164,7 @@ int obj_init(void)
 			          type->name);
 			goto err;
 		}
+		type->count = 0;
 	}
 
 	return PTL_OK;

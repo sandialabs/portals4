@@ -1,3 +1,6 @@
+/*
+ * Shared structures between the control process and the clients.
+ */
 
 /* RANK */
 struct rank_entry {
@@ -5,9 +8,7 @@ struct rank_entry {
 	ptl_nid_t nid;
 	ptl_pid_t pid;
 	uint32_t xrc_srq_num;
-
-	/* Connection from remote rank. */
-	struct rdma_cm_id *cm_id;
+	in_addr_t addr;				/* IPV4 address, in network order */
 };
 
 struct rank_table {
@@ -21,4 +22,9 @@ struct rank_table {
 struct shared_config {
 	off_t rank_table_offset;
 	size_t rank_table_size;
+};
+
+/* RDMA CM private data */
+struct cm_priv_request {
+	ptl_rank_t src_rank;		/* rank requesting that connection */
 };

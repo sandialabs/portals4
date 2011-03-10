@@ -12,8 +12,8 @@ static void xport_hdr_from_xx(hdr_t *hdr, xi_t *xi)
 	hdr->atom_op = xi->atom_op;
 	hdr->atom_type = xi->atom_type;
 	hdr->ni_type = ni->ni_type;
-	hdr->src_nid = ni->nid;
-	hdr->src_pid = ni->pid;
+	hdr->src_nid = ni->id.phys.nid;
+	hdr->src_pid = ni->id.phys.pid;
 }
 
 void xport_hdr_from_xi(hdr_t *hdr, xi_t *xi)

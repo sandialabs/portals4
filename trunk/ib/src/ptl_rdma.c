@@ -41,12 +41,13 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.opcode = IBV_WR_RDMA_READ;
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
+	wr.xrc_remote_srq_num = rdma_buf->dest->xrc_remote_srq_num;
 
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&rdma_buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	err = ibv_post_send(ni->qp, &wr, &bad_wr);
+	err = ibv_post_send(rdma_buf->dest->qp, &wr, &bad_wr);
 	if (err) {
 		WARN();
 		pthread_spin_lock(&ni->send_list_lock);
@@ -64,7 +65,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
  *	build and post a single RDMA wrwite work request
  *	XXX Todo: Consider batching workrequest option as enhancement
  */
-int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
+static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	struct ibv_sge *loc_sge, int num_loc_sge, uint32_t imm_data,
 	uint8_t imm, uint8_t comp)
 {
@@ -103,12 +104,13 @@ int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.num_sge = num_loc_sge;
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
+	wr.xrc_remote_srq_num = rdma_buf->dest->xrc_remote_srq_num;
 
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&rdma_buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	err = ibv_post_send(ni->qp, &wr, &bad_wr);
+	err = ibv_post_send(rdma_buf->dest->qp, &wr, &bad_wr);
 	if (err) {
 		WARN();
 		pthread_spin_lock(&ni->send_list_lock);
