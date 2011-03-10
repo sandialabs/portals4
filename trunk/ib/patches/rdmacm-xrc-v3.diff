@@ -1,0 +1,328 @@
+Only in librdmacm-1.0.13: cmatose.o
+Only in librdmacm-1.0.13: config.h
+Only in librdmacm-1.0.13: config.log
+Only in librdmacm-1.0.13: config.status
+Only in librdmacm-1.0.13: .deps
+Only in librdmacm-1.0.13/examples: .dirstamp
+Only in librdmacm-1.0.13/examples: .libs
+Only in librdmacm-1.0.13/examples: mckey
+Only in librdmacm-1.0.13/examples: rdma_client
+Only in librdmacm-1.0.13/examples: rdma_server
+Only in librdmacm-1.0.13/examples: rping
+Only in librdmacm-1.0.13/examples: ucmatose
+Only in librdmacm-1.0.13/examples: udaddy
+diff -rubw librdmacm-1.0.13.org/include/rdma/rdma_cma.h librdmacm-1.0.13/include/rdma/rdma_cma.h
+--- librdmacm-1.0.13.org/include/rdma/rdma_cma.h	2010-05-21 17:17:41.000000000 -0500
++++ librdmacm-1.0.13/include/rdma/rdma_cma.h	2011-03-04 17:01:22.000000000 -0600
+@@ -125,6 +125,8 @@
+ 	struct ibv_cq		*send_cq;
+ 	struct ibv_comp_channel *recv_cq_channel;
+ 	struct ibv_cq		*recv_cq;
++ 	struct ibv_xrc_domain *xrc_domain;
++ 	uint32_t xrc_rcv_qpn;
+ };
+ 
+ enum {
+@@ -237,6 +239,10 @@
+ 		   struct rdma_cm_id **id, void *context,
+ 		   enum rdma_port_space ps);
+ 
++/* Returns the context and PD used by a CM ID. */
++void rdma_query_id(struct rdma_cm_id *id, struct ibv_context **context,
++				   struct ibv_pd **pd);
++
+ /**
+  * rdma_create_ep - Allocate a communication identifier and qp.
+  * @id: A reference where the allocated communication identifier will be
+Only in librdmacm-1.0.13/include/rdma: rdma_cma.h~
+Only in librdmacm-1.0.13: .libs
+Only in librdmacm-1.0.13: libtool
+Only in librdmacm-1.0.13: Makefile
+diff -rubw librdmacm-1.0.13.org/man/rdma_create_qp.3 librdmacm-1.0.13/man/rdma_create_qp.3
+--- librdmacm-1.0.13.org/man/rdma_create_qp.3	2010-08-10 15:47:26.000000000 -0500
++++ librdmacm-1.0.13/man/rdma_create_qp.3	2011-03-04 10:30:30.000000000 -0600
+@@ -39,6 +39,10 @@
+ allocated by the rdma_cm for the QP, along with corresponding completion
+ channels.  Completion channels and CQ data created by the rdma_cm are
+ exposed to the user through the rdma_cm_id structure.
++.P
++To create an XRC receive QP, and in addition to the XRC QP type,
++ibv_qp_init_attr.cap.max_send_wr must be set to 0. Conversely, to
++create the XRC send QP, that attribute must be non-zero.
+ .SH "SEE ALSO"
+ rdma_bind_addr(3), rdma_resolve_addr(3), rdma_destroy_qp(3), ibv_create_qp(3),
+ ibv_modify_qp(3)
+Only in librdmacm-1.0.13: mckey.o
+Only in librdmacm-1.0.13: rdma_client.o
+Only in librdmacm-1.0.13: rdma_server.o
+Only in librdmacm-1.0.13: rping.o
+diff -rubw librdmacm-1.0.13.org/src/cma.c librdmacm-1.0.13/src/cma.c
+--- librdmacm-1.0.13.org/src/cma.c	2010-08-10 15:47:26.000000000 -0500
++++ librdmacm-1.0.13/src/cma.c	2011-03-07 10:27:06.000000000 -0600
+@@ -948,12 +948,29 @@
+ 	return 0;
+ }
+ 
++static int rdma_modify_qp(struct rdma_cm_id *id, 
++						  struct ibv_qp_attr *qp_attr,
++						  int qp_attr_mask)
++{
++	int ret;
++
++	if (id->qp)
++		ret = ibv_modify_qp(id->qp, qp_attr, qp_attr_mask);
++	else if (id->xrc_domain)
++		ret = ibv_modify_xrc_rcv_qp(id->xrc_domain, id->xrc_rcv_qpn,
++									qp_attr, qp_attr_mask);
++	else 
++		ret = EINVAL;
++
++	return ret;
++}
++
+ static int ucma_modify_qp_rtr(struct rdma_cm_id *id, uint8_t resp_res)
+ {
+ 	struct ibv_qp_attr qp_attr;
+ 	int qp_attr_mask, ret;
+ 
+-	if (!id->qp)
++	if (!id->qp && !id->xrc_domain)
+ 		return ERR(EINVAL);
+ 
+ 	/* Need to update QP attributes from default values. */
+@@ -962,7 +979,7 @@
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = ibv_modify_qp(id->qp, &qp_attr, qp_attr_mask);
++	ret = rdma_modify_qp(id, &qp_attr, qp_attr_mask);
+ 	if (ret)
+ 		return ERR(ret);
+ 
+@@ -973,7 +990,7 @@
+ 
+ 	if (resp_res != RDMA_MAX_RESP_RES)
+ 		qp_attr.max_dest_rd_atomic = resp_res;
+-	return rdma_seterrno(ibv_modify_qp(id->qp, &qp_attr, qp_attr_mask));
++	return rdma_seterrno(rdma_modify_qp(id, &qp_attr, qp_attr_mask));
+ }
+ 
+ static int ucma_modify_qp_rts(struct rdma_cm_id *id, uint8_t init_depth)
+@@ -988,29 +1005,29 @@
+ 
+ 	if (init_depth != RDMA_MAX_INIT_DEPTH)
+ 		qp_attr.max_rd_atomic = init_depth;
+-	return rdma_seterrno(ibv_modify_qp(id->qp, &qp_attr, qp_attr_mask));
++	return rdma_seterrno(rdma_modify_qp(id, &qp_attr, qp_attr_mask));
+ }
+ 
+ static int ucma_modify_qp_sqd(struct rdma_cm_id *id)
+ {
+ 	struct ibv_qp_attr qp_attr;
+ 
+-	if (!id->qp)
++	if (!id->qp && !id->xrc_domain)
+ 		return 0;
+ 
+ 	qp_attr.qp_state = IBV_QPS_SQD;
+-	return rdma_seterrno(ibv_modify_qp(id->qp, &qp_attr, IBV_QP_STATE));
++	return rdma_seterrno(rdma_modify_qp(id, &qp_attr, IBV_QP_STATE));
+ }
+ 
+ static int ucma_modify_qp_err(struct rdma_cm_id *id)
+ {
+ 	struct ibv_qp_attr qp_attr;
+ 
+-	if (!id->qp)
++	if (!id->qp && !id->xrc_domain)
+ 		return 0;
+ 
+ 	qp_attr.qp_state = IBV_QPS_ERR;
+-	return rdma_seterrno(ibv_modify_qp(id->qp, &qp_attr, IBV_QP_STATE));
++	return rdma_seterrno(rdma_modify_qp(id, &qp_attr, IBV_QP_STATE));
+ }
+ 
+ static int ucma_find_pkey(struct cma_device *cma_dev, uint8_t port_num,
+@@ -1029,7 +1046,7 @@
+ 	return ERR(EINVAL);
+ }
+ 
+-static int ucma_init_conn_qp3(struct cma_id_private *id_priv, struct ibv_qp *qp)
++static int ucma_init_conn_qp3(struct cma_id_private *id_priv)
+ {
+ 	struct ibv_qp_attr qp_attr;
+ 	int ret;
+@@ -1044,25 +1061,25 @@
+ 	qp_attr.qp_state = IBV_QPS_INIT;
+ 	qp_attr.qp_access_flags = 0;
+ 
+-	ret = ibv_modify_qp(qp, &qp_attr, IBV_QP_STATE | IBV_QP_ACCESS_FLAGS |
++	ret = rdma_modify_qp(&id_priv->id, &qp_attr, IBV_QP_STATE | IBV_QP_ACCESS_FLAGS |
+ 					  IBV_QP_PKEY_INDEX | IBV_QP_PORT);
+ 	return rdma_seterrno(ret);
+ }
+ 
+-static int ucma_init_conn_qp(struct cma_id_private *id_priv, struct ibv_qp *qp)
++static int ucma_init_conn_qp(struct cma_id_private *id_priv)
+ {
+ 	struct ibv_qp_attr qp_attr;
+ 	int qp_attr_mask, ret;
+ 
+ 	if (abi_ver == 3)
+-		return ucma_init_conn_qp3(id_priv, qp);
++		return ucma_init_conn_qp3(id_priv);
+ 
+ 	qp_attr.qp_state = IBV_QPS_INIT;
+ 	ret = rdma_init_qp_attr(&id_priv->id, &qp_attr, &qp_attr_mask);
+ 	if (ret)
+ 		return ret;
+ 
+-	return rdma_seterrno(ibv_modify_qp(qp, &qp_attr, qp_attr_mask));
++	return rdma_seterrno(rdma_modify_qp(&id_priv->id, &qp_attr, qp_attr_mask));
+ }
+ 
+ static int ucma_init_ud_qp3(struct cma_id_private *id_priv, struct ibv_qp *qp)
+@@ -1141,7 +1158,7 @@
+ 
+ static int ucma_create_cqs(struct rdma_cm_id *id, struct ibv_qp_init_attr *attr)
+ {
+-	if (!attr->recv_cq) {
++	if (!attr->recv_cq && !attr->xrc_domain) {
+ 		id->recv_cq_channel = ibv_create_comp_channel(id->verbs);
+ 		if (!id->recv_cq_channel)
+ 			goto err;
+@@ -1181,11 +1198,29 @@
+ 	int ret;
+ 
+ 	id_priv = container_of(id, struct cma_id_private, id);
++
++	if (qp_init_attr->qp_type == IBV_QPT_XRC &&
++		qp_init_attr->cap.max_send_wr == 0) {
++		/* Special case: this is a receive XRC QP. */
++
++		/* TODO: should create the recv CQ is none provided. Should
++		 * split ucma_create_cqs(). */
++
++		ret = ibv_create_xrc_rcv_qp(qp_init_attr, &id->xrc_rcv_qpn);
++		if (ret) {
++			ret = ERR(ret);
++			goto err1;
++		}
++		id->xrc_domain = qp_init_attr->xrc_domain;
++		qp = NULL;
++	} else {
+ 	if (!pd)
+ 		pd = id_priv->cma_dev->pd;
+ 	else if (id->verbs != pd->context)
+ 		return ERR(EINVAL);
+ 
++		/* TODO: if xrc domain, create only the send CQ. Should
++		 * split ucma_create_cqs(). */
+ 	ret = ucma_create_cqs(id, qp_init_attr);
+ 	if (ret)
+ 		return ret;
+@@ -1195,29 +1230,39 @@
+ 		ret = ERR(ENOMEM);
+ 		goto err1;
+ 	}
++	}
++
++	id->qp = qp;
+ 
+ 	if (ucma_is_ud_ps(id->ps))
+ 		ret = ucma_init_ud_qp(id_priv, qp);
+ 	else
+-		ret = ucma_init_conn_qp(id_priv, qp);
++		ret = ucma_init_conn_qp(id_priv);
+ 	if (ret)
+ 		goto err2;
+ 
+-	id->qp = qp;
+ 	return 0;
+ err2:
++	if (qp)
+ 	ibv_destroy_qp(qp);
+ err1:
++	id->qp = NULL;
++	id->xrc_domain = NULL;
+ 	ucma_destroy_cqs(id);
+ 	return ret;
+ }
+ 
+ void rdma_destroy_qp(struct rdma_cm_id *id)
+ {
++	if (id->xrc_domain) {
++		ibv_unreg_xrc_rcv_qp(id->xrc_domain, id->xrc_rcv_qpn);
++		id->xrc_domain = NULL;
++	} else {
+ 	ibv_destroy_qp(id->qp);
+-	ucma_destroy_cqs(id);
+ 	id->qp = NULL;
+ }
++	ucma_destroy_cqs(id);
++}
+ 
+ static int ucma_valid_param(struct cma_id_private *id_priv,
+ 			    struct rdma_conn_param *param)
+@@ -1428,10 +1473,18 @@
+ 		ucma_copy_conn_param_to_kern(id_priv, &cmd->conn_param,
+ 					     conn_param, id->qp->qp_num,
+ 					     (id->qp->srq != NULL));
++	else {
++		uint32_t qp_num;
++
++		if (id->xrc_domain)
++			qp_num = id->xrc_rcv_qpn;
+ 	else
++			qp_num = conn_param->qp_num;
++
+ 		ucma_copy_conn_param_to_kern(id_priv, &cmd->conn_param,
+-					     conn_param, conn_param->qp_num,
++					     conn_param, qp_num,
+ 					     conn_param->srq);
++	}
+ 
+ 	ret = write(id->channel->fd, msg, size);
+ 	if (ret != size) {
+@@ -2188,3 +2241,17 @@
+ 
+ 	rdma_destroy_id(id);
+ }
++
++void rdma_query_id(struct rdma_cm_id *id, struct ibv_context **context,
++				   struct ibv_pd **pd)
++{
++	struct cma_id_private *id_priv = container_of(id, struct cma_id_private, id);
++
++	if (id_priv->cma_dev) {
++		*context = id_priv->cma_dev->verbs;
++		*pd = id_priv->cma_dev->pd;
++	} else {
++		*context = NULL;
++		*pd = NULL;
++	}
++}
+Only in librdmacm-1.0.13/src: cma.c~
+Only in librdmacm-1.0.13/src: .dirstamp
+Only in librdmacm-1.0.13/src: librdmacm.la
+diff -rubw librdmacm-1.0.13.org/src/librdmacm.map librdmacm-1.0.13/src/librdmacm.map
+--- librdmacm-1.0.13.org/src/librdmacm.map	2010-05-21 17:17:41.000000000 -0500
++++ librdmacm-1.0.13/src/librdmacm.map	2011-03-04 17:01:05.000000000 -0600
+@@ -4,6 +4,7 @@
+ 		rdma_destroy_event_channel;
+ 		rdma_create_id;
+ 		rdma_destroy_id;
++		rdma_query_id;
+ 		rdma_bind_addr;
+ 		rdma_resolve_addr;
+ 		rdma_resolve_route;
+Only in librdmacm-1.0.13/src: librdmacm.map~
+Only in librdmacm-1.0.13/src: .libs
+Only in librdmacm-1.0.13: src_librdmacm_la-acm.lo
+Only in librdmacm-1.0.13: src_librdmacm_la-acm.o
+Only in librdmacm-1.0.13: src_librdmacm_la-addrinfo.lo
+Only in librdmacm-1.0.13: src_librdmacm_la-addrinfo.o
+Only in librdmacm-1.0.13: src_librdmacm_la-cma.lo
+Only in librdmacm-1.0.13: src_librdmacm_la-cma.o
+Only in librdmacm-1.0.13: stamp-h1
+Only in librdmacm-1.0.13: udaddy.o
