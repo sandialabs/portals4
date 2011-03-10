@@ -26,8 +26,6 @@ void me_release(void *arg)
 	me_t *me = arg;
 
 	le_release((le_t *)me);
-
-	/* TODO ME specific cleanup code goes here */
 }
 
 /*
@@ -92,7 +90,6 @@ int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_me_t *me_init, ptl_list_t ptl_list,
 		    ptl_handle_me_t *me_handle)
 {
-	/* TODO ME specific check code goes here */
 	return le_append_check(TYPE_ME, ni, pt_index, (ptl_le_t *)me_init,
 			       ptl_list, (ptl_handle_le_t *)me_handle);
 }
