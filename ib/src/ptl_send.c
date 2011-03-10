@@ -21,15 +21,20 @@ int send_message(buf_t *buf)
 	buf->sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
 
-	err = ibv_post_send(ni->qp, &buf->send_wr, &bad_wr);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
-
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
+
+	err = ibv_post_send(ni->qp, &buf->send_wr, &bad_wr);
+	if (err) {
+		WARN();
+		pthread_spin_lock(&ni->send_list_lock);
+		list_del(&buf->list);
+		pthread_spin_unlock(&ni->send_list_lock);
+
+		return PTL_FAIL;
+	}
+
 
 	return PTL_OK;
 }
