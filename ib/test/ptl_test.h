@@ -19,6 +19,8 @@
 #include "dict.h"
 #include "api.h"
 
+#include <mpi.h>
+
 int get_maps(void);
 
 extern int verbose;

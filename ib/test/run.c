@@ -1169,6 +1169,10 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_get_id(info);
 				errs += walk_tree(info, node->children);
 				goto done;
+
+			case NODE_MPI_BARRIER:
+				MPI_Barrier(MPI_COMM_WORLD);
+				goto done;
 			}
 
 			info = push_info(info, e->token);

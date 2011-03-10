@@ -120,6 +120,8 @@ int main(int argc, char *argv[])
 	int ret;
 	xmlDocPtr doc;
 
+    MPI_Init(&argc, &argv);
+
 	ret = process_args(argc, argv);
 	if (ret) {
 		if (ret == PTL_TEST_RETURN_HELP) {
@@ -150,6 +152,8 @@ int main(int argc, char *argv[])
 	cio_cleanup();
 
 	ret = fini();
+
+    MPI_Finalize();
 
 	return 0;
 }

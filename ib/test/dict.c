@@ -75,6 +75,7 @@ struct dict_init {
 	{"ptl_trig_ct_inc",		TYPE_NODE,		NODE_PTL_TRIG_CT_INC},
 	{"ptl_trig_ct_set",		TYPE_NODE,		NODE_PTL_TRIG_CT_SET},
 	{"ptl_handle_is_equal",		TYPE_NODE,		NODE_PTL_HANDLE_IS_EQUAL},
+	{"mpi_barrier",			TYPE_NODE,		NODE_MPI_BARRIER},
 
 	{"ret",				TYPE_ATTR,		ATTR_RET},
 	{"ptr",				TYPE_ATTR,		ATTR_PTR},
