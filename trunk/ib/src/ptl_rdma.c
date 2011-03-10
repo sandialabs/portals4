@@ -42,14 +42,19 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
 
-	err = ibv_post_send(ni->qp, &wr, &bad_wr);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&rdma_buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
+
+	err = ibv_post_send(ni->qp, &wr, &bad_wr);
+	if (err) {
+		WARN();
+		pthread_spin_lock(&ni->send_list_lock);
+		list_del(&rdma_buf->list);
+		pthread_spin_unlock(&ni->send_list_lock);
+
+		return PTL_FAIL;
+	}
 
 	return PTL_OK;
 }
@@ -99,14 +104,19 @@ int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
 
-	err = ibv_post_send(ni->qp, &wr, &bad_wr);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&rdma_buf->list, &ni->send_list);
 	pthread_spin_unlock(&ni->send_list_lock);
+
+	err = ibv_post_send(ni->qp, &wr, &bad_wr);
+	if (err) {
+		WARN();
+		pthread_spin_lock(&ni->send_list_lock);
+		list_del(&rdma_buf->list);
+		pthread_spin_unlock(&ni->send_list_lock);
+
+		return PTL_FAIL;
+	}
 
 	return PTL_OK;
 }
