@@ -161,11 +161,17 @@ static void *cm_task(void *arg)
 	pthread_exit(0);
 }
 
-static int net_dir_filter(const struct dirent *entry)
+static int net_dir_filter1(const struct dirent *entry)
 {
 	return strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..");
 }
 
+static int net_dir_filter2(const struct dirent *entry)
+{
+	return !(strncmp(entry->d_name, "infiniband:", 11));
+}
+
+/* Find the IB device tied to a network device (eg. ib0 -> mlx4_0). */
 static char *net_to_ibdev(const char *netdev, char *name_buf, int name_buf_size)
 {
 	char dirname[IF_NAMESIZE + 24];
@@ -173,11 +179,21 @@ static char *net_to_ibdev(const char *netdev, char *name_buf, int name_buf_size)
 	int num_entries;
 	int i;
 
+	/* The information we seek is either
+	 * /sys/class/net/<netdevice>/device/infiniband/XXXX or, for older
+	 * kernels, is
+	 * /sys/class/net/<netdevice>/device:infiniband:XXXX */
 	snprintf(dirname, sizeof(dirname), "/sys/class/net/%s/device/infiniband", netdev);
+	num_entries = scandir(dirname, &namelist, net_dir_filter1, alphasort);
+	if (num_entries == -1) {
+		/* Try the other path. */
+		snprintf(dirname, sizeof(dirname), "/sys/class/net/%s/device", netdev);
+		num_entries = scandir(dirname, &namelist, net_dir_filter2, alphasort);
 
-	num_entries = scandir(dirname, &namelist, net_dir_filter, alphasort);
-
-	if (num_entries > 0)
+		if (num_entries > 0)
+			strncpy(name_buf, &namelist[0]->d_name[11], name_buf_size);
+	}
+	else if (num_entries > 0)
 		strncpy(name_buf, namelist[0]->d_name, name_buf_size);
 	
 	for (i=0; i < num_entries; i++)
