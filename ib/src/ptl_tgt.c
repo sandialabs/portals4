@@ -723,6 +723,13 @@ static int tgt_rdma_desc(xt_t *xt)
 	int err;
 	int next;
 
+	err = check_conn(xt);
+	if (err == -1)
+		return STATE_TGT_ERROR;
+	else if (err == 1)
+		/* Not connected yet. */
+		return STATE_TGT_RDMA_DESC;
+
 	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
 
 	/*
@@ -1481,6 +1488,8 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_RDMA_DESC:
 				state = tgt_rdma_desc(xt);
+				if (state == STATE_TGT_RDMA_DESC)
+					goto exit;
 				if (state == STATE_TGT_RDMA_WAIT_DESC)
 					goto exit;
 				break;
