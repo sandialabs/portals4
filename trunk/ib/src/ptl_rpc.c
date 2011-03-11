@@ -273,7 +273,7 @@ static void *io_task(void *arg)
 				FD_ISSET(rpc->extra_fd, &readfds)) {
 
 				rpc->extra_fd_callback(rpc->extra_fd_data);
-				FD_CLR(rpc->fd, &readfds);
+				FD_CLR(rpc->extra_fd, &readfds);
 				nfd--;
 				goto next;
 			}
