@@ -14,7 +14,6 @@ static char *recv_state_name[] = {
 	[STATE_RECV_PACKET]		= "recv_packet",
 	[STATE_RECV_DROP_BUF]		= "recv_drop_buf",
 	[STATE_RECV_REQ]		= "recv_req",
-	[STATE_RECV_TGT]		= "recv_tgt",
 	[STATE_RECV_INIT]		= "recv_init",
 	[STATE_RECV_ERROR]		= "recv_error",
 	[STATE_RECV_DONE]		= "recv_done",
@@ -235,9 +234,6 @@ printf("\n");
 		}
 		return STATE_RECV_REQ;
 
-	case OP_DONE:
-		return STATE_RECV_TGT;
-
 	case OP_DATA:
 	case OP_REPLY:
 	case OP_ACK:
@@ -281,36 +277,8 @@ static int recv_req(buf_t *buf)
 		xt->data_in = (data_t *)(buf->data + sizeof(*hdr) +
 					  data_size(xt->data_out));
 
-	xx_enqueue_recv_buf((xi_t *)xt, buf);
+	xt->recv_buf = buf;
 	xt->state = STATE_TGT_START;
-	err = process_tgt(xt);
-	if (err)
-		WARN();
-
-	return STATE_RECV_DONE;
-}
-
-/*
- * recv_tgt
- *	process a subsequent packet to target
- *	currently only done
- */
-static int recv_tgt(buf_t *buf)
-{
-	int err;
-	xt_t *xt;
-	hdr_t *hdr = (hdr_t *)buf->data;
-
-	err = xt_get(be64_to_cpu(hdr->handle), &xt);
-	if (err) {
-		WARN();
-		return STATE_RECV_DROP_BUF;
-	}
-
-	base_hdr_to_xt(hdr, xt);
-
-	xx_enqueue_recv_buf((xi_t *)xt, buf);
-
 	err = process_tgt(xt);
 	if (err)
 		WARN();
@@ -334,7 +302,7 @@ static int recv_init(buf_t *buf)
 		return STATE_RECV_DROP_BUF;
 	}
 
-	xx_enqueue_recv_buf(xi, buf);
+	xi->recv_buf = buf;
 
 	err = process_init(xi);
 	if (err)
@@ -369,9 +337,6 @@ static int process_recv(ni_t *ni)
 			break;
 		case STATE_RECV_REQ:
 			state = recv_req(buf);
-			break;
-		case STATE_RECV_TGT:
-			state = recv_tgt(buf);
 			break;
 		case STATE_RECV_INIT:
 			state = recv_init(buf);

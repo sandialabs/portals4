@@ -23,7 +23,6 @@ typedef enum {
 	OP_ATOMIC,
 	OP_FETCH,
 	OP_SWAP,
-	OP_DONE,
 
 	/* from target to init */
 	OP_DATA,

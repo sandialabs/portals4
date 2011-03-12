@@ -72,25 +72,6 @@ static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
         return (ptl_handle_buf_t)buf->obj_handle;
 }
 
-static inline void xx_enqueue_recv_buf(xi_t *xi, struct buf *buf)
-{
-	pthread_spin_lock(&xi->recv_lock);
-	list_add(&buf->list, &xi->recv_list);
-	pthread_spin_unlock(&xi->recv_lock);
-}
-
-static inline struct buf *xx_dequeue_recv_buf(xi_t *xi)
-{
-	struct list_head *l;
-
-	pthread_spin_lock(&xi->recv_lock);
-	l = xi->recv_list.next;
-	list_del(l);
-	pthread_spin_unlock(&xi->recv_lock);
-
-	return list_entry(l, struct buf, list);
-}
-
 int post_recv(ni_t *ni);
 
 void buf_dump(buf_t *buf);
