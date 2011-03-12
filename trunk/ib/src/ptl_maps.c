@@ -21,7 +21,7 @@ struct map_entry {
 	unsigned long	to;
 };
 
-#define MAX_MAPS	(256)
+#define MAX_MAPS	(512)
 
 static struct map_entry mem_maps[MAX_MAPS];
 static int num_maps;
