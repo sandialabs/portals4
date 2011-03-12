@@ -351,7 +351,7 @@ static int wait_recv(xi_t *xi)
 	int ret;
 
 	pthread_spin_lock(&xi->recv_lock);
-	if (list_empty(&xi->recv_list)) {
+	if (!xi->recv_buf) {
 		pthread_spin_lock(&ni->xi_wait_list_lock);
 		list_add(&xi->list, &ni->xi_wait_list);
 		pthread_spin_unlock(&ni->xi_wait_list_lock);
@@ -373,8 +373,7 @@ static int handle_recv(xi_t *xi)
 	/* we took another reference, drop it now */
 	xi_put(xi);
 
-	buf = xx_dequeue_recv_buf(xi);
-	xi->recv_buf = buf;
+	buf = xi->recv_buf;
 	hdr = (hdr_t *)buf->data;
 
 	/* get returned fields */
@@ -441,19 +440,6 @@ static int init_cleanup(xi_t *xi)
 		buf_put(xi->recv_buf);
 		xi->recv_buf = NULL;
 	}
-
-	pthread_spin_lock(&xi->recv_lock);
-	while (!list_empty(&xi->recv_list)) {
-		struct list_head *l;
-		buf_t *buf;
-
-		l = xi->recv_list.next;
-		list_del(l);
-		buf = list_entry(l, buf_t, list);
-		buf_put(buf);
-		// TODO count these as dropped packets??
-	}
-	pthread_spin_unlock(&xi->recv_lock);
 
 	xi_put(xi);
 	return STATE_INIT_DONE;

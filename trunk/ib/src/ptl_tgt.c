@@ -208,8 +208,6 @@ static int tgt_start(xt_t *xt)
 {
 	ni_t *ni = to_ni(xt);
 
-	xt->recv_buf = xx_dequeue_recv_buf((xi_t *)xt);
-
 	if (xt->pt_index >= ni->limits.max_pt_index) {
 		WARN();
 		xt->ni_fail = PTL_NI_DROPPED;
@@ -1384,21 +1382,6 @@ static int tgt_cleanup(xt_t *xt)
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
 	}
-
-	pthread_spin_lock(&xt->recv_lock);
-	while (!list_empty(&xt->recv_list)) {
-		struct list_head *l;
-		buf_t *buf;
-
-		l = xt->recv_list.next;
-		list_del(l);
-		buf = list_entry(l, buf_t, list);
-		if (debug)
-			printf("cleanup xi recv list @ %p\n", buf);
-		buf_put(buf);
-		// TODO count these as dropped packets??
-	}
-	pthread_spin_unlock(&xt->recv_lock);
 
 	pthread_spin_lock(&xt->pt->obj_lock);
 	xt->pt->num_xt_active--;

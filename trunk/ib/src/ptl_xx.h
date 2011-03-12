@@ -32,7 +32,6 @@ struct xremote {
 
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
-	struct list_head	recv_list;		\
 	pthread_spinlock_t	recv_lock;		\
 	pthread_spinlock_t	send_lock;		\
 	struct buf		*send_buf;		\
