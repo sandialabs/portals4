@@ -8,9 +8,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_START]		= "tgt_start",
 	[STATE_TGT_DROP]		= "tgt_drop",
 	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
-	[STATE_TGT_NO_MATCH]		= "tgt_no_match",
 	[STATE_TGT_GET_PERM]		= "tgt_get_perm",
-	[STATE_TGT_NO_PERM]		= "tgt_no_perm",
 	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
 	[STATE_TGT_RDMA]		= "tgt_rdma",
@@ -327,7 +325,8 @@ static int tgt_get_match(xt_t *xt)
 
 	WARN();
 	xt->le = NULL;
-	return STATE_TGT_NO_MATCH;
+	xt->ni_fail = PTL_NI_DROPPED;
+	return STATE_TGT_DROP;
 
 done:
 	return STATE_TGT_GET_PERM;
@@ -346,11 +345,11 @@ static int tgt_get_perm(xt_t *xt)
 	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
 		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
 			WARN();
-			return STATE_TGT_NO_PERM;
+			goto no_perm;
 		}
 		if (!(xt->le->uid == PTL_UID_ANY || (xt->le->uid == xt->uid))) {
 			WARN();
-			return STATE_TGT_NO_PERM;
+			goto no_perm;
 		}
 	}
 
@@ -359,14 +358,14 @@ static int tgt_get_perm(xt_t *xt)
 	case OP_PUT:
 		if (!(xt->le->options & PTL_ME_OP_PUT)) {
 			WARN();
-			return STATE_TGT_NO_PERM;
+			goto no_perm;
 		}
 		break;
 
 	case OP_GET:
 		if (!(xt->le->options & PTL_ME_OP_GET)) {
 			WARN();
-			return STATE_TGT_NO_PERM;
+			goto no_perm;
 		}
 		break;
 
@@ -375,7 +374,7 @@ static int tgt_get_perm(xt_t *xt)
 		if ((xt->le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
 		    != (PTL_ME_OP_PUT | PTL_ME_OP_GET)) {
 			WARN();
-			return STATE_TGT_NO_PERM;
+			goto no_perm;
 		}
 		break;
 
@@ -384,6 +383,10 @@ static int tgt_get_perm(xt_t *xt)
 	}
 
 	return STATE_TGT_GET_LENGTH;
+
+no_perm:
+	xt->ni_fail = PTL_NI_PERM_VIOLATION;
+	return STATE_TGT_DROP;
 }
 
 /*
@@ -1450,18 +1453,8 @@ int process_tgt(xt_t *xt)
 			case STATE_TGT_GET_MATCH:
 				state = tgt_get_match(xt);
 				break;
-			case STATE_TGT_NO_MATCH:
-				WARN();
-				xt->ni_fail = PTL_NI_DROPPED;
-				state = STATE_TGT_DROP;
-				break;
 			case STATE_TGT_GET_PERM:
 				state = tgt_get_perm(xt);
-				break;
-			case STATE_TGT_NO_PERM:
-				WARN();
-				xt->ni_fail = PTL_NI_PERM_VIOLATION;
-				state = STATE_TGT_DROP;
 				break;
 			case STATE_TGT_GET_LENGTH:
 				state = tgt_get_length(xt);
