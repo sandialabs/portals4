@@ -734,7 +734,7 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	ni = gbl_lookup_ni(gbl, iface, ni_type);
 	if (ni) {
-		__sync_add_and_fetch(&ni->ref_cnt, 1);
+		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
 		goto done;
 	}
 

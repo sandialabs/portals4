@@ -53,7 +53,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	int err;
 	pt_t *pt;
 	ni_t *ni;
-	ptl_pt_index_t index;
+	ptl_pt_index_t index = 0;
 	gbl_t *gbl;
 	eq_t *eq;
 

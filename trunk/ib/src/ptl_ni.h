@@ -169,18 +169,23 @@ static inline int ni_get(ptl_handle_ni_t handle, ni_t **ni_p)
 
 	err = obj_get(type_ni, (ptl_handle_any_t)handle, (obj_t **)&ni);
 	if (err)
-		return err;
+		goto err;
 
 	/* this is because we can call PtlNIFini
 	   and still get the object if someone
 	   is holding a reference */
 	if (ni && ni->ref_cnt <= 0) {
 		ni_put(ni);
-		return PTL_ARG_INVALID;
+		err = PTL_ARG_INVALID;
+		goto err;
 	}
 
 	*ni_p = ni;
 	return PTL_OK;
+
+err:
+	*ni_p = NULL;
+	return err;
 }
 
 static inline ptl_handle_ni_t ni_to_handle(ni_t *ni)

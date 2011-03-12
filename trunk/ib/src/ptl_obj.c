@@ -249,7 +249,7 @@ static int type_get_pagelist_pointer(obj_type_t *type, pagelist_t **pp)
 static int type_alloc_page(obj_type_t *type)
 {
 	int err;
-	pagelist_t *pp;
+	pagelist_t *pp = NULL;
 	uint8_t *p;
 	int i;
 	obj_t *obj;
