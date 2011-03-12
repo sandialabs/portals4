@@ -890,6 +890,7 @@ static int tgt_data_in(xt_t *xt)
 		break;
 	default:
 		WARN();
+		next = STATE_TGT_ERROR;
 	}
 
 	/*
