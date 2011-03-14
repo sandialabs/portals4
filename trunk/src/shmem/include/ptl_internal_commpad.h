@@ -38,12 +38,12 @@ typedef struct {
     /* data used for GETs and properly processing events */
     ptl_internal_handle_converter_t md_handle1;
     ptl_internal_handle_converter_t md_handle2;
-    uint32_t local_offset1;
-    uint32_t local_offset2;
     uint32_t length;
     uint16_t src;
     uint16_t target;
-    uint64_t dest_offset:40;
+    uint64_t local_offset1:48;
+    uint64_t local_offset2:48;
+    uint64_t dest_offset:48;
     uint8_t pt_index:6; // only need 5
     ptl_ack_req_t ack_req:2; // only used by PUTs and ATOMICs
     unsigned char type:5;         // 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
