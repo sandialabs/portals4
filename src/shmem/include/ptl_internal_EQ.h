@@ -19,8 +19,8 @@ typedef struct {
     } initiator;                // 4 bytes (44)
     uint16_t uid;               // 2 bytes (46)
     uint16_t jid;               // 2 bytes (48)
-    uint64_t remote_offset:40;  // 5 bytes (53)
-    uint8_t type;               // 1 byte  (54)
+    uint8_t type;               // 1 byte  (49)
+    uint64_t remote_offset:48;  // 6 bytes (55)
     uint8_t pt_index:5;
     uint8_t atomic_operation:5;
     uint8_t ni_fail_type:3;
