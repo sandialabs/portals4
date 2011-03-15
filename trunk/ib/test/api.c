@@ -117,7 +117,9 @@ int test_ptl_pt_free(struct node_info *info)
 {
 	int ret;
 
-	ret = PtlPTFree(info->ni_handle, info->pt_index);
+	while ((ret = PtlPTFree(info->ni_handle, info->pt_index)) ==
+		PTL_PT_IN_USE)
+		sched_yield();
 
 	if (ret == PTL_OK) {
 		if (info->next_pt == 0) {
@@ -284,7 +286,8 @@ int test_ptl_md_release(struct node_info *info)
 {
 	int ret;
 
-	ret = PtlMDRelease(info->md_handle);
+	while ((ret = PtlMDRelease(info->md_handle)) == PTL_IN_USE)
+		sched_yield();
 
 	if (ret == PTL_OK) {
 		if (info->next_md == 0) {
@@ -322,7 +325,8 @@ int test_ptl_le_unlink(struct node_info *info)
 {
 	int ret;
 
-	ret = PtlLEUnlink(info->le_handle);
+	while ((ret = PtlLEUnlink(info->le_handle)) == PTL_IN_USE);
+		sched_yield();
 
 	if (ret == PTL_OK) {
 		if (info->next_le == 0) {
@@ -365,7 +369,8 @@ int test_ptl_me_unlink(struct node_info *info)
 {
 	int ret;
 
-	ret = PtlMEUnlink(info->me_handle);
+	while ((ret = PtlMEUnlink(info->me_handle)) == PTL_IN_USE);
+		sched_yield();
 
 	if (ret == PTL_OK) {
 		if (info->next_me == 0) {
