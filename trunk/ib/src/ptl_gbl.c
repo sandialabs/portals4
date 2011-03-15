@@ -189,6 +189,7 @@ static int start_daemon(gbl_t *gbl)
 		char nranks[10];
 		char nid[10];
 		char master_nid[10];
+		char num_nids[10];
 		int i;
 
 		/* Close all the file descriptors, except the standard ones. */
@@ -201,6 +202,7 @@ static int start_daemon(gbl_t *gbl)
 		sprintf(nranks, "%u", gbl->nranks);
 		sprintf(nid, "%u", gbl->nid);
 		sprintf(master_nid, "%u", gbl->main_ctl_nid);
+		sprintf(num_nids, "%u", gbl->num_nids);
 
 		/* Change the session. */
 		if (setsid() == -1) {
@@ -215,6 +217,7 @@ static int start_daemon(gbl_t *gbl)
 			  "-j", jobid,
 			  "-t", local_nranks,
 			  "-s", nranks,
+			  "-u", num_nids,
 #if 0
 			  //todo: pass existing params instead
 			  "-v",

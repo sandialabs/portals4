@@ -16,6 +16,27 @@ static char lock_filename [1024];
 
 struct p4oibd_config conf;
 
+/* Used by master only. Rank table is complete. Send it to local ranks
+ * and remote control processes. */
+void broadcast_rank_table()
+{
+	ptl_rank_t local_rank;
+	struct rpc_msg msg;
+
+	/* Give rank table to local nodes. */
+	msg.type = REPLY_RANK_TABLE;
+	strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
+	msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
+	for (local_rank=0; local_rank<conf.local_nranks; local_rank++) {
+		//??		rpc_send(session, &msg);
+
+		rpc_send(conf.sessions[local_rank], &msg);
+	}
+
+	/* Give rank table to remote control nodes. */
+	// todo
+}
+
 static void rpc_callback(struct session *session)
 {
 	struct rpc_msg msg;
@@ -73,37 +94,15 @@ static void rpc_callback(struct session *session)
 				}
 
 				if (conf.recv_nranks == conf.nranks) {
-					/* Rank table is complete. */
-
-					/* Give rank table to local nodes. */
-					for (local_rank=0; local_rank<conf.local_nranks; local_rank++) {
-
-						msg.type = REPLY_RANK_TABLE;
-						strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
-						msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
-						rpc_send(session, &msg);
-
-						rpc_send(conf.sessions[local_rank], &msg);
-					}
-
-					/* Give rank table to remote control nodes. */
-					// todo
+					broadcast_rank_table();
 				}
 
 			} else {
+				/* Not the master control process. */
 				// TODO
 				assert(0);
 			}
-
-
 		}
-		break;
-#if 0
-		msg.type = REPLY_RANK_TABLE;
-		strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
-		msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
-		rpc_send(session, &msg);
-#endif
 		break;
 
 	case QUERY_XRC_DOMAIN:
@@ -166,13 +165,14 @@ static void usage(char *argv[])
 	printf("    -t | --local_nranks number of local ranks\n");
 	printf("    -s | --nranks       number of ranks\n");
 	printf("    -m | --master-nid   NID of master control daemon\n");
+	printf("    -u | --num_nids     number of nids (nodes)\n");
 }
 
 static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int opt_index = 0;
-	const char *opt_string = "hvp:n:j:l:t:s:m:x:";
+	const char *opt_string = "hvp:n:j:l:t:s:m:x:u:";
 	static const struct option opt_long[] = {
 		{"help", 0, 0, 'h'},
 		{"verbose", 0, 0, 'v'},
@@ -183,6 +183,7 @@ static int arg_process(int argc, char *argv[])
 		{"log", 1, 0, 'l'},
 		{"local_nranks", 1, 0, 't'},
 		{"nranks", 1, 0, 's'},
+		{"num_nids", 1, 0, 'u'},
 		{0, 0, 0, 0}
 	};
 
@@ -244,8 +245,12 @@ static int arg_process(int argc, char *argv[])
 			conf.xrc_port = strtol(optarg, NULL, 0);
 			break;
 
+		case 'u':
+			conf.num_nids = strtol(optarg, NULL, 0);
+			break;
+
 		default:
-			fprintf(stderr, "unexpected option\n");
+			fprintf(stderr, "unexpected option %s\n", optarg);
 			goto err1;
 		}
 	}
