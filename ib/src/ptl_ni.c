@@ -253,26 +253,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	return PTL_OK;
 }
 
-static int ni_rcqp_init(ni_t *ni)
-{
-	int err;
-
-	ni->recv_run = 1;
-	err = pthread_create(&ni->recv_thread, NULL, recv_thread, ni);
-	if (err) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
-	}
-	ni->has_recv_thread = 1;
-
-	return PTL_OK;
-
-err1:
-	assert(0);
-	return err;
-}
-
 /* Establish a new connection. connect is already locked. */
 int init_connect(ni_t *ni, struct nid_connect *connect)
 {
@@ -794,15 +774,15 @@ int PtlNIInit(ptl_interface_t iface,
 		goto err3;
 	}
 
-	/* Add watcher for CM connections. */
+	/* Add a watcher for CM connections. */
 	ev_io_init(&ni->cm_watcher, process_cm_event, ni->cm_channel->fd, EV_READ);
 	ni->cm_watcher.data = ni;
 	ev_io_start(my_event_loop, &ni->cm_watcher);
 
-	err = ni_rcqp_init(ni);
-	if (err) {
-		goto err3;
-	}
+	/* Add a watcher for CQ events. */
+	ev_io_init(&ni->cq_watcher, process_recv, ni->ch->fd, EV_READ);
+	ni->cq_watcher.data = ni;
+	ev_io_start(my_event_loop, &ni->cq_watcher);
 
 	err = gbl_add_ni(gbl, ni);
 	if (unlikely(err)) {
@@ -875,19 +855,10 @@ static void cleanup_mr_list(ni_t *ni)
 
 static void ni_cleanup(ni_t *ni)
 {
-	void *notused;
-
 	interrupt_cts(ni);
 	cleanup_mr_list(ni);
 
-	ni->recv_run = 0;
-
 	ni_rcqp_stop(ni);
-
-	if (ni->has_recv_thread) {
-		pthread_join(ni->recv_thread, &notused);
-		ni->has_recv_thread = 0;
-	}
 
 	ni_rcqp_cleanup(ni);
 

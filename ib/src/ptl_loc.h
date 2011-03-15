@@ -201,7 +201,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 int post_tgt_rdma(xt_t *xt, data_dir_t dir);
 
-void *recv_thread(void *arg);
+void process_recv(EV_P_ ev_io *w, int revents);
 
 int process_init(xi_t *xi);
 
