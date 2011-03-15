@@ -496,4 +496,30 @@ int API_FUNC PtlCTInc(
     return PTL_OK;
 }                                      /*}}} */
 
+void INTERNAL PtlInternalCTSuccessInc(
+    ptl_handle_ct_t ct_handle,
+    ptl_size_t increment)
+{				       /*{{{ */
+    const ptl_internal_handle_converter_t ct = { ct_handle };
+    ptl_ct_event_t *cte;
+#ifndef NO_ARG_VALIDATION
+    assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
+#endif
+    cte = &(ct_events[ct.s.ni][ct.s.code]);
+    PtlInternalAtomicInc(&(cte->success), increment);
+}				       /*}}} */
+
+void INTERNAL PtlInternalCTFailureInc(
+    ptl_handle_ct_t ct_handle)
+{				       /*{{{ */
+    const ptl_internal_handle_converter_t ct = { ct_handle };
+    ptl_ct_event_t *cte;
+#ifndef NO_ARG_VALIDATION
+    assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
+#endif
+    cte = &(ct_events[ct.s.ni][ct.s.code]);
+    PtlInternalAtomicInc(&(cte->failure), 1);
+}				       /*}}} */
+
+
 /* vim:set expandtab: */

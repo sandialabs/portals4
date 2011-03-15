@@ -13,6 +13,7 @@
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_handles.h"
+#include "ptl_internal_CT.h"
 #include "ptl_visibility.h"
 
 static ptl_process_t COLLECTOR;
@@ -243,8 +244,7 @@ void API_FUNC runtime_barrier(
 
         if (0 == my_rank) {
             /* to make counting easier */
-            ptl_ct_event_t incr = { num_procs - 2, 0 };
-            PtlCTInc(barrier_ct_h, incr);
+            PtlInternalCTSuccessInc(barrier_ct_h, num_procs - 2);
         }
 
     } else {
