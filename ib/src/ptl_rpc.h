@@ -20,7 +20,6 @@ struct rpc_msg {
 		QUERY_XRC_DOMAIN = 1,
 		QUERY_RANK_TABLE = 2,
 
-
 		/* 8th bit indicate a reply. */
 		REPLY_RANK_TABLE = 128,
 		REPLY_XRC_DOMAIN = 129,
