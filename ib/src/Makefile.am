@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libportals.la
 libportals_la_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_CHECK_POINTER -DPTL_LOG_ENABLE=4
-libportals_la_LIBADD = -libverbs -lpthread -lrt
+libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_SOURCES = \
 	ptl.c \
 	ptl_atomic.c \
@@ -56,7 +56,7 @@ libportals_la_SOURCES = \
 
 bin_PROGRAMS = control
 control_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
-control_LDADD = -libverbs -lrdmacm -lpthread
+control_LDADD = -libverbs -lrdmacm -lpthread -lev
 control_SOURCES =  \
 	ctl.h \
 	ctl_config.c \

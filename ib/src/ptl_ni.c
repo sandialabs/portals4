@@ -307,9 +307,9 @@ int init_connect(ni_t *ni, struct nid_connect *connect)
 	return 0;
 }
 
-static void process_cm_event(void *data)
+static void process_cm_event(EV_P_ ev_io *w, int revents)
 {
-	ni_t *ni = data;
+	ni_t *ni = w->data;
 	struct rdma_cm_event *event;
 	struct nid_connect *connect;
     struct rdma_conn_param conn_param;
@@ -794,7 +794,10 @@ int PtlNIInit(ptl_interface_t iface,
 		goto err3;
 	}
 
-	rpc_add_extra_fd(gbl->rpc, ni->cm_channel->fd, process_cm_event, ni);
+	/* Add watcher for CM connections. */
+	ev_io_init(&ni->cm_watcher, process_cm_event, ni->cm_channel->fd, EV_READ);
+	ni->cm_watcher.data = ni;
+	ev_io_start(my_event_loop, &ni->cm_watcher);
 
 	err = ni_rcqp_init(ni);
 	if (err) {

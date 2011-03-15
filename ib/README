@@ -4,7 +4,8 @@ Quickstart guide
 
 Pre-requisite
 * openmpi 1.4.x or 1.5.x: the test program is MPI based, and starting a task necessitate mpirun.
-* OFED 1.5.2 with a patches to librdmacm (see patches/rdmacm-xrc-v?.diff). patches/rdma-bw-xrc-v?.diff is not necessary, but allows to test XRC+RDMA CM with the rdma_bw test.
+* OFED 1.5.2 with patches to librdmacm (see patches/rdmacm-xrc-v?.diff). patches/rdma-bw-xrc-v?.diff is not necessary, but allows to test XRC+RDMA CM with the rdma_bw test.
+* libev-4.0.4 (or similar), available at http://software.schmorp.de/pkg/libev.html
 
 Build:
 * ./autogen.sh

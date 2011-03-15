@@ -27,8 +27,8 @@ typedef struct gbl {
 	int			fd;
 	struct sockaddr_in	addr;
 
-	pthread_t		thread;
-	int			thread_run;
+	pthread_t		event_thread;
+	int			event_thread_run;
 
 	struct rpc		*rpc;
 

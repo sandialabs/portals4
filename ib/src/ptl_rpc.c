@@ -69,7 +69,8 @@ int rpc_get_pid(gbl_t *gbl)
 }
 #endif
 
-static int init_session(struct rpc *rpc, int s, struct session **session_p)
+static int init_session(struct rpc *rpc, int s, struct session **session_p,
+						void (*cb)(EV_P_ ev_io *w, int revents))
 {
 	int err;
 	struct session *session;
@@ -87,11 +88,16 @@ static int init_session(struct rpc *rpc, int s, struct session **session_p)
 	pthread_mutex_init(&session->mutex, NULL);
 	pthread_cond_init(&session->cond, NULL);
 
+	session->fd = s;
+	session->rpc = rpc;
+	ev_io_init(&session->watcher, cb, s, EV_READ);
+	session->watcher.data = session;
+
 	pthread_spin_lock(&rpc->session_list_lock);
 	list_add(&session->session_list, &rpc->session_list);
 	pthread_spin_unlock(&rpc->session_list_lock);
 
-	session->fd = s;
+	ev_io_start(my_event_loop, &session->watcher);
 
 	*session_p = session;
 
@@ -103,12 +109,14 @@ err1:
 
 static void fini_session(struct rpc *rpc, struct session *session)
 {
+	ev_io_stop(my_event_loop, &session->watcher);
+
 	close(session->fd);
 	session->fd = -1;
 
-	pthread_spin_lock(&rpc->session_list_lock);
+	pthread_spin_lock(&session->rpc->session_list_lock);
 	list_del(&session->session_list);
-	pthread_spin_unlock(&rpc->session_list_lock);
+	pthread_spin_unlock(&session->rpc->session_list_lock);
 
 	pthread_cond_destroy(&session->cond);
 	pthread_mutex_destroy(&session->mutex);
@@ -116,10 +124,11 @@ static void fini_session(struct rpc *rpc, struct session *session)
 	free(session);
 }
 
-static int read_one(struct rpc *rpc, struct session *session)
+static void read_one(EV_P_ ev_io *w, int revents)
 {
 	ssize_t ret;
 	int err;
+	struct session *session = w->data;
 
 	ret = recv(session->fd, &session->rpc_msg, sizeof(struct rpc_msg), MSG_WAITALL);
 	if (ret < 0) {
@@ -141,20 +150,19 @@ static int read_one(struct rpc *rpc, struct session *session)
 			pthread_mutex_unlock(&session->mutex);
 		} else {
 			/* A request. */
-			rpc->callback(session);
+			session->rpc->callback(session);
 		}
 
 		err = 0;
 	}
 
 done:
-	if (err)
-		fini_session(rpc, session);
-
-	return err;
+	if (err) {
+		fini_session(session->rpc, session);
+	}
 }
 
-static int accept_one(struct rpc *rpc)
+static void accept_one(EV_P_ ev_io *w, int revents)
 {
 	int err;
 	int new_s;
@@ -162,6 +170,7 @@ static int accept_one(struct rpc *rpc)
 	struct sockaddr_in remote_addr;
 	socklen_t addr_len;
 	struct session *session;
+	struct rpc *rpc = w->data;
 
 	addr_len = sizeof(remote_addr);
 
@@ -172,147 +181,17 @@ static int accept_one(struct rpc *rpc)
 			strerror_r(errno, buf, sizeof(buf));
 			printf("unable to accept on socket: %s\n", buf);
 		}
-		goto err1;
+		return;
 	}
 
-	err = init_session(rpc, new_s, &session);
-	if (err) 
-		goto err1;
+	err = init_session(rpc, new_s, &session, read_one);
+	if (err) {
+		close(new_s);
+		return;
+	}
 
 	if (verbose)
 		printf("received new connection on sd = %d\n", new_s);
-
-	return 0;
-
-err1:
-	return err;
-}
-
-/* Add an extra file descriptor to listen to. Hack to listen to the IB
- * connections. Will need better fix eventually. */
-void rpc_add_extra_fd(struct rpc *rpc, int fd, void (*callback)(void *),
-					  void *data)
-{
-	rpc->extra_fd = fd;
-	rpc->extra_fd_callback = callback;
-	rpc->extra_fd_data = data;
-}
-
-void rpc_remove_extra_fd(struct rpc *rpc)
-{
-	rpc->extra_fd = -1;
-	rpc->extra_fd_callback = NULL;
-	rpc->extra_fd_data = NULL;
-}
-
-static void *io_task(void *arg)
-{
-	struct rpc *rpc = arg;
-	int err;
-	int maxfd;
-	int nfd;
-	int i;
-	fd_set readfds;
-	struct timeval timeout;
-	struct list_head *l, *t;
-	struct session *session;
-
-	if (verbose > 1)
-		printf("(%d) io_thread started\n", getpid());
-
-	while (rpc->io_thread_run) {
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 100000;
-
-		FD_ZERO(&readfds);
-
-		if (rpc->type == rpc_type_server) {
-			FD_SET(rpc->fd, &readfds);
-			maxfd = rpc->fd;
-		} else {
-			maxfd = -1;
-		}
-
-		if (rpc->extra_fd != -1) {
-			FD_SET(rpc->extra_fd, &readfds);
-			if (rpc->extra_fd > maxfd)
-				maxfd = rpc->extra_fd;
-		}
-
-		list_for_each(l, &rpc->session_list) {
-			session = list_entry(l, struct session, session_list);
-
-			FD_SET(session->fd, &readfds);
-			if (session->fd > maxfd)
-				maxfd = session->fd;
-		}
-
-		nfd = select(maxfd + 1, &readfds, NULL, NULL, &timeout);
-		if (nfd < 0) {
-			err = errno;
-			if (verbose) {
-				perror("select failed: %s\n");
-			}
-			goto err1;
-		}
-
-		while (nfd) {
-			if ((rpc->type == rpc_type_server)
-			    && FD_ISSET(rpc->fd, &readfds)) {
-				err = accept_one(rpc);
-				if (err) {
-					perror("accept failed\n");
-					goto err1;
-				}
-				FD_CLR(rpc->fd, &readfds);
-				nfd--;
-				goto next;
-			}
-
-			if (rpc->extra_fd != -1 &&
-				FD_ISSET(rpc->extra_fd, &readfds)) {
-
-				rpc->extra_fd_callback(rpc->extra_fd_data);
-				FD_CLR(rpc->extra_fd, &readfds);
-				nfd--;
-				goto next;
-			}
-
-			list_for_each_safe(l, t, &rpc->session_list) {
-				session = list_entry(l, struct session, session_list);
-				if (FD_ISSET(session->fd, &readfds)) {
-					err = read_one(rpc, session);
-					if (err < 0) {
-						fprintf(stderr, "read_one error\n");
-					}
-					if (err == 0)
-						FD_CLR(session->fd, &readfds);
-					nfd--;
-					goto next;
-				}
-			}
-			for (i = 0; i <= maxfd; i++) {
-				if (FD_ISSET(i, &readfds)) {
-					printf("unexpected fd %d readable\n", i);
-					FD_CLR(i, &readfds);
-					nfd--;
-					goto next;
-				}
-			}
-next:
-			;
-		}
-	}
-
-	if (verbose > 1)
-		printf("(%d) io_thread stopped\n", getpid());
-
-	return NULL;
-
-err1:
-	if (verbose > 1)
-		printf("io_thread STOPPED - %d \n", getpid());
-	return NULL;
 }
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
@@ -342,7 +221,6 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 	pthread_spin_init(&rpc->session_list_lock, 0);
 	rpc->type = type;
 	rpc->fd = -1;
-	rpc->extra_fd = -1;
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0) {
@@ -384,6 +262,9 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 		}
 
 		rpc->fd = s;
+		ev_io_init(&rpc->watcher, accept_one, s, EV_READ);
+		rpc->watcher.data = rpc;
+		ev_io_start(my_event_loop, &rpc->watcher);
 
 	} else {
 
@@ -409,7 +290,7 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 			goto err3;
 		}
 
-		err = init_session(rpc, s, &session);
+		err = init_session(rpc, s, &session, read_one);
 		if (err) {
 			ptl_warn("init_session failed, err = %d\n", err);
 			goto err3;
@@ -418,25 +299,11 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 		rpc->to_server = session;
 	}
 
-	rpc->io_thread_run = 1;
-
-	err = pthread_create(&rpc->io_thread, NULL, io_task, rpc);
-	if (err) {
-		rpc->io_thread_run = 0;
-		err = errno;
-		strerror_r(errno, buf, sizeof(buf));
-		ptl_warn("unable to create io thread: %s\n", buf);
-		goto err4;
-	}
-
 	*rpc_p = rpc;
 
 	ptl_info("ok\n");
 	return PTL_OK;
 
-err4:
-	if (session)
-		fini_session(rpc, session);
 err3:
 	close(s);
 err2:
@@ -447,21 +314,11 @@ err1:
 
 int rpc_fini(struct rpc *rpc)
 {
-	int err;
 	struct list_head *l, *t;
 	struct session *session;
 
-	if (rpc->io_thread_run) {
-
-		rpc->io_thread_run = 0;
-
-		err = pthread_join(rpc->io_thread, NULL);
-		if (err) {
-			printf("pthread_join failed\n");
-		}
-	}
-
 	if (rpc->fd != -1) {
+		ev_io_stop(my_event_loop, &rpc->watcher);
 		close(rpc->fd);
 		rpc->fd = -1;
 	}

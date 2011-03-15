@@ -28,6 +28,8 @@
 #include <assert.h>
 #include <poll.h>
 
+#include <ev.h>
+
 #include "portals4.h"
 
 #include "ptl_types.h"
