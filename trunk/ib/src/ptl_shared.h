@@ -28,3 +28,6 @@ struct shared_config {
 struct cm_priv_request {
 	ptl_rank_t src_rank;		/* rank requesting that connection */
 };
+
+/* Event loop */
+struct ev_loop *my_event_loop;

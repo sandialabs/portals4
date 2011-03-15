@@ -124,6 +124,7 @@ typedef struct ni {
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
 	struct rdma_event_channel *cm_channel;
+	ev_io cm_watcher;
 
 	/* IB XRC support. */
 	int			xrc_domain_fd;

@@ -7,10 +7,7 @@
 static struct list_head net_interfaces;	
 static struct list_head ib_interfaces;	
 static struct rdma_event_channel *cm_channel;
-static pthread_t cm_thread;
-static int cm_thread_stop;
-static int cm_thread_running;
-
+static ev_io cm_watcher;
 
 /* Find the network interface. */
 struct net_intf *find_net_intf(const char *name)
@@ -96,7 +93,7 @@ err:
 
 /* Called when an event happenned on the event channel. 
  * Not used yet, incomplete. */
-static void process_cm_event(void)
+static void process_cm_event(EV_P_ ev_io *w, int revents)
 {
 	struct rdma_cm_event *event;
 	struct ctl_connect *connect;
@@ -132,33 +129,6 @@ static void process_cm_event(void)
 	rdma_ack_cm_event(event);
 
 	return;
-}
-
-static void *cm_task(void *arg)
-{
-	int rc;
-	struct pollfd pollfd;
-
-    pollfd.fd = cm_channel->fd;
-    pollfd.events  = POLLIN;
-    pollfd.revents = 0;
-
-	printf("cm event thread running\n");
-
-	while (!cm_thread_stop) {
-
-		rc = poll(&pollfd, 1, 1000000);
-
-		if (rc < 0) {
-			perror("poll");
-			break;
-		}
-
-		if (rc)
-			process_cm_event();
-	}
-
-	pthread_exit(0);
 }
 
 static int net_dir_filter1(const struct dirent *entry)
@@ -255,7 +225,6 @@ int create_ib_resources(void)
 	struct sockaddr_in sin;
 	struct list_head *l;
 	int i, j;
-	int err;
 	int num_ib_device;
 	struct ibv_device **ib_device_list;
 	struct if_nameindex *net_device_list;
@@ -391,6 +360,11 @@ found_ib_intf:
 		return 1;
 	}
 
+	/* Add watcher for CM connections. */
+	ev_io_init(&cm_watcher, process_cm_event, cm_channel->fd, EV_READ);
+	cm_watcher.data = NULL;
+	ev_io_start(my_event_loop, &cm_watcher);
+
 	/* Listen on each interface. */
 	list_for_each(l, &ib_interfaces) {
 		ib_intf = list_entry(l, struct ib_intf, list);
@@ -421,13 +395,6 @@ found_ib_intf:
 		ptl_info("listening on %s, port %d\n", ib_intf->name, conf.xrc_port);
 	}
 
-	err = pthread_create(&cm_thread, NULL, cm_task, NULL);
-	if (err) {
-		ptl_fatal("unable to create CM thread\n");
-		goto err;
-	}
-	cm_thread_running = 1;
-
 	ibv_free_device_list(ib_device_list);
 	ptl_info("ok\n");
 	return 0;
@@ -444,11 +411,7 @@ void destroy_ib_resources(void)
 	struct ib_intf *ib_intf;
 	struct net_intf *net_intf;
 
-	if (cm_thread_running) {
-		cm_thread_stop = 1;
-		pthread_join(cm_thread, NULL);
-		cm_thread_running = 0;
-	}
+	ev_io_stop(my_event_loop, &cm_watcher);
 
 	/* TODO: free and unlink intf. list_for_each_safe ? */
 

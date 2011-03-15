@@ -330,6 +330,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	my_event_loop = EV_DEFAULT;
+
 	err = create_ib_resources();
 	if (err) {
 		fprintf(stderr, "Couldn't create some IB resources\n");
@@ -351,7 +353,8 @@ int main(int argc, char *argv[])
 
 	printf("%s started\n", progname);
 
-	sleep(99999);
+	/* Run the event loop. */
+	ev_run(my_event_loop, 0);
 
 	rpc_fini(conf.rpc);
 

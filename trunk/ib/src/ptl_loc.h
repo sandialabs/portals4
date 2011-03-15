@@ -31,6 +31,8 @@
 #include <assert.h>
 #include <poll.h>
 
+#include <ev.h>
+
 #include "portals4.h"
 
 /* branch prediction hints for compiler */

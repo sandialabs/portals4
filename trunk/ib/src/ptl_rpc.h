@@ -76,12 +76,15 @@ enum rpc_type {
 /*
  * per rpc session info
  */
+struct rpc;
 struct session {
 	struct list_head		session_list;
 	int				fd;			/* connected socket */
 	uint32_t			sequence;
 	pthread_mutex_t			mutex;
 	pthread_cond_t			cond;
+	ev_io					watcher;
+	struct rpc				*rpc; /* backpointer to rpc owner */
 	struct rpc_msg			rpc_msg;
 };
 
@@ -92,8 +95,7 @@ struct rpc {
 	enum rpc_type			type;
 	int				fd;			/* listening socket */
 
-	pthread_t			io_thread;
-	int				io_thread_run;
+	ev_io watcher;
 
 	/* List of all active sessions. */
 	struct list_head		session_list;
@@ -101,11 +103,6 @@ struct rpc {
 	pthread_spinlock_t		session_list_lock;
 
 	void (*callback)(struct session *session);
-
-	/* Extra FD. */
-	int extra_fd;
-	void (*extra_fd_callback)(void *);
-	void *extra_fd_data;
 };
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
@@ -116,8 +113,5 @@ int rpc_fini(struct rpc *rpc);
 int rpc_get(struct session *session,
 			struct rpc_msg *msg_in, struct rpc_msg *msg_out);
 int rpc_send(struct session *session, struct rpc_msg *msg_out);
-
-void rpc_add_extra_fd(struct rpc *rpc, int fd, void (*callback)(void *), void *data);
-void rpc_remove_extra_fd(struct rpc *rpc);
 
 #endif /* RPC_PTL_H */

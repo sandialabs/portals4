@@ -21,6 +21,11 @@ unsigned int ctl_port = PTL_CTL_PORT;
 static gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
+{
+	ev_break(my_event_loop, EVBREAK_ALL);
+}
+
 static void gbl_release(ref_t *ref)
 {
 	gbl_t *gbl = container_of(ref, gbl_t, ref);
@@ -28,45 +33,23 @@ static void gbl_release(ref_t *ref)
 	/* fini the object allocator */
 	obj_fini();
 
+	/* Terminate the event loop, which will terminate the event
+	 * thread. */
+	if (gbl->event_thread_run) {
+		/* Create an async event to stop the event loop. May be there is a
+		 * better way. */
+		ev_async stop_event_loop;
+
+		ev_async_init(&stop_event_loop, stop_event_loop_func);
+		ev_async_start(my_event_loop, &stop_event_loop);
+		ev_async_send(my_event_loop, &stop_event_loop);
+		pthread_join(gbl->event_thread, NULL);
+	}
+
 	pthread_mutex_destroy(&gbl->gbl_mutex);
 
 	rpc_fini(gbl->rpc);
 }
-
-#ifdef notused
-int ni_read(ni_t *ni)
-{
-	int err;
-	char buf[64];
-
-	err = recv(ni->fd, buf, sizeof(buf), 0);
-	if (err < 0) {
-		perror("read");
-		return PTL_FAIL;
-	}
-
-	printf("got received %d bytes\n", err);
-	
-	return PTL_OK;
-}
-
-int gbl_read(gbl_t *gbl)
-{
-	int err;
-	char buf[64];
-
-	err = recv(gbl->fd, buf, sizeof(buf), 0);
-	if (err < 0) {
-		perror("read");
-		return PTL_FAIL;
-	}
-
-	if (!strcmp(buf, "quit"))
-		return PTL_FAIL;
-
-	return PTL_OK;
-}
-#endif
 
 /* Get an int value from an environment variable. */
 static long getenv_val(const char *name, unsigned int *val)
@@ -178,7 +161,7 @@ static int get_vars(gbl_t *gbl)
 }
 
 /* Start the control daemon. */
-static int start_daemon(gbl_t *gbl)
+static int start_control_daemon(gbl_t *gbl)
 {
 	pid_t pid;
 
@@ -243,6 +226,13 @@ static void rpc_callback(struct session *session)
 	ptl_warn("Got RPC message - dropping it\n");
 }
 
+static void *event_loop_func(void *arg)
+{
+	ev_run(my_event_loop, 0);
+
+	return NULL;
+}
+
 static int gbl_init(gbl_t *gbl)
 {
 	int err;
@@ -253,7 +243,9 @@ static int gbl_init(gbl_t *gbl)
 		goto err1;
 	}
 
-	start_daemon(gbl);
+	start_control_daemon(gbl);
+
+	my_event_loop = EV_DEFAULT;
 
 	err = rpc_init(rpc_type_client, gbl->nid, ctl_port, &gbl->rpc, rpc_callback);
 	if (unlikely(err)) {
@@ -283,6 +275,14 @@ static int gbl_init(gbl_t *gbl)
 		ptl_warn("obj_init failed\n");
 		goto err2;
 	}
+
+	/* Create the event loop thread. */
+	err = pthread_create(&gbl->event_thread, NULL, event_loop_func, gbl);
+	if (unlikely(err)) {
+		ptl_warn("event loop creation failed\n");
+		goto err2;
+	}
+	gbl->event_thread_run = 1;
 
 	return PTL_OK;
 
