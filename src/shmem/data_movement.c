@@ -569,11 +569,11 @@ int API_FUNC PtlPut(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1<<48)) {
+    if (local_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1<<48)) {
+    if (remote_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
@@ -716,11 +716,11 @@ int API_FUNC PtlGet(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1<<48)) {
+    if (local_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1<<48)) {
+    if (remote_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
@@ -891,11 +891,11 @@ int API_FUNC PtlAtomic(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1<<48)) {
+    if (local_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1<<48)) {
+    if (remote_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
@@ -1106,15 +1106,15 @@ int API_FUNC PtlFetchAtomic(
                       (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_put_offset >= (1<<48)) {
+    if (local_put_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (local_get_offset >= (1<<48)) {
+    if (local_get_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1<<48)) {
+    if (remote_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
@@ -1323,15 +1323,15 @@ int API_FUNC PtlSwap(
                       (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_put_offset >= (1<<48)) {
+    if (local_put_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (local_get_offset >= (1<<48)) {
+    if (local_get_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1<<48)) {
+    if (remote_offset >= (1ULL<<48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
