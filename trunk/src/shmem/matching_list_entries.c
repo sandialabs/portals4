@@ -1205,11 +1205,9 @@ static void PtlInternalAnnounceMEDelivery(
     }
     if (ct_announce != 0) {
         if ((options & PTL_ME_EVENT_CT_BYTES) == 0) {
-            const ptl_ct_event_t cte = { 1, 0 };
-            PtlCTInc(ct_handle, cte);
+            PtlInternalCTSuccessInc(ct_handle, 1);
         } else {
-            const ptl_ct_event_t cte = { mlength, 0 };
-            PtlCTInc(ct_handle, cte);
+            PtlInternalCTSuccessInc(ct_handle, mlength);
         }
     }
     if (eq_handle != PTL_EQ_NONE &&

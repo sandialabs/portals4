@@ -22,6 +22,7 @@
 #include "ptl_internal_nit.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_fragments.h"
+#include "ptl_internal_CT.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_LE.h"
 #include "ptl_internal_ME.h"
@@ -94,11 +95,9 @@ static void PtlInternalHandleAck(
                         PtlInternalMDCleared(md_handle);
                         if (options & PTL_MD_EVENT_CT_SEND) {
                             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
-                                ptl_ct_event_t cte = { 1, 0 };
-                                PtlCTInc(cth, cte);
+                                PtlInternalCTSuccessInc(cth, 1);
                             } else {
-                                ptl_ct_event_t cte = { hdr->length, 0 };
-                                PtlCTInc(cth, cte);
+                                PtlInternalCTSuccessInc(cth, hdr->length);
                             }
                         }
                         if (eqh != PTL_EQ_NONE &&
@@ -121,11 +120,9 @@ static void PtlInternalHandleAck(
                     PtlInternalMDCleared(md_handle);
                     if (options & PTL_MD_EVENT_CT_SEND) {
                         if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
-                            ptl_ct_event_t cte = { 1, 0 };
-                            PtlCTInc(cth, cte);
+                            PtlInternalCTSuccessInc(cth, 1);
                         } else {
-                            ptl_ct_event_t cte = { hdr->length, 0 };
-                            PtlCTInc(cth, cte);
+                            PtlInternalCTSuccessInc(cth, hdr->length);
                         }
                     }
                     if (eqh != PTL_EQ_NONE &&
@@ -276,11 +273,9 @@ static void PtlInternalHandleAck(
                 }
                 if (md_ct != PTL_CT_NONE && ct_enabled != 0) {
                     if ((md_opts & PTL_MD_EVENT_CT_BYTES) == 0) {
-                        ptl_ct_event_t cte = { 1, 0 };
-                        PtlCTInc(md_ct, cte);
+                        PtlInternalCTSuccessInc(md_ct, 1);
                     } else {
-                        ptl_ct_event_t cte = { hdr->length, 0 };
-                        PtlCTInc(md_ct, cte);
+                        PtlInternalCTSuccessInc(md_ct, hdr->length);
                     }
                 }
                 if (md_eq != PTL_EQ_NONE &&
@@ -322,17 +317,7 @@ static void PtlInternalHandleAck(
                 }
                 if (ct_enabled) {
                     if (md_ct != PTL_CT_NONE) {
-                        ptl_ct_event_t cte = { 0, 1 };
-                        ptl_ct_event_t ctc;
-                        PtlCTGet(md_ct, &ctc);
-                        ack_printf("ct before inc = {%u,%u}\n",
-                                   (unsigned int)ctc.success,
-                                   (unsigned int)ctc.failure);
-                        PtlCTInc(md_ct, cte);
-                        PtlCTGet(md_ct, &ctc);
-                        ack_printf("ct after inc = {%u,%u}\n",
-                                   (unsigned int)ctc.success,
-                                   (unsigned int)ctc.failure);
+                        PtlInternalCTFailureInc(md_ct);
                     } else {
                         /* this should never happen */
                         fprintf(stderr, "enabled CT counting, but no CT!\n");
@@ -648,11 +633,9 @@ int API_FUNC PtlPut(
         if (options & PTL_MD_EVENT_CT_SEND) {
             //printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
-                ptl_ct_event_t cte = { 1, 0 };
-                PtlCTInc(cth, cte);
+                PtlInternalCTSuccessInc(cth, 1);
             } else {
-                ptl_ct_event_t cte = { length, 0 };
-                PtlCTInc(cth, cte);
+                PtlInternalCTSuccessInc(cth, length);
             }
         } else {
             //printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
@@ -963,11 +946,9 @@ int API_FUNC PtlAtomic(
     mdptr = PtlInternalMDFetch(md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
         if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-            ptl_ct_event_t cte = { 1, 0 };
-            PtlCTInc(mdptr->ct_handle, cte);
+            PtlInternalCTSuccessInc(mdptr->ct_handle, 1);
         } else {
-            ptl_ct_event_t cte = { length, 0 };
-            PtlCTInc(mdptr->ct_handle, cte);
+            PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
@@ -1184,11 +1165,9 @@ int API_FUNC PtlFetchAtomic(
     mdptr = PtlInternalMDFetch(put_md_handle);
     if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
         if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-            ptl_ct_event_t cte = { 1, 0 };
-            PtlCTInc(mdptr->ct_handle, cte);
+            PtlInternalCTSuccessInc(mdptr->ct_handle, 1);
         } else {
-            ptl_ct_event_t cte = { length, 0 };
-            PtlCTInc(mdptr->ct_handle, cte);
+            PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
     }
     if (mdptr->eq_handle != PTL_EQ_NONE &&
@@ -1421,11 +1400,9 @@ int API_FUNC PtlSwap(
         ptl_md_t *mdptr = PtlInternalMDFetch(put_md_handle);
         if (mdptr->options & PTL_MD_EVENT_CT_SEND) {
             if ((mdptr->options & PTL_MD_EVENT_CT_BYTES) == 0) {
-                ptl_ct_event_t cte = { 1, 0 };
-                PtlCTInc(mdptr->ct_handle, cte);
+                PtlInternalCTSuccessInc(mdptr->ct_handle, 1);
             } else {
-                ptl_ct_event_t cte = { length, 0 };
-                PtlCTInc(mdptr->ct_handle, cte);
+                PtlInternalCTSuccessInc(mdptr->ct_handle, length);
             }
         }
         if (mdptr->eq_handle != PTL_EQ_NONE &&
