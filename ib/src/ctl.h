@@ -89,8 +89,7 @@ struct p4oibd_config {
 	ptl_nid_t master_nid;		/* NID of master control */
 	unsigned int num_nids;		/* number of nodes */
 
-	/* Session from ranks. One per local rank. */
-	struct session **sessions;
+	/* Session count, from ranks. */
 	int num_sessions;
 
 	unsigned int recv_nranks;	/* number of rank waiting. When this
