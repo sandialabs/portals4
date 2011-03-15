@@ -31,67 +31,38 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 	struct ibv_wc wc;
 	int n;
 	buf_t *buf;
-	struct pollfd pollfd;
-	const int timeout = 500;
-	int rc;
 
-	/* TODO: this function is inefficient. we could probably
-	 * ibv_poll_cq until the queue is empty, then block.*/
-
-	pollfd.fd = ni->ch->fd;
-	pollfd.events  = POLLIN;
-	pollfd.revents = 0;
-
-	while(ni->recv_run) {
-
-		rc = poll(&pollfd, 1, timeout);
-
-		if (rc < 0) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		if (rc == 0)
-			continue;
-
-		err = ibv_get_cq_event(ni->ch, &cq, &unused);
-		if (err) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		/* todo: coalesce acks. ibv_ack_cq_events is costly. see man page. */
-		ibv_ack_cq_events(ni->cq, 1);
-
-		if (cq != ni->cq) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		if (ibv_req_notify_cq(ni->cq, 0)) {
-			ptl_warn("unable to req notify\n");
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		n = ibv_poll_cq(ni->cq, 1, &wc);
-		if (n < 0) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		if (n == 1) {
-			/* No buffer with intermediate error completion */
-			if (wc.wr_id == 0) {
-				WARN();
-				continue;
-			} else {
-				break;
-			}
-		}
+	err = ibv_get_cq_event(ni->ch, &cq, &unused);
+	if (err) {
+		WARN();
+		return STATE_RECV_ERROR;
 	}
 
-	if (!ni->recv_run) {
+	/* todo: coalesce acks. ibv_ack_cq_events is costly. see man page. */
+	ibv_ack_cq_events(ni->cq, 1);
+
+	if (cq != ni->cq) {
+		WARN();
+		return STATE_RECV_ERROR;
+	}
+
+	if (ibv_req_notify_cq(ni->cq, 0)) {
+		ptl_warn("unable to req notify\n");
+		WARN();
+		return STATE_RECV_ERROR;
+	}
+
+	n = ibv_poll_cq(ni->cq, 1, &wc);
+	if (n <= 0) {
+		WARN();
+		return STATE_RECV_ERROR;
+	}
+
+	assert(n == 1);
+
+	if (wc.wr_id == 0) {
+		/* No buffer with intermediate error completion */
+		WARN();
 		return STATE_RECV_ERROR;
 	}
 
@@ -100,7 +71,7 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 
 	if (debug)
 		printf("comp_wait - wc.status(%d), wc.length(%d)\n",
-			(int) wc.status, (int) wc.byte_len);
+			   (int) wc.status, (int) wc.byte_len);
 
 	if (wc.status == IBV_WC_WR_FLUSH_ERR)
 		return STATE_RECV_DROP_BUF;
@@ -315,8 +286,9 @@ static int recv_init(buf_t *buf)
  * process_recv
  *	process an incoming packet
  */
-static int process_recv(ni_t *ni)
+void process_recv(EV_P_ ev_io *w, int revents)
 {
+	ni_t *ni = w->data;
 	int state = STATE_RECV_COMP_WAIT;
 	buf_t *buf = NULL;
 
@@ -353,21 +325,4 @@ static int process_recv(ni_t *ni)
 			return PTL_OK;
 		}
 	}
-}
-
-void *recv_thread(void *arg)
-{
-	ni_t *ni = arg;
-	int err;
-
-	while(ni->recv_run) {
-		err = process_recv(ni);
-		if (err) {
-			if (ni->recv_run)
-				WARN();
-			break;
-		}
-	}
-
-	return NULL;
 }

@@ -123,6 +123,7 @@ typedef struct ni {
 	struct ibv_pd		*pd;
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
+	ev_io cq_watcher;
 	struct rdma_event_channel *cm_channel;
 	ev_io cm_watcher;
 
@@ -131,10 +132,6 @@ typedef struct ni {
 	struct ibv_xrc_domain	*xrc_domain;
 	struct ibv_srq		*xrc_srq;
 	uint32_t		xrc_rcv_qpn;
-
-	pthread_t		recv_thread;
-	int			has_recv_thread;
-	int			recv_run;
 
 	/* shared memory. */
 	struct {
