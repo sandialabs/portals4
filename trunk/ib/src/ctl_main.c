@@ -18,18 +18,22 @@ static char lock_filename [1024];
  * and remote control processes. */
 void broadcast_rank_table(struct p4oibd_config *conf)
 {
-	ptl_rank_t local_rank;
 	struct rpc_msg msg;
+	struct list_head *l;
 
 	/* Give rank table to local nodes. */
 	msg.type = REPLY_RANK_TABLE;
 	strcpy(msg.reply_rank_table.shmem_filename, conf->shmem.filename);
 	msg.reply_rank_table.shmem_filesize = conf->shmem.filesize;
-	for (local_rank=0; local_rank<conf->local_nranks; local_rank++) {
-		//??		rpc_send(session, &msg);
 
-		rpc_send(conf->sessions[local_rank], &msg);
+	pthread_spin_lock(&conf->rpc->session_list_lock);
+
+	list_for_each(l, &conf->rpc->session_list) {
+		struct session *session = list_entry(l, struct session, session_list);
+		rpc_send(session, &msg);
 	}
+
+	pthread_spin_unlock(&conf->rpc->session_list_lock);
 
 	/* Give rank table to remote control nodes. */
 	// todo
@@ -63,7 +67,6 @@ static void rpc_callback(struct session *session, void *data)
 			conf->local_rank_table->elem[local_rank].addr = m->query_rank_table.addr;
 			conf->local_rank_table->elem[local_rank].nid = conf->nid;
 
-			conf->sessions[local_rank] = session;
 			conf->num_sessions ++;
 		}
 
@@ -298,13 +301,6 @@ int main(int argc, char *argv[])
 	err = daemon(0,0);
 	if (err) {
 		perror("Couldn't daemonize\n");
-		return 1;
-	}
-
-	/* Create sessions table */
-	conf.sessions = calloc(conf.local_nranks, sizeof(struct session *));
-	if (!conf.sessions) {
-		fprintf(stderr, "Couldn't allocate sessions\n");
 		return 1;
 	}
 
