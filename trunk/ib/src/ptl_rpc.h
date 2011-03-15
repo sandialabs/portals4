@@ -6,7 +6,7 @@
 #define PTL_RPC_H
 
 /* TCP port for control connections. */
-#define PTL_CTL_PORT		(0x3456)
+#define PTL_CTL_PORT		(3456)
 
 /* Port on which RDMA listen wait for incoming XRC connection. */
 #define PTL_XRC_PORT (7694)
@@ -102,14 +102,15 @@ struct rpc {
 	struct session			*to_server; /* for client only */
 	pthread_spinlock_t		session_list_lock;
 
-	void (*callback)(struct session *session);
+	void (*callback)(struct session *session, void *data);
+	void *callback_data;
 };
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 			 struct rpc **rpc_p,
-			 void (*callback)(struct session *session));
+			 void (*callback)(struct session *session, void *callback_data),
+			 void *callback_data);
 int rpc_fini(struct rpc *rpc);
-//int rpc_get_pid(gbl_t *gbl);
 int rpc_get(struct session *session,
 			struct rpc_msg *msg_in, struct rpc_msg *msg_out);
 int rpc_send(struct session *session, struct rpc_msg *msg_out);

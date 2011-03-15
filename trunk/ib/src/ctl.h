@@ -60,12 +60,6 @@ struct net_intf {
 	struct ib_intf *ib_intf;
 };
 
-extern int load_rank_table(const char *name);
-extern int create_ib_resources(void);
-extern void destroy_ib_resources(void);
-extern struct net_intf *find_net_intf(const char *name);
-extern int create_shared_memory(void);
-
 struct ctl_connect {
 	enum {
 		PTL_CONNECT_DISCONNECTED,
@@ -111,6 +105,12 @@ struct p4oibd_config {
 		struct shared_config *m; /* mmaped memory */
 	} shmem;
 
+	/* IB */
+	struct list_head net_interfaces;	
+	struct list_head ib_interfaces;	
+	struct rdma_event_channel *cm_channel;
+	ev_io cm_watcher;
+
 	/* XRC port to listen to */
 	int xrc_port;
 
@@ -121,6 +121,10 @@ struct p4oibd_config {
 
 #define MAX_QP_RECV_WR		(10)
 
-extern struct p4oibd_config conf;
+extern int load_rank_table(const char *name);
+extern int create_ib_resources(struct p4oibd_config *conf);
+extern void destroy_ib_resources(struct p4oibd_config *conf);
+extern struct net_intf *find_net_intf(struct p4oibd_config *conf, const char *name);
+extern int create_shared_memory(struct p4oibd_config *conf);
 
 #endif /* CTL_H */

@@ -4,18 +4,13 @@
 
 #include "ctl.h"
 
-static struct list_head net_interfaces;	
-static struct list_head ib_interfaces;	
-static struct rdma_event_channel *cm_channel;
-static ev_io cm_watcher;
-
 /* Find the network interface. */
-struct net_intf *find_net_intf(const char *name)
+struct net_intf *find_net_intf(struct p4oibd_config *conf, const char *name)
 {
 	struct list_head *l;
 	struct net_intf *intf;
 
-	list_for_each(l, &net_interfaces) {
+	list_for_each(l, &conf->net_interfaces) {
 		intf = list_entry(l, struct net_intf, list);
 
 		if (strcmp(intf->name, name) == 0)
@@ -25,7 +20,7 @@ struct net_intf *find_net_intf(const char *name)
 	return NULL;
 }
 
-static int process_connect_request(struct rdma_cm_event *event)
+static int process_connect_request(struct p4oibd_config *conf, struct rdma_cm_event *event)
 {
 	const struct cm_priv_request *priv;
 	struct rdma_conn_param conn_param;
@@ -40,12 +35,12 @@ static int process_connect_request(struct rdma_cm_event *event)
 
 	priv = event->param.conn.private_data;
 
-	pthread_mutex_lock(&conf.mutex);
-	if (priv->src_rank >= conf.nranks) {
+	pthread_mutex_lock(&conf->mutex);
+	if (priv->src_rank >= conf->nranks) {
 		goto err;
 	}
 
-	connect = &conf.connect[priv->src_rank];
+	connect = &conf->connect[priv->src_rank];
 
 	if (connect->state != PTL_CONNECT_DISCONNECTED) {
 		/* Already connected. Should not get there. */
@@ -83,11 +78,11 @@ static int process_connect_request(struct rdma_cm_event *event)
 		goto err;
 	}	
 
-	pthread_mutex_unlock(&conf.mutex);
+	pthread_mutex_unlock(&conf->mutex);
 	return 0;
 
 err:
-	pthread_mutex_unlock(&conf.mutex);
+	pthread_mutex_unlock(&conf->mutex);
 	return 1;
 }
 
@@ -97,29 +92,30 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 {
 	struct rdma_cm_event *event;
 	struct ctl_connect *connect;
+	struct p4oibd_config *conf = w->data;
 
-	if (rdma_get_cm_event(cm_channel, &event)) 
+	if (rdma_get_cm_event(conf->cm_channel, &event)) 
 		return;
 
 	switch(event->event) {
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
-		process_connect_request(event);
+		process_connect_request(conf, event);
 		break;
 
 	case RDMA_CM_EVENT_ESTABLISHED:
 		connect = event->id->context;
 		assert(connect->state == PTL_CONNECT_CONNECTING);
-		pthread_mutex_lock(&conf.mutex);
+		pthread_mutex_lock(&conf->mutex);
 		connect->state = PTL_CONNECT_CONNECTED;
-		pthread_mutex_unlock(&conf.mutex);
+		pthread_mutex_unlock(&conf->mutex);
 		break;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
 		connect = event->id->context;
 		assert(connect->state == PTL_CONNECT_CONNECTED);
-		pthread_mutex_lock(&conf.mutex);
+		pthread_mutex_lock(&conf->mutex);
 		connect->state = PTL_CONNECT_DISCONNECTED;
-		pthread_mutex_unlock(&conf.mutex);
+		pthread_mutex_unlock(&conf->mutex);
 		break;
 
 	default:
@@ -200,12 +196,12 @@ static char *ib_to_netdev(char *ibdev_path, char *name_buf, int name_buf_size)
 	return name_buf;
 }
 
-static struct ib_intf *find_ib_intf(const char *ib_dev_name)
+static struct ib_intf *find_ib_intf(struct p4oibd_config *conf, const char *ib_dev_name)
 {
 	struct list_head *l;
 	struct ib_intf *intf;
 
-	list_for_each(l, &ib_interfaces) {
+	list_for_each(l, &conf->ib_interfaces) {
 		intf = list_entry(l, struct ib_intf, list);
 
 		if (strcmp(intf->name, ib_dev_name) == 0)
@@ -216,7 +212,7 @@ static struct ib_intf *find_ib_intf(const char *ib_dev_name)
 }
 
 /* Retrieve the list of IB interfaces available on this machine. */
-int create_ib_resources(void)
+int create_ib_resources(struct p4oibd_config *conf)
 {
 	struct ib_intf *ib_intf;
 	struct net_intf *net_intf;
@@ -231,8 +227,8 @@ int create_ib_resources(void)
 
 	ptl_info("entering create_ib_resources\n");
 
-	INIT_LIST_HEAD(&net_interfaces);
-	INIT_LIST_HEAD(&ib_interfaces);
+	INIT_LIST_HEAD(&conf->net_interfaces);
+	INIT_LIST_HEAD(&conf->ib_interfaces);
 
 	/* get list of ib devices */
 	ib_device_list = ibv_get_device_list(&num_ib_device);
@@ -288,7 +284,7 @@ found_one:
 			net_intf->index = net_device_list[j].if_index;
 
 			/* find/build ib_intf struct */
-			ib_intf = find_ib_intf(ib_device_list[i]->name);
+			ib_intf = find_ib_intf(conf, ib_device_list[i]->name);
 			if (ib_intf) {
 				net_intf->ib_intf = ib_intf;
 				goto found_ib_intf;
@@ -342,35 +338,35 @@ found_one:
 				goto err;
 			}
 
-			list_add(&ib_intf->list, &ib_interfaces);
+			list_add(&ib_intf->list, &conf->ib_interfaces);
 found_ib_intf:
-			list_add(&net_intf->list, &net_interfaces);
+			list_add(&net_intf->list, &conf->net_interfaces);
 		}
 	}
 
-	if (list_empty(&net_interfaces)) {
+	if (list_empty(&conf->net_interfaces)) {
 		ptl_warn("No suitable ib interfaces found\n");
 		return 1;
 	}
 
 	/* Create the RDMA CM listen endpoint. */
-	cm_channel = rdma_create_event_channel();
-	if (!cm_channel) {
+	conf->cm_channel = rdma_create_event_channel();
+	if (!conf->cm_channel) {
 		ptl_fatal("unable to create rdma event channel\n");
 		return 1;
 	}
 
 	/* Add watcher for CM connections. */
-	ev_io_init(&cm_watcher, process_cm_event, cm_channel->fd, EV_READ);
-	cm_watcher.data = NULL;
-	ev_io_start(my_event_loop, &cm_watcher);
+	ev_io_init(&conf->cm_watcher, process_cm_event, conf->cm_channel->fd, EV_READ);
+	conf->cm_watcher.data = conf;
+	ev_io_start(my_event_loop, &conf->cm_watcher);
 
 	/* Listen on each interface. */
-	list_for_each(l, &ib_interfaces) {
+	list_for_each(l, &conf->ib_interfaces) {
 		ib_intf = list_entry(l, struct ib_intf, list);
 
 		/* Listen on that interface. */
-		if (rdma_create_id(cm_channel, &ib_intf->listen_id,
+		if (rdma_create_id(conf->cm_channel, &ib_intf->listen_id,
 						   ib_intf, RDMA_PS_TCP)) {
 			continue;
 		}
@@ -379,7 +375,7 @@ found_ib_intf:
 		memset(&sin, 0, sizeof(struct sockaddr_in));
 		sin.sin_addr.s_addr = htonl(INADDR_ANY);
 		sin.sin_family = AF_INET;
-		sin.sin_port = htons(conf.xrc_port);
+		sin.sin_port = htons(conf->xrc_port);
 
 		if (rdma_bind_addr(ib_intf->listen_id,
 			(struct sockaddr *)&sin)) {
@@ -392,7 +388,7 @@ found_ib_intf:
 			continue;
 		}
 
-		ptl_info("listening on %s, port %d\n", ib_intf->name, conf.xrc_port);
+		ptl_info("listening on %s, port %d\n", ib_intf->name, conf->xrc_port);
 	}
 
 	ibv_free_device_list(ib_device_list);
@@ -400,22 +396,22 @@ found_ib_intf:
 	return 0;
 
  err:
-	destroy_ib_resources();
+	destroy_ib_resources(conf);
 	ibv_free_device_list(ib_device_list);
 	return 1;
 }
 
-void destroy_ib_resources(void)
+void destroy_ib_resources(struct p4oibd_config *conf)
 {
 	struct list_head *l;
 	struct ib_intf *ib_intf;
 	struct net_intf *net_intf;
 
-	ev_io_stop(my_event_loop, &cm_watcher);
+	ev_io_stop(my_event_loop, &conf->cm_watcher);
 
 	/* TODO: free and unlink intf. list_for_each_safe ? */
 
-	list_for_each(l, &ib_interfaces) {
+	list_for_each(l, &conf->ib_interfaces) {
 		ib_intf = list_entry(l, struct ib_intf, list);
 
 		if (ib_intf->listen_id) {
@@ -429,12 +425,12 @@ void destroy_ib_resources(void)
 		}
 	}
 
-	list_for_each(l, &net_interfaces) {
+	list_for_each(l, &conf->net_interfaces) {
 		net_intf = list_entry(l, struct net_intf, list);
 	}
 
-	if (cm_channel) {
-		rdma_destroy_event_channel(cm_channel);
-		cm_channel = NULL;
+	if (conf->cm_channel) {
+		rdma_destroy_event_channel(conf->cm_channel);
+		conf->cm_channel = NULL;
 	}
 }

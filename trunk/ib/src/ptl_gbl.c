@@ -221,7 +221,7 @@ static int start_control_daemon(gbl_t *gbl)
 	return 0;
 }
 
-static void rpc_callback(struct session *session)
+static void rpc_callback(struct session *session, void *data)
 {
 	ptl_warn("Got RPC message - dropping it\n");
 }
@@ -247,7 +247,7 @@ static int gbl_init(gbl_t *gbl)
 
 	my_event_loop = EV_DEFAULT;
 
-	err = rpc_init(rpc_type_client, gbl->nid, ctl_port, &gbl->rpc, rpc_callback);
+	err = rpc_init(rpc_type_client, gbl->nid, ctl_port, &gbl->rpc, rpc_callback, NULL);
 	if (unlikely(err)) {
 		ptl_warn("rpc_init failed\n");
 		goto err1;

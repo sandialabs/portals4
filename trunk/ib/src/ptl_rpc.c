@@ -150,7 +150,7 @@ static void read_one(EV_P_ ev_io *w, int revents)
 			pthread_mutex_unlock(&session->mutex);
 		} else {
 			/* A request. */
-			session->rpc->callback(session);
+			session->rpc->callback(session, session->rpc->callback_data);
 		}
 
 		err = 0;
@@ -196,7 +196,8 @@ static void accept_one(EV_P_ ev_io *w, int revents)
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 			 struct rpc **rpc_p,
-			 void (*callback)(struct session *session))
+			 void (*callback)(struct session *session, void *data_callback),
+			 void *callback_data)
 {
 	int s;
 	int i;
@@ -216,6 +217,7 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 	}
 
 	rpc->callback = callback;
+	rpc->callback_data = callback_data;
 
 	INIT_LIST_HEAD(&rpc->session_list);
 	pthread_spin_init(&rpc->session_list_lock, 0);

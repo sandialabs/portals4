@@ -14,87 +14,86 @@ int ptl_log_level;
 static char *progname;
 static char lock_filename [1024];
 
-struct p4oibd_config conf;
-
 /* Used by master only. Rank table is complete. Send it to local ranks
  * and remote control processes. */
-void broadcast_rank_table()
+void broadcast_rank_table(struct p4oibd_config *conf)
 {
 	ptl_rank_t local_rank;
 	struct rpc_msg msg;
 
 	/* Give rank table to local nodes. */
 	msg.type = REPLY_RANK_TABLE;
-	strcpy(msg.reply_rank_table.shmem_filename, conf.shmem.filename);
-	msg.reply_rank_table.shmem_filesize = conf.shmem.filesize;
-	for (local_rank=0; local_rank<conf.local_nranks; local_rank++) {
+	strcpy(msg.reply_rank_table.shmem_filename, conf->shmem.filename);
+	msg.reply_rank_table.shmem_filesize = conf->shmem.filesize;
+	for (local_rank=0; local_rank<conf->local_nranks; local_rank++) {
 		//??		rpc_send(session, &msg);
 
-		rpc_send(conf.sessions[local_rank], &msg);
+		rpc_send(conf->sessions[local_rank], &msg);
 	}
 
 	/* Give rank table to remote control nodes. */
 	// todo
 }
 
-static void rpc_callback(struct session *session)
+static void rpc_callback(struct session *session, void *data)
 {
 	struct rpc_msg msg;
 	struct net_intf *net_intf;
 	struct ib_intf *ib_intf;
 	struct rpc_msg *m = &session->rpc_msg;
 	ptl_rank_t local_rank;
+	struct p4oibd_config *conf = data;
 
 	switch(session->rpc_msg.type) {
 	case QUERY_RANK_TABLE:
 		if (verbose)
-			printf("got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf.local_nranks);
+			printf("got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf->local_nranks);
 		local_rank = m->query_rank_table.local_rank;
 
-		if (conf.local_rank_table->size <= m->query_rank_table.local_rank) {
+		if (conf->local_rank_table->size <= m->query_rank_table.local_rank) {
 			/* Bad rank. Should not happen */
 			assert(0);
 		}
 
 		/* We may already have it. In that case, reply, but don't
 		 * modify the table. */
-		if (conf.local_rank_table->elem[local_rank].nid != conf.nid) {
-			conf.local_rank_table->elem[local_rank].rank = m->query_rank_table.rank;
-			conf.local_rank_table->elem[local_rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
-			conf.local_rank_table->elem[local_rank].addr = m->query_rank_table.addr;
-			conf.local_rank_table->elem[local_rank].nid = conf.nid;
+		if (conf->local_rank_table->elem[local_rank].nid != conf->nid) {
+			conf->local_rank_table->elem[local_rank].rank = m->query_rank_table.rank;
+			conf->local_rank_table->elem[local_rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
+			conf->local_rank_table->elem[local_rank].addr = m->query_rank_table.addr;
+			conf->local_rank_table->elem[local_rank].nid = conf->nid;
 
-			conf.sessions[local_rank] = session;
-			conf.num_sessions ++;
+			conf->sessions[local_rank] = session;
+			conf->num_sessions ++;
 		}
 
 		if (verbose)
-			printf("got another session - %d %d\n", conf.num_sessions, conf.local_nranks);
-		if (conf.num_sessions == conf.local_nranks) {
+			printf("got another session - %d %d\n", conf->num_sessions, conf->local_nranks);
+		if (conf->num_sessions == conf->local_nranks) {
 			/* All local ranks have reported. Sent the local rank table to the master control. */
 			//	msg.type = LOCAL_RANK_TABLE;
 
 			if (verbose)
 				printf("got all session\n");
 
-			if (conf.nid == conf.master_nid) {
+			if (conf->nid == conf->master_nid) {
 				/* Hey, I'm the boss. Copy the local ranks to the
 				 * global rank table if we don't already have it. */
-				if (conf.master_rank_table->elem[conf.local_rank_table->elem[local_rank].rank].nid != conf.local_rank_table->elem[local_rank].nid) {
-					for (local_rank=0; local_rank < conf.local_rank_table->size; local_rank++) {
-						ptl_rank_t rank = conf.local_rank_table->elem[local_rank].rank;
-						conf.master_rank_table->elem[rank].rank = rank;
-						conf.master_rank_table->elem[rank].xrc_srq_num = conf.local_rank_table->elem[local_rank].xrc_srq_num;
-						conf.master_rank_table->elem[rank].addr = conf.local_rank_table->elem[local_rank].addr;
-						conf.master_rank_table->elem[rank].pid = 0; /* ??? todo */
-						conf.master_rank_table->elem[rank].nid = conf.local_rank_table->elem[local_rank].nid;
+				if (conf->master_rank_table->elem[conf->local_rank_table->elem[local_rank].rank].nid != conf->local_rank_table->elem[local_rank].nid) {
+					for (local_rank=0; local_rank < conf->local_rank_table->size; local_rank++) {
+						ptl_rank_t rank = conf->local_rank_table->elem[local_rank].rank;
+						conf->master_rank_table->elem[rank].rank = rank;
+						conf->master_rank_table->elem[rank].xrc_srq_num = conf->local_rank_table->elem[local_rank].xrc_srq_num;
+						conf->master_rank_table->elem[rank].addr = conf->local_rank_table->elem[local_rank].addr;
+						conf->master_rank_table->elem[rank].pid = 0; /* ??? todo */
+						conf->master_rank_table->elem[rank].nid = conf->local_rank_table->elem[local_rank].nid;
 
-						conf.recv_nranks ++;
+						conf->recv_nranks ++;
 					}
 				}
 
-				if (conf.recv_nranks == conf.nranks) {
-					broadcast_rank_table();
+				if (conf->recv_nranks == conf->nranks) {
+					broadcast_rank_table(conf);
 				}
 
 			} else {
@@ -106,7 +105,7 @@ static void rpc_callback(struct session *session)
 		break;
 
 	case QUERY_XRC_DOMAIN:
-		net_intf = find_net_intf(
+		net_intf = find_net_intf(conf,
 				session->rpc_msg.query_xrc_domain.net_name);
 		msg.type = REPLY_XRC_DOMAIN;
 		if (net_intf) {
@@ -128,13 +127,13 @@ static void rpc_callback(struct session *session)
 
 /* Each process in a job will try to start the control process. Only
  * one must succeed. */
-static int run_once(void)
+static int run_once(struct p4oibd_config *conf)
 {
 	int fd;
 	int err;
 
 	/* Create a file and try to lock it. */
-	sprintf(lock_filename, "/tmp/p4oibd-JID-%d.lck", conf.jobid);
+	sprintf(lock_filename, "/tmp/p4oibd-JID-%d.lck", conf->jobid);
 	fd = open(lock_filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
 	if (fd == -1)
@@ -168,7 +167,7 @@ static void usage(char *argv[])
 	printf("    -u | --num_nids     number of nids (nodes)\n");
 }
 
-static int arg_process(int argc, char *argv[])
+static int arg_process(struct p4oibd_config *conf, int argc, char *argv[])
 {
 	int c;
 	int opt_index = 0;
@@ -191,9 +190,9 @@ static int arg_process(int argc, char *argv[])
 	if (!progname)
 		progname = argv[0];
 
-	conf.ctl_port = PTL_CTL_PORT;
-	conf.xrc_port = PTL_XRC_PORT;
-	conf.shmem.fd = -1;
+	conf->ctl_port = PTL_CTL_PORT;
+	conf->xrc_port = PTL_XRC_PORT;
+	conf->shmem.fd = -1;
 
 	while (1) {
 		c = getopt_long(argc, argv, opt_string, opt_long, &opt_index);
@@ -214,19 +213,19 @@ static int arg_process(int argc, char *argv[])
 			break;
 
 		case 'p':
-			conf.ctl_port = strtol(optarg, NULL, 0);
+			conf->ctl_port = strtol(optarg, NULL, 0);
 			break;
 
 		case 'n':
-			conf.nid = strtol(optarg, NULL, 0);
+			conf->nid = strtol(optarg, NULL, 0);
 			break;
 
 		case 'm':
-			conf.master_nid = strtol(optarg, NULL, 0);
+			conf->master_nid = strtol(optarg, NULL, 0);
 			break;
 
 		case 'j':
-			conf.jobid = strtol(optarg, NULL, 0);
+			conf->jobid = strtol(optarg, NULL, 0);
 			break;
 
 		case 'l':
@@ -234,19 +233,19 @@ static int arg_process(int argc, char *argv[])
 			break;
 
 		case 't':
-			conf.local_nranks = strtol(optarg, NULL, 0);
+			conf->local_nranks = strtol(optarg, NULL, 0);
 			break;
 
 		case 's':
-			conf.nranks = strtol(optarg, NULL, 0);
+			conf->nranks = strtol(optarg, NULL, 0);
 			break;
 
 		case 'x':
-			conf.xrc_port = strtol(optarg, NULL, 0);
+			conf->xrc_port = strtol(optarg, NULL, 0);
 			break;
 
 		case 'u':
-			conf.num_nids = strtol(optarg, NULL, 0);
+			conf->num_nids = strtol(optarg, NULL, 0);
 			break;
 
 		default:
@@ -255,12 +254,12 @@ static int arg_process(int argc, char *argv[])
 		}
 	}
 
-	if (!conf.nid) {
+	if (!conf->nid) {
 		fprintf(stderr, "NID not set\n");
 		return 1;
 	}
 
-	if (!conf.jobid) {
+	if (!conf->jobid) {
 		fprintf(stderr, "Missing Job ID.\n");
 		return 1;
 	}
@@ -275,8 +274,11 @@ err1:
 int main(int argc, char *argv[])
 {
 	int err;
+	struct p4oibd_config conf;
 
-	err = arg_process(argc, argv);
+	memset(&conf, 0, sizeof(struct p4oibd_config));
+
+	err = arg_process(&conf, argc, argv);
 	if (err)
 		return 1;
 
@@ -286,7 +288,7 @@ int main(int argc, char *argv[])
 		printf("	XRC port = %d\n", conf.xrc_port);
 	}
 
-	err = run_once();
+	err = run_once(&conf);
 	if (err) {
 		/* Another process is already running. */
 		return 1;
@@ -324,7 +326,7 @@ int main(int argc, char *argv[])
 	}
 	conf.local_rank_table->size = conf.local_nranks;
 
-	err = create_shared_memory();
+	err = create_shared_memory(&conf);
 	if (err) {
 		fprintf(stderr, "Couldn't create shared data\n");
 		return 1;
@@ -332,13 +334,13 @@ int main(int argc, char *argv[])
 
 	my_event_loop = EV_DEFAULT;
 
-	err = create_ib_resources();
+	err = create_ib_resources(&conf);
 	if (err) {
 		fprintf(stderr, "Couldn't create some IB resources\n");
 		return 1;
 	}
 
-	err = rpc_init(rpc_type_server, -1, conf.ctl_port, &conf.rpc, rpc_callback);
+	err = rpc_init(rpc_type_server, -1, conf.ctl_port, &conf.rpc, rpc_callback, &conf);
 	if (err) {
 		switch (err) {
 		case EADDRINUSE:
@@ -358,7 +360,7 @@ int main(int argc, char *argv[])
 
 	rpc_fini(conf.rpc);
 
-	destroy_ib_resources();
+	destroy_ib_resources(&conf);
 
 	printf("%s stopped\n", progname);
 
