@@ -119,7 +119,7 @@ static int compar_rank(const void *a, const void *b)
 }
 
 /* Create a mapping from rank to NID. We needs this because the rank
- * table is in shared memory, and we need one cmi_id per remote
+ * table is in shared memory, and we need one cm_id per remote
  * node. */
 static int create_rank_to_nid_table(ni_t *ni)
 {
