@@ -34,8 +34,8 @@
 
 #include "ptl_types.h"
 #include "ptl_log.h"
-#include "ptl_rpc.h"
 #include "ptl_shared.h"
+#include "ptl_rpc.h"
 
 /* branch prediction hints for compiler */
 #define unlikely(x)	__builtin_expect((x),0)
@@ -77,6 +77,9 @@ struct p4oibd_config {
 	unsigned int ctl_port;
 	struct rpc *rpc;
 
+	/* Master control process. */
+	struct rpc *master_rpc;
+
 	/* From configuration files */
 	struct rank_table *local_rank_table;  /* local, not shared */
 	struct rank_table *master_rank_table; /* in shared memory */
@@ -90,11 +93,10 @@ struct p4oibd_config {
 	unsigned int num_nids;		/* number of nodes */
 
 	/* Session count, from ranks. */
-	int num_sessions;
-
-	unsigned int recv_nranks;	/* number of rank waiting. When this
-								   number is nranks, then the rank
-								   table is complete. */
+	int local_table_queries;	/* number of local ranks waiting for
+								 * the rank table. */
+	int table_queries;	/* total number of ranks waiting. When this number is
+						 * nranks, then the rank table is complete. */
 
 	/* Shared memory. */
 	struct {
@@ -105,8 +107,8 @@ struct p4oibd_config {
 	} shmem;
 
 	/* IB */
-	struct list_head net_interfaces;	
-	struct list_head ib_interfaces;	
+	struct list_head net_interfaces;
+	struct list_head ib_interfaces;
 	struct rdma_event_channel *cm_channel;
 	ev_io cm_watcher;
 

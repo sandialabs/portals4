@@ -146,12 +146,25 @@ static int get_vars(gbl_t *gbl)
 	}
 
 	/* Extract the Node ID for the main control process. */
-	env = getenv("OMPI_MCA_orte_hnp_uri");
-	if (!env) {
-		ptl_warn("OMPI_MCA_orte_hnp_uri not found\n");
-		return PTL_FAIL;
+	env = getenv("PORTALS4_MASTER_NID");
+	if (env) {
+		struct in_addr inp;
+
+		if (!inet_aton(env, &inp)) {
+			ptl_warn("Invalid PORTALS4_MASTER_NID\n");
+			return PTL_FAIL;
+		}
+
+		gbl->main_ctl_nid = ntohl(inp.s_addr);
+
+	} else {
+		env = getenv("OMPI_MCA_orte_hnp_uri");
+		if (!env) {
+			ptl_warn("OMPI_MCA_orte_hnp_uri not found\n");
+			return PTL_FAIL;
+		}
+		gbl->main_ctl_nid = get_node_id_from_tcp(env);
 	}
-	gbl->main_ctl_nid = get_node_id_from_tcp(env);
 	if (!gbl->main_ctl_nid) {
 		ptl_warn("Can't extract node id\n");
 		return PTL_FAIL;
@@ -223,7 +236,7 @@ static int start_control_daemon(gbl_t *gbl)
 
 static void rpc_callback(struct session *session, void *data)
 {
-	ptl_warn("Got RPC message - dropping it\n");
+	ptl_warn("Got RPC message %d - dropping it\n", session->rpc_msg.type);
 }
 
 static void *event_loop_func(void *arg)

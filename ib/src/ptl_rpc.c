@@ -38,7 +38,7 @@ int rpc_send(struct session *session, struct rpc_msg *msg_out)
 
 	ret = send(session->fd, msg_out, sizeof(struct rpc_msg), 0);
 
-	ptl_info("rep sent %d bytes \n", ret);
+	ptl_info("rep sent %d / %zd bytes \n", ret, sizeof(struct rpc_msg));
 
 	return PTL_OK;
 }

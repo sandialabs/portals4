@@ -19,6 +19,8 @@ struct rpc_msg {
 		INVALID,
 		QUERY_XRC_DOMAIN = 1,
 		QUERY_RANK_TABLE = 2,
+		SEND_LOCAL_RANK_TABLE = 3,
+		SEND_RANK_TABLE = 4,
 
 		/* 8th bit indicate a reply. */
 		REPLY_RANK_TABLE = 128,
@@ -54,14 +56,17 @@ struct rpc_msg {
 			char xrc_domain_fname[1024];
 		} reply_xrc_domain;
 
-		/* LOCAL RANK TABLE */
-		struct {
-			ptl_nid_t nid;
-			struct {
-				ptl_rank_t rank;
-				uint32_t xrc_srq_num;
-			} ranks[64];
-		} local_rank_table;
+		/* SEND_LOCAL_RANK_TABLE */
+       struct {
+           unsigned num_entries;
+           struct rank_entry ranks[10];        /* TODO : dynamic value instead of hardcoded */
+       } send_local_rank_table;
+
+       /* SEND_MASTER_RANK_TABLE */
+       struct {
+           struct rank_entry ranks[200];       /* TODO : dynamic value instead of hardcoded */
+       } send_master_rank_table;
+
 	};
 };
 
@@ -78,14 +83,15 @@ enum rpc_type {
  */
 struct rpc;
 struct session {
-	struct list_head		session_list;
-	int				fd;			/* connected socket */
-	uint32_t			sequence;
-	pthread_mutex_t			mutex;
-	pthread_cond_t			cond;
-	ev_io					watcher;
-	struct rpc				*rpc; /* backpointer to rpc owner */
-	struct rpc_msg			rpc_msg;
+	struct list_head session_list; /* link sessions together inside an rpc */
+	struct rpc *rpc;			   /* backpointer to rpc owner */
+	int	fd;						   /* connected socket */
+	uint32_t sequence;
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	ev_io watcher;
+	void *data;					   /* for session owner */
+	struct rpc_msg rpc_msg;		   /* to receive */
 };
 
 /*

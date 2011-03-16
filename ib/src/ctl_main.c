@@ -30,13 +30,36 @@ void broadcast_rank_table(struct p4oibd_config *conf)
 
 	list_for_each(l, &conf->rpc->session_list) {
 		struct session *session = list_entry(l, struct session, session_list);
-		rpc_send(session, &msg);
+		if (session->data == (void *)1) {
+			rpc_send(session, &msg);
+		}
+	}
+
+	/* Give rank table to remote control nodes. */
+	if (conf->nid == conf->master_nid) {
+		ptl_rank_t rank;
+
+		msg.type = SEND_RANK_TABLE;
+		for (rank=0; rank<conf->master_rank_table->num_entries; rank++) {
+			msg.send_master_rank_table.ranks[rank] = conf->master_rank_table->elem[rank];
+			if (verbose)
+				printf("broadcast_rank_table - rank=%d, nid=%x, addr=%x\n",
+					   conf->master_rank_table->elem[rank].rank,
+					   conf->master_rank_table->elem[rank].nid,
+					   conf->master_rank_table->elem[rank].addr);
+
+		}
+
+		list_for_each(l, &conf->rpc->session_list) {
+			struct session *session = list_entry(l, struct session, session_list);
+			if (session->data == (void *)2) {
+				if (verbose)
+					rpc_send(session, &msg);
+			}
+		}
 	}
 
 	pthread_spin_unlock(&conf->rpc->session_list_lock);
-
-	/* Give rank table to remote control nodes. */
-	// todo
 }
 
 static void rpc_callback(struct session *session, void *data)
@@ -45,36 +68,44 @@ static void rpc_callback(struct session *session, void *data)
 	struct net_intf *net_intf;
 	struct ib_intf *ib_intf;
 	struct rpc_msg *m = &session->rpc_msg;
-	ptl_rank_t local_rank;
+	ptl_rank_t rank;
 	struct p4oibd_config *conf = data;
 
 	switch(session->rpc_msg.type) {
 	case QUERY_RANK_TABLE:
 		if (verbose)
-			printf("got QUERY_RANK_TABLE from rank %d / %d\n", session->rpc_msg.query_rank_table.rank, conf->local_nranks);
-		local_rank = m->query_rank_table.local_rank;
+			printf("got QUERY_RANK_TABLE from rank %d / %d\n", m->query_rank_table.rank, conf->local_nranks);
+		rank = m->query_rank_table.local_rank;
 
-		if (conf->local_rank_table->size <= m->query_rank_table.local_rank) {
-			/* Bad rank. Should not happen */
-			assert(0);
-		}
+		assert(session->data == NULL);
+		session->data = (void *)1; /* it is a local rank */
 
-		/* We may already have it. In that case, reply, but don't
-		 * modify the table. */
-		if (conf->local_rank_table->elem[local_rank].nid != conf->nid) {
-			conf->local_rank_table->elem[local_rank].rank = m->query_rank_table.rank;
-			conf->local_rank_table->elem[local_rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
-			conf->local_rank_table->elem[local_rank].addr = m->query_rank_table.addr;
-			conf->local_rank_table->elem[local_rank].nid = conf->nid;
+		/* Ensure the querying rank is right. */
+		assert(m->query_rank_table.local_rank < conf->local_rank_table->num_entries);
 
-			conf->num_sessions ++;
-		}
+		/* Ensure we don't already have it. */
+		assert(conf->local_rank_table->elem[rank].nid != conf->nid);
+
+		/* Good. Copy the entry into the local table. */
+		conf->local_rank_table->elem[rank].rank = m->query_rank_table.rank;
+		conf->local_rank_table->elem[rank].xrc_srq_num = m->query_rank_table.xrc_srq_num;
+		conf->local_rank_table->elem[rank].addr = m->query_rank_table.addr;
+		conf->local_rank_table->elem[rank].nid = conf->nid;
+
+		conf->local_table_queries ++;
 
 		if (verbose)
-			printf("got another session - %d %d\n", conf->num_sessions, conf->local_nranks);
-		if (conf->num_sessions == conf->local_nranks) {
-			/* All local ranks have reported. Sent the local rank table to the master control. */
-			//	msg.type = LOCAL_RANK_TABLE;
+			printf("QUERY_RANK_TABLE got rank=%d, nid=%x, addr=%x\n",
+				   conf->local_rank_table->elem[rank].rank,
+				   conf->local_rank_table->elem[rank].nid,
+				   conf->local_rank_table->elem[rank].addr);
+
+		if (verbose)
+			printf("got another session - %d %d\n", conf->local_table_queries, conf->local_nranks);
+
+		/* Check whether we have all the local entries. */
+		if (conf->local_table_queries == conf->local_nranks) {
+			/* Sent the local rank table to the master control. */
 
 			if (verbose)
 				printf("got all session\n");
@@ -82,27 +113,36 @@ static void rpc_callback(struct session *session, void *data)
 			if (conf->nid == conf->master_nid) {
 				/* Hey, I'm the boss. Copy the local ranks to the
 				 * global rank table if we don't already have it. */
-				if (conf->master_rank_table->elem[conf->local_rank_table->elem[local_rank].rank].nid != conf->local_rank_table->elem[local_rank].nid) {
-					for (local_rank=0; local_rank < conf->local_rank_table->size; local_rank++) {
-						ptl_rank_t rank = conf->local_rank_table->elem[local_rank].rank;
-						conf->master_rank_table->elem[rank].rank = rank;
-						conf->master_rank_table->elem[rank].xrc_srq_num = conf->local_rank_table->elem[local_rank].xrc_srq_num;
-						conf->master_rank_table->elem[rank].addr = conf->local_rank_table->elem[local_rank].addr;
-						conf->master_rank_table->elem[rank].pid = 0; /* ??? todo */
-						conf->master_rank_table->elem[rank].nid = conf->local_rank_table->elem[local_rank].nid;
+				if (conf->master_rank_table->elem[conf->local_rank_table->elem[rank].rank].nid != conf->local_rank_table->elem[rank].nid) {
+					for (rank=0; rank < conf->local_rank_table->num_entries; rank++) {
+						ptl_rank_t m_rank = conf->local_rank_table->elem[rank].rank;
+						conf->master_rank_table->elem[m_rank].rank = m_rank;
+						conf->master_rank_table->elem[m_rank].xrc_srq_num = conf->local_rank_table->elem[rank].xrc_srq_num;
+						conf->master_rank_table->elem[m_rank].addr = conf->local_rank_table->elem[rank].addr;
+						conf->master_rank_table->elem[m_rank].pid = 0; /* ??? todo */
+						conf->master_rank_table->elem[m_rank].nid = conf->local_rank_table->elem[rank].nid;
 
-						conf->recv_nranks ++;
+						/* Each entry was generated by a query from a rank. */
+						conf->table_queries ++;
 					}
+
 				}
 
-				if (conf->recv_nranks == conf->nranks) {
+				/* If all the nodes have reported, broadcast the
+				   table. */
+				if (conf->table_queries == conf->nranks) {
 					broadcast_rank_table(conf);
 				}
 
 			} else {
-				/* Not the master control process. */
-				// TODO
-				assert(0);
+				/* Not the master control process. Send the local
+				   table to the master. */
+				msg.type = SEND_LOCAL_RANK_TABLE;
+				msg.send_local_rank_table.num_entries = conf->local_rank_table->num_entries;
+				for (rank=0; rank < conf->local_rank_table->num_entries; rank++) {
+					msg.send_local_rank_table.ranks[rank] = conf->local_rank_table->elem[rank];
+				}
+				rpc_send(conf->master_rpc->to_server, &msg);
 			}
 		}
 		break;
@@ -119,6 +159,61 @@ static void rpc_callback(struct session *session, void *data)
 			strcpy(msg.reply_xrc_domain.xrc_domain_fname, "");
 		}
 		rpc_send(session, &msg);
+		break;
+
+	case SEND_LOCAL_RANK_TABLE:
+
+		assert(session->data == NULL);
+		session->data = (void *)2; /* it is a remote control process */
+
+		/* A remote node sends its local rank table. */
+		assert(conf->nid == conf->master_nid);
+
+		/* Copy the entries in the master table. */
+		for (rank=0; rank < m->send_local_rank_table.num_entries; rank++) {
+			struct rank_entry *l_rank = &m->send_local_rank_table.ranks[rank];
+			struct rank_entry *master_rank;
+
+			/* Make sure rank is sane. */
+			assert(l_rank->rank < conf->master_rank_table->num_entries);
+
+			master_rank = &conf->master_rank_table->elem[l_rank->rank];
+
+			if (verbose)
+				printf("SEND_RANK_TABLE got rank=%d, nid=%x, addr=%x\n",
+					   l_rank->rank, l_rank->nid, l_rank->addr);
+
+			/* Make sure we don't already have it. */
+			assert(master_rank->rank != l_rank->rank);
+
+			*master_rank = *l_rank;
+
+			conf->table_queries ++;
+		}
+
+		/* If all the nodes have reported, broadcast the
+		 * table. */
+		if (conf->table_queries == conf->nranks) {
+			broadcast_rank_table(conf);
+		}
+		break;
+
+	case SEND_RANK_TABLE:
+		/* Receiving full rank table from master control. */
+		assert(conf->nid != conf->master_nid);
+
+		for(rank=0; rank<conf->master_rank_table->num_entries; rank++) {
+			conf->master_rank_table->elem[rank] = m->send_master_rank_table.ranks[rank];
+			if (verbose)
+				printf("SEND_RANK_TABLE got rank=%d, nid=%x, addr=%x\n",
+					   conf->master_rank_table->elem[rank].rank,
+					   conf->master_rank_table->elem[rank].nid,
+					   conf->master_rank_table->elem[rank].addr);
+		}
+
+		/* Give it to local ranks. */
+		broadcast_rank_table(conf);
+					
 		break;
 
 	default:
@@ -311,7 +406,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Couldn't allocate local rank table\n");
 		return 1;
 	}
-	conf.local_rank_table->size = conf.local_nranks;
+	conf.local_rank_table->num_entries = conf.local_nranks;
 
 	/* Create connection table. */
 	conf.connect = calloc(conf.nranks,
@@ -320,7 +415,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Couldn't allocate connection table\n");
 		return 1;
 	}
-	conf.local_rank_table->size = conf.local_nranks;
 
 	err = create_shared_memory(&conf);
 	if (err) {
@@ -347,6 +441,18 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "unable to start %s\n", progname);
 		}
 		goto err1;
+	}
+
+	/* Connect to the master control process. */
+	if (conf.nid != conf.master_nid) {
+		conf.master_nid = 0xc0a8de0d;
+		if (verbose)
+			printf("trying to connect to master - %x\n", conf.master_nid);
+		err = rpc_init(rpc_type_client, conf.master_nid, conf.ctl_port, &conf.master_rpc, rpc_callback, &conf);
+		if (unlikely(err)) {
+			ptl_warn("rpc_init to master failed\n");
+			goto err1;
+		}
 	}
 
 	printf("%s started\n", progname);

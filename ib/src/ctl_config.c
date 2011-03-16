@@ -53,6 +53,7 @@ int create_shared_memory(struct p4oibd_config *conf)
 	memcpy(m, &sc, sizeof(sc));
 
 	conf->master_rank_table = (struct rank_table *)(m + sc.rank_table_offset);
+	conf->master_rank_table->num_entries = conf->nranks;
 
 	return 0;
 }
