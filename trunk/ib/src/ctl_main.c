@@ -53,8 +53,7 @@ void broadcast_rank_table(struct p4oibd_config *conf)
 		list_for_each(l, &conf->rpc->session_list) {
 			struct session *session = list_entry(l, struct session, session_list);
 			if (session->data == (void *)2) {
-				if (verbose)
-					rpc_send(session, &msg);
+				rpc_send(session, &msg);
 			}
 		}
 	}
