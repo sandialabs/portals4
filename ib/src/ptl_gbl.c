@@ -186,12 +186,8 @@ static int start_control_daemon(gbl_t *gbl)
 
 	pid = fork();
 	if (pid == 0) {
-		char jobid[10];
-		char local_nranks[10];
-		char nranks[10];
-		char nid[10];
-		char master_nid[10];
-		char num_nids[10];
+		char str[20][60];		/* 20 strings of 60 chars */
+		char *argv[21];
 		int i;
 
 		/* Close all the file descriptors, except the standard ones. */
@@ -199,12 +195,40 @@ static int start_control_daemon(gbl_t *gbl)
 			close(i);
 		}
 
-		sprintf(jobid, "%d", gbl->jid);
-		sprintf(local_nranks, "%u", gbl->local_nranks);
-		sprintf(nranks, "%u", gbl->nranks);
-		sprintf(nid, "%u", gbl->nid);
-		sprintf(master_nid, "%u", gbl->main_ctl_nid);
-		sprintf(num_nids, "%u", gbl->num_nids);
+		i = 0;
+		sprintf(str[i++], "../src/control");
+
+		sprintf(str[i++], "-j");
+		sprintf(str[i++], "%d", gbl->jid);
+
+		sprintf(str[i++], "-t");
+		sprintf(str[i++], "%u", gbl->local_nranks);
+
+		sprintf(str[i++], "-s");
+		sprintf(str[i++], "%u", gbl->nranks);
+
+		sprintf(str[i++], "-n");
+		sprintf(str[i++], "%u", gbl->nid);
+
+		sprintf(str[i++], "-m");
+		sprintf(str[i++], "%u", gbl->main_ctl_nid);
+
+		sprintf(str[i++], "-u");
+		sprintf(str[i++], "%u", gbl->num_nids);
+
+#if 0
+		//todo: use env variables to decide whether to set these
+		sprintf(str[i++], "-v");
+
+		sprintf(str[i++], "-l");
+		sprintf(str[i++], "100");
+#endif
+
+		argv[i] = NULL;
+		while(i) {
+			i--;
+			argv[i] = str[i];
+		}
 
 		/* Change the session. */
 		if (setsid() == -1) {
@@ -212,20 +236,7 @@ static int start_control_daemon(gbl_t *gbl)
 			return 1;
 		}
 
-		execl("../src/control",
-			  "../src/control",
-			  "-n", nid, 
-			  "-m", master_nid,
-			  "-j", jobid,
-			  "-t", local_nranks,
-			  "-s", nranks,
-			  "-u", num_nids,
-#if 0
-			  //todo: pass existing params instead
-			  "-v",
-			  "-l", "100",
-#endif
-			  NULL);
+		execv(argv[0], argv);
 
 		_exit(0);
 	}
