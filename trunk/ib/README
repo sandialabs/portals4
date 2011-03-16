@@ -16,5 +16,12 @@ Build:
 Test:
 * cd test
 * killall control; mpirun --mca mpi_warn_on_fork 0 --mca btl_openib_warn_default_gid_prefix 0 -H localhost -n 2 ./ptl_test -f ./test_put.xml
+* with several nodes: pdsh -w "puff[3,4]" killall control; sleep 1; mpirun --mca mpi_warn_on_fork 0 --mca btl_openib_warn_default_gid_prefix 0 -H puff3,puff4 -n 2 -x PORTALS4_MASTER_NID=192.168.221.13 ./ptl_test -f ./test_put.xml
 
+Limitations:
+- A program may not open more than one NID in its lifetime.
+- There is a hardcoded limit of 200 nods with 10 ranks each.
+- If mpirun is started on a node not part of the cluster, then
+  PORTALS4_MASTER_NID must be set to indicate which node will host the
+  master control process.
 

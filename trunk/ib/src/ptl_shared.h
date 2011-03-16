@@ -12,7 +12,7 @@ struct rank_entry {
 };
 
 struct rank_table {
-	unsigned int size;			/* number of elements */
+	unsigned int num_entries;
 	struct rank_entry elem[0];
 };
 
@@ -20,8 +20,8 @@ struct rank_table {
  * applications. Offsets are relative to the
  * start of the shared memory. */
 struct shared_config {
-	off_t rank_table_offset;
-	size_t rank_table_size;
+	off_t rank_table_offset;	/* offset in bytes */
+	size_t rank_table_size;		/* table size in bytes */
 };
 
 /* RDMA CM private data */
