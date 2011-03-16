@@ -114,14 +114,22 @@ static void fini_session(struct rpc *rpc, struct session *session)
 	close(session->fd);
 	session->fd = -1;
 
-	pthread_spin_lock(&session->rpc->session_list_lock);
+	pthread_spin_lock(&rpc->session_list_lock);
 	list_del(&session->session_list);
-	pthread_spin_unlock(&session->rpc->session_list_lock);
+	pthread_spin_unlock(&rpc->session_list_lock);
 
 	pthread_cond_destroy(&session->cond);
 	pthread_mutex_destroy(&session->mutex);
 
 	free(session);
+
+	/* Tell the owner that the session list is now empty. Only usefull
+	 * for the control process. */
+	if (list_empty(&rpc->session_list)) {
+		pthread_spin_lock(&rpc->session_list_lock);
+		session_list_is_empty();
+		pthread_spin_unlock(&rpc->session_list_lock);
+	}
 }
 
 static void read_one(EV_P_ ev_io *w, int revents)

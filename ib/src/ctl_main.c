@@ -245,6 +245,14 @@ static int run_once(struct p4oibd_config *conf)
 	return 0;
 }
 
+/* This function will be called when the last connection to this
+ * control process is closed. It means that the task has run its
+ * course and can wrap-up peacefully. */
+void session_list_is_empty(void)
+{
+	ev_break(my_event_loop, EVBREAK_ALL);
+}
+
 static void usage(char *argv[])
 {
 	printf("usage:\n");
@@ -393,7 +401,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Detach the process before continuing. */
-	err = daemon(0,0);
+	err = daemon(1,1);
 	if (err) {
 		perror("Couldn't daemonize\n");
 		return 1;

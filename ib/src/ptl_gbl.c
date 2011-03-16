@@ -21,6 +21,12 @@ unsigned int ctl_port = PTL_CTL_PORT;
 static gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+void session_list_is_empty(void)
+{
+	/* We don't care. */
+	return;
+}
+
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
 	ev_break(my_event_loop, EVBREAK_ALL);
