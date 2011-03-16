@@ -258,7 +258,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	/* There should only be 2 references on the object before we can
 	 * release it. */
 	if (md->obj_ref.ref_cnt > 2) {
-		me_put(md);
+		md_put(md);
 		return PTL_IN_USE;
 	}
 
