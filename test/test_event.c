@@ -10,8 +10,8 @@
 #include "testing.h"
 
 int main(
-    int argc,
-    char *argv[])
+         int argc,
+         char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
@@ -33,16 +33,15 @@ int main(
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
-    CHECK_RETURNVAL(PtlNIInit
-                    (PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
-                     PTL_PID_ANY, NULL, NULL, num_procs, NULL, amapping,
-                     &ni_logical));
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
+                              PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
+                              num_procs, NULL, amapping,
+                              &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &pt_eq_handle));
-    CHECK_RETURNVAL(PtlPTAlloc
-                    (ni_logical, 0, pt_eq_handle, PTL_PT_ANY,
-                     &logical_pt_index));
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, pt_eq_handle, PTL_PT_ANY,
+                               &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeefc0d1f1edUL;
@@ -51,10 +50,9 @@ int main(
     value_le.ac_id.uid = PTL_UID_ANY;
     value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
-    CHECK_RETURNVAL(PtlLEAppend
-                    (ni_logical, 0, &value_le, PTL_PRIORITY_LIST,
-                     (void *)(0xcafecafe00UL + myself.rank),
-                     &value_le_handle));
+    CHECK_RETURNVAL(PtlLEAppend(ni_logical, 0, &value_le, PTL_PRIORITY_LIST,
+                                (void *)(0xcafecafe00UL + myself.rank),
+                                &value_le_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -80,12 +78,12 @@ int main(
     {
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
-        CHECK_RETURNVAL(PtlGet
-                        (read_md_handle, myself.rank % sizeof(uint64_t),
-                         sizeof(uint64_t) - (myself.rank % sizeof(uint64_t)),
-                         r0, logical_pt_index, myself.rank,
-                         myself.rank % sizeof(uint64_t),
-                         (void *)(uintptr_t) (myself.rank + 1)));
+        CHECK_RETURNVAL(PtlGet(read_md_handle, myself.rank % sizeof(uint64_t),
+                               sizeof(uint64_t) -
+                               (myself.rank % sizeof(uint64_t)), r0,
+                               logical_pt_index, myself.rank, myself.rank %
+                               sizeof(uint64_t),
+                               (void *)(uintptr_t)(myself.rank + 1)));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
@@ -156,20 +154,20 @@ int main(
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {
-                                printf
-                                    ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
-                                     (unsigned)event.match_bits,
-                                     (unsigned)event.rlength,
-                                     (unsigned)event.mlength,
-                                     (unsigned)event.remote_offset,
-                                     event.start, &value, event.user_ptr,
-                                     (unsigned)event.hdr_data,
-                                     (unsigned)event.initiator.rank,
-                                     event.uid, event.jid,
-                                     (unsigned)event.ni_fail_type,
-                                     (unsigned)event.pt_index,
-                                     (unsigned)event.atomic_operation,
-                                     (unsigned)event.atomic_type);
+                                printf(
+                                       "match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
+                                       (unsigned)event.match_bits,
+                                       (unsigned)event.rlength,
+                                       (unsigned)event.mlength,
+                                       (unsigned)event.remote_offset,
+                                       event.start, &value, event.user_ptr,
+                                       (unsigned)event.hdr_data,
+                                       (unsigned)event.initiator.rank,
+                                       event.uid, event.jid,
+                                       (unsigned)event.ni_fail_type,
+                                       (unsigned)event.pt_index,
+                                       (unsigned)event.atomic_operation,
+                                       (unsigned)event.atomic_type);
                             }
                             assert(event.match_bits == 0);      // since this is a non-matching NI
                             assert(((char *)event.start) -
@@ -190,25 +188,26 @@ int main(
                         case PTL_EVENT_ACK:
                             /* initiator */
                             if (verb) {
-                                printf
-                                    ("mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
-                                     (unsigned)event.mlength,
-                                     (unsigned)event.remote_offset,
-                                     event.user_ptr,
-                                     (unsigned)event.ni_fail_type);
+                                printf(
+                                       "mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
+                                       (unsigned)event.mlength,
+                                       (unsigned)event.remote_offset,
+                                       event.user_ptr,
+                                       (unsigned)event.ni_fail_type);
                             }
-                            assert(event.mlength ==
-                                   sizeof(uint64_t) -
+                            assert(event.mlength == sizeof(uint64_t) -
                                    (myself.rank % sizeof(uint64_t)));
-                            assert(event.remote_offset ==
-                                   myself.rank % sizeof(uint64_t));
+                            assert(
+                                   event.remote_offset == myself.rank %
+                                   sizeof(uint64_t));
                             assert(event.user_ptr ==
-                                   (void *)(uintptr_t) (myself.rank + 1));
+                                   (void *)(uintptr_t)(myself.rank + 1));
                             assert(event.ni_fail_type == PTL_NI_OK);
                             break;
                     }
-                    if (verb)
+                    if (verb) {
                         printf("\n");
+                    }
                     break;
                 case PTL_EQ_EMPTY:
                     break;

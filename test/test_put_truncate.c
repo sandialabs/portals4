@@ -11,26 +11,26 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-#define ENTRY_T ptl_me_t
-#define HANDLE_T ptl_handle_me_t
-#define NI_TYPE PTL_NI_MATCHING
-#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-#define APPEND PtlMEAppend
-#define UNLINK PtlMEUnlink
+# define ENTRY_T        ptl_me_t
+# define HANDLE_T       ptl_handle_me_t
+# define NI_TYPE        PTL_NI_MATCHING
+# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND         PtlMEAppend
+# define UNLINK         PtlMEUnlink
 #else
-#define ENTRY_T ptl_le_t
-#define HANDLE_T ptl_handle_le_t
-#define NI_TYPE PTL_NI_NO_MATCHING
-#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-#define APPEND PtlLEAppend
-#define UNLINK PtlLEUnlink
-#endif
+# define ENTRY_T        ptl_le_t
+# define HANDLE_T       ptl_handle_le_t
+# define NI_TYPE        PTL_NI_NO_MATCHING
+# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND         PtlLEAppend
+# define UNLINK         PtlLEUnlink
+#endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 
 int main(
-    int argc,
-    char *argv[])
+         int argc,
+         char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
@@ -62,19 +62,20 @@ int main(
     assert(readval);
 
     CHECK_RETURNVAL(PtlNIInit
-                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
-                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
+                        (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                        PTL_PID_ANY,
+                        NULL, NULL, num_procs, NULL, amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &eq_handle));
     CHECK_RETURNVAL(PtlPTAlloc
-                    (ni_logical, 0, eq_handle, PTL_PT_ANY,
-                     &logical_pt_index));
+                        (ni_logical, 0, eq_handle, PTL_PT_ANY,
+                        &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(value, 42, BUFSIZE);
     value_e.start = value;
-    value_e.length = BUFSIZE/2;
+    value_e.length = BUFSIZE / 2;
     value_e.ac_id.uid = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
@@ -84,9 +85,9 @@ int main(
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
     CHECK_RETURNVAL(APPEND
-                    (ni_logical, 0, &value_e, PTL_PRIORITY_LIST,
-                     (void *)(0xcafecafe00UL + myself.rank),
-                     &value_e_handle));
+                        (ni_logical, 0, &value_e, PTL_PRIORITY_LIST,
+                        (void *)(0xcafecafe00UL + myself.rank),
+                        &value_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -109,23 +110,31 @@ int main(
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
         CHECK_RETURNVAL(PtlPut
-                        (write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ, r0,
-                         logical_pt_index, 1, 0, NULL, 0));
+                            (write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ, r0,
+                            logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
-        assert(ctc.success == BUFSIZE/2);
+        assert(ctc.success == BUFSIZE / 2);
     }
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        for (unsigned idx=0; idx<BUFSIZE/2; ++idx) {
+        for (unsigned idx = 0; idx < BUFSIZE / 2; ++idx) {
             if (value[idx] != 61) {
-                fprintf(stderr, "bad value at idx %u (readval[%u] = %i, should be 61)\n", idx, idx, value[idx]);
+                fprintf(
+                        stderr,
+                        "bad value at idx %u (readval[%u] = %i, should be 61)\n",
+                        idx,
+                        idx, value[idx]);
                 abort();
             }
         }
-        for (unsigned idx=BUFSIZE/2; idx < BUFSIZE; ++idx) {
+        for (unsigned idx = BUFSIZE / 2; idx < BUFSIZE; ++idx) {
             if (value[idx] != 42) {
-                fprintf(stderr, "bad value at idx %u (readval[%u] = %i, should be 42)\n", idx, idx, value[idx]);
+                fprintf(
+                        stderr,
+                        "bad value at idx %u (readval[%u] = %i, should be 42)\n",
+                        idx,
+                        idx, value[idx]);
                 abort();
             }
         }
@@ -195,34 +204,35 @@ int main(
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {
-                                printf("match_bits(%u), ", (unsigned)event.match_bits);
-                                printf("%u",(unsigned)event.rlength);
-                                printf("%u",(unsigned)event.mlength);
-                                printf("%u",(unsigned)event.remote_offset);
-                                printf("%p",event.start);
-                                printf("%p",event.user_ptr);
-                                printf("%u",(unsigned)event.hdr_data);
-                                printf("%u",(unsigned)event.initiator.rank);
-                                printf("%u",event.uid);
-                                printf("%u",event.jid);
-                                printf("%u",(unsigned)event.ni_fail_type);
-                                printf("%u",(unsigned)event.pt_index);
-                                printf("%u",(unsigned)event.atomic_operation);
-                                printf("%u",(unsigned)event.atomic_type);
+                                printf("match_bits(%u), ",
+                                       (unsigned)event.match_bits);
+                                printf("%u", (unsigned)event.rlength);
+                                printf("%u", (unsigned)event.mlength);
+                                printf("%u", (unsigned)event.remote_offset);
+                                printf("%p", event.start);
+                                printf("%p", event.user_ptr);
+                                printf("%u", (unsigned)event.hdr_data);
+                                printf("%u", (unsigned)event.initiator.rank);
+                                printf("%u", event.uid);
+                                printf("%u", event.jid);
+                                printf("%u", (unsigned)event.ni_fail_type);
+                                printf("%u", (unsigned)event.pt_index);
+                                printf("%u", (unsigned)event.atomic_operation);
+                                printf("%u", (unsigned)event.atomic_type);
                                 /*printf
-                                    ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
-                                     (unsigned)event.match_bits,
-                                     (unsigned)event.rlength,
-                                     (unsigned)event.mlength,
-                                     (unsigned)event.remote_offset,
-                                     event.start, value, event.user_ptr,
-                                     (unsigned)event.hdr_data,
-                                     (unsigned)event.initiator.rank,
-                                     event.uid, event.jid,
-                                     (unsigned)event.ni_fail_type,
-                                     (unsigned)event.pt_index,
-                                     (unsigned)event.atomic_operation,
-                                     (unsigned)event.atomic_type);*/
+                                 *  ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
+                                 *   (unsigned)event.match_bits,
+                                 *   (unsigned)event.rlength,
+                                 *   (unsigned)event.mlength,
+                                 *   (unsigned)event.remote_offset,
+                                 *   event.start, value, event.user_ptr,
+                                 *   (unsigned)event.hdr_data,
+                                 *   (unsigned)event.initiator.rank,
+                                 *   event.uid, event.jid,
+                                 *   (unsigned)event.ni_fail_type,
+                                 *   (unsigned)event.pt_index,
+                                 *   (unsigned)event.atomic_operation,
+                                 *   (unsigned)event.atomic_type);*/
                             }
 #if INTERFACE == 1
                             assert(event.match_bits == INTERFACE);
@@ -232,7 +242,7 @@ int main(
                             assert(event.pt_index == logical_pt_index);
                             assert(event.ni_fail_type == PTL_NI_OK);
                             assert(event.mlength == event.rlength);
-                            assert(event.rlength == BUFSIZE/2);
+                            assert(event.rlength == BUFSIZE / 2);
                             assert(event.remote_offset ==
                                    event.initiator.rank % sizeof(uint64_t));
                             assert(event.user_ptr ==
@@ -245,13 +255,14 @@ int main(
                             /* initiator */
                             if (verb) {
                                 printf
-                                    ("mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
-                                     (unsigned)event.mlength,
-                                     (unsigned)event.remote_offset,
-                                     event.user_ptr,
-                                     (unsigned)event.ni_fail_type);
+                                (
+                                 "mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
+                                 (unsigned)event.mlength,
+                                 (unsigned)event.remote_offset,
+                                 event.user_ptr,
+                                 (unsigned)event.ni_fail_type);
                             }
-                            assert(event.mlength == BUFSIZE/2);
+                            assert(event.mlength == BUFSIZE / 2);
                             assert(event.remote_offset == 0);
                             assert(event.user_ptr == NULL);
                             assert(event.ni_fail_type == PTL_NI_OK);
@@ -282,4 +293,5 @@ int main(
 
     return 0;
 }
+
 /* vim:set expandtab: */

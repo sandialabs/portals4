@@ -11,26 +11,26 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-#define ENTRY_T ptl_me_t
-#define HANDLE_T ptl_handle_me_t
-#define NI_TYPE PTL_NI_MATCHING
-#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-#define APPEND PtlMEAppend
-#define UNLINK PtlMEUnlink
+# define ENTRY_T        ptl_me_t
+# define HANDLE_T       ptl_handle_me_t
+# define NI_TYPE        PTL_NI_MATCHING
+# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND         PtlMEAppend
+# define UNLINK         PtlMEUnlink
 #else
-#define ENTRY_T ptl_le_t
-#define HANDLE_T ptl_handle_le_t
-#define NI_TYPE PTL_NI_NO_MATCHING
-#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-#define APPEND PtlLEAppend
-#define UNLINK PtlLEUnlink
-#endif
+# define ENTRY_T        ptl_le_t
+# define HANDLE_T       ptl_handle_le_t
+# define NI_TYPE        PTL_NI_NO_MATCHING
+# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND         PtlLEAppend
+# define UNLINK         PtlLEUnlink
+#endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 
 int main(
-    int argc,
-    char *argv[])
+         int argc,
+         char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
@@ -56,14 +56,13 @@ int main(
     assert(value);
     assert(readval);
 
-    CHECK_RETURNVAL(PtlNIInit
-                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
-                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                              PTL_PID_ANY, NULL, NULL, num_procs, NULL,
+                              amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
-    CHECK_RETURNVAL(PtlPTAlloc
-                    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-                     &logical_pt_index));
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                               &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(value, 42, BUFSIZE);
@@ -77,9 +76,8 @@ int main(
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-    CHECK_RETURNVAL(APPEND
-                    (ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
-                     &value_e_handle));
+    CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
+                           &value_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -101,17 +99,18 @@ int main(
     {
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
-        CHECK_RETURNVAL(PtlPut
-                        (write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ, r0,
-                         logical_pt_index, 1, 0, NULL, 0));
+        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ,
+                               r0, logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        for (unsigned idx=0; idx<BUFSIZE; ++idx) {
+        for (unsigned idx = 0; idx < BUFSIZE; ++idx) {
             if (value[idx] != 61) {
-                fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n", idx, idx, value[idx]);
+                fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n",
+                        idx, idx,
+                        value[idx]);
                 abort();
             }
         }
@@ -128,4 +127,5 @@ int main(
 
     return 0;
 }
+
 /* vim:set expandtab: */
