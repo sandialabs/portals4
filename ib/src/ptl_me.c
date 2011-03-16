@@ -182,6 +182,13 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	if (unlikely(err))
 		goto err1;
 
+	/* There should only be 2 references on the object before we can
+	 * release it. */
+	if (me->obj_ref.ref_cnt > 2) {
+		me_put(me);
+		return PTL_IN_USE;
+	}
+
 	me_unlink(me);
 
 	me_put(me);
