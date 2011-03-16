@@ -31,3 +31,5 @@ struct cm_priv_request {
 
 /* Event loop */
 struct ev_loop *my_event_loop;
+
+void session_list_is_empty(void);
