@@ -10,24 +10,24 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-#define ENTRY_T ptl_me_t
-#define HANDLE_T ptl_handle_me_t
-#define NI_TYPE PTL_NI_MATCHING
-#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
-#define APPEND PtlMEAppend
-#define UNLINK PtlMEUnlink
+# define ENTRY_T        ptl_me_t
+# define HANDLE_T       ptl_handle_me_t
+# define NI_TYPE        PTL_NI_MATCHING
+# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
+# define APPEND         PtlMEAppend
+# define UNLINK         PtlMEUnlink
 #else
-#define ENTRY_T ptl_le_t
-#define HANDLE_T ptl_handle_le_t
-#define NI_TYPE PTL_NI_NO_MATCHING
-#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
-#define APPEND PtlLEAppend
-#define UNLINK PtlLEUnlink
-#endif
+# define ENTRY_T        ptl_le_t
+# define HANDLE_T       ptl_handle_le_t
+# define NI_TYPE        PTL_NI_NO_MATCHING
+# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
+# define APPEND         PtlLEAppend
+# define UNLINK         PtlLEUnlink
+#endif /* if INTERFACE == 1 */
 
 int main(
-    int argc,
-    char *argv[])
+         int argc,
+         char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
@@ -47,14 +47,13 @@ int main(
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
-    CHECK_RETURNVAL(PtlNIInit
-                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
-                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                              PTL_PID_ANY, NULL, NULL, num_procs, NULL,
+                              amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
-    CHECK_RETURNVAL(PtlPTAlloc
-                    (ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-                     &logical_pt_index));
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                               &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeefc0d1f1ed;
@@ -69,9 +68,8 @@ int main(
         value_e.ignore_bits = 0;
 #endif
         CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-        CHECK_RETURNVAL(APPEND
-                        (ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
-                         &value_e_handle));
+        CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST,
+                               NULL, &value_e_handle));
     }
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
@@ -94,21 +92,21 @@ int main(
     {
         ptl_ct_event_t ctc;
         ptl_process_t r0 = {.rank = 0 };
-        CHECK_RETURNVAL(PtlSwap
-                        (read_md_handle, 0, read_md_handle, 0,
-                         sizeof(uint64_t), r0, logical_pt_index, 1, 0, NULL,
-                         0, NULL, PTL_SWAP, PTL_ULONG));
+        CHECK_RETURNVAL(PtlSwap(read_md_handle, 0, read_md_handle, 0,
+                                sizeof(uint64_t), r0, logical_pt_index, 1, 0,
+                                NULL, 0, NULL, PTL_SWAP,
+                                PTL_ULONG));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
     /*printf("%i readval: %llx\n", (int)myself.rank,
-           (unsigned long long)readval);*/
+     *     (unsigned long long)readval);*/
     assert(readval != myself.rank);
     assert(readval == 0xdeadbeefc0d1f1ed || readval < num_procs);
 
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        //printf("0 value: %llx\n", (unsigned long long)value);
+        // printf("0 value: %llx\n", (unsigned long long)value);
         assert(value < num_procs);
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
@@ -123,4 +121,5 @@ int main(
 
     return 0;
 }
+
 /* vim:set expandtab: */

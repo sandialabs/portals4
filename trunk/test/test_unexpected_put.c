@@ -11,27 +11,29 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-#define ENTRY_T ptl_me_t
-#define HANDLE_T ptl_handle_me_t
-#define NI_TYPE PTL_NI_MATCHING
-#define OPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-#define APPEND PtlMEAppend
-#define UNLINK PtlMEUnlink
+# define ENTRY_T        ptl_me_t
+# define HANDLE_T       ptl_handle_me_t
+# define NI_TYPE        PTL_NI_MATCHING
+# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND         PtlMEAppend
+# define UNLINK         PtlMEUnlink
 #else
-#define ENTRY_T ptl_le_t
-#define HANDLE_T ptl_handle_le_t
-#define NI_TYPE PTL_NI_NO_MATCHING
-#define OPTIONS (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-#define APPEND PtlLEAppend
-#define UNLINK PtlLEUnlink
-#endif
+# define ENTRY_T        ptl_le_t
+# define HANDLE_T       ptl_handle_le_t
+# define NI_TYPE        PTL_NI_NO_MATCHING
+# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND         PtlLEAppend
+# define UNLINK         PtlLEUnlink
+#endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 static int verb = 0;
 
-static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself, size_t expected)
+static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
+                      size_t expected)
 {
     size_t events = 0;
+
     do {
         ptl_event_t event;
         int retval;
@@ -91,54 +93,66 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself, size_t ex
                     case PTL_EVENT_PUT_OVERFLOW:
                         /* target */
                         if (verb) {
-                            printf("initiator.rank(%u), ",(unsigned)event.initiator.rank);
-                            printf("pt_index(%u), ",(unsigned)event.pt_index);
-                            printf("uid(%u), ",event.uid);
-                            printf("jid(%u), ",event.jid);
-                            printf("match_bits(%u), ", (unsigned)event.match_bits);
-                            printf("rlength(%u), ",(unsigned)event.rlength);
-                            printf("mlength(%u), ",(unsigned)event.mlength);
-                            printf("remote_offset(%u), ",(unsigned)event.remote_offset);
-                            printf("start(%p), ",event.start);
-                            printf("user_ptr(%p), ",event.user_ptr);
-                            printf("hdr_data(%u), ",(unsigned)event.hdr_data);
-                            printf("ni_fail_type(%u)",(unsigned)event.ni_fail_type);
+                            printf("initiator.rank(%u), ",
+                                   (unsigned)event.initiator.rank);
+                            printf("pt_index(%u), ", (unsigned)event.pt_index);
+                            printf("uid(%u), ", event.uid);
+                            printf("jid(%u), ", event.jid);
+                            printf("match_bits(%u), ",
+                                   (unsigned)event.match_bits);
+                            printf("rlength(%u), ", (unsigned)event.rlength);
+                            printf("mlength(%u), ", (unsigned)event.mlength);
+                            printf("remote_offset(%u), ",
+                                   (unsigned)event.remote_offset);
+                            printf("start(%p), ", event.start);
+                            printf("user_ptr(%p), ", event.user_ptr);
+                            printf("hdr_data(%u), ", (unsigned)event.hdr_data);
+                            printf("ni_fail_type(%u)",
+                                   (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_ATOMIC:
                     case PTL_EVENT_ATOMIC_OVERFLOW:
                         /* target */
                         if (verb) {
-                            printf("initiator.rank(%u), ",(unsigned)event.initiator.rank);
-                            printf("pt_index(%u), ",(unsigned)event.pt_index);
-                            printf("uid(%u), ",event.uid);
-                            printf("jid(%u), ",event.jid);
-                            printf("match_bits(%u), ", (unsigned)event.match_bits);
-                            printf("rlength(%u), ",(unsigned)event.rlength);
-                            printf("mlength(%u), ",(unsigned)event.mlength);
-                            printf("remote_offset(%u), ",(unsigned)event.remote_offset);
-                            printf("start(%p), ",event.start);
-                            printf("user_ptr(%p), ",event.user_ptr);
-                            printf("hdr_data(%u), ",(unsigned)event.hdr_data);
-                            printf("ni_fail_type(%u), ",(unsigned)event.ni_fail_type);
-                            printf("atomic_operation(%u), ",(unsigned)event.atomic_operation);
-                            printf("atomic_type(%u)",(unsigned)event.atomic_type);
+                            printf("initiator.rank(%u), ",
+                                   (unsigned)event.initiator.rank);
+                            printf("pt_index(%u), ", (unsigned)event.pt_index);
+                            printf("uid(%u), ", event.uid);
+                            printf("jid(%u), ", event.jid);
+                            printf("match_bits(%u), ",
+                                   (unsigned)event.match_bits);
+                            printf("rlength(%u), ", (unsigned)event.rlength);
+                            printf("mlength(%u), ", (unsigned)event.mlength);
+                            printf("remote_offset(%u), ",
+                                   (unsigned)event.remote_offset);
+                            printf("start(%p), ", event.start);
+                            printf("user_ptr(%p), ", event.user_ptr);
+                            printf("hdr_data(%u), ", (unsigned)event.hdr_data);
+                            printf("ni_fail_type(%u), ",
+                                   (unsigned)event.ni_fail_type);
+                            printf("atomic_operation(%u), ",
+                                   (unsigned)event.atomic_operation);
+                            printf("atomic_type(%u)",
+                                   (unsigned)event.atomic_type);
                         }
                         break;
                     case PTL_EVENT_PT_DISABLED:
                         /* target */
                         if (verb) {
-                            printf("pt_index(%u), ",(unsigned)event.pt_index);
-                            printf("ni_fail_type(%u), ",(unsigned)event.ni_fail_type);
+                            printf("pt_index(%u), ", (unsigned)event.pt_index);
+                            printf("ni_fail_type(%u), ",
+                                   (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_AUTO_UNLINK:
                     case PTL_EVENT_AUTO_FREE:
                         /* target */
                         if (verb) {
-                            printf("pt_index(%u), ",(unsigned)event.pt_index);
-                            printf("user_ptr(%p), ",event.user_ptr);
-                            printf("ni_fail_type(%u) ",(unsigned)event.ni_fail_type);
+                            printf("pt_index(%u), ", (unsigned)event.pt_index);
+                            printf("user_ptr(%p), ", event.user_ptr);
+                            printf("ni_fail_type(%u) ",
+                                   (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_REPLY:
@@ -146,12 +160,12 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself, size_t ex
                     case PTL_EVENT_ACK:
                         /* initiator */
                         if (verb) {
-                            printf
-                                ("mlength(%u), remote_offset(%u), user_ptr(%p), ni_fail_type(%u)",
-                                 (unsigned)event.mlength,
-                                 (unsigned)event.remote_offset,
-                                 event.user_ptr,
-                                 (unsigned)event.ni_fail_type);
+                            printf(
+                                   "mlength(%u), remote_offset(%u), user_ptr(%p), ni_fail_type(%u)",
+                                   (unsigned)event.mlength,
+                                   (unsigned)event.remote_offset,
+                                   event.user_ptr,
+                                   (unsigned)event.ni_fail_type);
                         }
                         break;
                 }
@@ -169,8 +183,8 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself, size_t ex
 }
 
 int main(
-    int argc,
-    char *argv[])
+         int argc,
+         char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t myself;
@@ -198,18 +212,17 @@ int main(
 
     assert(amapping);
     assert(unexpected_buf);
-    //printf("unexpected_buf = %p\n", unexpected_buf);
-    //printf("recvval = %p\n", &recvval);
+    // printf("unexpected_buf = %p\n", unexpected_buf);
+    // printf("recvval = %p\n", &recvval);
 
-    CHECK_RETURNVAL(PtlNIInit
-                    (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
-                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                              PTL_PID_ANY, NULL, NULL, num_procs, NULL,
+                              amapping, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &recv_eq));
-    CHECK_RETURNVAL(PtlPTAlloc
-                    (ni_logical, 0, recv_eq, PTL_PT_ANY,
-                     &logical_pt_index));
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, recv_eq, PTL_PT_ANY,
+                               &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(unexpected_buf, 42, BUFSIZE);
@@ -220,15 +233,14 @@ int main(
     unexpected_e.match_id.rank = PTL_RANK_ANY;
     unexpected_e.match_bits = 0;
     memset(&unexpected_e.ignore_bits, 0xff, sizeof(ptl_match_bits_t));
-    unexpected_e.min_free = BUFSIZE-sizeof(sendval);
+    unexpected_e.min_free = BUFSIZE - sizeof(sendval);
     unexpected_e.options = OPTIONS | PTL_ME_MANAGE_LOCAL;
 #else
     unexpected_e.options = OPTIONS;
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &unexpected_e.ct_handle));
-    CHECK_RETURNVAL(APPEND
-                    (ni_logical, logical_pt_index, &unexpected_e, PTL_OVERFLOW,
-                     (void*)2, &unexpected_e_handle));
+    CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &unexpected_e,
+                           PTL_OVERFLOW, (void*)2, &unexpected_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -249,9 +261,9 @@ int main(
     /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
-        CHECK_RETURNVAL(PtlPut
-                        (write_md_handle, 0, write_md.length, PTL_CT_ACK_REQ, myself,
-                         logical_pt_index, 1, 0, NULL, 0));
+        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, write_md.length,
+                               PTL_CT_ACK_REQ, myself, logical_pt_index, 1, 0,
+                               NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
         assert(ctc.success == 1);
@@ -286,7 +298,8 @@ int main(
     recv_e.options = OPTIONS | PTL_LE_USE_ONCE;
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &recv_e.ct_handle));
-    CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &recv_e, PTL_PRIORITY_LIST, (void*)1, &recv_e_handle));
+    CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &recv_e,
+                           PTL_PRIORITY_LIST, (void*)1, &recv_e_handle));
     {
         size_t count_events;
         if (verb) {
@@ -304,7 +317,7 @@ int main(
 
     CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
     CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
-    //CHECK_RETURNVAL(UNLINK(unexpected_e_handle));
+    // CHECK_RETURNVAL(UNLINK(unexpected_e_handle));
     CHECK_RETURNVAL(PtlCTFree(unexpected_e.ct_handle));
 
     /* cleanup */
@@ -315,4 +328,5 @@ int main(
 
     return 0;
 }
+
 /* vim:set expandtab: */
