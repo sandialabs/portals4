@@ -184,10 +184,10 @@ static int init_start(xi_t *xi)
 		 * flushed once connected/disconnected. */
 		int ret;
 
+		list_add_tail(&xi->connect_pending_list, &connect->xi_list);
+
 		if (connect->state == GBLN_DISCONNECTED) {
 			/* Initiate connection. */
-			list_add_tail(&xi->connect_pending_list, &connect->xi_list);
-
 			if (init_connect(ni, connect)) {
 				list_del(&xi->connect_pending_list);
 				ret = STATE_INIT_ERROR;

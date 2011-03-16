@@ -644,10 +644,11 @@ static int check_conn(xt_t *xt)
 	if (unlikely(connect->state != GBLN_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
 		 * flushed once connected/disconnected. */
+
+		list_add_tail(&xt->connect_pending_list, &connect->xt_list);
+
 		if (connect->state == GBLN_DISCONNECTED) {
 			/* Initiate connection. */
-			list_add_tail(&xt->connect_pending_list, &connect->xt_list);
-
 			if (init_connect(ni, connect)) {
 				list_del(&xt->connect_pending_list);
 				ret = -1;
