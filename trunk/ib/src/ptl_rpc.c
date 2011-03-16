@@ -148,7 +148,8 @@ static void read_one(EV_P_ ev_io *w, int revents)
 	}
 
 	if (ret == 0) {
-		printf("session closed, pid=%d\n", getpid());
+		if (verbose)
+			printf("session closed, pid=%d\n", getpid());
 		err = 1;
 	} else {
 		if (session->rpc_msg.type & 0x80) {

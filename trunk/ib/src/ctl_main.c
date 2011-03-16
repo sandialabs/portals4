@@ -462,7 +462,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	printf("%s started\n", progname);
+	if (verbose)
+		printf("%s started\n", progname);
 
 	/* Run the event loop. */
 	ev_run(my_event_loop, 0);
@@ -471,7 +472,8 @@ int main(int argc, char *argv[])
 
 	destroy_ib_resources(&conf);
 
-	printf("%s stopped\n", progname);
+	if (verbose)
+		printf("%s stopped\n", progname);
 
 	remove(lock_filename);
 
