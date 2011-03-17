@@ -8,22 +8,13 @@ extern size_t LARGE_FRAG_SIZE;
 extern size_t LARGE_FRAG_PAYLOAD;
 extern size_t LARGE_FRAG_COUNT;
 
-void PtlInternalFragmentSetup(
-    volatile char *buf);
+void INTERNAL     PtlInternalFragmentSetup(volatile char *buf);
+void * INTERNAL   PtlInternalFragmentFetch(size_t payload_size);
+void INTERNAL     PtlInternalFragmentFree(void *data);
+void INTERNAL     PtlInternalFragmentToss(void *frag,
+                                          ptl_pid_t dest);
+void * INTERNAL   PtlInternalFragmentReceive(void);
+uint64_t INTERNAL PtlInternalFragmentSize(void *frag);
 
-void *PtlInternalFragmentFetch(
-    size_t payload_size);
-void PtlInternalFragmentFree(
-    void *data);
-
-void PtlInternalFragmentToss(
-    void *frag,
-    ptl_pid_t dest);
-void *PtlInternalFragmentReceive(
-    void);
-
-uint64_t PtlInternalFragmentSize(
-    void *frag);
-
-#endif
+#endif /* ifndef PTL_INTERNAL_FRAGMENTS_H */
 /* vim:set expandtab: */

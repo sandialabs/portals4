@@ -3,7 +3,8 @@
 
 typedef struct ptl_internal_trigger_s {
     struct ptl_internal_trigger_s *next;
-    ptl_size_t threshold;
+    ptl_size_t                     threshold;
 } ptl_internal_trigger_t;
 
 #endif
+/* vim:set expandtab */
