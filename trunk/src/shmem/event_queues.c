@@ -3,7 +3,7 @@
 #endif
 
 #if defined(HAVE_GETTIME_TIMER)
-#define _POSIX_C_SOURCE 199309L
+# define _POSIX_C_SOURCE 199309L
 #endif
 
 /* The API definition */
@@ -22,58 +22,63 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_alignment.h"
 #ifndef NO_ARG_VALIDATION
-#include "ptl_internal_commpad.h"
-#include "ptl_internal_error.h"
+# include "ptl_internal_commpad.h"
+# include "ptl_internal_error.h"
 #endif
 
-const ptl_internal_handle_converter_t eq_none = {.s = {
-    .selector = HANDLE_EQ_CODE,
-    .ni = ((1 << HANDLE_NI_BITS) - 1),
-    .code = ((1 << HANDLE_CODE_BITS) - 1)}
+const ptl_internal_handle_converter_t eq_none = {
+    .s = {
+        .selector = HANDLE_EQ_CODE,
+        .ni       = ((1 << HANDLE_NI_BITS) - 1),
+        .code     = ((1 << HANDLE_CODE_BITS) - 1)
+    }
 };
 
 const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff; /* (1<<29) & 0x1fffffff */
 
 typedef union {
     struct {
-        uint16_t sequence;
-        uint16_t offset;
+        uint16_t        sequence;
+        uint16_t        offset;
     } s;
     uint32_t u;
 } eq_off_t;
 
 typedef struct {
-    ptl_internal_event_t *ring;
-    uint32_t size;
-    volatile eq_off_t head, leading_tail, lagging_tail;
-} ptl_internal_eq_t ALIGNED(CACHELINE_WIDTH);
+    ptl_internal_event_t *      ring;
+    uint32_t                    size;
+    volatile eq_off_t           head, leading_tail, lagging_tail;
+} ptl_internal_eq_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
 
-void INTERNAL PtlInternalEQNISetup(
-    unsigned int ni)
-{
+void INTERNAL PtlInternalEQNISetup(unsigned int ni)
+{   /*{{{*/
     ptl_internal_eq_t *tmp;
+
     while ((tmp =
-            PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
-                                    (void *)1)) == (void *)1) ;
+                PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
+                                        (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
-        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni].max_eqs, sizeof(ptl_internal_eq_t));
+        ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni].max_eqs,
+                       sizeof(ptl_internal_eq_t));
         assert(tmp != NULL);
         assert(eq_refcounts[ni] == NULL);
-        ALIGNED_CALLOC(eq_refcounts[ni], CACHELINE_WIDTH, nit_limits[ni].max_eqs, sizeof(uint64_t));
+        ALIGNED_CALLOC(eq_refcounts[ni], CACHELINE_WIDTH,
+                       nit_limits[ni].max_eqs,
+                       sizeof(uint64_t));
         assert(eq_refcounts[ni] != NULL);
         __sync_synchronize();
         eqs[ni] = tmp;
     }
-}
+} /*}}}*/
 
-void INTERNAL PtlInternalEQNITeardown(
-    unsigned int ni)
-{
+void INTERNAL PtlInternalEQNITeardown(unsigned int ni)
+{   /*{{{*/
     ptl_internal_eq_t *restrict tmp;
     volatile uint64_t *restrict rc;
+
     while (eqs[ni] == (void *)1) ;     // just in case (should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&eqs[ni], NULL);
     rc = PtlInternalAtomicSwapPtr((void *volatile *)&eq_refcounts[ni], NULL);
@@ -90,28 +95,30 @@ void INTERNAL PtlInternalEQNITeardown(
     }
     ALIGNED_FREE(tmp, CACHELINE_WIDTH);
     ALIGNED_FREE((void *)rc, CACHELINE_WIDTH);
-}
+} /*}}}*/
 
 #ifndef NO_ARG_VALIDATION
-int INTERNAL PtlInternalEQHandleValidator(
-    ptl_handle_eq_t handle,
-    int none_ok)
-{
+int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
+                                          int none_ok)
+{   /*{{{*/
     const ptl_internal_handle_converter_t eq = { handle };
+
     if (eq.s.selector != HANDLE_EQ_CODE) {
         VERBOSE_ERROR
-            ("Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n",
-             eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
+        (
+         "Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n",
+         eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
         return PTL_ARG_INVALID;
     }
-    if (none_ok == 1 && handle == PTL_EQ_NONE) {
+    if ((none_ok == 1) && (handle == PTL_EQ_NONE)) {
         return PTL_OK;
     }
-    if (eq.s.ni > 3 || eq.s.code > nit_limits[eq.s.ni].max_eqs ||
+    if ((eq.s.ni > 3) || (eq.s.code > nit_limits[eq.s.ni].max_eqs) ||
         (nit.refcount[eq.s.ni] == 0)) {
         VERBOSE_ERROR
-            ("EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
-             eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
+        (
+         "EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+         eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }
     if (eqs[eq.s.ni] == NULL) {
@@ -124,16 +131,17 @@ int INTERNAL PtlInternalEQHandleValidator(
         return PTL_ARG_INVALID;
     }
     return PTL_OK;
-}
-#endif
+} /*}}}*/
 
-int API_FUNC PtlEQAlloc(
-    ptl_handle_ni_t ni_handle,
-    ptl_size_t count,
-    ptl_handle_eq_t * eq_handle)
-{
+#endif /* ifndef NO_ARG_VALIDATION */
+
+int API_FUNC PtlEQAlloc(ptl_handle_ni_t ni_handle,
+                        ptl_size_t count,
+                        ptl_handle_eq_t * eq_handle)
+{   /*{{{*/
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t eqh = {.s.selector = HANDLE_EQ_CODE };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -155,14 +163,14 @@ int API_FUNC PtlEQAlloc(
         VERBOSE_ERROR("insanely large count");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     assert(eqs[ni.s.ni] != NULL);
     eqh.s.ni = ni.s.ni;
     /* make count the next highest power of two (fast algorithm modified from
-     * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2) */
-    if (count == 0)
+    * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2) */
+    if (count == 0) {
         count = 2;
-    else {
+    } else {
         count--;
         count |= count >> 1;
         count |= count >> 2;
@@ -174,11 +182,14 @@ int API_FUNC PtlEQAlloc(
     {
         ptl_internal_eq_t *ni_eqs = eqs[ni.s.ni];
         volatile uint64_t *rc = eq_refcounts[ni.s.ni];
-        for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_eqs; ++offset) {
+        for (uint32_t offset = 0;
+             offset < nit_limits[ni.s.ni].max_eqs;
+             ++offset) {
             if (rc[offset] == 0) {
                 if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                     ptl_internal_event_t *tmp;
-                    ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, count, sizeof(ptl_internal_event_t));
+                    ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, count,
+                                   sizeof(ptl_internal_event_t));
                     if (tmp == NULL) {
                         rc[offset] = 0;
                         return PTL_NO_SPACE;
@@ -199,14 +210,14 @@ int API_FUNC PtlEQAlloc(
         *eq_handle = PTL_INVALID_HANDLE;
         return PTL_NO_SPACE;
     }
-}
+} /*}}}*/
 
-int API_FUNC PtlEQFree(
-    ptl_handle_eq_t eq_handle)
-{
+int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
+{   /*{{{*/
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_event_t *tmp;
     ptl_internal_eq_t *eq;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -223,63 +234,64 @@ int API_FUNC PtlEQFree(
         return PTL_ARG_INVALID;
     }
     // should probably enqueue a death-event
-    while (eq_refcounts[eqh.s.ni][eqh.s.code] != 1)
-        __asm__ __volatile__ ("pause":::"memory");
+    while (eq_refcounts[eqh.s.ni][eqh.s.code] !=
+           1) __asm__ __volatile__ ("pause" ::: "memory");
     tmp = eq->ring;
     eq->ring = NULL;
     ALIGNED_FREE(tmp, CACHELINE_WIDTH);
     PtlInternalAtomicInc(&(eq_refcounts[eqh.s.ni][eqh.s.code]), -1);
     return PTL_OK;
-}
+} /*}}}*/
 
-#define ASSIGN_EVENT(e,ie,ni) do { \
-    e->type = (ptl_event_kind_t)(ie.type); \
-    switch (e->type) { \
-        case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
-            e->atomic_operation = (ptl_op_t) ie.atomic_operation; \
-            e->atomic_type = (ptl_datatype_t) ie.atomic_type; \
-        default: \
-            e->atomic_operation = (ptl_op_t) 0; \
-            e->atomic_type = (ptl_datatype_t) 0; \
-    } \
-    switch (e->type) { \
-        case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
-        case PTL_EVENT_GET: case PTL_EVENT_PUT: case PTL_EVENT_PUT_OVERFLOW: \
-        case PTL_EVENT_PT_DISABLED: \
-        case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: case PTL_EVENT_PROBE: /* target */ \
-            e->match_bits = ie.match_bits; \
-            e->start = ie.start; \
-            e->user_ptr = ie.user_ptr; \
-            e->hdr_data = ie.hdr_data; \
-            e->rlength = ie.rlength; \
-            e->mlength = ie.mlength; \
-            if (ni <= 1) { /* logical */ \
-                e->initiator.rank = ie.initiator.rank; \
-            } else { /* physical */ \
+#define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/ \
+        e->type = (ptl_event_kind_t)(ie.type); \
+        switch (e->type) { \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
+                e->atomic_operation = (ptl_op_t)ie.atomic_operation; \
+                e->atomic_type = (ptl_datatype_t)ie.atomic_type; \
+            default: \
+                e->atomic_operation = (ptl_op_t)0; \
+                e->atomic_type = (ptl_datatype_t)0; \
+        } \
+        switch (e->type) { \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
+            case PTL_EVENT_GET: case PTL_EVENT_PUT: \
+            case PTL_EVENT_PUT_OVERFLOW: \
+            case PTL_EVENT_PT_DISABLED: \
+            case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: \
+            case PTL_EVENT_PROBE:                                          /* target */ \
+                e->match_bits = ie.match_bits; \
+                e->start = ie.start; \
+                e->user_ptr = ie.user_ptr; \
+                e->hdr_data = ie.hdr_data; \
+                e->rlength = ie.rlength; \
+                e->mlength = ie.mlength; \
+                if (ni <= 1) { /* logical */ \
+                    e->initiator.rank = ie.initiator.rank; \
+                } else { /* physical */ \
+                    e->initiator.phys.pid = ie.initiator.phys.pid; \
+                    e->initiator.phys.nid = ie.initiator.phys.nid; \
+                } \
+                e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */ \
                 e->initiator.phys.pid = ie.initiator.phys.pid; \
-                e->initiator.phys.nid = ie.initiator.phys.nid; \
-            } \
-            e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */ \
-            e->initiator.phys.pid = ie.initiator.phys.pid; \
-            e->uid = ie.uid; \
-            e->jid = ie.jid; \
-            e->remote_offset = ie.remote_offset; \
-            e->pt_index = ie.pt_index; \
-            e->ni_fail_type = ie.ni_fail_type; \
-            break; \
-        case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
-            e->mlength = ie.mlength; \
-            e->remote_offset = ie.remote_offset; \
-            e->user_ptr = ie.user_ptr; \
-            e->ni_fail_type = ie.ni_fail_type; \
-            break; \
-    } \
-} while (0)
+                e->uid = ie.uid; \
+                e->jid = ie.jid; \
+                e->remote_offset = ie.remote_offset; \
+                e->pt_index = ie.pt_index; \
+                e->ni_fail_type = ie.ni_fail_type; \
+                break; \
+            case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
+                e->mlength = ie.mlength; \
+                e->remote_offset = ie.remote_offset; \
+                e->user_ptr = ie.user_ptr; \
+                e->ni_fail_type = ie.ni_fail_type; \
+                break; \
+        } \
+} while (0) /*}}}*/
 
-int API_FUNC PtlEQGet(
-    ptl_handle_eq_t eq_handle,
-    ptl_event_t * event)
-{
+int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
+                      ptl_event_t * event)
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -293,7 +305,7 @@ int API_FUNC PtlEQGet(
         VERBOSE_ERROR("null event\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
@@ -307,19 +319,18 @@ int API_FUNC PtlEQGet(
             return PTL_EQ_EMPTY;
         }
         ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
-        newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);       // a prime number
-        newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
+        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
+        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
     } while ((curidx.u =
-              PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                     newidx.u)) != readidx.u);
+                  PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+                                         newidx.u)) != readidx.u);
     PtlInternalPAPIDoneC(PTL_EQ_GET, 0);
     return PTL_OK;
-}
+} /*}}}*/
 
-int API_FUNC PtlEQWait(
-    ptl_handle_eq_t eq_handle,
-    ptl_event_t * event)
-{
+int API_FUNC PtlEQWait(ptl_handle_eq_t eq_handle,
+                       ptl_event_t * event)
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -333,7 +344,7 @@ int API_FUNC PtlEQWait(
         VERBOSE_ERROR("null event\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
@@ -353,31 +364,31 @@ loopstart:
             goto loopstart;
         }
         ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
-        newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);       // a prime number
-        newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
+        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
+        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
     } while ((curidx.u =
-              PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                     newidx.u)) != readidx.u);
+                  PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+                                         newidx.u)) != readidx.u);
     PtlInternalAtomicInc(rc, -1);
     return PTL_OK;
-}
+} /*}}}*/
 
-int API_FUNC PtlEQPoll(
-    ptl_handle_eq_t * eq_handles,
-    unsigned int size,
-    ptl_time_t timeout,
-    ptl_event_t * event,
-    int *which)
-{
+int API_FUNC PtlEQPoll(ptl_handle_eq_t * eq_handles,
+                       unsigned int size,
+                       ptl_time_t timeout,
+                       ptl_event_t * event,
+                       int *which)
+{   /*{{{*/
     ptl_size_t eqidx, offset;
     size_t nstart;
     TIMER_TYPE tp;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if (event == NULL && which == NULL) {
+    if ((event == NULL) && (which == NULL)) {
         VERBOSE_ERROR("null event or null which\n");
         return PTL_ARG_INVALID;
     }
@@ -387,7 +398,7 @@ int API_FUNC PtlEQPoll(
             return PTL_ARG_INVALID;
         }
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     ptl_internal_eq_t *eqs[size];
     uint32_t masks[size];
     volatile uint64_t *rcs[size];
@@ -410,11 +421,11 @@ int API_FUNC PtlEQPoll(
         MILLI_TO_TIMER_INTS(timeout);
     }
     {
-        uint16_t t = (uint16_t) (size - 1);
-        t = (uint16_t) (t | (t >> 1));
-        t = (uint16_t) (t | (t >> 2));
-        t = (uint16_t) (t | (t >> 4));
-        t = (uint16_t) (t | (t >> 8));
+        uint16_t t = (uint16_t)(size - 1);
+        t = (uint16_t)(t | (t >> 1));
+        t = (uint16_t)(t | (t >> 2));
+        t = (uint16_t)(t | (t >> 4));
+        t = (uint16_t)(t | (t >> 8));
         offset = nstart & t;           // pseudo-random
     }
     do {
@@ -429,37 +440,40 @@ int API_FUNC PtlEQPoll(
             do {
                 readidx = curidx;
                 if (readidx.s.offset >= eq->size) {
-                    for (size_t idx = 0; idx < size; ++idx)
-                        PtlInternalAtomicInc(rcs[idx], -1);
+                    for (size_t idx = 0; idx < size;
+                         ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                     return PTL_INTERRUPTED;
                 } else if (readidx.s.offset == eq->lagging_tail.s.offset) {
                     found = 0;
                     break;
                 }
                 ASSIGN_EVENT(event, eq->ring[readidx.s.offset], ni);
-                newidx.s.sequence = (uint16_t) (readidx.s.sequence + 23);       // a prime number
-                newidx.s.offset = (uint16_t) ((readidx.s.offset + 1) & mask);
+                newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
+                newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
             } while ((curidx.u =
-                      PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                             newidx.u)) != readidx.u);
+                          PtlInternalAtomicCas32(&eq->head.u, readidx.u,
+                                                 newidx.u)) != readidx.u);
             if (found) {
-                for (size_t idx = 0; idx < size; ++idx)
-                    PtlInternalAtomicInc(rcs[idx], -1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
+                                                                             rcs
+                                                                             [
+                                                                                 idx
+                                                                             ],
+                                                                             -
+                                                                             1);
                 return PTL_OK;
             }
         }
         MARK_TIMER(tp);
     } while (timeout == PTL_TIME_FOREVER ||
              (TIMER_INTS(tp) - nstart) < timeout);
-    for (size_t idx = 0; idx < size; ++idx)
-        PtlInternalAtomicInc(rcs[idx], -1);
+    for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
     return PTL_EQ_EMPTY;
-}
+} /*}}}*/
 
-void INTERNAL PtlInternalEQPush(
-    ptl_handle_eq_t eq_handle,
-    ptl_internal_event_t * event)
-{
+void INTERNAL PtlInternalEQPush(ptl_handle_eq_t eq_handle,
+                                ptl_internal_event_t * event)
+{   /*{{{*/
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
@@ -469,27 +483,26 @@ void INTERNAL PtlInternalEQPush(
     curidx = eq->leading_tail;
     do {
         writeidx = curidx;
-        newidx.s.sequence = (uint16_t) (writeidx.s.sequence + 23);
-        newidx.s.offset = (uint16_t) ((writeidx.s.offset + 1) & mask);
+        newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
+        newidx.s.offset = (uint16_t)((writeidx.s.offset + 1) & mask);
     } while ((curidx.u =
-              PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
-                                     newidx.u)) != writeidx.u);
+                  PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
+                                         newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish
-    while (eq->lagging_tail.u != writeidx.u)
-        __asm__ __volatile__ ("pause":::"memory");
+    while (eq->lagging_tail.u !=
+           writeidx.u) __asm__ __volatile__ ("pause" ::: "memory");
 
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
-}
+} /*}}}*/
 
-void PtlInternalEQPushESEND(
-    const ptl_handle_eq_t eq_handle,
-    const uint32_t length,
-    const uint64_t roffset,
-    void * const user_ptr)
-{
+void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
+                                     const uint32_t length,
+                                     const uint64_t roffset,
+                                     void * const user_ptr)
+{   /*{{{*/
     const ptl_internal_handle_converter_t eqh = { eq_handle };
     ptl_internal_eq_t *const eq = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t mask = eq->size - 1;
@@ -499,11 +512,11 @@ void PtlInternalEQPushESEND(
     curidx = eq->leading_tail;
     do {
         writeidx = curidx;
-        newidx.s.sequence = (uint16_t) (writeidx.s.sequence + 23);
-        newidx.s.offset = (uint16_t) ((writeidx.s.offset + 1) & mask);
+        newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
+        newidx.s.offset = (uint16_t)((writeidx.s.offset + 1) & mask);
     } while ((curidx.u =
-              PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
-                                     newidx.u)) != writeidx.u);
+                  PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
+                                         newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset].type = PTL_EVENT_SEND;
     eq->ring[writeidx.s.offset].mlength = length;
@@ -511,10 +524,10 @@ void PtlInternalEQPushESEND(
     eq->ring[writeidx.s.offset].user_ptr = user_ptr;
     eq->ring[writeidx.s.offset].ni_fail_type = PTL_NI_OK;
     // now, wait for our neighbor to finish
-    while (eq->lagging_tail.u != writeidx.u)
-        __asm__ __volatile__ ("pause":::"memory");
+    while (eq->lagging_tail.u !=
+           writeidx.u) __asm__ __volatile__ ("pause" ::: "memory");
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
-}
+} /*}}}*/
 
 /* vim:set expandtab: */
