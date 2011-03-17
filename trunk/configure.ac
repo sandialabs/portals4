@@ -112,6 +112,10 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
+
+LT_PREREQ([2.2])
+LT_INIT([dlopen])
 
 AC_CACHE_SAVE
 
@@ -126,12 +130,17 @@ AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
 # include <sys/time.h>
 #endif
 ])
+AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/file.h sys/socket.h unistd.h])
 
 ## --------------- ##
 ## Check for types ##
 ## --------------- ##
 AC_C_INLINE
+AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT8_T
+AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_PID_T
@@ -200,13 +209,15 @@ AC_CACHE_SAVE
 
 AC_FUNC_FORK
 AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_FUNC_STRERROR_R
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
 AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
 AC_CHECK_FUNCS([getpagesize]) # not mandatory
 AC_SEARCH_LIBS([pthread_spin_init],[pthread],
 			   [AC_DEFINE([HAVE_PTHREAD_SPIN_INIT], [1], [Define if pthread supports spinlocks])]) # not mandatory either, just faster
-AC_CHECK_FUNCS([ftruncate memset setenv strtol], [],
+AC_CHECK_FUNCS([ftruncate memset setenv strtol strtoul select inet_ntoa socket strerror], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD functions like ftruncate
 AS_IF([test "x$enable_papi" != x],
