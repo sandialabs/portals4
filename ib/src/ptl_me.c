@@ -134,8 +134,7 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 	me->ptl_list = ptl_list;
 	me->offset = 0;
 	me->min_free = me_init->min_free;
-	me->nid = me_init->match_id.phys.nid;
-	me->pid = me_init->match_id.phys.pid;
+	me->id = me_init->match_id;
 	me->match_bits = me_init->match_bits;
 	me->ignore_bits = me_init->ignore_bits;
 	INIT_LIST_HEAD(&me->list);
