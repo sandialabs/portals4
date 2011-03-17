@@ -28,26 +28,29 @@
 #include "ptl_internal_ME.h"
 #include "ptl_internal_papi.h"
 #ifndef NO_ARG_VALIDATION
-#include "ptl_internal_error.h"
+# include "ptl_internal_error.h"
 #endif
 
 static uint32_t spawned;
 static pthread_t catcher;
 
 #if 0
-#define dm_printf(format,...) printf("%u ~> " format, (unsigned int)proc_number, ##__VA_ARGS__)
+# define dm_printf(format, ...) printf("%u ~> " format, \
+                                       (unsigned int)proc_number, \
+                                       ## __VA_ARGS__)
 #else
-#define dm_printf(format,...)
+# define dm_printf(format, ...)
 #endif
 
 #if 0
-#define ack_printf(format,...) printf("%u +> " format, (unsigned int)proc_number, ##__VA_ARGS__)
+# define ack_printf(format, ...) printf("%u +> " format, \
+                                        (unsigned int)proc_number, \
+                                        ## __VA_ARGS__)
 #else
-#define ack_printf(format,...)
+# define ack_printf(format, ...)
 #endif
 
-static void PtlInternalHandleAck(
-    ptl_internal_header_t * restrict hdr)
+static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
 {                                      /*{{{ */
     ptl_md_t *mdptr = NULL;
     ptl_handle_md_t md_handle = PTL_INVALID_HANDLE;
@@ -91,7 +94,8 @@ static void PtlInternalHandleAck(
                         const ptl_handle_ct_t cth = mdptr->ct_handle;
                         const unsigned int options = mdptr->options;
                         ack_printf
-                            ("announce that we're done with the send-buffer\n");
+                        (
+                         "announce that we're done with the send-buffer\n");
                         PtlInternalMDCleared(md_handle);
                         if (options & PTL_MD_EVENT_CT_SEND) {
                             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -100,8 +104,9 @@ static void PtlInternalHandleAck(
                                 PtlInternalCTSuccessInc(cth, hdr->length);
                             }
                         }
-                        if (eqh != PTL_EQ_NONE &&
-                            (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                        if ((eqh != PTL_EQ_NONE) &&
+                            ((options & PTL_MD_EVENT_SUCCESS_DISABLE) ==
+                             0)) {
                             PtlInternalEQPushESEND(eqh, hdr->length,
                                                    hdr->local_offset1,
                                                    hdr->user_ptr);
@@ -125,8 +130,8 @@ static void PtlInternalHandleAck(
                             PtlInternalCTSuccessInc(cth, hdr->length);
                         }
                     }
-                    if (eqh != PTL_EQ_NONE &&
-                        (options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+                    if ((eqh != PTL_EQ_NONE) &&
+                        ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
                         PtlInternalEQPushESEND(eqh, hdr->length,
                                                hdr->
                                                local_offset1, hdr->user_ptr);
@@ -159,8 +164,9 @@ static void PtlInternalHandleAck(
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
-                if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-                    memcpy((uint8_t *) (mdptr->start) +
+                if ((mdptr != NULL) &&
+                    ((hdr->src == 1) || (hdr->src == 0))) {
+                    memcpy((uint8_t *)(mdptr->start) +
                            hdr->local_offset1, hdr->data,
                            hdr->length);
                 }
@@ -179,21 +185,22 @@ static void PtlInternalHandleAck(
         case HDR_TYPE_FETCHATOMIC:
             ack_printf("it's an ACK for a FETCHATOMIC\n");
             if (truncated) {
-                fprintf(stderr,
+                fprintf(
+                        stderr,
                         "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
                 abort();
             }
             md_handle = hdr->md_handle1.a;
-            if (hdr->md_handle2.a !=
-                PTL_INVALID_HANDLE &&
-                hdr->md_handle2.a != md_handle) {
+            if ((hdr->md_handle2.a !=
+                 PTL_INVALID_HANDLE) &&
+                (hdr->md_handle2.a != md_handle)) {
                 PtlInternalMDCleared(hdr->md_handle2.a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
             ack_printf("replied with %i data\n", (int)hdr->length);
-            if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-                memcpy((uint8_t *) (mdptr->start) +
+            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                memcpy((uint8_t *)(mdptr->start) +
                        hdr->local_offset1,
                        hdr->data, hdr->length);
             }
@@ -206,15 +213,15 @@ static void PtlInternalHandleAck(
                 abort();
             }
             md_handle = hdr->md_handle1.a;
-            if (hdr->md_handle2.a != PTL_INVALID_HANDLE
-                && hdr->md_handle2.a != md_handle) {
+            if ((hdr->md_handle2.a != PTL_INVALID_HANDLE) &&
+                (hdr->md_handle2.a != md_handle)) {
                 PtlInternalMDCleared(hdr->md_handle2.a);
             }
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
             ack_printf("replied with %i data\n", (int)hdr->length);
-            if (mdptr != NULL && (hdr->src == 1 || hdr->src == 0)) {
-                memcpy((uint8_t *) (mdptr->start) +
+            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                memcpy((uint8_t *)(mdptr->start) +
                        hdr->local_offset1,
                        hdr->data + 8, hdr->length);
             }
@@ -234,7 +241,7 @@ static void PtlInternalHandleAck(
         case HDR_TYPE_GET:
         case HDR_TYPE_FETCHATOMIC:
         case HDR_TYPE_SWAP:
-            if (mdptr != NULL && md_handle != PTL_INVALID_HANDLE) {
+            if ((mdptr != NULL) && (md_handle != PTL_INVALID_HANDLE)) {
                 ack_printf("clearing ACK's md_handle\n");
                 PtlInternalMDCleared(md_handle);
             }
@@ -266,21 +273,21 @@ static void PtlInternalHandleAck(
             ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
             if (mdptr != NULL) {
                 int ct_enabled = 0;
-                if (hdr->type == HDR_TYPE_PUT && acktype != 0) {
+                if ((hdr->type == HDR_TYPE_PUT) && (acktype != 0)) {
                     ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
                 } else {
                     ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
                 }
-                if (md_ct != PTL_CT_NONE && ct_enabled != 0) {
+                if ((md_ct != PTL_CT_NONE) && (ct_enabled != 0)) {
                     if ((md_opts & PTL_MD_EVENT_CT_BYTES) == 0) {
                         PtlInternalCTSuccessInc(md_ct, 1);
                     } else {
                         PtlInternalCTSuccessInc(md_ct, hdr->length);
                     }
                 }
-                if (md_eq != PTL_EQ_NONE &&
-                    (md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0 &&
-                    acktype > 1) {
+                if ((md_eq != PTL_EQ_NONE) &&
+                    ((md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) &&
+                    (acktype > 1)) {
                     ptl_internal_event_t e;
                     switch (hdr->type) {
                         case HDR_TYPE_PUT:
@@ -301,9 +308,9 @@ static void PtlInternalHandleAck(
             break;
         case 3:                       // Permission Violation
             ack_printf("ACK says permission violation\n");
-            //goto reporterror;
+        // goto reporterror;
         case 4:                       // nothing matched, report error
-            //reporterror:
+            // reporterror:
             ack_printf("ACK says nothing matched!\n");
             if (mdptr != NULL) {
                 int ct_enabled = 0;
@@ -348,8 +355,8 @@ static void PtlInternalHandleAck(
     ack_printf("freed\n");
 }                                      /*}}} */
 
-static void *PtlInternalDMCatcher(
-    void * __attribute__ ((unused)) junk) Q_NORETURN
+static void *PtlInternalDMCatcher(void * __attribute__ ((unused)) junk)
+Q_NORETURN
 {                                      /*{{{ */
     while (1) {
         ptl_pid_t src;
@@ -376,13 +383,15 @@ static void *PtlInternalDMCatcher(
             if (table_entry->status == 1) {
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
-                        fprintf(stderr,
+                        fprintf(
+                                stderr,
                                 "PORTALS4-> rank %u sent to an uninitialized PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                     case 2:           // disabled
-                        fprintf(stderr,
+                        fprintf(
+                                stderr,
                                 "PORTALS4-> rank %u sent to a disabled PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
@@ -390,17 +399,19 @@ static void *PtlInternalDMCatcher(
                 }
                 if (hdr->type == HDR_TYPE_PUT) {
                     dm_printf
-                        ("received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
-                         (unsigned int)hdr->ni, hdr->pt_index,
-                         (unsigned)hdr->hdr_data,
-                         table_entry->priority.head,
-                         table_entry->overflow.head);
+                    (
+                     "received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
+                     (unsigned int)hdr->ni, hdr->pt_index,
+                     (unsigned)hdr->hdr_data,
+                     table_entry->priority.head,
+                     table_entry->overflow.head);
                 } else {
                     dm_printf
-                        ("received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
-                         (unsigned int)hdr->ni, hdr->pt_index,
-                         (unsigned)hdr->type, table_entry->priority.head,
-                         table_entry->overflow.head);
+                    (
+                     "received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
+                     (unsigned int)hdr->ni, hdr->pt_index,
+                     (unsigned)hdr->type, table_entry->priority.head,
+                     table_entry->overflow.head);
                 }
                 switch (hdr->ni) {
                     case 0:
@@ -434,10 +445,11 @@ static void *PtlInternalDMCatcher(
             } else {
                 /* Invalid PT: increment the dropped counter */
                 (void)
-                    PtlInternalAtomicInc(&nit.regs[hdr->ni]
-                                         [PTL_SR_DROP_COUNT], 1);
+                PtlInternalAtomicInc(&nit.regs[hdr->ni]
+                                     [PTL_SR_DROP_COUNT], 1);
 #ifdef LOUD_DROPS
-                fprintf(stderr,
+                fprintf(
+                        stderr,
                         "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
                         (unsigned)proc_number, (unsigned)hdr->src,
                         (unsigned)hdr->pt_index, (unsigned)hdr->ni);
@@ -450,7 +462,8 @@ static void *PtlInternalDMCatcher(
             }
         } else {                       // uninitialized NI
 #ifdef LOUD_DROPS
-            fprintf(stderr,
+            fprintf(
+                    stderr,
                     "PORTALS4-> Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
                     (unsigned)proc_number, (unsigned)hdr->src,
                     (unsigned)hdr->ni);
@@ -467,8 +480,7 @@ static void *PtlInternalDMCatcher(
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalDMSetup(
-    void)
+void INTERNAL PtlInternalDMSetup(void)
 {                                      /*{{{ */
     if (PtlInternalAtomicInc(&spawned, 1) == 0) {
         ptl_assert(pthread_create(&catcher, NULL, PtlInternalDMCatcher, NULL),
@@ -476,10 +488,10 @@ void INTERNAL PtlInternalDMSetup(
     }
 }                                      /*}}} */
 
-void PtlInternalDMStop(
-    void)
+void PtlInternalDMStop(void)
 {                                      /*{{{ */
     static int already_stopped = 0;
+
     if (already_stopped == 0) {
         already_stopped = 1;
         ptl_internal_header_t *restrict hdr;
@@ -492,8 +504,7 @@ void PtlInternalDMStop(
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalDMTeardown(
-    void)
+void INTERNAL PtlInternalDMTeardown(void)
 {                                      /*{{{ */
     if (PtlInternalAtomicInc(&spawned, -1) == 1) {
         PtlInternalDMStop();
@@ -501,21 +512,21 @@ void INTERNAL PtlInternalDMTeardown(
     }
 }                                      /*}}} */
 
-int API_FUNC PtlPut(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_ack_req_t ack_req,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data)
+int API_FUNC PtlPut(ptl_handle_md_t md_handle,
+                    ptl_size_t local_offset,
+                    ptl_size_t length,
+                    ptl_ack_req_t ack_req,
+                    ptl_process_t target_id,
+                    ptl_pt_index_t pt_index,
+                    ptl_match_bits_t match_bits,
+                    ptl_size_t remote_offset,
+                    void *user_ptr,
+                    ptl_hdr_data_t hdr_data)
 {                                      /*{{{ */
     int quick_exit = 0;
     ptl_internal_header_t *restrict hdr;
     const ptl_internal_handle_converter_t md = { md_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -554,24 +565,24 @@ int API_FUNC PtlPut(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1ULL<<48)) {
+    if (local_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1ULL<<48)) {
+    if (remote_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     PtlInternalPAPIStartC();
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
-    //printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
+    // printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_PUT;
     hdr->ni = md.s.ni;
-    //printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
+    // printf("hdr->NI = %u, md.s.ni = %u\n", (unsigned int)hdr->ni, (unsigned int)md.s.ni);
     hdr->src = proc_number;
     switch (md.s.ni) {
         case 0: case 1: // Logical
@@ -594,12 +605,12 @@ int API_FUNC PtlPut(
     {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle,&(hdr->uid));
-        PtlGetJid(ni_handle,&(hdr->jid));
+        PtlGetUid(ni_handle, &(hdr->uid));
+        PtlGetJid(ni_handle, &(hdr->jid));
     }
     hdr->ack_req = ack_req;
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
-    //PtlInternalPAPISaveC(PTL_PUT, 0);
+    // PtlInternalPAPISaveC(PTL_PUT, 0);
     /* step 3: load up the data */
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
@@ -614,7 +625,7 @@ int API_FUNC PtlPut(
     }
     /* step 4: enqueue the op structure on the target */
     PtlInternalFragmentToss(hdr, hdr->target);
-    //PtlInternalPAPISaveC(PTL_PUT, 1);
+    // PtlInternalPAPISaveC(PTL_PUT, 1);
     if (quick_exit) {
         unsigned int options;
         ptl_handle_eq_t eqh;
@@ -631,17 +642,17 @@ int API_FUNC PtlPut(
         PtlInternalMDCleared(md_handle);
         /* step 5: report the send event */
         if (options & PTL_MD_EVENT_CT_SEND) {
-            //printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
+            // printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
                 PtlInternalCTSuccessInc(cth, 1);
             } else {
                 PtlInternalCTSuccessInc(cth, length);
             }
         } else {
-            //printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
+            // printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
         }
-        if (eqh != PTL_EQ_NONE && (options & PTL_MD_EVENT_SUCCESS_DISABLE)
-            == 0) {
+        if ((eqh != PTL_EQ_NONE) && ((options & PTL_MD_EVENT_SUCCESS_DISABLE)
+                                     == 0)) {
             PtlInternalEQPushESEND(eqh, length, local_offset, user_ptr);
         }
     }
@@ -649,18 +660,18 @@ int API_FUNC PtlPut(
     return PTL_OK;
 }                                      /*}}} */
 
-int API_FUNC PtlGet(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr)
+int API_FUNC PtlGet(ptl_handle_md_t md_handle,
+                    ptl_size_t local_offset,
+                    ptl_size_t length,
+                    ptl_process_t target_id,
+                    ptl_pt_index_t pt_index,
+                    ptl_match_bits_t match_bits,
+                    ptl_size_t remote_offset,
+                    void *user_ptr)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { md_handle };
     ptl_internal_header_t *hdr;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -699,15 +710,15 @@ int API_FUNC PtlGet(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1ULL<<48)) {
+    if (local_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1ULL<<48)) {
+    if (remote_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
@@ -726,8 +737,8 @@ int API_FUNC PtlGet(
     {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle,&(hdr->uid));
-        PtlGetJid(ni_handle,&(hdr->jid));
+        PtlGetUid(ni_handle, &(hdr->uid));
+        PtlGetJid(ni_handle, &(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -761,23 +772,23 @@ int API_FUNC PtlGet(
     return PTL_OK;
 }                                      /*}}} */
 
-int API_FUNC PtlAtomic(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_ack_req_t ack_req,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    ptl_op_t operation,
-    ptl_datatype_t datatype)
+int API_FUNC PtlAtomic(ptl_handle_md_t md_handle,
+                       ptl_size_t local_offset,
+                       ptl_size_t length,
+                       ptl_ack_req_t ack_req,
+                       ptl_process_t target_id,
+                       ptl_pt_index_t pt_index,
+                       ptl_match_bits_t match_bits,
+                       ptl_size_t remote_offset,
+                       void *user_ptr,
+                       ptl_hdr_data_t hdr_data,
+                       ptl_op_t operation,
+                       ptl_datatype_t datatype)
 {                                      /*{{{ */
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t md = { md_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -847,9 +858,10 @@ int API_FUNC PtlAtomic(
         case PTL_SWAP:
         case PTL_CSWAP:
         case PTL_MSWAP:
-            VERBOSE_ERROR
-                ("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
+            VERBOSE_ERROR(
+                          "SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
             return PTL_ARG_INVALID;
+
         case PTL_LOR:
         case PTL_LAND:
         case PTL_LXOR:
@@ -859,9 +871,10 @@ int API_FUNC PtlAtomic(
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR(
+                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
@@ -874,15 +887,15 @@ int API_FUNC PtlAtomic(
                       (unsigned long)nit_limits[md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_offset >= (1ULL<<48)) {
+    if (local_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1ULL<<48)) {
+    if (remote_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
@@ -901,8 +914,8 @@ int API_FUNC PtlAtomic(
     {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle,&(hdr->uid));
-        PtlGetJid(ni_handle,&(hdr->jid));
+        PtlGetUid(ni_handle, &(hdr->uid));
+        PtlGetJid(ni_handle, &(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -951,33 +964,33 @@ int API_FUNC PtlAtomic(
             PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
     }
-    if (mdptr->eq_handle != PTL_EQ_NONE &&
-        (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+    if ((mdptr->eq_handle != PTL_EQ_NONE) &&
+        ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
         PtlInternalEQPushESEND(mdptr->eq_handle, length, local_offset,
                                user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
 
-int API_FUNC PtlFetchAtomic(
-    ptl_handle_md_t get_md_handle,
-    ptl_size_t local_get_offset,
-    ptl_handle_md_t put_md_handle,
-    ptl_size_t local_put_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    ptl_op_t operation,
-    ptl_datatype_t datatype)
+int API_FUNC PtlFetchAtomic(ptl_handle_md_t get_md_handle,
+                            ptl_size_t local_get_offset,
+                            ptl_handle_md_t put_md_handle,
+                            ptl_size_t local_put_offset,
+                            ptl_size_t length,
+                            ptl_process_t target_id,
+                            ptl_pt_index_t pt_index,
+                            ptl_match_bits_t match_bits,
+                            ptl_size_t remote_offset,
+                            void *user_ptr,
+                            ptl_hdr_data_t hdr_data,
+                            ptl_op_t operation,
+                            ptl_datatype_t datatype)
 {                                      /*{{{ */
     ptl_internal_header_t *hdr;
     ptl_md_t *mdptr;
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -997,15 +1010,19 @@ int API_FUNC PtlFetchAtomic(
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR
-            ("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(get_md_handle), local_get_offset + length);
+        VERBOSE_ERROR(
+                      "FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(
+                                          get_md_handle), local_get_offset +
+                      length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR
-            ("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(put_md_handle), local_put_offset + length);
+        VERBOSE_ERROR(
+                      "FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(
+                                          put_md_handle), local_put_offset +
+                      length);
         return PTL_ARG_INVALID;
     }
     {
@@ -1063,6 +1080,7 @@ int API_FUNC PtlFetchAtomic(
         case PTL_MSWAP:
             VERBOSE_ERROR("MSWAP/CSWAP should be performed with PtlSwap\n");
             return PTL_ARG_INVALID;
+
         case PTL_LOR:
         case PTL_LAND:
         case PTL_LXOR:
@@ -1072,9 +1090,10 @@ int API_FUNC PtlFetchAtomic(
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR(
+                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
@@ -1087,19 +1106,19 @@ int API_FUNC PtlFetchAtomic(
                       (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_put_offset >= (1ULL<<48)) {
+    if (local_put_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (local_get_offset >= (1ULL<<48)) {
+    if (local_get_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1ULL<<48)) {
+    if (remote_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(put_md_handle);
     if (get_md_handle != put_md_handle) {
         PtlInternalMDPosted(get_md_handle);
@@ -1121,8 +1140,8 @@ int API_FUNC PtlFetchAtomic(
     {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(get_md_handle, &ni_handle);
-        PtlGetUid(ni_handle,&(hdr->uid));
-        PtlGetJid(ni_handle,&(hdr->jid));
+        PtlGetUid(ni_handle, &(hdr->uid));
+        PtlGetJid(ni_handle, &(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -1170,32 +1189,32 @@ int API_FUNC PtlFetchAtomic(
             PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
     }
-    if (mdptr->eq_handle != PTL_EQ_NONE &&
-        (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+    if ((mdptr->eq_handle != PTL_EQ_NONE) &&
+        ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
         PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset,
                                user_ptr);
     }
     return PTL_OK;
 }                                      /*}}} */
 
-int API_FUNC PtlSwap(
-    ptl_handle_md_t get_md_handle,
-    ptl_size_t local_get_offset,
-    ptl_handle_md_t put_md_handle,
-    ptl_size_t local_put_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    void *operand,
-    ptl_op_t operation,
-    ptl_datatype_t datatype)
+int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
+                     ptl_size_t local_get_offset,
+                     ptl_handle_md_t put_md_handle,
+                     ptl_size_t local_put_offset,
+                     ptl_size_t length,
+                     ptl_process_t target_id,
+                     ptl_pt_index_t pt_index,
+                     ptl_match_bits_t match_bits,
+                     ptl_size_t remote_offset,
+                     void *user_ptr,
+                     ptl_hdr_data_t hdr_data,
+                     void *operand,
+                     ptl_op_t operation,
+                     ptl_datatype_t datatype)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     ptl_internal_header_t *hdr;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
     if (comm_pad == NULL) {
@@ -1216,15 +1235,19 @@ int API_FUNC PtlSwap(
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR
-            ("Swap saw get_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(get_md_handle), local_get_offset + length);
+        VERBOSE_ERROR(
+                      "Swap saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(
+                                          get_md_handle), local_get_offset +
+                      length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR
-            ("Swap saw put_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(put_md_handle), local_put_offset + length);
+        VERBOSE_ERROR(
+                      "Swap saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(
+                                          put_md_handle), local_put_offset +
+                      length);
         return PTL_ARG_INVALID;
     }
     {
@@ -1284,16 +1307,17 @@ int API_FUNC PtlSwap(
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
+                    VERBOSE_ERROR(
+                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
             break;
         default:
-            VERBOSE_ERROR
-                ("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
+            VERBOSE_ERROR(
+                          "Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
@@ -1302,19 +1326,19 @@ int API_FUNC PtlSwap(
                       (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
-    if (local_put_offset >= (1ULL<<48)) {
+    if (local_put_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (local_get_offset >= (1ULL<<48)) {
+    if (local_get_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-    if (remote_offset >= (1ULL<<48)) {
+    if (remote_offset >= (1ULL << 48)) {
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(put_md_handle);
     if (get_md_handle != put_md_handle) {
         PtlInternalMDPosted(get_md_handle);
@@ -1337,8 +1361,8 @@ int API_FUNC PtlSwap(
     {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(get_md_handle, &ni_handle);
-        PtlGetUid(ni_handle,&(hdr->uid));
-        PtlGetJid(ni_handle,&(hdr->jid));
+        PtlGetUid(ni_handle, &(hdr->uid));
+        PtlGetJid(ni_handle, &(hdr->jid));
     }
     hdr->pt_index = pt_index;
     hdr->match_bits = match_bits;
@@ -1357,7 +1381,7 @@ int API_FUNC PtlSwap(
     /* step 3: load up the data */
     {
         char *dataptr = hdr->data;
-        if (operation == PTL_CSWAP || operation == PTL_MSWAP) {
+        if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
             switch (datatype) {
                 case PTL_CHAR:
                 case PTL_UCHAR:
@@ -1405,8 +1429,8 @@ int API_FUNC PtlSwap(
                 PtlInternalCTSuccessInc(mdptr->ct_handle, length);
             }
         }
-        if (mdptr->eq_handle != PTL_EQ_NONE &&
-            (mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) {
+        if ((mdptr->eq_handle != PTL_EQ_NONE) &&
+            ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
             PtlInternalEQPushESEND(mdptr->eq_handle, length, local_put_offset,
                                    user_ptr);
         }
