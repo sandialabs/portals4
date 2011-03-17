@@ -27,8 +27,11 @@ static ptl_pt_index_t phys_pt_index;
 static long barrier_count = 0;
 static ptl_handle_le_t barrier_le_h;
 static ptl_handle_ct_t barrier_ct_h;
+static ptl_handle_ct_t barrier_ct_h2;
+static ptl_handle_md_t barrier_md_h;
 
 #define NI_PHYS_NOMATCH 3
+#define __PtlBarrierIndex	(14)
 
 static void noFailures(
     ptl_handle_ct_t ct,
@@ -94,6 +97,28 @@ void runtime_init(
     assert(dmapping != NULL);
     amapping = calloc(maxrank + 1, sizeof(ptl_process_t));
     assert(amapping != NULL);
+
+    /* for the runtime_barrier() */
+    {
+        ptl_pt_index_t index;
+        ptl_md_t md = { .start = NULL, .length=0, .options=PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE,
+            .eq_handle = PTL_EQ_NONE, .ct_handle = PTL_CT_NONE };
+        ptl_assert(PtlMDBind(ni_physical, &md, &barrier_md_h), PTL_OK);
+        /* We want a specific Portals table entry */
+        ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, __PtlBarrierIndex, &index), PTL_OK);
+        assert(index == __PtlBarrierIndex);
+
+    }
+    {
+        ptl_le_t le = {
+            .start = NULL,
+            .length = 0,
+            .ac_id.uid = PTL_UID_ANY,
+            .options = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM};
+        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h2), PTL_OK);
+        le.ct_handle = barrier_ct_h2;
+        ptl_assert(PtlLEAppend(ni_physical, __PtlBarrierIndex, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h), PTL_OK);
+    }
 
     /* for distributing my ID */
     md.start = &myself;
@@ -169,6 +194,7 @@ void runtime_finalize(
 
     if (barrier_count > 0) {
         ptl_assert(PtlCTFree(barrier_ct_h), PTL_OK);
+        ptl_assert(PtlCTFree(barrier_ct_h2), PTL_OK);
         ptl_assert(PtlLEUnlink(barrier_le_h), PTL_OK);
     }
 
@@ -227,7 +253,7 @@ void API_FUNC runtime_barrier(
         md.options = 0;
         md.eq_handle = PTL_EQ_NONE;
         md.ct_handle = PTL_CT_NONE;
-        ptl_assert(PtlCTAlloc(ni.a, &barrier_ct_h), PTL_OK);
+        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h), PTL_OK);
         le.ct_handle = barrier_ct_h;
         /* post my receive */
         ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h),
@@ -249,33 +275,43 @@ void API_FUNC runtime_barrier(
 
     } else {
         /* follow-on barrier calls only within user space */
-        ptl_handle_md_t mdh;
-        ptl_md_t md;
-        int i;
-        ptl_process_t id;
-        ptl_ct_event_t ctc;
+        static ptl_size_t __barrier_cnt = 1;
+        ptl_process_t parent, leftchild, rightchild;
+        ptl_size_t test;
+        ptl_ct_event_t cnt_value;
 
-        md.options = 0;
-        md.eq_handle = PTL_EQ_NONE;
-        md.ct_handle = PTL_CT_NONE;
-        ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
+        parent.phys.pid = ((my_rank+1) >> 1) - 1;
+        parent.phys.nid = 0;
+        leftchild.phys.pid = ((my_rank+1) << 1) - 1;
+        leftchild.phys.nid = 0;
+        rightchild.phys.pid = leftchild.phys.pid + 1;
+        rightchild.phys.nid = 0;
 
-        if (0 == my_rank) {
-            /* wait for size - 1 events, then send size -1 events */
-            ptl_assert(PtlCTWait(barrier_ct_h, barrier_count * (num_procs - 1), &ctc), PTL_OK);
-            for (i = 1 ; i < num_procs ; ++i) {
-                id.phys.nid = 0;
-                id.phys.pid = i;
-                ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, id, 0, 0, 0, NULL, 0), PTL_OK);
+        if (leftchild.phys.pid < num_procs) {
+            /* Wait for my children to enter the barrier */
+            test = __barrier_cnt++;
+            if (rightchild.phys.pid < num_procs) {
+                test = __barrier_cnt++;
             }
-        } else {
-            id.phys.nid = 0;
-            id.phys.pid = 0;
-            ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, id, 0, 0, 0, NULL, 0), PTL_OK);
-            ptl_assert(PtlCTWait(barrier_ct_h, barrier_count, &ctc), PTL_OK);
-            assert(ctc.failure == 0);
+            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value), PTL_OK);
         }
-        ptl_assert(PtlMDRelease(mdh), PTL_OK);
+
+        if (my_rank > 0) {
+            /* Tell my parent that I have entered the barrier */
+            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, parent, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+
+            /* Wait for my parent to wake me up */
+            test = __barrier_cnt++;
+            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value), PTL_OK);
+        }
+
+        /* Wake my children */
+        if (leftchild.phys.pid < num_procs) {
+            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, leftchild, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+            if (rightchild.phys.pid < num_procs) {
+                ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, rightchild, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+            }
+        }
     }
 }
 
