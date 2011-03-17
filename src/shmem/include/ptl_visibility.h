@@ -15,9 +15,9 @@
 #  else
 #   define API_FUNC __declspec(dllimport)       // Note: actually gcc seems to also supports this syntax.
 #  endif
-# endif
+# endif /* ifdef BUILDING_DLL */
 # define INTERNAL
-#else
+#else /* if defined(_WIN32) || defined(__CYGWIN__) */
 # if __GNUC__ >= 4
 #  define API_FUNC __attribute__((visibility("default")))
 #  define INTERNAL __attribute__((visibility("hidden")))
@@ -25,7 +25,7 @@
 #  define API_FUNC
 #  define INTERNAL
 # endif
-#endif
+#endif /* if defined(_WIN32) || defined(__CYGWIN__) */
 
-#endif
+#endif /* ifndef PTL_VISIBILITY_H */
 /* vim:set expandtab: */

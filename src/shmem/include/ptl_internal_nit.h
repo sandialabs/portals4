@@ -8,10 +8,10 @@
 #include "ptl_internal_PT.h"
 
 typedef struct {
-    ptl_table_entry_t *tables[4];
-    uint32_t refcount[4];
-    volatile uint32_t internal_refcount[4];
-    ptl_sr_value_t regs[4][2];
+    ptl_table_entry_t *             tables[4];
+    uint32_t                        refcount[4];
+    volatile uint32_t               internal_refcount[4];
+    ptl_sr_value_t                  regs[4][2];
     ptl_internal_buffered_header_t *unexpecteds[4];
     ptl_internal_buffered_header_t *unexpecteds_buf[4];
 } ptl_internal_nit_t;
@@ -19,12 +19,14 @@ typedef struct {
 extern ptl_internal_nit_t nit;
 extern ptl_ni_limits_t nit_limits[4];
 
-int PtlInternalNIValidator(
-    const ptl_internal_handle_converter_t ni);
+int PtlInternalNIValidator(const
+                           ptl_internal_handle_converter_t ni);
 
-void PtlInternalDeallocUnexpectedHeader(
-    ptl_internal_buffered_header_t * const hdr);
-ptl_internal_buffered_header_t *PtlInternalAllocUnexpectedHeader(
-    const unsigned int ni);
-#endif
+void PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t
+                                        * const hdr);
+
+ptl_internal_buffered_header_t *PtlInternalAllocUnexpectedHeader(const
+                                                                 unsigned int
+                                                                 ni);
+#endif /* ifndef PTL_INTERNAL_NIT_H */
 /* vim:set expandtab: */
