@@ -15,6 +15,7 @@
 #include "ptl_internal_assert.h"
 #include "ptl_internal_ME.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_CT.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_atomic.h"
 #ifndef NO_ARG_VALIDATION
