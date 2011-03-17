@@ -42,7 +42,7 @@ static pthread_t catcher;
 # define dm_printf(format, ...)
 #endif
 
-#if 1
+#if 0
 # define ack_printf(format, ...) printf("%u +> " format, \
                                         (unsigned int)proc_number, \
                                         ## __VA_ARGS__)
