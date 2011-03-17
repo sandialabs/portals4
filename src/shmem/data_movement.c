@@ -42,7 +42,7 @@ static pthread_t catcher;
 # define dm_printf(format, ...)
 #endif
 
-#if 0
+#if 1
 # define ack_printf(format, ...) printf("%u +> " format, \
                                         (unsigned int)proc_number, \
                                         ## __VA_ARGS__)
@@ -59,10 +59,11 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
     unsigned int md_opts = 0;
     int acktype;
     int truncated = hdr->type & HDR_TYPE_TRUNCFLAG;
+    const unsigned char basictype = hdr->type & HDR_TYPE_BASICMASK;
 
     ack_printf("got an ACK (%p)\n", hdr);
     /* first, figure out what to do with the ack */
-    switch (hdr->type & HDR_TYPE_BASICMASK) {
+    switch (basictype) {
         case HDR_TYPE_PUT:
             ack_printf("it's an ACK for a PUT\n");
             md_handle = hdr->md_handle1.a;
@@ -237,7 +238,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
         md_ct = mdptr->ct_handle;
         md_opts = mdptr->options;
     }
-    switch (hdr->type & HDR_TYPE_BASICMASK) {
+    switch (basictype) {
         case HDR_TYPE_GET:
         case HDR_TYPE_FETCHATOMIC:
         case HDR_TYPE_SWAP:
@@ -248,7 +249,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
     }
     /* determine desired acktype */
     acktype = 2;                       // any acktype
-    switch (hdr->type & HDR_TYPE_BASICMASK) {
+    switch (basictype) {
         case HDR_TYPE_PUT:
         case HDR_TYPE_ATOMIC:
             switch (hdr->ack_req) {
@@ -273,7 +274,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
             ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
             if (mdptr != NULL) {
                 int ct_enabled = 0;
-                if ((hdr->type == HDR_TYPE_PUT) && (acktype != 0)) {
+                if ((basictype == HDR_TYPE_PUT) && (acktype != 0)) {
                     ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
                 } else {
                     ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
@@ -289,7 +290,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
                     ((md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) &&
                     (acktype > 1)) {
                     ptl_internal_event_t e;
-                    switch (hdr->type) {
+                    switch (basictype) {
                         case HDR_TYPE_PUT:
                             e.type = PTL_EVENT_ACK;
                             break;
@@ -314,7 +315,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
             ack_printf("ACK says nothing matched!\n");
             if (mdptr != NULL) {
                 int ct_enabled = 0;
-                switch (hdr->type) {
+                switch (basictype) {
                     case HDR_TYPE_PUT:
                         ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
                         break;
