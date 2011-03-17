@@ -15,11 +15,7 @@ typedef struct me {
 	ptl_size_t		min_free;
 	uint64_t		match_bits;
 	uint64_t		ignore_bits;
-	union {
-	uint32_t		nid;
-	uint32_t		rank;
-	};
-	uint32_t		pid;
+	ptl_process_t   id;
 } me_t;
 
 void me_init(void *arg);

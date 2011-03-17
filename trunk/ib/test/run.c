@@ -251,6 +251,11 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->me.length			= info->actual.max_msg_size;
 	info->me.options		= 0;
 	info->me.min_free		= 0;
+	if (info->ni_opt & PTL_NI_PHYSICAL) {
+		info->me.match_id.phys.pid  = PTL_PID_ANY;
+		info->me.match_id.phys.nid  = PTL_NID_ANY;
+	} else 
+		info->me.match_id.rank  = PTL_RANK_ANY;
 
 	switch(tok) {
 	case NODE_PTL_NI:
@@ -1140,7 +1145,7 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 			}
 
-			if (debug) printf("start node = %s\n", e->name);
+			if (debug) printf("rank %d: start node = %s\n", info->id.rank, e->name);
 
 			/* the following cases do not push the stack */
 			switch (e->token) {
@@ -1498,7 +1503,7 @@ pop:
 			info = pop_node(info);
 done:
 			tot_errs += errs;
-			if (debug) printf("end node = %s, errs = %d\n", e->name, errs);
+			if (debug) printf("rank %d: end node = %s, errs = %d\n", info->id.rank, e->name, errs);
 		}
 	}
 

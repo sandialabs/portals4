@@ -251,15 +251,15 @@ static int check_match(xt_t *xt)
 	ptl_size_t length;
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		if (!(xt->me->rank == PTL_RANK_ANY ||
-		     (xt->me->rank == xt->initiator.rank)))
+		if (!(xt->me->id.rank == PTL_RANK_ANY ||
+		     (xt->me->id.rank == xt->initiator.rank)))
 			return 0;
 	} else {
-		if (!(xt->me->nid == PTL_NID_ANY ||
-		     (xt->me->nid == xt->initiator.phys.nid)))
+		if (!(xt->me->id.phys.nid == PTL_NID_ANY ||
+		     (xt->me->id.phys.nid == xt->initiator.phys.nid)))
 			return 0;
-		if (!(xt->me->pid == PTL_PID_ANY ||
-		     (xt->me->pid == xt->initiator.phys.pid)))
+		if (!(xt->me->id.phys.pid == PTL_PID_ANY ||
+		     (xt->me->id.phys.pid == xt->initiator.phys.pid)))
 			return 0;
 	}
 
