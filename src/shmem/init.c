@@ -30,14 +30,14 @@
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_papi.h"
 
-volatile char *comm_pad = NULL;
-size_t num_siblings = 0;
-size_t proc_number = 0;
+volatile char *comm_pad       = NULL;
+size_t num_siblings           = 0;
+size_t proc_number            = 0;
 size_t per_proc_comm_buf_size = 0;
-size_t firstpagesize = 0;
+size_t firstpagesize          = 0;
 
-static unsigned int init_ref_count = 0;
-static size_t comm_pad_size = 0;
+static unsigned int init_ref_count   = 0;
+static size_t comm_pad_size          = 0;
 static const char *comm_pad_shm_name = NULL;
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do { \
@@ -62,9 +62,8 @@ static const char *comm_pad_shm_name = NULL;
  * handles important aspects of the init/cleanup and passes data via
  * envariables).
  */
-int API_FUNC PtlInit(
-    void)
-{
+int API_FUNC PtlInit( void)
+{/*{{{*/
     unsigned int race = PtlInternalAtomicInc(&init_ref_count, 1);
     static volatile int done_initializing = 0;
     static volatile int failure = 0;
@@ -184,11 +183,10 @@ int API_FUNC PtlInit(
   exit_fail_fast:
     PtlInternalAtomicInc(&init_ref_count, -1);
     return PTL_FAIL;
-}
+}/*}}}*/
 
-void API_FUNC PtlFini(
-    void)
-{
+void API_FUNC PtlFini( void)
+{/*{{{*/
     unsigned int lastone;
 
     runtime_finalize();
@@ -208,5 +206,5 @@ void API_FUNC PtlFini(
         ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
         comm_pad = NULL;
     }
-}
+}/*}}}*/
 /* vim:set expandtab: */
