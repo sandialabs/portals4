@@ -41,17 +41,17 @@ static size_t comm_pad_size          = 0;
 static const char *comm_pad_shm_name = NULL;
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do { \
-    char * strerr; \
-    const char *str = getenv(env_str); \
-    if (str == NULL) { \
-        if (reqd == 1) goto exit_fail; \
-    } else { \
-        size_t tmp = strtol(str, &strerr, 10); \
-        if (strerr == NULL || strerr == str || *strerr != 0) { \
-            goto exit_fail; \
+        char * strerr; \
+        const char *str = getenv(env_str); \
+        if (str == NULL) { \
+            if (reqd == 1) { goto exit_fail; } \
+        } else { \
+            size_t tmp = strtol(str, &strerr, 10); \
+            if ((strerr == NULL) || (strerr == str) || (*strerr != 0)) { \
+                goto exit_fail; \
+            } \
+            var = tmp; \
         } \
-        var = tmp; \
-    } \
 } while (0)
 
 /* The trick to this function is making it thread-safe: multiple threads can
@@ -62,8 +62,8 @@ static const char *comm_pad_shm_name = NULL;
  * handles important aspects of the init/cleanup and passes data via
  * envariables).
  */
-int API_FUNC PtlInit( void)
-{/*{{{*/
+int API_FUNC PtlInit(void)
+{   /*{{{*/
     unsigned int race = PtlInternalAtomicInc(&init_ref_count, 1);
     static volatile int done_initializing = 0;
     static volatile int failure = 0;
@@ -85,7 +85,8 @@ int API_FUNC PtlInit( void)
         comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
         if (comm_pad_shm_name == NULL) {
 #ifdef LOUD_DROPS
-            fprintf(stderr,
+            fprintf(
+                    stderr,
                     "PORTALS4-> Environment variable PORTALS4_SHM_NAME missing!\n");
             fflush(stderr);
 #endif
@@ -102,7 +103,8 @@ int API_FUNC PtlInit( void)
                 (LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
                 sizeof(NEMESIS_blocking_queue)) == per_proc_comm_buf_size);
 
-        comm_pad_size = firstpagesize + (per_proc_comm_buf_size * (num_siblings + 1));  // the one extra is for the collator
+        comm_pad_size = firstpagesize +
+                        (per_proc_comm_buf_size * (num_siblings + 1));                  // the one extra is for the collator
 
         /* Open the communication pad */
         assert(comm_pad == NULL);
@@ -149,8 +151,8 @@ int API_FUNC PtlInit( void)
         PtlInternalPAPIInit();
 
         /**************************************************************************
-         * Can Now Announce My Presence
-         **************************************************************************/
+        * Can Now Announce My Presence
+        **************************************************************************/
         comm_pad[proc_number] = 1;
 
         if (proc_number != num_siblings) {
@@ -171,22 +173,23 @@ int API_FUNC PtlInit( void)
     } else {
         /* Should block until other inits finish. */
         while (!done_initializing) ;
-        if (!failure)
+        if (!failure) {
             return PTL_OK;
-        else
+        } else {
             goto exit_fail_fast;
+        }
     }
-  exit_fail:
+exit_fail:
     failure = 1;
     __sync_synchronize();
     done_initializing = 1;
-  exit_fail_fast:
+exit_fail_fast:
     PtlInternalAtomicInc(&init_ref_count, -1);
     return PTL_FAIL;
-}/*}}}*/
+} /*}}}*/
 
-void API_FUNC PtlFini( void)
-{/*{{{*/
+void API_FUNC PtlFini(void)
+{   /*{{{*/
     unsigned int lastone;
 
     runtime_finalize();
@@ -196,15 +199,17 @@ void API_FUNC PtlFini( void)
     }
     assert(init_ref_count > 0);
 #endif
-    if (init_ref_count == 0)
+    if (init_ref_count == 0) {
         return;
+    }
     lastone = PtlInternalAtomicInc(&init_ref_count, -1);
     if (lastone == 1) {
         /* Clean up */
         PtlInternalPAPITeardown();
-        //printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
+        // printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
         ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
         comm_pad = NULL;
     }
-}/*}}}*/
+} /*}}}*/
+
 /* vim:set expandtab: */
