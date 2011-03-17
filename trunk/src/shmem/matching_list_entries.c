@@ -56,10 +56,8 @@ typedef struct {
 static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
 
 #ifdef PARANOID
-static void PtlInternalValidateMEPTs(
-                                     unsigned int ni);
-static inline void PtlInternalValidateMEPT(
-                                           ptl_table_entry_t * t);
+static void PtlInternalValidateMEPTs(unsigned int ni);
+static inline void PtlInternalValidateMEPT(ptl_table_entry_t * t);
 #else
 # define PtlInternalValidateMEPTs(x)
 # define PtlInternalValidateMEPT(x)
@@ -473,7 +471,7 @@ permission_violation:
                             }
                             PtlInternalValidateMEPT(t);
                         }
-#else /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
+#else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         if ((tEQ != PTL_EQ_NONE) ||
                             (me->ct_handle != PTL_CT_NONE)) {
                             PtlInternalAnnounceMEDelivery(tEQ, me->ct_handle,
@@ -488,7 +486,7 @@ permission_violation:
                         if (PtlInternalMarkMEReusable(meh.a) != PTL_OK) {
                             abort();
                         }
-#endif /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
+#endif              /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         PtlInternalValidateMEPT(t);
                         PTL_LOCK_UNLOCK(t->lock);
                         /* technically, the ME was never actually *linked*, but
@@ -520,7 +518,7 @@ permission_violation:
                                     PtlInternalEQPush(tEQ, &e);
                                 }
                             }
-#endif /* ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
+#endif                  /* ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         }
                         // return
                         PtlInternalDeallocUnexpectedHeader(cur);
