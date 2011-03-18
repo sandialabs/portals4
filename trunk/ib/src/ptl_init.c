@@ -170,14 +170,13 @@ static int init_start(xi_t *xi)
 	gbl_t *gbl = ni->gbl;
 	struct nid_connect *connect;
 
-	if (unlikely(xi->target.rank >= gbl->nranks)) {
-		ptl_warn("Invalid rank (%d >= %d\n",
-				 xi->target.rank, gbl->nranks);
+	/* Ensure we are already connected. */
+	connect = get_connect_for_id(ni, &xi->target);
+	if (unlikely(!connect)) {
+		ptl_warn("Invalid destination\n");
 		return STATE_INIT_ERROR;
 	}
 
-	/* Ensure we are already connected. */
-	connect = ni->rank_to_nid_table[xi->target.rank].connect;
 	pthread_mutex_lock(&connect->mutex);
 	if (unlikely(connect->state != GBLN_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
@@ -229,7 +228,7 @@ static int init_start(xi_t *xi)
 	case OP_ATOMIC:
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
-			     length, buf);
+							   length, buf);
 		if (err)
 			return STATE_INIT_ERROR;
 		break;
@@ -237,7 +236,7 @@ static int init_start(xi_t *xi)
 	case OP_GET:
 		get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
-			     length, buf);
+							   length, buf);
 		if (err)
 			return STATE_INIT_ERROR;
 		break;
@@ -246,13 +245,13 @@ static int init_start(xi_t *xi)
 	case OP_SWAP:
 		get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
-			     length, buf);
+							   length, buf);
 		if (err)
 			return STATE_INIT_ERROR;
 
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
-			     length, buf);
+							   length, buf);
 		if (err)
 			return STATE_INIT_ERROR;
 		break;
