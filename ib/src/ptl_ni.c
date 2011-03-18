@@ -138,6 +138,8 @@ static int create_rank_to_nid_table(ni_t *ni)
 	ptl_nid_t prev_nid;
 	struct nid_connect *connect;
 
+	assert(ni->options & PTL_NI_LOGICAL);
+
 	ni->logical.rank_to_nid_table = calloc(gbl->nranks, sizeof(struct rank_to_nid));
 	if (ni->logical.rank_to_nid_table == NULL)
 		goto error;
@@ -251,14 +253,18 @@ static void ni_rcqp_stop(ni_t *ni)
 {
 	int i;
 
-	for (i=0; i<ni->gbl->num_nids; i++) {
-		struct nid_connect *connect = &ni->logical.nid_table[i];
+	if (ni->options & PTL_NI_LOGICAL) {
+		for (i=0; i<ni->gbl->num_nids; i++) {
+			struct nid_connect *connect = &ni->logical.nid_table[i];
 		
-		pthread_mutex_lock(&connect->mutex);
-		if (connect->state != GBLN_DISCONNECTED) {
-			rdma_disconnect(connect->cm_id);
+			pthread_mutex_lock(&connect->mutex);
+			if (connect->state != GBLN_DISCONNECTED) {
+				rdma_disconnect(connect->cm_id);
+			}
+			pthread_mutex_unlock(&connect->mutex);
 		}
-		pthread_mutex_unlock(&connect->mutex);
+	} else {
+		/* TODO: physical. */
 	}
 }
 
@@ -655,14 +661,14 @@ static inline int ni_options_to_type(unsigned int options)
 }
 
 int PtlNIInit(ptl_interface_t iface,
-	      unsigned int options,
-	      ptl_pid_t pid,
-	      ptl_ni_limits_t *desired,
-	      ptl_ni_limits_t *actual,
-	      ptl_size_t map_size,
-	      ptl_process_t *desired_mapping,
-	      ptl_process_t *actual_mapping,
-	      ptl_handle_ni_t *ni_handle)
+			  unsigned int options,
+			  ptl_pid_t pid,
+			  ptl_ni_limits_t *desired,
+			  ptl_ni_limits_t *actual,
+			  ptl_size_t map_size,
+			  ptl_process_t *desired_mapping,
+			  ptl_process_t *actual_mapping,
+			  ptl_handle_ni_t *ni_handle)
 {
 	int err;
 	ni_t *ni;
@@ -702,13 +708,13 @@ int PtlNIInit(ptl_interface_t iface,
 	}
 
 	if (unlikely(!!(options & PTL_NI_MATCHING)
-		     ^ !(options & PTL_NI_NO_MATCHING))) {
+				 ^ !(options & PTL_NI_NO_MATCHING))) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(!!(options & PTL_NI_LOGICAL)
-		     ^ !(options & PTL_NI_PHYSICAL))) {
+				 ^ !(options & PTL_NI_PHYSICAL))) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
@@ -721,13 +727,13 @@ int PtlNIInit(ptl_interface_t iface,
 
 	if (options & PTL_NI_LOGICAL) {
 		if (unlikely(map_size && desired_mapping &&
-			     CHECK_RANGE(desired_mapping, ptl_process_t, map_size))) {
+					 CHECK_RANGE(desired_mapping, ptl_process_t, map_size))) {
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
 
 		if (unlikely(map_size &&
-			     CHECK_RANGE(actual_mapping, ptl_process_t, map_size))) {
+					 CHECK_RANGE(actual_mapping, ptl_process_t, map_size))) {
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
@@ -813,17 +819,19 @@ int PtlNIInit(ptl_interface_t iface,
 		goto err3;
 	}
 
-	err = get_rank_table(ni);
-	if (err) {
-		goto err3;
+	if (ni->options & PTL_NI_LOGICAL) {
+		err = get_rank_table(ni);
+		if (err) {
+			goto err3;
+		}
+
+		err = create_rank_to_nid_table(ni);
+		if (err) {
+			goto err3;
+		}
 	}
 
-	err = create_rank_to_nid_table(ni);
-	if (err) {
-		goto err3;
-	}
-
-done:
+ done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
 
 	if (actual)
@@ -838,11 +846,11 @@ done:
 	gbl_put(gbl);
 	return PTL_OK;
 
-err3:
+ err3:
 	ni_put(ni);
-err2:
+ err2:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
-err1:
+ err1:
 	gbl_put(gbl);
 	return err;
 }

@@ -140,16 +140,16 @@ typedef struct ni {
 	} shmem;
 
     /* Connection mappings. */
-    union {
-        struct {
-            /* Logical NI. */
-            struct rank_to_nid *rank_to_nid_table;
-            struct nid_connect *nid_table;
-        } logical;
-        struct {
-            /* Physical NI. */
-        } physical;
-    };
+	union {
+		struct {
+			/* Logical NI. */
+			struct rank_to_nid *rank_to_nid_table;
+			struct nid_connect *nid_table;
+		} logical;
+		struct {
+			/* Physical NI. */
+		} physical;
+	};
 
 } ni_t;
 
