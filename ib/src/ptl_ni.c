@@ -104,15 +104,15 @@ static int get_rank_table(ni_t *ni)
 
 static void init_nid_connect(struct nid_connect *connect)
 {
-        memset(connect, 0, sizeof(*connect));
+	memset(connect, 0, sizeof(*connect));
 
-        pthread_mutex_init(&connect->mutex, NULL);
-        connect->state = GBLN_DISCONNECTED;
-        INIT_LIST_HEAD(&connect->xi_list);
-        INIT_LIST_HEAD(&connect->xt_list);
+	pthread_mutex_init(&connect->mutex, NULL);
+	connect->state = GBLN_DISCONNECTED;
+	INIT_LIST_HEAD(&connect->xi_list);
+	INIT_LIST_HEAD(&connect->xt_list);
 }
 
-static int compar_nid(const void *a, const void *b)
+static int compare_nid(const void *a, const void *b)
 {
 	const struct rank_to_nid *nid1 = a;
 	const struct rank_to_nid *nid2 = b;
@@ -120,7 +120,7 @@ static int compar_nid(const void *a, const void *b)
 	return(nid1->nid - nid2->nid);
 }
 
-static int compar_rank(const void *a, const void *b)
+static int compare_rank(const void *a, const void *b)
 {
 	const struct rank_to_nid *nid1 = a;
 	const struct rank_to_nid *nid2 = b;
@@ -157,7 +157,7 @@ static int create_rank_to_nid_table(ni_t *ni)
 	prev_nid = ni->rank_to_nid_table[0].nid + 1;
 	connect = ni->nid_table;
 	connect --;
-	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compar_nid);
+	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_nid);
 	for (i=0; i<gbl->nranks; i++) {
 		struct rank_to_nid *rtn = &ni->rank_to_nid_table[i];
 		
@@ -182,7 +182,7 @@ static int create_rank_to_nid_table(ni_t *ni)
 	assert(connect == &ni->nid_table[gbl->num_nids-1]);
 
 	/* Sort the rank_to_nid table based on the rank. */
-	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compar_rank);
+	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_rank);
 
 	return 0;
 
