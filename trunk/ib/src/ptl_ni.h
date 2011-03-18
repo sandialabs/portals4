@@ -28,8 +28,7 @@ struct nid_connect {
 
 	/* CM */
 	struct rdma_cm_id *cm_id;
-	in_addr_t addr;				/* IPV4 address, in network order */
-	ptl_nid_t nid;
+	struct sockaddr_in sin;		/* IPV4 address, in network order */
 
 	int retry_resolve_addr;
 	int retry_resolve_route;
