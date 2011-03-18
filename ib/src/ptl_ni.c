@@ -138,28 +138,28 @@ static int create_rank_to_nid_table(ni_t *ni)
 	ptl_nid_t prev_nid;
 	struct nid_connect *connect;
 
-	ni->rank_to_nid_table = calloc(gbl->nranks, sizeof(struct rank_to_nid));
-	if (ni->rank_to_nid_table == NULL)
+	ni->logical.rank_to_nid_table = calloc(gbl->nranks, sizeof(struct rank_to_nid));
+	if (ni->logical.rank_to_nid_table == NULL)
 		goto error;
 
-	ni->nid_table = calloc(gbl->num_nids, sizeof(struct nid_connect));
-	if (ni->nid_table == NULL)
+	ni->logical.nid_table = calloc(gbl->num_nids, sizeof(struct nid_connect));
+	if (ni->logical.nid_table == NULL)
 		goto error;
 
 	for (i=0; i<gbl->nranks; i++) {
-		struct rank_to_nid *elem1 = &ni->rank_to_nid_table[i];
+		struct rank_to_nid *elem1 = &ni->logical.rank_to_nid_table[i];
 		struct rank_entry *elem2 = &ni->shmem.rank_table->elem[i];
 		elem1->nid = elem2->nid;
 		elem1->rank = elem2->rank;
 	}
 
 	/* Sort the rank_to_nid table to find the unique nids, and build the nid table. */
-	prev_nid = ni->rank_to_nid_table[0].nid + 1;
-	connect = ni->nid_table;
+	prev_nid = ni->logical.rank_to_nid_table[0].nid + 1;
+	connect = ni->logical.nid_table;
 	connect --;
-	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_nid);
+	qsort(ni->logical.rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_nid);
 	for (i=0; i<gbl->nranks; i++) {
-		struct rank_to_nid *rtn = &ni->rank_to_nid_table[i];
+		struct rank_to_nid *rtn = &ni->logical.rank_to_nid_table[i];
 		
 		if (rtn->nid != prev_nid) {
 			/* New NID. */
@@ -179,15 +179,37 @@ static int create_rank_to_nid_table(ni_t *ni)
 	}
 
 	/* Ensure we got the algo right. */
-	assert(connect == &ni->nid_table[gbl->num_nids-1]);
+	assert(connect == &ni->logical.nid_table[gbl->num_nids-1]);
 
 	/* Sort the rank_to_nid table based on the rank. */
-	qsort(ni->rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_rank);
+	qsort(ni->logical.rank_to_nid_table, gbl->nranks, sizeof(struct rank_to_nid), compare_rank);
 
 	return 0;
 
  error:
 	return PTL_FAIL;
+}
+
+/* Find the connection for a destination. In case of a physical NI,
+ * the connection record will be created if it doesn't exist. */
+struct nid_connect *get_connect_for_id(ni_t *ni, ptl_process_t *id)
+{
+	struct nid_connect *connect;
+
+	if (ni->options & PTL_NI_LOGICAL) {
+		/* Logical */
+		if (unlikely(id->rank >= ni->gbl->nranks)) {
+			ptl_warn("Invalid rank (%d >= %d)\n",
+					 id->rank, ni->gbl->nranks);
+			return NULL;
+		}
+
+		connect = ni->logical.rank_to_nid_table[id->rank].connect;
+	} else {
+		/* TODO */
+	}
+
+	return connect;
 }
 
 /* TODO finish this */
@@ -230,7 +252,7 @@ static void ni_rcqp_stop(ni_t *ni)
 	int i;
 
 	for (i=0; i<ni->gbl->num_nids; i++) {
-		struct nid_connect *connect = &ni->nid_table[i];
+		struct nid_connect *connect = &ni->logical.nid_table[i];
 		
 		pthread_mutex_lock(&connect->mutex);
 		if (connect->state != GBLN_DISCONNECTED) {

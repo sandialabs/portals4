@@ -639,7 +639,12 @@ static int check_conn(xt_t *xt)
 	ni_t *ni = to_ni(xt);
 
 	/* Ensure we are already connected. */
-	connect = ni->rank_to_nid_table[xt->initiator.rank].connect;
+	connect = get_connect_for_id(ni, &xt->initiator);
+	if (unlikely(!connect)) {
+		ptl_warn("Invalid destination\n");
+		return -1;
+	}
+
 	pthread_mutex_lock(&connect->mutex);
 	if (unlikely(connect->state != GBLN_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
