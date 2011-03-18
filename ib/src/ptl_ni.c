@@ -102,6 +102,16 @@ static int get_rank_table(ni_t *ni)
 	return PTL_FAIL;
 }
 
+static void init_nid_connect(struct nid_connect *connect)
+{
+        memset(connect, 0, sizeof(*connect));
+
+        pthread_mutex_init(&connect->mutex, NULL);
+        connect->state = GBLN_DISCONNECTED;
+        INIT_LIST_HEAD(&connect->xi_list);
+        INIT_LIST_HEAD(&connect->xt_list);
+}
+
 static int compar_nid(const void *a, const void *b)
 {
 	const struct rank_to_nid *nid1 = a;
@@ -155,14 +165,12 @@ static int create_rank_to_nid_table(ni_t *ni)
 			/* New NID. */
 			connect ++;
 
-			pthread_mutex_init(&connect->mutex, NULL);
-			connect->state = GBLN_DISCONNECTED;
-			INIT_LIST_HEAD(&connect->xi_list);
-			INIT_LIST_HEAD(&connect->xt_list);
-			connect->nid = rtn->nid;
+			init_nid_connect(connect);
 
 			/* Get the IP address from the rank table for that NID. */
-			connect->addr = ni->shmem.rank_table->elem[rtn->rank].addr;
+			connect->sin.sin_family = AF_INET;
+			connect->sin.sin_addr.s_addr = ni->shmem.rank_table->elem[rtn->rank].addr;
+			connect->sin.sin_port = htons(PTL_XRC_PORT);
 
 			prev_nid = rtn->nid;
 		}
@@ -256,8 +264,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 /* Establish a new connection. connect is already locked. */
 int init_connect(ni_t *ni, struct nid_connect *connect)
 {
-    struct sockaddr_in sin;
-
 	assert(connect->state == GBLN_DISCONNECTED);
 
 	connect->retry_resolve_addr = 3;
@@ -271,15 +277,10 @@ int init_connect(ni_t *ni, struct nid_connect *connect)
 
 	connect->state = GBLN_RESOLVING_ADDR;
 
-	memset(&sin, 0, sizeof(struct sockaddr_in));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = connect->addr;
-	sin.sin_port = htons(PTL_XRC_PORT);
-
 	if (rdma_resolve_addr(connect->cm_id, NULL,
-						  (struct sockaddr *)&sin, 2000)) {
-		ptl_warn("rdma_resolve_addr failed for NID %x\n",
-				 connect->nid);
+						  (struct sockaddr *)&connect->sin, 2000)) {
+		ptl_warn("rdma_resolve_addr failed %x:%d\n",
+				 connect->sin.sin_addr.s_addr, connect->sin.sin_port);
 		connect->state = GBLN_DISCONNECTED;
 		return 1;
 	}
@@ -525,6 +526,7 @@ static int init_ib(ni_t *ni)
 
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = ni->addr;
+	sin.sin_port = 0;
 
 	if (rdma_bind_addr(cm_id, (struct sockaddr *)&sin)) {
 		ptl_warn("unable to bind to local address %x\n", ni->addr);
