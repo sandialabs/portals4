@@ -359,7 +359,7 @@ found_ib_intf:
 	/* Add watcher for CM connections. */
 	ev_io_init(&conf->cm_watcher, process_cm_event, conf->cm_channel->fd, EV_READ);
 	conf->cm_watcher.data = conf;
-	ev_io_start(my_event_loop, &conf->cm_watcher);
+	EVL_WATCH(ev_io_start(evl.loop, &conf->cm_watcher));
 
 	/* Listen on each interface. */
 	list_for_each(l, &conf->ib_interfaces) {
@@ -407,7 +407,7 @@ void destroy_ib_resources(struct p4oibd_config *conf)
 	struct ib_intf *ib_intf;
 	struct net_intf *net_intf;
 
-	ev_io_stop(my_event_loop, &conf->cm_watcher);
+	EVL_WATCH(ev_io_stop(evl.loop, &conf->cm_watcher));
 
 	/* TODO: free and unlink intf. list_for_each_safe ? */
 

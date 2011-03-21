@@ -807,12 +807,14 @@ int PtlNIInit(ptl_interface_t iface,
 	/* Add a watcher for CM connections. */
 	ev_io_init(&ni->cm_watcher, process_cm_event, ni->cm_channel->fd, EV_READ);
 	ni->cm_watcher.data = ni;
-	ev_io_start(my_event_loop, &ni->cm_watcher);
+
+
+	EVL_WATCH(ev_io_start(evl.loop, &ni->cm_watcher));
 
 	/* Add a watcher for CQ events. */
 	ev_io_init(&ni->cq_watcher, process_recv, ni->ch->fd, EV_READ);
 	ni->cq_watcher.data = ni;
-	ev_io_start(my_event_loop, &ni->cq_watcher);
+	EVL_WATCH(ev_io_start(evl.loop, &ni->cq_watcher));
 
 	err = gbl_add_ni(gbl, ni);
 	if (unlikely(err)) {

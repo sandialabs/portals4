@@ -21,6 +21,9 @@ unsigned int ctl_port = PTL_CTL_PORT;
 static gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* Event loop. */
+struct evl evl;
+
 void session_list_is_empty(void)
 {
 	/* We don't care. */
@@ -29,7 +32,7 @@ void session_list_is_empty(void)
 
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
-	ev_break(my_event_loop, EVBREAK_ALL);
+	ev_break(evl.loop, EVBREAK_ALL);
 }
 
 static void gbl_release(ref_t *ref)
@@ -42,13 +45,13 @@ static void gbl_release(ref_t *ref)
 	/* Terminate the event loop, which will terminate the event
 	 * thread. */
 	if (gbl->event_thread_run) {
-		/* Create an async event to stop the event loop. May be there is a
-		 * better way. */
+		/* Create an async event to stop the event loop. May be there
+		 * is a better way. */
 		ev_async stop_event_loop;
-
 		ev_async_init(&stop_event_loop, stop_event_loop_func);
-		ev_async_start(my_event_loop, &stop_event_loop);
-		ev_async_send(my_event_loop, &stop_event_loop);
+		EVL_WATCH(ev_async_start(evl.loop, &stop_event_loop));
+		ev_async_send(evl.loop, &stop_event_loop);
+
 		pthread_join(gbl->event_thread, NULL);
 	}
 
@@ -258,8 +261,7 @@ static void rpc_callback(struct session *session, void *data)
 
 static void *event_loop_func(void *arg)
 {
-	ev_run(my_event_loop, 0);
-
+	evl_run(&evl);
 	return NULL;
 }
 
@@ -275,7 +277,7 @@ static int gbl_init(gbl_t *gbl)
 
 	start_control_daemon(gbl);
 
-	my_event_loop = EV_DEFAULT;
+	evl_init(&evl);
 
 	err = rpc_init(rpc_type_client, gbl->nid, ctl_port, &gbl->rpc, rpc_callback, NULL);
 	if (unlikely(err)) {
