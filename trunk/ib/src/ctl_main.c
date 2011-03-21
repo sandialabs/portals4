@@ -14,6 +14,9 @@ int ptl_log_level;
 static char *progname;
 static char lock_filename [1024];
 
+/* Event loop. */
+struct evl evl;
+
 /* Used by master only. Rank table is complete. Send it to local ranks
  * and remote control processes. */
 void broadcast_rank_table(struct p4oibd_config *conf)
@@ -249,7 +252,7 @@ static int run_once(struct p4oibd_config *conf)
  * course and can wrap-up peacefully. */
 void session_list_is_empty(void)
 {
-	ev_break(my_event_loop, EVBREAK_ALL);
+	ev_break(evl.loop, EVBREAK_ALL);
 }
 
 static void usage(char *argv[])
@@ -429,7 +432,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	my_event_loop = EV_DEFAULT;
+	evl_init(&evl);
 
 	err = create_ib_resources(&conf);
 	if (err) {
@@ -466,7 +469,7 @@ int main(int argc, char *argv[])
 		printf("%s started\n", progname);
 
 	/* Run the event loop. */
-	ev_run(my_event_loop, 0);
+	evl_run(&evl);
 
 	rpc_fini(conf.rpc);
 

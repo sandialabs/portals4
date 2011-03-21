@@ -28,13 +28,12 @@
 #include <assert.h>
 #include <poll.h>
 
-#include <ev.h>
-
 #include "portals4.h"
 
 #include "ptl_types.h"
 #include "ptl_log.h"
 #include "ptl_shared.h"
+#include "ptl_evloop.h"
 #include "ptl_rpc.h"
 
 /* branch prediction hints for compiler */

@@ -97,7 +97,9 @@ static int init_session(struct rpc *rpc, int s, struct session **session_p,
 	list_add(&session->session_list, &rpc->session_list);
 	pthread_spin_unlock(&rpc->session_list_lock);
 
-	ev_io_start(my_event_loop, &session->watcher);
+	/* This is running inside the event loop, so locking is already
+	 * done. */
+	ev_io_start(evl.loop, &session->watcher);
 
 	*session_p = session;
 
@@ -109,7 +111,8 @@ err1:
 
 static void fini_session(struct rpc *rpc, struct session *session)
 {
-	ev_io_stop(my_event_loop, &session->watcher);
+	/* Called from inside the event loop, so don't lock. */
+	ev_io_stop(evl.loop, &session->watcher);
 
 	close(session->fd);
 	session->fd = -1;
@@ -275,7 +278,8 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 		rpc->fd = s;
 		ev_io_init(&rpc->watcher, accept_one, s, EV_READ);
 		rpc->watcher.data = rpc;
-		ev_io_start(my_event_loop, &rpc->watcher);
+
+		EVL_WATCH(ev_io_start(evl.loop, &rpc->watcher));
 
 	} else {
 
@@ -329,7 +333,7 @@ int rpc_fini(struct rpc *rpc)
 	struct session *session;
 
 	if (rpc->fd != -1) {
-		ev_io_stop(my_event_loop, &rpc->watcher);
+		EVL_WATCH(ev_io_stop(evl.loop, &rpc->watcher));
 		close(rpc->fd);
 		rpc->fd = -1;
 	}

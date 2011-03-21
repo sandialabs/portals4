@@ -31,8 +31,6 @@
 #include <assert.h>
 #include <poll.h>
 
-#include <ev.h>
-
 #include "portals4.h"
 
 /* branch prediction hints for compiler */
@@ -52,6 +50,7 @@ typedef uint64_t	__be64;
 #include "ptl_types.h"
 #include "ptl_ref.h"
 #include "ptl_shared.h"
+#include "ptl_evloop.h"
 #include "ptl_gbl.h"
 #include "ptl_rpc.h"
 #include "ptl_index.h"

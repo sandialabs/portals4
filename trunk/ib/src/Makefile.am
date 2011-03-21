@@ -12,6 +12,8 @@ libportals_la_SOURCES = \
 	ptl_data.h \
 	ptl_eq.c \
 	ptl_eq.h \
+	ptl_evloop.c \
+	ptl_evloop.h \
 	ptl_gbl.c \
 	ptl_gbl.h \
 	ptl_handle.c \
@@ -59,6 +61,8 @@ control_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
 control_LDADD = -libverbs -lrdmacm -lpthread -lev
 control_SOURCES =  \
 	ctl.h \
+	ptl_evloop.c \
+	ptl_evloop.h \
 	ctl_config.c \
 	ctl_ib.c \
 	ctl_main.c \
