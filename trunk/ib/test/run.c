@@ -690,8 +690,18 @@ int get_attr(struct node_info *info, xmlNode *node)
 			break;
 
 		/* get, put */
-		case ATTR_TARGET_ID:
-			info->target_id.rank = get_number(info, val);
+		case ATTR_TARGET_ID: {
+			char *dotpos;
+			if ((dotpos = strchr(val, ':'))) {
+				/* Physical ID. */
+				info->target_id.phys.nid = get_number(info, val);
+				dotpos ++;
+				info->target_id.phys.pid = get_number(info, dotpos);
+			} else {
+				/* Logical ID. */
+				info->target_id.rank = get_number(info, val);
+			}
+		}
 			break;
 		}
 	}
