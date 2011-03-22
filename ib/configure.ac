@@ -24,9 +24,10 @@ AC_PROG_MAKE_SET
 AM_PROG_CC_C_O
 
 # Checks for libraries.
+AC_CHECK_LIB(ev, ev_loop_new,,AC_MSG_ERROR([libev not found.])) 
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/socket.h unistd.h ev.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
