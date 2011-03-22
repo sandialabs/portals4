@@ -42,8 +42,8 @@
         </ptl_eq>
       </ptl_ni>
     </ptl>
+  <mpi_barrier/>
   </subtest>
-<!--
   <subtest>
     <desc>Test PtlPut 64K with good parameters to ME</desc>
     <ptl>
@@ -85,6 +85,7 @@
 	</ptl_eq>
       </ptl_ni>
     </ptl>
+  <mpi_barrier/>
   </subtest>
   <subtest>
     <desc>Test PtlGet with good parameters from ME</desc>
@@ -124,6 +125,7 @@
 	</ptl_eq>
       </ptl_ni>
     </ptl>
+  <mpi_barrier/>
   </subtest>
   <subtest>
     <desc>Test PtlPut with good parameters to LE</desc>
@@ -165,6 +167,7 @@
         </ptl_eq>
       </ptl_ni>
     </ptl>
+  <mpi_barrier/>
   </subtest>
   <subtest>
     <desc>Test PtlGet with good parameters from LE</desc>
@@ -366,8 +369,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
--->
-<!--
   <subtest>
     <desc>Test PtlPut with good parameters MD IOVEC of 8 </desc>
     <ptl>
@@ -701,8 +702,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
--->
-<!--
   <subtest>
     <desc>Test PUT using RDMA message flow with drop at target</desc>
     <ptl>
@@ -784,5 +783,4 @@
       </ptl_ni>
     </ptl>
   </subtest>
--->
 </test>
