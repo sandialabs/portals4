@@ -796,8 +796,8 @@ static void release_buffers(ni_t *ni)
 /* convert ni option flags to a 2 bit type */
 static inline int ni_options_to_type(unsigned int options)
 {
-	return (((options & PTL_NI_MATCHING) != 0) << 1) |
-	       ((options & PTL_NI_LOGICAL) != 0);
+	return (((options & PTL_NI_MATCHING) ? 1 : 0) << 1) |
+		((options & PTL_NI_LOGICAL) ? 1 : 0);
 }
 
 int PtlNIInit(ptl_interface_t iface,

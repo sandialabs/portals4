@@ -7,11 +7,16 @@
 
 #define MAX_IFACE		(32)
 
+/* total number of combinations of matching/no matching and
+ * logical/physical. See ni_options_to_type(). */
+#define MAX_NI_TYPES	(4)	
+
+
 struct ni;
 struct rpc;
 
 typedef struct iface {
-	struct ni		*ni[4];
+	struct ni		*ni[MAX_NI_TYPES];
 	char			if_name[IF_NAMESIZE];
 } iface_t;
 

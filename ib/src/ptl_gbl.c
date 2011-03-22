@@ -123,8 +123,6 @@ static int get_loopback_vars(gbl_t *gbl)
 {
 	struct in_addr inp;
 
-abort();
-
 	gbl->num_nids = 1;
 	gbl->rank = 0;
 	ptl_test_rank = 0;
@@ -297,8 +295,8 @@ static int gbl_init(gbl_t *gbl)
 {
 	int err;
 
-	err = get_vars(gbl);
 #if !TEMP_PHYSICAL_NI
+	err = get_vars(gbl);
 	if (unlikely(err)) {
 		ptl_warn("get_vars failed\n");
 		goto err1;
@@ -369,7 +367,7 @@ void gbl_put(gbl_t *gbl)
 /* caller must hold global mutex */
 ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
 {
-	if (iface >= MAX_IFACE || ni_type >= 4)
+	if (iface >= MAX_IFACE || ni_type >= MAX_NI_TYPES)
 		return NULL;
 
 	return gbl->iface[iface].ni[ni_type];
@@ -379,7 +377,7 @@ ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
 int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 {
 	/* Ensure there's no NI there already. */
-	if (ni->iface >= MAX_IFACE || ni->ni_type >= 4 || gbl->iface[ni->iface].ni[ni->ni_type])
+	if (ni->iface >= MAX_IFACE || ni->ni_type >= MAX_NI_TYPES || gbl->iface[ni->iface].ni[ni->ni_type])
 		return PTL_ARG_INVALID;
 
 	gbl->iface[ni->iface].ni[ni->ni_type] = ni;
