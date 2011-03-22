@@ -675,6 +675,13 @@ static int init_ib(ni_t *ni)
 		goto err1;
 	}
 
+	if ((ni->options & PTL_NI_PHYSICAL) &&
+		(ni->id.phys.pid == PTL_PID_ANY)) {
+		/* No well know PID was given. Retrieve the pid given by
+		 * bind. */
+		ni->id.phys.pid = ntohs(rdma_get_src_port(ni->cm_id));
+	}
+
 	rdma_query_id(ni->cm_id, &ni->ibv_context, &ni->pd);
 	if (ni->ibv_context == NULL || ni->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
@@ -746,8 +753,7 @@ static int init_ib(ni_t *ni)
 	}
 
 	/* Create a listening CM ID for physical NI that have a well-known port. */
-	if ((ni->options & PTL_NI_PHYSICAL) &&
-		(ni->id.phys.pid != PTL_PID_ANY)) {
+	if (ni->options & PTL_NI_PHYSICAL) {
 
 		if (debug)
 			printf("Listening on local NID/PID\n");
