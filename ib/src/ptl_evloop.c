@@ -20,7 +20,6 @@ static void evl_acquire(EV_P)
 static void async_cb(EV_P_ ev_async *w, int revents)
 {
 	/* Nothing to do */
-	printf("got async event\n");
 }
 
 void evl_init(struct evl *evl)
