@@ -130,7 +130,7 @@ typedef struct ni {
 	ev_io cq_watcher;
 	struct rdma_event_channel *cm_channel;
 	ev_io cm_watcher;
-	struct rdma_cm_id *cm_id;	/* for physical NI. */
+	struct rdma_cm_id *listen_id;	/* for physical NI. */
 	struct ibv_srq		*srq;	/* either regular of XRC */
 
 	/* IB XRC support. Used only with physical NI. */
