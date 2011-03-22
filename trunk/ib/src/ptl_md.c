@@ -259,7 +259,8 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	 * release it. */
 	if (md->obj_ref.ref_cnt > 2) {
 		md_put(md);
-		return PTL_IN_USE;
+		err = PTL_IN_USE;
+		goto err1;
 	}
 
 	md_put(md);	/* from md_get */
