@@ -119,6 +119,27 @@ static ptl_nid_t get_node_id_from_tcp(const char *str)
 	return addr_to_nid(inp.s_addr);
 }
 
+static int get_loopback_vars(gbl_t *gbl)
+{
+	struct in_addr inp;
+
+abort();
+
+	gbl->num_nids = 1;
+	gbl->rank = 0;
+	ptl_test_rank = 0;
+	gbl->nranks = 1;
+	gbl->local_rank = 0;
+	gbl->local_nranks = 1;
+	gbl->jid = 0x12345678;
+
+	// TODO look this up somewhere
+	inet_aton("192.168.221.11", &inp);
+	gbl->nid = ntohl(inp.s_addr);
+	gbl->main_ctl_nid = gbl->nid;
+	return PTL_OK;
+}
+
 
 /* The job launcher (mpirun) gives some parameters through environment
  * variables:
@@ -137,9 +158,11 @@ static int get_vars(gbl_t *gbl)
 		getenv_val("OMPI_COMM_WORLD_SIZE", &gbl->nranks) ||
 		getenv_val("OMPI_COMM_WORLD_LOCAL_RANK", &gbl->local_rank) ||
 		getenv_val("OMPI_COMM_WORLD_LOCAL_SIZE", &gbl->local_nranks)) {
-		ptl_warn("some variables are not set or invalid\n");
-		return PTL_FAIL;
+		ptl_warn("using loopback\n");
+		return get_loopback_vars(gbl);
 	}
+
+	ptl_test_rank = gbl->rank;
 
 	gbl->jid = jid;
 
@@ -346,25 +369,21 @@ void gbl_put(gbl_t *gbl)
 /* caller must hold global mutex */
 ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
 {
-	if (iface > MAX_IFACE)
+	if (iface >= MAX_IFACE || ni_type >= 4)
 		return NULL;
 
-	return gbl->iface[iface].ni;
+	return gbl->iface[iface].ni[ni_type];
 }
 
 /* caller must hold global mutex */
 int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 {
-	ptl_interface_t iface = ni->iface;
-
 	/* Ensure there's no NI there already. */
-	if (iface >= MAX_IFACE || gbl->iface[iface].ni)
+	if (ni->iface >= MAX_IFACE || ni->ni_type >= 4 || gbl->iface[ni->iface].ni[ni->ni_type])
 		return PTL_ARG_INVALID;
 
-	gbl->iface[iface].ni = ni;
-	sprintf(gbl->iface[iface].if_name, "ib%d", iface);
-
-	ni->iface = iface;
+	gbl->iface[ni->iface].ni[ni->ni_type] = ni;
+	sprintf(gbl->iface[ni->iface].if_name, "ib%d", ni->iface);
 
 	return PTL_OK;
 }
@@ -374,11 +393,11 @@ int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
 {
 	ptl_interface_t iface = ni->iface;
 
-	if (unlikely(ni != gbl->iface[iface].ni))
+	if (unlikely(ni != gbl->iface[iface].ni[ni->ni_type]))
 		return PTL_FAIL;
 
 	gbl->iface[iface].if_name[0] = 0;
-	gbl->iface[iface].ni = NULL;
+	gbl->iface[iface].ni[ni->ni_type] = NULL;
 
 	return PTL_OK;
 }

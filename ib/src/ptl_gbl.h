@@ -11,7 +11,7 @@ struct ni;
 struct rpc;
 
 typedef struct iface {
-	struct ni		*ni;
+	struct ni		*ni[4];
 	char			if_name[IF_NAMESIZE];
 } iface_t;
 
