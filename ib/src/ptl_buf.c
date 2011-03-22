@@ -74,7 +74,7 @@ int post_recv(ni_t *ni)
     list_add_tail(&buf->list, &ni->recv_list);
 	pthread_spin_unlock(&ni->recv_list_lock);
 
-	err = ibv_post_srq_recv(ni->xrc_srq, &buf->recv_wr, &bad_wr);
+	err = ibv_post_srq_recv(ni->srq, &buf->recv_wr, &bad_wr);
 	if (err) {
 		WARN();
 		pthread_spin_lock(&ni->recv_list_lock);

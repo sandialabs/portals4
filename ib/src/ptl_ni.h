@@ -34,6 +34,11 @@ struct nid_connect {
 	int retry_resolve_route;
 	int retry_connect;
 
+	/* NID is used for both logical and physical. PID is only used for
+	 * physical. rank is not used. May be replace with nid/pid instead
+	 * to avoid confusion. */
+	ptl_process_t id;
+
 	pthread_mutex_t	mutex;
 
 	/* xi/xt awaiting connection establishment. */
@@ -125,11 +130,12 @@ typedef struct ni {
 	ev_io cq_watcher;
 	struct rdma_event_channel *cm_channel;
 	ev_io cm_watcher;
+	struct rdma_cm_id *cm_id;	/* for physical NI. */
+	struct ibv_srq		*srq;	/* either regular of XRC */
 
-	/* IB XRC support. */
+	/* IB XRC support. Used only with physical NI. */
 	int			xrc_domain_fd;
 	struct ibv_xrc_domain	*xrc_domain;
-	struct ibv_srq		*xrc_srq;
 	uint32_t		xrc_rcv_qpn;
 
 	/* shared memory. */
@@ -139,7 +145,7 @@ typedef struct ni {
 		struct rank_table *rank_table;
 	} shmem;
 
-    /* Connection mappings. */
+	/* Connection mappings. */
 	union {
 		struct {
 			/* Logical NI. */
@@ -148,6 +154,8 @@ typedef struct ni {
 		} logical;
 		struct {
 			/* Physical NI. */
+			void *tree;	/* binary tree root */
+			pthread_mutex_t lock;
 		} physical;
 	};
 

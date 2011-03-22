@@ -5,6 +5,7 @@
 #include "ptl_loc.h"
 
 #include <sys/ioctl.h>
+#include <search.h>
 
 unsigned short ptl_ni_port(ni_t *ni)
 {
@@ -17,44 +18,15 @@ static int get_default_iface(gbl_t *gbl)
 {
 	int iface;
 
-	pthread_mutex_lock(&gbl->gbl_mutex);
-
 	/* Default interface is ib0 (iface==0). */
 	if (if_nametoindex("ib0") > 0) {
 		iface = 0;
 		goto done;
 	}
 
-#if 0
-	/* This code is not right anymore. */
-
-	char file_name[64];
-	FILE *fd;
-	char if_name[16];
-	int n;
-
-	snprintf(file_name, sizeof(file_name), "/sys/class/infiniband/rxe0/parent");
-	fd = fopen(file_name, "r");
-	if (!fd) {
-		pthread_mutex_unlock(&gbl->gbl_mutex);
-		return PTL_IFACE_DEFAULT;
-	}
-
-	n = fread(if_name, 1, 16, fd);
-	fclose(fd);
-	if (n <= 0) {
-		pthread_mutex_unlock(&gbl->gbl_mutex);
-		return PTL_IFACE_DEFAULT;
-	}
-
-	if_name[n-1] = 0;
-	iface = if_nametoindex(if_name);
-#endif
-
 	iface = PTL_IFACE_DEFAULT;
 
 done:
-	pthread_mutex_unlock(&gbl->gbl_mutex);
 	return iface;
 }
 
@@ -66,11 +38,13 @@ static int get_rank_table(ni_t *ni)
 	void *m;
 	gbl_t *gbl = ni->gbl;
 
+	assert(ni->options & PTL_NI_LOGICAL);
+
 	memset(&rpc_msg, 0, sizeof(rpc_msg));
 	rpc_msg.type = QUERY_RANK_TABLE;
 	rpc_msg.query_rank_table.rank = gbl->rank;
 	rpc_msg.query_rank_table.local_rank = gbl->local_rank;
-	rpc_msg.query_rank_table.xrc_srq_num  = ni->xrc_srq->xrc_srq_num;
+	rpc_msg.query_rank_table.xrc_srq_num  = ni->srq->xrc_srq_num;
 	rpc_msg.query_rank_table.addr = ni->addr;
 	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
 	if (err)
@@ -192,9 +166,17 @@ static int create_rank_to_nid_table(ni_t *ni)
 	return PTL_FAIL;
 }
 
+static int compare_nids(const void *a, const void *b)
+{
+	const struct nid_connect *c1 = a;
+	const struct nid_connect *c2 = b;
+
+	return(c1->id.phys.nid - c2->id.phys.nid);
+}
+
 /* Find the connection for a destination. In case of a physical NI,
  * the connection record will be created if it doesn't exist. */
-struct nid_connect *get_connect_for_id(ni_t *ni, ptl_process_t *id)
+struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id)
 {
 	struct nid_connect *connect;
 
@@ -208,7 +190,39 @@ struct nid_connect *get_connect_for_id(ni_t *ni, ptl_process_t *id)
 
 		connect = ni->logical.rank_to_nid_table[id->rank].connect;
 	} else {
-		/* TODO */
+		struct nid_connect c;
+		void **ret;
+
+		/* Physical */
+		pthread_mutex_lock(&ni->physical.lock);
+
+		c.id.phys.nid = id->phys.nid;
+		ret = tfind(&c, &ni->physical.tree, compare_nids);
+
+		if (!ret) {
+			/* Not found. Allocate and insert. */
+			connect = malloc(sizeof(*connect));
+			init_nid_connect(connect);
+			connect->id = *id;
+
+			/* Get the IP address from the NID. */
+			connect->sin.sin_family = AF_INET;
+			connect->sin.sin_addr.s_addr = nid_to_addr(id->phys.nid);
+			connect->sin.sin_port = pid_to_port(id->phys.pid);
+
+			if (connect) {
+				ret = tsearch(connect, &ni->physical.tree, compare_nids);
+				if (!ret) {
+					/* Insertion failed. */
+					free(connect);
+					connect = NULL;
+				}
+			}
+		} else {
+			connect = *ret;
+		}
+		
+		pthread_mutex_unlock(&ni->physical.lock);
 	}
 
 	return connect;
@@ -264,7 +278,7 @@ static void ni_rcqp_stop(ni_t *ni)
 			pthread_mutex_unlock(&connect->mutex);
 		}
 	} else {
-		/* TODO: physical. */
+		// todo: physical walk and disconnect
 	}
 }
 
@@ -292,6 +306,10 @@ static int ni_rcqp_cleanup(ni_t *ni)
 /* Establish a new connection. connect is already locked. */
 int init_connect(ni_t *ni, struct nid_connect *connect)
 {
+	if (debug)
+		printf("Initiate connect with %x:%x\n",
+			   connect->sin.sin_addr.s_addr, connect->sin.sin_port);
+		
 	assert(connect->state == GBLN_DISCONNECTED);
 
 	connect->retry_resolve_addr = 3;
@@ -300,6 +318,7 @@ int init_connect(ni_t *ni, struct nid_connect *connect)
 
 	if (rdma_create_id(ni->cm_channel, &connect->cm_id,
 					   connect, RDMA_PS_TCP)) {
+		WARN();
 		return 1;
 	}
 
@@ -313,7 +332,73 @@ int init_connect(ni_t *ni, struct nid_connect *connect)
 		return 1;
 	}
 
+	if (debug)
+		printf("Connection initiated successfully to %x:%d\n",
+			   connect->sin.sin_addr.s_addr, connect->sin.sin_port);
+
 	return 0;
+}
+
+static int process_connect_request(ni_t *ni, struct rdma_cm_event *event)
+{
+	const struct cm_priv_request *priv;
+	struct rdma_conn_param conn_param;
+	struct ibv_qp_init_attr init_attr;
+	struct nid_connect *connect;
+
+	assert(ni->options & PTL_NI_PHYSICAL);
+
+	if (!event->param.conn.private_data ||
+		(event->param.conn.private_data_len <
+		sizeof(struct cm_priv_request)))
+		return 1;
+
+	priv = event->param.conn.private_data;
+
+	connect = get_connect_for_id(ni, &priv->src_id);
+
+	pthread_mutex_lock(&connect->mutex);
+
+	if (connect->state != GBLN_DISCONNECTED) {
+		/* Already connected. Should not get there. */
+		abort();
+		goto err;
+	}
+
+	connect->state = GBLN_CONNECTING;
+
+	memset(&init_attr, 0, sizeof(struct ibv_qp_init_attr));
+	init_attr.qp_type = IBV_QPT_RC;
+	init_attr.send_cq = ni->cq;
+	init_attr.recv_cq = ni->cq;
+	init_attr.srq = ni->srq;
+	init_attr.cap.max_send_wr = 50;
+	init_attr.cap.max_send_sge = 1;
+
+	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+		connect->state = GBLN_DISCONNECTED;
+		goto err;
+	}
+
+	connect->cm_id = event->id;
+	event->id->context = connect;
+
+	memset(&conn_param, 0, sizeof conn_param);
+	conn_param.responder_resources = 1;
+	conn_param.initiator_depth = 1;
+
+	if (rdma_accept(event->id, &conn_param)) {
+		rdma_destroy_qp(event->id);
+		connect->state = GBLN_DISCONNECTED;
+		goto err;
+	}
+
+	pthread_mutex_unlock(&connect->mutex);
+	return 0;
+
+err:
+	pthread_mutex_unlock(&connect->mutex);
+	return 1;
 }
 
 static void process_cm_event(EV_P_ ev_io *w, int revents)
@@ -352,17 +437,33 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
 		assert(connect->cm_id == event->id);
 
+        memset(&conn_param, 0, sizeof conn_param);
+        conn_param.responder_resources = 1;
+        conn_param.initiator_depth = 1;
+        conn_param.retry_count = 5;
+		conn_param.private_data = &priv;
+		conn_param.private_data_len = sizeof(priv);
+
 		/* Create the QP. */
 		memset(&init, 0, sizeof(init));
 		init.qp_context			= ni;
 		init.send_cq			= ni->cq;
-		init.recv_cq			= ni->cq; /* can't receive, but libverbs crashes if not present ("cmd->recv_cq_handle  = attr->recv_cq->handle;")*/
+		init.recv_cq			= ni->cq;
 		init.cap.max_send_wr		= MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
 		init.cap.max_recv_wr		= 0;
 		init.cap.max_send_sge		= MAX_INLINE_SGE;
 		init.cap.max_recv_sge		= 10;
-		init.qp_type			= IBV_QPT_XRC;
-		init.xrc_domain			= ni->xrc_domain;
+
+		if (ni->options & PTL_NI_LOGICAL) {
+			init.qp_type			= IBV_QPT_XRC;
+			init.xrc_domain			= ni->xrc_domain;
+
+			priv.src_id.rank = ni->gbl->rank;
+		} else {
+			init.qp_type			= IBV_QPT_RC;
+			init.srq = ni->srq;
+			priv.src_id = connect->id;
+		}
 
 		pthread_mutex_lock(&connect->mutex);
 
@@ -374,15 +475,6 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 			//goto err1;
 		}
 
-        memset(&conn_param, 0, sizeof conn_param);
-        conn_param.responder_resources = 1;
-        conn_param.initiator_depth = 1;
-        conn_param.retry_count = 5;
-		conn_param.private_data = &priv;
-		conn_param.private_data_len = sizeof(priv);
-
-		priv.src_rank = ni->gbl->rank;
-		
 		if (rdma_connect(connect->cm_id, &conn_param)) {
 			//todo 
 			abort();
@@ -426,6 +518,15 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	}
 		break;
 
+	case RDMA_CM_EVENT_CONNECT_REQUEST:
+		process_connect_request(ni, event);
+		break;
+
+	case RDMA_CM_EVENT_REJECTED:
+		connect->state = GBLN_DISCONNECTED;
+		/* todo: destroy QP and reset connect. */
+		break;
+
 	default:
 		ptl_warn("Got unknown CM event: %d\n", event->event);
 		break;
@@ -462,9 +563,14 @@ static in_addr_t get_ip_address(const char *ifname)
 
 static int cleanup_ib(ni_t *ni)
 {
-	if (ni->xrc_srq) {
-		ibv_destroy_srq(ni->xrc_srq);
-		ni->xrc_srq = NULL;
+	if (ni->cm_id) {
+		rdma_destroy_id(ni->cm_id);
+		ni->cm_id = NULL;
+	}
+
+	if (ni->srq) {
+		ibv_destroy_srq(ni->srq);
+		ni->srq = NULL;
 	}
 
 	if (ni->xrc_domain_fd) {
@@ -494,9 +600,7 @@ static int init_ib(ni_t *ni)
 {
 	struct ibv_srq_init_attr srq_init_attr;
 	gbl_t *gbl = ni->gbl;
-	struct rpc_msg rpc_msg;
 	int err;
-	struct rdma_cm_id *cm_id;
 	struct sockaddr_in sin;
 	int i;
 	int flags;
@@ -517,25 +621,39 @@ static int init_ib(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	/* Retrieve the IB interface and the XRC domain name. */
-	memset(&rpc_msg, 0, sizeof(rpc_msg));
-	rpc_msg.type = QUERY_XRC_DOMAIN;
-	strcpy(rpc_msg.query_xrc_domain.net_name, ni->ifname);
-	err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
-	if (err) {
-		ptl_warn("rpc_get(QUERY_XRC_DOMAIN) failed\n");
-		return PTL_FAIL;
-	}
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = ni->addr;
 
-	if (strlen(rpc_msg.reply_xrc_domain.xrc_domain_fname) == 0) {
-		ptl_warn("bad xrc domain fname\n");
-		return PTL_FAIL;
-	}
+	if (ni->options & PTL_NI_LOGICAL) {
+		struct rpc_msg rpc_msg;
 
-	ni->xrc_domain_fd = open(rpc_msg.reply_xrc_domain.xrc_domain_fname, O_RDONLY);
-	if (ni->xrc_domain_fd == -1) {
-		ptl_warn("unable to open xrc domain file = %s\n", rpc_msg.reply_xrc_domain.xrc_domain_fname);
-		return PTL_FAIL;
+		/* Retrieve the IB interface and the XRC domain name. */
+
+		memset(&rpc_msg, 0, sizeof(rpc_msg));
+		rpc_msg.type = QUERY_XRC_DOMAIN;
+		strcpy(rpc_msg.query_xrc_domain.net_name, ni->ifname);
+		err = rpc_get(gbl->rpc->to_server, &rpc_msg, &rpc_msg);
+		if (err) {
+			ptl_warn("rpc_get(QUERY_XRC_DOMAIN) failed\n");
+			return PTL_FAIL;
+		}
+
+		if (strlen(rpc_msg.reply_xrc_domain.xrc_domain_fname) == 0) {
+			ptl_warn("bad xrc domain fname\n");
+			return PTL_FAIL;
+		}
+
+		ni->xrc_domain_fd = open(rpc_msg.reply_xrc_domain.xrc_domain_fname, O_RDONLY);
+		if (ni->xrc_domain_fd == -1) {
+			ptl_warn("unable to open xrc domain file = %s\n", rpc_msg.reply_xrc_domain.xrc_domain_fname);
+			return PTL_FAIL;
+		}
+
+		sin.sin_port = 0;
+
+	} else {
+		ni->id.phys.nid = addr_to_nid(ni->addr);
+		sin.sin_port = pid_to_port(ni->id.phys.pid);
 	}
 
 	ni->cm_channel = rdma_create_event_channel();
@@ -547,26 +665,21 @@ static int init_ib(ni_t *ni)
 	/* Create a RDMA CM ID and bind it to retrieve the context and
 	 * PD. These will be valid for as long as librdmacm is not
 	 * unloaded, ie. when the program exits. */
-	if (rdma_create_id(ni->cm_channel, &cm_id, NULL, RDMA_PS_TCP)) {
+	if (rdma_create_id(ni->cm_channel, &ni->cm_id, NULL, RDMA_PS_TCP)) {
 		ptl_warn("unable to create CM ID\n");
 		goto err1;
 	}
 
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = ni->addr;
-	sin.sin_port = 0;
-
-	if (rdma_bind_addr(cm_id, (struct sockaddr *)&sin)) {
+	if (rdma_bind_addr(ni->cm_id, (struct sockaddr *)&sin)) {
 		ptl_warn("unable to bind to local address %x\n", ni->addr);
 		goto err1;
 	}
 
-	rdma_query_id(cm_id, &ni->ibv_context, &ni->pd);
+	rdma_query_id(ni->cm_id, &ni->ibv_context, &ni->pd);
 	if (ni->ibv_context == NULL || ni->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
 		goto err1;
 	}
-	rdma_destroy_id(cm_id);
 
 	/* Create CC, CQ, SRQ. */
 	ni->ch = ibv_create_comp_channel(ni->ibv_context);
@@ -582,7 +695,7 @@ static int init_ib(ni_t *ni)
 	}
 
 	ni->cq = ibv_create_cq(ni->ibv_context, MAX_QP_SEND_WR + MAX_QP_RECV_WR,
-		ni, ni->ch, 0);
+						   ni, ni->ch, 0);
 	if (!ni->cq) {
 		WARN();
 		ptl_warn("unable to create cq\n");
@@ -595,36 +708,63 @@ static int init_ib(ni_t *ni)
 		goto err1;
 	}
 
-	/* Create XRC QP. */
-
-	/* Open XRC domain. */
-	ni->xrc_domain = ibv_open_xrc_domain(ni->ibv_context,
-		ni->xrc_domain_fd, O_CREAT);
-	if (!ni->xrc_domain) {
-		ptl_warn("unable to open xrc domain\n");
-		goto err1;
-	}
-
 	srq_init_attr.srq_context = ni;
 	srq_init_attr.attr.max_wr = 100; /* todo: adjust */
 	srq_init_attr.attr.max_sge = 1;
 	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
 
-	ni->xrc_srq = ibv_create_xrc_srq(ni->pd, ni->xrc_domain,
+	if (ni->options & PTL_NI_LOGICAL) {
+		/* Create XRC SRQ. */
+
+		/* Open XRC domain. */
+		ni->xrc_domain = ibv_open_xrc_domain(ni->ibv_context,
+											 ni->xrc_domain_fd, O_CREAT);
+		if (!ni->xrc_domain) {
+			ptl_warn("unable to open xrc domain\n");
+			goto err1;
+		}
+
+		ni->srq = ibv_create_xrc_srq(ni->pd, ni->xrc_domain,
 									 ni->cq, &srq_init_attr);
-	if (!ni->xrc_srq) {
-		ptl_fatal("unable to create xrc srq\n");
+	} else {
+		/* Create regular SRQ. */
+		ni->srq = ibv_create_srq(ni->pd, &srq_init_attr);
+	}
+
+	if (!ni->srq) {
+		ptl_fatal("unable to create srq\n");
 		goto err1;
 	}
 
 	for (i = 0; i < srq_init_attr.attr.max_wr; i++) {
-        err = post_recv(ni);
-        if (err) {
-            WARN();
-            err = PTL_FAIL;
-            goto err1;
-        }
-    }
+		err = post_recv(ni);
+		if (err) {
+			WARN();
+			err = PTL_FAIL;
+			goto err1;
+		}
+	}
+
+	/* Create a listening CM ID for physical NI that have a well-known port. */
+	if ((ni->options & PTL_NI_PHYSICAL) &&
+		(ni->id.phys.pid != PTL_PID_ANY)) {
+
+		if (debug)
+			printf("Listening on local NID/PID\n");
+			
+		if (rdma_listen(ni->cm_id, 0)) {
+			goto err1;
+		}
+
+		if (debug) {
+			printf("CM listening on %x:%x\n", sin.sin_addr.s_addr, sin.sin_port);
+		}
+
+	} else {
+		/* Logical NIs don't need one. */
+		rdma_destroy_id(ni->cm_id);
+		ni->cm_id = NULL;
+	}
 
 	return PTL_OK;
 
@@ -719,8 +859,8 @@ int PtlNIInit(ptl_interface_t iface,
 		goto err1;
 	}
 
-	/* For now, only accept PTL_PID_ANY. */
-	if (pid != PTL_PID_ANY) {
+	/* TODO: is this test correct ? */
+	if ((options & PTL_NI_LOGICAL) && (pid != PTL_PID_ANY)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
@@ -781,6 +921,7 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
 	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
 	pthread_cond_init(&ni->ct_wait_cond, NULL);
+	pthread_mutex_init(&ni->physical.lock, NULL);
 
 	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
@@ -796,7 +937,7 @@ int PtlNIInit(ptl_interface_t iface,
 			goto err3;
 		}
 	} else {
-		/* TODO: set ni->id.phys.xxx. */
+		ni->id.phys.pid = pid;
 	}
 
 	err = init_ib(ni);
@@ -807,7 +948,6 @@ int PtlNIInit(ptl_interface_t iface,
 	/* Add a watcher for CM connections. */
 	ev_io_init(&ni->cm_watcher, process_cm_event, ni->cm_channel->fd, EV_READ);
 	ni->cm_watcher.data = ni;
-
 
 	EVL_WATCH(ev_io_start(evl.loop, &ni->cm_watcher));
 

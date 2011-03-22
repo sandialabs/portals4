@@ -90,7 +90,7 @@ static long getenv_val(const char *name, unsigned int *val)
  * extract the IP adress and return it as a 32 bits number. 
  * 0 means error.
  */
-static uint32_t get_node_id_from_tcp(const char *str)
+static ptl_nid_t get_node_id_from_tcp(const char *str)
 {
 	char *p, *q;
 	const char *to_find = "tcp://";
@@ -115,7 +115,7 @@ static uint32_t get_node_id_from_tcp(const char *str)
 	if (!inet_aton(ipaddr, &inp))
 		return 0;
 
-	return ntohl(inp.s_addr);
+	return addr_to_nid(inp.s_addr);
 }
 
 
@@ -164,7 +164,7 @@ static int get_vars(gbl_t *gbl)
 			return PTL_FAIL;
 		}
 
-		gbl->main_ctl_nid = ntohl(inp.s_addr);
+		gbl->main_ctl_nid = addr_to_nid(inp.s_addr);
 
 	} else {
 		env = getenv("OMPI_MCA_orte_hnp_uri");
@@ -186,6 +186,10 @@ static int get_vars(gbl_t *gbl)
 static int start_control_daemon(gbl_t *gbl)
 {
 	pid_t pid;
+
+#if TEMP_PHYSICAL_NI
+	return PTL_OK;
+#endif
 
 	pid = fork();
 	if (pid == 0) {
@@ -270,10 +274,12 @@ static int gbl_init(gbl_t *gbl)
 	int err;
 
 	err = get_vars(gbl);
+#if !TEMP_PHYSICAL_NI
 	if (unlikely(err)) {
 		ptl_warn("get_vars failed\n");
 		goto err1;
 	}
+#endif
 
 	start_control_daemon(gbl);
 
@@ -293,13 +299,6 @@ static int gbl_init(gbl_t *gbl)
 		goto err2;
 	}
 
-#if 0
-	err = get_init_data(gbl);
-	if (err) {
-		ptl_warn("get_init_data failed\n");
-		goto err2;
-	}
-#endif
 
 	/* init the object allocator */
 	err = obj_init();

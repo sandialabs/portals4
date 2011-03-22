@@ -175,14 +175,20 @@ static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
 
 static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
 {
+	ni_t *ni = to_ni(xi);
+
 	xi->dest.qp = connect->cm_id->qp;
-	xi->dest.xrc_remote_srq_num = xi->obj_ni->shmem.rank_table->elem[xi->target.rank].xrc_srq_num;
+	if (ni->options & PTL_NI_LOGICAL)
+		xi->dest.xrc_remote_srq_num = xi->obj_ni->shmem.rank_table->elem[xi->target.rank].xrc_srq_num;
 }
 
 static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
 {
+	ni_t *ni = to_ni(xt);
+
 	xt->dest.qp = connect->cm_id->qp;
-	xt->dest.xrc_remote_srq_num = xt->obj_ni->shmem.rank_table->elem[xt->initiator.rank].xrc_srq_num;
+	if (ni->options & PTL_NI_LOGICAL)
+		xt->dest.xrc_remote_srq_num = xt->obj_ni->shmem.rank_table->elem[xt->initiator.rank].xrc_srq_num;
 }
 
 #endif /* PTL_XX_H */
