@@ -75,7 +75,7 @@ struct dict_init {
 	{"ptl_trig_ct_inc",		TYPE_NODE,		NODE_PTL_TRIG_CT_INC},
 	{"ptl_trig_ct_set",		TYPE_NODE,		NODE_PTL_TRIG_CT_SET},
 	{"ptl_handle_is_equal",		TYPE_NODE,		NODE_PTL_HANDLE_IS_EQUAL},
-	{"mpi_barrier",			TYPE_NODE,		NODE_MPI_BARRIER},
+	{"barrier",			TYPE_NODE,		NODE_BARRIER},
 
 	{"ret",				TYPE_ATTR,		ATTR_RET},
 	{"ptr",				TYPE_ATTR,		ATTR_PTR},
@@ -184,7 +184,7 @@ struct dict_init {
 	{"threshold",			TYPE_ATTR,		ATTR_THRESHOLD},
 
 	{"rank",			TYPE_ATTR,		ATTR_RANK},
-	{"target_id",		TYPE_ATTR,		ATTR_TARGET_ID},
+	{"target_id",			TYPE_ATTR,		ATTR_TARGET_ID},
 
 	/* used to mark end of list keep last */
 	{NULL,				0,			0},
