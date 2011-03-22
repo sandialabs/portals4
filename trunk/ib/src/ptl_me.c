@@ -8,11 +8,12 @@
  * me_init
  *	initialize new me
  */
-void me_init(void *arg)
+int me_init(void *arg)
 {
 	me_t *me = arg;
 
 	me->type = TYPE_ME;
+	return 0;
 }
 
 /*

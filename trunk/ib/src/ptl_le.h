@@ -35,7 +35,7 @@ typedef struct le {
 	PTL_LE_OBJ
 } le_t;
 
-void le_init(void *arg);
+int le_init(void *arg);
 void le_release(void *arg);
 
 static inline int le_alloc(ni_t *ni, le_t **le_p)

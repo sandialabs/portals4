@@ -360,8 +360,13 @@ int obj_alloc(obj_type_t *type, obj_t *parent, obj_t **p_obj)
 	 */
 	memset((uint8_t *)obj + sizeof(obj_t), 0, type->size - sizeof(obj_t));
 
-	if (type->init)
-		type->init(obj);
+	if (type->init) {
+		if (type->init(obj)) {
+			WARN();
+			obj_release(&obj->obj_ref);
+			return PTL_FAIL;
+		}
+	}
 
 	obj->obj_free = 0;
 	*p_obj = obj;

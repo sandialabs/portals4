@@ -4,6 +4,9 @@
 
 #include "ptl_loc.h"
 
+/*
+ * buf_release - release buffers reference to associated memory region.
+ */ 
 void buf_release(void *arg)
 {
 	buf_t *buf = arg;
@@ -12,7 +15,10 @@ void buf_release(void *arg)
 		mr_put(buf->mr);
 }
 
-void buf_init(void *arg)
+/*
+ * buf_init - initialize a buffer object and create/reference memory region.
+ */
+int buf_init(void *arg)
 {
 	int err;
 	buf_t *buf = arg;
@@ -28,17 +34,21 @@ void buf_init(void *arg)
 	buf->send_wr.sg_list = buf->sg_list;
 	buf->send_wr.num_sge = 1;
 
-	// TODO this is a hack need to allocate mrs for large slabs
 	err = mr_lookup(ni, buf->data, buf->size, &buf->mr);
 	if (err) {
 		WARN();
-		printf("TODO fix object init so it can fail\n");
+		return -1;
 	}
 
 	buf->sg_list[0].addr = (uintptr_t)buf->data;
 	buf->sg_list[0].lkey = buf->mr->ibmr->lkey;
+
+	return 0;
 }
 
+/*
+ * buf_dump - debug function to print buffer attributes.
+ */
 void buf_dump(buf_t *buf)
 {
 	hdr_t *hdr = (hdr_t *)buf->data;
@@ -54,6 +64,9 @@ void buf_dump(buf_t *buf)
 	printf("\n");
 }
 
+/*
+ * post_recv - Allocate a receive buffer for specified NI and post to SRQ.
+ */
 int post_recv(ni_t *ni)
 {
 	int err;
@@ -71,7 +84,7 @@ int post_recv(ni_t *ni)
 	buf->type = BUF_RECV;
 
 	pthread_spin_lock(&ni->recv_list_lock);
-    list_add_tail(&buf->list, &ni->recv_list);
+	list_add_tail(&buf->list, &ni->recv_list);
 	pthread_spin_unlock(&ni->recv_list_lock);
 
 	err = ibv_post_srq_recv(ni->srq, &buf->recv_wr, &bad_wr);
