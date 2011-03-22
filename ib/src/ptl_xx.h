@@ -94,7 +94,7 @@ typedef struct xi {
 } xi_t;
 
 extern obj_type_t *type_xi;
-void xi_init(void *arg);
+int xi_init(void *arg);
 void xi_release(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
@@ -145,7 +145,7 @@ typedef struct xt {
 } xt_t;
 
 extern obj_type_t *type_xt;
-void xt_init(void *arg);
+int xt_init(void *arg);
 void xt_release(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)

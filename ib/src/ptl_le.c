@@ -8,11 +8,12 @@
  * le_init
  *	initialize new le
  */
-void le_init(void *arg)
+int le_init(void *arg)
 {
 	le_t *le = arg;
 
 	le->type = TYPE_LE;
+	return 0;
 }
 
 /*

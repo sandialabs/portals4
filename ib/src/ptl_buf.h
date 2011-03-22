@@ -44,7 +44,7 @@ typedef struct buf {
 	struct ibv_sge		sg_list[1];
 } buf_t;
 
-void buf_init(void *arg);
+int buf_init(void *arg);
 void buf_release(void *arg);
 
 static inline int buf_alloc(ni_t *ni, buf_t **buf_p)

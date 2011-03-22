@@ -43,7 +43,7 @@ typedef struct pagelist {
  */
 typedef struct obj_type {
 	char			*name;
-	void			(*init)(void *arg);
+	int			(*init)(void *arg);
 	void			(*fini)(void *arg);
 	struct list_head	chunk_list;
 	struct list_head	free_list;

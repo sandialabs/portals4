@@ -18,7 +18,7 @@ typedef struct me {
 	ptl_process_t   id;
 } me_t;
 
-void me_init(void *arg);
+int me_init(void *arg);
 void me_release(void *arg);
 
 static inline int me_alloc(ni_t *ni, me_t **me_p)
