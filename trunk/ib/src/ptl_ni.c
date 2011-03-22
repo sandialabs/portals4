@@ -563,9 +563,9 @@ static in_addr_t get_ip_address(const char *ifname)
 
 static int cleanup_ib(ni_t *ni)
 {
-	if (ni->cm_id) {
-		rdma_destroy_id(ni->cm_id);
-		ni->cm_id = NULL;
+	if (ni->listen_id) {
+		rdma_destroy_id(ni->listen_id);
+		ni->listen_id = NULL;
 	}
 
 	if (ni->srq) {
@@ -665,12 +665,12 @@ static int init_ib(ni_t *ni)
 	/* Create a RDMA CM ID and bind it to retrieve the context and
 	 * PD. These will be valid for as long as librdmacm is not
 	 * unloaded, ie. when the program exits. */
-	if (rdma_create_id(ni->cm_channel, &ni->cm_id, NULL, RDMA_PS_TCP)) {
+	if (rdma_create_id(ni->cm_channel, &ni->listen_id, NULL, RDMA_PS_TCP)) {
 		ptl_warn("unable to create CM ID\n");
 		goto err1;
 	}
 
-	if (rdma_bind_addr(ni->cm_id, (struct sockaddr *)&sin)) {
+	if (rdma_bind_addr(ni->listen_id, (struct sockaddr *)&sin)) {
 		ptl_warn("unable to bind to local address %x\n", ni->addr);
 		goto err1;
 	}
@@ -679,10 +679,10 @@ static int init_ib(ni_t *ni)
 		(ni->id.phys.pid == PTL_PID_ANY)) {
 		/* No well know PID was given. Retrieve the pid given by
 		 * bind. */
-		ni->id.phys.pid = ntohs(rdma_get_src_port(ni->cm_id));
+		ni->id.phys.pid = ntohs(rdma_get_src_port(ni->listen_id));
 	}
 
-	rdma_query_id(ni->cm_id, &ni->ibv_context, &ni->pd);
+	rdma_query_id(ni->listen_id, &ni->ibv_context, &ni->pd);
 	if (ni->ibv_context == NULL || ni->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
 		goto err1;
@@ -758,7 +758,7 @@ static int init_ib(ni_t *ni)
 		if (debug)
 			printf("Listening on local NID/PID\n");
 			
-		if (rdma_listen(ni->cm_id, 0)) {
+		if (rdma_listen(ni->listen_id, 0)) {
 			goto err1;
 		}
 
@@ -768,8 +768,8 @@ static int init_ib(ni_t *ni)
 
 	} else {
 		/* Logical NIs don't need one. */
-		rdma_destroy_id(ni->cm_id);
-		ni->cm_id = NULL;
+		rdma_destroy_id(ni->listen_id);
+		ni->listen_id = NULL;
 	}
 
 	return PTL_OK;
