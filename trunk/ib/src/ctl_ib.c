@@ -380,11 +380,13 @@ found_ib_intf:
 		if (rdma_bind_addr(ib_intf->listen_id,
 			(struct sockaddr *)&sin)) {
 			rdma_destroy_id(ib_intf->listen_id);
+			ib_intf->listen_id = NULL;
 			continue;
 		}
 
 		if (rdma_listen(ib_intf->listen_id, 0)) {
 			rdma_destroy_id(ib_intf->listen_id);
+			ib_intf->listen_id = NULL;
 			continue;
 		}
 
