@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <test>
+<repeat count="9">
   <subtest>
     <desc>Test short put without offset</desc>
     <ptl>
-      
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -50,6 +50,6 @@
         </ptl_eq>
       </ptl_ni>
     </ptl>
-    
   </subtest>
+</repeat>
 </test>
