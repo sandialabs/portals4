@@ -19,6 +19,9 @@
  * for testing purposes */
 extern int			ptl_test_return;
 
+/* private values for rank under test */
+extern int			ptl_test_rank;
+
 /* private control for logging output */
 extern int			ptl_log_level;
 
