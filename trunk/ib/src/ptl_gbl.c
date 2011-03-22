@@ -53,6 +53,7 @@ static void gbl_release(ref_t *ref)
 		ev_async_send(evl.loop, &stop_event_loop);
 
 		pthread_join(gbl->event_thread, NULL);
+		EVL_WATCH(ev_async_stop(evl.loop, &stop_event_loop));
 	}
 
 	pthread_mutex_destroy(&gbl->gbl_mutex);
