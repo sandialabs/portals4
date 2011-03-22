@@ -6,7 +6,7 @@
 
 void ct_release(void *arg)
 {
-        ct_t *ct = arg;
+	ct_t *ct = arg;
 	ni_t *ni = to_ni(ct);
 
 	pthread_spin_lock(&ni->ct_list_lock);
@@ -50,7 +50,7 @@ static void ct_check(ct_t *ct)
 }
 
 void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail, ptl_size_t length,
-		int bytes)
+		   int bytes)
 {
 	ni_t *ni = to_ni(ct);
 
@@ -201,8 +201,8 @@ err1:
 }
 
 int PtlCTWait(ptl_handle_ct_t ct_handle,
-			  uint64_t test,
-			  ptl_ct_event_t *event)
+	      uint64_t test,
+	      ptl_ct_event_t *event)
 {
 	int err;
 	gbl_t *gbl;
@@ -272,11 +272,11 @@ err1:
 }
 
 int PtlCTPoll(ptl_handle_ct_t *ct_handles,
-	ptl_size_t *tests,
-	int size,
-	ptl_time_t timeout,
-	ptl_ct_event_t *event,
-	int *which)
+	      ptl_size_t *tests,
+	      int size,
+	      ptl_time_t timeout,
+	      ptl_ct_event_t *event,
+	      int *which)
 {
 	int err;
 	gbl_t *gbl;
