@@ -82,7 +82,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	mr_t *mr;
 	struct list_head *l;
 
-	if (debug)
+	if (debug > 1)
 		printf("mr_lookup: start = %p, length = %" PRIu64 "\n",
 			start, length);
 
@@ -98,11 +98,11 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 	pthread_spin_unlock(&ni->mr_list_lock);
 
-	if (debug) printf("creating a new mr\n");
+	if (debug > 1) printf("creating a new mr\n");
 	return mr_create(ni, start, length, mr_p);
 
 found:
-	if (debug) printf("found an existing mr\n");
+	if (debug > 1) printf("found an existing mr\n");
 	*mr_p = mr;
 	return PTL_OK;
 }
