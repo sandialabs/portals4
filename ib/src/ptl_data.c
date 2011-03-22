@@ -4,6 +4,10 @@
 
 #include "ptl_loc.h"
 
+/*
+ * iov_count_sge - return the number of SG entries required to cover IO vector
+ * from offset for length.
+ */
 int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
 		  ptl_size_t offset, ptl_size_t length)
 {
@@ -52,6 +56,10 @@ int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
 	return j;
 }
 
+/*
+ * iov_to_sge - Build a SG list from an IO vector starting at the IO vector
+ * offset for the specified length.
+ */
 static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 		      ptl_iovec_t *iov, ptl_size_t num_iov,
 		      ptl_size_t offset, ptl_size_t length)
@@ -114,6 +122,9 @@ static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 	return PTL_OK;
 }
 
+/*
+ * data_size - return the length of the data area of a portals message.
+ */
 int data_size(data_t *data)
 {
 	int size = sizeof(*data);
@@ -122,13 +133,13 @@ int data_size(data_t *data)
 		return 0;
 
 	switch (data->data_fmt) {
-        case DATA_FMT_IMMEDIATE:
+	case DATA_FMT_IMMEDIATE:
 		size += be32_to_cpu(data->data_length);
 		break;
-        case DATA_FMT_DMA:
+	case DATA_FMT_DMA:
 		size += be32_to_cpu(data->num_sge) * sizeof(struct ibv_sge);
 		break;
-        case DATA_FMT_INDIRECT:
+	case DATA_FMT_INDIRECT:
 		size += sizeof(struct ibv_sge);
 		break;
 	}
@@ -136,6 +147,9 @@ int data_size(data_t *data)
 	return size;
 }
 
+/*
+ * append_init_data - Build and append the data portion of a portals message.
+ */
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		     ptl_size_t length, buf_t *buf)
 {
@@ -240,100 +254,6 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				be32_to_cpu(data->sge_list[0].lkey));
 		}
 #endif
-	}
-
-done:
-	return err;
-}
-
-int append_tgt_data(le_t *le, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf)
-{
-	int err = PTL_OK;
-	hdr_t *hdr = (hdr_t *)buf->data;
-	data_t *data = (data_t *)(buf->data + buf->length);
-	int num_sge;
-
-	if (dir == DATA_DIR_IN)
-		hdr->data_in = 1;
-	else
-		hdr->data_out = 1;
-
-	if (dir == DATA_DIR_OUT && length <= MAX_INLINE_DATA) {
-		data->data_fmt = DATA_FMT_IMMEDIATE;
-		data->data_length = cpu_to_be32(length);
-
-		if (le->options & PTL_IOVEC) {
-			err = iov_copy_out(data->data, le->start, le->num_iov,
-					   offset, length);
-			if (err) {
-				WARN();
-				return err;
-			}
-		} else {
-			memcpy(data->data, le->start + offset, length);
-		}
-
-		buf->length += sizeof(*data) + length;
-		goto done;
-	}
-
-	if (le->options & PTL_IOVEC && le->num_iov > MAX_INLINE_SGE) {
-		num_sge = iov_count_sge((ptl_iovec_t *)le->start,
-					le->num_iov, offset, length);
-		if (num_sge < 0) {
-			WARN();
-			return PTL_FAIL;
-		}
-
-		if (num_sge > MAX_INLINE_SGE) {
-			data->data_fmt = DATA_FMT_INDIRECT;
-			data->num_sge = cpu_to_be32(1);
-
-			data->sge_list->addr
-				= cpu_to_be64((uintptr_t)le->sge_list);
-			data->sge_list->length
-				= cpu_to_be32(num_sge *
-					      sizeof(struct ibv_sge));
-			data->sge_list->lkey
-				= cpu_to_be32(le->mr->ibmr->lkey);
-
-			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-			goto done;
-		} else {
-			data->data_fmt = DATA_FMT_DMA;
-			data->num_sge = cpu_to_be32(num_sge);
-			buf->length += num_sge * sizeof(struct ibv_sge);
-
-			err = iov_to_sge(le->mr_list, data->sge_list,
-					 (ptl_iovec_t *)le->start, le->num_iov,
-					 offset, length);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
-	} else if (le->options & PTL_IOVEC) {
-		data->data_fmt = DATA_FMT_DMA;
-		data->num_sge = cpu_to_be32(le->num_iov);
-		buf->length += le->num_iov * sizeof(struct ibv_sge);
-
-		err = iov_to_sge(le->mr_list, data->sge_list,
-				 (ptl_iovec_t *)le->start,
-				 le->num_iov, offset, length);
-		if (err) {
-			WARN();
-			return err;
-		}
-	} else {
-		data->data_fmt = DATA_FMT_DMA;
-		data->num_sge = cpu_to_be32(1);
-		buf->length += sizeof(struct ibv_sge);
-
-		data->sge_list[0].addr = cpu_to_be64((uintptr_t)le->start +
-						    offset);
-		data->sge_list[0].length = cpu_to_be32(length);
-		data->sge_list[0].lkey = cpu_to_be32(le->mr->ibmr->lkey);
 	}
 
 done:
