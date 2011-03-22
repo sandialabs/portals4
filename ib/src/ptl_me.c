@@ -186,7 +186,8 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	 * release it. */
 	if (me->obj_ref.ref_cnt > 2) {
 		me_put(me);
-		return PTL_IN_USE;
+		err = PTL_IN_USE;
+		goto err1;
 	}
 
 	me_unlink(me);
