@@ -206,6 +206,6 @@ int process_init(xi_t *xi);
 
 int process_tgt(xt_t *xt);
 
-struct nid_connect *get_connect_for_id(ni_t *ni, ptl_process_t *id);
+struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id);
 
 #endif /* PTL_LOC_H */

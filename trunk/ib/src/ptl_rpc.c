@@ -221,6 +221,10 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 	socklen_t addr_len;
 	int backlog = 32;
 
+#if TEMP_PHYSICAL_NI
+	return PTL_OK;
+#endif
+
 	rpc = calloc(1, sizeof(*rpc));
 	if (unlikely(!rpc)) {
 		ptl_fatal("unable to allocate memory for rpc\n");
@@ -283,7 +287,7 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 
 	} else {
 
-		addr.sin_addr.s_addr = htonl(nid);
+		addr.sin_addr.s_addr = nid_to_addr(nid);
 
 		/* Retry connect()'ing for 5 seconds because the daemon might
 		 * be starting. */
@@ -331,6 +335,10 @@ int rpc_fini(struct rpc *rpc)
 {
 	struct list_head *l, *t;
 	struct session *session;
+
+#if TEMP_PHYSICAL_NI
+	return PTL_OK;
+#endif
 
 	if (rpc->fd != -1) {
 		EVL_WATCH(ev_io_stop(evl.loop, &rpc->watcher));

@@ -26,7 +26,28 @@ struct shared_config {
 
 /* RDMA CM private data */
 struct cm_priv_request {
-	ptl_rank_t src_rank;		/* rank requesting that connection */
+	ptl_process_t src_id;		/* rank or NID/PID requesting that connection */
 };
+
+/* In current implementation a NID is just an IPv4 address in host order. */
+static inline in_addr_t nid_to_addr(ptl_nid_t nid)
+{
+	return htonl(nid);
+}
+
+static inline ptl_nid_t addr_to_nid(in_addr_t addr)
+{
+	return ntohl(addr);
+}
+
+/* A PID is a port in host order. */
+static inline uint16_t pid_to_port(ptl_pid_t pid)
+{
+	if (pid == PTL_PID_ANY) {
+		return 0;
+	} else {
+		return htons(pid);
+	}
+}
 
 void session_list_is_empty(void);

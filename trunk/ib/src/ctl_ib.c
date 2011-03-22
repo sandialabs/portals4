@@ -36,11 +36,11 @@ static int process_connect_request(struct p4oibd_config *conf, struct rdma_cm_ev
 	priv = event->param.conn.private_data;
 
 	pthread_mutex_lock(&conf->mutex);
-	if (priv->src_rank >= conf->nranks) {
+	if (priv->src_id.rank >= conf->nranks) {
 		goto err;
 	}
 
-	connect = &conf->connect[priv->src_rank];
+	connect = &conf->connect[priv->src_id.rank];
 
 	if (connect->state != PTL_CONNECT_DISCONNECTED) {
 		/* Already connected. Should not get there. */
