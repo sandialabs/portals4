@@ -70,8 +70,9 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 	*buf_p = buf;
 
 	if (debug)
-		printf("comp_wait - wc.status(%d), wc.length(%d)\n",
-			   (int) wc.status, (int) wc.byte_len);
+		printf("rank %d: comp_wait - wc.status(%d), wc.length(%d)\n",
+			   ni->gbl->rank, (int) wc.status, (int) wc.byte_len);
+
 
 	if (wc.status == IBV_WC_WR_FLUSH_ERR)
 		return STATE_RECV_DROP_BUF;
