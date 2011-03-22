@@ -40,7 +40,4 @@ int data_size(data_t *data);
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		     ptl_size_t length, buf_t *buf);
 
-int append_tgt_data(le_t *le, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf);
-
 #endif /* PTL_DATA_H */
