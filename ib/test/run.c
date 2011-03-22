@@ -2,60 +2,43 @@
 
 #include "ptl_test.h"
 
-ptl_handle_any_t get_handle(char *val)
+ptl_handle_any_t get_handle(struct node_info *info, char *val)
 {
+	int n;
+	char obj[8];
 	ptl_handle_any_t handle;
 
 	if (!strcmp("INVALID", val))
 		handle = PTL_INVALID_HANDLE;
 	else if (!strcmp("NONE", val))
 		handle = PTL_HANDLE_NONE;
-	else
+	else if (sscanf(val, "%2s[%d]", obj, &n) == 2) {
+		if (n < 0 || n >= STACK_SIZE) {
+			printf("invalid index n = %d\n", n);
+			handle =  0xffffffffffffffffULL;
+		}
+		else if (!strcmp(obj, "md"))
+			handle =  info->md_stack[n];
+		else if (!strcmp(obj, "me"))
+			handle =  info->me_stack[n];
+		else if (!strcmp(obj, "le"))
+			handle =  info->le_stack[n];
+		else if (!strcmp(obj, "ni"))
+			handle =  info->ni_stack[n];
+		else if (!strcmp(obj, "pt"))
+			handle =  info->pt_stack[n];
+		else if (!strcmp(obj, "eq"))
+			handle =  info->eq_stack[n];
+		else if (!strcmp(obj, "ct"))
+			handle =  info->ct_stack[n];
+		else {
+			printf("invalid object %s\n", obj);
+			handle =  0xffffffffffffffffULL;
+		}
+	} else
 		handle = (ptl_handle_any_t)strtoull(val, NULL, 0);
 
 	return handle;
-}
-
-ptl_handle_md_t md_get_handle(struct node_info *info, char *val)
-{
-	int n;
-
-	if (sscanf(val, "[%d]", &n) == 1) {
-		if (n < 0 || n >= STACK_SIZE) {
-			printf("invalid md, n = %d\n", n);
-			return 0xffffffffffffffffULL;
-		}
-		return info->md_stack[n];
-	} else
-		return get_handle(val);
-}
-
-ptl_handle_eq_t eq_get_handle(struct node_info *info, char *val)
-{
-	int n;
-
-	if (sscanf(val, "[%d]", &n) == 1) {
-		if (n < 0 || n >= STACK_SIZE) {
-			printf("invalid eq, n = %d\n", n);
-			return 0xffffffffffffffffULL;
-		}
-		return info->eq_stack[n];
-	} else
-		return get_handle(val);
-}
-
-ptl_handle_ct_t ct_get_handle(struct node_info *info, char *val)
-{
-	int n;
-
-	if (sscanf(val, "[%d]", &n) == 1) {
-		if (n < 0 || n >= STACK_SIZE) {
-			printf("invalid eq, n = %d\n", n);
-			return 0xffffffffffffffffULL;
-		}
-		return info->ct_stack[n];
-	} else
-		return get_handle(val);
 }
 
 long get_number(struct node_info *info, char *orig_val)
@@ -75,7 +58,15 @@ long get_number(struct node_info *info, char *orig_val)
 		while((tok[i++] = strtok_r(val, ".", &save))) 
 			val = 0;
 
-		if (!strcmp("actual", tok[0])) {
+		if (!strcmp("count", tok[0])) {
+			num = info->count;
+		}
+
+		else if (!strcmp("thread_id", tok[0])) {
+			num = info->thread_id;
+		}
+
+		else if (!strcmp("actual", tok[0])) {
 			if (!strcmp("max_pt_index", tok[1])) {
 				num = info->actual.max_pt_index;
 			} else {
@@ -151,7 +142,7 @@ int get_jid(struct node_info *info, char *val)
 	
 }
 
-int get_index(char *val, struct node_info *info)
+int get_index(struct node_info *info, char *val)
 {
 	int index;
 
@@ -529,7 +520,7 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->actual_map_ptr = get_ptr(val);
 			break;
 		case ATTR_NI_HANDLE:
-			info->ni_handle = get_handle(val);
+			info->ni_handle = get_handle(info, val);
 			break;
 
 		/* pt */
@@ -537,7 +528,7 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->pt_opt = get_pt_opt(val);
 			break;
 		case ATTR_PT_INDEX:
-			info->pt_index = get_index(val, info);
+			info->pt_index = get_index(info, val);
 			break;
 
 		case ATTR_LIST:
@@ -561,7 +552,7 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->md.options = get_md_opt(val);
 			break;
 		case ATTR_MD_HANDLE:
-			info->md_handle = md_get_handle(info, val);
+			info->md_handle = get_handle(info, val);
 			break;
 		case ATTR_MD_DATA:
 			info->md_data = get_datatype(info->type, val);
@@ -623,12 +614,12 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->eq_count = get_number(info, val);
 			break;
 		case ATTR_EQ_HANDLE:
-			info->eq_handle = eq_get_handle(info, val);
+			info->eq_handle = get_handle(info, val);
 			break;
 
 		/* ct */
 		case ATTR_CT_HANDLE:
-			info->ct_handle = ct_get_handle(info, val);
+			info->ct_handle = get_handle(info, val);
 			break;
 		case ATTR_CT_EVENT_SUCCESS:
 			info->ct_event.success = get_number(info, val);
@@ -647,10 +638,10 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->type = get_atom_type(val);
 			break;
 		case ATTR_GET_MD_HANDLE:
-			info->get_md_handle = md_get_handle(info, val);
+			info->get_md_handle = get_handle(info, val);
 			break;
 		case ATTR_PUT_MD_HANDLE:
-			info->put_md_handle = md_get_handle(info, val);
+			info->put_md_handle = get_handle(info, val);
 			break;
 		case ATTR_USER_PTR:
 			info->user_ptr = get_ptr(val);
@@ -680,10 +671,10 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->threshold = get_number(info, val);
 			break;
 		case ATTR_HANDLE1:
-			info->handle1 = get_handle(val);
+			info->handle1 = get_handle(info, val);
 			break;
 		case ATTR_HANDLE2:
-			info->handle2 = get_handle(val);
+			info->handle2 = get_handle(info, val);
 			break;
 		case ATTR_EVENT_TYPE:
 			info->eq_event.type = get_event_type(val);
@@ -1155,7 +1146,7 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 			}
 
-			if (debug) printf("rank %d: start node = %s\n", info->id.rank, e->name);
+			if (debug) printf("rank %d: start node = %s\n", ptl_test_rank, e->name);
 
 			/* the following cases do not push the stack */
 			switch (e->token) {
@@ -1180,12 +1171,7 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_COMMENT:
 				goto done;
 
-			case NODE_PTL_GET_ID:
-				errs = test_ptl_get_id(info);
-				errs += walk_tree(info, node->children);
-				goto done;
-
-			case NODE_MPI_BARRIER:
+			case NODE_BARRIER:
 				MPI_Barrier(MPI_COMM_WORLD);
 				goto done;
 			}
@@ -1306,6 +1292,10 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_pt_enable(info);
 				errs += walk_tree(info, node->children);
 				break;
+			case NODE_PTL_GET_ID:
+				errs = test_ptl_get_id(info);
+				errs += walk_tree(info, node->children);
+				goto done;
 			case NODE_PTL_GET_UID:
 				errs = test_ptl_get_uid(info);
 				errs += walk_tree(info, node->children);
@@ -1513,7 +1503,7 @@ pop:
 			info = pop_node(info);
 done:
 			tot_errs += errs;
-			if (debug) printf("rank %d: end node = %s, errs = %d\n", info->id.rank, e->name, errs);
+			if (debug) printf("rank %d: end node = %s, errs = %d\n", ptl_test_rank, e->name, errs);
 		}
 	}
 
