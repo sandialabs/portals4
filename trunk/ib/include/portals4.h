@@ -18,7 +18,6 @@
 /* private return value from APIs that do not normally return errors
  * for testing purposes */
 extern int			ptl_test_return;
-extern int			ptl_test_rank;
 
 /* private values for rank under test, enables rank output prior to get_id */
 extern int			ptl_test_rank;
