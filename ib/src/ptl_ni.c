@@ -1034,7 +1034,11 @@ static void ni_cleanup(ni_t *ni)
 
 	ni_rcqp_stop(ni);
 
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->cq_watcher));
+
 	ni_rcqp_cleanup(ni);
+
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->cm_watcher));
 
 	cleanup_ib(ni);
 
