@@ -294,7 +294,6 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	}
 
 	/* First try with just spinning */
-	/* Todo - look at being fair */
 	for (i = 0; i < size; i++) {
 		err = eq_get(eq_handles[i], &eq[i]);
 		if (unlikely(err) || !eq[i]) {
@@ -425,9 +424,10 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	ptl_event_t *ev;
 	ni_t *ni;
 
-	/* TODO check to see if there is room in the eq */
-
 	pthread_spin_lock(&eq->obj_lock);
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+		eq->overflow = 1;
+
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
