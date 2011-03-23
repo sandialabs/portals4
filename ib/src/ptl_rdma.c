@@ -6,7 +6,6 @@
 /*
  * rdma read
  *	build and post a single RDMA read work request
- *	XXX Todo: Consider batching workrequest option as enhancement
  */
 int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp)
@@ -24,8 +23,6 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 	if (num_loc_sge > MAX_QP_SEND_SGE)
 		return PTL_FAIL;
-
-	/* XXXX Todo: handle throttle case and return EBUSY */
 
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
@@ -62,9 +59,8 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 }
 
 /*
- * rdma_write 
+ * rdma_write
  *	build and post a single RDMA wrwite work request
- *	XXX Todo: Consider batching workrequest option as enhancement
  */
 static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	struct ibv_sge *loc_sge, int num_loc_sge, uint32_t imm_data,
@@ -84,8 +80,6 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > MAX_QP_SEND_SGE)
 		return PTL_FAIL;
 
-	/* XXXX Todo: handle throttle case and return EBUSY */
-
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
@@ -100,7 +94,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (unlikely(imm)) {
 		wr.imm_data = imm_data;
 		wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
-	} else 
+	} else
 		wr.opcode = IBV_WR_RDMA_WRITE;
 
 	wr.next	= NULL;
@@ -155,7 +149,7 @@ ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 				len = iov->iov_len - *loc_off;
 			sge->lkey = mr->ibmr->lkey;
 			sge->length = len;
-	
+
 			tot_len += len;
 			*loc_off += len;
 			if (tot_len < rem_len && *loc_off >= iov->iov_len) {
@@ -192,7 +186,7 @@ ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 
 /*
  * post_tgt_rdma
- *	Issue one or more RDMA from target to initiator based on target.
+ *	Issue one or more RDMA from target to initiator based on target
  * transfer state.
  *
  * xt - target transfer context
@@ -234,13 +228,9 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		}
 
 		xt->interim_rdma++;
-		/* XXX todo: we could throttle WR on a QP bases instead of xt */
 
-		if (*resid == bytes || xt->interim_rdma >= MAX_RDMA_WR_OUT) {
-			/* XXX todo: if write w/ immediate fold that in */
+		if (*resid == bytes || xt->interim_rdma >= MAX_RDMA_WR_OUT)
 			comp = 1;
-			xt->interim_rdma = 0;
-		}
 
 		if (dir == DATA_DIR_IN)
 			err = rdma_read(xt->rdma_buf, raddr, rkey, sge,
@@ -254,8 +244,10 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			return err;
 		}
 
-		if (comp)
+		if (comp) {
 			xt->rdma_comp++;
+			xt->interim_rdma = 0;
+		}
 
 		*resid -= bytes;
 		xt->cur_loc_iov_index = iov_index;
@@ -273,7 +265,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 				WARN();
 				return PTL_FAIL;
 			}
-		else 
+		else
 			xt->cur_rem_off += bytes;
 	}
 
