@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <test>
   <subtest>
-    <desc>Test detection of EQ overflow</desc>
+    <desc>Test detection of EQ overflow at initiator</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq eq_count="4">
@@ -32,6 +32,47 @@
 		  <barrier/>
                 </ptl_me>
               </repeat>
+            </if>
+          </ptl_pt>
+        </ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test detection of EQ overflow at target</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH LOGICAL">
+        <ptl_eq eq_count="2">
+          <ptl_pt>
+            <ptl_get_id/>
+            
+            <if rank="0">
+	      <repeat count="3">
+                <ptl_md md_data="0xaa">
+                  <barrier/>
+                  <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
+                  <ptl_eq_poll time="100">
+                      <check event_type="SEND"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
+                      <check event_type="ACK"/>
+                  </ptl_eq_poll>
+                  <barrier/>
+                </ptl_md>
+              </repeat>
+            </if>
+            
+            <if rank="1">
+              <repeat count="3">
+                <ptl_me me_opt="OP_PUT" me_match="0x5555">
+                  <barrier/>
+
+		  <barrier/>
+                </ptl_me>
+              </repeat>
+
+              <ptl_eq_wait ret="EQ_DROPPED"/>
+              <ptl_eq_wait ret="OK"/>
             </if>
           </ptl_pt>
         </ptl_eq>
