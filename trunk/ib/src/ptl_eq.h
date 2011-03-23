@@ -18,6 +18,7 @@ typedef struct eq {
 	unsigned int		prod_gen;
 	unsigned int		cons_gen;
 	int			interrupt;
+	int			overflow;
 } eq_t;
 
 void eq_release(void *arg);

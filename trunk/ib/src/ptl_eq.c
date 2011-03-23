@@ -6,7 +6,7 @@
 
 void eq_release(void *arg)
 {
-        eq_t *eq = arg;
+	eq_t *eq = arg;
 	ni_t *ni = to_ni(eq);
 
 	pthread_spin_lock(&ni->obj_lock);
@@ -67,6 +67,8 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq->consumer = 0;
 	eq->prod_gen = 0;
 	eq->cons_gen = 0;
+	eq->overflow = 0;
+	eq->interrupt = 0;
 
 	pthread_spin_lock(&ni->obj_lock);
 	ni->current.max_eqs++;
@@ -77,8 +79,6 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 		goto err3;
 	}
 	pthread_spin_unlock(&ni->obj_lock);
-
-	// TODO add to a list of eqs somewhere
 
 	*eq_handle = eq_to_handle(eq);
 
@@ -145,6 +145,8 @@ err1:
 
 int get_event(eq_t *eq, ptl_event_t *event)
 {
+	int ret;
+
 	pthread_spin_lock(&eq->obj_lock);
 	if ((eq->producer == eq->consumer) &&
 	    (eq->prod_gen == eq->cons_gen)) {
@@ -152,14 +154,19 @@ int get_event(eq_t *eq, ptl_event_t *event)
 		return PTL_EQ_EMPTY;
 	}
 
-	//TODO detect dropped events
+	if (eq->overflow) {
+		ret = PTL_EQ_DROPPED;
+		eq->overflow = 0;
+	} else
+		ret = PTL_OK;
+
 	*event = eq->eqe_list[eq->consumer++].event;
 	if (eq->consumer >= eq->count) {
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
 	pthread_spin_unlock(&eq->obj_lock);
-	return PTL_OK;
+	return ret;
 }
 
 int PtlEQGet(ptl_handle_eq_t eq_handle,
@@ -312,7 +319,7 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 
 	ni = to_ni(eq[0]);
 
-	if (timeout != PTL_TIME_FOREVER) {	
+	if (timeout != PTL_TIME_FOREVER) {
 		long usec;
 
 		gettimeofday(&time, NULL);
@@ -351,7 +358,7 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	err = PTL_EQ_EMPTY;
 
 done2:
-	for (i = 0; i < size; i++) 
+	for (i = 0; i < size; i++)
 		eq_put(eq[i]);
 
 done:
@@ -371,9 +378,10 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	ptl_event_t *ev;
 	ni_t *ni;
 
-	/* TODO check to see if there is room in the eq */
-
 	pthread_spin_lock(&eq->obj_lock);
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+		eq->overflow = 1;
+
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
 
