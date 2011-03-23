@@ -12,27 +12,27 @@
 		<ptl_md>
 		  <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="PUT"/>
 		    <check event_match="0x5aa5"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -51,14 +51,14 @@
 	      <ptl_md eq_handle="NONE">
 		<ptl_put ack_req="NO_ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		<msleep count="10"/>
-		<ptl_eq_poll eq_handle="[0]">
+		<ptl_eq_poll eq_handle="eq[0]">
 		  <check which="INVALID"/>
 		  <check event_type="PUT"/>
 		  <check event_match="0x5aa5"/>
 		  <check event_user_ptr="654"/>
 		  <check event_ni_fail="OK"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	    </ptl_me>
 	  </ptl_pt>
@@ -77,20 +77,20 @@
 		<ptl_md>
 		  <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -110,21 +110,21 @@
 		<ptl_md>
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="GET"/>
 		    <check event_match="0x3f5c"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="REPLY"/>
 		    <check event_user_ptr="234"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -143,14 +143,14 @@
 		<ptl_md eq_handle="NONE">
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="GET"/>
 		    <check event_match="0x3f5c"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	    </ptl_me>
 	  </ptl_pt>
@@ -169,14 +169,14 @@
 		<ptl_md>
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="REPLY"/>
 		    <check event_user_ptr="234"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -196,7 +196,7 @@
 		<ptl_md>
 		  <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="ATOMIC"/>
 		    <check event_match="0xebef"/>
@@ -204,20 +204,20 @@
 		    <check event_ni_fail="OK"/>
 		    <check event_atom_op="LOR"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -236,7 +236,7 @@
 		<ptl_md eq_handle="NONE">
 		  <ptl_atomic ack_req="NO_ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="ATOMIC"/>
 		    <check event_match="0xebef"/>
@@ -244,7 +244,7 @@
 		    <check event_ni_fail="OK"/>
 		    <check event_atom_op="LOR"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	    </ptl_me>
 	  </ptl_pt>
@@ -263,20 +263,20 @@
 		<ptl_md>
 		  <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_me>
@@ -298,7 +298,7 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -306,21 +306,21 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -343,7 +343,7 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -351,14 +351,14 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -380,7 +380,7 @@
 		    <ptl_md eq_handle="NONE">
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -388,14 +388,14 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		</ptl_md>
 	      </ptl_eq>
@@ -418,21 +418,21 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -456,7 +456,7 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -464,21 +464,21 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -501,7 +501,7 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -509,14 +509,14 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -538,7 +538,7 @@
 		    <ptl_md eq_handle="NONE">
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_match="0x442c"/>
@@ -546,14 +546,14 @@
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		</ptl_md>
 	      </ptl_eq>
@@ -576,21 +576,21 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -612,26 +612,26 @@
 		<ptl_md>
 		  <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="PUT"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -650,13 +650,13 @@
 		<ptl_md eq_handle="NONE">
 		  <ptl_put ack_req="NO_ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="PUT"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	    </ptl_le>
 	  </ptl_pt>
@@ -675,20 +675,20 @@
 		<ptl_md>
 		  <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="432"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -708,20 +708,20 @@
 		<ptl_md>
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="GET"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="REPLY"/>
 		    <check event_user_ptr="234"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -740,13 +740,13 @@
 		<ptl_md eq_handle="NONE">
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="GET"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	    </ptl_le>
 	  </ptl_pt>
@@ -765,14 +765,14 @@
 		<ptl_md>
 		  <ptl_get user_ptr="234" match="0x3f5c" pt_index="3"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="REPLY"/>
 		    <check event_user_ptr="234"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -792,27 +792,27 @@
 		<ptl_md>
 		  <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="ATOMIC"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		    <check event_atom_op="LOR"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -831,14 +831,14 @@
 		<ptl_md eq_handle="NONE">
 		  <ptl_atomic ack_req="NO_ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]">
+		  <ptl_eq_poll eq_handle="eq[0]">
 		    <check which="INVALID"/>
 		    <check event_type="ATOMIC"/>
 		    <check event_user_ptr="654"/>
 		    <check event_ni_fail="OK"/>
 		    <check event_atom_op="LOR"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	    </ptl_le>
 	  </ptl_pt>
@@ -857,20 +857,20 @@
 		<ptl_md>
 		  <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" pt_index="4" atom_op="LOR"/>
 		  <msleep count="10"/>
-		  <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="SEND"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]">
+		  <ptl_eq_poll eq_handle="eq[1]">
 		    <check which="INVALID"/>
 		    <check event_type="ACK"/>
 		    <check event_user_ptr="265"/>
 		    <check event_ni_fail="OK"/>
 		  </ptl_eq_poll>
-		  <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		  <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		</ptl_md>
 	      </ptl_eq>
 	    </ptl_le>
@@ -892,28 +892,28 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -936,21 +936,21 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -972,21 +972,21 @@
 		    <ptl_md eq_handle="NONE">
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="LXOR"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		</ptl_md>
 	      </ptl_eq>
@@ -1009,21 +1009,21 @@
 		    <ptl_md>
 		      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -1047,28 +1047,28 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -1091,21 +1091,21 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -1127,21 +1127,21 @@
 		    <ptl_md eq_handle="NONE">
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]">
+		      <ptl_eq_poll eq_handle="eq[0]">
 			<check which="INVALID"/>
 			<check event_type="ATOMIC"/>
 			<check event_user_ptr="654"/>
 			<check event_ni_fail="OK"/>
 			<check event_atom_op="SWAP"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		</ptl_md>
 	      </ptl_eq>
@@ -1164,21 +1164,21 @@
 		    <ptl_md>
 		      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
 		      <msleep count="10"/>
-		      <ptl_eq_poll eq_handle="[0]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[1]">
+		      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[1]">
 			<check which="INVALID"/>
 			<check event_type="SEND"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-		      <ptl_eq_poll eq_handle="[2]">
+		      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]">
 			<check which="INVALID"/>
 			<check event_type="REPLY"/>
 			<check event_user_ptr="523"/>
 			<check event_ni_fail="OK"/>
 		      </ptl_eq_poll>
-		      <ptl_eq_poll eq_handle="[2]" ret="EQ_EMPTY"/>
+		      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
 		    </ptl_md>
 		  </ptl_eq>
 		</ptl_md>
@@ -1199,23 +1199,23 @@
 	      <ptl_md>
 		<ptl_put ack_req="ACK" user_ptr="432" pt_index="2"/>
 		<msleep count="10"/>
-		<ptl_eq_poll time="100" eq_handle="[0]">
+		<ptl_eq_poll time="100" eq_handle="eq[0]">
 		  <check which="INVALID"/>
 		  <check event_type="PT_DISABLED"/>
 		  <check event_ni_fail="FLOW_CTRL"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
-		<ptl_eq_poll time="100" eq_handle="[1]">
+		<ptl_eq_poll time="100" eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]">
 		  <check event_type="SEND"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="FLOW_CTRL"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[1]">
+		<ptl_eq_poll time="100" eq_handle="eq[1]">
 		  <check event_type="ACK"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="FLOW_CTRL"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	    </ptl_eq>
 	  </ptl_pt>
