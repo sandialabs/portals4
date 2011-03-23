@@ -31,6 +31,10 @@ echo "===== test_events.xml ====="
 ./ptl_test -f test_events.xml
 echo "===== test_ct_events.xml ====="
 ./ptl_test -f test_ct_events.xml
+echo "===== test_flow.xml ===="
+./ptl_test -f test_flow.xml
+echo "===== test_eq_overflow.xml ===="
+./ptl_test -f test_eq_overflow.xml
 echo "===== test_unlink.xml ====="
 ./ptl_test -f test_unlink.xml
 echo "===== test_short.xml ====="

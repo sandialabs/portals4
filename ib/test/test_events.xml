@@ -1189,39 +1189,5 @@
       </ptl_ni>
     </ptl>
   </subtest>
- <subtest>
-  <desc>Test events with put to generate PTL_EVENT_PT_DISABLED</desc>
-    <ptl>
-      <ptl_ni>
-	<ptl_eq>
-	  <ptl_pt pt_opt="FLOW" pt_index="2">
-	    <ptl_eq>
-	      <ptl_md>
-		<ptl_put ack_req="ACK" user_ptr="432" pt_index="2"/>
-		<msleep count="10"/>
-		<ptl_eq_poll time="100" eq_handle="eq[0]">
-		  <check which="INVALID"/>
-		  <check event_type="PT_DISABLED"/>
-		  <check event_ni_fail="FLOW_CTRL"/>
-		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="eq[0]" ret="EQ_EMPTY"/>
-		<ptl_eq_poll time="100" eq_handle="eq[1]">
-		  <check event_type="SEND"/>
-		  <check event_user_ptr="432"/>
-		  <check event_ni_fail="FLOW_CTRL"/>
-		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="eq[1]">
-		  <check event_type="ACK"/>
-		  <check event_user_ptr="432"/>
-		  <check event_ni_fail="FLOW_CTRL"/>
-		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="eq[1]" ret="EQ_EMPTY"/>
-	      </ptl_md>
-	    </ptl_eq>
-	  </ptl_pt>
-        </ptl_eq>
-      </ptl_ni>
-    </ptl>
-  </subtest>
   </repeat>
 </test>
