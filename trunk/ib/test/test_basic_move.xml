@@ -280,7 +280,7 @@
   <subtest>
     <desc>Test PtlPut with good parameters</desc>
     <ptl>
-      <ptl_ni>
+      <ptl_ni ni_opt="LOGICAL MATCH">
 	<ptl_pt>
 	  <ptl_me me_opt="OP_PUT">
             <ptl_md>
@@ -317,17 +317,17 @@
 	      <ptl_md>
 		<ptl_put ack_req="ACK" user_ptr="432" pt_index="2"/>
 		<msleep count="10"/>
-		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
-		<ptl_eq_poll time="100" eq_handle="[1]">
+		<ptl_eq_poll time="100" eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]">
 		  <check event_type="SEND"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[1]">
+		<ptl_eq_poll time="100" eq_handle="eq[1]">
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	    </ptl_eq>
 	  </ptl_pt>
@@ -375,13 +375,13 @@
 	      <ptl_md>
 		<ptl_get user_ptr="432" pt_index="2"/>
 		<msleep count="10"/>
-		<ptl_eq_poll time="100" eq_handle="[0]" ret="EQ_EMPTY"/>
-		<ptl_eq_poll time="100" eq_handle="[1]">
+		<ptl_eq_poll time="100" eq_handle="eq[0]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]">
 		  <check event_type="REPLY"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-		<ptl_eq_poll time="100" eq_handle="[1]" ret="EQ_EMPTY"/>
+		<ptl_eq_poll time="100" eq_handle="eq[1]" ret="EQ_EMPTY"/>
 	      </ptl_md>
 	    </ptl_eq>
 	  </ptl_pt>
