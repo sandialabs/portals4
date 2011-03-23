@@ -90,7 +90,7 @@ struct node_info {
 	ptl_process_t		actual_map[MAP_SIZE];
 	ptl_process_t		*actual_map_ptr;
 	ptl_handle_ni_t		ni_handle;
-	ptl_sr_index_t		status_reg;
+	ptl_sr_index_t		reg;
 	ptl_sr_value_t		status;
 	ptl_handle_any_t	handle;
 	
