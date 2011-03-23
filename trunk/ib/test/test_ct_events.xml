@@ -12,10 +12,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -37,10 +37,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -62,10 +62,10 @@
 		<ptl_md md_opt="CT_ACK">
 		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -87,10 +87,10 @@
 		<ptl_md md_opt="CT_SEND">
 		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -112,10 +112,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
 		  <ptl_put length="10" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="20" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -137,10 +137,10 @@
 		<ptl_md md_opt="CT_REPLY">
 		  <ptl_get match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -162,10 +162,10 @@
 		<ptl_md md_opt="CT_REPLY">
 		  <ptl_get match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -187,10 +187,10 @@
 		<ptl_md>
 		  <ptl_get match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -212,10 +212,10 @@
 		<ptl_md md_opt="CT_REPLY CT_BYTES">
 		  <ptl_get length="10" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -237,10 +237,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -262,10 +262,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -287,10 +287,10 @@
 		<ptl_md md_opt="CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -312,10 +312,10 @@
 		<ptl_md md_opt="CT_SEND">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -337,10 +337,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
 		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="20" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -364,13 +364,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -396,13 +396,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -428,13 +428,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -460,13 +460,13 @@
 		    <ptl_md>
 		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -492,13 +492,13 @@
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
 		      <ptl_fetch length="10" atom_op="LXOR" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -524,13 +524,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -556,13 +556,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -588,13 +588,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -620,13 +620,13 @@
 		    <ptl_md>
 		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -652,13 +652,13 @@
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
 		      <ptl_swap length="10" atom_op="SWAP" match="0x5aa5" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -682,10 +682,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -707,10 +707,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -732,10 +732,10 @@
 		<ptl_md md_opt="CT_ACK">
 		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -757,10 +757,10 @@
 		<ptl_md md_opt="CT_SEND">
 		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -782,10 +782,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
 		  <ptl_put length="10" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="20" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -807,10 +807,10 @@
 		<ptl_md md_opt="CT_REPLY">
 		  <ptl_get pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -832,10 +832,10 @@
 		<ptl_md md_opt="CT_REPLY">
 		  <ptl_get pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -857,10 +857,10 @@
 		<ptl_md>
 		  <ptl_get pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -882,10 +882,10 @@
 		<ptl_md md_opt="CT_REPLY CT_BYTES">
 		  <ptl_get length="10" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -907,10 +907,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -932,10 +932,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="2" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -957,10 +957,10 @@
 		<ptl_md md_opt="CT_ACK">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -982,10 +982,10 @@
 		<ptl_md md_opt="CT_SEND">
 		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -1007,10 +1007,10 @@
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
 		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
 		  <msleep count="10"/>
-		  <ptl_ct_get ct_handle="[0]">
+		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
 		  </ptl_ct_get>
-		  <ptl_ct_get ct_handle="[1]">
+		  <ptl_ct_get ct_handle="ct[1]">
 		    <check ct_event_success="20" ct_event_failure="0"/>
 		  </ptl_ct_get>
 	        </ptl_md>
@@ -1034,13 +1034,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1066,13 +1066,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1098,13 +1098,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1130,13 +1130,13 @@
 		    <ptl_md>
 		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1162,13 +1162,13 @@
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
 		      <ptl_fetch length="10" atom_op="LXOR" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1194,13 +1194,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1226,13 +1226,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1258,13 +1258,13 @@
 		    <ptl_md md_opt="CT_REPLY">
 		      <ptl_swap atom_op="SWAP" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1290,13 +1290,13 @@
 		    <ptl_md>
 		      <ptl_swap atom_op="SWAP" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
@@ -1322,13 +1322,13 @@
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
 		      <ptl_swap length="10" atom_op="SWAP" pt_index="2"/>
 		      <msleep count="10"/>
-		      <ptl_ct_get ct_handle="[0]">
+		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[1]">
+		      <ptl_ct_get ct_handle="ct[1]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
-		      <ptl_ct_get ct_handle="[2]">
+		      <ptl_ct_get ct_handle="ct[2]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
 		      </ptl_ct_get>
 	            </ptl_md>
