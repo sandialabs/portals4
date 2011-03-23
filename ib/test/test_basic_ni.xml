@@ -113,6 +113,7 @@
       <ptl_ni/>
     </ptl>
   </subtest>
+<comment>
   <subtest>
     <desc>Test PtlNIInit with default iface create all 4 ni types</desc>
     <ptl>
@@ -130,6 +131,69 @@
     <desc>Test PtlNIInit with iface = 2</desc>
     <ptl>
       <ptl_ni iface="2"/>
+    </ptl>
+  </subtest>
+</comment>
+  <subtest>
+    <desc>Test PtlNIStatus with INVALID register index</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ni_status reg="0x7fffffff" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIStatus with NULL status pointer</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ni_status ptr="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIStatus with BAD status pointer</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ni_status ptr="NULL" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIStatus with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_ni_status/>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIHandle with NULL ni_handle pointer</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_md>
+          <ptl_ni_handle handle="md[0]" ptr="NULL" ret="ARG_INVALID"/>
+	</ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIHandle with BAD ni_handle pointer</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_md>
+          <ptl_ni_handle handle="md[0]" ptr="BAD" ret="ARG_INVALID"/>
+	</ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlNIHandle with good parameters</desc>
+    <ptl>
+      <ptl_ni>
+	<ptl_md>
+          <ptl_ni_handle handle="md[0]"/>
+	</ptl_md>
+      </ptl_ni>
     </ptl>
   </subtest>
   </repeat>
