@@ -219,11 +219,11 @@ struct node_info *push_info(struct node_info *head, int tok)
 			return NULL;
 		}
 		info->buf_alloc = 1;
+		get_maps();
 		break;
 	default:
 		break;
 	}
-	get_maps();
 
 	for (i = 0; i < IOV_SIZE; i++) {
 		info->iov[i].iov_base	= info->buf + 1024*i;
@@ -242,6 +242,7 @@ struct node_info *push_info(struct node_info *head, int tok)
 	info->me.length			= info->actual.max_msg_size;
 	info->me.options		= 0;
 	info->me.min_free		= 0;
+
 	if (info->ni_opt & PTL_NI_PHYSICAL) {
 		info->me.match_id.phys.pid  = PTL_PID_ANY;
 		info->me.match_id.phys.nid  = PTL_NID_ANY;
@@ -257,6 +258,12 @@ struct node_info *push_info(struct node_info *head, int tok)
 		info->desired_map_ptr = &info->desired_map[0];
 		info->actual_map_ptr = &info->actual_map[0];
 		info->ni_opt = PTL_NI_MATCHING | PTL_NI_PHYSICAL;
+		break;
+	case NODE_PTL_NI_STATUS:
+		info->ptr = &info->status;
+		break;
+	case NODE_PTL_NI_HANDLE:
+		info->ptr = &info->ni_handle;
 		break;
 	case NODE_PTL_GET_UID:
 		info->ptr = &info->uid;
@@ -320,13 +327,21 @@ struct node_info *push_info(struct node_info *head, int tok)
 		break;
 	case NODE_PTL_FETCH:
 	case NODE_PTL_TRIG_FETCH:
-		info->get_md_handle = info->md_stack[info->next_md - 1];
-		info->put_md_handle = info->md_stack[info->next_md - 2];
+		if ((info->next_md - 2) > 0) {
+			info->get_md_handle = info->md_stack[info->next_md - 1];
+			info->put_md_handle = info->md_stack[info->next_md - 2];
+		} else {
+			printf("ERROR fetch/trig fetch require >= 2 MDs\n");
+		}
 		break;
 	case NODE_PTL_SWAP:
 	case NODE_PTL_TRIG_SWAP:
-		info->get_md_handle = info->md_stack[info->next_md - 1];
-		info->put_md_handle = info->md_stack[info->next_md - 2];
+		if ((info->next_md - 2) > 0) {
+			info->get_md_handle = info->md_stack[info->next_md - 1];
+			info->put_md_handle = info->md_stack[info->next_md - 2];
+		} else {
+			printf("ERROR swap/trig swap require >= 2 MDs\n");
+		}
 		info->ptr = &info->operand;
 		info->atom_op = PTL_SWAP;
 		break;
@@ -522,6 +537,15 @@ int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_NI_HANDLE:
 			info->ni_handle = get_handle(info, val);
 			break;
+		case ATTR_SR_INDEX:
+			info->reg = get_number(info, val);
+			break;
+		case ATTR_SR_VALUE:
+			info->status = get_number(info, val);
+			break;
+		case ATTR_HANDLE:
+			info->handle = get_handle(info, val);
+			break;
 
 		/* pt */
 		case ATTR_PT_OPT:
@@ -660,6 +684,12 @@ int get_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_LOC_OFFSET:
 			info->loc_offset = get_number(info, val);
+			break;
+		case ATTR_LOC_GET_OFFSET:
+			info->loc_get_offset = get_number(info, val);
+			break;
+		case ATTR_LOC_PUT_OFFSET:
+			info->loc_put_offset = get_number(info, val);
 			break;
 		case ATTR_REM_OFFSET:
 			info->rem_offset = get_number(info, val);
@@ -984,6 +1014,7 @@ int check_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_EVENT_MLENGTH: {
 			ptl_size_t mlength;
+			/* TODO what is the point of this and similar below ??? */
 			if (info->eq_event.type == PTL_EVENT_REPLY ||
 			    info->eq_event.type == PTL_EVENT_SEND ||
 			    info->eq_event.type == PTL_EVENT_ACK)
@@ -1542,11 +1573,11 @@ void set_default_info(struct node_info *info)
 	info->atom_op				= PTL_SUM;
 	info->list				= PTL_PRIORITY_LIST;
 
-	info->user_ptr			= NULL;
+	info->user_ptr				= NULL;
 
-	info->length			= 1;
-	info->loc_offset		= 0;
-	info->ack_req			= PTL_NO_ACK_REQ;
+	info->length				= 1;
+	info->loc_offset			= 0;
+	info->ack_req				= PTL_NO_ACK_REQ;
 }
 
 void run_doc(xmlDocPtr doc)
