@@ -86,38 +86,6 @@ static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t * addr,
 # endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicReadCT(ptl_ct_event_t * dest,
-                                           volatile ptl_ct_event_t * src)
-{                                      /*{{{ */
-# if defined(HAVE_READ128_INTRINSIC) && 0       /* potentially (and probably) not atomic */
-    *dest = __m128i_mm_load_si128(src);
-# elif defined(HAVE_MOVDQA) && 0       /* not actually atomic */
-    __asm__ __volatile__ (
-                          "movdqa (%1), %%xmm0\n\t" "movdqa %%xmm0, (%0)" :
-                          "=r" (dest)
-                          : "r"    (src)
-                          : "xmm0");
-# elif defined(HAVE_CMPXCHG16B)
-    __asm__ __volatile__ (
-                          "xor %%rax, %%rax\n\t" // zero rax out to avoid affecting *addr
-                          "xor %%rbx, %%rbx\n\t" // zero rbx out to avoid affecting *addr
-                          "xor %%rcx, %%rcx\n\t" // zero rcx out to avoid affecting *addr
-                          "xor %%rdx, %%rdx\n\t" // zero rdx out to avoid affecting *addr
-                          "lock cmpxchg16b (%2)\n\t" // atomic swap
-                          "mov %%rax, %0\n\t" // put rax into dest->success
-                          "mov %%rdx, %1\n\t" // put rdx into dest->failure
-                          : "=m"   (dest->success),
-                          "=m"    (dest->failure)
-                          : "r"    (src)
-                          : "cc",
-                          "rax",
-                          "rbx",
-                          "rcx",
-                          "rdx");
-# else /* if defined(HAVE_READ128_INTRINSIC) && 0 */
-#  error No known 128-bit atomic read operations are available
-# endif /* if defined(HAVE_READ128_INTRINSIC) && 0 */
-}                                      /*}}} */
 
 static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t * addr,
                                             const ptl_ct_event_t newval)
@@ -645,15 +613,15 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
 }                                      /*}}} */
 
 void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr)
-{
+{   /*{{{*/
     ordered_NEMESIS_queue *restrict q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
     ordered_NEMESIS_ptr cursor, prev;
     ptl_internal_trigger_t *restrict t = (ptl_internal_trigger_t*)hdr->user_ptr;
     ordered_NEMESIS_ptr f = { .ptr = (void*)t, .val = t->threshold };
 
     PtlInternalCTPullTriggers(hdr);
-    cursor = q->head; // XXX: atomic read
-    if (cursor.ptr == NULL || cursor.val > t->threshold) {
+    PtlInternalAtomicRead128(&cursor, &q->head);
+    if ((cursor.ptr == NULL) || (cursor.val > t->threshold)) {
         /* insert at head */
         prev = PtlInternalAtomicSwap128(&(q->tail), f);
         if (prev.val > f.val) { // someone else has appended, so prepending is easy
@@ -662,27 +630,25 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr
             q->head = f;
         } else {
             if (prev.ptr == NULL) {
-                q->head = f; // XXX: atomic write
+                PtlInternalAtomicWrite128(&q->head, f);
             } else {
-                prev.ptr->next = f; // XXX: atomic write
+                PtlInternalAtomicWrite128(&prev.ptr->next, f);
             }
         }
     } else {
         do {
             prev = cursor;
-            cursor = cursor.ptr->next; // XXX: atomic read
+            PtlInternalAtomicRead128(&cursor, &cursor.ptr->next);
         } while (cursor.ptr != NULL && cursor.val < t->threshold);
         /* insert after prev */
         prev.ptr->next = f; // this does NOT need to be atomic
         f.ptr->next = cursor; // this does NOT need to be atomic
-    }
-    if (cursor.ptr == NULL) {
-        q->tail = f; // XXX: atomic write
+        assert(cursor.ptr != NULL); // otherwise this would have been an append operation
     }
     PtlInternalCTPullTriggers(hdr); // just in case
     __sync_synchronize();
     PTL_LOCK_UNLOCK(*(PTL_LOCK_TYPE*)hdr->data);
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
                                       ptl_size_t increment)
