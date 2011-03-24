@@ -7,8 +7,6 @@ extern obj_type_t *type_mr;
 
 typedef struct mr {
 	PTL_BASE_OBJ
-	void			*start;	// temporary
-	ptl_size_t		length;	// temporary
 	struct ibv_mr		*ibmr;
 	struct list_head	list;
 } mr_t;

@@ -15,6 +15,11 @@
 extern obj_type_t *type_ni;
 
 struct nid_connect {
+	/* NID is used for both logical and physical. PID is only used for
+	 * physical. rank is not used. May be replace with nid/pid instead
+	 * to avoid confusion. */
+	ptl_process_t id;	/* keep me first */
+
 	enum {
 		GBLN_DISCONNECTED,
 		GBLN_RESOLVE_ADDR,
@@ -33,11 +38,6 @@ struct nid_connect {
 	int retry_resolve_addr;
 	int retry_resolve_route;
 	int retry_connect;
-
-	/* NID is used for both logical and physical. PID is only used for
-	 * physical. rank is not used. May be replace with nid/pid instead
-	 * to avoid confusion. */
-	ptl_process_t id;
 
 	pthread_mutex_t	mutex;
 
@@ -115,7 +115,7 @@ typedef struct ni {
 	struct list_head	recv_list;
 	pthread_spinlock_t	recv_list_lock;
 
-	ptl_process_t id;
+	ptl_process_t		id;
 	ptl_uid_t		uid;
 
 	/* Network interface. */

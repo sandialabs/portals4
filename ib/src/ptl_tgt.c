@@ -751,7 +751,7 @@ static int tgt_rdma_desc(xt_t *xt)
 		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
 		       " rkey(0x%x), len(%d)\n", raddr, rkey, rlen);
 
-	xt->indir_sge = calloc(1, rlen);
+	xt->indir_sge = ptl_calloc(1, rlen);
 	if (!xt->indir_sge) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;

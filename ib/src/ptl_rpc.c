@@ -75,7 +75,7 @@ static int init_session(struct rpc *rpc, int s, struct session **session_p,
 	int err;
 	struct session *session;
 
-	session = calloc(1, sizeof(*session));
+	session = ptl_calloc(1, sizeof(*session));
 	if (unlikely(!session)) {
 		err = PTL_NO_SPACE;
 		if (verbose)
@@ -225,7 +225,7 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 	return PTL_OK;
 #endif
 
-	rpc = calloc(1, sizeof(*rpc));
+	rpc = ptl_calloc(1, sizeof(*rpc));
 	if (unlikely(!rpc)) {
 		ptl_fatal("unable to allocate memory for rpc\n");
 		err = PTL_NO_SPACE;

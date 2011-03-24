@@ -58,19 +58,25 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 	gbl_t *gbl;
 
 	err = get_gbl(&gbl);
-	if (err)
+	if (err) {
+		WARN();
 		return err;
+	}
 
 	if (unlikely(CHECK_POINTER(id, ptl_process_t))) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	err = ni_get(ni_handle, &ni);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err1;
+	}
 
 	if (!ni) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}

@@ -56,7 +56,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err2;
 
-	eq->eqe_list = calloc(count, sizeof(*eq->eqe_list));
+	eq->eqe_list = ptl_calloc(count, sizeof(*eq->eqe_list));
 	if (!eq->eqe_list) {
 		err = PTL_NO_SPACE;
 		goto err3;

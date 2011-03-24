@@ -114,11 +114,11 @@ static int create_rank_to_nid_table(ni_t *ni)
 
 	assert(ni->options & PTL_NI_LOGICAL);
 
-	ni->logical.rank_to_nid_table = calloc(gbl->nranks, sizeof(struct rank_to_nid));
+	ni->logical.rank_to_nid_table = ptl_calloc(gbl->nranks, sizeof(struct rank_to_nid));
 	if (ni->logical.rank_to_nid_table == NULL)
 		goto error;
 
-	ni->logical.nid_table = calloc(gbl->num_nids, sizeof(struct nid_connect));
+	ni->logical.nid_table = ptl_calloc(gbl->num_nids, sizeof(struct nid_connect));
 	if (ni->logical.nid_table == NULL)
 		goto error;
 
@@ -166,12 +166,16 @@ static int create_rank_to_nid_table(ni_t *ni)
 	return PTL_FAIL;
 }
 
-static int compare_nids(const void *a, const void *b)
+/*
+ * compare the id's of two connect records
+ */
+static int compare_id(const void *a, const void *b)
 {
 	const struct nid_connect *c1 = a;
 	const struct nid_connect *c2 = b;
 
-	return(c1->id.phys.nid - c2->id.phys.nid);
+	return (c1->id.phys.nid != c2->id.phys.nid) ? (c1->id.phys.nid - c2->id.phys.nid)
+						    : (c1->id.phys.pid - c2->id.phys.pid);
 }
 
 /* Find the connection for a destination. In case of a physical NI,
@@ -179,6 +183,7 @@ static int compare_nids(const void *a, const void *b)
 struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id)
 {
 	struct nid_connect *connect;
+	void **ret;
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		/* Logical */
@@ -190,18 +195,21 @@ struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id)
 
 		connect = ni->logical.rank_to_nid_table[id->rank].connect;
 	} else {
-		struct nid_connect c;
-		void **ret;
-
 		/* Physical */
 		pthread_mutex_lock(&ni->physical.lock);
 
-		c.id.phys.nid = id->phys.nid;
-		ret = tfind(&c, &ni->physical.tree, compare_nids);
-
-		if (!ret) {
+		ret = tfind(id, &ni->physical.tree, compare_id);
+		if (ret) {
+			connect = *ret;
+		} else {
 			/* Not found. Allocate and insert. */
-			connect = malloc(sizeof(*connect));
+			connect = ptl_malloc(sizeof(*connect));
+			if (!connect) {
+				pthread_mutex_unlock(&ni->physical.lock);
+				WARN();
+				return NULL;
+			}
+
 			init_nid_connect(connect);
 			connect->id = *id;
 
@@ -210,16 +218,13 @@ struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id)
 			connect->sin.sin_addr.s_addr = nid_to_addr(id->phys.nid);
 			connect->sin.sin_port = pid_to_port(id->phys.pid);
 
-			if (connect) {
-				ret = tsearch(connect, &ni->physical.tree, compare_nids);
-				if (!ret) {
-					/* Insertion failed. */
-					free(connect);
-					connect = NULL;
-				}
+			ret = tsearch(connect, &ni->physical.tree, compare_id);
+			if (!ret) {
+				/* Insertion failed. */
+				WARN();
+				free(connect);
+				connect = NULL;
 			}
-		} else {
-			connect = *ret;
 		}
 		
 		pthread_mutex_unlock(&ni->physical.lock);
@@ -339,12 +344,100 @@ int init_connect(ni_t *ni, struct nid_connect *connect)
 	return 0;
 }
 
+/*
+ * accept an RC connection request
+ *	called while holding connect->mutex
+ *	only used for physical NIs
+ */
+static int accept_connection_request(ni_t *ni, struct nid_connect *connect,
+					struct rdma_cm_event *event)
+{
+	struct rdma_conn_param conn_param;
+	struct ibv_qp_init_attr init_attr;
+
+	connect->state = GBLN_CONNECTING;
+
+	memset(&init_attr, 0, sizeof(init_attr));
+	init_attr.qp_type = IBV_QPT_RC;
+	init_attr.send_cq = ni->cq;
+	init_attr.recv_cq = ni->cq;
+	init_attr.srq = ni->srq;
+	init_attr.cap.max_send_wr = MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
+	init_attr.cap.max_send_sge = MAX_INLINE_SGE;
+
+	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+		connect->state = GBLN_DISCONNECTED;
+		return 1;
+	}
+
+	connect->cm_id = event->id;
+	event->id->context = connect;
+
+	memset(&conn_param, 0, sizeof conn_param);
+	conn_param.responder_resources = 1;
+	conn_param.initiator_depth = 1;
+
+	if (rdma_accept(event->id, &conn_param)) {
+		rdma_destroy_qp(event->id);
+		connect->state = GBLN_DISCONNECTED;
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * accept an RC connection request to self
+ *	called while holding connect->mutex
+ *	only used for physical NIs
+ */
+static int accept_connection_self(ni_t *ni, struct nid_connect *connect,
+				  struct rdma_cm_event *event)
+{
+	struct rdma_conn_param conn_param;
+	struct ibv_qp_init_attr init_attr;
+
+	connect->state = GBLN_CONNECTING;
+
+	memset(&init_attr, 0, sizeof(init_attr));
+	init_attr.qp_type = IBV_QPT_RC;
+	init_attr.send_cq = ni->cq;
+	init_attr.recv_cq = ni->cq;
+	init_attr.srq = ni->srq;
+	init_attr.cap.max_send_wr = MAX_QP_SEND_WR * MAX_RDMA_WR_OUT;
+	init_attr.cap.max_send_sge = MAX_INLINE_SGE;
+
+	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+		connect->state = GBLN_DISCONNECTED;
+		return 1;
+	}
+
+	connect->cm_id = event->id;
+	event->id->context = connect;
+
+	memset(&conn_param, 0, sizeof conn_param);
+	conn_param.responder_resources = 1;
+	conn_param.initiator_depth = 1;
+
+	if (rdma_accept(event->id, &conn_param)) {
+		rdma_destroy_qp(event->id);
+		connect->state = GBLN_DISCONNECTED;
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * process RC connection request event
+ *	only used for physical NIs
+ */
 static int process_connect_request(ni_t *ni, struct rdma_cm_event *event)
 {
 	const struct cm_priv_request *priv;
-	struct rdma_conn_param conn_param;
-	struct ibv_qp_init_attr init_attr;
 	struct nid_connect *connect;
+	int ret;
+	int c;
 
 	assert(ni->options & PTL_NI_PHYSICAL);
 
@@ -359,46 +452,46 @@ static int process_connect_request(ni_t *ni, struct rdma_cm_event *event)
 
 	pthread_mutex_lock(&connect->mutex);
 
-	if (connect->state != GBLN_DISCONNECTED) {
-		/* Already connected. Should not get there. */
-		abort();
-		goto err;
-	}
+	switch (connect->state) {
+	case GBLN_CONNECTED:
+		/* we received a connection request but we are already connected
+			- reject it
+		 */
+		ret = rdma_reject (event->id, NULL, 0);
+		break;
 
-	connect->state = GBLN_CONNECTING;
+	case GBLN_CONNECTING:
+		/* we received a connection request but we are already connecting
+			- accept connection from higher id
+			- reject connection from lower id
+			- accept connection from self, but cleanup
+		 */
+		c = compare_id(&priv->src_id, &ni->id);
+		if (c > 0) {
+			ret = accept_connection_request(ni, connect, event);
+		} else if (c < 0) {
+			ret = rdma_reject (event->id, NULL, 0);
+		} else {
+			ret = accept_connection_self(ni, connect, event);
+		}
+		break;
 
-	memset(&init_attr, 0, sizeof(struct ibv_qp_init_attr));
-	init_attr.qp_type = IBV_QPT_RC;
-	init_attr.send_cq = ni->cq;
-	init_attr.recv_cq = ni->cq;
-	init_attr.srq = ni->srq;
-	init_attr.cap.max_send_wr = 50;
-	init_attr.cap.max_send_sge = 1;
+	case GBLN_DISCONNECTED:
+		/* we received a connection request and we are disconnected
+			- accept it
+		 */
+		ret = accept_connection_request(ni, connect, event);
+		break;
 
-	if (rdma_create_qp(event->id, NULL, &init_attr)) {
-		connect->state = GBLN_DISCONNECTED;
-		goto err;
-	}
-
-	connect->cm_id = event->id;
-	event->id->context = connect;
-
-	memset(&conn_param, 0, sizeof conn_param);
-	conn_param.responder_resources = 1;
-	conn_param.initiator_depth = 1;
-
-	if (rdma_accept(event->id, &conn_param)) {
-		rdma_destroy_qp(event->id);
-		connect->state = GBLN_DISCONNECTED;
-		goto err;
+	default:
+		/* should never happen */
+		assert(0);
+		break;
 	}
 
 	pthread_mutex_unlock(&connect->mutex);
-	return 0;
 
-err:
-	pthread_mutex_unlock(&connect->mutex);
-	return 1;
+	return ret;
 }
 
 static void process_cm_event(EV_P_ ev_io *w, int revents)
@@ -406,7 +499,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	ni_t *ni = w->data;
 	struct rdma_cm_event *event;
 	struct nid_connect *connect;
-    struct rdma_conn_param conn_param;
+	struct rdma_conn_param conn_param;
 	struct cm_priv_request priv;
 	struct ibv_qp_init_attr init;
 
@@ -437,10 +530,11 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
 		assert(connect->cm_id == event->id);
 
-        memset(&conn_param, 0, sizeof conn_param);
-        conn_param.responder_resources = 1;
-        conn_param.initiator_depth = 1;
-        conn_param.retry_count = 5;
+		memset(&conn_param, 0, sizeof conn_param);
+
+		conn_param.responder_resources = 1;
+		conn_param.initiator_depth = 1;
+		conn_param.retry_count = 5;
 		conn_param.private_data = &priv;
 		conn_param.private_data_len = sizeof(priv);
 
@@ -929,7 +1023,7 @@ int PtlNIInit(ptl_interface_t iface,
 	pthread_cond_init(&ni->ct_wait_cond, NULL);
 	pthread_mutex_init(&ni->physical.lock, NULL);
 
-	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
+	ni->pt = ptl_calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
 		err = PTL_NO_SPACE;
 		goto err3;

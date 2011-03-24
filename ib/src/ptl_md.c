@@ -53,20 +53,26 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	md->num_iov = num_iov;
 
-	md->mr_list = calloc(num_iov, sizeof(mr_t *));
-	if (!md->mr_list)
+	md->mr_list = ptl_calloc(num_iov, sizeof(mr_t *));
+	if (!md->mr_list) {
+		WARN();
 		return PTL_NO_SPACE;
+	}
 
 	if (num_iov > MAX_INLINE_SGE) {
-		md->sge_list = calloc(num_iov, sizeof(struct ibv_sge));
-		if (!md->sge_list)
+		md->sge_list = ptl_calloc(num_iov, sizeof(struct ibv_sge));
+		if (!md->sge_list) {
+			WARN();
 			return PTL_NO_SPACE;
+		}
 
 		err = mr_lookup(ni, md->sge_list,
 				num_iov * sizeof(*sge),
 				&md->mr);
-		if (err)
+		if (err) {
+			WARN();
 			return err;
+		}
 	}
 
 	md->length = 0;
@@ -76,12 +82,16 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	for (i = 0; i < num_iov; i++) {
 		if (unlikely(CHECK_RANGE(iov->iov_base, unsigned char,
-					 iov->iov_len)))
+					 iov->iov_len))) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 
 		err = mr_lookup(ni, iov->iov_base, iov->iov_len, &mr);
-		if (err)
+		if (err) {
+			WARN();
 			return err;
+		}
 
 		md->mr_list[i] = mr;
 		md->length += iov->iov_len;

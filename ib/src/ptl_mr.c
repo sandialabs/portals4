@@ -58,8 +58,8 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	/* For now do not drop mr's take one more reference */
 	mr_ref(mr);
 
-	mr->start = start;
-	mr->length = length;
+	//mr->start = start;
+	//mr->length = length;
 
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_add(&mr->list, &ni->mr_list);
@@ -89,8 +89,8 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_for_each(l, &ni->mr_list) {
 		mr = list_entry(l, mr_t , list);
-		if ((mr->start <= start) &&
-		    ((mr->start + mr->length) >= (start + length))) {
+		if ((mr->ibmr->addr <= start) &&
+		    ((mr->ibmr->addr + mr->ibmr->length) >= (start + length))) {
 			mr_ref(mr);
 			pthread_spin_unlock(&ni->mr_list_lock);
 			goto found;
@@ -98,11 +98,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 	pthread_spin_unlock(&ni->mr_list_lock);
 
-	if (debug > 1) printf("creating a new mr\n");
 	return mr_create(ni, start, length, mr_p);
 
 found:
-	if (debug > 1) printf("found an existing mr\n");
 	*mr_p = mr;
 	return PTL_OK;
 }

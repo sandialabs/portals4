@@ -192,12 +192,12 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
-		le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
+		le->mr_list = ptl_calloc(le->num_iov, sizeof(mr_t *));
 		if (!le->mr_list)
 			return PTL_NO_SPACE;
 
 		if (le->num_iov > MAX_INLINE_SGE) {
-			le->sge_list = calloc(le->num_iov, sizeof(*sge));
+			le->sge_list = ptl_calloc(le->num_iov, sizeof(*sge));
 			if (!le->sge_list)
 				return PTL_NO_SPACE;
 
