@@ -160,9 +160,27 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t ct_handle,
 
     t->next = NULL;
     if (!PtlInternalOrderedNEMESISEnqueue(&ct_event_triggers[ct.s.ni][ct.s.code], t, t->threshold)) {
+        ptl_internal_header_t *restrict hdr;
         /* else send control message to self (serial insert) */
-        fprintf(stderr, "unimplemented out-of-order triggers\n");
-        abort();
+        /* step 1: get a local memory fragment */
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_LOCK_TYPE));
+        /* step 2: fill the op structure */
+        hdr->type = HDR_TYPE_CMD;
+        hdr->ni = ct.s.ni;
+        hdr->src = proc_number;
+        hdr->target = proc_number;
+
+        hdr->pt_index = CMD_TYPE_ENQUEUE;
+        hdr->hdr_data = ct.s.code;
+        hdr->user_ptr = t;
+
+        /* step 3: load up data... */
+        PTL_LOCK_INIT(*(PTL_LOCK_TYPE*)hdr->data);
+        PTL_LOCK_LOCK(*(PTL_LOCK_TYPE*)hdr->data);
+
+        /* step 4: enqueue the op structure on the target */
+        PtlInternalFragmentToss(hdr, proc_number);
+        PTL_LOCK_LOCK(*(PTL_LOCK_TYPE*)hdr->data);
     }
 }
 
@@ -610,7 +628,7 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
     if (ct_event_triggers[ct.s.ni][ct.s.code].head.ptr != NULL) {
         ptl_internal_header_t *restrict hdr;
         /* step 1: get a local memory fragment */
-        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_LOCK_TYPE));
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         /* step 2: fill the op structure */
         hdr->type = HDR_TYPE_CMD;
         hdr->ni = ct.s.ni;
@@ -625,6 +643,46 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
     }
     return PTL_OK;
 }                                      /*}}} */
+
+void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr)
+{
+    ordered_NEMESIS_queue *restrict q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ordered_NEMESIS_ptr cursor, prev;
+    ptl_internal_trigger_t *restrict t = (ptl_internal_trigger_t*)hdr->user_ptr;
+    ordered_NEMESIS_ptr f = { .ptr = (void*)t, .val = t->threshold };
+
+    PtlInternalCTPullTriggers(hdr);
+    cursor = q->head; // XXX: atomic read
+    if (cursor.ptr == NULL || cursor.val > t->threshold) {
+        /* insert at head */
+        prev = PtlInternalAtomicSwap128(&(q->tail), f);
+        if (prev.val > f.val) { // someone else has appended, so prepending is easy
+            while (q->head.ptr == NULL) ;
+            f.ptr->next = q->head;
+            q->head = f;
+        } else {
+            if (prev.ptr == NULL) {
+                q->head = f; // XXX: atomic write
+            } else {
+                prev.ptr->next = f; // XXX: atomic write
+            }
+        }
+    } else {
+        do {
+            prev = cursor;
+            cursor = cursor.ptr->next; // XXX: atomic read
+        } while (cursor.ptr != NULL && cursor.val < t->threshold);
+        /* insert after prev */
+        prev.ptr->next = f; // this does NOT need to be atomic
+        f.ptr->next = cursor; // this does NOT need to be atomic
+    }
+    if (cursor.ptr == NULL) {
+        q->tail = f; // XXX: atomic write
+    }
+    PtlInternalCTPullTriggers(hdr); // just in case
+    __sync_synchronize();
+    PTL_LOCK_UNLOCK(*(PTL_LOCK_TYPE*)hdr->data);
+}
 
 void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
                                       ptl_size_t increment)
