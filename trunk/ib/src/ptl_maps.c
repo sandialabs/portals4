@@ -79,8 +79,12 @@ int check_range(void *addr, unsigned long length)
 	unsigned long start = (unsigned long)addr;
 
 	pthread_mutex_lock(&map_mutex);
-	if (start < mem_maps[0].from ||
-	    (start + length) > mem_maps[num_maps-1].to) {
+	if (start < mem_maps[0].from) {
+		pthread_mutex_unlock(&map_mutex);
+		return PTL_ARG_INVALID;
+	}
+
+	if ((start + length) > mem_maps[num_maps-1].to) {
 		pthread_mutex_unlock(&map_mutex);
 		return PTL_ARG_INVALID;
 	}
@@ -90,6 +94,10 @@ int check_range(void *addr, unsigned long length)
 		    mem_maps[i].to >= (start+length)) {
 			pthread_mutex_unlock(&map_mutex);
 			return PTL_OK;
+		}
+		if (mem_maps[i].from <= start &&
+		    mem_maps[i].to >= start) {
+			start = mem_maps[i].to + 1;
 		}
 	}
 	pthread_mutex_unlock(&map_mutex);
