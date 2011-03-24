@@ -60,6 +60,9 @@ static void PtlInternalHandleCmd(ptl_internal_header_t * restrict hdr)
         case CMD_TYPE_CHECK:
             PtlInternalCTPullTriggers(hdr);
             break;
+        case CMD_TYPE_ENQUEUE:
+            PtlInternalCTUnorderedEnqueue(hdr);
+            break;
         default:
             abort();
     }

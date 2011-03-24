@@ -110,9 +110,9 @@ static inline int PtlInternalOrderedNEMESISEnqueue(ordered_NEMESIS_queue * restr
     }
 
     if (prev.ptr == NULL) {
-        q->head = f;
+        q->head = f; // XXX: atomic write
     } else {
-        prev.ptr->next = f;
+        prev.ptr->next = f; // XXX: atomic write
     }
     //printf("3 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64")\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val);
     return 1;
@@ -121,7 +121,7 @@ static inline int PtlInternalOrderedNEMESISEnqueue(ordered_NEMESIS_queue * restr
 static inline void *PtlInternalOrderedNEMESISDequeue(ordered_NEMESIS_queue * q,
                                                      ptl_size_t upper_bound)
 {
-    ordered_NEMESIS_ptr retval = q->head;
+    ordered_NEMESIS_ptr retval = q->head; // XXX: atomic read
     const ordered_NEMESIS_ptr nil = { .ptr = NULL, .val = 0 };
 
     //printf("1 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64") ub = %"PRIu64"\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val, upper_bound);
