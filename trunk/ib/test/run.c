@@ -142,6 +142,30 @@ int get_jid(struct node_info *info, char *val)
 	
 }
 
+ptl_process_t get_target_id(struct node_info *info, char *val)
+{
+	ptl_process_t id;
+	char *dotpos;
+
+	memset(&id, 0, sizeof(id));
+	
+	if (!strcmp(val, "SELF")) {
+		if (PtlGetId(info->ni_handle, &id) != PTL_OK) {
+			printf("PtlGetId failed\n");
+		}
+	} else if ((dotpos = strchr(val, ':'))) {
+		/* Physical ID. */
+		id.phys.nid = get_number(info, val);
+		dotpos ++;
+		id.phys.pid = get_number(info, dotpos);
+	} else {
+		/* Logical ID. */
+		id.rank = get_number(info, val);
+	}
+
+	return id;
+}
+
 int get_index(struct node_info *info, char *val)
 {
 	int index;
@@ -192,6 +216,7 @@ struct node_info *push_info(struct node_info *head, int tok)
 		printf("unable to allocate node_info\n");
 		return NULL;
 	}
+	get_maps();
 
 	*info = *head;
 	info->buf_alloc = 0;
@@ -213,21 +238,24 @@ struct node_info *push_info(struct node_info *head, int tok)
 	case NODE_PTL_LE:
 	case NODE_PTL_LE_APPEND:
 		info->buf = calloc(1, info->actual.max_msg_size);
-		if (!info) {
+		if (!info->buf) {
 			printf("unable to allocate md/me/le buffer\n");
 			free(info);
 			return NULL;
 		}
-		info->buf_alloc = 1;
 		get_maps();
+		for (i = 0; i < IOV_SIZE; i++) {
+			info->iov[i].iov_base	= info->buf + 1024*i;
+			info->iov[i].iov_len	= 1024;
+		}
+		info->buf_alloc = 1;
 		break;
 	default:
+		for (i = 0; i < IOV_SIZE; i++) {
+			info->iov[i].iov_base	= 0;
+			info->iov[i].iov_len	= 0;
+		}
 		break;
-	}
-
-	for (i = 0; i < IOV_SIZE; i++) {
-		info->iov[i].iov_base	= info->buf + 1024*i;
-		info->iov[i].iov_len	= 1024;
 	}
 
 	info->md.start			= info->buf;
@@ -327,21 +355,23 @@ struct node_info *push_info(struct node_info *head, int tok)
 		break;
 	case NODE_PTL_FETCH:
 	case NODE_PTL_TRIG_FETCH:
-		if ((info->next_md - 2) >= 0) {
+		if (info->next_md >= 2) {
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
-			printf("ERROR fetch/trig fetch require >= 2 MDs\n");
+			info->get_md_handle = get_handle(info, "NONE");
+			info->put_md_handle = get_handle(info, "NONE");
 		}
 		info->ptr = &info->operand;
 		break;
 	case NODE_PTL_SWAP:
 	case NODE_PTL_TRIG_SWAP:
-		if ((info->next_md - 2) >= 0) {
+		if (info->next_md >= 2) {
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
-			printf("ERROR swap/trig swap require >= 2 MDs\n");
+			info->get_md_handle = get_handle(info, "NONE");
+			info->put_md_handle = get_handle(info, "NONE");
 		}
 		info->ptr = &info->operand;
 		info->atom_op = PTL_SWAP;
@@ -358,8 +388,9 @@ struct node_info *pop_node(struct node_info *info)
 	head = info->next;
 	head->prev = NULL;
 
-	if (info->buf_alloc)
+	if (info->buf_alloc) {
 		free(info->buf);
+	}
 	free(info);
 
 	return head;
@@ -710,20 +741,8 @@ int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_EVENT_TYPE:
 			info->eq_event.type = get_event_type(val);
 			break;
-
-		/* get, put */
-		case ATTR_TARGET_ID: {
-			char *dotpos;
-			if ((dotpos = strchr(val, ':'))) {
-				/* Physical ID. */
-				info->target_id.phys.nid = get_number(info, val);
-				dotpos ++;
-				info->target_id.phys.pid = get_number(info, dotpos);
-			} else {
-				/* Logical ID. */
-				info->target_id.rank = get_number(info, val);
-			}
-		}
+		case ATTR_TARGET_ID:
+			info->target_id = get_target_id(info, val);
 			break;
 		}
 	}
@@ -1232,6 +1251,11 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_THREADS: {
 				volatile struct thread_info *t;
 				info->threads = calloc(info->count, sizeof(struct thread_info));
+				if (!info->threads) {
+					printf("unable to allocate memory for info->threads\n");
+					exit(1);
+				}
+				get_maps();
 
 				for (i = 0; i < info->count; i++) {
 					t = &info->threads[i];
