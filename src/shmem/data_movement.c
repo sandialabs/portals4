@@ -50,6 +50,20 @@ static pthread_t catcher;
 # define ack_printf(format, ...)
 #endif
 
+static void PtlInternalHandleCmd(ptl_internal_header_t * restrict hdr)
+{   /*{{{*/
+    /* Command packets are always from the local process */
+    //printf("%u !> got a command packet of some kind!\n", (unsigned int)proc_number);
+    switch(hdr->pt_index) { // this is the selector of what kind of command packet
+        case CMD_TYPE_CTFREE:
+            PtlInternalCTFree(hdr);
+            break;
+        default:
+            abort();
+    }
+    return;
+} /*}}}*/
+
 static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)
 {                                      /*{{{ */
     ptl_md_t *mdptr = NULL;
@@ -370,6 +384,10 @@ Q_NORETURN
         if (hdr->type & HDR_TYPE_ACKFLAG) {
             hdr->type &= HDR_TYPE_ACKMASK;
             PtlInternalHandleAck(hdr);
+            continue;
+        }
+        if (hdr->type == HDR_TYPE_CMD) {
+            PtlInternalHandleCmd(hdr);
             continue;
         }
         dm_printf("got a header! %p points to ni %i\n", hdr, hdr->ni);
