@@ -21,6 +21,8 @@ TESTS = test_init \
 	test_ME_put_truncate \
 	test_LE_get_truncate \
 	test_ME_get_truncate \
+	test_triggered_ctinc \
+	test_triggered_ctinc_unordered \
 	test_LE_oversize_get \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
@@ -123,6 +125,13 @@ test_LE_get_truncate_DEPENDENCIES = $(PORTALSLIB)
 test_ME_get_truncate_SOURCES = test_get_truncate.c
 test_ME_get_truncate_CPPFLAGS = -DINTERFACE=1
 test_ME_get_truncate_DEPENDENCIES = $(PORTALSLIB)
+
+test_triggered_ctinc_SOURCES = test_triggered_ctinc.c
+test_triggered_ctinc_CPPFLAGS = -DORDERED
+test_triggered_ctinc_DEPENDENCIES = $(PORTALSLIB)
+
+test_triggered_ctinc_unordered_SOURCES = test_triggered_ctinc.c
+test_triggered_ctinc_unordered_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_unexpected_put_SOURCES = test_unexpected_put.c
 test_ME_unexpected_put_CPPFLAGS = -DINTERFACE=1
