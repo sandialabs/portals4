@@ -53,15 +53,18 @@ static pthread_t catcher;
 static void PtlInternalHandleCmd(ptl_internal_header_t * restrict hdr)
 {   /*{{{*/
     /* Command packets are always from the local process */
-    //printf("%u !> got a command packet of some kind!\n", (unsigned int)proc_number);
     switch(hdr->pt_index) { // this is the selector of what kind of command packet
         case CMD_TYPE_CTFREE:
             PtlInternalCTFree(hdr);
             break;
+        case CMD_TYPE_CHECK:
+            PtlInternalCTPullTriggers(hdr);
+            break;
         default:
             abort();
     }
-    return;
+    /* now, put the fragment back in the freelist */
+    PtlInternalFragmentFree(hdr);
 } /*}}}*/
 
 static void PtlInternalHandleAck(ptl_internal_header_t * restrict hdr)

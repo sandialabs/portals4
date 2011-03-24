@@ -543,7 +543,10 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
                                ptl_handle_ct_t trig_ct_handle,
                                ptl_size_t threshold)
 {
-    // const ptl_internal_handle_converter_t ct = { ct_handle };
+    //const ptl_internal_handle_converter_t ct = { ct_handle };
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t *t;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -554,11 +557,29 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
+    if (increment.success != 0 && increment.failure != 0) {
+	return PTL_ARG_INVALID;
+    }
 #endif
-    /* build the trigger structure */
+
+    {
+	ptl_ct_event_t tmp;
+	PtlCTGet(trig_ct_handle, &tmp);
+	if (tmp.success + tmp.failure >= threshold) {
+	    PtlCTInc(ct_handle, increment);
+	    return PTL_OK;
+	}
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    t->threshold = threshold;
+    t->type = CTINC;
+    t->t.ctinc.ct_handle = ct_handle;
+    t->t.ctinc.increment = increment;
     /* append IFF threshold > max_threshold */
-    /* else send control message to self */
-    return PTL_FAIL;
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
 }
 
 int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
@@ -583,6 +604,16 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 
 void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
 {   /*{{{*/
+    switch(t->type) {
+	case CTINC:
+	    PtlCTInc(t->t.ctinc.ct_handle, t->t.ctinc.increment);
+	    break;
+	case CTSET:
+	    fprintf(stderr, "CTSET not implemented\n");
+	    fflush(stderr);
+	    abort();
+	    break;
+    }
 } /*}}}*/
 
 /* vim:set expandtab */
