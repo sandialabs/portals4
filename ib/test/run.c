@@ -327,16 +327,17 @@ struct node_info *push_info(struct node_info *head, int tok)
 		break;
 	case NODE_PTL_FETCH:
 	case NODE_PTL_TRIG_FETCH:
-		if ((info->next_md - 2) > 0) {
+		if ((info->next_md - 2) >= 0) {
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
 			printf("ERROR fetch/trig fetch require >= 2 MDs\n");
 		}
+		info->ptr = &info->operand;
 		break;
 	case NODE_PTL_SWAP:
 	case NODE_PTL_TRIG_SWAP:
-		if ((info->next_md - 2) > 0) {
+		if ((info->next_md - 2) >= 0) {
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
