@@ -26,10 +26,14 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_trigger.h"
 #include "ptl_internal_alignment.h"
+#include "ptl_internal_orderednemesis.h"
 #ifndef NO_ARG_VALIDATION
 # include "ptl_internal_error.h"
 #endif
 #include "ptl_internal_timer.h"
+/* for command packets */
+#include "ptl_internal_locks.h"
+#include "ptl_internal_fragments.h"
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
@@ -43,7 +47,12 @@ volatile uint64_t global_generation = 0;
 static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
 static volatile uint64_t *restrict ct_event_refcounts[4] =
 { NULL, NULL, NULL, NULL };
-static void *restrict * restrict ct_event_triggers[4] =
+
+/* ct_event_triggers is the triggers for a given CT. The ct_triggers_alloc is
+ * the allocation (per NI) of trigger structures, but ct_triggers is the
+ * interface for the pool of them (i.e. ct_triggers_alloc allows easy freeing)
+ */
+static ordered_NEMESIS_queue * restrict ct_event_triggers[4] =
 { NULL, NULL, NULL, NULL };
 static ptl_internal_trigger_t * ct_triggers_alloc[4] =
 { NULL, NULL, NULL, NULL };
@@ -154,8 +163,11 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
         assert(ct_triggers[ni] == NULL);
         assert(ct_triggers_alloc[ni] == NULL);
         if (nit_limits[ni].max_triggered_ops > 0) {
-            ct_event_triggers[ni] = calloc(limit, sizeof(void *));
+            ct_event_triggers[ni] = malloc(nit_limits[ni].max_cts * sizeof(ordered_NEMESIS_queue));
             assert(ct_event_triggers[ni] != NULL);
+            for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
+                PtlInternalOrderedNEMESISInit(&ct_event_triggers[ni][i]);
+            }
             ct_triggers_alloc[ni] = calloc(nit_limits[ni].max_triggered_ops,
                                            sizeof(ptl_internal_trigger_t));
             assert(ct_triggers_alloc[ni] != NULL);
@@ -290,6 +302,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
 int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
+    ptl_internal_header_t *restrict hdr;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -299,12 +312,45 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
         return PTL_ARG_INVALID;
     }
 #endif
-    ct_events[ct.s.ni][ct.s.code] = CTERR;
-    __sync_synchronize();
+    /* step 1: get a local memory fragment */
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_LOCK_TYPE));
+    /* step 2: fill the op structure */
+    hdr->type = HDR_TYPE_CMD;
+    hdr->ni = ct.s.ni;
+    hdr->src = proc_number;
+    hdr->target = proc_number;
+
+    hdr->pt_index = CMD_TYPE_CTFREE;
+    hdr->hdr_data = ct.s.code;
+
+    /* step 3: load up data... */
+    PTL_LOCK_INIT(*(PTL_LOCK_TYPE*)hdr->data);
+    PTL_LOCK_LOCK(*(PTL_LOCK_TYPE*)hdr->data);
+
+    /* step 4: enqueue the op structure on the target */
+    PtlInternalFragmentToss(hdr, proc_number);
+    PTL_LOCK_LOCK(*(PTL_LOCK_TYPE*)hdr->data);
+
     PtlInternalAtomicInc(&(ct_event_refcounts[ct.s.ni][ct.s.code]), -1);
-    while (ct_event_refcounts[ct.s.ni][ct.s.code] != 0) ;
+    while (ct_event_refcounts[ct.s.ni][ct.s.code] != 0) {
+        __asm__ __volatile__ ("pause" ::: "memory");
+    }
     return PTL_OK;
 }                                      /*}}} */
+
+void INTERNAL PtlInternalCTFree(ptl_internal_header_t * restrict hdr)
+{
+    ordered_NEMESIS_queue *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ptl_internal_trigger_t *trigger;
+    trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
+    while (trigger != NULL) {
+        PtlInternalTriggerPull(trigger);
+        trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
+    }
+    ct_events[hdr->ni][hdr->hdr_data] = CTERR;
+    __sync_synchronize();
+    PTL_LOCK_UNLOCK(*(PTL_LOCK_TYPE*)hdr->data);
+}
 
 int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t * event)

@@ -8,13 +8,13 @@
 /* Internals */
 #include "ptl_visibility.h"
 #ifndef NO_ARG_VALIDATION
-#include "ptl_internal_error.h"
-#include "ptl_internal_nit.h"
-#include "ptl_internal_DM.h"
-#include "ptl_internal_MD.h"
-#include "ptl_internal_CT.h"
-#include "ptl_internal_pid.h"
-#include "ptl_internal_commpad.h"
+# include "ptl_internal_error.h"
+# include "ptl_internal_nit.h"
+# include "ptl_internal_DM.h"
+# include "ptl_internal_MD.h"
+# include "ptl_internal_CT.h"
+# include "ptl_internal_pid.h"
+# include "ptl_internal_commpad.h"
 #endif
 #include "ptl_internal_trigger.h"
 
@@ -33,29 +33,28 @@
  *   (relies on 128-bit atomics)
  */
 
-int API_FUNC PtlTriggeredPut(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_ack_req_t ack_req,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredPut(ptl_handle_md_t md_handle,
+                             ptl_size_t local_offset,
+                             ptl_size_t length,
+                             ptl_ack_req_t ack_req,
+                             ptl_process_t target_id,
+                             ptl_pt_index_t pt_index,
+                             ptl_match_bits_t match_bits,
+                             ptl_size_t remote_offset,
+                             void *user_ptr,
+                             ptl_hdr_data_t hdr_data,
+                             ptl_handle_ct_t trig_ct_handle,
+                             ptl_size_t threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t mdh = { md_handle };
     if (comm_pad == NULL) {
-	VERBOSE_ERROR("communication pad not initialized\n");
-	return PTL_NO_INIT;
+        VERBOSE_ERROR("communication pad not initialized\n");
+        return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
-	VERBOSE_ERROR("invalid md_handle\n");
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("invalid md_handle\n");
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
         VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
@@ -82,38 +81,39 @@ int API_FUNC PtlTriggeredPut(
             break;
     }
     if (pt_index > nit_limits[mdh.s.ni].max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits[mdh.s.ni].max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits[mdh.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-#endif
-    //PtlInternalMDPosted(md_handle);
+#endif /* ifndef NO_ARG_VALIDATION */
+       // PtlInternalMDPosted(md_handle);
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredGet(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    void *user_ptr,
-    ptl_size_t remote_offset,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredGet(ptl_handle_md_t md_handle,
+                             ptl_size_t local_offset,
+                             ptl_size_t length,
+                             ptl_process_t target_id,
+                             ptl_pt_index_t pt_index,
+                             ptl_match_bits_t match_bits,
+                             void *user_ptr,
+                             ptl_size_t remote_offset,
+                             ptl_handle_ct_t trig_ct_handle,
+                             ptl_size_t threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
-	VERBOSE_ERROR("communication pad not initialized\n");
-	return PTL_NO_INIT;
+        VERBOSE_ERROR("communication pad not initialized\n");
+        return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
-	VERBOSE_ERROR("invalid md_handle\n");
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("invalid md_handle\n");
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(md_handle) < local_offset + length) {
         VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
@@ -140,41 +140,42 @@ int API_FUNC PtlTriggeredGet(
             break;
     }
     if (pt_index > nit_limits[md.s.ni].max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits[md.s.ni].max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredAtomic(
-    ptl_handle_md_t md_handle,
-    ptl_size_t local_offset,
-    ptl_size_t length,
-    ptl_ack_req_t ack_req,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    ptl_op_t operation,
-    ptl_datatype_t datatype,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t md_handle,
+                                ptl_size_t local_offset,
+                                ptl_size_t length,
+                                ptl_ack_req_t ack_req,
+                                ptl_process_t target_id,
+                                ptl_pt_index_t pt_index,
+                                ptl_match_bits_t match_bits,
+                                ptl_size_t remote_offset,
+                                void *user_ptr,
+                                ptl_hdr_data_t hdr_data,
+                                ptl_op_t operation,
+                                ptl_datatype_t datatype,
+                                ptl_handle_ct_t trig_ct_handle,
+                                ptl_size_t threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
-	VERBOSE_ERROR("communication pad not initialized\n");
-	return PTL_NO_INIT;
+        VERBOSE_ERROR("communication pad not initialized\n");
+        return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
-	VERBOSE_ERROR("invalid md_handle\n");
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("invalid md_handle\n");
+        return PTL_ARG_INVALID;
     }
     {
         int multiple = 1;
@@ -234,6 +235,7 @@ int API_FUNC PtlTriggeredAtomic(
             VERBOSE_ERROR
                 ("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
             return PTL_ARG_INVALID;
+
         case PTL_LOR:
         case PTL_LAND:
         case PTL_LXOR:
@@ -244,8 +246,10 @@ int API_FUNC PtlTriggeredAtomic(
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
                     VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    (
+                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
@@ -253,32 +257,33 @@ int API_FUNC PtlTriggeredAtomic(
             break;
     }
     if (pt_index > nit_limits[md.s.ni].max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits[md.s.ni].max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredFetchAtomic(
-    ptl_handle_md_t get_md_handle,
-    ptl_size_t local_get_offset,
-    ptl_handle_md_t put_md_handle,
-    ptl_size_t local_put_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    ptl_op_t operation,
-    ptl_datatype_t datatype,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
+                                     ptl_size_t local_get_offset,
+                                     ptl_handle_md_t put_md_handle,
+                                     ptl_size_t local_put_offset,
+                                     ptl_size_t length,
+                                     ptl_process_t target_id,
+                                     ptl_pt_index_t pt_index,
+                                     ptl_match_bits_t match_bits,
+                                     ptl_size_t remote_offset,
+                                     void *user_ptr,
+                                     ptl_hdr_data_t hdr_data,
+                                     ptl_op_t operation,
+                                     ptl_datatype_t datatype,
+                                     ptl_handle_ct_t trig_ct_handle,
+                                     ptl_size_t threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -303,13 +308,13 @@ int API_FUNC PtlTriggeredFetchAtomic(
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
         VERBOSE_ERROR
             ("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(get_md_handle), local_get_offset + length);
+            PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
         VERBOSE_ERROR
             ("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(put_md_handle), local_put_offset + length);
+            PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {
@@ -367,6 +372,7 @@ int API_FUNC PtlTriggeredFetchAtomic(
         case PTL_MSWAP:
             VERBOSE_ERROR("MSWAP/CSWAP should be performed with PtlSwap\n");
             return PTL_ARG_INVALID;
+
         case PTL_LOR:
         case PTL_LAND:
         case PTL_LXOR:
@@ -377,8 +383,10 @@ int API_FUNC PtlTriggeredFetchAtomic(
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
                     VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    (
+                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
@@ -386,33 +394,34 @@ int API_FUNC PtlTriggeredFetchAtomic(
             break;
     }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredSwap(
-    ptl_handle_md_t get_md_handle,
-    ptl_size_t local_get_offset,
-    ptl_handle_md_t put_md_handle,
-    ptl_size_t local_put_offset,
-    ptl_size_t length,
-    ptl_process_t target_id,
-    ptl_pt_index_t pt_index,
-    ptl_match_bits_t match_bits,
-    ptl_size_t remote_offset,
-    void *user_ptr,
-    ptl_hdr_data_t hdr_data,
-    void *operand,
-    ptl_op_t operation,
-    ptl_datatype_t datatype,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredSwap(ptl_handle_md_t get_md_handle,
+                              ptl_size_t local_get_offset,
+                              ptl_handle_md_t put_md_handle,
+                              ptl_size_t local_put_offset,
+                              ptl_size_t length,
+                              ptl_process_t target_id,
+                              ptl_pt_index_t pt_index,
+                              ptl_match_bits_t match_bits,
+                              ptl_size_t remote_offset,
+                              void *user_ptr,
+                              ptl_hdr_data_t hdr_data,
+                              void *operand,
+                              ptl_op_t operation,
+                              ptl_datatype_t datatype,
+                              ptl_handle_ct_t trig_ct_handle,
+                              ptl_size_t threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -437,13 +446,13 @@ int API_FUNC PtlTriggeredSwap(
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
         VERBOSE_ERROR
             ("Swap saw get_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(get_md_handle), local_get_offset + length);
+            PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
         VERBOSE_ERROR
             ("Swap saw put_md too short for local_offset (%u < %u)\n",
-             PtlInternalMDLength(put_md_handle), local_put_offset + length);
+            PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {
@@ -504,8 +513,10 @@ int API_FUNC PtlTriggeredSwap(
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
                     VERBOSE_ERROR
-                        ("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
+                    (
+                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
                     return PTL_ARG_INVALID;
+
                 default:
                     break;
             }
@@ -515,23 +526,24 @@ int API_FUNC PtlTriggeredSwap(
             return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
-        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n", (unsigned long)pt_index, (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
-	return PTL_ARG_INVALID;
+        VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
+                      (unsigned long)pt_index,
+                      (unsigned long)nit_limits[get_md.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredCTInc(
-    ptl_handle_ct_t ct_handle,
-    ptl_ct_event_t increment,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
+                               ptl_ct_event_t increment,
+                               ptl_handle_ct_t trig_ct_handle,
+                               ptl_size_t threshold)
 {
-    //const ptl_internal_handle_converter_t ct = { ct_handle };
+    // const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -549,13 +561,12 @@ int API_FUNC PtlTriggeredCTInc(
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredCTSet(
-    ptl_handle_ct_t ct_handle,
-    ptl_ct_event_t new_ct,
-    ptl_handle_ct_t trig_ct_handle,
-    ptl_size_t threshold)
+int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
+                               ptl_ct_event_t new_ct,
+                               ptl_handle_ct_t trig_ct_handle,
+                               ptl_size_t threshold)
 {
-    //const ptl_internal_handle_converter_t ct = { ct_handle };
+    // const ptl_internal_handle_converter_t ct = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -569,3 +580,9 @@ int API_FUNC PtlTriggeredCTSet(
 #endif
     return PTL_FAIL;
 }
+
+void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
+{   /*{{{*/
+} /*}}}*/
+
+/* vim:set expandtab */
