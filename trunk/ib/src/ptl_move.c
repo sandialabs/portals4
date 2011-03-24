@@ -530,63 +530,80 @@ static int fetch_common(ptl_handle_md_t get_md_handle,
 	xi_t *xi;
 
 	err = get_gbl(&gbl);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		return err;
+	}
 
 	if (unlikely(atom_op < PTL_MIN || atom_op > PTL_MSWAP)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(!op_info[atom_op].atomic_ok)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(atom_type < PTL_CHAR || atom_type > PTL_DOUBLE)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(atom_type >= PTL_FLOAT && !op_info[atom_op].float_ok)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	err = md_get(get_md_handle, &get_md);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err1;
+	}
 
 	if (unlikely(!get_md)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(local_get_offset + length > get_md->length)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
 
 	err = md_get(put_md_handle, &put_md);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err2;
+	}
 
 	if (unlikely(!put_md)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
 	if (unlikely(local_put_offset + length > put_md->length)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
 
 	if (trig) {
 		err = ct_get(trig_ct_handle, &ct);
-		if (unlikely(err))
+		if (unlikely(err)) {
+			WARN();
 			goto err3;
+		}
 
 		if (unlikely(!ct)) {
+			WARN();
 			err = PTL_ARG_INVALID;
 			goto err3;
 		}
@@ -595,18 +612,22 @@ static int fetch_common(ptl_handle_md_t get_md_handle,
 	ni = to_ni(get_md);
 
 	if (unlikely(to_ni(put_md) != ni)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err4;
 	}
 
 	if (unlikely(length > ni->limits.max_atomic_size)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err4;
 	}
 
 	err = xi_alloc(ni, &xi);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err4;
+	}
 
 	xi->operation = OP_FETCH;
 	xi->target = target_id;

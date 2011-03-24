@@ -24,17 +24,16 @@ int index_init()
 {
 	next_index = 0;
 
-	index_bit_map = calloc(SEGMENT_SIZE*SEGMENT_SIZE/8, 1);
+	index_bit_map = ptl_calloc(SEGMENT_SIZE*SEGMENT_SIZE/8, 1);
 	if (!index_bit_map)
 		return PTL_NO_SPACE;
 
-	index_maps = calloc(SEGMENT_SIZE, sizeof(void *));
+	index_maps = ptl_calloc(SEGMENT_SIZE, sizeof(void *));
 	if (!index_maps) {
 		free(index_bit_map);
 		return PTL_NO_SPACE;
 	}
 
-	get_maps();
 	return PTL_OK;
 }
 
@@ -94,10 +93,9 @@ found_bit:
 	index = (next_word << WORD_SHIFT) + index - 1;
 	map = index_maps[index >> SEGMENT_SHIFT];
 	if (!map) {
-		map = calloc(SEGMENT_SIZE, sizeof(void *));
+		map = ptl_calloc(SEGMENT_SIZE, sizeof(void *));
 		if (!map)
 			return PTL_NO_SPACE;
-		get_maps();
 		index_maps[index >> SEGMENT_SHIFT] = map;
 	}
 

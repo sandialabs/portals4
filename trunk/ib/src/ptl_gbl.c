@@ -321,7 +321,6 @@ static int gbl_init(gbl_t *gbl)
 		goto err2;
 	}
 
-
 	/* init the object allocator */
 	err = obj_init();
 	if (unlikely(err)) {

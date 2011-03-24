@@ -35,6 +35,7 @@
 #include "ptl_shared.h"
 #include "ptl_evloop.h"
 #include "ptl_rpc.h"
+#include "ptl_maps.h"
 
 /* branch prediction hints for compiler */
 #define unlikely(x)	__builtin_expect((x),0)
