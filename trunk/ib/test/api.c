@@ -24,7 +24,7 @@ int test_ptl_ni_init(struct node_info *info)
 				      info->map_size, info->desired_map_ptr,
 				      info->actual_map_ptr, info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->ni_handle) {
 		if (info->next_ni >= STACK_SIZE) {
 			printf("NI stack overflow\n");
 			return PTL_FAIL;
@@ -89,7 +89,7 @@ int test_ptl_pt_alloc(struct node_info *info)
 	ret = PtlPTAlloc(info->ni_handle, info->pt_opt,
 		         info->eq_handle, info->pt_index, info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->pt_index) {
 		if (info->next_pt >= STACK_SIZE) {
 			printf("PT stack overflow\n");
 			return PTL_FAIL;
@@ -135,7 +135,7 @@ int test_ptl_eq_alloc(struct node_info *info)
 
 	ret = PtlEQAlloc(info->ni_handle, info->eq_count, info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->eq_handle) {
 		if (info->next_eq >= STACK_SIZE) {
 			printf("EQ stack overflow\n");
 			return PTL_FAIL;
@@ -185,7 +185,7 @@ int test_ptl_ct_alloc(struct node_info *info)
 
 	ret = PtlCTAlloc(info->ni_handle, info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->ct_handle) {
 		if (info->next_ct >= STACK_SIZE) {
 			printf("CT stack overflow\n");
 			return PTL_FAIL;
@@ -254,7 +254,7 @@ int test_ptl_md_bind(struct node_info *info)
 	}
 	ret = PtlMDBind(info->ni_handle, &info->md, info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->md_handle) {
 		if (info->next_md >= STACK_SIZE) {
 			printf("MD stack overflow\n");
 			return PTL_FAIL;
@@ -293,7 +293,7 @@ int test_ptl_le_append(struct node_info *info)
 					&info->le, info->list, info->user_ptr,
 					info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->le_handle) {
 		if (info->next_le >= STACK_SIZE) {
 			printf("LE stack overflow\n");
 			return PTL_FAIL;
@@ -337,7 +337,7 @@ int test_ptl_me_append(struct node_info *info)
 					&info->me, info->list, info->user_ptr,
 					info->ptr);
 
-	if (ret == PTL_OK) {
+	if (ret == PTL_OK && info->ptr == &info->me_handle) {
 		if (info->next_me >= STACK_SIZE) {
 			printf("ME stack overflow\n");
 			return PTL_FAIL;
