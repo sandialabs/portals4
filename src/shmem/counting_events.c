@@ -37,10 +37,10 @@
 
 const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
-#define CT_FREE         0
-#define CT_BUSY         1
-#define CT_READY        2
-#define CT_ERR_VAL      0xffffffffffffffffULL
+#define CT_FREE    0
+#define CT_BUSY    1
+#define CT_READY   2
+#define CT_ERR_VAL 0xffffffffffffffffULL
 
 volatile uint64_t global_generation = 0;
 
@@ -52,17 +52,13 @@ static volatile uint64_t *restrict ct_event_refcounts[4] =
  * the allocation (per NI) of trigger structures, but ct_triggers is the
  * interface for the pool of them (i.e. ct_triggers_alloc allows easy freeing)
  */
-static ordered_NEMESIS_queue * restrict ct_event_triggers[4] =
-{ NULL, NULL, NULL, NULL };
-static ptl_internal_trigger_t * ct_triggers_alloc[4] =
-{ NULL, NULL, NULL, NULL };
+static ordered_NEMESIS_queue * restrict ct_event_triggers[4] = { NULL, NULL, NULL, NULL };
+static ptl_internal_trigger_t * ct_triggers_alloc[4] = { NULL, NULL, NULL, NULL };
 static ptl_internal_trigger_t * ct_triggers[4] = { NULL, NULL, NULL, NULL };
 static const ptl_ct_event_t CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 
-#define CT_NOT_EQUAL(a, b)      (a.success != b.success || a.failure != \
-                                 b.failure)
-#define CT_EQUAL(a, b)          (a.success == b.success && a.failure == \
-                                 b.failure)
+#define CT_NOT_EQUAL(a, b) (a.success != b.success || a.failure != b.failure)
+#define CT_EQUAL(a, b)     (a.success == b.success && a.failure == b.failure)
 
 #if 0
 /* 128-bit Atomics */
@@ -144,15 +140,40 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t * addr,
 
 #endif /* if 0 */
 
+ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
+{
+    ptl_internal_trigger_t *tmp;
+    volatile ptl_internal_trigger_t *old, *new;
+
+    tmp = ct_triggers[ni];
+    do {
+        old = tmp;
+        new = tmp->next;
+    } while ((tmp = PtlInternalAtomicCasPtr(&ct_triggers[ni], old, new)) != old);
+    return tmp;
+}
+
+void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t ct_handle,
+                                    ptl_internal_trigger_t *t)
+{
+    const ptl_internal_handle_converter_t ct = { ct_handle };
+
+    t->next = NULL;
+    if (!PtlInternalOrderedNEMESISEnqueue(&ct_event_triggers[ct.s.ni][ct.s.code], t, t->threshold)) {
+        /* else send control message to self (serial insert) */
+        fprintf(stderr, "unimplemented out-of-order triggers\n");
+        abort();
+    }
+}
+
 void INTERNAL PtlInternalCTNISetup(unsigned int ni,
                                    ptl_size_t limit)
 {                                      /*{{{ */
     ptl_ct_event_t *tmp;
 
-    while ((tmp =
-                PtlInternalAtomicCasPtr((void *volatile *)&(ct_events[ni]),
-                                        NULL,
-                                        (void *)1)) == (void *)1) ;
+    while ((tmp = PtlInternalAtomicCasPtr((void *volatile *)&(ct_events[ni]),
+                                          NULL,
+                                          (void *)1)) == (void *)1) ;
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, 16, limit, sizeof(ptl_ct_event_t));
         assert((((intptr_t)tmp) & 0x7) == 0);
@@ -172,8 +193,7 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
                                            sizeof(ptl_internal_trigger_t));
             assert(ct_triggers_alloc[ni] != NULL);
             ct_triggers[ni] = ct_triggers_alloc[ni];
-            for (size_t t = 0; t < nit_limits[ni].max_triggered_ops - 1;
-                 ++t) {
+            for (size_t t = 0; t < nit_limits[ni].max_triggered_ops - 1; ++t) {
                 ct_triggers[ni][t].next = &ct_triggers[ni][t + 1];
             }
         }
@@ -261,7 +281,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
     ptl_size_t offset;
     volatile uint64_t *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t ct = {.s.selector = HANDLE_CT_CODE };
+    ptl_internal_handle_converter_t ct = { .s.selector = HANDLE_CT_CODE };
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -339,18 +359,32 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
 }                                      /*}}} */
 
 void INTERNAL PtlInternalCTFree(ptl_internal_header_t * restrict hdr)
-{
+{   /*{{{*/
     ordered_NEMESIS_queue *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
     ptl_internal_trigger_t *trigger;
+
+    PtlInternalCTPullTriggers(hdr);
     trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
     while (trigger != NULL) {
-        PtlInternalTriggerPull(trigger);
         trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
     }
     ct_events[hdr->ni][hdr->hdr_data] = CTERR;
     __sync_synchronize();
     PTL_LOCK_UNLOCK(*(PTL_LOCK_TYPE*)hdr->data);
-}
+} /*}}}*/
+
+void INTERNAL PtlInternalCTPullTriggers(ptl_internal_header_t * restrict hdr)
+{   /*{{{*/
+    ordered_NEMESIS_queue *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ptl_internal_trigger_t *trigger;
+    ptl_size_t cur_val = ct_events[hdr->ni][hdr->hdr_data].success + ct_events[hdr->ni][hdr->hdr_data].failure;
+
+    trigger = PtlInternalOrderedNEMESISDequeue(q, cur_val);
+    while (trigger != NULL) {
+        PtlInternalTriggerPull(trigger);
+        trigger = PtlInternalOrderedNEMESISDequeue(q, cur_val);
+    }
+} /*}}}*/
 
 int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t * event)
@@ -572,6 +606,22 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
         PtlInternalAtomicInc(&(cte->failure), increment.failure);
     } else {
         return PTL_ARG_INVALID;
+    }
+    if (ct_event_triggers[ct.s.ni][ct.s.code].head.ptr != NULL) {
+        ptl_internal_header_t *restrict hdr;
+        /* step 1: get a local memory fragment */
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_LOCK_TYPE));
+        /* step 2: fill the op structure */
+        hdr->type = HDR_TYPE_CMD;
+        hdr->ni = ct.s.ni;
+        hdr->src = proc_number;
+        hdr->target = proc_number;
+
+        hdr->pt_index = CMD_TYPE_CHECK;
+        hdr->hdr_data = ct.s.code;
+
+        /* step 3: enqueue the op structure on the target */
+        PtlInternalFragmentToss(hdr, proc_number);
     }
     return PTL_OK;
 }                                      /*}}} */

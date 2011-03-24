@@ -8,6 +8,7 @@
 /* System headers */
 #include <stdlib.h>
 #include <limits.h>                    /* for UINT_MAX */
+#include <inttypes.h>
 #include <string.h>                    /* for memcpy() */
 
 #include <stdio.h>
@@ -90,6 +91,7 @@ int API_FUNC PtlNIInit(
         return PTL_ARG_INVALID;
     }
     if (map_size > 0 && (actual_mapping == NULL)) {
+        VERBOSE_ERROR("asked for a map size (%"PRIu64") without a place to put it (actual_mapping == NULL)\n", map_size);
         return PTL_ARG_INVALID;
     }
 #endif

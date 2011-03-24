@@ -27,6 +27,7 @@ extern size_t firstpagesize;
 
 enum cmd_types {
     CMD_TYPE_CTFREE,
+    CMD_TYPE_CHECK,
 };
 
 typedef struct {
