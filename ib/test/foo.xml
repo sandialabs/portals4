@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- test events with put in loopback mode -->
+<test>
+  <subtest>
+    <desc>Test events with put to me</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH LOGICAL">
+	<ptl_eq>
+	  <ptl_pt>
+	    <ptl_me me_opt="OP_PUT" uid="ANY" me_match="0x5aa5" me_ignore="0xff00">
+		<ptl_md>
+		  <ptl_put ack_req="ACK" user_ptr="432" match="0xa5a5" target_id="SELF"/>
+		  <msleep count="10"/>
+		  <ptl_eq_poll time="100">
+		    <check event_type="PUT"/>
+		    <check event_match="0xa5a5"/>
+		    <check event_ni_fail="OK"/>
+		  </ptl_eq_poll>
+		  <ptl_eq_poll time="100">
+		    <check event_type="SEND"/>
+		    <check event_user_ptr="432"/>
+		    <check event_ni_fail="OK"/>
+		  </ptl_eq_poll>
+		  <ptl_eq_poll time="100">
+		    <check event_type="ACK"/>
+		    <check event_user_ptr="432"/>
+		    <check event_ni_fail="OK"/>
+		  </ptl_eq_poll>
+		  <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+	      </ptl_md>
+	    </ptl_me>
+	  </ptl_pt>
+	</ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+</test>
