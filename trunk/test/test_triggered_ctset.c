@@ -33,14 +33,12 @@ int main(int   argc,
      * logical interface set up */
     runtime_barrier();
 
-    ptl_ct_event_t inc  = { 1, 0 };
-    ptl_ct_event_t inc2 = { 7, 0 };
 #ifdef ORDERED
-    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc, trigger, 1));
-    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc2, trigger, 2));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, (ptl_ct_event_t) { 1, 0 }, trigger, 1));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, (ptl_ct_event_t) { 7, 0 }, trigger, 2));
 #else
-    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc2, trigger, 2));
-    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc, trigger, 1));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, (ptl_ct_event_t) { 7, 0 }, trigger, 2));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, (ptl_ct_event_t) { 1, 0 }, trigger, 1));
 #endif
 
     /* check the target and trigger, make sure they're both zero */
@@ -54,7 +52,7 @@ int main(int   argc,
         assert(test.failure == 0);
     }
     /* Increment the trigger */
-    CHECK_RETURNVAL(PtlCTInc(trigger, inc));
+    CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1, 0 }));
     /* Check the target */
     {
         ptl_ct_event_t test;
@@ -63,7 +61,7 @@ int main(int   argc,
         assert(test.failure == 0);
     }
     /* Increment the trigger again */
-    CHECK_RETURNVAL(PtlCTInc(trigger, inc));
+    CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1, 0 }));
     {
         ptl_ct_event_t test;
         CHECK_RETURNVAL(PtlCTWait(target, 7, &test));
