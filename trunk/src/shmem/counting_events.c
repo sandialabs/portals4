@@ -44,25 +44,24 @@ const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 
 volatile uint64_t global_generation = 0;
 
-static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
-static volatile uint64_t *restrict ct_event_refcounts[4] =
-{ NULL, NULL, NULL, NULL };
+static ptl_ct_event_t *restrict    ct_events[4] = { NULL, NULL, NULL, NULL };
+static volatile uint64_t *restrict ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
 
 /* ct_event_triggers is the triggers for a given CT. The ct_triggers_alloc is
  * the allocation (per NI) of trigger structures, but ct_triggers is the
  * interface for the pool of them (i.e. ct_triggers_alloc allows easy freeing)
  */
-static ordered_NEMESIS_queue * restrict ct_event_triggers[4] = { NULL, NULL, NULL, NULL };
-static ptl_internal_trigger_t * ct_triggers_alloc[4] = { NULL, NULL, NULL, NULL };
-static ptl_internal_trigger_t * ct_triggers[4] = { NULL, NULL, NULL, NULL };
-static const ptl_ct_event_t CTERR = { CT_ERR_VAL, CT_ERR_VAL };
+static ordered_NEMESIS_queue *restrict ct_event_triggers[4] = { NULL, NULL, NULL, NULL };
+static ptl_internal_trigger_t         *ct_triggers_alloc[4] = { NULL, NULL, NULL, NULL };
+static ptl_internal_trigger_t         *ct_triggers[4] = { NULL, NULL, NULL, NULL };
+static const ptl_ct_event_t            CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 
 #define CT_NOT_EQUAL(a, b) (a.success != b.success || a.failure != b.failure)
 #define CT_EQUAL(a, b)     (a.success == b.success && a.failure == b.failure)
 
 #if 0
 /* 128-bit Atomics */
-static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t * addr,
+static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
                                          const ptl_ct_event_t oldval,
                                          const ptl_ct_event_t newval)
 {                                      /*{{{ */
@@ -86,8 +85,7 @@ static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t * addr,
 # endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-
-static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t * addr,
+static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
                                             const ptl_ct_event_t newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
@@ -110,7 +108,7 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t * addr,
 
 ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
 {
-    ptl_internal_trigger_t *tmp;
+    ptl_internal_trigger_t          *tmp;
     volatile ptl_internal_trigger_t *old, *new;
 
     tmp = ct_triggers[ni];
@@ -133,9 +131,9 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t ct_handle,
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
         /* step 2: fill the op structure */
-        hdr->type = HDR_TYPE_CMD;
-        hdr->ni = ct.s.ni;
-        hdr->src = proc_number;
+        hdr->type   = HDR_TYPE_CMD;
+        hdr->ni     = ct.s.ni;
+        hdr->src    = proc_number;
         hdr->target = proc_number;
 
         hdr->pt_index = CMD_TYPE_ENQUEUE;
@@ -189,14 +187,14 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
 
 void INTERNAL PtlInternalCTNITeardown(int ni)
 {                                      /*{{{ */
-    ptl_ct_event_t *restrict tmp;
+    ptl_ct_event_t *restrict    tmp;
     volatile uint64_t *restrict rc;
-    ptl_internal_trigger_t *ctt;
+    ptl_internal_trigger_t     *ctt;
 
     while (ct_events[ni] == (void *)1) ;        // in case its in the middle of being allocated (this should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
-    rc = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
-                                  NULL);
+    rc  = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
+                                   NULL);
     PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_triggers[ni], NULL);
     PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers[ni], NULL);
     ctt =
@@ -260,13 +258,13 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
 }                                      /*}}} */
 
 int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
-                        ptl_handle_ct_t * ct_handle)
+                        ptl_handle_ct_t *ct_handle)
 {                                      /*{{{ */
-    ptl_ct_event_t *cts;
-    ptl_size_t offset;
-    volatile uint64_t *rc;
+    ptl_ct_event_t                       *cts;
+    ptl_size_t                            offset;
+    volatile uint64_t                    *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t ct = { .s.selector = HANDLE_CT_CODE };
+    ptl_internal_handle_converter_t       ct = { .s.selector = HANDLE_CT_CODE };
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -287,15 +285,15 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     ct.s.ni = ni.s.ni;
-    cts = ct_events[ni.s.ni];
-    rc = ct_event_refcounts[ni.s.ni];
+    cts     = ct_events[ni.s.ni];
+    rc      = ct_event_refcounts[ni.s.ni];
     for (offset = 0; offset < nit_limits[ct.s.ni].max_cts; ++offset) {
         if (rc[offset] == 0) {
             if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                 cts[offset].success = 0;
                 cts[offset].failure = 0;
-                ct.s.code = offset;
-                *ct_handle = ct.a;
+                ct.s.code           = offset;
+                *ct_handle          = ct.a;
                 return PTL_OK;
             }
         }
@@ -307,7 +305,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
 int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_internal_header_t *restrict hdr;
+    ptl_internal_header_t *restrict       hdr;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -320,9 +318,9 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
     /* step 2: fill the op structure */
-    hdr->type = HDR_TYPE_CMD;
-    hdr->ni = ct.s.ni;
-    hdr->src = proc_number;
+    hdr->type   = HDR_TYPE_CMD;
+    hdr->ni     = ct.s.ni;
+    hdr->src    = proc_number;
     hdr->target = proc_number;
 
     hdr->pt_index = CMD_TYPE_CTFREE;
@@ -340,9 +338,9 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
     return PTL_OK;
 }                                      /*}}} */
 
-void INTERNAL PtlInternalCTFree(ptl_internal_header_t * restrict hdr)
+void INTERNAL PtlInternalCTFree(ptl_internal_header_t *restrict hdr)
 {   /*{{{*/
-    ordered_NEMESIS_queue *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ordered_NEMESIS_queue  *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
     ptl_internal_trigger_t *trigger;
 
     PtlInternalCTPullTriggers(hdr);
@@ -355,11 +353,11 @@ void INTERNAL PtlInternalCTFree(ptl_internal_header_t * restrict hdr)
     PTL_CMD_LOCK_PROGRESS(hdr->data);
 } /*}}}*/
 
-void INTERNAL PtlInternalCTPullTriggers(ptl_internal_header_t * restrict hdr)
+void INTERNAL PtlInternalCTPullTriggers(ptl_internal_header_t *restrict hdr)
 {   /*{{{*/
-    ordered_NEMESIS_queue *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ordered_NEMESIS_queue  *q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
     ptl_internal_trigger_t *trigger;
-    ptl_size_t cur_val = ct_events[hdr->ni][hdr->hdr_data].success + ct_events[hdr->ni][hdr->hdr_data].failure;
+    ptl_size_t              cur_val = ct_events[hdr->ni][hdr->hdr_data].success + ct_events[hdr->ni][hdr->hdr_data].failure;
 
     trigger = PtlInternalOrderedNEMESISDequeue(q, cur_val);
     while (trigger != NULL) {
@@ -369,7 +367,7 @@ void INTERNAL PtlInternalCTPullTriggers(ptl_internal_header_t * restrict hdr)
 } /*}}}*/
 
 int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
-                      ptl_ct_event_t * event)
+                      ptl_ct_event_t *event)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
@@ -390,12 +388,12 @@ int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
 
 int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
                        ptl_size_t test,
-                       ptl_ct_event_t * event)
+                       ptl_ct_event_t *event)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    uint64_t old_fail_val;
-    volatile ptl_ct_event_t *cte;
-    volatile uint64_t *rc;
+    uint64_t                              old_fail_val;
+    volatile ptl_ct_event_t              *cte;
+    volatile uint64_t                    *rc;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -406,7 +404,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
-    rc = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
+    rc  = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
     // printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long
     // long)ct.i, (unsigned long long)test);
     PtlInternalAtomicInc(rc, 1);
@@ -430,18 +428,18 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     } while (1);
 }                                      /*}}} */
 
-int API_FUNC PtlCTPoll(ptl_handle_ct_t * ct_handles,
-                       ptl_size_t * tests,
+int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
+                       ptl_size_t *tests,
                        unsigned int size,
                        ptl_time_t timeout,
-                       ptl_ct_event_t * event,
+                       ptl_ct_event_t *event,
                        int *which)
 {                                      /*{{{ */
-    ptl_size_t ctidx, offset;
-    ptl_ct_event_t *ctes[size];
+    ptl_size_t         ctidx, offset;
+    ptl_ct_event_t    *ctes[size];
     volatile uint64_t *rcs[size];
-    size_t nstart;
-    TIMER_TYPE tp;
+    size_t             nstart;
+    TIMER_TYPE         tp;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -459,7 +457,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t * ct_handles,
     for (ctidx = 0; ctidx < size; ++ctidx) {
         const ptl_internal_handle_converter_t ct = { ct_handles[ctidx] };
         ctes[ctidx] = &(ct_events[ct.s.ni][ct.s.code]);
-        rcs[ctidx] = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
+        rcs[ctidx]  = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
         PtlInternalAtomicInc(rcs[ctidx], 1);
     }
     {
@@ -472,11 +470,11 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t * ct_handles,
     }
     {
         uint32_t t = size - 1;
-        t |= t >> 1;
-        t |= t >> 2;
-        t |= t >> 4;
-        t |= t >> 8;
-        t |= t >> 16;
+        t     |= t >> 1;
+        t     |= t >> 2;
+        t     |= t >> 4;
+        t     |= t >> 8;
+        t     |= t >> 16;
         offset = nstart & t;           // pseudo-random, guarantees offset < size
     }
     assert(offset < size);
@@ -569,7 +567,7 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t increment)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t *cte;
+    ptl_ct_event_t                       *cte;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -594,9 +592,9 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         /* step 2: fill the op structure */
-        hdr->type = HDR_TYPE_CMD;
-        hdr->ni = ct.s.ni;
-        hdr->src = proc_number;
+        hdr->type   = HDR_TYPE_CMD;
+        hdr->ni     = ct.s.ni;
+        hdr->src    = proc_number;
         hdr->target = proc_number;
 
         hdr->pt_index = CMD_TYPE_CHECK;
@@ -608,12 +606,12 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
     return PTL_OK;
 }                                      /*}}} */
 
-void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr)
+void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr)
 {   /*{{{*/
-    ordered_NEMESIS_queue *restrict q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
-    ordered_NEMESIS_ptr cursor, prev;
+    ordered_NEMESIS_queue *restrict  q = &(ct_event_triggers[hdr->ni][hdr->hdr_data]);
+    ordered_NEMESIS_ptr              cursor, prev;
     ptl_internal_trigger_t *restrict t = (ptl_internal_trigger_t*)hdr->user_ptr;
-    ordered_NEMESIS_ptr f = { .ptr = (void*)t, .val = t->threshold };
+    ordered_NEMESIS_ptr              f = { .ptr = (void*)t, .val = t->threshold };
 
     PtlInternalCTPullTriggers(hdr);
     PtlInternalAtomicRead128(&cursor, &q->head);
@@ -623,7 +621,7 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr
         if (prev.val > f.val) { // someone else has appended, so prepending is easy
             while (q->head.ptr == NULL) ;
             f.ptr->next = q->head;
-            q->head = f;
+            q->head     = f;
         } else {
             if (prev.ptr == NULL) {
                 PtlInternalAtomicWrite128(&q->head, f);
@@ -638,7 +636,7 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t * restrict hdr
         } while (cursor.ptr != NULL && cursor.val < t->threshold);
         /* insert after prev */
         prev.ptr->next = f; // this does NOT need to be atomic
-        f.ptr->next = cursor; // this does NOT need to be atomic
+        f.ptr->next    = cursor; // this does NOT need to be atomic
         assert(cursor.ptr != NULL); // otherwise this would have been an append operation
     }
     PtlInternalCTPullTriggers(hdr); // just in case
@@ -650,7 +648,7 @@ void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
                                       ptl_size_t increment)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t *cte;
+    ptl_ct_event_t                       *cte;
 
 #ifndef NO_ARG_VALIDATION
     assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
@@ -662,7 +660,7 @@ void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
 void INTERNAL PtlInternalCTFailureInc(ptl_handle_ct_t ct_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t *cte;
+    ptl_ct_event_t                       *cte;
 
 #ifndef NO_ARG_VALIDATION
     assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
