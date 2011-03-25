@@ -336,9 +336,7 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
     PTL_CMD_LOCK_SENDER2(hdr->data);
 
     PtlInternalAtomicInc(&(ct_event_refcounts[ct.s.ni][ct.s.code]), -1);
-    while (ct_event_refcounts[ct.s.ni][ct.s.code] != 0) {
-        __asm__ __volatile__ ("pause" ::: "memory");
-    }
+    while (ct_event_refcounts[ct.s.ni][ct.s.code] != 0) SPINLOCK_BODY();
     return PTL_OK;
 }                                      /*}}} */
 
