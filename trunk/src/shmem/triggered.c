@@ -260,7 +260,15 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_LONG_DOUBLE:
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -427,7 +435,15 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_LONG_DOUBLE:
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -599,7 +615,15 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_LONG_DOUBLE:
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -706,7 +730,15 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 memcpy(t->args.swap.operand, operand, 8);
+                break;
+            case PTL_LONG_DOUBLE:
+            case PTL_DOUBLE_COMPLEX:
+                memcpy(t->args.swap.operand, operand, 16);
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                memcpy(t->args.swap.operand, operand, 32);
                 break;
         }
     }
