@@ -251,8 +251,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             UNREACHABLE;
             *(int *)0 = 0;
     }
-    /* allow the MD to be deallocated (happens *before* notifying listeners
-     * that we're done, to avoid race conditions) */
+    /* allow the MD to be deallocated (happens *before* notifying listeners that we're done, to avoid race conditions) */
     if (mdptr != NULL) {
         md_eq   = mdptr->eq_handle;
         md_ct   = mdptr->ct_handle;
@@ -520,9 +519,7 @@ void PtlInternalDMStop(void)
     if (already_stopped == 0) {
         already_stopped = 1;
         ptl_internal_header_t *restrict hdr;
-        /* Using a termination sigil, rather than pthread_cancel(), so that the queues
-         * are always left in a valid/useable state (e.g. unlocked), so that late sends
-         * and late acks don't cause hangs. */
+        /* Using a termination sigil, rather than pthread_cancel(), so that the queues are always left in a valid/useable state (e.g. unlocked), so that late sends and late acks don't cause hangs. */
         hdr       = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         hdr->type = HDR_TYPE_TERM;
         PtlInternalFragmentToss(hdr, proc_number);
@@ -850,6 +847,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
                 break;
+            case PTL_LONG_DOUBLE:
             case PTL_DOUBLE_COMPLEX:
                 multiple = 16;
                 break;
@@ -1079,6 +1077,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
                 break;
+            case PTL_LONG_DOUBLE:
             case PTL_DOUBLE_COMPLEX:
                 multiple = 16;
                 break;
@@ -1305,6 +1304,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
                 break;
+            case PTL_LONG_DOUBLE:
             case PTL_DOUBLE_COMPLEX:
                 multiple = 16;
                 break;
@@ -1450,6 +1450,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
                 case PTL_FLOAT_COMPLEX:
                     memcpy(dataptr, operand, 8);
                     break;
+                case PTL_LONG_DOUBLE:
                 case PTL_DOUBLE_COMPLEX:
                     memcpy(dataptr, operand, 16);
                     break;
