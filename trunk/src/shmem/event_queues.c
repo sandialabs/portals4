@@ -99,7 +99,7 @@ void INTERNAL PtlInternalEQNITeardown(unsigned int ni)
 
 #ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
-                                          int none_ok)
+                                          int             none_ok)
 {   /*{{{*/
     const ptl_internal_handle_converter_t eq = { handle };
 
@@ -135,8 +135,8 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
 
 #endif /* ifndef NO_ARG_VALIDATION */
 
-int API_FUNC PtlEQAlloc(ptl_handle_ni_t ni_handle,
-                        ptl_size_t count,
+int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
+                        ptl_size_t       count,
                         ptl_handle_eq_t *eq_handle)
 {   /*{{{*/
     const ptl_internal_handle_converter_t ni  = { ni_handle };
@@ -289,7 +289,7 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
 } while (0) /*}}}*/
 
 int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
-                      ptl_event_t *event)
+                      ptl_event_t    *event)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -328,7 +328,7 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
 } /*}}}*/
 
 int API_FUNC PtlEQWait(ptl_handle_eq_t eq_handle,
-                       ptl_event_t *event)
+                       ptl_event_t    *event)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -373,10 +373,10 @@ loopstart:
 } /*}}}*/
 
 int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
-                       unsigned int size,
-                       ptl_time_t timeout,
-                       ptl_event_t *event,
-                       int *which)
+                       unsigned int     size,
+                       ptl_time_t       timeout,
+                       ptl_event_t     *event,
+                       int             *which)
 {   /*{{{*/
     ptl_size_t eqidx, offset;
     size_t     nstart;
@@ -470,7 +470,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
     return PTL_EQ_EMPTY;
 } /*}}}*/
 
-void INTERNAL PtlInternalEQPush(ptl_handle_eq_t eq_handle,
+void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
                                 ptl_internal_event_t *event)
 {   /*{{{*/
     const ptl_internal_handle_converter_t eqh  = { eq_handle };
@@ -497,9 +497,9 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t eq_handle,
 } /*}}}*/
 
 void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
-                                     const uint32_t length,
-                                     const uint64_t roffset,
-                                     void *const user_ptr)
+                                     const uint32_t        length,
+                                     const uint64_t        roffset,
+                                     void *const           user_ptr)
 {   /*{{{*/
     const ptl_internal_handle_converter_t eqh  = { eq_handle };
     ptl_internal_eq_t *const              eq   = &(eqs[eqh.s.ni][eqh.s.code]);
