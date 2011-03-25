@@ -232,8 +232,7 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t md_handle,
         case PTL_SWAP:
         case PTL_CSWAP:
         case PTL_MSWAP:
-            VERBOSE_ERROR
-                ("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
+            VERBOSE_ERROR("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
             return PTL_ARG_INVALID;
 
         case PTL_LOR:
@@ -245,9 +244,7 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t md_handle,
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                    (
-                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
 
                 default:
@@ -306,15 +303,13 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR
-            ("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
-            PtlInternalMDLength(get_md_handle), local_get_offset + length);
+        VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR
-            ("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
-            PtlInternalMDLength(put_md_handle), local_put_offset + length);
+        VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {
@@ -382,9 +377,7 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                    (
-                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
 
                 default:
@@ -444,15 +437,13 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t get_md_handle,
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR
-            ("Swap saw get_md too short for local_offset (%u < %u)\n",
-            PtlInternalMDLength(get_md_handle), local_get_offset + length);
+        VERBOSE_ERROR("Swap saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR
-            ("Swap saw put_md too short for local_offset (%u < %u)\n",
-            PtlInternalMDLength(put_md_handle), local_put_offset + length);
+        VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {
@@ -512,17 +503,14 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t get_md_handle,
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR
-                    (
-                         "PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
                     return PTL_ARG_INVALID;
 
                 default:
                     break;
             }
         default:
-            VERBOSE_ERROR
-                ("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
+            VERBOSE_ERROR("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
@@ -543,9 +531,9 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
                                ptl_handle_ct_t trig_ct_handle,
                                ptl_size_t threshold)
 {
-    //const ptl_internal_handle_converter_t ct = { ct_handle };
+    // const ptl_internal_handle_converter_t ct = { ct_handle };
     const ptl_internal_handle_converter_t tct = { trig_ct_handle };
-    ptl_internal_trigger_t *t;
+    ptl_internal_trigger_t               *t;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -557,24 +545,24 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
-    if (increment.success != 0 && increment.failure != 0) {
-	return PTL_ARG_INVALID;
+    if ((increment.success != 0) && (increment.failure != 0)) {
+        return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
 
     {
-	ptl_ct_event_t tmp;
-	PtlCTGet(trig_ct_handle, &tmp);
-	if (tmp.success + tmp.failure >= threshold) {
-	    PtlCTInc(ct_handle, increment);
-	    return PTL_OK;
-	}
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            PtlCTInc(ct_handle, increment);
+            return PTL_OK;
+        }
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
     /* 2. Build the trigger structure */
-    t->threshold = threshold;
-    t->type = CTINC;
+    t->threshold         = threshold;
+    t->type              = CTINC;
     t->t.ctinc.ct_handle = ct_handle;
     t->t.ctinc.increment = increment;
     /* append IFF threshold > max_threshold */
@@ -605,14 +593,14 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
 {   /*{{{*/
     switch(t->type) {
-	case CTINC:
-	    PtlCTInc(t->t.ctinc.ct_handle, t->t.ctinc.increment);
-	    break;
-	case CTSET:
-	    fprintf(stderr, "CTSET not implemented\n");
-	    fflush(stderr);
-	    abort();
-	    break;
+        case CTINC:
+            PtlCTInc(t->t.ctinc.ct_handle, t->t.ctinc.increment);
+            break;
+        case CTSET:
+            fprintf(stderr, "CTSET not implemented\n");
+            fflush(stderr);
+            abort();
+            break;
     }
 } /*}}}*/
 
