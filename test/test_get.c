@@ -10,39 +10,38 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-# define ENTRY_T        ptl_me_t
-# define HANDLE_T       ptl_handle_me_t
-# define NI_TYPE        PTL_NI_MATCHING
-# define OPTIONS        (PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
-# define APPEND         PtlMEAppend
-# define UNLINK         PtlMEUnlink
+# define ENTRY_T  ptl_me_t
+# define HANDLE_T ptl_handle_me_t
+# define NI_TYPE  PTL_NI_MATCHING
+# define OPTIONS  (PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
+# define APPEND   PtlMEAppend
+# define UNLINK   PtlMEUnlink
 #else
-# define ENTRY_T        ptl_le_t
-# define HANDLE_T       ptl_handle_le_t
-# define NI_TYPE        PTL_NI_NO_MATCHING
-# define OPTIONS        (PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
-# define APPEND         PtlLEAppend
-# define UNLINK         PtlLEUnlink
+# define ENTRY_T  ptl_le_t
+# define HANDLE_T ptl_handle_le_t
+# define NI_TYPE  PTL_NI_NO_MATCHING
+# define OPTIONS  (PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
+# define APPEND   PtlLEAppend
+# define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    ptl_process_t *amapping;
-    uint64_t value, readval;
-    ENTRY_T value_e;
-    HANDLE_T value_e_handle;
-    ptl_md_t read_md;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    ptl_process_t  *amapping;
+    uint64_t        value, readval;
+    ENTRY_T         value_e;
+    HANDLE_T        value_e_handle;
+    ptl_md_t        read_md;
     ptl_handle_md_t read_md_handle;
-    int my_rank, num_procs;
+    int             my_rank, num_procs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
@@ -56,14 +55,14 @@ int main(
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    value = myself.rank + 0xdeadbeefc0d1f1ed;
-    value_e.start = &value;
-    value_e.length = sizeof(uint64_t);
+    value             = myself.rank + 0xdeadbeefc0d1f1ed;
+    value_e.start     = &value;
+    value_e.length    = sizeof(uint64_t);
     value_e.ac_id.uid = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
-    value_e.match_bits = 1;
-    value_e.ignore_bits = 0;
+    value_e.match_bits    = 1;
+    value_e.ignore_bits   = 0;
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
@@ -78,9 +77,9 @@ int main(
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    read_md.start = &readval;
-    read_md.length = sizeof(uint64_t);
-    read_md.options = PTL_MD_EVENT_CT_REPLY;
+    read_md.start     = &readval;
+    read_md.length    = sizeof(uint64_t);
+    read_md.options   = PTL_MD_EVENT_CT_REPLY;
     read_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &read_md, &read_md_handle));
@@ -88,7 +87,7 @@ int main(
     /* read rank 0's value */
     {
         ptl_ct_event_t ctc;
-        ptl_process_t r0 = {.rank = 0 };
+        ptl_process_t  r0 = { .rank = 0 };
         CHECK_RETURNVAL(PtlGet(read_md_handle, 0, sizeof(uint64_t), r0,
                                logical_pt_index, 1, 0, NULL));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
