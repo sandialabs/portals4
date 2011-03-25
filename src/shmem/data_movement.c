@@ -1253,12 +1253,6 @@ int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
         VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
         return PTL_ARG_INVALID;
     }
-    if (length > nit_limits[get_md.s.ni].max_atomic_size) {
-        VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
-                      (unsigned int)length,
-                      (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
-        return PTL_ARG_INVALID;
-    }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
         VERBOSE_ERROR(
                       "Swap saw get_md too short for local_offset (%u < %u)\n",
@@ -1326,14 +1320,24 @@ int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
     }
     switch (operation) {
         case PTL_SWAP:
+            if (length > nit_limits[get_md.s.ni].max_atomic_size) {
+                VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
+                        (unsigned int)length,
+                        (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
+                return PTL_ARG_INVALID;
+            }
             break;
         case PTL_CSWAP:
         case PTL_MSWAP:
+            if (length > 8) {
+                VERBOSE_ERROR("Length (%u) is bigger than one datatype (8)\n",
+                        (unsigned int)length);
+                return PTL_ARG_INVALID;
+            }
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR(
-                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for CSWAP/MSWAP\n");
                     return PTL_ARG_INVALID;
 
                 default:
@@ -1341,8 +1345,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
             }
             break;
         default:
-            VERBOSE_ERROR(
-                          "Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
+            VERBOSE_ERROR("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
@@ -1369,8 +1372,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
         PtlInternalMDPosted(get_md_handle);
     }
     /* step 1: get a local memory fragment */
-    hdr =
-        PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_SWAP;
     hdr->ni = get_md.s.ni;
@@ -1429,9 +1431,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t get_md_handle,
             }
         }
         dataptr += 8;
-        memcpy(dataptr,
-               PtlInternalMDDataPtr(put_md_handle) + local_put_offset,
-               length);
+        memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset, length);
     }
     /* step 4: enqueue the op structure on the target */
     switch (get_md.s.ni) {
