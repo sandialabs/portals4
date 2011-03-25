@@ -8,10 +8,10 @@
 #include "ptl_internal_handles.h"
 
 extern volatile char *comm_pad;
-extern size_t num_siblings;
-extern size_t proc_number;
-extern size_t per_proc_comm_buf_size;
-extern size_t firstpagesize;
+extern size_t         num_siblings;
+extern size_t         proc_number;
+extern size_t         per_proc_comm_buf_size;
+extern size_t         firstpagesize;
 
 #define HDR_TYPE_PUT         0         /* _____ */
 #define HDR_TYPE_GET         1         /* ____1 */
@@ -34,13 +34,13 @@ enum cmd_types {
 typedef struct {
     void *volatile                  next;
     ptl_match_bits_t                match_bits;
-    void *                          user_ptr;
+    void                           *user_ptr;
     ptl_hdr_data_t                  hdr_data; // not used by GETs
     ptl_uid_t                       uid;
     ptl_jid_t                       jid;
     /* data used for long & truncated messages */
-    char *                          moredata;
-    void *                          entry;
+    char                           *moredata;
+    void                           *entry;
     uint32_t                        remaining;
     /* data used for GETs and properly processing events */
     ptl_internal_handle_converter_t md_handle1;
@@ -48,22 +48,22 @@ typedef struct {
     uint32_t                        length;
     uint16_t                        src;
     uint16_t                        target;
-    uint64_t                        local_offset1 : 48;
-    uint64_t                        local_offset2 : 48;
-    uint64_t                        dest_offset : 48;
-    uint8_t                         pt_index : 6; // only need 5
-    ptl_ack_req_t                   ack_req : 2; // only used by PUTs and ATOMICs
-    unsigned char                   type : 5; // 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
-    unsigned char                   ni : 2;
+    uint64_t                        local_offset1    : 48;
+    uint64_t                        local_offset2    : 48;
+    uint64_t                        dest_offset      : 48;
+    uint8_t                         pt_index         : 6; // only need 5
+    ptl_ack_req_t                   ack_req          : 2; // only used by PUTs and ATOMICs
+    unsigned char                   type             : 5; // 0=put, 1=get, 2=atomic, 3=fetchatomic, 4=swap
+    unsigned char                   ni               : 2;
     uint8_t                         atomic_operation : 5;
-    uint8_t                         atomic_datatype : 4;
+    uint8_t                         atomic_datatype  : 4;
     char                            data[];
 } ptl_internal_header_t;
 
 typedef struct {
     ptl_internal_header_t hdr;
-    void *                unexpected_entry;
-    void *                buffered_data;
+    void                 *unexpected_entry;
+    void                 *buffered_data;
 } ptl_internal_buffered_header_t;
 
 #endif /* ifndef PTL_INTERNAL_COMMPAD_H */

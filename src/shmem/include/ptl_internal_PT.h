@@ -19,16 +19,15 @@ typedef struct {
       buffered_headers;
 } ptl_table_entry_t ALIGNED (64);
 
-void PtlInternalPTInit(ptl_table_entry_t * t);
-int  PtlInternalPTValidate(ptl_table_entry_t * t);
+void PtlInternalPTInit(ptl_table_entry_t *t);
+int  PtlInternalPTValidate(ptl_table_entry_t *t);
 
 #include "ptl_internal_commpad.h"
 
-void PtlInternalPTBufferUnexpectedHeader(ptl_table_entry_t * restrict const t,
-                                         const ptl_internal_header_t *
-                                         restrict const hdr,
-                                         const uintptr_t entry_ptr,
-                                         const uintptr_t data);
+void PtlInternalPTBufferUnexpectedHeader(ptl_table_entry_t *restrict const           t,
+                                         const ptl_internal_header_t *restrict const hdr,
+                                         const uintptr_t                             entry_ptr,
+                                         const uintptr_t                             data);
 
 #endif /* ifndef PTL_INTERNAL_PT_H */
 /* vim:set expandtab: */

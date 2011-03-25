@@ -34,15 +34,15 @@
 #endif /* ifdef __tile__ */
 
 #define PTL_CMD_LOCK_TYPE uint32_t
-#define PTL_CMD_LOCK_SENDER1(x) *(PTL_CMD_LOCK_TYPE*)(x) = 0;
+#define PTL_CMD_LOCK_SENDER1(x)  *(PTL_CMD_LOCK_TYPE*)(x) = 0;
 #define PTL_CMD_LOCK_PROGRESS(x) do { \
-    while (*(PTL_CMD_LOCK_TYPE*)(x) != 0) SPINLOCK_BODY(); \
-    *(PTL_CMD_LOCK_TYPE*)(x) = 1; \
-    while (*(PTL_CMD_LOCK_TYPE*)(x) != 2) SPINLOCK_BODY(); \
+        while (*(PTL_CMD_LOCK_TYPE*)(x) != 0) SPINLOCK_BODY(); \
+        *(PTL_CMD_LOCK_TYPE*)(x) = 1; \
+        while (*(PTL_CMD_LOCK_TYPE*)(x) != 2) SPINLOCK_BODY(); \
 } while (0)
-#define PTL_CMD_LOCK_SENDER2(x) do { \
-    while (*(PTL_CMD_LOCK_TYPE*)(x) != 1) SPINLOCK_BODY(); \
-    *(PTL_CMD_LOCK_TYPE*)(x) = 2; \
+#define PTL_CMD_LOCK_SENDER2(x)  do { \
+        while (*(PTL_CMD_LOCK_TYPE*)(x) != 1) SPINLOCK_BODY(); \
+        *(PTL_CMD_LOCK_TYPE*)(x) = 2; \
 } while (0)
 
 #endif /* ifndef PTL_INTERNAL_LOCKS_H */
