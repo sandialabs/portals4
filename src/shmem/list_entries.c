@@ -30,46 +30,46 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_alignment.h"
 
-#define LE_FREE         0
-#define LE_ALLOCATED    1
-#define LE_IN_USE       2
+#define LE_FREE      0
+#define LE_ALLOCATED 1
+#define LE_IN_USE    2
 
 typedef struct {
-    void *                              next;
-    void *                              user_ptr;
-    ptl_internal_handle_converter_t     le_handle;
+    void                           *next;
+    void                           *user_ptr;
+    ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
 
 typedef struct {
-    ptl_internal_appendLE_t     Qentry;
-    ptl_le_t                    visible;
-    volatile uint32_t           status; // 0=free, 1=allocated, 2=in-use
-    ptl_pt_index_t              pt_index;
-    ptl_list_t                  ptl_list;
+    ptl_internal_appendLE_t Qentry;
+    ptl_le_t                visible;
+    volatile uint32_t       status;     // 0=free, 1=allocated, 2=in-use
+    ptl_pt_index_t          pt_index;
+    ptl_list_t              ptl_list;
 } ptl_internal_le_t;
 
 static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
 /* Static functions */
-static void PtlInternalPerformDelivery(const unsigned char type,
+static void PtlInternalPerformDelivery(const unsigned char  type,
                                        void *const restrict local_data,
                                        void *const restrict message_data,
-                                       size_t nbytes,
-                                       ptl_internal_header_t * const restrict
+                                       size_t               nbytes,
+                                       ptl_internal_header_t *const restrict
                                        hdr);
 static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
                                           const ptl_handle_ct_t ct_handle,
-                                          const unsigned char type,
-                                          const unsigned int options,
-                                          const uint64_t mlength,
-                                          const uintptr_t start,
-                                          const int overflow,
-                                          void *const user_ptr,
-                                          ptl_internal_header_t * const
-                                          restrict hdr);
+                                          const unsigned char   type,
+                                          const unsigned int    options,
+                                          const uint64_t        mlength,
+                                          const uintptr_t       start,
+                                          const int             overflow,
+                                          void *const           user_ptr,
+                                          ptl_internal_header_t *const
+                                          restrict              hdr);
 
 void INTERNAL PtlInternalLENISetup(unsigned int ni,
-                                   ptl_size_t limit)
+                                   ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
@@ -88,7 +88,7 @@ void INTERNAL PtlInternalLENITeardown(unsigned int ni)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
-    tmp = les[ni];
+    tmp     = les[ni];
     les[ni] = NULL;
     assert(tmp != NULL);
     assert(tmp != (void *)1);
@@ -96,15 +96,15 @@ void INTERNAL PtlInternalLENITeardown(unsigned int ni)
 }                                      /*}}} */
 
 #define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do { \
-        e.pt_index = hdr->pt_index; \
-        e.uid = hdr->uid; \
-        e.jid = hdr->jid; \
-        e.match_bits = hdr->match_bits; \
-        e.rlength = hdr->length; \
-        e.mlength = 0; \
+        e.pt_index      = hdr->pt_index; \
+        e.uid           = hdr->uid; \
+        e.jid           = hdr->jid; \
+        e.match_bits    = hdr->match_bits; \
+        e.rlength       = hdr->length; \
+        e.mlength       = 0; \
         e.remote_offset = hdr->dest_offset; \
-        e.user_ptr = uptr; \
-        e.ni_fail_type = PTL_NI_OK; \
+        e.user_ptr      = uptr; \
+        e.ni_fail_type  = PTL_NI_OK; \
         if (hdr->ni <= 1) { /* Logical */ \
             e.initiator.rank = hdr->src; \
         } else { /* Physical */ \
@@ -113,34 +113,34 @@ void INTERNAL PtlInternalLENITeardown(unsigned int ni)
         } \
         switch (hdr->type & HDR_TYPE_BASICMASK) { \
             case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-                e.hdr_data = hdr->hdr_data; \
+                e.hdr_data            = hdr->hdr_data; \
                 break; \
             case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data = hdr->hdr_data; \
+                e.hdr_data               = hdr->hdr_data; \
                 break; \
             case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data = hdr->hdr_data; \
+                e.hdr_data                    = hdr->hdr_data; \
                 break; \
             case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data = hdr->hdr_data; \
+                e.hdr_data             = hdr->hdr_data; \
                 break; \
             case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
-                e.hdr_data = 0; \
+                e.hdr_data            = 0; \
                 break; \
         } \
 } while (0)
 
-int API_FUNC PtlLEAppend(ptl_handle_ni_t ni_handle,
-                         ptl_pt_index_t pt_index,
-                         ptl_le_t * le,
-                         ptl_list_t ptl_list,
-                         void * user_ptr,
-                         ptl_handle_le_t * le_handle)
+int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
+                         ptl_pt_index_t   pt_index,
+                         ptl_le_t        *le,
+                         ptl_list_t       ptl_list,
+                         void            *user_ptr,
+                         ptl_handle_le_t *le_handle)
 {                                      /*{{{ */
-    const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t leh = {.s.selector = HANDLE_LE_CODE };
-    ptl_internal_appendLE_t *Qentry = NULL;
-    ptl_table_entry_t *t;
+    const ptl_internal_handle_converter_t ni     = { ni_handle };
+    ptl_internal_handle_converter_t       leh    = { .s.selector = HANDLE_LE_CODE };
+    ptl_internal_appendLE_t              *Qentry = NULL;
+    ptl_table_entry_t                    *t;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -181,11 +181,11 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t ni_handle,
             if (PtlInternalAtomicCas32
                     (&(les[ni.s.ni][offset].status), LE_FREE,
                     LE_ALLOCATED) == LE_FREE) {
-                leh.s.code = offset;
-                les[ni.s.ni][offset].visible = *le;
+                leh.s.code                    = offset;
+                les[ni.s.ni][offset].visible  = *le;
                 les[ni.s.ni][offset].pt_index = pt_index;
                 les[ni.s.ni][offset].ptl_list = ptl_list;
-                Qentry = &(les[ni.s.ni][offset].Qentry);
+                Qentry                        = &(les[ni.s.ni][offset].Qentry);
                 break;
             }
         }
@@ -193,9 +193,9 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t ni_handle,
     if (Qentry == NULL) {
         return PTL_FAIL;
     }
-    Qentry->user_ptr = user_ptr;
+    Qentry->user_ptr  = user_ptr;
     Qentry->le_handle = leh;
-    *le_handle = leh.a;
+    *le_handle        = leh.a;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
@@ -262,9 +262,9 @@ permission_violation:
                                                    [
                                                        PTL_SR_PERMISSIONS_VIOLATIONS
                                                    ], 1);
-                        tmp = cur;
+                        tmp            = cur;
                         prev->hdr.next = cur->hdr.next;
-                        cur = prev;
+                        cur            = prev;
                         PtlInternalDeallocUnexpectedHeader(tmp);
                         continue;
                     }
@@ -443,9 +443,9 @@ permission_violationPO:
                             ptl_internal_event_t e;
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
                                                      user_ptr);
-                            e.type = PTL_EVENT_PROBE;
+                            e.type    = PTL_EVENT_PROBE;
                             e.mlength = mlength;
-                            e.start = cur->buffered_data;
+                            e.start   = cur->buffered_data;
                             PtlInternalEQPush(t->EQ, &e);
                         }
                     }
@@ -465,7 +465,7 @@ done_appending:
 int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t le = { le_handle };
-    ptl_table_entry_t *restrict const t =
+    ptl_table_entry_t *restrict const     t  =
         &(nit.tables[le.s.ni][les[le.s.ni][le.s.code].pt_index]);
     const ptl_internal_appendLE_t *restrict const dq_target =
         &(les[le.s.ni][le.s.code].Qentry);
@@ -509,7 +509,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
                 ptl_internal_appendLE_t *prev = NULL;
                 while (dq != dq_target && dq != NULL) {
                     prev = dq;
-                    dq = dq->next;
+                    dq   = dq->next;
                 }
                 if (dq == NULL) {
                     fprintf(
@@ -543,7 +543,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
                 while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq !=
                        NULL) {
                     prev = dq;
-                    dq = dq->next;
+                    dq   = dq->next;
                 }
                 if (dq == NULL) {
                     fprintf(
@@ -584,17 +584,17 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
     return PTL_OK;
 }                                      /*}}} */
 
-ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t * restrict t,
-                                        ptl_internal_header_t * restrict
+ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
+                                        ptl_internal_header_t *restrict
                                         hdr)
 {                                      /*{{{ */
     enum {PRIORITY, OVERFLOW} foundin = PRIORITY;
-    ptl_internal_appendLE_t *entry = NULL;
-    ptl_handle_eq_t tEQ = t->EQ;
-    ptl_le_t le;
-    ptl_size_t msg_mlength = 0, fragment_mlength = 0;
-    char need_more_data = 0;
-    char need_to_unlock = 1;    // to decide whether to unlock the table upon return or whether it was unlocked earlier
+    ptl_internal_appendLE_t *entry    = NULL;
+    ptl_handle_eq_t          tEQ      = t->EQ;
+    ptl_le_t                 le;
+    ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
+    char                     need_more_data = 0;
+    char                     need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalPAPIStartC();
     assert(t);
@@ -604,14 +604,14 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t * restrict t,
         if (t->priority.head) {
             entry = t->priority.head;
         } else if (t->overflow.head) {
-            entry = t->overflow.head;
+            entry   = t->overflow.head;
             foundin = OVERFLOW;
         }
         hdr->entry = entry;
     } else {
         entry = hdr->entry;
-        le = *(ptl_le_t *)(((char *)entry) +
-                           offsetof(ptl_internal_le_t, visible));
+        le    = *(ptl_le_t *)(((char *)entry) +
+                              offsetof(ptl_internal_le_t, visible));
         goto check_lengths;
     }
     if (entry != NULL) {
@@ -684,7 +684,7 @@ permission_violation:
                 ((le.options & (PTL_LE_EVENT_UNLINK_DISABLE)) == 0)) {
                 ptl_internal_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
-                e.type = PTL_EVENT_AUTO_UNLINK;
+                e.type  = PTL_EVENT_AUTO_UNLINK;
                 e.start = (char *)le.start + hdr->dest_offset;
                 PtlInternalEQPush(tEQ, &e);
             }
@@ -706,24 +706,24 @@ check_lengths:
                 msg_mlength = hdr->length;
             }
             if (msg_mlength < hdr->length) {
-                hdr->length = msg_mlength;
+                hdr->length    = msg_mlength;
                 hdr->remaining = msg_mlength;
-                hdr->type |= HDR_TYPE_TRUNCFLAG;
+                hdr->type     |= HDR_TYPE_TRUNCFLAG;
             }
             if (max_payload >= msg_mlength) {
                 /* the entire operation fits into a single fragment */
                 fragment_mlength = msg_mlength;
-                need_more_data = 0;
+                need_more_data   = 0;
             } else {
                 /* the operation requires multiple fragments */
                 if (hdr->remaining > max_payload) {
                     /* this is NOT the last fragment */
                     fragment_mlength = max_payload;
-                    need_more_data = 1;
+                    need_more_data   = 1;
                 } else {
                     /* this IS the last fragment */
                     fragment_mlength = hdr->remaining;
-                    need_more_data = 0;
+                    need_more_data   = 0;
                 }
             }
         }
@@ -745,7 +745,7 @@ check_lengths:
          * `------------------------------> le.start
          */
         void *report_this_start = (char *)le.start + hdr->dest_offset;
-        void *effective_start =
+        void *effective_start   =
             (char *)le.start + hdr->dest_offset + (msg_mlength -
                                                    hdr->remaining);
         if (foundin == PRIORITY) {
@@ -807,7 +807,7 @@ check_lengths:
     if (tEQ != PTL_EQ_NONE) {
         ptl_internal_event_t e;
         PTL_INTERNAL_INIT_TEVENT(e, hdr, NULL);
-        e.start = NULL;
+        e.start        = NULL;
         e.ni_fail_type = PTL_NI_DROPPED;
         PtlInternalEQPush(tEQ, &e);
     }
@@ -819,11 +819,11 @@ check_lengths:
     return 0;                          // silent ACK
 }                                      /*}}} */
 
-static void PtlInternalPerformDelivery(const unsigned char type,
-                                       void *const restrict local_data,
-                                       void *const restrict message_data,
-                                       size_t nbytes,
-                                       ptl_internal_header_t * restrict hdr)
+static void PtlInternalPerformDelivery(const unsigned char             type,
+                                       void *const restrict            local_data,
+                                       void *const restrict            message_data,
+                                       size_t                          nbytes,
+                                       ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
@@ -854,14 +854,14 @@ static void PtlInternalPerformDelivery(const unsigned char type,
 
 static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
                                           const ptl_handle_ct_t ct_handle,
-                                          const unsigned char type,
-                                          const unsigned int options,
-                                          const uint64_t mlength,
-                                          const uintptr_t start,
-                                          const int overflow,
-                                          void *const user_ptr,
-                                          ptl_internal_header_t * const
-                                          restrict hdr)
+                                          const unsigned char   type,
+                                          const unsigned int    options,
+                                          const uint64_t        mlength,
+                                          const uintptr_t       start,
+                                          const int             overflow,
+                                          void *const           user_ptr,
+                                          ptl_internal_header_t *const
+                                          restrict              hdr)
 {                                      /*{{{ */
     int ct_announce = ct_handle != PTL_CT_NONE;
 
@@ -898,7 +898,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
             }
         }
         e.mlength = mlength;
-        e.start = (void *)start;
+        e.start   = (void *)start;
         PtlInternalEQPush(eq_handle, &e);
     }
 }                                      /*}}} */

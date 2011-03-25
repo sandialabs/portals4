@@ -19,11 +19,10 @@
  * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
  * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
  * with multiple enqueuers and a single de-queuer. */
-void INTERNAL PtlInternalNEMESISBlockingInit(
-    NEMESIS_blocking_queue * q)
+void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
 {                                      /*{{{ */
     PtlInternalNEMESISInit(&q->q);
-#if defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
+#if defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING)
     q->frustration = 0;
     {
         pthread_mutexattr_t ma;
@@ -41,18 +40,17 @@ void INTERNAL PtlInternalNEMESISBlockingInit(
         ptl_assert(pthread_cond_init(&q->trigger, &ca), 0);
         ptl_assert(pthread_condattr_destroy(&ca), 0);
     }
-    //printf("init q=%p(%u)\n", q, (unsigned)((uintptr_t)q - (uintptr_t)comm_pad));
-#else
-    /* for the pipe to work, it has to be created by yod */
-    //assert(pipe(q->pipe) == 0);
-    /* I'm leaving open both ends of the pipe, so that I can both receive
-     * messages AND send myself messages */
-#endif
+    // printf("init q=%p(%u)\n", q, (unsigned)((uintptr_t)q - (uintptr_t)comm_pad));
+#else /* if defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING) */
+      /* for the pipe to work, it has to be created by yod */
+      // assert(pipe(q->pipe) == 0);
+      /* I'm leaving open both ends of the pipe, so that I can both receive
+       * messages AND send myself messages */
+#endif /* if defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING) */
 }                                      /*}}} */
 
-void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
-    NEMESIS_blocking_queue * restrict q,
-    NEMESIS_entry * restrict f)
+void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(NEMESIS_blocking_queue *restrict q,
+                                                      NEMESIS_entry *restrict          f)
 {                                      /*{{{ */
     assert(f->next == NULL);
     PtlInternalNEMESISOffsetEnqueue(&q->q, f);
@@ -70,13 +68,12 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(
 # else
     ptl_assert(write(q->pipe[1], "", 1), 1);
 # endif
-#endif
+#endif /* ifndef USE_HARD_POLLING */
 }                                      /*}}} */
 
-NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
-    NEMESIS_blocking_queue * q)
+NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking_queue *q)
 {                                      /*{{{ */
-#if ! defined(HAVE_PTHREAD_SHMEM_LOCKS) && ! defined(USE_HARD_POLLING)
+#if !defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING)
     char junk;
     ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
@@ -84,21 +81,21 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     if (retval == NULL) {
         while (q->q.shadow_head == NULL && q->q.head == NULL) {
 #ifdef USE_HARD_POLLING
-            __asm__ __volatile__( "pause":::"memory");
+            __asm__ __volatile__ ("pause" ::: "memory");
 #else
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
                 ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
                 if (q->frustration > 1000) {
                     ptl_assert(pthread_cond_wait
-                               (&q->trigger, &q->trigger_lock), 0);
+                                   (&q->trigger, &q->trigger_lock), 0);
                 }
                 ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
             }
 # else
             ptl_assert(read(q->pipe[0], &junk, 1), 1);
 # endif
-#endif
+#endif /* ifdef USE_HARD_POLLING */
         }
         retval = PtlInternalNEMESISOffsetDequeue(&q->q);
         assert(retval != NULL);
@@ -107,4 +104,5 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(
     assert(retval->next == NULL);
     return retval;
 }                                      /*}}} */
+
 /* vim:set expandtab: */

@@ -15,8 +15,8 @@
 # include "ptl_internal_commpad.h"
 #endif
 
-int API_FUNC PtlGetJid(ptl_handle_ni_t  ni_handle,
-                       ptl_jid_t *      jid)
+int API_FUNC PtlGetJid(ptl_handle_ni_t ni_handle,
+                       ptl_jid_t      *jid)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };

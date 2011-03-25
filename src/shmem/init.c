@@ -30,18 +30,18 @@
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_papi.h"
 
-volatile char *comm_pad       = NULL;
-size_t num_siblings           = 0;
-size_t proc_number            = 0;
-size_t per_proc_comm_buf_size = 0;
-size_t firstpagesize          = 0;
+volatile char *comm_pad               = NULL;
+size_t         num_siblings           = 0;
+size_t         proc_number            = 0;
+size_t         per_proc_comm_buf_size = 0;
+size_t         firstpagesize          = 0;
 
-static unsigned int init_ref_count   = 0;
-static size_t comm_pad_size          = 0;
-static const char *comm_pad_shm_name = NULL;
+static unsigned int init_ref_count    = 0;
+static size_t       comm_pad_size     = 0;
+static const char  *comm_pad_shm_name = NULL;
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do { \
-        char * strerr; \
+        char       *strerr; \
         const char *str = getenv(env_str); \
         if (str == NULL) { \
             if (reqd == 1) { goto exit_fail; } \
@@ -64,9 +64,9 @@ static const char *comm_pad_shm_name = NULL;
  */
 int API_FUNC PtlInit(void)
 {   /*{{{*/
-    unsigned int race = PtlInternalAtomicInc(&init_ref_count, 1);
+    unsigned int        race              = PtlInternalAtomicInc(&init_ref_count, 1);
     static volatile int done_initializing = 0;
-    static volatile int failure = 0;
+    static volatile int failure           = 0;
 
     if (race == 0) {
         int shm_fd;
@@ -134,19 +134,19 @@ int API_FUNC PtlInit(void)
 
         memset(&nit, 0, sizeof(ptl_internal_nit_t));
         for (int ni = 0; ni < 4; ++ni) {
-            nit_limits[ni].max_list_size = 16384;       // Arbitrary
-            nit_limits[ni].max_pt_index = 63;   // Minimum required by spec
-            nit_limits[ni].max_entries = nit_limits[ni].max_list_size * 4;      // Maybe this should be max_pt_index+1 instead of 4
+            nit_limits[ni].max_list_size          = 16384; // Arbitrary
+            nit_limits[ni].max_pt_index           = 63; // Minimum required by spec
+            nit_limits[ni].max_entries            = nit_limits[ni].max_list_size * 4; // Maybe this should be max_pt_index+1 instead of 4
             nit_limits[ni].max_unexpected_headers = 128;        // Arbitrary
-            nit_limits[ni].max_mds = 128;       // Arbitrary
-            nit_limits[ni].max_cts = 128;       // Arbitrary
-            nit_limits[ni].max_eqs = 128;       // Arbitrary
-            nit_limits[ni].max_iovecs = 0;      // XXX: ???
-            nit_limits[ni].max_triggered_ops = 128;     // Arbitrary
-            nit_limits[ni].max_msg_size = UINT32_MAX;
-            nit_limits[ni].max_atomic_size = LARGE_FRAG_PAYLOAD;        // single payload
-            nit_limits[ni].max_fetch_atomic_size = LARGE_FRAG_PAYLOAD;  // single payload
-            nit_limits[ni].max_ordered_size = LARGE_FRAG_PAYLOAD;       // single payload
+            nit_limits[ni].max_mds                = 128; // Arbitrary
+            nit_limits[ni].max_cts                = 128; // Arbitrary
+            nit_limits[ni].max_eqs                = 128; // Arbitrary
+            nit_limits[ni].max_iovecs             = 0; // XXX: ???
+            nit_limits[ni].max_triggered_ops      = 128; // Arbitrary
+            nit_limits[ni].max_msg_size           = UINT32_MAX;
+            nit_limits[ni].max_atomic_size        = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_fetch_atomic_size  = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_ordered_size       = LARGE_FRAG_PAYLOAD; // single payload
         }
         PtlInternalPAPIInit();
 
