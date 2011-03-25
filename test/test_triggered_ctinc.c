@@ -61,7 +61,6 @@ int main(int   argc,
         do {
             CHECK_RETURNVAL(PtlCTGet(target, &test));
         } while (test.success == 0 && test.failure == 0);
-        printf("success = %u, failure = %u\n", (unsigned)test.success, (unsigned)test.failure);
         assert(test.success == 1);
         assert(test.failure == 0);
     }
@@ -72,7 +71,6 @@ int main(int   argc,
         do {
             CHECK_RETURNVAL(PtlCTGet(target, &test));
         } while (test.success == 1 && test.failure == 0);
-        printf("success = %u, failure = %u\n", (unsigned)test.success, (unsigned)test.failure);
         assert(test.success == 3);
         assert(test.failure == 0);
     }
