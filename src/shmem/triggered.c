@@ -7,7 +7,7 @@
 
 /* System headers */
 /*#include <stdio.h>
-#include <inttypes.h>*/
+ #include <inttypes.h>*/
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -50,6 +50,9 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
                              ptl_handle_ct_t  trig_ct_handle,
                              ptl_size_t       threshold)
 {
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t mdh = { md_handle };
     if (comm_pad == NULL) {
@@ -94,8 +97,34 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-       // PtlInternalMDPosted(md_handle);
-    return PTL_FAIL;
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            return PtlPut(md_handle, local_offset, length, ack_req,
+                          target_id, pt_index, match_bits, remote_offset,
+                          user_ptr, hdr_data);
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    PtlInternalMDPosted(md_handle);
+    t->threshold              = threshold;
+    t->type                   = PUT;
+    t->args.put.md_handle     = md_handle;
+    t->args.put.local_offset  = local_offset;
+    t->args.put.length        = length;
+    t->args.put.ack_req       = ack_req;
+    t->args.put.target_id     = target_id;
+    t->args.put.pt_index      = pt_index;
+    t->args.put.match_bits    = match_bits;
+    t->args.put.remote_offset = remote_offset;
+    t->args.put.user_ptr      = user_ptr;
+    t->args.put.hdr_data      = hdr_data;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
 }
 
 int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
@@ -557,17 +586,16 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
         ptl_ct_event_t tmp;
         PtlCTGet(trig_ct_handle, &tmp);
         if (tmp.success + tmp.failure >= threshold) {
-            PtlCTInc(ct_handle, increment);
-            return PTL_OK;
+            return PtlCTInc(ct_handle, increment);
         }
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
     /* 2. Build the trigger structure */
-    t->threshold         = threshold;
-    t->type              = CTINC;
-    t->t.ctinc.ct_handle = ct_handle;
-    t->t.ctinc.increment = increment;
+    t->threshold            = threshold;
+    t->type                 = CTINC;
+    t->args.ctinc.ct_handle = ct_handle;
+    t->args.ctinc.increment = increment;
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
@@ -577,7 +605,7 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
                                ptl_ct_event_t  new_ct,
                                ptl_handle_ct_t trig_ct_handle,
                                ptl_size_t      threshold)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t tct = { trig_ct_handle };
     ptl_internal_trigger_t               *t;
 
@@ -597,30 +625,42 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
         ptl_ct_event_t tmp;
         PtlCTGet(trig_ct_handle, &tmp);
         if (tmp.success + tmp.failure >= threshold) {
-            PtlCTSet(ct_handle, new_ct);
-            return PTL_OK;
+            return PtlCTSet(ct_handle, new_ct);
         }
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
     /* 2. Build the trigger structure */
-    t->threshold         = threshold;
-    t->type              = CTSET;
-    t->t.ctset.ct_handle = ct_handle;
-    t->t.ctset.newval    = new_ct;
+    t->threshold            = threshold;
+    t->type                 = CTSET;
+    t->args.ctset.ct_handle = ct_handle;
+    t->args.ctset.newval    = new_ct;
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
 {   /*{{{*/
     switch(t->type) {
+        case PUT:
+            PtlPut(t->args.put.md_handle,
+                   t->args.put.local_offset,
+                   t->args.put.length,
+                   t->args.put.ack_req,
+                   t->args.put.target_id,
+                   t->args.put.pt_index,
+                   t->args.put.match_bits,
+                   t->args.put.remote_offset,
+                   t->args.put.user_ptr,
+                   t->args.put.hdr_data);
+	    PtlInternalMDCleared(t->args.put.md_handle);
+            break;
         case CTINC:
-            PtlCTInc(t->t.ctinc.ct_handle, t->t.ctinc.increment);
+            PtlCTInc(t->args.ctinc.ct_handle, t->args.ctinc.increment);
             break;
         case CTSET:
-            PtlCTSet(t->t.ctset.ct_handle, t->t.ctset.newval);
+            PtlCTSet(t->args.ctset.ct_handle, t->args.ctset.newval);
             break;
     }
 } /*}}}*/
