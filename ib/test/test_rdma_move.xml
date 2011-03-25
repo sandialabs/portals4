@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <test>
+  <repeat count="2">
   <subtest>
     <desc>Test PtlPut 32K with good parameters to ME</desc>
     <ptl>
@@ -11,17 +12,13 @@
 	    <if rank="0">
 	      <ptl_md md_length="32768" type="UINT" md_data="0xa5a5a5a5">
 	        <barrier/>
-
 	        <ptl_put length="32768" ack_req="ACK" target_id="1" match="0x5555"/>
-
  	        <ptl_eq_poll time="100">
 	          <check event_type="SEND"/>
 	        </ptl_eq_poll>
-
  	        <ptl_eq_poll time="100">
 	          <check event_type="ACK"/>
 	        </ptl_eq_poll>
-
 	        <barrier/>
 	      </ptl_md>
 	    </if>
@@ -29,21 +26,20 @@
 	    <if rank="1">
 	      <ptl_me me_opt="OP_PUT" me_length="32768" me_match="0x5555" type="UINT" me_data="0x00000000">
 	        <barrier/>
-
 	        <ptl_eq_poll time="100">
 	  	  <check event_type="PUT"/>
 	        </ptl_eq_poll>
 	        <check length="32768" type="UINT" me_data="0xa5a5a5a5"/>
-
 	        <barrier/>
 	      </ptl_me>
 	    </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
-  <barrier/>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut 64K with good parameters to ME</desc>
     <ptl>
@@ -55,16 +51,13 @@
 	    <if rank="0">
               <ptl_md md_length="65536" type="UINT" md_data="0xa5a5a5a5">
 	        <barrier/>
-
                 <ptl_put length="65536" ack_req="ACK" target_id="1" match="0x5555"/>
 	        <ptl_eq_poll time="100">
 	  	  <check event_type="SEND"/>
 	        </ptl_eq_poll>
-
 	        <ptl_eq_poll time="100">
 	  	  <check event_type="ACK"/>
 	        </ptl_eq_poll>
-
 	        <barrier/>
               </ptl_md>
 	    </if>
@@ -72,21 +65,20 @@
 	    <if rank="1">
 	      <ptl_me me_opt="OP_PUT" me_length="65536" me_match="0x5555" type="UINT" me_data="0x00000000">
 	        <barrier/>
-
 	        <ptl_eq_poll time="100">
 		  <check event_type="PUT"/>
 	        </ptl_eq_poll>
 	        <check length="65536" type="UINT" me_data="0xa5a5a5a5"/>
-
 	        <barrier/>
 	      </ptl_me>
 	    </if>
+
 	  </ptl_pt>
 	</ptl_eq>
       </ptl_ni>
     </ptl>
-  <barrier/>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters from ME</desc>
     <ptl>
@@ -99,13 +91,10 @@
 	      <ptl_md md_length="8192" type="UINT" me_data="0x00000000">
 	        <barrier/>
                 <ptl_get length="8192" target_id="1" match="0x5555"/>
-
 	        <ptl_eq_poll time="100">
 		  <check event_type="REPLY"/>
 	        </ptl_eq_poll>
-
 	        <check length="8192" type="UINT" md_data="0x5a5a5a5a"/>
-
 	        <barrier/>
               </ptl_md>
 	    </if>
@@ -113,20 +102,19 @@
 	    <if rank="1">
 	      <ptl_me me_opt="OP_GET" me_length="8192" me_match="0x5555" type="UINT" me_data="0x5a5a5a5a">
 	        <barrier/>
-
 	        <ptl_eq_poll time="100">
 		  <check event_type="GET"/>
 	        </ptl_eq_poll>
-
 	        <barrier/>
 	      </ptl_me>
 	    </if>
+
 	  </ptl_pt>
 	</ptl_eq>
       </ptl_ni>
     </ptl>
-  <barrier/>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters to LE</desc>
     <ptl>
@@ -139,14 +127,12 @@
               <ptl_md md_length="16384" type="UINT" md_data="0xf0f0f0f0">
                 <barrier/>
                 <ptl_put length="16384" ack_req="ACK" target_id="1"/>
-
                 <ptl_eq_poll time="100">
                     <check event_type="SEND"/>
                 </ptl_eq_poll>
                 <ptl_eq_poll time="100">
                     <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -154,21 +140,20 @@
             <if rank="1">
 	      <ptl_le le_opt="OP_PUT" le_length="16384" type="UINT" le_data="0x00000000">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                     <check event_type="PUT"/>
                 </ptl_eq_poll>
 	        <check length="16384" type="UINT" le_data="0xf0f0f0f0"/>
-
                 <barrier/>
 	      </ptl_le>
             </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
-  <barrier/>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters from LE</desc>
     <ptl>
@@ -177,17 +162,15 @@
         <ptl_eq>
 	  <ptl_pt>
             <ptl_get_id/>
+
             <if rank="0">
               <ptl_md md_length="16384" type="UINT" md_data="0xffffffff">
                 <barrier/>
-
                 <ptl_get length="16384" target_id="1"/>
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
                 <check length="16384" type="UINT" md_data="0x0f0f0f0f"/>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -195,19 +178,19 @@
             <if rank="1">
 	      <ptl_le le_opt="OP_GET" le_length="16384" type="UINT" le_data="0x0f0f0f0f">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_le>
             </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME IOVEC of 8 </desc>
     <ptl>
@@ -219,16 +202,13 @@
             <if rank="0">
               <ptl_md md_length="8192" type="UINT" md_data="0x5a5a5a5a">
                 <barrier/>
-
                 <ptl_put length="8192" ack_req="ACK" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -236,20 +216,20 @@
             <if rank="1">
 	      <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0xa5a5a5a5">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
                 <check length="8192" type="UINT" me_data="0x5a5a5a5a"/>
-
                 <barrier/>
               </ptl_me>
             </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME IOVEC of 8 </desc>
     <ptl>
@@ -261,15 +241,11 @@
             <if rank="0">
               <ptl_md md_length="8192" type="UINT" md_data="0x00000000">
                 <barrier/>
-
                 <ptl_get length="8192" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
                 <check length="8192" type="UINT" md_data="0x12481248"/>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -277,19 +253,19 @@
             <if rank="1">
 	      <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x12481248">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_me>
             </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE IOVEC of 8 </desc>
     <ptl>
@@ -302,15 +278,12 @@
               <ptl_md md_length="8192" type="UINT" md_data="0x0000ffff">
                 <barrier/>
                 <ptl_put length="8192" ack_req="ACK" target_id="1"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
-
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -318,20 +291,20 @@
             <if rank="1">
 	      <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0xffff0000">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
-
 	        <check length="8192" type="UINT" le_data="0x0000ffff"/>
                 <barrier/>
               </ptl_le>
             </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE IOVEC of 8 </desc>
     <ptl>
@@ -339,36 +312,35 @@
         <ptl_eq>
 	  <ptl_pt>
             <ptl_get_id/>
+
             <if rank="0">
               <ptl_md md_length="8192" type="UINT" md_data="0x00000000">
                 <barrier/>
                 <ptl_get length="8192" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
                 <check length="8192" type="UINT" md_data="0x12345678"/>
-
                 <barrier/>
               </ptl_md>
             </if>
+
             <if rank="1">
 	      <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x12345678">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_le>
             </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters MD IOVEC of 8 </desc>
     <ptl>
@@ -380,16 +352,13 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x00000000">
                 <barrier/>
-
                 <ptl_put length="8192" ack_req="ACK" target_id="1" match="0x5555"/>
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
-
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -397,20 +366,20 @@
             <if rank="1">
 	      <ptl_me me_opt="OP_PUT" me_length="8192" me_match="0x5555" type="UINT" me_data="0xffffffff">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
 	        <check length="8192" type="UINT" me_data="0x00000000"/>
-
                 <barrier/>
               </ptl_me>
             </if>
+
   	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters MD IOVEC of 8 </desc>
     <ptl>
@@ -422,15 +391,11 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0xffffffff">
                 <barrier/>
-
                 <ptl_get length="8192" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
 	        <check length="8192" type="UINT" md_data="0x0a5f0a5f"/>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -438,19 +403,19 @@
             <if rank="1">
 	      <ptl_me me_opt="OP_GET" me_length="8192" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
 	      </ptl_me>
             </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
@@ -462,38 +427,35 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0xa5a5a5a5">
                 <barrier/>
-
                 <ptl_put length="8192" ack_req="ACK" target_id="1" match="0x5555"/>
+                <barrier/>
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
-
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
-                <barrier/>
               </ptl_md>
             </if>
 
-            <if rank="0">
+            <if rank="1">
 	      <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x00000000">
                 <barrier/>
 
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
-
                 <check length="8192" type="UINT" me_data="0xa5a5a5a5"/>
-
                 <barrier/>
               </ptl_me>
             </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
@@ -505,27 +467,21 @@
              <if rank="0">
                <ptl_md md_opt="IOVEC" md_length="8" type="UINIT" md_data="0x0000ffff">
                  <barrier/>
-
                  <ptl_get length="8192" target_id="1" match="0x5555"/>
-
+                 <barrier/>
                  <ptl_eq_poll time="100">
                    <check event_type="REPLY"/>
                  </ptl_eq_poll>
-
 	         <check length="8192" type="UINT" md_data="0x5555aaaa"/>
-
-                 <barrier/>
                </ptl_md>
              </if>
 
              <if rank="1">
                <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x5555aaaa">
                  <barrier/>
-
                  <ptl_eq_poll time="100">
                    <check event_type="GET"/>
                  </ptl_eq_poll>
-
                  <barrier/>
 	      </ptl_me>
             </if>
@@ -534,6 +490,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
@@ -545,17 +502,13 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x01234567">
                 <barrier/>
-
                 <ptl_put length="8192" ack_req="ACK" target_id="1"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
-
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -563,21 +516,20 @@
             <if rank="1">
               <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x00000000">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
-
 	        <check length="8192" type="UINT" le_data="0x01234567"/>
-
                 <barrier/>
 	      </ptl_le>
             </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
@@ -589,15 +541,11 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="8" type="UINT" md_data="0x00000000">
                 <barrier/>
-
                 <ptl_get length="8192" target_id="1"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
 	      	<check length="8192" type="UINT" md_data="0x84218421"/>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -605,19 +553,19 @@
             <if rank="1">
               <ptl_le le_opt="IOVEC OP_GET" le_length="8" type="UINT" le_data="0x84218421">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
 	      </ptl_le>
             </if>
+
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test indirect PtlPut with good parameters MD IOVEC of 32 </desc>
     <ptl>
@@ -629,17 +577,13 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="32" type="UINT" md_data="0x00000000">
                 <barrier/>
-
                 <ptl_put length="32768" ack_req="ACK" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="SEND"/>
                 </ptl_eq_poll>
-
                 <ptl_eq_poll time="100">
                   <check event_type="ACK"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -647,13 +591,10 @@
             <if rank="1">
 	      <ptl_me me_opt="OP_PUT" me_length="32768" me_match="0x5555" type="UINT" me_data="0xffffffff">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="PUT"/>
                 </ptl_eq_poll>
-
 	        <check length="32768" type="UINT" me_data="0x00000000"/>
-
                 <barrier/>
               </ptl_me>
             </if>
@@ -662,6 +603,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test indirect PtlGet with good parameters MD IOVEC of 32 </desc>
     <ptl>
@@ -673,15 +615,11 @@
             <if rank="0">
               <ptl_md md_opt="IOVEC" md_length="32" type="UINT" md_data="0xffffffff">
                 <barrier/>
-
                 <ptl_get length="32768" target_id="1" match="0x5555"/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="REPLY"/>
                 </ptl_eq_poll>
-
                 <check length="32768" type="UINT" md_data="0x0a5f0a5f"/>
-
                 <barrier/>
               </ptl_md>
             </if>
@@ -689,11 +627,9 @@
             <if rank="1">
 	      <ptl_me me_opt="OP_GET" me_length="32768" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
                 <barrier/>
-
                 <ptl_eq_poll time="100">
                   <check event_type="GET"/>
                 </ptl_eq_poll>
-
                 <barrier/>
               </ptl_me>
             </if>
@@ -702,6 +638,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test PUT using RDMA message flow with drop at target</desc>
     <ptl>
@@ -713,7 +650,6 @@
             <if rank="0">
 	      <ptl_md md_length="32768">
                 <barrier/>
-
 		<ptl_put length="32768" ack_req="ACK" match="0x5555" user_ptr="432" target_id="1"/>
 
 		<ptl_eq_poll time="100">
@@ -721,24 +657,19 @@
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-
 		<ptl_eq_poll time="100">
 		  <check event_type="ACK"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-
 		<ptl_eq_poll time="100" ret="EQ_EMPTY"/>
-
                 <barrier/>
               </ptl_md>
             </if>
 
             <if rank="1">
               <barrier/>
-
               <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
-
               <barrier/>
             </if>
 	  </ptl_pt>
@@ -746,6 +677,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <barrier/>
   <subtest>
     <desc>Test GET using RDMA message flow with drop at target</desc>
     <ptl>
@@ -757,15 +689,12 @@
             <if rank="0">
 	      <ptl_md md_length="32768">
                 <barrier/>
-
 		<ptl_get length="32768" user_ptr="432" target_id="1"/>
-
 		<ptl_eq_poll time="100">
 		  <check event_type="REPLY"/>
 		  <check event_user_ptr="432"/>
 		  <check event_ni_fail="DROPPED"/>
 		</ptl_eq_poll>
-
 		<ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                 <barrier/>
               </ptl_md>
@@ -773,9 +702,7 @@
 
             <if rank="1">
               <barrier/>
-
 	      <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
-
               <barrier/>
             </if>
 	  </ptl_pt>
@@ -783,4 +710,5 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </repeat>
 </test>
