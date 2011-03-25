@@ -21,8 +21,8 @@ echo "===== test_basic_me.xml ====="
 ./ptl_test -f test_basic_me.xml
 echo "===== test_basic_move.xml ====="
 ./ptl_test -f test_basic_move.xml
-echo "===== test_rdma_move.xml ====="
-./ptl_test -f test_rdma_move.xml
+echo "===== test_rdma_move_logical.xml ====="
+./ptl_test -f test_rdma_move_logical.xml
 echo "===== test_basic_trig.xml ====="
 ./ptl_test -f test_basic_trig.xml
 echo "===== test_limits.xml ====="
