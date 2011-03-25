@@ -34,12 +34,12 @@
 typedef struct fragment_hdr_s fragment_hdr_t;
 
 struct fragment_hdr_s {
-    fragment_hdr_t *    next;             // for NEMESIS_entry
-    uint64_t            size;
+    fragment_hdr_t *next;                 // for NEMESIS_entry
+    uint64_t        size;
 #ifdef PARANOID
-    uint64_t owner_rank;
+    uint64_t        owner_rank;
 #endif
-    char data[];
+    char            data[];
 };
 
 size_t SMALL_FRAG_SIZE    = 256;
@@ -49,26 +49,23 @@ size_t LARGE_FRAG_PAYLOAD = 0;
 size_t LARGE_FRAG_SIZE    = 4096;
 size_t LARGE_FRAG_COUNT   = 128;
 
-static fragment_hdr_t *small_free_list  = NULL;
-static fragment_hdr_t *large_free_list  = NULL;
-static NEMESIS_blocking_queue *receiveQ = NULL;
+static fragment_hdr_t         *small_free_list = NULL;
+static fragment_hdr_t         *large_free_list = NULL;
+static NEMESIS_blocking_queue *receiveQ        = NULL;
 
 #define C_VALIDPTR(x) assert(((uintptr_t)(x)) >= (uintptr_t)comm_pad && \
-                             ((uintptr_t)(x)) < \
-                             ((uintptr_t)comm_pad + per_proc_comm_buf_size * \
-                              (num_siblings + 1)))
+                             ((uintptr_t)(x)) < ((uintptr_t)comm_pad + per_proc_comm_buf_size * (num_siblings + 1)))
 #ifdef PARANOID
 static uintptr_t small_bufstart, small_bufend;
 static uintptr_t large_bufstart, large_bufend;
-# define PARANOID_STEP(x)       x
-# define VALIDPTR(x, t)         assert(((uintptr_t)(x)) >= t ## _bufstart && \
-                                       ((uintptr_t)(x)) < t ## _bufend)
-static void PtlInternalValidateFragmentLists(
-                                             void)
+# define PARANOID_STEP(x) x
+# define VALIDPTR(x, t)   assert(((uintptr_t)(x)) >= t ## _bufstart && \
+                                 ((uintptr_t)(x)) < t ## _bufend)
+static void PtlInternalValidateFragmentLists(void)
 {                                      /*{{{ */
-    unsigned long count = 0;
+    unsigned long   count  = 0;
     fragment_hdr_t *cursor = small_free_list;
-    fragment_hdr_t *prev = NULL;
+    fragment_hdr_t *prev   = NULL;
 
     while (cursor != NULL) {
         count++;
@@ -81,12 +78,12 @@ static void PtlInternalValidateFragmentLists(
                     prev);
         }
         assert(cursor->size == SMALL_FRAG_PAYLOAD);
-        prev = cursor;
+        prev   = cursor;
         cursor = cursor->next;
     }
     cursor = large_free_list;
-    count = 0;
-    prev = NULL;
+    count  = 0;
+    prev   = NULL;
     while (cursor != NULL) {
         count++;
         VALIDPTR(cursor, large);
@@ -98,7 +95,7 @@ static void PtlInternalValidateFragmentLists(
                     prev);
         }
         assert(cursor->size == LARGE_FRAG_PAYLOAD);
-        prev = cursor;
+        prev   = cursor;
         cursor = cursor->next;
     }
 }                                      /*}}} */
@@ -110,9 +107,9 @@ static void PtlInternalValidateFragmentLists(
 
 void INTERNAL PtlInternalFragmentSetup(volatile char *buf)
 {                                      /*{{{ */
-    size_t i;
+    size_t          i;
     fragment_hdr_t *fptr;
-    char *bptr;
+    char           *bptr;
 
     /* init metadata */
     SMALL_FRAG_PAYLOAD = SMALL_FRAG_SIZE - sizeof(fragment_hdr_t);
@@ -130,7 +127,7 @@ void INTERNAL PtlInternalFragmentSetup(volatile char *buf)
         fptr->size = SMALL_FRAG_PAYLOAD;
         PARANOID_STEP(fptr->owner_rank = proc_number);
         small_free_list = fptr;
-        fptr = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i + 1)));
+        fptr            = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i + 1)));
         // fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
     }
     /* and finally, initialize the large fragment free-list */
@@ -140,7 +137,7 @@ void INTERNAL PtlInternalFragmentSetup(volatile char *buf)
         fptr->size = LARGE_FRAG_PAYLOAD;
         PARANOID_STEP(fptr->owner_rank = proc_number);
         large_free_list = fptr;
-        fptr = (fragment_hdr_t *)(fptr->data + LARGE_FRAG_PAYLOAD);
+        fptr            = (fragment_hdr_t *)(fptr->data + LARGE_FRAG_PAYLOAD);
     }
     PARANOID_STEP(large_bufend = (uintptr_t)fptr);
     PtlInternalValidateFragmentLists();
@@ -183,7 +180,7 @@ void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
 }                                      /*}}} */
 
 /* this enqueues a fragment in the specified receive queue */
-void INTERNAL PtlInternalFragmentToss(void *frag,
+void INTERNAL PtlInternalFragmentToss(void     *frag,
                                       ptl_pid_t dest)
 {                                      /*{{{ */
     NEMESIS_blocking_queue *destQ =

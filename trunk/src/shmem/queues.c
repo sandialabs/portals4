@@ -7,21 +7,19 @@
 #include "ptl_internal_atomic.h"
 
 #define QCTR_MASK (15)
-#define QPTR(x) ((volatile ptl_internal_qnode_t*)(((uintptr_t)(x))&~(uintptr_t)QCTR_MASK))
-#define QCTR(x) (((uintptr_t)(x))&QCTR_MASK)
-#define QCOMPOSE(x,y) (void*)(((uintptr_t)QPTR(x))|((QCTR(y)+1)&QCTR_MASK))
+#define QPTR(x)        ((volatile ptl_internal_qnode_t*)(((uintptr_t)(x)) & ~(uintptr_t)QCTR_MASK))
+#define QCTR(x)        (((uintptr_t)(x)) & QCTR_MASK)
+#define QCOMPOSE(x, y) (void*)(((uintptr_t)QPTR(x)) | ((QCTR(y) + 1) & QCTR_MASK))
 
 // This lock-free algorithm borrowed from qthreads, which borrowed it from
 // http://www.research.ibm.com/people/m/michael/podc-1996.pdf
 
-void INTERNAL PtlInternalQueueInit(
-    ptl_internal_q_t * q)
+void INTERNAL PtlInternalQueueInit(ptl_internal_q_t *q)
 {
     q->head = q->tail = calloc(1, sizeof(ptl_internal_qnode_t));
 }
 
-void INTERNAL PtlInternalQueueDestroy(
-    ptl_internal_q_t * q)
+void INTERNAL PtlInternalQueueDestroy(ptl_internal_q_t *q)
 {
     assert(q->head == q->tail);
     assert(q->head != NULL);
@@ -29,13 +27,12 @@ void INTERNAL PtlInternalQueueDestroy(
     q->head = q->tail = NULL;
 }
 
-void INTERNAL PtlInternalQueueAppend(
-    ptl_internal_q_t * q,
-    void *t)
+void INTERNAL PtlInternalQueueAppend(ptl_internal_q_t *q,
+                                     void             *t)
 {
     volatile ptl_internal_qnode_t *tail;
     volatile ptl_internal_qnode_t *next;
-    ptl_internal_qnode_t *node;
+    ptl_internal_qnode_t          *node;
 
     assert(t != NULL);
     assert(q != NULL);
@@ -46,7 +43,7 @@ void INTERNAL PtlInternalQueueAppend(
 
     node->value = t;
     // set to NULL without disturbing the ctr
-    node->next = (ptl_internal_qnode_t *) (uintptr_t) QCTR(node->next);
+    node->next = (ptl_internal_qnode_t *)(uintptr_t)QCTR(node->next);
 
     while (1) {
         tail = q->tail;
@@ -54,8 +51,9 @@ void INTERNAL PtlInternalQueueAppend(
         if (tail == q->tail) {         // are tail and next consistent?
             if (QPTR(next) == NULL) {  // was tail pointing to the last node ?
                 if (PtlInternalAtomicCasPtr
-                    (&(QPTR(tail)->next), next, QCOMPOSE(node, next)) == next)
+                        (&(QPTR(tail)->next), next, QCOMPOSE(node, next)) == next) {
                     break;             // success!
+                }
             } else {
                 (void)PtlInternalAtomicCasPtr(&(q->tail), tail,
                                               QCOMPOSE(next, tail));
@@ -65,18 +63,17 @@ void INTERNAL PtlInternalQueueAppend(
     (void)PtlInternalAtomicCasPtr(&(q->tail), tail, QCOMPOSE(node, tail));
 }
 
-void INTERNAL *PtlInternalQueuePop(
-    ptl_internal_q_t * q)
+void INTERNAL *PtlInternalQueuePop(ptl_internal_q_t *q)
 {
-    void *p;
+    void                          *p;
     volatile ptl_internal_qnode_t *head;
     volatile ptl_internal_qnode_t *tail;
     volatile ptl_internal_qnode_t *next_ptr;
 
     assert(q != NULL);
     while (1) {
-        head = q->head;
-        tail = q->tail;
+        head     = q->head;
+        tail     = q->tail;
         next_ptr = QPTR(QPTR(head)->next);
         if (head == q->head) {         // are head, tail, and next consistent?
             if (head == tail) {        // is queue empty or tail falling behind?
@@ -89,7 +86,7 @@ void INTERNAL *PtlInternalQueuePop(
                 // read value before CAS, otherwise another dequeue might free the next node
                 p = next_ptr->value;
                 if (PtlInternalAtomicCasPtr
-                    (&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
+                        (&(q->head), head, QCOMPOSE(next_ptr, head)) == head) {
                     break;             // success!
                 }
             }
@@ -98,4 +95,5 @@ void INTERNAL *PtlInternalQueuePop(
     free((void *)QPTR(head));
     return p;
 }
+
 /* vim:set expandtab: */

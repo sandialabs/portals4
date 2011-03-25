@@ -14,27 +14,25 @@
 #include "ptl_visibility.h"
 #include "ptl_internal_handles.h"
 #ifndef NO_ARG_VALIDATION
-#include "ptl_internal_error.h"
+# include "ptl_internal_error.h"
 #endif
 
-int INTERNAL PtlInternalLogicalProcessValidator(
-    ptl_process_t p)
+int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
     return (p.rank >= num_siblings);
 }
 
-int INTERNAL PtlInternalPhysicalProcessValidator(
-    ptl_process_t p)
+int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
 {
     /* pid == num_siblings is the COLLECTOR */
     return (p.phys.pid > num_siblings || p.phys.nid != 0);
 }
 
-int API_FUNC PtlGetId(
-    ptl_handle_ni_t ni_handle,
-    ptl_process_t * id)
+int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
+                      ptl_process_t  *id)
 {
     ptl_internal_handle_converter_t ni = { ni_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -60,4 +58,5 @@ int API_FUNC PtlGetId(
     }
     return PTL_OK;
 }
+
 /* vim:set expandtab: */

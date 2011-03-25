@@ -29,47 +29,45 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_alignment.h"
 #ifndef NO_ARG_VALIDATION
-#include "ptl_internal_error.h"
+# include "ptl_internal_error.h"
 #endif
 
-ptl_internal_nit_t nit = { {0, 0, 0, 0}
-, {0, 0, 0, 0}
-, {0, 0, 0, 0}
-, {{0, 0}
-   , {0, 0}
-   , {0, 0}
-   , {0, 0}
-   }
-};
-ptl_ni_limits_t nit_limits[4];
+ptl_internal_nit_t nit = { { 0, 0, 0, 0 },
+                           { 0, 0, 0, 0 },
+                           { 0, 0, 0, 0 },
+                           { { 0, 0 },
+                             { 0, 0 },
+                             { 0, 0 },
+                             { 0, 0 } } };
+ptl_ni_limits_t    nit_limits[4];
 
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
-const ptl_interface_t PTL_IFACE_DEFAULT = UINT_MAX;
+const ptl_interface_t  PTL_IFACE_DEFAULT = UINT_MAX;
 const ptl_handle_any_t PTL_INVALID_HADLE = { UINT_MAX };
 
-int API_FUNC PtlNIInit(
-    ptl_interface_t iface,
-    unsigned int options,
-    ptl_pid_t pid,
-    ptl_ni_limits_t * desired,
-    ptl_ni_limits_t * actual,
-    ptl_size_t map_size,
-    Q_UNUSED ptl_process_t * desired_mapping,
-    ptl_process_t * actual_mapping,
-    ptl_handle_ni_t * ni_handle)
+int API_FUNC PtlNIInit(ptl_interface_t         iface,
+                       unsigned int            options,
+                       ptl_pid_t               pid,
+                       ptl_ni_limits_t        *desired,
+                       ptl_ni_limits_t        *actual,
+                       ptl_size_t              map_size,
+                       Q_UNUSED ptl_process_t *desired_mapping,
+                       ptl_process_t          *actual_mapping,
+                       ptl_handle_ni_t        *ni_handle)
 {
-    ptl_internal_handle_converter_t ni = {.s = {HANDLE_NI_CODE, 0, 0} };
-    ptl_table_entry_t *tmp;
+    ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
+    ptl_table_entry_t              *tmp;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if (iface != 0 && iface != PTL_IFACE_DEFAULT) {
+    if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
         VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
         return PTL_ARG_INVALID;
     }
-    if (pid != PTL_PID_ANY && pid != proc_number) {
+    if ((pid != PTL_PID_ANY) && (pid != proc_number)) {
         VERBOSE_ERROR("Weird PID (%i)\n", (int)pid);
         return PTL_ARG_INVALID;
     }
@@ -81,7 +79,7 @@ int API_FUNC PtlNIInit(
         VERBOSE_ERROR("Neither logical nor physical\n");
         return PTL_ARG_INVALID;
     }
-    if (pid > num_siblings && pid != PTL_PID_ANY) {
+    if ((pid > num_siblings) && (pid != PTL_PID_ANY)) {
         VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid,
                       (int)num_siblings);
         return PTL_ARG_INVALID;
@@ -90,11 +88,11 @@ int API_FUNC PtlNIInit(
         VERBOSE_ERROR("ni_handle == NULL\n");
         return PTL_ARG_INVALID;
     }
-    if (map_size > 0 && (actual_mapping == NULL)) {
-        VERBOSE_ERROR("asked for a map size (%"PRIu64") without a place to put it (actual_mapping == NULL)\n", map_size);
+    if ((map_size > 0) && (actual_mapping == NULL)) {
+        VERBOSE_ERROR("asked for a map size (%" PRIu64 ") without a place to put it (actual_mapping == NULL)\n", map_size);
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     if (iface == PTL_IFACE_DEFAULT) {
         iface = 0;
     }
@@ -118,54 +116,54 @@ int API_FUNC PtlNIInit(
 #endif
     }
     *ni_handle = ni.a;
-    if (desired != NULL &&
-        PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 1) == 0) {
+    if ((desired != NULL) &&
+        (PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 1) == 0)) {
         /* nit_limits_init[ni.s.ni] now marked as "being initialized" */
-        if (desired->max_entries > 0 &&
-            desired->max_entries < (1 << HANDLE_CODE_BITS)) {
+        if ((desired->max_entries > 0) &&
+            (desired->max_entries < (1 << HANDLE_CODE_BITS))) {
             nit_limits[ni.s.ni].max_entries = desired->max_entries;
         }
         if (desired->max_unexpected_headers > 0) {
             nit_limits[ni.s.ni].max_unexpected_headers = desired->max_unexpected_headers;
         }
-        if (desired->max_mds > 0 &&
-            desired->max_mds < (1 << HANDLE_CODE_BITS)) {
+        if ((desired->max_mds > 0) &&
+            (desired->max_mds < (1 << HANDLE_CODE_BITS))) {
             nit_limits[ni.s.ni].max_mds = desired->max_mds;
         }
-        if (desired->max_cts > 0 &&
-            desired->max_cts < (1 << HANDLE_CODE_BITS)) {
+        if ((desired->max_cts > 0) &&
+            (desired->max_cts < (1 << HANDLE_CODE_BITS))) {
             nit_limits[ni.s.ni].max_cts = desired->max_cts;
         }
-        if (desired->max_eqs > 0 &&
-            desired->max_eqs < (1 << HANDLE_CODE_BITS)) {
+        if ((desired->max_eqs > 0) &&
+            (desired->max_eqs < (1 << HANDLE_CODE_BITS))) {
             nit_limits[ni.s.ni].max_eqs = desired->max_eqs;
         }
         if (desired->max_pt_index >= 63) {      // XXX: there may need to be more restrictions on this
             nit_limits[ni.s.ni].max_pt_index = desired->max_pt_index;
         }
-        //nit_limits[ni.s.ni].max_iovecs = INT_MAX;      // ???
-        if (desired->max_list_size > 0 &&
-            desired->max_list_size < (1ULL << (sizeof(uint32_t) * 8))) {
+        // nit_limits[ni.s.ni].max_iovecs = INT_MAX;      // ???
+        if ((desired->max_list_size > 0) &&
+            (desired->max_list_size < (1ULL << (sizeof(uint32_t) * 8)))) {
             nit_limits[ni.s.ni].max_list_size = desired->max_list_size;
         }
-        if (desired->max_triggered_ops >= 0 &&
-            desired->max_triggered_ops < (1ULL << (sizeof(uint32_t) * 8))) {
+        if ((desired->max_triggered_ops >= 0) &&
+            (desired->max_triggered_ops < (1ULL << (sizeof(uint32_t) * 8)))) {
             nit_limits[ni.s.ni].max_triggered_ops = desired->max_list_size;
         }
-        if (desired->max_msg_size > 0 &&
-            desired->max_msg_size < UINT32_MAX) {
+        if ((desired->max_msg_size > 0) &&
+            (desired->max_msg_size < UINT32_MAX)) {
             nit_limits[ni.s.ni].max_msg_size = desired->max_msg_size;
         }
-        if (desired->max_atomic_size >= 8 &&
-            desired->max_atomic_size <= LARGE_FRAG_SIZE) {
+        if ((desired->max_atomic_size >= 8) &&
+            (desired->max_atomic_size <= LARGE_FRAG_SIZE)) {
             nit_limits[ni.s.ni].max_atomic_size = desired->max_atomic_size;
         }
-        if (desired->max_fetch_atomic_size >= 8 &&
-            desired->max_fetch_atomic_size <= LARGE_FRAG_SIZE) {
+        if ((desired->max_fetch_atomic_size >= 8) &&
+            (desired->max_fetch_atomic_size <= LARGE_FRAG_SIZE)) {
             nit_limits[ni.s.ni].max_fetch_atomic_size = desired->max_fetch_atomic_size;
         }
-        if (desired->max_ordered_size >= 8 &&
-            desired->max_ordered_size <= LARGE_FRAG_SIZE) {
+        if ((desired->max_ordered_size >= 8) &&
+            (desired->max_ordered_size <= LARGE_FRAG_SIZE)) {
             nit_limits[ni.s.ni].max_ordered_size = desired->max_ordered_size;
         }
         nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
@@ -175,14 +173,14 @@ int API_FUNC PtlNIInit(
     if (actual != NULL) {
         *actual = nit_limits[ni.s.ni];
     }
-    if ((options & PTL_NI_LOGICAL) != 0 && actual_mapping != NULL) {
+    if (((options & PTL_NI_LOGICAL) != 0) && (actual_mapping != NULL)) {
         for (int i = 0; i < map_size; ++i) {
             if (i >= num_siblings) {
                 actual_mapping[i].phys.nid = PTL_NID_ANY;       // aka "invalid"
                 actual_mapping[i].phys.pid = PTL_PID_ANY;       // aka "invalid"
             } else {
                 actual_mapping[i].phys.nid = 0;
-                actual_mapping[i].phys.pid = (ptl_pid_t) i;
+                actual_mapping[i].phys.pid = (ptl_pid_t)i;
             }
         }
     }
@@ -198,8 +196,8 @@ int API_FUNC PtlNIInit(
         }
         /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
         while ((tmp =
-                PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
-                                        (void *)1)) == (void *)1) ;
+                    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
+                                            (void *)1)) == (void *)1) ;
         if (tmp == NULL) {
             ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni.s.ni].max_pt_index + 1, sizeof(ptl_table_entry_t));
             if (tmp == NULL) {
@@ -207,8 +205,8 @@ int API_FUNC PtlNIInit(
                 return PTL_NO_SPACE;
             }
             nit.unexpecteds[ni.s.ni] = nit.unexpecteds_buf[ni.s.ni] =
-                calloc(nit_limits[ni.s.ni].max_unexpected_headers,
-                       sizeof(ptl_internal_buffered_header_t));
+                                           calloc(nit_limits[ni.s.ni].max_unexpected_headers,
+                                                  sizeof(ptl_internal_buffered_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
@@ -230,15 +228,15 @@ int API_FUNC PtlNIInit(
     return PTL_OK;
 }
 
-int API_FUNC PtlNIFini(
-    ptl_handle_ni_t ni_handle)
+int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
 #endif
@@ -261,24 +259,24 @@ int API_FUNC PtlNIFini(
         /* deallocate NI */
         free(nit.unexpecteds_buf[ni.s.ni]);
         ALIGNED_FREE(nit.tables[ni.s.ni], CACHELINE_WIDTH);
-        nit.unexpecteds[ni.s.ni] = NULL;
+        nit.unexpecteds[ni.s.ni]     = NULL;
         nit.unexpecteds_buf[ni.s.ni] = NULL;
-        nit.tables[ni.s.ni] = NULL;
+        nit.tables[ni.s.ni]          = NULL;
     }
     return PTL_OK;
 }
 
-int API_FUNC PtlNIStatus(
-    ptl_handle_ni_t ni_handle,
-    ptl_sr_index_t status_register,
-    ptl_sr_value_t * status)
+int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
+                         ptl_sr_index_t  status_register,
+                         ptl_sr_value_t *status)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if (ni.s.ni >= 4 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
     if (status == NULL) {
@@ -287,16 +285,16 @@ int API_FUNC PtlNIStatus(
     if (status_register >= 2) {
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     *status = nit.regs[ni.s.ni][status_register];
     return PTL_FAIL;
 }
 
-int API_FUNC PtlNIHandle(
-    ptl_handle_any_t handle,
-    ptl_handle_ni_t * ni_handle)
+int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
+                         ptl_handle_ni_t *ni_handle)
 {
     ptl_internal_handle_converter_t ehandle;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -312,9 +310,9 @@ int API_FUNC PtlNIHandle(
         case HANDLE_MD_CODE:
         case HANDLE_LE_CODE:
         case HANDLE_ME_CODE:
-            ehandle.s.code = 0;
+            ehandle.s.code     = 0;
             ehandle.s.selector = HANDLE_NI_CODE;
-            *ni_handle = ehandle.i;
+            *ni_handle         = ehandle.i;
             break;
         default:
             return PTL_ARG_INVALID;
@@ -322,37 +320,35 @@ int API_FUNC PtlNIHandle(
     return PTL_OK;
 }
 
-int INTERNAL PtlInternalNIValidator(
-    const ptl_internal_handle_converter_t ni)
+int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
 {
 #ifndef NO_ARG_VALIDATION
     if (ni.s.selector != HANDLE_NI_CODE) {
         return PTL_ARG_INVALID;
     }
-    if (ni.s.ni > 3 || ni.s.code != 0 || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
 #endif
     return PTL_OK;
 }
 
-ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(
-    const unsigned int ni)
+ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const unsigned int ni)
 {
     ptl_internal_buffered_header_t *hdr = nit.unexpecteds[ni];
+
     if (hdr != NULL) {
         ptl_internal_buffered_header_t *foundhdr;
         while ((foundhdr =
-                PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], hdr,
-                                        hdr->hdr.next)) != hdr) {
+                    PtlInternalAtomicCasPtr(&nit.unexpecteds[ni], hdr,
+                                            hdr->hdr.next)) != hdr) {
             hdr = foundhdr;
         }
     }
     return hdr;
 }
 
-void INTERNAL PtlInternalDeallocUnexpectedHeader(
-    ptl_internal_buffered_header_t * const hdr)
+void INTERNAL PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr)
 {
     ptl_internal_buffered_header_t **const ni_unex =
         &nit.unexpecteds[hdr->hdr.ni];
@@ -360,8 +356,8 @@ void INTERNAL PtlInternalDeallocUnexpectedHeader(
 
     expectednext = hdr->hdr.next = *ni_unex;
     while ((foundnext =
-            PtlInternalAtomicCasPtr(ni_unex, expectednext,
-                                    hdr)) != expectednext) {
+                PtlInternalAtomicCasPtr(ni_unex, expectednext,
+                                        hdr)) != expectednext) {
         expectednext = hdr->hdr.next = foundnext;
     }
 }
