@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <test>
+  <repeat count="2">
   <subtest>
     <desc>Test events with put to me</desc>
     <ptl>
@@ -1190,38 +1191,44 @@
     </ptl>
   </subtest>
   <barrier/>
-<!--
   <subtest>
     <desc>Test events with fetch atomic le, get_md with no eq</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" pt_index="2">
-              <ptl_eq>
-                <ptl_md>
-                    <ptl_md eq_handle="NONE">
-                      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]">
-                        <check which="INVALID"/>
-                        <check event_type="ATOMIC"/>
-                        <check event_user_ptr="654"/>
-                        <check event_ni_fail="OK"/>
-                        <check event_atom_op="LXOR"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="SEND"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                    </ptl_md>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md>
+                <ptl_md eq_handle="NONE">
+                  <barrier/>
+                  <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
+                  <barrier/>
                 </ptl_md>
-              </ptl_eq>
-            </ptl_le>
+                <ptl_eq_poll time="100">
+                  <check event_type="SEND"/>
+                  <check event_user_ptr="523"/>
+                  <check event_ni_fail="OK"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll ret="EQ_EMPTY"/>
+              </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100">
+                  <check event_type="ATOMIC"/>
+                  <check event_user_ptr="654"/>
+                  <check event_ni_fail="OK"/>
+                  <check event_atom_op="LXOR"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
@@ -1231,36 +1238,40 @@
   <subtest>
     <desc>Test events with fetch atomic le, le disabled</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" pt_index="2">
-              <ptl_eq>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md>
                 <ptl_md>
-                  <ptl_eq>
-                    <ptl_md>
-                      <ptl_fetch user_ptr="523" match="0x442c" pt_index="2" atom_op="LXOR"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="SEND"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[2]">
-                        <check which="INVALID"/>
-                        <check event_type="REPLY"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
-                    </ptl_md>
-                  </ptl_eq>
+                  <barrier/>
+                  <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
+                  <ptl_eq_poll time="100">
+                    <check event_type="SEND"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
+                    <check event_type="REPLY"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll ret="EQ_EMPTY"/>
+                  <barrier/>
                 </ptl_md>
-              </ptl_eq>
-            </ptl_le>
+              </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
@@ -1270,43 +1281,46 @@
   <subtest>
     <desc>Test events with swap le</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" pt_index="2">
-              <ptl_eq>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md>
                 <ptl_md>
-                  <ptl_eq>
-                    <ptl_md>
-                      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]">
-                        <check which="INVALID"/>
-                        <check event_type="ATOMIC"/>
-                        <check event_user_ptr="654"/>
-                        <check event_ni_fail="OK"/>
-                        <check event_atom_op="SWAP"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="SEND"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[2]">
-                        <check which="INVALID"/>
-                        <check event_type="REPLY"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
-                    </ptl_md>
-                  </ptl_eq>
+                  <barrier/>
+                  <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                  <ptl_eq_poll time="100">
+                    <check event_type="SEND"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
+                    <check event_type="REPLY"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll ret="EQ_EMPTY"/>
+                  <barrier/>
                 </ptl_md>
-              </ptl_eq>
-            </ptl_le>
+              </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100">
+                  <check event_type="ATOMIC"/>
+                  <check event_user_ptr="654"/>
+                  <check event_ni_fail="OK"/>
+                  <check event_atom_op="SWAP"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
@@ -1316,34 +1330,43 @@
   <subtest>
     <desc>Test events with swap le, put_md with no eq</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" pt_index="2">
-                <ptl_md eq_handle="NONE">
-                  <ptl_eq>
-                    <ptl_md>
-                      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]">
-                        <check which="INVALID"/>
-                        <check event_type="ATOMIC"/>
-                        <check event_user_ptr="654"/>
-                        <check event_ni_fail="OK"/>
-                        <check event_atom_op="SWAP"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="REPLY"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                    </ptl_md>
-                  </ptl_eq>
-                </ptl_md>
-            </ptl_le>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md eq_handle="NONE">
+                <ptl_eq>
+                  <ptl_md>
+                    <barrier/>
+                    <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                    <ptl_eq_poll time="100">
+                      <check event_type="REPLY"/>
+                      <check event_user_ptr="523"/>
+                      <check event_ni_fail="OK"/>
+                    </ptl_eq_poll>
+                    <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                    <barrier/>
+                  </ptl_md>
+                </ptl_eq>
+              </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100">
+                  <check event_type="ATOMIC"/>
+                  <check event_user_ptr="654"/>
+                  <check event_ni_fail="OK"/>
+                  <check event_atom_op="SWAP"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
@@ -1353,34 +1376,41 @@
   <subtest>
     <desc>Test events with swap le, get_md with no eq</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" pt_index="2">
-              <ptl_eq>
-                <ptl_md>
-                    <ptl_md eq_handle="NONE">
-                      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]">
-                        <check which="INVALID"/>
-                        <check event_type="ATOMIC"/>
-                        <check event_user_ptr="654"/>
-                        <check event_ni_fail="OK"/>
-                        <check event_atom_op="SWAP"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="SEND"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                    </ptl_md>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md>
+                <ptl_md eq_handle="NONE">
+                  <barrier/>
+                  <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                  <barrier/>
                 </ptl_md>
-              </ptl_eq>
-            </ptl_le>
+                <ptl_eq_poll time="100">
+                  <check event_type="SEND"/>
+                  <check event_user_ptr="523"/>
+                  <check event_ni_fail="OK"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+              </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100">
+                  <check event_type="ATOMIC"/>
+                  <check event_user_ptr="654"/>
+                  <check event_ni_fail="OK"/>
+                  <check event_atom_op="SWAP"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
@@ -1390,41 +1420,45 @@
   <subtest>
     <desc>Test events with swap le, le disabled</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
-          <ptl_pt pt_index="2">
-            <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" pt_index="2" target_id="SELF">
-              <ptl_eq>
+          <ptl_pt>
+            <ptl_get_id/>
+
+            <if rank="0">
+              <ptl_md>
                 <ptl_md>
-                  <ptl_eq>
-                    <ptl_md>
-                      <ptl_swap user_ptr="523" match="0x442c" pt_index="2" atom_op="SWAP"/>
-                      <msleep count="10"/>
-                      <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[1]">
-                        <check which="INVALID"/>
-                        <check event_type="SEND"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY"/>
-                      <ptl_eq_poll eq_handle="eq[2]">
-                        <check which="INVALID"/>
-                        <check event_type="REPLY"/>
-                        <check event_user_ptr="523"/>
-                        <check event_ni_fail="OK"/>
-                      </ptl_eq_poll>
-                      <ptl_eq_poll eq_handle="eq[2]" ret="EQ_EMPTY"/>
-                    </ptl_md>
-                  </ptl_eq>
-                </ptl_md>
-              </ptl_eq>
-            </ptl_le>
+                  <barrier/>
+                  <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                  <ptl_eq_poll time="100">
+                    <check event_type="SEND"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
+                    <check event_type="REPLY"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                 <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                 <barrier/>
+               </ptl_md>
+             </ptl_md>
+            </if>
+
+            <if rank="1">
+              <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                <barrier/>
+                <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                <barrier/>
+              </ptl_le>
+            </if>
+
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
     </ptl>
   </subtest>
--->
   <barrier/>
+  </repeat>
 </test>
