@@ -131,11 +131,10 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
         /* step 2: fill the op structure */
-        hdr->type   = HDR_TYPE_CMD;
-        hdr->ni     = ct.s.ni;
-        hdr->src    = proc_number;
-        hdr->target = proc_number;
-
+        hdr->type     = HDR_TYPE_CMD;
+        hdr->ni       = ct.s.ni;
+        hdr->src      = proc_number;
+        hdr->target   = proc_number;
         hdr->pt_index = CMD_TYPE_ENQUEUE;
         hdr->hdr_data = ct.s.code;
         hdr->user_ptr = t;
@@ -151,11 +150,10 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         /* step 2: fill the op structure */
-        hdr->type   = HDR_TYPE_CMD;
-        hdr->ni     = ct.s.ni;
-        hdr->src    = proc_number;
-        hdr->target = proc_number;
-
+        hdr->type     = HDR_TYPE_CMD;
+        hdr->ni       = ct.s.ni;
+        hdr->src      = proc_number;
+        hdr->target   = proc_number;
         hdr->pt_index = CMD_TYPE_CHECK;
         hdr->hdr_data = ct.s.code;
 
@@ -333,11 +331,10 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
     /* step 1: get a local memory fragment */
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
     /* step 2: fill the op structure */
-    hdr->type   = HDR_TYPE_CMD;
-    hdr->ni     = ct.s.ni;
-    hdr->src    = proc_number;
-    hdr->target = proc_number;
-
+    hdr->type     = HDR_TYPE_CMD;
+    hdr->ni       = ct.s.ni;
+    hdr->src      = proc_number;
+    hdr->target   = proc_number;
     hdr->pt_index = CMD_TYPE_CTFREE;
     hdr->hdr_data = ct.s.code;
 
@@ -607,11 +604,10 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
         /* step 2: fill the op structure */
-        hdr->type   = HDR_TYPE_CMD;
-        hdr->ni     = ct.s.ni;
-        hdr->src    = proc_number;
-        hdr->target = proc_number;
-
+        hdr->type     = HDR_TYPE_CMD;
+        hdr->ni       = ct.s.ni;
+        hdr->src      = proc_number;
+        hdr->target   = proc_number;
         hdr->pt_index = CMD_TYPE_CHECK;
         hdr->hdr_data = ct.s.code;
 
