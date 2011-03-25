@@ -1935,7 +1935,11 @@ typedef enum {
     PTL_LONG, /*!< 64-bit signed integer */
     PTL_ULONG, /*!< 64-bit unsigned integer */
     PTL_FLOAT, /*!< 32-bit floating-point number */
-    PTL_DOUBLE /*!< 64-bit floating-point number */
+    PTL_DOUBLE, /*!< 64-bit floating-point number */
+    PTL_LONG_DOUBLE,
+    PTL_FLOAT_COMPLEX,
+    PTL_DOUBLE_COMPLEX,
+    PTL_LONG_DOUBLE_COMPLEX
 } ptl_datatype_t;
 /*!
  * @fn PtlAtomic(ptl_handle_md_t    md_handle,

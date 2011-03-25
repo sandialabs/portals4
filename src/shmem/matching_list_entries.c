@@ -65,25 +65,21 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #endif
 
 /* Static functions */
-static void PtlInternalPerformDelivery(const unsigned char  type,
-                                       void *const restrict local_data,
-                                       void *const restrict message_data,
-                                       size_t               nbytes,
-                                       ptl_internal_header_t *const restrict
-                                       hdr);
-static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t eq_handle,
-                                          const ptl_handle_ct_t ct_handle,
-                                          const unsigned char   type,
-                                          const unsigned int    options,
-                                          const uint64_t        mlength,
-                                          const uintptr_t       start,
-                                          const ptl_internal_listtype_t
-                                          foundin,
-                                          ptl_internal_appendME_t *const
-                                          restrict              priority_entry,
-                                          ptl_internal_header_t *const
-                                          restrict              hdr,
-                                          const ptl_handle_me_t me_handle);
+static void PtlInternalPerformDelivery(const unsigned char             type,
+                                       void *restrict                  local_data,
+                                       void *restrict                  message_data,
+                                       size_t                          nbytes,
+                                       ptl_internal_header_t *restrict hdr);
+static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
+                                          const ptl_handle_ct_t             ct_handle,
+                                          const unsigned char               type,
+                                          const unsigned int                options,
+                                          const uint64_t                    mlength,
+                                          const uintptr_t                   start,
+                                          const ptl_internal_listtype_t     foundin,
+                                          ptl_internal_appendME_t *restrict priority_entry,
+                                          ptl_internal_header_t *restrict   hdr,
+                                          const ptl_handle_me_t             me_handle);
 
 void INTERNAL PtlInternalMENISetup(unsigned int ni,
                                    ptl_size_t   limit)
@@ -112,14 +108,12 @@ void INTERNAL PtlInternalMENITeardown(unsigned int ni)
     ALIGNED_FREE(tmp, CACHELINE_WIDTH);
 }                                      /*}}} */
 
-static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *
-                                                const restrict       Qentry,
-                                                char *const restrict lstart,
-                                                const ptl_size_t     llength,
-                                                const unsigned int   loptions,
-                                                const ptl_size_t     mlength,
-                                                ptl_internal_header_t *const
-                                                restrict             hdr)
+static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restrict     Qentry,
+                                                char *const restrict                  lstart,
+                                                const ptl_size_t                      llength,
+                                                const unsigned int                    loptions,
+                                                const ptl_size_t                      mlength,
+                                                const ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
     void *retval = NULL;
 
@@ -318,11 +312,8 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                         }
                     }
                     /* now, act like there was a delivery;
-                     * 1. Dequeue header
-                     * 2. Check permissions
-                     * 3. Iff ME is persistent...
-                     * 4a. Queue buffered header to ME buffer
-                     * 5a. When done processing entire unexpected header list, send retransmit request
+                     * 1. Dequeue header 2. Check permissions 3. Iff ME is persistent...
+                     * 4a. Queue buffered header to ME buffer 5a. When done processing entire unexpected header list, send retransmit request
                      * ... else: deliver and return */
                     // dequeue header
                     if (prev != NULL) {
@@ -381,14 +372,8 @@ permission_violation:
                         fprintf(
                                 stderr,
                                 "PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)\n");
-                        /* suggested plan: put an ME-specific buffered header
-                         * list on each ME, and when the ME is persistent, it
-                         * gets the buffered headers that it matched, in order.
-                         * Then, this list can be used to start reworking (e.g.
-                         * retransmitting/restarting) the original order of
-                         * deliveries. While this list exists on the ME, new
-                         * packets get added to that list. Once the list is
-                         * empty, the ME becomes a normal persistent ME. */
+                        /* suggested plan: put an ME-specific buffered header list on each ME, and when the ME is persistent, it gets the buffered headers that it matched, in order. Then, this list can be used to start reworking (e.g.
+                         * retransmitting/restarting) the original order of deliveries. While this list exists on the ME, new packets get added to that list. Once the list is empty, the ME becomes a normal persistent ME. */
                         abort();
                         // Queue buffered header to ME buffer
                         // etc.
@@ -410,9 +395,7 @@ permission_violation:
                         }
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
-                            /* we're assuming that this buffered_data includes
-                             * ALLLLL of the necessary data; partial data is
-                             * not supported. Bad things will happen. */
+                            /* we're assuming that this buffered_data includes ALLLLL of the necessary data; partial data is not supported. Bad things will happen. */
                             char *realstart =
                                 ((char *)me->start) + cur->hdr.dest_offset;
                             if ((cur->hdr.type == HDR_TYPE_PUT) &&
@@ -490,9 +473,7 @@ permission_violation:
 #endif              /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         PtlInternalValidateMEPT(t);
                         PTL_LOCK_UNLOCK(t->lock);
-                        /* technically, the ME was never actually *linked*, but
-                         * for symmetry of the interface, we need to pretend
-                         * like it was linked and announce the unlink */
+                        /* technically, the ME was never actually *linked*, but for symmetry of the interface, we need to pretend like it was linked and announce the unlink */
                         if ((tEQ != PTL_EQ_NONE) &&
                             ((me->options & PTL_ME_EVENT_UNLINK_DISABLE) ==
                              0)) {
@@ -526,9 +507,7 @@ permission_violation:
                         goto done_appending_unlocked;
                     }
                 }
-                /* either nothing matched in the buffered_headers, or something
-                 * did but we're appending a persistent ME, so go on and append
-                 * to the priority list */
+                /* either nothing matched in the buffered_headers, or something did but we're appending a persistent ME, so go on and append to the priority list */
             }
             if (t->priority.tail == NULL) {
                 t->priority.head = Qentry;
@@ -584,9 +563,7 @@ permission_violation:
                         }
                     }
                     /* now, act like there was a delivery;
-                     * 1. Check permissions
-                     * 2. Queue buffered header to ME buffer
-                     * 4a. When done processing entire unexpected header list, send retransmit request
+                     * 1. Check permissions 2. Queue buffered header to ME buffer 4a. When done processing entire unexpected header list, send retransmit request
                      * ... else: deliver and return */
                     // (1) check permissions
                     if (me->options & PTL_ME_AUTH_USE_JID) {
@@ -898,9 +875,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
     PtlInternalPAPIStartC();
     if (hdr->entry == NULL) {
         /* To match, one must check, in order:
-         * 1. The match_bits (with the ignore_bits) against hdr->match_bits
-         * 2. if notruncate, length
-         * 3. the match_id against src
+         * 1. The match_bits (with the ignore_bits) against hdr->match_bits 2. if notruncate, length 3. the match_id against src
          */
         PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
                                  hdr->length, hdr->dest_offset, &entry, &prev,
@@ -977,19 +952,8 @@ permission_violation:
             ((me.options & PTL_ME_MANAGE_LOCAL) && (me.min_free != 0) &&
              ((me.length - entry->local_offset) - me.min_free <=
               hdr->length))) {
-            /* that last bit of math only works because we already know that
-             * the hdr body can, at least partially, fit into this entry. In
-             * essence, the comparison is:
-             *      avalable_space - reserved_space <= incoming_block
-             * We calculate how much space is available without using reserved
-             * space (math which should NOT cause the offsets to roll-over or
-             * go negative), and compare that to the length of the incoming
-             * data. This works even if we will have to truncate the incoming
-             * data. The gyrations here, rather than something straightforward
-             * like
-             *      available_space - incoming_block <= reserved_space
-             * are to avoid problems with offsets rolling over when enormous
-             * messages are sent (esp. ones that are allowed to be truncated).
+            /* that last bit of math only works because we already know that the hdr body can, at least partially, fit into this entry. In essence, the comparison is:
+             *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */
             /* unlink ME */
             if (prev != NULL) {
@@ -1010,8 +974,7 @@ permission_violation:
             PtlInternalValidateMEPT(t);
             entry->next     = NULL;
             entry->unlinked = 1;
-            /* now that the ME has been unlinked, we can unlock the portal
-             * table, thus allowing appends on the PT while we do this delivery
+            /* now that the ME has been unlinked, we can unlock the portal table, thus allowing appends on the PT while we do this delivery
              */
             need_to_unlock = 0;
             PTL_LOCK_UNLOCK(t->lock);
@@ -1075,10 +1038,8 @@ check_lengths:
         * Perform the Operation *
         *************************/
         /*
-         * msg_mlength is the total bytecount of the message
-         * fragment_mlength is the total bytecount of this packet
-         * remaining is the total bytecount that has not been transmitted yet
-         * Thus, the offset from the beginning of the message that this fragment refers to is...
+         * msg_mlength is the total bytecount of the message fragment_mlength is the total bytecount of this packet
+         * remaining is the total bytecount that has not been transmitted yet Thus, the offset from the beginning of the message that this fragment refers to is...
          * me.start + dest_offset + (msg_mlength - fragment_mlength - remaining)
          * >_____+--------####====+____<
          * |     |        |   |   |    `--> me.start + me.length
@@ -1204,8 +1165,8 @@ check_lengths:
 }                                      /*}}} */
 
 static void PtlInternalPerformDelivery(const unsigned char             type,
-                                       void *const restrict            local_data,
-                                       void *const restrict            message_data,
+                                       void *restrict                  local_data,
+                                       void *restrict                  message_data,
                                        size_t                          nbytes,
                                        ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
@@ -1224,11 +1185,10 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
             break;
         case HDR_TYPE_SWAP:
             PtlInternalPerformAtomicArg(local_data,
-                                        ((char *)message_data) + 8,
+                                        ((char *)message_data) + 32,
                                         *(uint64_t *)message_data, nbytes,
                                         (ptl_op_t)hdr->atomic_operation,
-                                        (ptl_datatype_t)hdr->
-                                        atomic_datatype);
+                                        (ptl_datatype_t)hdr->atomic_datatype);
             break;
         default:
             UNREACHABLE;
@@ -1236,19 +1196,16 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
     }
 }                                      /*}}} */
 
-static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t eq_handle,
-                                          const ptl_handle_ct_t ct_handle,
-                                          const unsigned char   type,
-                                          const unsigned int    options,
-                                          const uint64_t        mlength,
-                                          const uintptr_t       start,
-                                          const ptl_internal_listtype_t
-                                          foundin,
-                                          ptl_internal_appendME_t *const
-                                          restrict              priority_entry,
-                                          ptl_internal_header_t *const
-                                          restrict              hdr,
-                                          const ptl_handle_me_t me_handle)
+static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
+                                          const ptl_handle_ct_t             ct_handle,
+                                          const unsigned char               type,
+                                          const unsigned int                options,
+                                          const uint64_t                    mlength,
+                                          const uintptr_t                   start,
+                                          const ptl_internal_listtype_t     foundin,
+                                          ptl_internal_appendME_t *restrict priority_entry,
+                                          ptl_internal_header_t *restrict   hdr,
+                                          const ptl_handle_me_t             me_handle)
 {                                      /*{{{ */
     int ct_announce = ct_handle != PTL_CT_NONE;
 

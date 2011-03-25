@@ -244,7 +244,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
                 memcpy((uint8_t *)(mdptr->start) +
                        hdr->local_offset1,
-                       hdr->data + 8, hdr->length);
+                       hdr->data + 32, hdr->length);
             }
             break;
         default:                      // impossible
@@ -847,7 +847,14 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -1069,7 +1076,14 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -1288,7 +1302,14 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             case PTL_LONG:
             case PTL_ULONG:
             case PTL_DOUBLE:
+            case PTL_FLOAT_COMPLEX:
                 multiple = 8;
+                break;
+            case PTL_DOUBLE_COMPLEX:
+                multiple = 16;
+                break;
+            case PTL_LONG_DOUBLE_COMPLEX:
+                multiple = 32;
                 break;
         }
         if (length % multiple != 0) {
@@ -1329,8 +1350,8 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             break;
         case PTL_CSWAP:
         case PTL_MSWAP:
-            if (length > 8) {
-                VERBOSE_ERROR("Length (%u) is bigger than one datatype (8)\n",
+            if (length > 32) {
+                VERBOSE_ERROR("Length (%u) is bigger than one datatype (32)\n",
                               (unsigned int)length);
                 return PTL_ARG_INVALID;
             }
@@ -1372,7 +1393,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         PtlInternalMDPosted(get_md_handle);
     }
     /* step 1: get a local memory fragment */
-    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 8);
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 32);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_SWAP;
     hdr->ni   = get_md.s.ni;
@@ -1426,11 +1447,18 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
                 case PTL_LONG:
                 case PTL_ULONG:
                 case PTL_DOUBLE:
+                case PTL_FLOAT_COMPLEX:
                     memcpy(dataptr, operand, 8);
+                    break;
+                case PTL_DOUBLE_COMPLEX:
+                    memcpy(dataptr, operand, 16);
+                    break;
+                case PTL_LONG_DOUBLE_COMPLEX:
+                    memcpy(dataptr, operand, 32);
                     break;
             }
         }
-        dataptr += 8;
+        dataptr += 32;
         memcpy(dataptr, PtlInternalMDDataPtr(put_md_handle) + local_put_offset, length);
     }
     /* step 4: enqueue the op structure on the target */
