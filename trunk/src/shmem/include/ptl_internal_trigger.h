@@ -5,6 +5,10 @@
 
 typedef enum {
     PUT,
+    GET,
+    ATOMIC,
+    FETCHATOMIC,
+    SWAP,
     CTINC,
     CTSET
 } ptl_internal_trigtype_t;
@@ -26,9 +30,17 @@ typedef struct ptl_internal_trigger_s {
             ptl_size_t       remote_offset;
             void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
-            ptl_handle_ct_t  trig_ct_handle;
-            ptl_size_t       threshold;
         } put;
+        struct {
+            ptl_handle_md_t  md_handle;
+            ptl_size_t       local_offset;
+            ptl_size_t       length;
+            ptl_process_t    target_id;
+            ptl_pt_index_t   pt_index;
+            ptl_match_bits_t match_bits;
+            ptl_size_t       remote_offset;
+            void            *user_ptr;
+        } get;
         struct {
             ptl_handle_ct_t ct_handle;
             ptl_ct_event_t  increment;
