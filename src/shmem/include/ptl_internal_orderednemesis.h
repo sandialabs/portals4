@@ -11,9 +11,6 @@
 #endif
 #include <stdint.h>                    /* for uint32_t */
 
-#include <stdio.h>
-#include <inttypes.h>
-
 /* Internal headers */
 #include "ptl_internal_alignment.h"
 #include "ptl_internal_assert.h"
@@ -43,9 +40,9 @@ typedef struct {
 } ordered_NEMESIS_queue ALIGNED (CACHELINE_WIDTH);
 
 /***********************************************/
-static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(volatile ordered_NEMESIS_ptr * addr,
-                                                          const ordered_NEMESIS_ptr oldval,
-                                                          const ordered_NEMESIS_ptr newval)
+static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(volatile ordered_NEMESIS_ptr *addr,
+                                                          const ordered_NEMESIS_ptr     oldval,
+                                                          const ordered_NEMESIS_ptr     newval)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     ordered_NEMESIS_ptr ret;
@@ -67,12 +64,11 @@ static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(volatile ordered_NEMES
 #endif  /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr * dest,
-                                           volatile ordered_NEMESIS_ptr * src)
+static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr          *dest,
+                                            volatile ordered_NEMESIS_ptr *src)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
-    __asm__ __volatile__ (
-                          "xor %%rax, %%rax\n\t" // zero rax out to avoid affecting *addr
+    __asm__ __volatile__ ("xor %%rax, %%rax\n\t" // zero rax out to avoid affecting *addr
                           "xor %%rbx, %%rbx\n\t" // zero rbx out to avoid affecting *addr
                           "xor %%rcx, %%rcx\n\t" // zero rcx out to avoid affecting *addr
                           "xor %%rdx, %%rdx\n\t" // zero rdx out to avoid affecting *addr
@@ -80,20 +76,20 @@ static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr * dest,
                           "mov %%rax, %0\n\t" // put rax into dest->success
                           "mov %%rdx, %1\n\t" // put rdx into dest->failure
                           : "=m"   (dest->ptr),
-                          "=m"    (dest->val)
+                          "=m"     (dest->val)
                           : "r"    (src)
                           : "cc",
                           "rax",
                           "rbx",
                           "rcx",
                           "rdx");
-# else
-#  error No known 128-bit atomic read operations are available
-# endif /* if defined(HAVE_READ128_INTRINSIC) && 0 */
+#else /* ifdef HAVE_CMPXCHG16B */
+# error No known 128-bit atomic read operations are available
+#endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicWrite128(volatile ordered_NEMESIS_ptr * addr,
-                                            const ordered_NEMESIS_ptr newval)
+static inline void PtlInternalAtomicWrite128(volatile ordered_NEMESIS_ptr *addr,
+                                             const ordered_NEMESIS_ptr     newval)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__ ("1:\n\t"
@@ -111,9 +107,8 @@ static inline void PtlInternalAtomicWrite128(volatile ordered_NEMESIS_ptr * addr
 #endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-
 static inline ordered_NEMESIS_ptr PtlInternalAtomicSwap128(volatile ordered_NEMESIS_ptr *addr,
-                                                           const ordered_NEMESIS_ptr newval)
+                                                           const ordered_NEMESIS_ptr     newval)
 {   /*{{{*/
     ordered_NEMESIS_ptr oldval = *addr;
     ordered_NEMESIS_ptr tmp;
@@ -132,19 +127,20 @@ static inline ordered_NEMESIS_ptr PtlInternalAtomicSwap128(volatile ordered_NEME
     return oldval;
 } /*}}}*/
 
-static inline void PtlInternalOrderedNEMESISInit(ordered_NEMESIS_queue * q)
+static inline void PtlInternalOrderedNEMESISInit(ordered_NEMESIS_queue *q)
 {
     assert(sizeof(ordered_NEMESIS_ptr) == 16);
-    q->head.ptr = q->tail.ptr = NULL;
-    q->head.val = q->tail.val = 0;
+    q->head.ptr    = q->tail.ptr = NULL;
+    q->head.val    = q->tail.val = 0;
     q->shadow_head = q->head;
 }
 
-static inline int PtlInternalOrderedNEMESISEnqueue(ordered_NEMESIS_queue * restrict q,
-                                                   void * e,
-                                                   ptl_size_t v)
+static inline int PtlInternalOrderedNEMESISEnqueue(ordered_NEMESIS_queue *restrict q,
+                                                   void                           *e,
+                                                   ptl_size_t                      v)
 {
     ordered_NEMESIS_ptr f = { .ptr = e, .val = v };
+
     assert(f.ptr->next.ptr == NULL);
     ordered_NEMESIS_ptr prev = PtlInternalAtomicSwap128(&(q->tail), f);
 
@@ -156,47 +152,36 @@ static inline int PtlInternalOrderedNEMESISEnqueue(ordered_NEMESIS_queue * restr
 
     if (prev.ptr == NULL) {
         PtlInternalAtomicWrite128(&q->head, f);
-        //q->head = f;
     } else {
         PtlInternalAtomicWrite128(&prev.ptr->next, f);
-        //prev.ptr->next = f;
     }
-    //printf("3 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64")\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val);
     return 1;
 }
 
-static inline void *PtlInternalOrderedNEMESISDequeue(ordered_NEMESIS_queue * q,
-                                                     ptl_size_t upper_bound)
+static inline void *PtlInternalOrderedNEMESISDequeue(ordered_NEMESIS_queue *q,
+                                                     ptl_size_t             upper_bound)
 {
-    ordered_NEMESIS_ptr retval;
+    ordered_NEMESIS_ptr       retval;
     const ordered_NEMESIS_ptr nil = { .ptr = NULL, .val = 0 };
 
-    //printf("1 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64") ub = %"PRIu64"\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val, upper_bound);
     PtlInternalAtomicRead128(&retval, &q->head);
     if (retval.ptr != NULL) {
         if (retval.val > upper_bound) {
             return NULL;
         }
         if (retval.ptr->next.ptr != NULL) {
-            //printf("next is not null (%p,%"PRIu64")\n", retval.ptr->next.ptr, retval.ptr->next.val);
             PtlInternalAtomicWrite128(&q->head, retval.ptr->next);
-            //q->head = retval.ptr->next;
             retval.ptr->next.ptr = NULL;
         } else {
-            //printf("next is null\n");
             ordered_NEMESIS_ptr old;
             q->head.ptr = NULL;
-            old = PtlInternalAtomicCas128(&(q->tail), retval, nil);
-            //printf("4 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64")\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val);
-            //printf("  old = %p(%"PRIu64"), retval = %p(%"PRIu64")\n", old.ptr, old.val, retval.ptr, retval.val);
+            old         = PtlInternalAtomicCas128(&(q->tail), retval, nil);
             if ((old.ptr != retval.ptr) || (old.val != retval.val)) {
                 while (retval.ptr->next.ptr == NULL) ;
                 PtlInternalAtomicWrite128(&q->head, retval.ptr->next);
-                //q->head = retval.ptr->next;
                 retval.ptr->next.ptr = NULL;
             }
         }
-        //printf("2 q->head = %p(%"PRIu64"), q->tail = %p(%"PRIu64")\n", q->head.ptr, q->head.val, q->tail.ptr, q->tail.val);
         return (void*)(retval.ptr);
     } else {
         return NULL;
