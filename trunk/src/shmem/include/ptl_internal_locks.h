@@ -33,5 +33,17 @@
  # define PTL_LOCK_UNLOCK(x) ptl_assert(pthread_mutex_unlock(&(x)), 0)*/
 #endif /* ifdef __tile__ */
 
+#define PTL_CMD_LOCK_TYPE uint32_t
+#define PTL_CMD_LOCK_SENDER1(x) *(PTL_CMD_LOCK_TYPE*)(x) = 0;
+#define PTL_CMD_LOCK_PROGRESS(x) do { \
+    while (*(PTL_CMD_LOCK_TYPE*)(x) != 0) { __asm__ __volatile__ ("pause" ::: "memory"); } \
+    *(PTL_CMD_LOCK_TYPE*)(x) = 1; \
+    while (*(PTL_CMD_LOCK_TYPE*)(x) != 2) { __asm__ __volatile__ ("pause" ::: "memory"); } \
+} while (0)
+#define PTL_CMD_LOCK_SENDER2(x) do { \
+    while (*(PTL_CMD_LOCK_TYPE*)(x) != 1) { __asm__ __volatile__ ("pause" ::: "memory"); } \
+    *(PTL_CMD_LOCK_TYPE*)(x) = 2; \
+} while (0)
+
 #endif /* ifndef PTL_INTERNAL_LOCKS_H */
 /* vim:set expandtab */
