@@ -27,8 +27,8 @@ echo "===== test_basic_trig.xml ====="
 ./ptl_test -f test_basic_trig.xml
 echo "===== test_limits.xml ====="
 ./ptl_test -f test_limits.xml
-echo "===== test_events.xml ====="
-./ptl_test -f test_events.xml
+echo "===== test_events_logical.xml ====="
+./ptl_test -f test_events_logical.xml
 echo "===== test_ct_events.xml ====="
 ./ptl_test -f test_ct_events.xml
 echo "===== test_flow.xml ===="

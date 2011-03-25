@@ -548,7 +548,6 @@
     </ptl>
   </subtest>
   <barrier/>
-<!--
   <subtest>
     <desc>Test events with swap to me</desc>
     <ptl>
@@ -560,21 +559,20 @@
             <if rank="0">
               <ptl_md>
                 <ptl_md>
-                  <ptl_eq>
-                    <barrier/>
-                    <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                    <ptl_eq_poll eq_handle="[0]" time="100">
-                      <check event_type="SEND"/>
-                      <check event_user_ptr="523"/>
-                      <check event_ni_fail="OK"/>
-                    </ptl_eq_poll>
-                    <ptl_eq_poll eq_handle="[1]" time="100">
-                      <check event_type="REPLY"/>
-                      <check event_user_ptr="523"/>
-                      <check event_ni_fail="OK"/>
-                    </ptl_eq_poll>
-                    <ptl_eq_poll eq_handle="[1]" ret="EQ_EMPTY"/>
-                  </ptl_eq>
+                  <barrier/>
+                  <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                  <ptl_eq_poll time="100">
+                    <check event_type="SEND"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
+                    <check event_type="REPLY"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll ret="EQ_EMPTY"/>
+                  <barrier/>
                 </ptl_md>
               </ptl_md>
             </if>
@@ -590,6 +588,7 @@
                   <check event_atom_op="SWAP"/>
                 </ptl_eq_poll>
                 <ptl_eq_poll ret="EQ_EMPTY"/>
+                <barrier/>
               </ptl_me>
             </if>
 
@@ -609,17 +608,21 @@
 
             <if rank="0">
               <ptl_md eq_handle="NONE">
-                <ptl_md>
-                  <barrier/>
-                  <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                  <ptl_eq_poll time="100">
-                    <check event_type="REPLY"/>
-                    <check event_user_ptr="523"/>
-                    <check event_ni_fail="OK"/>
-                  </ptl_eq_poll>
-                  <ptl_eq_poll ret="EQ_EMPTY"/>
-                </ptl_md>
+                <ptl_eq>
+                  <ptl_md>
+                    <barrier/>
+                    <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
+                    <ptl_eq_poll time="100">
+                      <check event_type="REPLY"/>
+                      <check event_user_ptr="523"/>
+                      <check event_ni_fail="OK"/>
+                    </ptl_eq_poll>
+                    <ptl_eq_poll ret="EQ_EMPTY"/>
+                    <barrier/>
+                  </ptl_md>
+                </ptl_eq>
               </ptl_md>
+              <ptl_eq_poll ret="EQ_EMPTY"/>
             </if>
 
             <if rank="1">
@@ -633,6 +636,7 @@
                   <check event_atom_op="SWAP"/>
                 </ptl_eq_poll>
                 <ptl_eq_poll ret="EQ_EMPTY"/>
+                <barrier/>
               </ptl_me>
             </if>
 
@@ -655,13 +659,14 @@
                 <ptl_md eq_handle="NONE">
                   <barrier/>
                   <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                  <ptl_eq_poll time="100">
-                    <check event_type="SEND"/>
-                    <check event_user_ptr="523"/>
-                    <check event_ni_fail="OK"/>
-                  </ptl_eq_poll>
-                  <ptl_eq_poll ret="EQ_EMPTY"/>
+                  <barrier/>
                 </ptl_md>
+                <ptl_eq_poll time="100">
+                  <check event_type="SEND"/>
+                  <check event_user_ptr="523"/>
+                  <check event_ni_fail="OK"/>
+                </ptl_eq_poll>
+                <ptl_eq_poll ret="EQ_EMPTY"/>
               </ptl_md>
             </if>
 
@@ -676,6 +681,7 @@
                   <check event_atom_op="SWAP"/>
                 </ptl_eq_poll>
                 <ptl_eq_poll ret="EQ_EMPTY"/>
+                <barrier/>
               </ptl_me>
             </if>
 
@@ -699,11 +705,17 @@
                   <barrier/>
                   <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
                   <ptl_eq_poll time="100">
+                    <check event_type="SEND"/>
+                    <check event_user_ptr="523"/>
+                    <check event_ni_fail="OK"/>
+                  </ptl_eq_poll>
+                  <ptl_eq_poll time="100">
                     <check event_type="REPLY"/>
                     <check event_user_ptr="523"/>
                     <check event_ni_fail="OK"/>
                   </ptl_eq_poll>
                   <ptl_eq_poll ret="EQ_EMPTY"/>
+                  <barrier/>
                 </ptl_md>
               </ptl_md>
             </if>
@@ -711,12 +723,8 @@
             <if rank="1">
               <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                 <barrier/>
-                <ptl_eq_poll time="100">
-                  <check event_type="SEND"/>
-                  <check event_user_ptr="523"/>
-                  <check event_ni_fail="OK"/>
-                </ptl_eq_poll>
                 <ptl_eq_poll ret="EQ_EMPTY"/>
+                <barrier/>
               </ptl_me>
             </if>
 
@@ -726,6 +734,7 @@
     </ptl>
   </subtest>
   <barrier/>
+<!--
   <subtest>
     <desc>Test events with put le</desc>
     <ptl>
