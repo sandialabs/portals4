@@ -74,10 +74,7 @@ int main(int   argc,
     /* Check the target */
     {
         ptl_ct_event_t test;
-        do {
-            CHECK_RETURNVAL(PtlCTGet(target, &test));
-        } while (test.success == 0 && test.failure == 0);
-        printf("success = %u (want 1), failure = %u (want 0)\n", (unsigned)test.success, (unsigned)test.failure);
+        CHECK_RETURNVAL(PtlCTWait(target, 1, &test));
         assert(test.success == 1);
         assert(test.failure == 0);
     }
@@ -85,11 +82,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTInc(trigger, inc));
     {
         ptl_ct_event_t test;
-        do {
-            CHECK_RETURNVAL(PtlCTGet(target, &test));
-        } while (test.success == 1 && test.failure == 0);
-        printf("success = %u (want 7), failure = %u (want 0)\n", (unsigned)test.success, (unsigned)test.failure);
-        fflush(stdout);
+        CHECK_RETURNVAL(PtlCTWait(target, 7, &test));
         assert(test.success == 7);
         assert(test.failure == 0);
     }
