@@ -9,22 +9,6 @@
 
 #include "testing.h"
 
-#if INTERFACE == 1
-# define ENTRY_T  ptl_me_t
-# define HANDLE_T ptl_handle_me_t
-# define NI_TYPE  PTL_NI_MATCHING
-# define OPTIONS  (PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
-# define APPEND   PtlMEAppend
-# define UNLINK   PtlMEUnlink
-#else
-# define ENTRY_T  ptl_le_t
-# define HANDLE_T ptl_handle_le_t
-# define NI_TYPE  PTL_NI_NO_MATCHING
-# define OPTIONS  (PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
-# define APPEND   PtlLEAppend
-# define UNLINK   PtlLEUnlink
-#endif /* if INTERFACE == 1 */
-
 int main(int   argc,
          char *argv[])
 {
@@ -38,7 +22,7 @@ int main(int   argc,
     my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, 0, NULL,
                               NULL, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
