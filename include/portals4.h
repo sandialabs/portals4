@@ -2639,8 +2639,8 @@ int PtlTriggeredPut(ptl_handle_md_t     md_handle,
  *                     ptl_process_t    target_id,
  *                     ptl_pt_index_t   pt_index,
  *                     ptl_match_bits_t match_bits,
- *                     void *           user_ptr,
  *                     ptl_size_t       remote_offset,
+ *                     void *           user_ptr,
  *                     ptl_handle_ct_t  trig_ct_handle,
  *                     ptl_size_t       threshold)
  * @brief Perform a triggered \e get operation.
@@ -2669,8 +2669,8 @@ int PtlTriggeredGet(ptl_handle_md_t     md_handle,
                     ptl_process_t       target_id,
                     ptl_pt_index_t      pt_index,
                     ptl_match_bits_t    match_bits,
-                    void *              user_ptr,
                     ptl_size_t          remote_offset,
+                    void *              user_ptr,
                     ptl_handle_ct_t     trig_ct_handle,
                     ptl_size_t          threshold);
 /*!
