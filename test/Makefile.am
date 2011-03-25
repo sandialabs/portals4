@@ -23,6 +23,8 @@ TESTS = test_init \
 	test_ME_get_truncate \
 	test_triggered_LE_put \
 	test_triggered_ME_put \
+	test_triggered_LE_get \
+	test_triggered_ME_get \
 	test_triggered_ctinc \
 	test_triggered_ctinc_unordered \
 	test_triggered_ctset \
@@ -137,6 +139,14 @@ test_triggered_LE_put_DEPENDENCIES = $(PORTALSLIB)
 test_triggered_ME_put_SOURCES = test_triggered_put.c
 test_triggered_ME_put_CPPFLAGS = -DINTERFACE=1
 test_triggered_ME_put_DEPENDENCIES = $(PORTALSLIB)
+
+test_triggered_LE_get_SOURCES = test_triggered_get.c
+test_triggered_LE_get_CPPFLAGS = -DINTERFACE=0
+test_triggered_LE_get_DEPENDENCIES = $(PORTALSLIB)
+
+test_triggered_ME_get_SOURCES = test_triggered_get.c
+test_triggered_ME_get_CPPFLAGS = -DINTERFACE=1
+test_triggered_ME_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ctinc_SOURCES = test_triggered_ctinc.c
 test_triggered_ctinc_CPPFLAGS = -DORDERED

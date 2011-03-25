@@ -49,7 +49,7 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
                              ptl_hdr_data_t   hdr_data,
                              ptl_handle_ct_t  trig_ct_handle,
                              ptl_size_t       threshold)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t tct = { trig_ct_handle };
     ptl_internal_trigger_t               *t;
 
@@ -125,7 +125,7 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
                              ptl_size_t       local_offset,
@@ -133,11 +133,14 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
                              ptl_process_t    target_id,
                              ptl_pt_index_t   pt_index,
                              ptl_match_bits_t match_bits,
-                             void            *user_ptr,
                              ptl_size_t       remote_offset,
+                             void            *user_ptr,
                              ptl_handle_ct_t  trig_ct_handle,
                              ptl_size_t       threshold)
 {
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
@@ -182,7 +185,32 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    return PTL_FAIL;
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            return PtlGet(md_handle, local_offset, length, target_id,
+                          pt_index, match_bits, remote_offset,
+                          user_ptr);
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    PtlInternalMDPosted(md_handle);
+    t->threshold              = threshold;
+    t->type                   = GET;
+    t->args.get.md_handle     = md_handle;
+    t->args.get.local_offset  = local_offset;
+    t->args.get.length        = length;
+    t->args.get.target_id     = target_id;
+    t->args.get.pt_index      = pt_index;
+    t->args.get.match_bits    = match_bits;
+    t->args.get.remote_offset = remote_offset;
+    t->args.get.user_ptr      = user_ptr;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
 }
 
 int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
@@ -654,7 +682,18 @@ void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
                    t->args.put.remote_offset,
                    t->args.put.user_ptr,
                    t->args.put.hdr_data);
-	    PtlInternalMDCleared(t->args.put.md_handle);
+            PtlInternalMDCleared(t->args.put.md_handle);
+            break;
+        case GET:
+            PtlGet(t->args.get.md_handle,
+                   t->args.get.local_offset,
+                   t->args.get.length,
+                   t->args.get.target_id,
+                   t->args.get.pt_index,
+                   t->args.get.match_bits,
+                   t->args.get.remote_offset,
+                   t->args.get.user_ptr);
+            PtlInternalMDCleared(t->args.get.md_handle);
             break;
         case CTINC:
             PtlCTInc(t->args.ctinc.ct_handle, t->args.ctinc.increment);
