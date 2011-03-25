@@ -11,46 +11,45 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-# define ENTRY_T        ptl_me_t
-# define HANDLE_T       ptl_handle_me_t
-# define NI_TYPE        PTL_NI_MATCHING
-# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-# define APPEND         PtlMEAppend
-# define UNLINK         PtlMEUnlink
+# define ENTRY_T  ptl_me_t
+# define HANDLE_T ptl_handle_me_t
+# define NI_TYPE  PTL_NI_MATCHING
+# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND   PtlMEAppend
+# define UNLINK   PtlMEUnlink
 #else
-# define ENTRY_T        ptl_le_t
-# define HANDLE_T       ptl_handle_le_t
-# define NI_TYPE        PTL_NI_NO_MATCHING
-# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-# define APPEND         PtlLEAppend
-# define UNLINK         PtlLEUnlink
+# define ENTRY_T  ptl_le_t
+# define HANDLE_T ptl_handle_le_t
+# define NI_TYPE  PTL_NI_NO_MATCHING
+# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND   PtlLEAppend
+# define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    ptl_process_t *amapping;
-    unsigned char *value, *readval;
-    ENTRY_T value_e;
-    HANDLE_T value_e_handle;
-    ptl_md_t write_md;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    ptl_process_t  *amapping;
+    unsigned char  *value, *readval;
+    ENTRY_T         value_e;
+    HANDLE_T        value_e_handle;
+    ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int my_rank, num_procs;
+    int             my_rank, num_procs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
-    value = malloc(sizeof(unsigned char) * BUFSIZE);
-    readval = malloc(sizeof(unsigned char) * BUFSIZE);
+    value    = malloc(sizeof(unsigned char) * BUFSIZE);
+    readval  = malloc(sizeof(unsigned char) * BUFSIZE);
 
     assert(amapping);
     assert(value);
@@ -66,13 +65,13 @@ int main(
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(value, 42, BUFSIZE);
-    value_e.start = value;
-    value_e.length = BUFSIZE;
+    value_e.start     = value;
+    value_e.length    = BUFSIZE;
     value_e.ac_id.uid = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
-    value_e.match_bits = 1;
-    value_e.ignore_bits = 0;
+    value_e.match_bits    = 1;
+    value_e.ignore_bits   = 0;
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
@@ -88,9 +87,9 @@ int main(
 
     /* set up the landing pad so that I can read others' values */
     memset(readval, 61, BUFSIZE);
-    write_md.start = readval;
-    write_md.length = BUFSIZE;
-    write_md.options = PTL_MD_EVENT_CT_SEND;
+    write_md.start     = readval;
+    write_md.length    = BUFSIZE;
+    write_md.options   = PTL_MD_EVENT_CT_SEND;
     write_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
@@ -98,7 +97,7 @@ int main(
     /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
-        ptl_process_t r0 = {.rank = 0 };
+        ptl_process_t  r0 = { .rank = 0 };
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ,
                                r0, logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
@@ -109,8 +108,7 @@ int main(
         for (unsigned idx = 0; idx < BUFSIZE; ++idx) {
             if (value[idx] != 61) {
                 fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n",
-                        idx, idx,
-                        value[idx]);
+                        idx, idx, value[idx]);
                 abort();
             }
         }
