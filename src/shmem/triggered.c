@@ -137,7 +137,7 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
                              void            *user_ptr,
                              ptl_handle_ct_t  trig_ct_handle,
                              ptl_size_t       threshold)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t tct = { trig_ct_handle };
     ptl_internal_trigger_t               *t;
 
@@ -211,7 +211,7 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
                                 ptl_size_t       local_offset,
@@ -227,7 +227,10 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
                                 ptl_datatype_t   datatype,
                                 ptl_handle_ct_t  trig_ct_handle,
                                 ptl_size_t       threshold)
-{
+{   /*{{{*/
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
     if (comm_pad == NULL) {
@@ -324,8 +327,37 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    return PTL_FAIL;
-}
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            return PtlAtomic(md_handle, local_offset, length, ack_req,
+                             target_id, pt_index, match_bits, remote_offset,
+                             user_ptr, hdr_data, operation, datatype);
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    PtlInternalMDPosted(md_handle);
+    t->threshold                 = threshold;
+    t->type                      = ATOMIC;
+    t->args.atomic.md_handle     = md_handle;
+    t->args.atomic.local_offset  = local_offset;
+    t->args.atomic.length        = length;
+    t->args.atomic.ack_req       = ack_req;
+    t->args.atomic.target_id     = target_id;
+    t->args.atomic.pt_index      = pt_index;
+    t->args.atomic.match_bits    = match_bits;
+    t->args.atomic.remote_offset = remote_offset;
+    t->args.atomic.user_ptr      = user_ptr;
+    t->args.atomic.hdr_data      = hdr_data;
+    t->args.atomic.operation     = operation;
+    t->args.atomic.datatype      = datatype;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
+} /*}}}*/
 
 int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
                                      ptl_size_t       local_get_offset,
@@ -342,7 +374,10 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
                                      ptl_datatype_t   datatype,
                                      ptl_handle_ct_t  trig_ct_handle,
                                      ptl_size_t       threshold)
-{
+{   /*{{{*/
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -458,7 +493,42 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
-}
+
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            return PtlFetchAtomic(get_md_handle, local_get_offset,
+                                  put_md_handle, local_put_offset,
+                                  length, target_id, pt_index, match_bits,
+                                  remote_offset, user_ptr, hdr_data,
+                                  operation, datatype);
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    PtlInternalMDPosted(get_md_handle);
+    PtlInternalMDPosted(put_md_handle);
+    t->threshold                         = threshold;
+    t->type                              = FETCHATOMIC;
+    t->args.fetchatomic.get_md_handle    = get_md_handle;
+    t->args.fetchatomic.local_get_offset = local_get_offset;
+    t->args.fetchatomic.put_md_handle    = put_md_handle;
+    t->args.fetchatomic.local_put_offset = local_put_offset;
+    t->args.fetchatomic.length           = length;
+    t->args.fetchatomic.target_id        = target_id;
+    t->args.fetchatomic.pt_index         = pt_index;
+    t->args.fetchatomic.match_bits       = match_bits;
+    t->args.fetchatomic.remote_offset    = remote_offset;
+    t->args.fetchatomic.user_ptr         = user_ptr;
+    t->args.fetchatomic.hdr_data         = hdr_data;
+    t->args.fetchatomic.operation        = operation;
+    t->args.fetchatomic.datatype         = datatype;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
+} /*}}}*/
 
 int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
                               ptl_size_t       local_get_offset,
@@ -476,7 +546,10 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
                               ptl_datatype_t   datatype,
                               ptl_handle_ct_t  trig_ct_handle,
                               ptl_size_t       threshold)
-{
+{   /*{{{*/
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -585,7 +658,64 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     return PTL_FAIL;
-}
+
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            return PtlSwap(get_md_handle, local_get_offset,
+                           put_md_handle, local_put_offset,
+                           length, target_id, pt_index, match_bits,
+                           remote_offset, user_ptr, hdr_data,
+                           operand, operation, datatype);
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    PtlInternalMDPosted(get_md_handle);
+    PtlInternalMDPosted(put_md_handle);
+    t->threshold                  = threshold;
+    t->type                       = SWAP;
+    t->args.swap.get_md_handle    = get_md_handle;
+    t->args.swap.local_get_offset = local_get_offset;
+    t->args.swap.put_md_handle    = put_md_handle;
+    t->args.swap.local_put_offset = local_put_offset;
+    t->args.swap.length           = length;
+    t->args.swap.target_id        = target_id;
+    t->args.swap.pt_index         = pt_index;
+    t->args.swap.match_bits       = match_bits;
+    t->args.swap.remote_offset    = remote_offset;
+    t->args.swap.user_ptr         = user_ptr;
+    t->args.swap.hdr_data         = hdr_data;
+    if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
+        switch (datatype) {
+            case PTL_CHAR:
+            case PTL_UCHAR:
+                memcpy(t->args.swap.operand, operand, 1);
+                break;
+            case PTL_SHORT:
+            case PTL_USHORT:
+                memcpy(t->args.swap.operand, operand, 2);
+                break;
+            case PTL_INT:
+            case PTL_UINT:
+            case PTL_FLOAT:
+                memcpy(t->args.swap.operand, operand, 4);
+                break;
+            case PTL_LONG:
+            case PTL_ULONG:
+            case PTL_DOUBLE:
+                memcpy(t->args.swap.operand, operand, 8);
+                break;
+        }
+    }
+    t->args.swap.operation        = operation;
+    t->args.swap.datatype         = datatype;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
+} /*}}}*/
 
 int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
                                ptl_ct_event_t  increment,
@@ -694,6 +824,56 @@ void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
                    t->args.get.remote_offset,
                    t->args.get.user_ptr);
             PtlInternalMDCleared(t->args.get.md_handle);
+            break;
+        case ATOMIC:
+            PtlAtomic(t->args.atomic.md_handle,
+                      t->args.atomic.local_offset,
+                      t->args.atomic.length,
+                      t->args.atomic.ack_req,
+                      t->args.atomic.target_id,
+                      t->args.atomic.pt_index,
+                      t->args.atomic.match_bits,
+                      t->args.atomic.remote_offset,
+                      t->args.atomic.user_ptr,
+                      t->args.atomic.hdr_data,
+                      t->args.atomic.operation,
+                      t->args.atomic.datatype);
+            PtlInternalMDCleared(t->args.atomic.md_handle);
+            break;
+        case FETCHATOMIC:
+            PtlFetchAtomic(t->args.fetchatomic.get_md_handle,
+                           t->args.fetchatomic.local_get_offset,
+                           t->args.fetchatomic.put_md_handle,
+                           t->args.fetchatomic.local_put_offset,
+                           t->args.fetchatomic.length,
+                           t->args.fetchatomic.target_id,
+                           t->args.fetchatomic.pt_index,
+                           t->args.fetchatomic.match_bits,
+                           t->args.fetchatomic.remote_offset,
+                           t->args.fetchatomic.user_ptr,
+                           t->args.fetchatomic.hdr_data,
+                           t->args.fetchatomic.operation,
+                           t->args.fetchatomic.datatype);
+            PtlInternalMDCleared(t->args.fetchatomic.get_md_handle);
+            PtlInternalMDCleared(t->args.fetchatomic.put_md_handle);
+            break;
+        case SWAP:
+            PtlSwap(t->args.swap.get_md_handle,
+                    t->args.swap.local_get_offset,
+                    t->args.swap.put_md_handle,
+                    t->args.swap.local_put_offset,
+                    t->args.swap.length,
+                    t->args.swap.target_id,
+                    t->args.swap.pt_index,
+                    t->args.swap.match_bits,
+                    t->args.swap.remote_offset,
+                    t->args.swap.user_ptr,
+                    t->args.swap.hdr_data,
+                    t->args.swap.operand,
+                    t->args.swap.operation,
+                    t->args.swap.datatype);
+            PtlInternalMDCleared(t->args.swap.get_md_handle);
+            PtlInternalMDCleared(t->args.swap.put_md_handle);
             break;
         case CTINC:
             PtlCTInc(t->args.ctinc.ct_handle, t->args.ctinc.increment);
