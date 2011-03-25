@@ -107,7 +107,7 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
 #endif /* if 0 */
 
 ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
-{
+{   /*{{{*/
     ptl_internal_trigger_t          *tmp;
     volatile ptl_internal_trigger_t *old, *new;
 
@@ -117,11 +117,11 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
         new = tmp->next;
     } while ((tmp = PtlInternalAtomicCasPtr(&ct_triggers[ni], old, new)) != old);
     return tmp;
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
                                     ptl_internal_trigger_t *t)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
     t->next = NULL;
@@ -160,7 +160,7 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
         /* step 3: enqueue the op structure on the target */
         PtlInternalFragmentToss(hdr, proc_number);
     }
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalCTNISetup(unsigned int ni,
                                    ptl_size_t   limit)
