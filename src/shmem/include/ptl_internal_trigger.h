@@ -82,7 +82,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_size_t       remote_offset;
             void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
-            unsigned char    operand[8];
+            unsigned char    operand[16];
             ptl_op_t         operation;
             ptl_datatype_t   datatype;
         } swap;
