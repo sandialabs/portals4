@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <test>
+  <repeat count="2">
   <subtest>
     <desc>Test PtlPut 32K with good parameters to ME</desc>
     <ptl>
@@ -26,7 +27,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut 64K with good parameters to ME</desc>
     <ptl>
@@ -53,7 +54,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters from ME</desc>
     <ptl>
@@ -77,7 +78,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters to LE</desc>
     <ptl>
@@ -104,7 +105,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters from LE</desc>
     <ptl>
@@ -128,7 +129,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME IOVEC of 8 </desc>
     <ptl>
@@ -155,7 +156,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME IOVEC of 8 </desc>
     <ptl>
@@ -179,7 +180,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE IOVEC of 8 </desc>
     <ptl>
@@ -206,7 +207,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE IOVEC of 8 </desc>
     <ptl>
@@ -230,7 +231,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters MD IOVEC of 8 </desc>
     <ptl>
@@ -257,7 +258,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters MD IOVEC of 8 </desc>
     <ptl>
@@ -281,7 +282,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
@@ -308,7 +309,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
@@ -332,7 +333,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
@@ -359,7 +360,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
@@ -383,7 +384,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test indirect PtlPut with good parameters MD IOVEC of 32 </desc>
     <ptl>
@@ -410,7 +411,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test indirect PtlGet with good parameters MD IOVEC of 32 </desc>
     <ptl>
@@ -434,7 +435,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test PUT using RDMA message flow with drop at target</desc>
     <ptl>
@@ -462,7 +463,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
   <subtest>
     <desc>Test GET using RDMA message flow with drop at target</desc>
     <ptl>
@@ -483,5 +484,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-<msleep count="1000"/>
+  <barrier/>
+  </repeat>
 </test>
