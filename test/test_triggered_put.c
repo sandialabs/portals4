@@ -91,19 +91,12 @@ int main(int   argc,
         assert(test.failure == 0);
     }
     /* set the trigger */
-    {
-        ptl_process_t r0 = { .rank = 0 };
-
-        CHECK_RETURNVAL(PtlTriggeredPut(write_md_handle, 0, write_md.length,
-                                        PTL_CT_ACK_REQ, r0, logical_pt_index,
-                                        1, 0, NULL, 0, trigger, 1));
-    }
+    CHECK_RETURNVAL(PtlTriggeredPut(write_md_handle, 0, write_md.length, PTL_CT_ACK_REQ,
+                                    (ptl_process_t) { .rank = 0 }, logical_pt_index, 1, 0, NULL, 0,
+                                    trigger, 1));
 
     /* Increment the trigger */
-    {
-        ptl_ct_event_t inc = { 1, 0 };
-        CHECK_RETURNVAL(PtlCTInc(trigger, inc));
-    }
+    CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1, 0 }));
     /* Check the send */
     {
         ptl_ct_event_t ctc;
