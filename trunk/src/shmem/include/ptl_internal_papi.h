@@ -17,18 +17,13 @@ enum ptl_internal_papi_func {
 
 # define NUM_SAVE_POINTS 10
 
-void INTERNAL PtlInternalPAPIInit(
-    void);
-void INTERNAL PtlInternalPAPITeardown(
-    void);
-void INTERNAL PtlInternalPAPIStartC(
-    void);
-void INTERNAL PtlInternalPAPISaveC(
-    enum ptl_internal_papi_func func,
-    int                         savept);
-void INTERNAL PtlInternalPAPIDoneC(
-    enum ptl_internal_papi_func func,
-    int                         savept);
+void INTERNAL PtlInternalPAPIInit(void);
+void INTERNAL PtlInternalPAPITeardown(void);
+void INTERNAL PtlInternalPAPIStartC(void);
+void INTERNAL PtlInternalPAPISaveC(enum ptl_internal_papi_func func,
+                                   int                         savept);
+void INTERNAL PtlInternalPAPIDoneC(enum ptl_internal_papi_func func,
+                                   int                         savept);
 #else /* if defined(HAVE_LIBPAPI) || defined(USE_RDTSC) */
 # define PtlInternalPAPIInit()
 # define PtlInternalPAPITeardown()

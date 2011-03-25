@@ -23,7 +23,7 @@
 # error Need to implement my own atomics (suggest stealing from qthreads)
 static inline unsigned long PtlInternalAtomicIncXX(volatile void *addr,
                                                    const long int incr,
-                                                   const size_t length)
+                                                   const size_t   length)
 {
     switch (length) {
         case 4:
@@ -49,19 +49,19 @@ static inline unsigned long PtlInternalAtomicIncXX(volatile void *addr,
     (void*)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
 #else
 # error Need to implement my own CAS (suggest stealing from qthreads)
-static inline uint32_t PtlInternalAtomicCas32(volatile uint32_t * addr,
-                                              uint32_t oldval,
-                                              uint32_t newval)
+static inline uint32_t PtlInternalAtomicCas32(volatile uint32_t *addr,
+                                              uint32_t           oldval,
+                                              uint32_t           newval)
 {}
 
-static inline uint64_t PtlInternalAtomicCas64(volatile uint64_t * addr,
-                                              uint64_t oldval,
-                                              uint64_t newval)
+static inline uint64_t PtlInternalAtomicCas64(volatile uint64_t *addr,
+                                              uint64_t           oldval,
+                                              uint64_t           newval)
 {}
 
 static inline void *PtlInternalAtomicCasPtr(void *volatile *addr,
-                                            void *oldval,
-                                            void *newval)
+                                            void           *oldval,
+                                            void           *newval)
 {
 # if (SIZEOF_VOIDP == 4)
     PtlInternalAtomicCas32((volatile uint32_t *)addr, (uint32_t)oldval,
@@ -77,7 +77,7 @@ static inline void *PtlInternalAtomicCasPtr(void *volatile *addr,
 #endif /* SANDIA_BUILTIN_CAS */
 
 static inline void *PtlInternalAtomicSwapPtr(void *volatile *addr,
-                                             void *newval)
+                                             void           *newval)
 {
     void *oldval = *addr;
     void *tmp;
