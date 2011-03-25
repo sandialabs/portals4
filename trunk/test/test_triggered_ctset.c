@@ -50,13 +50,13 @@ int main(int   argc,
     runtime_barrier();
 
     ptl_ct_event_t inc  = { 1, 0 };
-    ptl_ct_event_t inc2 = { 2, 0 };
+    ptl_ct_event_t inc2 = { 7, 0 };
 #ifdef ORDERED
-    CHECK_RETURNVAL(PtlTriggeredCTInc(target, inc, trigger, 1));
-    CHECK_RETURNVAL(PtlTriggeredCTInc(target, inc2, trigger, 2));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc, trigger, 1));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc2, trigger, 2));
 #else
-    CHECK_RETURNVAL(PtlTriggeredCTInc(target, inc2, trigger, 2));
-    CHECK_RETURNVAL(PtlTriggeredCTInc(target, inc, trigger, 1));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc2, trigger, 2));
+    CHECK_RETURNVAL(PtlTriggeredCTSet(target, inc, trigger, 1));
 #endif
 
     /* check the target and trigger, make sure they're both zero */
@@ -77,7 +77,7 @@ int main(int   argc,
         do {
             CHECK_RETURNVAL(PtlCTGet(target, &test));
         } while (test.success == 0 && test.failure == 0);
-        printf("success = %u, failure = %u\n", (unsigned)test.success, (unsigned)test.failure);
+        printf("success = %u (want 1), failure = %u (want 0)\n", (unsigned)test.success, (unsigned)test.failure);
         assert(test.success == 1);
         assert(test.failure == 0);
     }
@@ -88,8 +88,9 @@ int main(int   argc,
         do {
             CHECK_RETURNVAL(PtlCTGet(target, &test));
         } while (test.success == 1 && test.failure == 0);
-        printf("success = %u, failure = %u\n", (unsigned)test.success, (unsigned)test.failure);
-        assert(test.success == 3);
+        printf("success = %u (want 7), failure = %u (want 0)\n", (unsigned)test.success, (unsigned)test.failure);
+        fflush(stdout);
+        assert(test.success == 7);
         assert(test.failure == 0);
     }
 
