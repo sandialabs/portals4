@@ -5,6 +5,10 @@
 /* The API definition */
 #include <portals4.h>
 
+/* System headers */
+/*#include <stdio.h>
+#include <inttypes.h>*/
+
 /* Internals */
 #include "ptl_visibility.h"
 #ifndef NO_ARG_VALIDATION
@@ -33,18 +37,18 @@
  *   (relies on 128-bit atomics)
  */
 
-int API_FUNC PtlTriggeredPut(ptl_handle_md_t md_handle,
-                             ptl_size_t local_offset,
-                             ptl_size_t length,
-                             ptl_ack_req_t ack_req,
-                             ptl_process_t target_id,
-                             ptl_pt_index_t pt_index,
+int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
+                             ptl_size_t       local_offset,
+                             ptl_size_t       length,
+                             ptl_ack_req_t    ack_req,
+                             ptl_process_t    target_id,
+                             ptl_pt_index_t   pt_index,
                              ptl_match_bits_t match_bits,
-                             ptl_size_t remote_offset,
-                             void *user_ptr,
-                             ptl_hdr_data_t hdr_data,
-                             ptl_handle_ct_t trig_ct_handle,
-                             ptl_size_t threshold)
+                             ptl_size_t       remote_offset,
+                             void            *user_ptr,
+                             ptl_hdr_data_t   hdr_data,
+                             ptl_handle_ct_t  trig_ct_handle,
+                             ptl_size_t       threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t mdh = { md_handle };
@@ -94,16 +98,16 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t md_handle,
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredGet(ptl_handle_md_t md_handle,
-                             ptl_size_t local_offset,
-                             ptl_size_t length,
-                             ptl_process_t target_id,
-                             ptl_pt_index_t pt_index,
+int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
+                             ptl_size_t       local_offset,
+                             ptl_size_t       length,
+                             ptl_process_t    target_id,
+                             ptl_pt_index_t   pt_index,
                              ptl_match_bits_t match_bits,
-                             void *user_ptr,
-                             ptl_size_t remote_offset,
-                             ptl_handle_ct_t trig_ct_handle,
-                             ptl_size_t threshold)
+                             void            *user_ptr,
+                             ptl_size_t       remote_offset,
+                             ptl_handle_ct_t  trig_ct_handle,
+                             ptl_size_t       threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
@@ -152,20 +156,20 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t md_handle,
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t md_handle,
-                                ptl_size_t local_offset,
-                                ptl_size_t length,
-                                ptl_ack_req_t ack_req,
-                                ptl_process_t target_id,
-                                ptl_pt_index_t pt_index,
+int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
+                                ptl_size_t       local_offset,
+                                ptl_size_t       length,
+                                ptl_ack_req_t    ack_req,
+                                ptl_process_t    target_id,
+                                ptl_pt_index_t   pt_index,
                                 ptl_match_bits_t match_bits,
-                                ptl_size_t remote_offset,
-                                void *user_ptr,
-                                ptl_hdr_data_t hdr_data,
-                                ptl_op_t operation,
-                                ptl_datatype_t datatype,
-                                ptl_handle_ct_t trig_ct_handle,
-                                ptl_size_t threshold)
+                                ptl_size_t       remote_offset,
+                                void            *user_ptr,
+                                ptl_hdr_data_t   hdr_data,
+                                ptl_op_t         operation,
+                                ptl_datatype_t   datatype,
+                                ptl_handle_ct_t  trig_ct_handle,
+                                ptl_size_t       threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
@@ -266,21 +270,21 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t md_handle,
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
-                                     ptl_size_t local_get_offset,
-                                     ptl_handle_md_t put_md_handle,
-                                     ptl_size_t local_put_offset,
-                                     ptl_size_t length,
-                                     ptl_process_t target_id,
-                                     ptl_pt_index_t pt_index,
+int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
+                                     ptl_size_t       local_get_offset,
+                                     ptl_handle_md_t  put_md_handle,
+                                     ptl_size_t       local_put_offset,
+                                     ptl_size_t       length,
+                                     ptl_process_t    target_id,
+                                     ptl_pt_index_t   pt_index,
                                      ptl_match_bits_t match_bits,
-                                     ptl_size_t remote_offset,
-                                     void *user_ptr,
-                                     ptl_hdr_data_t hdr_data,
-                                     ptl_op_t operation,
-                                     ptl_datatype_t datatype,
-                                     ptl_handle_ct_t trig_ct_handle,
-                                     ptl_size_t threshold)
+                                     ptl_size_t       remote_offset,
+                                     void            *user_ptr,
+                                     ptl_hdr_data_t   hdr_data,
+                                     ptl_op_t         operation,
+                                     ptl_datatype_t   datatype,
+                                     ptl_handle_ct_t  trig_ct_handle,
+                                     ptl_size_t       threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -399,22 +403,22 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
     return PTL_FAIL;
 }
 
-int API_FUNC PtlTriggeredSwap(ptl_handle_md_t get_md_handle,
-                              ptl_size_t local_get_offset,
-                              ptl_handle_md_t put_md_handle,
-                              ptl_size_t local_put_offset,
-                              ptl_size_t length,
-                              ptl_process_t target_id,
-                              ptl_pt_index_t pt_index,
+int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
+                              ptl_size_t       local_get_offset,
+                              ptl_handle_md_t  put_md_handle,
+                              ptl_size_t       local_put_offset,
+                              ptl_size_t       length,
+                              ptl_process_t    target_id,
+                              ptl_pt_index_t   pt_index,
                               ptl_match_bits_t match_bits,
-                              ptl_size_t remote_offset,
-                              void *user_ptr,
-                              ptl_hdr_data_t hdr_data,
-                              void *operand,
-                              ptl_op_t operation,
-                              ptl_datatype_t datatype,
-                              ptl_handle_ct_t trig_ct_handle,
-                              ptl_size_t threshold)
+                              ptl_size_t       remote_offset,
+                              void            *user_ptr,
+                              ptl_hdr_data_t   hdr_data,
+                              void            *operand,
+                              ptl_op_t         operation,
+                              ptl_datatype_t   datatype,
+                              ptl_handle_ct_t  trig_ct_handle,
+                              ptl_size_t       threshold)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
@@ -527,11 +531,10 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t get_md_handle,
 }
 
 int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
-                               ptl_ct_event_t increment,
+                               ptl_ct_event_t  increment,
                                ptl_handle_ct_t trig_ct_handle,
-                               ptl_size_t threshold)
-{
-    // const ptl_internal_handle_converter_t ct = { ct_handle };
+                               ptl_size_t      threshold)
+{   /*{{{*/
     const ptl_internal_handle_converter_t tct = { trig_ct_handle };
     ptl_internal_trigger_t               *t;
 
@@ -568,14 +571,16 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
-                               ptl_ct_event_t new_ct,
+                               ptl_ct_event_t  new_ct,
                                ptl_handle_ct_t trig_ct_handle,
-                               ptl_size_t threshold)
+                               ptl_size_t      threshold)
 {
-    // const ptl_internal_handle_converter_t ct = { ct_handle };
+    const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+    ptl_internal_trigger_t               *t;
+
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -587,7 +592,25 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
-    return PTL_FAIL;
+
+    {
+        ptl_ct_event_t tmp;
+        PtlCTGet(trig_ct_handle, &tmp);
+        if (tmp.success + tmp.failure >= threshold) {
+            PtlCTSet(ct_handle, new_ct);
+            return PTL_OK;
+        }
+    }
+    /* 1. Fetch the trigger structure */
+    t = PtlInternalFetchTrigger(tct.s.ni);
+    /* 2. Build the trigger structure */
+    t->threshold         = threshold;
+    t->type              = CTSET;
+    t->t.ctset.ct_handle = ct_handle;
+    t->t.ctset.newval    = new_ct;
+    /* append IFF threshold > max_threshold */
+    PtlInternalAddTrigger(trig_ct_handle, t);
+    return PTL_OK;
 }
 
 void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
@@ -597,11 +620,9 @@ void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t)
             PtlCTInc(t->t.ctinc.ct_handle, t->t.ctinc.increment);
             break;
         case CTSET:
-            fprintf(stderr, "CTSET not implemented\n");
-            fflush(stderr);
-            abort();
+            PtlCTSet(t->t.ctset.ct_handle, t->t.ctset.newval);
             break;
     }
 } /*}}}*/
 
-/* vim:set expandtab */
+/* vim:set expandtab: */

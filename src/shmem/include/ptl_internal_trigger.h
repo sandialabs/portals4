@@ -18,11 +18,14 @@ typedef struct ptl_internal_trigger_s {
             ptl_handle_ct_t ct_handle;
             ptl_ct_event_t  increment;
         } ctinc;
-        struct {} ctset;
+        struct {
+            ptl_handle_ct_t ct_handle;
+            ptl_ct_event_t  newval;
+        } ctset;
     } t;
 } ptl_internal_trigger_t;
 
 void INTERNAL PtlInternalTriggerPull(ptl_internal_trigger_t *t);
 
 #endif /* ifndef PTL_INTERNAL_TRIGGER_H */
-/* vim:set expandtab */
+/* vim:set expandtab: */
