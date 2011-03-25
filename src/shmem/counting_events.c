@@ -62,8 +62,8 @@ static const ptl_ct_event_t            CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 #if 0
 /* 128-bit Atomics */
 static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
-                                         const ptl_ct_event_t oldval,
-                                         const ptl_ct_event_t newval)
+                                         const ptl_ct_event_t     oldval,
+                                         const ptl_ct_event_t     newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
     register unsigned char ret;
@@ -86,7 +86,7 @@ static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
 }                                      /*}}} */
 
 static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
-                                            const ptl_ct_event_t newval)
+                                            const ptl_ct_event_t     newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__ (
@@ -119,7 +119,7 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
     return tmp;
 }
 
-void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t ct_handle,
+void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
                                     ptl_internal_trigger_t *t)
 {
     const ptl_internal_handle_converter_t ct = { ct_handle };
@@ -146,11 +146,26 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t ct_handle,
         /* step 4: enqueue the op structure on the target */
         PtlInternalFragmentToss(hdr, proc_number);
         PTL_CMD_LOCK_SENDER2(hdr->data);
+    } else {
+        ptl_internal_header_t *restrict hdr;
+        /* step 1: get a local memory fragment */
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+        /* step 2: fill the op structure */
+        hdr->type   = HDR_TYPE_CMD;
+        hdr->ni     = ct.s.ni;
+        hdr->src    = proc_number;
+        hdr->target = proc_number;
+
+        hdr->pt_index = CMD_TYPE_CHECK;
+        hdr->hdr_data = ct.s.code;
+
+        /* step 3: enqueue the op structure on the target */
+        PtlInternalFragmentToss(hdr, proc_number);
     }
 }
 
 void INTERNAL PtlInternalCTNISetup(unsigned int ni,
-                                   ptl_size_t limit)
+                                   ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_ct_event_t *tmp;
 
@@ -221,7 +236,7 @@ void INTERNAL PtlInternalCTNITeardown(int ni)
 }                                      /*}}} */
 
 int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
-                                          int none_ok)
+                                          int             none_ok)
 {                                      /*{{{ */
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ct = { handle };
@@ -257,7 +272,7 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
     return PTL_OK;
 }                                      /*}}} */
 
-int API_FUNC PtlCTAlloc(ptl_handle_ni_t ni_handle,
+int API_FUNC PtlCTAlloc(ptl_handle_ni_t  ni_handle,
                         ptl_handle_ct_t *ct_handle)
 {                                      /*{{{ */
     ptl_ct_event_t                       *cts;
@@ -387,7 +402,7 @@ int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
 }                                      /*}}} */
 
 int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
-                       ptl_size_t test,
+                       ptl_size_t      test,
                        ptl_ct_event_t *event)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
@@ -429,11 +444,11 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
 }                                      /*}}} */
 
 int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
-                       ptl_size_t *tests,
-                       unsigned int size,
-                       ptl_time_t timeout,
-                       ptl_ct_event_t *event,
-                       int *which)
+                       ptl_size_t      *tests,
+                       unsigned int     size,
+                       ptl_time_t       timeout,
+                       ptl_ct_event_t  *event,
+                       int             *which)
 {                                      /*{{{ */
     ptl_size_t         ctidx, offset;
     ptl_ct_event_t    *ctes[size];
@@ -546,7 +561,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
 }                                      /*}}} */
 
 int API_FUNC PtlCTSet(ptl_handle_ct_t ct_handle,
-                      ptl_ct_event_t test)
+                      ptl_ct_event_t  test)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
@@ -564,7 +579,7 @@ int API_FUNC PtlCTSet(ptl_handle_ct_t ct_handle,
 }                                      /*}}} */
 
 int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
-                      ptl_ct_event_t increment)
+                      ptl_ct_event_t  increment)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_ct_event_t                       *cte;
@@ -645,7 +660,7 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr)
 } /*}}}*/
 
 void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
-                                      ptl_size_t increment)
+                                      ptl_size_t      increment)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_ct_event_t                       *cte;
