@@ -731,10 +731,10 @@ check_lengths:
         * Perform the Operation *
         *************************/
         /*
-         * msg_mlength is the total bytecount of the message
-         * fragment_mlength is the total bytecount of this packet
-         * remaining is the total bytecount that has not been transmitted yet
-         * Thus, the offset from the beginning of the message that this fragment refers to is...
+         * msg_mlength is the total bytecount of the message fragment_mlength
+         * is the total bytecount of this packet remaining is the total
+         * bytecount that has not been transmitted yet Thus, the offset from
+         * the beginning of the message that this fragment refers to is...
          * me.start + dest_offset + (msg_mlength - fragment_mlength - remaining)
          * >_____+--------####====+____<
          * |     |        |   |   |    `--> le.start + le.length
@@ -852,16 +852,15 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
     }
 }                                      /*}}} */
 
-static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
-                                          const ptl_handle_ct_t ct_handle,
-                                          const unsigned char   type,
-                                          const unsigned int    options,
-                                          const uint64_t        mlength,
-                                          const uintptr_t       start,
-                                          const int             overflow,
-                                          void *const           user_ptr,
-                                          ptl_internal_header_t *const
-                                          restrict              hdr)
+static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 eq_handle,
+                                          const ptl_handle_ct_t                 ct_handle,
+                                          const unsigned char                   type,
+                                          const unsigned int                    options,
+                                          const uint64_t                        mlength,
+                                          const uintptr_t                       start,
+                                          const int                             overflow,
+                                          void *const                           user_ptr,
+                                          ptl_internal_header_t *const restrict hdr)
 {                                      /*{{{ */
     int ct_announce = ct_handle != PTL_CT_NONE;
 
@@ -878,6 +877,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
         } else {
             PtlInternalCTSuccessInc(ct_handle, mlength);
         }
+        PtlInternalCTPullTriggers(ct_handle);
     }
     if ((eq_handle != PTL_EQ_NONE) &&
         ((options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))

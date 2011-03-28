@@ -1222,6 +1222,7 @@ static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_h
         } else {
             PtlInternalCTSuccessInc(ct_handle, mlength);
         }
+        PtlInternalCTPullTriggers(ct_handle);
     }
     if ((eq_handle != PTL_EQ_NONE) &&
         ((options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE))

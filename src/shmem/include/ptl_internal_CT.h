@@ -14,8 +14,9 @@ void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
                                       ptl_size_t      increment);
 void INTERNAL PtlInternalCTFailureInc(ptl_handle_ct_t ct_handle);
 void INTERNAL PtlInternalCTFree(ptl_internal_header_t *restrict hdr);
-void INTERNAL PtlInternalCTPullTriggers(ptl_internal_header_t *restrict hdr);
+void INTERNAL PtlInternalCTPullTriggers(ptl_handle_ct_t ct_handle);
 void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr);
+void INTERNAL PtlInternalCTTriggerCheck(ptl_handle_ct_t ct);
 void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
                                     ptl_internal_trigger_t *t);
 
