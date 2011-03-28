@@ -87,6 +87,10 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
             }
             break;
     }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
+    }
     if (pt_index > nit_limits[mdh.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
@@ -174,6 +178,10 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
                 return PTL_ARG_INVALID;
             }
             break;
+    }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
@@ -324,6 +332,10 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
             }
         default:
             break;
+    }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
@@ -498,6 +510,10 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
         default:
             break;
     }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
+    }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
@@ -671,6 +687,10 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
             VERBOSE_ERROR("Only PTL_SWAP/CSWAP/MSWAP may be used with PtlSwap\n");
             return PTL_ARG_INVALID;
     }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
+    }
     if (pt_index > nit_limits[get_md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
@@ -767,6 +787,10 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
+        return PTL_ARG_INVALID;
+    }
     if ((increment.success != 0) && (increment.failure != 0)) {
         return PTL_ARG_INVALID;
     }
@@ -807,6 +831,10 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
     if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
+        return PTL_ARG_INVALID;
+    }
+    if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+        VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
         return PTL_ARG_INVALID;
     }
 #endif
