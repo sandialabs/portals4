@@ -48,6 +48,7 @@
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_DM.h"
+#include "ptl_internal_locks.h"
 
 #ifndef PSHMNAMLEN
 # define PSHMNAMLEN 100
@@ -60,6 +61,7 @@ static pid_t *pids = NULL;
 static long            count = 0;
 static ptl_handle_ct_t collator_ct_handle;
 static ptl_handle_ni_t ni_physical;
+static volatile int    collatorLEposted = 0;
 
 static char shmname[PSHMNAMLEN + 1];
 
@@ -284,11 +286,14 @@ int main(int   argc,
         assert(pt_index == 0);
     }
     collator_ct_handle = PTL_CT_NONE;
+    collatorLEposted   = 0;
+    __sync_synchronize();
     if (pthread_create(&collator_thread, NULL, collator, &ni_physical) != 0) {
         perror("pthread_create");
         fprintf(stderr, "yod-> failed to create collator thread\n");
         ct_spawned = 0;                /* technically not fatal, though maybe should be */
     }
+    while (collatorLEposted == 0) SPINLOCK_BODY();
 
     /* Launch children */
     for (long c = 0; c < count; ++c) {
@@ -491,6 +496,9 @@ void *collator(void *Q_UNUSED junk) Q_NORETURN
     ptl_assert(PtlLEAppend
                    (ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle),
                PTL_OK);
+    __sync_synchronize();
+    collatorLEposted = 1; // release yod
+    __sync_synchronize();
     /* wait for everyone to post to the mapping */
     {
         ptl_ct_event_t ct_data;
