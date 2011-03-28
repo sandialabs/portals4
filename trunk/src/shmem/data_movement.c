@@ -58,7 +58,7 @@ static void PtlInternalHandleCmd(ptl_internal_header_t *restrict hdr)
             PtlInternalCTFree(hdr);
             break;
         case CMD_TYPE_CHECK:
-            PtlInternalCTPullTriggers(hdr);
+            PtlInternalCTPullTriggers(hdr->hdr_data);
             break;
         case CMD_TYPE_ENQUEUE:
             PtlInternalCTUnorderedEnqueue(hdr);
@@ -124,6 +124,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                             } else {
                                 PtlInternalCTSuccessInc(cth, hdr->length);
                             }
+                            PtlInternalCTPullTriggers(cth);
                         }
                         if ((eqh != PTL_EQ_NONE) &&
                             ((options & PTL_MD_EVENT_SUCCESS_DISABLE) ==
@@ -150,6 +151,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                         } else {
                             PtlInternalCTSuccessInc(cth, hdr->length);
                         }
+                        PtlInternalCTPullTriggers(cth);
                     }
                     if ((eqh != PTL_EQ_NONE) &&
                         ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
@@ -304,6 +306,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     } else {
                         PtlInternalCTSuccessInc(md_ct, hdr->length);
                     }
+                    PtlInternalCTPullTriggers(md_ct);
                 }
                 if ((md_eq != PTL_EQ_NONE) &&
                     ((md_opts & PTL_MD_EVENT_SUCCESS_DISABLE) == 0) &&
@@ -670,6 +673,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
             } else {
                 PtlInternalCTSuccessInc(cth, length);
             }
+            PtlInternalCTTriggerCheck(cth);
         } else {
             // printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
         }
@@ -993,6 +997,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         } else {
             PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
+        PtlInternalCTTriggerCheck(mdptr->ct_handle);
     }
     if ((mdptr->eq_handle != PTL_EQ_NONE) &&
         ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
@@ -1226,6 +1231,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         } else {
             PtlInternalCTSuccessInc(mdptr->ct_handle, length);
         }
+        PtlInternalCTTriggerCheck(mdptr->ct_handle);
     }
     if ((mdptr->eq_handle != PTL_EQ_NONE) &&
         ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
@@ -1482,6 +1488,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             } else {
                 PtlInternalCTSuccessInc(mdptr->ct_handle, length);
             }
+            PtlInternalCTTriggerCheck(mdptr->ct_handle);
         }
         if ((mdptr->eq_handle != PTL_EQ_NONE) &&
             ((mdptr->options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
