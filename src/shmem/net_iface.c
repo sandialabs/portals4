@@ -148,7 +148,7 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         }
         if ((desired->max_triggered_ops >= 0) &&
             (desired->max_triggered_ops < (1ULL << (sizeof(uint32_t) * 8)))) {
-            nit_limits[ni.s.ni].max_triggered_ops = desired->max_list_size;
+            nit_limits[ni.s.ni].max_triggered_ops = desired->max_triggered_ops;
         }
         if ((desired->max_msg_size > 0) &&
             (desired->max_msg_size < UINT32_MAX)) {
