@@ -423,7 +423,7 @@ int main(int   argc,
     PtlFini();
 #ifndef USE_HARD_POLLING
     for (size_t i = 0; i <= count; ++i) {
-        char                   *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
+        uint8_t                *remote_pad = ((uint8_t *)commpad) + pagesize + (commsize * i);
         NEMESIS_blocking_queue *q1         = (NEMESIS_blocking_queue *)remote_pad;
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
         int perr;

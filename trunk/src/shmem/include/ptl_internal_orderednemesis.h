@@ -34,10 +34,10 @@ typedef struct {
     /* The First Cacheline */
     ordered_NEMESIS_ptr head;
     ordered_NEMESIS_ptr tail;
-    char                pad1[CACHELINE_WIDTH - (2 * sizeof(ordered_NEMESIS_ptr))];
+    uint8_t             pad1[CACHELINE_WIDTH - (2 * sizeof(ordered_NEMESIS_ptr))];
     /* The Second Cacheline */
     ordered_NEMESIS_ptr shadow_head;
-    char                pad2[CACHELINE_WIDTH - sizeof(ordered_NEMESIS_ptr)];
+    uint8_t             pad2[CACHELINE_WIDTH - sizeof(ordered_NEMESIS_ptr)];
 } ordered_NEMESIS_queue ALIGNED (CACHELINE_WIDTH);
 
 /***********************************************/
@@ -69,13 +69,13 @@ static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr          *dest,
                                             volatile ordered_NEMESIS_ptr *src)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
-    __asm__ __volatile__ ("xor %%rax, %%rax\n\t" // zero rax out to avoid affecting *addr
-                          "xor %%rbx, %%rbx\n\t" // zero rbx out to avoid affecting *addr
-                          "xor %%rcx, %%rcx\n\t" // zero rcx out to avoid affecting *addr
-                          "xor %%rdx, %%rdx\n\t" // zero rdx out to avoid affecting *addr
+    __asm__ __volatile__ ("xor %%rax, %%rax\n\t"     // zero rax out to avoid affecting *addr
+                          "xor %%rbx, %%rbx\n\t"     // zero rbx out to avoid affecting *addr
+                          "xor %%rcx, %%rcx\n\t"     // zero rcx out to avoid affecting *addr
+                          "xor %%rdx, %%rdx\n\t"     // zero rdx out to avoid affecting *addr
                           "lock cmpxchg16b (%2)\n\t" // atomic swap
-                          "mov %%rax, %0\n\t" // put rax into dest->success
-                          "mov %%rdx, %1\n\t" // put rdx into dest->failure
+                          "mov %%rax, %0\n\t"        // put rax into dest->success
+                          "mov %%rdx, %1\n\t"        // put rdx into dest->failure
                           : "=m"   (dest->ptr),
                           "=m"     (dest->val)
                           : "r"    (src)

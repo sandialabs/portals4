@@ -31,11 +31,11 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_locks.h"
 
-volatile char *comm_pad               = NULL;
-size_t         num_siblings           = 0;
-size_t         proc_number            = 0;
-size_t         per_proc_comm_buf_size = 0;
-size_t         firstpagesize          = 0;
+volatile uint8_t *comm_pad               = NULL;
+size_t            num_siblings           = 0;
+size_t            proc_number            = 0;
+size_t            per_proc_comm_buf_size = 0;
+size_t            firstpagesize          = 0;
 
 static unsigned int init_ref_count    = 0;
 static size_t       comm_pad_size     = 0;

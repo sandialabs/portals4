@@ -11,11 +11,11 @@
 
 #include "ptl_internal_handles.h"
 
-extern volatile char *comm_pad;
-extern size_t         num_siblings;
-extern size_t         proc_number;
-extern size_t         per_proc_comm_buf_size;
-extern size_t         firstpagesize;
+extern volatile uint8_t *comm_pad;
+extern size_t            num_siblings;
+extern size_t            proc_number;
+extern size_t            per_proc_comm_buf_size;
+extern size_t            firstpagesize;
 
 #define HDR_TYPE_PUT         0         /* _____ */
 #define HDR_TYPE_GET         1         /* ____1 */
@@ -36,12 +36,12 @@ enum cmd_types {
 };
 
 typedef struct {
-    void *volatile                  next;
-    ptl_match_bits_t                match_bits;
-    void                           *user_ptr;
-    ptl_hdr_data_t                  hdr_data; // not used by GETs
+    void *volatile   next;
+    ptl_match_bits_t match_bits;
+    void            *user_ptr;
+    ptl_hdr_data_t   hdr_data;                // not used by GETs
 #ifdef STRICT_UID_JID
-    ptl_jid_t                       jid;
+    ptl_jid_t        jid;
 #endif
     /* data used for long & truncated messages */
     char                           *moredata;
