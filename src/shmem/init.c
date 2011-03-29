@@ -29,6 +29,7 @@
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_papi.h"
+#include "ptl_internal_locks.h"
 
 volatile char *comm_pad               = NULL;
 size_t         num_siblings           = 0;
@@ -164,7 +165,7 @@ int API_FUNC PtlInit(void)
             for (i = 0; i < num_siblings; ++i) {
                 /* oddly enough, this should reduce cache traffic for large numbers
                  * of siblings */
-                while (comm_pad[i] == 0) ;
+                while (comm_pad[i] == 0) SPINLOCK_BODY();
             }
         }
 
@@ -175,7 +176,7 @@ int API_FUNC PtlInit(void)
         return PTL_OK;
     } else {
         /* Should block until other inits finish. */
-        while (!done_initializing) ;
+        while (!done_initializing) SPINLOCK_BODY();
         if (!failure) {
             return PTL_OK;
         } else {

@@ -44,9 +44,8 @@ void INTERNAL PtlInternalMDNISetup(
 {                                      /*{{{ */
     ptl_internal_md_t *tmp;
     assert(sizeof(ptl_internal_md_t) == CACHELINE_WIDTH);
-    while ((tmp =
-            PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
-                                    (void *)1)) == (void *)1) ;
+    while ((tmp = PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
+                                    (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit+1, sizeof(ptl_internal_md_t));
         assert(tmp != NULL);

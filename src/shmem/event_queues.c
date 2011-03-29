@@ -57,9 +57,8 @@ void INTERNAL PtlInternalEQNISetup(unsigned int ni)
 {   /*{{{*/
     ptl_internal_eq_t *tmp;
 
-    while ((tmp =
-                PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
-                                        (void *)1)) == (void *)1) ;
+    while ((tmp = PtlInternalAtomicCasPtr(&(eqs[ni]), NULL,
+                                          (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni].max_eqs,
                        sizeof(ptl_internal_eq_t));
@@ -79,7 +78,7 @@ void INTERNAL PtlInternalEQNITeardown(unsigned int ni)
     ptl_internal_eq_t *restrict tmp;
     volatile uint64_t *restrict rc;
 
-    while (eqs[ni] == (void *)1) ;     // just in case (should never happen in sane code)
+    while (eqs[ni] == (void *)1) SPINLOCK_BODY();     // just in case (should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&eqs[ni], NULL);
     rc  = PtlInternalAtomicSwapPtr((void *volatile *)&eq_refcounts[ni], NULL);
     assert(tmp != NULL);
@@ -88,7 +87,7 @@ void INTERNAL PtlInternalEQNITeardown(unsigned int ni)
     for (size_t i = 0; i < nit_limits[ni].max_eqs; ++i) {
         if (rc[i] != 0) {
             PtlInternalAtomicInc(&(rc[i]), -1);
-            while (rc[i] != 0) ;
+            while (rc[i] != 0) SPINLOCK_BODY();
             free(tmp[i].ring);
             tmp[i].ring = NULL;
         }

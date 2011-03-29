@@ -16,6 +16,7 @@
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
+#include "ptl_internal_locks.h"
 
 typedef struct ordered_NEMESIS_entry_s ordered_NEMESIS_entry;
 
@@ -177,7 +178,7 @@ static inline void *PtlInternalOrderedNEMESISDequeue(ordered_NEMESIS_queue *q,
             q->head.ptr = NULL;
             old         = PtlInternalAtomicCas128(&(q->tail), retval, nil);
             if ((old.ptr != retval.ptr) || (old.val != retval.val)) {
-                while (retval.ptr->next.ptr == NULL) ;
+                while (retval.ptr->next.ptr == NULL) SPINLOCK_BODY();
                 PtlInternalAtomicWrite128(&q->head, retval.ptr->next);
                 retval.ptr->next.ptr = NULL;
             }

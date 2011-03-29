@@ -168,8 +168,8 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         }
         nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
     }
-    PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 2);     /* if not yet initialized, it is now */
-    while (nit_limits_init[ni.s.ni] == 1) ;     /* if being initialized by another thread, wait for it to be initialized */
+    PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 2);   /* if not yet initialized, it is now */
+    while (nit_limits_init[ni.s.ni] == 1) SPINLOCK_BODY();     /* if being initialized by another thread, wait for it to be initialized */
     if (actual != NULL) {
         *actual = nit_limits[ni.s.ni];
     }
@@ -195,9 +195,8 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
             PtlInternalLENISetup(ni.s.ni, nit_limits[ni.s.ni].max_entries);
         }
         /* Okay, now this is tricky, because it needs to be thread-safe, even with respect to PtlNIFini(). */
-        while ((tmp =
-                    PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
-                                            (void *)1)) == (void *)1) ;
+        while ((tmp = PtlInternalAtomicCasPtr(&(nit.tables[ni.s.ni]), NULL,
+                                              (void *)1)) == (void *)1) SPINLOCK_BODY();
         if (tmp == NULL) {
             ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni.s.ni].max_pt_index + 1, sizeof(ptl_table_entry_t));
             if (tmp == NULL) {
@@ -241,7 +240,7 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
     }
 #endif
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
-        while (nit.internal_refcount[ni.s.ni] != 0) ;
+        while (nit.internal_refcount[ni.s.ni] != 0) SPINLOCK_BODY();
         PtlInternalDMTeardown();
         PtlInternalCTNITeardown(ni.s.ni);
         PtlInternalMDNITeardown(ni.s.ni);

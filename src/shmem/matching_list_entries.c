@@ -96,9 +96,8 @@ void INTERNAL PtlInternalMENISetup(unsigned int ni,
 {                                      /*{{{ */
     ptl_internal_me_t *tmp;
 
-    while ((tmp =
-                PtlInternalAtomicCasPtr(&(mes[ni]), NULL,
-                                        (void *)1)) == (void *)1) ;
+    while ((tmp = PtlInternalAtomicCasPtr(&(mes[ni]), NULL,
+                                          (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit, sizeof(ptl_internal_me_t));
         assert(tmp != NULL);
