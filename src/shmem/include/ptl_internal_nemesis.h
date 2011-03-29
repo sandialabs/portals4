@@ -27,10 +27,10 @@ typedef struct {
     /* The First Cacheline */
     void *volatile head;
     void *volatile tail;
-    char           pad1[CACHELINE_WIDTH - (2 * sizeof(void*))];
+    uint8_t        pad1[CACHELINE_WIDTH - (2 * sizeof(void*))];
     /* The Second Cacheline */
     void *volatile shadow_head;
-    char           pad2[CACHELINE_WIDTH - sizeof(void*)];
+    uint8_t        pad2[CACHELINE_WIDTH - sizeof(void*)];
 } NEMESIS_queue ALIGNED (CACHELINE_WIDTH);
 
 typedef struct {
@@ -144,9 +144,9 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(NEMESIS_queue *q)
     return retval;
 }
 
-void           PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q);
-void           PtlInternalNEMESISBlockingEnqueue(NEMESIS_blocking_queue *restrict q,
-                                                 NEMESIS_entry *restrict          e);
+void PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q);
+void PtlInternalNEMESISBlockingEnqueue(NEMESIS_blocking_queue *restrict q,
+                                       NEMESIS_entry *restrict          e);
 NEMESIS_entry *PtlInternalNEMESISBlockingDequeue(NEMESIS_blocking_queue *q);
 void           PtlInternalNEMESISBlockingOffsetEnqueue(NEMESIS_blocking_queue *restrict q,
                                                        NEMESIS_entry *restrict          e);
