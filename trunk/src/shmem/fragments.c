@@ -105,7 +105,7 @@ static void PtlInternalValidateFragmentLists(void)
 # define PtlInternalValidateFragmentLists()
 #endif /* ifdef PARANOID */
 
-void INTERNAL PtlInternalFragmentSetup(volatile char *buf)
+void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
 {                                      /*{{{ */
     size_t          i;
     fragment_hdr_t *fptr;
