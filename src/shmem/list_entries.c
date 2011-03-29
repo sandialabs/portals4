@@ -50,6 +50,14 @@ typedef struct {
 
 static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
+#ifdef STRICT_UID_JID
+# define CHECK_JID(a, b) (((a) != PTL_JID_ANY) && ((a) != (b)))
+# define CHECK_UID(a, b) (((a) != PTL_UID_ANY) && ((a) != (b)))
+#else
+# define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
+# define CHECK_UID(a, b) ((a) != PTL_UID_ANY)
+#endif
+
 /* Static functions */
 static void PtlInternalPerformDelivery(const unsigned char  type,
                                        void *const restrict local_data,
@@ -95,10 +103,18 @@ void INTERNAL PtlInternalLENITeardown(unsigned int ni)
     ALIGNED_FREE(tmp, CACHELINE_WIDTH);
 }                                      /*}}} */
 
+#ifdef STRICT_UID_JID
+# define HDRUID hdr->uid
+# define HDRJID hdr->jid
+#else
+# define HDRUID ((ptl_internal_uid_t)PTL_UID_ANY)
+# define HDRJID ((ptl_internal_uid_t)PTL_JID_NONE)
+#endif
+
 #define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do { \
         e.pt_index      = hdr->pt_index; \
-        e.uid           = hdr->uid; \
-        e.jid           = hdr->jid; \
+        e.uid           = HDRUID; \
+        e.jid           = HDRJID; \
         e.match_bits    = hdr->match_bits; \
         e.rlength       = hdr->length; \
         e.mlength       = 0; \
@@ -227,13 +243,11 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
                         if (le->ac_id.jid == PTL_JID_NONE) {
                             goto permission_violation;
                         }
-                        if ((le->ac_id.jid != PTL_JID_ANY) &&
-                            (le->ac_id.jid != cur->hdr.jid)) {
+                        if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
                             goto permission_violation;
                         }
                     } else {
-                        if ((le->ac_id.uid != PTL_UID_ANY) &&
-                            (le->ac_id.uid != cur->hdr.uid)) {
+                        if (CHECK_UID(le->ac_id.uid, cur->hdr.uid)) {
                             goto permission_violation;
                         }
                     }
@@ -388,12 +402,11 @@ permission_violation:
                     * ... else: deliver and return */
                     // (1) check permissions
                     if (le->options & PTL_LE_AUTH_USE_JID) {
-                        if (le->ac_id.jid != PTL_JID_ANY) {
+                        if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
                             goto permission_violationPO;
                         }
                     } else {
-                        if ((le->ac_id.uid != PTL_UID_ANY) &&
-                            (le->ac_id.uid != cur->hdr.uid)) {
+                        if (CHECK_UID(le->ac_id.uid, cur->hdr.uid)) {
                             goto permission_violationPO;
                         }
                     }
@@ -623,12 +636,11 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
         assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
         // check the permissions on the LE
         if (le.options & PTL_LE_AUTH_USE_JID) {
-            if (le.ac_id.jid != PTL_JID_ANY) {
+            if (CHECK_JID(le.ac_id.jid, hdr->jid)) {
                 goto permission_violation;
             }
         } else {
-            if ((le.ac_id.uid != PTL_UID_ANY) &&
-                (le.ac_id.uid != hdr->uid)) {
+            if (CHECK_UID(le.ac_id.uid, hdr->uid)) {
                 goto permission_violation;
             }
         }

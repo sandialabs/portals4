@@ -34,6 +34,11 @@
 static uint32_t  spawned;
 static pthread_t catcher;
 
+#ifdef STRICT_UID_JID
+static ptl_uid_t saved_uid = -1;
+static ptl_jid_t saved_jid = -1;
+#endif
+
 #if 0
 # define dm_printf(format, ...) printf("%u ~> " format, \
                                        (unsigned int)proc_number, \
@@ -627,12 +632,16 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     hdr->local_offset1 = local_offset;
     hdr->remaining     = length;
     hdr->hdr_data      = hdr_data;
-    {
+#ifdef STRICT_UID_JID
+    if (hdr->uid != saved_uid || hdr->jid != saved_jid) {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle, &(hdr->uid));
-        PtlGetJid(ni_handle, &(hdr->jid));
+        PtlGetUid(ni_handle, &(saved_uid));
+        PtlGetJid(ni_handle, &(saved_jid));
+        hdr->uid = saved_uid;
+        hdr->jid = saved_jid;
     }
+#endif
     hdr->ack_req = ack_req;
     char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
     // PtlInternalPAPISaveC(PTL_PUT, 0);
@@ -760,12 +769,16 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
             hdr->target = target_id.phys.pid;
             break;
     }
-    {
+#ifdef STRICT_UID_JID
+    if (hdr->uid != saved_uid || hdr->jid != saved_jid) {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle, &(hdr->uid));
-        PtlGetJid(ni_handle, &(hdr->jid));
+        PtlGetUid(ni_handle, &(saved_uid));
+        PtlGetJid(ni_handle, &(saved_jid));
+        hdr->uid = saved_uid;
+        hdr->jid = saved_jid;
     }
+#endif
     hdr->pt_index      = pt_index;
     hdr->match_bits    = match_bits;
     hdr->dest_offset   = remote_offset;
@@ -945,12 +958,16 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
             hdr->target = target_id.phys.pid;
             break;
     }
-    {
+#ifdef STRICT_UID_JID
+    if (hdr->uid != saved_uid || hdr->jid != saved_jid) {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(md_handle, &ni_handle);
-        PtlGetUid(ni_handle, &(hdr->uid));
-        PtlGetJid(ni_handle, &(hdr->jid));
+        PtlGetUid(ni_handle, &(saved_uid));
+        PtlGetJid(ni_handle, &(saved_jid));
+        hdr->uid = saved_uid;
+        hdr->jid = saved_jid;
     }
+#endif
     hdr->pt_index         = pt_index;
     hdr->match_bits       = match_bits;
     hdr->dest_offset      = remote_offset;
@@ -1180,12 +1197,16 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
             hdr->target = target_id.phys.pid;
             break;
     }
-    {
+#ifdef STRICT_UID_JID
+    if (hdr->uid != saved_uid || hdr->jid != saved_jid) {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(get_md_handle, &ni_handle);
-        PtlGetUid(ni_handle, &(hdr->uid));
-        PtlGetJid(ni_handle, &(hdr->jid));
+        PtlGetUid(ni_handle, &(saved_uid));
+        PtlGetJid(ni_handle, &(saved_jid));
+        hdr->uid = saved_uid;
+        hdr->jid = saved_jid;
     }
+#endif
     hdr->pt_index         = pt_index;
     hdr->match_bits       = match_bits;
     hdr->dest_offset      = remote_offset;
@@ -1412,12 +1433,16 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             hdr->target = target_id.phys.pid;
             break;
     }
-    {
+#ifdef STRICT_UID_JID
+    if (hdr->uid != saved_uid || hdr->jid != saved_jid) {
         ptl_handle_ni_t ni_handle;
         PtlNIHandle(get_md_handle, &ni_handle);
-        PtlGetUid(ni_handle, &(hdr->uid));
-        PtlGetJid(ni_handle, &(hdr->jid));
+        PtlGetUid(ni_handle, &(saved_uid));
+        PtlGetJid(ni_handle, &(saved_jid));
+        hdr->uid = saved_uid;
+        hdr->jid = saved_jid;
     }
+#endif
     hdr->pt_index         = pt_index;
     hdr->match_bits       = match_bits;
     hdr->dest_offset      = remote_offset;
