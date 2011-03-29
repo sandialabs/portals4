@@ -51,9 +51,11 @@ typedef struct {
 static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 
 #ifdef STRICT_UID_JID
+# define EXT_UID extern ptl_uid_t the_ptl_uid
 # define CHECK_JID(a, b) (((a) != PTL_JID_ANY) && ((a) != (b)))
 # define CHECK_UID(a, b) (((a) != PTL_UID_ANY) && ((a) != (b)))
 #else
+# define EXT_UID do { } while (0)
 # define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
 # define CHECK_UID(a, b) ((a) != PTL_UID_ANY)
 #endif
@@ -104,17 +106,18 @@ void INTERNAL PtlInternalLENITeardown(unsigned int ni)
 }                                      /*}}} */
 
 #ifdef STRICT_UID_JID
-# define HDRUID hdr->uid
-# define HDRJID hdr->jid
+# define HDRUID the_ptl_uid
+# define HDRJID(hdr) hdr->jid
 #else
 # define HDRUID ((ptl_internal_uid_t)PTL_UID_ANY)
-# define HDRJID ((ptl_internal_uid_t)PTL_JID_NONE)
+# define HDRJID(hdr) ((ptl_internal_uid_t)PTL_JID_NONE)
 #endif
 
 #define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do { \
+        EXT_UID; \
         e.pt_index      = hdr->pt_index; \
         e.uid           = HDRUID; \
-        e.jid           = HDRJID; \
+        e.jid           = HDRJID(hdr); \
         e.match_bits    = hdr->match_bits; \
         e.rlength       = hdr->length; \
         e.mlength       = 0; \
@@ -247,7 +250,8 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
                             goto permission_violation;
                         }
                     } else {
-                        if (CHECK_UID(le->ac_id.uid, cur->hdr.uid)) {
+                        EXT_UID;
+                        if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
                             goto permission_violation;
                         }
                     }
@@ -406,7 +410,8 @@ permission_violation:
                             goto permission_violationPO;
                         }
                     } else {
-                        if (CHECK_UID(le->ac_id.uid, cur->hdr.uid)) {
+                        EXT_UID;
+                        if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
                             goto permission_violationPO;
                         }
                     }
@@ -640,7 +645,8 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
                 goto permission_violation;
             }
         } else {
-            if (CHECK_UID(le.ac_id.uid, hdr->uid)) {
+            EXT_UID;
+            if (CHECK_UID(le.ac_id.uid, the_ptl_uid)) {
                 goto permission_violation;
             }
         }
