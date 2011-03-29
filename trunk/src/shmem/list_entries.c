@@ -83,9 +83,8 @@ void INTERNAL PtlInternalLENISetup(unsigned int ni,
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
-    while ((tmp =
-                PtlInternalAtomicCasPtr(&(les[ni]), NULL,
-                                        (void *)1)) == (void *)1) ;
+    while ((tmp = PtlInternalAtomicCasPtr(&(les[ni]), NULL,
+                                          (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit, sizeof(ptl_internal_le_t));
         assert(tmp != NULL);

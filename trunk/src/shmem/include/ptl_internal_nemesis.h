@@ -16,6 +16,7 @@
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_commpad.h"
+#include "ptl_internal_locks.h"
 
 typedef struct {
     void *volatile next;
@@ -79,7 +80,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(NEMESIS_queue *q)
             q->head = NULL;
             old     = PtlInternalAtomicCasPtr(&(q->tail), retval, NULL);
             if (old != retval) {
-                while (retval->next == NULL) ;
+                while (retval->next == NULL) SPINLOCK_BODY();
                 q->head      = retval->next;
                 retval->next = NULL;
             }

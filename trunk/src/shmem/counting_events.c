@@ -169,7 +169,9 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
 
     while ((tmp = PtlInternalAtomicCasPtr((void *volatile *)&(ct_events[ni]),
                                           NULL,
-                                          (void *)1)) == (void *)1) ;
+                                          (void *)1)) == (void *)1) {
+        SPINLOCK_BODY();
+    }
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, 16, limit, sizeof(ptl_ct_event_t));
         assert((((intptr_t)tmp) & 0x7) == 0);
@@ -204,7 +206,7 @@ void INTERNAL PtlInternalCTNITeardown(int ni)
     volatile uint64_t *restrict rc;
     ptl_internal_trigger_t     *ctt;
 
-    while (ct_events[ni] == (void *)1) ;        // in case its in the middle of being allocated (this should never happen in sane code)
+    while (ct_events[ni] == (void *)1) SPINLOCK_BODY();        // in case its in the middle of being allocated (this should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
     rc  = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
                                    NULL);
@@ -229,7 +231,7 @@ void INTERNAL PtlInternalCTNITeardown(int ni)
         }
     }
     for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
-        while (rc[i] != 0) ;
+        while (rc[i] != 0) SPINLOCK_BODY();
     }
     ALIGNED_FREE(tmp, 16);
     free((void *)rc);
@@ -445,7 +447,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
             return PTL_OK;
         }
         while (tmpread.success == cte->success &&
-               tmpread.failure == cte->failure) ;
+               tmpread.failure == cte->failure) SPINLOCK_BODY();
     } while (1);
 }                                      /*}}} */
 
@@ -649,7 +651,7 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr)
         /* insert at head */
         prev = PtlInternalAtomicSwap128(&(q->tail), f);
         if (prev.val > f.val) { // someone else has appended, so prepending is easy
-            while (q->head.ptr == NULL) ;
+            while (q->head.ptr == NULL) SPINLOCK_BODY();
             f.ptr->next = q->head;
             q->head     = f;
         } else {
@@ -665,8 +667,8 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr)
             PtlInternalAtomicRead128(&cursor, &cursor.ptr->next);
         } while (cursor.ptr != NULL && cursor.val < t->threshold);
         /* insert after prev */
-        prev.ptr->next = f; // this does NOT need to be atomic
-        f.ptr->next    = cursor; // this does NOT need to be atomic
+        prev.ptr->next = f;         // this does NOT need to be atomic
+        f.ptr->next    = cursor;    // this does NOT need to be atomic
         assert(cursor.ptr != NULL); // otherwise this would have been an append operation
     }
     PtlInternalCTPullTriggers((ptl_handle_ct_t)(hdr->hdr_data)); // just in case
