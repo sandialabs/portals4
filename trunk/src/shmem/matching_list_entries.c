@@ -64,6 +64,14 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 # define PtlInternalValidateMEPT(x)
 #endif
 
+#ifdef STRICT_UID_JID
+# define CHECK_JID(a, b) (((a) != PTL_JID_ANY) && ((a) != (b)))
+# define CHECK_UID(a, b) (((a) != PTL_UID_ANY) && ((a) != (b)))
+#else
+# define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
+# define CHECK_UID(a, b) ((a) != PTL_UID_ANY)
+#endif
+
 /* Static functions */
 static void PtlInternalPerformDelivery(const unsigned char             type,
                                        void *restrict                  local_data,
@@ -135,10 +143,18 @@ static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restric
     return retval;
 }                                      /*}}} */
 
+#ifdef STRICT_UID_JID
+# define HDRUID hdr->uid
+# define HDRJID hdr->jid
+#else
+# define HDRUID ((ptl_internal_uid_t)PTL_UID_ANY)
+# define HDRJID ((ptl_internal_uid_t)PTL_JID_NONE)
+#endif
+
 #define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do { \
         e.pt_index      = hdr->pt_index; \
-        e.uid           = hdr->uid; \
-        e.jid           = hdr->jid; \
+        e.uid           = HDRUID; \
+        e.jid           = HDRJID; \
         e.match_bits    = hdr->match_bits; \
         e.rlength       = hdr->length; \
         e.mlength       = 0; \
@@ -326,13 +342,11 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                         if (me->ac_id.jid == PTL_JID_NONE) {
                             goto permission_violation;
                         }
-                        if ((me->ac_id.jid != PTL_JID_ANY) &&
-                            (me->ac_id.jid != cur->hdr.jid)) {
+                        if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
                             goto permission_violation;
                         }
                     } else {
-                        if ((me->ac_id.uid != PTL_UID_ANY) &&
-                            (me->ac_id.uid != cur->hdr.uid)) {
+                        if (CHECK_UID(me->ac_id.uid, cur->hdr.uid)) {
                             goto permission_violation;
                         }
                     }
@@ -570,13 +584,11 @@ permission_violation:
                         if (me->ac_id.jid == PTL_JID_NONE) {
                             goto permission_violationPO;
                         }
-                        if ((me->ac_id.jid != PTL_JID_ANY) &&
-                            (me->ac_id.jid != cur->hdr.jid)) {
+                        if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
                             goto permission_violationPO;
                         }
                     } else {
-                        if ((me->ac_id.uid != PTL_UID_ANY) &&
-                            (me->ac_id.uid != cur->hdr.uid)) {
+                        if (CHECK_UID(me->ac_id.uid, cur->hdr.uid)) {
                             goto permission_violationPO;
                         }
                     }
@@ -909,13 +921,11 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
             if (me.ac_id.jid == PTL_JID_NONE) {
                 goto permission_violation;
             }
-            if ((me.ac_id.jid != PTL_JID_ANY) &&
-                (me.ac_id.jid != hdr->jid)) {
+            if (CHECK_JID(me.ac_id.jid, hdr->jid)) {
                 goto permission_violation;
             }
         } else {
-            if ((me.ac_id.uid != PTL_UID_ANY) &&
-                (me.ac_id.uid != hdr->uid)) {
+            if (CHECK_UID(me.ac_id.uid, hdr->uid)) {
                 goto permission_violation;
             }
         }
