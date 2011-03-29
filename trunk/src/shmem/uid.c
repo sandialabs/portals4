@@ -10,11 +10,14 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_atomic.h"
 #ifndef NO_ARG_VALIDATION
 # include "ptl_internal_error.h"
 # include "ptl_internal_nit.h"
 # include "ptl_internal_commpad.h"
 #endif
+
+ptl_uid_t the_ptl_uid = PTL_UID_ANY;
 
 int PtlGetUid(ptl_handle_ni_t ni_handle,
               ptl_uid_t      *uid)
@@ -34,7 +37,11 @@ int PtlGetUid(ptl_handle_ni_t ni_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    *uid = geteuid();
+    if (the_ptl_uid == PTL_UID_ANY) {
+        ptl_uid_t real_uid = geteuid();
+        PtlInternalAtomicCas64(&the_ptl_uid, PTL_UID_ANY, real_uid);
+    }
+    *uid = the_ptl_uid;
     return PTL_OK;
 }
 
