@@ -35,7 +35,7 @@ int API_FUNC PtlGetJid(ptl_handle_ni_t ni_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    *jid = PTL_JID_NONE;               // JID is somewhat ill defined... probably requires querying the job scheduler somehow
+    *jid = the_ptl_jid;
     return PTL_OK;
 }
 
