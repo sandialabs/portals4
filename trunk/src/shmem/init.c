@@ -68,6 +68,7 @@ int API_FUNC PtlInit(void)
     static volatile int done_initializing = 0;
     static volatile int failure           = 0;
     extern ptl_jid_t    the_ptl_jid;
+    extern ptl_uid_t    the_ptl_uid;
 
     if (race == 0) {
         int shm_fd;
@@ -81,6 +82,8 @@ int API_FUNC PtlInit(void)
 #else
         firstpagesize = 4096;
 #endif
+
+        the_ptl_uid = geteuid();
 
         /* Parse the official yod-provided environment variables */
         comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
