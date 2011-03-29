@@ -45,18 +45,26 @@ AS_IF([test "x$enable_picky" == x],
 	  [AS_IF([test -d "${srcdir}/.svn"],
 			 [echo "--> developer override: enable picky compiler by default"
 			  enable_picky=yes])])
-AC_ARG_ENABLE([arg-checking],
-			  [AS_HELP_STRING([--disable-arg-checking],
-							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
-AC_ARG_ENABLE([hard-polling],
-			  [AS_HELP_STRING([--enable-hard-polling],
-							  [Forces hard polls on inter-process communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
 AC_ARG_ENABLE([fast],
 			  [AS_HELP_STRING([--enable-fast],
 							  [Sets the available configuration options to run as quickly as possible. This makes assumptions and CAN result in bad things happening.])])
 AC_ARG_ENABLE([debug-symbols],
 			  [AS_HELP_STRING([--enable-debug-symbols],
 							  [For use with --enable-fast, adds the flag for debug symbols to CFLAGS])])
+AS_IF([test "x$enable_fast" == xyes],
+	  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
+	   CFLAGS="-O3 $CFLAGS"
+	   enable_arg_checking=no
+	   enable_strict_uidjid=no
+	   enable_hard_polling=yes
+	   AS_IF([test "x$enable_debug_symbols" == xyes],
+			 [CFLAGS="-g $CFLAGS"])])
+AC_ARG_ENABLE([arg-checking],
+			  [AS_HELP_STRING([--disable-arg-checking],
+							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
+AC_ARG_ENABLE([hard-polling],
+			  [AS_HELP_STRING([--enable-hard-polling],
+							  [Forces hard polls on inter-process communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
 AC_ARG_ENABLE([papi],
 			  [AS_HELP_STRING([--enable-papi],
 							  [Enables PAPI performance counters support])])
@@ -66,6 +74,9 @@ AC_ARG_ENABLE([rdtsc],
 AC_ARG_ENABLE([loud-drops],
 			  [AS_HELP_STRING([--enable-loud-drops],
 							  [Makes dropped messages print an error to the console])])
+AC_ARG_ENABLE([strict-uidjid],
+			  [AS_HELP_STRING([--enable-strict-uidjid],
+							  [Makes the uid/jid checking conform strictly according to the spec. By default, the uid/jid are assumed to be correct])])
 AC_ARG_WITH([cacheline-width],
 			[AS_HELP_STRING([--with-cacheline-width=bytes],
 							[Specify the cacheline width for the target machine. Defaults to 64.])],
@@ -82,12 +93,6 @@ AC_ARG_ENABLE([internal-overflow],
 			      [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
 AS_IF([test "x$enable_hard_polling" == xyes],
 	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
-AS_IF([test "x$enable_fast" == xyes],
-	  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
-	   CFLAGS="-O3 $CFLAGS"
-	   enable_arg_checking=no
-	   AS_IF([test "x$enable_debug_symbols" == xyes],
-			 [CFLAGS="-g $CFLAGS"])])
 AS_IF([test "x$enable_arg_checking" == xno],
 	  [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 AS_IF([test "x$enable_internal_overflow" != xyes],
@@ -98,6 +103,8 @@ AS_IF([test "x$enable_paranoia" == xyes],
 	  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
 AS_IF([test "x$enable_rdtsc" == xyes],
 	  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
+AS_IF([test "x$enable_strict_uidjid" == xyes],
+	  [AC_DEFINE([STRICT_UID_JID], [1], [Define to enable extra UID/JID checking per message])])
 
 
 ## ------------------- ##
