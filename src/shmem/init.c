@@ -122,7 +122,7 @@ int API_FUNC PtlInit(void)
             goto exit_fail;
         }
         comm_pad =
-            (char *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
+            (uint8_t *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
                          MAP_SHARED, shm_fd, 0);
         if (comm_pad == MAP_FAILED) {
 #ifdef LOUD_DROPS
