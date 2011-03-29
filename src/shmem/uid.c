@@ -37,10 +37,6 @@ int PtlGetUid(ptl_handle_ni_t ni_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    if (the_ptl_uid == PTL_UID_ANY) {
-        ptl_uid_t real_uid = geteuid();
-        PtlInternalAtomicCas64(&the_ptl_uid, PTL_UID_ANY, real_uid);
-    }
     *uid = the_ptl_uid;
     return PTL_OK;
 }
