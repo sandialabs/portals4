@@ -57,7 +57,7 @@ static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 #else
 # define EXT_UID do { } while (0)
 # define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
-# define CHECK_UID(a, b) ((a) != PTL_UID_ANY)
+# define CHECK_UID(a, b) (0)
 #endif
 
 /* Static functions */

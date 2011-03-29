@@ -71,7 +71,7 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #else
 # define EXT_UID do { } while (0)
 # define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
-# define CHECK_UID(a, b) ((a) != PTL_UID_ANY)
+# define CHECK_UID(a, b) (0)
 #endif
 
 /* Static functions */
