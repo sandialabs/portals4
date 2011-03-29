@@ -6,17 +6,19 @@
 #include <portals4.h>
 
 /* System headers */
+#include <string.h> /* for memcpy() */
 /*#include <stdio.h>
  #include <inttypes.h>*/
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_handles.h"
+#include "ptl_internal_MD.h"
+#include "ptl_internal_CT.h"
 #ifndef NO_ARG_VALIDATION
 # include "ptl_internal_error.h"
 # include "ptl_internal_nit.h"
 # include "ptl_internal_DM.h"
-# include "ptl_internal_MD.h"
-# include "ptl_internal_CT.h"
 # include "ptl_internal_pid.h"
 # include "ptl_internal_commpad.h"
 #endif
@@ -762,8 +764,8 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
                 break;
         }
     }
-    t->args.swap.operation        = operation;
-    t->args.swap.datatype         = datatype;
+    t->args.swap.operation = operation;
+    t->args.swap.datatype  = datatype;
     /* append IFF threshold > max_threshold */
     PtlInternalAddTrigger(trig_ct_handle, t);
     return PTL_OK;
@@ -837,7 +839,7 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
         VERBOSE_ERROR("Triggered operations not allowed on this NI (%i); max_triggered_ops set to zero\n", tct.s.ni);
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
 
     {
         ptl_ct_event_t tmp;
