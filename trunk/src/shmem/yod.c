@@ -93,6 +93,7 @@ int main(int   argc,
     size_t       large_frag_count   = 128;
     const size_t max_count          = buffsize - 1;
     void        *commpad            = NULL;
+    ptl_jid_t    yod_jid            = PTL_JID_NONE;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void*));
@@ -104,7 +105,7 @@ int main(int   argc,
 
     {
         int opt;
-        while ((opt = getopt(argc, argv, "l:s:hc:L:S:")) != -1) {
+        while ((opt = getopt(argc, argv, "l:s:hc:L:S:j:")) != -1) {
             switch (opt) {
                 case 'h':
                     print_usage(0);
@@ -159,6 +160,16 @@ int main(int   argc,
                     large_frag_count = strtol(optarg, &opterr, 0);
                     if ((opterr == NULL) || (opterr == optarg) || (*opterr != 0)) {
                         fprintf(stderr, "Error: Unparseable large fragment count! (%s)\n", optarg);
+                        print_usage(1);
+                    }
+                    break;
+                }
+                case 'j':
+                {
+                    char *opterr = NULL;
+                    yod_jid = strtol(optarg, &opterr, 0);
+                    if ((opterr == NULL) || (opterr == optarg) || (*opterr != 0)) {
+                        fprintf(stderr, "Error: Unparseable job ID! (%s)\n", optarg);
                         print_usage(1);
                     }
                     break;
@@ -261,6 +272,12 @@ int main(int   argc,
 
     pids = malloc(sizeof(pid_t) * (count + 1));
     assert(pids != NULL);
+
+    if (yod_jid == PTL_JID_NONE) {
+        yod_jid = random();
+    }
+
+    EXPORT_ENV_NUM("PORTALS4_JID", yod_jid);
     EXPORT_ENV_NUM("PORTALS4_COMM_SIZE", commsize);
     EXPORT_ENV_NUM("PORTALS4_NUM_PROCS", count);
     EXPORT_ENV_NUM("PORTALS4_COLLECTOR_NID", 0);
@@ -584,6 +601,7 @@ void print_usage(int ex)
     printf("\t-h                        Print this help.\n");
     printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
     printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
+    printf("\t-j [job_id]               The JID to use.\n");
     fflush(stdout);
     if (ex) {
         exit(EXIT_FAILURE);
