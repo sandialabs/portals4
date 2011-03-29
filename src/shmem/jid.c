@@ -15,6 +15,8 @@
 # include "ptl_internal_commpad.h"
 #endif
 
+ptl_jid_t the_ptl_jid = PTL_JID_NONE;
+
 int API_FUNC PtlGetJid(ptl_handle_ni_t ni_handle,
                        ptl_jid_t      *jid)
 {
