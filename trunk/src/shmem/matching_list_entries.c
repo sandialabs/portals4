@@ -1200,8 +1200,8 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
             break;
         case HDR_TYPE_SWAP:
             PtlInternalPerformAtomicArg(local_data,
-                                        ((char *)message_data) + 32,
-                                        *(uint64_t *)message_data, nbytes,
+                                        ((uint8_t *)message_data) + 32,
+                                        (uint8_t *)message_data, nbytes,
                                         (ptl_op_t)hdr->atomic_operation,
                                         (ptl_datatype_t)hdr->atomic_datatype);
             break;
