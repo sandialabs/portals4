@@ -151,6 +151,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_PID_T
+AC_CHECK_TYPES([uint_fast8_t uint_fast32_t uint_fast64_t])
 
 ## ---------------------------------- ##
 ## Check for compiler characteristics ##

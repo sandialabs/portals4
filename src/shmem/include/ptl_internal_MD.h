@@ -2,6 +2,7 @@
 #define PTL_INTERNAL_MD_H
 
 #include "ptl_visibility.h"
+#include "ptl_internal_ints.h"
 
 void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
                                    const ptl_size_t   limit);

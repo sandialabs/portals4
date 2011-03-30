@@ -12,6 +12,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_ints.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_ME.h"
 #include "ptl_internal_EQ.h"

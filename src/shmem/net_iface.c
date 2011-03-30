@@ -15,6 +15,7 @@
 
 /* Internals */
 #include "ptl_visibility.h"
+#include "ptl_internal_ints.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_nit.h"
