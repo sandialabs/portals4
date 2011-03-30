@@ -77,7 +77,7 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 /* Static functions */
 static void PtlInternalPerformDelivery(const unsigned char             type,
                                        void *restrict                  local_data,
-                                       void *restrict                  message_data,
+                                       uint8_t *restrict               message_data,
                                        size_t                          nbytes,
                                        ptl_internal_header_t *restrict hdr);
 static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
@@ -152,40 +152,40 @@ static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restric
 # define HDRJID(hdr) ((ptl_internal_uid_t)PTL_JID_NONE)
 #endif
 
-#define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do { \
-        EXT_UID; \
-        e.pt_index      = hdr->pt_index; \
-        e.uid           = HDRUID; \
-        e.jid           = HDRJID(hdr); \
-        e.match_bits    = hdr->match_bits; \
-        e.rlength       = hdr->length; \
-        e.mlength       = 0; \
-        e.remote_offset = hdr->dest_offset; \
-        e.user_ptr      = uptr; \
-        e.ni_fail_type  = PTL_NI_OK; \
-        if (hdr->ni <= 1) {            /* Logical */ \
-            e.initiator.rank = hdr->src; \
-        } else {                       /* Physical */ \
-            e.initiator.phys.pid = hdr->src; \
-            e.initiator.phys.nid = 0; \
-        } \
-        switch (hdr->type & HDR_TYPE_BASICMASK) { \
-            case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT; \
-                e.hdr_data            = hdr->hdr_data; \
-                break; \
-            case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data               = hdr->hdr_data; \
-                break; \
+#define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do {               \
+        EXT_UID;                                                  \
+        e.pt_index      = hdr->pt_index;                          \
+        e.uid           = HDRUID;                                 \
+        e.jid           = HDRJID(hdr);                            \
+        e.match_bits    = hdr->match_bits;                        \
+        e.rlength       = hdr->length;                            \
+        e.mlength       = 0;                                      \
+        e.remote_offset = hdr->dest_offset;                       \
+        e.user_ptr      = uptr;                                   \
+        e.ni_fail_type  = PTL_NI_OK;                              \
+        if (hdr->ni <= 1) {            /* Logical */              \
+            e.initiator.rank = hdr->src;                          \
+        } else {                       /* Physical */             \
+            e.initiator.phys.pid = hdr->src;                      \
+            e.initiator.phys.nid = 0;                             \
+        }                                                         \
+        switch (hdr->type & HDR_TYPE_BASICMASK) {                 \
+            case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT;            \
+                e.hdr_data            = hdr->hdr_data;            \
+                break;                                            \
+            case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC;      \
+                e.hdr_data               = hdr->hdr_data;         \
+                break;                                            \
             case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data                    = hdr->hdr_data; \
-                break; \
-            case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data             = hdr->hdr_data; \
-                break; \
-            case HDR_TYPE_GET: e.type = PTL_EVENT_GET; \
-                e.hdr_data            = 0; \
-                break; \
-        } \
+                e.hdr_data                    = hdr->hdr_data;    \
+                break;                                            \
+            case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC;        \
+                e.hdr_data             = hdr->hdr_data;           \
+                break;                                            \
+            case HDR_TYPE_GET: e.type = PTL_EVENT_GET;            \
+                e.hdr_data            = 0;                        \
+                break;                                            \
+        }                                                         \
 } while (0)
 
 static int PtlInternalMarkMEReusable(const ptl_handle_me_t me_handle)
@@ -1181,7 +1181,7 @@ check_lengths:
 
 static void PtlInternalPerformDelivery(const unsigned char             type,
                                        void *restrict                  local_data,
-                                       void *restrict                  message_data,
+                                       uint8_t *restrict               message_data,
                                        size_t                          nbytes,
                                        ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */

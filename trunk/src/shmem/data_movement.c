@@ -1434,7 +1434,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     hdr->atomic_datatype  = datatype;
     /* step 3: load up the data */
     {
-        char *dataptr = hdr->data;
+        uint8_t *dataptr = hdr->data;
         if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
             switch (datatype) {
                 case PTL_CHAR:
