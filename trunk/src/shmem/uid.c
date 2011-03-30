@@ -21,7 +21,7 @@ ptl_uid_t the_ptl_uid = PTL_UID_ANY;
 
 int PtlGetUid(ptl_handle_ni_t ni_handle,
               ptl_uid_t      *uid)
-{
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
     if (comm_pad == NULL) {
@@ -39,6 +39,6 @@ int PtlGetUid(ptl_handle_ni_t ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
     *uid = the_ptl_uid;
     return PTL_OK;
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

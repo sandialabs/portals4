@@ -14,7 +14,6 @@ libportals_la_SOURCES += \
 			 shmem/data_movement.c \
 			 shmem/fragments.c \
 			 shmem/nemesis.c \
-			 shmem/queues.c \
 			 shmem/perform_atomic.c \
 			 shmem/handle.c \
 			 shmem/triggered.c \
