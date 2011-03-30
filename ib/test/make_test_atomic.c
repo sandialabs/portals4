@@ -495,7 +495,7 @@ int main(int argc, char *argv[])
 				atom_type[type].name, datatype_str(type, din));
 
 		if (match)
-			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "target_id=\"SELF\"/>\n",
+			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "\" target_id=\"SELF\"/>\n",
 				ptl_op, atom_op_name[op], atom_type[type].name, length, match_bits);
 		else
 			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" target_id=\"SELF\"/>\n",
