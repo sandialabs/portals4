@@ -9,15 +9,17 @@
 
 /* total number of combinations of matching/no matching and
  * logical/physical. See ni_options_to_type(). */
-#define MAX_NI_TYPES	(4)	
-
+#define MAX_NI_TYPES		(4)	
 
 struct ni;
 struct rpc;
 
+/*
+ * interface table entry
+ */
 typedef struct iface {
 	struct ni		*ni[MAX_NI_TYPES];
-	char			if_name[IF_NAMESIZE];
+	//char			if_name[IF_NAMESIZE];
 } iface_t;
 
 typedef struct gbl {
@@ -26,7 +28,7 @@ typedef struct gbl {
 	pthread_mutex_t		gbl_mutex;
 
 	int			init_once;
-	int			ref_cnt;		/* PtlInit/PtlFini */
+	int			ref_cnt;	/* count PtlInit/PtlFini */
 	ref_t			ref;		/* sub objects references */
 	
 	int			fd;
@@ -40,15 +42,15 @@ typedef struct gbl {
 	ptl_jid_t		jid;
 	ptl_nid_t		nid;
 
-	ptl_nid_t		main_ctl_nid; /* NID of the main control process */
+	ptl_nid_t		main_ctl_nid;	/* NID of the main control process */
 
-	ptl_rank_t rank;
-	unsigned int nranks;		/* total number of rank for job */
+	ptl_rank_t		rank;
+	unsigned int		nranks;		/* total number of rank for job */
 
-	ptl_rank_t local_rank;
-	unsigned int local_nranks;	/* number of ranks on that node */
+	ptl_rank_t		local_rank;
+	unsigned int		local_nranks;	/* number of ranks on that node */
 
-	unsigned int num_nids;		/* number of nodes */
+	unsigned int		num_nids;	/* number of nodes */
 
 } gbl_t;
 

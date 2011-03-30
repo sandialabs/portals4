@@ -167,7 +167,7 @@ static int put_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_PUT;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->gbl->jid;
+	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -284,7 +284,7 @@ static int get_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_GET;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->gbl->jid;
+	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->get_md = md;
@@ -444,7 +444,7 @@ static int atomic_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_ATOMIC;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->gbl->jid;
+	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -632,7 +632,7 @@ static int fetch_common(ptl_handle_md_t get_md_handle,
 	xi->operation = OP_FETCH;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->gbl->jid;
+	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
@@ -848,7 +848,7 @@ static int swap_common(ptl_handle_md_t get_md_handle,
 	xi->operation = OP_SWAP;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->gbl->jid;
+	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;

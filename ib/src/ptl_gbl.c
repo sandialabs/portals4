@@ -129,12 +129,12 @@ static int get_loopback_vars(gbl_t *gbl)
 	gbl->nranks = 1;
 	gbl->local_rank = 0;
 	gbl->local_nranks = 1;
-	gbl->jid = 0x12345678;
+	//gbl->jid = 0x12345678;
 
 	// TODO look this up somewhere
 	inet_aton("192.168.221.11", &inp);
-	gbl->nid = ntohl(inp.s_addr);
-	gbl->main_ctl_nid = gbl->nid;
+	//gbl->nid = ntohl(inp.s_addr);
+	//gbl->main_ctl_nid = gbl->nid;
 	return PTL_OK;
 }
 
@@ -380,7 +380,7 @@ int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 		return PTL_ARG_INVALID;
 
 	gbl->iface[ni->iface].ni[ni->ni_type] = ni;
-	sprintf(gbl->iface[ni->iface].if_name, "ib%d", ni->iface);
+	//sprintf(gbl->iface[ni->iface].if_name, "ib%d", ni->iface);
 
 	return PTL_OK;
 }
@@ -393,7 +393,7 @@ int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
 	if (unlikely(ni != gbl->iface[iface].ni[ni->ni_type]))
 		return PTL_FAIL;
 
-	gbl->iface[iface].if_name[0] = 0;
+	//gbl->iface[iface].if_name[0] = 0;
 	gbl->iface[iface].ni[ni->ni_type] = NULL;
 
 	return PTL_OK;
