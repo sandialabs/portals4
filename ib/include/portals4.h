@@ -648,4 +648,15 @@ int PtlHandleIsEqual(					/* 3.18.1 */
 
 void _dump_type_counts();
 
+/*
+ * Portals4 over InfiniBand runtime support API
+ */
+int PtlSetJid(
+	ptl_handle_ni_t		ni_handle,
+	ptl_jid_t		jid);
+
+int PtlSetId(
+	ptl_handle_ni_t		ni_handle,
+	ptl_process_t		id);
+
 #endif /* PORTALS4_h */
