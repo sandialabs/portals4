@@ -76,8 +76,8 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
                                           void *const                           user_ptr,
                                           ptl_internal_header_t *const restrict hdr);
 
-void INTERNAL PtlInternalLENISetup(uint_fast8_t ni,
-                                   ptl_size_t   limit)
+void INTERNAL PtlInternalLENISetup(const uint_fast8_t ni,
+                                   const ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
@@ -91,7 +91,7 @@ void INTERNAL PtlInternalLENISetup(uint_fast8_t ni,
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalLENITeardown(uint_fast8_t ni)
+void INTERNAL PtlInternalLENITeardown(const uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
@@ -271,11 +271,7 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
                     if (0) {
                         ptl_internal_buffered_header_t *tmp;
 permission_violation:
-                        (void)PtlInternalAtomicInc(
-                                                   &nit.regs[cur->hdr.ni]
-                                                   [
-                                                       PTL_SR_PERMISSIONS_VIOLATIONS
-                                                   ], 1);
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         tmp            = cur;
                         prev->hdr.next = cur->hdr.next;
                         cur            = prev;
@@ -284,9 +280,7 @@ permission_violation:
                     }
                     // (2) iff LE is persistent
                     if ((le->options & PTL_LE_USE_ONCE) == 0) {
-                        fprintf(
-                                stderr,
-                                "PORTALS4-> PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
+                        fprintf(stderr, "PORTALS4-> PtlLEAppend() does not work with persistent LEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an LE-specific buffered header
                          * list on each LE, and when the LE is persistent, it
                          * gets the buffered headers that it matched, in order.
@@ -428,11 +422,7 @@ permission_violation:
                     }
                     if (0) {
 permission_violationPO:
-                        (void)PtlInternalAtomicInc(
-                                                   &nit.regs[cur->hdr.ni]
-                                                   [
-                                                       PTL_SR_PERMISSIONS_VIOLATIONS
-                                                   ], 1);
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         continue;
                     }
                     {
@@ -489,10 +479,8 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
     }
     if ((le.s.ni > 3) || (le.s.code > nit_limits[le.s.ni].max_entries) ||
         (nit.refcount[le.s.ni] == 0)) {
-        VERBOSE_ERROR
-        (
-         "LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-         le.s.ni, le.s.code, nit_limits[le.s.ni].max_entries);
+        VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
+                      le.s.ni, le.s.code, nit_limits[le.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
     if (les[le.s.ni] == NULL) {
@@ -524,9 +512,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
                     dq   = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(
-                            stderr,
-                            "PORTALS4-> attempted to unlink an un-queued LE\n");
+                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
                     return PTL_FAIL;
                 }
                 prev->next = dq->next;
@@ -558,9 +544,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
                     dq   = dq->next;
                 }
                 if (dq == NULL) {
-                    fprintf(
-                            stderr,
-                            "PORTALS4-> attempted to unlink an un-queued LE\n");
+                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
                     return PTL_FAIL;
                 }
                 prev->next = dq->next;
@@ -772,9 +756,7 @@ check_lengths:
             }
         } else {
             if ((fragment_mlength != msg_mlength) && (le.length > 0)) {
-                fprintf(
-                        stderr,
-                        "multi-fragment (oversize) messages into the overflow list doesn't work\n");
+                fprintf(stderr, "multi-fragment (oversize) messages into the overflow list doesn't work\n");
                 abort();
             }
             assert(hdr->length + hdr->dest_offset <= fragment_mlength);
@@ -807,9 +789,7 @@ check_lengths:
         }
     }
 #ifdef LOUD_DROPS
-    fprintf(
-            stderr,
-            "PORTALS4-> Rank %u dropped a message from rank %u, no LEs posted on PT %u on NI %u\n",
+    fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u, no LEs posted on PT %u on NI %u\n",
             (unsigned)proc_number, (unsigned)hdr->src,
             (unsigned)hdr->pt_index, (unsigned)hdr->ni);
     fflush(stderr);
