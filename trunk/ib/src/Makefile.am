@@ -54,7 +54,9 @@ libportals_la_SOURCES = \
 	ptl_tgt.c \
 	ptl_types.h \
 	ptl_xx.c \
-	ptl_xx.h
+	ptl_xx.h \
+	ptl_rt.c \
+	ptl_rt.h
 
 bin_PROGRAMS = control
 control_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
