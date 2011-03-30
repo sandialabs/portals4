@@ -8,7 +8,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x25f91c24" me_match="0x67fbcb8e">
 <ptl_md type="UINT" md_data="0x6bcd8073">
 <ptl_md type="UINT" md_data="0x04bfd795">
-<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x7041c7a0" match="0x67fbcb8e"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x7041c7a0" match="0x67fbcb8e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x6bcd8073"/>
@@ -20,7 +20,8 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
+<barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/SHORT</desc>
 <ptl>
@@ -29,7 +30,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xf8f8" me_match="0x73260564">
 <ptl_md type="SHORT" md_data="0x161b">
 <ptl_md type="SHORT" md_data="0xb024">
-<ptl_swap atom_op="CSWAP_GT" atom_type="SHORT" length="2" operand="0x5476" match="0x73260564"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="SHORT" length="2" operand="0x5476" match="0x73260564" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x161b"/>
@@ -41,7 +42,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/DOUBLE</desc>
 <ptl>
@@ -50,7 +51,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.433506420676230853">
 <ptl_md type="DOUBLE" md_data="0.483975861034928234">
 <ptl_md type="DOUBLE" md_data="0.152641755180763145">
-<ptl_swap atom_op="CSWAP_LT" atom_type="DOUBLE" length="8" operand="0.099104043704708267"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="DOUBLE" length="8" operand="0.099104043704708267" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.483975861034928234"/>
@@ -62,7 +63,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/DOUBLE</desc>
 <ptl>
@@ -71,7 +72,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.307248799818703955">
 <ptl_md type="DOUBLE" md_data="0.366469686882058887">
 <ptl_md type="DOUBLE" md_data="0.499189865180925008">
-<ptl_swap atom_op="CSWAP" atom_type="DOUBLE" length="8" operand="0.346798664877020379"/>
+<ptl_swap atom_op="CSWAP" atom_type="DOUBLE" length="8" operand="0.346798664877020379" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.366469686882058887"/>
@@ -83,7 +84,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/CHAR</desc>
 <ptl>
@@ -92,7 +93,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xd2" me_match="0x530a6776">
 <ptl_md type="CHAR" md_data="0x0f">
 <ptl_md type="CHAR" md_data="0x16">
-<ptl_swap atom_op="CSWAP" atom_type="CHAR" length="1" operand="0x0b" match="0x530a6776"/>
+<ptl_swap atom_op="CSWAP" atom_type="CHAR" length="1" operand="0x0b" match="0x530a6776" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="CHAR" md_data="0x0f"/>
@@ -104,7 +105,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/ULONG</desc>
 <ptl>
@@ -113,7 +114,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x3fa371256c5eabfa" me_match="0x32f78d1e">
 <ptl_md type="ULONG" md_data="0x39fbe23342636071">
 <ptl_md type="ULONG" md_data="0x1716a3391b9ab4d1">
-<ptl_swap atom_op="CSWAP" atom_type="ULONG" length="8" operand="0x4300dd3c66889f6e" match="0x32f78d1e"/>
+<ptl_swap atom_op="CSWAP" atom_type="ULONG" length="8" operand="0x4300dd3c66889f6e" match="0x32f78d1e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x39fbe23342636071"/>
@@ -125,7 +126,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/SHORT</desc>
 <ptl>
@@ -134,7 +135,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x61bb" me_match="0x31778204">
 <ptl_md type="SHORT" md_data="0x753f">
 <ptl_md type="SHORT" md_data="0xc747">
-<ptl_swap atom_op="CSWAP_LE" atom_type="SHORT" length="2" operand="0x1b92" match="0x31778204"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="SHORT" length="2" operand="0x1b92" match="0x31778204" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x753f"/>
@@ -146,7 +147,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/DOUBLE</desc>
 <ptl>
@@ -155,7 +156,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.297062023949499987">
 <ptl_md type="DOUBLE" md_data="0.218872912680421583">
 <ptl_md type="DOUBLE" md_data="0.425744999987200223">
-<ptl_swap atom_op="CSWAP" atom_type="DOUBLE" length="8" operand="0.187522470054797663"/>
+<ptl_swap atom_op="CSWAP" atom_type="DOUBLE" length="8" operand="0.187522470054797663" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.218872912680421583"/>
@@ -167,7 +168,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
@@ -176,7 +177,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x04b8" me_match="0x380d96d2">
 <ptl_md type="USHORT" md_data="0xca0d">
 <ptl_md type="USHORT" md_data="0x23f0">
-<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0xc72a" match="0x380d96d2"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0xc72a" match="0x380d96d2" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xca0d"/>
@@ -188,7 +189,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/DOUBLE</desc>
 <ptl>
@@ -197,7 +198,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.194881218033346515">
 <ptl_md type="DOUBLE" md_data="0.029433537902050826">
 <ptl_md type="DOUBLE" md_data="0.319282886655812337">
-<ptl_swap atom_op="CSWAP_LT" atom_type="DOUBLE" length="8" operand="0.223893958130797738"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="DOUBLE" length="8" operand="0.223893958130797738" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.029433537902050826"/>
@@ -209,7 +210,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
@@ -218,7 +219,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x027f11ed63d4036f">
 <ptl_md type="ULONG" md_data="0x703a69b65290919f">
 <ptl_md type="ULONG" md_data="0x53506e57690d2051">
-<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x250d1c316efb6aff"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x250d1c316efb6aff" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x703a69b65290919f"/>
@@ -230,7 +231,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
@@ -239,7 +240,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="DOUBLE" me_data="0.158704568052551453" me_match="0x70bf2a30">
 <ptl_md type="DOUBLE" md_data="0.286958918105080785">
 <ptl_md type="DOUBLE" md_data="0.160116162153021241">
-<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.077781869507885487" match="0x70bf2a30"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.077781869507885487" match="0x70bf2a30" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.286958918105080785"/>
@@ -251,7 +252,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
@@ -260,7 +261,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x3a4b" me_match="0x5371b0d6">
 <ptl_md type="USHORT" md_data="0xd3b8">
 <ptl_md type="USHORT" md_data="0x97c2">
-<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x2aa9" match="0x5371b0d6"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x2aa9" match="0x5371b0d6" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xd3b8"/>
@@ -272,7 +273,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/SHORT</desc>
 <ptl>
@@ -281,7 +282,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="SHORT" le_data="0xad90">
 <ptl_md type="SHORT" md_data="0x0a6d">
 <ptl_md type="SHORT" md_data="0xc2d4">
-<ptl_swap atom_op="CSWAP_LT" atom_type="SHORT" length="2" operand="0x312c"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="SHORT" length="2" operand="0x312c" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x0a6d"/>
@@ -293,7 +294,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UINT</desc>
 <ptl>
@@ -302,7 +303,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x3b44a7aa">
 <ptl_md type="UINT" md_data="0x3da5defc">
 <ptl_md type="UINT" md_data="0x43f21ab5">
-<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x5f8bb676"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x5f8bb676" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x3da5defc"/>
@@ -314,7 +315,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
@@ -323,7 +324,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x6b03af22" me_match="0x5a089ad3">
 <ptl_md type="UINT" md_data="0x565497b7">
 <ptl_md type="UINT" md_data="0x23279c2f">
-<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x5c286799" match="0x5a089ad3"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x5c286799" match="0x5a089ad3" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x565497b7"/>
@@ -335,7 +336,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
@@ -344,7 +345,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="INT" le_data="0x6bff0af9">
 <ptl_md type="INT" md_data="0x3042ec2b">
 <ptl_md type="INT" md_data="0x5b5e2ef8">
-<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x3d4b0788"/>
+<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x3d4b0788" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x3042ec2b"/>
@@ -356,7 +357,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/SHORT</desc>
 <ptl>
@@ -365,7 +366,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="SHORT" le_data="0xa9e8">
 <ptl_md type="SHORT" md_data="0x1485">
 <ptl_md type="SHORT" md_data="0x613d">
-<ptl_swap atom_op="CSWAP_LE" atom_type="SHORT" length="2" operand="0x8bfb"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="SHORT" length="2" operand="0x8bfb" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x1485"/>
@@ -377,7 +378,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/LONG</desc>
 <ptl>
@@ -386,7 +387,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x3af40b247992e890" me_match="0x42e16cb4">
 <ptl_md type="LONG" md_data="0x4baefcf62eec54dd">
 <ptl_md type="LONG" md_data="0x00874bb060eb7051">
-<ptl_swap atom_op="CSWAP_GT" atom_type="LONG" length="8" operand="0x061e1f0d5e1ba753" match="0x42e16cb4"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="LONG" length="8" operand="0x061e1f0d5e1ba753" match="0x42e16cb4" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x4baefcf62eec54dd"/>
@@ -398,7 +399,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/ULONG</desc>
 <ptl>
@@ -407,7 +408,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x0b2cacf847e1b41f" me_match="0x7121ce2f">
 <ptl_md type="ULONG" md_data="0x5be2a9264d715867">
 <ptl_md type="ULONG" md_data="0x7213296f5ae9c0cd">
-<ptl_swap atom_op="CSWAP_LT" atom_type="ULONG" length="8" operand="0x0abc5fef7cb562e0" match="0x7121ce2f"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="ULONG" length="8" operand="0x0abc5fef7cb562e0" match="0x7121ce2f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x5be2a9264d715867"/>
@@ -419,7 +420,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/DOUBLE</desc>
 <ptl>
@@ -428,7 +429,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.375411408946900171">
 <ptl_md type="DOUBLE" md_data="0.044127207568441233">
 <ptl_md type="DOUBLE" md_data="0.168733100102923833">
-<ptl_swap atom_op="CSWAP_LE" atom_type="DOUBLE" length="8" operand="0.326464205387265838"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="DOUBLE" length="8" operand="0.326464205387265838" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.044127207568441233"/>
@@ -440,7 +441,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/CHAR</desc>
 <ptl>
@@ -449,7 +450,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xc7" me_match="0x54fc0cf">
 <ptl_md type="CHAR" md_data="0xab">
 <ptl_md type="CHAR" md_data="0x20">
-<ptl_swap atom_op="CSWAP_LT" atom_type="CHAR" length="1" operand="0x44" match="0x54fc0cf"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="CHAR" length="1" operand="0x44" match="0x54fc0cf" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="CHAR" md_data="0xab"/>
@@ -461,7 +462,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/SHORT</desc>
 <ptl>
@@ -470,7 +471,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x7c58" me_match="0x3b1b1d4">
 <ptl_md type="SHORT" md_data="0xf284">
 <ptl_md type="SHORT" md_data="0x8004">
-<ptl_swap atom_op="CSWAP_GT" atom_type="SHORT" length="2" operand="0xa973" match="0x3b1b1d4"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="SHORT" length="2" operand="0xa973" match="0x3b1b1d4" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0xf284"/>
@@ -482,7 +483,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/LONG</desc>
 <ptl>
@@ -491,7 +492,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x220028ae7d509ec7" me_match="0x2a0d257e">
 <ptl_md type="LONG" md_data="0x1c5ac32a68a6e48d">
 <ptl_md type="LONG" md_data="0x71eed99d3f1461c9">
-<ptl_swap atom_op="CSWAP_LE" atom_type="LONG" length="8" operand="0x6ef250bb4cff0417" match="0x2a0d257e"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="LONG" length="8" operand="0x6ef250bb4cff0417" match="0x2a0d257e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x1c5ac32a68a6e48d"/>
@@ -503,7 +504,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
@@ -512,7 +513,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x5470" me_match="0x4e9b48e4">
 <ptl_md type="SHORT" md_data="0x5900">
 <ptl_md type="SHORT" md_data="0x09b3">
-<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x3ad4" match="0x4e9b48e4"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x3ad4" match="0x4e9b48e4" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x5900"/>
@@ -524,7 +525,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/CHAR</desc>
 <ptl>
@@ -533,7 +534,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0x69" me_match="0x22e9e738">
 <ptl_md type="CHAR" md_data="0xb0">
 <ptl_md type="CHAR" md_data="0x0c">
-<ptl_swap atom_op="CSWAP_GT" atom_type="CHAR" length="1" operand="0x10" match="0x22e9e738"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="CHAR" length="1" operand="0x10" match="0x22e9e738" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="CHAR" md_data="0xb0"/>
@@ -545,7 +546,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
@@ -554,7 +555,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x60d0" me_match="0x11c106c1">
 <ptl_md type="SHORT" md_data="0xc45d">
 <ptl_md type="SHORT" md_data="0x2c3f">
-<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x05dc" match="0x11c106c1"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x05dc" match="0x11c106c1" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0xc45d"/>
@@ -566,7 +567,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/USHORT</desc>
 <ptl>
@@ -575,7 +576,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x52ec" me_match="0x64a823fb">
 <ptl_md type="USHORT" md_data="0x3b25">
 <ptl_md type="USHORT" md_data="0xc2c2">
-<ptl_swap atom_op="CSWAP_LE" atom_type="USHORT" length="2" operand="0xe70f" match="0x64a823fb"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="USHORT" length="2" operand="0xe70f" match="0x64a823fb" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x3b25"/>
@@ -587,7 +588,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
@@ -596,7 +597,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.38463712" me_match="0x4f05e38">
 <ptl_md type="FLOAT" md_data="0.40245858">
 <ptl_md type="FLOAT" md_data="0.39420187">
-<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.30989769" match="0x4f05e38"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.30989769" match="0x4f05e38" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.40245858"/>
@@ -608,7 +609,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UCHAR</desc>
 <ptl>
@@ -617,7 +618,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0x5b">
 <ptl_md type="UCHAR" md_data="0x34">
 <ptl_md type="UCHAR" md_data="0x59">
-<ptl_swap atom_op="CSWAP_GT" atom_type="UCHAR" length="1" operand="0x8e"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="UCHAR" length="1" operand="0x8e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x34"/>
@@ -629,7 +630,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/INT</desc>
 <ptl>
@@ -638,7 +639,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x7cf3f510" me_match="0x4dd7addf">
 <ptl_md type="INT" md_data="0x1d1d48e5">
 <ptl_md type="INT" md_data="0x0485723c">
-<ptl_swap atom_op="CSWAP_GT" atom_type="INT" length="4" operand="0x7a479863" match="0x4dd7addf"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="INT" length="4" operand="0x7a479863" match="0x4dd7addf" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x1d1d48e5"/>
@@ -650,7 +651,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/DOUBLE</desc>
 <ptl>
@@ -659,7 +660,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.307180223824753629">
 <ptl_md type="DOUBLE" md_data="0.466198534061213143">
 <ptl_md type="DOUBLE" md_data="0.096855375327205118">
-<ptl_swap atom_op="CSWAP_NE" atom_type="DOUBLE" length="8" operand="0.426285710519558159"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="DOUBLE" length="8" operand="0.426285710519558159" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.466198534061213143"/>
@@ -671,7 +672,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/LONG</desc>
 <ptl>
@@ -680,7 +681,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x33d7349e6d36dc46" me_match="0xf7d1448">
 <ptl_md type="LONG" md_data="0x2f25aa7b7f819f8d">
 <ptl_md type="LONG" md_data="0x760a664f767ef4f5">
-<ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" operand="0x2f9471d84bcfcef8" match="0xf7d1448"/>
+<ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" operand="0x2f9471d84bcfcef8" match="0xf7d1448" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x2f25aa7b7f819f8d"/>
@@ -692,7 +693,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UINT</desc>
 <ptl>
@@ -701,7 +702,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x517e4aa3">
 <ptl_md type="UINT" md_data="0x4cc79e9b">
 <ptl_md type="UINT" md_data="0x48ee0b13">
-<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x4d737d4f"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x4d737d4f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x4cc79e9b"/>
@@ -713,7 +714,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
@@ -722,7 +723,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x8404" me_match="0x4e723fb3">
 <ptl_md type="USHORT" md_data="0xfceb">
 <ptl_md type="USHORT" md_data="0x1f2e">
-<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x39cd" match="0x4e723fb3"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x39cd" match="0x4e723fb3" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xfceb"/>
@@ -734,7 +735,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/FLOAT</desc>
 <ptl>
@@ -743,7 +744,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.17454715">
 <ptl_md type="FLOAT" md_data="0.48497435">
 <ptl_md type="FLOAT" md_data="0.17726915">
-<ptl_swap atom_op="CSWAP_GE" atom_type="FLOAT" length="4" operand="0.13818425"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="FLOAT" length="4" operand="0.13818425" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.48497435"/>
@@ -755,7 +756,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
@@ -764,7 +765,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xfd67">
 <ptl_md type="USHORT" md_data="0x26b4">
 <ptl_md type="USHORT" md_data="0xa5c5">
-<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0x3e3f"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0x3e3f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x26b4"/>
@@ -776,7 +777,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
@@ -785,7 +786,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x63c40c4b">
 <ptl_md type="UINT" md_data="0x0b7ae451">
 <ptl_md type="UINT" md_data="0x36795289">
-<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x205e3a0a"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x205e3a0a" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x0b7ae451"/>
@@ -797,7 +798,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
@@ -806,7 +807,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x362f7d00" me_match="0x2b7f21fe">
 <ptl_md type="UINT" md_data="0x5b711270">
 <ptl_md type="UINT" md_data="0x05441ee9">
-<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x55d455fa" match="0x2b7f21fe"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x55d455fa" match="0x2b7f21fe" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x5b711270"/>
@@ -818,7 +819,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/FLOAT</desc>
 <ptl>
@@ -827,7 +828,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.28846794" me_match="0x1d475576">
 <ptl_md type="FLOAT" md_data="0.30847067">
 <ptl_md type="FLOAT" md_data="0.09754903">
-<ptl_swap atom_op="CSWAP" atom_type="FLOAT" length="4" operand="0.04289787" match="0x1d475576"/>
+<ptl_swap atom_op="CSWAP" atom_type="FLOAT" length="4" operand="0.04289787" match="0x1d475576" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.30847067"/>
@@ -839,7 +840,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
@@ -848,7 +849,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x0c4433e564c28b9f">
 <ptl_md type="ULONG" md_data="0x2ac5f1f10be7d0ee">
 <ptl_md type="ULONG" md_data="0x3e854d0522927ff8">
-<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x22385fe942bd866e"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x22385fe942bd866e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x2ac5f1f10be7d0ee"/>
@@ -860,7 +861,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/INT</desc>
 <ptl>
@@ -869,7 +870,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x05e1d729" me_match="0x5fc6c34">
 <ptl_md type="INT" md_data="0x6f244ee4">
 <ptl_md type="INT" md_data="0x317b8e32">
-<ptl_swap atom_op="CSWAP_GT" atom_type="INT" length="4" operand="0x36bfad1c" match="0x5fc6c34"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="INT" length="4" operand="0x36bfad1c" match="0x5fc6c34" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x6f244ee4"/>
@@ -881,7 +882,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/UINT</desc>
 <ptl>
@@ -890,7 +891,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x6a006aa1">
 <ptl_md type="UINT" md_data="0x2eb4287e">
 <ptl_md type="UINT" md_data="0x5958a9a0">
-<ptl_swap atom_op="MSWAP" atom_type="UINT" length="4" operand="0x723403f1"/>
+<ptl_swap atom_op="MSWAP" atom_type="UINT" length="4" operand="0x723403f1" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x2eb4287e"/>
@@ -902,7 +903,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/LONG</desc>
 <ptl>
@@ -911,7 +912,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x508d5a9c455f2079">
 <ptl_md type="LONG" md_data="0x1a992e885e404f6d">
 <ptl_md type="LONG" md_data="0x1fbb02672dfadaa4">
-<ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x6a28205b5cd18e82"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x6a28205b5cd18e82" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x1a992e885e404f6d"/>
@@ -923,7 +924,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/USHORT</desc>
 <ptl>
@@ -932,7 +933,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xafff">
 <ptl_md type="USHORT" md_data="0xd569">
 <ptl_md type="USHORT" md_data="0xec79">
-<ptl_swap atom_op="CSWAP" atom_type="USHORT" length="2" operand="0x7aab"/>
+<ptl_swap atom_op="CSWAP" atom_type="USHORT" length="2" operand="0x7aab" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xd569"/>
@@ -944,7 +945,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
@@ -953,7 +954,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="DOUBLE" me_data="0.000392114514508376" me_match="0x6a6b8728">
 <ptl_md type="DOUBLE" md_data="0.028148109997916254">
 <ptl_md type="DOUBLE" md_data="0.151042486380827762">
-<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.501676208872433804" match="0x6a6b8728"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.501676208872433804" match="0x6a6b8728" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.028148109997916254"/>
@@ -965,7 +966,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/INT</desc>
 <ptl>
@@ -974,7 +975,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x5ab73b1c" me_match="0x6a19febd">
 <ptl_md type="INT" md_data="0x6f2be0f7">
 <ptl_md type="INT" md_data="0x1d9bdad4">
-<ptl_swap atom_op="CSWAP" atom_type="INT" length="4" operand="0x3d56dd3b" match="0x6a19febd"/>
+<ptl_swap atom_op="CSWAP" atom_type="INT" length="4" operand="0x3d56dd3b" match="0x6a19febd" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x6f2be0f7"/>
@@ -986,7 +987,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
@@ -995,7 +996,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xa4ba" me_match="0x755069a4">
 <ptl_md type="SHORT" md_data="0x4d03">
 <ptl_md type="SHORT" md_data="0x8a1d">
-<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x3636" match="0x755069a4"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x3636" match="0x755069a4" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x4d03"/>
@@ -1007,7 +1008,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
@@ -1016,7 +1017,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x346c">
 <ptl_md type="USHORT" md_data="0x023f">
 <ptl_md type="USHORT" md_data="0x8f13">
-<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0xb360"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0xb360" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x023f"/>
@@ -1028,7 +1029,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/USHORT</desc>
 <ptl>
@@ -1037,7 +1038,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0xe9ab" me_match="0x62ed5c34">
 <ptl_md type="USHORT" md_data="0xcd1d">
 <ptl_md type="USHORT" md_data="0x8711">
-<ptl_swap atom_op="MSWAP" atom_type="USHORT" length="2" operand="0xda6d" match="0x62ed5c34"/>
+<ptl_swap atom_op="MSWAP" atom_type="USHORT" length="2" operand="0xda6d" match="0x62ed5c34" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xcd1d"/>
@@ -1049,7 +1050,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
@@ -1058,7 +1059,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x3f74" me_match="0x6681728f">
 <ptl_md type="USHORT" md_data="0x0f21">
 <ptl_md type="USHORT" md_data="0x83ea">
-<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0xb093" match="0x6681728f"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0xb093" match="0x6681728f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x0f21"/>
@@ -1070,7 +1071,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/ULONG</desc>
 <ptl>
@@ -1079,7 +1080,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x380c849f01e212d1" me_match="0x5ddfc991">
 <ptl_md type="ULONG" md_data="0x152283be41e15207">
 <ptl_md type="ULONG" md_data="0x42b0ffc7138fcade">
-<ptl_swap atom_op="MSWAP" atom_type="ULONG" length="8" operand="0x259b54462061b90c" match="0x5ddfc991"/>
+<ptl_swap atom_op="MSWAP" atom_type="ULONG" length="8" operand="0x259b54462061b90c" match="0x5ddfc991" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x152283be41e15207"/>
@@ -1091,7 +1092,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
@@ -1100,7 +1101,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xcc51">
 <ptl_md type="USHORT" md_data="0x9c51">
 <ptl_md type="USHORT" md_data="0x4267">
-<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x2c12"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0x2c12" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x9c51"/>
@@ -1112,7 +1113,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/UINT</desc>
 <ptl>
@@ -1121,7 +1122,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x0e6ae741">
 <ptl_md type="UINT" md_data="0x1909f227">
 <ptl_md type="UINT" md_data="0x3e5a3edb">
-<ptl_swap atom_op="CSWAP_NE" atom_type="UINT" length="4" operand="0x1e73c2c5"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="UINT" length="4" operand="0x1e73c2c5" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x1909f227"/>
@@ -1133,7 +1134,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/CHAR</desc>
 <ptl>
@@ -1142,7 +1143,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xb6" me_match="0x319b26b5">
 <ptl_md type="CHAR" md_data="0xef">
 <ptl_md type="CHAR" md_data="0x46">
-<ptl_swap atom_op="CSWAP_LE" atom_type="CHAR" length="1" operand="0x0e" match="0x319b26b5"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="CHAR" length="1" operand="0x0e" match="0x319b26b5" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="CHAR" md_data="0xef"/>
@@ -1154,7 +1155,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
@@ -1163,7 +1164,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x2d6974080ae18eb9" me_match="0x2c967474">
 <ptl_md type="ULONG" md_data="0x079279790ee94d77">
 <ptl_md type="ULONG" md_data="0x2e78874539a8965b">
-<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x0a4d4cab15ccb66f" match="0x2c967474"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x0a4d4cab15ccb66f" match="0x2c967474" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x079279790ee94d77"/>
@@ -1175,7 +1176,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/DOUBLE</desc>
 <ptl>
@@ -1184,7 +1185,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.401146043109360473">
 <ptl_md type="DOUBLE" md_data="0.211988436750411818">
 <ptl_md type="DOUBLE" md_data="0.236779625682706413">
-<ptl_swap atom_op="CSWAP_GT" atom_type="DOUBLE" length="8" operand="0.481477921970829337"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="DOUBLE" length="8" operand="0.481477921970829337" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.211988436750411818"/>
@@ -1196,7 +1197,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/CHAR</desc>
 <ptl>
@@ -1205,7 +1206,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0x36" me_match="0x74a29a7b">
 <ptl_md type="CHAR" md_data="0x21">
 <ptl_md type="CHAR" md_data="0x30">
-<ptl_swap atom_op="MSWAP" atom_type="CHAR" length="1" operand="0x77" match="0x74a29a7b"/>
+<ptl_swap atom_op="MSWAP" atom_type="CHAR" length="1" operand="0x77" match="0x74a29a7b" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="CHAR" md_data="0x21"/>
@@ -1217,7 +1218,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/ULONG</desc>
 <ptl>
@@ -1226,7 +1227,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x559a79f56cc40cc3">
 <ptl_md type="ULONG" md_data="0x6531934a39d587a6">
 <ptl_md type="ULONG" md_data="0x0b5d00601bf1e39a">
-<ptl_swap atom_op="CSWAP_NE" atom_type="ULONG" length="8" operand="0x48bed51d0303edfd"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="ULONG" length="8" operand="0x48bed51d0303edfd" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x6531934a39d587a6"/>
@@ -1238,7 +1239,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
@@ -1247,7 +1248,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x6850">
 <ptl_md type="USHORT" md_data="0x86ef">
 <ptl_md type="USHORT" md_data="0x3ac4">
-<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0xebec"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="USHORT" length="2" operand="0xebec" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x86ef"/>
@@ -1259,7 +1260,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UCHAR</desc>
 <ptl>
@@ -1268,7 +1269,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0xf1">
 <ptl_md type="UCHAR" md_data="0xb8">
 <ptl_md type="UCHAR" md_data="0x06">
-<ptl_swap atom_op="CSWAP_LT" atom_type="UCHAR" length="1" operand="0x36"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="UCHAR" length="1" operand="0x36" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0xb8"/>
@@ -1280,7 +1281,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/ULONG</desc>
 <ptl>
@@ -1289,7 +1290,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x5043adcc294ab211" me_match="0x32ca8b28">
 <ptl_md type="ULONG" md_data="0x44191ec61cee1775">
 <ptl_md type="ULONG" md_data="0x119117143451ca32">
-<ptl_swap atom_op="CSWAP" atom_type="ULONG" length="8" operand="0x56c39f1b25de27c1" match="0x32ca8b28"/>
+<ptl_swap atom_op="CSWAP" atom_type="ULONG" length="8" operand="0x56c39f1b25de27c1" match="0x32ca8b28" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x44191ec61cee1775"/>
@@ -1301,7 +1302,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
@@ -1310,7 +1311,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.493070187475423083">
 <ptl_md type="DOUBLE" md_data="0.257828003731972011">
 <ptl_md type="DOUBLE" md_data="0.449571183795608398">
-<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.401653696151642703"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" operand="0.401653696151642703" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.257828003731972011"/>
@@ -1322,7 +1323,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UINT</desc>
 <ptl>
@@ -1331,7 +1332,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x1f33c48b" me_match="0x73408928">
 <ptl_md type="UINT" md_data="0x414898a1">
 <ptl_md type="UINT" md_data="0x4f14a4b2">
-<ptl_swap atom_op="CSWAP_LE" atom_type="UINT" length="4" operand="0x1f8b5ab8" match="0x73408928"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="UINT" length="4" operand="0x1f8b5ab8" match="0x73408928" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x414898a1"/>
@@ -1343,7 +1344,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
@@ -1352,7 +1353,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.26122248" me_match="0xaabb47c">
 <ptl_md type="FLOAT" md_data="0.26166433">
 <ptl_md type="FLOAT" md_data="0.24120314">
-<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.31014273" match="0xaabb47c"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.31014273" match="0xaabb47c" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.26166433"/>
@@ -1364,7 +1365,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UCHAR</desc>
 <ptl>
@@ -1373,7 +1374,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x5d" me_match="0x6a946e2">
 <ptl_md type="UCHAR" md_data="0x49">
 <ptl_md type="UCHAR" md_data="0xf3">
-<ptl_swap atom_op="CSWAP_GT" atom_type="UCHAR" length="1" operand="0xc7" match="0x6a946e2"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="UCHAR" length="1" operand="0xc7" match="0x6a946e2" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x49"/>
@@ -1385,7 +1386,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
@@ -1394,7 +1395,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x3b22e848" me_match="0x1602b01c">
 <ptl_md type="INT" md_data="0x515b32f0">
 <ptl_md type="INT" md_data="0x57b56a48">
-<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x24e0ab63" match="0x1602b01c"/>
+<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x24e0ab63" match="0x1602b01c" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x515b32f0"/>
@@ -1406,7 +1407,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/DOUBLE</desc>
 <ptl>
@@ -1415,7 +1416,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.201061773140825961">
 <ptl_md type="DOUBLE" md_data="0.324696599828342036">
 <ptl_md type="DOUBLE" md_data="0.074138682082119642">
-<ptl_swap atom_op="CSWAP_NE" atom_type="DOUBLE" length="8" operand="0.094682992763518159"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="DOUBLE" length="8" operand="0.094682992763518159" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.324696599828342036"/>
@@ -1427,7 +1428,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/LONG</desc>
 <ptl>
@@ -1436,7 +1437,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x5dd1b02555db7223">
 <ptl_md type="LONG" md_data="0x69e603f503274cde">
 <ptl_md type="LONG" md_data="0x0c28880f57286943">
-<ptl_swap atom_op="CSWAP" atom_type="LONG" length="8" operand="0x4a69bf790dc5a918"/>
+<ptl_swap atom_op="CSWAP" atom_type="LONG" length="8" operand="0x4a69bf790dc5a918" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x69e603f503274cde"/>
@@ -1448,7 +1449,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
@@ -1457,7 +1458,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.31239247">
 <ptl_md type="FLOAT" md_data="0.15500666">
 <ptl_md type="FLOAT" md_data="0.30434343">
-<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.14622276"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.14622276" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.15500666"/>
@@ -1469,7 +1470,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
@@ -1478,7 +1479,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xc2cc">
 <ptl_md type="USHORT" md_data="0x142e">
 <ptl_md type="USHORT" md_data="0xa5b2">
-<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0xe34e"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0xe34e" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x142e"/>
@@ -1490,7 +1491,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
@@ -1499,7 +1500,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x731df2ad3295ec13" me_match="0x4627e4f">
 <ptl_md type="ULONG" md_data="0x48afe81e5a0693d1">
 <ptl_md type="ULONG" md_data="0x4dde0bc21bf5896a">
-<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x5d2de0af50efa2d2" match="0x4627e4f"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x5d2de0af50efa2d2" match="0x4627e4f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x48afe81e5a0693d1"/>
@@ -1511,7 +1512,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/ULONG</desc>
 <ptl>
@@ -1520,7 +1521,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x59fd1fc26b6ff702" me_match="0x2797a028">
 <ptl_md type="ULONG" md_data="0x1bd5de912caf03f1">
 <ptl_md type="ULONG" md_data="0x5f21f9ff327dacca">
-<ptl_swap atom_op="CSWAP_LT" atom_type="ULONG" length="8" operand="0x51f1782c52d7c5aa" match="0x2797a028"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="ULONG" length="8" operand="0x51f1782c52d7c5aa" match="0x2797a028" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x1bd5de912caf03f1"/>
@@ -1532,7 +1533,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UCHAR</desc>
 <ptl>
@@ -1541,7 +1542,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0xbb">
 <ptl_md type="UCHAR" md_data="0x77">
 <ptl_md type="UCHAR" md_data="0xf7">
-<ptl_swap atom_op="CSWAP_LE" atom_type="UCHAR" length="1" operand="0x41"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="UCHAR" length="1" operand="0x41" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x77"/>
@@ -1553,7 +1554,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
@@ -1562,7 +1563,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x0dbc085a" me_match="0x491fc8fe">
 <ptl_md type="UINT" md_data="0x60aa9c40">
 <ptl_md type="UINT" md_data="0x65155268">
-<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x58334516" match="0x491fc8fe"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" operand="0x58334516" match="0x491fc8fe" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x60aa9c40"/>
@@ -1574,7 +1575,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
@@ -1583,7 +1584,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xc42e">
 <ptl_md type="USHORT" md_data="0x33d3">
 <ptl_md type="USHORT" md_data="0x8931">
-<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0x8330"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0x8330" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x33d3"/>
@@ -1595,7 +1596,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
@@ -1604,7 +1605,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0xc609" me_match="0x588da2c0">
 <ptl_md type="USHORT" md_data="0xff4e">
 <ptl_md type="USHORT" md_data="0x99c2">
-<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0x917c" match="0x588da2c0"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="USHORT" length="2" operand="0x917c" match="0x588da2c0" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0xff4e"/>
@@ -1616,7 +1617,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/UINT</desc>
 <ptl>
@@ -1625,7 +1626,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x1042bc50" me_match="0x7778edb5">
 <ptl_md type="UINT" md_data="0x4e72afa4">
 <ptl_md type="UINT" md_data="0x58edd82c">
-<ptl_swap atom_op="CSWAP_GE" atom_type="UINT" length="4" operand="0x3ec540f3" match="0x7778edb5"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="UINT" length="4" operand="0x3ec540f3" match="0x7778edb5" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x4e72afa4"/>
@@ -1637,7 +1638,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UINT</desc>
 <ptl>
@@ -1646,7 +1647,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x54db1021">
 <ptl_md type="UINT" md_data="0x0036bdd6">
 <ptl_md type="UINT" md_data="0x08e80cb3">
-<ptl_swap atom_op="CSWAP_LE" atom_type="UINT" length="4" operand="0x1c289507"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="UINT" length="4" operand="0x1c289507" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x0036bdd6"/>
@@ -1658,7 +1659,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
@@ -1667,7 +1668,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x4d1fe2800d983a63" me_match="0x7dfdf809">
 <ptl_md type="ULONG" md_data="0x6f45b341402c0c79">
 <ptl_md type="ULONG" md_data="0x05d62bdc74923fc0">
-<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x547f0cd8111d7c42" match="0x7dfdf809"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" operand="0x547f0cd8111d7c42" match="0x7dfdf809" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x6f45b341402c0c79"/>
@@ -1679,7 +1680,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
@@ -1688,7 +1689,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0xd8" me_match="0x3ba9d2e2">
 <ptl_md type="UCHAR" md_data="0xa8">
 <ptl_md type="UCHAR" md_data="0x97">
-<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0xc3" match="0x3ba9d2e2"/>
+<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0xc3" match="0x3ba9d2e2" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0xa8"/>
@@ -1700,7 +1701,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/USHORT</desc>
 <ptl>
@@ -1709,7 +1710,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x2ffa" me_match="0x4090d028">
 <ptl_md type="USHORT" md_data="0x8f33">
 <ptl_md type="USHORT" md_data="0x409a">
-<ptl_swap atom_op="CSWAP_GE" atom_type="USHORT" length="2" operand="0x4d4d" match="0x4090d028"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="USHORT" length="2" operand="0x4d4d" match="0x4090d028" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x8f33"/>
@@ -1721,7 +1722,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
@@ -1730,7 +1731,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x23fa">
 <ptl_md type="USHORT" md_data="0x5de6">
 <ptl_md type="USHORT" md_data="0x3825">
-<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0x6401"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0x6401" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="USHORT" md_data="0x5de6"/>
@@ -1742,7 +1743,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
@@ -1751,7 +1752,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x6a" me_match="0x158fd73c">
 <ptl_md type="UCHAR" md_data="0x53">
 <ptl_md type="UCHAR" md_data="0x9f">
-<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0x51" match="0x158fd73c"/>
+<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0x51" match="0x158fd73c" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x53"/>
@@ -1763,7 +1764,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/LONG</desc>
 <ptl>
@@ -1772,7 +1773,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x1c18001a6db28347" me_match="0x63d10a29">
 <ptl_md type="LONG" md_data="0x22dca9906234331e">
 <ptl_md type="LONG" md_data="0x3bc946d15b872ff2">
-<ptl_swap atom_op="CSWAP_NE" atom_type="LONG" length="8" operand="0x2031980e04e640b4" match="0x63d10a29"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="LONG" length="8" operand="0x2031980e04e640b4" match="0x63d10a29" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x22dca9906234331e"/>
@@ -1784,7 +1785,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
@@ -1793,7 +1794,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="INT" le_data="0x1132536e">
 <ptl_md type="INT" md_data="0x047b7056">
 <ptl_md type="INT" md_data="0x6a570824">
-<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x77d54049"/>
+<ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x77d54049" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="INT" md_data="0x047b7056"/>
@@ -1805,7 +1806,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/SHORT</desc>
 <ptl>
@@ -1814,7 +1815,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xec0b" me_match="0x377c7768">
 <ptl_md type="SHORT" md_data="0x14c5">
 <ptl_md type="SHORT" md_data="0x4ea4">
-<ptl_swap atom_op="CSWAP_GE" atom_type="SHORT" length="2" operand="0x6044" match="0x377c7768"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="SHORT" length="2" operand="0x6044" match="0x377c7768" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0x14c5"/>
@@ -1826,7 +1827,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/SHORT</desc>
 <ptl>
@@ -1835,7 +1836,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xf31b" me_match="0x2474e875">
 <ptl_md type="SHORT" md_data="0xc7af">
 <ptl_md type="SHORT" md_data="0xf29e">
-<ptl_swap atom_op="CSWAP_LT" atom_type="SHORT" length="2" operand="0x3970" match="0x2474e875"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="SHORT" length="2" operand="0x3970" match="0x2474e875" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="2" type="SHORT" md_data="0xc7af"/>
@@ -1847,7 +1848,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
@@ -1856,7 +1857,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x214bcca52f93c671" me_match="0x23fb9cab">
 <ptl_md type="ULONG" md_data="0x38f7386f3cb1326c">
 <ptl_md type="ULONG" md_data="0x11ae1ff24675049c">
-<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x253b91f10ba2d4c9" match="0x23fb9cab"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="ULONG" length="8" operand="0x253b91f10ba2d4c9" match="0x23fb9cab" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x38f7386f3cb1326c"/>
@@ -1868,7 +1869,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/DOUBLE</desc>
 <ptl>
@@ -1877,7 +1878,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.010860271440825658">
 <ptl_md type="DOUBLE" md_data="0.057421262828373017">
 <ptl_md type="DOUBLE" md_data="0.431355934843054789">
-<ptl_swap atom_op="CSWAP_LE" atom_type="DOUBLE" length="8" operand="0.231398516674072352"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="DOUBLE" length="8" operand="0.231398516674072352" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.057421262828373017"/>
@@ -1889,7 +1890,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/UINT</desc>
 <ptl>
@@ -1898,7 +1899,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x5e484289">
 <ptl_md type="UINT" md_data="0x3c63b745">
 <ptl_md type="UINT" md_data="0x3325456a">
-<ptl_swap atom_op="MSWAP" atom_type="UINT" length="4" operand="0x3b6b3808"/>
+<ptl_swap atom_op="MSWAP" atom_type="UINT" length="4" operand="0x3b6b3808" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="UINT" md_data="0x3c63b745"/>
@@ -1910,7 +1911,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/DOUBLE</desc>
 <ptl>
@@ -1919,7 +1920,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.270286601999292553">
 <ptl_md type="DOUBLE" md_data="0.148114653515305839">
 <ptl_md type="DOUBLE" md_data="0.013288214884251874">
-<ptl_swap atom_op="CSWAP_GT" atom_type="DOUBLE" length="8" operand="0.082672877711897325"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="DOUBLE" length="8" operand="0.082672877711897325" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="DOUBLE" md_data="0.148114653515305839"/>
@@ -1931,7 +1932,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/LONG</desc>
 <ptl>
@@ -1940,7 +1941,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x2d6b9bfe1c999923" me_match="0x7dd6a6bf">
 <ptl_md type="LONG" md_data="0x192184116179a3f9">
 <ptl_md type="LONG" md_data="0x2d6a6d3176fdb69f">
-<ptl_swap atom_op="CSWAP_LT" atom_type="LONG" length="8" operand="0x5fbda8fe1b55f8c5" match="0x7dd6a6bf"/>
+<ptl_swap atom_op="CSWAP_LT" atom_type="LONG" length="8" operand="0x5fbda8fe1b55f8c5" match="0x7dd6a6bf" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x192184116179a3f9"/>
@@ -1952,7 +1953,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
@@ -1961,7 +1962,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.04900181">
 <ptl_md type="FLOAT" md_data="0.00575921">
 <ptl_md type="FLOAT" md_data="0.44423455">
-<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.14262456"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" operand="0.14262456" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="4" type="FLOAT" md_data="0.00575921"/>
@@ -1973,7 +1974,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/LONG</desc>
 <ptl>
@@ -1982,7 +1983,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x04fb43cd0c5ecaff">
 <ptl_md type="LONG" md_data="0x477f5caf4d8ecb5a">
 <ptl_md type="LONG" md_data="0x4a2bf90b5f3d65c6">
-<ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x629fbd9c712e2671"/>
+<ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x629fbd9c712e2671" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x477f5caf4d8ecb5a"/>
@@ -1994,7 +1995,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/LONG</desc>
 <ptl>
@@ -2003,7 +2004,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x3467f2ee78d72be7" me_match="0x3461e24a">
 <ptl_md type="LONG" md_data="0x191982e958cb34e7">
 <ptl_md type="LONG" md_data="0x2b5f98e917ce59cb">
-<ptl_swap atom_op="CSWAP_LE" atom_type="LONG" length="8" operand="0x74212dac5fa3456e" match="0x3461e24a"/>
+<ptl_swap atom_op="CSWAP_LE" atom_type="LONG" length="8" operand="0x74212dac5fa3456e" match="0x3461e24a" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x191982e958cb34e7"/>
@@ -2015,7 +2016,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/ULONG</desc>
 <ptl>
@@ -2024,7 +2025,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x6f6baa5450a66d3d">
 <ptl_md type="ULONG" md_data="0x70e378ef09c0e8e6">
 <ptl_md type="ULONG" md_data="0x4be581bf04a6e6ed">
-<ptl_swap atom_op="CSWAP_GT" atom_type="ULONG" length="8" operand="0x4071cf003997a35f"/>
+<ptl_swap atom_op="CSWAP_GT" atom_type="ULONG" length="8" operand="0x4071cf003997a35f" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="ULONG" md_data="0x70e378ef09c0e8e6"/>
@@ -2036,7 +2037,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/UCHAR</desc>
 <ptl>
@@ -2045,7 +2046,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x42" me_match="0x7f12bb0">
 <ptl_md type="UCHAR" md_data="0x55">
 <ptl_md type="UCHAR" md_data="0xaf">
-<ptl_swap atom_op="CSWAP_NE" atom_type="UCHAR" length="1" operand="0x6e" match="0x7f12bb0"/>
+<ptl_swap atom_op="CSWAP_NE" atom_type="UCHAR" length="1" operand="0x6e" match="0x7f12bb0" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x55"/>
@@ -2057,7 +2058,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/LONG</desc>
 <ptl>
@@ -2066,7 +2067,7 @@
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x6815f62e16740a1c" me_match="0x24ba12fb">
 <ptl_md type="LONG" md_data="0x2252dc6f70f05fb5">
 <ptl_md type="LONG" md_data="0x3c886cc66f3eca47">
-<ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" operand="0x5093a523436f3bfc" match="0x24ba12fb"/>
+<ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" operand="0x5093a523436f3bfc" match="0x24ba12fb" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="8" type="LONG" md_data="0x2252dc6f70f05fb5"/>
@@ -2078,7 +2079,7 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
@@ -2087,7 +2088,7 @@
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0x9f">
 <ptl_md type="UCHAR" md_data="0x95">
 <ptl_md type="UCHAR" md_data="0x21">
-<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0x75"/>
+<ptl_swap atom_op="CSWAP" atom_type="UCHAR" length="1" operand="0x75" target_id="SELF"/>
 <msleep count="10"/>
 </ptl_md>
 <check length="1" type="UCHAR" md_data="0x95"/>
@@ -2099,5 +2100,5 @@
 </ptl_pt>
 </ptl_ni>
 </ptl>
-</subtest>
+</subtest> <barrier/>
 </test>

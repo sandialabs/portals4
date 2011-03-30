@@ -39,7 +39,7 @@ echo "===== test_unlink.xml ====="
 ./ptl_test -f test_unlink.xml
 echo "===== test_short.xml ====="
 ./ptl_test -f test_short.xml
-echo "===== test_atomic.xml ====="
-./ptl_test -f test_atomic.xml
-echo "===== test_swap.xml ====="
-./ptl_test -f test_swap.xml
+echo "===== test_atomic_logical_lb.xml ====="
+./ptl_test -f test_atomic_logical_lb.xml
+echo "===== test_swap_logical_lb.xml ====="
+./ptl_test -f test_swap_logical_lb.xml
