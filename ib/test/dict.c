@@ -24,6 +24,7 @@ struct dict_init {
 	{"msleep",			TYPE_NODE,		NODE_MSLEEP},
 	{"dump_objects",		TYPE_NODE,		NODE_DUMP_OBJECTS},
 	{"barrier",			TYPE_NODE,		NODE_BARRIER},
+	{"ompi_rt",			TYPE_NODE,		NODE_OMPI_RT},
 	{"ptl",				TYPE_NODE,		NODE_PTL},
 	{"ptl_init",			TYPE_NODE,		NODE_PTL_INIT},
 	{"ptl_fini",			TYPE_NODE,		NODE_PTL_FINI},
@@ -76,6 +77,7 @@ struct dict_init {
 	{"ptl_trig_ct_inc",		TYPE_NODE,		NODE_PTL_TRIG_CT_INC},
 	{"ptl_trig_ct_set",		TYPE_NODE,		NODE_PTL_TRIG_CT_SET},
 	{"ptl_handle_is_equal",		TYPE_NODE,		NODE_PTL_HANDLE_IS_EQUAL},
+	{"ptl_set_jid",			TYPE_NODE,		NODE_PTL_SET_JID},
 
 	{"ret",				TYPE_ATTR,		ATTR_RET},
 	{"ptr",				TYPE_ATTR,		ATTR_PTR},

@@ -295,7 +295,7 @@
 	<ptl_pt>
 	  <ptl_me>
           <ptl_md>
-            <ptl_put length="4"/>
+            <ptl_put length="4" target_id="SELF"/>
 	    <msleep count="10"/>
           </ptl_md>
 	  </ptl_me>
@@ -311,7 +311,7 @@
 	<ptl_pt>
 	  <ptl_me>
           <ptl_md>
-            <ptl_put length="5" ret="ARG_INVALID"/>
+            <ptl_put length="5" ret="ARG_INVALID" target_id="SELF"/>
           </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -326,7 +326,7 @@
 	<ptl_pt>
 	  <ptl_me>
           <ptl_md>
-            <ptl_get length="4"/>
+            <ptl_get length="4" target_id="SELF"/>
 	    <msleep count="10"/>
           </ptl_md>
 	  </ptl_me>
@@ -342,7 +342,7 @@
 	<ptl_pt>
 	  <ptl_me>
           <ptl_md>
-            <ptl_get length="5" ret="ARG_INVALID"/>
+            <ptl_get length="5" ret="ARG_INVALID" target_id="SELF"/>
           </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -358,7 +358,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_put length="4"/>
+              <ptl_trig_put length="4" target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_ct>
           </ptl_md>
@@ -376,7 +376,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_put length="5" ret="ARG_INVALID"/>
+              <ptl_trig_put length="5" ret="ARG_INVALID" target_id="SELF"/>
 	    </ptl_ct>
           </ptl_md>
 	  </ptl_me>
@@ -393,7 +393,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_get length="4"/>
+              <ptl_trig_get length="4" target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_ct>
           </ptl_md>
@@ -411,7 +411,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_get length="5" ret="ARG_INVALID"/>
+              <ptl_trig_get length="5" ret="ARG_INVALID" target_id="SELF"/>
 	    </ptl_ct>
           </ptl_md>
 	  </ptl_me>
@@ -427,7 +427,7 @@
 	<ptl_pt>
 	  <ptl_me>
 	  <ptl_md>
-            <ptl_atomic length="4"/>
+            <ptl_atomic length="4" target_id="SELF"/>
 	    <msleep count="10"/>
 	  </ptl_md>
 	  </ptl_me>
@@ -443,7 +443,7 @@
 	<ptl_pt>
 	  <ptl_me>
 	  <ptl_md>
-            <ptl_atomic length="5" ret="ARG_INVALID"/>
+            <ptl_atomic length="5" ret="ARG_INVALID" target_id="SELF"/>
 	  </ptl_md>
 	  </ptl_me>
 	</ptl_pt>
@@ -459,7 +459,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_md>
-              <ptl_fetch length="4"/>
+              <ptl_fetch length="4" target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_md>
           </ptl_md>
@@ -477,7 +477,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_md>
-              <ptl_fetch length="5" ret="ARG_INVALID"/>
+              <ptl_fetch length="5" ret="ARG_INVALID" target_id="SELF"/>
 	    </ptl_md>
           </ptl_md>
 	  </ptl_me>
@@ -494,7 +494,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_md>
-              <ptl_swap length="4"/>
+              <ptl_swap length="4" target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_md>
           </ptl_md>
@@ -512,7 +512,7 @@
 	  <ptl_me>
           <ptl_md>
 	    <ptl_md>
-              <ptl_swap length="5" ret="ARG_INVALID"/>
+              <ptl_swap length="5" ret="ARG_INVALID" target_id="SELF"/>
 	    </ptl_md>
           </ptl_md>
 	  </ptl_me>
@@ -529,7 +529,7 @@
 	  <ptl_me>
 	  <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_atomic length="4"/>
+              <ptl_trig_atomic length="4" target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_ct>
 	  </ptl_md>
@@ -547,7 +547,7 @@
 	  <ptl_me>
 	  <ptl_md>
 	    <ptl_ct>
-              <ptl_trig_atomic length="5" ret="ARG_INVALID"/>
+              <ptl_trig_atomic length="5" ret="ARG_INVALID" target_id="SELF"/>
 	    </ptl_ct>
 	  </ptl_md>
 	  </ptl_me>
@@ -565,7 +565,7 @@
           <ptl_md>
 	    <ptl_md>
 	      <ptl_ct>
-                <ptl_trig_fetch length="4"/>
+                <ptl_trig_fetch length="4" target_id="SELF"/>
 	        <msleep count="10"/>
 	      </ptl_ct>
 	    </ptl_md>
@@ -585,7 +585,7 @@
           <ptl_md>
 	    <ptl_md>
 	      <ptl_ct>
-                <ptl_trig_fetch length="5" ret="ARG_INVALID"/>
+                <ptl_trig_fetch length="5" ret="ARG_INVALID" target_id="SELF"/>
 	      </ptl_ct>
 	    </ptl_md>
           </ptl_md>
@@ -604,7 +604,7 @@
           <ptl_md>
 	    <ptl_md>
 	      <ptl_ct>
-                <ptl_trig_swap length="4"/>
+                <ptl_trig_swap length="4" target_id="SELF"/>
 	        <msleep count="10"/>
 	      </ptl_ct>
 	    </ptl_md>
@@ -624,7 +624,7 @@
           <ptl_md>
 	    <ptl_md>
 	      <ptl_ct>
-                <ptl_trig_swap length="5" ret="ARG_INVALID"/>
+                <ptl_trig_swap length="5" ret="ARG_INVALID" target_id="SELF"/>
 	      </ptl_ct>
 	    </ptl_md>
           </ptl_md>

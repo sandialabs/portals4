@@ -988,6 +988,10 @@ int check_attr(struct node_info *info, xmlNode *node)
 				return 1;
 			}
 			break;
+		case ATTR_JID:
+			if (info->jid != get_number(info, val))
+				return 1;
+			break;
 		case ATTR_WHICH:
 			if(info->which != get_number(info, val)) {
 				return 1;
@@ -1284,6 +1288,10 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_DUMP_OBJECTS:
 				_dump_type_counts();
 				break;
+			case NODE_OMPI_RT:
+				errs = ompi_rt_init(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL:
 				errs = test_ptl_init(info);
 				errs += walk_tree(info, node->children);
@@ -1554,6 +1562,12 @@ int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_handle_is_eq(info);
 				errs += walk_tree(info, node->children);
 				break;
+
+			/* runtime APIs */
+			case NODE_PTL_SET_JID:
+				errs = test_ptl_set_jid(info);
+				errs += walk_tree(info, node->children);
+				goto done;
 			}
 pop:
 			info = pop_node(info);
