@@ -6,6 +6,7 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_PT.h"
+#include "ptl_internal_ints.h"
 
 typedef struct {
     ptl_table_entry_t              *tables[4];

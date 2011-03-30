@@ -4,6 +4,7 @@
 #include "ptl_visibility.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_trigger.h"
+#include "ptl_internal_ints.h"
 
 void INTERNAL PtlInternalCTNISetup(const uint_fast8_t ni,
                                    const ptl_size_t   limit);

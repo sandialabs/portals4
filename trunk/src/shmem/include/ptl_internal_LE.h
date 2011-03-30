@@ -3,6 +3,7 @@
 
 #include "ptl_internal_PT.h"
 #include "ptl_internal_commpad.h"
+#include "ptl_internal_ints.h"
 
 void INTERNAL PtlInternalLENISetup(const uint_fast8_t ni,
                                    const ptl_size_t   limit);
