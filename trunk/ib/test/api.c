@@ -479,3 +479,8 @@ int test_ptl_trig_ct_set(struct node_info *info)
 	return info->ret != PtlTriggeredCTSet(info->ct_handle, info->ct_event,
 					      info->trig_ct_handle, info->threshold);
 }
+
+int test_ptl_set_jid(struct node_info *info)
+{
+	return info->ret != PtlSetJid(info->ni_handle, info->jid);
+}

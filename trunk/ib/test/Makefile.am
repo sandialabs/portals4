@@ -15,6 +15,7 @@ ptl_test_SOURCES = \
 	main.c \
 	mask.c \
 	ptl_test.h \
+	rt.c \
 	run.c
 
 make_test_swap_SOURCES = data.c make_test_swap.c
