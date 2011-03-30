@@ -43,7 +43,7 @@ typedef struct {
     size_t                          local_offset;
     size_t                          messages, announced;     // for knowing when to issue PTL_EVENT_FREE
     ptl_match_bits_t                dont_ignore_bits;
-    char                            unlinked;
+    uint_fast8_t                    unlinked;
 } ptl_internal_appendME_t;
 
 typedef struct {
@@ -57,7 +57,7 @@ typedef struct {
 static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
 
 #ifdef PARANOID
-static void        PtlInternalValidateMEPTs(unsigned int ni);
+static void        PtlInternalValidateMEPTs(const uint_fast8_t ni);
 static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #else
 # define PtlInternalValidateMEPTs(x)
@@ -75,24 +75,24 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #endif
 
 /* Static functions */
-static void PtlInternalPerformDelivery(const unsigned char             type,
+static void PtlInternalPerformDelivery(const uint_fast8_t              type,
                                        void *restrict                  local_data,
                                        uint8_t *restrict               message_data,
                                        size_t                          nbytes,
                                        ptl_internal_header_t *restrict hdr);
 static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
-                                          const unsigned char               type,
+                                          const uint_fast8_t                type,
                                           const unsigned int                options,
-                                          const uint64_t                    mlength,
+                                          const uint_fast64_t               mlength,
                                           const uintptr_t                   start,
                                           const ptl_internal_listtype_t     foundin,
                                           ptl_internal_appendME_t *restrict priority_entry,
                                           ptl_internal_header_t *restrict   hdr,
                                           const ptl_handle_me_t             me_handle);
 
-void INTERNAL PtlInternalMENISetup(unsigned int ni,
-                                   ptl_size_t   limit)
+void INTERNAL PtlInternalMENISetup(const uint_fast8_t ni,
+                                   const ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_internal_me_t *tmp;
 
@@ -106,7 +106,7 @@ void INTERNAL PtlInternalMENISetup(unsigned int ni,
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalMENITeardown(unsigned int ni)
+void INTERNAL PtlInternalMENITeardown(const uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_internal_me_t *tmp;
 
@@ -118,7 +118,7 @@ void INTERNAL PtlInternalMENITeardown(unsigned int ni)
 }                                      /*}}} */
 
 static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restrict     Qentry,
-                                                char *const restrict                  lstart,
+                                                uint8_t *const restrict               lstart,
                                                 const ptl_size_t                      llength,
                                                 const unsigned int                    loptions,
                                                 const ptl_size_t                      mlength,
@@ -193,8 +193,7 @@ static int PtlInternalMarkMEReusable(const ptl_handle_me_t me_handle)
     const ptl_internal_handle_converter_t me = { me_handle };
 
     assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
-    switch (PtlInternalAtomicCas32
-                (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
+    switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_ALLOCATED:
             /* success! */
             return PTL_OK;
@@ -258,7 +257,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
     assert(mes[ni.s.ni] != NULL);
     meh.s.ni = ni.s.ni;
     /* find an ME handle */
-    for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_entries;
+    for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries;
          ++offset) {
         if (mes[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32
@@ -373,11 +372,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                     if (0) {
                         ptl_internal_buffered_header_t *tmp;
 permission_violation:
-                        (void)PtlInternalAtomicInc(
-                                                   &nit.regs[cur->hdr.ni]
-                                                   [
-                                                       PTL_SR_PERMISSIONS_VIOLATIONS
-                                                   ], 1);
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         tmp            = cur;
                         prev->hdr.next = cur->hdr.next;
                         cur            = prev;
@@ -386,9 +381,7 @@ permission_violation:
                     }
                     // iff ME is persistent...
                     if ((me->options & PTL_ME_USE_ONCE) == 0) {
-                        fprintf(
-                                stderr,
-                                "PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)\n");
+                        fprintf(stderr, "PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an ME-specific buffered header list on each ME, and when the ME is persistent, it gets the buffered headers that it matched, in order. Then, this list can be used to start reworking (e.g.
                          * retransmitting/restarting) the original order of deliveries. While this list exists on the ME, new packets get added to that list. Once the list is empty, the ME becomes a normal persistent ME. */
                         abort();
@@ -413,24 +406,17 @@ permission_violation:
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
                             /* we're assuming that this buffered_data includes ALLLLL of the necessary data; partial data is not supported. Bad things will happen. */
-                            char *realstart =
-                                ((char *)me->start) + cur->hdr.dest_offset;
+                            uint8_t *realstart = ((uint8_t *)me->start) + cur->hdr.dest_offset;
                             if ((cur->hdr.type == HDR_TYPE_PUT) &&
                                 ((me->options & PTL_ME_MANAGE_LOCAL) != 0)) {
-                                assert(cur->hdr.length +
-                                       Qentry->local_offset <= mlength);
+                                assert(cur->hdr.length + Qentry->local_offset <= mlength);
                                 if (mlength > 0) {
                                     ++(Qentry->messages);       // safe because the PT is locked
-                                    realstart =
-                                        ((char *)me->start) +
-                                        Qentry->local_offset;
+                                    realstart             = ((uint8_t *)me->start) + Qentry->local_offset;
                                     Qentry->local_offset += mlength;
                                 }
                             }
-                            PtlInternalPerformDelivery(cur->hdr.type,
-                                                       realstart,
-                                                       cur->buffered_data,
-                                                       mlength, &(cur->hdr));
+                            PtlInternalPerformDelivery(cur->hdr.type, realstart, cur->buffered_data, mlength, &(cur->hdr));
                             // notify
                             if ((tEQ != PTL_EQ_NONE) ||
                                 (me->ct_handle != PTL_CT_NONE)) {
@@ -439,8 +425,7 @@ permission_violation:
                                                               cur->hdr.type,
                                                               me->options,
                                                               mlength,
-                                                              (uintptr_t)
-                                                              realstart,
+                                                              (uintptr_t)realstart,
                                                               PRIORITY,
                                                               Qentry,
                                                               &(cur->hdr),
@@ -475,14 +460,16 @@ permission_violation:
 #else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         if ((tEQ != PTL_EQ_NONE) ||
                             (me->ct_handle != PTL_CT_NONE)) {
-                            PtlInternalAnnounceMEDelivery(tEQ, me->ct_handle,
+                            PtlInternalAnnounceMEDelivery(tEQ,
+                                                          me->ct_handle,
                                                           cur->hdr.type,
                                                           me->options,
                                                           mlength,
-                                                          (uintptr_t)
-                                                          cur->buffered_data,
-                                                          OVERFLOW, Qentry,
-                                                          &(cur->hdr), meh.a);
+                                                          (uintptr_t)cur->buffered_data,
+                                                          OVERFLOW,
+                                                          Qentry,
+                                                          &(cur->hdr),
+                                                          meh.a);
                         }
                         if (PtlInternalMarkMEReusable(meh.a) != PTL_OK) {
                             abort();
@@ -498,13 +485,10 @@ permission_violation:
                             PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
                                                      user_ptr);
                             e.type  = PTL_EVENT_AUTO_UNLINK;
-                            e.start =
-                                (char *)me->start + cur->hdr.dest_offset;
+                            e.start = (uint8_t *)me->start + cur->hdr.dest_offset;
                             PtlInternalEQPush(tEQ, &e);
 #ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS
-                            ptl_internal_appendME_t *const restrict
-                            overflow_entry = (ptl_internal_appendME_t *)
-                                             cur->unexpected_entry;
+                            ptl_internal_appendME_t *const restrict overflow_entry = (ptl_internal_appendME_t *)cur->unexpected_entry;
                             if (overflow_entry != NULL) {
                                 if (mlength > 0) {
                                     ++(overflow_entry->announced);
@@ -615,11 +599,7 @@ permission_violation:
                     }
                     if (0) {
 permission_violationPO:
-                        (void)PtlInternalAtomicInc(
-                                                   &nit.regs[cur->hdr.ni]
-                                                   [
-                                                       PTL_SR_PERMISSIONS_VIOLATIONS
-                                                   ], 1);
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         continue;
                     }
                     {
@@ -678,10 +658,8 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
     }
     if ((me.s.ni > 3) || (me.s.code > nit_limits[me.s.ni].max_entries) ||
         (nit.refcount[me.s.ni] == 0)) {
-        VERBOSE_ERROR
-        (
-         "ME Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-         me.s.ni, me.s.code, nit_limits[me.s.ni].max_entries);
+        VERBOSE_ERROR("ME Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
+                      me.s.ni, me.s.code, nit_limits[me.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
     if (mes[me.s.ni] == NULL) {
@@ -791,7 +769,7 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
 }                                      /*}}} */
 
 static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
-                                     const unsigned char       ni,
+                                     const uint_fast8_t        ni,
                                      const ptl_pid_t           src,
                                      const ptl_size_t          length,
                                      const ptl_size_t          offset,
@@ -804,8 +782,7 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
     ptl_me_t                *me      = *mme;
 
     for (; current != NULL; prev = current, current = current->next) {
-        me = (ptl_me_t *)(((char *)current) +
-                          offsetof(ptl_internal_me_t, visible));
+        me = (ptl_me_t *)(((uint8_t *)current) + offsetof(ptl_internal_me_t, visible));
 
         assert(((ptl_internal_me_t *)current)->status != ME_FREE);      // Sanity checking (Brian's bug)
 
@@ -858,7 +835,7 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t)
     }
 }                                      /*}}} */
 
-static void PtlInternalValidateMEPTs(unsigned int ni)
+static void PtlInternalValidateMEPTs(const uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_table_entry_t *table = nit.tables[ni];
 
@@ -884,8 +861,8 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
     ptl_handle_eq_t          tEQ     = t->EQ;
     ptl_me_t                 me;
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
-    char                     need_more_data = 0;
-    char                     need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
+    uint_fast8_t             need_more_data = 0;
+    uint_fast8_t             need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalValidateMEPT(t);
     PtlInternalPAPIStartC();
@@ -909,16 +886,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
         hdr->entry = entry;
     } else {
         entry = hdr->entry;
-        me    = *(ptl_me_t *)(((char *)entry) +
-                              offsetof(ptl_internal_me_t, visible));
+        me    = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
         goto check_lengths;
     }
     if (entry != NULL) {               // Match
         /*************************************************************************
         * There is a matching ME present, and 'entry'/'me_ptr' points to it *
         *************************************************************************/
-        me = *(ptl_me_t *)(((char *)entry) +
-                           offsetof(ptl_internal_me_t, visible));
+        me = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
         assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
         // check permissions on the ME
         if (me.options & PTL_ME_AUTH_USE_JID) {
@@ -998,7 +973,7 @@ permission_violation:
                 ptl_internal_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type  = PTL_EVENT_AUTO_UNLINK;
-                e.start = (char *)me.start + hdr->dest_offset;
+                e.start = (uint8_t *)me.start + hdr->dest_offset;
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
                 PtlInternalEQPush(tEQ, &e);
                 PtlInternalPAPIStartC();
@@ -1022,9 +997,7 @@ check_lengths:
             }
             if (msg_mlength < hdr->length) {
                 if ((me.options & PTL_ME_NO_TRUNCATE) != 0) {
-                    fprintf(
-                            stderr,
-                            "PORTALS4-> attempt to deliver a big message to a little ME with NO_TRUNCATE set\n");
+                    fprintf(stderr, "PORTALS4-> attempt to deliver a big message to a little ME with NO_TRUNCATE set\n");
                     abort();
                 } else {
                     hdr->length    = msg_mlength;
@@ -1064,35 +1037,27 @@ check_lengths:
          * |     `------------------------> me.start + hdr->dest_offset
          * `------------------------------> me.start
          */
-        void *report_this_start = ((char *)me.start) + hdr->dest_offset;
-        void *effective_start   =
-            ((char *)me.start) + hdr->dest_offset + (msg_mlength -
-                                                     hdr->remaining);
+        void *report_this_start = ((uint8_t *)me.start) + hdr->dest_offset;
+        void *effective_start   = ((uint8_t *)me.start) + hdr->dest_offset + (msg_mlength - hdr->remaining);
         if (foundin == PRIORITY) {
             if (((hdr->type & HDR_TYPE_BASICMASK) == HDR_TYPE_PUT) &&
                 ((me.options & PTL_ME_MANAGE_LOCAL) != 0)) {
                 if ((fragment_mlength != msg_mlength) &&
                     ((me.options & PTL_ME_NO_TRUNCATE) == 0) &&
                     (me.length > 0)) {
-                    fprintf(
-                            stderr,
-                            "multi-fragment (oversize) messages do not work safely with locally managed offsets\n");
+                    fprintf(stderr, "multi-fragment (oversize) messages do not work safely with locally managed offsets\n");
                     abort();
                 }
                 assert(hdr->length + entry->local_offset <= fragment_mlength);
                 if (fragment_mlength > 0) {
                     ++(entry->messages);        // safe because the PT is locked
-                    report_this_start =
-                        ((char *)me.start) + entry->local_offset;
-                    effective_start =
-                        (char *)report_this_start + (msg_mlength -
-                                                     hdr->remaining);
+                    report_this_start    = ((uint8_t *)me.start) + entry->local_offset;
+                    effective_start      = (uint8_t *)report_this_start + (msg_mlength - hdr->remaining);
                     entry->local_offset += fragment_mlength;
                 }
             }
             if (fragment_mlength > 0) {
-                PtlInternalPerformDelivery(hdr->type, effective_start,
-                                           hdr->data, fragment_mlength, hdr);
+                PtlInternalPerformDelivery(hdr->type, effective_start, hdr->data, fragment_mlength, hdr);
             }
             if (need_more_data == 0) {
                 PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
@@ -1103,9 +1068,7 @@ check_lengths:
                 if (entry->unlinked == 1) {
                     if (PtlInternalMarkMEReusable(entry->me_handle.a) !=
                         PTL_OK) {
-                        fprintf(
-                                stderr,
-                                "PtlInternalMarkMEReusable returned an unfathomable error.\n");
+                        fprintf(stderr, "PtlInternalMarkMEReusable returned an unfathomable error.\n");
                         abort();
                     }
                     PtlInternalValidateMEPT(t);
@@ -1113,15 +1076,11 @@ check_lengths:
             }
         } else {
             if (fragment_mlength > msg_mlength) {
-                fprintf(
-                        stderr,
-                        "Sending oversize messages into the overflow list doesn't work\n");
+                fprintf(stderr, "Sending oversize messages into the overflow list doesn't work\n");
                 abort();
             }
             if (hdr->type == HDR_TYPE_GET) {
-                fprintf(
-                        stderr,
-                        "Sending a PtlGet to the overflow list doesn't work.\n");
+                fprintf(stderr, "Sending a PtlGet to the overflow list doesn't work.\n");
                 abort();
             }
             if ((me.length > 0) && (me.start != NULL)) {
@@ -1154,9 +1113,7 @@ check_lengths:
         }
     }
 #ifdef LOUD_DROPS
-    fprintf(
-            stderr,
-            "PORTALS4-> Rank %u dropped a message from rank %u, no MEs posted on PT %u on NI %u\n",
+    fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u, no MEs posted on PT %u on NI %u\n",
             (unsigned)proc_number, (unsigned)hdr->src,
             (unsigned)hdr->pt_index, (unsigned)hdr->ni);
     fflush(stderr);
@@ -1179,7 +1136,7 @@ check_lengths:
     return 0;                          // silent ACK
 }                                      /*}}} */
 
-static void PtlInternalPerformDelivery(const unsigned char             type,
+static void PtlInternalPerformDelivery(const uint_fast8_t              type,
                                        void *restrict                  local_data,
                                        uint8_t *restrict               message_data,
                                        size_t                          nbytes,
@@ -1213,9 +1170,9 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
 
 static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
-                                          const unsigned char               type,
+                                          const uint_fast8_t                type,
                                           const unsigned int                options,
-                                          const uint64_t                    mlength,
+                                          const uint_fast64_t               mlength,
                                           const uintptr_t                   start,
                                           const ptl_internal_listtype_t     foundin,
                                           ptl_internal_appendME_t *restrict priority_entry,

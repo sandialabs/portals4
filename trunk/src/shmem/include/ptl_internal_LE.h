@@ -4,9 +4,9 @@
 #include "ptl_internal_PT.h"
 #include "ptl_internal_commpad.h"
 
-void INTERNAL PtlInternalLENISetup(uint_fast8_t ni,
-                                   ptl_size_t   limit);
-void INTERNAL      PtlInternalLENITeardown(uint_fast8_t ni);
+void INTERNAL PtlInternalLENISetup(const uint_fast8_t ni,
+                                   const ptl_size_t   limit);
+void INTERNAL      PtlInternalLENITeardown(const uint_fast8_t ni);
 ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
                                         ptl_internal_header_t *restrict h);
 
