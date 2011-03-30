@@ -53,10 +53,15 @@ struct rank_to_nid {
 	struct nid_connect *connect;
 };
 
+/*
+ * per NI info
+ */
 typedef struct ni {
 	PTL_BASE_OBJ
 
 	gbl_t			*gbl;
+
+	rt_t			rt;
 
 	ptl_ni_limits_t		limits;
 	ptl_ni_limits_t		current;
@@ -119,18 +124,18 @@ typedef struct ni {
 	ptl_uid_t		uid;
 
 	/* Network interface. */
-	char ifname[IF_NAMESIZE];	/* eg "ib0", "ib1", ... */
-	in_addr_t addr;				/* ifname IPV4 address, in network order */
+	char			ifname[IF_NAMESIZE];	/* eg "ib0", "ib1", ... */
+	in_addr_t		addr;			/* ifname IPV4 address, in network order */
 
 	/* IB */
 	struct ibv_context	*ibv_context;
 	struct ibv_pd		*pd;
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
-	ev_io cq_watcher;
+	ev_io			cq_watcher;
 	struct rdma_event_channel *cm_channel;
-	ev_io cm_watcher;
-	struct rdma_cm_id *listen_id;	/* for physical NI. */
+	ev_io			cm_watcher;
+	struct rdma_cm_id	*listen_id;	/* for physical NI. */
 	struct ibv_srq		*srq;	/* either regular of XRC */
 
 	/* IB XRC support. Used only with physical NI. */
