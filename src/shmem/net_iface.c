@@ -55,7 +55,7 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
                        Q_UNUSED ptl_process_t *desired_mapping,
                        ptl_process_t          *actual_mapping,
                        ptl_handle_ni_t        *ni_handle)
-{
+{   /*{{{*/
     ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
     ptl_table_entry_t              *tmp;
 
@@ -80,8 +80,7 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         return PTL_ARG_INVALID;
     }
     if ((pid > num_siblings) && (pid != PTL_PID_ANY)) {
-        VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid,
-                      (int)num_siblings);
+        VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid, (int)num_siblings);
         return PTL_ARG_INVALID;
     }
     if (ni_handle == NULL) {
@@ -204,16 +203,14 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
                 return PTL_NO_SPACE;
             }
             nit.unexpecteds[ni.s.ni] = nit.unexpecteds_buf[ni.s.ni] =
-                                           calloc(nit_limits[ni.s.ni].max_unexpected_headers,
-                                                  sizeof(ptl_internal_buffered_header_t));
+                                           calloc(nit_limits[ni.s.ni].max_unexpected_headers, sizeof(ptl_internal_buffered_header_t));
             if (nit.unexpecteds[ni.s.ni] == NULL) {
                 free(tmp);
                 nit.tables[ni.s.ni] = NULL;
                 return PTL_NO_SPACE;
             }
             for (size_t u = 0; u < nit_limits[ni.s.ni].max_unexpected_headers - 1; ++u) {
-                nit.unexpecteds[ni.s.ni][u].hdr.next =
-                    &(nit.unexpecteds[ni.s.ni][u + 1]);
+                nit.unexpecteds[ni.s.ni][u].hdr.next = &(nit.unexpecteds[ni.s.ni][u + 1]);
             }
             for (size_t e = 0; e <= nit_limits[ni.s.ni].max_pt_index; ++e) {
                 PtlInternalPTInit(tmp + e);
@@ -225,10 +222,10 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         PtlInternalDMSetup();          // This MUST happen AFTER the tables are set up
     }
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
@@ -263,12 +260,12 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
         nit.tables[ni.s.ni]          = NULL;
     }
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
                          ptl_sr_index_t  status_register,
                          ptl_sr_value_t *status)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
@@ -287,11 +284,11 @@ int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
     *status = nit.regs[ni.s.ni][status_register];
     return PTL_FAIL;
-}
+} /*}}}*/
 
 int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
                          ptl_handle_ni_t *ni_handle)
-{
+{   /*{{{*/
     ptl_internal_handle_converter_t ehandle;
 
 #ifndef NO_ARG_VALIDATION
@@ -317,10 +314,10 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
             return PTL_ARG_INVALID;
     }
     return PTL_OK;
-}
+} /*}}}*/
 
 int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
-{
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (ni.s.selector != HANDLE_NI_CODE) {
         return PTL_ARG_INVALID;
@@ -330,10 +327,10 @@ int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
     }
 #endif
     return PTL_OK;
-}
+} /*}}}*/
 
-ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const unsigned int ni)
-{
+ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const uint_fast8_t ni)
+{   /*{{{*/
     ptl_internal_buffered_header_t *hdr = nit.unexpecteds[ni];
 
     if (hdr != NULL) {
@@ -345,20 +342,17 @@ ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const 
         }
     }
     return hdr;
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr)
-{
-    ptl_internal_buffered_header_t **const ni_unex =
-        &nit.unexpecteds[hdr->hdr.ni];
-    ptl_internal_buffered_header_t *expectednext, *foundnext;
+{   /*{{{*/
+    ptl_internal_buffered_header_t **const ni_unex = &nit.unexpecteds[hdr->hdr.ni];
+    ptl_internal_buffered_header_t        *expectednext, *foundnext;
 
     expectednext = hdr->hdr.next = *ni_unex;
-    while ((foundnext =
-                PtlInternalAtomicCasPtr(ni_unex, expectednext,
-                                        hdr)) != expectednext) {
+    while ((foundnext = PtlInternalAtomicCasPtr(ni_unex, expectednext, hdr)) != expectednext) {
         expectednext = hdr->hdr.next = foundnext;
     }
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

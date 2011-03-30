@@ -18,19 +18,19 @@
 #endif
 
 int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
-{
+{   /*{{{*/
     return (p.rank >= num_siblings);
-}
+} /*}}}*/
 
 int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
-{
+{   /*{{{*/
     /* pid == num_siblings is the COLLECTOR */
     return (p.phys.pid > num_siblings || p.phys.nid != 0);
-}
+} /*}}}*/
 
 int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
                       ptl_process_t  *id)
-{
+{   /*{{{*/
     ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
@@ -45,7 +45,7 @@ int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
     switch (ni.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
-            id->rank = proc_number;    // heh
+            id->rank = proc_number;   // heh
             break;
         case 2:                       // Physical
         case 3:                       // Physical
@@ -57,6 +57,6 @@ int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
             *(int *)0 = 0;             // should never happen
     }
     return PTL_OK;
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

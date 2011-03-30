@@ -69,15 +69,15 @@ static void  cleanup(int s);
 static void  print_usage(int ex);
 static void *collator(void *junk);
 
-#define EXPORT_ENV_NUM(env_str, val) do { \
-        char str[21]; \
+#define EXPORT_ENV_NUM(env_str, val) do {             \
+        char str[21];                                 \
         snprintf(str, 21, "%lu", (unsigned long)val); \
-        ptl_assert(setenv(env_str, str, 1), 0); \
+        ptl_assert(setenv(env_str, str, 1), 0);       \
 } while (0)
 
 int main(int   argc,
          char *argv[])
-{
+{   /*{{{*/
     const size_t pagesize = getpagesize();
     size_t       commsize;
     size_t       buffsize = pagesize;
@@ -96,11 +96,11 @@ int main(int   argc,
     ptl_jid_t    yod_jid            = PTL_JID_NONE;
 
 #ifdef PARANOID
-    small_frag_payload = small_frag_size - (3 * sizeof(void*));
-    large_frag_payload = large_frag_size - (3 * sizeof(void*));
+    small_frag_payload = small_frag_size - (3 * sizeof(void *));
+    large_frag_payload = large_frag_size - (3 * sizeof(void *));
 #else
-    small_frag_payload = small_frag_size - (2 * sizeof(void*));
-    large_frag_payload = large_frag_size - (2 * sizeof(void*));
+    small_frag_payload = small_frag_size - (2 * sizeof(void *));
+    large_frag_payload = large_frag_size - (2 * sizeof(void *));
 #endif
 
     {
@@ -212,8 +212,8 @@ int main(int   argc,
                  (long)getpid(), pw->pw_name, r1, r2, r3);
     }
     ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
-    large_frag_size = large_frag_payload + (2 * sizeof(void*));
-    small_frag_size = small_frag_payload + (2 * sizeof(void*));
+    large_frag_size = large_frag_payload + (2 * sizeof(void *));
+    small_frag_size = small_frag_payload + (2 * sizeof(void *));
 #ifdef PARANOID
     small_frag_size += sizeof(uint64_t);
     large_frag_size += sizeof(uint64_t);
@@ -478,10 +478,10 @@ int main(int   argc,
     }
     free(pids);
     return err;
-}
+} /*}}}*/
 
 static void cleanup(Q_UNUSED int s)
-{
+{   /*{{{*/
     if ((pids != NULL) && (count > 0)) {
         for (int d = 0; d < count; ++d) {
             if (kill(pids[d], SIGKILL) == -1) {
@@ -491,10 +491,10 @@ static void cleanup(Q_UNUSED int s)
             }
         }
     }
-}
+} /*}}}*/
 
 void *collator(void *Q_UNUSED junk) Q_NORETURN
-{
+{   /*{{{*/
     ptl_process_t *mapping;
 
     /* set up the landing pad to collect and distribute mapping information */
@@ -589,10 +589,10 @@ cleanup_phase:
     ptl_assert(PtlLEUnlink(le_handle), PTL_OK);
     PtlInternalDMStop();
     return NULL;
-}
+} /*}}}*/
 
 void print_usage(int ex)
-{
+{   /*{{{*/
     printf("yod {options} executable\n");
     printf("Options are:\n");
     printf("\t-c [num_procs]            Spawn num_procs processes.\n");
@@ -608,6 +608,6 @@ void print_usage(int ex)
     } else {
         exit(EXIT_SUCCESS);
     }
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

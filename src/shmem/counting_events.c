@@ -42,10 +42,8 @@ const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
 #define CT_READY   2
 #define CT_ERR_VAL 0xffffffffffffffffULL
 
-volatile uint64_t global_generation = 0;
-
-static ptl_ct_event_t *restrict    ct_events[4] = { NULL, NULL, NULL, NULL };
-static volatile uint64_t *restrict ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
+static ptl_ct_event_t *restrict         ct_events[4] = { NULL, NULL, NULL, NULL };
+static volatile uint_fast64_t *restrict ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
 
 /* ct_event_triggers is the triggers for a given CT. The ct_triggers_alloc is
  * the allocation (per NI) of trigger structures, but ct_triggers is the
@@ -106,7 +104,7 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
 
 #endif /* if 0 */
 
-ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(unsigned int ni)
+ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
 {   /*{{{*/
     ptl_internal_trigger_t          *tmp;
     volatile ptl_internal_trigger_t *old, *new;
@@ -162,8 +160,8 @@ void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
     }
 } /*}}}*/
 
-void INTERNAL PtlInternalCTNISetup(unsigned int ni,
-                                   ptl_size_t   limit)
+void INTERNAL PtlInternalCTNISetup(const uint_fast8_t ni,
+                                   const ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_ct_event_t *tmp;
 
@@ -176,7 +174,7 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
         ALIGNED_CALLOC(tmp, 16, limit, sizeof(ptl_ct_event_t));
         assert((((intptr_t)tmp) & 0x7) == 0);
         assert(ct_event_refcounts[ni] == NULL);
-        ct_event_refcounts[ni] = calloc(limit, sizeof(uint64_t));
+        ct_event_refcounts[ni] = calloc(limit, sizeof(uint_fast64_t));
         assert(ct_event_refcounts[ni] != NULL);
         assert(ct_event_triggers[ni] == NULL);
         assert(ct_triggers[ni] == NULL);
@@ -200,25 +198,22 @@ void INTERNAL PtlInternalCTNISetup(unsigned int ni,
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalCTNITeardown(int ni)
+void INTERNAL PtlInternalCTNITeardown(const uint_fast8_t ni)
 {                                      /*{{{ */
-    ptl_ct_event_t *restrict    tmp;
-    volatile uint64_t *restrict rc;
-    ptl_internal_trigger_t     *ctt;
+    ptl_ct_event_t *restrict         tmp;
+    volatile uint_fast64_t *restrict rc;
+    ptl_internal_trigger_t *restrict ctt;
 
     while (ct_events[ni] == (void *)1) SPINLOCK_BODY();        // in case its in the middle of being allocated (this should never happen in sane code)
     tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
-    rc  = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni],
-                                   NULL);
+    rc  = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni], NULL);
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
     free(PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_triggers[ni], NULL));
     if (nit_limits[ni].max_triggered_ops > 0) {
         PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers[ni], NULL);
-        ctt =
-            PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni],
-                                     NULL);
+        ctt = PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni], NULL);
         assert(ctt != NULL);
         free(ctt);
     }
@@ -238,7 +233,7 @@ void INTERNAL PtlInternalCTNITeardown(int ni)
 }                                      /*}}} */
 
 int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
-                                          int             none_ok)
+                                          uint_fast8_t    none_ok)
 {                                      /*{{{ */
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ct = { handle };
@@ -277,7 +272,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 {                                      /*{{{ */
     ptl_ct_event_t                       *cts;
     ptl_size_t                            offset;
-    volatile uint64_t                    *rc;
+    volatile uint_fast64_t               *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t       ct = { .s.selector = HANDLE_CT_CODE };
 
@@ -414,7 +409,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     const ptl_internal_handle_converter_t ct = { ct_handle };
     uint64_t                              old_fail_val;
     volatile ptl_ct_event_t              *cte;
-    volatile uint64_t                    *rc;
+    volatile uint_fast64_t               *rc;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -456,11 +451,11 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                        ptl_ct_event_t  *event,
                        int             *which)
 {                                      /*{{{ */
-    ptl_size_t         ctidx, offset;
-    ptl_ct_event_t    *ctes[size];
-    volatile uint64_t *rcs[size];
-    size_t             nstart;
-    TIMER_TYPE         tp;
+    ptl_size_t              ctidx, offset;
+    ptl_ct_event_t         *ctes[size];
+    volatile uint_fast64_t *rcs[size];
+    size_t                  nstart;
+    TIMER_TYPE              tp;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -473,6 +468,9 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
         if (PtlInternalCTHandleValidator(ct_handles[ctidx], 0)) {
             return PTL_ARG_INVALID;
         }
+    }
+    if (size > UINT32_MAX) {
+        return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     for (ctidx = 0; ctidx < size; ++ctidx) {

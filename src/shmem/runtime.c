@@ -24,7 +24,7 @@ static struct runtime_proc_t *ranks;
 static ptl_handle_ni_t        ni_physical;
 static ptl_pt_index_t         phys_pt_index;
 
-static long            barrier_count = 0;
+static long long       barrier_count = 0;
 static ptl_handle_le_t barrier_le_h;
 static ptl_handle_ct_t barrier_ct_h;
 static ptl_handle_ct_t barrier_ct_h2;
@@ -36,7 +36,7 @@ static ptl_handle_md_t barrier_md_h;
 static void noFailures(ptl_handle_ct_t ct,
                        ptl_size_t      threshold,
                        size_t          line)
-{
+{   /*{{{*/
     ptl_ct_event_t ct_data;
 
     if (PTL_OK != PtlCTWait(ct, threshold, &ct_data)) {
@@ -48,13 +48,11 @@ static void noFailures(ptl_handle_ct_t ct,
                 (unsigned int)line);
         abort();
     }
-}
+} /*}}}*/
 
 void runtime_init(void)
-{
-    int             ret, i;
+{   /*{{{*/
     ptl_process_t   myself;
-    uint64_t        rank, maxrank;
     ptl_process_t  *dmapping, *amapping;
     ptl_le_t        le;
     ptl_handle_le_t le_handle;
@@ -70,36 +68,28 @@ void runtime_init(void)
     COLLECTOR.phys.nid = atoi(getenv("PORTALS4_COLLECTOR_NID"));
     COLLECTOR.phys.pid = atoi(getenv("PORTALS4_COLLECTOR_PID"));
     assert(getenv("PORTALS4_RANK") != NULL);
-    rank = my_rank = atoi(getenv("PORTALS4_RANK"));
+    my_rank = atoi(getenv("PORTALS4_RANK"));
     assert(getenv("PORTALS4_NUM_PROCS") != NULL);
     num_procs = atoi(getenv("PORTALS4_NUM_PROCS"));
-    maxrank   = num_procs - 1;
 
-    if (COLLECTOR.phys.pid == rank) {
+    if (COLLECTOR.phys.pid == my_rank) {
         return;
     }
 
-    ret =
-        PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                  PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+                         PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical),
+               PTL_OK);
 
-    ret = PtlGetId(ni_physical, &myself);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlGetId(ni_physical, &myself),
+               PTL_OK);
 
-    ret = PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &phys_pt_index);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &phys_pt_index),
+               PTL_OK);
     assert(phys_pt_index == 0);
 
-    dmapping = calloc(maxrank + 1, sizeof(ptl_process_t));
+    dmapping = calloc(num_procs, sizeof(ptl_process_t));
     assert(dmapping != NULL);
-    amapping = calloc(maxrank + 1, sizeof(ptl_process_t));
+    amapping = calloc(num_procs, sizeof(ptl_process_t));
     assert(amapping != NULL);
 
     /* for the runtime_barrier() */
@@ -109,9 +99,11 @@ void runtime_init(void)
             .start     = NULL, .length = 0, .options = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE,
             .eq_handle = PTL_EQ_NONE, .ct_handle = PTL_CT_NONE
         };
-        ptl_assert(PtlMDBind(ni_physical, &md, &barrier_md_h), PTL_OK);
+        ptl_assert(PtlMDBind(ni_physical, &md, &barrier_md_h),
+                   PTL_OK);
         /* We want a specific Portals table entry */
-        ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, __PtlBarrierIndex, &index), PTL_OK);
+        ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, __PtlBarrierIndex, &index),
+                   PTL_OK);
         assert(index == __PtlBarrierIndex);
     }
     {
@@ -121,129 +113,116 @@ void runtime_init(void)
             .ac_id.uid = PTL_UID_ANY,
             .options   = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM
         };
-        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h2), PTL_OK);
+        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h2),
+                   PTL_OK);
         le.ct_handle = barrier_ct_h2;
-        ptl_assert(PtlLEAppend(ni_physical, __PtlBarrierIndex, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h), PTL_OK);
+        ptl_assert(PtlLEAppend(ni_physical, __PtlBarrierIndex, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h),
+                   PTL_OK);
     }
 
     /* for distributing my ID */
     md.start     = &myself;
     md.length    = sizeof(ptl_process_t);
     md.options   = PTL_MD_EVENT_CT_SEND; // count sends
-    md.eq_handle = PTL_EQ_NONE;        // i.e. don't queue send events
-    ret          = PtlCTAlloc(ni_physical, &md.ct_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    md.eq_handle = PTL_EQ_NONE;          // i.e. don't queue send events
+    ptl_assert(PtlCTAlloc(ni_physical, &md.ct_handle),
+               PTL_OK);
 
     /* for receiving the mapping */
     le.start     = dmapping;
-    le.length    = (maxrank + 1) * sizeof(ptl_process_t);
+    le.length    = num_procs * sizeof(ptl_process_t);
     le.ac_id.uid = PTL_UID_ANY;
     le.options   =
         PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_COMM_DISABLE |
         PTL_LE_EVENT_CT_COMM;
-    ret = PtlCTAlloc(ni_physical, &le.ct_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle),
+               PTL_OK);
 
     /* post this now to avoid a race condition later */
-    ret =
-        PtlLEAppend(ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlLEAppend(ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle),
+               PTL_OK);
 
     /* now send my ID to the collector */
-    ret = PtlMDBind(ni_physical, &md, &md_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlMDBind(ni_physical, &md, &md_handle),
+               PTL_OK);
 
-    ret =
-        PtlPut(md_handle, 0, sizeof(ptl_process_t), PTL_OC_ACK_REQ, COLLECTOR,
-               phys_pt_index, 0, rank * sizeof(ptl_process_t), NULL, 0);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlPut(md_handle, 0, sizeof(ptl_process_t), PTL_OC_ACK_REQ, COLLECTOR,
+                      phys_pt_index, 0, my_rank * sizeof(ptl_process_t), NULL, 0),
+               PTL_OK);
 
     /* wait for the send to finish */
     noFailures(md.ct_handle, 1, __LINE__);
 
     /* cleanup */
-    ret = PtlMDRelease(md_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlMDRelease(md_handle),
+               PTL_OK);
 
-    ret = PtlCTFree(md.ct_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlCTFree(md.ct_handle),
+               PTL_OK);
 
     /* wait to receive the mapping from the COLLECTOR */
     noFailures(le.ct_handle, 1, __LINE__);
     /* cleanup the counter */
-    ret = PtlCTFree(le.ct_handle);
-    if (ret != PTL_OK) {
-        abort();
-    }
+    ptl_assert(PtlCTFree(le.ct_handle),
+               PTL_OK);
 
     ranks = malloc(sizeof(struct runtime_proc_t) * num_procs);
     if (NULL == ranks) {
         abort();
     }
-    for (i = 0; i < num_procs; ++i) {
+    for (int i = 0; i < num_procs; ++i) {
         ranks[i].nid = 0;
         ranks[i].pid = i;
     }
-}
+} /*}}}*/
 
 void runtime_finalize(void)
-{
+{   /*{{{*/
     if ((runtime_inited == 0) || (COLLECTOR.phys.pid == my_rank)) {
         return;
     }
     runtime_inited = 0;
 
     if (barrier_count > 0) {
-        ptl_assert(PtlCTFree(barrier_ct_h), PTL_OK);
-        ptl_assert(PtlCTFree(barrier_ct_h2), PTL_OK);
-        ptl_assert(PtlLEUnlink(barrier_le_h), PTL_OK);
+        ptl_assert(PtlCTFree(barrier_ct_h),
+                   PTL_OK);
+        ptl_assert(PtlCTFree(barrier_ct_h2),
+                   PTL_OK);
+        ptl_assert(PtlLEUnlink(barrier_le_h),
+                   PTL_OK);
     }
 
     PtlPTFree(ni_physical, phys_pt_index);
     PtlNIFini(ni_physical);
-}
+} /*}}}*/
 
 int API_FUNC runtime_get_rank(void)
-{
+{   /*{{{*/
     if (runtime_inited == 0) {
         runtime_init();
     }
     return my_rank;
-}
+} /*}}}*/
 
 int API_FUNC runtime_get_size(void)
-{
+{   /*{{{*/
     if (runtime_inited == 0) {
         runtime_init();
     }
     return num_procs;
-}
+} /*}}}*/
 
 int API_FUNC runtime_get_nidpid_map(struct runtime_proc_t **map)
-{
+{   /*{{{*/
     if (runtime_inited == 0) {
         runtime_init();
     }
     *map = ranks;
     return num_procs;
-}
+} /*}}}*/
 
 void API_FUNC runtime_barrier(void)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0 } };
 
     if (runtime_inited == 0) {
@@ -265,20 +244,24 @@ void API_FUNC runtime_barrier(void)
         md.options    = 0;
         md.eq_handle  = PTL_EQ_NONE;
         md.ct_handle  = PTL_CT_NONE;
-        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h), PTL_OK);
+        ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h),
+                   PTL_OK);
         le.ct_handle = barrier_ct_h;
         /* post my receive */
         ptl_assert(PtlLEAppend(ni.a, 0, &le, PTL_PRIORITY_LIST, NULL, &barrier_le_h),
                    PTL_OK);
         /* prepare my messenger */
-        ptl_assert(PtlMDBind(ni.a, &md, &mdh), PTL_OK);
+        ptl_assert(PtlMDBind(ni.a, &md, &mdh),
+                   PTL_OK);
         /* alert COLLECTOR of my presence */
         ptl_assert(PtlPut(mdh, 0, 0, PTL_NO_ACK_REQ, COLLECTOR, 0, 0, 0, NULL, 0),
                    PTL_OK);
         /* wait for COLLECTOR to respond */
-        ptl_assert(PtlCTWait(barrier_ct_h, 1, &ctc), PTL_OK);
+        ptl_assert(PtlCTWait(barrier_ct_h, 1, &ctc),
+                   PTL_OK);
         assert(ctc.failure == 0);
-        ptl_assert(PtlMDRelease(mdh), PTL_OK);
+        ptl_assert(PtlMDRelease(mdh),
+                   PTL_OK);
 
         if (0 == my_rank) {
             /* to make counting easier */
@@ -304,26 +287,31 @@ void API_FUNC runtime_barrier(void)
             if (rightchild.phys.pid < num_procs) {
                 test = __barrier_cnt++;
             }
-            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value), PTL_OK);
+            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value),
+                       PTL_OK);
         }
 
         if (my_rank > 0) {
             /* Tell my parent that I have entered the barrier */
-            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, parent, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, parent, __PtlBarrierIndex, 0, 0, NULL, 0),
+                       PTL_OK);
 
             /* Wait for my parent to wake me up */
             test = __barrier_cnt++;
-            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value), PTL_OK);
+            ptl_assert(PtlCTWait(barrier_ct_h2, test, &cnt_value),
+                       PTL_OK);
         }
 
         /* Wake my children */
         if (leftchild.phys.pid < num_procs) {
-            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, leftchild, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+            ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, leftchild, __PtlBarrierIndex, 0, 0, NULL, 0),
+                       PTL_OK);
             if (rightchild.phys.pid < num_procs) {
-                ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, rightchild, __PtlBarrierIndex, 0, 0, NULL, 0), PTL_OK);
+                ptl_assert(PtlPut(barrier_md_h, 0, 0, PTL_NO_ACK_REQ, rightchild, __PtlBarrierIndex, 0, 0, NULL, 0),
+                           PTL_OK);
             }
         }
     }
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

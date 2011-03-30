@@ -30,16 +30,16 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 
 typedef struct {
     volatile uint32_t in_use;   // 0=free, 1=in_use
-    uint32_t          refcount;
+    uint_fast32_t     refcount;
     uint8_t           pad1[8];
     ptl_md_t          visible;
-    uint8_t           pad2[CACHELINE_WIDTH - (8 + sizeof(uint32_t) * 2 + sizeof(ptl_md_t))];
+    uint8_t           pad2[CACHELINE_WIDTH - (8 + sizeof(uint_fast32_t) + sizeof(uint32_t) + sizeof(ptl_md_t))];
 } ptl_internal_md_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
 
-void INTERNAL PtlInternalMDNISetup(unsigned int ni,
-                                   ptl_size_t   limit)
+void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
+                                   const ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_internal_md_t *tmp;
 
@@ -49,13 +49,13 @@ void INTERNAL PtlInternalMDNISetup(unsigned int ni,
     if (tmp == NULL) {
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, limit + 1, sizeof(ptl_internal_md_t));
         assert(tmp != NULL);
-        tmp = (ptl_internal_md_t*)(((char*)tmp) + (CACHELINE_WIDTH / 2));
+        tmp = (ptl_internal_md_t *)(((char *)tmp) + (CACHELINE_WIDTH / 2));
         __sync_synchronize();
         mds[ni] = tmp;
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalMDNITeardown(unsigned int ni)
+void INTERNAL PtlInternalMDNITeardown(const uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_internal_md_t *tmp = mds[ni];
 
@@ -65,12 +65,12 @@ void INTERNAL PtlInternalMDNITeardown(unsigned int ni)
     for (size_t mdi = 0; mdi < nit_limits[ni].max_mds; ++mdi) {
         while (tmp[mdi].refcount != 0) ;
     }
-    ALIGNED_FREE(((char*)tmp) - (CACHELINE_WIDTH / 2), CACHELINE_WIDTH);
+    ALIGNED_FREE(((char *)tmp) - (CACHELINE_WIDTH / 2), CACHELINE_WIDTH);
 }                                      /*}}} */
 
 #ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
-                                          int             care_about_ct)
+                                          uint_fast8_t    care_about_ct)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
     ptl_internal_md_t                    *mdptr;
@@ -79,11 +79,9 @@ int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
         VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
         return PTL_ARG_INVALID;
     }
-    if ((md.s.ni > 3) || (md.s.code > nit_limits[md.s.ni].max_mds) ||
-        (nit.refcount[md.s.ni] == 0)) {
-        VERBOSE_ERROR
-            ("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-            md.s.ni, md.s.code, nit_limits[md.s.ni].max_mds);
+    if ((md.s.ni > 3) || (md.s.code > nit_limits[md.s.ni].max_mds) || (nit.refcount[md.s.ni] == 0)) {
+        VERBOSE_ERROR("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
+                      md.s.ni, md.s.code, nit_limits[md.s.ni].max_mds);
         return PTL_ARG_INVALID;
     }
     if (mds[md.s.ni] == NULL) {
@@ -101,13 +99,11 @@ int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
     }
     if (care_about_ct) {
         int ct_optional = 1;
-        if (mdptr->
-            visible.options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-                               PTL_MD_EVENT_CT_ACK)) {
+        if (mdptr->visible.options &
+            (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY | PTL_MD_EVENT_CT_ACK)) {
             ct_optional = 0;
         }
-        if (PtlInternalCTHandleValidator
-                (mdptr->visible.ct_handle, ct_optional)) {
+        if (PtlInternalCTHandleValidator(mdptr->visible.ct_handle, ct_optional)) {
             VERBOSE_ERROR("MD has a bad CT handle\n");
             return PTL_ARG_INVALID;
         }
@@ -144,9 +140,8 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("MD saw invalid EQ\n");
         return PTL_ARG_INVALID;
     }
-    if (md->
-        options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
-                   PTL_MD_EVENT_CT_ACK)) {
+    if (md->options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
+                       PTL_MD_EVENT_CT_ACK)) {
         ct_optional = 0;
     }
     if (PtlInternalCTHandleValidator(md->ct_handle, ct_optional)) {
@@ -158,9 +153,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
     mdh.s.ni       = ni.s.ni;
     for (offset = 0; offset < nit_limits[ni.s.ni].max_mds; ++offset) {
         if (mds[ni.s.ni][offset].in_use == MD_FREE) {
-            if (PtlInternalAtomicCas32
-                    (&(mds[ni.s.ni][offset].in_use), MD_FREE,
-                    MD_IN_USE) == MD_FREE) {
+            if (PtlInternalAtomicCas32(&(mds[ni.s.ni][offset].in_use), MD_FREE, MD_IN_USE) == MD_FREE) {
                 mds[ni.s.ni][offset].visible = *md;
                 mdh.s.code                   = offset;
                 break;
