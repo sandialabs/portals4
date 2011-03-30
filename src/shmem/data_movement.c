@@ -35,7 +35,7 @@ static uint32_t  spawned;
 static pthread_t catcher;
 
 #if 0
-# define dm_printf(format, ...) printf("%u ~> " format, \
+# define dm_printf(format, ...) printf("%u ~> " format,           \
                                        (unsigned int)proc_number, \
                                        ## __VA_ARGS__)
 #else
@@ -43,7 +43,7 @@ static pthread_t catcher;
 #endif
 
 #if 0
-# define ack_printf(format, ...) printf("%u +> " format, \
+# define ack_printf(format, ...) printf("%u +> " format,           \
                                         (unsigned int)proc_number, \
                                         ## __VA_ARGS__)
 #else
@@ -114,9 +114,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                         const ptl_handle_eq_t eqh     = mdptr->eq_handle;
                         const ptl_handle_ct_t cth     = mdptr->ct_handle;
                         const unsigned int    options = mdptr->options;
-                        ack_printf
-                        (
-                         "announce that we're done with the send-buffer\n");
+                        ack_printf("announce that we're done with the send-buffer\n");
                         PtlInternalMDCleared(md_handle);
                         if (options & PTL_MD_EVENT_CT_SEND) {
                             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -208,9 +206,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
         case HDR_TYPE_FETCHATOMIC:
             ack_printf("it's an ACK for a FETCHATOMIC\n");
             if (truncated) {
-                fprintf(
-                        stderr,
-                        "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
+                fprintf(stderr, "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
                 abort();
             }
             md_handle = hdr->md_handle1.a;
@@ -410,35 +406,27 @@ Q_NORETURN
             if (table_entry->status == 1) {
                 switch (PtlInternalPTValidate(table_entry)) {
                     case 1:           // uninitialized
-                        fprintf(
-                                stderr,
-                                "PORTALS4-> rank %u sent to an uninitialized PT! (%u)\n",
+                        fprintf(stderr, "PORTALS4-> rank %u sent to an uninitialized PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                     case 2:           // disabled
-                        fprintf(
-                                stderr,
-                                "PORTALS4-> rank %u sent to a disabled PT! (%u)\n",
+                        fprintf(stderr, "PORTALS4-> rank %u sent to a disabled PT! (%u)\n",
                                 (unsigned)src, (unsigned)hdr->pt_index);
                         abort();
                         break;
                 }
                 if (hdr->type == HDR_TYPE_PUT) {
-                    dm_printf
-                    (
-                     "received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
-                     (unsigned int)hdr->ni, hdr->pt_index,
-                     (unsigned)hdr->hdr_data,
-                     table_entry->priority.head,
-                     table_entry->overflow.head);
+                    dm_printf("received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
+                              (unsigned int)hdr->ni, hdr->pt_index,
+                              (unsigned)hdr->hdr_data,
+                              table_entry->priority.head,
+                              table_entry->overflow.head);
                 } else {
-                    dm_printf
-                    (
-                     "received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
-                     (unsigned int)hdr->ni, hdr->pt_index,
-                     (unsigned)hdr->type, table_entry->priority.head,
-                     table_entry->overflow.head);
+                    dm_printf("received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
+                              (unsigned int)hdr->ni, hdr->pt_index,
+                              (unsigned)hdr->type, table_entry->priority.head,
+                              table_entry->overflow.head);
                 }
                 switch (hdr->ni) {
                     case 0:
@@ -475,9 +463,7 @@ Q_NORETURN
                 PtlInternalAtomicInc(&nit.regs[hdr->ni]
                                      [PTL_SR_DROP_COUNT], 1);
 #ifdef LOUD_DROPS
-                fprintf(
-                        stderr,
-                        "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
+                fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
                         (unsigned)proc_number, (unsigned)hdr->src,
                         (unsigned)hdr->pt_index, (unsigned)hdr->ni);
                 fflush(stderr);
@@ -489,9 +475,7 @@ Q_NORETURN
             }
         } else {                       // uninitialized NI
 #ifdef LOUD_DROPS
-            fprintf(
-                    stderr,
-                    "PORTALS4-> Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
+            fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u sent to an uninitialized NI %u\n",
                     (unsigned)proc_number, (unsigned)hdr->src,
                     (unsigned)hdr->ni);
             fflush(stderr);
@@ -892,8 +876,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         case PTL_SWAP:
         case PTL_CSWAP:
         case PTL_MSWAP:
-            VERBOSE_ERROR(
-                          "SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
+            VERBOSE_ERROR("SWAP/CSWAP/MSWAP invalid optypes for PtlAtomic()\n");
             return PTL_ARG_INVALID;
 
         case PTL_LOR:
@@ -905,8 +888,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR(
-                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
 
                 default:
@@ -1045,19 +1027,13 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR(
-                      "FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(
-                                          get_md_handle), local_get_offset +
-                      length);
+        VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR(
-                      "FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(
-                                          put_md_handle), local_put_offset +
-                      length);
+        VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {
@@ -1133,8 +1109,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
             switch (datatype) {
                 case PTL_DOUBLE:
                 case PTL_FLOAT:
-                    VERBOSE_ERROR(
-                                  "PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
+                    VERBOSE_ERROR("PTL_DOUBLE/PTL_FLOAT invalid datatypes for logical/binary operations\n");
                     return PTL_ARG_INVALID;
 
                 default:
@@ -1273,19 +1248,13 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR(
-                      "Swap saw get_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(
-                                          get_md_handle), local_get_offset +
-                      length);
+        VERBOSE_ERROR("Swap saw get_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
         return PTL_ARG_INVALID;
     }
     if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR(
-                      "Swap saw put_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(
-                                          put_md_handle), local_put_offset +
-                      length);
+        VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n",
+                      PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {

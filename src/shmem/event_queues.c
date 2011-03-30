@@ -103,10 +103,8 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
     const ptl_internal_handle_converter_t eq = { handle };
 
     if (eq.s.selector != HANDLE_EQ_CODE) {
-        VERBOSE_ERROR
-        (
-         "Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n",
-         eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
+        VERBOSE_ERROR("Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n",
+                      eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
         return PTL_ARG_INVALID;
     }
     if ((none_ok == 1) && (handle == PTL_EQ_NONE)) {
@@ -114,10 +112,8 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
     }
     if ((eq.s.ni > 3) || (eq.s.code > nit_limits[eq.s.ni].max_eqs) ||
         (nit.refcount[eq.s.ni] == 0)) {
-        VERBOSE_ERROR
-        (
-         "EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
-         eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
+        VERBOSE_ERROR("EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+                      eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }
     if (eqs[eq.s.ni] == NULL) {
@@ -241,50 +237,50 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
     return PTL_OK;
 } /*}}}*/
 
-#define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/ \
-        e->type = (ptl_event_kind_t)(ie.type); \
-        switch (e->type) { \
-            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
-                e->atomic_operation = (ptl_op_t)ie.atomic_operation; \
-                e->atomic_type      = (ptl_datatype_t)ie.atomic_type; \
-            default: \
-                e->atomic_operation = (ptl_op_t)0; \
-                e->atomic_type      = (ptl_datatype_t)0; \
-        } \
-        switch (e->type) { \
-            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW: \
-            case PTL_EVENT_GET: case PTL_EVENT_PUT: \
-            case PTL_EVENT_PUT_OVERFLOW: \
-            case PTL_EVENT_PT_DISABLED: \
-            case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE: \
-            case PTL_EVENT_PROBE:                                          /* target */ \
-                e->match_bits = ie.match_bits; \
-                e->start      = ie.start; \
-                e->user_ptr   = ie.user_ptr; \
-                e->hdr_data   = ie.hdr_data; \
-                e->rlength    = ie.rlength; \
-                e->mlength    = ie.mlength; \
-                if (ni <= 1) { /* logical */ \
-                    e->initiator.rank = ie.initiator.rank; \
-                } else { /* physical */ \
-                    e->initiator.phys.pid = ie.initiator.phys.pid; \
-                    e->initiator.phys.nid = ie.initiator.phys.nid; \
-                } \
+#define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/                                               \
+        e->type = (ptl_event_kind_t)(ie.type);                                             \
+        switch (e->type) {                                                                 \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:                         \
+                e->atomic_operation = (ptl_op_t)ie.atomic_operation;                       \
+                e->atomic_type      = (ptl_datatype_t)ie.atomic_type;                      \
+            default:                                                                       \
+                e->atomic_operation = (ptl_op_t)0;                                         \
+                e->atomic_type      = (ptl_datatype_t)0;                                   \
+        }                                                                                  \
+        switch (e->type) {                                                                 \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:                         \
+            case PTL_EVENT_GET: case PTL_EVENT_PUT:                                        \
+            case PTL_EVENT_PUT_OVERFLOW:                                                   \
+            case PTL_EVENT_PT_DISABLED:                                                    \
+            case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE:                          \
+            case PTL_EVENT_PROBE:                                          /* target */    \
+                e->match_bits = ie.match_bits;                                             \
+                e->start      = ie.start;                                                  \
+                e->user_ptr   = ie.user_ptr;                                               \
+                e->hdr_data   = ie.hdr_data;                                               \
+                e->rlength    = ie.rlength;                                                \
+                e->mlength    = ie.mlength;                                                \
+                if (ni <= 1) { /* logical */                                               \
+                    e->initiator.rank = ie.initiator.rank;                                 \
+                } else { /* physical */                                                    \
+                    e->initiator.phys.pid = ie.initiator.phys.pid;                         \
+                    e->initiator.phys.nid = ie.initiator.phys.nid;                         \
+                }                                                                          \
                 e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */ \
-                e->initiator.phys.pid = ie.initiator.phys.pid; \
-                e->uid                = ie.uid; \
-                e->jid                = ie.jid; \
-                e->remote_offset      = ie.remote_offset; \
-                e->pt_index           = ie.pt_index; \
-                e->ni_fail_type       = ie.ni_fail_type; \
-                break; \
+                e->initiator.phys.pid = ie.initiator.phys.pid;                             \
+                e->uid                = ie.uid;                                            \
+                e->jid                = ie.jid;                                            \
+                e->remote_offset      = ie.remote_offset;                                  \
+                e->pt_index           = ie.pt_index;                                       \
+                e->ni_fail_type       = ie.ni_fail_type;                                   \
+                break;                                                                     \
             case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
-                e->mlength       = ie.mlength; \
-                e->remote_offset = ie.remote_offset; \
-                e->user_ptr      = ie.user_ptr; \
-                e->ni_fail_type  = ie.ni_fail_type; \
-                break; \
-        } \
+                e->mlength       = ie.mlength;                                             \
+                e->remote_offset = ie.remote_offset;                                       \
+                e->user_ptr      = ie.user_ptr;                                            \
+                e->ni_fail_type  = ie.ni_fail_type;                                        \
+                break;                                                                     \
+        }                                                                                  \
 } while (0) /*}}}*/
 
 int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
@@ -452,13 +448,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
                           PtlInternalAtomicCas32(&eq->head.u, readidx.u,
                                                  newidx.u)) != readidx.u);
             if (found) {
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
-                                                                             rcs
-                                                                             [
-                                                                                 idx
-                                                                             ],
-                                                                             -
-                                                                             1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
             }
         }

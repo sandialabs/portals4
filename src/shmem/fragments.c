@@ -12,8 +12,8 @@
 # include <stdio.h>
 #endif
 
-#include <sys/mman.h>  /* for mprotect */
-#include <unistd.h>  /* for getpagesize */
+#include <sys/mman.h> /* for mprotect */
+#include <unistd.h>   /* for getpagesize */
 
 /* Internal headers */
 #include "ptl_internal_assert.h"
@@ -71,11 +71,8 @@ static void PtlInternalValidateFragmentLists(void)
         count++;
         VALIDPTR(cursor, small);
         if (cursor->size != SMALL_FRAG_PAYLOAD) {
-            fprintf(
-                    stderr,
-                    "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
-                    count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD,
-                    prev);
+            fprintf(stderr, "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
+                    count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD, prev);
         }
         assert(cursor->size == SMALL_FRAG_PAYLOAD);
         prev   = cursor;
@@ -88,11 +85,8 @@ static void PtlInternalValidateFragmentLists(void)
         count++;
         VALIDPTR(cursor, large);
         if (cursor->size != LARGE_FRAG_PAYLOAD) {
-            fprintf(
-                    stderr,
-                    "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
-                    count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD,
-                    prev);
+            fprintf(stderr, "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
+                    count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD, prev);
         }
         assert(cursor->size == LARGE_FRAG_PAYLOAD);
         prev   = cursor;
@@ -120,7 +114,7 @@ void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
     // printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *)(buf + sizeof(NEMESIS_blocking_queue));
-    bptr = (char*)fptr;
+    bptr = (char *)fptr;
     PARANOID_STEP(small_bufstart = (uintptr_t)fptr);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
         fptr->next = small_free_list;
@@ -213,7 +207,7 @@ uint64_t INTERNAL PtlInternalFragmentSize(void *frag)
 
 void INTERNAL PtlInternalFragmentFree(void *data)
 {                                      /*{{{ */
-    fragment_hdr_t *frag = (((fragment_hdr_t*)data) - 1);
+    fragment_hdr_t *frag = (((fragment_hdr_t *)data) - 1);
 
     assert(frag->next == NULL);
     assert((uintptr_t)frag > (uintptr_t)comm_pad);

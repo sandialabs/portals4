@@ -68,9 +68,9 @@ static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
 # ifdef HAVE_CMPXCHG16B
     register unsigned char ret;
     assert(((uintptr_t)addr & 0xf) == 0);
-    __asm__ __volatile__ (
-                          "lock cmpxchg16b %1\n\t" "sete           %0" : "=q" (
-                                                                               ret),
+    __asm__ __volatile__ ("lock cmpxchg16b %1\n\t"
+                          "sete           %0"
+                          : "=q" (ret),
                           "+m"    (*addr)
                           : "a"    (oldval.success),
                           "d"     (oldval.failure),
@@ -89,10 +89,10 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
                                             const ptl_ct_event_t     newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
-    __asm__ __volatile__ (
-                          "1:\n\t" "lock cmpxchg16b %0\n\t" "jne 1b" : "+m" (
-                                                                             *
-                                                                             addr)
+    __asm__ __volatile__ ("1:\n\t"
+                          "lock cmpxchg16b %0\n\t"
+                          "jne 1b"
+                          : "+m" (*addr)
                           : "a"    (addr->success),
                           "d"     (addr->failure),
                           "b"     (newval.success),
@@ -256,10 +256,8 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
     }
     if ((ct.s.ni > 3) || (ct.s.code > nit_limits[ct.s.ni].max_cts) ||
         (nit.refcount[ct.s.ni] == 0)) {
-        VERBOSE_ERROR
-        (
-         "CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
-         ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
+        VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+                      ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }
     if (ct_events[ct.s.ni] == NULL) {
@@ -508,13 +506,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
             ptl_ct_event_t tmpread = *ctes[ctidx];
             if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
-                                                                             rcs
-                                                                             [
-                                                                                 idx
-                                                                             ],
-                                                                             -
-                                                                             1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
             } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
                 if (event != NULL) {
@@ -523,13 +515,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                 if (which != NULL) {
                     *which = (int)ctidx;
                 }
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
-                                                                             rcs
-                                                                             [
-                                                                                 idx
-                                                                             ],
-                                                                             -
-                                                                             1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
             }
         }
@@ -537,13 +523,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
             ptl_ct_event_t tmpread = *ctes[ctidx];
             if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
-                                                                             rcs
-                                                                             [
-                                                                                 idx
-                                                                             ],
-                                                                             -
-                                                                             1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
             } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
                 if (event != NULL) {
@@ -552,13 +532,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                 if (which != NULL) {
                     *which = (int)ctidx;
                 }
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(
-                                                                             rcs
-                                                                             [
-                                                                                 idx
-                                                                             ],
-                                                                             -
-                                                                             1);
+                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
             }
         }
@@ -642,8 +616,8 @@ void INTERNAL PtlInternalCTUnorderedEnqueue(ptl_internal_header_t *restrict hdr)
     const ptl_internal_handle_converter_t ct = { hdr->hdr_data };
     ordered_NEMESIS_queue *restrict       q  = &(ct_event_triggers[hdr->ni][ct.s.code]);
     ordered_NEMESIS_ptr                   cursor, prev;
-    ptl_internal_trigger_t *restrict      t = (ptl_internal_trigger_t*)hdr->user_ptr;
-    ordered_NEMESIS_ptr                   f = { .ptr = (void*)t, .val = t->threshold };
+    ptl_internal_trigger_t *restrict      t = (ptl_internal_trigger_t *)hdr->user_ptr;
+    ordered_NEMESIS_ptr                   f = { .ptr = (void *)t, .val = t->threshold };
 
     PtlInternalCTPullTriggers((ptl_handle_ct_t)(hdr->hdr_data));
     PtlInternalAtomicRead128(&cursor, &q->head);
