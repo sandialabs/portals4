@@ -8,6 +8,7 @@
 #include "data.h"
 
 unsigned int seed;
+unsigned int physical = 0;
 unsigned int count = 1;
 unsigned int max_length = 32;
 int fetch;
@@ -338,11 +339,12 @@ void usage()
 	printf("Generate random portals4 test cases for the PtlAtomic operation to standard out.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("	-h | --help			print this message\n");
-	printf("	-f | --fetch			generate fetch tests\n");
-	printf("	-s | --seed		seed	set random number seed (default time())\n");
-	printf("	-c | --count		count	set number of test cases (default 1)\n");
-	printf("	-m | --max_length	length	set max message length (>= 8) (default 32)\n");
+	printf("	-h | --help			 print this message\n");
+	printf("	-f | --fetch			 generate fetch tests\n");
+	printf("	-s | --seed		seed	 set random number seed (default time())\n");
+	printf("	-p | --physical		physical use physical NI (logical NI)\n");
+	printf("	-c | --count		count	  set number of test cases (default 1)\n");
+	printf("	-m | --max_length	length	  set max message length (>= 8) (default 32)\n");
 	printf("\n");
 }
 
@@ -350,11 +352,12 @@ int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
-	static char *opt_string = "hfs:c:m:";
+	static char *opt_string = "hfps:c:m:";
 	static struct option long_options[] = {
 		{"help", 0, 0, 'h'},
 		{"fetch", 0, 0, 'f'},
 		{"seed", 1, 0, 's'},
+		{"physical", 0, 0, 'p'},
 		{"count", 1, 0, 'c'},
 		{"max_length", 1, 0, 'm'},
 		{0, 0, 0, 0}
@@ -377,6 +380,10 @@ int arg_process(int argc, char *argv[])
 
 		case 's':
 			seed = strtol(optarg, NULL, 0);
+			break;
+
+		case 'p':
+			physical = 1;
 			break;
 
 		case 'c':
@@ -467,11 +474,9 @@ int main(int argc, char *argv[])
 			ptl_op, atom_op_name[op], atom_type[type].name, length);
 		printf("    <ptl>\n");
 
-		if (match)
-			printf("      <ptl_ni ni_opt=\"MATCH PHYSICAL\">\n");
-		else
-			printf("      <ptl_ni ni_opt=\"NO_MATCH PHYSICAL\">\n");
-
+		printf("      <ptl_ni ni_opt=\"%s %s\">\n",
+	                        match ? "MATCH" : "NO_MATCH",
+				physical ? "PHYSICAL" : "LOGICAL");
 		printf("        <ptl_pt>\n");
 
 		/* setup me/le */
@@ -490,10 +495,10 @@ int main(int argc, char *argv[])
 				atom_type[type].name, datatype_str(type, din));
 
 		if (match)
-			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "\"/>\n",
+			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "target_id=\"SELF\"/>\n",
 				ptl_op, atom_op_name[op], atom_type[type].name, length, match_bits);
 		else
-			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" />\n",
+			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" target_id=\"SELF\"/>\n",
 				ptl_op, atom_op_name[op], atom_type[type].name, length);
 
 		/* TODO replace with an event */
@@ -510,10 +515,10 @@ int main(int argc, char *argv[])
 		}
 
 		/* check to see that dout data has not changed */
-                printf("              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
-                        length, atom_type[type].name, datatype_str(type, dout));
-                printf("              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
-                        atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
+	        printf("              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
+	                length, atom_type[type].name, datatype_str(type, dout));
+	        printf("              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
+	                atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
 
 		printf("            </ptl_md>\n");
 
