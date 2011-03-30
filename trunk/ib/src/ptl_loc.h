@@ -57,6 +57,7 @@ typedef uint64_t	__be64;
 #include "ptl_obj.h"
 #include "ptl_maps.h"
 #include "ptl_pt.h"
+#include "ptl_rt.h"
 #include "ptl_ni.h"
 #include "ptl_mr.h"
 #include "ptl_md.h"
