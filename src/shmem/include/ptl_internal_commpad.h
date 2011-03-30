@@ -62,7 +62,7 @@ typedef struct {
     unsigned char                   ni               : 2;
     uint8_t                         atomic_operation : 5;
     uint8_t                         atomic_datatype  : 4;
-    char                            data[];
+    uint8_t                         data[];
 } ptl_internal_header_t;
 
 typedef struct {

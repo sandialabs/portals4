@@ -61,24 +61,22 @@ static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
 #endif
 
 /* Static functions */
-static void PtlInternalPerformDelivery(const unsigned char  type,
-                                       void *const restrict local_data,
-                                       void *const restrict message_data,
-                                       size_t               nbytes,
-                                       ptl_internal_header_t *const restrict
-                                       hdr);
-static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t eq_handle,
-                                          const ptl_handle_ct_t ct_handle,
-                                          const unsigned char   type,
-                                          const unsigned int    options,
-                                          const uint64_t        mlength,
-                                          const uintptr_t       start,
-                                          const int             overflow,
-                                          void *const           user_ptr,
-                                          ptl_internal_header_t *const
-                                          restrict              hdr);
+static void PtlInternalPerformDelivery(const uint_fast8_t                    type,
+                                       void *const restrict                  local_data,
+                                       uint8_t *const restrict               message_data,
+                                       const size_t                          nbytes,
+                                       ptl_internal_header_t *const restrict hdr);
+static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 eq_handle,
+                                          const ptl_handle_ct_t                 ct_handle,
+                                          const uint_fast8_t                    type,
+                                          const unsigned int                    options,
+                                          const uint_fast64_t                   mlength,
+                                          const uintptr_t                       start,
+                                          const uint_fast8_t                    overflow,
+                                          void *const                           user_ptr,
+                                          ptl_internal_header_t *const restrict hdr);
 
-void INTERNAL PtlInternalLENISetup(unsigned int ni,
+void INTERNAL PtlInternalLENISetup(uint_fast8_t ni,
                                    ptl_size_t   limit)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
@@ -93,7 +91,7 @@ void INTERNAL PtlInternalLENISetup(unsigned int ni,
     }
 }                                      /*}}} */
 
-void INTERNAL PtlInternalLENITeardown(unsigned int ni)
+void INTERNAL PtlInternalLENITeardown(uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_internal_le_t *tmp;
 
@@ -193,8 +191,7 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
     assert(les[ni.s.ni] != NULL);
     leh.s.ni = ni.s.ni;
     /* find an LE handle */
-    for (uint32_t offset = 0; offset < nit_limits[ni.s.ni].max_entries;
-         ++offset) {
+    for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries; ++offset) {
         if (les[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32
                     (&(les[ni.s.ni][offset].status), LE_FREE,
@@ -319,7 +316,7 @@ permission_violation:
 #ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                         if (cur->buffered_data != NULL) {
                             PtlInternalPerformDelivery(cur->hdr.type,
-                                                       (char *)le->start +
+                                                       (uint8_t *)le->start +
                                                        cur->hdr.dest_offset,
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
@@ -331,10 +328,8 @@ permission_violation:
                                                               cur->hdr.type,
                                                               le->options,
                                                               mlength,
-                                                              (uintptr_t)
-                                                              le->start +
-                                                              cur->hdr.
-                                                              dest_offset, 0,
+                                                              (uintptr_t)le->start + cur->hdr.dest_offset,
+                                                              0,
                                                               user_ptr,
                                                               &(cur->hdr));
                             }
@@ -601,17 +596,16 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
     return PTL_OK;
 }                                      /*}}} */
 
-ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
-                                        ptl_internal_header_t *restrict
-                                        hdr)
+ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
+                                        ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
     enum {PRIORITY, OVERFLOW} foundin = PRIORITY;
     ptl_internal_appendLE_t *entry    = NULL;
     ptl_handle_eq_t          tEQ      = t->EQ;
     ptl_le_t                 le;
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
-    char                     need_more_data = 0;
-    char                     need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
+    uint_fast8_t             need_more_data = 0;
+    uint_fast8_t             need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
 
     PtlInternalPAPIStartC();
     assert(t);
@@ -627,7 +621,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
         hdr->entry = entry;
     } else {
         entry = hdr->entry;
-        le    = *(ptl_le_t *)(((char *)entry) +
+        le    = *(ptl_le_t *)(((uint8_t *)entry) +
                               offsetof(ptl_internal_le_t, visible));
         goto check_lengths;
     }
@@ -635,7 +629,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict t,
         /*********************************************************
         * There is an LE present, and 'entry' points to it *
         *********************************************************/
-        le = *(ptl_le_t *)(((char *)entry) +
+        le = *(ptl_le_t *)(((uint8_t *)entry) +
                            offsetof(ptl_internal_le_t, visible));
         assert(les[hdr->ni][entry->le_handle.s.code].status != LE_FREE);
         // check the permissions on the LE
@@ -702,7 +696,7 @@ permission_violation:
                 ptl_internal_event_t e;
                 PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
                 e.type  = PTL_EVENT_AUTO_UNLINK;
-                e.start = (char *)le.start + hdr->dest_offset;
+                e.start = (uint8_t *)le.start + hdr->dest_offset;
                 PtlInternalEQPush(tEQ, &e);
             }
         }
@@ -761,10 +755,10 @@ check_lengths:
          * |     `------------------------> le.start + hdr->dest_offset
          * `------------------------------> le.start
          */
-        void *report_this_start = (char *)le.start + hdr->dest_offset;
+        void *report_this_start = (uint8_t *)le.start + hdr->dest_offset;
         void *effective_start   =
-            (char *)le.start + hdr->dest_offset + (msg_mlength -
-                                                   hdr->remaining);
+            (uint8_t *)le.start + hdr->dest_offset + (msg_mlength -
+                                                      hdr->remaining);
         if (foundin == PRIORITY) {
             if (fragment_mlength > 0) {
                 PtlInternalPerformDelivery(hdr->type, effective_start,
@@ -836,10 +830,10 @@ check_lengths:
     return 0;                          // silent ACK
 }                                      /*}}} */
 
-static void PtlInternalPerformDelivery(const unsigned char             type,
+static void PtlInternalPerformDelivery(const uint_fast8_t              type,
                                        void *const restrict            local_data,
-                                       void *const restrict            message_data,
-                                       size_t                          nbytes,
+                                       uint8_t *const restrict         message_data,
+                                       const size_t                    nbytes,
                                        ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
     switch (type & HDR_TYPE_BASICMASK) {
@@ -857,8 +851,8 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
             break;
         case HDR_TYPE_SWAP:
             PtlInternalPerformAtomicArg(local_data,
-                                        ((uint8_t *)message_data) + 32,
-                                        (uint8_t *)message_data, nbytes,
+                                        message_data + 32,
+                                        message_data, nbytes,
                                         (ptl_op_t)hdr->atomic_operation,
                                         (ptl_datatype_t)hdr->
                                         atomic_datatype);
@@ -871,11 +865,11 @@ static void PtlInternalPerformDelivery(const unsigned char             type,
 
 static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 eq_handle,
                                           const ptl_handle_ct_t                 ct_handle,
-                                          const unsigned char                   type,
+                                          const uint_fast8_t                    type,
                                           const unsigned int                    options,
-                                          const uint64_t                        mlength,
+                                          const uint_fast64_t                   mlength,
                                           const uintptr_t                       start,
-                                          const int                             overflow,
+                                          const uint_fast8_t                    overflow,
                                           void *const                           user_ptr,
                                           ptl_internal_header_t *const restrict hdr)
 {                                      /*{{{ */
