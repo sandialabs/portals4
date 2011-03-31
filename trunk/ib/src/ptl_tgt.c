@@ -244,6 +244,10 @@ static int request_drop(xt_t *xt)
 	return STATE_TGT_COMM_EVENT;
 }
 
+/*
+ * check_match
+ *	determine if ME matches XT request info.
+ */
 static int check_match(xt_t *xt)
 {
 	ni_t *ni = to_ni(xt);
@@ -459,7 +463,7 @@ static int tgt_get_length(xt_t *xt)
 	case OP_FETCH:
 	case OP_SWAP:
 		return STATE_TGT_DATA_OUT;
-		
+	
 	default:
 		return STATE_TGT_ERROR;
 	}
@@ -601,12 +605,13 @@ static int tgt_data_out(xt_t *xt)
 	if (xt->operation == OP_SWAP) {
 		if (xt->atom_op == PTL_SWAP) {
 			return STATE_TGT_DATA_IN;
-		} else if (xt->atom_op >= PTL_CSWAP && xt->atom_op <= PTL_MSWAP) {
+		} else if (xt->atom_op >= PTL_CSWAP &&
+			   xt->atom_op <= PTL_MSWAP) {
 			return STATE_TGT_SWAP_DATA_IN;
 		} else {
 			WARN();
 			return STATE_TGT_ERROR;
-	
+
 		}
 	}
 
@@ -618,7 +623,7 @@ static int tgt_data_out(xt_t *xt)
 		me->offset += xt->mlength;
 
 	/*
-	 * Unlink if required to prevent further use of this 
+	 * Unlink if required to prevent further use of this
 	 * ME/LE.
 	 */
 	if (me->options & PTL_ME_USE_ONCE)
@@ -674,7 +679,10 @@ static int check_conn(xt_t *xt)
 	return ret;
 }
 
-
+/*
+ * tgt_rdma
+ *	initiate as many RDMA requests as possible for a XT
+ */
 static int tgt_rdma(xt_t *xt)
 {
 	int err;
@@ -720,6 +728,10 @@ static int tgt_rdma(xt_t *xt)
 	return STATE_TGT_RDMA;
 }
 
+/*
+ * tgt_rdma_desc
+ *	initiate read of indirect descriptors for initiator IOV
+ */
 static int tgt_rdma_desc(xt_t *xt)
 {
 	data_t *data;
@@ -784,6 +796,10 @@ done:
 	return next;
 }
 
+/*
+ * tgt_rdma_init_loc_off
+ *	initialize local offsets into ME/LE for RDMA
+ */
 static int tgt_rdma_init_loc_off(xt_t *xt)
 {
 	me_t *me = xt->me;
@@ -833,6 +849,10 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 	return PTL_OK;
 }
 
+/*
+ * tgt_rdma_wait_desc
+ *	indirect descriptor RDMA has completed, initialize for common RDMA code
+ */
 static int tgt_rdma_wait_desc(xt_t *xt)
 {
 	data_t *data;
@@ -848,12 +868,16 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 		printf("Wait Desc:cur_rem_sge(%p), num_rem_sge(%d)\n",
 			xt->cur_rem_sge, (int)xt->num_rem_sge);
 
-	if (tgt_rdma_init_loc_off(xt)) 
+	if (tgt_rdma_init_loc_off(xt))
 		return STATE_TGT_ERROR;
 
 	return STATE_TGT_RDMA;
 }
 
+/*
+ * tgt_data_in
+ *	handle request for data from initiator to target
+ */
 static int tgt_data_in(xt_t *xt)
 {
 	int err;
@@ -881,7 +905,7 @@ static int tgt_data_in(xt_t *xt)
 			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
 				xt->cur_rem_sge, (int)xt->num_rem_sge);
 
-		if (tgt_rdma_init_loc_off(xt)) 
+		if (tgt_rdma_init_loc_off(xt))
 			return STATE_TGT_ERROR;
 
 		xt->rdma_dir = DATA_DIR_IN;
@@ -907,7 +931,7 @@ static int tgt_data_in(xt_t *xt)
 		me->offset += xt->mlength;
 
 	/*
-	 * Unlink if required to prevent further use of this 
+	 * Unlink if required to prevent further use of this
 	 * ME/LE.
 	 */
 	if (me->options & PTL_ME_USE_ONCE)
@@ -919,6 +943,10 @@ static int tgt_data_in(xt_t *xt)
 	return next;
 }
 
+/*
+ * tgt_atomic_data_in
+ *	handle atomic operation
+ */
 static int tgt_atomic_data_in(xt_t *xt)
 {
 	int err;
@@ -948,6 +976,10 @@ static int tgt_atomic_data_in(xt_t *xt)
 	return STATE_TGT_COMM_EVENT;
 }
 
+/*
+ * tgt_swap_data_in
+ *	handle swap operation
+ */
 static int tgt_swap_data_in(xt_t *xt)
 {
 	int err;
@@ -1384,7 +1416,7 @@ static int tgt_cleanup(xt_t *xt)
 		free(xt->indir_sge);
 		xt->indir_sge = NULL;
 	}
-	
+
 	/* tgt responsible to cleanup all received buffers */
 	if (xt->recv_buf) {
 		if (debug)
@@ -1402,7 +1434,7 @@ static int tgt_cleanup(xt_t *xt)
 		if (make_target_event(xt, xt->pt->eq,
 				      PTL_EVENT_PT_DISABLED, NULL))
 			WARN();
-		
+	
 	} else
 		pthread_spin_unlock(&xt->pt->obj_lock);
 
