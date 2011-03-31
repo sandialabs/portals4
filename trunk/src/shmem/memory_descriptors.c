@@ -30,8 +30,8 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 #define MD_IN_USE 1
 
 typedef struct {
-    volatile uint32_t in_use;   // 0=free, 1=in_use
     uint_fast32_t     refcount;
+    volatile uint32_t in_use;   // 0=free, 1=in_use
     uint8_t           pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
     ptl_md_t          visible;
     uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t))];
@@ -47,8 +47,17 @@ void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
 #ifndef NDEBUG
     if (sizeof(ptl_internal_md_t) != CACHELINE_WIDTH) {
         fprintf(stderr, "sizeof(ptl_internal_md_t) (%zu) != CACHELINE_WIDTH (%u)\n"
-                        "sizeof(ptl_md_t) = (%zu)\n",
-                sizeof(ptl_internal_md_t), CACHELINE_WIDTH, sizeof(ptl_md_t));
+                        "refcount offset: %zu (%zu)\n"
+                        "in_use offset:   %zu (%zu)\n"
+                        "pad1 offset:     %zu (%zu)\n"
+                        "visible offset:  %zu (%zu)\n"
+                        "pad2 offset:     %zu (%zu)\n",
+                sizeof(ptl_internal_md_t), CACHELINE_WIDTH,
+                offsetof(ptl_internal_md_t, refcount), sizeof(uint_fast32_t),
+                offsetof(ptl_internal_md_t, in_use), sizeof(volatile uint32_t),
+                offsetof(ptl_internal_md_t, pad1), 16 - sizeof(uint32_t) - sizeof(uint_fast32_t),
+                offsetof(ptl_internal_md_t, visible), sizeof(ptl_md_t),
+                offsetof(ptl_internal_md_t, pad2), CACHELINE_WIDTH - (16 + sizeof(ptl_md_t)));
         abort();
     }
 #endif
