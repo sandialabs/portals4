@@ -528,6 +528,7 @@ permission_violation:
             }
             t->overflow.tail = Qentry;
             break;
+#if 0
         case PTL_PROBE_ONLY:
             if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
@@ -636,8 +637,8 @@ permission_violationPO:
                 }
             }
             break;
+#endif  /* if 0 */
     }
-done_appending:
     PtlInternalValidateMEPT(t);
     PTL_LOCK_UNLOCK(t->lock);
 done_appending_unlocked:
@@ -675,77 +676,62 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
     t = &(nit.tables[me.s.ni][mes[me.s.ni][me.s.code].pt_index]);
     PTL_LOCK_LOCK(t->lock);
     PtlInternalValidateMEPT(t);
-    switch (mes[me.s.ni][me.s.code].ptl_list) {
-        case PTL_PRIORITY_LIST:
-        {
-            ptl_internal_appendME_t *dq =
-                (ptl_internal_appendME_t *)(t->priority.head);
-            if (dq == dq_target) {
-                if (dq->next != NULL) {
-                    t->priority.head = dq->next;
-                } else {
-                    t->priority.head = t->priority.tail = NULL;
-                }
-                dq->next = NULL;
+    if (mes[me.s.ni][me.s.code].ptl_list == PTL_PRIORITY_LIST) {
+        ptl_internal_appendME_t *dq = (ptl_internal_appendME_t *)(t->priority.head);
+        if (dq == dq_target) {
+            if (dq->next != NULL) {
+                t->priority.head = dq->next;
             } else {
-                ptl_internal_appendME_t *prev = NULL;
-                while (dq != dq_target && dq != NULL) {
-                    prev = dq;
-                    dq   = dq->next;
-                }
-                if (dq == NULL) {
-                    fprintf(stderr,
-                            "PORTALS4-> attempted to link an un-queued ME\n");
-                    return PTL_FAIL;
-                }
-                prev->next = dq->next;
-                if (dq->next == NULL) {
-                    assert(t->priority.tail == dq);
-                    t->priority.tail = prev;
-                } else {
-                    dq->next = NULL;
-                }
+                t->priority.head = t->priority.tail = NULL;
             }
-            break;
-        }
-        case PTL_OVERFLOW:
-        {
-            ptl_internal_appendME_t *dq =
-                (ptl_internal_appendME_t *)(t->overflow.head);
-            if (dq == &(mes[me.s.ni][me.s.code].Qentry)) {
-                if (dq->next != NULL) {
-                    t->overflow.head = dq->next;
-                } else {
-                    t->overflow.head = t->overflow.tail = NULL;
-                }
-                dq->next = NULL;
+            dq->next = NULL;
+        } else {
+            ptl_internal_appendME_t *prev = NULL;
+            while (dq != dq_target && dq != NULL) {
+                prev = dq;
+                dq   = dq->next;
+            }
+            if (dq == NULL) {
+                fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                return PTL_FAIL;
+            }
+            prev->next = dq->next;
+            if (dq->next == NULL) {
+                assert(t->priority.tail == dq);
+                t->priority.tail = prev;
             } else {
-                ptl_internal_appendME_t *prev = NULL;
-                while (dq != &(mes[me.s.ni][me.s.code].Qentry) && dq !=
-                       NULL) {
-                    prev = dq;
-                    dq   = dq->next;
-                }
-                if (dq == NULL) {
-                    fprintf(stderr,
-                            "PORTALS4-> attempted to link an un-queued ME\n");
-                    return PTL_FAIL;
-                }
-                prev->next = dq->next;
-                if (dq->next == NULL) {
-                    assert(t->overflow.tail == dq);
-                    t->overflow.tail = prev;
-                } else {
-                    dq->next = NULL;
-                }
+                dq->next = NULL;
             }
-            break;
         }
-        case PTL_PROBE_ONLY:
-            fprintf(stderr, "how on earth did this happen?\n");
-            abort();
-            break;
+    } else {     /* PTL_OVERFLOW */
+        ptl_internal_appendME_t *dq = (ptl_internal_appendME_t *)(t->overflow.head);
+        if (dq == &(mes[me.s.ni][me.s.code].Qentry)) {
+            if (dq->next != NULL) {
+                t->overflow.head = dq->next;
+            } else {
+                t->overflow.head = t->overflow.tail = NULL;
+            }
+            dq->next = NULL;
+        } else {
+            ptl_internal_appendME_t *prev = NULL;
+            while (dq != &(mes[me.s.ni][me.s.code].Qentry) && dq != NULL) {
+                prev = dq;
+                dq   = dq->next;
+            }
+            if (dq == NULL) {
+                fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                return PTL_FAIL;
+            }
+            prev->next = dq->next;
+            if (dq->next == NULL) {
+                assert(t->overflow.tail == dq);
+                t->overflow.tail = prev;
+            } else {
+                dq->next = NULL;
+            }
+        }
     }
+
     PtlInternalValidateMEPT(t);
     PTL_LOCK_UNLOCK(t->lock);
     assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
