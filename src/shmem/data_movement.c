@@ -291,10 +291,14 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
             if (mdptr != NULL) {
                 int ct_enabled = 0;
-                if ((basictype == HDR_TYPE_PUT) && (acktype != 0)) {
-                    ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
-                } else {
-                    ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
+                switch(basictype) {
+                    case HDR_TYPE_PUT: case HDR_TYPE_ATOMIC:
+                        if (acktype != 0) {
+                            ct_enabled = md_opts & PTL_MD_EVENT_CT_ACK;
+                        }
+                        break;
+                    default:
+                        ct_enabled = md_opts & PTL_MD_EVENT_CT_REPLY;
                 }
                 if ((md_ct != PTL_CT_NONE) && (ct_enabled != 0)) {
                     if ((md_opts & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -310,6 +314,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     ptl_internal_event_t e;
                     switch (basictype) {
                         case HDR_TYPE_PUT:
+                        case HDR_TYPE_ATOMIC:
                             e.type = PTL_EVENT_ACK;
                             break;
                         default:
