@@ -44,7 +44,8 @@ int send_message(buf_t *buf)
  *	copy length bytes to io vector starting at offset offset
  *	from src to an array of io vectors of length num_iov
  */
-int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length)
+int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+		ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i;
 	ptl_size_t iov_offset = 0;
