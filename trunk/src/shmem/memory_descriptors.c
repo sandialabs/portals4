@@ -32,9 +32,9 @@ const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
 typedef struct {
     volatile uint32_t in_use;   // 0=free, 1=in_use
     uint_fast32_t     refcount;
-    uint8_t           pad1[8];
+    uint8_t           pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
     ptl_md_t          visible;
-    uint8_t           pad2[CACHELINE_WIDTH - (8 + sizeof(uint_fast32_t) + sizeof(uint32_t) + sizeof(ptl_md_t))];
+    uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t))];
 } ptl_internal_md_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
@@ -44,7 +44,14 @@ void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
 {                                      /*{{{ */
     ptl_internal_md_t *tmp;
 
-    assert(sizeof(ptl_internal_md_t) == CACHELINE_WIDTH);
+#ifndef NDEBUG
+    if (sizeof(ptl_internal_md_t) != CACHELINE_WIDTH) {
+        fprintf(stderr, "sizeof(ptl_internal_md_t) (%zu) != CACHELINE_WIDTH (%u)\n"
+                        "sizeof(ptl_md_t) = (%zu)\n",
+                sizeof(ptl_internal_md_t), CACHELINE_WIDTH, sizeof(ptl_md_t));
+        abort();
+    }
+#endif
     while ((tmp = PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
                                           (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
