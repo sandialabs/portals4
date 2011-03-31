@@ -381,6 +381,7 @@ permission_violation:
             }
             t->overflow.tail = Qentry;
             break;
+#if 0
         case PTL_PROBE_ONLY:
             if (t->buffered_headers.head != NULL) {
                 ptl_internal_buffered_header_t *cur =
@@ -459,6 +460,7 @@ permission_violationPO:
                 }
             }
             break;
+#endif  /* if 0 */
     }
 done_appending:
     PTL_LOCK_UNLOCK(t->lock);
@@ -494,75 +496,62 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     PTL_LOCK_LOCK(t->lock);
-    switch (les[le.s.ni][le.s.code].ptl_list) {
-        case PTL_PRIORITY_LIST:
-        {
-            ptl_internal_appendLE_t *dq =
-                (ptl_internal_appendLE_t *)(t->priority.head);
-            if (dq == dq_target) {
-                if (dq->next != NULL) {
-                    t->priority.head = dq->next;
-                } else {
-                    t->priority.head = t->priority.tail = NULL;
-                }
-                dq->next = NULL;
+    if (les[le.s.ni][le.s.code].ptl_list == PTL_PRIORITY_LIST) {
+        ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t *)(t->priority.head);
+        if (dq == dq_target) {
+            if (dq->next != NULL) {
+                t->priority.head = dq->next;
             } else {
-                ptl_internal_appendLE_t *prev = NULL;
-                while (dq != dq_target && dq != NULL) {
-                    prev = dq;
-                    dq   = dq->next;
-                }
-                if (dq == NULL) {
-                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
-                    return PTL_FAIL;
-                }
-                prev->next = dq->next;
-                if (dq->next == NULL) {
-                    assert(t->priority.tail == dq);
-                    t->priority.tail = prev;
-                } else {
-                    dq->next = NULL;
-                }
+                t->priority.head = t->priority.tail = NULL;
             }
-            break;
-        }
-        case PTL_OVERFLOW:
-        {
-            ptl_internal_appendLE_t *dq =
-                (ptl_internal_appendLE_t *)(t->overflow.head);
-            if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
-                if (dq->next != NULL) {
-                    t->overflow.head = dq->next;
-                } else {
-                    t->overflow.head = t->overflow.tail = NULL;
-                }
-                dq->next = NULL;
+            dq->next = NULL;
+        } else {
+            ptl_internal_appendLE_t *prev = NULL;
+            while (dq != dq_target && dq != NULL) {
+                prev = dq;
+                dq   = dq->next;
+            }
+            if (dq == NULL) {
+                fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
+                return PTL_FAIL;
+            }
+            prev->next = dq->next;
+            if (dq->next == NULL) {
+                assert(t->priority.tail == dq);
+                t->priority.tail = prev;
             } else {
-                ptl_internal_appendLE_t *prev = NULL;
-                while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq !=
-                       NULL) {
-                    prev = dq;
-                    dq   = dq->next;
-                }
-                if (dq == NULL) {
-                    fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
-                    return PTL_FAIL;
-                }
-                prev->next = dq->next;
-                if (dq->next == NULL) {
-                    assert(t->overflow.tail == dq);
-                    t->overflow.tail = prev;
-                } else {
-                    dq->next = NULL;
-                }
+                dq->next = NULL;
             }
-            break;
         }
-        case PTL_PROBE_ONLY:
-            fprintf(stderr, "PORTALS4-> how on earth did this happen?\n");
-            abort();
-            break;
+    } else {     /* PTL_OVERFLOW */
+        ptl_internal_appendLE_t *dq = (ptl_internal_appendLE_t *)(t->overflow.head);
+        if (dq == &(les[le.s.ni][le.s.code].Qentry)) {
+            if (dq->next != NULL) {
+                t->overflow.head = dq->next;
+            } else {
+                t->overflow.head = t->overflow.tail = NULL;
+            }
+            dq->next = NULL;
+        } else {
+            ptl_internal_appendLE_t *prev = NULL;
+            while (dq != &(les[le.s.ni][le.s.code].Qentry) && dq != NULL) {
+                prev = dq;
+                dq   = dq->next;
+            }
+            if (dq == NULL) {
+                fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued LE\n");
+                return PTL_FAIL;
+            }
+            prev->next = dq->next;
+            if (dq->next == NULL) {
+                assert(t->overflow.tail == dq);
+                t->overflow.tail = prev;
+            } else {
+                dq->next = NULL;
+            }
+        }
     }
+
     PTL_LOCK_UNLOCK(t->lock);
     switch (PtlInternalAtomicCas32
                 (&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {

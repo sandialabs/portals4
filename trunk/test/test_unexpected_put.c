@@ -11,32 +11,33 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-# define ENTRY_T        ptl_me_t
-# define HANDLE_T       ptl_handle_me_t
-# define NI_TYPE        PTL_NI_MATCHING
-# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-# define APPEND         PtlMEAppend
-# define UNLINK         PtlMEUnlink
+# define ENTRY_T  ptl_me_t
+# define HANDLE_T ptl_handle_me_t
+# define NI_TYPE  PTL_NI_MATCHING
+# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND   PtlMEAppend
+# define UNLINK   PtlMEUnlink
 #else
-# define ENTRY_T        ptl_le_t
-# define HANDLE_T       ptl_handle_le_t
-# define NI_TYPE        PTL_NI_NO_MATCHING
-# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-# define APPEND         PtlLEAppend
-# define UNLINK         PtlLEUnlink
+# define ENTRY_T  ptl_le_t
+# define HANDLE_T ptl_handle_le_t
+# define NI_TYPE  PTL_NI_NO_MATCHING
+# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND   PtlLEAppend
+# define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 static int verb = 0;
 
-static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
-                      size_t expected)
+static size_t emptyEQ(ptl_handle_eq_t eq_handle,
+                      ptl_process_t   myself,
+                      size_t          expected)
 {
     size_t events = 0;
 
     do {
         ptl_event_t event;
-        int retval;
+        int         retval;
         if (events == expected) {
             retval = PtlEQGet(eq_handle, &event);
         } else {
@@ -48,101 +49,66 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
                 if (verb) {
                     printf("%i ", (int)myself.rank);
                     switch (event.type) {
-                        case PTL_EVENT_GET:
-                            printf("GET: ");
-                            break;
-                        case PTL_EVENT_PUT:
-                            printf("PUT: ");
-                            break;
-                        case PTL_EVENT_PUT_OVERFLOW:
-                            printf("PUT-OVERFLOW: ");
-                            break;
-                        case PTL_EVENT_ATOMIC:
-                            printf("ATOMIC: ");
-                            break;
-                        case PTL_EVENT_ATOMIC_OVERFLOW:
-                            printf("ATOMIC-OVERFLOW: ");
-                            break;
-                        case PTL_EVENT_REPLY:
-                            printf("REPLY: ");
-                            break;
-                        case PTL_EVENT_SEND:
-                            printf("SEND: ");
-                            break;
-                        case PTL_EVENT_ACK:
-                            printf("ACK: ");
-                            break;
-                        case PTL_EVENT_PT_DISABLED:
-                            printf("PT-DISABLED: ");
-                            break;
-                        case PTL_EVENT_AUTO_UNLINK:
-                            printf("UNLINK: ");
-                            break;
-                        case PTL_EVENT_AUTO_FREE:
-                            printf("FREE: ");
-                            break;
-                        case PTL_EVENT_PROBE:
-                            printf("PROBE: ");
-                            break;
+                        case PTL_EVENT_GET:             printf("GET: "); break;
+                        case PTL_EVENT_PUT:             printf("PUT: "); break;
+                        case PTL_EVENT_PUT_OVERFLOW:    printf("PUT-OVERFLOW: "); break;
+                        case PTL_EVENT_ATOMIC:          printf("ATOMIC: "); break;
+                        case PTL_EVENT_ATOMIC_OVERFLOW: printf("ATOMIC-OVERFLOW: "); break;
+                        case PTL_EVENT_REPLY:           printf("REPLY: "); break;
+                        case PTL_EVENT_SEND:            printf("SEND: "); break;
+                        case PTL_EVENT_ACK:             printf("ACK: "); break;
+                        case PTL_EVENT_PT_DISABLED:     printf("PT-DISABLED: "); break;
+                        case PTL_EVENT_AUTO_UNLINK:     printf("UNLINK: "); break;
+                        case PTL_EVENT_AUTO_FREE:       printf("FREE: "); break;
+                        case PTL_EVENT_SEARCH:          printf("SEARCH: "); break;
                     }
                 }
                 switch (event.type) {
-                    case PTL_EVENT_PROBE:
+                    case PTL_EVENT_SEARCH:
                     case PTL_EVENT_GET:
                     case PTL_EVENT_PUT:
                     case PTL_EVENT_PUT_OVERFLOW:
                         /* target */
                         if (verb) {
-                            printf("initiator.rank(%u), ",
-                                   (unsigned)event.initiator.rank);
+                            printf("initiator.rank(%u), ", (unsigned)event.initiator.rank);
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
                             printf("uid(%u), ", event.uid);
                             printf("jid(%u), ", event.jid);
-                            printf("match_bits(%u), ",
-                                   (unsigned)event.match_bits);
+                            printf("match_bits(%u), ", (unsigned)event.match_bits);
                             printf("rlength(%u), ", (unsigned)event.rlength);
                             printf("mlength(%u), ", (unsigned)event.mlength);
-                            printf("remote_offset(%u), ",
-                                   (unsigned)event.remote_offset);
+                            printf("remote_offset(%u), ", (unsigned)event.remote_offset);
                             printf("start(%p), ", event.start);
                             printf("user_ptr(%p), ", event.user_ptr);
                             printf("hdr_data(%u), ", (unsigned)event.hdr_data);
-                            printf("ni_fail_type(%u)",
-                                   (unsigned)event.ni_fail_type);
+                            printf("ni_fail_type(%u)", (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_ATOMIC:
                     case PTL_EVENT_ATOMIC_OVERFLOW:
                         /* target */
                         if (verb) {
-                            printf("initiator.rank(%u), ",
-                                   (unsigned)event.initiator.rank);
+                            printf("initiator.rank(%u), ", (unsigned)event.initiator.rank);
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
                             printf("uid(%u), ", event.uid);
                             printf("jid(%u), ", event.jid);
-                            printf("match_bits(%u), ",
-                                   (unsigned)event.match_bits);
+                            printf("match_bits(%u), ", (unsigned)event.match_bits);
                             printf("rlength(%u), ", (unsigned)event.rlength);
                             printf("mlength(%u), ", (unsigned)event.mlength);
-                            printf("remote_offset(%u), ",
-                                   (unsigned)event.remote_offset);
+                            printf("remote_offset(%u), ", (unsigned)event.remote_offset);
                             printf("start(%p), ", event.start);
                             printf("user_ptr(%p), ", event.user_ptr);
                             printf("hdr_data(%u), ", (unsigned)event.hdr_data);
-                            printf("ni_fail_type(%u), ",
-                                   (unsigned)event.ni_fail_type);
-                            printf("atomic_operation(%u), ",
-                                   (unsigned)event.atomic_operation);
-                            printf("atomic_type(%u)",
-                                   (unsigned)event.atomic_type);
+                            printf("ni_fail_type(%u), ", (unsigned)event.ni_fail_type);
+                            printf("atomic_operation(%u), ", (unsigned)event.atomic_operation);
+                            printf("atomic_type(%u)", (unsigned)event.atomic_type);
                         }
                         break;
                     case PTL_EVENT_PT_DISABLED:
                         /* target */
                         if (verb) {
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
-                            printf("ni_fail_type(%u), ",
-                                   (unsigned)event.ni_fail_type);
+                            printf("ni_fail_type(%u), ", (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_AUTO_UNLINK:
@@ -151,8 +117,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
                         if (verb) {
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
                             printf("user_ptr(%p), ", event.user_ptr);
-                            printf("ni_fail_type(%u) ",
-                                   (unsigned)event.ni_fail_type);
+                            printf("ni_fail_type(%u) ", (unsigned)event.ni_fail_type);
                         }
                         break;
                     case PTL_EVENT_REPLY:
@@ -160,8 +125,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
                     case PTL_EVENT_ACK:
                         /* initiator */
                         if (verb) {
-                            printf(
-                                   "mlength(%u), remote_offset(%u), user_ptr(%p), ni_fail_type(%u)",
+                            printf("mlength(%u), remote_offset(%u), user_ptr(%p), ni_fail_type(%u)",
                                    (unsigned)event.mlength,
                                    (unsigned)event.remote_offset,
                                    event.user_ptr,
@@ -182,21 +146,20 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle, ptl_process_t myself,
     return events;
 }
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    ptl_process_t *amapping;
-    unsigned char *unexpected_buf;
-    uint64_t sendval, recvval;
-    ENTRY_T unexpected_e, recv_e;
-    HANDLE_T unexpected_e_handle, recv_e_handle;
-    ptl_md_t write_md;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    ptl_process_t  *amapping;
+    unsigned char  *unexpected_buf;
+    uint64_t        sendval, recvval;
+    ENTRY_T         unexpected_e, recv_e;
+    HANDLE_T        unexpected_e_handle, recv_e_handle;
+    ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int my_rank, num_procs;
+    int             my_rank, num_procs;
     ptl_handle_eq_t recv_eq;
 
     if (getenv("VERBOSE")) {
@@ -204,10 +167,10 @@ int main(
     }
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    amapping = malloc(sizeof(ptl_process_t) * num_procs);
+    amapping       = malloc(sizeof(ptl_process_t) * num_procs);
     unexpected_buf = malloc(sizeof(unsigned char) * BUFSIZE);
 
     assert(amapping);
@@ -226,21 +189,21 @@ int main(
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(unexpected_buf, 42, BUFSIZE);
-    unexpected_e.start = unexpected_buf;
-    unexpected_e.length = BUFSIZE;
+    unexpected_e.start     = unexpected_buf;
+    unexpected_e.length    = BUFSIZE;
     unexpected_e.ac_id.uid = PTL_UID_ANY;
 #if INTERFACE == 1
     unexpected_e.match_id.rank = PTL_RANK_ANY;
-    unexpected_e.match_bits = 0;
+    unexpected_e.match_bits    = 0;
     memset(&unexpected_e.ignore_bits, 0xff, sizeof(ptl_match_bits_t));
     unexpected_e.min_free = BUFSIZE - sizeof(sendval);
-    unexpected_e.options = OPTIONS | PTL_ME_MANAGE_LOCAL;
+    unexpected_e.options  = OPTIONS | PTL_ME_MANAGE_LOCAL;
 #else
     unexpected_e.options = OPTIONS;
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &unexpected_e.ct_handle));
     CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &unexpected_e,
-                           PTL_OVERFLOW, (void*)2, &unexpected_e_handle));
+                           PTL_OVERFLOW, (void *)2, &unexpected_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -250,9 +213,9 @@ int main(
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    sendval = 61;
-    write_md.start = &sendval;
-    write_md.length = sizeof(sendval);
+    sendval          = 61;
+    write_md.start   = &sendval;
+    write_md.length  = sizeof(sendval);
     write_md.options = PTL_MD_EVENT_CT_SEND;
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &write_md.eq_handle));
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
@@ -285,21 +248,21 @@ int main(
         printf("\nNow... posting the receive:\n");
     }
     fflush(NULL);
-    recvval = 0;
-    recv_e.start = &recvval;
-    recv_e.length = sizeof(recvval);
+    recvval          = 0;
+    recv_e.start     = &recvval;
+    recv_e.length    = sizeof(recvval);
     recv_e.ac_id.uid = PTL_UID_ANY;
 #if INTERFACE == 1
     recv_e.match_id.rank = PTL_RANK_ANY;
-    recv_e.match_bits = 1;
-    recv_e.ignore_bits = 0;
-    recv_e.options = OPTIONS | PTL_ME_USE_ONCE;
+    recv_e.match_bits    = 1;
+    recv_e.ignore_bits   = 0;
+    recv_e.options       = OPTIONS | PTL_ME_USE_ONCE;
 #else
     recv_e.options = OPTIONS | PTL_LE_USE_ONCE;
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &recv_e.ct_handle));
     CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &recv_e,
-                           PTL_PRIORITY_LIST, (void*)1, &recv_e_handle));
+                           PTL_PRIORITY_LIST, (void *)1, &recv_e_handle));
     {
         size_t count_events;
         if (verb) {

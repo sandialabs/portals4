@@ -186,8 +186,8 @@ int main(
                             case PTL_EVENT_AUTO_FREE:
                                 printf("FREE: ");
                                 break;
-                            case PTL_EVENT_PROBE:
-                                printf("PROBE: ");
+                            case PTL_EVENT_SEARCH:
+                                printf("SEARCH: ");
                                 break;
                         }
                     }
@@ -200,7 +200,7 @@ int main(
                         case PTL_EVENT_PT_DISABLED:
                         case PTL_EVENT_AUTO_UNLINK:
                         case PTL_EVENT_AUTO_FREE:
-                        case PTL_EVENT_PROBE:
+                        case PTL_EVENT_SEARCH:
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {

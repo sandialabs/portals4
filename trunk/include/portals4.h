@@ -157,10 +157,10 @@ typedef struct {
  *      with ptl_iovec_t. While this is a supported operation, it is unlikely
  *      to perform well in most implementations.
  * @note When a ptl_iovec_t is passed to a Portals operation (as part of a
- *	memory descriptor, list entry, or match list entry), it must be treated
- *	exactly like a data buffer. That is, it cannot be modified or freed
- *	until Portals indicates that it has completed the operations on that
- *	buffer.
+ *      memory descriptor, list entry, or match list entry), it must be treated
+ *      exactly like a data buffer. That is, it cannot be modified or freed
+ *      until Portals indicates that it has completed the operations on that
+ *      buffer.
  * @implnote The implementation is required to support the mixing of the
  *      ptl_iovec_t type with offsets (local and remote); however, it will be
  *      difficult to make this perform well in the general case. The correct
@@ -169,9 +169,9 @@ typedef struct {
  *      cases, this may require walking the entire scatter/gather list to find
  *      the correct location for depositing the data.
  * @implnote The implementation may choose to copy the ptl_iovec_t to prevent
- *	the application from corrupting it; however, the implementation is also
- *	free to use the buffer in place. The implementation is not allowed to
- *	modify the ptl_iovec_t.
+ *      the application from corrupting it; however, the implementation is also
+ *      free to use the buffer in place. The implementation is not allowed to
+ *      modify the ptl_iovec_t.
  */
 typedef struct {
     void* iov_base; /*!< The byte aligned start address of the vector element. */
@@ -405,7 +405,7 @@ typedef unsigned char ptl_ni_fail_t;
 #define PTL_NI_UNDELIVERABLE    ((ptl_ni_fail_t) 1)
 
 /*! Indicates that a message was dropped for some reason. */
-#define PTL_NI_DROPPED		((ptl_ni_fail_t) 2)
+#define PTL_NI_DROPPED          ((ptl_ni_fail_t) 2)
 
 /*! Indicates that the remote node has exhausted its resources, enabled flow
  * control, and dropped this message. */
@@ -437,20 +437,20 @@ typedef struct {
                                   memory descriptor for this interface. */
     int max_list_size;          /*!< Maximum number of match list entries that
                                   can be attached to any portal table index. */
-    int max_triggered_ops;	/*!< Maximum number of triggered operations
-				  that can be outstanding. */
+    int max_triggered_ops;      /*!< Maximum number of triggered operations
+                                  that can be outstanding. */
     ptl_size_t max_msg_size;    /*!< Maximum size (in bytes) of a message (put,
                                   get, or reply). */
     ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) that can be passed
                                   to an atomic operation. */
     ptl_size_t max_fetch_atomic_size; /*!< Maximum size (in bytes) that can be passed
-				  to an atomic operation that returns the prior
-				  value to the initiator. */
+                                  to an atomic operation that returns the prior
+                                  value to the initiator. */
     ptl_size_t max_ordered_size; /*!< Maximum size (in bytes) of a message
-				   (put, get, reply, or atomic) that will
-				   buarantee "per-address" data ordering. An
-				   interface must provide a \a max_ordered_size
-				   of at least 8 bytes. */
+                                   (put, get, reply, or atomic) that will
+                                   buarantee "per-address" data ordering. An
+                                   interface must provide a \a max_ordered_size
+                                   of at least 8 bytes. */
 } ptl_ni_limits_t;
 
 /*!
@@ -612,7 +612,7 @@ int PtlNIHandle(ptl_handle_any_t    handle,
 #define PTL_PT_ONLY_USE_ONCE    (1)
 
 /*! Enable flow control on this portal table entry. */
-#define PTL_PT_FLOWCTRL		(1<<1)
+#define PTL_PT_FLOWCTRL         (1<<1)
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
  *                unsigned int      options,
@@ -882,10 +882,10 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * @retval PTL_NO_SPACE     Indicates that there is insufficient memory to
  *                          allocate the memory descriptor.
  * @implnote Because the \a eq_handle and \a ct_handle are bound to the memory
- *	descriptor on the initiator, there are usage models where it is
- *	necessary to create numerous memory descriptors that only differ in
- *	their eq_handle or ct_handle field. Implementations should support this
- *	usage model and may desire to optimize for it.
+ *      descriptor on the initiator, there are usage models where it is
+ *      necessary to create numerous memory descriptors that only differ in
+ *      their eq_handle or ct_handle field. Implementations should support this
+ *      usage model and may desire to optimize for it.
  * @see PtlMDRelease()
  */
 int PtlMDBind(ptl_handle_ni_t   ni_handle,
@@ -931,10 +931,22 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
     PTL_OVERFLOW, /*!< The overflow list associated with a portal table entry. */
-    PTL_PROBE_ONLY /*!< Do not attach to a list. Use the LE to probe the
-                      overflow list, without consuming an item in the list and
-                      without being attached anywhere. */
 } ptl_list_t;
+
+/*!
+ * @enum ptl_search_op_t
+ * @brief A behavior for list searching.
+ * @see PtlLESearch()
+ * @see PtlMESearch()
+ * @ingroup LEL
+ * @ingroup MLEML
+ */
+typedef enum {
+    PTL_SEARCH_ONLY, /*!< Use the LE/ME to search the overflow list, without
+                       consuming an item in the list. */
+    PTL_SEARCH_DELETE, /*!< Use the LE/ME to search the overflow list and
+                         delete the item from the list. */
+} ptl_search_op_t;
 
 /*! Specifies that the list entry will respond to \p put operations. By
  * default, list entries reject \p put operations. If a \p put operation
@@ -1080,6 +1092,74 @@ int PtlLEAppend(ptl_handle_ni_t     ni_handle,
  * @see PtlLEAppend()
  */
 int PtlLEUnlink(ptl_handle_le_t le_handle);
+/*!
+ * @fn PtlLESearch(ptl_handle_ni_t ni_handle,
+ *                 ptl_pt_index_t  pt_index,
+ *                 ptl_le_t       *le,
+ *                 ptl_search_op_t ptl_search_op,
+ *                 void           *user_ptr)
+ * @brief Used to search for a message in the unexpected list associated with a
+ *      specific portal table entry specified by \a pt_index for the portal
+ *      table for \a ni_handle. PtlLESearch() uses the exact same search of the
+ *      unexpected list as PtlLEAppend(); however, the list entry specified in
+ *      the PtlLESearch() call is never linked into a priority list.
+ *
+ *      The PtlLESearch() function can be called in two modes. If
+ *      ptl_search_op_t is set to PTL_SEARCH_ONLY, the unexpected list is
+ *      searched to support the MPI_Probe functionality. If ptl_search_op_t is
+ *      set to PTL_SEARCH_DELETE, the unexpected list is searched and any
+ *      matching items are deleted. A search of the overflow list will always
+ *      generate an event. When used with PTL_SEARCH_ONLY, a PTL_EVENT_SEARCH
+ *      event is always generated. If a matching message was found in the
+ *      overflow list, PTL_NI_OK is returned in the event. Otherwise, the event
+ *      indicates that the search operation failed. When used with
+ *      PTL_SEARCH_DELETE, the event that is generated corresponds to the type
+ *      of operation that is found (e.g. PTL_EVENT_PUT_OVERFLOW or
+ *      PTL_EVENT_ATOMIC_OVERFLOW). If no operation is found, a
+ *      PTL_EVENT_SEARCH is generated with a failure indication.
+ *
+ *      Event generation for the search function works just as it would for an
+ *      append function. If a search is performed with events disabled (either
+ *      through option or through the absence of an event queue on the portal
+ *      table entry), the search will succeed, but no events will be generated.
+ *      Status registers, however, are handled slightly differently for a
+ *      search in that a PtlLESearch()never causes a status register to be
+ *      incremented.
+ * @implnote When a persistent LE (or ME) is used to search a list, the entire
+ *      overflow list is traversed and multiple matches can be found. This is
+ *      because messages arriving in the overflow list are treated like
+ *      messages that match in the priority list: a persistent ME/LE would be
+ *      able to match multiple incoming messages if it were in the priority
+ *      list; hence, it should be able to match multiple unexpected messages in
+ *      the overflow list.
+ * @note Searches with persistent entries could have unexpected performance and
+ *      resource usage characteristics if a large overflow list has
+ *      accumulated, since a PtlLESearch() that uses a persistent LE can cause
+ *      multiple matches.
+ * @param[in] ni_handle     The interface handle to use
+ * @param[in] pt_index      The portal table index to search.
+ * @param[in] le            Provides values for the user-visible parts of a
+ *                          list entry to use for searching.
+ * @param[in] ptl_search_op Determines whether the function will delete any
+ *                          list entries that match the search parameters.
+ * @param[in] user_ptr      A user-specified value that is associated with each
+ *                          command that can generate an event. The value does
+ *                          not need to be a pointer, but must fit in the space
+ *                          used by a pointer. This value (along with other
+ *                          values) is recorded in events associated with
+ *                          operations on this list entry.
+ * @retval PTL_OK           Indicates success.
+ * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. THe
+ *                          definition of which arguments are checked is
+ *                          implementation dependent.
+ * @retval PTL_NO_INIT      Indicates that the portals API has not been
+ *                          successfully initialized.
+ */
+int PtlLESearch(ptl_handle_ni_t ni_handle,
+                ptl_pt_index_t  pt_index,
+                ptl_le_t       *le,
+                ptl_search_op_t ptl_search_op,
+                void           *user_ptr);
 /*! @} */
 
 /********************************************
@@ -1305,11 +1385,6 @@ typedef struct {
  *      is generated. No searching is performed when a match list entry is
  *      posted to the overflow list.
  *
- *      If \a ptl_list is set to \c PTL_PROBE_ONLY, the overflow list is probed
- *      to support the MPI_Probe functionality. A probe of the overflow list
- *      will \e always generate a \c PTL_EVENT_PROBE event. If a matching
- *      message was found in the overflow list, \c PTL_NI_OK is returned in the
- *      event. Otherwise, the event indicates that the probe operation failed.
  * @param[in] ni_handle     The interface handle to use.
  * @param[in] pt_index      The portal table index where the match list entry
  *                          should be appended.
@@ -1379,6 +1454,65 @@ int PtlMEAppend(ptl_handle_ni_t     ni_handle,
  * @see PtlMEAppend()
  */
 int PtlMEUnlink(ptl_handle_me_t me_handle);
+/*!
+ * @fn PtlMESearch(ptl_handle_ni_t ni_handle,
+ *                 ptl_pt_index_t  pt_index,
+ *                 ptl_me_t       *me,
+ *                 ptl_search_op_t ptl_search_op,
+ *                 void           *user_ptr)
+ * @brief The PtlMESearch() function is used to search for a message in the
+ *      unexpected list associated with a specific portal table entry specified
+ *      by pt_index for the portal table for ni_handle. PtlMESearch() uses the
+ *      exact same search of the unexpected list as PtlMEAppend(); however, the
+ *      match list entry specified in the PtlMESearch() call is never linked
+ *      into a priority list.
+ *
+ *      The PtlMESearch() function can be called in two modes. If ptl_search_op
+ *      is set to PTL_SEARCH_ONLY, the unexpected list is searched to support
+ *      the MPI_Probe functionality. If ptl_search_op is set to
+ *      PTL_SEARCH_DELETE, the unexpected list is searched and any matching
+ *      items are deleted. A search of the overflow list will always generate
+ *      an event. When used with PTL_SEARCH_ONLY, a PTL_EVENT_SEARCH event is
+ *      always generated. If a matching message was found in the overflow list,
+ *      PTL_NI_OK is returned in the event. Otherwise, the event indicates that
+ *      the search operation failed. When used with PTL_SEARCH_DELETE, the
+ *      event that is generated corresponds to the type of operation that is
+ *      found (e.g. PTL_EVENT_PUT_OVERFLOW or PTL_EVENT_ATOMIC_OVERFLOW). If no
+ *      operation is found, a PTL_EVENT_SEARCH is generated with a failure
+ *      indication.
+ *
+ *      Event generation for the search functions works just as it would for an
+ *      append function. If a search is performed with events disabled (either
+ *      through option or through the absence of an event queue on the portal
+ *      table entry), the search will succeed, but no events will be generated.
+ *      Status registers, however, are handled slightly differently for a
+ *      search in that a PtlMESearch() never causes a status register to be
+ *      incremented.
+ * @see PtlLESearch()
+ * @param[in] ni_handle     The interface handle to use
+ * @param[in] pt_index      The portal table index to search.
+ * @param[in] me            Provides values for the user-visible parts of a
+ *                          match list entry to use for searching.
+ * @param[in] ptl_search_op Determines whether the function will delete any
+ *                          match list entries that match the search parameters.
+ * @param[in] user_ptr      A user-specified value that is associated with each
+ *                          command that can generate an event. The value does
+ *                          not need to be a pointer, but must fit in the space
+ *                          used by a pointer. This value (along with other
+ *                          values) is recorded in events associated with
+ *                          operations on this match list entry.
+ * @retval PTL_OK           Indicates success.
+ * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. THe
+ *                          definition of which arguments are checked is
+ *                          implementation dependent.
+ * @retval PTL_NO_INIT      Indicates that the portals API has not been
+ *                          successfully initialized.
+ */
+int PtlMESearch(ptl_handle_ni_t ni_handle,
+                ptl_pt_index_t  pt_index,
+                ptl_me_t       *me,
+                ptl_search_op_t ptl_search_op,
+                void           *user_ptr);
 /*! @} */
 
 /*********************************
@@ -1763,7 +1897,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *            ptl_process_t     target_id,
  *            ptl_pt_index_t    pt_index,
  *            ptl_match_bits_t  match_bits,
- *            ptl_size_t	remote_offset,
+ *            ptl_size_t        remote_offset,
  *            void *            user_ptr)
  * @brief Perform a \e get operation.
  * @details Initiates a remote read operation. There are two events associated
@@ -1806,7 +1940,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
            ptl_process_t    target_id,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
-	   ptl_size_t	    remote_offset,
+           ptl_size_t       remote_offset,
            void *           user_ptr);
 
 /************************
@@ -2275,7 +2409,7 @@ typedef enum {
      * PTL_EVENT_PUT_OVERFLOW event. Otherwise, a failure is recorded in the \a
      * ni_fail_type field, and the \a user_ptr is filled in correctly, and the
      * other fields are undefined. */
-    PTL_EVENT_PROBE
+    PTL_EVENT_SEARCH
 } ptl_event_kind_t;
 /*!
  * @struct ptl_event_t
@@ -2287,30 +2421,30 @@ typedef struct {
     ptl_event_kind_t    type;
 
     /*! The identifier of the \e initiator. */
-    ptl_process_t	initiator;
+    ptl_process_t       initiator;
 
     /*! The portal table index where the message arrived. */
-    ptl_pt_index_t	pt_index;
+    ptl_pt_index_t      pt_index;
 
     /*! The user identifier of the \e initiator. */
-    ptl_uid_t		uid;
+    ptl_uid_t           uid;
 
     /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
      * implementations that do not support job identifiers. */
-    ptl_jid_t		jid;
+    ptl_jid_t           jid;
 
     /*! The match bits specified by the \e initiator. */
-    ptl_match_bits_t	match_bits;
+    ptl_match_bits_t    match_bits;
 
     /*! The length (in bytes) specified in the request. */
-    ptl_size_t		rlength;
+    ptl_size_t          rlength;
 
     /*! The length (in bytes) of the data that was manipulated by the
      * operation. For truncated operations, the manipulated length will be the
      * number of bytes specified by the memory descriptor operation (possibly
      * with an offset). For all other operations, the manipulated length will
      * be the length of the requested operation. */
-    ptl_size_t		mlength;
+    ptl_size_t          mlength;
 
     /*! The offset requested/used by the other end of the link. At the
      * initiator, this is the displacement (in bytes) into the memory region
@@ -2318,7 +2452,7 @@ typedef struct {
      * the operation for a remote managed offset in a match list entry or by
      * the match list entry at the target for a locally managed offset. At the
      * target, this is the offset requested by th initiator. */
-    ptl_size_t		remote_offset;
+    ptl_size_t          remote_offset;
 
     /*! The starting location (virtual, byte address) where the message has
      * been placed. The \a start variable is the sum of the \a start variable
@@ -2331,26 +2465,26 @@ typedef struct {
      * list where the matching message resides. This may require the
      * application to copy the message to the desired buffer.
      */
-    void *		start;
+    void *              start;
 
     /*! A user-specified value that is associated with each command that can
      * generate an event. */
-    void *		user_ptr;
+    void *              user_ptr;
 
     /*! 64 bits of out-of-band user data. */
-    ptl_hdr_data_t	hdr_data;
+    ptl_hdr_data_t      hdr_data;
 
     /*! Is used to convey the failure of an operation. Success is indicated by
      * \c PTL_NI_OK. */
-    ptl_ni_fail_t	ni_fail_type;
+    ptl_ni_fail_t       ni_fail_type;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * atomic operation that was performed. */
-    ptl_op_t		atomic_operation;
+    ptl_op_t            atomic_operation;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * data type of the atomic operation that was performed. */
-    ptl_datatype_t	atomic_type;
+    ptl_datatype_t      atomic_type;
 } ptl_event_t;
 /*!
  * @fn PtlEQAlloc(ptl_handle_ni_t   ni_handle,
@@ -2529,13 +2663,13 @@ int PtlEQWait(ptl_handle_eq_t   eq_handle,
  * @implnote Implementations are free to provide macros for PtlEQGet() and
  *      PtlEQWait() that use PtlEQPoll() instead of providing these functions.
  * @implnote Not all of the members of the ptl_event_t structure (and
- *	corresponding ptl_initiator_event_t or ptl_target_event_t sub-fields)
- *	are relevant to all operations. The offset and mlength fields of a
- *	ptl_initiator_event_t are undefined for a \c PTL_EVENT_SEND event. The
- *	atomic_operation and atomic_type fields of a ptl_target_event_t are
- *	undefined for operations other than atomic operations. The match_bits
- *	field is undefined for a non-matching NI. All other fields must be
- *	filled in with valid information.
+ *      corresponding ptl_initiator_event_t or ptl_target_event_t sub-fields)
+ *      are relevant to all operations. The offset and mlength fields of a
+ *      ptl_initiator_event_t are undefined for a \c PTL_EVENT_SEND event. The
+ *      atomic_operation and atomic_type fields of a ptl_target_event_t are
+ *      undefined for operations other than atomic operations. The match_bits
+ *      field is undefined for a non-matching NI. All other fields must be
+ *      filled in with valid information.
  * @see PtlEQGet(), PtlEQWait()
  */
 int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
@@ -2924,36 +3058,36 @@ int PtlTriggeredCTSet(ptl_handle_ct_t   ct_handle,
  * @fn PtlStartBundle(ptl_handle_ni_t ni_handle)
  * @brief Indicates a group of communication operations is about to start.
  * @details The PtlStartBundle() function is used by the application to
- *	indicate to the implementation that a group of communication operations
- *	is about to start. PtlStartBundle() takes an \a ni_handle as an
- *	argument and only impacts operations on that \a ni_handle.
- *	PtlStartBundle() can be called multiple times, and each call to
- *	PtlStartBundle() increments a reference count and must be matched by a
- *	call to PtlEndBundle(). After a call to PtlStartBundle(), the
- *	implementation may begin deferring communication operations until a
- *	call to PtlEndBundle().
- * @param[in] ni_handle	    An interface handle to start bundling operations.
- * @retval PTL_OK	    Indicates success.
- * @retval PTL_NO_INIT	    Indicates that the portals API has not been
- *			    successfully initialized.
+ *      indicate to the implementation that a group of communication operations
+ *      is about to start. PtlStartBundle() takes an \a ni_handle as an
+ *      argument and only impacts operations on that \a ni_handle.
+ *      PtlStartBundle() can be called multiple times, and each call to
+ *      PtlStartBundle() increments a reference count and must be matched by a
+ *      call to PtlEndBundle(). After a call to PtlStartBundle(), the
+ *      implementation may begin deferring communication operations until a
+ *      call to PtlEndBundle().
+ * @param[in] ni_handle     An interface handle to start bundling operations.
+ * @retval PTL_OK           Indicates success.
+ * @retval PTL_NO_INIT      Indicates that the portals API has not been
+ *                          successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. The
- *			    definition of which arguments are checked is
- *			    implementation dependent.
+ *                          definition of which arguments are checked is
+ *                          implementation dependent.
  * @note Layered libraries and heavily nested PtlStartBundle() calls can yield
- *	unexpected results. The PtlStartBundle() and PtlEndBundle() interface
- *	was designed for use in short periods of high activity (e.g. during the
- *	setup of a collective operation or duing an inner loop for PGAS
- *	languages). The interval between PtlStartBundle() and the corresponding
- *	PtlEndBundle() should be kept short.
+ *      unexpected results. The PtlStartBundle() and PtlEndBundle() interface
+ *      was designed for use in short periods of high activity (e.g. during the
+ *      setup of a collective operation or duing an inner loop for PGAS
+ *      languages). The interval between PtlStartBundle() and the corresponding
+ *      PtlEndBundle() should be kept short.
  * @implnote The PtlStartBundle() and PtlEndBundle() interface was designed to
- *	allow the implementation to avoid unnecessary sfence()/memory barrier
- *	operations during periods that the application expects high message
- *	rate usage. A quality implementation will attempt to minimize latency
- *	while maximizing message rate. For example, an implementation that
- *	requires writes into “write-combining” space may require sfence()
- *	operations with every message to have relatively deterministic latency.
- *	Between a PtlStartBundle() and PtlEndBundle(), the implementation might
- *	simply omit the sfence() operations.
+ *      allow the implementation to avoid unnecessary sfence()/memory barrier
+ *      operations during periods that the application expects high message
+ *      rate usage. A quality implementation will attempt to minimize latency
+ *      while maximizing message rate. For example, an implementation that
+ *      requires writes into “write-combining” space may require sfence()
+ *      operations with every message to have relatively deterministic latency.
+ *      Between a PtlStartBundle() and PtlEndBundle(), the implementation might
+ *      simply omit the sfence() operations.
  */
 int PtlStartBundle(ptl_handle_ni_t ni_handle);
 
@@ -2961,20 +3095,20 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle);
  * @fn PtlEndBundle(ptl_handle_ni_t ni_handle)
  * @brief Indicates a group of communication operations has ended.
  * @details The PtlEndBundle() function is used by the application to indicate
- *	to the implementation that a group of communication operations has
- *	ended. PtlEndBundle() takes an ni_handle as an argument and only
- *	impacts operations on that ni_handle. PtlEndBundle() must be called
- *	once for each PtlStartBundle() call. At each call to PtlEndBundle(),
- *	the implementation must initiate all communication operations that have
- *	been deferred; however, the implementation is not required to cease
- *	bundling future operations until the reference count reaches zero.
- * @param[in] ni_handle	    An interface handle to end bundling operations.
- * @retval PTL_OK	    Indicates success.
- * @retval PTL_NO_INIT	    Indicates that the portals API has not been
- *			    successfully initialized.
+ *      to the implementation that a group of communication operations has
+ *      ended. PtlEndBundle() takes an ni_handle as an argument and only
+ *      impacts operations on that ni_handle. PtlEndBundle() must be called
+ *      once for each PtlStartBundle() call. At each call to PtlEndBundle(),
+ *      the implementation must initiate all communication operations that have
+ *      been deferred; however, the implementation is not required to cease
+ *      bundling future operations until the reference count reaches zero.
+ * @param[in] ni_handle     An interface handle to end bundling operations.
+ * @retval PTL_OK           Indicates success.
+ * @retval PTL_NO_INIT      Indicates that the portals API has not been
+ *                          successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that an invalid argument was passed. The
- *			    definition of which arguments are checked is
- *			    implementation dependent.
+ *                          definition of which arguments are checked is
+ *                          implementation dependent.
  */
 int PtlEndBundle(ptl_handle_ni_t ni_handle);
 /*! @} */

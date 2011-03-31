@@ -240,26 +240,13 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
 #define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/                                               \
         e->type = (ptl_event_kind_t)(ie.type);                                             \
         switch (e->type) {                                                                 \
-            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:                         \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:          /* target */   \
                 e->atomic_operation = (ptl_op_t)ie.atomic_operation;                       \
                 e->atomic_type      = (ptl_datatype_t)ie.atomic_type;                      \
-            default:                                                                       \
-                e->atomic_operation = (ptl_op_t)0;                                         \
-                e->atomic_type      = (ptl_datatype_t)0;                                   \
-        }                                                                                  \
-        switch (e->type) {                                                                 \
-            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:                         \
             case PTL_EVENT_GET: case PTL_EVENT_PUT:                                        \
             case PTL_EVENT_PUT_OVERFLOW:                                                   \
-            case PTL_EVENT_PT_DISABLED:                                                    \
-            case PTL_EVENT_AUTO_UNLINK: case PTL_EVENT_AUTO_FREE:                          \
-            case PTL_EVENT_PROBE:                                          /* target */    \
-                e->match_bits = ie.match_bits;                                             \
-                e->start      = ie.start;                                                  \
-                e->user_ptr   = ie.user_ptr;                                               \
-                e->hdr_data   = ie.hdr_data;                                               \
-                e->rlength    = ie.rlength;                                                \
-                e->mlength    = ie.mlength;                                                \
+            case PTL_EVENT_SEARCH:                                          /* target */   \
+                e->hdr_data = ie.hdr_data;                                                 \
                 if (ni <= 1) { /* logical */                                               \
                     e->initiator.rank = ie.initiator.rank;                                 \
                 } else { /* physical */                                                    \
@@ -270,15 +257,24 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
                 e->initiator.phys.pid = ie.initiator.phys.pid;                             \
                 e->uid                = ie.uid;                                            \
                 e->jid                = ie.jid;                                            \
+                e->match_bits         = ie.match_bits;                                     \
+                e->rlength            = ie.rlength;                                        \
+                e->mlength            = ie.mlength;                                        \
                 e->remote_offset      = ie.remote_offset;                                  \
-                e->pt_index           = ie.pt_index;                                       \
-                e->ni_fail_type       = ie.ni_fail_type;                                   \
+                e->start              = ie.start;                                          \
+            case PTL_EVENT_AUTO_UNLINK:                                     /* target */   \
+            case PTL_EVENT_AUTO_FREE:                                       /* target */   \
+                e->user_ptr = ie.user_ptr;                                                 \
+            case PTL_EVENT_PT_DISABLED:                                                    \
+                e->pt_index     = ie.pt_index;                                             \
+                e->ni_fail_type = ie.ni_fail_type;                                         \
                 break;                                                                     \
-            case PTL_EVENT_REPLY: case PTL_EVENT_SEND: case PTL_EVENT_ACK: /* initiator */ \
+            case PTL_EVENT_REPLY: case PTL_EVENT_ACK: /* initiator */                      \
                 e->mlength       = ie.mlength;                                             \
                 e->remote_offset = ie.remote_offset;                                       \
-                e->user_ptr      = ie.user_ptr;                                            \
-                e->ni_fail_type  = ie.ni_fail_type;                                        \
+            case PTL_EVENT_SEND:                                                           \
+                e->user_ptr     = ie.user_ptr;                                             \
+                e->ni_fail_type = ie.ni_fail_type;                                         \
                 break;                                                                     \
         }                                                                                  \
 } while (0) /*}}}*/

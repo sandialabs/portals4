@@ -9,26 +9,25 @@
 
 #include "testing.h"
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    ptl_process_t *amapping;
-    uint64_t value, readval;
-    ptl_le_t value_le;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    ptl_process_t  *amapping;
+    uint64_t        value, readval;
+    ptl_le_t        value_le;
     ptl_handle_le_t value_le_handle;
-    ptl_md_t read_md;
+    ptl_md_t        read_md;
     ptl_handle_md_t read_md_handle;
     ptl_handle_eq_t pt_eq_handle;
-    char verb = 0;
-    int my_rank, num_procs;
+    char            verb = 0;
+    int             my_rank, num_procs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
@@ -44,11 +43,11 @@ int main(
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    value = myself.rank + 0xdeadbeefc0d1f1edUL;
-    value_le.start = &value;
-    value_le.length = sizeof(uint64_t);
+    value              = myself.rank + 0xdeadbeefc0d1f1edUL;
+    value_le.start     = &value;
+    value_le.length    = sizeof(uint64_t);
     value_le.ac_id.uid = PTL_UID_ANY;
-    value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
+    value_le.options   = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend(ni_logical, 0, &value_le, PTL_PRIORITY_LIST,
                                 (void *)(0xcafecafe00UL + myself.rank),
@@ -62,10 +61,10 @@ int main(
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    readval = 0;
-    read_md.start = &readval;
-    read_md.length = sizeof(uint64_t);
-    read_md.options = PTL_MD_EVENT_CT_REPLY;
+    readval           = 0;
+    read_md.start     = &readval;
+    read_md.length    = sizeof(uint64_t);
+    read_md.options   = PTL_MD_EVENT_CT_REPLY;
     read_md.eq_handle = pt_eq_handle;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &read_md, &read_md_handle));
@@ -77,7 +76,7 @@ int main(
     /* read rank 0's value */
     {
         ptl_ct_event_t ctc;
-        ptl_process_t r0 = {.rank = 0 };
+        ptl_process_t  r0 = { .rank = 0 };
         CHECK_RETURNVAL(PtlGet(read_md_handle, myself.rank % sizeof(uint64_t),
                                sizeof(uint64_t) -
                                (myself.rank % sizeof(uint64_t)), r0,
@@ -95,7 +94,7 @@ int main(
         int fetched = 0;
         do {
             ptl_event_t event;
-            int retval;
+            int         retval;
             fetched = 0;
             switch (retval = PtlEQGet(pt_eq_handle, &event)) {
                 case PTL_OK:
@@ -136,8 +135,8 @@ int main(
                             case PTL_EVENT_AUTO_FREE:
                                 printf("FREE: ");
                                 break;
-                            case PTL_EVENT_PROBE:
-                                printf("PROBE: ");
+                            case PTL_EVENT_SEARCH:
+                                printf("SEARCH: ");
                                 break;
                         }
                     }
@@ -150,12 +149,11 @@ int main(
                         case PTL_EVENT_PT_DISABLED:
                         case PTL_EVENT_AUTO_UNLINK:
                         case PTL_EVENT_AUTO_FREE:
-                        case PTL_EVENT_PROBE:
+                        case PTL_EVENT_SEARCH:
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {
-                                printf(
-                                       "match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
+                                printf("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
                                        (unsigned)event.match_bits,
                                        (unsigned)event.rlength,
                                        (unsigned)event.mlength,
@@ -170,17 +168,13 @@ int main(
                                        (unsigned)event.atomic_type);
                             }
                             assert(event.match_bits == 0);      // since this is a non-matching NI
-                            assert(((char *)event.start) -
-                                   event.remote_offset == (char *)&value);
+                            assert(((char *)event.start) - event.remote_offset == (char *)&value);
                             assert(event.pt_index == logical_pt_index);
                             assert(event.ni_fail_type == PTL_NI_OK);
                             assert(event.mlength == event.rlength);
-                            assert(event.rlength ==
-                                   sizeof(uint64_t) - event.remote_offset);
-                            assert(event.remote_offset ==
-                                   event.initiator.rank % sizeof(uint64_t));
-                            assert(event.user_ptr ==
-                                   (void *)(0xcafecafe00UL + myself.rank));
+                            assert(event.rlength == sizeof(uint64_t) - event.remote_offset);
+                            assert(event.remote_offset == event.initiator.rank % sizeof(uint64_t));
+                            assert(event.user_ptr == (void *)(0xcafecafe00UL + myself.rank));
                             assert(event.hdr_data == 0);
                             break;
                         case PTL_EVENT_REPLY:
@@ -188,20 +182,15 @@ int main(
                         case PTL_EVENT_ACK:
                             /* initiator */
                             if (verb) {
-                                printf(
-                                       "mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
+                                printf("mlength(%u), offset(%u), user_ptr(%p), ni_fail_type(%u)",
                                        (unsigned)event.mlength,
                                        (unsigned)event.remote_offset,
                                        event.user_ptr,
                                        (unsigned)event.ni_fail_type);
                             }
-                            assert(event.mlength == sizeof(uint64_t) -
-                                   (myself.rank % sizeof(uint64_t)));
-                            assert(
-                                   event.remote_offset == myself.rank %
-                                   sizeof(uint64_t));
-                            assert(event.user_ptr ==
-                                   (void *)(uintptr_t)(myself.rank + 1));
+                            assert(event.mlength == sizeof(uint64_t) - (myself.rank % sizeof(uint64_t)));
+                            assert(event.remote_offset == myself.rank % sizeof(uint64_t));
+                            assert(event.user_ptr == (void *)(uintptr_t)(myself.rank + 1));
                             assert(event.ni_fail_type == PTL_NI_OK);
                             break;
                     }
