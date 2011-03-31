@@ -70,7 +70,7 @@ int rpc_get_pid(gbl_t *gbl)
 #endif
 
 static int init_session(struct rpc *rpc, int s, struct session **session_p,
-						void (*cb)(EV_P_ ev_io *w, int revents))
+			void (*cb)(EV_P_ ev_io *w, int revents))
 {
 	int err;
 	struct session *session;
@@ -141,7 +141,8 @@ static void read_one(EV_P_ ev_io *w, int revents)
 	int err;
 	struct session *session = w->data;
 
-	ret = recv(session->fd, &session->rpc_msg, sizeof(struct rpc_msg), MSG_WAITALL);
+	ret = recv(session->fd, &session->rpc_msg, sizeof(struct rpc_msg),
+		   MSG_WAITALL);
 	if (ret < 0) {
 		err = -errno;
 		if (verbose) {
@@ -162,7 +163,8 @@ static void read_one(EV_P_ ev_io *w, int revents)
 			pthread_mutex_unlock(&session->mutex);
 		} else {
 			/* A request. */
-			session->rpc->callback(session, session->rpc->callback_data);
+			session->rpc->callback(session,
+					       session->rpc->callback_data);
 		}
 
 		err = 0;
@@ -207,9 +209,9 @@ static void accept_one(EV_P_ ev_io *w, int revents)
 }
 
 int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
-			 struct rpc **rpc_p,
-			 void (*callback)(struct session *session, void *data_callback),
-			 void *callback_data)
+	     struct rpc **rpc_p,
+             void (*callback)(struct session *session, void *data_callback),
+	     void *callback_data)
 {
 	int s;
 	int i;
@@ -260,7 +262,8 @@ int rpc_init(enum rpc_type type, ptl_nid_t nid, unsigned int ctl_port,
 		err = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 		if (err < 0) {
 			strerror_r(errno, buf, sizeof(buf));
-			ptl_fatal("unable to set SO_REUSEADDR on socket: %s\n", buf);
+			ptl_fatal("unable to set SO_REUSEADDR on socket: %s\n",
+				  buf);
 		}
 
 		err = bind(s, (struct sockaddr *)&addr, addr_len);
