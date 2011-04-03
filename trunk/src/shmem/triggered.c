@@ -114,6 +114,9 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     PtlInternalMDPosted(md_handle);
     t->threshold              = threshold;
@@ -206,6 +209,9 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     PtlInternalMDPosted(md_handle);
     t->threshold              = threshold;
@@ -360,6 +366,9 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     PtlInternalMDPosted(md_handle);
     t->threshold                 = threshold;
@@ -541,6 +550,9 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     PtlInternalMDPosted(get_md_handle);
     PtlInternalMDPosted(put_md_handle);
@@ -718,6 +730,9 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     PtlInternalMDPosted(get_md_handle);
     PtlInternalMDPosted(put_md_handle);
@@ -807,6 +822,9 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     t->threshold            = threshold;
     t->type                 = CTINC;
@@ -850,6 +868,9 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
     }
     /* 1. Fetch the trigger structure */
     t = PtlInternalFetchTrigger(tct.s.ni);
+    if (t == NULL) {
+        return PTL_NO_SPACE;
+    }
     /* 2. Build the trigger structure */
     t->threshold            = threshold;
     t->type                 = CTSET;
