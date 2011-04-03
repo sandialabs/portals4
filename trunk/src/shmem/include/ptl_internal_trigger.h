@@ -14,7 +14,7 @@ typedef enum {
 } ptl_internal_trigtype_t;
 
 typedef struct ptl_internal_trigger_s {
-    struct ptl_internal_trigger_s *next; // this is for the pool of triggers
+    volatile struct ptl_internal_trigger_s *next; // this is for the pool of triggers
     ptl_size_t                     next_threshold;
     ptl_size_t                     threshold;
     ptl_internal_trigtype_t        type;
