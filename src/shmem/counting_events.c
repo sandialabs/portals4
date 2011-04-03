@@ -113,6 +113,9 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
     tmp = ct_triggers[ni];
     do {
         old = tmp;
+        if (tmp == NULL) {
+            return NULL;
+        }
         new = tmp->next;
     } while ((tmp = PtlInternalAtomicCasPtr(&ct_triggers[ni], old, new)) != old);
     return tmp;
