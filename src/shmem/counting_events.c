@@ -121,6 +121,18 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
     return tmp;
 } /*}}}*/
 
+static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme, const uint_fast8_t ni)
+{
+    volatile ptl_internal_trigger_t *tmpv, *oldv, *newv;
+    tmpv = ct_triggers[ni];
+    do {
+        freeme->next = tmpv;
+        oldv = tmpv;
+        newv = freeme;
+        tmpv = PtlInternalAtomicCasPtr(&ct_triggers[ni], oldv, newv);
+    } while (tmpv != oldv);
+}
+
 void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
                                     ptl_internal_trigger_t *t)
 {   /*{{{*/
@@ -382,6 +394,7 @@ void INTERNAL PtlInternalCTPullTriggers(ptl_handle_ct_t ct_handle)
     trigger = PtlInternalOrderedNEMESISDequeue(q, cur_val);
     while (trigger != NULL) {
         PtlInternalTriggerPull(trigger);
+        PtlInternalCTFreeTrigger(trigger, ct.s.ni);
         trigger = PtlInternalOrderedNEMESISDequeue(q, cur_val);
     }
 } /*}}}*/
