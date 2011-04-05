@@ -415,6 +415,10 @@ typedef unsigned char ptl_ni_fail_t;
  * violation for this message. */
 #define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
 
+/*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
+#define PTL_TARGET_BIND_INACCESSIBLE (1<<0)
+
+
 /*!
  * @struct ptl_ni_limits_t
  * @brief The network interface (NI) limits type */
@@ -446,11 +450,32 @@ typedef struct {
     ptl_size_t max_fetch_atomic_size; /*!< Maximum size (in bytes) that can be passed
                                   to an atomic operation that returns the prior
                                   value to the initiator. */
+    ptl_size_t max_waw_ordered_size; /*!< Maximum size (in bytes) of a message
+				       that will guarantee “per-address” data
+				       ordering for a write followed by a write
+				       (consecutive put or atomic or a mixture
+				       of the two) and a write followed by a
+				       read (put followed by a get) An
+				       interface must provide a
+				       \a max_waw_ordered_size of at least 64
+				       bytes. */
+    ptl_size_t max_war_ordered_size; /*!< Maximum size (in bytes) of a message
+				       that will guarantee “per-address” data
+				       ordering for a read followed by a write
+				       (get followed by a put or atomic). An
+				       interface must provide a
+				       \a max_war_ordered_size of at least 8
+				       bytes. */
     ptl_size_t max_ordered_size; /*!< Maximum size (in bytes) of a message
                                    (put, get, reply, or atomic) that will
                                    buarantee "per-address" data ordering. An
                                    interface must provide a \a max_ordered_size
                                    of at least 8 bytes. */
+    ptl_size_t max_buffered_size;
+    unsigned int features; /*!< A bit mask of features supported by the the
+			     portals implementation. Currently, the features
+			     that are defined are PTL_LE_BIND_INACCESSIBLE and
+			     PTL_ME_BIND_INACCESSIBLE. */
 } ptl_ni_limits_t;
 
 /*!
@@ -841,11 +866,13 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * descriptor do not have to arrive at the target in order. */
 #define PTL_MD_UNORDERED             (1<<4)
 
-/*! Indicate to the portals implementation that failures requiring
- * notification from the target should not be delivered to the local
- * application. This prevents the local events (e.g. \c PTL_EVENT_SEND) from
- * having to wait for a round-trip notification before delivery. */
-#define PTL_MD_REMOTE_FAILURE_DISABLE (1<<6)
+/*! Indicate to the Portals implementation that the application may modify the
+ * buffer associated with this memory buffer immediately following the return
+ * from a portals operation. Operations should not return until it is safe for
+ * the application to reuse the buffer. The Portals implementation is not
+ * required to honor this option unless the size of the operation is less than
+ * or equal to max_volatile_size. */
+#define PTL_MD_VOLATILE              (1<<6)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
@@ -1728,7 +1755,8 @@ int PtlCTPoll(ptl_handle_ct_t * ct_handles,
  *      set the value of a counting event. The entire ptl_ct_event_t is updated
  *      atomically relative to other modifications of the counting event;
  *      however, it is not atomic relative to read accesses of the counting
- *      event.
+ *      event. The increment field can only be non-zero for either the success
+ *      or failure field in a given call to PtlCTInc().
  * @param[in] ct_handle The counting event handle.
  * @param[in] new_ct    On successful return, the value of the counting event
  *                      will have been set to this value.
