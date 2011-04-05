@@ -152,7 +152,7 @@ int API_FUNC PtlInit(void)
             nit_limits[ni].max_fetch_atomic_size  = LARGE_FRAG_PAYLOAD; // single payload
             nit_limits[ni].max_waw_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
             nit_limits[ni].max_war_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
-            nit_limits[ni].max_volatile_size      = 8;                  // unless we get transactional memory
+            nit_limits[ni].max_volatile_size      = LARGE_FRAG_PAYLOAD; // single payload
         }
         PtlInternalPAPIInit();
 
