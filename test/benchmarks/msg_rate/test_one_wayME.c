@@ -17,7 +17,7 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 
         md.start     = send_buf;
         md.length    = SEND_BUF_SIZE;
-        md.options   = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
+        md.options   = PTL_MD_UNORDERED;
         md.ct_handle = PTL_CT_NONE;
             
         ptl_assert( PtlMDBind(ni, &md, &md_handle), PTL_OK );

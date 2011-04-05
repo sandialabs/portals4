@@ -41,18 +41,18 @@ static unsigned int init_ref_count    = 0;
 static size_t       comm_pad_size     = 0;
 static const char  *comm_pad_shm_name = NULL;
 
-#define PARSE_ENV_NUM(env_str, var, reqd) do { \
-        char       *strerr; \
-        const char *str = getenv(env_str); \
-        if (str == NULL) { \
-            if (reqd == 1) { goto exit_fail; } \
-        } else { \
-            size_t tmp = strtol(str, &strerr, 10); \
+#define PARSE_ENV_NUM(env_str, var, reqd) do {                           \
+        char       *strerr;                                              \
+        const char *str = getenv(env_str);                               \
+        if (str == NULL) {                                               \
+            if (reqd == 1) { goto exit_fail; }                           \
+        } else {                                                         \
+            size_t tmp = strtol(str, &strerr, 10);                       \
             if ((strerr == NULL) || (strerr == str) || (*strerr != 0)) { \
-                goto exit_fail; \
-            } \
-            var = tmp; \
-        } \
+                goto exit_fail;                                          \
+            }                                                            \
+            var = tmp;                                                   \
+        }                                                                \
 } while (0)
 
 /* The trick to this function is making it thread-safe: multiple threads can
@@ -123,7 +123,7 @@ int API_FUNC PtlInit(void)
         }
         comm_pad =
             (uint8_t *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
-                         MAP_SHARED, shm_fd, 0);
+                            MAP_SHARED, shm_fd, 0);
         if (comm_pad == MAP_FAILED) {
 #ifdef LOUD_DROPS
             fprintf(stderr, "PORTALS4-> PtlInit: mmap failed:");
@@ -150,7 +150,9 @@ int API_FUNC PtlInit(void)
             nit_limits[ni].max_msg_size           = UINT32_MAX;
             nit_limits[ni].max_atomic_size        = LARGE_FRAG_PAYLOAD; // single payload
             nit_limits[ni].max_fetch_atomic_size  = LARGE_FRAG_PAYLOAD; // single payload
-            nit_limits[ni].max_ordered_size       = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_waw_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_war_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_volatile_size      = 8;                  // unless we get transactional memory
         }
         PtlInternalPAPIInit();
 

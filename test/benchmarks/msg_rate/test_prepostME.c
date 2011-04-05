@@ -31,7 +31,7 @@ test_prepostME(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers,
 
     send_md.start     = send_buf;
     send_md.length    = SEND_BUF_SIZE;
-    send_md.options   = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE;
+    send_md.options   = PTL_MD_UNORDERED;
     send_md.ct_handle = PTL_CT_NONE;
 
     ptl_assert( PtlMDBind(ni, &send_md, &send_md_handle), PTL_OK );
