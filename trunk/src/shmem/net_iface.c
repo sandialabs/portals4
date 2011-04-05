@@ -162,9 +162,17 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
             (desired->max_fetch_atomic_size <= LARGE_FRAG_SIZE)) {
             nit_limits[ni.s.ni].max_fetch_atomic_size = desired->max_fetch_atomic_size;
         }
-        if ((desired->max_ordered_size >= 8) &&
-            (desired->max_ordered_size <= LARGE_FRAG_SIZE)) {
-            nit_limits[ni.s.ni].max_ordered_size = desired->max_ordered_size;
+        if ((desired->max_waw_ordered_size >= 8) &&
+            (desired->max_waw_ordered_size <= LARGE_FRAG_SIZE)) {
+            nit_limits[ni.s.ni].max_waw_ordered_size = desired->max_waw_ordered_size;
+        }
+        if ((desired->max_war_ordered_size >= 8) &&
+            (desired->max_war_ordered_size <= LARGE_FRAG_SIZE)) {
+            nit_limits[ni.s.ni].max_war_ordered_size = desired->max_war_ordered_size;
+        }
+        if ((desired->max_volatile_size >= 8) &&
+            (desired->max_volatile_size <= LARGE_FRAG_SIZE)) {
+            nit_limits[ni.s.ni].max_volatile_size = desired->max_volatile_size;
         }
         nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
     }

@@ -96,7 +96,7 @@ void runtime_init(void)
     {
         ptl_pt_index_t index;
         ptl_md_t       md = {
-            .start     = NULL, .length = 0, .options = PTL_MD_UNORDERED | PTL_MD_REMOTE_FAILURE_DISABLE,
+            .start     = NULL, .length = 0, .options = PTL_MD_UNORDERED,
             .eq_handle = PTL_EQ_NONE, .ct_handle = PTL_CT_NONE
         };
         ptl_assert(PtlMDBind(ni_physical, &md, &barrier_md_h),

@@ -433,7 +433,9 @@ int test_type;
 		printf("  max_list_size:          %d\n", actual.max_list_size);
 		printf("  max_msg_size:           %d\n", (int)actual.max_msg_size);
 		printf("  max_atomic_size:        %d\n", (int)actual.max_atomic_size);
-		printf("  max_ordered_size:       %d\n", (int)actual.max_ordered_size);
+		printf("  max_waw_ordered_size:   %d\n", (int)actual.max_waw_ordered_size);
+		printf("  max_war_ordered_size:   %d\n", (int)actual.max_war_ordered_size);
+		printf("  max_volatile_size:      %d\n", (int)actual.max_volatile_size);
 	    }
 
             printf("job size:   %d\n", world_size);
