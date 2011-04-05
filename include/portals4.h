@@ -466,12 +466,10 @@ typedef struct {
 				       interface must provide a
 				       \a max_war_ordered_size of at least 8
 				       bytes. */
-    ptl_size_t max_ordered_size; /*!< Maximum size (in bytes) of a message
-                                   (put, get, reply, or atomic) that will
-                                   buarantee "per-address" data ordering. An
-                                   interface must provide a \a max_ordered_size
-                                   of at least 8 bytes. */
-    ptl_size_t max_buffered_size;
+    ptl_size_t max_volatile_size; /*!< Maximum size (in bytes) that can be
+				    passed as the length of a put or atomic for
+				    a memory descriptor with the
+				    PTL_MD_VOLATILE option set. */
     unsigned int features; /*!< A bit mask of features supported by the the
 			     portals implementation. Currently, the features
 			     that are defined are PTL_LE_BIND_INACCESSIBLE and
