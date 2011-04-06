@@ -5,15 +5,17 @@
     <desc>Test put le unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_pt>
 	  <ptl_le_append le_opt="OP_PUT USE_ONCE" uid="ANY">
 	    <ptl_md>
-	      <ptl_put/>
+	      <ptl_put target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_md>
 	    <ptl_le_unlink ret="ARG_INVALID"/>
 	  </ptl_le_append>
 	</ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -21,15 +23,17 @@
     <desc>Test put me unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_PUT USE_ONCE" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_put match="0x5555"/>
+		<ptl_put match="0x5555" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -37,15 +41,17 @@
     <desc>Test put me unlink with min_free not reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_put match="0x5555" length="6"/>
+		<ptl_put match="0x5555" length="6" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -53,15 +59,17 @@
     <desc>Test put me unlink with min_free reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_put match="0x5555" length="7"/>
+		<ptl_put match="0x5555" length="7" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -69,15 +77,17 @@
     <desc>Test get le unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_pt>
 	  <ptl_le_append le_opt="OP_GET USE_ONCE" uid="ANY">
 	    <ptl_md>
-	      <ptl_get/>
+	      <ptl_get target_id="SELF"/>
 	      <msleep count="10"/>
 	    </ptl_md>
 	    <ptl_le_unlink ret="ARG_INVALID"/>
 	  </ptl_le_append>
 	</ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -85,15 +95,17 @@
     <desc>Test get me unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_GET USE_ONCE" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_get match="0x5555"/>
+		<ptl_get match="0x5555" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -101,15 +113,17 @@
     <desc>Test get me unlink with min_free not reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_GET MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_get match="0x5555" length="6"/>
+		<ptl_get match="0x5555" length="6" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -117,15 +131,17 @@
     <desc>Test get me unlink with min_free reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
 	    <ptl_me_append me_opt="OP_GET MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
 	      <ptl_md>
-		<ptl_get match="0x5555" length="7"/>
+		<ptl_get match="0x5555" length="7" target_id="SELF"/>
 		<msleep count="10"/>
 	      </ptl_md>
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -133,8 +149,9 @@
     <desc>Test atomic le unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_pt>
-	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY">
+	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
 	    <ptl_md>
 	      <ptl_atomic/>
 	      <msleep count="10"/>
@@ -142,6 +159,7 @@
 	    <ptl_le_unlink ret="ARG_INVALID"/>
 	  </ptl_le_append>
 	</ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -149,8 +167,9 @@
     <desc>Test atomic me unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 		<ptl_atomic match="0x5555"/>
 		<msleep count="10"/>
@@ -158,6 +177,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -165,8 +185,9 @@
     <desc>Test atomic me unlink with min_free not reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 		<ptl_atomic match="0x5555" length="6"/>
 		<msleep count="10"/>
@@ -174,6 +195,7 @@
 	      <ptl_me_unlink/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -181,8 +203,9 @@
     <desc>Test atomic me unlink with min_free reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 		<ptl_atomic match="0x5555" length="7"/>
 		<msleep count="10"/>
@@ -190,6 +213,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -197,8 +221,9 @@
     <desc>Test fetch atomic le unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_pt>
-	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY">
+	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
 	    <ptl_md>
 	    <ptl_md>
 	      <ptl_fetch/>
@@ -208,6 +233,7 @@
 	    <ptl_le_unlink ret="ARG_INVALID"/>
 	  </ptl_le_append>
 	</ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -215,8 +241,9 @@
     <desc>Test fetch atomic me unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_fetch match="0x5555"/>
@@ -226,6 +253,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -233,8 +261,9 @@
     <desc>Test fetch atomic me unlink with min_free not reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_fetch match="0x5555" length="6"/>
@@ -244,6 +273,7 @@
 	      <ptl_me_unlink/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -251,8 +281,9 @@
     <desc>Test fetch atomic me unlink with min_free reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_fetch match="0x5555" length="7"/>
@@ -262,6 +293,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -269,8 +301,9 @@
     <desc>Test swap le unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_pt>
-	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY">
+	  <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
 	    <ptl_md>
 	    <ptl_md>
 	      <ptl_swap atom_op="SWAP"/>
@@ -280,6 +313,7 @@
 	    <ptl_le_unlink ret="ARG_INVALID"/>
 	  </ptl_le_append>
 	</ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -287,8 +321,9 @@
     <desc>Test swap me unlink with USE_ONCE</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_swap match="0x5555" atom_op="SWAP"/>
@@ -298,6 +333,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -305,8 +341,9 @@
     <desc>Test swap me unlink with min_free not reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_swap match="0x5555" length="6" atom_op="SWAP"/>
@@ -316,6 +353,7 @@
 	      <ptl_me_unlink/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -323,8 +361,9 @@
     <desc>Test swap me unlink with min_free reached</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
+    <ompi_rt>
 	  <ptl_pt>
-	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
+	    <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
 	      <ptl_md>
 	      <ptl_md>
 		<ptl_swap match="0x5555" length="7" atom_op="SWAP"/>
@@ -334,6 +373,7 @@
 	      <ptl_me_unlink ret="ARG_INVALID"/>
 	    </ptl_me_append>
 	  </ptl_pt>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>

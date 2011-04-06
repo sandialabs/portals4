@@ -48,6 +48,8 @@
   <subtest>
     <desc>Test PtlPut 64K with good parameters to ME</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="65536" ni_opt="MATCH LOGICAL">
         <ptl_eq>
 	  <ptl_pt>
@@ -81,13 +83,17 @@
 	  </ptl_pt>
 	</ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters from ME</desc>
     <ptl>
-      <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
+ 	  <ptl_ni>
+	  <ompi_rt>
+     <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
 	<ptl_eq>
 	  <ptl_pt>
 	    <ptl_get_id/>
@@ -117,13 +123,17 @@
 	  </ptl_pt>
 	</ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters to LE</desc>
     <ptl>
-      <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="16384">
+   	  <ptl_ni>
+	  <ompi_rt>
+   <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="16384">
         <ptl_eq>
 	  <ptl_pt>
 	    <ptl_get_id/>
@@ -156,6 +166,8 @@
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
@@ -163,6 +175,8 @@
     <desc>Test PtlGet with good parameters from LE</desc>
     <ptl>
       <barrier/>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="16384">
         <ptl_eq>
 	  <ptl_pt>
@@ -193,12 +207,16 @@
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -232,12 +250,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -268,12 +290,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -307,12 +333,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="8192">
         <ptl_eq>
 	  <ptl_pt>
@@ -343,12 +373,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
 	  <ptl_pt>
@@ -382,12 +416,16 @@
   	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
 	  <ptl_pt>
@@ -418,12 +456,16 @@
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -458,12 +500,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters ME and MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="8192" ni_opt="MATCH LOGICAL">
         <ptl_eq>
 	  <ptl_pt>
@@ -493,12 +539,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlPut with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="8192">
         <ptl_eq>
 	  <ptl_pt>
@@ -532,12 +582,16 @@
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PtlGet with good parameters LE and MD IOVEC of 8 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="NO_MATCH LOGICAL" desired_max_msg_size="8192">
         <ptl_eq>
 	  <ptl_pt>
@@ -568,12 +622,16 @@
 	  </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test indirect PtlPut with good parameters MD IOVEC of 32 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="32768" ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -606,12 +664,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test indirect PtlGet with good parameters MD IOVEC of 32 </desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="32768" ni_opt="MATCH LOGICAL">
         <ptl_eq>
 	  <ptl_pt>
@@ -641,12 +703,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test PUT using RDMA message flow with drop at target</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="32768" ni_opt="NO_MATCH LOGICAL">
 	<ptl_eq>
 	  <ptl_pt>
@@ -680,12 +746,16 @@
 	  </ptl_pt>
 	</ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+      </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test GET using RDMA message flow with drop at target</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="32768" ni_opt="NO_MATCH LOGICAL">
 	<ptl_eq>
 	  <ptl_pt>
@@ -712,6 +782,8 @@
             </if>
 	  </ptl_pt>
 	</ptl_eq>
+      </ptl_ni>
+	  </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>

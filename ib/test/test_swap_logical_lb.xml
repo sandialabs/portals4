@@ -3,6 +3,8 @@
 <subtest>
 <desc>Test swap CSWAP_GT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x25f91c24" me_match="0x67fbcb8e">
@@ -18,6 +20,9 @@
 <check length="4" type="UINT" offset="4" me_data="0x25f91c24"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
@@ -25,6 +30,8 @@
 <subtest>
 <desc>Test swap CSWAP_GT/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xf8f8" me_match="0x73260564">
@@ -40,12 +47,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0xf8f8"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.433506420676230853">
@@ -61,12 +73,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.433506420676230853"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.307248799818703955">
@@ -82,12 +99,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.307248799818703955"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/CHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xd2" me_match="0x530a6776">
@@ -103,12 +125,17 @@
 <check length="1" type="CHAR" offset="1" me_data="0xd2"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x3fa371256c5eabfa" me_match="0x32f78d1e">
@@ -124,12 +151,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x3fa371256c5eabfa"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x61bb" me_match="0x31778204">
@@ -145,12 +177,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0x61bb"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.297062023949499987">
@@ -166,12 +203,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.297062023949499987"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x04b8" me_match="0x380d96d2">
@@ -187,12 +229,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x04b8"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.194881218033346515">
@@ -208,12 +255,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.194881218033346515"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x027f11ed63d4036f">
@@ -229,12 +281,17 @@
 <check length="8" type="ULONG" offset="8" le_data="0x027f11ed63d4036f"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="DOUBLE" me_data="0.158704568052551453" me_match="0x70bf2a30">
@@ -250,12 +307,17 @@
 <check length="8" type="DOUBLE" offset="8" me_data="0.158704568052551453"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x3a4b" me_match="0x5371b0d6">
@@ -271,12 +333,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x3a4b"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="SHORT" le_data="0xad90">
@@ -292,12 +359,17 @@
 <check length="2" type="SHORT" offset="2" le_data="0xad90"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x3b44a7aa">
@@ -313,12 +385,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x3b44a7aa"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x6b03af22" me_match="0x5a089ad3">
@@ -334,12 +411,17 @@
 <check length="4" type="UINT" offset="4" me_data="0x6b03af22"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="INT" le_data="0x6bff0af9">
@@ -355,12 +437,17 @@
 <check length="4" type="INT" offset="4" le_data="0x6bff0af9"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="SHORT" le_data="0xa9e8">
@@ -376,12 +463,17 @@
 <check length="2" type="SHORT" offset="2" le_data="0xa9e8"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x3af40b247992e890" me_match="0x42e16cb4">
@@ -397,12 +489,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x3af40b247992e890"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x0b2cacf847e1b41f" me_match="0x7121ce2f">
@@ -418,12 +515,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x0b2cacf847e1b41f"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.375411408946900171">
@@ -439,12 +541,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.375411408946900171"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/CHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xc7" me_match="0x54fc0cf">
@@ -460,12 +567,17 @@
 <check length="1" type="CHAR" offset="1" me_data="0xc7"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x7c58" me_match="0x3b1b1d4">
@@ -481,12 +593,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0x7c58"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x220028ae7d509ec7" me_match="0x2a0d257e">
@@ -502,12 +619,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x220028ae7d509ec7"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x5470" me_match="0x4e9b48e4">
@@ -523,12 +645,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0x5470"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/CHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0x69" me_match="0x22e9e738">
@@ -544,12 +671,17 @@
 <check length="1" type="CHAR" offset="1" me_data="0x69"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0x60d0" me_match="0x11c106c1">
@@ -565,12 +697,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0x60d0"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x52ec" me_match="0x64a823fb">
@@ -586,12 +723,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x52ec"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.38463712" me_match="0x4f05e38">
@@ -607,12 +749,17 @@
 <check length="4" type="FLOAT" offset="4" me_data="0.38463712"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0x5b">
@@ -628,12 +775,17 @@
 <check length="1" type="UCHAR" offset="1" le_data="0x5b"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x7cf3f510" me_match="0x4dd7addf">
@@ -649,12 +801,17 @@
 <check length="4" type="INT" offset="4" me_data="0x7cf3f510"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.307180223824753629">
@@ -670,12 +827,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.307180223824753629"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x33d7349e6d36dc46" me_match="0xf7d1448">
@@ -691,12 +853,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x33d7349e6d36dc46"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x517e4aa3">
@@ -712,12 +879,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x517e4aa3"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x8404" me_match="0x4e723fb3">
@@ -733,12 +905,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x8404"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.17454715">
@@ -754,12 +931,17 @@
 <check length="4" type="FLOAT" offset="4" le_data="0.17454715"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xfd67">
@@ -775,12 +957,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0xfd67"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x63c40c4b">
@@ -796,12 +983,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x63c40c4b"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x362f7d00" me_match="0x2b7f21fe">
@@ -817,12 +1009,17 @@
 <check length="4" type="UINT" offset="4" me_data="0x362f7d00"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.28846794" me_match="0x1d475576">
@@ -838,12 +1035,17 @@
 <check length="4" type="FLOAT" offset="4" me_data="0.28846794"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x0c4433e564c28b9f">
@@ -859,12 +1061,17 @@
 <check length="8" type="ULONG" offset="8" le_data="0x0c4433e564c28b9f"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x05e1d729" me_match="0x5fc6c34">
@@ -880,12 +1087,17 @@
 <check length="4" type="INT" offset="4" me_data="0x05e1d729"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x6a006aa1">
@@ -901,12 +1113,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x6a006aa1"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x508d5a9c455f2079">
@@ -922,12 +1139,17 @@
 <check length="8" type="LONG" offset="8" le_data="0x508d5a9c455f2079"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xafff">
@@ -943,12 +1165,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0xafff"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="DOUBLE" me_data="0.000392114514508376" me_match="0x6a6b8728">
@@ -964,12 +1191,17 @@
 <check length="8" type="DOUBLE" offset="8" me_data="0.000392114514508376"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x5ab73b1c" me_match="0x6a19febd">
@@ -985,12 +1217,17 @@
 <check length="4" type="INT" offset="4" me_data="0x5ab73b1c"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xa4ba" me_match="0x755069a4">
@@ -1006,12 +1243,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0xa4ba"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x346c">
@@ -1027,12 +1269,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0x346c"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0xe9ab" me_match="0x62ed5c34">
@@ -1048,12 +1295,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0xe9ab"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x3f74" me_match="0x6681728f">
@@ -1069,12 +1321,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x3f74"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x380c849f01e212d1" me_match="0x5ddfc991">
@@ -1090,12 +1347,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x380c849f01e212d1"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xcc51">
@@ -1111,12 +1373,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0xcc51"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x0e6ae741">
@@ -1132,12 +1399,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x0e6ae741"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/CHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0xb6" me_match="0x319b26b5">
@@ -1153,12 +1425,17 @@
 <check length="1" type="CHAR" offset="1" me_data="0xb6"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x2d6974080ae18eb9" me_match="0x2c967474">
@@ -1174,12 +1451,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x2d6974080ae18eb9"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.401146043109360473">
@@ -1195,12 +1477,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.401146043109360473"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/CHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="CHAR" me_data="0x36" me_match="0x74a29a7b">
@@ -1216,12 +1503,17 @@
 <check length="1" type="CHAR" offset="1" me_data="0x36"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x559a79f56cc40cc3">
@@ -1237,12 +1529,17 @@
 <check length="8" type="ULONG" offset="8" le_data="0x559a79f56cc40cc3"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x6850">
@@ -1258,12 +1555,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0x6850"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0xf1">
@@ -1279,12 +1581,17 @@
 <check length="1" type="UCHAR" offset="1" le_data="0xf1"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x5043adcc294ab211" me_match="0x32ca8b28">
@@ -1300,12 +1607,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x5043adcc294ab211"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.493070187475423083">
@@ -1321,12 +1633,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.493070187475423083"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x1f33c48b" me_match="0x73408928">
@@ -1342,12 +1659,17 @@
 <check length="4" type="UINT" offset="4" me_data="0x1f33c48b"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="FLOAT" me_data="0.26122248" me_match="0xaabb47c">
@@ -1363,12 +1685,17 @@
 <check length="4" type="FLOAT" offset="4" me_data="0.26122248"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x5d" me_match="0x6a946e2">
@@ -1384,12 +1711,17 @@
 <check length="1" type="UCHAR" offset="1" me_data="0x5d"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="INT" me_data="0x3b22e848" me_match="0x1602b01c">
@@ -1405,12 +1737,17 @@
 <check length="4" type="INT" offset="4" me_data="0x3b22e848"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.201061773140825961">
@@ -1426,12 +1763,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.201061773140825961"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x5dd1b02555db7223">
@@ -1447,12 +1789,17 @@
 <check length="8" type="LONG" offset="8" le_data="0x5dd1b02555db7223"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.31239247">
@@ -1468,12 +1815,17 @@
 <check length="4" type="FLOAT" offset="4" le_data="0.31239247"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xc2cc">
@@ -1489,12 +1841,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0xc2cc"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x731df2ad3295ec13" me_match="0x4627e4f">
@@ -1510,12 +1867,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x731df2ad3295ec13"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x59fd1fc26b6ff702" me_match="0x2797a028">
@@ -1531,12 +1893,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x59fd1fc26b6ff702"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0xbb">
@@ -1552,12 +1919,17 @@
 <check length="1" type="UCHAR" offset="1" le_data="0xbb"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x0dbc085a" me_match="0x491fc8fe">
@@ -1573,12 +1945,17 @@
 <check length="4" type="UINT" offset="4" me_data="0x0dbc085a"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0xc42e">
@@ -1594,12 +1971,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0xc42e"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0xc609" me_match="0x588da2c0">
@@ -1615,12 +1997,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0xc609"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UINT" me_data="0x1042bc50" me_match="0x7778edb5">
@@ -1636,12 +2023,17 @@
 <check length="4" type="UINT" offset="4" me_data="0x1042bc50"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x54db1021">
@@ -1657,12 +2049,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x54db1021"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x4d1fe2800d983a63" me_match="0x7dfdf809">
@@ -1678,12 +2075,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x4d1fe2800d983a63"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0xd8" me_match="0x3ba9d2e2">
@@ -1699,12 +2101,17 @@
 <check length="1" type="UCHAR" offset="1" me_data="0xd8"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="USHORT" me_data="0x2ffa" me_match="0x4090d028">
@@ -1720,12 +2127,17 @@
 <check length="2" type="USHORT" offset="2" me_data="0x2ffa"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/USHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="USHORT" le_data="0x23fa">
@@ -1741,12 +2153,17 @@
 <check length="2" type="USHORT" offset="2" le_data="0x23fa"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x6a" me_match="0x158fd73c">
@@ -1762,12 +2179,17 @@
 <check length="1" type="UCHAR" offset="1" me_data="0x6a"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x1c18001a6db28347" me_match="0x63d10a29">
@@ -1783,12 +2205,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x1c18001a6db28347"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/INT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="INT" le_data="0x1132536e">
@@ -1804,12 +2231,17 @@
 <check length="4" type="INT" offset="4" le_data="0x1132536e"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xec0b" me_match="0x377c7768">
@@ -1825,12 +2257,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0xec0b"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/SHORT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="SHORT" me_data="0xf31b" me_match="0x2474e875">
@@ -1846,12 +2283,17 @@
 <check length="2" type="SHORT" offset="2" me_data="0xf31b"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="ULONG" me_data="0x214bcca52f93c671" me_match="0x23fb9cab">
@@ -1867,12 +2309,17 @@
 <check length="8" type="ULONG" offset="8" me_data="0x214bcca52f93c671"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.010860271440825658">
@@ -1888,12 +2335,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.010860271440825658"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/UINT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UINT" le_data="0x5e484289">
@@ -1909,12 +2361,17 @@
 <check length="4" type="UINT" offset="4" le_data="0x5e484289"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/DOUBLE</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="DOUBLE" le_data="0.270286601999292553">
@@ -1930,12 +2387,17 @@
 <check length="8" type="DOUBLE" offset="8" le_data="0.270286601999292553"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LT/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x2d6b9bfe1c999923" me_match="0x7dd6a6bf">
@@ -1951,12 +2413,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x2d6b9bfe1c999923"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/FLOAT</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.04900181">
@@ -1972,12 +2439,17 @@
 <check length="4" type="FLOAT" offset="4" le_data="0.04900181"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GE/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="LONG" le_data="0x04fb43cd0c5ecaff">
@@ -1993,12 +2465,17 @@
 <check length="8" type="LONG" offset="8" le_data="0x04fb43cd0c5ecaff"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_LE/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x3467f2ee78d72be7" me_match="0x3461e24a">
@@ -2014,12 +2491,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x3467f2ee78d72be7"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_GT/ULONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="ULONG" le_data="0x6f6baa5450a66d3d">
@@ -2035,12 +2517,17 @@
 <check length="8" type="ULONG" offset="8" le_data="0x6f6baa5450a66d3d"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP_NE/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="UCHAR" me_data="0x42" me_match="0x7f12bb0">
@@ -2056,12 +2543,17 @@
 <check length="1" type="UCHAR" offset="1" me_data="0x42"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap MSWAP/LONG</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="MATCH LOGICAL">
 <ptl_pt>
 <ptl_me me_opt="OP_PUT OP_GET" type="LONG" me_data="0x6815f62e16740a1c" me_match="0x24ba12fb">
@@ -2077,12 +2569,17 @@
 <check length="8" type="LONG" offset="8" me_data="0x6815f62e16740a1c"/>
 </ptl_me>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
 <subtest>
 <desc>Test swap CSWAP/UCHAR</desc>
 <ptl>
+<ptl_ni>
+<ompi_rt>
 <ptl_ni ni_opt="NO_MATCH LOGICAL">
 <ptl_pt>
 <ptl_le le_opt="OP_PUT OP_GET" type="UCHAR" le_data="0x9f">
@@ -2098,6 +2595,9 @@
 <check length="1" type="UCHAR" offset="1" le_data="0x9f"/>
 </ptl_le>
 </ptl_pt>
+<barrier/>
+</ptl_ni>
+</ompi_rt>
 </ptl_ni>
 </ptl>
 </subtest> <barrier/>
