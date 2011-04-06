@@ -41,12 +41,10 @@ static int get_desired_mapping(struct node_info *info)
 				msg.pid = my_id.phys.pid;
 				msg.rank = info->rank;
 				MPI_Send(&msg, sizeof(msg), MPI_CHAR, j, 0, MPI_COMM_WORLD);
-				//printf("FZ sent from rank %d to rank %d\n", i, j);
 			}
 		} else {
 			/* Get their info. */
 			MPI_Recv(&msg, sizeof(msg), MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
-			//printf("FZ recv from rank %d - %x:%x\n", i, msg.nid, msg.pid);
 
 			assert(i == msg.rank);
 			
