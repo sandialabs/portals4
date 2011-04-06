@@ -12,14 +12,27 @@
 #define MAX_NI_TYPES		(4)	
 
 struct ni;
-struct rpc;
 
 /*
  * interface table entry
  */
 typedef struct iface {
 	struct ni		*ni[MAX_NI_TYPES];
-	//char			if_name[IF_NAMESIZE];
+	char			ifname[IF_NAMESIZE];
+
+	/* Rank table, for logical NIs only. */
+	ptl_size_t map_size;
+	ptl_process_t *actual_mapping;
+
+	/* Listen to incoming IB connections. */
+	struct rdma_event_channel *cm_channel;
+	struct rdma_cm_id	*listen_id;	/* for physical NI. */
+	int listen;						/* boolean' true if listening */
+	struct sockaddr_in sin;		/* local address this interface is bound to. */
+	struct ibv_context	*ibv_context;
+	struct ibv_pd		*pd;
+	ev_io			cm_watcher;
+
 } iface_t;
 
 typedef struct gbl {
@@ -37,20 +50,7 @@ typedef struct gbl {
 	pthread_t		event_thread;
 	int			event_thread_run;
 
-	struct rpc		*rpc;
-
 	ptl_jid_t		jid;
-	ptl_nid_t		nid;
-
-	ptl_nid_t		main_ctl_nid;	/* NID of the main control process */
-
-	ptl_rank_t		rank;
-	unsigned int		nranks;		/* total number of rank for job */
-
-	ptl_rank_t		local_rank;
-	unsigned int		local_nranks;	/* number of ranks on that node */
-
-	unsigned int		num_nids;	/* number of nodes */
 
 } gbl_t;
 

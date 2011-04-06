@@ -4,6 +4,8 @@
   <subtest>
     <desc>Test PtlPut 32K with good parameters to ME</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni desired_max_msg_size="32768" ni_opt="MATCH LOGICAL">
 	<ptl_eq>
 	  <ptl_pt>
@@ -36,6 +38,9 @@
 
 	  </ptl_pt>
         </ptl_eq>
+	  <barrier/>
+      </ptl_ni>
+	  </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>

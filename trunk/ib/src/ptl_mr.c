@@ -40,7 +40,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	       | IBV_ACCESS_REMOTE_READ
 	       | IBV_ACCESS_REMOTE_ATOMIC;
 
-	ibmr = ibv_reg_mr(ni->pd, start, length, access);
+	ibmr = ibv_reg_mr(ni->iface->pd, start, length, access);
 	if (!ibmr) {
 		WARN();
 		err = PTL_FAIL;
@@ -56,10 +56,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	mr->ibmr = ibmr;
 
 	/* For now do not drop mr's take one more reference */
-	mr_ref(mr);
-
-	//mr->start = start;
-	//mr->length = length;
+	//	mr_ref(mr);
 
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_add(&mr->list, &ni->mr_list);
@@ -80,12 +77,15 @@ err1:
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	mr_t *mr;
+#if 0
 	struct list_head *l;
+#endif
 
 	if (debug > 1)
 		printf("mr_lookup: start = %p, length = %" PRIu64 "\n",
 			start, length);
 
+#if 0
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_for_each(l, &ni->mr_list) {
 		mr = list_entry(l, mr_t , list);
@@ -97,6 +97,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		}
 	}
 	pthread_spin_unlock(&ni->mr_list_lock);
+#endif
 
 	return mr_create(ni, start, length, mr_p);
 

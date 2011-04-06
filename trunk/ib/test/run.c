@@ -283,8 +283,6 @@ struct node_info *push_info(struct node_info *head, int tok)
 		info->ptr = &info->ni_handle;
 		info->desired_ptr = &info->desired;
 		info->actual_ptr = &info->actual;
-		info->desired_map_ptr = &info->desired_map[0];
-		info->actual_map_ptr = &info->actual_map[0];
 		info->ni_opt = PTL_NI_MATCHING | PTL_NI_PHYSICAL;
 		break;
 	case NODE_PTL_NI_STATUS:
@@ -521,9 +519,6 @@ int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_JID:
 			info->jid = get_jid(info, val);
 			break;
-		case ATTR_DESIRED_PTR:
-			info->desired_ptr = get_ptr(val);
-			break;
 		case ATTR_DESIRED_MAX_ENTRIES:
 			info->desired.max_entries = get_number(info, val);
 			break;
@@ -553,18 +548,6 @@ int get_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_DESIRED_MAX_ATOMIC_SIZE:
 			info->desired.max_atomic_size = get_number(info, val);
-			break;
-		case ATTR_ACTUAL_PTR:
-			info->actual_ptr = get_ptr(val);
-			break;
-		case ATTR_MAP_SIZE:
-			info->map_size = get_number(info, val);
-			break;
-		case ATTR_DESIRED_MAP_PTR:
-			info->desired_map_ptr = get_ptr(val);
-			break;
-		case ATTR_ACTUAL_MAP_PTR:
-			info->actual_map_ptr = get_ptr(val);
 			break;
 		case ATTR_NI_HANDLE:
 			info->ni_handle = get_handle(info, val);
@@ -767,7 +750,6 @@ int get_attr(struct node_info *info, xmlNode *node)
 		if (!set_me_len)
 			info->me.length = IOV_SIZE;
 	}
-
 
 	if (set_md_data) {
 		set_data(info->md_data, info->buf, info->type,
@@ -1154,7 +1136,7 @@ int check_attr(struct node_info *info, xmlNode *node)
 	return 0;
 }
 
-int walk_tree(struct node_info *head, xmlNode *parent);
+static int walk_tree(struct node_info *head, xmlNode *parent);
 
 static void *run_thread(void *arg)
 {
@@ -1183,7 +1165,7 @@ static void *run_thread(void *arg)
 	return NULL;
 }
 
-int walk_tree(struct node_info *info, xmlNode *parent)
+static int walk_tree(struct node_info *info, xmlNode *parent)
 {
 	xmlNode *node = NULL;
 	int errs;
@@ -1589,6 +1571,7 @@ void set_default_info(struct node_info *info)
 
 	info->iface				= PTL_IFACE_DEFAULT;
 	info->pid				= PTL_PID_ANY;
+	info->rank				= PTL_RANK_ANY;
 	info->ni_opt				= PTL_NI_MATCHING | PTL_NI_PHYSICAL;
 	info->desired.max_entries		= 10;
 	info->desired.max_overflow_entries	= 10;
@@ -1598,7 +1581,7 @@ void set_default_info(struct node_info *info)
 	info->desired.max_pt_index		= 10;
 	info->desired.max_iovecs		= IOV_SIZE;
 	info->desired.max_list_size		= 10;
-	info->desired.max_msg_size		= 64;
+	info->desired.max_msg_size		= IOV_SIZE*1024;
 	info->desired.max_atomic_size		= 64;
 	info->map_size				= 10;
 	info->ni_handle				= PTL_INVALID_HANDLE;

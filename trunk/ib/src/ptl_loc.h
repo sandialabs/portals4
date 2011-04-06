@@ -49,10 +49,8 @@ typedef uint64_t	__be64;
 #include "ptl_log.h"
 #include "ptl_types.h"
 #include "ptl_ref.h"
-#include "ptl_shared.h"
 #include "ptl_evloop.h"
 #include "ptl_gbl.h"
-#include "ptl_rpc.h"
 #include "ptl_index.h"
 #include "ptl_obj.h"
 #include "ptl_maps.h"
@@ -184,6 +182,50 @@ enum {
 	STATE_INIT_DONE,
 	STATE_INIT_LAST,
 };
+
+/* RDMA CM private data */
+struct cm_priv_request {
+	uint32_t options;	  /* NI options (physical/logical, ...) */
+	// TODO: make network safe
+	ptl_process_t src_id;		/* rank or NID/PID requesting that connection */
+};
+
+#define REJECT_REASON_NO_NI			1 /* NI options don't match */
+#define REJECT_REASON_GOOD_SRQ		2 /* no main process, SRQ # is good */
+#define REJECT_REASON_BAD_PARAM		3 /* request parm is invalid */
+#define REJECT_REASON_CONNECTED		4 /* already connected */
+#define REJECT_REASON_ERROR			5 /* something unexpected happened; catch all */
+struct cm_priv_reject {
+	uint32_t reason;
+	uint32_t xrc_srq_num;
+};
+
+struct cm_priv_accept {
+	uint32_t xrc_srq_num;
+};
+
+/* In current implementation a NID is just an IPv4 address in host order. */
+static inline in_addr_t nid_to_addr(ptl_nid_t nid)
+{
+	return htonl(nid);
+}
+
+static inline ptl_nid_t addr_to_nid(struct sockaddr_in *sin)
+{
+	return ntohl(sin->sin_addr.s_addr);
+}
+
+/* A PID is a port in host order. */
+static inline uint16_t pid_to_port(ptl_pid_t pid)
+{
+	if (pid == PTL_PID_ANY) {
+		return 0;
+	} else {
+		return htons(pid);
+	}
+}
+
+void session_list_is_empty(void);
 
 int send_message(buf_t *buf);
 
