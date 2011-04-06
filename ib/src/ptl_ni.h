@@ -13,18 +13,25 @@
 #define MAX_SRQ_RECV_WR		(100)
 
 extern obj_type_t *type_ni;
+struct ni;
 
 struct nid_connect {
-	/* NID is used for both logical and physical. PID is only used for
+	/* Destination. NID is used for both logical and physical. PID is only used for
 	 * physical. rank is not used. May be replace with nid/pid instead
 	 * to avoid confusion. */
 	ptl_process_t id;	/* keep me first */
 
+	struct ni *ni;				/* backpointer to owner */
+
+	/* Used for logical NI only.
+	 *
+	 * For receive side: links the receiving NI together. For send
+	 * side, used to wait until main rank is connected to. */
+	struct list_head list;
+
 	enum {
 		GBLN_DISCONNECTED,
-		GBLN_RESOLVE_ADDR,
 		GBLN_RESOLVING_ADDR,
-		GBLN_RESOLVE_ROUTE,
 		GBLN_RESOLVING_ROUTE,
 		GBLN_CONNECT,
 		GBLN_CONNECTING,
@@ -41,16 +48,26 @@ struct nid_connect {
 
 	pthread_mutex_t	mutex;
 
-	/* xi/xt awaiting connection establishment. */
+	/* xi/xt awaiting connection establishment. In case of logical NI,
+	 * they will only hold something if the rank is not the main rank
+	 * and the main rank is not yet connected. */
 	struct list_head xi_list;
 	struct list_head xt_list;
+
+	/* For logical NI only. There's only one connection, with the
+	 * main rank on the remote node. */
+	struct nid_connect *main_connect;
 };
 
-/* Translation table to find a connection from a rank. */
-struct rank_to_nid {
-	ptl_rank_t rank;			/* key */
+/* RANK */
+struct rank_entry {
+	ptl_rank_t rank;
+	ptl_rank_t main_rank;		/* main rank on NID */
 	ptl_nid_t nid;
-	struct nid_connect *connect;
+	ptl_pid_t pid;
+	uint32_t remote_xrc_srq_num;
+	in_addr_t addr;				/* IPV4 address, in network order */ // todo: keep ?
+	struct nid_connect connect;
 };
 
 /*
@@ -66,14 +83,10 @@ typedef struct ni {
 	ptl_ni_limits_t		limits;
 	ptl_ni_limits_t		current;
 
-	struct {
-		uint32_t		nid;
-		uint32_t		pid;
-	} *map;
-
 	int			ref_cnt;
 
-	unsigned int		iface;
+	struct iface *iface;		/* back pointer to interface owner */
+	unsigned int ifacenum;
 	unsigned int		options;
 	unsigned int		ni_type;
 
@@ -103,12 +116,12 @@ typedef struct ni {
 	struct list_head	mr_list;
 	pthread_spinlock_t	mr_list_lock;
 
-	/*Can be held outside of EQ object lock */
+	/* Can be held outside of EQ object lock */
 	pthread_mutex_t		eq_wait_mutex;
 	pthread_cond_t		eq_wait_cond;
 	int			eq_waiting;
 
-	/*Can be held outside of CT object lock */
+	/* Can be held outside of CT object lock */
 	pthread_mutex_t		ct_wait_mutex;
 	pthread_cond_t		ct_wait_cond;
 	int			ct_waiting;
@@ -123,43 +136,43 @@ typedef struct ni {
 	ptl_process_t		id;
 	ptl_uid_t		uid;
 
-	/* Network interface. */
-	char			ifname[IF_NAMESIZE];	/* eg "ib0", "ib1", ... */
-	in_addr_t		addr;			/* ifname IPV4 address, in network order */
-
 	/* IB */
-	struct ibv_context	*ibv_context;
-	struct ibv_pd		*pd;
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
 	ev_io			cq_watcher;
-	struct rdma_event_channel *cm_channel;
-	ev_io			cm_watcher;
-	struct rdma_cm_id	*listen_id;	/* for physical NI. */
 	struct ibv_srq		*srq;	/* either regular of XRC */
-
-	/* IB XRC support. Used only with physical NI. */
-	int			xrc_domain_fd;
-	struct ibv_xrc_domain	*xrc_domain;
-	uint32_t		xrc_rcv_qpn;
-
-	/* shared memory. */
-	struct {
-		int fd;
-		struct shared_config *m; /* mmaped memory */
-		struct rank_table *rank_table;
-	} shmem;
 
 	/* Connection mappings. */
 	union {
 		struct {
 			/* Logical NI. */
-			struct rank_to_nid *rank_to_nid_table;
-			struct nid_connect *nid_table;
+
+			/* On a NID, the process creating the domain is going to
+			 * be the one with the lowest PID. Connection attempts to
+			 * the other PIDs will be rejected. Also, locally, the
+			 * XI/XT will not be queued on the non-main ranks, but on
+			 * the main rank. */
+			int is_main;		/* todo: not used enough / remove ? */
+			int main_rank;
+
+			/* Rank table. This is used to connection TO remote ranks */
+			int map_size;
+			struct rank_entry *rank_table;
+
+			/* Connection list. This is a set of passive connections,
+			 * used for connections FROM remote ranks. */
+			pthread_mutex_t lock;
+			struct list_head connect_list;
+
+			/* IB XRC support. */
+			int			xrc_domain_fd;
+			struct ibv_xrc_domain	*xrc_domain;
+			uint32_t		xrc_rcv_qpn;
+	
 		} logical;
 		struct {
 			/* Physical NI. */
-			void *tree;	/* binary tree root */
+			void *tree;			/* binary tree root, of nid_connect elements */
 			pthread_mutex_t lock;
 		} physical;
 	};

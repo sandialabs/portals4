@@ -651,7 +651,13 @@ static int check_conn(xt_t *xt)
 	}
 
 	pthread_mutex_lock(&connect->mutex);
-	if (unlikely(connect->state != GBLN_CONNECTED)) {
+
+	if (connect->main_connect) {
+		assert(connect->state == GBLN_DISCONNECTED);
+		set_xt_dest(xt, connect->main_connect);
+		ret = 0;
+	} 
+	else if (unlikely(connect->state != GBLN_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
 		 * flushed once connected/disconnected. */
 
@@ -668,7 +674,6 @@ static int check_conn(xt_t *xt)
 			/* Connection in already in progress. */
 			ret = 1;
 		}
-
 	} else {
 		set_xt_dest(xt, connect);
 		ret = 0;

@@ -47,26 +47,10 @@ libportals_la_SOURCES = \
 	ptl_recv.c \
 	ptl_ref.c \
 	ptl_ref.h \
-	ptl_rpc.c \
-	ptl_rpc.h \
 	ptl_send.c \
-	ptl_shared.h \
 	ptl_tgt.c \
 	ptl_types.h \
 	ptl_xx.c \
 	ptl_xx.h \
 	ptl_rt.c \
 	ptl_rt.h
-
-bin_PROGRAMS = control
-control_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
-control_LDADD = -libverbs -lrdmacm -lpthread -lev
-control_SOURCES =  \
-	ctl.h \
-	ptl_evloop.c \
-	ptl_evloop.h \
-	ctl_config.c \
-	ctl_ib.c \
-	ctl_main.c \
-	ptl_rpc.c \
-	ptl_rpc.h

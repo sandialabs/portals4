@@ -179,7 +179,7 @@ static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
 
 	xi->dest.qp = connect->cm_id->qp;
 	if (ni->options & PTL_NI_LOGICAL)
-		xi->dest.xrc_remote_srq_num = xi->obj_ni->shmem.rank_table->elem[xi->target.rank].xrc_srq_num;
+		xi->dest.xrc_remote_srq_num = xi->obj_ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
 }
 
 static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
@@ -188,7 +188,7 @@ static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
 
 	xt->dest.qp = connect->cm_id->qp;
 	if (ni->options & PTL_NI_LOGICAL)
-		xt->dest.xrc_remote_srq_num = xt->obj_ni->shmem.rank_table->elem[xt->initiator.rank].xrc_srq_num;
+		xt->dest.xrc_remote_srq_num = xt->obj_ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
 }
 
 #endif /* PTL_XX_H */

@@ -71,7 +71,7 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 
 	if (debug)
 		printf("rank %d: comp_wait - wc.status(%d), wc.length(%d)\n",
-			   ni->gbl->rank, (int) wc.status, (int) wc.byte_len);
+			   ni->id.rank, (int) wc.status, (int) wc.byte_len);
 
 
 	if (wc.status == IBV_WC_WR_FLUSH_ERR)

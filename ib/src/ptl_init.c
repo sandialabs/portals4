@@ -167,7 +167,6 @@ static int init_start(xi_t *xi)
 	data_t *get_data = NULL;
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
-	gbl_t *gbl = ni->gbl;
 	struct nid_connect *connect;
 
 	/* Ensure we are already connected. */
@@ -178,7 +177,12 @@ static int init_start(xi_t *xi)
 	}
 
 	pthread_mutex_lock(&connect->mutex);
-	if (unlikely(connect->state != GBLN_CONNECTED)) {
+
+	if (connect->main_connect) {
+		assert(connect->state == GBLN_DISCONNECTED);
+		set_xi_dest(xi, connect->main_connect);
+	} 
+	else if (unlikely(connect->state != GBLN_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
 		 * flushed once connected/disconnected. */
 		int ret;
@@ -463,7 +467,7 @@ int process_init(xi_t *xi)
 		err = pthread_spin_trylock(&xi->state_lock);
 		if (err) {
 			if (err == EBUSY) {
-				/* we've set send_again so the current
+				/* we've set state_again so the current
 				 * thread will take another crack at it */
 				return PTL_OK;
 			} else {

@@ -4,6 +4,8 @@
   <subtest>
     <desc>Test short put without offset</desc>
     <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ompi_rt>
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -48,6 +50,8 @@
             
           </ptl_pt>
         </ptl_eq>
+      </ptl_ni>
+      </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>

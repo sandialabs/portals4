@@ -17,7 +17,8 @@ print <<EOF;
   <subtest>
     <desc>Message relay amongst $num_ranks ranks</desc>
     <ptl>
-      
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+	  <ompi_rt>
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt>
@@ -27,7 +28,7 @@ print <<EOF;
               <ptl_md md_data="0xaa">
                 
                 <!-- Wait for rank 1 to set up the receiving buffer -->
-                <mpi_barrier/>
+                <barrier/>
                 
                 <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
                 
@@ -56,7 +57,7 @@ print <<EOF
                 
 
                 <!-- Force rank 0 to wait for the buffer to be ready -->
-                <mpi_barrier/>
+                <barrier/>
                 
                 <!-- Wait for the PUT from rank 0 -->                
                 <ptl_eq_wait>
@@ -91,7 +92,7 @@ print <<EOF
               <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77">
                 
                 <!-- Force rank 0 to wait for the buffer to be ready -->
-                <mpi_barrier/>
+                <barrier/>
                 
                 <!-- Wait for the PUT from rank 1 -->                
                 <ptl_eq_wait>
@@ -104,6 +105,9 @@ print <<EOF
             
           </ptl_pt>
         </ptl_eq>
+	<barrier/>
+      </ptl_ni>
+	  </ompi_rt>
       </ptl_ni>
     </ptl>
     

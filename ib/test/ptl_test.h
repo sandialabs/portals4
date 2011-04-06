@@ -81,15 +81,14 @@ struct node_info {
 	 */
 	ptl_interface_t		iface;
 	unsigned int		ni_opt;
-	ptl_pid_t		pid;
+	ptl_rank_t			rank;
+	ptl_pid_t			pid;
 	ptl_ni_limits_t		desired;
 	ptl_ni_limits_t		*desired_ptr;
 	ptl_ni_limits_t		actual;
 	ptl_ni_limits_t		*actual_ptr;
 	ptl_size_t		map_size;
-	ptl_process_t		desired_map[MAP_SIZE];
 	ptl_process_t		*desired_map_ptr;
-	ptl_process_t		actual_map[MAP_SIZE];
 	ptl_process_t		*actual_map_ptr;
 	ptl_handle_ni_t		ni_handle;
 	ptl_sr_index_t		reg;
