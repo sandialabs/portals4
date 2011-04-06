@@ -573,6 +573,15 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
             }
             break;
     }
+    {
+        ptl_md_t *mdptr;
+        mdptr = PtlInternalMDFetch(md_handle);
+        if ((mdptr->options & PTL_MD_VOLATILE) && (length > nit_limits[md.s.ni].max_volatile_size)) {
+            VERBOSE_ERROR("asking for too big a send (%u bytes) from an MD marked VOLATILE (max %u bytes)\n",
+                          length, nit_limits[md.s.ni].max_volatile_size);
+            return PTL_ARG_INVALID;
+        }
+    }
     if (pt_index > nit_limits[md.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
@@ -819,6 +828,15 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
     {
+        ptl_md_t *mdptr;
+        mdptr = PtlInternalMDFetch(md_handle);
+        if ((mdptr->options & PTL_MD_VOLATILE) && (length > nit_limits[md.s.ni].max_volatile_size)) {
+            VERBOSE_ERROR("asking for too big a send (%u bytes) from an MD marked VOLATILE (max %u bytes)\n",
+                          length, nit_limits[md.s.ni].max_volatile_size);
+            return PTL_ARG_INVALID;
+        }
+    }
+    {
         int multiple = 1;
         switch (datatype) {
             case PTL_CHAR:
@@ -1042,6 +1060,15 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         return PTL_ARG_INVALID;
     }
     {
+        ptl_md_t *mdptr;
+        mdptr = PtlInternalMDFetch(put_md_handle);
+        if ((mdptr->options & PTL_MD_VOLATILE) && (length > nit_limits[put_md.s.ni].max_volatile_size)) {
+            VERBOSE_ERROR("asking for too big a send (%u bytes) from an MD marked VOLATILE (max %u bytes)\n",
+                          length, nit_limits[put_md.s.ni].max_volatile_size);
+            return PTL_ARG_INVALID;
+        }
+    }
+    {
         int multiple = 1;
         switch (datatype) {
             case PTL_CHAR:
@@ -1261,6 +1288,15 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n",
                       PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
+    }
+    {
+        ptl_md_t *mdptr;
+        mdptr = PtlInternalMDFetch(put_md_handle);
+        if ((mdptr->options & PTL_MD_VOLATILE) && (length > nit_limits[put_md.s.ni].max_volatile_size)) {
+            VERBOSE_ERROR("asking for too big a send (%u bytes) from an MD marked VOLATILE (max %u bytes)\n",
+                          length, nit_limits[put_md.s.ni].max_volatile_size);
+            return PTL_ARG_INVALID;
+        }
     }
     {
         int multiple = 1;
