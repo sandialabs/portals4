@@ -48,36 +48,6 @@
     </ptl>
   </subtest>
   <subtest>
-    <desc>Test PtlNIInit with bad desired pointer</desc>
-    <ptl>
-      <ptl_ni_init desired_ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad actual pointer</desc>
-    <ptl>
-      <ptl_ni_init actual_ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad desired map pointer</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="NO_MATCH LOGICAL" desired_map_ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with NULL actual map pointer</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="NO_MATCH LOGICAL" actual_map_ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad actual map pointer</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="NO_MATCH LOGICAL" actual_map_ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlNIInit with bad options (1)</desc>
     <ptl>
       <ptl_ni_init ni_opt="0" ret="ARG_INVALID"/>

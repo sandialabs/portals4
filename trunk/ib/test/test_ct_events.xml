@@ -5,12 +5,13 @@
     <desc>Test ct events with put to me</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -23,6 +24,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -30,12 +32,13 @@
     <desc>Test ct events with put to me, no CT_COMM</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -48,6 +51,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -55,12 +59,13 @@
     <desc>Test ct events with put to me, no CT_SEND</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_ACK">
-		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -73,6 +78,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -80,12 +86,13 @@
     <desc>Test ct events with put to me, no CT_ACK</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND">
-		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -98,6 +105,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -105,12 +113,13 @@
     <desc>Test ct events with put to me with CT_BYTES</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT CT_COMM CT_BYTES" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
-		  <ptl_put length="10" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_put length="10" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -123,6 +132,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -130,12 +140,13 @@
     <desc>Test ct events with get to me</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY">
-		  <ptl_get match="0x5aa5" pt_index="2"/>
+		  <ptl_get match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -148,6 +159,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -155,12 +167,13 @@
     <desc>Test ct events with get to me, no CT_COMM</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_GET" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY">
-		  <ptl_get match="0x5aa5" pt_index="2"/>
+		  <ptl_get match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -173,6 +186,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -180,12 +194,13 @@
     <desc>Test ct events with get to me, no CT_REPLY</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md>
-		  <ptl_get match="0x5aa5" pt_index="2"/>
+		  <ptl_get match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -198,6 +213,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -205,12 +221,13 @@
     <desc>Test ct events with get to me with CT_BYTES</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY CT_BYTES">
-		  <ptl_get length="10" match="0x5aa5" pt_index="2"/>
+		  <ptl_get length="10" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -223,6 +240,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -230,12 +248,13 @@
     <desc>Test ct events with atomic to me</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -248,6 +267,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -255,12 +275,13 @@
     <desc>Test ct events with atomic to me, no CT_COMM</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -273,6 +294,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -280,12 +302,13 @@
     <desc>Test ct events with atomic to me, no CT_SEND</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -298,6 +321,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -305,12 +329,13 @@
     <desc>Test ct events with atomic to me, no CT_ACK</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -323,6 +348,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -330,12 +356,13 @@
     <desc>Test ct events with atomic to me with CT_BYTES</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
-		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2"/>
+		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -348,6 +375,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -355,6 +383,7 @@
     <desc>Test ct events with fetch atomic to me</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -362,7 +391,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -380,6 +409,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -387,6 +417,7 @@
     <desc>Test ct events with fetch atomic to me, no CT_COMM</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -394,7 +425,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
@@ -412,6 +443,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -419,6 +451,7 @@
     <desc>Test ct events with fetch atomic to me, no CT_SEND</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -426,7 +459,7 @@
 		<ptl_md>
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -444,6 +477,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -451,6 +485,7 @@
     <desc>Test ct events with fetch atomic to me, no CT_REPLY</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -458,7 +493,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md>
-		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -476,6 +511,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -483,6 +519,7 @@
     <desc>Test ct events with fetch atomic to me with CT_BYTES</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -490,7 +527,7 @@
 		<ptl_md md_opt="CT_SEND CT_BYTES">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
-		      <ptl_fetch length="10" atom_op="LXOR" match="0x5aa5" pt_index="2"/>
+		      <ptl_fetch length="10" atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
@@ -508,6 +545,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -515,6 +553,7 @@
     <desc>Test ct events with swap to me</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -522,7 +561,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -540,6 +579,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -547,6 +587,7 @@
     <desc>Test ct events with swap to me, no CT_COMM</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -554,7 +595,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
@@ -572,6 +613,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -579,6 +621,7 @@
     <desc>Test ct events with swap to me, no CT_SEND</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -586,7 +629,7 @@
 		<ptl_md>
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -604,6 +647,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -611,6 +655,7 @@
     <desc>Test ct events with swap to me, no CT_REPLY</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -618,7 +663,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md>
-		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -636,6 +681,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -643,6 +689,7 @@
     <desc>Test ct events with swap to me with CT_BYTES</desc>
     <ptl>
       <ptl_ni>
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_me me_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2" me_match="0xa5a5" me_ignore="0xff00">
@@ -650,7 +697,7 @@
 		<ptl_md md_opt="CT_SEND CT_BYTES">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
-		      <ptl_swap length="10" atom_op="SWAP" match="0x5aa5" pt_index="2"/>
+		      <ptl_swap length="10" atom_op="SWAP" match="0x5aa5" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
@@ -668,6 +715,7 @@
 	    </ptl_me>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -675,12 +723,13 @@
     <desc>Test ct events with put to le</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -693,6 +742,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -700,12 +750,13 @@
     <desc>Test ct events with put to le, no CT_COMM</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -718,6 +769,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -725,12 +777,13 @@
     <desc>Test ct events with put to le, no CT_SEND</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_ACK">
-		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -743,6 +796,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -750,12 +804,13 @@
     <desc>Test ct events with put to le, no CT_ACK</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND">
-		  <ptl_put ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_put ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -768,6 +823,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -775,12 +831,13 @@
     <desc>Test ct events with put to le with CT_BYTES</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT CT_COMM CT_BYTES" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
-		  <ptl_put length="10" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_put length="10" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -793,6 +850,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -800,12 +858,13 @@
     <desc>Test ct events with get to le</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_GET CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY">
-		  <ptl_get pt_index="2"/>
+		  <ptl_get pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -818,6 +877,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -825,12 +885,13 @@
     <desc>Test ct events with get to le, no CT_COMM</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_GET" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY">
-		  <ptl_get pt_index="2"/>
+		  <ptl_get pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -843,6 +904,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -850,12 +912,13 @@
     <desc>Test ct events with get to le, no CT_REPLY</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_GET CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md>
-		  <ptl_get pt_index="2"/>
+		  <ptl_get pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -868,6 +931,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -875,12 +939,13 @@
     <desc>Test ct events with get to le with CT_BYTES</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_REPLY CT_BYTES">
-		  <ptl_get length="10" pt_index="2"/>
+		  <ptl_get length="10" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -893,6 +958,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -900,12 +966,13 @@
     <desc>Test ct events with atomic to le</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -918,6 +985,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -925,12 +993,13 @@
     <desc>Test ct events with atomic to le, no CT_COMM</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="0" ct_event_failure="0"/>
@@ -943,6 +1012,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -950,12 +1020,13 @@
     <desc>Test ct events with atomic to le, no CT_SEND</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_ACK">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -968,6 +1039,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -975,12 +1047,13 @@
     <desc>Test ct events with atomic to le, no CT_ACK</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND">
-		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_atomic atom_op="LXOR" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="1" ct_event_failure="0"/>
@@ -993,6 +1066,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1000,12 +1074,13 @@
     <desc>Test ct events with atomic to le with CT_BYTES</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2">
 	      <ptl_ct>
 		<ptl_md md_opt="CT_SEND CT_ACK CT_BYTES">
-		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" pt_index="2"/>
+		  <ptl_atomic length="10" atom_op="LXOR" ack_req="CT_ACK" pt_index="2" target_id="SELF"/>
 		  <msleep count="10"/>
 		  <ptl_ct_get ct_handle="ct[0]">
 		    <check ct_event_success="10" ct_event_failure="0"/>
@@ -1018,6 +1093,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1025,6 +1101,7 @@
     <desc>Test ct events with fetch atomic to le</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1032,7 +1109,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1050,6 +1127,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1057,6 +1135,7 @@
     <desc>Test ct events with fetch atomic to le, no CT_COMM</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET" uid="ANY" pt_index="2">
@@ -1064,7 +1143,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
@@ -1082,6 +1161,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1089,6 +1169,7 @@
     <desc>Test ct events with fetch atomic to le, no CT_SEND</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1096,7 +1177,7 @@
 		<ptl_md>
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1114,6 +1195,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1121,6 +1203,7 @@
     <desc>Test ct events with fetch atomic to le, no CT_REPLY</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1128,7 +1211,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md>
-		      <ptl_fetch atom_op="LXOR" pt_index="2"/>
+		      <ptl_fetch atom_op="LXOR" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1146,6 +1229,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1153,6 +1237,7 @@
     <desc>Test ct events with fetch atomic to le with CT_BYTES</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2">
@@ -1160,7 +1245,7 @@
 		<ptl_md md_opt="CT_SEND CT_BYTES">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
-		      <ptl_fetch length="10" atom_op="LXOR" pt_index="2"/>
+		      <ptl_fetch length="10" atom_op="LXOR" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
@@ -1178,6 +1263,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1185,6 +1271,7 @@
     <desc>Test ct events with swap to le</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1192,7 +1279,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1210,6 +1297,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1217,6 +1305,7 @@
     <desc>Test ct events with swap to le, no CT_COMM</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET" uid="ANY" pt_index="2">
@@ -1224,7 +1313,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="0" ct_event_failure="0"/>
@@ -1242,6 +1331,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1249,6 +1339,7 @@
     <desc>Test ct events with swap to le, no CT_SEND</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1256,7 +1347,7 @@
 		<ptl_md>
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY">
-		      <ptl_swap atom_op="SWAP" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1274,6 +1365,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1281,6 +1373,7 @@
     <desc>Test ct events with swap to le, no CT_REPLY</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM" uid="ANY" pt_index="2">
@@ -1288,7 +1381,7 @@
 		<ptl_md md_opt="CT_SEND">
 	          <ptl_ct>
 		    <ptl_md>
-		      <ptl_swap atom_op="SWAP" pt_index="2"/>
+		      <ptl_swap atom_op="SWAP" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="1" ct_event_failure="0"/>
@@ -1306,6 +1399,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
@@ -1313,6 +1407,7 @@
     <desc>Test ct events with swap to le with CT_BYTES</desc>
     <ptl>
       <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+    <ompi_rt>
 	<ptl_ct>
 	  <ptl_pt pt_index="2">
 	    <ptl_le le_opt="OP_PUT OP_GET CT_COMM CT_BYTES" uid="ANY" pt_index="2">
@@ -1320,7 +1415,7 @@
 		<ptl_md md_opt="CT_SEND CT_BYTES">
 	          <ptl_ct>
 		    <ptl_md md_opt="CT_REPLY CT_BYTES">
-		      <ptl_swap length="10" atom_op="SWAP" pt_index="2"/>
+		      <ptl_swap length="10" atom_op="SWAP" pt_index="2" target_id="SELF"/>
 		      <msleep count="10"/>
 		      <ptl_ct_get ct_handle="ct[0]">
 		        <check ct_event_success="10" ct_event_failure="0"/>
@@ -1338,6 +1433,7 @@
 	    </ptl_le>
 	  </ptl_pt>
 	</ptl_ct>
+    </ompi_rt>
       </ptl_ni>
     </ptl>
   </subtest>
