@@ -76,8 +76,8 @@ err1:
  */
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
-	mr_t *mr;
 #if 0
+	mr_t *mr;
 	struct list_head *l;
 #endif
 
@@ -101,7 +101,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 
 	return mr_create(ni, start, length, mr_p);
 
-found:
+#if 0
+ found:
 	*mr_p = mr;
 	return PTL_OK;
+#endif
 }
