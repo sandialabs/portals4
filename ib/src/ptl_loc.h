@@ -216,13 +216,18 @@ static inline ptl_nid_t addr_to_nid(struct sockaddr_in *sin)
 }
 
 /* A PID is a port in host order. */
-static inline uint16_t pid_to_port(ptl_pid_t pid)
+static inline __be16 pid_to_port(ptl_pid_t pid)
 {
 	if (pid == PTL_PID_ANY) {
 		return 0;
 	} else {
 		return htons(pid);
 	}
+}
+
+static inline ptl_pid_t port_to_pid(__be16 port)
+{
+	return ntohs(port);
 }
 
 void session_list_is_empty(void);

@@ -15,11 +15,14 @@
 extern obj_type_t *type_ni;
 struct ni;
 
+/* Describes the current state of a connection with a remote rank or node. */
 struct nid_connect {
 	/* Destination. NID is used for both logical and physical. PID is only used for
 	 * physical. rank is not used. May be replace with nid/pid instead
 	 * to avoid confusion. */
 	ptl_process_t id;	/* keep me first */
+
+	pthread_mutex_t	mutex;
 
 	struct ni *ni;				/* backpointer to owner */
 
@@ -46,8 +49,6 @@ struct nid_connect {
 	int retry_resolve_route;
 	int retry_connect;
 
-	pthread_mutex_t	mutex;
-
 	/* xi/xt awaiting connection establishment. In case of logical NI,
 	 * they will only hold something if the rank is not the main rank
 	 * and the main rank is not yet connected. */
@@ -59,14 +60,13 @@ struct nid_connect {
 	struct nid_connect *main_connect;
 };
 
-/* RANK */
+/* Remote rank. There's one record per rank. Logical NIs only. */
 struct rank_entry {
 	ptl_rank_t rank;
 	ptl_rank_t main_rank;		/* main rank on NID */
 	ptl_nid_t nid;
 	ptl_pid_t pid;
 	uint32_t remote_xrc_srq_num;
-	in_addr_t addr;				/* IPV4 address, in network order */ // todo: keep ?
 	struct nid_connect connect;
 };
 
@@ -126,13 +126,14 @@ typedef struct ni {
 	pthread_cond_t		ct_wait_cond;
 	int			ct_waiting;
 
-	/* simulation code */
+	/* Pending send and receive operations. */
 	struct list_head	send_list;
 	pthread_spinlock_t	send_list_lock;
 
 	struct list_head	recv_list;
 	pthread_spinlock_t	recv_list_lock;
 
+	/* NI identifications */
 	ptl_process_t		id;
 	ptl_uid_t		uid;
 
@@ -140,7 +141,7 @@ typedef struct ni {
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
 	ev_io			cq_watcher;
-	struct ibv_srq		*srq;	/* either regular of XRC */
+	struct ibv_srq		*srq;	/* either regular or XRC */
 
 	/* Connection mappings. */
 	union {
@@ -152,7 +153,7 @@ typedef struct ni {
 			 * the other PIDs will be rejected. Also, locally, the
 			 * XI/XT will not be queued on the non-main ranks, but on
 			 * the main rank. */
-			int is_main;		/* todo: not used enough / remove ? */
+			int is_main;
 			int main_rank;
 
 			/* Rank table. This is used to connection TO remote ranks */
@@ -172,6 +173,7 @@ typedef struct ni {
 		} logical;
 		struct {
 			/* Physical NI. */
+
 			void *tree;			/* binary tree root, of nid_connect elements */
 			pthread_mutex_t lock;
 		} physical;

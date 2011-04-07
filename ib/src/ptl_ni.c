@@ -649,7 +649,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 			init.qp_type			= IBV_QPT_XRC;
 			init.xrc_domain			= ni->logical.xrc_domain;
 
-			priv.src_id.rank = ni->id.rank; /* todo: ni->id same as connect->id ? */
+			priv.src_id.rank = ni->id.rank;
 		} else {
 			init.qp_type			= IBV_QPT_RC;
 			init.srq = ni->srq;
@@ -1044,7 +1044,7 @@ static int init_ib(struct iface *iface, ni_t *ni)
 		(ni->id.phys.pid == PTL_PID_ANY)) {
 		/* No well know PID was given. Retrieve the pid given by
 		 * bind. */
-		ni->id.phys.pid = ntohs(rdma_get_src_port(iface->listen_id));
+		ni->id.phys.pid = port_to_pid(rdma_get_src_port(iface->listen_id));
 	}
 
 	/* Create CC, CQ, SRQ. */
