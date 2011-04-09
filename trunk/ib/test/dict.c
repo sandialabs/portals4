@@ -14,6 +14,7 @@ struct dict_init {
 	{"set",				TYPE_NODE,		NODE_SET},
 	{"check",			TYPE_NODE,		NODE_CHECK},
 	{"if",				TYPE_NODE,		NODE_IF},
+	{"ifdef",			TYPE_NODE,		NODE_IFDEF},
 	{"else",			TYPE_NODE,		NODE_ELSE},
 	{"test",			TYPE_NODE,		NODE_TEST},
 	{"threads",			TYPE_NODE,		NODE_THREADS},
@@ -187,6 +188,10 @@ struct dict_init {
 
 	{"rank",			TYPE_ATTR,		ATTR_RANK},
 	{"target_id",			TYPE_ATTR,		ATTR_TARGET_ID},
+
+#ifdef PTL_CHECK_POINTER
+	{"check_pointer",		TYPE_OPT,		OPT_CHECK_POINTER},
+#endif
 
 	/* used to mark end of list keep last */
 	{NULL,				0,			0},

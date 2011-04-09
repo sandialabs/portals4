@@ -41,12 +41,14 @@
       <ptl_ni_init ptr="NULL" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlNIInit with bad ni_handle pointer</desc>
     <ptl>
       <ptl_ni_init ptr="BAD" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlNIInit with bad options (1)</desc>
     <ptl>
@@ -120,6 +122,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlNIStatus with BAD status pointer</desc>
     <ptl>
@@ -128,6 +131,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlNIStatus with good parameters</desc>
     <ptl>
@@ -146,6 +150,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlNIHandle with BAD ni_handle pointer</desc>
     <ptl>
@@ -156,6 +161,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlNIHandle with good parameters</desc>
     <ptl>

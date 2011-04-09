@@ -1136,6 +1136,20 @@ int check_attr(struct node_info *info, xmlNode *node)
 	return 0;
 }
 
+int check_opt(xmlNode *node)
+{
+	xmlAttr *attr;
+	struct dict_entry *e;
+
+	for (attr = node->properties; attr; attr = attr->next) {
+		e = lookup((char *)attr->name);
+		if (!e)
+			return 0;
+	}
+
+	return 1;
+}
+
 static int walk_tree(struct node_info *head, xmlNode *parent);
 
 static void *run_thread(void *arg)
@@ -1199,6 +1213,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 			case NODE_ELSE:
 				if (!info->cond)
+					errs = walk_tree(info, node->children);
+				goto done;
+			case NODE_IFDEF:
+				if (check_opt(node))
 					errs = walk_tree(info, node->children);
 				goto done;
 			case NODE_DESC:

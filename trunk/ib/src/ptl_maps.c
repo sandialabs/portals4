@@ -2,6 +2,8 @@
  * ptl_maps.c - code for checking addresses and ranges
  */
 
+#ifdef PTL_CHECK_POINTER
+
 /*
  * this is for debugging only, not performance critical since
  * it will get turned off in production
@@ -104,3 +106,5 @@ int check_range(void *addr, unsigned long length)
 
 	return PTL_ARG_INVALID;
 }
+
+#endif /* PTL_CHECK_POINTER */
