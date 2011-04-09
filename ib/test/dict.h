@@ -8,12 +8,14 @@
 enum {
 	TYPE_NODE,
 	TYPE_ATTR,
+	TYPE_OPT,
 };
 
 enum {
 	NODE_SET,
 	NODE_CHECK,
 	NODE_IF,
+	NODE_IFDEF,
 	NODE_ELSE,
 	NODE_TEST,
 	NODE_THREADS,
@@ -208,6 +210,9 @@ enum {
 
 	/* put */
 	ATTR_TARGET_ID,
+
+	/* options */
+	OPT_CHECK_POINTER,
 };
 
 struct dict_entry {

@@ -15,12 +15,14 @@
       <ptl_md_bind ptr="NULL" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMDBind with md_handle pointer = BAD</desc>
     <ptl>
       <ptl_md_bind ptr="BAD" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMDBind with unsupported options</desc>
     <ptl>
@@ -87,6 +89,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMDBind with md.start = BAD</desc>
     <ptl>
@@ -95,6 +98,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMDBind with md.opt = IOVEC md.start = NULL</desc>
     <ptl>
@@ -103,6 +107,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMDBind with md.opt = IOVEC md.start = BAD</desc>
     <ptl>
@@ -111,6 +116,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMDBind with md.opt = IOVEC iov_base = NULL</desc>
     <ptl>
@@ -119,6 +125,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMDBind with md.opt = IOVEC iov_base = BAD</desc>
     <ptl>
@@ -127,6 +134,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMDBind/Release with good parameters</desc>
     <ptl>

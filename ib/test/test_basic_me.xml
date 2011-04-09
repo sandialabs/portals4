@@ -15,12 +15,14 @@
       <ptl_me_append ptr="NULL" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMEAppend with me_handle = BAD pointer</desc>
     <ptl>
       <ptl_me_append ptr="BAD" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMEAppend with unsupported options</desc>
     <ptl>
@@ -99,6 +101,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMEAppend with me.start = BAD</desc>
     <ptl>
@@ -107,6 +110,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMEAppend with me.opt = IOVEC me.start = NULL</desc>
     <ptl>
@@ -115,6 +119,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMEAppend with me.opt = IOVEC me.start = BAD</desc>
     <ptl>
@@ -123,6 +128,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMEAppend with iov_base = NULL</desc>
     <ptl>
@@ -131,6 +137,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  <ifdef check_pointer="">
   <subtest>
     <desc>Test PtlMEAppend with iov_base = BAD</desc>
     <ptl>
@@ -139,6 +146,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
+  </ifdef>
   <subtest>
     <desc>Test PtlMEAppend with invalid pt_index = 0</desc>
     <ptl>
