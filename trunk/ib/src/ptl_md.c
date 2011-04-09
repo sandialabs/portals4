@@ -38,9 +38,9 @@ void md_release(void *arg)
 		md->sge_list = NULL;
 	}
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_mds--;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 }
 
 static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
@@ -216,15 +216,15 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 	md->start = md_init->start;
 	md->options = md_init->options;
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_mds++;
 	if (unlikely(ni->current.max_mds > ni->limits.max_mds)) {
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		WARN();
 		err = PTL_NO_SPACE;
 		goto err3;
 	}
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	*md_handle = md_to_handle(md);
 
@@ -267,7 +267,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 
 	/* There should only be 2 references on the object before we can
 	 * release it. */
-	if (md->obj_ref.ref_cnt > 2) {
+	if (md->obj.obj_ref.ref_cnt > 2) {
 		md_put(md);
 		err = PTL_IN_USE;
 		goto err1;

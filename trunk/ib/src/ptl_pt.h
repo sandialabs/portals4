@@ -20,8 +20,7 @@ enum {
  * and freed so don't get carried away and call pt_get for
  * example */
 typedef struct pt {
-	PTL_BASE_OBJ
-
+	obj_t			obj;
 	unsigned int		options;
 	int			in_use;
 	int			enabled;

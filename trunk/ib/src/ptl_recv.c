@@ -317,13 +317,20 @@ void process_recv(EV_P_ ev_io *w, int revents)
 		case STATE_RECV_DROP_BUF:
 			buf_put(buf);
 			ni->num_recv_drops++;
-			return PTL_OK;
+			goto done;
 		case STATE_RECV_ERROR:
 			buf_put(buf);
 			ni->num_recv_errs++;
-			return PTL_FAIL;
+			goto fail;
 		case STATE_RECV_DONE:
-			return PTL_OK;
+			goto done;
 		}
 	}
+
+done:
+	return;
+
+fail:
+	// TODO handle failed read
+	return;
 }

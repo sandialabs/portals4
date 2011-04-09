@@ -28,7 +28,7 @@ int index_init()
 	if (!index_bit_map)
 		return PTL_NO_SPACE;
 
-	index_maps = ptl_calloc(SEGMENT_SIZE, sizeof(void *));
+	index_maps = ptl_calloc(SEGMENT_SIZE, sizeof(void **));
 	if (!index_maps) {
 		free(index_bit_map);
 		return PTL_NO_SPACE;
@@ -40,7 +40,7 @@ int index_init()
 void index_fini()
 {
 	int i;
-	void *p;
+	void **p;
 
 	for (i = 0; i < SEGMENT_SIZE; i++) {
 		p = index_maps[i];
@@ -52,7 +52,7 @@ void index_fini()
 	free(index_bit_map);
 }
 
-int index_get(void *data, unsigned int *index_p)
+int index_get(obj_t *obj, unsigned int *index_p)
 {
 	unsigned int next_word;
 	unsigned int first_word;
@@ -99,7 +99,7 @@ found_bit:
 		index_maps[index >> SEGMENT_SHIFT] = map;
 	}
 
-	map[index & (SEGMENT_SIZE - 1)] = data;
+	map[index & (SEGMENT_SIZE - 1)] = obj;
 	index_bit_map[next_word] |= (1ULL << (index & (WORD_SIZE - 1)));
 
 	next_index = index + 1;
@@ -135,7 +135,7 @@ int index_free(unsigned int index)
 	return PTL_OK;
 }
 
-int index_lookup(unsigned int index, void **data)
+int index_lookup(unsigned int index, obj_t **obj_p)
 {
 	unsigned int segment;
 	unsigned int offset;
@@ -151,6 +151,6 @@ int index_lookup(unsigned int index, void **data)
 	if (!map || !map[offset])
 		return PTL_FAIL;
 
-	*data = map[offset];
+	*obj_p = map[offset];
 	return PTL_OK;
 }

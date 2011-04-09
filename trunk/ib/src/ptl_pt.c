@@ -105,11 +105,10 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->options = options;
 	pt->eq = eq;
 
-	pt->obj_type = &type_info[OBJ_TYPE_PT];
-	pt->obj_parent = (obj_t *)ni;
-	pt->obj_ni = ni;
-	pt->obj_type = type_pt;
-	pthread_spin_init(&pt->obj_lock, PTHREAD_PROCESS_PRIVATE);
+	pt->obj.obj_parent = (obj_t *)ni;
+	pt->obj.obj_ni = ni;
+	pt->obj.obj_type = type_pt;
+	pthread_spin_init(&pt->obj.obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	pthread_spin_init(&pt->list_lock, PTHREAD_PROCESS_PRIVATE);
 	INIT_LIST_HEAD(&pt->priority_list);
@@ -169,9 +168,9 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	pthread_spin_destroy(&pt->list_lock);
-	pthread_spin_destroy(&pt->obj_lock);
-	pt->obj_parent = NULL;
-	pt->obj_ni = NULL;
+	pthread_spin_destroy(&pt->obj.obj_lock);
+	pt->obj.obj_parent = NULL;
+	pt->obj.obj_ni = NULL;
 
 	pt->in_use = 0;
 	pt->enabled = 0;
@@ -221,16 +220,16 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	/* Serialize with progress to let active target processing complete */
-	pthread_spin_lock(&pt->obj_lock);
+	pthread_spin_lock(&pt->obj.obj_lock);
 	pt->disable |= PT_API_DISABLE;
 	while(pt->num_xt_active) {
-		pthread_spin_unlock(&pt->obj_lock);
+		pthread_spin_unlock(&pt->obj.obj_lock);
 		sched_yield();
-		pthread_spin_lock(&pt->obj_lock);
+		pthread_spin_lock(&pt->obj.obj_lock);
 	}
 	pt->enabled = 0;
 	pt->disable &= ~PT_API_DISABLE;
-	pthread_spin_unlock(&pt->obj_lock);
+	pthread_spin_unlock(&pt->obj.obj_lock);
 
 	ni_put(ni);
 	gbl_put(gbl);
@@ -272,14 +271,14 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	/* Serialize with disable operations */
-	pthread_spin_lock(&pt->obj_lock);
+	pthread_spin_lock(&pt->obj.obj_lock);
 	if (pt->disable) {
-		pthread_spin_unlock(&pt->obj_lock);
+		pthread_spin_unlock(&pt->obj.obj_lock);
 		sched_yield();
-		pthread_spin_lock(&pt->obj_lock);
+		pthread_spin_lock(&pt->obj.obj_lock);
 	}
 	pt->enabled = 1;
-	pthread_spin_unlock(&pt->obj_lock);
+	pthread_spin_unlock(&pt->obj.obj_lock);
 
 	ni_put(ni);
 	gbl_put(gbl);

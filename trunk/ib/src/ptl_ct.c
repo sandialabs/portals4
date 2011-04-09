@@ -13,21 +13,21 @@ void ct_release(void *arg)
 	list_del(&ct->list);
 	pthread_spin_unlock(&ni->ct_list_lock);
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_cts--;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 }
 
 void post_ct(xi_t *xi, ct_t *ct)
 {
-	pthread_spin_lock(&ct->obj_lock);
+	pthread_spin_lock(&ct->obj.obj_lock);
 	if ((ct->event.success + ct->event.failure) >= xi->threshold) {
-		pthread_spin_unlock(&ct->obj_lock);
+		pthread_spin_unlock(&ct->obj.obj_lock);
 		process_init(xi);
 		return;
 	}
 	list_add(&xi->list, &ct->xi_list);
-	pthread_spin_unlock(&ct->obj_lock);
+	pthread_spin_unlock(&ct->obj.obj_lock);
 }
 
 /* caller must hold the CT mutex handling Wait/Poll */
@@ -56,13 +56,13 @@ void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail, ptl_size_t length,
 
 	/* Must take mutex because of poll API */
 	pthread_mutex_lock(&ni->ct_wait_mutex);
-	pthread_spin_lock(&ct->obj_lock);
+	pthread_spin_lock(&ct->obj.obj_lock);
 	if (ni_fail)
 		ct->event.failure++;
 	else
 		ct->event.success += bytes ? length : 1;
 	ct_check(ct);
-	pthread_spin_unlock(&ct->obj_lock);
+	pthread_spin_unlock(&ct->obj.obj_lock);
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
 }
 
@@ -102,14 +102,14 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 	list_add(&ct->list, &ni->ct_list);
 	pthread_spin_unlock(&ni->ct_list_lock);
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_cts++;
 	if (unlikely(ni->current.max_cts > ni->limits.max_cts)) {
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		err = PTL_NO_SPACE;
 		goto err3;
 	}
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	*ct_handle = ct_to_handle(ct);
 
@@ -228,26 +228,26 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	}
 
 	/* Check first */
-	pthread_spin_lock(&ct->obj_lock);
+	pthread_spin_lock(&ct->obj.obj_lock);
 	if ((ct->event.success + ct->event.failure) >= test) {
 		*event = ct->event;
-		pthread_spin_unlock(&ct->obj_lock);
+		pthread_spin_unlock(&ct->obj.obj_lock);
 		goto done;
 	}
-	pthread_spin_unlock(&ct->obj_lock);
+	pthread_spin_unlock(&ct->obj.obj_lock);
 
 	/* Conditionally block until interrupted or CT test succeeds */
 	ni = to_ni(ct);
 	pthread_mutex_lock(&ni->ct_wait_mutex);
 	while (1) {
-		pthread_spin_lock(&ct->obj_lock);
+		pthread_spin_lock(&ct->obj.obj_lock);
 		if ((ct->event.success + ct->event.failure) >= test) {
 			*event = ct->event;
-			pthread_spin_unlock(&ct->obj_lock);
+			pthread_spin_unlock(&ct->obj.obj_lock);
 			pthread_mutex_unlock(&ni->ct_wait_mutex);
 			goto done;
 		}
-		pthread_spin_unlock(&ct->obj_lock);
+		pthread_spin_unlock(&ct->obj.obj_lock);
 		ni->ct_waiting++;
 		pthread_cond_wait(&ni->ct_wait_cond, &ni->ct_wait_mutex);
 		ni->ct_waiting--;
@@ -308,20 +308,20 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		}
 
 
-		pthread_spin_lock(&ct[i]->obj_lock);
+		pthread_spin_lock(&ct[i]->obj.obj_lock);
 		if ((ct[i]->event.success +
 			ct[i]->event.failure) >= tests[i]) {
 			int j;
 			*event = ct[i]->event;
 			*which = i;
-			pthread_spin_unlock(&ct[i]->obj_lock);
+			pthread_spin_unlock(&ct[i]->obj.obj_lock);
 
 			for (j = 0; j <= i; j++)
 				ct_put(ct[j]);
 
 			goto done;
 		}
-		pthread_spin_unlock(&ct[i]->obj_lock);
+		pthread_spin_unlock(&ct[i]->obj.obj_lock);
 	}
 
 
@@ -341,10 +341,10 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	err = 0;
 	while (!err) {
 		for (i = 0; i < size; i++) {
-			pthread_spin_lock(&ct[i]->obj_lock);
+			pthread_spin_lock(&ct[i]->obj.obj_lock);
 			if (ct[i]->interrupt) {
 				err = PTL_INTERRUPTED;
-				pthread_spin_unlock(&ct[i]->obj_lock);
+				pthread_spin_unlock(&ct[i]->obj.obj_lock);
 				pthread_mutex_unlock(&ni->ct_wait_mutex);
 				goto done2;
 			}
@@ -353,11 +353,11 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 				ct[i]->event.failure) >= tests[i]) {
 				*event = ct[i]->event;
 				*which = i;
-				pthread_spin_unlock(&ct[i]->obj_lock);
+				pthread_spin_unlock(&ct[i]->obj.obj_lock);
 				pthread_mutex_unlock(&ni->ct_wait_mutex);
 				goto done2;
 			}
-			pthread_spin_unlock(&ct[i]->obj_lock);
+			pthread_spin_unlock(&ct[i]->obj.obj_lock);
 		}
 
 		ni->ct_waiting++;
@@ -407,11 +407,11 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
 	/* Must take mutex because of poll API */
 	ni = to_ni(ct);
 	pthread_mutex_lock(&ni->ct_wait_mutex);
-	pthread_spin_lock(&ct->obj_lock);
+	pthread_spin_lock(&ct->obj.obj_lock);
 	ct->event = new_ct;
 
 	ct_check(ct);
-	pthread_spin_unlock(&ct->obj_lock);
+	pthread_spin_unlock(&ct->obj.obj_lock);
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
@@ -447,12 +447,12 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
 	/* Must take mutex because of poll API */
 	ni = to_ni(ct);
 	pthread_mutex_lock(&ni->ct_wait_mutex);
-	pthread_spin_lock(&ct->obj_lock);
+	pthread_spin_lock(&ct->obj.obj_lock);
 	ct->event.success += increment.success;
 	ct->event.failure += increment.failure;
 
 	ct_check(ct);
-	pthread_spin_unlock(&ct->obj_lock);
+	pthread_spin_unlock(&ct->obj.obj_lock);
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
