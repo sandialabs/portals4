@@ -253,7 +253,6 @@ static int type_alloc_page(obj_type_t *type)
 	uint8_t *p;
 	int i;
 	obj_t *obj;
-	unsigned int index = 0;
 
 	err = type_get_pagelist_pointer(type, &pp);
 	if (unlikely(err))
@@ -269,10 +268,6 @@ static int type_alloc_page(obj_type_t *type)
 		obj = (obj_t *)p;
 		obj->obj_free = 1;
 		obj->obj_type = type;
-		err = index_get(obj, &index);
-		if (err)
-			return err;
-		obj->obj_handle	= ((uint64_t)(type->type) << 56) | index;
 		ref_set(&obj->obj_ref, 0);
 		list_add(&obj->obj_list, &type->free_list);
 		p += type->round_size;
@@ -298,6 +293,7 @@ void obj_release(ref_t *ref)
 	err = index_free(index);
 	if (err)
 		ptl_fatal("object corrupted unable to free_index\n");
+	obj->obj_handle = 0;
 
 	if (type->fini)
 		type->fini(obj);
@@ -323,6 +319,7 @@ int obj_alloc(obj_type_t *type, obj_t *parent, obj_t **p_obj)
 	int err;
         obj_t *obj;
 	struct list_head *l;
+	unsigned int index = 0;
 
 	pthread_spin_lock(&type->free_list_lock);
 
@@ -346,6 +343,11 @@ int obj_alloc(obj_type_t *type, obj_t *parent, obj_t **p_obj)
 	obj->obj_parent = parent;
 
 	obj->obj_ni = (type == type_ni) ? (ni_t *)obj : parent->obj_ni;
+
+	err = index_get(obj, &index);
+	if (err)
+		return err;
+	obj->obj_handle	= ((uint64_t)(type->type) << 56) | index;
 
 	ref_init(&obj->obj_ref);
 
@@ -389,26 +391,38 @@ int obj_get(obj_type_t *type, ptl_handle_any_t handle, obj_t **obj_p)
 	if (handle == PTL_HANDLE_NONE)
 		goto done;
 
-	if (handle == PTL_INVALID_HANDLE)
+	if (handle == PTL_INVALID_HANDLE) {
+		WARN();
 		goto err1;
+	}
 
-	if (type_num && handle_type && type_num != handle_type)
+	if (type_num && handle_type && type_num != handle_type) {
+		WARN();
 		goto err1;
+	}
 
 	index = obj_handle_to_index(handle);
 
 	err = index_lookup(index, &obj);
-	if (err)
+	if (err) {
+		WARN();
 		goto err1;
+	}
 
-	if (obj->obj_free)
+	if (obj->obj_free) {
+		WARN();
 		goto err1;
+	}
 
-	if (obj_handle_to_index(obj->obj_handle) != index)
+	if (obj_handle_to_index(obj->obj_handle) != index) {
+		WARN();
 		goto err1;
+	}
 
-	if (type_num && (type_num != obj->obj_type->type))
+	if (type_num && (type_num != obj->obj_type->type)) {
+		WARN();
 		goto err1;
+	}
 
 	obj_ref(obj);
 

@@ -87,6 +87,7 @@ int index_get(obj_t *obj, unsigned int *index_p)
 		}
 	}
 
+	WARN();
 	return PTL_NO_SPACE;
 
 found_bit:
@@ -127,10 +128,20 @@ int index_free(unsigned int index)
 	if (!map)
 		return PTL_FAIL;
 
+	if (!map[offset]) {
+		WARN();
+		return PTL_FAIL;
+	}
+
 	map[offset] = NULL;
 
+	if (!(index_bit_map[index >> WORD_SHIFT] & (1ULL << (index & (WORD_SIZE - 1))))) {
+		WARN();
+		return PTL_FAIL;
+	}
+
 	index_bit_map[index >> WORD_SHIFT] &=
-		~((1 << (index & (WORD_SIZE - 1))));
+		~((1ULL << (index & (WORD_SIZE - 1))));
 
 	return PTL_OK;
 }
