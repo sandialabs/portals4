@@ -91,7 +91,7 @@ static int put_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
-	ct_t *ct;
+	ct_t *ct = NULL;
 	xi_t *xi;
 
 	err = get_gbl(&gbl);
@@ -238,7 +238,7 @@ static int get_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
-	ct_t *ct;
+	ct_t *ct = NULL;
 	xi_t *xi;
 
 	err = get_gbl(&gbl);
@@ -352,7 +352,7 @@ static int atomic_common(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
-	ct_t *ct;
+	ct_t *ct = NULL;
 	xi_t *xi;
 
 	err = get_gbl(&gbl);
@@ -524,9 +524,9 @@ static int fetch_common(ptl_handle_md_t get_md_handle,
 	int err;
 	gbl_t *gbl;
 	md_t *get_md;
-	md_t *put_md;
+	md_t *put_md = NULL;
 	ni_t *ni;
-	ct_t *ct;
+	ct_t *ct = NULL;
 	xi_t *xi;
 
 	err = get_gbl(&gbl);
@@ -724,9 +724,9 @@ static int swap_common(ptl_handle_md_t get_md_handle,
 	int err;
 	gbl_t *gbl;
 	md_t *get_md;
-	md_t *put_md;
+	md_t *put_md = NULL;
 	ni_t *ni;
-	ct_t *ct;
+	ct_t *ct = NULL;
 	xi_t *xi;
 	uint64_t opval = 0;
 

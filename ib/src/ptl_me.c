@@ -63,19 +63,19 @@ int me_get_me(ni_t *ni, me_t **me_p)
 	int err;
 	me_t *me;
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	if (unlikely(ni->current.max_entries >= ni->limits.max_entries)) {
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		return PTL_NO_SPACE;
 	}
 	ni->current.max_entries++;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	err = me_alloc(ni, &me);
 	if (unlikely(err)) {
-		pthread_spin_lock(&ni->obj_lock);
+		pthread_spin_lock(&ni->obj.obj_lock);
 		ni->current.max_entries--;
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		return err;
 	}
 
@@ -184,7 +184,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 
 	/* There should only be 2 references on the object before we can
 	 * release it. */
-	if (me->obj_ref.ref_cnt > 2) {
+	if (me->obj.obj_ref.ref_cnt > 2) {
 		me_put(me);
 		err = PTL_IN_USE;
 		goto err1;

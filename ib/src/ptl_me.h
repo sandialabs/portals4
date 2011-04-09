@@ -8,7 +8,7 @@ extern obj_type_t *type_me;
 #define TYPE_ME			(1)
 
 typedef struct me {
-	PTL_BASE_OBJ
+	obj_t			obj;
 	PTL_LE_OBJ
 
 	ptl_size_t		offset;
@@ -23,27 +23,47 @@ void me_release(void *arg);
 
 static inline int me_alloc(ni_t *ni, me_t **me_p)
 {
-	return obj_alloc(type_me, (obj_t *)ni, (obj_t **)me_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_me, (obj_t *)ni, &obj);
+	if (err) {
+		*me_p = NULL;
+		return err;
+	}
+
+	*me_p = container_of(obj, me_t, obj);
+	return PTL_OK;
 }
 
 static inline int me_get(ptl_handle_me_t handle, me_t **me_p)
 {
-	return obj_get(type_me, (ptl_handle_any_t) handle, (obj_t **)me_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_get(type_me, (ptl_handle_any_t)handle, &obj);
+	if (err) {
+		*me_p = NULL;
+		return err;
+	}
+
+	*me_p = container_of(obj, me_t, obj);
+	return PTL_OK;
 }
 
 static inline void me_ref(me_t *me)
 {
-	obj_ref((obj_t *)me);
+	obj_ref(&me->obj);
 }
 
 static inline int me_put(me_t *me)
 {
-	return obj_put((obj_t *)me);
+	return obj_put(&me->obj);
 }
 
 static inline ptl_handle_me_t me_to_handle(me_t *me)
 {
-        return (ptl_handle_me_t)me->obj_handle;
+        return (ptl_handle_me_t)me->obj.obj_handle;
 }
 
 void me_unlink(me_t *me);

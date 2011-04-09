@@ -77,18 +77,14 @@ void obj_fini(void);
  *	see xx_t for type specific info
  */
 typedef struct obj {
-
-#define PTL_BASE_OBJ \
-	int			obj_free;	\
-	obj_type_t		*obj_type;	\
-	struct obj		*obj_parent;	\
-	struct ni		*obj_ni;	\
-	ptl_handle_any_t	obj_handle;	\
-	pthread_spinlock_t	obj_lock;	\
-	ref_t			obj_ref;	\
+	int			obj_free;
+	obj_type_t		*obj_type;
+	struct obj		*obj_parent;
+	struct ni		*obj_ni;
+	ptl_handle_any_t	obj_handle;
+	pthread_spinlock_t	obj_lock;
+	ref_t			obj_ref;
 	struct list_head	obj_list;
-
-	PTL_BASE_OBJ
 } obj_t;
 
 /*

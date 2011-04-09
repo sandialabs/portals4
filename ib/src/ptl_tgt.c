@@ -220,14 +220,14 @@ static int tgt_start(xt_t *xt)
 	}
 
 	/* Serialize between progress and API */
-	pthread_spin_lock(&xt->pt->obj_lock);
+	pthread_spin_lock(&xt->pt->obj.obj_lock);
 	if (!xt->pt->enabled || xt->pt->disable) {
-		pthread_spin_unlock(&xt->pt->obj_lock);
+		pthread_spin_unlock(&xt->pt->obj.obj_lock);
 		xt->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 	xt->pt->num_xt_active++;
-	pthread_spin_unlock(&xt->pt->obj_lock);
+	pthread_spin_unlock(&xt->pt->obj.obj_lock);
 
 	return STATE_TGT_GET_MATCH;
 }
@@ -292,9 +292,9 @@ static int tgt_get_match(xt_t *xt)
 		if (list_empty(&xt->pt->priority_list) &&
 		    list_empty(&xt->pt->overflow_list)) {
 			WARN();
-			pthread_spin_lock(&xt->pt->obj_lock);
+			pthread_spin_lock(&xt->pt->obj.obj_lock);
 			xt->pt->disable |= PT_AUTO_DISABLE;
-			pthread_spin_unlock(&xt->pt->obj_lock);
+			pthread_spin_unlock(&xt->pt->obj.obj_lock);
 			xt->ni_fail = PTL_NI_FLOW_CTRL;
 			xt->le = NULL;
 			return STATE_TGT_DROP;
@@ -1430,18 +1430,18 @@ static int tgt_cleanup(xt_t *xt)
 		xt->recv_buf = NULL;
 	}
 
-	pthread_spin_lock(&xt->pt->obj_lock);
+	pthread_spin_lock(&xt->pt->obj.obj_lock);
 	xt->pt->num_xt_active--;
 	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
 		xt->pt->enabled = 0;
 		xt->pt->disable &= ~PT_AUTO_DISABLE;
-		pthread_spin_unlock(&xt->pt->obj_lock);
+		pthread_spin_unlock(&xt->pt->obj.obj_lock);
 		if (make_target_event(xt, xt->pt->eq,
 				      PTL_EVENT_PT_DISABLED, NULL))
 			WARN();
 	
 	} else
-		pthread_spin_unlock(&xt->pt->obj_lock);
+		pthread_spin_unlock(&xt->pt->obj.obj_lock);
 
 	xt_put(xt);
 	return STATE_TGT_DONE;

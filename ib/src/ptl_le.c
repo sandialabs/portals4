@@ -54,9 +54,9 @@ void le_release(void *arg)
 		le->mr = NULL;
 	}
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_entries--;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 }
 
 /*
@@ -92,19 +92,19 @@ int le_get_le(ni_t *ni, le_t **le_p)
 	int err;
 	le_t *le;
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	if (unlikely(ni->current.max_entries >= ni->limits.max_entries)) {
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		return PTL_NO_SPACE;
 	}
 	ni->current.max_entries++;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	err = le_alloc(ni, &le);
 	if (unlikely(err)) {
-		pthread_spin_lock(&ni->obj_lock);
+		pthread_spin_lock(&ni->obj.obj_lock);
 		ni->current.max_entries--;
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		return err;
 	}
 

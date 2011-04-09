@@ -9,9 +9,9 @@ void eq_release(void *arg)
 	eq_t *eq = arg;
 	ni_t *ni = to_ni(eq);
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_eqs--;
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	if (eq->eqe_list)
 		free(eq->eqe_list);
@@ -70,15 +70,15 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq->overflow = 0;
 	eq->interrupt = 0;
 
-	pthread_spin_lock(&ni->obj_lock);
+	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_eqs++;
 	/* eq_release will decrement count and free eqe_list */
 	if (unlikely(ni->current.max_eqs > ni->limits.max_eqs)) {
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 		err = PTL_NO_SPACE;
 		goto err3;
 	}
-	pthread_spin_unlock(&ni->obj_lock);
+	pthread_spin_unlock(&ni->obj.obj_lock);
 
 	*eq_handle = eq_to_handle(eq);
 
@@ -147,10 +147,10 @@ int get_event(eq_t *eq, ptl_event_t *event)
 {
 	int ret;
 
-	pthread_spin_lock(&eq->obj_lock);
+	pthread_spin_lock(&eq->obj.obj_lock);
 	if ((eq->producer == eq->consumer) &&
 	    (eq->prod_gen == eq->cons_gen)) {
-		pthread_spin_unlock(&eq->obj_lock);
+		pthread_spin_unlock(&eq->obj.obj_lock);
 		return PTL_EQ_EMPTY;
 	}
 
@@ -165,7 +165,7 @@ int get_event(eq_t *eq, ptl_event_t *event)
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
+	pthread_spin_unlock(&eq->obj.obj_lock);
 	return ret;
 }
 
@@ -377,7 +377,7 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	ptl_event_t *ev;
 	ni_t *ni;
 
-	pthread_spin_lock(&eq->obj_lock);
+	pthread_spin_lock(&eq->obj.obj_lock);
 	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
 		eq->overflow = 1;
 
@@ -405,7 +405,7 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
+	pthread_spin_unlock(&eq->obj.obj_lock);
 
 	/* Handle case where waiters have blocked */
 	ni = to_ni(eq);
@@ -424,7 +424,7 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	ptl_event_t *ev;
 	ni_t *ni;
 
-	pthread_spin_lock(&eq->obj_lock);
+	pthread_spin_lock(&eq->obj.obj_lock);
 	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
 		eq->overflow = 1;
 
@@ -452,7 +452,7 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
-	pthread_spin_unlock(&eq->obj_lock);
+	pthread_spin_unlock(&eq->obj.obj_lock);
 
 	/* Handle case where waiters have blocked */
 	ni = to_ni(eq);

@@ -7,8 +7,7 @@ struct ct;
 extern obj_type_t *type_md;
 
 typedef struct md {
-	PTL_BASE_OBJ
-
+	obj_t			obj;
 	void			*start;
 	unsigned int		num_iov;
 	ptl_size_t		length;
@@ -26,27 +25,47 @@ void md_release(void *arg);
 
 static inline int md_alloc(ni_t *ni, md_t **md_p)
 {
-	return obj_alloc(type_md, (obj_t *)ni, (obj_t **)md_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_md, (obj_t *)ni, &obj);
+	if (err) {
+		*md_p = NULL;
+		return err;
+	}
+
+	*md_p = container_of(obj, md_t, obj);
+	return PTL_OK;
 }
 
 static inline int md_get(ptl_handle_md_t handle, md_t **md_p)
 {
-	return obj_get(type_md, (ptl_handle_any_t) handle, (obj_t **)md_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_get(type_md, (ptl_handle_any_t)handle, &obj);
+	if (err) {
+		*md_p = NULL;
+		return err;
+	}
+
+	*md_p = container_of(obj, md_t, obj);
+	return PTL_OK;
 }
 
 static inline void md_ref(md_t *md)
 {
-	obj_ref((obj_t *)md);
+	obj_ref(&md->obj);
 }
 
 static inline int md_put(md_t *md)
 {
-	return obj_put((obj_t *)md);
+	return obj_put(&md->obj);
 }
 
 static inline ptl_handle_md_t md_to_handle(md_t *md)
 {
-        return (ptl_handle_md_t)md->obj_handle;
+        return (ptl_handle_md_t)md->obj.obj_handle;
 }
 
 #endif /* PTL_MD_H */

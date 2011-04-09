@@ -2,6 +2,8 @@
  * ptl_index.h -- simple index to object mapping service
  */
 
+struct obj;
+
 /*
  * index_init
  *	must be called before any other calls
@@ -20,7 +22,7 @@ void index_fini();
  *	allocate a new index and store data
  *	returns PTL_OK or PTL_NO_SPACE
  */
-int index_get(void *data, unsigned int *index);
+int index_get(struct obj *obj, unsigned int *index);
 
 /*
  * index_free
@@ -34,4 +36,4 @@ int index_free(unsigned int index);
  *	lookup index and return data
  *	returns PTL_OK or PTL_FAIL if index not present
  */
-int index_lookup(unsigned int index, void **data);
+int index_lookup(unsigned int index, struct obj **obj_p);

@@ -75,7 +75,7 @@ struct xremote {
 
 /* initiator side transaction descriptor */
 typedef struct xi {
-	PTL_BASE_OBJ
+	obj_t			obj;
 	PTL_BASE_XX
 
 	ptl_handle_xt_t		xt_handle;
@@ -87,9 +87,9 @@ typedef struct xi {
 	ptl_process_t		target;
 
 	/* This xi is waiting for connection to be established. */
-	struct list_head connect_pending_list;
+	struct list_head	connect_pending_list;
 
-	struct xremote dest;
+	struct xremote		dest;
 
 } xi_t;
 
@@ -99,32 +99,52 @@ void xi_release(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 {
-	return obj_alloc(type_xi, (obj_t *)ni, (obj_t **)xi_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_xi, (obj_t *)ni, &obj);
+	if (err) {
+		*xi_p = NULL;
+		return err;
+	}
+
+	*xi_p = container_of(obj, xi_t, obj);
+	return PTL_OK;
 }
 
 static inline int xi_get(ptl_handle_xi_t xi_handle, xi_t **xi_p)
 {
-	return obj_get(type_xi, (ptl_handle_any_t)xi_handle, (obj_t **)xi_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_get(type_xi, (ptl_handle_any_t)xi_handle, &obj);
+	if (err) {
+		*xi_p = NULL;
+		return err;
+	}
+
+	*xi_p = container_of(obj, xi_t, obj);
+	return PTL_OK;
 }
 
 static inline void xi_ref(xi_t *xi)
 {
-	obj_ref((obj_t *)xi);
+	obj_ref(&xi->obj);
 }
 
 static inline int xi_put(xi_t *xi)
 {
-	return obj_put((obj_t *)xi);
+	return obj_put(&xi->obj);
 }
 
 static inline ptl_handle_xi_t xi_to_handle(xi_t *xi)
 {
-        return (ptl_handle_xi_t)xi->obj_handle;
+        return (ptl_handle_xi_t)xi->obj.obj_handle;
 }
 
 /* target side transaction descriptor */
 typedef struct xt {
-	PTL_BASE_OBJ
+	obj_t			obj;
 	PTL_BASE_XX
 
 	ptl_handle_xi_t		xi_handle;
@@ -150,27 +170,47 @@ void xt_release(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 {
-	return obj_alloc(type_xt, (obj_t *)ni, (obj_t **)xt_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_xt, (obj_t *)ni, &obj);
+	if (err) {
+		*xt_p = NULL;
+		return err;
+	}
+
+	*xt_p = container_of(obj, xt_t, obj);
+	return PTL_OK;
 }
 
 static inline int xt_get(ptl_handle_xt_t xt_handle, xt_t **xt_p)
 {
-	return obj_get(type_xt, (ptl_handle_any_t)xt_handle, (obj_t **)xt_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_get(type_xt, (ptl_handle_any_t)xt_handle, &obj);
+	if (err) {
+		*xt_p = NULL;
+		return err;
+	}
+
+	*xt_p = container_of(obj, xt_t, obj);
+	return PTL_OK;
 }
 
 static inline void xt_ref(xt_t *xt)
 {
-	obj_ref((obj_t *)xt);
+	obj_ref(&xt->obj);
 }
 
 static inline int xt_put(xt_t *xt)
 {
-	return obj_put((obj_t *)xt);
+	return obj_put(&xt->obj);
 }
 
 static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
 {
-        return (ptl_handle_xt_t)xt->obj_handle;
+        return (ptl_handle_xt_t)xt->obj.obj_handle;
 }
 
 static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
@@ -179,7 +219,7 @@ static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
 
 	xi->dest.qp = connect->cm_id->qp;
 	if (ni->options & PTL_NI_LOGICAL)
-		xi->dest.xrc_remote_srq_num = xi->obj_ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
+		xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
 }
 
 static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
@@ -188,7 +228,7 @@ static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
 
 	xt->dest.qp = connect->cm_id->qp;
 	if (ni->options & PTL_NI_LOGICAL)
-		xt->dest.xrc_remote_srq_num = xt->obj_ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
+		xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
 }
 
 #endif /* PTL_XX_H */

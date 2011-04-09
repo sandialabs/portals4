@@ -397,7 +397,7 @@ int obj_get(obj_type_t *type, ptl_handle_any_t handle, obj_t **obj_p)
 
 	index = obj_handle_to_index(handle);
 
-	err = index_lookup(index, (void **)&obj);
+	err = index_lookup(index, &obj);
 	if (err)
 		goto err1;
 

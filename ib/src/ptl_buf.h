@@ -19,7 +19,7 @@ typedef enum {
 } buf_type_t;
 
 typedef struct buf {
-	PTL_BASE_OBJ
+	obj_t			obj;
 
 	/* To hang on NI's send_list or recv_list. */
 	struct list_head	list;
@@ -49,27 +49,47 @@ void buf_release(void *arg);
 
 static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 {
-	return obj_alloc(type_buf, (obj_t *)ni, (obj_t **)buf_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_buf, (obj_t *)ni, &obj);
+	if (err) {
+		*buf_p = NULL;
+		return err;
+	}
+
+	*buf_p = container_of(obj, buf_t, obj);
+	return PTL_OK;
 }
 
 static inline int buf_get(ptl_handle_buf_t buf_handle, buf_t **buf_p)
 {
-	return obj_get(type_buf, (ptl_handle_any_t)buf_handle, (obj_t **)buf_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_get(type_buf, (ptl_handle_any_t)buf_handle, &obj);
+	if (err) {
+		*buf_p = NULL;
+		return err;
+	}
+
+	*buf_p = container_of(obj, buf_t, obj);
+	return PTL_OK;
 }
 
 static inline void buf_ref(buf_t *buf)
 {
-	obj_ref((obj_t *)buf);
+	obj_ref(&buf->obj);
 }
 
 static inline int buf_put(buf_t *buf)
 {
-	return obj_put((obj_t *)buf);
+	return obj_put(&buf->obj);
 }
 
 static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
 {
-        return (ptl_handle_buf_t)buf->obj_handle;
+        return (ptl_handle_buf_t)buf->obj.obj_handle;
 }
 
 int post_recv(ni_t *ni);

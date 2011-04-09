@@ -74,7 +74,7 @@ struct rank_entry {
  * per NI info
  */
 typedef struct ni {
-	PTL_BASE_OBJ
+	obj_t			obj;
 
 	gbl_t			*gbl;
 
@@ -183,27 +183,40 @@ typedef struct ni {
 
 static inline int ni_alloc(ni_t **ni_p)
 {
-	return obj_alloc(type_ni, NULL, (obj_t **)ni_p);
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(type_ni, NULL, &obj);
+	if (err) {
+		*ni_p = NULL;
+		return err;
+	}
+
+	*ni_p = container_of(obj, ni_t, obj);
+	return PTL_OK;
 }
 
 static inline void ni_ref(ni_t *ni)
 {
-	obj_ref((obj_t *)ni);
+	obj_ref(&ni->obj);
 }
 
 static inline int ni_put(ni_t *ni)
 {
-	return obj_put((obj_t *)ni);
+	return obj_put(&ni->obj);
 }
 
 static inline int ni_get(ptl_handle_ni_t handle, ni_t **ni_p)
 {
 	int err;
+	obj_t *obj;
 	ni_t *ni;
 
-	err = obj_get(type_ni, (ptl_handle_any_t)handle, (obj_t **)&ni);
+	err = obj_get(type_ni, (ptl_handle_any_t)handle, &obj);
 	if (err)
 		goto err;
+
+	ni = container_of(obj, ni_t, obj);
 
 	/* this is because we can call PtlNIFini
 	   and still get the object if someone
@@ -224,7 +237,7 @@ err:
 
 static inline ptl_handle_ni_t ni_to_handle(ni_t *ni)
 {
-	return (ptl_handle_ni_t)ni->obj_handle;
+	return (ptl_handle_ni_t)ni->obj.obj_handle;
 }
 
 static inline ni_t *to_ni(void *obj)
@@ -235,9 +248,9 @@ static inline ni_t *to_ni(void *obj)
 static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
 {
 	if (index < _PTL_STATUS_LAST) {
-		pthread_spin_lock(&ni->obj_lock);
+		pthread_spin_lock(&ni->obj.obj_lock);
 		ni->status[index]++;
-		pthread_spin_unlock(&ni->obj_lock);
+		pthread_spin_unlock(&ni->obj.obj_lock);
 	}
 }
 
