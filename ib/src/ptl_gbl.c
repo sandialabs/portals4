@@ -36,7 +36,7 @@ static void gbl_release(ref_t *ref)
 	gbl_t *gbl = container_of(ref, gbl_t, ref);
 
 	/* cleanup ni object pool */
-	obj_type_fini(&gbl->ni_pool);
+	pool_fini(&gbl->ni_pool);
 
 	/* fini the index service */
 	index_fini();
@@ -97,7 +97,7 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 	gbl->event_thread_run = 1;
 
 	/* init ni object pool */
-	err = obj_type_init(&gbl->ni_pool, "ni", sizeof(ni_t), OBJ_TYPE_NI, NULL);
+	err = pool_init(&gbl->ni_pool, "ni", sizeof(ni_t), OBJ_TYPE_NI, NULL);
 	if (err) {
 		WARN();
 		goto err;

@@ -7,7 +7,7 @@
 
 struct ni;
 
-enum obj_type_index {
+enum pool_index {
 	OBJ_TYPE_NONE,
 	OBJ_TYPE_NI,
 	OBJ_TYPE_PT,
@@ -22,6 +22,8 @@ enum obj_type_index {
 	OBJ_TYPE_BUF,
 	OBJ_TYPE_LAST,		/* keep me last */
 };
+
+#define PTL_OBJ_ALLOC_TIMEOUT	(5)	/* seconds to wait before failing */
 
 /*
  * segment_t
@@ -45,10 +47,10 @@ typedef struct segment_list {
 } segment_list_t;
 
 /*
- * obj_type_t
- *	per object type info
+ * pool_t
+ *	per object pool info
  */
-typedef struct obj_type {
+typedef struct pool {
 	struct obj		*parent;
 	char			*name;
 	int			(*init)(void *arg, void *parm);
@@ -58,13 +60,18 @@ typedef struct obj_type {
 	struct list_head	chunk_list;
 	struct list_head	free_list;
 	pthread_spinlock_t	free_list_lock;
-	enum obj_type_index	type;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		cond;
+	enum pool_index		type;
 	int			count;
+	int			max_count;	/* hi water mark */
+	int			min_count;	/* lo water mark */
+	int			waiters;
 	int			size;
 	int			round_size;
 	int			segment_size;
 	int			obj_per_segment;
-} obj_type_t;
+} pool_t;
 
 /*
  * obj_t
@@ -72,7 +79,7 @@ typedef struct obj_type {
  */
 typedef struct obj {
 	int			obj_free;
-	obj_type_t		*obj_type;
+	pool_t			*obj_pool;
 	struct obj		*obj_parent;
 	struct ni		*obj_ni;
 	ptl_handle_any_t	obj_handle;
@@ -82,17 +89,17 @@ typedef struct obj {
 } obj_t;
 
 /*
- * obj_type_init
+ * pool_init
  *	initialize a pool of objects
  */
-int obj_type_init(obj_type_t *pool, char *name, int size,
-		  int type, obj_t *parent);
+int pool_init(pool_t *pool, char *name, int size,
+	      int type, obj_t *parent);
 
 /*
- * obj_type_fini
+ * pool_fini
  *	finalize a pool of objects
  */
-void obj_type_fini(obj_type_t *type);
+void pool_fini(pool_t *pool);
 
 /*
  * obj_release
@@ -107,7 +114,7 @@ void obj_release(ref_t *ref);
  *	parent. If parent is specified takes a reference
  *	on parent. Takes a reference on the object.
  */
-int obj_alloc(obj_type_t *pool, obj_t **p_obj);
+int obj_alloc(pool_t *pool, obj_t **p_obj);
 
 /*
  * obj_get
@@ -123,7 +130,8 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p);
  */
 static inline void obj_ref(obj_t *obj)
 {
-	if (obj) ref_get(&obj->obj_ref);
+	if (obj)
+		ref_get(&obj->obj_ref);
 }
 
 /*

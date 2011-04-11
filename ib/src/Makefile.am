@@ -18,7 +18,6 @@ libportals_la_SOURCES = \
 	ptl_gbl.c \
 	ptl_gbl.h \
 	ptl_handle.c \
-	ptl_handle.h \
 	ptl_hdr.c \
 	ptl_hdr.h \
 	ptl_id.c \
