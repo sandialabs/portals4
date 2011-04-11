@@ -237,6 +237,7 @@ AC_SEARCH_LIBS([shm_open],
 AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 SANDIA_CHOOSE_TIMER
+SANDIA_DETECT_KNEM
 
 ## -------------------------- ##
 ## Check for library behavior ##
