@@ -64,7 +64,7 @@ static inline int buf_get(ptl_handle_buf_t buf_handle, buf_t **buf_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(OBJ_TYPE_BUF, (ptl_handle_any_t)buf_handle, &obj);
+	err = obj_get(POOL_BUF, (ptl_handle_any_t)buf_handle, &obj);
 	if (err) {
 		*buf_p = NULL;
 		return err;

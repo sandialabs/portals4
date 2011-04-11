@@ -19,14 +19,38 @@ void *obj_get_zero_filled_segment(pool_t *pool)
 	return p;
 }
 
+/*
+ * pool_init
+ *	caller is expected to set linesize to cache line size
+ *	and pagesize to system page size
+ */
 int pool_init(pool_t *pool, char *name, int size,
 		  int type, obj_t *parent)
 {
 	int err;
+
 	pool->name = name;
 	pool->size = size;
 	pool->type = type;
 	pool->parent = parent;
+
+	pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
+
+	if (pool->segment_size < pagesize)
+		pool->segment_size = pagesize;
+
+	pool->segment_size = (pool->segment_size + pagesize - 1) &
+			     ~(pagesize - 1);
+
+	pool->obj_per_segment = pool->segment_size/pool->round_size;
+	if (!pool->obj_per_segment) {
+		ptl_error("Well that's embarassing but "
+			  "can't fit any %s's in a segment\n",
+			  pool->name);
+		return PTL_FAIL;
+	}
+
+	pool->count = 0;
 
 	INIT_LIST_HEAD(&pool->free_list);
 	INIT_LIST_HEAD(&pool->chunk_list);
@@ -48,23 +72,6 @@ int pool_init(pool_t *pool, char *name, int size,
 		WARN();
 		return PTL_FAIL;
 	}
-
-	pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
-
-	if (pool->segment_size < pagesize)
-		pool->segment_size = pagesize;
-
-	pool->segment_size = (pool->segment_size + pagesize - 1) &
-			     ~(pagesize - 1);
-
-	pool->obj_per_segment = pool->segment_size/pool->round_size;
-	if (!pool->obj_per_segment) {
-		ptl_error("Well that's embarassing but "
-			  "can't fit any %s's in a segment\n",
-			  pool->name);
-		return PTL_FAIL;
-	}
-	pool->count = 0;
 
 	return PTL_OK;
 }
@@ -93,7 +100,7 @@ void pool_fini(pool_t *pool)
 	}
 
 	/*
-	 * if type has a cleanup routine call it
+	 * if pool has a cleanup routine call it
 	 */
 	if (pool->fini) {
 		pthread_spin_lock(&pool->free_list_lock);
@@ -116,19 +123,22 @@ void pool_fini(pool_t *pool)
 	if (err)
 		WARN();
 
+	/*
+	 * free the segments
+	 */
 	list_for_each_safe(l, t, &pool->chunk_list) {
 		list_del(l);
 		chunk = list_entry(l, segment_list_t, chunk_list);
 
 		for (i = 0; i < chunk->num_segments; i++) {
-			free(chunk->segment_list[i].addr);
-
-			/* hack see below TODO cleanup later */
+			/* see below TODO make more elegant */
 			if (chunk->segment_list[i].priv) {
 				struct ibv_mr *mr = chunk->segment_list[i].priv;
 
 				ibv_dereg_mr(mr);
 			}
+
+			free(chunk->segment_list[i].addr);
 		}
 
 		free(chunk);
@@ -175,11 +185,11 @@ static int type_get_segment_list_pointer(pool_t *pool, segment_list_t **pp)
 }
 
 /*
- * type_alloc_segment
+ * pool_alloc_segment
  *	allocate a new segment of objects for a given pool
  *	caller should hold pool->free_list_lock
  */
-static int type_alloc_segment(pool_t *pool)
+static int pool_alloc_segment(pool_t *pool)
 {
 	int err;
 	segment_list_t *pp = NULL;
@@ -200,7 +210,7 @@ static int type_alloc_segment(pool_t *pool)
 	/*
 	 * want to abstract this a little but just hack it for now
 	 */
-	if (pool->type == OBJ_TYPE_BUF) {
+	if (pool->type == POOL_BUF) {
 		ni = (ni_t *)pool->parent;
 		mr = ibv_reg_mr(ni->iface->pd, p, pool->segment_size,
 				IBV_ACCESS_LOCAL_WRITE);
@@ -248,6 +258,7 @@ void obj_release(ref_t *ref)
 	struct list_head *l = &obj->obj_list;
 	pool_t *pool = obj->obj_pool;
 	unsigned int index = obj_handle_to_index(obj->obj_handle);
+	int do_signal = 0;
 
 	err = index_free(index);
 	if (err)
@@ -260,17 +271,18 @@ void obj_release(ref_t *ref)
 
 	if (obj->obj_parent)
 		obj_put(obj->obj_parent);
+
 	obj->obj_free = 1;
 
 	pthread_spin_lock(&pool->free_list_lock);
 	list_add_tail(l, &pool->free_list);
 	pool->count--;
+	if (pool->max_count && pool->count < pool->min_count && pool->waiters)
+		do_signal = 1;
 	pthread_spin_unlock(&pool->free_list_lock);
 
-	/* this is a hint, have to check again in alloc */
-	if (pool->max_count && pool->count < pool->min_count && pool->waiters) {
+	if (do_signal)
 		pthread_cond_signal(&pool->cond);
-	}
 }
 
 /*
@@ -294,9 +306,9 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	 * under the limit, give up after a few seconds
 	 */
 	if (pool->max_count && pool->count >= pool->max_count) {
+		pool->waiters++;
 		pthread_mutex_lock(&pool->mutex);
 		pthread_spin_unlock(&pool->free_list_lock);
-		pool->waiters++;
 		clock_gettime(CLOCK_REALTIME, &timeout);
 		timeout.tv_sec += PTL_OBJ_ALLOC_TIMEOUT;
 		do {
@@ -306,13 +318,13 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 				return PTL_FAIL;
 			}
 		} while(pool->count >= pool->max_count);
-		pool->waiters--;
-		pool->count++;
 		pthread_spin_lock(&pool->free_list_lock);
 		pthread_mutex_unlock(&pool->mutex);
-	} else {
-		pool->count++;
+		pool->waiters--;
 	}
+
+	/* reserve an object */
+	pool->count++;
 
 	/*
 	 * if the pool free list is empty make up a new batch of objects
@@ -320,7 +332,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	if (list_empty(&pool->free_list)) {
 		pthread_mutex_lock(&pool->mutex);
 		pthread_spin_unlock(&pool->free_list_lock);
-		err = type_alloc_segment(pool);
+		err = pool_alloc_segment(pool);
 		if (unlikely(err)) {
 			pool->count--;
 			pthread_mutex_unlock(&pool->mutex);

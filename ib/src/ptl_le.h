@@ -56,7 +56,7 @@ static inline int le_get(ptl_handle_le_t handle, le_t **le_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(OBJ_TYPE_LE, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(POOL_LE, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*le_p = NULL;
 		return err;
