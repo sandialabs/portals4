@@ -3,8 +3,6 @@
 
 typedef ptl_handle_any_t ptl_handle_mr_t;
 
-extern obj_type_t *type_mr;
-
 typedef struct mr {
 	obj_t			obj;
 	struct ibv_mr		*ibmr;
@@ -18,7 +16,7 @@ static inline int mr_alloc(ni_t *ni, mr_t **mr_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_mr, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->mr_pool, &obj);
 	if (err) {
 		*mr_p = NULL;
 		return err;
@@ -33,7 +31,7 @@ static inline int mr_get(ptl_handle_mr_t handle, mr_t **mr_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_mr, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(OBJ_TYPE_MR, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*mr_p = NULL;
 		return err;

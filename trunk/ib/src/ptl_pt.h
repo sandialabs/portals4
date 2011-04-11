@@ -7,8 +7,6 @@
 
 struct eq;
 
-extern obj_type_t *type_pt;
-
 enum {
 	PT_API_DISABLE	= 1,
 	PT_AUTO_DISABLE = 1 << 1

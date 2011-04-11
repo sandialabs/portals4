@@ -3,8 +3,6 @@
 
 struct ct;
 
-extern obj_type_t *type_le;
-
 #define TYPE_LE			(0)
 
 /*
@@ -43,7 +41,7 @@ static inline int le_alloc(ni_t *ni, le_t **le_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_le, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->le_pool, &obj);
 	if (err) {
 		*le_p = NULL;
 		return err;
@@ -58,7 +56,7 @@ static inline int le_get(ptl_handle_le_t handle, le_t **le_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_le, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(OBJ_TYPE_LE, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*le_p = NULL;
 		return err;

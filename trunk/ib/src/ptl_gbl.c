@@ -35,8 +35,11 @@ static void gbl_release(ref_t *ref)
 {
 	gbl_t *gbl = container_of(ref, gbl_t, ref);
 
-	/* fini the object allocator */
-	obj_fini();
+	/* cleanup ni object pool */
+	obj_type_fini(&gbl->ni_pool);
+
+	/* fini the index service */
+	index_fini();
 
 	/* Terminate the event loop, which will terminate the event
 	 * thread. */
@@ -65,8 +68,6 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 {
 	int err;
 
-	evl_init(&evl);
-
 	pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
 	gbl->jid = jid;
@@ -77,14 +78,17 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 		goto err;
 	}
 
-	/* init the object allocator */
-	err = obj_init();
-	if (unlikely(err)) {
-		ptl_warn("obj_init failed\n");
-		goto err;
-	}
+	/* init the index service */
+	err = index_init();
+	if (err)
+		return err;
+
+	pagesize = sysconf(_SC_PAGESIZE);
+	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 
 	/* Create the event loop thread. */
+	evl_init(&evl);
+
 	err = pthread_create(&gbl->event_thread, NULL, event_loop_func, gbl);
 	if (unlikely(err)) {
 		ptl_warn("event loop creation failed\n");
@@ -92,9 +96,16 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 	}
 	gbl->event_thread_run = 1;
 
+	/* init ni object pool */
+	err = obj_type_init(&gbl->ni_pool, "ni", sizeof(ni_t), OBJ_TYPE_NI, NULL);
+	if (err) {
+		WARN();
+		goto err;
+	}
+
 	return PTL_OK;
 
- err:
+err:
 	pthread_mutex_destroy(&gbl->gbl_mutex);
 	return err;
 }
@@ -117,29 +128,43 @@ void gbl_put(gbl_t *gbl)
 	ref_put(&gbl->ref, gbl_release);
 }
 
-/* caller must hold global mutex */
+/*
+ * gbl_lookup_ni
+ *	lookup ni in iface table
+ *	caller should hold global mutex
+ */
 ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
 {
-	if (iface >= MAX_IFACE || ni_type >= MAX_NI_TYPES)
+	if (iface >= MAX_IFACE || ni_type >= MAX_NI_TYPES) {
+		WARN();
 		return NULL;
+	}
 
 	return gbl->iface[iface].ni[ni_type];
 }
 
-/* caller must hold global mutex */
+/*
+ * gbl_add_ni
+ *	add ni to iface table
+ *	caller should hold global mutex
+ */
 int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 {
 	struct iface *iface;
 
 	/* Ensure there's no NI there already. */
 	if (ni->ifacenum >= MAX_IFACE ||
-		ni->ni_type >= MAX_NI_TYPES)
+	    ni->ni_type >= MAX_NI_TYPES) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
 
 	iface = &gbl->iface[ni->ifacenum];
 
-	if (iface->ni[ni->ni_type])
+	if (iface->ni[ni->ni_type]) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
 
 	iface->ni[ni->ni_type] = ni;
 	ni->iface = iface;
@@ -147,15 +172,20 @@ int gbl_add_ni(gbl_t *gbl, ni_t *ni)
 	return PTL_OK;
 }
 
-/* caller must hold global mutex */
+/*
+ * gbl_remove_ni
+ *	remove ni from iface table
+ *	caller should hold global mutex
+ */
 int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
 {
 	struct iface *iface = ni->iface;
 
-	if (unlikely(ni != iface->ni[ni->ni_type]))
+	if (unlikely(ni != iface->ni[ni->ni_type])) {
+		WARN();
 		return PTL_FAIL;
+	}
 
-	//gbl->iface[iface].if_name[0] = 0;
 	iface->ni[ni->ni_type] = NULL;
 	ni->iface = NULL;
 
@@ -178,15 +208,13 @@ int PtlInit(ptl_jid_t jid)
 	if (gbl->ref_cnt == 0) {
 		/* check for dangling reference */
 		if (gbl->ref.ref_cnt > 0)
-			usleep(10000);
+			usleep(100000);
 		if (gbl->ref.ref_cnt > 0) {
-			ptl_warn("still cleaning up, ref.ref_cnt = %d\n",
-				gbl->ref.ref_cnt);
+			WARN();
 			ret = PTL_FAIL;
 			goto err1;
 		} else {
 			ref_init(&gbl->ref);
-			//printf("gbl set ref = %d\n", gbl->ref.ref_cnt);
 		}
 
 		ret = gbl_init(gbl, jid);

@@ -36,22 +36,17 @@ typedef struct iface {
 } iface_t;
 
 typedef struct gbl {
-
 	iface_t			iface[MAX_IFACE];
 	pthread_mutex_t		gbl_mutex;
-
 	int			init_once;
 	int			ref_cnt;	/* count PtlInit/PtlFini */
 	ref_t			ref;		/* sub objects references */
-	
 	int			fd;
 	struct sockaddr_in	addr;
-
 	pthread_t		event_thread;
 	int			event_thread_run;
-
 	ptl_jid_t		jid;
-
+	obj_type_t		ni_pool;
 } gbl_t;
 
 /*

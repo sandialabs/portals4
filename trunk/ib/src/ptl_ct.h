@@ -1,8 +1,6 @@
 #ifndef PTL_CT_H
 #define PTL_CT_H
 
-extern obj_type_t *type_ct;
-
 typedef struct ct {
 	obj_t			obj;
 	ptl_ct_event_t		event;
@@ -18,7 +16,7 @@ static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_ct, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->ct_pool, &obj);
 	if (err) {
 		*ct_p = NULL;
 		return err;
@@ -33,7 +31,7 @@ static inline int ct_get(ptl_handle_ct_t ct_handle, ct_t **ct_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_ct, (ptl_handle_any_t)ct_handle, &obj);
+	err = obj_get(OBJ_TYPE_CT, (ptl_handle_any_t)ct_handle, &obj);
 	if (err) {
 		*ct_p = NULL;
 		return err;

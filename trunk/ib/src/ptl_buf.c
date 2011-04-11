@@ -9,20 +9,16 @@
  */ 
 void buf_release(void *arg)
 {
-	buf_t *buf = arg;
-
-	if (buf->mr)
-		mr_put(buf->mr);
 }
 
 /*
  * buf_init - initialize a buffer object and create/reference memory region.
  */
-int buf_init(void *arg)
+int buf_init(void *arg, void *parm)
 {
 	int err;
 	buf_t *buf = arg;
-	ni_t *ni = to_ni(buf);
+	struct ibv_mr *mr = parm;
 
 	INIT_LIST_HEAD(&buf->list);
 
@@ -34,14 +30,8 @@ int buf_init(void *arg)
 	buf->send_wr.sg_list = buf->sg_list;
 	buf->send_wr.num_sge = 1;
 
-	err = mr_lookup(ni, buf->data, buf->size, &buf->mr);
-	if (err) {
-		WARN();
-		return -1;
-	}
-
 	buf->sg_list[0].addr = (uintptr_t)buf->data;
-	buf->sg_list[0].lkey = buf->mr->ibmr->lkey;
+	buf->sg_list[0].lkey = mr->lkey;
 
 	return 0;
 }

@@ -107,7 +107,6 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 
 	pt->obj.obj_parent = (obj_t *)ni;
 	pt->obj.obj_ni = ni;
-	pt->obj.obj_type = type_pt;
 	pthread_spin_init(&pt->obj.obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	pthread_spin_init(&pt->list_lock, PTHREAD_PROCESS_PRIVATE);

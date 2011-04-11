@@ -3,8 +3,6 @@
 
 struct ct;
 
-extern obj_type_t *type_me;
-
 #define TYPE_ME			(1)
 
 typedef struct me {
@@ -26,7 +24,7 @@ static inline int me_alloc(ni_t *ni, me_t **me_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_me, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->me_pool, &obj);
 	if (err) {
 		*me_p = NULL;
 		return err;
@@ -41,7 +39,7 @@ static inline int me_get(ptl_handle_me_t handle, me_t **me_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_me, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(OBJ_TYPE_ME, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*me_p = NULL;
 		return err;
