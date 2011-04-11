@@ -4,6 +4,24 @@
 #ifndef DATA_H
 #define DATA_H
 
+typedef enum {
+	/* from init to target */
+	OP_PUT,
+	OP_GET,
+	OP_ATOMIC,
+	OP_FETCH,
+	OP_SWAP,
+
+	/* from target to init */
+	OP_DATA,
+	OP_REPLY,
+	OP_ACK,
+	OP_CT_ACK,
+	OP_OC_ACK,
+
+	OP_LAST,
+} op_t;
+
 typedef union datatype {
 	int8_t		s8;
 	uint8_t		u8;
