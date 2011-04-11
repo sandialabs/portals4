@@ -222,7 +222,7 @@ static inline int ni_get(ptl_handle_ni_t handle, ni_t **ni_p)
 	obj_t *obj;
 	ni_t *ni;
 
-	err = obj_get(OBJ_TYPE_NI, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(POOL_NI, (ptl_handle_any_t)handle, &obj);
 	if (err)
 		goto err;
 

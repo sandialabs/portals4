@@ -97,7 +97,7 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 	gbl->event_thread_run = 1;
 
 	/* init ni object pool */
-	err = pool_init(&gbl->ni_pool, "ni", sizeof(ni_t), OBJ_TYPE_NI, NULL);
+	err = pool_init(&gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
 	if (err) {
 		WARN();
 		goto err;

@@ -39,7 +39,7 @@ static inline int me_get(ptl_handle_me_t handle, me_t **me_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(OBJ_TYPE_ME, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(POOL_ME, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*me_p = NULL;
 		return err;

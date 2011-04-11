@@ -7,20 +7,20 @@
 
 struct ni;
 
-enum pool_index {
-	OBJ_TYPE_NONE,
-	OBJ_TYPE_NI,
-	OBJ_TYPE_PT,
-	OBJ_TYPE_MR,
-	OBJ_TYPE_LE,
-	OBJ_TYPE_ME,
-	OBJ_TYPE_MD,
-	OBJ_TYPE_EQ,
-	OBJ_TYPE_CT,
-	OBJ_TYPE_XI,
-	OBJ_TYPE_XT,
-	OBJ_TYPE_BUF,
-	OBJ_TYPE_LAST,		/* keep me last */
+enum pool_type {
+	POOL_NONE,
+	POOL_NI,
+	POOL_PT,
+	POOL_MR,
+	POOL_LE,
+	POOL_ME,
+	POOL_MD,
+	POOL_EQ,
+	POOL_CT,
+	POOL_XI,
+	POOL_XT,
+	POOL_BUF,
+	POOL_LAST,		/* keep me last */
 };
 
 #define PTL_OBJ_ALLOC_TIMEOUT	(5)	/* seconds to wait before failing */
@@ -62,7 +62,7 @@ typedef struct pool {
 	pthread_spinlock_t	free_list_lock;
 	pthread_mutex_t		mutex;
 	pthread_cond_t		cond;
-	enum pool_index		type;
+	enum pool_type		type;
 	int			count;
 	int			max_count;	/* hi water mark */
 	int			min_count;	/* lo water mark */

@@ -1328,7 +1328,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->mr_pool.free = mr_release;
 
 	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
-			    OBJ_TYPE_MR, (obj_t *)ni);
+			POOL_MR, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1337,7 +1337,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->md_pool.free = md_release;
 
 	err = pool_init(&ni->md_pool, "md", sizeof(md_t),
-			    OBJ_TYPE_MD, (obj_t *)ni);
+			POOL_MD, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1346,7 +1346,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->me_pool.free = me_release;
 
 	err = pool_init(&ni->me_pool, "me", sizeof(me_t),
-			    OBJ_TYPE_ME, (obj_t *)ni);
+			POOL_ME, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1355,7 +1355,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->le_pool.free = le_release;
 
 	err = pool_init(&ni->le_pool, "le", sizeof(le_t),
-			    OBJ_TYPE_LE, (obj_t *)ni);
+			POOL_LE, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1364,7 +1364,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->eq_pool.free = eq_release;
 
 	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
-			    OBJ_TYPE_EQ, (obj_t *)ni);
+			POOL_EQ, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1373,7 +1373,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->ct_pool.free = ct_release;
 
 	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
-			    OBJ_TYPE_CT, (obj_t *)ni);
+			POOL_CT, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1385,7 +1385,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
 
 	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
-			    OBJ_TYPE_XI, (obj_t *)ni);
+			POOL_XI, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1395,7 +1395,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->xt_pool.free = xt_release;
 
 	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
-			    OBJ_TYPE_XT, (obj_t *)ni);
+			POOL_XT, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
@@ -1406,7 +1406,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->buf_pool.segment_size = 128*1024;
 
 	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t),
-			    OBJ_TYPE_BUF, (obj_t *)ni);
+			POOL_BUF, (obj_t *)ni);
 	if (err) {
 		WARN();
 		goto err3;
