@@ -46,7 +46,7 @@ typedef struct gbl {
 	pthread_t		event_thread;
 	int			event_thread_run;
 	ptl_jid_t		jid;
-	obj_type_t		ni_pool;
+	pool_t			ni_pool;
 } gbl_t;
 
 /*

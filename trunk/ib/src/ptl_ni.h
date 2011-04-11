@@ -6,7 +6,7 @@
 #define PTL_NI_H
 
 /* These values will need to come from runtime environment */
-#define MAX_QP_SEND_WR		(10)
+#define MAX_QP_SEND_WR		(100)
 #define MAX_QP_SEND_SGE		(16) // Best if >= MAX_INLINE_SGE
 #define MAX_QP_RECV_WR		(10)
 #define MAX_QP_RECV_SGE		(10)
@@ -142,15 +142,15 @@ typedef struct ni {
 	ev_io			cq_watcher;
 	struct ibv_srq		*srq;	/* either regular or XRC */
 
-	obj_type_t		mr_pool;
-	obj_type_t		md_pool;
-	obj_type_t		me_pool;
-	obj_type_t		le_pool;
-	obj_type_t		eq_pool;
-	obj_type_t		ct_pool;
-	obj_type_t		xi_pool;
-	obj_type_t		xt_pool;
-	obj_type_t		buf_pool;
+	pool_t			mr_pool;
+	pool_t			md_pool;
+	pool_t			me_pool;
+	pool_t			le_pool;
+	pool_t			eq_pool;
+	pool_t			ct_pool;
+	pool_t			xi_pool;
+	pool_t			xt_pool;
+	pool_t			buf_pool;
 
 	/* Connection mappings. */
 	union {
@@ -191,12 +191,12 @@ typedef struct ni {
 
 } ni_t;
 
-static inline int ni_alloc(obj_type_t *type, ni_t **ni_p)
+static inline int ni_alloc(pool_t *pool, ni_t **ni_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type, &obj);
+	err = obj_alloc(pool, &obj);
 	if (err) {
 		*ni_p = NULL;
 		return err;

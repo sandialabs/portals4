@@ -4,8 +4,6 @@
 struct eq;
 struct ct;
 
-extern obj_type_t *type_md;
-
 typedef struct md {
 	obj_t			obj;
 	void			*start;
