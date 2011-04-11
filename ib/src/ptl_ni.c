@@ -265,6 +265,21 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			break;
 
 		buf = (buf_t *)(uintptr_t)wc.wr_id;
+
+		switch (buf->type) {
+		case BUF_SEND:
+		case BUF_RDMA:
+			pthread_spin_lock(&ni->send_list_lock);
+			list_del(&buf->list);
+			pthread_spin_unlock(&ni->send_list_lock);
+			break;
+		case BUF_RECV:
+			pthread_spin_lock(&ni->recv_list_lock);
+			list_del(&buf->list);
+			pthread_spin_unlock(&ni->recv_list_lock);
+			break;
+		}
+
 		buf_put(buf);
 	}
 
@@ -1579,6 +1594,7 @@ static void ni_cleanup(ni_t *ni)
 	pthread_spin_destroy(&ni->xt_wait_list_lock);
 	pthread_spin_destroy(&ni->mr_list_lock);
 	pthread_spin_destroy(&ni->send_list_lock);
+	pthread_spin_destroy(&ni->recv_list_lock);
 }
 
 int PtlNIFini(ptl_handle_ni_t ni_handle)

@@ -90,7 +90,12 @@ int post_recv(ni_t *ni)
 	return PTL_OK;
 
 err2:
+	pthread_spin_lock(&ni->recv_list_lock);
+	list_del(&buf->list);
+	pthread_spin_unlock(&ni->recv_list_lock);
+
 	buf_put(buf);
+
 err1:
 	return err;
 }

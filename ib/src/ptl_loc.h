@@ -79,7 +79,7 @@ unsigned int linesize;
 extern int debug;
 extern int atom_type_size[];
 
-#define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
+#define WARN()	do { if (1) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
 
 #define PTL_NI_PORT	(0x4567)
 unsigned short ptl_ni_port(ni_t *ni);

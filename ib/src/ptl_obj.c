@@ -222,7 +222,8 @@ void obj_release(ref_t *ref)
 
 	err = index_free(index);
 	if (err)
-		ptl_fatal("object corrupted unable to free_index\n");
+		WARN();
+
 	obj->obj_handle = 0;
 
 	if (type->free)

@@ -498,14 +498,6 @@ static int tgt_alloc_rdma_buf(xt_t *xt)
 	return 0;
 }
 
-static void tgt_free_rdma_buf(xt_t *xt)
-{
-	if (xt->rdma_buf) {
-		buf_put(xt->rdma_buf);
-		xt->rdma_buf = NULL;
-	}
-}
-
 static int tgt_data_out(xt_t *xt)
 {
 	me_t *me = xt->me;
@@ -1410,9 +1402,6 @@ static int tgt_cleanup(xt_t *xt)
 		xt->le = NULL;
 	}
 
-	/* tgt must release RDMA acquired resources */
-	tgt_free_rdma_buf(xt);
-
 	if (xt->indir_sge) {
 		if (xt->indir_mr) {
 			mr_put(xt->indir_mr);
@@ -1422,10 +1411,14 @@ static int tgt_cleanup(xt_t *xt)
 		xt->indir_sge = NULL;
 	}
 
+	/* tgt must release RDMA acquired resources */
+	if (xt->rdma_buf) {
+		buf_put(xt->rdma_buf);
+		xt->rdma_buf = NULL;
+	}
+
 	/* tgt responsible to cleanup all received buffers */
 	if (xt->recv_buf) {
-		if (debug)
-			printf("cleanup recv buf %p\n", xt->recv_buf);
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
 	}
