@@ -1284,10 +1284,23 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			}
 			case NODE_MSLEEP:
 				usleep(1000*info->count);
+				errs += walk_tree(info, node->children);
 				break;
-			case NODE_DUMP_OBJECTS:
-				_dump_type_counts();
+			case NODE_TIME: {
+				struct timeval start_time;
+				struct timeval stop_time;
+				double diff;
+
+       				gettimeofday(&start_time, NULL);
+				errs += walk_tree(info, node->children);
+       				gettimeofday(&stop_time, NULL);
+
+				diff = 1e-6*(stop_time.tv_usec - start_time.tv_usec)
+					+ (stop_time.tv_sec - start_time.tv_sec);
+
+				printf(" [time = %.6lf] ", diff);
 				break;
+			}
 			case NODE_OMPI_RT:
 				errs = ompi_rt_init(info);
 				errs += walk_tree(info, node->children);

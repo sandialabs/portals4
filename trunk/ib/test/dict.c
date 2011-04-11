@@ -23,7 +23,7 @@ struct dict_init {
 	{"comment",			TYPE_NODE,		NODE_COMMENT},
 	{"repeat",			TYPE_NODE,		NODE_REPEAT},
 	{"msleep",			TYPE_NODE,		NODE_MSLEEP},
-	{"dump_objects",		TYPE_NODE,		NODE_DUMP_OBJECTS},
+	{"get_time",			TYPE_NODE,		NODE_TIME},
 	{"barrier",			TYPE_NODE,		NODE_BARRIER},
 	{"ompi_rt",			TYPE_NODE,		NODE_OMPI_RT},
 	{"ptl",				TYPE_NODE,		NODE_PTL},

@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #include <portals4.h>
 #include "dict.h"
