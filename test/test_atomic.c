@@ -109,7 +109,7 @@ int main(
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
         /*printf("0 value: %g\n", value);*/
-        assert(value == 77.5 + (1.1 * num_procs));
+        assert(fpequal(value, 77.5 + (1.1 * num_procs)));
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
