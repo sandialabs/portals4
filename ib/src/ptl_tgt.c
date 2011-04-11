@@ -1488,8 +1488,8 @@ int process_tgt(xt_t *xt)
 
 		while(1) {
 			if (debug)
-				printf("tgt state = %s\n",
-					tgt_state_name[state]);
+				printf("%p: tgt state = %s\n",
+					xt, tgt_state_name[state]);
 			switch (state) {
 			case STATE_TGT_START:
 				state = tgt_start(xt);

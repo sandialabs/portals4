@@ -8,7 +8,9 @@
  *	for debugging output
  */
 static char *recv_state_name[] = {
-	[STATE_RECV_COMP_WAIT]		= "comp_wait",
+	[STATE_RECV_EVENT_WAIT]		= "event_wait",
+	[STATE_RECV_COMP_REARM]		= "comp_rearm",
+	[STATE_RECV_COMP_POLL]		= "comp_poll",
 	[STATE_RECV_SEND_COMP]		= "send_comp",
 	[STATE_RECV_RDMA_COMP]		= "rdma_comp",
 	[STATE_RECV_PACKET]		= "recv_packet",
@@ -21,16 +23,13 @@ static char *recv_state_name[] = {
 
 /*
  * comp_wait
- *	wait for a send or recv to complete
+ *	wait for a send or recv completion event
  */
-static int comp_wait(ni_t *ni, buf_t **buf_p)
+static int event_wait(ni_t *ni)
 {
 	int err;
 	struct ibv_cq *cq;
 	void *unused;
-	struct ibv_wc wc;
-	int n;
-	buf_t *buf;
 
 	err = ibv_get_cq_event(ni->ch, &cq, &unused);
 	if (err) {
@@ -38,7 +37,6 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 		return STATE_RECV_ERROR;
 	}
 
-	/* todo: coalesce acks. ibv_ack_cq_events is costly. see man page. */
 	ibv_ack_cq_events(ni->cq, 1);
 
 	if (cq != ni->cq) {
@@ -46,19 +44,42 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 		return STATE_RECV_ERROR;
 	}
 
+	return STATE_RECV_COMP_REARM;
+}
+
+/*
+ * comp_rearm
+ *	rearm completion queue
+ */
+static int comp_rearm(ni_t *ni)
+{
 	if (ibv_req_notify_cq(ni->cq, 0)) {
-		ptl_warn("unable to req notify\n");
 		WARN();
 		return STATE_RECV_ERROR;
 	}
 
+	return STATE_RECV_COMP_POLL;
+}
+
+/*
+ * comp_poll
+ *	poll for completion event
+ *	returns buffer that completed
+ *	note we can optimize this by
+ *	polling for multiple events and then
+ *	queuing the resulting buffers
+ */
+static int comp_poll(ni_t *ni, buf_t **buf_p)
+{
+	struct ibv_wc wc;
+	int n;
+	buf_t *buf;
+
+	/* if queue is empty and we are rearmed
+	 * then we are done for this cycle */
 	n = ibv_poll_cq(ni->cq, 1, &wc);
-	if (n <= 0) {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
-
-	assert(n == 1);
+	if (n == 0)
+		return STATE_RECV_DONE;
 
 	if (wc.wr_id == 0) {
 		/* No buffer with intermediate error completion */
@@ -69,16 +90,21 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 	buf = (buf_t *)(uintptr_t)wc.wr_id;
 	*buf_p = buf;
 
-	if (debug)
-		printf("rank %d: comp_wait - wc.status(%d), wc.length(%d)\n",
-			   ni->id.rank, (int) wc.status, (int) wc.byte_len);
+	if (debug) {
+		if (ni->options & PTL_NI_LOGICAL)
+			printf("rank %d: ", ni->id.rank);
+		else
+			printf("nid %d: pid %d: ", ni->id.phys.nid, ni->id.phys.pid);
 
+		printf("comp_wait - wc.status(%d), wc.length(%d)\n",
+			   (int) wc.status, (int) wc.byte_len);
+	}
 
 	if (wc.status == IBV_WC_WR_FLUSH_ERR)
 		return STATE_RECV_DROP_BUF;
 
 	if (wc.status != IBV_WC_SUCCESS) {
-		if (debug) printf("error completion\n");
+		WARN();
 		return STATE_RECV_ERROR;
 	}
 
@@ -87,76 +113,82 @@ static int comp_wait(ni_t *ni, buf_t **buf_p)
 	if (buf->type == BUF_SEND) {
 		if (debug) printf("received a send wc\n");
 		return STATE_RECV_SEND_COMP;
+	} else if (buf->type == BUF_RDMA) {
+		if (debug) printf("received a send RDMA wc\n");
+		return STATE_RECV_RDMA_COMP;
 	} else if (buf->type == BUF_RECV) {
 		if (debug) printf("received a recv wc\n");
 		post_recv(ni);
 		return STATE_RECV_PACKET;
-	} else if (buf->type == BUF_RDMA) {
-		if (debug) printf("received a send RDMA wc\n");
-		return STATE_RECV_RDMA_COMP;
 	} else {
-		if (debug) printf("received a bogus wc\n");
+		WARN();
 		return STATE_RECV_ERROR;
 	}
 }
 
-static int send_comp(buf_t *send_buf)
+/*
+ * send_comp
+ *	process a send completion event
+ */
+static int send_comp(buf_t *buf)
 {
 	int err;
-	ni_t *ni = to_ni(send_buf);
+	ni_t *ni = to_ni(buf);
 
 	pthread_spin_lock(&ni->send_list_lock);
-	list_del(&send_buf->list);
+	list_del(&buf->list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	if (send_buf->xi) {
-		send_buf->xi->send_buf = NULL;
-		err = process_init(send_buf->xi);
-		if (err) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-	}
-	if (send_buf->xt) {
-		send_buf->xt->send_buf = NULL;
-		err = process_tgt(send_buf->xt);
+	if (buf->xi) {
+		buf->xi->send_buf = NULL;
+		err = process_init(buf->xi);
 		if (err) {
 			WARN();
 			return STATE_RECV_ERROR;
 		}
 	}
 
-	buf_put(send_buf);
-	return STATE_RECV_DONE;
+	if (buf->xt) {
+		buf->xt->send_buf = NULL;
+		err = process_tgt(buf->xt);
+		if (err) {
+			WARN();
+			return STATE_RECV_ERROR;
+		}
+	}
+
+	buf_put(buf);
+	return STATE_RECV_COMP_REARM;
 }
 
 /*
  * rdma_comp
- *	received completion on target initiated RDMA
+ *	process an send rdma completion event
  */
-static int rdma_comp(buf_t *rdma_buf)
+static int rdma_comp(buf_t *buf)
 {
 	int err;
-	ni_t *ni = to_ni(rdma_buf);
+	ni_t *ni = to_ni(buf);
 
 	pthread_spin_lock(&ni->send_list_lock);
-	list_del(&rdma_buf->list);
+	list_del(&buf->list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	if (rdma_buf->xt) {
-		rdma_buf->xt->rdma_comp--;
-		err = process_tgt(rdma_buf->xt);
+	if (buf->xt) {
+		buf->xt->rdma_comp--;
+		err = process_tgt(buf->xt);
 		if (err) {
 			WARN();
 			return STATE_RECV_ERROR;
 		}
 	}
-	return STATE_RECV_DONE;
+
+	return STATE_RECV_COMP_REARM;
 }
 
 /*
  * recv_packet
- *	process a new packet
+ *	process a receive completion event
  */
 static int recv_packet(buf_t *buf)
 {
@@ -166,18 +198,6 @@ static int recv_packet(buf_t *buf)
 	pthread_spin_lock(&ni->recv_list_lock);
 	list_del(&buf->list);
 	pthread_spin_unlock(&ni->recv_list_lock);
-
-#if 0
-int i;
-for (i = 0; i < buf->length; i++) {
-	if (i % 8 == 0)
-	printf("%04x: ", i);
-	printf(" %02x", buf->data[i]);
-	if (i % 8 == 7)
-	printf("\n");
-}
-printf("\n");
-#endif
 
 	if (buf->length < sizeof(hdr_t)) {
 		WARN();
@@ -241,7 +261,7 @@ static int recv_req(buf_t *buf)
 	req_hdr_to_xt(hdr, xt);
 	xt->operation = hdr->operation;
 
-	/* req packet data dir is wrt init, xt is wrt tgt */
+	/* req packet data direction is wrt init, xt direction is wrt tgt */
 	if (hdr->data_in)
 		xt->data_out = (data_t *)(buf->data + sizeof(*hdr));
 
@@ -251,11 +271,12 @@ static int recv_req(buf_t *buf)
 
 	xt->recv_buf = buf;
 	xt->state = STATE_TGT_START;
+
 	err = process_tgt(xt);
 	if (err)
 		WARN();
 
-	return STATE_RECV_DONE;
+	return STATE_RECV_COMP_REARM;
 }
 
 /*
@@ -280,24 +301,44 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	return STATE_RECV_DONE;
+	return STATE_RECV_COMP_REARM;
+}
+
+/*
+ * recv_drop_buf
+ *	drop buffer
+ */
+static int recv_drop_buf(buf_t *buf)
+{
+	ni_t *ni = to_ni(buf);
+
+	buf_put(buf);
+	ni->num_recv_drops++;
+
+	return STATE_RECV_COMP_REARM;
 }
 
 /*
  * process_recv
- *	process an incoming packet
+ *	handle ni completion queue
  */
 void process_recv(EV_P_ ev_io *w, int revents)
 {
 	ni_t *ni = w->data;
-	int state = STATE_RECV_COMP_WAIT;
+	int state = STATE_RECV_EVENT_WAIT;
 	buf_t *buf = NULL;
 
 	while(1) {
-		if (debug) printf("recv state = %s\n", recv_state_name[state]);
+		if (debug) printf("%p: recv state = %s\n", buf, recv_state_name[state]);
 		switch (state) {
-		case STATE_RECV_COMP_WAIT:
-			state = comp_wait(ni, &buf);
+		case STATE_RECV_EVENT_WAIT:
+			state = event_wait(ni);
+			break;
+		case STATE_RECV_COMP_REARM:
+			state = comp_rearm(ni);
+			break;
+		case STATE_RECV_COMP_POLL:
+			state = comp_poll(ni, &buf);
 			break;
 		case STATE_RECV_SEND_COMP:
 			state = send_comp(buf);
@@ -315,9 +356,8 @@ void process_recv(EV_P_ ev_io *w, int revents)
 			state = recv_init(buf);
 			break;
 		case STATE_RECV_DROP_BUF:
-			buf_put(buf);
-			ni->num_recv_drops++;
-			goto done;
+			state = recv_drop_buf(buf);
+			break;
 		case STATE_RECV_ERROR:
 			buf_put(buf);
 			ni->num_recv_errs++;

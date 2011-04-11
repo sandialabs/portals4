@@ -135,7 +135,9 @@ typedef int (*atom_op_t)(void *src, void *dst, ptl_size_t length);
 extern atom_op_t atom_op[_PTL_OP_LAST][_PTL_DATATYPE_LAST];
 
 enum {
-	STATE_RECV_COMP_WAIT,
+	STATE_RECV_EVENT_WAIT,
+	STATE_RECV_COMP_REARM,
+	STATE_RECV_COMP_POLL,
 	STATE_RECV_GET_BUF,
 	STATE_RECV_WAIT,
 	STATE_RECV_SEND_COMP,
