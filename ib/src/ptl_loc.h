@@ -30,6 +30,11 @@
 #include <unistd.h>
 #include <assert.h>
 #include <poll.h>
+#include <sys/time.h>
+
+struct timeval start_time;
+struct timeval stop_time;
+int test_time;
 
 #include "portals4.h"
 
@@ -46,13 +51,16 @@ typedef uint64_t	__be64;
 #define DEF_PT_INDEX	64
 #define MAX_PT_INDEX	4096
 
+unsigned int pagesize;
+unsigned int linesize;
+
 #include "ptl_log.h"
 #include "ptl_types.h"
 #include "ptl_ref.h"
 #include "ptl_evloop.h"
-#include "ptl_gbl.h"
 #include "ptl_index.h"
 #include "ptl_obj.h"
+#include "ptl_gbl.h"
 #include "ptl_maps.h"
 #include "ptl_pt.h"
 #include "ptl_rt.h"

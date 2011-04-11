@@ -8,8 +8,6 @@
 struct xi;
 struct xt;
 
-extern obj_type_t *type_buf;
-
 typedef ptl_handle_any_t ptl_handle_buf_t;
 
 typedef enum {
@@ -32,7 +30,6 @@ typedef struct buf {
 	unsigned int		size;
 	unsigned int		length;
 	uint8_t			data[512];
-	mr_t			*mr;
 
 	union {
 		struct ibv_send_wr	send_wr;
@@ -44,7 +41,7 @@ typedef struct buf {
 	struct ibv_sge		sg_list[1];
 } buf_t;
 
-int buf_init(void *arg);
+int buf_init(void *arg, void *parm);
 void buf_release(void *arg);
 
 static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
@@ -52,7 +49,7 @@ static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_buf, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->buf_pool, &obj);
 	if (err) {
 		*buf_p = NULL;
 		return err;
@@ -67,7 +64,7 @@ static inline int buf_get(ptl_handle_buf_t buf_handle, buf_t **buf_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_buf, (ptl_handle_any_t)buf_handle, &obj);
+	err = obj_get(OBJ_TYPE_BUF, (ptl_handle_any_t)buf_handle, &obj);
 	if (err) {
 		*buf_p = NULL;
 		return err;

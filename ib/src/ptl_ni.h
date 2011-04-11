@@ -12,7 +12,6 @@
 #define MAX_QP_RECV_SGE		(10)
 #define MAX_SRQ_RECV_WR		(100)
 
-extern obj_type_t *type_ni;
 struct ni;
 
 /* Describes the current state of a connection with a remote rank or node. */
@@ -85,8 +84,8 @@ typedef struct ni {
 
 	int			ref_cnt;
 
-	struct iface *iface;		/* back pointer to interface owner */
-	unsigned int ifacenum;
+	struct iface		*iface;
+	unsigned int		ifacenum;
 	unsigned int		options;
 	unsigned int		ni_type;
 
@@ -143,6 +142,16 @@ typedef struct ni {
 	ev_io			cq_watcher;
 	struct ibv_srq		*srq;	/* either regular or XRC */
 
+	obj_type_t		mr_pool;
+	obj_type_t		md_pool;
+	obj_type_t		me_pool;
+	obj_type_t		le_pool;
+	obj_type_t		eq_pool;
+	obj_type_t		ct_pool;
+	obj_type_t		xi_pool;
+	obj_type_t		xt_pool;
+	obj_type_t		buf_pool;
+
 	/* Connection mappings. */
 	union {
 		struct {
@@ -179,14 +188,15 @@ typedef struct ni {
 		} physical;
 	};
 
+
 } ni_t;
 
-static inline int ni_alloc(ni_t **ni_p)
+static inline int ni_alloc(obj_type_t *type, ni_t **ni_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_ni, NULL, &obj);
+	err = obj_alloc(type, &obj);
 	if (err) {
 		*ni_p = NULL;
 		return err;
@@ -212,7 +222,7 @@ static inline int ni_get(ptl_handle_ni_t handle, ni_t **ni_p)
 	obj_t *obj;
 	ni_t *ni;
 
-	err = obj_get(type_ni, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(OBJ_TYPE_NI, (ptl_handle_any_t)handle, &obj);
 	if (err)
 		goto err;
 

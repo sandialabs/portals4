@@ -93,7 +93,6 @@ typedef struct xi {
 
 } xi_t;
 
-extern obj_type_t *type_xi;
 int xi_init(void *arg);
 void xi_release(void *arg);
 
@@ -102,7 +101,7 @@ static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_xi, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->xi_pool, &obj);
 	if (err) {
 		*xi_p = NULL;
 		return err;
@@ -117,7 +116,7 @@ static inline int xi_get(ptl_handle_xi_t xi_handle, xi_t **xi_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_xi, (ptl_handle_any_t)xi_handle, &obj);
+	err = obj_get(OBJ_TYPE_XI, (ptl_handle_any_t)xi_handle, &obj);
 	if (err) {
 		*xi_p = NULL;
 		return err;
@@ -164,7 +163,6 @@ typedef struct xt {
 	mr_t			*indir_mr;
 } xt_t;
 
-extern obj_type_t *type_xt;
 int xt_init(void *arg);
 void xt_release(void *arg);
 
@@ -173,7 +171,7 @@ static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_xt, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->xt_pool, &obj);
 	if (err) {
 		*xt_p = NULL;
 		return err;
@@ -188,7 +186,7 @@ static inline int xt_get(ptl_handle_xt_t xt_handle, xt_t **xt_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_xt, (ptl_handle_any_t)xt_handle, &obj);
+	err = obj_get(OBJ_TYPE_XT, (ptl_handle_any_t)xt_handle, &obj);
 	if (err) {
 		*xt_p = NULL;
 		return err;

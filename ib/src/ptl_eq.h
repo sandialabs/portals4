@@ -1,8 +1,6 @@
 #ifndef PTL_EQ_H
 #define PTL_EQ_H
 
-extern obj_type_t *type_eq;
-
 typedef struct eqe {
 	unsigned int		generation;
 	ptl_event_t		event;
@@ -27,7 +25,7 @@ static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_eq, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->eq_pool, &obj);
 	if (err) {
 		*eq_p = NULL;
 		return err;
@@ -42,7 +40,7 @@ static inline int eq_get(ptl_handle_eq_t eq_handle, eq_t **eq_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_eq, (ptl_handle_any_t)eq_handle, &obj);
+	err = obj_get(OBJ_TYPE_EQ, (ptl_handle_any_t)eq_handle, &obj);
 	if (err) {
 		*eq_p = NULL;
 		return err;

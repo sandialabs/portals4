@@ -4,237 +4,141 @@
 
 #include "ptl_loc.h"
 
-static unsigned int linesize;
-
-/*
- * type_info
- *	list of object type specific info
- */
-obj_type_t type_info[] = {
-	[OBJ_TYPE_NONE] = {
-		.name	= "obj",
-		.size	= sizeof(obj_t),
-		.type	= OBJ_TYPE_NONE,
-	},
-
-	[OBJ_TYPE_NI] = {
-		.name	= "ni",
-		.size	= sizeof(ni_t),
-		.type	= OBJ_TYPE_NI,
-	},
-
-	[OBJ_TYPE_PT] = {
-		.name	= "pt",
-		.size	= sizeof(pt_t),
-		.type	= OBJ_TYPE_PT,
-	},
-
-	[OBJ_TYPE_MR] = {
-		.name	= "mr",
-		.size	= sizeof(mr_t),
-		.type	= OBJ_TYPE_MR,
-		.fini	= mr_release,
-	},
-
-	[OBJ_TYPE_LE] = {
-		.name	= "le",
-		.size	= sizeof(le_t),
-		.type	= OBJ_TYPE_LE,
-		.init	= le_init,
-		.fini	= le_release,
-	},
-
-	[OBJ_TYPE_ME] = {
-		.name	= "me",
-		.size	= sizeof(me_t),
-		.type	= OBJ_TYPE_ME,
-		.init	= me_init,
-		.fini	= me_release,
-	},
-
-	[OBJ_TYPE_MD] = {
-		.name	= "md",
-		.size	= sizeof(md_t),
-		.type	= OBJ_TYPE_MD,
-		.fini	= md_release,
-	},
-
-	[OBJ_TYPE_EQ] = {
-		.name	= "eq",
-		.size	= sizeof(eq_t),
-		.type	= OBJ_TYPE_EQ,
-		.fini	= eq_release,
-	},
-
-	[OBJ_TYPE_CT] = {
-		.name	= "ct",
-		.size	= sizeof(ct_t),
-		.type	= OBJ_TYPE_CT,
-		.fini	= ct_release,
-	},
-
-	[OBJ_TYPE_XI] = {
-		.name	= "xi",
-		.size	= sizeof(xi_t),
-		.type	= OBJ_TYPE_XI,
-		.init	= xi_init,
-		.fini	= xi_release,
-	},
-
-	[OBJ_TYPE_XT] = {
-		.name	= "xt",
-		.size	= sizeof(xt_t),
-		.type	= OBJ_TYPE_XT,
-		.init	= xt_init,
-		.fini	= xt_release,
-	},
-
-	[OBJ_TYPE_BUF] = {
-		.name	= "buf",
-		.size	= sizeof(buf_t),
-		.type	= OBJ_TYPE_BUF,
-		.init	= buf_init,
-		.fini	= buf_release,
-	},
-};
-
-obj_type_t *type_ni = &type_info[OBJ_TYPE_NI];
-obj_type_t *type_pt = &type_info[OBJ_TYPE_PT];
-obj_type_t *type_mr = &type_info[OBJ_TYPE_MR];
-obj_type_t *type_le = &type_info[OBJ_TYPE_LE];
-obj_type_t *type_me = &type_info[OBJ_TYPE_ME];
-obj_type_t *type_md = &type_info[OBJ_TYPE_MD];
-obj_type_t *type_eq = &type_info[OBJ_TYPE_EQ];
-obj_type_t *type_ct = &type_info[OBJ_TYPE_CT];
-obj_type_t *type_xi = &type_info[OBJ_TYPE_XI];
-obj_type_t *type_xt = &type_info[OBJ_TYPE_XT];
-obj_type_t *type_buf = &type_info[OBJ_TYPE_BUF];
-
-void _dump_type_counts()
-{
-	int i;
-
-	for (i = 0; i < OBJ_TYPE_LAST; i++)
-		printf("%s:%d ", type_info[i].name, type_info[i].count);
-	printf("\n");
-}
-
-void *obj_get_zero_filled_page(void)
+void *obj_get_zero_filled_segment(obj_type_t *type)
 {
 	int err;
 	void *p;
 
-	err = posix_memalign(&p, pagesize, pagesize);
+	err = posix_memalign(&p, pagesize, type->segment_size);
 	if (unlikely(err))
 		return NULL;
 
 	get_maps();
-	memset(p, 0, pagesize);
+	memset(p, 0, type->segment_size);
 
 	return p;
 }
 
-int obj_init(void)
+int obj_type_init(obj_type_t *pool, char *name, int size,
+		  int type, obj_t *parent)
 {
-	int err;
-	int i;
-	obj_type_t *type;
+	pool->name = name;
+	pool->size = size;
+	pool->type = type;
+	pool->parent = parent;
 
-	err = index_init();
-	if (err)
-		return err;
+	INIT_LIST_HEAD(&pool->free_list);
+	INIT_LIST_HEAD(&pool->chunk_list);
+	pthread_spin_init(&pool->free_list_lock, PTHREAD_PROCESS_PRIVATE);
 
-	pagesize = sysconf(_SC_PAGESIZE);
-	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+	pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
 
-	for (i = 0; i < OBJ_TYPE_LAST; i++) {
-		type = &type_info[i];
+	if (pool->segment_size < pagesize)
+		pool->segment_size = pagesize;
 
-		INIT_LIST_HEAD(&type->free_list);
-		INIT_LIST_HEAD(&type->chunk_list);
-		pthread_spin_init(&type->free_list_lock,
-			PTHREAD_PROCESS_PRIVATE);
+	pool->segment_size = (pool->segment_size + pagesize - 1) &
+			     ~(pagesize - 1);
 
-		type->round_size = (type->size + linesize - 1)
-				   & ~(linesize - 1);
-		type->obj_per_page = pagesize/type->round_size;
-		if (!type->obj_per_page) {
-			ptl_error("Well that's embarassing but "
-			          "can't fit any %s's in a page\n",
-			          type->name);
-			goto err;
-		}
-		type->count = 0;
+	pool->obj_per_segment = pool->segment_size/pool->round_size;
+	if (!pool->obj_per_segment) {
+		ptl_error("Well that's embarassing but "
+			  "can't fit any %s's in a segment\n",
+			  pool->name);
+		return PTL_FAIL;
 	}
+	pool->count = 0;
 
 	return PTL_OK;
-
-err:
-	return PTL_FAIL;
 }
 
-void obj_fini(void)
+void obj_type_fini(obj_type_t *pool)
 {
-	int i;
-	int j;
-	obj_type_t *type;
 	struct list_head *l, *t;
-	pagelist_t *chunk;
+	obj_t *obj;
+	segment_list_t *chunk;
+	int i;
 
-	for (i = 0; i < OBJ_TYPE_LAST; i++) {
-		type = &type_info[i];
+	/* avoid getting called from cleanup during PtlNIInit */
+	if (!pool->name)
+		return;
 
-		if (type->count) {
-			/*
-			 * we shouldn't get here since we
-			 * are supposed to clean up all the
-			 * objects during processing PtlFini
-			 * so this would be a library bug
-			 */
-			ptl_warn("leaked %d %s objects\n",
-				 type->count, type->name);
-			ptl_test_return = PTL_FAIL;
-		}
-
-		pthread_spin_destroy(&type->free_list_lock);
-
-		list_for_each_safe(l, t, &type->chunk_list) {
-			list_del(l);
-			chunk = list_entry(l, pagelist_t, chunk_list);
-
-			for (j = 0; j < chunk->num_pages; j++)
-				free(chunk->page_list[j]);
-
-			free(chunk);
-		}
+	if (pool->count) {
+		/*
+		 * we shouldn't get here since we
+		 * are supposed to clean up all the
+		 * objects during processing PtlFini
+		 * so this would be a library bug
+		 */
+		ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
+		ptl_test_return = PTL_FAIL;
 	}
 
-	index_fini();
+	/*
+	 * if type has a cleanup routine call it
+	 */
+	if (pool->fini) {
+		pthread_spin_lock(&pool->free_list_lock);
+		list_for_each(l, &pool->free_list) {
+			obj = list_entry(l, obj_t, obj_list);
+			pool->fini(obj);
+		}
+		pthread_spin_unlock(&pool->free_list_lock);
+	}
+
+	pthread_spin_destroy(&pool->free_list_lock);
+
+	list_for_each_safe(l, t, &pool->chunk_list) {
+		list_del(l);
+		chunk = list_entry(l, segment_list_t, chunk_list);
+
+		for (i = 0; i < chunk->num_segments; i++) {
+			free(chunk->segment_list[i].addr);
+
+			/* hack see below TODO cleanup later */
+			if (chunk->segment_list[i].priv) {
+				struct ibv_mr *mr = chunk->segment_list[i].priv;
+
+				ibv_dereg_mr(mr);
+			}
+		}
+
+		free(chunk);
+	}
 }
 
 /*
- * type_get_pagelist_pointer
- *	get pointer to pagelist with room to hold
- *	a new page pointer
+ * type_get_segment_list_pointer
+ *	get pointer to segment_list with room to hold
+ *	a new segment pointer
  *	caller should hold type->free_list_lock
+ *	note that we never free object memory so there are
+ *	never any holes in a segment list
  */
-static int type_get_pagelist_pointer(obj_type_t *type, pagelist_t **pp)
+static int type_get_segment_list_pointer(obj_type_t *type, segment_list_t **pp)
 {
+	int err;
 	struct list_head *l = type->chunk_list.next;
-	pagelist_t *p = list_entry(l, pagelist_t, chunk_list);
+	segment_list_t *p = list_entry(l, segment_list_t, chunk_list);
+	void *d;
 
 	if (likely(!list_empty(&type->chunk_list)
-	    && (p->num_pages < p->max_pages))) {
+	    && (p->num_segments < p->max_segments))) {
 		*pp = p;
 		return PTL_OK;
 	}
 
-	p = obj_get_zero_filled_page();
-	if (unlikely(!p))
+	/* have to allocate a new segment list */
+	err = posix_memalign(&d, pagesize, pagesize);
+	if (unlikely(err))
 		return PTL_NO_SPACE;
 
-	p->num_pages = 0;
-	p->max_pages = (pagesize - sizeof(*p))/sizeof(void *);
+	p = d;
+
+	get_maps();
+	memset(p, 0, pagesize);
+
+	p->num_segments = 0;
+	p->max_segments = (type->segment_size - sizeof(*p))/sizeof(void *);
 	list_add(&p->chunk_list, &type->chunk_list);
 
 	*pp = p;
@@ -242,35 +146,61 @@ static int type_get_pagelist_pointer(obj_type_t *type, pagelist_t **pp)
 }
 
 /*
- * type_alloc_page
- *	allocate a new page of objects of given type
- *	caller should hold type->free_list_lock
+ * type_alloc_segment
+ *	allocate a new segment of objects for a given pool
+ *	caller should hold pool->free_list_lock
  */
-static int type_alloc_page(obj_type_t *type)
+static int type_alloc_segment(obj_type_t *pool)
 {
 	int err;
-	pagelist_t *pp = NULL;
+	segment_list_t *pp = NULL;
 	uint8_t *p;
 	int i;
 	obj_t *obj;
+	struct ibv_mr *mr = NULL;
+	ni_t *ni;
 
-	err = type_get_pagelist_pointer(type, &pp);
+	err = type_get_segment_list_pointer(pool, &pp);
 	if (unlikely(err))
 		return err;
 
-	p = obj_get_zero_filled_page();
+	p = obj_get_zero_filled_segment(pool);
 	if (unlikely(!p))
 		return PTL_NO_SPACE;
 
-	pp->page_list[pp->num_pages++] = p;
+	/*
+	 * want to abstract this a little but just hack it for now
+	 */
+	if (pool->type == OBJ_TYPE_BUF) {
+		ni = (ni_t *)pool->parent;
+		mr = ibv_reg_mr(ni->iface->pd, p, pool->segment_size,
+				IBV_ACCESS_LOCAL_WRITE);
+		if (!mr) {
+			WARN();
+			return PTL_FAIL;
+		}
+		pp->segment_list[pp->num_segments].priv = mr;
+	}
 
-	for (i = 0; i < type->obj_per_page; i++) {
+	pp->segment_list[pp->num_segments++].addr = p;
+
+	for (i = 0; i < pool->obj_per_segment; i++) {
 		obj = (obj_t *)p;
 		obj->obj_free = 1;
-		obj->obj_type = type;
+		obj->obj_type = pool;
 		ref_set(&obj->obj_ref, 0);
-		list_add(&obj->obj_list, &type->free_list);
-		p += type->round_size;
+		obj->obj_parent = pool->parent;
+		obj->obj_ni = (pool->parent) ? pool->parent->obj_ni
+					     : (ni_t *)obj;
+		if (pool->init) {
+			err = pool->init(obj, mr);
+			if (err) {
+				WARN();
+				return PTL_FAIL;
+			}
+		}
+		list_add(&obj->obj_list, &pool->free_list);
+		p += pool->round_size;
 	}
 
 	return PTL_OK;
@@ -295,12 +225,11 @@ void obj_release(ref_t *ref)
 		ptl_fatal("object corrupted unable to free_index\n");
 	obj->obj_handle = 0;
 
-	if (type->fini)
-		type->fini(obj);
+	if (type->free)
+		type->free(obj);
 
 	if (obj->obj_parent)
 		obj_put(obj->obj_parent);
-	obj->obj_parent = NULL;
 	obj->obj_free = 1;
 
 	pthread_spin_lock(&type->free_list_lock);
@@ -314,56 +243,48 @@ void obj_release(ref_t *ref)
  *	allocate a new object of indicated type
  *	zero fill after the base type
  */
-int obj_alloc(obj_type_t *type, obj_t *parent, obj_t **p_obj)
+int obj_alloc(obj_type_t *pool, obj_t **p_obj)
 {
 	int err;
         obj_t *obj;
 	struct list_head *l;
 	unsigned int index = 0;
 
-	pthread_spin_lock(&type->free_list_lock);
+	pthread_spin_lock(&pool->free_list_lock);
 
-	if (list_empty(&type->free_list)) {
-		err = type_alloc_page(type);
+	if (list_empty(&pool->free_list)) {
+		err = type_alloc_segment(pool);
 		if (unlikely(err)) {
-			pthread_spin_unlock(&type->free_list_lock);
+			pthread_spin_unlock(&pool->free_list_lock);
 			return err;
 		}
 	}
 
-	l = type->free_list.next;
+	l = pool->free_list.next;
 	list_del(l);
 	obj = list_entry(l, obj_t, obj_list);
-	type->count++;
+	pool->count++;
 
-	pthread_spin_unlock(&type->free_list_lock);
+	pthread_spin_unlock(&pool->free_list_lock);
 
-	if (parent)
-		obj_ref(parent);
-	obj->obj_parent = parent;
-
-	obj->obj_ni = (type == type_ni) ? (ni_t *)obj : parent->obj_ni;
+	if (pool->parent)
+		obj_ref(pool->parent);
 
 	err = index_get(obj, &index);
 	if (err)
 		return err;
-	obj->obj_handle	= ((uint64_t)(type->type) << 56) | index;
+	obj->obj_handle	= ((uint64_t)(pool->type) << 56) | index;
 
 	ref_init(&obj->obj_ref);
 
         pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	/*
-	 * for now we are zeroing this out
-	 * to avoid strange scribbles
-	 * eventually should consider making the
-	 * types responsible for this since they
-	 * fill in most of the space anyway
+	 * if any type specific per allocation initialization do it
 	 */
-	memset((uint8_t *)obj + sizeof(obj_t), 0, type->size - sizeof(obj_t));
-
-	if (type->init) {
-		if (type->init(obj)) {
+	if (pool->alloc) {
+		err = pool->alloc(obj);
+		if (err) {
 			WARN();
 			obj_release(&obj->obj_ref);
 			return PTL_FAIL;
@@ -380,13 +301,12 @@ int obj_alloc(obj_type_t *type, obj_t *parent, obj_t **p_obj)
  * obj_get
  *	return an object from handle and optionally type
  */
-int obj_get(obj_type_t *type, ptl_handle_any_t handle, obj_t **obj_p)
+int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 {
 	int err;
 	obj_t *obj = NULL;
 	unsigned int handle_type = (unsigned int)(handle >> 56);
 	unsigned int index;
-	unsigned int type_num = type ? type->type : 0;
 
 	if (handle == PTL_HANDLE_NONE)
 		goto done;
@@ -396,7 +316,7 @@ int obj_get(obj_type_t *type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
-	if (type_num && handle_type && type_num != handle_type) {
+	if (type && handle_type && type != handle_type) {
 		WARN();
 		goto err1;
 	}
@@ -419,7 +339,7 @@ int obj_get(obj_type_t *type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
-	if (type_num && (type_num != obj->obj_type->type)) {
+	if (type && (type != obj->obj_type->type)) {
 		WARN();
 		goto err1;
 	}

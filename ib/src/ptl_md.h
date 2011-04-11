@@ -28,7 +28,7 @@ static inline int md_alloc(ni_t *ni, md_t **md_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_alloc(type_md, (obj_t *)ni, &obj);
+	err = obj_alloc(&ni->md_pool, &obj);
 	if (err) {
 		*md_p = NULL;
 		return err;
@@ -43,7 +43,7 @@ static inline int md_get(ptl_handle_md_t handle, md_t **md_p)
 	int err;
 	obj_t *obj;
 
-	err = obj_get(type_md, (ptl_handle_any_t)handle, &obj);
+	err = obj_get(OBJ_TYPE_MD, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*md_p = NULL;
 		return err;

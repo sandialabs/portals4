@@ -597,9 +597,6 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	struct ibv_qp_init_attr init;
 	const struct cm_priv_reject *rej;
 
-	if (debug)
-		printf("Rank got a CM event\n");
-
 	if (rdma_get_cm_event(iface->cm_channel, &event)) 
 		return;
 
@@ -1271,7 +1268,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	if (err)
 		goto err2;
 
-	err = ni_alloc(&ni);
+	err = ni_alloc(&gbl->ni_pool, &ni);
 	if (unlikely(err))
 		goto err2;
 
@@ -1310,6 +1307,90 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	ni->pt = ptl_calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
 		err = PTL_NO_SPACE;
+		goto err3;
+	}
+
+	ni->mr_pool.free = mr_release;
+
+	err = obj_type_init(&ni->mr_pool, "mr", sizeof(mr_t),
+			    OBJ_TYPE_MR, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->md_pool.free = md_release;
+
+	err = obj_type_init(&ni->md_pool, "md", sizeof(md_t),
+			    OBJ_TYPE_MD, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->me_pool.free = me_release;
+
+	err = obj_type_init(&ni->me_pool, "me", sizeof(me_t),
+			    OBJ_TYPE_ME, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->le_pool.free = le_release;
+
+	err = obj_type_init(&ni->le_pool, "le", sizeof(le_t),
+			    OBJ_TYPE_LE, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->eq_pool.free = eq_release;
+
+	err = obj_type_init(&ni->eq_pool, "eq", sizeof(eq_t),
+			    OBJ_TYPE_EQ, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->ct_pool.free = ct_release;
+
+	err = obj_type_init(&ni->ct_pool, "ct", sizeof(ct_t),
+			    OBJ_TYPE_CT, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->xi_pool.alloc = xi_init;
+	ni->xi_pool.free = xi_release;
+
+	err = obj_type_init(&ni->xi_pool, "xi", sizeof(xi_t),
+			    OBJ_TYPE_XI, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->xt_pool.alloc = xt_init;
+	ni->xt_pool.free = xt_release;
+
+	err = obj_type_init(&ni->xt_pool, "xt", sizeof(xt_t),
+			    OBJ_TYPE_XT, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto err3;
+	}
+
+	ni->buf_pool.init = buf_init;
+	ni->buf_pool.fini = buf_release;
+
+	err = obj_type_init(&ni->buf_pool, "buf", sizeof(buf_t),
+			    OBJ_TYPE_BUF, (obj_t *)ni);
+	if (err) {
+		WARN();
 		goto err3;
 	}
 
@@ -1472,6 +1553,16 @@ static void ni_cleanup(ni_t *ni)
 
 	release_buffers(ni);
 
+	obj_type_fini(&ni->buf_pool);
+	obj_type_fini(&ni->xt_pool);
+	obj_type_fini(&ni->xi_pool);
+	obj_type_fini(&ni->ct_pool);
+	obj_type_fini(&ni->eq_pool);
+	obj_type_fini(&ni->le_pool);
+	obj_type_fini(&ni->me_pool);
+	obj_type_fini(&ni->md_pool);
+	obj_type_fini(&ni->mr_pool);
+
 	if (ni->pt) {
 		free(ni->pt);
 		ni->pt = NULL;
@@ -1585,7 +1676,7 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 		goto err1;
 	}
 
-	err = obj_get(NULL, handle, &obj);
+	err = obj_get(0, handle, &obj);
 	if (unlikely(err))
 		goto err1;
 
