@@ -5,6 +5,8 @@
 #ifndef PORTALS4_H
 #define PORTALS4_H
 
+#include <stdint.h>
+
 /*
  * All symbold beginning with underscore are private to the implementation
  * for the convenience of the implementation developers and can be ignored
