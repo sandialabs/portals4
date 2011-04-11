@@ -494,8 +494,8 @@ int process_init(xi_t *xi)
 		state = xi->state;
 
 		while (1) {
-			if (debug) printf("init state = %s\n",
-					  init_state_name[state]);
+			if (debug) printf("%p: init state = %s\n",
+					  xi, init_state_name[state]);
 			switch (state) {
 			case STATE_INIT_START:
 				state = init_start(xi);
