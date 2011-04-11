@@ -1,6 +1,8 @@
 #ifndef TESTING_H
 #define TESTING_H
 
+#include <math.h> // for fabsl
+
 #define CHECK_RETURNVAL(x) do { int ret; \
     switch (ret = x) { \
         case PTL_OK: break; \
@@ -22,5 +24,9 @@
         abort(); \
     } \
 } while (0)
+
+/* floating-point equality is hard to check for, but this should work
+ * for the comparisons of doubles used in our atomics test programs. */
+#define fpequal(a,b) (fabsl((a)-(b)) < 0.00001)
 
 #endif
