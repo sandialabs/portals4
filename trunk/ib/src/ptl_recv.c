@@ -272,6 +272,7 @@ static int recv_req(buf_t *buf)
 	xt->recv_buf = buf;
 	xt->state = STATE_TGT_START;
 
+	/* note process_tgt must drop recv_buf */
 	err = process_tgt(xt);
 	if (err)
 		WARN();
@@ -297,6 +298,7 @@ static int recv_init(buf_t *buf)
 
 	xi->recv_buf = buf;
 
+	/* note process_init must drop recv_buf */
 	err = process_init(xi);
 	if (err)
 		WARN();
