@@ -91,7 +91,7 @@ typedef struct xi {
 
 	struct xremote		dest;
 
-	conn_t	*connect;
+	conn_t			*conn;
 
 } xi_t;
 
