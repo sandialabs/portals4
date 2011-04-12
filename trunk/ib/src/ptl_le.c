@@ -122,9 +122,6 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_le_t *le_init, ptl_list_t ptl_list,
 		    ptl_handle_le_t *le_handle)
 {
-	int i;
-	ptl_iovec_t *iov;
-
 	if (unlikely(!ni))
 		return PTL_ARG_INVALID;
 
@@ -140,22 +137,7 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		return PTL_ARG_INVALID;
 
 	if (le_init->options & PTL_IOVEC) {
-		if (unlikely(CHECK_RANGE(le_init->start,
-					 ptl_iovec_t, le_init->length)))
-			return PTL_ARG_INVALID;
-
 		if (le_init->length > ni->limits.max_iovecs)
-			return PTL_ARG_INVALID;
-
-		for (i = 0, iov = (ptl_iovec_t *)le_init->start;
-					i < le_init->length; i++, iov++) {
-			if (unlikely(CHECK_RANGE(iov->iov_base,
-						 unsigned char, iov->iov_len)))
-				return PTL_ARG_INVALID;
-		}
-	} else {
-		if (unlikely(CHECK_RANGE(le_init->start,
-					 unsigned char, le_init->length)))
 			return PTL_ARG_INVALID;
 	}
 
@@ -168,9 +150,6 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_PROBE_ONLY))
-		return PTL_ARG_INVALID;
-
-	if (unlikely(CHECK_POINTER(le_handle, ptl_handle_le_t)))
 		return PTL_ARG_INVALID;
 
 	return PTL_OK;
@@ -192,12 +171,12 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
-		le->mr_list = ptl_calloc(le->num_iov, sizeof(mr_t *));
+		le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
 		if (!le->mr_list)
 			return PTL_NO_SPACE;
 
 		if (le->num_iov > MAX_INLINE_SGE) {
-			le->sge_list = ptl_calloc(le->num_iov, sizeof(*sge));
+			le->sge_list = calloc(le->num_iov, sizeof(*sge));
 			if (!le->sge_list)
 				return PTL_NO_SPACE;
 
@@ -212,10 +191,6 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 		sge = le->sge_list;
 
 		for (i = 0; i < le->num_iov; i++) {
-			if (unlikely(CHECK_RANGE(iov->iov_base, unsigned char,
-						 iov->iov_len)))
-				return PTL_ARG_INVALID;
-
 			err = mr_lookup(ni, iov->iov_base, iov->iov_len, &mr);
 			if (err)
 				return err;

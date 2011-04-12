@@ -61,7 +61,6 @@ unsigned int linesize;
 #include "ptl_index.h"
 #include "ptl_obj.h"
 #include "ptl_gbl.h"
-#include "ptl_maps.h"
 #include "ptl_pt.h"
 #include "ptl_rt.h"
 #include "ptl_ni.h"

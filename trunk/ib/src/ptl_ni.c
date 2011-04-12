@@ -165,7 +165,7 @@ struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id)
 			connect = *ret;
 		} else {
 			/* Not found. Allocate and insert. */
-			connect = ptl_malloc(sizeof(*connect));
+			connect = malloc(sizeof(*connect));
 			if (!connect) {
 				pthread_mutex_unlock(&ni->physical.lock);
 				WARN();
@@ -396,7 +396,7 @@ static int accept_connection_request_logical(ni_t *ni, struct rdma_cm_event *eve
 	/* Accept the connection and give back our SRQ
 	 * number. This will be a passive connection (ie, nothing
 	 * will be sent from that side. */
-	connect = ptl_malloc(sizeof(*connect));
+	connect = malloc(sizeof(*connect));
 	if (!connect) {
 		WARN();
 		return 1;
@@ -1209,21 +1209,6 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	}
 	iface = &gbl->iface[ifacenum];
 
-	if (unlikely(CHECK_POINTER(ni_handle, ptl_handle_ni_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
-	if (unlikely(desired && CHECK_POINTER(desired, ptl_ni_limits_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
-	if (unlikely(actual && CHECK_POINTER(actual, ptl_ni_limits_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	if (unlikely(options & ~_PTL_NI_INIT_OPTIONS)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -1250,21 +1235,9 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			goto err1;
 		}
 
-		if (unlikely(map_size && desired_mapping &&
-					 CHECK_RANGE(desired_mapping, ptl_process_t, map_size))) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
 		if (map_size &&
 			iface->map_size &&
 			map_size != iface->map_size) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
-		if (actual_mapping && 
-			unlikely(map_size && CHECK_RANGE(actual_mapping, ptl_process_t, map_size))) {
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
@@ -1319,7 +1292,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	pthread_mutex_init(&ni->physical.lock, NULL);
 	pthread_mutex_init(&ni->logical.lock, NULL);
 
-	ni->pt = ptl_calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
+	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
 		err = PTL_NO_SPACE;
 		goto err3;
@@ -1650,11 +1623,6 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(status, ptl_sr_value_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	if (unlikely(index >= _PTL_SR_LAST)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -1689,11 +1657,6 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
-
-	if (unlikely(CHECK_POINTER(ni_handle, ptl_handle_ni_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
 
 	err = obj_get(0, handle, &obj);
 	if (unlikely(err))

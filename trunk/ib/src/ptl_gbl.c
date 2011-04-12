@@ -72,12 +72,6 @@ static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
 
 	gbl->jid = jid;
 
-	err = get_maps();
-	if (unlikely(err)) {
-		ptl_warn("get_maps failed\n");
-		goto err;
-	}
-
 	/* init the index service */
 	err = index_init();
 	if (err)

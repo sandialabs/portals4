@@ -53,14 +53,14 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	md->num_iov = num_iov;
 
-	md->mr_list = ptl_calloc(num_iov, sizeof(mr_t *));
+	md->mr_list = calloc(num_iov, sizeof(mr_t *));
 	if (!md->mr_list) {
 		WARN();
 		return PTL_NO_SPACE;
 	}
 
 	if (num_iov > MAX_INLINE_SGE) {
-		md->sge_list = ptl_calloc(num_iov, sizeof(struct ibv_sge));
+		md->sge_list = calloc(num_iov, sizeof(struct ibv_sge));
 		if (!md->sge_list) {
 			WARN();
 			return PTL_NO_SPACE;
@@ -81,12 +81,6 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	sge = md->sge_list;
 
 	for (i = 0; i < num_iov; i++) {
-		if (unlikely(CHECK_RANGE(iov->iov_base, unsigned char,
-					 iov->iov_len))) {
-			WARN();
-			return PTL_ARG_INVALID;
-		}
-
 		err = mr_lookup(ni, iov->iov_base, iov->iov_len, &mr);
 		if (err) {
 			WARN();
@@ -123,12 +117,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 		return err;
 	}
 
-	if (unlikely(CHECK_POINTER(md_handle, ptl_handle_md_t))) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	if (unlikely(md_init->options & ~_PTL_MD_BIND_OPTIONS)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -154,13 +142,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 	}
 
 	if (md_init->options & PTL_IOVEC) {
-		if (unlikely(CHECK_RANGE(md_init->start, ptl_iovec_t,
-			     md_init->length))) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err3;
-		}
-
 		if (md_init->length > ni->limits.max_iovecs) {
 			WARN();
 			err = PTL_ARG_INVALID;
@@ -175,13 +156,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 			goto err3;
 		}
 	} else {
-		if (unlikely(CHECK_RANGE(md_init->start, unsigned char,
-					 md_init->length))) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err3;
-		}
-
 		err = mr_lookup(ni, md_init->start, md_init->length, &md->mr);
 		if (err)
 			goto err3;

@@ -16,7 +16,6 @@ void buf_release(void *arg)
  */
 int buf_init(void *arg, void *parm)
 {
-	int err;
 	buf_t *buf = arg;
 	struct ibv_mr *mr = parm;
 

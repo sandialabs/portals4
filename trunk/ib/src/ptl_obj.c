@@ -13,7 +13,6 @@ void *obj_get_zero_filled_segment(pool_t *pool)
 	if (unlikely(err))
 		return NULL;
 
-	get_maps();
 	memset(p, 0, pool->segment_size);
 
 	return p;
@@ -173,7 +172,6 @@ static int type_get_segment_list_pointer(pool_t *pool, segment_list_t **pp)
 
 	p = d;
 
-	get_maps();
 	memset(p, 0, pagesize);
 
 	p->num_segments = 0;
