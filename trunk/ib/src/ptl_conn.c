@@ -494,15 +494,15 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 			/* Flush the posted requests/replies. */
 			while(!list_empty(&conn->list)) {
-				conn_t *conn = list_first_entry(&conn->list, conn_t, list);
+				conn_t *c = list_first_entry(&conn->list, conn_t, list);
 
-				list_del_init(&conn->list);
+				list_del_init(&c->list);
 
 				pthread_mutex_unlock(&conn->mutex);
 
-				pthread_mutex_lock(&conn->mutex);
-				flush_pending_xi_xt(conn);
-				pthread_mutex_unlock(&conn->mutex);
+				pthread_mutex_lock(&c->mutex);
+				flush_pending_xi_xt(c);
+				pthread_mutex_unlock(&c->mutex);
 
 				pthread_mutex_lock(&conn->mutex);
 			}
