@@ -190,16 +190,18 @@ int index_lookup(unsigned int index, obj_t **obj_p)
 	unsigned int offset;
 	void **map;
 
+	segment = index >> SEGMENT_SHIFT;
+	offset = index & (SEGMENT_SIZE - 1);
+
+#ifdef PTL_CHECK_BUILD
 	if (!index_is_init) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-	segment = index >> SEGMENT_SHIFT;
-	offset = index & (SEGMENT_SIZE - 1);
-
 	if (segment >= SEGMENT_SIZE)
 		return PTL_FAIL;
+#endif
 
 	map = index_maps[segment];
 	if (!map || !map[offset]) {

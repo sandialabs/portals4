@@ -4,7 +4,8 @@
 #include "ptl_loc.h"
 
 static char *init_state_name[] = {
-	[STATE_INIT_START]			= "init_start",
+	[STATE_INIT_START]		= "init_start",
+	[STATE_INIT_WAIT_CONN]		= "init_wait_conn",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
 	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
 	[STATE_INIT_HANDLE_COMP]	= "init_handle_comp",
@@ -152,14 +153,139 @@ static void init_events(xi_t *xi)
 	}
 }
 
-/*
- * init_start
- *	start request operation
- *	call assumes xi has been filled in from one the
- *	move or triggered move calls
- */
 static int init_start(xi_t *xi)
 {
+	int err;
+	ni_t *ni = to_ni(xi);
+	buf_t *buf;
+	req_hdr_t *hdr;
+	data_t *get_data = NULL;
+	data_t *put_data = NULL;
+	ptl_size_t length = xi->rlength;
+
+	/* Ensure we are already connected. */
+	xi->connect = get_conn(ni, &xi->target);
+	if (unlikely(!xi->connect)) {
+		ptl_warn("Invalid destination\n");
+		return STATE_INIT_ERROR;
+	}
+
+	pthread_mutex_lock(&xi->connect->mutex);
+
+	if (xi->connect->main_connect) {
+		assert(xi->connect->state == CONN_STATE_DISCONNECTED);
+		set_xi_dest(xi, xi->connect->main_connect);
+	} 
+	else if (unlikely(xi->connect->state != CONN_STATE_CONNECTED)) {
+		/* Not connected. Add the xi on the pending list. It will be
+		 * flushed once connected/disconnected. */
+		int ret;
+
+		list_add_tail(&xi->connect_pending_list, &xi->connect->xi_list);
+
+		if (xi->connect->state == CONN_STATE_DISCONNECTED) {
+			/* Initiate connection. */
+			if (init_connect(ni, xi->connect)) {
+				list_del(&xi->connect_pending_list);
+				ret = STATE_INIT_ERROR;
+			} else
+				ret = STATE_INIT_START;
+		} else {
+			/* Connection in already in progress. */
+			ret = STATE_INIT_START;
+		}
+
+		pthread_mutex_unlock(&xi->connect->mutex);
+
+		return ret;
+	} else {
+		set_xi_dest(xi, xi->connect);
+	}
+
+	pthread_mutex_unlock(&xi->connect->mutex);
+
+	err = buf_alloc(ni, &buf);
+	if (err) {
+		WARN();
+		return STATE_INIT_ERROR;
+	}
+	hdr = (req_hdr_t *)buf->data;
+
+	xi->send_buf = buf;
+
+	xport_hdr_from_xi((hdr_t *)hdr, xi);
+	base_hdr_from_xi((hdr_t *)hdr, xi);
+	req_hdr_from_xi(hdr, xi);
+	hdr->operation = xi->operation;
+	buf->length = sizeof(req_hdr_t);
+	buf->xi = xi;
+	buf->dest = &xi->dest;
+
+	switch (xi->operation) {
+	case OP_PUT:
+	case OP_ATOMIC:
+		put_data = (data_t *)(buf->data + buf->length);
+		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
+							   length, buf);
+		if (err)
+			return STATE_INIT_ERROR;
+		break;
+
+	case OP_GET:
+		get_data = (data_t *)(buf->data + buf->length);
+		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
+							   length, buf);
+		if (err)
+			return STATE_INIT_ERROR;
+		break;
+
+	case OP_FETCH:
+	case OP_SWAP:
+		get_data = (data_t *)(buf->data + buf->length);
+		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
+							   length, buf);
+		if (err)
+			return STATE_INIT_ERROR;
+
+		put_data = (data_t *)(buf->data + buf->length);
+		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
+							   length, buf);
+		if (err)
+			return STATE_INIT_ERROR;
+		break;
+
+	default:
+		WARN();
+		break;
+	}
+
+	buf->send_wr.opcode = IBV_WR_SEND;
+	buf->sg_list[0].length = buf->length;
+	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
+
+	init_events(xi);
+
+	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
+	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)) &&
+	    (xi->put_md->options & PTL_MD_REMOTE_FAILURE_DISABLE))
+		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
+	else if (xi->event_mask) {
+		/* we need an ack and they are all the same */
+		hdr->ack_req = PTL_ACK_REQ;
+		xi->next_state = STATE_INIT_GET_RECV;
+	} else
+		xi->next_state = STATE_INIT_CLEANUP;
+
+	err = send_message(buf);
+	if (err)
+		return STATE_INIT_SEND_ERROR;
+
+	return STATE_INIT_WAIT_COMP;
+}
+
+static int wait_conn(xi_t *xi)
+{
+#if 0
 	int err;
 	ni_t *ni = to_ni(xi);
 	buf_t *buf;
@@ -170,7 +296,7 @@ static int init_start(xi_t *xi)
 	struct nid_connect *connect;
 
 	/* Ensure we are already connected. */
-	connect = get_connect_for_id(ni, &xi->target);
+	connect = get_conn(ni, &xi->target);
 	if (unlikely(!connect)) {
 		ptl_warn("Invalid destination\n");
 		return STATE_INIT_ERROR;
@@ -179,17 +305,17 @@ static int init_start(xi_t *xi)
 	pthread_mutex_lock(&connect->mutex);
 
 	if (connect->main_connect) {
-		assert(connect->state == GBLN_DISCONNECTED);
+		assert(connect->state == CONN_STATE_DISCONNECTED);
 		set_xi_dest(xi, connect->main_connect);
 	} 
-	else if (unlikely(connect->state != GBLN_CONNECTED)) {
+	else if (unlikely(connect->state != CONN_STATE_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
 		 * flushed once connected/disconnected. */
 		int ret;
 
 		list_add_tail(&xi->connect_pending_list, &connect->xi_list);
 
-		if (connect->state == GBLN_DISCONNECTED) {
+		if (connect->state == CONN_STATE_DISCONNECTED) {
 			/* Initiate connection. */
 			if (init_connect(ni, connect)) {
 				list_del(&xi->connect_pending_list);
@@ -286,6 +412,7 @@ static int init_start(xi_t *xi)
 	if (err)
 		return STATE_INIT_SEND_ERROR;
 
+#endif
 	return STATE_INIT_WAIT_COMP;
 }
 
@@ -500,6 +627,11 @@ int process_init(xi_t *xi)
 			case STATE_INIT_START:
 				state = init_start(xi);
 				if (state == STATE_INIT_START)
+					goto exit;
+				break;
+			case STATE_INIT_WAIT_CONN:
+				state = wait_conn(xi);
+				if (state == STATE_INIT_WAIT_CONN)
 					goto exit;
 				break;
 			case STATE_INIT_SEND_ERROR:

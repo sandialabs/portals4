@@ -384,8 +384,10 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 {
 	int err;
 	obj_t *obj = NULL;
-	unsigned int handle_type = (unsigned int)(handle >> 56);
 	unsigned int index;
+#ifdef PTL_CHECK_BUILD
+	unsigned int handle_type = (unsigned int)(handle >> 56);
+#endif
 
 	if (handle == PTL_HANDLE_NONE)
 		goto done;
@@ -395,10 +397,12 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
+#ifdef PTL_CHECK_BUILD
 	if (type && handle_type && type != handle_type) {
 		WARN();
 		goto err1;
 	}
+#endif
 
 	index = obj_handle_to_index(handle);
 
@@ -408,6 +412,7 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
+#ifdef PTL_CHECK_BUILD
 	if (obj->obj_free) {
 		WARN();
 		goto err1;
@@ -422,6 +427,7 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 		WARN();
 		goto err1;
 	}
+#endif
 
 	obj_ref(obj);
 

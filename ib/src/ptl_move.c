@@ -195,6 +195,7 @@ err1:
 	return err;
 }
 
+#if 0
 int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -204,6 +205,110 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 			  pt_index, match_bits, remote_offset, user_ptr,
 			  hdr_data,
 			  0, 0, 0);
+}
+#endif
+
+int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
+	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
+	   ptl_size_t remote_offset, void *user_ptr, ptl_hdr_data_t hdr_data)
+{
+	int err;
+	gbl_t *gbl;
+	md_t *md;
+	ni_t *ni;
+	xi_t *xi;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err)) {
+		WARN();
+		return err;
+	}
+
+	err = md_get(md_handle, &md);
+	if (unlikely(err)) {
+		WARN();
+		goto err1;
+	}
+
+#ifdef PTL_CHECK_BUILD
+	if (unlikely(!md)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+
+	if (unlikely(local_offset + length > md->length)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+
+	if (unlikely(ack_req < PTL_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+
+	if (unlikely(ack_req == PTL_ACK_REQ && !md->eq)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+
+	if (unlikely(ack_req == PTL_CT_ACK_REQ && !md->ct)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+#endif
+
+	ni = to_ni(md);
+
+#ifdef PTL_CHECK_BUILD
+	if (unlikely(length > ni->limits.max_msg_size)) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+#endif
+
+	err = xi_alloc(ni, &xi);
+	if (unlikely(err)) {
+		WARN();
+		goto err2;
+	}
+
+	xi->operation = OP_PUT;
+	xi->target = target_id;
+	xi->uid = ni->uid;
+	xi->jid = ni->rt.jid;
+	xi->pt_index = pt_index;
+	xi->match_bits = match_bits,
+	xi->ack_req = ack_req;
+	xi->put_md = md;
+	xi->hdr_data = hdr_data;
+	xi->user_ptr = user_ptr;
+	xi->threshold = 0;
+
+	xi->rlength = length;
+	xi->put_offset = local_offset;
+	xi->put_resid = length;
+	xi->roffset = remote_offset;
+
+	xi->pkt_len = sizeof(req_hdr_t);
+	xi->state = STATE_INIT_START;
+
+	process_init(xi);
+
+	gbl_put(gbl);
+	return PTL_OK;
+
+err2:
+	md_put(md);
+err1:
+	gbl_put(gbl);
+	return err;
 }
 
 int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,

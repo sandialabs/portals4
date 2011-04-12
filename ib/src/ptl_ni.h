@@ -14,51 +14,6 @@
 
 struct ni;
 
-/* Describes the current state of a connection with a remote rank or node. */
-struct nid_connect {
-	/* Destination. NID is used for both logical and physical. PID is only used for
-	 * physical. rank is not used. May be replace with nid/pid instead
-	 * to avoid confusion. */
-	ptl_process_t id;	/* keep me first */
-
-	pthread_mutex_t	mutex;
-
-	struct ni *ni;				/* backpointer to owner */
-
-	/* Used for logical NI only.
-	 *
-	 * For receive side: links the receiving NI together. For send
-	 * side, used to wait until main rank is connected to. */
-	struct list_head list;
-
-	enum {
-		GBLN_DISCONNECTED,
-		GBLN_RESOLVING_ADDR,
-		GBLN_RESOLVING_ROUTE,
-		GBLN_CONNECT,
-		GBLN_CONNECTING,
-		GBLN_CONNECTED,
-	} state;
-
-	/* CM */
-	struct rdma_cm_id *cm_id;
-	struct sockaddr_in sin;		/* IPV4 address, in network order */
-
-	int retry_resolve_addr;
-	int retry_resolve_route;
-	int retry_connect;
-
-	/* xi/xt awaiting connection establishment. In case of logical NI,
-	 * they will only hold something if the rank is not the main rank
-	 * and the main rank is not yet connected. */
-	struct list_head xi_list;
-	struct list_head xt_list;
-
-	/* For logical NI only. There's only one connection, with the
-	 * main rank on the remote node. */
-	struct nid_connect *main_connect;
-};
-
 /* Remote rank. There's one record per rank. Logical NIs only. */
 struct rank_entry {
 	ptl_rank_t rank;
@@ -66,7 +21,7 @@ struct rank_entry {
 	ptl_nid_t nid;
 	ptl_pid_t pid;
 	uint32_t remote_xrc_srq_num;
-	struct nid_connect connect;
+	conn_t connect;
 };
 
 /*
@@ -182,13 +137,10 @@ typedef struct ni {
 		} logical;
 		struct {
 			/* Physical NI. */
-
-			void *tree;			/* binary tree root, of nid_connect elements */
-			pthread_mutex_t lock;
+			void			*tree;
+			pthread_spinlock_t	lock;
 		} physical;
 	};
-
-
 } ni_t;
 
 static inline int ni_alloc(pool_t *pool, ni_t **ni_p)
@@ -264,6 +216,13 @@ static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
 	}
 }
 
-int init_connect(ni_t *ni, struct nid_connect *connect);
+int init_connect(ni_t *ni, conn_t *connect);
+
+/* convert ni option flags to a 2 bit type */
+static inline int ni_options_to_type(unsigned int options)
+{
+	return (((options & PTL_NI_MATCHING) ? 1 : 0) << 1) |
+		((options & PTL_NI_LOGICAL) ? 1 : 0);
+}
 
 #endif /* PTL_NI_H */

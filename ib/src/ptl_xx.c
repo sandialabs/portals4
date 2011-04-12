@@ -4,7 +4,7 @@
 
 #include "ptl_loc.h"
 
-void xi_release(void *arg)
+void xi_fini(void *arg)
 {
 	xi_t *xi = arg;
 
@@ -13,7 +13,7 @@ void xi_release(void *arg)
 	pthread_spin_destroy(&xi->state_lock);
 }
 
-int xi_init(void *arg)
+int xi_init(void *arg, void *parm)
 {
 	xi_t *xi = arg;
 
@@ -26,7 +26,7 @@ int xi_init(void *arg)
 	return 0;
 }
 
-void xt_release(void *arg)
+void xt_fini(void *arg)
 {
 	xt_t *xt = arg;
 
@@ -35,7 +35,7 @@ void xt_release(void *arg)
 	pthread_spin_destroy(&xt->state_lock);
 }
 
-int xt_init(void *arg)
+int xt_init(void *arg, void *parm)
 {
 	xt_t *xt = arg;
 
