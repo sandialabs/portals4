@@ -38,11 +38,6 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(eq_handle, ptl_handle_eq_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = ni_get(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
@@ -56,7 +51,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err2;
 
-	eq->eqe_list = ptl_calloc(count, sizeof(*eq->eqe_list));
+	eq->eqe_list = calloc(count, sizeof(*eq->eqe_list));
 	if (!eq->eqe_list) {
 		err = PTL_NO_SPACE;
 		goto err3;
@@ -180,11 +175,6 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(event, ptl_event_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = eq_get(eq_handle, &eq);
 	if (unlikely(err))
 		goto err1;
@@ -215,11 +205,6 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	ret = get_gbl(&gbl);
 	if (unlikely(ret))
 		return ret;
-
-	if (unlikely(CHECK_POINTER(event, ptl_event_t))) {
-		ret = PTL_ARG_INVALID;
-		goto err1;
-	}
 
 	ret = eq_get(eq_handle, &eq);
 	if (unlikely(ret))
@@ -282,16 +267,6 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
-
-	if (unlikely(CHECK_POINTER(event, ptl_event_t))) {
-		err = PTL_ARG_INVALID;
-		goto done;
-	}
-
-	if (unlikely(CHECK_POINTER(which, int))) {
-		err = PTL_ARG_INVALID;
-		goto done;
-	}
 
 	/* First try with just spinning */
 	for (i = 0; i < size; i++) {

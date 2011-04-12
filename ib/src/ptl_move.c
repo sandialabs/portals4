@@ -46,28 +46,19 @@ int atom_type_size[] =
 
 static int get_operand(ptl_datatype_t type, void *operand, uint64_t *opval)
 {
-	int err;
 	uint64_t val;
 
 	switch(atom_type_size[type]) {
 	case 1:
-		if (CHECK_POINTER(operand, uint8_t))
-			return err = PTL_ARG_INVALID;
 		val = *(uint8_t *)operand;
 		break;
 	case 2:
-		if (CHECK_POINTER(operand, uint16_t))
-			return err = PTL_ARG_INVALID;
 		val = *(uint16_t *)operand;
 		break;
 	case 4:
-		if (CHECK_POINTER(operand, uint32_t))
-			return err = PTL_ARG_INVALID;
 		val = *(uint32_t *)operand;
 		break;
 	case 8:
-		if (CHECK_POINTER(operand, uint64_t))
-			return err = PTL_ARG_INVALID;
 		val = *(uint64_t *)operand;
 		break;
 	default:

@@ -20,11 +20,6 @@ int PtlGetUid(ptl_handle_ni_t ni_handle, ptl_uid_t *uid)
 	if (err)
 		return err;
 
-	if (unlikely(CHECK_POINTER(uid, ptl_uid_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = ni_get(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
@@ -61,12 +56,6 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 	if (err) {
 		WARN();
 		return err;
-	}
-
-	if (unlikely(CHECK_POINTER(id, ptl_process_t))) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
 	}
 
 	err = ni_get(ni_handle, &ni);
@@ -108,12 +97,6 @@ int PtlGetJid(ptl_handle_ni_t ni_handle, ptl_jid_t *jid)
 	if (err) {
 		WARN();
 		return err;
-	}
-
-	if (unlikely(CHECK_POINTER(jid, ptl_jid_t))) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
 	}
 
 	err = ni_get(ni_handle, &ni);

@@ -61,11 +61,6 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(pt_index, ptl_pt_index_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	if (unlikely(options & ~_PTL_PT_ALLOC_OPTIONS)) {
 		err = PTL_ARG_INVALID;
 		goto err1;

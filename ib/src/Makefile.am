@@ -28,8 +28,6 @@ libportals_la_SOURCES = \
 	ptl_le.h \
 	ptl_loc.h \
 	ptl_log.h \
-	ptl_maps.c \
-	ptl_maps.h \
 	ptl_md.c \
 	ptl_md.h \
 	ptl_me.c \

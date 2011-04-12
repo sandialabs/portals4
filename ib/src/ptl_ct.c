@@ -78,11 +78,6 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(ct_handle, ptl_handle_ct_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = ni_get(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
@@ -175,11 +170,6 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(CHECK_POINTER(event, ptl_ct_event_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = ct_get(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
@@ -212,11 +202,6 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
-
-	if (unlikely(CHECK_POINTER(event, ptl_ct_event_t))) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
 
 	err = ct_get(ct_handle, &ct);
 	if (unlikely(err))
@@ -289,11 +274,6 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
-
-	if (unlikely(CHECK_POINTER(event, ptl_ct_event_t))) {
-		err = PTL_ARG_INVALID;
-		goto done;
-	}
 
 	/* Check try with just spinning */
 	for (i = 0; i < size; i++) {
