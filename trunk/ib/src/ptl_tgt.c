@@ -631,12 +631,12 @@ static int tgt_data_out(xt_t *xt)
    if the connection is pending, and 0 if connected. */
 static int check_conn(xt_t *xt)
 {
-	struct nid_connect *connect;
+	conn_t *connect;
 	int ret;
 	ni_t *ni = to_ni(xt);
 
 	/* Ensure we are already connected. */
-	connect = get_connect_for_id(ni, &xt->initiator);
+	connect = get_conn(ni, &xt->initiator);
 	if (unlikely(!connect)) {
 		ptl_warn("Invalid destination\n");
 		return -1;
@@ -645,17 +645,17 @@ static int check_conn(xt_t *xt)
 	pthread_mutex_lock(&connect->mutex);
 
 	if (connect->main_connect) {
-		assert(connect->state == GBLN_DISCONNECTED);
+		assert(connect->state == CONN_STATE_DISCONNECTED);
 		set_xt_dest(xt, connect->main_connect);
 		ret = 0;
 	} 
-	else if (unlikely(connect->state != GBLN_CONNECTED)) {
+	else if (unlikely(connect->state != CONN_STATE_CONNECTED)) {
 		/* Not connected. Add the xi on the pending list. It will be
 		 * flushed once connected/disconnected. */
 
 		list_add_tail(&xt->connect_pending_list, &connect->xt_list);
 
-		if (connect->state == GBLN_DISCONNECTED) {
+		if (connect->state == CONN_STATE_DISCONNECTED) {
 			/* Initiate connection. */
 			if (init_connect(ni, connect)) {
 				list_del(&xt->connect_pending_list);

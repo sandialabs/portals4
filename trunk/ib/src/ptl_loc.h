@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <poll.h>
 #include <sys/time.h>
+#include <search.h>
 
 struct timeval start_time;
 struct timeval stop_time;
@@ -63,6 +64,7 @@ unsigned int linesize;
 #include "ptl_gbl.h"
 #include "ptl_pt.h"
 #include "ptl_rt.h"
+#include "ptl_conn.h"
 #include "ptl_ni.h"
 #include "ptl_mr.h"
 #include "ptl_md.h"
@@ -176,6 +178,7 @@ enum {
 
 enum {
 	STATE_INIT_START,
+	STATE_INIT_WAIT_CONN,
 	STATE_INIT_SEND_ERROR,
 	STATE_INIT_WAIT_COMP,
 	STATE_INIT_HANDLE_COMP,
@@ -262,7 +265,5 @@ void process_recv(EV_P_ ev_io *w, int revents);
 int process_init(xi_t *xi);
 
 int process_tgt(xt_t *xt);
-
-struct nid_connect *get_connect_for_id(ni_t *ni, const ptl_process_t *id);
 
 #endif /* PTL_LOC_H */

@@ -37,6 +37,8 @@ libportals_la_SOURCES = \
 	ptl_mr.h \
 	ptl_ni.c \
 	ptl_ni.h \
+	ptl_conn.c \
+	ptl_conn.h \
 	ptl_obj.c \
 	ptl_obj.h \
 	ptl_pt.c \

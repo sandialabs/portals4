@@ -91,10 +91,12 @@ typedef struct xi {
 
 	struct xremote		dest;
 
+	conn_t	*connect;
+
 } xi_t;
 
-int xi_init(void *arg);
-void xi_release(void *arg);
+int xi_init(void *arg, void *parm);
+void xi_fini(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 {
@@ -163,8 +165,8 @@ typedef struct xt {
 	mr_t			*indir_mr;
 } xt_t;
 
-int xt_init(void *arg);
-void xt_release(void *arg);
+int xt_init(void *arg, void *parm);
+void xt_fini(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 {
@@ -211,7 +213,7 @@ static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
         return (ptl_handle_xt_t)xt->obj.obj_handle;
 }
 
-static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
+static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 {
 	ni_t *ni = to_ni(xi);
 
@@ -220,7 +222,7 @@ static inline void set_xi_dest(xi_t *xi, struct nid_connect *connect)
 		xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
 }
 
-static inline void set_xt_dest(xt_t *xt, struct nid_connect *connect)
+static inline void set_xt_dest(xt_t *xt, conn_t *connect)
 {
 	ni_t *ni = to_ni(xt);
 
