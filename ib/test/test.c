@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <portals4.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 int debug = 0;
 int put = 0;
@@ -17,9 +18,9 @@ void dump_limits(ptl_ni_limits_t *limits)
 	printf("max_pt_index		= %d\n", limits->max_pt_index);
 	printf("max_iovecs		= %d\n", limits->max_iovecs);
 	printf("max_list_size		= %d\n", limits->max_list_size);
-	printf("max_msg_size		= %ld\n", limits->max_msg_size);
-	printf("max_atomic_size		= %ld\n", limits->max_atomic_size);
-	printf("max_unordered_size	= %ld\n", limits->max_unordered_size);
+	printf("max_msg_size		= %" PRIu64 "\n", limits->max_msg_size);
+	printf("max_atomic_size		= %" PRIu64 "\n", limits->max_atomic_size);
+	printf("max_unordered_size	= %" PRIu64 "\n", limits->max_unordered_size);
 }
 
 void dump_event(ptl_event_t *event)
@@ -30,13 +31,13 @@ void dump_event(ptl_event_t *event)
         printf("pt_index		= %d\n", event->pt_index);
         printf("uid			= %d\n", event->uid);
         printf("jid			= %d\n", event->jid);
-        printf("match_bits		= 0x%lx\n", event->match_bits);
-        printf("rlength			= %ld\n", event->rlength);
-        printf("mlength			= %ld\n", event->mlength);
-        printf("remote_offset		= %ld\n", event->remote_offset);
+        printf("match_bits		= 0x%" PRIx64 "\n", event->match_bits);
+        printf("rlength			= %" PRIu64 "\n", event->rlength);
+        printf("mlength			= %" PRIu64 "\n", event->mlength);
+        printf("remote_offset		= %" PRIu64 "\n", event->remote_offset);
         printf("start			= %p\n", event->start);
         printf("user_ptr		= %p\n", event->user_ptr);
-        printf("hdr_data		= %ld\n", event->hdr_data);
+        printf("hdr_data		= %" PRIu64 "\n", event->hdr_data);
         printf("ni_fail_type		= %d\n", event->ni_fail_type);
         printf("atomic_operation	= %d\n", event->atomic_operation);
         printf("atomic_type		= %d\n", event->atomic_type);
@@ -77,7 +78,6 @@ int main(int argc, char *argv[])
 	int			i;
         ptl_size_t              count;
 	ptl_event_t		event;
-	int			events;
 
 	ptl_log_level = 4;
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	desired.max_atomic_size		= 64;
 	desired.max_unordered_size	= 64;
 
-	err = PtlNIInit(iface, ni_opt, &id, &desired, &actual,
+	err = PtlNIInit(iface, ni_opt, PTL_PID_ANY, &desired, &actual,
 		      0, NULL, NULL, &ni_handle);
 	if (err) {
 		printf("PtlNIInit failed, err = %d\n", err);
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 	ptl_list	= PTL_PRIORITY_LIST;
 	user_ptr	= NULL;
 	if (!me.start) {
-		printf("unable to allocate %ld bytes for me\n", me.length);
+		printf("unable to allocate %" PRIu64 " bytes for me\n", me.length);
 		return 1;
 	}
 
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	md.eq_handle		= eq_handle;
 	md.ct_handle		= PTL_CT_NONE;
 	if (!md.start) {
-		printf("unable to allocate %ld bytes for md\n", md.length);
+		printf("unable to allocate %" PRIu64 " bytes for md\n", md.length);
 		return 1;
 	}
 

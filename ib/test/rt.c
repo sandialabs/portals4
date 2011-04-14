@@ -26,7 +26,7 @@ static int get_desired_mapping(struct node_info *info)
 		printf("PtlGetId returned id = %x, %x\n", my_id.phys.nid, my_id.phys.pid);
 
 	if (debug)
-		printf("info->map_size = %d\n", info->map_size);
+		printf("info->map_size = %" PRIu64 "\n", info->map_size);
 
 	info->desired_map_ptr = calloc(info->map_size, sizeof(ptl_process_t));
 	if (!info->desired_map_ptr) {

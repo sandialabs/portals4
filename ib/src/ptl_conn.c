@@ -530,7 +530,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		if (!event->param.conn.private_data ||
 			(event->param.conn.private_data_len < sizeof(struct cm_priv_reject))) {
-			ptl_warn("Invalid reject private data size (%d, %ld)\n",
+			ptl_warn("Invalid reject private data size (%d, %zd)\n",
 					 event->param.conn.private_data_len, 
 					 sizeof(struct cm_priv_reject));
 			pthread_mutex_unlock(&conn->mutex);
