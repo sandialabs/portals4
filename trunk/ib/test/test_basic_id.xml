@@ -13,42 +13,6 @@
       <ptl_get_jid ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlGetUid with NULL uid pointer</desc>
-    <ptl>
-      <ptl_get_uid ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetId with NULL id pointer</desc>
-    <ptl>
-      <ptl_get_id ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetJid with NULL jid pointer</desc>
-    <ptl>
-      <ptl_get_jid ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetUid with bad uid pointer</desc>
-    <ptl>
-      <ptl_get_uid ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetId with bad id pointer</desc>
-    <ptl>
-      <ptl_get_id ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetJid with bad jid pointer</desc>
-    <ptl>
-      <ptl_get_jid ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlGetUid with ni_handle = NONE</desc>
     <ptl>
       <ptl_get_uid ni_handle="NONE" ret="ARG_INVALID"/>

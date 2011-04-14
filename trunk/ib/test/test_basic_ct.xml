@@ -30,30 +30,6 @@
     <ptl_ct_inc ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlCTAlloc with NULL ct_handle pointer</desc>
-    <ptl>
-      <ptl_ct_alloc ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTAlloc with bad ct_handle pointer</desc>
-    <ptl>
-      <ptl_ct_alloc ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTGet with NULL event pointer</desc>
-    <ptl>
-      <ptl_ct_get ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTGet with bad event pointer</desc>
-    <ptl>
-      <ptl_ct_get ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlCTAlloc with ni_handle = NONE</desc>
     <ptl>
       <ptl_ct_alloc ni_handle="NONE" ret="ARG_INVALID"/>
@@ -111,30 +87,6 @@
     <desc>Test PtlCTPoll with bad ct_handle</desc>
     <ptl>
       <ptl_ct_poll ct_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTPoll with NULL event pointer</desc>
-    <ptl>
-      <ptl_ct_poll ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTPoll with BAD event pointer</desc>
-    <ptl>
-      <ptl_ct_poll ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTPoll with NULL which pointer</desc>
-    <ptl>
-      <ptl_ct_poll which_ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlCTPoll with BAD which pointer</desc>
-    <ptl>
-      <ptl_ct_poll which_ptr="BAD" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
   <subtest>

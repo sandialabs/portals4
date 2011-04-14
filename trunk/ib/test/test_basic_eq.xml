@@ -22,66 +22,6 @@
     <ptl_eq_poll ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlEQAlloc with NULL eq_handle pointer</desc>
-    <ptl>
-      <ptl_eq_alloc ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQAlloc with bad eq_handle pointer</desc>
-    <ptl>
-      <ptl_eq_alloc ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet with NULL event pointer</desc>
-    <ptl>
-      <ptl_eq_get ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet with bad event pointer</desc>
-    <ptl>
-      <ptl_eq_get ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQWait with NULL event pointer</desc>
-    <ptl>
-      <ptl_eq_wait ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQWait with bad event pointer</desc>
-    <ptl>
-      <ptl_eq_wait ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with NULL event pointer</desc>
-    <ptl>
-      <ptl_eq_poll ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with bad event pointer</desc>
-    <ptl>
-      <ptl_eq_poll ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with NULL which pointer</desc>
-    <ptl>
-      <ptl_eq_poll which_ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with bad which pointer</desc>
-    <ptl>
-      <ptl_eq_poll which_ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlEQAlloc with ni_handle = NONE</desc>
     <ptl>
       <ptl_eq_alloc ni_handle="NONE" ret="ARG_INVALID"/>

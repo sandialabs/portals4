@@ -10,20 +10,6 @@
     <ptl_md_release ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlMDBind with md_handle pointer = NULL</desc>
-    <ptl>
-      <ptl_md_bind ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMDBind with md_handle pointer = BAD</desc>
-    <ptl>
-      <ptl_md_bind ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
     <desc>Test PtlMDBind with unsupported options</desc>
     <ptl>
       <ptl_md_bind md_opt="INVALID" ret="ARG_INVALID"/>
@@ -81,60 +67,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with md.start = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMDBind with md.start = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlMDBind with md.opt = IOVEC md.start = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_opt="IOVEC" md_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMDBind with md.opt = IOVEC md.start = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_opt="IOVEC" md_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlMDBind with md.opt = IOVEC iov_base = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_opt="IOVEC" iov_base="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMDBind with md.opt = IOVEC iov_base = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind md_opt="IOVEC" iov_base="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
   <subtest>
     <desc>Test PtlMDBind/Release with good parameters</desc>
     <ptl>

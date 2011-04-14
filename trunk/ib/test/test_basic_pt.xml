@@ -18,18 +18,6 @@
     <ptl_pt_enable ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlPTAlloc with NULL pt_index pointer</desc>
-    <ptl>
-      <ptl_pt_alloc ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with bad pt_index pointer</desc>
-    <ptl>
-      <ptl_pt_alloc ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlPTAlloc with unsupported options</desc>
     <ptl>
       <ptl_pt_alloc pt_opt="INVALID" ret="ARG_INVALID"/>

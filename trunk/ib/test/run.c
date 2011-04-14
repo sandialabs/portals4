@@ -216,7 +216,6 @@ struct node_info *push_info(struct node_info *head, int tok)
 		printf("unable to allocate node_info\n");
 		return NULL;
 	}
-	get_maps();
 
 	*info = *head;
 	info->buf_alloc = 0;
@@ -243,7 +242,6 @@ struct node_info *push_info(struct node_info *head, int tok)
 			free(info);
 			return NULL;
 		}
-		get_maps();
 		for (i = 0; i < IOV_SIZE; i++) {
 			info->iov[i].iov_base	= info->buf + 1024*i;
 			info->iov[i].iov_len	= 1024;
@@ -1168,7 +1166,6 @@ static void *run_thread(void *arg)
 		t->errs++;
 		return NULL;
 	}
-	get_maps();
 	*info = *t->info;
 	info->thread_id = t->num;
 
@@ -1259,7 +1256,6 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 					printf("unable to allocate memory for info->threads\n");
 					exit(1);
 				}
-				get_maps();
 
 				for (i = 0; i < info->count; i++) {
 					t = &info->threads[i];
@@ -1644,7 +1640,6 @@ void run_doc(xmlDocPtr doc)
 		printf("unable to allocate memory for node info\n");
 		return;
 	}
-	get_maps();
 
 	set_default_info(info);
 
