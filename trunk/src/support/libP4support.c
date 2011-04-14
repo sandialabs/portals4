@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
 
@@ -27,71 +27,81 @@
 #include <portals4_runtime.h>
 #include "libP4support.h"
 
-
-
 /* Return Portals error return codes as strings */
-char *__StrPtlError(
-    int error_code)
+char *__StrPtlError(int error_code)
 {                                      /*{{{ */
     switch (error_code) {
         case PTL_OK:
             return "PTL_OK";
+
         case PTL_ARG_INVALID:
             return "PTL_ARG_INVALID";
+
         case PTL_CT_NONE_REACHED:
             return "PTL_CT_NONE_REACHED";
+
         case PTL_EQ_DROPPED:
             return "PTL_EQ_DROPPED";
+
         case PTL_EQ_EMPTY:
             return "PTL_EQ_EMPTY";
+
         case PTL_FAIL:
             return "PTL_FAIL";
+
         case PTL_IN_USE:
             return "PTL_IN_USE";
+
         case PTL_INTERRUPTED:
             return "PTL_INTERRUPTED";
+
         case PTL_LIST_TOO_LONG:
             return "PTL_LIST_TOO_LONG";
+
         case PTL_NI_NOT_LOGICAL:
             return "PTL_NI_NOT_LOGICAL";
+
         case PTL_NO_INIT:
             return "PTL_NO_INIT";
+
         case PTL_NO_SPACE:
             return "PTL_NO_SPACE";
+
         case PTL_PID_IN_USE:
             return "PTL_PID_IN_USE";
+
         case PTL_PT_FULL:
             return "PTL_PT_FULL";
+
         case PTL_PT_EQ_NEEDED:
             return "PTL_PT_EQ_NEEDED";
+
         case PTL_PT_IN_USE:
             return "PTL_PT_IN_USE";
+
         case PTL_SIZE_INVALID:
             return "PTL_SIZE_INVALID";
+
         default:
             return "Unknown Portals return code";
     }
-
 }                                      /* end of strPTLerror() *//*}}} */
-
-
 
 /*
 ** Create an MD
 */
-ptl_handle_md_t __PtlCreateMD(
-    ptl_handle_ni_t ni,
-    void *start,
-    ptl_size_t length)
+ptl_handle_md_t __PtlCreateMD(ptl_handle_ni_t ni,
+                              void           *start,
+                              ptl_size_t      length)
 {                                      /*{{{ */
-    int rc;
-    ptl_md_t md;
+    int             rc;
+    ptl_md_t        md;
     ptl_handle_md_t md_handle;
 
     /* Setup the MD */
-    md.start = start;
-    md.length = length;
-    md.options = PTL_MD_UNORDERED;
+    md.start     = start;
+    md.length    = length;
+    md.options   = PTL_MD_UNORDERED;
     md.eq_handle = PTL_EQ_NONE;
     md.ct_handle = PTL_CT_NONE;
 
@@ -99,62 +109,53 @@ ptl_handle_md_t __PtlCreateMD(
     PTL_CHECK(rc, "Error in __PtlCreateMD(): PtlMDBind");
 
     return md_handle;
-
 }                                      /* end of __PtlCreateMD() *//*}}} */
-
-
 
 /*
 ** Create an MD with a event counter attached to it
 */
-void __PtlCreateMDCT(
-    ptl_handle_ni_t ni,
-    void *start,
-    ptl_size_t length,
-    ptl_handle_md_t * mh,
-    ptl_handle_ct_t * ch)
+void __PtlCreateMDCT(ptl_handle_ni_t  ni,
+                     void            *start,
+                     ptl_size_t       length,
+                     ptl_handle_md_t *mh,
+                     ptl_handle_ct_t *ch)
 {                                      /*{{{ */
-    int rc;
+    int      rc;
     ptl_md_t md;
 
     /*
-     ** Create a counter
-     ** If a user wants to resue a CT handle, it will not be PTL_INVALID_HANDLE
-     */
+    ** Create a counter
+    ** If a user wants to resue a CT handle, it will not be PTL_INVALID_HANDLE
+    */
     if (*ch == PTL_INVALID_HANDLE) {
         rc = PtlCTAlloc(ni, ch);
         PTL_CHECK(rc, "Error in __PtlCreateMDCT(): PtlCTAlloc");
     }
 
     /* Setup the MD */
-    md.start = start;
-    md.length = length;
-    md.options = PTL_MD_EVENT_CT_SEND | PTL_MD_UNORDERED;
+    md.start     = start;
+    md.length    = length;
+    md.options   = PTL_MD_EVENT_CT_SEND | PTL_MD_UNORDERED;
     md.eq_handle = PTL_EQ_NONE;
     md.ct_handle = *ch;
 
     rc = PtlMDBind(ni, &md, mh);
     PTL_CHECK(rc, "Error in __PtlCreateMDCT(): PtlMDBind");
-
 }                                      /* end of __PtlCreateMDCT() *//*}}} */
-
-
 
 /*
 ** Create a (persistent) LE with a counter attached to it
 ** Right now used for puts only...
 */
-void __PtlCreateLECT(
-    ptl_handle_ni_t ni,
-    ptl_pt_index_t index,
-    void *start,
-    ptl_size_t length,
-    ptl_handle_le_t * lh,
-    ptl_handle_ct_t * ch)
+void __PtlCreateLECT(ptl_handle_ni_t  ni,
+                     ptl_pt_index_t   index,
+                     void            *start,
+                     ptl_size_t       length,
+                     ptl_handle_le_t *lh,
+                     ptl_handle_ct_t *ch)
 {                                      /*{{{ */
-    int rc;
+    int      rc;
     ptl_le_t le;
-
 
     /* If a user wants to reuse a CT handle, it will not be PTL_INVALID_HANDLE */
     if (*ch == PTL_INVALID_HANDLE) {
@@ -162,51 +163,47 @@ void __PtlCreateLECT(
         PTL_CHECK(rc, "Error in __PtlCreateLECT(): PtlCTAlloc");
     }
 
-    le.start = start;
-    le.length = length;
+    le.start     = start;
+    le.length    = length;
     le.ac_id.uid = PTL_UID_ANY;
-    le.options = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM;
+    le.options   = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM;
     le.ct_handle = *ch;
-    rc = PtlLEAppend(ni, index, &le, PTL_PRIORITY_LIST, NULL, lh);
+    rc           = PtlLEAppend(ni, index, &le, PTL_PRIORITY_LIST, NULL, lh);
     PTL_CHECK(rc, "Error in __PtlCreateLECT(): PtlLEAppend");
-
 }                                      /* end of __PtlCreateLECT () *//*}}} */
-
-
 
 /*
 ** Create "count" MEs with an event queue attached to it
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-static int __PtlCreateME(
-    ptl_handle_ni_t ni,
-    ptl_pt_index_t index,
-    void *start,
-    ptl_size_t length,
-    ptl_size_t count,
-    unsigned int options,
-    ptl_handle_me_t *mh)
+static int __PtlCreateME(ptl_handle_ni_t  ni,
+                         ptl_pt_index_t   index,
+                         void            *start,
+                         ptl_size_t       length,
+                         ptl_size_t       count,
+                         unsigned int     options,
+                         ptl_handle_me_t *mh)
 {                                      /*{{{ */
-    int rc;
-    int i;
-    ptl_me_t me;
+    int           rc;
+    int           i;
+    ptl_me_t      me;
     ptl_process_t src;
 
-    src.rank= PTL_RANK_ANY;
-    for (i= 0; i < count; i++)   {
-	me.start = (char *)start + i * length;
-	me.length = length;
-	me.ct_handle = PTL_CT_NONE;
-	me.min_free = 0;
-	me.ac_id.uid = PTL_UID_ANY;
-	me.options = options;
-	me.match_id = src;
-	me.match_bits = i;
-	me.ignore_bits = 0;
+    src.rank = PTL_RANK_ANY;
+    for (i = 0; i < count; i++) {
+        me.start       = (char *)start + i * length;
+        me.length      = length;
+        me.ct_handle   = PTL_CT_NONE;
+        me.min_free    = 0;
+        me.ac_id.uid   = PTL_UID_ANY;
+        me.options     = options;
+        me.match_id    = src;
+        me.match_bits  = i;
+        me.ignore_bits = 0;
 
-	rc = PtlMEAppend(ni, index, &me, PTL_PRIORITY_LIST, NULL, &mh[i]);
-	PTL_CHECK(rc, "Error in __PtlCreateME(): PtlMEAppend");
+        rc = PtlMEAppend(ni, index, &me, PTL_PRIORITY_LIST, NULL, &mh[i]);
+        PTL_CHECK(rc, "Error in __PtlCreateME(): PtlMEAppend");
     }
     return rc;
 }                                      /* end of __PtlCreateME() *//*}}} */
@@ -216,34 +213,34 @@ static int __PtlCreateME(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-int __PtlCreateMEPersistent(
-    ptl_handle_ni_t ni,
-    ptl_pt_index_t index,
-    void *start,
-    ptl_size_t length,
-    ptl_size_t count,
-    ptl_handle_me_t *mh)
-{
+int __PtlCreateMEPersistent(ptl_handle_ni_t  ni,
+                            ptl_pt_index_t   index,
+                            void            *start,
+                            ptl_size_t       length,
+                            ptl_size_t       count,
+                            ptl_handle_me_t *mh)
+{   /*{{{*/
     unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
-    return __PtlCreateME(ni,index,start,length,count,options,mh);
-}                                /* end of __PtlCreateMEPersistent() *//*}}} */
+
+    return __PtlCreateME(ni, index, start, length, count, options, mh);
+}                                /* end of __PtlCreateMEPersistent() *//*}}}*/
 
 /*
 ** Create "count" UseOnce MEs with an event queue attached to it
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-int __PtlCreateMEUseOnce(
-    ptl_handle_ni_t ni,
-    ptl_pt_index_t index,
-    void *start,
-    ptl_size_t length,
-    ptl_size_t count,
-    ptl_handle_me_t *mh)
+int __PtlCreateMEUseOnce(ptl_handle_ni_t  ni,
+                         ptl_pt_index_t   index,
+                         void            *start,
+                         ptl_size_t       length,
+                         ptl_size_t       count,
+                         ptl_handle_me_t *mh)
 {
-    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE | 
-                    PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE;
-    return __PtlCreateME(ni,index,start,length,count,options,mh);
+    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE |
+                           PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE;
+
+    return __PtlCreateME(ni, index, start, length, count, options, mh);
 }                                /* end of __PtlCreateMEUseONe() *//*}}} */
 
 /*
@@ -251,35 +248,28 @@ int __PtlCreateMEUseOnce(
 ** Each ME points to a "length" size chunk in a buffer starting at "start".
 ** Right now used for puts only...
 */
-void __PtlFreeME(
-    ptl_size_t count,
-    ptl_handle_me_t *mh)
+void __PtlFreeME(ptl_size_t       count,
+                 ptl_handle_me_t *mh)
 {                                      /*{{{ */
     int rc;
     int i;
 
-
-    for (i= 0; i < count; i++)   {
-	rc = PtlMEUnlink(mh[i]);
-	PTL_CHECK(rc, "Error in __PtlFreeME(): PtlMEUnlink");
+    for (i = 0; i < count; i++) {
+        rc = PtlMEUnlink(mh[i]);
+        PTL_CHECK(rc, "Error in __PtlFreeME(): PtlMEUnlink");
     }
-
 }                                      /* end of __PtlFreeME() *//*}}} */
-
-
 
 /*
 ** Create a Portal table entry. Use PTL_PT_ANY if you don't need
 ** a specific table entry.
 */
-ptl_pt_index_t __PtlPTAlloc(
-    ptl_handle_ni_t ni,
-    ptl_pt_index_t request,
-    ptl_handle_eq_t eq)
+ptl_pt_index_t __PtlPTAlloc(ptl_handle_ni_t ni,
+                            ptl_pt_index_t  request,
+                            ptl_handle_eq_t eq)
 {                                      /*{{{ */
-    int rc;
+    int            rc;
     ptl_pt_index_t index;
-
 
     rc = PtlPTAlloc(ni, 0, eq, request, &index);
     PTL_CHECK(rc, "Error in __PtlPTAlloc(): PtlPTAlloc");
@@ -289,10 +279,7 @@ ptl_pt_index_t __PtlPTAlloc(
     }
 
     return index;
-
 }                                      /* end of __PtlPTAlloc() *//*}}} */
-
-
 
 /*
 ** Simple barrier
@@ -305,27 +292,24 @@ ptl_pt_index_t __PtlPTAlloc(
 ** __PtlBarrier_init() sets up the send-side MD, and the receive side LE and counter.
 ** __PtlBarrier() performs the above simple barrier on a ring.
 */
-#define __PtlBarrierIndex	(14)
+#define __PtlBarrierIndex (14)
 
-static int __my_rank = -1;
-static int __nproc = 1;
+static int             __my_rank = -1;
+static ptl_rank_t      __nproc   = 1;
 static ptl_handle_md_t __md_handle_barrier;
 static ptl_handle_ct_t __ct_handle_barrier;
-static ptl_size_t __barrier_cnt;
+static ptl_size_t      __barrier_cnt;
 
-
-void __PtlBarrierInit(
-    ptl_handle_ni_t ni,
-    int rank,
-    int nproc)
+void __PtlBarrierInit(ptl_handle_ni_t ni,
+                      int             rank,
+                      int             nproc)
 {                                      /*{{{ */
-    ptl_pt_index_t index;
+    ptl_pt_index_t  index;
     ptl_handle_le_t le_handle;
 
-
-    __my_rank = rank;
-    __nproc = nproc;
-    __barrier_cnt = 1;
+    __my_rank           = rank;
+    __nproc             = nproc;
+    __barrier_cnt       = 1;
     __ct_handle_barrier = PTL_INVALID_HANDLE;
 
     /* Create the send side MD */
@@ -337,156 +321,134 @@ void __PtlBarrierInit(
 
     /* Create a counter and attach an LE to the Portal table */
     __PtlCreateLECT(ni, index, NULL, 0, &le_handle, &__ct_handle_barrier);
-
 }                                      /* end of __PtlBarrier_init() *//*}}} */
 
-
-
-void __PtlBarrier(
-    void)
+void __PtlBarrier(void)
 {                                      /*{{{ */
-    int rc;
-    ptl_process_t parent, leftchild, rightchild;
-    ptl_size_t test;
+    int            rc;
+    ptl_process_t  parent, leftchild, rightchild;
+    ptl_size_t     test;
     ptl_ct_event_t cnt_value;
 
-    parent.rank = ((__my_rank+1) >> 1) - 1;
-    leftchild.rank = ((__my_rank+1) << 1) - 1;
+    parent.rank     = ((__my_rank + 1) >> 1) - 1;
+    leftchild.rank  = ((__my_rank + 1) << 1) - 1;
     rightchild.rank = leftchild.rank + 1;
 
     if (leftchild.rank < __nproc) {
-	/* Wait for my children to enter the barrier */
-	test = __barrier_cnt++;
-	if (rightchild.rank < __nproc) {
-	    test = __barrier_cnt++;
-	}
-	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-	PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
+        /* Wait for my children to enter the barrier */
+        test = __barrier_cnt++;
+        if (rightchild.rank < __nproc) {
+            test = __barrier_cnt++;
+        }
+        rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+        PTL_CHECK(rc, "1st PtlCTWait in __PtlBarrier");
     }
 
     if (__my_rank > 0) {
-	/* Tell my parent that I have entered the barrier */
-	rc = __PtlPut(__md_handle_barrier, 0, parent, __PtlBarrierIndex);
-	PTL_CHECK(rc, "1st PtlPut in __PtlBarrier");
+        /* Tell my parent that I have entered the barrier */
+        rc = __PtlPut(__md_handle_barrier, 0, parent, __PtlBarrierIndex);
+        PTL_CHECK(rc, "1st PtlPut in __PtlBarrier");
 
-	/* Wait for my parent to wake me up */
-	test = __barrier_cnt++;
-	rc = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
-	PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
+        /* Wait for my parent to wake me up */
+        test = __barrier_cnt++;
+        rc   = PtlCTWait(__ct_handle_barrier, test, &cnt_value);
+        PTL_CHECK(rc, "2nd PtlCTWait in __PtlBarrier");
     }
 
     /* Wake my children */
     if (leftchild.rank < __nproc) {
-	rc = __PtlPut(__md_handle_barrier, 0, leftchild, __PtlBarrierIndex);
-	PTL_CHECK(rc, "2nd PtlPut in __PtlBarrier");
-	if (rightchild.rank < __nproc) {
-	    rc = __PtlPut(__md_handle_barrier, 0, rightchild, __PtlBarrierIndex);
-	    PTL_CHECK(rc, "3rd PtlPut in __PtlBarrier");
-	}
+        rc = __PtlPut(__md_handle_barrier, 0, leftchild, __PtlBarrierIndex);
+        PTL_CHECK(rc, "2nd PtlPut in __PtlBarrier");
+        if (rightchild.rank < __nproc) {
+            rc = __PtlPut(__md_handle_barrier, 0, rightchild, __PtlBarrierIndex);
+            PTL_CHECK(rc, "3rd PtlPut in __PtlBarrier");
+        }
     }
 }                                      /* end of __PtlBarrier() *//*}}} */
-
-
 
 /*
 ** Allreduce on a ring
 */
-int __PtlAllreduceIndex[2]= {15, 16};
+ptl_pt_index_t         __PtlAllreduceIndex[2] = { 15, 16 };
 static ptl_handle_md_t __md_handle_allreduce[2];
 static ptl_handle_md_t __md_handle_allreduce_local;
-static double __allreduce_value[2];
-static double __allreduce_value_local;
+static double          __allreduce_value[2];
+static double          __allreduce_value_local;
 static ptl_handle_ct_t __ct_handle_allreduce;
-static ptl_size_t __allreduce_cnt;
+static ptl_size_t      __allreduce_cnt;
 
-void __PtlAllreduceDouble_init(
-    ptl_handle_ni_t ni)
+void __PtlAllreduceDouble_init(ptl_handle_ni_t ni)
 {                                      /*{{{ */
-    ptl_pt_index_t index[2];
+    ptl_pt_index_t  index[2];
     ptl_handle_le_t le_handle;
 
-
-    __allreduce_value[0] = 98.0;
-    __allreduce_value[1] = 99.0;
+    __allreduce_value[0]    = 98.0;
+    __allreduce_value[1]    = 99.0;
     __allreduce_value_local = 55.0;
-    __allreduce_cnt = 1;
-    __ct_handle_allreduce = PTL_INVALID_HANDLE;
+    __allreduce_cnt         = 1;
+    __ct_handle_allreduce   = PTL_INVALID_HANDLE;
 
     /* We use two specific Portals table entry and alternate between them */
     index[0] = __PtlPTAlloc(ni, __PtlAllreduceIndex[0], PTL_EQ_NONE);
     index[1] = __PtlPTAlloc(ni, __PtlAllreduceIndex[1], PTL_EQ_NONE);
 
     /* Create a counter and attach an LE to each of the two Portal table entries */
-    __PtlCreateLECT(ni, index[0], &__allreduce_value[0], sizeof(double),
-                    &le_handle, &__ct_handle_allreduce);
-    __PtlCreateLECT(ni, index[1], &__allreduce_value[1], sizeof(double),
-                    &le_handle, &__ct_handle_allreduce);
+    __PtlCreateLECT(ni, index[0], &__allreduce_value[0], sizeof(double), &le_handle, &__ct_handle_allreduce);
+    __PtlCreateLECT(ni, index[1], &__allreduce_value[1], sizeof(double), &le_handle, &__ct_handle_allreduce);
 
     /* Create two send-side MDs */
-    __md_handle_allreduce[0] =
-        __PtlCreateMD(ni, &__allreduce_value[0], sizeof(double));
-    __md_handle_allreduce[1] =
-        __PtlCreateMD(ni, &__allreduce_value[1], sizeof(double));
+    __md_handle_allreduce[0] = __PtlCreateMD(ni, &__allreduce_value[0], sizeof(double));
+    __md_handle_allreduce[1] = __PtlCreateMD(ni, &__allreduce_value[1], sizeof(double));
 
     /* Create another MD to send my value */
-    __md_handle_allreduce_local =
-        __PtlCreateMD(ni, &__allreduce_value_local, sizeof(double));
-
+    __md_handle_allreduce_local = __PtlCreateMD(ni, &__allreduce_value_local, sizeof(double));
 }                                      /* end of __PtlAllreduceDouble_init() *//*}}} */
 
-
-
-double __PtlAllreduceDouble(
-    double value,
-    ptl_op_t op)
+double __PtlAllreduceDouble(double   value,
+                            ptl_op_t op)
 {                                      /*{{{ */
-    int rc;
-    double ret;
-    ptl_process_t neighbor;
-    ptl_size_t test;
+    int            rc;
+    double         ret;
+    ptl_process_t  neighbor;
+    ptl_size_t     test;
     ptl_ct_event_t cnt_value;
-    static int even = 0; // XXX not thread-safe
+    static int     even = 0; // XXX not thread-safe
 
     assert(__my_rank >= 0);
     /* Send my value to my right neighbor if I am rank 0 to get things started */
     neighbor.rank = (__my_rank + 1) % __nproc;
     if (__my_rank == 0) {
-
         __allreduce_value_local = value;
-        rc = __PtlPut(__md_handle_allreduce_local, sizeof(double), neighbor,
-                      __PtlAllreduceIndex[even]);
+        rc                      = __PtlPut(__md_handle_allreduce_local, sizeof(double), neighbor, __PtlAllreduceIndex[even]);
         PTL_CHECK(rc, "1st PtlPut in __PtlAllreduceDouble");
-
     } else {
-
         /* Wait for the value from my left neighbor */
         test = __allreduce_cnt++;
-        rc = PtlCTWait(__ct_handle_allreduce, test, &cnt_value);
+        rc   = PtlCTWait(__ct_handle_allreduce, test, &cnt_value);
         PTL_CHECK(rc, "1st PtlCTWait in __PtlAllreduceDouble");
 
         /* Add my value */
         __allreduce_value[even] += value;
 
         /* Send result to right neighbor */
-        rc = __PtlPut(__md_handle_allreduce[even], sizeof(double), neighbor,
-                      __PtlAllreduceIndex[even]);
+        rc = __PtlPut(__md_handle_allreduce[even], sizeof(double), neighbor, __PtlAllreduceIndex[even]);
         PTL_CHECK(rc, "2nd PtlPut in __PtlAllreduceDouble");
     }
 
     /* Wait for total */
     test = __allreduce_cnt++;
-    rc = PtlCTWait(__ct_handle_allreduce, test, &cnt_value);
+    rc   = PtlCTWait(__ct_handle_allreduce, test, &cnt_value);
     PTL_CHECK(rc, "2nd PtlCTWait in __PtlAllreduceDouble");
 
     /* Pass it on, until we reach rank 0 again */
     if (__my_rank != (__nproc - 1)) {
-        rc = __PtlPut(__md_handle_allreduce[even], sizeof(double), neighbor,
-                      __PtlAllreduceIndex[even]);
+        rc = __PtlPut(__md_handle_allreduce[even], sizeof(double), neighbor, __PtlAllreduceIndex[even]);
         PTL_CHECK(rc, "3rd PtlPut in __PtlAllreduceDouble");
     }
 
-    ret = __allreduce_value[even];
+    ret  = __allreduce_value[even];
     even = (even + 1) % 2;
     return ret;
-
 }                                      /* end of __PtlAllreduceDouble() *//*}}} */
+
+/* vim:set expandtab: */
