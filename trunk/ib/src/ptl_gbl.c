@@ -31,6 +31,30 @@ static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 	ev_break(evl.loop, EVBREAK_ALL);
 }
 
+/*
+ * iface_init
+ *	init iface table
+ */
+void iface_init(gbl_t *gbl)
+{
+	int i;
+
+	//memset(gbl->iface, 0, MAX_IFACE*sizeof(*gbl->iface));
+
+	for (i = 0; i < MAX_IFACE; i++) {
+		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
+		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
+	}
+}
+
+/*
+ * iface_fini
+ *	fini iface table
+ */
+void iface_fini(gbl_t *gbl)
+{
+}
+
 static void gbl_release(ref_t *ref)
 {
 	gbl_t *gbl = container_of(ref, gbl_t, ref);
@@ -55,6 +79,8 @@ static void gbl_release(ref_t *ref)
 		EVL_WATCH(ev_async_stop(evl.loop, &stop_event_loop));
 	}
 
+	iface_fini(gbl);
+
 	pthread_mutex_destroy(&gbl->gbl_mutex);
 }
 
@@ -64,13 +90,13 @@ static void *event_loop_func(void *arg)
 	return NULL;
 }
 
-static int gbl_init(gbl_t *gbl, ptl_jid_t jid)
+static int gbl_init(gbl_t *gbl)
 {
 	int err;
 
-	pthread_mutex_init(&gbl->gbl_mutex, NULL);
+	iface_init(gbl);
 
-	gbl->jid = jid;
+	pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
 	/* init the index service */
 	err = index_init();
@@ -186,7 +212,7 @@ int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
 	return PTL_OK;
 }
 
-int PtlInit(ptl_jid_t jid)
+int PtlInit()
 {
 	int ret;
 	gbl_t *gbl = &per_proc_gbl;
@@ -211,13 +237,8 @@ int PtlInit(ptl_jid_t jid)
 			ref_init(&gbl->ref);
 		}
 
-		ret = gbl_init(gbl, jid);
+		ret = gbl_init(gbl);
 		if (ret != PTL_OK) {
-			goto err1;
-		}
-	} else {
-		if (gbl->jid != jid) {
-			ret = PTL_FAIL;
 			goto err1;
 		}
 	}

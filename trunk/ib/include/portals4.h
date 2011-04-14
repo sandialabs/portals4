@@ -339,14 +339,14 @@ typedef enum {						/* 3.15.1 */
  * Function Prototypes
  *---------------------------------------------------------------------------*/
 
-int PtlInit(ptl_jid_t jid);					/* 3.4.1 */
+int PtlInit();						/* 3.4.1 */
 
 void PtlFini(void);					/* 3.4.2 */
 
 int PtlNIInit(						/* 3.5.2 */
 	ptl_interface_t		iface,
 	unsigned int		options,
-	ptl_process_t		*id,
+	ptl_pid_t		pid,
 	ptl_ni_limits_t		*desired,
 	ptl_ni_limits_t		*actual,
 	ptl_size_t		map_size,

@@ -19,16 +19,17 @@ struct ni;
 typedef struct iface {
 	struct ni		*ni[MAX_NI_TYPES];
 	char			ifname[IF_NAMESIZE];
+	ptl_process_t		id;		/* physical id for this interface */
 
 	/* Rank table, for logical NIs only. */
-	ptl_size_t map_size;
-	ptl_process_t *actual_mapping;
+	ptl_size_t		map_size;
+	ptl_process_t		*actual_mapping;
 
 	/* Listen to incoming IB connections. */
 	struct rdma_event_channel *cm_channel;
 	struct rdma_cm_id	*listen_id;	/* for physical NI. */
-	int listen;						/* boolean' true if listening */
-	struct sockaddr_in sin;		/* local address this interface is bound to. */
+	int			listen;		/* boolean' true if listening */
+	struct sockaddr_in	sin;		/* local address this interface is bound to. */
 	struct ibv_context	*ibv_context;
 	struct ibv_pd		*pd;
 	ev_io			cm_watcher;

@@ -141,14 +141,6 @@ static void set_limits(ni_t *ni, ptl_ni_limits_t *desired)
 		ni->limits.max_pt_index		= MIN_PT_INDEX;
 }
 
-static int ni_map(gbl_t *gbl, ni_t *ni,
-		  ptl_size_t map_size,
-		  ptl_process_t *desired_mapping)
-{
-	ptl_warn("TODO implement mapping\n");
-	return PTL_OK;
-}
-
 static void ni_rcqp_stop(ni_t *ni)
 {
 	int i;
@@ -435,9 +427,20 @@ static int init_ib(struct iface *iface, ni_t *ni)
 
 		ni->id.phys.nid = addr_to_nid(&iface->sin);
 
+		if (iface->id.phys.nid == PTL_NID_ANY) {
+			iface->id.phys.nid = ni->id.phys.nid;
+		} else if (iface->id.phys.nid != ni->id.phys.nid) {
+			WARN();
+			goto err1;
+		}
+
+		if (debug)
+			printf("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
+
 		err = bind_iface(iface, pid_to_port(ni->id.phys.pid));
 		if (err) {
 			ptl_warn("Binding failed\n");
+			WARN();
 			goto err1;
 		}
 	}
@@ -447,18 +450,26 @@ static int init_ib(struct iface *iface, ni_t *ni)
 		/* No well know PID was given. Retrieve the pid given by
 		 * bind. */
 		ni->id.phys.pid = port_to_pid(rdma_get_src_port(iface->listen_id));
+
+		/* remember the physical pid in case application creates another NI */
+		iface->id.phys.pid = ni->id.phys.pid;
+
+		if (debug)
+			printf("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
 
 	/* Create CC, CQ, SRQ. */
 	ni->ch = ibv_create_comp_channel(iface->ibv_context);
 	if (!ni->ch) {
 		ptl_warn("unable to create comp channel\n");
+		WARN();
 		goto err1;
 	}
 
 	flags = fcntl(ni->ch->fd, F_GETFL);
 	if (fcntl(ni->ch->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
 		ptl_warn("Cannot set completion event channel to non blocking\n");
+		WARN();
 		goto err1;
 	}
 
@@ -467,12 +478,14 @@ static int init_ib(struct iface *iface, ni_t *ni)
 	if (!ni->cq) {
 		WARN();
 		ptl_warn("unable to create cq\n");
+		WARN();
 		goto err1;
 	}
 
 	err = ibv_req_notify_cq(ni->cq, 0);
 	if (err) {
 		ptl_warn("unable to req notify\n");
+		WARN();
 		goto err1;
 	}
 
@@ -571,7 +584,7 @@ static void release_buffers(ni_t *ni)
 
 int PtlNIInit(ptl_interface_t ifacenum,
 			  unsigned int options,
-			  ptl_process_t *id,
+			  ptl_pid_t pid,
 			  ptl_ni_limits_t *desired,
 			  ptl_ni_limits_t *actual,
 			  ptl_size_t map_size,
@@ -584,15 +597,18 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	gbl_t *gbl;
 	int ni_type;
 	struct iface *iface;
+	int i;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
+		WARN();
 		return err;
 	}
 
 	if (ifacenum == PTL_IFACE_DEFAULT) {
 		ifacenum = get_default_iface(gbl);
 		if (ifacenum == PTL_IFACE_DEFAULT) {
+			WARN();
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
@@ -600,18 +616,21 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	iface = &gbl->iface[ifacenum];
 
 	if (unlikely(options & ~_PTL_NI_INIT_OPTIONS)) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(!!(options & PTL_NI_MATCHING)
 				 ^ !(options & PTL_NI_NO_MATCHING))) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
 	if (unlikely(!!(options & PTL_NI_LOGICAL)
 				 ^ !(options & PTL_NI_PHYSICAL))) {
+		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
@@ -621,6 +640,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		 * a previous one. */
 		if ((!desired_mapping && !iface->actual_mapping) ||
 			(desired_mapping && map_size == 0)) {
+			WARN();
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
@@ -628,27 +648,62 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		if (map_size &&
 			iface->map_size &&
 			map_size != iface->map_size) {
+			WARN();
 			err = PTL_ARG_INVALID;
 			goto err1;
 		}
-
-		ptl_test_rank = id->rank;
 	}
 
 	ni_type = ni_options_to_type(options);
+
 	pthread_mutex_lock(&gbl->gbl_mutex);
+
 	ni = gbl_lookup_ni(gbl, ifacenum, ni_type);
 	if (ni) {
 		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
 		goto done;
 	}
+
 	err = init_iface(iface, ifacenum);
-	if (err)
+	if (err) {
+		WARN();
 		goto err2;
+	}
 
 	err = ni_alloc(&gbl->ni_pool, &ni);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err2;
+	}
+
+	if (options & PTL_NI_PHYSICAL) {
+		ni->id.phys.nid = PTL_NID_ANY;
+		ni->id.phys.pid = pid;
+
+		if (pid == PTL_PID_ANY && iface->id.phys.pid != PTL_PID_ANY) {
+			ni->id.phys.pid = iface->id.phys.pid;
+		} else if (iface->id.phys.pid == PTL_PID_ANY && pid != PTL_PID_ANY) {
+			iface->id.phys.pid = pid;
+
+			if (debug)
+				printf("set iface pid(2) = %x\n", iface->id.phys.pid);
+		} else if (pid != iface->id.phys.pid) {
+			WARN();
+			err = PTL_ARG_INVALID;
+			goto err3;
+		}
+	} else {
+		ni->id.rank = PTL_RANK_ANY;
+
+		/* currently we must always create a physical NI first
+		 * to establish the PID */
+		if (iface->id.phys.pid == PTL_PID_ANY) {
+			ptl_warn("no PID established before creating logical NI\n");
+			WARN();
+			err = PTL_ARG_INVALID;
+			goto err3;
+		}
+	}
 
 	ni->iface = iface;
 	ni->ni_type = ni_type;
@@ -684,6 +739,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
+		WARN();
 		err = PTL_NO_SPACE;
 		goto err3;
 	}
@@ -777,19 +833,9 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		goto err3;
 	}
 
-	/* For logical NIs, this contains the rank. For physical NIs, we
-	 * get the PID, and the NID is ignored; both can be overriden later. */
-	ni->id = *id;
-
-	if (options & PTL_NI_LOGICAL) {
-		err = ni_map(gbl, ni, map_size, desired_mapping);
-		if (unlikely(err)) {
-			goto err3;
-		}
-	}
-
 	err = init_ib(iface, ni);
 	if (err) {
+		WARN();
 		goto err3;
 	}
 
@@ -802,6 +848,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			iface->map_size = map_size;
 			iface->actual_mapping = malloc(size);
 			if (!iface->actual_mapping) {
+				WARN();
 				err = PTL_NO_SPACE;
 				goto err3;
 			}
@@ -815,6 +862,29 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			map_size = iface->map_size;
 		}
 
+		/* lookup our nid/pid to determine rank */
+		for (i = 0; i < map_size; i++) {
+			if (debug)
+				printf("compare mapping[%d], %x = %x, %x = %x\n", i,
+				desired_mapping[i].phys.nid, iface->id.phys.nid,
+				desired_mapping[i].phys.pid, iface->id.phys.pid);
+			if ((desired_mapping[i].phys.nid == iface->id.phys.nid) &&
+			    (desired_mapping[i].phys.pid == iface->id.phys.pid)) {
+				ni->id.rank = i;
+				ptl_test_rank = i;
+			}
+		}
+
+		if (ni->id.rank == PTL_RANK_ANY) {
+			ptl_warn("mapping does not contain NID/PID\n");
+			WARN();
+			err = PTL_ARG_INVALID;
+			goto err3;
+		}
+
+		if (debug)
+			printf("found rank = %d\n", ni->id.rank);
+
 		/* return mapping to caller. */
 		if (actual_mapping) {
 			const int size = map_size * sizeof(ptl_process_t);
@@ -824,12 +894,14 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 		err = create_tables(ni, map_size, desired_mapping);
 		if (err) {
+			WARN();
 			goto err3;
 		}
 
 		/* Retrieve the XRC domain name. */
 		err = get_xrc_domain(ni);
 		if (err) {
+			WARN();
 			goto err3;
 		}
 	}
@@ -837,6 +909,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	/* Create own SRQ. */
 	err = init_ib_srq(ni);
 	if (err) {
+		WARN();
 		goto err3;
 	}
 
@@ -850,6 +923,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		!iface->listen) {
 		if (rdma_listen(iface->listen_id, 0)) {
 			ptl_warn("Failed to listen\n");
+			WARN();
 			goto err1;
 		}
 
@@ -862,6 +936,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	err = gbl_add_ni(gbl, ni);
 	if (unlikely(err)) {
+		WARN();
 		goto err3;
 	}
 
@@ -870,10 +945,6 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	if (actual)
 		*actual = ni->limits;
-
-	if (actual_mapping) {
-		// TODO write out mapping
-	}
 
 	*ni_handle = ni_to_handle(ni);
 
