@@ -21,12 +21,20 @@ echo "===== test_basic_me.xml ====="
 ./ptl_test -f test_basic_me.xml
 echo "===== test_basic_move.xml ====="
 ./ptl_test -f test_basic_move.xml
+echo "===== test_rdma_move_logical.xml ====="
+./ptl_test -f test_rdma_move_logical.xml
 echo "===== test_basic_trig.xml ====="
 ./ptl_test -f test_basic_trig.xml
 echo "===== test_limits.xml ====="
 ./ptl_test -f test_limits.xml
+echo "===== test_events_logical.xml ====="
+./ptl_test -f test_events_logical.xml
 echo "===== test_ct_events.xml ====="
 ./ptl_test -f test_ct_events.xml
+echo "===== test_flow.xml ===="
+./ptl_test -f test_flow.xml
+echo "===== test_eq_overflow.xml ===="
+./ptl_test -f test_eq_overflow.xml
 echo "===== test_unlink.xml ====="
 ./ptl_test -f test_unlink.xml
 echo "===== test_short.xml ====="
