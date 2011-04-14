@@ -71,7 +71,8 @@ struct xremote {
 	ptl_ni_fail_t		ni_fail;		\
 	ptl_size_t		threshold;		\
 	struct data		*data_in;		\
-	struct data		*data_out;
+	struct data		*data_out;		\
+	conn_t			*conn;
 
 /* initiator side transaction descriptor */
 typedef struct xi {
@@ -87,16 +88,15 @@ typedef struct xi {
 	ptl_process_t		target;
 
 	/* This xi is waiting for connection to be established. */
-	struct list_head	connect_pending_list;
 
 	struct xremote		dest;
 
-	conn_t			*conn;
 
 } xi_t;
 
 int xi_init(void *arg, void *parm);
 void xi_fini(void *arg);
+int xi_new(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 {
@@ -167,6 +167,7 @@ typedef struct xt {
 
 int xt_init(void *arg, void *parm);
 void xt_fini(void *arg);
+int xt_new(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 {

@@ -10,6 +10,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
 	[STATE_TGT_GET_PERM]		= "tgt_get_perm",
 	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
+	[STATE_TGT_WAIT_CONN]		= "tgt_wait_conn",
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
 	[STATE_TGT_RDMA]		= "tgt_rdma",
 	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
@@ -74,12 +75,10 @@ static void make_ct_comm_event(xt_t *xt)
  */
 static void init_events(xt_t *xt)
 {
-	if (xt->pt->eq && !(xt->le->options &
-			    PTL_LE_EVENT_COMM_DISABLE))
+	if (xt->pt->eq && !(xt->le->options & PTL_LE_EVENT_COMM_DISABLE))
 		xt->event_mask |= XT_COMM_EVENT;
 
-	if (xt->le->ct && (xt->le->options &
-			   PTL_LE_EVENT_CT_COMM))
+	if (xt->le->ct && (xt->le->options & PTL_LE_EVENT_CT_COMM))
 		xt->event_mask |= XT_CT_COMM_EVENT;
 
 	switch (xt->operation) {
@@ -96,29 +95,6 @@ static void init_events(xt_t *xt)
 		break;
 	}
 }
-
-/*
- * init_drop_events
- *	Set events for messages that are dropped.  xt->ni_fail
- * should be set to failure type.
- */
-static void init_drop_events(xt_t *xt)
-{
-	switch (xt->operation) {
-	case OP_PUT:
-	case OP_ATOMIC:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
-			xt->event_mask |= XT_ACK_EVENT;
-		break;
-	case OP_GET:
-	case OP_FETCH:
-	case OP_SWAP:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
-			xt->event_mask |= XT_REPLY_EVENT;
-		break;
-	}
-}
-
 
 /*
  * copy_in
@@ -187,7 +163,7 @@ static int copy_out(xt_t *xt, me_t *me, void *data)
 
 	if (me->num_iov) {
 		err = iov_copy_out(data, (ptl_iovec_t *)me->start,
-				  me->num_iov, offset, length);
+				me->num_iov, offset, length);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
@@ -240,8 +216,23 @@ static int request_drop(xt_t *xt)
 {
 	/* logging ? */
 
-	init_drop_events(xt);
-	return STATE_TGT_COMM_EVENT;
+	/* we are not transfering data but we will send
+	 * an ack/rep message so go to wait conn */
+	switch (xt->operation) {
+	case OP_PUT:
+	case OP_ATOMIC:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_ACK_EVENT;
+		break;
+	case OP_GET:
+	case OP_FETCH:
+	case OP_SWAP:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_REPLY_EVENT;
+		break;
+	}
+
+	return STATE_TGT_WAIT_CONN;
 }
 
 /*
@@ -342,10 +333,6 @@ done:
  */
 static int tgt_get_perm(xt_t *xt)
 {
-	/* just a handy place to do this
-	 * nothing to do with permissions */
-	init_events(xt);
-
 	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
 		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
 			WARN();
@@ -452,21 +439,79 @@ static int tgt_get_length(xt_t *xt)
 	xt->mlength = length;
 	xt->moffset = offset;
 
-	switch (xt->operation) {
-	case OP_PUT:
-		return STATE_TGT_DATA_IN;
+	init_events(xt);
 
-	case OP_ATOMIC:
-		return STATE_TGT_ATOMIC_DATA_IN;
+	return STATE_TGT_WAIT_CONN;
+}
 
-	case OP_GET:
-	case OP_FETCH:
-	case OP_SWAP:
-		return STATE_TGT_DATA_OUT;
-	
-	default:
-		return STATE_TGT_ERROR;
+/*
+ * tgt_wait_conn
+ *	check whether we need a connection to init
+ *	and if so wait until we are connected
+ */
+static int tgt_wait_conn(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+	conn_t *conn = xt->conn;
+
+	/* we need a connection if we are sending an ack/reply
+	 * or doing an RDMA operation */
+	if (!(xt->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) &&
+	    !(xt->data_out || (xt->data_in && (xt->data_in->data_fmt
+						!= DATA_FMT_IMMEDIATE))))
+		goto out1;
+
+	/* get per conn info */
+	if (!conn) {
+		conn = xt->conn = get_conn(ni, &xt->initiator);
+		if (unlikely(!conn)) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
 	}
+
+	if (conn->state >= CONN_STATE_CONNECTED)
+		goto out2;
+
+	/* if not connected. Add the xt on the pending list. It will be
+	 * retried once connected/disconnected. */
+	pthread_mutex_lock(&conn->mutex);
+	if (conn->state < CONN_STATE_CONNECTED) {
+		pthread_spin_lock(&conn->wait_list_lock);
+		list_add_tail(&xt->list, &conn->xt_list);
+		pthread_spin_unlock(&conn->wait_list_lock);
+
+		if (conn->state == CONN_STATE_DISCONNECTED) {
+			/* Initiate connection. */
+			if (init_connect(ni, conn)) {
+				pthread_mutex_unlock(&conn->mutex);
+				pthread_spin_lock(&conn->wait_list_lock);
+				list_del(&xt->list);
+				pthread_spin_unlock(&conn->wait_list_lock);
+				return STATE_TGT_ERROR;
+			}
+		}
+
+		pthread_mutex_unlock(&conn->mutex);
+		return STATE_TGT_WAIT_CONN;
+	}
+	pthread_mutex_unlock(&conn->mutex);
+
+out2:
+	if (conn->state == CONN_STATE_XRC_CONNECTED)
+		set_xt_dest(xt, conn->main_connect);
+	else
+		set_xt_dest(xt, conn);
+
+out1:
+	if (xt->get_resid)
+		return STATE_TGT_DATA_OUT;
+
+	if (xt->put_resid)
+		return (xt->operation == OP_ATOMIC) ? STATE_TGT_ATOMIC_DATA_IN
+						    : STATE_TGT_DATA_IN;
+
+	return STATE_TGT_COMM_EVENT;
 }
 
 static void tgt_unlink(xt_t *xt)
@@ -496,301 +541,6 @@ static int tgt_alloc_rdma_buf(xt_t *xt)
 	xt->rdma_buf = buf;
 
 	return 0;
-}
-
-static int tgt_data_out(xt_t *xt)
-{
-	me_t *me = xt->me;
-	data_t *data = xt->data_out;
-	int next;
-
-	if (!data) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
-
-	switch (data->data_fmt) {
-	case DATA_FMT_DMA:
-		if (tgt_alloc_rdma_buf(xt))
-			return STATE_TGT_ERROR;
-
-		/* Write to SG list provided directly in request */
-		xt->cur_rem_sge = &data->sge_list[0];
-		xt->cur_rem_off = 0;
-		xt->num_rem_sge = be32_to_cpu(data->num_sge);
-
-		if (debug)
-			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
-				xt->cur_rem_sge, (int)xt->num_rem_sge);
-		/*
-		 * RDMA data from le/me  memory, determine starting vector
-		 * and vector offset for le/me.
-		 */
-		xt->cur_loc_iov_index = 0;
-		xt->cur_loc_iov_off = 0;
-
-		if (debug)
-			printf("me->num_iov(%d), xt->moffset(%d)\n",
-				me->num_iov, (int)xt->moffset);
-
-		if (me->num_iov) {
-			ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
-			ptl_size_t i = 0;
-			ptl_size_t loc_offset = 0;
-			ptl_size_t iov_offset = 0;
-
-			if (debug)
-				printf("*iov(%p)\n", (void *)iov);
-
-			for (i = 0; i < me->num_iov && loc_offset < xt->moffset;
-				i++, iov++) {
-				iov_offset = xt->moffset - loc_offset;
-				if (iov_offset > iov->iov_len)
-					iov_offset = iov->iov_len;
-				loc_offset += iov_offset;
-				if (debug)
-					printf("In loop: loc_offset(%d),"
- 						"moffset(%d)\n",
-						(int)loc_offset,
-						(int)xt->moffset);
-			}
-			if (loc_offset < xt->moffset) {
-				WARN();
-				return STATE_TGT_ERROR;
-			}
-
-			xt->cur_loc_iov_index = i;
-			xt->cur_loc_iov_off = iov_offset;
-		} else {
-			xt->cur_loc_iov_off = xt->moffset;
-		}
-		if (debug)
-			printf("cur_loc_iov_index(%d), cur_loc_iov_off(%d)\n",
-				(int)xt->cur_loc_iov_index,
-				(int)xt->cur_loc_iov_off);
-
-		xt->rdma_dir = DATA_DIR_OUT;
-		next = STATE_TGT_RDMA;
-		break;
-	case DATA_FMT_INDIRECT:
-		if (tgt_alloc_rdma_buf(xt))
-			return STATE_TGT_ERROR;
-
-		xt->rdma_dir = DATA_DIR_OUT;
-		next = STATE_TGT_RDMA_DESC;
-		break;
-	default:
-		WARN();
-		return STATE_TGT_ERROR;
-		break;
-	}
-
-	if (xt->operation == OP_FETCH) {
-		if (xt->atom_op >= PTL_MIN && xt->atom_op <= PTL_BXOR) {
-			return STATE_TGT_ATOMIC_DATA_IN;
-		} else {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-	}
-
-	if (xt->operation == OP_SWAP) {
-		if (xt->atom_op == PTL_SWAP) {
-			return STATE_TGT_DATA_IN;
-		} else if (xt->atom_op >= PTL_CSWAP &&
-			   xt->atom_op <= PTL_MSWAP) {
-			return STATE_TGT_SWAP_DATA_IN;
-		} else {
-			WARN();
-			return STATE_TGT_ERROR;
-
-		}
-	}
-
-	/*
-	 * If locally managed update to reserve space for the
-	 * associated RDMA data.
-	 */
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += xt->mlength;
-
-	/*
-	 * Unlink if required to prevent further use of this
-	 * ME/LE.
-	 */
-	if (me->options & PTL_ME_USE_ONCE)
-		tgt_unlink(xt);
-	else if  ((me->options & PTL_ME_MANAGE_LOCAL) &&
-	    ((me->length - me->offset) < me->min_free))
-		tgt_unlink(xt);
-
-	return next;
-}
-
-/* Start a connection if not connected already. Return -1 on error, 1
-   if the connection is pending, and 0 if connected. */
-static int check_conn(xt_t *xt)
-{
-	conn_t *connect;
-	int ret;
-	ni_t *ni = to_ni(xt);
-
-	/* Ensure we are already connected. */
-	connect = get_conn(ni, &xt->initiator);
-	if (unlikely(!connect)) {
-		ptl_warn("Invalid destination\n");
-		return -1;
-	}
-
-	pthread_mutex_lock(&connect->mutex);
-
-	if (connect->main_connect) {
-		assert(connect->state == CONN_STATE_DISCONNECTED);
-		set_xt_dest(xt, connect->main_connect);
-		ret = 0;
-	} 
-	else if (unlikely(connect->state != CONN_STATE_CONNECTED)) {
-		/* Not connected. Add the xi on the pending list. It will be
-		 * flushed once connected/disconnected. */
-
-		list_add_tail(&xt->connect_pending_list, &connect->xt_list);
-
-		if (connect->state == CONN_STATE_DISCONNECTED) {
-			/* Initiate connection. */
-			if (init_connect(ni, connect)) {
-				list_del(&xt->connect_pending_list);
-				ret = -1;
-			} else
-				ret = 1;
-		} else {
-			/* Connection in already in progress. */
-			ret = 1;
-		}
-	} else {
-		set_xt_dest(xt, connect);
-		ret = 0;
-	}
-
-	pthread_mutex_unlock(&connect->mutex);
-
-	return ret;
-}
-
-/*
- * tgt_rdma
- *	initiate as many RDMA requests as possible for a XT
- */
-static int tgt_rdma(xt_t *xt)
-{
-	int err;
-	ptl_size_t *resid = xt->rdma_dir == DATA_DIR_IN ?
-		&xt->put_resid : &xt->get_resid;
-
-	if (debug) printf("tgt_rdma - data_dir(%d), resid(%d), "
-		"interim_rdma(%d), rdma_comp(%d)\n",
-		(int) xt->rdma_dir, (int) xt->put_resid,
-		 (int) xt->interim_rdma, (int) xt->rdma_comp);
-
-	err = check_conn(xt);
-	if (err == -1)
-		return STATE_TGT_ERROR;
-	else if (err == 1)
-		/* Not connected yet. */
-		return STATE_TGT_RDMA;
-
-	/*
-	 * Issue as many RDMA requests as we can.  We may have to take
-	 * intermediate completions if we run out send queue resources;
-	 * We will always take at least one on the last work request
-	 * associated with a portals transfer.
-	 */
-	if (*resid) {
-		if (debug)
-			printf("tgt_rdma - post rdma\n");
-
-		err = post_tgt_rdma(xt, xt->rdma_dir);
-		if (err) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-	}
-
-	/*
-	 * If all RDMA have been issued and there is not a completion
-	 * outstanding advance state.
-	 */
-	if (!*resid && !xt->rdma_comp)
-		return STATE_TGT_COMM_EVENT;
-
-	return STATE_TGT_RDMA;
-}
-
-/*
- * tgt_rdma_desc
- *	initiate read of indirect descriptors for initiator IOV
- */
-static int tgt_rdma_desc(xt_t *xt)
-{
-	data_t *data;
-	uint64_t raddr;
-	uint32_t rkey;
-	uint32_t rlen;
-	struct ibv_sge sge;
-	int err;
-	int next;
-
-	err = check_conn(xt);
-	if (err == -1)
-		return STATE_TGT_ERROR;
-	else if (err == 1)
-		/* Not connected yet. */
-		return STATE_TGT_RDMA_DESC;
-
-	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
-
-	/*
-	 * Allocate and map indirect buffer and setup to read
-	 * descriptor list from initiator memory.
-	 */
-	raddr = be64_to_cpu(data->sge_list[0].addr);
-	rkey = be32_to_cpu(data->sge_list[0].lkey);
-	rlen = be32_to_cpu(data->sge_list[0].length);
-
-	if (debug)
-		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
-		       " rkey(0x%x), len(%d)\n", raddr, rkey, rlen);
-
-	xt->indir_sge = calloc(1, rlen);
-	if (!xt->indir_sge) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
-
-	if (mr_lookup(to_ni(xt), xt->indir_sge, rlen,
-		      &xt->indir_mr)) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
-
-	/*
-	 * Post RDMA read
-	 */
-	sge.addr = (uintptr_t)xt->indir_sge;
-	sge.lkey = xt->indir_mr->ibmr->lkey;
-	sge.length = rlen;
-
-	xt->rdma_comp++;
-	err = rdma_read(xt->rdma_buf, raddr, rkey, &sge, 1, 1);
-	if (err) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
-	next = STATE_TGT_RDMA_WAIT_DESC;
-done:
-	return next;
 }
 
 /*
@@ -846,6 +596,162 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 	return PTL_OK;
 }
 
+static int tgt_data_out(xt_t *xt)
+{
+	me_t *me = xt->me;
+	data_t *data = xt->data_out;
+	int next;
+
+	if (!data) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	if (tgt_alloc_rdma_buf(xt))
+		return STATE_TGT_ERROR;
+
+	xt->rdma_dir = DATA_DIR_OUT;
+
+	switch (data->data_fmt) {
+	case DATA_FMT_DMA:
+		xt->cur_rem_sge = &data->sge_list[0];
+		xt->cur_rem_off = 0;
+		xt->num_rem_sge = be32_to_cpu(data->num_sge);
+
+		if (tgt_rdma_init_loc_off(xt))
+			return STATE_TGT_ERROR;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_INDIRECT:
+		next = STATE_TGT_RDMA_DESC;
+		break;
+
+	default:
+		WARN();
+		return STATE_TGT_ERROR;
+		break;
+	}
+
+	/*
+	 * If locally managed update to reserve space for the
+	 * associated RDMA data.
+	 */
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += xt->mlength;
+
+	/*
+	 * Unlink if required to prevent further use of this
+	 * ME/LE.
+	 */
+	if ((me->options & PTL_ME_USE_ONCE) ||
+	    ((me->options & PTL_ME_MANAGE_LOCAL) &&
+	    ((me->length - me->offset) < me->min_free)))
+		tgt_unlink(xt);
+
+	return next;
+}
+
+/*
+ * tgt_rdma
+ *	initiate as many RDMA requests as possible for a XT
+ */
+static int tgt_rdma(xt_t *xt)
+{
+	int err;
+	ptl_size_t *resid = xt->rdma_dir == DATA_DIR_IN ?
+				&xt->put_resid : &xt->get_resid;
+
+	/* post one or more RDMA operations */
+	err = post_tgt_rdma(xt, xt->rdma_dir);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	/* more work to do */
+	if (*resid || xt->rdma_comp)
+		return STATE_TGT_RDMA;
+
+	/* check to see if we still need data in phase */
+	if (xt->put_resid) {
+		if (xt->operation == OP_FETCH)
+			return STATE_TGT_ATOMIC_DATA_IN;
+
+		if (xt->operation == OP_SWAP)
+			return (xt->atom_op == PTL_SWAP) ? STATE_TGT_DATA_IN
+							 : STATE_TGT_SWAP_DATA_IN;
+
+		return  STATE_TGT_DATA_IN;
+	}
+
+	return STATE_TGT_COMM_EVENT;
+}
+
+/*
+ * tgt_rdma_desc
+ *	initiate read of indirect descriptors for initiator IOV
+ */
+static int tgt_rdma_desc(xt_t *xt)
+{
+	data_t *data;
+	uint64_t raddr;
+	uint32_t rkey;
+	uint32_t rlen;
+	struct ibv_sge sge;
+	int err;
+	int next;
+
+	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
+
+	/*
+	 * Allocate and map indirect buffer and setup to read
+	 * descriptor list from initiator memory.
+	 */
+	raddr = be64_to_cpu(data->sge_list[0].addr);
+	rkey = be32_to_cpu(data->sge_list[0].lkey);
+	rlen = be32_to_cpu(data->sge_list[0].length);
+
+	if (debug)
+		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
+		       " rkey(0x%x), len(%d)\n", raddr, rkey, rlen);
+
+	xt->indir_sge = calloc(1, rlen);
+	if (!xt->indir_sge) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	if (mr_lookup(to_ni(xt), xt->indir_sge, rlen,
+		      &xt->indir_mr)) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	/*
+	 * Post RDMA read
+	 */
+	sge.addr = (uintptr_t)xt->indir_sge;
+	sge.lkey = xt->indir_mr->ibmr->lkey;
+	sge.length = rlen;
+
+	xt->rdma_comp = 1;
+	err = rdma_read(xt->rdma_buf, raddr, rkey, &sge, 1, 1);
+	if (err) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	next = STATE_TGT_RDMA_WAIT_DESC;
+
+done:
+	return next;
+}
+
 /*
  * tgt_rdma_wait_desc
  *	indirect descriptor RDMA has completed, initialize for common RDMA code
@@ -860,10 +766,6 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 	xt->cur_rem_off = 0;
 	xt->num_rem_sge = (be32_to_cpu(data->sge_list[0].length)) /
 			  sizeof(struct ibv_sge);
-
-	if (debug)
-		printf("Wait Desc:cur_rem_sge(%p), num_rem_sge(%d)\n",
-			xt->cur_rem_sge, (int)xt->num_rem_sge);
 
 	if (tgt_rdma_init_loc_off(xt))
 		return STATE_TGT_ERROR;
@@ -887,6 +789,7 @@ static int tgt_data_in(xt_t *xt)
 		err = copy_in(xt, me, data->data);
 		if (err)
 			return STATE_TGT_ERROR;
+
 		next = STATE_TGT_COMM_EVENT;
 		break;
 	case DATA_FMT_DMA:
@@ -926,6 +829,7 @@ static int tgt_data_in(xt_t *xt)
 	 */
 	if (me->options & PTL_ME_MANAGE_LOCAL)
 		me->offset += xt->mlength;
+// TODO double counting for SWAP/FETCH fix me
 
 	/*
 	 * Unlink if required to prevent further use of this
@@ -952,6 +856,12 @@ static int tgt_atomic_data_in(xt_t *xt)
 
 	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	// TODO should we return an ni fail??
+	if (xt->atom_op > PTL_BXOR || xt->atom_type > PTL_DOUBLE) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -990,6 +900,11 @@ static int tgt_swap_data_in(xt_t *xt)
 
 	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
+
+	if (xt->atom_op < PTL_CSWAP || xt->atom_op > PTL_MSWAP || xt->atom_type > PTL_DOUBLE) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -1293,12 +1208,8 @@ static int tgt_send_ack(xt_t *xt)
 	buf_t *buf;
 	hdr_t *hdr;
 
-	err = check_conn(xt);
-	if (err == -1)
-		return STATE_TGT_ERROR;
-	else if (err == 1)
-		/* Not connected yet. */
-		return STATE_TGT_SEND_ACK;
+if (!xt->conn)
+printf("EEEEE in tgt_send_ack with no conn!!, xt->event_mask = %x\n", xt->event_mask);
 
 	xt->event_mask &= ~XT_ACK_EVENT;
 
@@ -1354,13 +1265,6 @@ static int tgt_send_reply(xt_t *xt)
 	ni_t *ni = to_ni(xt);
 	buf_t *buf;
 	hdr_t *hdr;
-
-	err = check_conn(xt);
-	if (err == -1)
-		return STATE_TGT_ERROR;
-	else if (err == 1)
-		/* Not connected yet. */
-		return STATE_TGT_SEND_REPLY;
 
 	xt->event_mask &= ~XT_REPLY_EVENT;
 
@@ -1495,6 +1399,11 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_GET_LENGTH:
 				state = tgt_get_length(xt);
+				break;
+			case STATE_TGT_WAIT_CONN:
+				state = tgt_wait_conn(xt);
+				if (state == STATE_TGT_WAIT_CONN)
+					goto exit;
 				break;
 			case STATE_TGT_DATA_IN:
 				state = tgt_data_in(xt);

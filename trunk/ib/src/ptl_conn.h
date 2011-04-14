@@ -12,10 +12,9 @@ enum {
 	CONN_STATE_DISCONNECTED,
 	CONN_STATE_RESOLVING_ADDR,
 	CONN_STATE_RESOLVING_ROUTE,
-	CONN_STATE_CONNECT,
 	CONN_STATE_CONNECTING,
 	CONN_STATE_CONNECTED,
-	CONN_STATE_MAIN_CONNECTED,
+	CONN_STATE_XRC_CONNECTED,
 };
 
 /*
@@ -34,6 +33,7 @@ typedef struct conn {
 	int			retry_connect;
 	struct list_head	xi_list;
 	struct list_head	xt_list;
+	pthread_spinlock_t	wait_list_lock;
 
 	/* logical NI only */
 	struct list_head	list;
@@ -48,13 +48,14 @@ typedef struct conn {
 conn_t *get_conn(struct ni *ni, const ptl_process_t *id);
 
 /*
- * init_conn
+ * conn_init
  *	initialize conn_t
  */
-void init_conn(struct ni *ni, conn_t *conn);
+void conn_init(struct ni *ni, conn_t *conn);
 
 /*
  * init_connect
+ *	request a connection from rdmacm
  */
 int init_connect(struct ni *ni, conn_t *conn);
 

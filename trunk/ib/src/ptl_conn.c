@@ -4,11 +4,12 @@
 
 #include "ptl_loc.h"
 
-void init_conn(ni_t *ni, conn_t *conn)
+void conn_init(ni_t *ni, conn_t *conn)
 {
 	memset(conn, 0, sizeof(*conn));
 
 	pthread_mutex_init(&conn->mutex, NULL);
+	pthread_spin_init(&conn->wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 
 	conn->ni = ni;
 	conn->state = CONN_STATE_DISCONNECTED;
@@ -16,6 +17,12 @@ void init_conn(ni_t *ni, conn_t *conn)
 	INIT_LIST_HEAD(&conn->xi_list);
 	INIT_LIST_HEAD(&conn->xt_list);
 	INIT_LIST_HEAD(&conn->list);
+}
+
+void conn_fini(conn_t *conn)
+{
+	pthread_mutex_destroy(&conn->mutex);
+	pthread_spin_destroy(&conn->wait_list_lock);
 }
 
 static int compare_id(const void *a, const void *b)
@@ -56,7 +63,7 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 				return NULL;
 			}
 
-			init_conn(ni, conn);
+			conn_init(ni, conn);
 			conn->id = *id;
 
 			/* Get the IP address from the NID. */
@@ -184,7 +191,7 @@ static int accept_connection_request_logical(ni_t *ni,
 		return PTL_NO_SPACE;
 	}
 
-	init_conn(ni, conn);
+	conn_init(ni, conn);
 
 	pthread_mutex_lock(&ni->logical.lock);
 	list_add_tail(&conn->list, &ni->logical.connect_list);
@@ -249,31 +256,30 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	return PTL_OK;
 }
 
-/* connect is locked. */
 void flush_pending_xi_xt(conn_t *conn)
 {
 	xi_t *xi;
 	xt_t *xt;
 
-	assert(pthread_mutex_trylock(&conn->mutex) != 0);
-
+	pthread_spin_lock(&conn->wait_list_lock);
 	while(!list_empty(&conn->xi_list)) {
-		xi = list_first_entry(&conn->xi_list, xi_t, connect_pending_list);
-		list_del_init(&xi->connect_pending_list);
-		pthread_mutex_unlock(&conn->mutex);
+		xi = list_first_entry(&conn->xi_list, xi_t, list);
+		list_del_init(&xi->list);
+		pthread_spin_unlock(&conn->wait_list_lock);
 		process_init(xi);
 			
-		pthread_mutex_lock(&conn->mutex);
+		pthread_spin_lock(&conn->wait_list_lock);
 	}
 
 	while(!list_empty(&conn->xt_list)) {
-		xt = list_first_entry(&conn->xt_list, xt_t, connect_pending_list);
-		list_del_init(&xt->connect_pending_list);
-		pthread_mutex_unlock(&conn->mutex);
+		xt = list_first_entry(&conn->xt_list, xt_t, list);
+		list_del_init(&xt->list);
+		pthread_spin_unlock(&conn->wait_list_lock);
 		process_tgt(xt);
 
-		pthread_mutex_lock(&conn->mutex);
+		pthread_spin_lock(&conn->wait_list_lock);
 	}
+	pthread_spin_unlock(&conn->wait_list_lock);
 }
 
 /*
@@ -556,27 +562,29 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 			entry->remote_xrc_srq_num = rej->xrc_srq_num;
 
 			/* We can now connect to the real endpoint. */
-			conn->state = CONN_STATE_DISCONNECTED;
+			conn->state = CONN_STATE_XRC_CONNECTED;
 
-			pthread_mutex_lock(&main_connect->mutex);
+			pthread_spin_lock(&main_connect->wait_list_lock);
 
 			conn->main_connect = main_connect;
 
 			if (main_connect->state == CONN_STATE_DISCONNECTED) {
 				list_add_tail(&conn->list, &main_connect->list);
 				init_connect(ni, main_connect);
-				pthread_mutex_unlock(&main_connect->mutex);
+				pthread_spin_unlock(&main_connect->wait_list_lock);
 			}
 			else if (main_connect->state == CONN_STATE_CONNECTED) {
-				pthread_mutex_unlock(&main_connect->mutex);
+				pthread_spin_unlock(&main_connect->wait_list_lock);
 				flush_pending_xi_xt(conn);
 			}
 			else {
 				/* move xi/xt so they will be processed when the node is
 				 * connected. */
+				pthread_spin_lock(&conn->wait_list_lock);
 				list_splice_init(&conn->xi_list, &main_connect->xi_list);
 				list_splice_init(&conn->xt_list, &main_connect->xt_list);
-				pthread_mutex_unlock(&main_connect->mutex);
+				pthread_spin_unlock(&conn->wait_list_lock);
+				pthread_spin_unlock(&main_connect->wait_list_lock);
 			}
 		}
 

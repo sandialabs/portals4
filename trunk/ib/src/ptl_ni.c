@@ -72,7 +72,7 @@ static int create_tables(ni_t *ni, ptl_size_t map_size, ptl_process_t *actual_ma
 		entry->nid = actual_mapping[i].phys.nid;
 		entry->pid = actual_mapping[i].phys.pid;
 
-		init_conn(ni, conn);
+		conn_init(ni, conn);
 
 		/* Get the IP address from the rank table for that NID. */
 		conn->sin.sin_family = AF_INET;
@@ -159,7 +159,8 @@ static void ni_rcqp_stop(ni_t *ni)
 			conn_t *connect = &ni->logical.rank_table[i].connect;
 		
 			pthread_mutex_lock(&connect->mutex);
-			if (connect->state != CONN_STATE_DISCONNECTED) {
+			if (connect->state != CONN_STATE_DISCONNECTED &&
+			    connect->state != CONN_STATE_XRC_CONNECTED) {
 				rdma_disconnect(connect->cm_id);
 			}
 			pthread_mutex_unlock(&connect->mutex);
@@ -743,6 +744,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	ni->xi_pool.init = xi_init;
 	ni->xi_pool.fini = xi_fini;
+	ni->xi_pool.alloc = xi_new;
 	ni->xi_pool.max_count = 50;	// TODO make this a tunable parameter
 	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
 
@@ -755,6 +757,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	ni->xt_pool.init = xt_init;
 	ni->xt_pool.fini = xt_fini;
+	ni->xt_pool.alloc = xt_new;
 
 	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
 			POOL_XT, (obj_t *)ni);

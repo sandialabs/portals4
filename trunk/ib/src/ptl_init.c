@@ -6,6 +6,7 @@
 static char *init_state_name[] = {
 	[STATE_INIT_START]		= "init_start",
 	[STATE_INIT_WAIT_CONN]		= "init_wait_conn",
+	[STATE_INIT_SEND_REQ]		= "init_send_req",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
 	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
 	[STATE_INIT_HANDLE_COMP]	= "init_handle_comp",
@@ -106,6 +107,8 @@ static inline void make_ct_reply_event(xi_t *xi)
 
 static void init_events(xi_t *xi)
 {
+	xi->event_mask = 0;
+
 	switch (xi->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
@@ -155,6 +158,63 @@ static void init_events(xi_t *xi)
 
 static int init_start(xi_t *xi)
 {
+	init_events(xi);
+
+	return STATE_INIT_WAIT_CONN;
+}
+
+static int wait_conn(xi_t *xi)
+{
+	ni_t *ni = to_ni(xi);
+	conn_t *conn = xi->conn;
+
+	/* get per conn info */
+	if (!conn) {
+		conn = xi->conn = get_conn(ni, &xi->target);
+		if (unlikely(!conn)) {
+			WARN();
+			return STATE_INIT_ERROR;
+		}
+	}
+
+	/* note once connected we don't go back */
+	if (conn->state >= CONN_STATE_CONNECTED)
+		goto out;
+
+	/* if not connected. Add the xt on the pending list. It will be
+	 * retried once connected/disconnected. */
+	pthread_mutex_lock(&conn->mutex);
+	if (conn->state < CONN_STATE_CONNECTED) {
+		pthread_spin_lock(&conn->wait_list_lock);
+		list_add_tail(&xi->list, &conn->xi_list);
+		pthread_spin_unlock(&conn->wait_list_lock);
+
+		if (conn->state == CONN_STATE_DISCONNECTED) {
+			if (init_connect(ni, conn)) {
+				pthread_mutex_unlock(&conn->mutex);
+				pthread_spin_lock(&conn->wait_list_lock);
+				list_del(&xi->list);
+				pthread_spin_unlock(&conn->wait_list_lock);
+				return STATE_INIT_ERROR;
+			}
+		}
+
+		pthread_mutex_unlock(&conn->mutex);
+		return STATE_INIT_WAIT_CONN;
+	}
+	pthread_mutex_unlock(&conn->mutex);
+
+out:
+	if (conn->state == CONN_STATE_XRC_CONNECTED)
+		set_xi_dest(xi, conn->main_connect);
+	else
+		set_xi_dest(xi, conn);
+
+	return STATE_INIT_SEND_REQ;
+}
+
+static int init_send_req(xi_t *xi)
+{
 	int err;
 	ni_t *ni = to_ni(xi);
 	buf_t *buf;
@@ -162,22 +222,6 @@ static int init_start(xi_t *xi)
 	data_t *get_data = NULL;
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
-
-	xi->conn = get_conn(ni, &xi->target);
-	if (unlikely(!xi->conn)) {
-		WARN();
-		return STATE_INIT_ERROR;
-	}
-
-	/* if we are not connected go wait until we are */
-	if ((xi->conn->state != CONN_STATE_CONNECTED) &&
-	    !xi->conn->main_connect)
-		return STATE_INIT_WAIT_CONN;
-
-	if (xi->conn->main_connect)
-		set_xi_dest(xi, xi->conn->main_connect);
-	else
-		set_xi_dest(xi, xi->conn);
 
 	err = buf_alloc(ni, &buf);
 	if (err) {
@@ -238,8 +282,6 @@ static int init_start(xi_t *xi)
 	buf->sg_list[0].length = buf->length;
 	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 
-	init_events(xi);
-
 	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
 	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)) &&
 	    (xi->put_md->options & PTL_MD_REMOTE_FAILURE_DISABLE))
@@ -256,26 +298,6 @@ static int init_start(xi_t *xi)
 		return STATE_INIT_SEND_ERROR;
 
 	return STATE_INIT_WAIT_COMP;
-}
-
-static int wait_conn(xi_t *xi)
-{
-	ni_t *ni = to_ni(xi);
-	conn_t *conn = xi->conn;
-
-	pthread_mutex_lock(&conn->mutex);
-	if (conn->state == CONN_STATE_DISCONNECTED) {
-		list_add_tail(&xi->connect_pending_list, &conn->xi_list);
-		if (init_connect(ni, conn)) {
-			list_del(&xi->connect_pending_list);
-			pthread_mutex_unlock(&conn->mutex);
-			return STATE_INIT_ERROR;
-		}
-	}
-	pthread_mutex_unlock(&conn->mutex);
-
-	return (conn->state == CONN_STATE_CONNECTED) ? STATE_INIT_START
-						     : STATE_INIT_WAIT_CONN;
 }
 
 static int init_send_error(xi_t *xi)
@@ -493,6 +515,9 @@ int process_init(xi_t *xi)
 				state = wait_conn(xi);
 				if (state == STATE_INIT_WAIT_CONN)
 					goto exit;
+				break;
+			case STATE_INIT_SEND_REQ:
+				state = init_send_req(xi);
 				break;
 			case STATE_INIT_SEND_ERROR:
 				state = init_send_error(xi);
