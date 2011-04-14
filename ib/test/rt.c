@@ -22,12 +22,21 @@ static int get_desired_mapping(struct node_info *info)
 		goto done;
 	}
 
+	if (debug)
+		printf("PtlGetId returned id = %x, %x\n", my_id.phys.nid, my_id.phys.pid);
+
+	if (debug)
+		printf("info->map_size = %d\n", info->map_size);
+
 	info->desired_map_ptr = calloc(info->map_size, sizeof(ptl_process_t));
 	if (!info->desired_map_ptr) {
 		printf("calloc desired map failed\n");
 		errs ++;
 		goto done;
 	}
+
+	if (debug)
+		printf("info->rank = %d\n", info->rank);
 
 	info->desired_map_ptr[info->rank] = my_id;
 
@@ -41,6 +50,8 @@ static int get_desired_mapping(struct node_info *info)
 				msg.pid = my_id.phys.pid;
 				msg.rank = info->rank;
 				MPI_Send(&msg, sizeof(msg), MPI_CHAR, j, 0, MPI_COMM_WORLD);
+if (debug)
+printf("sent desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
 			}
 		} else {
 			/* Get their info. */
@@ -50,6 +61,8 @@ static int get_desired_mapping(struct node_info *info)
 			
 			info->desired_map_ptr[i].phys.nid = msg.nid;
 			info->desired_map_ptr[i].phys.pid = msg.pid;
+if (debug)
+printf("received desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
 		}
 	}
 

@@ -72,6 +72,10 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 
 	*id = ni->id;
 
+	if (debug) {
+		printf("PtlGetId returned id = %x, %x\n", ni->id.phys.nid, ni->id.phys.pid);
+	}
+
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;

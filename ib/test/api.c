@@ -6,7 +6,7 @@
 
 int test_ptl_init(struct node_info *info)
 {
-	return info->ret != PtlInit(3456); /* TODO: add variable for JID and default */
+	return info->ret != PtlInit();
 }
 
 int test_ptl_fini(struct node_info *info)
@@ -18,14 +18,8 @@ int test_ptl_fini(struct node_info *info)
 int test_ptl_ni_init(struct node_info *info)
 {
 	int ret;
-	ptl_process_t id;
 
-	if (info->ni_opt & PTL_NI_PHYSICAL)
-		id.phys.pid = info->pid;
-	else
-		id.rank = info->rank;
-
-	ret = PtlNIInit(info->iface, info->ni_opt, &id,
+	ret = PtlNIInit(info->iface, info->ni_opt, info->pid,
 				      info->desired_ptr, info->actual_ptr,
 				      info->map_size, info->desired_map_ptr,
 				      info->actual_map_ptr, info->ptr);

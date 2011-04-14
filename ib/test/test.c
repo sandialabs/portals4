@@ -84,9 +84,7 @@ int main(int argc, char *argv[])
 	/*
 	 * init portals library
 	 */
-	jid = 0;
-
-	err = PtlInit(jid);
+	err = PtlInit();
 	if (err) {
 		printf("PtlInit failed, err = %d\n", err);
 		return 1;
