@@ -24,12 +24,6 @@
 
 #include <mpi.h>
 
-#ifdef PTL_CHECK_POINTER
-int get_maps(void);
-#else
-#define get_maps(void)	(0)
-#endif
-
 extern int verbose;
 extern int debug;
 

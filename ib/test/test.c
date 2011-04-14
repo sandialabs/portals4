@@ -4,6 +4,8 @@
 #include <sys/time.h>
 
 int debug = 0;
+int put = 0;
+int ptl_log_level;
 
 void dump_limits(ptl_ni_limits_t *limits)
 {
@@ -18,6 +20,26 @@ void dump_limits(ptl_ni_limits_t *limits)
 	printf("max_msg_size		= %ld\n", limits->max_msg_size);
 	printf("max_atomic_size		= %ld\n", limits->max_atomic_size);
 	printf("max_unordered_size	= %ld\n", limits->max_unordered_size);
+}
+
+void dump_event(ptl_event_t *event)
+{
+        printf("type			= %d\n", event->type);
+        printf("initiator.phys.nid	= 0x%x\n", event->initiator.phys.nid);
+        printf("initiator.phys.pid	= 0x%x\n", event->initiator.phys.pid);
+        printf("pt_index		= %d\n", event->pt_index);
+        printf("uid			= %d\n", event->uid);
+        printf("jid			= %d\n", event->jid);
+        printf("match_bits		= 0x%lx\n", event->match_bits);
+        printf("rlength			= %ld\n", event->rlength);
+        printf("mlength			= %ld\n", event->mlength);
+        printf("remote_offset		= %ld\n", event->remote_offset);
+        printf("start			= %p\n", event->start);
+        printf("user_ptr		= %p\n", event->user_ptr);
+        printf("hdr_data		= %ld\n", event->hdr_data);
+        printf("ni_fail_type		= %d\n", event->ni_fail_type);
+        printf("atomic_operation	= %d\n", event->atomic_operation);
+        printf("atomic_type		= %d\n", event->atomic_type);
 }
 
 struct timeval start_time;
@@ -52,6 +74,12 @@ int main(int argc, char *argv[])
 	ptl_match_bits_t	match_bits;
 	ptl_size_t		remote_offset;
 	ptl_hdr_data_t		hdr_data;
+	int			i;
+        ptl_size_t              count;
+	ptl_event_t		event;
+	int			events;
+
+	ptl_log_level = 4;
 
 	/*
 	 * init portals library
@@ -106,13 +134,23 @@ int main(int argc, char *argv[])
 		printf("NID = %x, PID = %x\n", id.phys.nid, id.phys.pid);
 
 	/*
+	 * create an EQ
+	 */
+	count		= 1000;
+
+	err = PtlEQAlloc(ni_handle, count, &eq_handle);
+	if (err) {
+		printf("PtlEQAlloc failed, err = %d\n", err);
+		return 1;
+	}
+
+	/*
 	 * create portals table entry
 	 */
 	pt_opt		= 0;
-	eq_handle	= PTL_EQ_NONE;
 	pt_index_req	= PTL_PT_ANY;
 
-	err = PtlPTAlloc(ni_handle, pt_opt, eq_handle, pt_index_req, &pt_index);
+	err = PtlPTAlloc(ni_handle, pt_opt, PTL_EQ_NONE, pt_index_req, &pt_index);
 	if (err) {
 		printf("PtlPTAlloc failed, err = %d\n", err);
 		return 1;
@@ -129,7 +167,7 @@ int main(int argc, char *argv[])
 	me.ct_handle	= PTL_CT_NONE;
 	me.ac_id.jid	= jid;
 	me.ac_id.uid	= PTL_UID_ANY;
-	me.options	= PTL_ME_OP_PUT;
+	me.options	= PTL_ME_OP_PUT | PTL_ME_OP_GET;
 	me.min_free	= 0;
 	me.match_id	= id;
 	me.match_bits	= 0;
@@ -153,7 +191,7 @@ int main(int argc, char *argv[])
 	md.length		= 1024;
 	md.start		= malloc(md.length);
 	md.options		= 0;
-	md.eq_handle		= PTL_EQ_NONE;
+	md.eq_handle		= eq_handle;
 	md.ct_handle		= PTL_CT_NONE;
 	if (!md.start) {
 		printf("unable to allocate %ld bytes for md\n", md.length);
@@ -167,39 +205,95 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * do a put
+	 * do a put/get to warm up
 	 */
 	local_offset		= 0;
-	length			= 1024;
-	ack_req			= PTL_NO_ACK_REQ;
+	length			= 4;
+	ack_req			= PTL_ACK_REQ;
 	target_id		= id;
 	match_bits		= 0;
 	remote_offset		= 0;
 	hdr_data		= 0;
 
-	err = PtlPut(md_handle, local_offset, length, ack_req, target_id,
-		     pt_index, match_bits, remote_offset, user_ptr, hdr_data);
-	if (err) {
-		printf("PtlPut failed, err = %d\n", err);
-		return 1;
-	}
+	if (put) {
+		err = PtlPut(md_handle, local_offset, length, ack_req, target_id,
+			     pt_index, match_bits, remote_offset, user_ptr, hdr_data);
+		if (err) {
+			printf("PtlPut failed, err = %d\n", err);
+			return 1;
+		}
 
-	usleep(100000);
+		for (i = 0; i < 2; i++) {
+			err = PtlEQWait(eq_handle, &event);
+			if (err) {
+				printf("PtlEQWait failed, err = %d\n", err);
+				return 1;
+			}
+		}
+	} else {
+		err = PtlGet(md_handle, local_offset, length, target_id,
+			     pt_index, match_bits, user_ptr, remote_offset);
+		if (err) {
+			printf("PtlGet failed, err = %d\n", err);
+			return 1;
+		}
+
+		err = PtlEQWait(eq_handle, &event);
+		if (err) {
+			printf("PtlEQWait failed, err = %d\n", err);
+			return 1;
+		}
+	}
 
 	gettimeofday(&start_time, NULL);
-	test_time = 1;
-
-	err = PtlPut(md_handle, local_offset, length, ack_req, target_id,
-		     pt_index, match_bits, remote_offset, user_ptr, hdr_data);
-	if (err) {
-		printf("PtlPut failed, err = %d\n", err);
-		return 1;
-	}
-
-	if (test_time) {
 	gettimeofday(&stop_time, NULL);
-	test_time = 0;
+
+	printf("=============START=================\n");
+
+	gettimeofday(&start_time, NULL);
+
+	if (put) {
+		for (i = 0; i < 10; i++) {
+			err = PtlPut(md_handle, local_offset, length, ack_req, target_id,
+				     pt_index, match_bits, remote_offset, user_ptr, hdr_data);
+			if (err) {
+				printf("PtlPut failed, err = %d\n", err);
+				return 1;
+			}
+		}
+
+		for (i = 0; i < 20; i++) {
+			err = PtlEQWait(eq_handle, &event);
+			if (err) {
+				printf("PtlEQWait failed, err = %d\n", err);
+				return 1;
+			}
+		}
+	} else {
+		for (i = 0; i < 400; i++) {
+			err = PtlGet(md_handle, local_offset, length, target_id,
+				     pt_index, match_bits, user_ptr, remote_offset);
+			if (err) {
+				printf("PtlGet failed, err = %d\n", err);
+				return 1;
+			}
+		}
+
+		for (i = 0; i < 400; i++) {
+			err = PtlEQWait(eq_handle, &event);
+			if (err) {
+				printf("PtlEQWait failed, err = %d\n", err);
+				return 1;
+			}
+		}
 	}
+
+	gettimeofday(&stop_time, NULL);
+
+	printf("=============STOP=================\n");
+
+	if (1)
+		dump_event(&event);
 
 	/*
 	 * destroy MD
@@ -229,6 +323,15 @@ int main(int argc, char *argv[])
 	err = PtlPTFree(ni_handle, pt_index);
 	if (err) {
 		printf("PtlPTFree failed, err = %d\n", err);
+		return 1;
+	}
+
+	/*
+	 * destroy an EQ
+	 */
+	err = PtlEQFree(eq_handle);
+	if (err) {
+		printf("PtlEQFree failed, err = %d\n", err);
 		return 1;
 	}
 

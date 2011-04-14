@@ -18,7 +18,7 @@ ptl_test_SOURCES = \
 	rt.c \
 	run.c
 
-test_CPPFLAGS = -Wall -I$(top_srcdir)/include
+test_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include
 test_LDFLAGS = -L$(top_builddir)/src
 test_LDADD = -lpthread -lrdmacm -libverbs $(top_builddir)/src/libportals.la
 test_SOURCES = \

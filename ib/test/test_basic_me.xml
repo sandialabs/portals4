@@ -10,20 +10,6 @@
     <ptl_me_unlink ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlMEAppend with me_handle = NULL pointer</desc>
-    <ptl>
-      <ptl_me_append ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMEAppend with me_handle = BAD pointer</desc>
-    <ptl>
-      <ptl_me_append ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
     <desc>Test PtlMEAppend with unsupported options</desc>
     <ptl>
       <ptl_me_append me_opt="INVALID" ret="ARG_INVALID"/>
@@ -93,60 +79,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <subtest>
-    <desc>Test PtlMEAppend with me.start = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMEAppend with me.start = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlMEAppend with me.opt = IOVEC me.start = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_opt="IOVEC" me_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMEAppend with me.opt = IOVEC me.start = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_opt="IOVEC" me_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlMEAppend with iov_base = NULL</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_opt="IOVEC" iov_base="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlMEAppend with iov_base = BAD</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_me_append me_opt="IOVEC" iov_base="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
   <subtest>
     <desc>Test PtlMEAppend with invalid pt_index = 0</desc>
     <ptl>

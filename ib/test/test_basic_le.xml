@@ -10,20 +10,6 @@
     <ptl_le_unlink ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlLEAppend with le_handle pointer = NULL pointer</desc>
-    <ptl>
-    <ptl_le_append ptr="NULL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlLEAppend with le_handle pointer = BAD</desc>
-    <ptl>
-      <ptl_le_append ptr="BAD" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
     <desc>Test PtlLEAppend with unsupported options</desc>
     <ptl>
       <ptl_le_append le_opt="INVALID" ret="ARG_INVALID"/>
@@ -93,60 +79,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <subtest>
-    <desc>Test PtlLEAppend with le.start = NULL</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlLEAppend with le.start = BAD</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlLEAppend with le.opt = IOVEC le.start = NULL</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_opt="IOVEC" le_start="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlLEAppend with le.opt = IOVEC le.start = BAD</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_opt="IOVEC" le_start="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
-  <subtest>
-    <desc>Test PtlLEAppend with le.opt = IOVEC iov_base = NULL</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_opt="IOVEC" iov_base="NULL" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <ifdef check_pointer="">
-  <subtest>
-    <desc>Test PtlLEAppend with le.opt = IOVEC iov_base = BAD</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_le_append le_opt="IOVEC" iov_base="BAD" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  </ifdef>
   <subtest>
     <desc>Test PtlLEAppend/Unlink with invalid pt_index = 0</desc>
     <ptl>
