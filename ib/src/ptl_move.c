@@ -219,6 +219,9 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni_t *ni;
 	xi_t *xi;
 
+	if (debug)
+		printf("PtlPut called\n");
+
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
 		WARN();

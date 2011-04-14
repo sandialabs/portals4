@@ -80,7 +80,7 @@ unsigned int linesize;
 extern int debug;
 extern int atom_type_size[];
 
-#define WARN()	do { if (1) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
+#define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
 
 #define PTL_NI_PORT	(0x4567)
 unsigned short ptl_ni_port(ni_t *ni);
@@ -158,6 +158,7 @@ enum {
 	STATE_TGT_GET_MATCH,
 	STATE_TGT_GET_PERM,
 	STATE_TGT_GET_LENGTH,
+	STATE_TGT_WAIT_CONN,
 	STATE_TGT_DATA_IN,
 	STATE_TGT_RDMA,
 	STATE_TGT_ATOMIC_DATA_IN,
@@ -179,6 +180,7 @@ enum {
 enum {
 	STATE_INIT_START,
 	STATE_INIT_WAIT_CONN,
+	STATE_INIT_SEND_REQ,
 	STATE_INIT_SEND_ERROR,
 	STATE_INIT_WAIT_COMP,
 	STATE_INIT_HANDLE_COMP,
