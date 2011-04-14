@@ -3,6 +3,8 @@
   <subtest>
     <desc>Test detection of EQ overflow at initiator</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq eq_count="4">
           <ptl_pt>
@@ -36,12 +38,16 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+	  </ptl_ni>
     </ptl>
   </subtest>
   <barrier/>
   <subtest>
     <desc>Test detection of EQ overflow at target</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="MATCH LOGICAL">
         <ptl_eq eq_count="2">
           <ptl_pt>
@@ -78,6 +84,8 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+	  </ptl_ni>
     </ptl>
   </subtest>
 </test>

@@ -3,6 +3,8 @@
  <subtest>
   <desc>Test events with put to generate PTL_EVENT_PT_DISABLED</desc>
     <ptl>
+	  <ptl_ni>
+	  <ompi_rt>
       <ptl_ni ni_opt="NO_MATCH LOGICAL">
         <ptl_eq>
           <ptl_pt pt_opt="FLOW">
@@ -41,6 +43,8 @@
           </ptl_pt>
         </ptl_eq>
       </ptl_ni>
+	  </ompi_rt>
+	  </ptl_ni>
     </ptl>
   </subtest>
 </test>
