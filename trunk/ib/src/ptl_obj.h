@@ -10,7 +10,6 @@ struct ni;
 enum pool_type {
 	POOL_NONE,
 	POOL_NI,
-	POOL_PT,
 	POOL_MR,
 	POOL_LE,
 	POOL_ME,

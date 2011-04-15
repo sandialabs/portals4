@@ -66,6 +66,8 @@ static void make_ct_comm_event(xt_t *xt)
 	int bytes = le->options & PTL_LE_EVENT_CT_BYTES;
 
 	make_ct_event(le->ct, xt->ni_fail, xt->mlength, bytes);
+
+	xt->event_mask &= ~XT_CT_COMM_EVENT;
 }
 
 /*
@@ -196,14 +198,14 @@ static int tgt_start(xt_t *xt)
 	}
 
 	/* Serialize between progress and API */
-	pthread_spin_lock(&xt->pt->obj.obj_lock);
+	pthread_spin_lock(&xt->pt->lock);
 	if (!xt->pt->enabled || xt->pt->disable) {
-		pthread_spin_unlock(&xt->pt->obj.obj_lock);
+		pthread_spin_unlock(&xt->pt->lock);
 		xt->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 	xt->pt->num_xt_active++;
-	pthread_spin_unlock(&xt->pt->obj.obj_lock);
+	pthread_spin_unlock(&xt->pt->lock);
 
 	return STATE_TGT_GET_MATCH;
 }
@@ -283,9 +285,9 @@ static int tgt_get_match(xt_t *xt)
 		if (list_empty(&xt->pt->priority_list) &&
 		    list_empty(&xt->pt->overflow_list)) {
 			WARN();
-			pthread_spin_lock(&xt->pt->obj.obj_lock);
+			pthread_spin_lock(&xt->pt->lock);
 			xt->pt->disable |= PT_AUTO_DISABLE;
-			pthread_spin_unlock(&xt->pt->obj.obj_lock);
+			pthread_spin_unlock(&xt->pt->lock);
 			xt->ni_fail = PTL_NI_FLOW_CTRL;
 			xt->le = NULL;
 			return STATE_TGT_DROP;
@@ -1208,9 +1210,6 @@ static int tgt_send_ack(xt_t *xt)
 	buf_t *buf;
 	hdr_t *hdr;
 
-if (!xt->conn)
-printf("EEEEE in tgt_send_ack with no conn!!, xt->event_mask = %x\n", xt->event_mask);
-
 	xt->event_mask &= ~XT_ACK_EVENT;
 
 	err = buf_alloc(ni, &buf);
@@ -1247,8 +1246,6 @@ printf("EEEEE in tgt_send_ack with no conn!!, xt->event_mask = %x\n", xt->event_
 	}
 
 	buf->length = sizeof(*hdr);
-
-	if (debug) buf_dump(buf);
 
 	err = send_message(buf);
 	if (err) {
@@ -1315,30 +1312,28 @@ static int tgt_cleanup(xt_t *xt)
 		xt->indir_sge = NULL;
 	}
 
-	/* tgt must release RDMA acquired resources */
 	if (xt->rdma_buf) {
 		buf_put(xt->rdma_buf);
 		xt->rdma_buf = NULL;
 	}
 
-	/* tgt responsible to cleanup all received buffers */
 	if (xt->recv_buf) {
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
 	}
 
-	pthread_spin_lock(&xt->pt->obj.obj_lock);
+	pthread_spin_lock(&xt->pt->lock);
 	xt->pt->num_xt_active--;
 	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
 		xt->pt->enabled = 0;
 		xt->pt->disable &= ~PT_AUTO_DISABLE;
-		pthread_spin_unlock(&xt->pt->obj.obj_lock);
+		pthread_spin_unlock(&xt->pt->lock);
 		if (make_target_event(xt, xt->pt->eq,
 				      PTL_EVENT_PT_DISABLED, NULL))
 			WARN();
 	
 	} else
-		pthread_spin_unlock(&xt->pt->obj.obj_lock);
+		pthread_spin_unlock(&xt->pt->lock);
 
 	xt_put(xt);
 	return STATE_TGT_DONE;
