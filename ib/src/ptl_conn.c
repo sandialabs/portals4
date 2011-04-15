@@ -284,14 +284,13 @@ void flush_pending_xi_xt(conn_t *conn)
 
 /*
  * process RC connection request event
- *	only used for physical NIs
  */
 static int process_connect_request(struct iface *iface, struct rdma_cm_event *event)
 {
 	const struct cm_priv_request *priv;
 	struct cm_priv_reject rej;
 	conn_t *conn;
-	int ret;
+	int ret = 0;
 	int c;
 	ni_t *ni;
 
@@ -332,6 +331,8 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 	}
 
 	/* From now on, it's only for connections to a physical NI. */
+	assert(ni->options & PTL_NI_PHYSICAL);
+
 	conn = get_conn(ni, &priv->src_id);
 
 	pthread_mutex_lock(&conn->mutex);
@@ -346,23 +347,19 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		break;
 
 	case CONN_STATE_CONNECTING:
-		assert(ni->options & PTL_NI_PHYSICAL);
 
-		if (ni->options & PTL_NI_PHYSICAL) {
-			/* we received a connection request but we are already connecting
-			 * - accept connection from higher id
-			 * - reject connection from lower id
-			 * - accept connection from self, but cleanup
-			 */
-			c = compare_id(&priv->src_id, &ni->id);
-			if (c > 0) {
-				ret = accept_connection_request(ni, conn, event);
-			} else if (c < 0) {
-				ret = rdma_reject (event->id, NULL, 0);
-			} else {
-				ret = accept_connection_self(ni, conn, event);
-			}
-		}
+		/* we received a connection request but we are already connecting
+		 * - accept connection from higher id
+		 * - reject connection from lower id
+		 * - accept connection from self, but cleanup
+		 */
+		c = compare_id(&priv->src_id, &ni->id);
+		if (c > 0)
+			ret = accept_connection_request(ni, conn, event);
+		else if (c < 0)
+			ret = rdma_reject (event->id, NULL, 0);
+		else
+			ret = accept_connection_self(ni, conn, event);
 		break;
 
 	case CONN_STATE_DISCONNECTED:

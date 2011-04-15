@@ -258,62 +258,73 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 {
 	int err;
 	gbl_t *gbl;
-	ni_t *ni;
-	struct timeval time;
+	ni_t *ni = NULL;
+	eq_t **eq = NULL;
 	struct timespec expire;
-	eq_t *eq[size];
-	int i = 0;
+	int i;
+	int j;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
 
-	/* First try with just spinning */
+	if (size == 0) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto done;
+	}
+
+	eq = malloc(size*sizeof(*eq));
+	if (!eq) {
+		WARN();
+		err = PTL_NO_SPACE;
+		goto done;
+	}
+
+	/*
+	 * convert handles to pointers
+	 * check that all handles are OK and that
+	 * they all belong to the same NI
+	 */
 	for (i = 0; i < size; i++) {
 		err = eq_get(eq_handles[i], &eq[i]);
-		if (unlikely(err) || !eq[i]) {
-			int j;
-
-			for (j=0; j < i; j++)
-				eq_put(eq[j]);
+		if (unlikely(err || !eq[i])) {
+			WARN();
 			err = PTL_ARG_INVALID;
-			goto done;
+			goto done2;
 		}
 
-		err = get_event(eq[i], event);
-		if (err == PTL_OK) {
-			int j;
-
-			*which = i;
-			for (j=0; j <= i; j++)
-				eq_put(eq[j]);
-			goto done;
-		}
+		if (i == 0)
+			ni = to_ni(eq[0]);
+		else
+			if (to_ni(eq[i]) != ni) {
+				WARN();
+				eq_put(eq[i]);
+				err = PTL_ARG_INVALID;
+				goto done2;
+			}
 	}
-
-	ni = to_ni(eq[0]);
 
 	if (timeout != PTL_TIME_FOREVER) {
-		long usec;
-
-		gettimeofday(&time, NULL);
-		usec = time.tv_usec + (timeout % 1000) * 1000;
-		expire.tv_sec = time.tv_sec + usec/1000000;
-		expire.tv_nsec = (usec % 1000000) * 1000;
+		clock_gettime(CLOCK_REALTIME, &expire);
+		expire.tv_nsec += 1000000UL * timeout;
+		expire.tv_sec += expire.tv_nsec/1000000000UL;
+		expire.tv_nsec = expire.tv_nsec % 1000000000UL;
 	}
 
-	/* Serialize for blocking, note all EQ are from same NI */
 	pthread_mutex_lock(&ni->eq_wait_mutex);
 	err = 0;
 	while (!err) {
-		for (i = 0; i < size; i++) {
-			if (eq[i]->interrupt) {
+		for (j = 0; j < size; j++) {
+			if (eq[j]->interrupt) {
 				pthread_mutex_unlock(&ni->eq_wait_mutex);
 				err = PTL_INTERRUPTED;
 				goto done2;
 			}
-			err = get_event(eq[i], event);
+
+			err = get_event(eq[j], event);
 			if (err != PTL_EQ_EMPTY) {
+				*which = j;
 				pthread_mutex_unlock(&ni->eq_wait_mutex);
 				goto done2;
 			}
@@ -332,10 +343,13 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	err = PTL_EQ_EMPTY;
 
 done2:
-	for (i = 0; i < size; i++)
-		eq_put(eq[i]);
+	for (j = 0; j < i; j++)
+		eq_put(eq[j]);
 
 done:
+	if (eq)
+		free(eq);
+
 	gbl_put(gbl);
 	return err;
 }

@@ -1,0 +1,6 @@
+Informal list of known issues/bugs:
+
+#	open		closed		Description
+----	----------	----------	---------------------------------------------------
+1000	2011/04/14	open		PtlPTDisable busywaits, should use a cond variable
+1001	2011/04/14	2011/04/14	pt_h doesn't need to contain an object, fixed.

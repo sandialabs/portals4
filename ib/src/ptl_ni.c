@@ -635,19 +635,8 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		goto err1;
 	}
 
-	if (options & PTL_NI_LOGICAL) {
-		/* We must have a desired mapping, either from that init, or from
-		 * a previous one. */
-		if ((!desired_mapping && !iface->actual_mapping) ||
-			(desired_mapping && map_size == 0)) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
-		if (map_size &&
-			iface->map_size &&
-			map_size != iface->map_size) {
+	if (options & PTL_NI_LOGICAL && !iface->actual_mapping) {
+		if (!desired_mapping || map_size == 0) {
 			WARN();
 			err = PTL_ARG_INVALID;
 			goto err1;
@@ -693,8 +682,6 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			goto err3;
 		}
 	} else {
-		ni->id.rank = PTL_RANK_ANY;
-
 		/* currently we must always create a physical NI first
 		 * to establish the PID */
 		if (iface->id.phys.pid == PTL_PID_ANY) {
@@ -840,7 +827,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	}
 
 	/* Create the rank table. */
-	if (ni->options & PTL_NI_LOGICAL) {
+	if (options & PTL_NI_LOGICAL) {
 		if (!iface->actual_mapping) {
 			/* Don't have one yet. Allocate and fill-up now. */
 			const int size = map_size * sizeof(ptl_process_t);
@@ -854,22 +841,14 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			}
 
 			memcpy(iface->actual_mapping, desired_mapping, size);
-
-		} else {
-			/* Already have one. Ignore the given parameter and use
-			 * the existing mapping. */
-			desired_mapping = iface->actual_mapping;
-			map_size = iface->map_size;
 		}
 
 		/* lookup our nid/pid to determine rank */
-		for (i = 0; i < map_size; i++) {
-			if (debug)
-				printf("compare mapping[%d], %x = %x, %x = %x\n", i,
-				desired_mapping[i].phys.nid, iface->id.phys.nid,
-				desired_mapping[i].phys.pid, iface->id.phys.pid);
-			if ((desired_mapping[i].phys.nid == iface->id.phys.nid) &&
-			    (desired_mapping[i].phys.pid == iface->id.phys.pid)) {
+		ni->id.rank = PTL_RANK_ANY;
+
+		for (i = 0; i < iface->map_size; i++) {
+			if ((iface->actual_mapping[i].phys.nid == iface->id.phys.nid) &&
+			    (iface->actual_mapping[i].phys.pid == iface->id.phys.pid)) {
 				ni->id.rank = i;
 				ptl_test_rank = i;
 			}
@@ -886,13 +865,11 @@ int PtlNIInit(ptl_interface_t ifacenum,
 			printf("found rank = %d\n", ni->id.rank);
 
 		/* return mapping to caller. */
-		if (actual_mapping) {
-			const int size = map_size * sizeof(ptl_process_t);
+		if (actual_mapping)
+			memcpy(actual_mapping, iface->actual_mapping,
+			       map_size*sizeof(ptl_process_t));
 
-			memcpy(actual_mapping, desired_mapping, size);
-		}
-
-		err = create_tables(ni, map_size, desired_mapping);
+		err = create_tables(ni, iface->map_size, iface->actual_mapping);
 		if (err) {
 			WARN();
 			goto err3;

@@ -265,99 +265,104 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 {
 	int err;
 	gbl_t *gbl;
-	ni_t *ni;
-	struct timeval time;
+	ni_t *ni = NULL;
+	ct_t **ct = NULL;
 	struct timespec expire;
-	ct_t *ct[size];
-	int i = 0;
+	int i;
+	int j;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
 
-	/* Check try with just spinning */
-	for (i = 0; i < size; i++) {
-		err = ct_get(ct_handles[i], &ct[i]);
-		if (unlikely(err) || !ct[i]) {
-			int j;
-
-			for (j = 0; j < i; j++)
-				ct_put(ct[j]);
-			err = PTL_ARG_INVALID;
-			goto done;
-		}
-
-
-		pthread_spin_lock(&ct[i]->obj.obj_lock);
-		if ((ct[i]->event.success +
-			ct[i]->event.failure) >= tests[i]) {
-			int j;
-			*event = ct[i]->event;
-			*which = i;
-			pthread_spin_unlock(&ct[i]->obj.obj_lock);
-
-			for (j = 0; j <= i; j++)
-				ct_put(ct[j]);
-
-			goto done;
-		}
-		pthread_spin_unlock(&ct[i]->obj.obj_lock);
+	if (size == 0) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto done;
 	}
 
+	ct = malloc(size*sizeof(*ct));
+	if (!ct) {
+		WARN();
+		err = PTL_NO_SPACE;
+		goto done;
+	}
 
-	/* Conditionally block until interrupted test succeeds for a CT */
-	ni = to_ni(ct[0]);
+	/*
+	 * convert handles to pointers
+	 * check that all handles are OK and that
+	 * they all belong to the same NI
+	 */
+	for (i = 0; i < size; i++) {
+		err = ct_get(ct_handles[i], &ct[i]);
+		if (unlikely(err || !ct[i])) {
+			WARN();
+			err = PTL_ARG_INVALID;
+			goto done2;
+		}
+
+		if (i == 0)
+			ni = to_ni(ct[0]);
+		else
+			if (to_ni(ct[i]) != ni) {
+				WARN();
+				ct_put(ct[i]);
+				err = PTL_ARG_INVALID;
+				goto done2;
+			}
+	}
 
 	if (timeout != PTL_TIME_FOREVER) {
-		long usec;
-
-		gettimeofday(&time, NULL);
-		usec = time.tv_usec + (timeout % 1000) * 1000;
-		expire.tv_sec = time.tv_sec + usec/1000000;
-		expire.tv_nsec = (usec % 1000000) * 1000;
+		clock_gettime(CLOCK_REALTIME, &expire);
+		expire.tv_nsec += 1000000UL * timeout;
+		expire.tv_sec += expire.tv_nsec/1000000000UL;
+		expire.tv_nsec = expire.tv_nsec % 1000000000UL;
 	}
 
 	pthread_mutex_lock(&ni->ct_wait_mutex);
 	err = 0;
-	while (!err) {
-		for (i = 0; i < size; i++) {
-			pthread_spin_lock(&ct[i]->obj.obj_lock);
-			if (ct[i]->interrupt) {
-				err = PTL_INTERRUPTED;
-				pthread_spin_unlock(&ct[i]->obj.obj_lock);
-				pthread_mutex_unlock(&ni->ct_wait_mutex);
-				goto done2;
-			}
-		
-			if ((ct[i]->event.success +
-				ct[i]->event.failure) >= tests[i]) {
-				*event = ct[i]->event;
-				*which = i;
-				pthread_spin_unlock(&ct[i]->obj.obj_lock);
-				pthread_mutex_unlock(&ni->ct_wait_mutex);
-				goto done2;
-			}
-			pthread_spin_unlock(&ct[i]->obj.obj_lock);
-		}
+        while (!err) {
+                for (j = 0; j < size; j++) {
+                        pthread_spin_lock(&ct[j]->obj.obj_lock);
+                        if (ct[j]->interrupt) {
+                                err = PTL_INTERRUPTED;
+                                pthread_spin_unlock(&ct[j]->obj.obj_lock);
+                                pthread_mutex_unlock(&ni->ct_wait_mutex);
+                                goto done2;
+                        }
 
-		ni->ct_waiting++;
-		if (timeout == PTL_TIME_FOREVER)
-			pthread_cond_wait(&ni->ct_wait_cond,
-				&ni->ct_wait_mutex);
-		else
-			err = pthread_cond_timedwait(&ni->ct_wait_cond,
-				&ni->ct_wait_mutex, &expire);
-		ni->ct_waiting--;
-	}
+                        if ((ct[j]->event.success +
+                                ct[j]->event.failure) >= tests[j]) {
+                                *event = ct[j]->event;
+                                *which = j;
+                                pthread_spin_unlock(&ct[j]->obj.obj_lock);
+                                pthread_mutex_unlock(&ni->ct_wait_mutex);
+                                goto done2;
+                        }
+                        pthread_spin_unlock(&ct[j]->obj.obj_lock);
+                }
+
+                ni->ct_waiting++;
+                if (timeout == PTL_TIME_FOREVER)
+                        pthread_cond_wait(&ni->ct_wait_cond,
+                                &ni->ct_wait_mutex);
+                else
+                        err = pthread_cond_timedwait(&ni->ct_wait_cond,
+                                &ni->ct_wait_mutex, &expire);
+                ni->ct_waiting--;
+        }
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	err = PTL_CT_NONE_REACHED;
 
 done2:
-	for (i = 0; i < size; i++)
-		ct_put(ct[i]);
+	for (j = 0; j < i; j++)
+		ct_put(ct[j]);
 
 done:
+	if (ct)
+		free(ct);
+
 	gbl_put(gbl);
 	return err;
 }
