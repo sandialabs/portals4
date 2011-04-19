@@ -1570,6 +1570,14 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_trig_ct_set(info);
 				errs += walk_tree(info, node->children);
 				break;
+			case NODE_PTL_START_BUNDLE:
+				errs = test_ptl_start_bundle(info);
+				errs += walk_tree(info, node->children);
+				break;
+			case NODE_PTL_END_BUNDLE:
+				errs = test_ptl_end_bundle(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL_HANDLE_IS_EQUAL:
 				errs = test_ptl_handle_is_eq(info);
 				errs += walk_tree(info, node->children);

@@ -503,6 +503,16 @@ int test_ptl_trig_ct_set(struct node_info *info)
 					      info->trig_ct_handle, info->threshold);
 }
 
+int test_ptl_start_bundle(struct node_info *info)
+{
+	return info->ret != PtlStartBundle(info->ni_handle);
+}
+
+int test_ptl_end_bundle(struct node_info *info)
+{
+	return info->ret != PtlEndBundle(info->ni_handle);
+}
+
 int test_ptl_set_jid(struct node_info *info)
 {
 	return info->ret != PtlSetJid(info->ni_handle, info->jid);

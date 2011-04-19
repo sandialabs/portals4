@@ -312,7 +312,9 @@ typedef enum {
 	PTL_LONG,
 	PTL_ULONG,
 	PTL_FLOAT,
+	PTL_FLOAT_COMPLEX,
 	PTL_DOUBLE,
+	PTL_DOUBLE_COMPLEX,
 	PTL_DATATYPE_LAST,
 } ptl_datatype_t;
 
