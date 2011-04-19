@@ -810,7 +810,7 @@ static int bxor_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
-atom_op_t atom_op[_PTL_OP_LAST][_PTL_DATATYPE_LAST] = {
+atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 	[PTL_MIN]	= {
 		[PTL_CHAR]	= min_sc,
 		[PTL_UCHAR]	= min_uc,

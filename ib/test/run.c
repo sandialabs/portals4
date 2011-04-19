@@ -520,9 +520,6 @@ int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_DESIRED_MAX_ENTRIES:
 			info->desired.max_entries = get_number(info, val);
 			break;
-		case ATTR_DESIRED_MAX_OVER:
-			info->desired.max_overflow_entries = get_number(info, val);
-			break;
 		case ATTR_DESIRED_MAX_MDS:
 			info->desired.max_mds = get_number(info, val);
 			break;
@@ -923,11 +920,6 @@ int check_attr(struct node_info *info, xmlNode *node)
 				return 1;
 			}
 			break;
-		case ATTR_ACTUAL_MAX_OVER:
-			if(info->actual.max_overflow_entries != get_number(info, val)) {
-				return 1;
-			}
-			break;
 		case ATTR_ACTUAL_MAX_MDS:
 			if(info->actual.max_mds != get_number(info, val)) {
 				return 1;
@@ -1191,7 +1183,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			if (!e) {
 				errs = 1;
 				printf("invalid node: %s\n", node->name);
-				goto done;
+				goto next;
 			}
 
 			if (debug) printf("rank %d: start node = %s\n", ptl_test_rank, e->name);
@@ -1583,6 +1575,8 @@ pop:
 done:
 			tot_errs += errs;
 			if (debug) printf("rank %d: end node = %s, errs = %d\n", ptl_test_rank, e->name, errs);
+next:
+			;
 		}
 	}
 
@@ -1601,7 +1595,6 @@ void set_default_info(struct node_info *info)
 	info->rank				= PTL_RANK_ANY;
 	info->ni_opt				= PTL_NI_MATCHING | PTL_NI_PHYSICAL;
 	info->desired.max_entries		= 10;
-	info->desired.max_overflow_entries	= 10;
 	info->desired.max_mds			= 10;
 	info->desired.max_cts			= 10;
 	info->desired.max_eqs			= 10;

@@ -24,7 +24,7 @@ unsigned int get_ni_opt(char *orig_val)
 		} else if (!strcmp("PHYSICAL", tok)) {
 			ni_opt |= PTL_NI_PHYSICAL;
 		} else if (!strcmp("INVALID", tok)) {
-			ni_opt = ~_PTL_NI_INIT_OPTIONS;
+			ni_opt = ~PTL_NI_INIT_OPTIONS;
 		} else {
 			ni_opt = strtol(tok, NULL, 0);
 			break;
@@ -53,7 +53,7 @@ unsigned int get_pt_opt(char *orig_val)
 		} else if (!strcmp("FLOW", tok)) {
 			pt_opt |= PTL_PT_FLOWCTRL;
 		} else if (!strcmp("INVALID", tok)) {
-			pt_opt = ~_PTL_PT_ALLOC_OPTIONS;
+			pt_opt = ~PTL_PT_ALLOC_OPTIONS;
 		} else {
 			pt_opt = strtol(tok, NULL, 0);
 			break;
@@ -91,10 +91,8 @@ unsigned int get_md_opt(char *orig_val)
 			md_opt |= PTL_MD_EVENT_CT_BYTES;
 		} else if (!strcmp("UNORDERED", tok)) {
 			md_opt |= PTL_MD_UNORDERED;
-		} else if (!strcmp("REMOTE_FAILURE_DISABLE", tok)) {
-			md_opt |= PTL_MD_REMOTE_FAILURE_DISABLE;
 		} else if (!strcmp("INVALID", tok)) {
-			md_opt = ~_PTL_MD_BIND_OPTIONS;
+			md_opt = ~PTL_MD_BIND_OPTIONS;
 		} else {
 			md_opt = strtol(tok, NULL, 0);
 			break;
@@ -147,7 +145,7 @@ unsigned int get_le_opt(char *orig_val)
 		} else if (!strcmp("AUTH_USE_JID", tok)) {
 			le_opt |= PTL_LE_AUTH_USE_JID;
 		} else if (!strcmp("INVALID", tok)) {
-			le_opt = ~_PTL_LE_APPEND_OPTIONS;
+			le_opt = ~PTL_LE_APPEND_OPTIONS;
 		} else {
 			le_opt = strtol(tok, NULL, 0);
 			break;
@@ -207,7 +205,7 @@ unsigned int get_me_opt(char *orig_val)
 		} else if (!strcmp("MAY_ALIGN", tok)) {
 			me_opt |= PTL_ME_MAY_ALIGN;
 		} else if (!strcmp("INVALID", tok)) {
-			me_opt = ~_PTL_ME_APPEND_OPTIONS;
+			me_opt = ~PTL_ME_APPEND_OPTIONS;
 		} else {
 			me_opt = strtol(tok, NULL, 0);
 			break;

@@ -44,7 +44,7 @@ typedef struct ni {
 	unsigned int		options;
 	unsigned int		ni_type;
 
-	ptl_sr_value_t		status[_PTL_SR_LAST];
+	ptl_sr_value_t		status[PTL_SR_LAST];
 
 	ptl_size_t		num_recv_pkts;
 	ptl_size_t		num_recv_bytes;
@@ -209,7 +209,7 @@ static inline ni_t *to_ni(void *obj)
 
 static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
 {
-	if (index < _PTL_STATUS_LAST) {
+	if (index < PTL_STATUS_LAST) {
 		pthread_spin_lock(&ni->obj.obj_lock);
 		ni->status[index]++;
 		pthread_spin_unlock(&ni->obj.obj_lock);

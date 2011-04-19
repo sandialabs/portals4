@@ -133,7 +133,7 @@ typedef union datatype {
 } datatype_t;
 
 typedef int (*atom_op_t)(void *src, void *dst, ptl_size_t length);
-extern atom_op_t atom_op[_PTL_OP_LAST][_PTL_DATATYPE_LAST];
+extern atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST];
 
 enum {
 	STATE_RECV_EVENT_WAIT,

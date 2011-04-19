@@ -8,12 +8,8 @@
 #include <stdint.h>
 
 /*
- * All symbold beginning with underscore are private to the implementation
- * for the convenience of the implementation developers and can be ignored
- * by applications.
- *
  * All references to 3.xx.y are to sections of "Portals 4.0 Message
- * Passing API". This version of portals4.h corresponds to Draft 11/11/2010
+ * Passing API". This version of portals4.h corresponds to Draft 4/4/2011
  * of that document.
  */
 
@@ -35,7 +31,6 @@ typedef uint64_t		ptl_size_t;		/* 3.2.1 */
 
 typedef uint64_t		ptl_handle_any_t;	/* 3.2.2 */
 typedef ptl_handle_any_t	ptl_handle_ni_t;
-typedef ptl_handle_any_t	ptl_handle_pt_t;
 typedef ptl_handle_any_t	ptl_handle_le_t;
 typedef ptl_handle_any_t	ptl_handle_me_t;
 typedef ptl_handle_any_t	ptl_handle_md_t;
@@ -81,7 +76,7 @@ enum {
 typedef enum {						/* 3.2.7 */
 	PTL_SR_DROP_COUNT,
 	PTL_SR_PERMISSIONS_VIOLATIONS,
-	_PTL_SR_LAST,
+	PTL_SR_LAST,
 } ptl_sr_index_t;
 
 typedef int			ptl_sr_value_t;
@@ -90,7 +85,7 @@ typedef uint64_t		ptl_hdr_data_t;
 typedef unsigned int		ptl_time_t;
 
 enum {							/* 3.13, 3.14 */
-	PTL_TIME_FOREVER	= 0xffffffff
+	PTL_TIME_FOREVER	= 0xffffffffU,
 };
 
 enum ptl_retvals {					/* 3.3 */
@@ -110,35 +105,47 @@ enum ptl_retvals {					/* 3.3 */
 	PTL_PT_EQ_NEEDED,
 	PTL_PT_IN_USE,
 	PTL_SIZE_INVALID,
-	_PTL_STATUS_LAST,	/* keep me last */
+	PTL_STATUS_LAST,	/* keep me last */
 };
 
 typedef struct {					/* 3.5.1 */
 	int			max_entries;
-	int			max_overflow_entries;
+	int			max_unexpected_headers;
 	int			max_mds;
 	int			max_cts;
 	int			max_eqs;
 	int			max_pt_index;
 	int			max_iovecs;
 	int			max_list_size;
+	int			max_triggered_ops;
 	ptl_size_t		max_msg_size;
 	ptl_size_t		max_atomic_size;
-	ptl_size_t		max_unordered_size;
+	ptl_size_t		max_fetch_atomic_size;
+	ptl_size_t		max_waw_ordered_size;
+	ptl_size_t		max_war_ordered_size;
+	ptl_size_t		max_volatile_size;
+	unsigned int		features;
 } ptl_ni_limits_t;
+
+enum {
+	PTL_LE_BIND_INACCESSIBLE	= 1,
+	PTL_ME_BIND_INACCESSIBLE	= 1<<1,
+	PTL_FEATURES			= (1<<2) - 1,
+
+};
 
 enum {							/* 3.5.2 */
 	PTL_NI_MATCHING			= 1,
 	PTL_NI_NO_MATCHING		= 1<<1,
 	PTL_NI_LOGICAL			= 1<<2,
 	PTL_NI_PHYSICAL			= 1<<3,
-	_PTL_NI_INIT_OPTIONS		= (1<<4) - 1,
+	PTL_NI_INIT_OPTIONS		= (1<<4) - 1,
 };
 
 enum {							/* 3.6.1 */
 	PTL_PT_ONLY_USE_ONCE		= 1,
 	PTL_PT_FLOWCTRL			= 1<<1,
-	_PTL_PT_ALLOC_OPTIONS		= (1<<2) - 1,
+	PTL_PT_ALLOC_OPTIONS		= (1<<2) - 1,
 };
 
 typedef union {						/* 3.8.1 */
@@ -165,8 +172,8 @@ enum {
 	PTL_MD_EVENT_CT_ACK		= 1<<5,
 	PTL_MD_EVENT_CT_BYTES		= 1<<6,
 	PTL_MD_UNORDERED		= 1<<7,
-	PTL_MD_REMOTE_FAILURE_DISABLE	= 1<<8,
-	_PTL_MD_BIND_OPTIONS		= (1<<9) - 1,
+	PTL_MD_VOLATILE			= 1<<8,
+	PTL_MD_BIND_OPTIONS		= (1<<9) - 1,
 };
 
 typedef struct {					/* 3.10.2 */
@@ -201,23 +208,28 @@ enum {
 	PTL_LE_EVENT_CT_OVERFLOW	= 1<<11,
 	PTL_LE_EVENT_CT_BYTES		= 1<<12,
 	PTL_LE_AUTH_USE_JID		= 1<<13,
-	_PTL_LE_APPEND_OPTIONS		= (1<<14) - 1,
+	PTL_LE_APPEND_OPTIONS		= (1<<14) - 1,
 };
 
 typedef enum {						/* 3.11.2 */
 	PTL_PRIORITY_LIST,
 	PTL_OVERFLOW,
-	PTL_PROBE_ONLY,
-	_PTL_LIST_LAST,
+	PTL_LIST_LAST,
 } ptl_list_t;
+
+typedef enum {						/* 3.11.4 */
+	PTL_SEARCH_ONLY,
+	PTL_SEARCH_DELETE,
+	PTL_SEARCH_LAST,
+} ptl_search_op_t;
 
 typedef struct {					/* 3.12.1 */
 	void			*start;
 	ptl_size_t		length;
 	ptl_handle_ct_t		ct_handle;
+	ptl_size_t		min_free;
 	ptl_ac_id_t		ac_id;
 	unsigned int		options;
-	ptl_size_t		min_free;
 	ptl_process_t		match_id;
 	ptl_match_bits_t	match_bits;
 	ptl_match_bits_t	ignore_bits;
@@ -240,7 +252,7 @@ enum {
 	PTL_ME_MANAGE_LOCAL		= 1<<14,
 	PTL_ME_NO_TRUNCATE		= 1<<15,
 	PTL_ME_MAY_ALIGN		= 1<<16,
-	_PTL_ME_APPEND_OPTIONS		= (1<<17) - 1,
+	PTL_ME_APPEND_OPTIONS		= (1<<17) - 1,
 };
 
 typedef enum {						/* 3.13.1 */
@@ -255,8 +267,8 @@ typedef enum {						/* 3.13.1 */
 	PTL_EVENT_PT_DISABLED,
 	PTL_EVENT_AUTO_UNLINK,
 	PTL_EVENT_AUTO_FREE,
-	PTL_EVENT_PROBE,
-	_PTL_EVENT_KIND_LAST,
+	PTL_EVENT_SEARCH,
+	PTL_EVENT_KIND_LAST,
 } ptl_event_kind_t;
 
 typedef enum {						/* 3.13.3 */
@@ -265,7 +277,7 @@ typedef enum {						/* 3.13.3 */
 	PTL_NI_DROPPED,
 	PTL_NI_FLOW_CTRL,
 	PTL_NI_PERM_VIOLATION,
-	_PTL_NI_FAIL_LAST,
+	PTL_NI_FAIL_LAST,
 } ptl_ni_fail_t;
 
 typedef enum {						/* 3.15.4 */
@@ -281,13 +293,13 @@ typedef enum {						/* 3.15.4 */
 	PTL_BXOR,
 	PTL_SWAP,
 	PTL_CSWAP,
+	PTL_MSWAP,
 	PTL_CSWAP_NE,
 	PTL_CSWAP_LE,
 	PTL_CSWAP_LT,
 	PTL_CSWAP_GE,
 	PTL_CSWAP_GT,
-	PTL_MSWAP,
-	_PTL_OP_LAST
+	PTL_OP_LAST
 } ptl_op_t;
 
 typedef enum {
@@ -301,7 +313,7 @@ typedef enum {
 	PTL_ULONG,
 	PTL_FLOAT,
 	PTL_DOUBLE,
-	_PTL_DATATYPE_LAST,
+	PTL_DATATYPE_LAST,
 } ptl_datatype_t;
 
 typedef struct {					/* 3.13.4 */
@@ -332,14 +344,14 @@ typedef enum {						/* 3.15.1 */
 	PTL_NO_ACK_REQ,
 	PTL_CT_ACK_REQ,
 	PTL_OC_ACK_REQ,
-	_PTL_ACK_REQ_LAST,
+	PTL_ACK_REQ_LAST,
 } ptl_ack_req_t;
 
 /*---------------------------------------------------------------------------*
  * Function Prototypes
  *---------------------------------------------------------------------------*/
 
-int PtlInit();						/* 3.4.1 */
+int PtlInit(void);					/* 3.4.1 */
 
 void PtlFini(void);					/* 3.4.2 */
 
@@ -416,6 +428,13 @@ int PtlLEAppend(					/* 3.11.2 */
 int PtlLEUnlink(					/* 3.11.3 */
 	ptl_handle_le_t 	le_handle);
 
+int PtlLESearch(					/* 3.11.4 */
+	ptl_handle_ni_t		ni_handle,
+	ptl_pt_index_t		pt_index,
+	ptl_le_t		*le,
+	ptl_search_op_t		ptl_search_op,
+	void			*user_ptr);
+
 int PtlMEAppend(					/* 3.12.2 */
 	ptl_handle_ni_t		ni_handle,
 	ptl_pt_index_t		pt_index,
@@ -426,6 +445,13 @@ int PtlMEAppend(					/* 3.12.2 */
 
 int PtlMEUnlink(					/* 3.12.3 */
 	ptl_handle_me_t 	me_handle);
+
+int PtlMESearch(					/* 3.12.4 */
+	ptl_handle_ni_t		ni_handle,
+	ptl_pt_index_t		pt_index,
+	ptl_me_t		*me,
+	ptl_search_op_t		ptl_search_op,
+	void			*user_ptr);
 
 int PtlEQAlloc(						/* 3.13.5 */
 	ptl_handle_ni_t		ni_handle,
@@ -501,8 +527,8 @@ int PtlGet(						/* 3.15.3 */
 	ptl_process_t		target_id,
 	ptl_pt_index_t		pt_index,
 	ptl_match_bits_t	match_bits,
-	void			*user_ptr,
-	ptl_size_t		remote_offset);
+	ptl_size_t		remote_offset,
+	void			*user_ptr);
 
 int PtlAtomic(						/* 3.15.4 */
 	ptl_handle_md_t		md_handle,

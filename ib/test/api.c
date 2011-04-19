@@ -380,8 +380,7 @@ int test_ptl_get(struct node_info *info)
 {
 	return info->ret != PtlGet(info->md_handle, info->loc_offset,
 				   info->length, info->target_id, info->pt_index,
-				   info->match, info->user_ptr,
-				   info->rem_offset);
+				   info->match, info->rem_offset, info->user_ptr);
 }
 
 int test_ptl_atomic(struct node_info *info)

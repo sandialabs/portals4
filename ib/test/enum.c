@@ -70,7 +70,6 @@ int get_list(char *val)
 {
 	     if (!strcmp("PRIORITY", val))	return PTL_PRIORITY_LIST;
 	else if (!strcmp("OVERFLOW", val))	return PTL_OVERFLOW;
-	else if (!strcmp("PROBE", val))		return PTL_PROBE_ONLY;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
 	else					return strtol(val, NULL, 0);
 }
@@ -98,7 +97,7 @@ int get_event_type(char *val)
 	else if (!strcmp("PT_DISABLED", val))	return PTL_EVENT_PT_DISABLED;
 	else if (!strcmp("AUTO_UNLINK", val))	return PTL_EVENT_AUTO_UNLINK;
 	else if (!strcmp("AUTO_FREE", val))	return PTL_EVENT_AUTO_FREE;
-	else if (!strcmp("PROBE", val))		return PTL_EVENT_PROBE;
+	else if (!strcmp("SEARCH", val))	return PTL_EVENT_SEARCH;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
 	else					return strtol(val, NULL, 0);
 }
