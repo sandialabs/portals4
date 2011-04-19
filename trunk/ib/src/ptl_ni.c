@@ -117,7 +117,6 @@ static int create_tables(ni_t *ni, ptl_size_t map_size, ptl_process_t *actual_ma
 /* TODO finish this */
 static ptl_ni_limits_t default_ni_limits = {
 	.max_entries		= 123,
-	.max_overflow_entries	= 123,
 	.max_mds		= 123,
 	.max_cts		= 123,
 	.max_eqs		= 123,
@@ -615,7 +614,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	}
 	iface = &gbl->iface[ifacenum];
 
-	if (unlikely(options & ~_PTL_NI_INIT_OPTIONS)) {
+	if (unlikely(options & ~PTL_NI_INIT_OPTIONS)) {
 		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -1063,7 +1062,7 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(index >= _PTL_SR_LAST)) {
+	if (unlikely(index >= PTL_SR_LAST)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}

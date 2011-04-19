@@ -283,8 +283,7 @@ static int init_send_req(xi_t *xi)
 	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 
 	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
-	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)) &&
-	    (xi->put_md->options & PTL_MD_REMOTE_FAILURE_DISABLE))
+	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)))
 		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
 	else if (xi->event_mask) {
 		/* we need an ack and they are all the same */

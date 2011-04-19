@@ -117,7 +117,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 		return err;
 	}
 
-	if (unlikely(md_init->options & ~_PTL_MD_BIND_OPTIONS)) {
+	if (unlikely(md_init->options & ~PTL_MD_BIND_OPTIONS)) {
 		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;

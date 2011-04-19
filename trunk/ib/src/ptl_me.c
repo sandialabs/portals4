@@ -200,3 +200,40 @@ err1:
 	gbl_put(gbl);
 	return err;
 }
+
+/*
+ * PtlMESearch
+ * returns:
+ *	PTL_OK
+ *	PTL_ARG_INVALID
+ *	PTL_NO_INIT
+ */
+int PtlMESearch(
+	ptl_handle_ni_t		ni_handle,
+	ptl_pt_index_t		pt_index,
+	ptl_me_t		*me,
+	ptl_search_op_t		ptl_search_op,
+	void			*user_ptr)
+{
+	int err;
+	gbl_t *gbl;
+	ni_t *ni;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err))
+		return err;
+
+	err = ni_get(ni_handle, &ni);
+	if (unlikely(err))
+		goto err1;
+
+	/* TODO implement rest of PtlMESearch */
+
+	ni_put(ni);
+	gbl_put(gbl);
+	return PTL_OK;
+
+err1:
+	gbl_put(gbl);
+	return err;
+}

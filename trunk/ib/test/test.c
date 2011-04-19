@@ -11,7 +11,6 @@ int ptl_log_level;
 void dump_limits(ptl_ni_limits_t *limits)
 {
 	printf("max_entries		= %d\n", limits->max_entries);
-	printf("max_overflow_entries	= %d\n", limits->max_overflow_entries);
 	printf("max_mds			= %d\n", limits->max_mds);
 	printf("max_cts			= %d\n", limits->max_cts);
 	printf("max_eqs			= %d\n", limits->max_eqs);
@@ -20,7 +19,6 @@ void dump_limits(ptl_ni_limits_t *limits)
 	printf("max_list_size		= %d\n", limits->max_list_size);
 	printf("max_msg_size		= %" PRIu64 "\n", limits->max_msg_size);
 	printf("max_atomic_size		= %" PRIu64 "\n", limits->max_atomic_size);
-	printf("max_unordered_size	= %" PRIu64 "\n", limits->max_unordered_size);
 }
 
 void dump_event(ptl_event_t *event)
@@ -50,7 +48,6 @@ int test_time;
 int main(int argc, char *argv[])
 {
 	int			err;
-	ptl_jid_t		jid;
 	double			elapsed_time;
 	ptl_interface_t		iface;
 	unsigned int		ni_opt;
@@ -98,7 +95,6 @@ int main(int argc, char *argv[])
 	id.phys.nid			= PTL_NID_ANY;
 	id.phys.pid			= PTL_PID_ANY;
 	desired.max_entries		= 64;
-	desired.max_overflow_entries	= 64;
 	desired.max_mds			= 64;
 	desired.max_cts			= 64;
 	desired.max_eqs			= 64;
@@ -107,7 +103,6 @@ int main(int argc, char *argv[])
 	desired.max_list_size		= 64;
 	desired.max_msg_size		= 32768;
 	desired.max_atomic_size		= 64;
-	desired.max_unordered_size	= 64;
 
 	err = PtlNIInit(iface, ni_opt, PTL_PID_ANY, &desired, &actual,
 		      0, NULL, NULL, &ni_handle);
@@ -163,7 +158,7 @@ int main(int argc, char *argv[])
 	me.length	= 1024;
 	me.start	= malloc(me.length);
 	me.ct_handle	= PTL_CT_NONE;
-	me.ac_id.jid	= jid;
+	me.ac_id.jid	= 0;
 	me.ac_id.uid	= PTL_UID_ANY;
 	me.options	= PTL_ME_OP_PUT | PTL_ME_OP_GET;
 	me.min_free	= 0;
@@ -230,7 +225,7 @@ int main(int argc, char *argv[])
 		}
 	} else {
 		err = PtlGet(md_handle, local_offset, length, target_id,
-			     pt_index, match_bits, user_ptr, remote_offset);
+			     pt_index, match_bits, remote_offset, user_ptr);
 		if (err) {
 			printf("PtlGet failed, err = %d\n", err);
 			return 1;
@@ -270,7 +265,7 @@ int main(int argc, char *argv[])
 	} else {
 		for (i = 0; i < 400; i++) {
 			err = PtlGet(md_handle, local_offset, length, target_id,
-				     pt_index, match_bits, user_ptr, remote_offset);
+				     pt_index, match_bits, remote_offset, user_ptr);
 			if (err) {
 				printf("PtlGet failed, err = %d\n", err);
 				return 1;

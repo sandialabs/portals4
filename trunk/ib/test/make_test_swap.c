@@ -363,8 +363,8 @@ int main(int argc, char *argv[])
 		match_bits = match_bits << 32 | random();
 
 		do {
-			op = (random() % (_PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
-			type = random() % _PTL_DATATYPE_LAST;
+			op = (random() % (PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
+			type = random() % PTL_DATATYPE_LAST;
 		} while (op == PTL_MSWAP && type >= PTL_FLOAT);
 
 		din = get_data(type);

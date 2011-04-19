@@ -35,7 +35,7 @@ typedef union datatype {
 	double		d;
 } datatype_t;
 
-extern char *atom_op_name[_PTL_OP_LAST];
+extern char *atom_op_name[PTL_OP_LAST];
 
 typedef struct {
 	char *name;

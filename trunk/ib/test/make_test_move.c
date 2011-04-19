@@ -489,8 +489,8 @@ void get_random_param(param_t *p)
 
 	else if (p->ptl_op == OP_SWAP) {
 		do {
-			p->atom_op = (random() % (_PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
-			p->type = random() % _PTL_DATATYPE_LAST;
+			p->atom_op = (random() % (PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
+			p->type = random() % PTL_DATATYPE_LAST;
 		} while (p->atom_op == PTL_MSWAP && p->type >= PTL_FLOAT);
 	}
 

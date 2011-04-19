@@ -142,14 +142,14 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~_PTL_ME_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS))
 			return PTL_ARG_INVALID;
 	} else {
-		if (unlikely(le_init->options & ~_PTL_LE_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS))
 			return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_PROBE_ONLY))
+	if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW))
 		return PTL_ARG_INVALID;
 
 	return PTL_OK;
@@ -340,6 +340,43 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	le_unlink(le);
 
 	le_put(le);
+	gbl_put(gbl);
+	return PTL_OK;
+
+err1:
+	gbl_put(gbl);
+	return err;
+}
+
+/*
+ * PtlLESearch
+ * returns:
+ *	PTL_OK
+ *	PTL_ARG_INVALID
+ *	PTL_NO_INIT
+ */
+int PtlLESearch(					/* 3.11.4 */
+	ptl_handle_ni_t		ni_handle,
+	ptl_pt_index_t		pt_index,
+	ptl_le_t		*le,
+	ptl_search_op_t		ptl_search_op,
+	void			*user_ptr)
+{
+	int err;
+	gbl_t *gbl;
+	ni_t *ni;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err))
+		return err;
+
+	err = ni_get(ni_handle, &ni);
+	if (unlikely(err))
+		goto err1;
+
+	/* TODO implement rest of PtlLESearch */
+
+	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
 
