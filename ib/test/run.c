@@ -609,6 +609,9 @@ int get_attr(struct node_info *info, xmlNode *node)
 			info->le_data = get_datatype(info->type, val);
 			set_le_data++;
 			break;
+		case ATTR_SEARCH_OP:
+			info->search_op = get_search_op(val);
+			break;
 
 		/* me */
 		case ATTR_ME_START:
@@ -1413,6 +1416,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_le_unlink(info);
 				errs += walk_tree(info, node->children);
 				break;
+			case NODE_PTL_LE_SEARCH:
+				errs = test_ptl_le_search(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL_ME:
 				for (i = 0; i < info->count - 1; i++) {
 					errs += test_ptl_me_append(info);
@@ -1433,6 +1440,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				break;
 			case NODE_PTL_ME_UNLINK:
 				errs = test_ptl_me_unlink(info);
+				errs += walk_tree(info, node->children);
+				break;
+			case NODE_PTL_ME_SEARCH:
+				errs = test_ptl_me_search(info);
 				errs += walk_tree(info, node->children);
 				break;
 			case NODE_PTL_EQ:

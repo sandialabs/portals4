@@ -74,6 +74,14 @@ int get_list(char *val)
 	else					return strtol(val, NULL, 0);
 }
 
+int get_search_op(char *val)
+{
+	     if (!strcmp("ONLY", val))		return PTL_SEARCH_ONLY;
+	else if (!strcmp("DELETE", val))	return PTL_SEARCH_DELETE;
+	else if (!strcmp("INVALID", val))	return 0xffffffff;
+	else					return strtol(val, NULL, 0);
+}
+
 int get_ack_req(char *val)
 {
 	     if (!strcmp("ACK", val))		return PTL_ACK_REQ;

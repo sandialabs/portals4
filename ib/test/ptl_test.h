@@ -127,15 +127,16 @@ struct node_info {
 	datatype_t		md_data;
 
 	/*
-	 * le_append, le_release
+	 * le_append, le_unlink, le_search
 	 */
 	ptl_le_t		le;
 	ptl_handle_le_t		le_handle;
 	ptl_list_t		list;
 	datatype_t		le_data;
+	ptl_search_op_t		search_op;
 
 	/*
-	 * me_append, me_release
+	 * me_append, me_unlink, me_search
 	 */
 	ptl_me_t		me;
 	ptl_handle_me_t		me_handle;
@@ -214,6 +215,7 @@ int get_ret(char *val);
 int get_atom_op(char *val);
 int get_atom_type(char *val);
 int get_list(char *val);
+int get_search_op(char *val);
 int get_ack_req(char *val);
 int get_event_type(char *val);
 int get_ni_fail(char *val);

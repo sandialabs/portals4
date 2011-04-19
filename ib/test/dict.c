@@ -48,9 +48,11 @@ struct dict_init {
 	{"ptl_le",			TYPE_NODE,		NODE_PTL_LE},
 	{"ptl_le_append",		TYPE_NODE,		NODE_PTL_LE_APPEND},
 	{"ptl_le_unlink",		TYPE_NODE,		NODE_PTL_LE_UNLINK},
+	{"ptl_le_search",		TYPE_NODE,		NODE_PTL_LE_SEARCH},
 	{"ptl_me",			TYPE_NODE,		NODE_PTL_ME},
 	{"ptl_me_append",		TYPE_NODE,		NODE_PTL_ME_APPEND},
 	{"ptl_me_unlink",		TYPE_NODE,		NODE_PTL_ME_UNLINK},
+	{"ptl_me_search",		TYPE_NODE,		NODE_PTL_ME_SEARCH},
 	{"ptl_eq",			TYPE_NODE,		NODE_PTL_EQ},
 	{"ptl_eq_alloc",		TYPE_NODE,		NODE_PTL_EQ_ALLOC},
 	{"ptl_eq_free",			TYPE_NODE,		NODE_PTL_EQ_FREE},
@@ -77,6 +79,8 @@ struct dict_init {
 	{"ptl_trig_swap",		TYPE_NODE,		NODE_PTL_TRIG_SWAP},
 	{"ptl_trig_ct_inc",		TYPE_NODE,		NODE_PTL_TRIG_CT_INC},
 	{"ptl_trig_ct_set",		TYPE_NODE,		NODE_PTL_TRIG_CT_SET},
+	{"ptl_start_bundle",		TYPE_NODE,		NODE_PTL_START_BUNDLE},
+	{"ptl_end_bundle",		TYPE_NODE,		NODE_PTL_END_BUNDLE},
 	{"ptl_handle_is_equal",		TYPE_NODE,		NODE_PTL_HANDLE_IS_EQUAL},
 	{"ptl_set_jid",			TYPE_NODE,		NODE_PTL_SET_JID},
 
@@ -129,6 +133,7 @@ struct dict_init {
 	{"le_length",			TYPE_ATTR,		ATTR_LE_LENGTH},
 	{"le_opt",			TYPE_ATTR,		ATTR_LE_OPT},
 	{"le_data",			TYPE_ATTR,		ATTR_LE_DATA},
+	{"search_op",			TYPE_ATTR,		ATTR_SEARCH_OP},
 
 	{"me_start",			TYPE_ATTR,		ATTR_ME_START},
 	{"me_length",			TYPE_ATTR,		ATTR_ME_LENGTH},

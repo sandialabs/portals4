@@ -322,6 +322,18 @@ int test_ptl_le_unlink(struct node_info *info)
 	return info->ret != ret;
 }
 
+int test_ptl_le_search(struct node_info *info)
+{
+	int ret;
+
+	info->le.ct_handle = info->ct_handle;
+
+	ret = PtlLESearch(info->ni_handle, info->pt_index,
+			  &info->le, info->search_op, info->user_ptr);
+
+	return info->ret != ret;
+}
+
 int test_ptl_me_append(struct node_info *info)
 {
 	int ret;
@@ -362,6 +374,18 @@ int test_ptl_me_unlink(struct node_info *info)
 		}
 		info->next_me--;
 	}
+
+	return info->ret != ret;
+}
+
+int test_ptl_me_search(struct node_info *info)
+{
+	int ret;
+
+	info->me.ct_handle = info->ct_handle;
+
+	ret = PtlLESearch(info->ni_handle, info->pt_index,
+			  &info->me, info->search_op, info->user_ptr);
 
 	return info->ret != ret;
 }
