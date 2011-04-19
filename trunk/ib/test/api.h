@@ -67,9 +67,13 @@ int test_ptl_le_append(struct node_info *info);
 
 int test_ptl_le_unlink(struct node_info *info);
 
+int test_ptl_le_search(struct node_info *info);
+
 int test_ptl_me_append(struct node_info *info);
 
 int test_ptl_me_unlink(struct node_info *info);
+
+int test_ptl_me_search(struct node_info *info);
 
 int test_ptl_put(struct node_info *info);
 

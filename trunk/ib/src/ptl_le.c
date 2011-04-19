@@ -349,6 +349,48 @@ err1:
 }
 
 /*
+ * le_search_check
+ *	check call parameters for PtlLESearch
+ * note:
+ *	common between LE and ME
+ */
+int le_search_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
+		    ptl_le_t *le_init, ptl_search_op_t search_op)
+{
+	if (unlikely(!ni))
+		return PTL_ARG_INVALID;
+
+	if (type == TYPE_ME) {
+		if (unlikely((ni->options & PTL_NI_MATCHING) == 0))
+			return PTL_ARG_INVALID;
+	} else {
+		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0))
+			return PTL_ARG_INVALID;
+	}
+
+	if (unlikely(pt_index >= ni->limits.max_pt_index))
+		return PTL_ARG_INVALID;
+
+	if (le_init->options & PTL_IOVEC) {
+		if (le_init->length > ni->limits.max_iovecs)
+			return PTL_ARG_INVALID;
+	}
+
+	if (type == TYPE_ME) {
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS))
+			return PTL_ARG_INVALID;
+	} else {
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS))
+			return PTL_ARG_INVALID;
+	}
+
+	if (unlikely(search_op < PTL_SEARCH_ONLY || search_op > PTL_SEARCH_DELETE))
+		return PTL_ARG_INVALID;
+
+	return PTL_OK;
+}
+
+/*
  * PtlLESearch
  * returns:
  *	PTL_OK
@@ -358,13 +400,14 @@ err1:
 int PtlLESearch(					/* 3.11.4 */
 	ptl_handle_ni_t		ni_handle,
 	ptl_pt_index_t		pt_index,
-	ptl_le_t		*le,
-	ptl_search_op_t		ptl_search_op,
+	ptl_le_t		*le_init,
+	ptl_search_op_t		search_op,
 	void			*user_ptr)
 {
 	int err;
 	gbl_t *gbl;
 	ni_t *ni;
+	ct_t *ct;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -374,12 +417,30 @@ int PtlLESearch(					/* 3.11.4 */
 	if (unlikely(err))
 		goto err1;
 
+	err = le_search_check(TYPE_LE, ni, pt_index, le_init, search_op);
+	if (unlikely(err))
+		goto err2;
+
+	err = ct_get(le_init->ct_handle, &ct);
+	if (unlikely(err))
+		goto err3;
+
+	if (unlikely(ct && (to_ni(ct) != ni))) {
+		err = PTL_ARG_INVALID;
+		goto err3;
+	}
+
 	/* TODO implement rest of PtlLESearch */
 
+	ct_put(ct);
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
 
+err3:
+	ct_put(ct);
+err2:
+	ni_put(ni);
 err1:
 	gbl_put(gbl);
 	return err;

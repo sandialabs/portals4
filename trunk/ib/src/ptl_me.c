@@ -211,13 +211,14 @@ err1:
 int PtlMESearch(
 	ptl_handle_ni_t		ni_handle,
 	ptl_pt_index_t		pt_index,
-	ptl_me_t		*me,
-	ptl_search_op_t		ptl_search_op,
+	ptl_me_t		*me_init,
+	ptl_search_op_t		search_op,
 	void			*user_ptr)
 {
 	int err;
 	gbl_t *gbl;
 	ni_t *ni;
+	ct_t *ct;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -227,12 +228,31 @@ int PtlMESearch(
 	if (unlikely(err))
 		goto err1;
 
+	err = le_search_check(TYPE_ME, ni, pt_index,
+			      (ptl_le_t *)me_init, search_op);
+	if (unlikely(err))
+		goto err2;
+
+	err = ct_get(me_init->ct_handle, &ct);
+	if (unlikely(err))
+		goto err3;
+
+	if (unlikely(ct && (to_ni(ct) != ni))) {
+		err = PTL_ARG_INVALID;
+		goto err3;
+	}
+
 	/* TODO implement rest of PtlMESearch */
 
+	ct_put(ct);
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
 
+err3:
+	ct_put(ct);
+err2:
+	ni_put(ni);
 err1:
 	gbl_put(gbl);
 	return err;
