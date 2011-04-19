@@ -99,6 +99,10 @@ int test_ptl_trig_ct_inc(struct node_info *info);
 
 int test_ptl_trig_ct_set(struct node_info *info);
 
+int test_ptl_start_bundle(struct node_info *info);
+
+int test_ptl_end_bundle(struct node_info *info);
+
 /* RUNTIME APIs */
 int test_ptl_set_jid(struct node_info *info);
 

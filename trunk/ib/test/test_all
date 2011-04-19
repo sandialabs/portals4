@@ -21,6 +21,8 @@ echo "===== test_basic_me.xml ====="
 ./ptl_test -f test_basic_me.xml
 echo "===== test_basic_move.xml ====="
 ./ptl_test -f test_basic_move.xml
+echo "===== test_basic_bundle.xml ====="
+./ptl_test -f test_basic_bundle.xml
 echo "===== test_basic_trig.xml ====="
 ./ptl_test -f test_basic_trig.xml
 echo "===== test_limits.xml ====="

@@ -26,6 +26,7 @@ void post_ct(xi_t *xi, ct_t *ct)
 		process_init(xi);
 		return;
 	}
+	/* TODO should sort these by threshold */
 	list_add(&xi->list, &ct->xi_list);
 	pthread_spin_unlock(&ct->obj.obj_lock);
 }
