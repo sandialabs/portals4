@@ -510,6 +510,23 @@ static int prod_f(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+static int prod_fc(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	float *s = src;
+	float *d = dst;
+	float a, b;
+
+	for (i = 0; i < length/8; i++, s += 2, d += 2) {
+		a = prod(s[0], d[0]) - prod(s[1], d[1]);
+		b = prod(s[0], d[1]) + prod(s[1], d[0]);
+		d[0] = a;
+		d[1] = b;
+	}
+
+	return PTL_OK;
+}
+
 static int prod_d(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -518,6 +535,23 @@ static int prod_d(void *dst, void *src, ptl_size_t length)
 
 	for (i = 0; i < length/8; i++, s++, d++)
 		*d = prod(*s, *d);
+
+	return PTL_OK;
+}
+
+static int prod_dc(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	double *s = src;
+	double *d = dst;
+	double a, b;
+
+	for (i = 0; i < length/16; i++, s += 2, d += 2) {
+		a = prod(s[0], d[0]) - prod(s[1], d[1]);
+		b = prod(s[0], d[1]) + prod(s[1], d[0]);
+		d[0] = a;
+		d[1] = b;
+	}
 
 	return PTL_OK;
 }
@@ -845,7 +879,10 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 		[PTL_LONG]	= sum_sl,
 		[PTL_ULONG]	= sum_ul,
 		[PTL_FLOAT]	= sum_f,
+		[PTL_FLOAT]	= sum_f,
+		[PTL_FLOAT_COMPLEX]	= sum_f,
 		[PTL_DOUBLE]	= sum_d,
+		[PTL_DOUBLE_COMPLEX]	= sum_d,
 	},
 	[PTL_PROD]	= {
 		[PTL_CHAR]	= prod_sc,
@@ -857,7 +894,9 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 		[PTL_LONG]	= prod_sl,
 		[PTL_ULONG]	= prod_ul,
 		[PTL_FLOAT]	= prod_f,
+		[PTL_FLOAT_COMPLEX]	= prod_fc,
 		[PTL_DOUBLE]	= prod_d,
+		[PTL_DOUBLE_COMPLEX]	= prod_dc,
 	},
 	[PTL_LOR]	= {
 		[PTL_CHAR]	= lor_c,

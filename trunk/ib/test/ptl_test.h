@@ -37,7 +37,9 @@ typedef union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
+	float		fc[2];
 	double		d;
+	double		dc[2];
 } datatype_t;
 
 #define PTL_TEST_VERSION	("0.1.0")
@@ -80,8 +82,8 @@ struct node_info {
 	 */
 	ptl_interface_t		iface;
 	unsigned int		ni_opt;
-	ptl_rank_t			rank;
-	ptl_pid_t			pid;
+	ptl_rank_t		rank;
+	ptl_pid_t		pid;
 	ptl_ni_limits_t		desired;
 	ptl_ni_limits_t		*desired_ptr;
 	ptl_ni_limits_t		actual;

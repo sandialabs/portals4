@@ -61,7 +61,9 @@ int get_atom_type(char *val)
 	else if (!strcmp("LONG", val))		return PTL_LONG;
 	else if (!strcmp("ULONG", val))		return PTL_ULONG;
 	else if (!strcmp("FLOAT", val))		return PTL_FLOAT;
+	else if (!strcmp("COMPLEX", val))	return PTL_FLOAT_COMPLEX;
 	else if (!strcmp("DOUBLE", val))	return PTL_DOUBLE;
+	else if (!strcmp("DCOMPLEX", val))	return PTL_DOUBLE_COMPLEX;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
 	else					return strtol(val, NULL, 0);
 }

@@ -117,8 +117,14 @@ datatype_t get_datatype(ptl_datatype_t type, char *val)
 	case PTL_FLOAT:
 		num.f = strtof(val, NULL);
 		break;
+	case PTL_FLOAT_COMPLEX:
+		sscanf(val, "(%f, %f)", &num.fc[0], &num.fc[1]);
+		break;
 	case PTL_DOUBLE:
 		num.d = strtod(val, NULL);
+		break;
+	case PTL_DOUBLE_COMPLEX:
+		sscanf(val, "(%lf, %lf)", &num.dc[0], &num.dc[1]);
 		break;
 	default:
 		printf("invalid type in get_datatype\n");
@@ -457,10 +463,24 @@ int set_data(datatype_t val, void *data, int type, int length)
 		for (i = 0; i < length/4; i++, p_f++)
 			*p_f = val.f;
 		break;
+	case PTL_FLOAT_COMPLEX:
+		p_f = data;
+		for (i = 0; i < length/8; i++, p_f += 2) {
+			p_f[0] = val.fc[0];
+			p_f[1] = val.fc[1];
+		}
+		break;
 	case PTL_DOUBLE:
 		p_d = data;
 		for (i = 0; i < length/8; i++, p_d++)
 			*p_d = val.d;
+		break;
+	case PTL_DOUBLE_COMPLEX:
+		p_d = data;
+		for (i = 0; i < length/16; i++, p_d += 2) {
+			p_d[0] = val.dc[0];
+			p_d[1] = val.dc[1];
+		}
 		break;
 	}
 
@@ -780,6 +800,8 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 	double *p_d;
 	int i;
 	datatype_t num;
+	float eps = 1e-6;
+	double deps = 1e-12;
 
 	num = get_datatype(type, val);
 
@@ -871,22 +893,56 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 	case PTL_FLOAT:
 		p_f = data;
 		for (i = 0; i < length/4; i++, p_f++)
-			if (*p_f != num.f) {
+			if (*p_f > (num.f + eps) || *p_f < (num.f - eps)) {
 				if (debug)
-					printf("check_data float failed expected %12.0f got %12.0f at i = %d\n",
+					printf("check_data float failed expected %12.10f got %12.10f at i = %d\n",
 						num.f, *p_f, i);
 				return 1;
 			}
 		break;
+	case PTL_FLOAT_COMPLEX:
+		p_f = data;
+		for (i = 0; i < length/8; i++, p_f += 2) {
+			if (p_f[0] > (num.fc[0] + eps) || p_f[0] < (num.fc[0] - eps)) {
+				if (debug)
+					printf("check_data complex.re failed expected %12.10f got %12.10f at i = %d\n",
+						num.fc[0], p_f[0], i);
+				return 1;
+			}
+			if (p_f[1] > (num.fc[1] + eps) || p_f[1] < (num.fc[1] - eps)) {
+				if (debug)
+					printf("check_data complex.im failed expected %12.10f got %12.10f at i = %d\n",
+						num.fc[1], p_f[1], i);
+				return 1;
+			}
+		}
+		break;
 	case PTL_DOUBLE:
 		p_d = data;
 		for (i = 0; i < length/8; i++, p_d++)
-			if (*p_d != num.d) {
+			if (*p_d > (num.d + deps) || *p_d < (num.d - deps)) {
 				if (debug)
 					printf("check_data double failed expected %22.20lf got %22.20lf at i = %d\n",
 						num.d, *p_d, i);
 				return 1;
 			}
+		break;
+	case PTL_DOUBLE_COMPLEX:
+		p_d = data;
+		for (i = 0; i < length/16; i++, p_f += 2) {
+			if (p_d[0] > (num.dc[0] + deps) || p_d[0] < (num.dc[0] - deps)) {
+				if (debug)
+					printf("check_data complex.re failed expected %22.20f got %22.20f at i = %d\n",
+						num.dc[0], p_d[0], i);
+				return 1;
+			}
+			if (p_d[1] > (num.dc[1] + deps) || p_d[1] < (num.dc[1] - deps)) {
+				if (debug)
+					printf("check_data complex.im failed expected %22.20f got %22.20f at i = %d\n",
+						num.dc[1], p_d[1], i);
+				return 1;
+			}
+		}
 		break;
 	default:
 		return 1;

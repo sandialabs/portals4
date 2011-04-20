@@ -32,7 +32,9 @@ typedef union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
+	float		fc[2];
 	double		d;
+	double		dc[2];
 } datatype_t;
 
 extern char *atom_op_name[PTL_OP_LAST];

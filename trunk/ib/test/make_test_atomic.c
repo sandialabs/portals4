@@ -117,8 +117,16 @@ datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		case PTL_FLOAT:
 			z.f = x.f + y.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			z.fc[0] = x.fc[0] + y.fc[0];
+			z.fc[1] = x.fc[1] + y.fc[1];
+			break;
 		case PTL_DOUBLE:
 			z.d = x.d + y.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			z.dc[0] = x.dc[0] + y.dc[0];
+			z.dc[1] = x.dc[1] + y.dc[1];
 			break;
 		}
 		break;
@@ -151,8 +159,16 @@ datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		case PTL_FLOAT:
 			z.f = x.f * y.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			z.fc[0] = (x.fc[0]*y.fc[0]) - (x.fc[1]*y.fc[1]);
+			z.fc[1] = (x.fc[0]*y.fc[1]) + (x.fc[1]*y.fc[0]);
+			break;
 		case PTL_DOUBLE:
 			z.d = x.d * y.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			z.dc[0] = (x.dc[0]*y.dc[0]) - (x.dc[1]*y.dc[1]);
+			z.dc[1] = (x.dc[0]*y.dc[1]) + (x.dc[1]*y.dc[0]);
 			break;
 		}
 		break;
@@ -453,10 +469,13 @@ int main(int argc, char *argv[])
 		match_bits = random();
 		match_bits = match_bits << 32 | random();
 
+		/* legal combinations */
 		do {
 			op = random() % (PTL_BXOR + 1);
-			type = random() % (PTL_DOUBLE + 1);
-		} while(op >= PTL_LOR && type >= PTL_FLOAT);
+			type = random() % PTL_DATATYPE_LAST;
+		} while((op >= PTL_LOR && type >= PTL_FLOAT) ||
+			(op <= PTL_MAX && (type == PTL_FLOAT_COMPLEX ||
+					   type == PTL_DOUBLE_COMPLEX)));
 
 		tgt = get_data(type);
 		dout = get_data(type);
