@@ -4,6 +4,8 @@ libportals_la_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include -DPTL_LOG_ENABL
 libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_SOURCES = \
 	ptl.c \
+	ptl_param.c \
+	ptl_param.h \
 	ptl_atomic.c \
 	ptl_buf.c \
 	ptl_buf.h \

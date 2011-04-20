@@ -90,7 +90,7 @@ static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 		if (dst_offset + bytes > length)
 			bytes = length - dst_offset;
 
-		if (j >= MAX_INLINE_SGE) {
+		if (j >= get_param(PTL_MAX_INLINE_SGE)) {
 			WARN();
 			return PTL_FAIL;
 		}
@@ -163,7 +163,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 	else
 		hdr->data_out = 1;
 
-	if (dir == DATA_DIR_OUT && length <= MAX_INLINE_DATA) {
+	if (dir == DATA_DIR_OUT && length <= get_param(PTL_MAX_INLINE_DATA)) {
 		data->data_fmt = DATA_FMT_IMMEDIATE;
 		data->data_length = cpu_to_be32(length);
 
@@ -182,7 +182,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		goto done;
 	}
 
-	if (md->options & PTL_IOVEC && md->num_iov > MAX_INLINE_SGE) {
+	if (md->options & PTL_IOVEC && md->num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		num_sge = iov_count_sge((ptl_iovec_t *)md->start,
 					md->num_iov, offset, length);
 		if (num_sge < 0) {
@@ -190,7 +190,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			return PTL_FAIL;
 		}
 
-		if (num_sge > MAX_INLINE_SGE) {
+		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
 			data->data_fmt = DATA_FMT_INDIRECT;
 			data->num_sge = cpu_to_be32(1);
 

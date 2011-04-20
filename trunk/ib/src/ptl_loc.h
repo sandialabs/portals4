@@ -48,15 +48,12 @@ typedef uint16_t	__be16;
 typedef uint32_t	__be32;
 typedef uint64_t	__be64;
 
-#define MIN_PT_INDEX	4
-#define DEF_PT_INDEX	64
-#define MAX_PT_INDEX	4096
-
 unsigned int pagesize;
 unsigned int linesize;
 
 #include "ptl_log.h"
 #include "ptl_types.h"
+#include "ptl_param.h"
 #include "ptl_ref.h"
 #include "ptl_evloop.h"
 #include "ptl_index.h"

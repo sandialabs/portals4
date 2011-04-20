@@ -107,7 +107,7 @@ int init_connect(ni_t *ni, conn_t *conn)
 	conn->state = CONN_STATE_RESOLVING_ADDR;
 
 	if (rdma_resolve_addr(conn->cm_id, NULL,
-			      (struct sockaddr *)&conn->sin, 2000)) {
+			      (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -138,12 +138,13 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		init_attr.cap.max_send_wr = 0;
 	} else {
 		init_attr.qp_type = IBV_QPT_RC;
-		init_attr.cap.max_send_wr = MAX_QP_SEND_WR + MAX_RDMA_WR_OUT;
+		init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
+					    get_param(PTL_MAX_RDMA_WR_OUT);
 	}
 	init_attr.send_cq = ni->cq;
 	init_attr.recv_cq = ni->cq;
 	init_attr.srq = ni->srq;
-	init_attr.cap.max_send_sge = MAX_INLINE_SGE;
+	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
 
 	if (rdma_create_qp(event->id, NULL, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -232,8 +233,9 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	init_attr.send_cq = ni->cq;
 	init_attr.recv_cq = ni->cq;
 	init_attr.srq = ni->srq;
-	init_attr.cap.max_send_wr = MAX_QP_SEND_WR + MAX_RDMA_WR_OUT;
-	init_attr.cap.max_send_sge = MAX_INLINE_SGE;
+	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
+				    get_param(PTL_MAX_RDMA_WR_OUT);
+	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
 
 	if (rdma_create_qp(event->id, NULL, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -411,7 +413,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		pthread_mutex_lock(&conn->mutex);
 
 		assert(conn->cm_id == event->id);
-		if (rdma_resolve_route(conn->cm_id, 2000)) {
+		if (rdma_resolve_route(conn->cm_id, get_param(PTL_RDMA_TIMEOUT))) {
 			//todo 
 			abort();
 		} else {
@@ -438,9 +440,10 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.qp_context			= ni;
 		init.send_cq			= ni->cq;
 		init.recv_cq			= ni->cq;
-		init.cap.max_send_wr		= MAX_QP_SEND_WR + MAX_RDMA_WR_OUT;
+		init.cap.max_send_wr		= get_param(PTL_MAX_QP_SEND_WR) +
+						  get_param(PTL_MAX_RDMA_WR_OUT);
 		init.cap.max_recv_wr		= 0;
-		init.cap.max_send_sge		= MAX_INLINE_SGE;
+		init.cap.max_send_sge		= get_param(PTL_MAX_INLINE_SGE);
 		init.cap.max_recv_sge		= 10;
 
 		if (ni->options & PTL_NI_LOGICAL) {

@@ -5,8 +5,6 @@
 #ifndef PTL_XX_H
 #define PTL_XX_H
 
-#define MAX_RDMA_WR_OUT		(100)
-
 struct buf;
 typedef ptl_handle_any_t ptl_handle_xi_t;
 typedef ptl_handle_any_t ptl_handle_xt_t;

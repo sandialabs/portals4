@@ -5,10 +5,6 @@
 #ifndef PTL_DATA_H
 #define PTL_DATA_H
 
-#define MAX_INLINE_DATA		(256)
-#define MAX_INLINE_SGE		(16)
-#define MAX_INDIRECT_SGE	(4096)
-
 typedef enum {
 	DATA_DIR_IN,
 	DATA_DIR_OUT,

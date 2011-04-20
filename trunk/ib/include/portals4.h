@@ -689,4 +689,6 @@ int PtlSetId(
 	ptl_handle_ni_t		ni_handle,
 	ptl_process_t		id);
 
+void PtlInitParam(int argc, char *argv[]);
+
 #endif /* PORTALS4_h */

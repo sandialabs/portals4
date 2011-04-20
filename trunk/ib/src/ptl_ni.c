@@ -114,30 +114,88 @@ static int create_tables(ni_t *ni, ptl_size_t map_size, ptl_process_t *actual_ma
 	return err;
 }
 
-/* TODO finish this */
-static ptl_ni_limits_t default_ni_limits = {
-	.max_entries		= 123,
-	.max_mds		= 123,
-	.max_cts		= 123,
-	.max_eqs		= 123,
-	.max_pt_index		= DEF_PT_INDEX,
-	.max_iovecs		= 123,
-	.max_list_size		= 123,
-	.max_msg_size		= 123,
-	.max_atomic_size	= 123,
-};
-
 static void set_limits(ni_t *ni, ptl_ni_limits_t *desired)
 {
-	if (desired)
-		ni->limits = *desired;
-	else
-		ni->limits = default_ni_limits;
-
-	if (ni->limits.max_pt_index > MAX_PT_INDEX)
-		ni->limits.max_pt_index		= MAX_PT_INDEX;
-	if (ni->limits.max_pt_index < MIN_PT_INDEX)
-		ni->limits.max_pt_index		= MIN_PT_INDEX;
+	if (desired) {
+		ni->limits.max_entries =
+			chk_param(PTL_LIM_MAX_ENTRIES,
+				  desired->max_entries);
+		ni->limits.max_unexpected_headers =
+			chk_param(PTL_LIM_MAX_UNEXPECTED_HEADERS,
+				  desired->max_unexpected_headers);
+		ni->limits.max_mds =
+			chk_param(PTL_LIM_MAX_MDS, desired->max_mds);
+		ni->limits.max_cts =
+			chk_param(PTL_LIM_MAX_CTS, desired->max_cts);
+		ni->limits.max_eqs =
+			chk_param(PTL_LIM_MAX_EQS, desired->max_eqs);
+		ni->limits.max_pt_index =
+			chk_param(PTL_LIM_MAX_PT_INDEX,
+				  desired->max_pt_index);
+		ni->limits.max_iovecs =
+			chk_param(PTL_LIM_MAX_IOVECS,
+				  desired->max_iovecs);
+		ni->limits.max_list_size =
+			chk_param(PTL_LIM_MAX_LIST_SIZE,
+				  desired->max_list_size);
+		ni->limits.max_triggered_ops =
+			chk_param(PTL_LIM_MAX_TRIGGERED_OPS,
+				  desired->max_triggered_ops);
+		ni->limits.max_msg_size =
+			chk_param(PTL_LIM_MAX_MSG_SIZE,
+				  desired->max_msg_size);
+		ni->limits.max_atomic_size =
+			chk_param(PTL_LIM_MAX_ATOMIC_SIZE,
+				  desired->max_atomic_size);
+		ni->limits.max_fetch_atomic_size =
+			chk_param(PTL_LIM_MAX_FETCH_ATOMIC_SIZE,
+				  desired->max_fetch_atomic_size);
+		ni->limits.max_waw_ordered_size =
+			chk_param(PTL_LIM_MAX_WAW_ORDERED_SIZE,
+				  desired->max_waw_ordered_size);
+		ni->limits.max_war_ordered_size =
+			chk_param(PTL_LIM_MAX_WAR_ORDERED_SIZE,
+				  desired->max_war_ordered_size);
+		ni->limits.max_volatile_size =
+			chk_param(PTL_LIM_MAX_VOLATILE_SIZE,
+				  desired->max_volatile_size);
+		ni->limits.features =
+			chk_param(PTL_LIM_FEATURES,
+				  desired->features);
+	} else {
+		ni->limits.max_entries =
+			get_param(PTL_LIM_MAX_ENTRIES);
+		ni->limits.max_unexpected_headers =
+			get_param(PTL_LIM_MAX_UNEXPECTED_HEADERS);
+		ni->limits.max_mds =
+			get_param(PTL_LIM_MAX_MDS);
+		ni->limits.max_cts =
+			get_param(PTL_LIM_MAX_CTS);
+		ni->limits.max_eqs =
+			get_param(PTL_LIM_MAX_EQS);
+		ni->limits.max_pt_index =
+			get_param(PTL_LIM_MAX_PT_INDEX);
+		ni->limits.max_iovecs =
+			get_param(PTL_LIM_MAX_IOVECS);
+		ni->limits.max_list_size =
+			get_param(PTL_LIM_MAX_LIST_SIZE);
+		ni->limits.max_triggered_ops =
+			get_param(PTL_LIM_MAX_TRIGGERED_OPS);
+		ni->limits.max_msg_size =
+			get_param(PTL_LIM_MAX_MSG_SIZE);
+		ni->limits.max_atomic_size =
+			get_param(PTL_LIM_MAX_ATOMIC_SIZE);
+		ni->limits.max_fetch_atomic_size =
+			get_param(PTL_LIM_MAX_FETCH_ATOMIC_SIZE);
+		ni->limits.max_waw_ordered_size =
+			get_param(PTL_LIM_MAX_WAW_ORDERED_SIZE);
+		ni->limits.max_war_ordered_size =
+			get_param(PTL_LIM_MAX_WAR_ORDERED_SIZE);
+		ni->limits.max_volatile_size =
+			get_param(PTL_LIM_MAX_VOLATILE_SIZE);
+		ni->limits.features =
+			get_param(PTL_LIM_FEATURES);
+	}
 }
 
 static void ni_rcqp_stop(ni_t *ni)
@@ -303,7 +361,7 @@ static int init_ib_srq(ni_t *ni)
 	int i;
 
 	srq_init_attr.srq_context = ni;
-	srq_init_attr.attr.max_wr = 100; /* todo: adjust */
+	srq_init_attr.attr.max_wr = get_param(PTL_MAX_SRQ_RECV_WR);
 	srq_init_attr.attr.max_sge = 1;
 	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
 
@@ -420,6 +478,7 @@ static int init_ib(struct iface *iface, ni_t *ni)
 {
 	int err;
 	int flags;
+	int cqe;
 
 	/* If it is a physical address, then we bind it. */
 	if (ni->options & PTL_NI_PHYSICAL) {
@@ -472,8 +531,10 @@ static int init_ib(struct iface *iface, ni_t *ni)
 		goto err1;
 	}
 
-	ni->cq = ibv_create_cq(iface->ibv_context, MAX_QP_SEND_WR + MAX_RDMA_WR_OUT + MAX_QP_RECV_WR + 10,
-						   ni, ni->ch, 0);
+	cqe = get_param(PTL_MAX_QP_SEND_WR) + get_param(PTL_MAX_RDMA_WR_OUT) +
+	      get_param(PTL_MAX_QP_RECV_WR) + 10;
+
+	ni->cq = ibv_create_cq(iface->ibv_context, cqe, ni, ni->ch, 0);
 	if (!ni->cq) {
 		WARN();
 		ptl_warn("unable to create cq\n");
