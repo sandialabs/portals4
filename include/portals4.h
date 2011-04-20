@@ -955,7 +955,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  */
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
-    PTL_OVERFLOW, /*!< The overflow list associated with a portal table entry. */
+    PTL_OVERFLOW       /*!< The overflow list associated with a portal table entry. */
 } ptl_list_t;
 
 /*!
@@ -969,7 +969,7 @@ typedef enum {
 typedef enum {
     PTL_SEARCH_ONLY, /*!< Use the LE/ME to search the overflow list, without
                        consuming an item in the list. */
-    PTL_SEARCH_DELETE, /*!< Use the LE/ME to search the overflow list and
+    PTL_SEARCH_DELETE /*!< Use the LE/ME to search the overflow list and
                          delete the item from the list. */
 } ptl_search_op_t;
 
