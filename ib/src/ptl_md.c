@@ -59,7 +59,7 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 		return PTL_NO_SPACE;
 	}
 
-	if (num_iov > MAX_INLINE_SGE) {
+	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		md->sge_list = calloc(num_iov, sizeof(struct ibv_sge));
 		if (!md->sge_list) {
 			WARN();

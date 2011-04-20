@@ -175,7 +175,7 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 		if (!le->mr_list)
 			return PTL_NO_SPACE;
 
-		if (le->num_iov > MAX_INLINE_SGE) {
+		if (le->num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 			le->sge_list = calloc(le->num_iov, sizeof(*sge));
 			if (!le->sge_list)
 				return PTL_NO_SPACE;

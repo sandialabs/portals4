@@ -22,8 +22,6 @@ enum pool_type {
 	POOL_LAST,		/* keep me last */
 };
 
-#define PTL_OBJ_ALLOC_TIMEOUT	(5)	/* seconds to wait before failing */
-
 /*
  * segment_t
  *	per segment info

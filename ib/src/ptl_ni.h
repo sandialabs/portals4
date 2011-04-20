@@ -5,23 +5,16 @@
 #ifndef PTL_NI_H
 #define PTL_NI_H
 
-/* These values will need to come from runtime environment */
-#define MAX_QP_SEND_WR		(100)
-#define MAX_QP_SEND_SGE		(16) // Best if >= MAX_INLINE_SGE
-#define MAX_QP_RECV_WR		(10)
-#define MAX_QP_RECV_SGE		(10)
-#define MAX_SRQ_RECV_WR		(100)
-
 struct ni;
 
 /* Remote rank. There's one record per rank. Logical NIs only. */
 struct rank_entry {
-	ptl_rank_t rank;
-	ptl_rank_t main_rank;		/* main rank on NID */
-	ptl_nid_t nid;
-	ptl_pid_t pid;
-	uint32_t remote_xrc_srq_num;
-	conn_t connect;
+	ptl_rank_t		rank;
+	ptl_rank_t		main_rank;		/* main rank on NID */
+	ptl_nid_t		nid;
+	ptl_pid_t		pid;
+	uint32_t		remote_xrc_srq_num;
+	conn_t			connect;
 };
 
 /*

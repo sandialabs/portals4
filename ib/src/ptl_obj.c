@@ -298,7 +298,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	if (pool->max_count && pool->count >= pool->max_count) {
 		pool->waiters++;
 		clock_gettime(CLOCK_REALTIME, &timeout);
-		timeout.tv_sec += PTL_OBJ_ALLOC_TIMEOUT;
+		timeout.tv_sec += get_param(PTL_OBJ_ALLOC_TIMEOUT);
 		do {
 			err = pthread_cond_timedwait(&pool->cond, &pool->mutex, &timeout);
 			if (err) {
