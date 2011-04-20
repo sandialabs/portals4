@@ -11,6 +11,7 @@
 #include "data.h"
 
 unsigned int seed;
+unsigned int physical = 0;
 unsigned int count = 1;
 unsigned int max_length = 32;
 
@@ -53,8 +54,16 @@ datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, int type
 		case PTL_FLOAT:
 			z.f = (o.f == t.f) ? d.f : t.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			z.fc[0] = (o.fc[0] == t.fc[0] && o.fc[1] == t.fc[1]) ? d.fc[0] : t.fc[0];
+			z.fc[1] = (o.fc[0] == t.fc[0] && o.fc[1] == t.fc[1]) ? d.fc[1] : t.fc[1];
+			break;
 		case PTL_DOUBLE:
 			z.d = (o.d == t.d) ? d.d : t.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			z.dc[0] = (o.dc[0] == t.dc[0] && o.dc[1] == t.dc[1]) ? d.dc[0] : t.dc[0];
+			z.dc[1] = (o.dc[0] == t.dc[0] && o.dc[1] == t.dc[1]) ? d.dc[1] : t.dc[1];
 			break;
 		}
 		break;
@@ -87,8 +96,16 @@ datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, int type
 		case PTL_FLOAT:
 			z.f = (o.f != t.f) ? d.f : t.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			z.fc[0] = (o.fc[0] != t.fc[0] || o.fc[1] != t.fc[1]) ? d.fc[0] : t.fc[0];
+			z.fc[1] = (o.fc[0] != t.fc[0] || o.fc[1] != t.fc[1]) ? d.fc[1] : t.fc[1];
+			break;
 		case PTL_DOUBLE:
 			z.d = (o.d != t.d) ? d.d : t.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			z.dc[0] = (o.dc[0] != t.dc[0] || o.dc[1] != t.dc[1]) ? d.dc[0] : t.dc[0];
+			z.dc[1] = (o.dc[0] != t.dc[0] || o.dc[1] != t.dc[1]) ? d.dc[1] : t.dc[1];
 			break;
 		}
 		break;
@@ -267,6 +284,7 @@ void usage()
 	printf("	--seed | -s		seed	set random number seed (default time())\n");
 	printf("	--count | -c		count	set number of test cases (default 1)\n");
 	printf("	--max_length | -m	length	set max message length (>= 8) (default 32)\n");
+	printf("	--physical | -p			physical use physical NI (logical NI)\n");
 	printf("\n");
 }
 
@@ -274,12 +292,13 @@ int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
-	static char *opt_string = "hs:c:m:";
+	static char *opt_string = "hps:c:m:";
 	static struct option long_options[] = {
 		{"help", 0, 0, 'h'},
 		{"seed", 1, 0, 's'},
 		{"count", 1, 0, 'c'},
 		{"max_length", 1, 0, 'm'},
+		{"physical", 0, 0, 'p'},
 		{0, 0, 0, 0}
 	};
 
@@ -300,6 +319,10 @@ int arg_process(int argc, char *argv[])
 
 		case 'c':
 			count = strtol(optarg, NULL, 0);
+			break;
+
+		case 'p':
+			physical = 1;
 			break;
 
 		case 'm':
@@ -365,7 +388,9 @@ int main(int argc, char *argv[])
 		do {
 			op = (random() % (PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
 			type = random() % PTL_DATATYPE_LAST;
-		} while (op == PTL_MSWAP && type >= PTL_FLOAT);
+		} while ((op == PTL_MSWAP && type >= PTL_FLOAT) ||
+			 (op > PTL_CSWAP_NE && (type == PTL_FLOAT_COMPLEX ||
+						type == PTL_DOUBLE_COMPLEX)));
 
 		din = get_data(type);
 		dout = get_data(type);
@@ -406,10 +431,11 @@ int main(int argc, char *argv[])
 
 		printf("                <ptl_swap atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" operand=\"%s\"",
 			atom_op_name[op], atom_type[type].name, length, datatype_str(type, opr));
+
 		if (match)
-			printf(" match=\"0x%" PRIu64 "\"/>\n", match_bits);
-		else
-			printf("/>\n");
+			printf(" match=\"0x%" PRIu64 "\"", match_bits);
+
+		printf(" target_id=\"SELF\"/>\n");
 
 		printf("                <msleep count=\"10\"/>\n");
 
