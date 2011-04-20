@@ -863,7 +863,7 @@ static int tgt_atomic_data_in(xt_t *xt)
 	}
 
 	// TODO should we return an ni fail??
-	if (xt->atom_op > PTL_BXOR || xt->atom_type > PTL_DOUBLE) {
+	if (xt->atom_op > PTL_BXOR || xt->atom_type >= PTL_DATATYPE_LAST) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -906,7 +906,7 @@ static int tgt_swap_data_in(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
-	if (xt->atom_op < PTL_CSWAP || xt->atom_op > PTL_MSWAP || xt->atom_type > PTL_DOUBLE) {
+	if (xt->atom_op < PTL_CSWAP || xt->atom_op >= PTL_OP_LAST || xt->atom_type >= PTL_DATATYPE_LAST) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -945,8 +945,24 @@ static int tgt_swap_data_in(xt_t *xt)
 		case PTL_FLOAT:
 			dst.f = (opr.f == src.f) ? d->f : src.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			dst.fc[0] = ((opr.fc[0] == src.fc[0]) &&
+				     (opr.fc[1] == src.fc[1])) ? d->fc[0]
+							       : src.fc[0];
+			dst.fc[1] = ((opr.fc[0] == src.fc[0]) &&
+				     (opr.fc[1] == src.fc[1])) ? d->fc[1]
+							       : src.fc[1];
+			break;
 		case PTL_DOUBLE:
 			dst.d = (opr.d == src.d) ? d->d : src.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			dst.dc[0] = ((opr.dc[0] == src.dc[0]) &&
+				     (opr.dc[1] == src.dc[1])) ? d->dc[0]
+							       : src.dc[0];
+			dst.dc[1] = ((opr.dc[0] == src.dc[0]) &&
+				     (opr.dc[1] == src.dc[1])) ? d->dc[1]
+							       : src.dc[1];
 			break;
 		default:
 			return STATE_TGT_ERROR;
@@ -981,8 +997,24 @@ static int tgt_swap_data_in(xt_t *xt)
 		case PTL_FLOAT:
 			dst.f = (opr.f != src.f) ? d->f : src.f;
 			break;
+		case PTL_FLOAT_COMPLEX:
+			dst.fc[0] = ((opr.fc[0] != src.fc[0]) ||
+				     (opr.fc[0] != src.fc[0])) ? d->fc[0]
+							       : src.fc[0];
+			dst.fc[1] = ((opr.fc[0] != src.fc[0]) ||
+				     (opr.fc[0] != src.fc[0])) ? d->fc[1]
+							       : src.fc[1];
+			break;
 		case PTL_DOUBLE:
 			dst.d = (opr.d != src.d) ? d->d : src.d;
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			dst.dc[0] = ((opr.dc[0] != src.dc[0]) ||
+				     (opr.dc[0] != src.dc[0])) ? d->dc[0]
+							       : src.dc[0];
+			dst.dc[1] = ((opr.dc[0] != src.dc[0]) ||
+				     (opr.dc[0] != src.dc[0])) ? d->dc[1]
+							       : src.dc[1];
 			break;
 		default:
 			return STATE_TGT_ERROR;

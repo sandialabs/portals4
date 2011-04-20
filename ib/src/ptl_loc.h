@@ -126,10 +126,13 @@ typedef union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
+	float		fc[2];
 	double		d;
+	double		dc[2];
 } datatype_t;
 
 typedef int (*atom_op_t)(void *src, void *dst, ptl_size_t length);
+
 extern atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST];
 
 enum {
@@ -206,6 +209,7 @@ struct cm_priv_request {
 #define REJECT_REASON_BAD_PARAM		3 /* request parm is invalid */
 #define REJECT_REASON_CONNECTED		4 /* already connected */
 #define REJECT_REASON_ERROR			5 /* something unexpected happened; catch all */
+
 struct cm_priv_reject {
 	uint32_t reason;
 	uint32_t xrc_srq_num;

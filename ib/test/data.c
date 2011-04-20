@@ -40,7 +40,9 @@ atom_type_t atom_type[] = {
 	[PTL_LONG] = {.name = "LONG", .size = 8,},
 	[PTL_ULONG] = {.name = "ULONG", .size = 8,},
 	[PTL_FLOAT] = {.name = "FLOAT", .size = 4,},
+	[PTL_FLOAT_COMPLEX] = {.name = "COMPLEX", .size = 8,},
 	[PTL_DOUBLE] = {.name = "DOUBLE", .size = 8,},
+	[PTL_DOUBLE_COMPLEX] = {.name = "DCOMPLEX", .size = 16,},
 };
 
 datatype_t get_data(int type)
@@ -70,8 +72,16 @@ datatype_t get_data(int type)
 	case PTL_FLOAT:
 		data.f = random()/65384.0/65384.0;
 		break;
+	case PTL_FLOAT_COMPLEX:
+		data.fc[0] = random()/65384.0/65384.0;
+		data.fc[1] = random()/65384.0/65384.0;
+		break;
 	case PTL_DOUBLE:
 		data.d = random()/65384.0/65384.0;
+		break;
+	case PTL_DOUBLE_COMPLEX:
+		data.dc[0] = random()/65384.0/65384.0;
+		data.dc[1] = random()/65384.0/65384.0;
 		break;
 	}
 
@@ -104,8 +114,14 @@ char *datatype_str(int type, datatype_t data)
 	case PTL_FLOAT:
 		sprintf(str, "%12.10f", data.f);
 		break;
+	case PTL_FLOAT_COMPLEX:
+		sprintf(str, "(%12.10f, %12.10f)", data.fc[0], data.fc[1]);
+		break;
 	case PTL_DOUBLE:
 		sprintf(str, "%22.20lf", data.d);
+		break;
+	case PTL_DOUBLE_COMPLEX:
+		sprintf(str, "(%22.20f, %22.20f)", data.dc[0], data.dc[1]);
 		break;
 	}
 
