@@ -384,7 +384,7 @@ int test_ptl_me_search(struct node_info *info)
 
 	info->me.ct_handle = info->ct_handle;
 
-	ret = PtlLESearch(info->ni_handle, info->pt_index,
+	ret = PtlMESearch(info->ni_handle, info->pt_index,
 			  &info->me, info->search_op, info->user_ptr);
 
 	return info->ret != ret;

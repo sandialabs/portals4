@@ -258,10 +258,10 @@ err1:
 
 int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	      ptl_size_t *tests,
-	      int size,
+	      unsigned int size,
 	      ptl_time_t timeout,
 	      ptl_ct_event_t *event,
-	      int *which)
+	      unsigned int *which)
 {
 	int err;
 	gbl_t *gbl;
