@@ -251,10 +251,10 @@ err1:
 }
 
 int PtlEQPoll(ptl_handle_eq_t *eq_handles,
-	      int size,
+	      unsigned int size,
 	      ptl_time_t timeout,
 	      ptl_event_t *event,
-	      int *which)
+	      unsigned int *which)
 {
 	int err;
 	gbl_t *gbl;

@@ -219,7 +219,6 @@ static int init_send_req(xi_t *xi)
 	ni_t *ni = to_ni(xi);
 	buf_t *buf;
 	req_hdr_t *hdr;
-	data_t *get_data = NULL;
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
 
@@ -251,7 +250,6 @@ static int init_send_req(xi_t *xi)
 		break;
 
 	case OP_GET:
-		get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
 							   length, buf);
 		if (err)
@@ -260,7 +258,6 @@ static int init_send_req(xi_t *xi)
 
 	case OP_FETCH:
 	case OP_SWAP:
-		get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
 							   length, buf);
 		if (err)

@@ -58,17 +58,21 @@ long get_number(struct node_info *info, char *orig_val)
 		while((tok[i++] = strtok_r(val, ".", &save))) 
 			val = 0;
 
-		if (!strcmp("count", tok[0])) {
-			num = info->count;
-		}
+		if (tok[0]) {
+			if (!strcmp("count", tok[0])) {
+				num = info->count;
+			}
 
-		else if (!strcmp("thread_id", tok[0])) {
-			num = info->thread_id;
-		}
+			else if (!strcmp("thread_id", tok[0])) {
+				num = info->thread_id;
+			}
 
-		else if (!strcmp("actual", tok[0])) {
-			if (!strcmp("max_pt_index", tok[1])) {
-				num = info->actual.max_pt_index;
+			else if (!strcmp("actual", tok[0])) {
+				if (tok[1] && !strcmp("max_pt_index", tok[1])) {
+					num = info->actual.max_pt_index;
+				} else {
+					num = 0;
+				}
 			} else {
 				num = 0;
 			}
@@ -929,7 +933,7 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 		break;
 	case PTL_DOUBLE_COMPLEX:
 		p_d = data;
-		for (i = 0; i < length/16; i++, p_f += 2) {
+		for (i = 0; i < length/16; i++, p_d += 2) {
 			if (p_d[0] > (num.dc[0] + deps) || p_d[0] < (num.dc[0] - deps)) {
 				if (debug)
 					printf("check_data complex.re failed expected %22.20f got %22.20f at i = %d\n",
@@ -1242,7 +1246,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			if (!e) {
 				errs = 1;
 				printf("invalid node: %s\n", node->name);
-				goto next;
+				goto done;
 			}
 
 			if (debug) printf("rank %d: start node = %s\n", ptl_test_rank, e->name);
@@ -1649,9 +1653,8 @@ pop:
 			info = pop_node(info);
 done:
 			tot_errs += errs;
-			if (debug) printf("rank %d: end node = %s, errs = %d\n", ptl_test_rank, e->name, errs);
-next:
-			;
+			if (debug && e)
+				printf("rank %d: end node = %s, errs = %d\n", ptl_test_rank, e->name, errs);
 		}
 	}
 

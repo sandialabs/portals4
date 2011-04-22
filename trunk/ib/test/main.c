@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 
 	cio_cleanup();
 
-	ret = fini();
+	fini();
 
 	MPI_Finalize();
 

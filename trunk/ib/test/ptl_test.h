@@ -153,8 +153,8 @@ struct node_info {
 	ptl_event_t		*eq_list[EQ_LIST_SIZE];
 	int			eq_size;
 	ptl_time_t		timeout;
-	int			which;
-	int			*which_ptr;
+	unsigned int	which;
+	unsigned int	*which_ptr;
 
 	/*
 	 * ct_alloc, ct_free, ct_get, ct_wait
