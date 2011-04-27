@@ -8,7 +8,6 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_START]		= "tgt_start",
 	[STATE_TGT_DROP]		= "tgt_drop",
 	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
-	[STATE_TGT_GET_PERM]		= "tgt_get_perm",
 	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
 	[STATE_TGT_WAIT_CONN]		= "tgt_wait_conn",
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
@@ -273,67 +272,10 @@ static int check_match(xt_t *xt)
 }
 
 /*
- * tgt_get_match
- *	get matching entry from PT
- */
-static int tgt_get_match(xt_t *xt)
-{
-	ni_t *ni = to_ni(xt);
-	struct list_head *l;
-
-	if (xt->pt->options & PTL_PT_FLOWCTRL) {
-		if (list_empty(&xt->pt->priority_list) &&
-		    list_empty(&xt->pt->overflow_list)) {
-			WARN();
-			pthread_spin_lock(&xt->pt->lock);
-			xt->pt->disable |= PT_AUTO_DISABLE;
-			pthread_spin_unlock(&xt->pt->lock);
-			xt->ni_fail = PTL_NI_FLOW_CTRL;
-			xt->le = NULL;
-			return STATE_TGT_DROP;
-		}
-	}
-
-	list_for_each(l, &xt->pt->priority_list) {
-		xt->le = list_entry(l, le_t, list);
-		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_ref(xt->le);
-			goto done;
-		}
-
-		if (check_match(xt)) {
-			me_ref((me_t *)xt->le);
-			goto done;
-		}
-	}
-
-	list_for_each(l, &xt->pt->overflow_list) {
-		xt->le = list_entry(l, le_t, list);
-		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_ref(xt->le);
-			goto done;
-		}
-
-		if (check_match(xt)) {
-			me_ref((me_t *)xt->le);
-			goto done;
-		}
-	}
-
-	WARN();
-	xt->le = NULL;
-	xt->ni_fail = PTL_NI_DROPPED;
-	return STATE_TGT_DROP;
-
-done:
-	return STATE_TGT_GET_PERM;
-}
-
-/*
- * tgt_get_perm
+ * check_perm
  *	check permission on incoming request packet
  */
-static int tgt_get_perm(xt_t *xt)
+static int check_perm(xt_t *xt)
 {
 	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
 		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
@@ -372,14 +314,92 @@ static int tgt_get_perm(xt_t *xt)
 		break;
 
 	default:
-		return STATE_TGT_ERROR;
+		assert(0);
 	}
 
-	return STATE_TGT_GET_LENGTH;
+	return PTL_OK;
 
 no_perm:
-	xt->ni_fail = PTL_NI_PERM_VIOLATION;
+	return PTL_FAIL;
+}
+
+/*
+ * tgt_get_match
+ *	get matching entry from PT
+ */
+static int tgt_get_match(xt_t *xt)
+{
+	ni_t *ni = to_ni(xt);
+	struct list_head *l;
+
+	/* have to protect against a race with le/me append/search
+	 * which change the pt lists */
+	pthread_spin_lock(&xt->pt->lock);
+
+	if (xt->pt->options & PTL_PT_FLOWCTRL) {
+		if (list_empty(&xt->pt->priority_list) &&
+		    list_empty(&xt->pt->overflow_list)) {
+			WARN();
+			xt->pt->disable |= PT_AUTO_DISABLE;
+			pthread_spin_unlock(&xt->pt->lock);
+			xt->ni_fail = PTL_NI_FLOW_CTRL;
+			xt->le = NULL;
+			return STATE_TGT_DROP;
+		}
+	}
+
+	list_for_each(l, &xt->pt->priority_list) {
+		xt->le = list_entry(l, le_t, list);
+		if (ni->options & PTL_NI_NO_MATCHING) {
+			le_ref(xt->le);
+			goto done;
+		}
+
+		if (check_match(xt)) {
+			me_ref((me_t *)xt->le);
+			goto done;
+		}
+	}
+
+	list_for_each(l, &xt->pt->overflow_list) {
+		xt->le = list_entry(l, le_t, list);
+		if (ni->options & PTL_NI_NO_MATCHING) {
+			le_ref(xt->le);
+			goto done;
+		}
+
+		if (check_match(xt)) {
+			me_ref((me_t *)xt->le);
+			goto done;
+		}
+	}
+
+	pthread_spin_unlock(&xt->pt->lock);
+	WARN();
+	xt->le = NULL;
+	xt->ni_fail = PTL_NI_DROPPED;
 	return STATE_TGT_DROP;
+
+done:
+	if (check_perm(xt)) {
+		pthread_spin_unlock(&xt->pt->lock);
+		if (xt->le->type == TYPE_LE)
+			le_put(xt->le);
+		else
+			me_put(xt->me);
+
+		xt->le = NULL;
+
+		xt->ni_fail = PTL_NI_PERM_VIOLATION;
+		return STATE_TGT_DROP;
+	}
+
+	/* save the header */
+	if (xt->le->ptl_list == PTL_OVERFLOW)
+		list_add(&xt->unexpected_list, &xt->le->pt->unexpected_list);
+
+	pthread_spin_unlock(&xt->pt->lock);
+	return STATE_TGT_GET_LENGTH;
 }
 
 /*
@@ -1355,6 +1375,7 @@ static int tgt_cleanup(xt_t *xt)
 	}
 
 	pthread_spin_lock(&xt->pt->lock);
+	list_del(&xt->unexpected_list);
 	xt->pt->num_xt_active--;
 	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
 		xt->pt->enabled = 0;
@@ -1420,9 +1441,6 @@ int process_tgt(xt_t *xt)
 				break;
 			case STATE_TGT_GET_MATCH:
 				state = tgt_get_match(xt);
-				break;
-			case STATE_TGT_GET_PERM:
-				state = tgt_get_perm(xt);
 				break;
 			case STATE_TGT_GET_LENGTH:
 				state = tgt_get_length(xt);

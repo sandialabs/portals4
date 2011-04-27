@@ -23,8 +23,9 @@ typedef struct pt {
 	struct list_head	priority_list;
 	unsigned int		overflow_size;
 	struct list_head	overflow_list;
+	unsigned int		unexpected_size;
+	struct list_head	unexpected_list;
 	pthread_spinlock_t	lock;
-	pthread_spinlock_t	list_lock;
 } pt_t;
 
 #endif /* PTL_PT_H */

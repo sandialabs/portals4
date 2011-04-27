@@ -102,9 +102,9 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->eq = eq;
 
 	pthread_spin_init(&pt->lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&pt->list_lock, PTHREAD_PROCESS_PRIVATE);
 	INIT_LIST_HEAD(&pt->priority_list);
 	INIT_LIST_HEAD(&pt->overflow_list);
+	INIT_LIST_HEAD(&pt->unexpected_list);
 
 	*pt_index = index;
 
@@ -159,7 +159,6 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 		goto err2;
 	}
 
-	pthread_spin_destroy(&pt->list_lock);
 	pthread_spin_destroy(&pt->lock);
 
 	pt->in_use = 0;

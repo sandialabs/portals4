@@ -39,13 +39,13 @@ void me_unlink(me_t *me)
         pt_t *pt = me->pt;
 
 	if (pt) {
-		pthread_spin_lock(&pt->list_lock);
+		pthread_spin_lock(&pt->lock);
 		if (me->ptl_list == PTL_PRIORITY_LIST)
 			pt->priority_size--;
 		else if (me->ptl_list == PTL_OVERFLOW)
 			pt->overflow_size--;
 		list_del_init(&me->list);
-		pthread_spin_unlock(&pt->list_lock);
+		pthread_spin_unlock(&pt->lock);
 		me->pt = NULL;
 		me_put(me);
 	} else

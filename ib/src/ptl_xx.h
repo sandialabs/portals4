@@ -155,7 +155,10 @@ typedef struct xt {
 	};
 
 	/* This xt is waiting for connection to be established. */
-	struct list_head connect_pending_list;
+	struct list_head	connect_pending_list;
+
+	/* used to put xt on unexpected list */
+	struct list_head	unexpected_list;
 
 	struct xremote dest;
 
