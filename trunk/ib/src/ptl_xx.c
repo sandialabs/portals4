@@ -92,6 +92,7 @@ int xt_new(void *arg)
 	xt->data_in = NULL;
 	xt->data_out = NULL;
 	xt->conn = NULL;
+	INIT_LIST_HEAD(&xt->unexpected_list);
 
 	return PTL_OK;
 }

@@ -69,13 +69,13 @@ void le_unlink(le_t *le)
 	pt_t *pt = le->pt;
 
 	if (pt) {
-		pthread_spin_lock(&pt->list_lock);
+		pthread_spin_lock(&pt->lock);
 		if (le->ptl_list == PTL_PRIORITY_LIST)
 			pt->priority_size--;
 		else if (le->ptl_list == PTL_OVERFLOW)
 			pt->overflow_size--;
 		list_del_init(&le->list);
-		pthread_spin_unlock(&pt->list_lock);
+		pthread_spin_unlock(&pt->lock);
 		le->pt = NULL;
 		le_put(le);
 	} else
@@ -231,13 +231,13 @@ int le_append_pt(ni_t *ni, le_t *le)
 	if (!pt->in_use)
 		return PTL_ARG_INVALID;
 
-	pthread_spin_lock(&pt->list_lock);
+	pthread_spin_lock(&pt->lock);
 
 	if (le->ptl_list == PTL_PRIORITY_LIST) {
 		pt->priority_size++;
 		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
 			pt->priority_size--;
-			pthread_spin_unlock(&pt->list_lock);
+			pthread_spin_unlock(&pt->lock);
 			return PTL_NO_SPACE;
 		}
 		list_add(&le->list, &pt->priority_list);
@@ -245,14 +245,14 @@ int le_append_pt(ni_t *ni, le_t *le)
 		pt->overflow_size++;
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
 			pt->overflow_size--;
-			pthread_spin_unlock(&pt->list_lock);
+			pthread_spin_unlock(&pt->lock);
 			return PTL_NO_SPACE;
 		}
 		list_add(&le->list, &pt->overflow_list);
 	}
 
 	le->pt = pt;
-	pthread_spin_unlock(&pt->list_lock);
+	pthread_spin_unlock(&pt->lock);
 
 	return PTL_OK;
 }
