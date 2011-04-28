@@ -40,6 +40,28 @@ typedef struct conn {
 	struct conn		*main_connect;
 } conn_t;
 
+/* RDMA CM private data */
+struct cm_priv_request {
+	uint32_t		options;	  /* NI options (physical/logical, ...) */
+	// TODO: make network safe
+	ptl_process_t		src_id;		/* rank or NID/PID requesting that connection */
+};
+
+#define REJECT_REASON_NO_NI			1 /* NI options don't match */
+#define REJECT_REASON_GOOD_SRQ			2 /* no main process, SRQ # is good */
+#define REJECT_REASON_BAD_PARAM			3 /* request parm is invalid */
+#define REJECT_REASON_CONNECTED			4 /* already connected */
+#define REJECT_REASON_ERROR			5 /* something unexpected happened; catch all */
+
+struct cm_priv_reject {
+	uint32_t		reason;
+	uint32_t		xrc_srq_num;
+};
+
+struct cm_priv_accept {
+	uint32_t		xrc_srq_num;
+};
+
 /*
  * get_conn
  *	lookup or create new conn_t
@@ -59,6 +81,20 @@ void conn_init(struct ni *ni, conn_t *conn);
  */
 int init_connect(struct ni *ni, conn_t *conn);
 
-void process_cm_event(EV_P_ ev_io *w, int revents);
+void cleanup_iface(iface_t *iface);
+
+int init_iface(iface_t *iface);
+
+int iface_init(gbl_t *gbl);
+
+void iface_fini(gbl_t *gbl);
+
+iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id);
+
+struct ni *iface_get_ni(iface_t *iface, int ni_type);
+
+int iface_add_ni(iface_t *iface, struct ni *ni);
+
+int iface_remove_ni(struct ni *ni);
 
 #endif /* PTL_CONN_H */

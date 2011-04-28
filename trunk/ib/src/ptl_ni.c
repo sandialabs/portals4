@@ -4,35 +4,10 @@
 
 #include "ptl_loc.h"
 
-#include <sys/ioctl.h>
-
-unsigned short ptl_ni_port(ni_t *ni)
-{
-	return PTL_NI_PORT + ni->ni_type;
-}
-
-/* Get the default interface index. Returns PTL_IFACE_DEFAULT if none
- * is found. */
-static int get_default_iface(gbl_t *gbl)
-{
-	int iface;
-
-	/* Default interface is ib0 (iface==0). */
-	if (if_nametoindex("ib0") > 0) {
-		iface = 0;
-		goto done;
-	}
-
-	iface = PTL_IFACE_DEFAULT;
-
-done:
-	return iface;
-}
-
 static int compare_nid_pid(const void *a, const void *b)
 {
-	const struct rank_entry *entry1 = a;
-	const struct rank_entry *entry2 = b;
+	const entry_t *entry1 = a;
+	const entry_t *entry2 = b;
 
 	if (entry1->nid == entry2->nid)
 		return(entry1->pid - entry2->pid);
@@ -42,76 +17,10 @@ static int compare_nid_pid(const void *a, const void *b)
 
 static int compare_rank(const void *a, const void *b)
 {
-	const struct rank_entry *entry1 = a;
-	const struct rank_entry *entry2 = b;
+	const entry_t *entry1 = a;
+	const entry_t *entry2 = b;
 
 	return(entry1->rank - entry2->rank);
-}
-
-static int create_tables(ni_t *ni, ptl_size_t map_size, ptl_process_t *actual_mapping)
-{
-	int i;
-	ptl_nid_t prev_nid;
-	int err;
-	int main_rank;
-
-	assert(ni->options & PTL_NI_LOGICAL);
-
-	ni->logical.rank_table = calloc(map_size, sizeof(struct rank_entry));
-	if (ni->logical.rank_table == NULL) {
-		err = PTL_NO_SPACE;
-		goto error;
-	}
-	ni->logical.map_size = map_size;
-
-	for (i = 0; i < map_size; i++) {
-		struct rank_entry *entry = &ni->logical.rank_table[i];
-		conn_t *conn = &entry->connect;
-
-		entry->rank = i;
-		entry->nid = actual_mapping[i].phys.nid;
-		entry->pid = actual_mapping[i].phys.pid;
-
-		conn_init(ni, conn);
-
-		/* Get the IP address from the rank table for that NID. */
-		conn->sin.sin_family = AF_INET;
-		conn->sin.sin_addr.s_addr = nid_to_addr(entry->nid);
-		conn->sin.sin_port = pid_to_port(entry->pid);
-	}
-
-	/* Sort the rank table by NID to find the unique nids. Be careful
-	 * here because some pointers won't be valid anymore, until the
-	 * table is sorted back by ranks. */
-	qsort(ni->logical.rank_table, map_size, sizeof(struct rank_entry), compare_nid_pid);
-
-	prev_nid = ni->logical.rank_table[0].nid + 1;
-	main_rank = -1;
-
-	for (i = 0; i < map_size; i++) {
-		struct rank_entry *entry = &ni->logical.rank_table[i];
-
-		/* Find the main rank for that node. */
-		if (entry->nid != prev_nid) {
-			/* New NID. */
-			prev_nid = entry->nid;
-			main_rank = entry->rank;
-
-			if (ni->id.rank == main_rank)
-				ni->logical.is_main = 1;
-		}
-
-		entry->main_rank = main_rank;
-	}
-
-
-	/* Sort back the rank table by rank. */
-	qsort(ni->logical.rank_table, map_size, sizeof(struct rank_entry), compare_rank);
-
-	return 0;
-
- error:
-	return err;
 }
 
 static void set_limits(ni_t *ni, ptl_ni_limits_t *desired)
@@ -255,108 +164,10 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	return PTL_OK;
 }
 
-/* Get the first IPv4 address for a device. returns INADDR_ANY on
- * error or if none exist. */
-static in_addr_t get_ip_address(const char *ifname)
-{
-	int fd;
-	struct ifreq devinfo;
-	struct sockaddr_in *sin = (struct sockaddr_in*)&devinfo.ifr_addr;
-	in_addr_t addr;
-
-	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-	strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
-
-	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0 &&
-		sin->sin_family == AF_INET) {
-		addr = sin->sin_addr.s_addr;
-	} else {
-		addr = htonl(INADDR_ANY);
-	}
-
-	close(fd);
-
-	return addr;
-}
-
-/* If this rank is the main one on the NID, create the domain, else
- * attach to an existing one. */
-static int get_xrc_domain(ni_t *ni)
-{
-	struct rank_entry *entry;
-	struct rank_entry *main_entry;
-	char domain_fname[100];
-	int err;
-
-	assert(ni->options & PTL_NI_LOGICAL);
-
-	/* Create filename for our domain. */
-	entry = &ni->logical.rank_table[ni->id.rank];
-	main_entry = &ni->logical.rank_table[entry->main_rank];
-	sprintf(domain_fname, "/tmp/p4-xrc-%u-%u-%u", 
-			ni->gbl->jid, main_entry->nid, main_entry->pid);
-
-	if (ni->logical.is_main) {
-
-		ni->logical.xrc_domain_fd = open(domain_fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-		if (ni->logical.xrc_domain_fd == -1) {
-			err = PTL_FAIL;
-			goto done;
-		}
-
-		/* Create XRC domain. */
-		ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
-											 ni->logical.xrc_domain_fd, O_CREAT);
-		if (!ni->logical.xrc_domain) {
-			ptl_warn("unable to open xrc domain\n");
-			err = PTL_FAIL;
-			goto done;
-		}
-
-	} else {
-		int try;
-		
-		/* Open domain file. Try for 10 seconds. */
-		try = 50;
-		do {
-			ni->logical.xrc_domain_fd = open(domain_fname, O_RDWR, S_IRUSR | S_IWUSR);
-			if (ni->logical.xrc_domain_fd != -1)
-				break;
-			try --;
-			usleep(200000);
-		} while(try && ni->logical.xrc_domain_fd == -1);
-
-		if (ni->logical.xrc_domain_fd == -1) {
-			ptl_warn("unable to open xrc domain file = %s\n", domain_fname);
-			err = PTL_FAIL;
-			goto done;
-		}
-
-		
-		/* Open XRC domain. Try for 10 seconds. */
-		try = 10;
-		do {
-			ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
-												 ni->logical.xrc_domain_fd, 0);
-		} while(try && !ni->logical.xrc_domain);
-
-		if (!ni->logical.xrc_domain) {
-			ptl_warn("unable to open xrc domain\n");
-			err = PTL_FAIL;
-			goto done;
-		}
-	}
-
-	err = PTL_OK;
-
- done:
-	return err;
-}
-
 static int init_ib_srq(ni_t *ni)
 {
 	struct ibv_srq_init_attr srq_init_attr;
-	struct iface *iface = ni->iface;
+	iface_t *iface = ni->iface;
 	int err;
 	int i;
 
@@ -368,64 +179,30 @@ static int init_ib_srq(ni_t *ni)
 	if (ni->options & PTL_NI_LOGICAL) {
 		/* Create XRC SRQ. */
 		ni->srq = ibv_create_xrc_srq(iface->pd, ni->logical.xrc_domain,
-									 ni->cq, &srq_init_attr);
+					     ni->cq, &srq_init_attr);
 	} else {
 		/* Create regular SRQ. */
 		ni->srq = ibv_create_srq(iface->pd, &srq_init_attr);
 	}
 
 	if (!ni->srq) {
-		ptl_fatal("unable to create srq\n");
-		goto done;
+		WARN();
+		return PTL_FAIL;
 	}
 
 	for (i = 0; i < srq_init_attr.attr.max_wr; i++) {
-		err = post_recv(ni);
+		err = ptl_post_recv(ni);
 		if (err) {
 			WARN();
-			err = PTL_FAIL;
-			goto done;
+			return PTL_FAIL;
 		}
-	}
-
-	err = PTL_OK;
-
-done:
-	return err;
-}
-
-static int cleanup_ib(ni_t *ni)
-{
-	if (ni->srq) {
-		ibv_destroy_srq(ni->srq);
-		ni->srq = NULL;
-	}
-
-	if (ni->logical.xrc_domain_fd != -1) {
-		close(ni->logical.xrc_domain_fd);
-		ni->logical.xrc_domain_fd = -1;
-	}
-
-	if (ni->logical.xrc_domain) {
-		ibv_close_xrc_domain(ni->logical.xrc_domain);
-		ni->logical.xrc_domain = NULL;
-	}
-
-	if (ni->cq) {
-		ibv_destroy_cq(ni->cq);
-		ni->cq = NULL;
-	}
-
-	if (ni->ch) {
-		ibv_destroy_comp_channel(ni->ch);
-		ni->ch = NULL;
 	}
 
 	return PTL_OK;
 }
 
 /* Must be locked by gbl_mutex. port is in network order. */
-static int bind_iface(struct iface *iface, unsigned int port)
+static int bind_iface(iface_t *iface, unsigned int port)
 {
 	if (iface->listen_id) {
 		/* Already bound. If we want to bind to the same port, or a
@@ -473,8 +250,38 @@ static int bind_iface(struct iface *iface, unsigned int port)
 	return PTL_FAIL;
 }
 
+static int cleanup_ib(ni_t *ni)
+{
+	if (ni->srq) {
+		ibv_destroy_srq(ni->srq);
+		ni->srq = NULL;
+	}
+
+	if (ni->logical.xrc_domain_fd != -1) {
+		close(ni->logical.xrc_domain_fd);
+		ni->logical.xrc_domain_fd = -1;
+	}
+
+	if (ni->logical.xrc_domain) {
+		ibv_close_xrc_domain(ni->logical.xrc_domain);
+		ni->logical.xrc_domain = NULL;
+	}
+
+	if (ni->cq) {
+		ibv_destroy_cq(ni->cq);
+		ni->cq = NULL;
+	}
+
+	if (ni->ch) {
+		ibv_destroy_comp_channel(ni->ch);
+		ni->ch = NULL;
+	}
+
+	return PTL_OK;
+}
+
 /* Must be locked by gbl_mutex. */
-static int init_ib(struct iface *iface, ni_t *ni)
+static int init_ib(iface_t *iface, ni_t *ni)
 {
 	int err;
 	int flags;
@@ -556,72 +363,6 @@ static int init_ib(struct iface *iface, ni_t *ni)
 	return PTL_FAIL;
 }
 
-static void cleanup_iface(struct iface *iface)
-{
-	if (iface->listen_id) {
-		rdma_destroy_id(iface->listen_id);
-		iface->listen_id = NULL;
-		iface->listen = 0;
-	}
-
-	if (iface->cm_channel)
-		rdma_destroy_event_channel(iface->cm_channel);
-
-	iface->sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	iface->ifname[0] = 0;
-
-	EVL_WATCH(ev_io_stop(evl.loop, &iface->cm_watcher));
-}
-
-/* Interface is being used by its first NI. gbl_mutex is already taken. */
-static int init_iface(struct iface *iface, unsigned int ifacenum)
-{
-	int err;
-
-	if (iface->ifname[0]) {
-		/* Already initialized. */
-		return PTL_OK;
-	}
-
-	/* Currently the interface name is ib followed by the interface
-	 * number. In the future we may have a system to override that,
-	 * for instance, by having a table or environment variable
-	 * (PORTALS4_INTERFACE_0=10.2.0.0/16) */
-	sprintf(iface->ifname, "ib%d", ifacenum);
-	if (if_nametoindex(iface->ifname) == 0) {
-		ptl_warn("The interface %s doesn't exist\n", iface->ifname);
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	iface->sin.sin_family = AF_INET;
-	iface->sin.sin_addr.s_addr = get_ip_address(iface->ifname);
-	if (iface->sin.sin_addr.s_addr == htonl(INADDR_ANY)) {
-		ptl_warn("The interface %s doesn't have an IPv4 address\n", iface->ifname);
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	iface->cm_channel = rdma_create_event_channel();
-	if (!iface->cm_channel) {
-		ptl_warn("unable to create interface CM event channel\n");
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	/* Add a watcher for CM connections. */
-	ev_io_init(&iface->cm_watcher, process_cm_event, iface->cm_channel->fd, EV_READ);
-	iface->cm_watcher.data = iface;
-
-	EVL_WATCH(ev_io_start(evl.loop, &iface->cm_watcher));
-
-	return PTL_OK;
-
- err1:
-		cleanup_iface(iface);
-	return err;
-}
-
 /* Release the buffers still on the send_list and recv_list. */
 static void release_buffers(ni_t *ni)
 {
@@ -642,22 +383,314 @@ static void release_buffers(ni_t *ni)
 	}
 }
 
-int PtlNIInit(ptl_interface_t ifacenum,
-			  unsigned int options,
-			  ptl_pid_t pid,
-			  ptl_ni_limits_t *desired,
-			  ptl_ni_limits_t *actual,
-			  ptl_size_t map_size,
-			  ptl_process_t *desired_mapping,
-			  ptl_process_t *actual_mapping,
-			  ptl_handle_ni_t *ni_handle)
+/*
+ * init_pools - initialize resource pools for NI
+ */
+static int init_pools(ni_t *ni)
+{
+	int err;
+
+	ni->mr_pool.free = mr_release;
+
+	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
+			POOL_MR, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->md_pool.free = md_release;
+
+	err = pool_init(&ni->md_pool, "md", sizeof(md_t),
+			POOL_MD, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->me_pool.free = me_release;
+
+	err = pool_init(&ni->me_pool, "me", sizeof(me_t),
+			POOL_ME, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->le_pool.free = le_release;
+
+	err = pool_init(&ni->le_pool, "le", sizeof(le_t),
+			POOL_LE, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->eq_pool.free = eq_release;
+
+	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
+			POOL_EQ, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->ct_pool.free = ct_release;
+
+	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
+			POOL_CT, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->xi_pool.init = xi_init;
+	ni->xi_pool.fini = xi_fini;
+	ni->xi_pool.alloc = xi_new;
+	ni->xi_pool.max_count = 50;	// TODO make this a tunable parameter
+	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
+
+	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
+			POOL_XI, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->xt_pool.init = xt_init;
+	ni->xt_pool.fini = xt_fini;
+	ni->xt_pool.alloc = xt_new;
+
+	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
+			POOL_XT, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	ni->buf_pool.init = buf_init;
+	ni->buf_pool.fini = buf_release;
+	ni->buf_pool.segment_size = 128*1024;
+
+	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t),
+			POOL_BUF, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	return PTL_OK;
+}
+
+/*
+ * create_tables
+ *	initialize private rank table in NI
+ *	we are not yet connected to remote QPs
+ */
+static int create_tables(ni_t *ni, ptl_size_t map_size,
+			 ptl_process_t *actual_mapping)
+{
+	int i;
+	ptl_nid_t curr_nid;
+	int main_rank;	/* rank of lowest pid in each nid */
+	entry_t *entry;
+	conn_t *conn;
+
+	ni->logical.rank_table = calloc(map_size, sizeof(entry_t));
+	if (!ni->logical.rank_table) {
+		WARN();
+		return PTL_NO_SPACE;
+	}
+
+	ni->logical.map_size = map_size;
+
+	for (i = 0; i < map_size; i++) {
+		entry = &ni->logical.rank_table[i];
+		conn = &entry->connect;
+
+		entry->rank = i;
+		entry->nid = actual_mapping[i].phys.nid;
+		entry->pid = actual_mapping[i].phys.pid;
+
+		conn_init(ni, conn);
+
+		/* convert nid/pid to ipv4 address */
+		conn->sin.sin_family = AF_INET;
+		conn->sin.sin_addr.s_addr = nid_to_addr(entry->nid);
+		conn->sin.sin_port = pid_to_port(entry->pid);
+	}
+
+	/* temporarily sort the rank table by NID/PID */
+	qsort(ni->logical.rank_table, map_size,
+	      sizeof(entry_t), compare_nid_pid);
+
+	/* anything that doesn't match first nid */
+	curr_nid = ni->logical.rank_table[0].nid + 1;
+	main_rank = -1;
+
+	for (i = 0; i < map_size; i++) {
+		entry = &ni->logical.rank_table[i];
+
+		if (entry->nid != curr_nid) {
+			/* start new NID. */
+			curr_nid = entry->nid;
+			main_rank = entry->rank;
+
+			if (ni->id.rank == main_rank)
+				ni->logical.is_main = 1;
+		}
+
+		entry->main_rank = main_rank;
+	}
+
+	/* Sort back the rank table by rank. */
+	qsort(ni->logical.rank_table, map_size,
+	      sizeof(entry_t), compare_rank);
+
+	return PTL_OK;
+}
+
+/* If this rank is the main one on the NID, create the domain, else
+ * attach to an existing one. */
+static int get_xrc_domain(ni_t *ni)
+{
+	entry_t *entry;
+	entry_t *main_entry;
+	char domain_fname[100];
+
+	/* Create filename for our domain. */
+	entry = &ni->logical.rank_table[ni->id.rank];
+	main_entry = &ni->logical.rank_table[entry->main_rank];
+	sprintf(domain_fname, "/tmp/p4-xrc-%u-%u-%u", 
+			ni->gbl->jid, main_entry->nid, main_entry->pid);
+
+	if (ni->logical.is_main) {
+		ni->logical.xrc_domain_fd = open(domain_fname, O_RDWR|O_CREAT,
+						 S_IRUSR|S_IWUSR);
+		if (ni->logical.xrc_domain_fd < 0) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		/* Create XRC domain. */
+		ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
+							     ni->logical.xrc_domain_fd, O_CREAT);
+		if (!ni->logical.xrc_domain) {
+			close(ni->logical.xrc_domain_fd);
+			WARN();
+			return PTL_FAIL;
+		}
+	} else {
+		int try;
+		
+		/* Open domain file. Try for 10 seconds. */
+		try = 50;
+		do {
+			ni->logical.xrc_domain_fd = open(domain_fname,
+							 O_RDWR, S_IRUSR | S_IWUSR);
+			if (ni->logical.xrc_domain_fd >= 0)
+				break;
+			try --;
+			usleep(200000);
+		} while(try && ni->logical.xrc_domain_fd < 0);
+
+		if (ni->logical.xrc_domain_fd < 0) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		/* Open XRC domain. Try for 10 seconds. */
+		try = 10;
+		do {
+			ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
+								     ni->logical.xrc_domain_fd, 0);
+		} while(try && !ni->logical.xrc_domain);
+
+		if (!ni->logical.xrc_domain) {
+			WARN();
+			return PTL_FAIL;
+		}
+	}
+
+	return PTL_OK;
+}
+
+/*
+ * init_mapping
+ */
+static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
+			   ptl_process_t *desired_mapping,
+			   ptl_process_t *actual_mapping)
+{
+	int i;
+	int err;
+
+	if (!iface->actual_mapping) {
+		/* Don't have one yet. Allocate and fill-up now. */
+		const int size = map_size * sizeof(ptl_process_t);
+
+		iface->map_size = map_size;
+		iface->actual_mapping = malloc(size);
+		if (!iface->actual_mapping) {
+			WARN();
+			return PTL_NO_SPACE;
+		}
+
+		memcpy(iface->actual_mapping, desired_mapping, size);
+	}
+
+	/* lookup our nid/pid to determine rank */
+	ni->id.rank = PTL_RANK_ANY;
+
+	for (i = 0; i < iface->map_size; i++) {
+		if ((iface->actual_mapping[i].phys.nid == iface->id.phys.nid) &&
+		    (iface->actual_mapping[i].phys.pid == iface->id.phys.pid)) {
+			ni->id.rank = i;
+			ptl_test_rank = i;
+		}
+	}
+
+	if (ni->id.rank == PTL_RANK_ANY) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	/* return mapping to caller. */
+	if (actual_mapping)
+		memcpy(actual_mapping, iface->actual_mapping,
+		       map_size*sizeof(ptl_process_t));
+
+	err = create_tables(ni, iface->map_size, iface->actual_mapping);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	/* Retrieve the XRC domain name. */
+	err = get_xrc_domain(ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	return PTL_OK;
+}
+
+int PtlNIInit(ptl_interface_t iface_id,
+	      unsigned int options,
+	      ptl_pid_t pid,
+	      ptl_ni_limits_t *desired,
+	      ptl_ni_limits_t *actual,
+	      ptl_size_t map_size,
+	      ptl_process_t *desired_mapping,
+	      ptl_process_t *actual_mapping,
+	      ptl_handle_ni_t *ni_handle)
 {
 	int err;
 	ni_t *ni;
 	gbl_t *gbl;
 	int ni_type;
-	struct iface *iface;
-	int i;
+	iface_t *iface;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
@@ -665,15 +698,11 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		return err;
 	}
 
-	if (ifacenum == PTL_IFACE_DEFAULT) {
-		ifacenum = get_default_iface(gbl);
-		if (ifacenum == PTL_IFACE_DEFAULT) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
+	iface = get_iface(gbl, iface_id);
+	if (unlikely(!iface)) {
+		WARN();
+		goto err1;
 	}
-	iface = &gbl->iface[ifacenum];
 
 	if (unlikely(options & ~PTL_NI_INIT_OPTIONS)) {
 		WARN();
@@ -707,13 +736,14 @@ int PtlNIInit(ptl_interface_t ifacenum,
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 
-	ni = gbl_lookup_ni(gbl, ifacenum, ni_type);
-	if (ni) {
-		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
+	/* check to see if ni of type ni_type already exists */
+	ni = iface_get_ni(iface, ni_type);
+	if (ni)
 		goto done;
-	}
 
-	err = init_iface(iface, ifacenum);
+	/* check to see if iface is configured and waiting for cm events
+	   if not, initialize it */
+	err = init_iface(iface);
 	if (err) {
 		WARN();
 		goto err2;
@@ -791,164 +821,25 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		goto err3;
 	}
 
-	ni->mr_pool.free = mr_release;
-
-	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
-			POOL_MR, (obj_t *)ni);
-	if (err) {
-		WARN();
+	err = init_pools(ni);
+	if (unlikely(err))
 		goto err3;
-	}
-
-	ni->md_pool.free = md_release;
-
-	err = pool_init(&ni->md_pool, "md", sizeof(md_t),
-			POOL_MD, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->me_pool.free = me_release;
-
-	err = pool_init(&ni->me_pool, "me", sizeof(me_t),
-			POOL_ME, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->le_pool.free = le_release;
-
-	err = pool_init(&ni->le_pool, "le", sizeof(le_t),
-			POOL_LE, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->eq_pool.free = eq_release;
-
-	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
-			POOL_EQ, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->ct_pool.free = ct_release;
-
-	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
-			POOL_CT, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->xi_pool.init = xi_init;
-	ni->xi_pool.fini = xi_fini;
-	ni->xi_pool.alloc = xi_new;
-	ni->xi_pool.max_count = 50;	// TODO make this a tunable parameter
-	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
-
-	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
-			POOL_XI, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->xt_pool.init = xt_init;
-	ni->xt_pool.fini = xt_fini;
-	ni->xt_pool.alloc = xt_new;
-
-	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
-			POOL_XT, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
-
-	ni->buf_pool.init = buf_init;
-	ni->buf_pool.fini = buf_release;
-	ni->buf_pool.segment_size = 128*1024;
-
-	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t),
-			POOL_BUF, (obj_t *)ni);
-	if (err) {
-		WARN();
-		goto err3;
-	}
 
 	err = init_ib(iface, ni);
-	if (err) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
-	/* Create the rank table. */
 	if (options & PTL_NI_LOGICAL) {
-		if (!iface->actual_mapping) {
-			/* Don't have one yet. Allocate and fill-up now. */
-			const int size = map_size * sizeof(ptl_process_t);
-
-			iface->map_size = map_size;
-			iface->actual_mapping = malloc(size);
-			if (!iface->actual_mapping) {
-				WARN();
-				err = PTL_NO_SPACE;
-				goto err3;
-			}
-
-			memcpy(iface->actual_mapping, desired_mapping, size);
-		}
-
-		/* lookup our nid/pid to determine rank */
-		ni->id.rank = PTL_RANK_ANY;
-
-		for (i = 0; i < iface->map_size; i++) {
-			if ((iface->actual_mapping[i].phys.nid == iface->id.phys.nid) &&
-			    (iface->actual_mapping[i].phys.pid == iface->id.phys.pid)) {
-				ni->id.rank = i;
-				ptl_test_rank = i;
-			}
-		}
-
-		if (ni->id.rank == PTL_RANK_ANY) {
-			ptl_warn("mapping does not contain NID/PID\n");
-			WARN();
-			err = PTL_ARG_INVALID;
+		err = init_mapping(ni, iface, map_size,
+				   desired_mapping, actual_mapping);
+		if (unlikely(err))
 			goto err3;
-		}
-
-		if (debug)
-			printf("found rank = %d\n", ni->id.rank);
-
-		/* return mapping to caller. */
-		if (actual_mapping)
-			memcpy(actual_mapping, iface->actual_mapping,
-			       map_size*sizeof(ptl_process_t));
-
-		err = create_tables(ni, iface->map_size, iface->actual_mapping);
-		if (err) {
-			WARN();
-			goto err3;
-		}
-
-		/* Retrieve the XRC domain name. */
-		err = get_xrc_domain(ni);
-		if (err) {
-			WARN();
-			goto err3;
-		}
 	}
 
-	/* Create own SRQ. */
+	/* Create shared receive queue */
 	err = init_ib_srq(ni);
-	if (err) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 	/* Add a watcher for CQ events. */
 	ev_io_init(&ni->cq_watcher, process_recv, ni->ch->fd, EV_READ);
@@ -956,8 +847,7 @@ int PtlNIInit(ptl_interface_t ifacenum,
 	EVL_WATCH(ev_io_start(evl.loop, &ni->cq_watcher));
 
 	/* Ready to listen. */
-	if ((ni->options & PTL_NI_PHYSICAL) &&
-		!iface->listen) {
+	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
 		if (rdma_listen(iface->listen_id, 0)) {
 			ptl_warn("Failed to listen\n");
 			WARN();
@@ -965,13 +855,9 @@ int PtlNIInit(ptl_interface_t ifacenum,
 		}
 
 		iface->listen = 1;
-		
-		if (debug) {
-			printf("CM listening on %x:%d\n", iface->sin.sin_addr.s_addr, iface->sin.sin_port);
-		}
 	}
 
-	err = gbl_add_ni(gbl, ni);
+	err = iface_add_ni(iface, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
@@ -1090,7 +976,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	if (__sync_sub_and_fetch(&ni->ref_cnt, 1) <= 0) {
-		err = gbl_remove_ni(gbl, ni);
+		err = iface_remove_ni(ni);
 		if (err) {
 			pthread_mutex_unlock(&gbl->gbl_mutex);
 			goto err2;

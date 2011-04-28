@@ -17,6 +17,7 @@ struct ni;
  * interface table entry
  */
 typedef struct iface {
+	ptl_interface_t		iface_id;
 	struct ni		*ni[MAX_NI_TYPES];
 	char			ifname[IF_NAMESIZE];
 	ptl_process_t		id;		/* physical id for this interface */
@@ -37,7 +38,8 @@ typedef struct iface {
 } iface_t;
 
 typedef struct gbl {
-	iface_t			iface[MAX_IFACE];
+	int			num_iface;	/* size of interface table */
+	iface_t			*iface;		/* interface table */
 	pthread_mutex_t		gbl_mutex;
 	int			init_once;
 	int			ref_cnt;	/* count PtlInit/PtlFini */
