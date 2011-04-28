@@ -5,20 +5,23 @@
 #ifndef PTL_NI_H
 #define PTL_NI_H
 
-struct ni;
-
-/* Remote rank. There's one record per rank. Logical NIs only. */
-struct rank_entry {
+/*
+ * rank_entry_t
+ *	per private rank table entry info
+ *	only used for logical NIs
+ */
+typedef struct rank_entry {
 	ptl_rank_t		rank;
 	ptl_rank_t		main_rank;		/* main rank on NID */
 	ptl_nid_t		nid;
 	ptl_pid_t		pid;
 	uint32_t		remote_xrc_srq_num;
 	conn_t			connect;
-};
+} entry_t;
 
 /*
- * per NI info
+ * ni_t
+ *	per NI info
  */
 typedef struct ni {
 	obj_t			obj;
@@ -27,13 +30,13 @@ typedef struct ni {
 
 	rt_t			rt;
 
-	ptl_ni_limits_t		limits;
-	ptl_ni_limits_t		current;
+	ptl_ni_limits_t		limits;		/* max number of xxx */
+	ptl_ni_limits_t		current;	/* current num of xxx */
 
 	int			ref_cnt;
 
 	struct iface		*iface;
-	unsigned int		ifacenum;
+	unsigned int		iface_id;
 	unsigned int		options;
 	unsigned int		ni_type;
 
@@ -90,6 +93,7 @@ typedef struct ni {
 	ev_io			cq_watcher;
 	struct ibv_srq		*srq;	/* either regular or XRC */
 
+	/* object allocation pools */
 	pool_t			mr_pool;
 	pool_t			md_pool;
 	pool_t			me_pool;
@@ -110,17 +114,17 @@ typedef struct ni {
 			 * the other PIDs will be rejected. Also, locally, the
 			 * XI/XT will not be queued on the non-main ranks, but on
 			 * the main rank. */
-			int is_main;
-			int main_rank;
+			int			is_main;
+			int			main_rank;
 
 			/* Rank table. This is used to connection TO remote ranks */
-			int map_size;
-			struct rank_entry *rank_table;
+			int			map_size;
+			struct rank_entry	*rank_table;
 
 			/* Connection list. This is a set of passive connections,
 			 * used for connections FROM remote ranks. */
-			pthread_mutex_t lock;
-			struct list_head connect_list;
+			pthread_mutex_t		lock;
+			struct list_head	connect_list;
 
 			/* IB XRC support. */
 			int			xrc_domain_fd;
@@ -128,6 +132,7 @@ typedef struct ni {
 			uint32_t		xrc_rcv_qpn;
 	
 		} logical;
+
 		struct {
 			/* Physical NI. */
 			void			*tree;
