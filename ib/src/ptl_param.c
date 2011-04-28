@@ -113,6 +113,12 @@ param_t param[] = {
 						.max	= LONG_MAX,
 						.val	= 5,
 					  },
+	[PTL_MAX_IFACE]				= {
+						.name	= "PTL_MAX_IFACE",
+						.min	= 0,
+						.max	= LONG_MAX,
+						.val	= 32,
+					  },
 	[PTL_MAX_QP_SEND_WR]			= {
 						.name	= "PTL_MAX_QP_SEND_WR",
 						.min	= 0,
