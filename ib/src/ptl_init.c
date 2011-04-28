@@ -242,8 +242,7 @@ static int init_send_req(xi_t *xi)
 	buf->dest = &xi->dest;
 
 	/* ask for a response - they are all the same */
-	if (xi->event_mask & (XI_CT_ACK_EVENT | XI_ACK_EVENT |
-			      XI_CT_REPLY_EVENT | XI_REPLY_EVENT))
+	if (xi->event_mask)
 		hdr->ack_req = PTL_ACK_REQ;
 
 	switch (xi->operation) {
@@ -286,12 +285,15 @@ static int init_send_req(xi_t *xi)
 	buf->sg_list[0].length = buf->length;
 	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 
+#if 0
 	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
 	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)))
 		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
-	else if (xi->event_mask) {
+	else 
+#endif
+	if (xi->event_mask)
 		xi->next_state = STATE_INIT_GET_RECV;
-	} else
+	else
 		xi->next_state = STATE_INIT_CLEANUP;
 
 	err = send_message(buf);
