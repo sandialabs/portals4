@@ -122,35 +122,60 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_le_t *le_init, ptl_list_t ptl_list,
 		    ptl_handle_le_t *le_handle)
 {
-	if (unlikely(!ni))
-		return PTL_ARG_INVALID;
+	pt_t *pt;
 
-	if (type == TYPE_ME) {
-		if (unlikely((ni->options & PTL_NI_MATCHING) == 0))
-			return PTL_ARG_INVALID;
-	} else {
-		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0))
-			return PTL_ARG_INVALID;
+	if (unlikely(!ni)) {
+		WARN();
+		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(pt_index >= ni->limits.max_pt_index))
+	pt = &ni->pt[pt_index];
+
+	if (!pt->in_use) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
+
+	if (type == TYPE_ME) {
+		if (unlikely((ni->options & PTL_NI_MATCHING) == 0)) {
+			WARN();
+			return PTL_ARG_INVALID;
+		}
+	} else {
+		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0)) {
+			WARN();
+			return PTL_ARG_INVALID;
+		}
+	}
+
+	if (unlikely(pt_index >= ni->limits.max_pt_index)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
 
 	if (le_init->options & PTL_IOVEC) {
-		if (le_init->length > ni->limits.max_iovecs)
+		if (le_init->length > ni->limits.max_iovecs) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS)) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	} else {
-		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS)) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	}
 
-	if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW))
+	if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW)) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
 
 	return PTL_OK;
 }
@@ -227,9 +252,6 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 int le_append_pt(ni_t *ni, le_t *le)
 {
 	pt_t *pt = &ni->pt[le->pt_index];
-
-	if (!pt->in_use)
-		return PTL_ARG_INVALID;
 
 	pthread_spin_lock(&pt->lock);
 
@@ -357,35 +379,60 @@ err1:
 int le_search_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_le_t *le_init, ptl_search_op_t search_op)
 {
-	if (unlikely(!ni))
-		return PTL_ARG_INVALID;
+	pt_t *pt;
 
-	if (type == TYPE_ME) {
-		if (unlikely((ni->options & PTL_NI_MATCHING) == 0))
-			return PTL_ARG_INVALID;
-	} else {
-		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0))
-			return PTL_ARG_INVALID;
+	if (unlikely(!ni)) {
+		WARN();
+		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(pt_index >= ni->limits.max_pt_index))
+	pt = &ni->pt[pt_index];
+
+	if (!pt->in_use) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
+
+	if (type == TYPE_ME) {
+		if (unlikely((ni->options & PTL_NI_MATCHING) == 0)) {
+			WARN();
+			return PTL_ARG_INVALID;
+		}
+	} else {
+		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0)) {
+			WARN();
+			return PTL_ARG_INVALID;
+		}
+	}
+
+	if (unlikely(pt_index >= ni->limits.max_pt_index)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
 
 	if (le_init->options & PTL_IOVEC) {
-		if (le_init->length > ni->limits.max_iovecs)
+		if (le_init->length > ni->limits.max_iovecs) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS)) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	} else {
-		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS))
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS)) {
+			WARN();
 			return PTL_ARG_INVALID;
+		}
 	}
 
-	if (unlikely(search_op < PTL_SEARCH_ONLY || search_op > PTL_SEARCH_DELETE))
+	if (unlikely(search_op < PTL_SEARCH_ONLY || search_op > PTL_SEARCH_DELETE)) {
+		WARN();
 		return PTL_ARG_INVALID;
+	}
 
 	return PTL_OK;
 }
@@ -410,23 +457,30 @@ int PtlLESearch(					/* 3.11.4 */
 	ct_t *ct;
 
 	err = get_gbl(&gbl);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		return err;
+	}
 
 	err = ni_get(ni_handle, &ni);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err1;
+	}
 
 	err = le_search_check(TYPE_LE, ni, pt_index, le_init, search_op);
 	if (unlikely(err))
 		goto err2;
 
 	err = ct_get(le_init->ct_handle, &ct);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
 	if (unlikely(ct && (to_ni(ct) != ni))) {
 		err = PTL_ARG_INVALID;
+		WARN();
 		goto err3;
 	}
 
