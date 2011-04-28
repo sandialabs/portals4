@@ -268,9 +268,15 @@ int test_ptl_md_bind(struct node_info *info)
 int test_ptl_md_release(struct node_info *info)
 {
 	int ret;
+	int i;
 
-	while ((ret = PtlMDRelease(info->md_handle)) == PTL_IN_USE)
-		sched_yield();
+	for (i = 0; i < 3; i++) {
+		ret = PtlMDRelease(info->md_handle);
+		if (ret == PTL_IN_USE)
+			usleep(10000);
+		else
+			break;
+	}
 
 	if (ret == PTL_OK) {
 		if (info->next_md == 0) {
