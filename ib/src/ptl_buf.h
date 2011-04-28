@@ -89,7 +89,7 @@ static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
         return (ptl_handle_buf_t)buf->obj.obj_handle;
 }
 
-int post_recv(ni_t *ni);
+int ptl_post_recv(ni_t *ni);
 
 void buf_dump(buf_t *buf);
 
