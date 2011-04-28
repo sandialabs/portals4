@@ -4,8 +4,6 @@
 
 #include "ptl_loc.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <sys/wait.h>
 
@@ -20,39 +18,9 @@ static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Event loop. */
 struct evl evl;
 
-void session_list_is_empty(void)
-{
-	/* We don't care. */
-	return;
-}
-
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
 	ev_break(evl.loop, EVBREAK_ALL);
-}
-
-/*
- * iface_init
- *	init iface table
- */
-void iface_init(gbl_t *gbl)
-{
-	int i;
-
-	//memset(gbl->iface, 0, MAX_IFACE*sizeof(*gbl->iface));
-
-	for (i = 0; i < MAX_IFACE; i++) {
-		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
-		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
-	}
-}
-
-/*
- * iface_fini
- *	fini iface table
- */
-void iface_fini(gbl_t *gbl)
-{
 }
 
 static void gbl_release(ref_t *ref)
@@ -94,7 +62,9 @@ static int gbl_init(gbl_t *gbl)
 {
 	int err;
 
-	iface_init(gbl);
+	err = iface_init(gbl);
+	if (err)
+		return err;
 
 	pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
@@ -146,70 +116,6 @@ int get_gbl(gbl_t **gbl_p)
 void gbl_put(gbl_t *gbl)
 {
 	ref_put(&gbl->ref, gbl_release);
-}
-
-/*
- * gbl_lookup_ni
- *	lookup ni in iface table
- *	caller should hold global mutex
- */
-ni_t *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type)
-{
-	if (iface >= MAX_IFACE || ni_type >= MAX_NI_TYPES) {
-		WARN();
-		return NULL;
-	}
-
-	return gbl->iface[iface].ni[ni_type];
-}
-
-/*
- * gbl_add_ni
- *	add ni to iface table
- *	caller should hold global mutex
- */
-int gbl_add_ni(gbl_t *gbl, ni_t *ni)
-{
-	struct iface *iface;
-
-	/* Ensure there's no NI there already. */
-	if (ni->ifacenum >= MAX_IFACE ||
-	    ni->ni_type >= MAX_NI_TYPES) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	iface = &gbl->iface[ni->ifacenum];
-
-	if (iface->ni[ni->ni_type]) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	iface->ni[ni->ni_type] = ni;
-	ni->iface = iface;
-	
-	return PTL_OK;
-}
-
-/*
- * gbl_remove_ni
- *	remove ni from iface table
- *	caller should hold global mutex
- */
-int gbl_remove_ni(gbl_t *gbl, ni_t *ni)
-{
-	struct iface *iface = ni->iface;
-
-	if (unlikely(ni != iface->ni[ni->ni_type])) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	iface->ni[ni->ni_type] = NULL;
-	ni->iface = NULL;
-
-	return PTL_OK;
 }
 
 int PtlInit()

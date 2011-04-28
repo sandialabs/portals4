@@ -387,7 +387,12 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 	return 1;
 }
 
-void process_cm_event(EV_P_ ev_io *w, int revents)
+/*
+ * process_cm_event
+ *	rdmacm event handler
+ *	there is a listening rdmacm id per iface
+ */
+static void process_cm_event(EV_P_ ev_io *w, int revents)
 {
 	struct iface *iface = w->data;
 	ni_t *ni;
@@ -604,4 +609,206 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	rdma_ack_cm_event(event);
 
 	return;
+}
+
+void cleanup_iface(iface_t *iface)
+{
+	if (iface->listen_id) {
+		rdma_destroy_id(iface->listen_id);
+		iface->listen_id = NULL;
+		iface->listen = 0;
+	}
+
+	if (iface->cm_channel)
+		rdma_destroy_event_channel(iface->cm_channel);
+
+	iface->sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	iface->ifname[0] = 0;
+
+	EVL_WATCH(ev_io_stop(evl.loop, &iface->cm_watcher));
+}
+
+/* Get the first IPv4 address for a device. returns INADDR_ANY on
+ * error or if none exist. */
+static in_addr_t get_ip_address(const char *ifname)
+{
+	int fd;
+	struct ifreq devinfo;
+	struct sockaddr_in *sin = (struct sockaddr_in*)&devinfo.ifr_addr;
+	in_addr_t addr;
+
+	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
+
+	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0 &&
+		sin->sin_family == AF_INET) {
+		addr = sin->sin_addr.s_addr;
+	} else {
+		addr = htonl(INADDR_ANY);
+	}
+
+	close(fd);
+
+	return addr;
+}
+
+int init_iface(iface_t *iface)
+{
+	int err;
+
+	if (iface->ifname[0]) {
+		/* Already initialized. */
+		return PTL_OK;
+	}
+
+	/* Currently the interface name is ib followed by the interface
+	 * number. In the future we may have a system to override that,
+	 * for instance, by having a table or environment variable
+	 * (PORTALS4_INTERFACE_0=10.2.0.0/16) */
+	sprintf(iface->ifname, "ib%d", iface->iface_id);
+	if (if_nametoindex(iface->ifname) == 0) {
+		ptl_warn("The interface %s doesn't exist\n", iface->ifname);
+		err = PTL_FAIL;
+		goto err1;
+	}
+
+	iface->sin.sin_family = AF_INET;
+	iface->sin.sin_addr.s_addr = get_ip_address(iface->ifname);
+	if (iface->sin.sin_addr.s_addr == htonl(INADDR_ANY)) {
+		ptl_warn("The interface %s doesn't have an IPv4 address\n", iface->ifname);
+		err = PTL_FAIL;
+		goto err1;
+	}
+
+	iface->cm_channel = rdma_create_event_channel();
+	if (!iface->cm_channel) {
+		ptl_warn("unable to create interface CM event channel\n");
+		err = PTL_FAIL;
+		goto err1;
+	}
+
+	/* Add a watcher for CM connections. */
+	ev_io_init(&iface->cm_watcher, process_cm_event,
+		   iface->cm_channel->fd, EV_READ);
+	iface->cm_watcher.data = iface;
+
+	EVL_WATCH(ev_io_start(evl.loop, &iface->cm_watcher));
+
+	return PTL_OK;
+
+ err1:
+	cleanup_iface(iface);
+	return err;
+}
+
+/*
+ * iface_init
+ *	init iface table
+ *	called once per PtlInit() call
+ */
+int iface_init(gbl_t *gbl)
+{
+	int i;
+	int num_iface = get_param(PTL_MAX_IFACE);
+
+	if (!gbl->iface) {
+		gbl->num_iface = num_iface;
+		gbl->iface = calloc(num_iface, sizeof(*gbl->iface));
+		if (!gbl->iface) {
+			WARN();
+			return PTL_NO_SPACE;
+		}
+	}
+
+	for (i = 0; i < num_iface; i++) {
+		gbl->iface[i].iface_id = i;
+		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
+		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
+	}
+
+	return PTL_OK;
+}
+
+/*
+ * iface_fini
+ *	fini iface table
+ *	called once per PtlFini() call
+ */
+void iface_fini(gbl_t *gbl)
+{
+}
+
+/*
+ * get_iface
+ *	return iface given iface_id
+ */
+iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id)
+{
+	if (!gbl->num_iface || !gbl->iface) {
+		WARN();
+		return NULL;
+	} else if (iface_id == PTL_IFACE_DEFAULT) {
+		if (if_nametoindex("ib0") > 0) {
+			return &gbl->iface[0];
+		} else {
+			WARN();
+			return NULL;
+		}
+	} else if (iface_id < 0 || iface_id >= gbl->num_iface) {
+		WARN();
+		return NULL;
+	} else {
+		return &gbl->iface[iface_id];
+	}
+}
+
+/*
+ * iface_get_ni
+ *	lookup ni in iface table
+ */
+ni_t *iface_get_ni(iface_t *iface, int ni_type)
+{
+	ni_t *ni;
+
+	if (ni_type >= MAX_NI_TYPES) {
+		WARN();
+		return NULL;
+	}
+
+	ni = iface->ni[ni_type];
+	if (ni)
+		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
+
+	return ni;
+}
+
+/*
+ * iface_add_ni
+ *	add ni to iface table
+ *	caller should hold global mutex
+ */
+int iface_add_ni(iface_t *iface, ni_t *ni)
+{
+	iface->ni[ni->ni_type] = ni;
+	ni->iface = iface;
+
+	return PTL_OK;
+}
+
+/*
+ * iface_remove_ni
+ *	remove ni from iface table
+ *	caller should hold global mutex
+ */
+int iface_remove_ni(ni_t *ni)
+{
+	if (unlikely(ni != ni->iface->ni[ni->ni_type])) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	ni->iface->ni[ni->ni_type] = NULL;
+	ni->iface = NULL;
+
+	return PTL_OK;
 }
