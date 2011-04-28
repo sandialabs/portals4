@@ -342,8 +342,8 @@ typedef struct {					/* 3.14.1 */
 } ptl_ct_event_t;
 
 typedef enum {						/* 3.15.1 */
-	PTL_ACK_REQ,
 	PTL_NO_ACK_REQ,
+	PTL_ACK_REQ,
 	PTL_CT_ACK_REQ,
 	PTL_OC_ACK_REQ,
 	PTL_ACK_REQ_LAST,
