@@ -227,9 +227,9 @@ typedef struct {					/* 3.12.1 */
 	void			*start;
 	ptl_size_t		length;
 	ptl_handle_ct_t		ct_handle;
-	ptl_size_t		min_free;
 	ptl_ac_id_t		ac_id;
 	unsigned int		options;
+	ptl_size_t		min_free;
 	ptl_process_t		match_id;
 	ptl_match_bits_t	match_bits;
 	ptl_match_bits_t	ignore_bits;

@@ -65,7 +65,6 @@ static void make_ct_comm_event(xt_t *xt)
 	int bytes = le->options & PTL_LE_EVENT_CT_BYTES;
 
 	make_ct_event(le->ct, xt->ni_fail, xt->mlength, bytes);
-
 	xt->event_mask &= ~XT_CT_COMM_EVENT;
 }
 

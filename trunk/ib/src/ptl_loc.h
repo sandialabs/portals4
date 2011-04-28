@@ -32,6 +32,7 @@
 #include <poll.h>
 #include <sys/time.h>
 #include <search.h>
+#include <sys/ioctl.h>
 
 struct timeval start_time;
 struct timeval stop_time;
@@ -78,9 +79,6 @@ extern int debug;
 extern int atom_type_size[];
 
 #define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
-
-#define PTL_NI_PORT	(0x4567)
-unsigned short ptl_ni_port(ni_t *ni);
 
 #ifndef cpu_to_be16
 #define cpu_to_be16(x)	htons(x)
@@ -196,28 +194,6 @@ enum {
 	STATE_INIT_LAST,
 };
 
-/* RDMA CM private data */
-struct cm_priv_request {
-	uint32_t options;	  /* NI options (physical/logical, ...) */
-	// TODO: make network safe
-	ptl_process_t src_id;		/* rank or NID/PID requesting that connection */
-};
-
-#define REJECT_REASON_NO_NI			1 /* NI options don't match */
-#define REJECT_REASON_GOOD_SRQ		2 /* no main process, SRQ # is good */
-#define REJECT_REASON_BAD_PARAM		3 /* request parm is invalid */
-#define REJECT_REASON_CONNECTED		4 /* already connected */
-#define REJECT_REASON_ERROR			5 /* something unexpected happened; catch all */
-
-struct cm_priv_reject {
-	uint32_t reason;
-	uint32_t xrc_srq_num;
-};
-
-struct cm_priv_accept {
-	uint32_t xrc_srq_num;
-};
-
 /* In current implementation a NID is just an IPv4 address in host order. */
 static inline in_addr_t nid_to_addr(ptl_nid_t nid)
 {
@@ -243,8 +219,6 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 {
 	return ntohs(port);
 }
-
-void session_list_is_empty(void);
 
 int send_message(buf_t *buf);
 

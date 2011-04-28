@@ -118,7 +118,7 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 		return STATE_RECV_RDMA_COMP;
 	} else if (buf->type == BUF_RECV) {
 		if (debug) printf("received a recv wc\n");
-		post_recv(ni);
+		ptl_post_recv(ni);
 		return STATE_RECV_PACKET;
 	} else {
 		WARN();

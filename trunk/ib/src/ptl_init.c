@@ -81,7 +81,7 @@ static inline void make_ct_send_event(xi_t *xi)
 	ct_t *ct = md->ct;
 	int bytes = md->options & PTL_MD_EVENT_CT_BYTES;
 
-	make_ct_event(ct, xi->ni_fail, xi->mlength, bytes);
+	make_ct_event(ct, xi->ni_fail, xi->rlength, bytes);
 	xi->event_mask &= ~XI_CT_SEND_EVENT;
 }
 
@@ -143,12 +143,14 @@ static void init_events(xi_t *xi)
 			xi->event_mask |= XI_REPLY_EVENT;
 
 		if (xi->put_md->ct &&
-		    (xi->put_md->options & PTL_MD_EVENT_CT_SEND))
+		    (xi->put_md->options & PTL_MD_EVENT_CT_SEND)) {
 			xi->event_mask |= XI_CT_SEND_EVENT;
+		}
 
 		if (xi->get_md->ct &&
-		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY))
+		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY)) {
 			xi->event_mask |= XI_CT_REPLY_EVENT;
+		}
 		break;
 	default:
 		WARN();
@@ -239,6 +241,11 @@ static int init_send_req(xi_t *xi)
 	buf->xi = xi;
 	buf->dest = &xi->dest;
 
+	/* ask for a response - they are all the same */
+	if (xi->event_mask & (XI_CT_ACK_EVENT | XI_ACK_EVENT |
+			      XI_CT_REPLY_EVENT | XI_REPLY_EVENT))
+		hdr->ack_req = PTL_ACK_REQ;
+
 	switch (xi->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
@@ -283,8 +290,6 @@ static int init_send_req(xi_t *xi)
 	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)))
 		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
 	else if (xi->event_mask) {
-		/* we need an ack and they are all the same */
-		hdr->ack_req = PTL_ACK_REQ;
 		xi->next_state = STATE_INIT_GET_RECV;
 	} else
 		xi->next_state = STATE_INIT_CLEANUP;
