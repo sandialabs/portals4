@@ -93,7 +93,7 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(ack_req < PTL_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
+	if (unlikely(ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
@@ -450,7 +450,7 @@ static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(ack_req < PTL_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
+	if (unlikely(ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
