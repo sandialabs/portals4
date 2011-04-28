@@ -75,11 +75,13 @@ static void make_ct_comm_event(xt_t *xt)
  */
 static void init_events(xt_t *xt)
 {
-	if (xt->pt->eq && !(xt->le->options & PTL_LE_EVENT_COMM_DISABLE))
+	if (xt->pt->eq && !(xt->le->options & PTL_LE_EVENT_COMM_DISABLE)) {
 		xt->event_mask |= XT_COMM_EVENT;
+	}
 
-	if (xt->le->ct && (xt->le->options & PTL_LE_EVENT_CT_COMM))
+	if (xt->le->ct && (xt->le->options & PTL_LE_EVENT_CT_COMM)) {
 		xt->event_mask |= XT_CT_COMM_EVENT;
+	}
 
 	switch (xt->operation) {
 	case OP_PUT:
@@ -90,8 +92,9 @@ static void init_events(xt_t *xt)
 	case OP_GET:
 	case OP_FETCH:
 	case OP_SWAP:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
+		if (xt->ack_req != PTL_NO_ACK_REQ) {
 			xt->event_mask |= XT_REPLY_EVENT;
+		}
 		break;
 	}
 }
@@ -1231,9 +1234,6 @@ static int tgt_swap_data_in(xt_t *xt)
 int tgt_comm_event(xt_t *xt)
 {
 	int err = PTL_OK;
-
-	if (debug)
-		printf("tgt_comm_event\n");
 
 	if (xt->event_mask & XT_COMM_EVENT)
 		err = make_comm_event(xt);
