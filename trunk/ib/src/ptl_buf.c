@@ -54,9 +54,9 @@ void buf_dump(buf_t *buf)
 }
 
 /*
- * post_recv - Allocate a receive buffer for specified NI and post to SRQ.
+ * ptl_post_recv - Allocate a receive buffer for specified NI and post to SRQ.
  */
-int post_recv(ni_t *ni)
+int ptl_post_recv(ni_t *ni)
 {
 	int err;
 	buf_t *buf;
