@@ -108,24 +108,34 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 	me_t *me;
 
 	err = get_gbl(&gbl);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		return err;
+	}
 
 	err = ni_get(ni_handle, &ni);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err1;
+	}
 
 	err = me_append_check(ni, pt_index, me_init, ptl_list, me_handle);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err2;
+	}
 
 	err = me_get_me(ni, &me);
-	if (err)
+	if (err) {
+		WARN();
 		goto err2;
+	}
 
 	err = le_get_mr(ni, (ptl_le_t *)me_init, (le_t *)me);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
 	me->pt_index = pt_index;
 	me->uid = me_init->ac_id.uid;
@@ -141,17 +151,22 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 	INIT_LIST_HEAD(&me->list);
 
 	err = ct_get(me_init->ct_handle, &me->ct);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
 	if (unlikely(me->ct && (to_ni(me->ct) != ni))) {
 		err = PTL_ARG_INVALID;
+		WARN();
 		goto err3;
 	}
 
 	err = le_append_pt(ni, (le_t *)me);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
 	*me_handle = me_to_handle(me);
 
