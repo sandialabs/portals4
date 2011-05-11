@@ -461,7 +461,7 @@ int test_ptl_trig_get(struct node_info *info)
 	return info->ret != PtlTriggeredGet(info->md_handle, info->loc_offset,
 					    info->length, info->target_id,
 					    info->pt_index, info->match,
-					    info->user_ptr, info->rem_offset,
+					    info->rem_offset, info->user_ptr,
 					    info->ct_handle, info->threshold);
 }
 

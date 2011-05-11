@@ -598,8 +598,8 @@ int PtlTriggeredGet(					/* 3.16.2 */
 	ptl_process_t		target_id,
 	ptl_pt_index_t		pt_index,
 	ptl_match_bits_t	match_bits,
-	void			*user_ptr,
 	ptl_size_t		remote_offset,
+	void			*user_ptr,
 	ptl_handle_ct_t		trig_ct_handle,
 	ptl_size_t		threshold);
 
