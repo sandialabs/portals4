@@ -114,5 +114,8 @@ static inline void list_splice_init(struct list_head *list,
         for (pos = (head)->next, n = pos->next; pos != (head); \
                 pos = n, n = pos->next)
 
+#define list_for_each_prev_safe(pos, n, head) \
+    for (pos = (head)->prev, n = pos->prev; \
+         pos != (head); pos = n, n = pos->prev)
 
 #endif /* PTL_TYPES_H */
