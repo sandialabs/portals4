@@ -34,13 +34,14 @@ void post_ct(xi_t *xi, ct_t *ct)
 static void ct_check(ct_t *ct)
 {
 	struct list_head *l;
+	struct list_head *t;
 	xi_t *xi;
 	ni_t *ni = to_ni(ct);
 
 	if (ni->ct_waiting)
 		pthread_cond_broadcast(&ni->ct_wait_cond);
 
-	list_for_each_prev(l, &ct->xi_list) {
+	list_for_each_prev_safe(l, t, &ct->xi_list) {
 		xi = list_entry(l, xi_t, list);
 		if ((ct->event.success + ct->event.failure) >= xi->threshold) {
 			list_del(l);
