@@ -3,9 +3,9 @@
 #ifndef CIO_H
 #define CIO_H
 
-int cio_init();
+void cio_init(void);
 
-void cio_cleanup();
+void cio_cleanup(void);
 
 xmlDocPtr cio_get_input(char *filename);
 

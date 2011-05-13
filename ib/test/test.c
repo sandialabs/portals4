@@ -4,11 +4,11 @@
 #include <sys/time.h>
 #include <inttypes.h>
 
-int debug = 0;
-int put = 0;
+static int debug = 0;
+static int put = 0;
 int ptl_log_level;
 
-void dump_limits(ptl_ni_limits_t *limits)
+static void dump_limits(ptl_ni_limits_t *limits)
 {
 	printf("max_entries		= %d\n", limits->max_entries);
 	printf("max_mds			= %d\n", limits->max_mds);
@@ -21,7 +21,7 @@ void dump_limits(ptl_ni_limits_t *limits)
 	printf("max_atomic_size		= %" PRIu64 "\n", limits->max_atomic_size);
 }
 
-void dump_event(ptl_event_t *event)
+static void dump_event(ptl_event_t *event)
 {
         printf("type			= %d\n", event->type);
         printf("initiator.phys.nid	= 0x%x\n", event->initiator.phys.nid);
@@ -41,8 +41,8 @@ void dump_event(ptl_event_t *event)
         printf("atomic_type		= %d\n", event->atomic_type);
 }
 
-struct timeval start_time;
-struct timeval stop_time;
+static struct timeval start_time;
+static struct timeval stop_time;
 int test_time;
 
 int main(int argc, char *argv[])

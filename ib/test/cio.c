@@ -4,17 +4,18 @@
 #include <libxml/tree.h>
 
 #include "ptl_test.h"
+#include "cio.h"
 
 /*
  * first pass - trivial implementation just reads one file
  */
 
-void cio_init()
+void cio_init(void)
 {
 //	LIBXML_TEST_VERSION
 }
 
-void cio_cleanup()
+void cio_cleanup(void)
 {
 	xmlCleanupParser();
 	xmlMemoryDump();

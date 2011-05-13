@@ -28,7 +28,7 @@ static char *tgt_state_name[] = {
 /*
  * make_comm_event
  */
-int make_comm_event(xt_t *xt)
+static int make_comm_event(xt_t *xt)
 {
 	int err = PTL_OK;
 	ptl_event_kind_t type;
@@ -1231,7 +1231,7 @@ static int tgt_swap_data_in(xt_t *xt)
 	return STATE_TGT_COMM_EVENT;
 }
 
-int tgt_comm_event(xt_t *xt)
+static int tgt_comm_event(xt_t *xt)
 {
 	int err = PTL_OK;
 

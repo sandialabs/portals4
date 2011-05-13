@@ -15,6 +15,9 @@
 static gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+unsigned int pagesize;
+unsigned int linesize;
+
 /* Event loop. */
 struct evl evl;
 
@@ -118,7 +121,7 @@ void gbl_put(gbl_t *gbl)
 	ref_put(&gbl->ref, gbl_release);
 }
 
-int PtlInit()
+int PtlInit(void)
 {
 	int ret;
 	gbl_t *gbl = &per_proc_gbl;

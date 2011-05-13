@@ -8,8 +8,8 @@
  * iov_count_sge - return the number of SG entries required to cover IO vector
  * from offset for length.
  */
-int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
-		  ptl_size_t offset, ptl_size_t length)
+static int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
+						 ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i, j;
 	ptl_size_t iov_offset = 0;

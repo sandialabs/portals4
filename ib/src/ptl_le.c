@@ -87,7 +87,7 @@ void le_unlink(le_t *le)
  *	allocate an le after checking to see if there
  *	is room in the limit
  */
-int le_get_le(ni_t *ni, le_t **le_p)
+static int le_get_le(ni_t *ni, le_t **le_p)
 {
 	int err;
 	le_t *le;

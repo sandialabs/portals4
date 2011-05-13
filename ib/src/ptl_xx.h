@@ -9,6 +9,7 @@ struct buf;
 typedef ptl_handle_any_t ptl_handle_xi_t;
 typedef ptl_handle_any_t ptl_handle_xt_t;
 
+/* Event mask */
 enum {
 	XI_SEND_EVENT		= (1 << 0),
 	XI_ACK_EVENT		= (1 << 1),
@@ -21,7 +22,7 @@ enum {
 	XT_CT_COMM_EVENT	= (1 << 1),
 	XT_ACK_EVENT		= (1 << 2),
 	XT_REPLY_EVENT		= (1 << 3),
-} event_mask_t;
+};
 
 struct xremote {
 	struct ibv_qp *qp;					   /* from RDMA CM */
