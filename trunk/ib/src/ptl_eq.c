@@ -138,7 +138,7 @@ err1:
 	return err;
 }
 
-int get_event(eq_t *eq, ptl_event_t *event)
+static int get_event(eq_t *eq, ptl_event_t *event)
 {
 	int ret;
 

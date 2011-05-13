@@ -2,7 +2,7 @@
 
 #include "ptl_test.h"
 
-ptl_handle_any_t get_handle(struct node_info *info, char *val)
+static ptl_handle_any_t get_handle(struct node_info *info, char *val)
 {
 	int n;
 	char obj[8];
@@ -41,7 +41,7 @@ ptl_handle_any_t get_handle(struct node_info *info, char *val)
 	return handle;
 }
 
-long get_number(struct node_info *info, char *orig_val)
+static long get_number(struct node_info *info, char *orig_val)
 {
 	char *val;
 	long num;
@@ -56,7 +56,7 @@ long get_number(struct node_info *info, char *orig_val)
 		val++;
 		i = 0;
 		while((tok[i++] = strtok_r(val, ".", &save))) 
-			val = 0;
+			val = NULL;
 
 		if (tok[0]) {
 			if (!strcmp("count", tok[0])) {
@@ -87,7 +87,7 @@ long get_number(struct node_info *info, char *orig_val)
 	return num;
 }
 
-datatype_t get_datatype(ptl_datatype_t type, char *val)
+static datatype_t get_datatype(ptl_datatype_t type, char *val)
 {
 	datatype_t num;
 
@@ -138,21 +138,21 @@ datatype_t get_datatype(ptl_datatype_t type, char *val)
 	return num;
 }
 
-int get_uid(struct node_info *info, char *val)
+static int get_uid(struct node_info *info, char *val)
 {
 	if (!strcmp("ANY", val)) return PTL_UID_ANY;
 	else return get_number(info, val);
 	
 }
 
-int get_jid(struct node_info *info, char *val)
+static int get_jid(struct node_info *info, char *val)
 {
 	if (!strcmp("ANY", val)) return PTL_JID_ANY;
 	else return get_number(info, val);
 	
 }
 
-ptl_process_t get_target_id(struct node_info *info, char *val)
+static ptl_process_t get_target_id(struct node_info *info, char *val)
 {
 	ptl_process_t id;
 	char *dotpos;
@@ -176,7 +176,7 @@ ptl_process_t get_target_id(struct node_info *info, char *val)
 	return id;
 }
 
-int get_index(struct node_info *info, char *val)
+static int get_index(struct node_info *info, char *val)
 {
 	int index;
 
@@ -196,7 +196,7 @@ int get_index(struct node_info *info, char *val)
 	return index;
 }
 
-void *get_ptr(char *val)
+static void *get_ptr(char *val)
 {
 	void *ptr;
 
@@ -216,7 +216,7 @@ void *get_ptr(char *val)
  *	it creates a new parameter set that is copied from the previous one
  *	with some operation specific configuration and some defaults
  */
-struct node_info *push_info(struct node_info *head, int tok)
+static struct node_info *push_info(struct node_info *head, int tok)
 {
 	int i;
 	struct node_info *info;
@@ -260,7 +260,7 @@ struct node_info *push_info(struct node_info *head, int tok)
 		break;
 	default:
 		for (i = 0; i < IOV_SIZE; i++) {
-			info->iov[i].iov_base	= 0;
+			info->iov[i].iov_base	= NULL;
 			info->iov[i].iov_len	= 0;
 		}
 		break;
@@ -387,7 +387,7 @@ struct node_info *push_info(struct node_info *head, int tok)
 	return info;
 }
 
-struct node_info *pop_node(struct node_info *info)
+static struct node_info *pop_node(struct node_info *info)
 {
 	struct node_info *head;
 
@@ -407,7 +407,7 @@ struct node_info *pop_node(struct node_info *info)
  *	initialize a buffer with repeated numeric values of
  *	a given type
  */
-int set_data(datatype_t val, void *data, int type, int length)
+static int set_data(datatype_t val, void *data, int type, int length)
 {
 	uint8_t *p_u8;
 	int8_t *p_8;
@@ -491,7 +491,7 @@ int set_data(datatype_t val, void *data, int type, int length)
 	return 0;
 }
 
-int get_attr(struct node_info *info, xmlNode *node)
+static int get_attr(struct node_info *info, xmlNode *node)
 {
 	xmlAttr *attr;
 	char *val;
@@ -790,7 +790,7 @@ int get_attr(struct node_info *info, xmlNode *node)
 	return 0;
 }
 
-int check_data(struct node_info *info, char *val, void *data, int type, int length)
+static int check_data(struct node_info *info, char *val, void *data, int type, int length)
 {
 	uint8_t *p_u8;
 	int8_t *p_8;
@@ -955,7 +955,7 @@ int check_data(struct node_info *info, char *val, void *data, int type, int leng
 	return 0;
 }
 
-int check_attr(struct node_info *info, xmlNode *node)
+static int check_attr(struct node_info *info, xmlNode *node)
 {
 	xmlAttr *attr;
 	char *val;
@@ -1189,7 +1189,7 @@ int check_attr(struct node_info *info, xmlNode *node)
 	return 0;
 }
 
-int check_opt(xmlNode *node)
+static int check_opt(xmlNode *node)
 {
 	xmlAttr *attr;
 	struct dict_entry *e;
@@ -1661,7 +1661,7 @@ done:
 	return tot_errs;
 }
 
-void set_default_info(struct node_info *info)
+static void set_default_info(struct node_info *info)
 {
 	memset(info, 0, sizeof(*info));
 

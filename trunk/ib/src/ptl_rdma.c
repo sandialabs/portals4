@@ -124,7 +124,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
  *
  * Returns the number of bytes to be transferred by the SG list.
  */
-ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
+static ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 	struct ibv_sge *sge, int num_sge, int *entries, ptl_size_t *loc_index,
 	ptl_size_t *loc_off, int max_loc_index)
 {

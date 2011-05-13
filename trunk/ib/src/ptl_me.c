@@ -58,7 +58,7 @@ void me_unlink(me_t *me)
  *	allocate an me after checking to see if there
  *	is room in the limit
  */
-int me_get_me(ni_t *ni, me_t **me_p)
+static int me_get_me(ni_t *ni, me_t **me_p)
 {
 	int err;
 	me_t *me;
@@ -87,7 +87,7 @@ int me_get_me(ni_t *ni, me_t **me_p)
  * me_append_check
  *	check call parameters for PtlMEAppend
  */
-int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
+static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_me_t *me_init, ptl_list_t ptl_list,
 		    ptl_handle_me_t *me_handle)
 {

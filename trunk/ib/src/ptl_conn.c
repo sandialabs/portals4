@@ -258,7 +258,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	return PTL_OK;
 }
 
-void flush_pending_xi_xt(conn_t *conn)
+static void flush_pending_xi_xt(conn_t *conn)
 {
 	xi_t *xi;
 	xt_t *xt;

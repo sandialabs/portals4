@@ -879,7 +879,6 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 		[PTL_LONG]	= sum_sl,
 		[PTL_ULONG]	= sum_ul,
 		[PTL_FLOAT]	= sum_f,
-		[PTL_FLOAT]	= sum_f,
 		[PTL_FLOAT_COMPLEX]	= sum_f,
 		[PTL_DOUBLE]	= sum_d,
 		[PTL_DOUBLE_COMPLEX]	= sum_d,

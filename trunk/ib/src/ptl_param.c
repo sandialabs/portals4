@@ -8,7 +8,7 @@
 #define MiB		(1024*1024)
 #define GiB		(1024*1024*1024)
 
-param_t param[] = {
+static param_t param[] = {
 	[PTL_LIM_MAX_ENTRIES]		= {
 						.name	= "PTL_LIM_MAX_ENTRIES",
 						.min	= 0,

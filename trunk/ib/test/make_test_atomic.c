@@ -7,13 +7,13 @@
 #include "../include/portals4.h"
 #include "data.h"
 
-unsigned int seed;
-unsigned int physical = 0;
-unsigned int count = 1;
-unsigned int max_length = 32;
-int fetch;
+static unsigned int seed;
+static unsigned int physical = 0;
+static unsigned int count = 1;
+static unsigned int max_length = 32;
+static int fetch;
 
-datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
+static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 {
 	datatype_t z;
 
@@ -345,7 +345,7 @@ datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 	return z;
 }
 
-void usage()
+static void usage(void)
 {
 	printf("usage:\n");
 	printf("\n");
@@ -364,19 +364,19 @@ void usage()
 	printf("\n");
 }
 
-int arg_process(int argc, char *argv[])
+static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
 	static char *opt_string = "hfps:c:m:";
 	static struct option long_options[] = {
-		{"help", 0, 0, 'h'},
-		{"fetch", 0, 0, 'f'},
-		{"seed", 1, 0, 's'},
-		{"physical", 0, 0, 'p'},
-		{"count", 1, 0, 'c'},
-		{"max_length", 1, 0, 'm'},
-		{0, 0, 0, 0}
+		{"help", 0, NULL, 'h'},
+		{"fetch", 0, NULL, 'f'},
+		{"seed", 1, NULL, 's'},
+		{"physical", 0, NULL, 'p'},
+		{"count", 1, NULL, 'c'},
+		{"max_length", 1, NULL, 'm'},
+		{NULL, 0, NULL, 0}
 	};
 
 	while (1) {

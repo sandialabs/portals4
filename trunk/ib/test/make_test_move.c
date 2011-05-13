@@ -27,7 +27,7 @@ typedef struct param {
 	int		indent;
 } param_t;
 
-char *ptl_op_name[] = {
+static char *ptl_op_name[] = {
 	[OP_PUT]	= "ptl_put",
 	[OP_GET]	= "ptl_get",
 	[OP_ATOMIC]	= "ptl_atomic",
@@ -40,13 +40,13 @@ char *ptl_op_name[] = {
 	[9]		= "bad9",
 };
 
-param_t param = {
+static param_t param = {
 	.count		= 1,
 	.max_length	= 32,
 	.op_mask	= (1 << OP_GET) | (1 << OP_PUT),
 };
 
-char *indent[] = {
+static char *indent[] = {
 	"",
 	"  ",
 	"    ",
@@ -60,7 +60,7 @@ char *indent[] = {
 	"                    ",
 };
 
-datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
+static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 {
 	datatype_t z;
 
@@ -376,7 +376,7 @@ datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 	return z;
 }
 
-void usage()
+static void usage(void)
 {
 	printf("usage:\n");
 	printf("\n");
@@ -397,21 +397,21 @@ void usage()
 	printf("\n");
 }
 
-int arg_process(int argc, char *argv[])
+static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
 	static char *opt_string = "AFShps:c:m:";
 	static struct option long_options[] = {
-		{"help", 0, 0, 'h'},
-		{"seed", 1, 0, 's'},
-		{"physical", 0, 0, 'p'},
-		{"count", 1, 0, 'c'},
-		{"max_length", 1, 0, 'm'},
-		{"atomic", 0, 0, 'A'},
-		{"fetch", 0, 0, 'F'},
-		{"swap", 0, 0, 'S'},
-		{0, 0, 0, 0}
+		{"help", 0, NULL, 'h'},
+		{"seed", 1, NULL, 's'},
+		{"physical", 0, NULL, 'p'},
+		{"count", 1, NULL, 'c'},
+		{"max_length", 1, NULL, 'm'},
+		{"atomic", 0, NULL, 'A'},
+		{"fetch", 0, NULL, 'F'},
+		{"swap", 0, NULL, 'S'},
+		{NULL, 0, NULL, 0}
 	};
 
 	while (1) {
@@ -470,7 +470,7 @@ int arg_process(int argc, char *argv[])
 	return 0;
 }
 
-void get_random_param(param_t *p)
+static void get_random_param(param_t *p)
 {
 	p->match = random() & 1;
 	p->match_bits = random();
@@ -510,7 +510,7 @@ void get_random_param(param_t *p)
 	p->me_opt = "OP_GET OP_PUT";
 }
 
-void start_test(param_t *p, int argc, char *argv[], time_t cur_time)
+static void start_test(param_t *p, int argc, char *argv[], time_t cur_time)
 {
 	int i;
 
@@ -530,12 +530,12 @@ void start_test(param_t *p, int argc, char *argv[], time_t cur_time)
 	printf("%s<test>\n", indent[p->indent++]);
 }
 
-void end_test(param_t *p)
+static void end_test(param_t *p)
 {
 	printf("%s</test>\n", indent[--p->indent]);
 }
 
-void start_subtest(param_t *p)
+static void start_subtest(param_t *p)
 {
 	printf("%s<subtest>\n", indent[p->indent++]);
 	printf("%s<desc>Test %s", indent[p->indent],
@@ -546,13 +546,13 @@ void start_subtest(param_t *p)
 	printf("%s<ptl>\n", indent[p->indent++]);
 }
 
-void end_subtest(param_t *p)
+static void end_subtest(param_t *p)
 {
 	printf("%s</ptl>\n", indent[--p->indent]);
 	printf("%s</subtest>\n", indent[--p->indent]);
 }
 
-void start_ni(param_t *p)
+static void start_ni(param_t *p)
 {
 	if (p->physical) {
 		printf("%s<ptl_ni ni_opt=\"%s PHYSICAL\">\n", indent[p->indent++],
@@ -568,7 +568,7 @@ void start_ni(param_t *p)
 	printf("%s<ptl_pt>\n", indent[p->indent++]);
 }
 
-void end_ni(param_t *p)
+static void end_ni(param_t *p)
 {
 	printf("%s</ptl_pt>\n", indent[--p->indent]);
 	if (p->physical) {
@@ -581,7 +581,7 @@ void end_ni(param_t *p)
 	}
 }
 
-void start_xe(param_t *p)
+static void start_xe(param_t *p)
 {
 	if (p->match) {
 		printf("%s<ptl_me me_opt=\"%s\" me_match=\"0x%"
@@ -595,7 +595,7 @@ void start_xe(param_t *p)
 	}
 }
 
-void end_xe(param_t *p)
+static void end_xe(param_t *p)
 {
 	if (p->match)
 		printf("%s</ptl_me>\n", indent[--p->indent]);
@@ -603,7 +603,7 @@ void end_xe(param_t *p)
 		printf("%s</ptl_le>\n", indent[--p->indent]);
 }
 
-void start_md(param_t *p)
+static void start_md(param_t *p)
 {
 	if (p->ptl_op == OP_PUT || p->ptl_op == OP_ATOMIC ||
 	    p->ptl_op == OP_FETCH || p->ptl_op == OP_SWAP) {
@@ -618,7 +618,7 @@ void start_md(param_t *p)
 	}
 }
 
-void end_md(param_t *p)
+static void end_md(param_t *p)
 {
 	if (p->ptl_op == OP_PUT || p->ptl_op == OP_ATOMIC ||
 	    p->ptl_op == OP_FETCH || p->ptl_op == OP_SWAP) {
@@ -630,7 +630,7 @@ void end_md(param_t *p)
 	}
 }
 
-void move_op(param_t *p)
+static void move_op(param_t *p)
 {
 	if (p->match) {
 		printf("%s<%s atom_op=\"%s\" atom_type=\"%s\" "
@@ -646,7 +646,7 @@ void move_op(param_t *p)
 	}
 }
 
-void check_din(param_t *p)
+static void check_din(param_t *p)
 {
 	if (0) {
 		printf("%s<check length=\"%d\" type=\"%s\" "
@@ -661,7 +661,7 @@ void check_din(param_t *p)
 	}
 }
 
-void check_dout(param_t *p)
+static void check_dout(param_t *p)
 {
 	printf("%s<check length=\"%d\" type=\"%s\" "
 	       "md_data=\"%s\"/>\n",
@@ -674,7 +674,7 @@ void check_dout(param_t *p)
 	       datatype_str(p->type, p->dout));
 }
 
-void check_tgt(param_t *p)
+static void check_tgt(param_t *p)
 {
 	if (p->match) {
 		printf("%s<check length=\"%d\" type=\"%s\" "

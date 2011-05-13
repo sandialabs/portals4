@@ -4,9 +4,9 @@
 
 #include "ptl_test.h"
 
-struct dict_entry *hash_table[1024];
+static struct dict_entry *hash_table[1024];
 
-struct dict_init {
+static struct dict_init {
 	char		*name;
 	int		type;
 	int		token;

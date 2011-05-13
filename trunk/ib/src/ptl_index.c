@@ -23,7 +23,7 @@ static void ***index_maps;
 static int index_is_init;
 static pthread_spinlock_t index_lock;
 
-int index_init()
+int index_init(void)
 {
 	next_index = 0;
 
@@ -44,7 +44,7 @@ int index_init()
 	return PTL_OK;
 }
 
-void index_fini()
+void index_fini(void)
 {
 	int i;
 	void **p;

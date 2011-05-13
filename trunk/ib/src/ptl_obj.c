@@ -4,7 +4,7 @@
 
 #include "ptl_loc.h"
 
-void *obj_get_zero_filled_segment(pool_t *pool)
+static void *obj_get_zero_filled_segment(pool_t *pool)
 {
 	int err;
 	void *p;

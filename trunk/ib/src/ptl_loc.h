@@ -34,10 +34,6 @@
 #include <search.h>
 #include <sys/ioctl.h>
 
-struct timeval start_time;
-struct timeval stop_time;
-int test_time;
-
 #include "portals4.h"
 
 /* branch prediction hints for compiler */
@@ -49,8 +45,8 @@ typedef uint16_t	__be16;
 typedef uint32_t	__be32;
 typedef uint64_t	__be64;
 
-unsigned int pagesize;
-unsigned int linesize;
+extern unsigned int pagesize;
+extern unsigned int linesize;
 
 #include "ptl_log.h"
 #include "ptl_types.h"

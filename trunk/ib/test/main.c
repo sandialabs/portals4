@@ -12,9 +12,9 @@
 int verbose = 1;
 int debug;
 
-char *filename;
+static char *filename;
 
-void usage()
+static void usage(void)
 {
 	printf("usage:\n");
 	printf("ptl_test OPTIONS\n");
@@ -29,7 +29,7 @@ void usage()
 	printf("	-l, --log level		log level\n");
 }
 
-int process_args(int argc, char *argv[])
+static int process_args(int argc, char *argv[])
 {
 	extern char *optarg;
 	extern int optind;
@@ -37,14 +37,14 @@ int process_args(int argc, char *argv[])
 	int option_index = 0;
 	char *options = "hVvqdf:l:";
 	static struct option long_options[] = {
-		{"help", 0, 0, 'h'},
-		{"version", 0, 0, 'V'},
-		{"verbose", 0, 0, 'v'},
-		{"quiet", 0, 0, 'q'},
-		{"debug", 0, 0, 'd'},
-		{"file", 1, 0, 'f'},
-		{"log", 1, 0, 'l'},
-		{0, 0, 0, 0}
+		{"help", 0, NULL, 'h'},
+		{"version", 0, NULL, 'V'},
+		{"verbose", 0, NULL, 'v'},
+		{"quiet", 0, NULL, 'q'},
+		{"debug", 0, NULL, 'd'},
+		{"file", 1, NULL, 'f'},
+		{"log", 1, NULL, 'l'},
+		{NULL, 0, NULL, 0}
 	};
 
 	while (1) {
@@ -104,13 +104,13 @@ int process_args(int argc, char *argv[])
 	return 0;
 }
 
-int init()
+static int init(void)
 {
 	init_dict();
 	return 0;
 }
 
-int fini()
+static int fini(void)
 {
 	return 0;
 }
@@ -137,9 +137,7 @@ int main(int argc, char *argv[])
 	if (ret)
 		exit(ret);
 
-	ret = cio_init();
-	if (ret)
-		exit(ret);
+	cio_init();
 
 	doc = cio_get_input(filename);
 	if (!doc)
