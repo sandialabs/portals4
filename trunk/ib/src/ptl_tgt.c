@@ -46,7 +46,7 @@ static int make_comm_event(xt_t *xt)
 	}
 
 	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
-		err = make_target_event(xt, xt->pt->eq, type, NULL);
+		err = make_target_event(xt, xt->pt->eq, type, xt->le->start+xt->moffset);
 		if (err)
 			WARN();
 	}
