@@ -219,6 +219,9 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			printf("raddr(0x%" PRIx64 "), rlen(%d), rkey(0x%x)\n",
 			raddr, rlength, rkey);
 
+		if (rlength > *resid)
+			rlength = *resid;
+
 		bytes = build_rdma_sge(xt, rlength, sge, get_param(PTL_MAX_QP_SEND_SGE),
 				&entries, &iov_index,  &iov_off,
 				xt->le->num_iov);
