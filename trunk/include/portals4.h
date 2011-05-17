@@ -25,7 +25,6 @@ enum ptl_retvals {
     PTL_IN_USE,         /*!< The specified resource is currently in use. */
     PTL_INTERRUPTED,    /*!< Wait/get operation was interrupted. */
     PTL_LIST_TOO_LONG,  /*!< The resulting list is too long (interface-dependent). */
-    PTL_NI_NOT_LOGICAL, /*!< Not a logically addressed network interface handle. */
     PTL_NO_INIT,        /*!< Init has not yet completed successfully. */
     PTL_NO_SPACE,       /*!< Sufficient memory for action was not available. */
     PTL_PID_IN_USE,     /*!< PID is in use. */
@@ -540,7 +539,6 @@ typedef struct {
  * @retval PTL_SIZE_INVALID     The requested \a map_size is different from the
  *                              \a map_size that was previously used to
  *                              initialize the interface.
- * @retval PTL_NI_NOT_LOGICAL   Not a logically addressed network interface handle.
  * @retval PTL_NO_SPACE         Indicates that PtlNIInit() was not able to
  *                              allocate the memory required to initialize this
  *                              interface.

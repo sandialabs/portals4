@@ -58,9 +58,6 @@ char *__StrPtlError(int error_code)
         case PTL_LIST_TOO_LONG:
             return "PTL_LIST_TOO_LONG";
 
-        case PTL_NI_NOT_LOGICAL:
-            return "PTL_NI_NOT_LOGICAL";
-
         case PTL_NO_INIT:
             return "PTL_NO_INIT";
 
