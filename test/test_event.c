@@ -167,7 +167,6 @@ int main(int   argc,
                                        (unsigned)event.atomic_operation,
                                        (unsigned)event.atomic_type);
                             }
-                            assert(event.match_bits == 0);      // since this is a non-matching NI
                             assert(((char *)event.start) - event.remote_offset == (char *)&value);
                             assert(event.pt_index == logical_pt_index);
                             assert(event.ni_fail_type == PTL_NI_OK);
