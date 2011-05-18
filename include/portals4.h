@@ -371,7 +371,7 @@ void PtlFini(void);
  * One additional burden placed on the implementation is the need for the
  * initiator to place 2 bits in the message header to identify to the target
  * the logical interface on which this message was sent. In addition, all
- * logical interfaces within a single process that are associated witha single
+ * logical interfaces within a single process that are associated with a single
  * physical interface must share a single node ID and Portals process ID.
  */
 /*! @typedef ptl_ni_fail_t
@@ -396,6 +396,8 @@ typedef unsigned char ptl_ni_fail_t;
  * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
  * PTL_NI_PHYSICAL are mutually exclusive */
 #define PTL_NI_PHYSICAL     (1<<3)
+
+#define PTL_NI_INIT_OPTIONS_MASK ((1<<4) - 1)
 
 /*! Used in successful end events to indicate that there has been no failure. */
 #define PTL_NI_OK               ((ptl_ni_fail_t) 0)
@@ -634,6 +636,9 @@ int PtlNIHandle(ptl_handle_any_t    handle,
 
 /*! Enable flow control on this portal table entry. */
 #define PTL_PT_FLOWCTRL         (1<<1)
+
+#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<2) - 1)
+
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
  *                unsigned int      options,
@@ -869,6 +874,8 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * required to honor this option unless the size of the operation is less than
  * or equal to max_volatile_size. */
 #define PTL_MD_VOLATILE              (1<<6)
+
+#define PTL_MD_OPTIONS_MASK	     (((1<<7)-1) | PTL_MD_EVENT_CT_BYTES)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
