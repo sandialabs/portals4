@@ -31,9 +31,9 @@ enum ptl_retvals {
     PTL_PT_FULL,        /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE,      /*!< Portal table index is busy. */
-    PTL_SIZE_INVALID,   /*!< The requested map size is invalid. */
-    PTL_STATUS_LAST
+    PTL_SIZE_INVALID    /*!< The requested map size is invalid. */
 };
+#define PTL_STATUS_LAST (PTL_SIZE_INVALID+1)
 
 /**************
  * Base Types *
@@ -69,11 +69,11 @@ typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
 typedef enum {
     PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
 			 dropped requests for the interface. */
-    PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
+    PTL_SR_PERMISSIONS_VIOLATIONS  /*!< Specifies the status register that
 				     counts the number of attempted permission
 				     violations. */
-    PTL_SR_LAST
 } ptl_sr_index_t;
+#define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS+1)
 typedef int             ptl_sr_value_t; /*!< Signed integral type that defines
                                           the types of values held in status
                                           registers. */
@@ -2080,13 +2080,13 @@ typedef enum {
                                  * The target value is always returned. This
                                  * operation is limited to single data items.
                                  */
-    PTL_MSWAP,                  /*!< A swap under mask -- update the bits of
+    PTL_MSWAP                   /*!< A swap under mask -- update the bits of
                                  * the target value that are set to 1 in the
                                  * operand and return the target value. This
                                  * operation is limited to single data items.
                                  */
-    PTL_OP_LAST
 } ptl_op_t;
+#define PTL_OP_LAST (PTL_MSWAP+1)
 /*!
  * @enum ptl_datatype_t
  * @brief The type of data an atomic operation is operating on
@@ -2105,9 +2105,9 @@ typedef enum {
     PTL_LONG_DOUBLE,
     PTL_FLOAT_COMPLEX,
     PTL_DOUBLE_COMPLEX,
-    PTL_LONG_DOUBLE_COMPLEX,
-    PTL_DATATYPE_LAST
+    PTL_LONG_DOUBLE_COMPLEX
 } ptl_datatype_t;
+#define PTL_DATATYPE_LAST (PTL_LONG_DOUBLE_COMPLEX+1)
 /*!
  * @fn PtlAtomic(ptl_handle_md_t    md_handle,
  *               ptl_size_t         local_offset,
