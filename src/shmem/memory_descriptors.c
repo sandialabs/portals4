@@ -7,8 +7,10 @@
 
 /* System headers */
 #include <limits.h>                    /* for UINT_MAX */
-
 #include <stdio.h>
+#ifdef REGISTER_ON_BIND
+# include <sys/mman.h>                 /* for PROT_READ, PROT_WRITE */
+#endif
 
 /* Internals */
 #include "ptl_visibility.h"
@@ -34,7 +36,12 @@ typedef struct {
     volatile uint32_t in_use;   // 0=free, 1=in_use
     uint8_t           pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
     ptl_md_t          visible;
+#ifdef REGISTER_ON_BIND
+    uint64_t          xfe_handle;
+    uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t) + sizeof(uint64_t))];
+#else
     uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t))];
+#endif
 } ptl_internal_md_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_md_t *mds[4] = { NULL, NULL, NULL, NULL };
@@ -157,7 +164,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("MD saw invalid EQ\n");
         return PTL_ARG_INVALID;
     }
-    if (md->options & ~PTL_MD_OPTION_MASK) {
+    if (md->options & ~PTL_MD_OPTIONS_MASK) {
         VERBOSE_ERROR("Invalid options field passed to PtlMDBind (0x%x)\n", md->options);
         return PTL_ARG_INVALID;
     }
@@ -177,6 +184,20 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
             if (PtlInternalAtomicCas32(&(mds[ni.s.ni][offset].in_use), MD_FREE, MD_IN_USE) == MD_FREE) {
                 mds[ni.s.ni][offset].visible = *md;
                 mdh.s.code                   = offset;
+#ifdef REGISTER_ON_BIND
+                /* TODO - FIXME: we should only do this registration if we know
+                 *               it won't fit into a large fragment later,
+                 *               otherwise it's unnecessary overhead for small
+                 *               messages...
+                 */
+                if (md->start != NULL && md->length > 0) {
+                    mds[ni.s.ni][offset].xfe_handle =
+                        xfe_register(md->start, md->length,
+                                     PROT_READ | PROT_WRITE);
+                } else {
+                    mds[ni.s.ni][offset].xfe_handle = 0;
+                }
+#endif
                 break;
             }
         }
@@ -207,6 +228,11 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
         VERBOSE_ERROR("%u MD handle in use!\n", (unsigned)proc_number);
         return PTL_IN_USE;
     }
+#ifdef REGISTER_ON_BIND
+    if (mds[md.s.ni][md.s.code].xfe_handle) {
+        xfe_unregister(mds[md.s.ni][md.s.code].xfe_handle);
+    }
+#endif
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
     return PTL_OK;
 }                                      /*}}} */
@@ -236,6 +262,15 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(ptl_handle_md_t handle)
         return NULL;
     }
 }                                      /*}}} */
+
+#ifdef REGISTER_ON_BIND
+ptl_size_t INTERNAL PtlInternalMDXFEHandle(ptl_handle_md_t handle)
+{                                      /*{{{ */
+    const ptl_internal_handle_converter_t md = { handle };
+
+    return mds[md.s.ni][md.s.code].xfe_handle;
+}                                      /*}}} */
+#endif
 
 void INTERNAL PtlInternalMDPosted(ptl_handle_md_t handle)
 {                                      /*{{{ */

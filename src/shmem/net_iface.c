@@ -234,6 +234,10 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         assert(nit.tables[ni.s.ni] != NULL);
         PtlInternalDMSetup();          // This MUST happen AFTER the tables are set up
     }
+
+    /* TODO: xfe_init isn't necessarily thread-safe */
+    xfe_init();
+
     return PTL_OK;
 } /*}}}*/
 

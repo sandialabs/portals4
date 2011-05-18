@@ -36,4 +36,5 @@ AS_IF([test "$knem_happy" == no],
 			 [CPPFLAGS="$saved_CPPFLAGS"])],
 	  [$1
 	   AC_DEFINE([USE_KNEM],[1],[Define to use KNEM])])
+AM_CONDITIONAL([COMPILE_KNEM], [test "x$knem_happy" == xyes])
 ])
