@@ -40,18 +40,26 @@ int API_FUNC PtlPTAlloc(ptl_handle_ni_t ni_handle,
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("Invalid NI passed to PtlPTAlloc\n");
+        return PTL_ARG_INVALID;
+    }
+    if (options & ~PTL_PT_INIT_OPTIONS_MASK) {
+        VERBOSE_ERROR("Invalid options to PtlPTAlloc (0x%x)\n", options);
         return PTL_ARG_INVALID;
     }
     if ((eq_handle == PTL_EQ_NONE) && options & PTL_PT_FLOWCTRL) {
         return PTL_PT_EQ_NEEDED;
     }
     if (PtlInternalEQHandleValidator(eq_handle, 1)) {
+        VERBOSE_ERROR("Invalid EQ passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
     if ((pt_index_req > nit_limits[ni.s.ni].max_pt_index) && (pt_index_req != PTL_PT_ANY)) {
+        VERBOSE_ERROR("Invalid pt_index request passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
     if (pt_index == NULL) {
+        VERBOSE_ERROR("Invalid pt_index pointer (NULL) passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
