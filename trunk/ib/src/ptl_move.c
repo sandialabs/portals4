@@ -293,6 +293,30 @@ static int check_get(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	return PTL_OK;
 }
 
+static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
+								 ptl_size_t local_offset,
+								 ptl_size_t length, ptl_process_t target_id,
+								 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
+								 ptl_size_t remote_offset, void *user_ptr)
+{
+	xi->operation = OP_GET;
+	xi->target = target_id;
+	xi->uid = ni->uid;
+	xi->jid = ni->rt.jid;
+	xi->pt_index = pt_index;
+	xi->match_bits = match_bits,
+	xi->get_md = md;
+	xi->user_ptr = user_ptr;
+
+	xi->rlength = length;
+	xi->get_offset = local_offset;
+	xi->get_resid = length;
+	xi->roffset = remote_offset;
+
+	xi->pkt_len = sizeof(req_hdr_t);
+	xi->state = STATE_INIT_START;
+}
+
 int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -324,22 +348,10 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err2;
 
-	xi->operation = OP_GET;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->get_md = md;
-	xi->user_ptr = user_ptr;
-
-	xi->rlength = length;
-	xi->get_offset = local_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
-
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	preparePtlGet(xi, ni, md, local_offset,
+				  length, target_id,
+				  pt_index, match_bits,
+				  remote_offset, user_ptr);
 
 	process_init(xi);
 
@@ -398,23 +410,12 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 	}
 
-	xi->operation = OP_GET;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->get_md = md;
-	xi->user_ptr = user_ptr;
+	preparePtlGet(xi, ni, md, local_offset,
+				  length, target_id,
+				  pt_index, match_bits,
+				  remote_offset, user_ptr);
+
 	xi->threshold = threshold;
-
-	xi->rlength = length;
-	xi->get_offset = local_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
-
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
 
 	post_ct(xi, ct);
 
