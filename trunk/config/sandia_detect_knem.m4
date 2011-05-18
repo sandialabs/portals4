@@ -13,8 +13,8 @@ AC_ARG_WITH([knem],
 			[with_knem=yes
 			 knem_softfail=yes])
 saved_CPPFLAGS="$CPPFLAGS"
+AS_IF([test "x$with_knem" != xno],[
 knem_happy=yes
-
 AS_IF([test "x$with_knem" != xyes -a "x$with_knem" != xno],
       [CPPFLAGS="$CPPFLAGS -I$with_knem/include"])
 AC_CHECK_HEADERS([knem_io.h],
@@ -27,14 +27,15 @@ AS_IF([test "$knem_happy" == yes],
 #endif]])],
 	                     [knem_happy=yes],
 						 [knem_happy=no])])
+],[knem_happy=no])
 AS_IF([test "$knem_happy" == no],
       [$2
 	   AS_IF([test "$knem_softfail" == no],
 	         [AS_IF([test "x$with_knem" == xyes],
 			 	    [AC_ERROR([KNEM enabled, but cannot find it.])],
-					[AC_ERROR([KNEM location specified, but cannot find it.])])],
+					[AS_IF([test "x$with_knem" == xno],[],[AC_ERROR([KNEM location specified, but cannot find it.])])])],
 			 [CPPFLAGS="$saved_CPPFLAGS"])],
 	  [$1
 	   AC_DEFINE([USE_KNEM],[1],[Define to use KNEM])])
-AM_CONDITIONAL([COMPILE_KNEM], [test "x$knem_happy" == xyes])
+AM_CONDITIONAL([USE_KNEM], [test "x$knem_happy" == xyes])
 ])
