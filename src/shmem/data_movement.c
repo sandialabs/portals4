@@ -671,7 +671,6 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, dataptr, length);
-        hdr->moredata = NULL;
         quick_exit    = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
     } else {
@@ -814,7 +813,6 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
     hdr->remaining     = length;
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
-        hdr->moredata = NULL;
         hdr->xfe_handle1 = (uint64_t)NULL;
     } else {
 #ifdef REGISTER_ON_BIND
@@ -1012,7 +1010,6 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, dataptr, length);
-        hdr->moredata = NULL;
         quick_exit    = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
     } else {
@@ -1264,7 +1261,6 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, put_dataptr, length);
-        hdr->moredata = NULL;
         quick_exit    = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;
@@ -1558,7 +1554,6 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) - 32 >=
         length) {
         memcpy(hdr_dataptr, put_dataptr, length);
-        hdr->moredata = NULL;
         quick_exit    = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;

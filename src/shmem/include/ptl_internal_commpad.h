@@ -45,7 +45,6 @@ typedef struct {
     ptl_jid_t        jid;
 #endif
     /* data used for long & truncated messages */
-    char                           *moredata;
     void                           *entry;
     uint32_t                        remaining;
     uint64_t                        xfe_handle1; // always used for XFE transfers
