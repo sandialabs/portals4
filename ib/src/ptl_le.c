@@ -161,12 +161,12 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS)) {
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
 	} else {
-		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS)) {
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
@@ -418,12 +418,12 @@ int le_search_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS)) {
+		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
 	} else {
-		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS)) {
+		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}

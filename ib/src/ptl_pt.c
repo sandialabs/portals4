@@ -61,7 +61,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	if (unlikely(options & ~PTL_PT_ALLOC_OPTIONS)) {
+	if (unlikely(options & ~PTL_PT_ALLOC_OPTIONS_MASK)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
