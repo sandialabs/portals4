@@ -57,6 +57,7 @@ AS_IF([test "x$enable_fast" == xyes],
 	   enable_arg_checking=no
 	   enable_strict_uidjid=no
 	   enable_hard_polling=yes
+	   enable_register_on_bind=yes
 	   AS_IF([test "x$enable_debug_symbols" == xyes],
 			 [CFLAGS="-g $CFLAGS"])])
 AC_ARG_ENABLE([arg-checking],
@@ -105,6 +106,8 @@ AS_IF([test "x$enable_rdtsc" == xyes],
 	  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
 AS_IF([test "x$enable_strict_uidjid" == xyes],
 	  [AC_DEFINE([STRICT_UID_JID], [1], [Define to enable extra UID/JID checking per message])])
+AS_IF([test "x$enable_register_on_bind" == xyes],
+	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
 
 ## ------------------- ##
