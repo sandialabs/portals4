@@ -148,8 +148,8 @@ int API_FUNC PtlInit(void)
             nit_limits[ni].max_iovecs             = 0;                                // XXX: ???
             nit_limits[ni].max_triggered_ops      = 128;                              // Arbitrary
             nit_limits[ni].max_msg_size           = UINT32_MAX;
-            nit_limits[ni].max_atomic_size        = LARGE_FRAG_PAYLOAD; // single payload
-            nit_limits[ni].max_fetch_atomic_size  = LARGE_FRAG_PAYLOAD; // single payload
+            nit_limits[ni].max_atomic_size        = UINT32_MAX;
+            nit_limits[ni].max_fetch_atomic_size  = UINT32_MAX;
             nit_limits[ni].max_waw_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
             nit_limits[ni].max_war_ordered_size   = LARGE_FRAG_PAYLOAD; // single payload
             nit_limits[ni].max_volatile_size      = LARGE_FRAG_PAYLOAD; // single payload

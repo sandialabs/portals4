@@ -159,11 +159,11 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
             nit_limits[ni.s.ni].max_msg_size = desired->max_msg_size;
         }
         if ((desired->max_atomic_size >= 8) &&
-            (desired->max_atomic_size <= LARGE_FRAG_SIZE)) {
+            (desired->max_atomic_size <= UINT32_MAX)) {
             nit_limits[ni.s.ni].max_atomic_size = desired->max_atomic_size;
         }
         if ((desired->max_fetch_atomic_size >= 8) &&
-            (desired->max_fetch_atomic_size <= LARGE_FRAG_SIZE)) {
+            (desired->max_fetch_atomic_size <= UINT32_MAX)) {
             nit_limits[ni.s.ni].max_fetch_atomic_size = desired->max_fetch_atomic_size;
         }
         if ((desired->max_waw_ordered_size >= 8) &&
