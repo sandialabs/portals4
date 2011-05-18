@@ -16,6 +16,9 @@ void INTERNAL       PtlInternalMDCleared(ptl_handle_md_t handle);
 int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
                                           uint_fast8_t    care_about_ct);
 #endif
+#ifdef REGISTER_ON_BIND
+ptl_size_t INTERNAL PtlInternalMDXFEHandle(ptl_handle_md_t handle);
+#endif
 
 #endif /* ifndef PTL_INTERNAL_MD_H */
 /* vim:set expandtab: */

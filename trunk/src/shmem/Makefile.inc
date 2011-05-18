@@ -21,7 +21,13 @@ libportals_la_SOURCES += \
 			 shmem/runtime.c \
 			 shmem/uid.c \
 			 shmem/jid.c \
-			 shmem/init.c
+			 shmem/init.c \
+			 shmem/transfer_engine.c
+
+if COMPILE_KNEM
+libportals_la_SOURCES += \
+						 knem.c
+endif
 
 if USE_PAPI
 libportals_la_SOURCES += \

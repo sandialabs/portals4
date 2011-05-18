@@ -10,6 +10,7 @@
 #include <stddef.h>                    /* for size_t */
 
 #include "ptl_internal_handles.h"
+#include "ptl_internal_transfer_engine.h"
 
 extern volatile uint8_t *comm_pad;
 extern size_t            num_siblings;
@@ -47,6 +48,8 @@ typedef struct {
     char                           *moredata;
     void                           *entry;
     uint32_t                        remaining;
+    uint64_t                        xfe_handle1; // always used for XFE transfers
+    uint64_t                        xfe_handle2; // only used for FetchAtomic & Swap
     /* data used for GETs and properly processing events */
     ptl_internal_handle_converter_t md_handle1;
     ptl_internal_handle_converter_t md_handle2;

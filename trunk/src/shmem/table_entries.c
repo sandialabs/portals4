@@ -43,7 +43,7 @@ int API_FUNC PtlPTAlloc(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("Invalid NI passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
-    if (options & ~PTL_PT_INIT_OPTIONS_MASK) {
+    if (options & ~PTL_PT_ALLOC_OPTIONS_MASK) {
         VERBOSE_ERROR("Invalid options to PtlPTAlloc (0x%x)\n", options);
         return PTL_ARG_INVALID;
     }
