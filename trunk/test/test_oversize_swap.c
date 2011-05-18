@@ -129,14 +129,14 @@ int main(
             (readval[idx] != 0xdeadbeefc0d1f1ed && readval[idx] >= num_procs)
            ) {
             fprintf(stderr, "bad value at idx %u (readval[%u] = 0x%lx)\n",
-                            idx, idx, readval[idx]);
+                            idx, idx, (unsigned long)readval[idx]);
             abort();
         }
         // check that all entries are identical to one another
         if (tmp != readval[idx]) {
             fprintf(stderr, "bad value at idx %u (readval[%u] = 0x%lx), "
                             "expected %lu everywhere (are atomics atomic?)\n",
-                            idx, idx, readval[idx], tmp);
+                            idx, idx, (unsigned long)readval[idx], (unsigned long)tmp);
             abort();
         }
     }
@@ -151,7 +151,7 @@ int main(
             if (value[idx] >= num_procs) {
                 fprintf(stderr, "bad result value at idx %u (value[%u] = 0x%lx)"
                         ", expected < %d\n",
-                        idx, idx, value[idx], num_procs);
+                        idx, idx, (unsigned long)value[idx], num_procs);
                 failed = 1;
             }
             // check that all entries are identical to one another
@@ -159,7 +159,7 @@ int main(
                 fprintf(stderr,
                         "bad result value at idx %u (value[%u] = 0x%lx), "
                         "expected %lu everywhere (are atomics atomic?)\n",
-                        idx, idx, value[idx], tmp);
+                        idx, idx, (unsigned long)value[idx], (unsigned long)tmp);
                 failed = 1;
             }
         }
