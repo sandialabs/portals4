@@ -1677,7 +1677,7 @@ int PtlCTWait(ptl_handle_ct_t   ct_handle,
  *               unsigned int       size,
  *               ptl_time_t         timeout,
  *               ptl_ct_event_t *   event,
- *               int *              which)
+ *               unsigned int *     which)
  * @brief Wait for an array of counting events to reach certain values.
  * @details Used to look for one of an array of counting events that has reached
  *      its respective threshold. Should a counting event reach the test value
@@ -1739,7 +1739,7 @@ int PtlCTPoll(ptl_handle_ct_t * ct_handles,
               unsigned int      size,
               ptl_time_t        timeout,
               ptl_ct_event_t *  event,
-              int *             which);
+              unsigned int *    which);
 /*!
  * @fn PtlCTSet(ptl_handle_ct_t ct_handle,
  *              ptl_ct_event_t  new_ct)
@@ -2641,7 +2641,7 @@ int PtlEQWait(ptl_handle_eq_t   eq_handle,
  *               unsigned int       size,
  *               ptl_time_t         timeout,
  *               ptl_event_t *      event,
- *               int *              which)
+ *               unsigned int *     which)
  * @brief Poll for a new event on multiple event queues.
  * @details Looks for an event from a set of event queues. Should an event arrive
  *      on any of the queues contained in the array of event queue handles, the
@@ -2700,7 +2700,7 @@ int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
               unsigned int          size,
               ptl_time_t            timeout,
               ptl_event_t *         event,
-              int *                 which);
+              unsigned int *        which);
 /*! @} */
 
 /************************

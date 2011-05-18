@@ -121,15 +121,17 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
     return tmp;
 } /*}}}*/
 
-static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme, const uint_fast8_t ni)
+static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme,
+                                     const uint_fast8_t      ni)
 {
     volatile ptl_internal_trigger_t *tmpv, *oldv, *newv;
+
     tmpv = ct_triggers[ni];
     do {
         freeme->next = tmpv;
-        oldv = tmpv;
-        newv = freeme;
-        tmpv = PtlInternalAtomicCasPtr(&ct_triggers[ni], oldv, newv);
+        oldv         = tmpv;
+        newv         = freeme;
+        tmpv         = PtlInternalAtomicCasPtr(&ct_triggers[ni], oldv, newv);
     } while (tmpv != oldv);
 }
 
@@ -466,7 +468,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                        unsigned int     size,
                        ptl_time_t       timeout,
                        ptl_ct_event_t  *event,
-                       int             *which)
+                       unsigned int    *which)
 {                                      /*{{{ */
     ptl_size_t              ctidx, offset;
     ptl_ct_event_t         *ctes[size];
@@ -528,7 +530,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                     *event = tmpread;
                 }
                 if (which != NULL) {
-                    *which = (int)ctidx;
+                    *which = (unsigned int)ctidx;
                 }
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
@@ -545,7 +547,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                     *event = tmpread;
                 }
                 if (which != NULL) {
-                    *which = (int)ctidx;
+                    *which = (unsigned int)ctidx;
                 }
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
