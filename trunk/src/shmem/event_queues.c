@@ -367,7 +367,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
                        unsigned int     size,
                        ptl_time_t       timeout,
                        ptl_event_t     *event,
-                       int             *which)
+                       unsigned int    *which)
 {   /*{{{*/
     ptl_size_t eqidx, offset;
     size_t     nstart;
@@ -445,6 +445,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
                                                  newidx.u)) != readidx.u);
             if (found) {
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
+                *which = (unsigned int)newidx.s.offset;
                 return PTL_OK;
             }
         }
