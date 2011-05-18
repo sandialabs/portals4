@@ -24,9 +24,9 @@ libportals_la_SOURCES += \
 			 shmem/init.c \
 			 shmem/transfer_engine.c
 
-if COMPILE_KNEM
+if USE_KNEM
 libportals_la_SOURCES += \
-						 knem.c
+			  shmem/knem.c
 endif
 
 if USE_PAPI
