@@ -72,6 +72,10 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
         VERBOSE_ERROR("Weird PID (%i)\n", (int)pid);
         return PTL_ARG_INVALID;
     }
+    if (options & ~(PTL_NI_INIT_OPTIONS_MASK)) {
+        VERBOSE_ERROR("Invalid options value (0x%x)\n", options);
+        return PTL_ARG_INVALID;
+    }
     if (options & PTL_NI_MATCHING && options & PTL_NI_NO_MATCHING) {
         VERBOSE_ERROR("Neither matching nor non-matching\n");
         return PTL_ARG_INVALID;
@@ -287,7 +291,7 @@ int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
     if (status == NULL) {
         return PTL_ARG_INVALID;
     }
-    if (status_register >= 2) {
+    if (status_register >= PTL_SR_LAST) {
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
