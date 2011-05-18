@@ -31,7 +31,8 @@ enum ptl_retvals {
     PTL_PT_FULL,        /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE,      /*!< Portal table index is busy. */
-    PTL_SIZE_INVALID    /*!< The requested map size is invalid. */
+    PTL_SIZE_INVALID,   /*!< The requested map size is invalid. */
+    PTL_STATUS_LAST
 };
 
 /**************
@@ -63,9 +64,16 @@ typedef uint32_t        ptl_uid_t; /*!< Integral type for representing user
                                      identifiers. */
 typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
                                      identifiers. */
-typedef unsigned int    ptl_sr_index_t; /*!< Defines the types of indexes that
-                                          can be used to access the status
-                                          registers. */
+/* Defines the types of indexes that can be used to access the status
+ * registers. */
+typedef enum {
+    PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
+			 dropped requests for the interface. */
+    PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
+				     counts the number of attempted permission
+				     violations. */
+    PTL_SR_LAST
+} ptl_sr_index_t;
 typedef int             ptl_sr_value_t; /*!< Signed integral type that defines
                                           the types of values held in status
                                           registers. */
@@ -314,14 +322,6 @@ extern const ptl_interface_t PTL_IFACE_DEFAULT;
 
 /*! Match any rank. */
 #define PTL_RANK_ANY ((ptl_rank_t) 0xffffffff)
-
-/*! Specifies the status register that counts the dropped requests for the
- * interface. */
-#define PTL_SR_DROP_COUNT ((ptl_sr_index_t) 0)
-
-/*! Specifies the status register that counts the number of attempted
- * permission violations. */
-#define PTL_SR_PERMISSIONS_VIOLATIONS ((ptl_sr_index_t) 1)
 
 /*! Enables an infinite timeout. */
 #define PTL_TIME_FOREVER ((ptl_time_t) 0xffffffff)
@@ -1888,10 +1888,10 @@ typedef enum {
  * @param[in] user_ptr      A user-specified value that is associated with each
  *                          command that can generate an event. The value does
  *                          not need to be a pointer, but must fit in the space
- *                          sued by a pointer. This value (along with other
+ *                          used by a pointer. This value (along with other
  *                          values) is recorded in \e initiator events
  *                          associated with this \p put operation.
- * @param[in] hdr_data      64 bites of user data that can be included in the
+ * @param[in] hdr_data      64 bits of user data that can be included in the
  *                          message header. This data is written to an event
  *                          queue entry at the \e target if an event queue is
  *                          present on the match list entry that matches the
@@ -2073,11 +2073,12 @@ typedef enum {
                                  * The target value is always returned. This
                                  * operation is limited to single data items.
                                  */
-    PTL_MSWAP                   /*!< A swap under mask -- update the bits of
+    PTL_MSWAP,                  /*!< A swap under mask -- update the bits of
                                  * the target value that are set to 1 in the
                                  * operand and return the target value. This
                                  * operation is limited to single data items.
                                  */
+    PTL_OP_LAST
 } ptl_op_t;
 /*!
  * @enum ptl_datatype_t
@@ -2097,7 +2098,8 @@ typedef enum {
     PTL_LONG_DOUBLE,
     PTL_FLOAT_COMPLEX,
     PTL_DOUBLE_COMPLEX,
-    PTL_LONG_DOUBLE_COMPLEX
+    PTL_LONG_DOUBLE_COMPLEX,
+    PTL_DATATYPE_LAST
 } ptl_datatype_t;
 /*!
  * @fn PtlAtomic(ptl_handle_md_t    md_handle,
