@@ -704,7 +704,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 		goto err1;
 	}
 
-	if (unlikely(options & ~PTL_NI_INIT_OPTIONS)) {
+	if (unlikely(options & ~PTL_NI_INIT_OPTIONS_MASK)) {
 		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;

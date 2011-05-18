@@ -139,13 +139,13 @@ enum {							/* 3.5.2 */
 	PTL_NI_NO_MATCHING		= 1<<1,
 	PTL_NI_LOGICAL			= 1<<2,
 	PTL_NI_PHYSICAL			= 1<<3,
-	PTL_NI_INIT_OPTIONS		= (1<<4) - 1,
+	PTL_NI_INIT_OPTIONS_MASK		= (1<<4) - 1,
 };
 
 enum {							/* 3.6.1 */
 	PTL_PT_ONLY_USE_ONCE		= 1,
 	PTL_PT_FLOWCTRL			= 1<<1,
-	PTL_PT_ALLOC_OPTIONS		= (1<<2) - 1,
+	PTL_PT_ALLOC_OPTIONS_MASK		= (1<<2) - 1,
 };
 
 typedef union {						/* 3.8.1 */
@@ -173,7 +173,7 @@ enum {
 	PTL_MD_EVENT_CT_BYTES		= 1<<6,
 	PTL_MD_UNORDERED		= 1<<7,
 	PTL_MD_VOLATILE			= 1<<8,
-	PTL_MD_BIND_OPTIONS		= (1<<9) - 1,
+	PTL_MD_BIND_OPTIONS_MASK		= (1<<9) - 1,
 };
 
 typedef struct {					/* 3.10.2 */
@@ -208,7 +208,7 @@ enum {
 	PTL_LE_EVENT_CT_OVERFLOW	= 1<<11,
 	PTL_LE_EVENT_CT_BYTES		= 1<<12,
 	PTL_LE_AUTH_USE_JID		= 1<<13,
-	PTL_LE_APPEND_OPTIONS		= (1<<14) - 1,
+	PTL_LE_APPEND_OPTIONS_MASK		= (1<<14) - 1,
 };
 
 typedef enum {						/* 3.11.2 */
@@ -252,7 +252,7 @@ enum {
 	PTL_ME_MANAGE_LOCAL		= 1<<14,
 	PTL_ME_NO_TRUNCATE		= 1<<15,
 	PTL_ME_MAY_ALIGN		= 1<<16,
-	PTL_ME_APPEND_OPTIONS		= (1<<17) - 1,
+	PTL_ME_APPEND_OPTIONS_MASK		= (1<<17) - 1,
 };
 
 typedef enum {						/* 3.13.1 */
