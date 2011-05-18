@@ -157,6 +157,10 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("MD saw invalid EQ\n");
         return PTL_ARG_INVALID;
     }
+    if (md->options & ~PTL_MD_OPTION_MASK) {
+        VERBOSE_ERROR("Invalid options field passed to PtlMDBind (0x%x)\n", md->options);
+        return PTL_ARG_INVALID;
+    }
     if (md->options & (PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_REPLY |
                        PTL_MD_EVENT_CT_ACK)) {
         ct_optional = 0;
