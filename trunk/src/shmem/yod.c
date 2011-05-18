@@ -245,9 +245,7 @@ int main(int   argc,
             }
             exit(EXIT_FAILURE);
         }
-        if ((commpad =
-                 mmap(NULL, buffsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd,
-                      0)) == MAP_FAILED) {
+        if ((commpad = mmap(NULL, buffsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == MAP_FAILED) {
             perror("yod-> mmap failed");
             if (shm_unlink(shmname) == -1) {
                 perror("yod-> shm_unlink failed");
