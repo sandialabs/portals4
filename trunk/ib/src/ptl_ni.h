@@ -74,7 +74,6 @@ typedef struct ni {
 	/* Can be held outside of CT object lock */
 	pthread_mutex_t		ct_wait_mutex;
 	pthread_cond_t		ct_wait_cond;
-	int			ct_waiting;
 
 	/* Pending send and receive operations. */
 	struct list_head	send_list;

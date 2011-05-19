@@ -3,6 +3,11 @@
 
 typedef struct ct {
 	obj_t			obj;
+
+	/* To wake-up waiting counters. */
+	pthread_mutex_t		mutex;
+	pthread_cond_t		cond;
+
 	ptl_ct_event_t		event;
 	struct list_head	xi_list;
 	struct list_head        list;

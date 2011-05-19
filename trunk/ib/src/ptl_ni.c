@@ -893,6 +893,7 @@ static void interrupt_cts(ni_t *ni)
 	list_for_each(l, &ni->ct_list) {
 		ct = list_entry(l, ct_t, list);
 		ct->interrupt = 1;
+		pthread_cond_broadcast(&ct->cond);
 	}
 	pthread_cond_broadcast(&ni->ct_wait_cond);
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
