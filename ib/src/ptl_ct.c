@@ -4,6 +4,16 @@
 
 #include "ptl_loc.h"
 
+/* Triggered Set and Inc need these special versions because the caller
+ * already owns the ni ct mutex. */
+static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
+						 ptl_ct_event_t increment,
+						 int do_lock);
+
+static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
+						 ptl_ct_event_t new_ct,
+						 int do_lock);
+
 void ct_release(void *arg)
 {
 	ct_t *ct = arg;
@@ -30,6 +40,33 @@ void post_ct(xi_t *xi, ct_t *ct)
 	pthread_mutex_unlock(&ct->mutex);
 }
 
+static void process_triggered_local(xl_t *xl)
+{
+	switch(xl->op) {
+	case TRIGGERED_CTSET:
+		PtlCTSet_lock(xl->ct_handle, xl->value, 0);
+		break;
+	case TRIGGERED_CTINC:
+		PtlCTInc_lock(xl->ct_handle, xl->value, 0);
+		break;
+	}
+
+	free(xl);
+}
+
+void post_ct_local(xl_t *xl, ct_t *ct)
+{
+	/* Must take mutex because of poll API */
+	pthread_mutex_lock(&ct->mutex);
+	if ((ct->event.success + ct->event.failure) >= xl->threshold) {
+		pthread_mutex_unlock(&ct->mutex);
+		process_triggered_local(xl);
+		return;
+	}
+	list_add(&xl->list, &ct->xl_list);
+	pthread_mutex_unlock(&ct->mutex);
+}
+
 /* caller must hold the CT mutex handling Wait/Poll */
 static void ct_check(ct_t *ct)
 {
@@ -45,6 +82,14 @@ static void ct_check(ct_t *ct)
 		if ((ct->event.success + ct->event.failure) >= xi->threshold) {
 			list_del(l);
 			process_init(xi);
+		}
+	}
+
+	list_for_each_prev_safe(l, t, &ct->xl_list) {
+		xl_t *xl = list_entry(l, xl_t, list);
+		if ((ct->event.success + ct->event.failure) >= xl->threshold) {
+			list_del(l);
+			process_triggered_local(xl);
 		}
 	}
 }
@@ -92,6 +137,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 		goto err2;
 
 	INIT_LIST_HEAD(&ct->xi_list);
+ 	INIT_LIST_HEAD(&ct->xl_list);
 	pthread_cond_init(&ct->cond, NULL);
 	pthread_mutex_init(&ct->mutex, NULL);
 
@@ -353,10 +399,10 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 
 	return err;
 }
-	      
 
-int PtlCTSet(ptl_handle_ct_t ct_handle,
-	     ptl_ct_event_t new_ct)
+static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
+				  ptl_ct_event_t new_ct,
+				  int do_lock)
 {
 	int err;
 	gbl_t *gbl;
@@ -378,12 +424,63 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
 
 	/* Must take mutex because of poll API */
 	ni = to_ni(ct);
-	pthread_mutex_lock(&ni->ct_wait_mutex);
+	if (do_lock)
+		pthread_mutex_lock(&ni->ct_wait_mutex);
 	pthread_mutex_lock(&ct->mutex);
 	ct->event = new_ct;
 	ct_check(ct);
 	pthread_mutex_unlock(&ct->mutex);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
+	if (do_lock)
+		pthread_mutex_unlock(&ni->ct_wait_mutex);
+
+	ct_put(ct);
+	gbl_put(gbl);
+	return PTL_OK;
+
+err1:
+	gbl_put(gbl);
+	return err;
+}
+
+int PtlCTSet(ptl_handle_ct_t ct_handle,
+			 ptl_ct_event_t new_ct)
+{
+	return PtlCTSet_lock(ct_handle, new_ct, 1);
+}
+
+static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
+						 ptl_ct_event_t increment,
+						 int do_lock)
+{
+	int err;
+	gbl_t *gbl;
+	ct_t *ct;
+	ni_t *ni;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err))
+		return err;
+
+	err = ct_get(ct_handle, &ct);
+	if (unlikely(err))
+		goto err1;
+
+	if (unlikely(!ct)) {
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+
+	/* Must take mutex because of poll API */
+	ni = to_ni(ct);
+	if (do_lock)
+		pthread_mutex_lock(&ni->ct_wait_mutex);
+	pthread_mutex_lock(&ct->mutex);
+	ct->event.success += increment.success;
+	ct->event.failure += increment.failure;
+	ct_check(ct);
+	pthread_mutex_unlock(&ct->mutex);
+	if (do_lock)
+		pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
 	gbl_put(gbl);
@@ -395,41 +492,7 @@ err1:
 }
 
 int PtlCTInc(ptl_handle_ct_t ct_handle,
-	     ptl_ct_event_t increment)
+			 ptl_ct_event_t increment)
 {
-	int err;
-	gbl_t *gbl;
-	ct_t *ct;
-	ni_t *ni;
-
-	err = get_gbl(&gbl);
-	if (unlikely(err))
-		return err;
-
-	err = ct_get(ct_handle, &ct);
-	if (unlikely(err))
-		goto err1;
-
-	if (unlikely(!ct)) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
-	/* Must take mutex because of poll API */
-	ni = to_ni(ct);
-	pthread_mutex_lock(&ni->ct_wait_mutex);
-	pthread_mutex_lock(&ct->mutex);
-	ct->event.success += increment.success;
-	ct->event.failure += increment.failure;
-	ct_check(ct);
-	pthread_mutex_unlock(&ct->mutex);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
-
-	ct_put(ct);
-	gbl_put(gbl);
-	return PTL_OK;
-
-err1:
-	gbl_put(gbl);
-	return err;
+	return PtlCTInc_lock(ct_handle, increment, 1);
 }

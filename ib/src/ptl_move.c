@@ -1152,26 +1152,33 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 	int err;
 	gbl_t *gbl;
 	ct_t *ct;
-	ni_t *ni;
+	xl_t *xl;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = ct_get(trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
-	/* TODO see PtlCTSet */
-	ct->event = new_ct;
+	xl = xl_alloc();
+	if (!xl)
+		goto err2;
 
-	ni = to_ni(ct);
+	xl->op = TRIGGERED_CTSET;
+	xl->ct_handle = ct_handle;
+	xl->value = new_ct;
+	xl->threshold = threshold;
 
+	post_ct_local(xl, ct);
+
+	err = PTL_OK;
+
+ err2:
 	ct_put(ct);
-	gbl_put(gbl);
-	return PTL_OK;
 
-err1:
+ err1:
 	gbl_put(gbl);
 	return err;
 }
@@ -1184,27 +1191,35 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 	int err;
 	gbl_t *gbl;
 	ct_t *ct;
-	ni_t *ni;
+	xl_t *xl;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = ct_get(trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
-	(void)__sync_fetch_and_add(&ct->event.success, increment.success);
-	(void)__sync_fetch_and_add(&ct->event.failure, increment.failure);
 
-	/* TODO see PtlCTSet */
+	xl = xl_alloc();
+	if (!xl)
+		goto err2;
 
+	xl->op = TRIGGERED_CTINC;
+	xl->ct_handle = ct_handle;
+	xl->value = increment;
+	xl->threshold = threshold;
+
+	post_ct_local(xl, ct);
+
+	err = PTL_OK;
+
+ err2:
 	ct_put(ct);
-	gbl_put(gbl);
-	return PTL_OK;
-
-err1:
-	gbl_put(gbl);
-	return err;
+	
+ err1:
+ 	gbl_put(gbl);
+ 	return err;
 }
 
 /*

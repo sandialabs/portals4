@@ -10,9 +10,24 @@ typedef struct ct {
 
 	ptl_ct_event_t		event;
 	struct list_head	xi_list;
+	struct list_head	xl_list;
 	struct list_head        list;
 	int			interrupt;
 } ct_t;
+
+typedef struct xl {
+	struct list_head        list;
+
+	enum {
+		TRIGGERED_CTSET = 1,
+		TRIGGERED_CTINC,
+	} op;
+
+	ptl_handle_ct_t ct_handle;
+	ptl_ct_event_t value;		/* either new value or increment */
+	ptl_size_t threshold;
+
+} xl_t;
 
 void ct_release(void *arg);
 
@@ -62,8 +77,15 @@ static inline ptl_handle_ct_t ct_to_handle(ct_t *ct)
 }
 
 void post_ct(xi_t *xi, ct_t *ct);
+void post_ct_local(xl_t *xl, ct_t *ct);
 
 void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail,
 		   ptl_size_t length, int bytes);
+
+/* TODO: make an object in a pool instead ? */
+static inline xl_t *xl_alloc(void)
+{
+	return malloc(sizeof(xl_t));
+}
 
 #endif /* PTL_CT_H */
