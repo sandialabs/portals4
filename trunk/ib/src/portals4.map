@@ -1,0 +1,62 @@
+{
+	global:
+		PtlAtomic;
+		PtlCTAlloc;
+		PtlCTFree;
+		PtlCTFree;
+		PtlCTGet;
+		PtlCTInc;
+		PtlCTPoll;
+		PtlCTSet;
+		PtlCTWait;
+		PtlCtInc;
+		PtlEQAlloc;
+		PtlEQFree;
+		PtlEQGet;
+		PtlEQPoll;
+		PtlEQWait;
+		PtlEndBundle;
+		PtlFetchAtomic;
+		PtlFini;
+		PtlGet;
+		PtlGetId;
+		PtlGetJid;
+		PtlGetUid;
+		PtlHandleIsEqual;
+		PtlInit;
+		PtlLEAppend;
+		PtlLESearch;
+		PtlLEUnlink;
+		PtlMDBind;
+		PtlMDRelease;
+		PtlMEAppend;
+		PtlMESearch;
+		PtlMEUnlink;
+		PtlNIFini;
+		PtlNIHandle;
+		PtlNIInit;
+		PtlNIStatus;
+		PtlPTAlloc;
+		PtlPTDisable;
+		PtlPTEnable;
+		PtlPTFree;
+		PtlPut;
+		PtlStartBundle;
+		PtlSwap;
+		PtlTriggeredAtomic;
+		PtlTriggeredCTInc;
+		PtlTriggeredCTSet;
+		PtlTriggeredFetchAtomic;
+		PtlTriggeredGet;
+		PtlTriggeredPut;
+		PtlTriggeredSwap;
+
+	# SFW runtime. Not part of portals.
+		PtlSetJid;
+		ptl_log_level;
+		ptl_test_rank;
+		ptl_test_return;
+
+	local:
+		*;
+};

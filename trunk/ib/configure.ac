@@ -48,6 +48,16 @@ AC_FUNC_REALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([ftruncate getpagesize inet_ntoa memset select socket strerror strtol strtoul])
 
+# Only export the library symbols 
+AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
+    [if test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"; then
+        LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/portals4.map'
+    else
+        LD_VERSION_SCRIPT=
+    fi])
+AC_SUBST(LD_VERSION_SCRIPT)
+
+
 AC_CONFIG_FILES([Makefile
 		 include/Makefile
                  src/Makefile
