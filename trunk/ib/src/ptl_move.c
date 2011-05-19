@@ -1166,10 +1166,6 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 	ct->event = new_ct;
 
 	ni = to_ni(ct);
-	pthread_mutex_lock(&ni->ct_wait_mutex);
-	if (ni->ct_waiting)
-		pthread_cond_broadcast(&ni->ct_wait_cond);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
 	gbl_put(gbl);
@@ -1201,11 +1197,6 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 	(void)__sync_fetch_and_add(&ct->event.failure, increment.failure);
 
 	/* TODO see PtlCTSet */
-	ni = to_ni(ct);
-	pthread_mutex_lock(&ni->ct_wait_mutex);
-	if (ni->ct_waiting)
-		pthread_cond_broadcast(&ni->ct_wait_cond);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
 	gbl_put(gbl);
