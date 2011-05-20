@@ -122,7 +122,8 @@ static void init_events(xi_t *xi)
 		    (xi->put_md->options & PTL_MD_EVENT_CT_SEND))
 			xi->event_mask |= XI_CT_SEND_EVENT;
 
-		if (xi->put_md->ct && (xi->ack_req == PTL_CT_ACK_REQ) &&
+		if (xi->put_md->ct && 
+			(xi->ack_req == PTL_CT_ACK_REQ || xi->ack_req == PTL_OC_ACK_REQ) &&
 		    (xi->put_md->options & PTL_MD_EVENT_CT_ACK))
 			xi->event_mask |= XI_CT_ACK_EVENT;
 		break;
