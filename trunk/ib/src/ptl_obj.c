@@ -4,6 +4,8 @@
 
 #include "ptl_loc.h"
 
+#define HANDLE_SHIFT ((sizeof(ptl_handle_any_t)*8)-8)
+
 static void *obj_get_zero_filled_segment(pool_t *pool)
 {
 	int err;
@@ -336,7 +338,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	err = index_get(obj, &index);
 	if (err)
 		return err;
-	obj->obj_handle	= ((uint64_t)(pool->type) << 56) | index;
+	obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
 
 	ref_init(&obj->obj_ref);
 
@@ -370,7 +372,7 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 	obj_t *obj = NULL;
 	unsigned int index;
 #ifdef PTL_CHECK_BUILD
-	unsigned int handle_type = (unsigned int)(handle >> 56);
+	unsigned int handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
 #endif
 
 	if (handle == PTL_HANDLE_NONE)

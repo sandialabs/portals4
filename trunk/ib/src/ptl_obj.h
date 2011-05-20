@@ -139,7 +139,7 @@ static inline int obj_put(obj_t *obj)
 	return obj ? ref_put(&obj->obj_ref, obj_release) : 0;
 }
 
-#define HANDLE_INDEX_MASK	(0xffffffff)
+#define HANDLE_INDEX_MASK	(0x00ffffff)
 
 /*
  * obj_handle_to_index
