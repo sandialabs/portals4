@@ -92,7 +92,7 @@ unsigned int get_md_opt(char *orig_val)
 		} else if (!strcmp("UNORDERED", tok)) {
 			md_opt |= PTL_MD_UNORDERED;
 		} else if (!strcmp("INVALID", tok)) {
-			md_opt = ~PTL_MD_BIND_OPTIONS_MASK;
+			md_opt = ~PTL_MD_OPTIONS_MASK;
 		} else {
 			md_opt = strtol(tok, NULL, 0);
 			break;
