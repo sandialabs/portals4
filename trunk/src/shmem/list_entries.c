@@ -235,9 +235,7 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
         case PTL_PRIORITY_LIST:
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
-                ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *)(t->buffered_headers.
-                                                       head);
+                ptl_internal_buffered_header_t *cur  = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
                 ptl_internal_buffered_header_t *prev = NULL;
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
                     /* act like there was a delivery;
@@ -482,6 +480,179 @@ done_appending:
     return PTL_OK;
 }                                      /*}}} */
 
+int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
+                         ptl_pt_index_t  pt_index,
+                         ptl_le_t       *le,
+                         ptl_search_op_t ptl_search_op,
+                         void           *user_ptr)
+{
+    const ptl_internal_handle_converter_t ni  = { ni_handle };
+    ptl_internal_handle_converter_t       leh = { .s.selector = HANDLE_LE_CODE };
+    ptl_table_entry_t                    *t;
+    uint_fast8_t                          found = 0;
+
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        VERBOSE_ERROR("communication pad not initialized\n");
+        return PTL_NO_INIT;
+    }
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("ni code wrong\n");
+        return PTL_ARG_INVALID;
+    }
+    if ((ni.s.ni == 0) || (ni.s.ni == 2)) { // must be a non-matching NI
+        VERBOSE_ERROR("must be a non-matching NI\n");
+        return PTL_ARG_INVALID;
+    }
+    if (nit.tables[ni.s.ni] == NULL) { // this should never happen
+        assert(nit.tables[ni.s.ni] != NULL);
+        return PTL_ARG_INVALID;
+    }
+    if (pt_index > nit_limits[ni.s.ni].max_pt_index) {
+        VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index,
+                      nit_limits[ni.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
+    }
+    {
+        int ptv = PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index]);
+        if ((ptv == 1) || (ptv == 3)) {    // Unallocated or bad EQ (enabled/disabled both allowed)
+            VERBOSE_ERROR("LEAppend sees an invalid PT\n");
+            return PTL_ARG_INVALID;
+        }
+    }
+#endif /* ifndef NO_ARG_VALIDATION */
+    assert(les[ni.s.ni] != NULL);
+    leh.s.ni = ni.s.ni;
+    /* append to associated list */
+    assert(nit.tables[ni.s.ni] != NULL);
+    t = &(nit.tables[ni.s.ni][pt_index]);
+    PTL_LOCK_LOCK(t->lock);
+    if (t->buffered_headers.head != NULL) {
+        ptl_internal_buffered_header_t *cur  = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
+        ptl_internal_buffered_header_t *prev = NULL;
+        for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
+            /* act like there was a delivery;
+            * 1. Check permissions
+            * 2. Iff LE is persistent...
+            * 3a. Queue buffered header to LE buffer
+            * 4a. When done processing entire unexpected header list, send retransmit request
+            * ... else: deliver and return */
+            if (ptl_search_op == PTL_SEARCH_DELETE) {
+                // dequeue header
+                prev->hdr.next = cur->hdr.next;
+            } else {
+                t->buffered_headers.head = cur->hdr.next;
+            }
+            // (1) check permissions
+            if (le->options & PTL_LE_AUTH_USE_JID) {
+                if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
+                    goto permission_violationPO;
+                }
+            } else {
+                EXT_UID;
+                if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
+                    goto permission_violationPO;
+                }
+            }
+            switch (cur->hdr.type) {
+                case HDR_TYPE_PUT:
+                case HDR_TYPE_ATOMIC:
+                case HDR_TYPE_FETCHATOMIC:
+                case HDR_TYPE_SWAP:
+                    if ((le->options & PTL_LE_OP_PUT) == 0) {
+                        goto permission_violationPO;
+                    }
+            }
+            switch (cur->hdr.type) {
+                case HDR_TYPE_GET:
+                case HDR_TYPE_FETCHATOMIC:
+                case HDR_TYPE_SWAP:
+                    if ((le->options & PTL_LE_OP_GET) == 0) {
+                        goto permission_violationPO;
+                    }
+            }
+            if (0) {
+permission_violationPO:
+                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                continue;
+            }
+            found = 1;
+            {
+                size_t mlength;
+                // deliver
+                if (le->length == 0) {
+                    mlength = 0;
+                } else if (cur->hdr.length + cur->hdr.dest_offset > le->length) {
+                    if (le->length > cur->hdr.dest_offset) {
+                        mlength = le->length - cur->hdr.dest_offset;
+                    } else {
+                        mlength = 0;
+                    }
+                } else {
+                    mlength = cur->hdr.length;
+                }
+                // notify
+                if (t->EQ != PTL_EQ_NONE) {
+                    ptl_internal_event_t e;
+                    PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                    if (ptl_search_op == PTL_SEARCH_ONLY) {
+                        e.type = PTL_EVENT_SEARCH;
+                    } else {
+                        switch(cur->hdr.type) {
+                            case 0: /* put */
+                                e.type = PTL_EVENT_PUT_OVERFLOW;
+                                break;
+                            case 1: /* get */
+                                abort();
+                            case 2: /* atomic */
+                            case 3: /* fetchatomic */
+                            case 4: /* swap */
+                                e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                                break;
+                        }
+                    }
+                    e.mlength = mlength;
+                    e.start   = cur->buffered_data;
+                    PtlInternalEQPush(t->EQ, &e);
+                }
+            }
+            // (2) iff LE is NOT persistent
+            if (le->options & PTL_LE_USE_ONCE) {
+                goto done_searching;
+            }
+        }
+    }
+    if (!found) {
+        if (t->EQ != PTL_EQ_NONE) {
+            ptl_internal_event_t e;
+            e.type           = PTL_EVENT_SEARCH;
+            e.initiator.rank = proc_number;
+            e.pt_index       = pt_index;
+            {
+                ptl_uid_t tmp;
+                PtlGetUid(ni_handle, &tmp);
+                e.uid = tmp;
+            }
+            {
+                ptl_jid_t tmp;
+                PtlGetJid(ni_handle, &tmp);
+                e.jid = tmp;
+            }
+            e.match_bits    = 0;
+            e.rlength       = 0;
+            e.mlength       = 0;
+            e.remote_offset = 0;
+            e.start         = 0;
+            e.user_ptr      = user_ptr;
+            e.hdr_data      = 0;
+            e.ni_fail_type  = PTL_NI_UNDELIVERABLE;
+        }
+    }
+done_searching:
+    PTL_LOCK_UNLOCK(t->lock);
+    return PTL_OK;
+}
+
 int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t le = { le_handle };
@@ -697,9 +868,9 @@ check_lengths:
 
             if (hdr->xfe_handle1) {
                 /* we can actually do the entire transfer now, so fake our
-                   max_payload value */
+                 * max_payload value */
                 max_payload = hdr->length;
-                use_xfe = 1;
+                use_xfe     = 1;
             } else {
                 max_payload = PtlInternalFragmentSize(hdr) -
                               sizeof(ptl_internal_header_t);
@@ -858,9 +1029,9 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t              type,
                                           ptl_internal_header_t *restrict hdr,
                                           uint8_t *const restrict         op)
 {                                      /*{{{ */
-    uint_fast8_t copy_back = 0;
-    uint_fast8_t have_operand = 0;
-    const uint_fast8_t basictype = type & HDR_TYPE_BASICMASK;
+    uint_fast8_t       copy_back    = 0;
+    uint_fast8_t       have_operand = 0;
+    const uint_fast8_t basictype    = type & HDR_TYPE_BASICMASK;
 
     /* Determine if our transfer engine can give us direct access to the
      * remote memory. If so, we can perform delivery in-place, without
@@ -870,6 +1041,7 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t              type,
      *         avoid the copy.
      */
     uint8_t *remote_buf = xfe_attach(msg_xfe_handle1);
+
     if (remote_buf) {
         switch (basictype) {
             case HDR_TYPE_PUT:
@@ -878,6 +1050,7 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t              type,
                 PtlInternalPerformDelivery2(type, local_data, remote_buf,
                                             nbytes, hdr, op);
                 return; // we're done
+
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
                 if (msg_xfe_handle1 == msg_xfe_handle2) {
@@ -897,50 +1070,50 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t              type,
             break;
         case HDR_TYPE_SWAP:
             have_operand = 1;
-            // fall through
+        // fall through
         case HDR_TYPE_FETCHATOMIC:
             copy_back = 1;
-            // fall through
+        // fall through
         case HDR_TYPE_ATOMIC:
-            {
-                /* copy and operate on the remote data piece-by-piece */
-                uint8_t chunk[2*LARGE_FRAG_SIZE];   // TODO totally arbitrary
-                size_t remaining = nbytes;
-                size_t offset = 0;
+        {
+            /* copy and operate on the remote data piece-by-piece */
+            uint8_t chunk[2 * LARGE_FRAG_SIZE];     // TODO totally arbitrary
+            size_t  remaining = nbytes;
+            size_t  offset    = 0;
 
-                while (remaining) {
-                    const size_t chunk_size = (remaining > sizeof(chunk))
-                                              ? sizeof(chunk)
-                                              : remaining;
+            while (remaining) {
+                const size_t chunk_size = (remaining > sizeof(chunk))
+                                          ? sizeof(chunk)
+                                          : remaining;
 
-                    /* copy chunk-sized piece of initiator data */
-                    xfe_copy_from(chunk, msg_xfe_handle1,
-                                  msg_xfe_offset1 + offset,
-                                  chunk_size);
+                /* copy chunk-sized piece of initiator data */
+                xfe_copy_from(chunk, msg_xfe_handle1,
+                              msg_xfe_offset1 + offset,
+                              chunk_size);
 
-                    if (have_operand) {
-                        PtlInternalPerformAtomicArg(local_data + offset,
-                                                    chunk, op, chunk_size,
-                                                    (ptl_op_t)hdr->atomic_operation,
-                                                    (ptl_datatype_t)hdr->atomic_datatype);
-                    } else {
-                        PtlInternalPerformAtomic(local_data + offset,
-                                                 chunk, chunk_size,
-                                                 (ptl_op_t)hdr->atomic_operation,
-                                                 (ptl_datatype_t)hdr->atomic_datatype);
-                    }
-
-                    /* copy result data back to the initiator's 'get' region */
-                    if (copy_back) {
-                        xfe_copy_to(msg_xfe_handle2, msg_xfe_offset2 + offset,
-                                    chunk, chunk_size);
-                    }
-
-                    remaining -= chunk_size;
-                    offset += chunk_size;
+                if (have_operand) {
+                    PtlInternalPerformAtomicArg(local_data + offset,
+                                                chunk, op, chunk_size,
+                                                (ptl_op_t)hdr->atomic_operation,
+                                                (ptl_datatype_t)hdr->atomic_datatype);
+                } else {
+                    PtlInternalPerformAtomic(local_data + offset,
+                                             chunk, chunk_size,
+                                             (ptl_op_t)hdr->atomic_operation,
+                                             (ptl_datatype_t)hdr->atomic_datatype);
                 }
+
+                /* copy result data back to the initiator's 'get' region */
+                if (copy_back) {
+                    xfe_copy_to(msg_xfe_handle2, msg_xfe_offset2 + offset,
+                                chunk, chunk_size);
+                }
+
+                remaining -= chunk_size;
+                offset    += chunk_size;
             }
             break;
+        }
         default:
             UNREACHABLE;
             abort();
