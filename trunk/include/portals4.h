@@ -1255,7 +1255,8 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 #define PTL_ME_EVENT_CT_COMM            (1<<10)
 
 /*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). */
+ * PTL_EVENT_ATOMIC_OVERFLOW). When an overflow event would be posted, the
+ * count is incremented by the \a mlength (modified length). */
 #define PTL_ME_EVENT_CT_OVERFLOW        (1<<11)
 
 /*! By default, counting events count events. When set, this option causes
@@ -1332,13 +1333,6 @@ typedef struct {
      * list entry are not counted. */
     ptl_handle_ct_t     ct_handle;
 
-    /*! When the unused portion of a match list entry (length - local offset)
-     * falls below this value, the match list entry automatically unlinks. A \a
-     * min_free value of 0 disables the \a min_free capability (thre free space
-     * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
-     * is set. */
-    ptl_size_t          min_free;
-
     /*! Specifies either the user ID or job ID (as selected by the options)
      * that may access this match list entry. Either the user ID or job ID may
      * be set to a wildcard (\c PTL_UID_ANY or \c PTL_JID_ANY). If the access
@@ -1393,6 +1387,13 @@ typedef struct {
     /*! The \a ignore_bits are used to mask out insignificant bits in the
      * incoming match bits. */
     ptl_match_bits_t    ignore_bits;
+
+    /*! When the unused portion of a match list entry (length - local offset)
+     * falls below this value, the match list entry automatically unlinks. A \a
+     * min_free value of 0 disables the \a min_free capability (thre free space
+     * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
+     * is set. */
+    ptl_size_t          min_free;
 } ptl_me_t;
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t      ni_handle,
@@ -2230,14 +2231,19 @@ int PtlAtomic(ptl_handle_md_t   md_handle,
  *      PtlPut() and PtlGet() style events can be delivered. When data is sent
  *      from the initiator node, a \c PTL_EVENT_SEND event is registered on the
  *      \e initiator node in the event queue specified by the \a put_md_handle.
- *      The even t\c PTL_EVENT_ATOMIC is registered on the \e target node to
+ *      The event \c PTL_EVENT_ATOMIC is registered on the \e target node to
  *      indicate completion of an atomic operation; and if data is returned
  *      from the \e target node, a \c PTL_EVENT_REPLY event is registered on
- *      the \e initiator node in the even tqueue specified by the \a
+ *      the \e initiator node in the event queue specified by the \a
  *      get_md_handle. Note that receiving a \c PTL_EVENT_REPLY inherently
  *      implies that the flow control check has passed on the target node. In
  *      addition, it is an error to use memory descriptors bound to different
- *      network interfaces in a single PtlFetchAtomic() call.
+ *      network interfaces in a single PtlFetchAtomic() call. The behavior that
+ *      occurs when the \a local_get_offset into the \a get_md_handle overlaps
+ *      with the \a local_put_offset into the \a put_md_handle is undefined.
+ *      Operations performed by PtlFetchAtomic() are constrained to be no more
+ *      than \a max_fetch_atomic_size bytes and must be aligned at the target
+ *      to the size of ptl_datatype_t passed in the \a datatype argument.
  * @param[in] get_md_handle     The memory descriptor handle that describes the
  *                              memory into which the result of the operation
  *                              will be placed. The memory descriptor can have
@@ -2321,7 +2327,14 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *      Like PtlFetchAtomic(), receiving a \c PTL_EVENT_REPLY inherently
  *      implies that the flow control check has passed on the target node. In
  *      addition, it is an error to use memory descriptors bound to different
- *      network interfaces in a single PtlSwap() call.
+ *      network interfaces in a single PtlSwap() call. The behavior that
+ *      occurs when the \a local_get_offset into the \a get_md_handle overlaps
+ *      with the \a local_put_offset into the \a put_md_handle is undefined.
+ *      Operations performed by PtlSwap() are constrained to be no more than \a
+ *      max_fetch_atomic_size bytes and must be aligned at the target
+ *      to the size of ptl_datatype_t passed in the \a datatype argument. \c
+ *      PTL_CSWAP and \c PTL_MSWAP operations are further restricted to one
+ *      item, whose size is defined by the size of the datatype used.
  * @param[in] get_md_handle     The memory descriptor handle that describes the
  *                              memory into which the result of the operation
  *                              will be placed. The memory descriptor can have
@@ -2504,21 +2517,25 @@ typedef enum {
  *      type and a union of the \e target specific event structure and the \e
  *      initiator specific event structure. */
 typedef struct {
-    /*! Indicates the type of the event. */
-    ptl_event_kind_t    type;
+    /*! The starting location (virtual, byte address) where the message has
+     * been placed. The \a start variable is the sum of the \a start variable
+     * in the match list entry and the offset used for the operation. The
+     * offset can be determined by the operation for a remote managed match
+     * list entry or by the local memory descriptor.
+     *
+     * When the PtlMEAppend() call matches a message that has arrived in the
+     * overflow list, the start address points to the addres in the overflow
+     * list where the matching message resides. This may require the
+     * application to copy the message to the desired buffer.
+     */
+    void *              start;
 
-    /*! The identifier of the \e initiator. */
-    ptl_process_t       initiator;
+    /*! A user-specified value that is associated with each command that can
+     * generate an event. */
+    void *              user_ptr;
 
-    /*! The portal table index where the message arrived. */
-    ptl_pt_index_t      pt_index;
-
-    /*! The user identifier of the \e initiator. */
-    ptl_uid_t           uid;
-
-    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
-     * implementations that do not support job identifiers. */
-    ptl_jid_t           jid;
+    /*! 64 bits of out-of-band user data. */
+    ptl_hdr_data_t      hdr_data;
 
     /*! The match bits specified by the \e initiator. */
     ptl_match_bits_t    match_bits;
@@ -2541,25 +2558,21 @@ typedef struct {
      * target, this is the offset requested by th initiator. */
     ptl_size_t          remote_offset;
 
-    /*! The starting location (virtual, byte address) where the message has
-     * been placed. The \a start variable is the sum of the \a start variable
-     * in the match list entry and the offset used for the operation. The
-     * offset can be determined by the operation for a remote managed match
-     * list entry or by the local memory descriptor.
-     *
-     * When the PtlMEAppend() call matches a message that has arrived in the
-     * overflow list, the start address points to the addres in the overflow
-     * list where the matching message resides. This may require the
-     * application to copy the message to the desired buffer.
-     */
-    void *              start;
+    /*! The user identifier of the \e initiator. */
+    ptl_uid_t           uid;
 
-    /*! A user-specified value that is associated with each command that can
-     * generate an event. */
-    void *              user_ptr;
+    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
+     * implementations that do not support job identifiers. */
+    ptl_jid_t           jid;
 
-    /*! 64 bits of out-of-band user data. */
-    ptl_hdr_data_t      hdr_data;
+    /*! The identifier of the \e initiator. */
+    ptl_process_t       initiator;
+
+    /*! Indicates the type of the event. */
+    ptl_event_kind_t    type;
+
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t      pt_index;
 
     /*! Is used to convey the failure of an operation. Success is indicated by
      * \c PTL_NI_OK. */
