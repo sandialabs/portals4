@@ -1598,6 +1598,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_atomic(info);
 				errs += walk_tree(info, node->children);
 				break;
+			case NODE_PTL_ATOMIC_SYNC:
+				errs = test_ptl_atomic_sync(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL_FETCH:
 				errs = test_ptl_fetch_atomic(info);
 				errs += walk_tree(info, node->children);

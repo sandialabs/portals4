@@ -71,6 +71,7 @@ static struct dict_init {
 	{"ptl_put",			TYPE_NODE,		NODE_PTL_PUT},
 	{"ptl_get",			TYPE_NODE,		NODE_PTL_GET},
 	{"ptl_atomic",			TYPE_NODE,		NODE_PTL_ATOMIC},
+	{"ptl_atomic_sync",		TYPE_NODE,		NODE_PTL_ATOMIC_SYNC},
 	{"ptl_fetch",			TYPE_NODE,		NODE_PTL_FETCH},
 	{"ptl_swap",			TYPE_NODE,		NODE_PTL_SWAP},
 	{"ptl_trig_put",		TYPE_NODE,		NODE_PTL_TRIG_PUT},
