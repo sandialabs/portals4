@@ -415,7 +415,7 @@ void INTERNAL PtlInternalCTCancelTriggers(ptl_handle_ct_t ct_handle)
 } /*}}}*/
 
 int API_FUNC PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
 #ifndef NO_ARG_VALIDATION
@@ -448,7 +448,8 @@ int API_FUNC PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
         /* step 5: wait for the progress thread to touch my fragment */
         PTL_CMD_LOCK_SENDER2(hdr->data);
     }
-}
+    return PTL_OK;
+} /*}}}*/
 
 int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t *event)
