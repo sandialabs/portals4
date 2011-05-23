@@ -63,6 +63,9 @@ static void PtlInternalHandleCmd(ptl_internal_header_t *restrict hdr)
         case CMD_TYPE_ENQUEUE:
             PtlInternalCTUnorderedEnqueue(hdr);
             break;
+        case CMD_TYPE_CANCEL:
+            PtlInternalCTCancelTriggers(hdr->hdr_data);
+            break;
         case CMD_TYPE_NOOP:
             __sync_synchronize();
             PTL_CMD_LOCK_PROGRESS(hdr->data);

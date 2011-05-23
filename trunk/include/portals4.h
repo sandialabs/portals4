@@ -1616,6 +1616,26 @@ int PtlCTAlloc(ptl_handle_ni_t      ni_handle,
  */
 int PtlCTFree(ptl_handle_ct_t ct_handle);
 /*!
+ * @fn PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+ * @brief Cancel pending triggered operations.
+ * @details In certain circumstances, it may be necessary to cancel triggered
+ *	operations that are pending. For example, an error condition may mean
+ *	that a counting event will never reach the designated threshold.
+ *	PtlCTCancelTriggered() is provided to handle these circumstances. Upon
+ *	return from PtlCTCancelTriggered(), all triggered operations waiting on
+ *	\a ct_handle are permanently destroyed. The operations are not
+ *	triggered, and will not modify any application-visible state. The other
+ *	state associated with ct_handle is left unchanged.
+ * @param[in] ct_handle The counting event handle associated with the triggered
+ *			operations to be canceled.
+ * @retval PTL_OK               Indicates success
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @retval PTL_ARG_INVALID      Indicates that \a ct_handle is not a valid
+ *                              counting event handle.
+ */
+int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle);
+/*!
  * @fn PtlCTGet(ptl_handle_ct_t     ct_handle,
  *              ptl_ct_event_t *    event)
  * @brief Get the current value of a counting event.
@@ -2763,7 +2783,11 @@ int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
  * argument reaches or exceeds the \a threshold (equal to or greater), the
  * operation proceeds \e at \e the \e initiator \e of \e the \e operation. For
  * example, a PtlTriggeredGet() or a PtlTriggeredAtomic() will not leave the \e
- * initiator until the threshold is reached.
+ * initiator until the threshold is reached. A triggered operation does not use
+ * the state of the buffer when the application calls the Portals function.
+ * Instead, it uses the state of the buffer after the threshold condition is
+ * met. Pending triggered operations can be canceled using
+ * PtlCTCancelTriggered().
  *
  * @note The use of a \a trig_ct_handle and \a threshold enables a variety of
  *      usage models. A single match list entry can trigger one operation (or
