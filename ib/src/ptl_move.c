@@ -667,6 +667,12 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
+	if (get_md_handle == put_md_handle) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+
 	err = md_get(get_md_handle, &get_md);
 	if (unlikely(err)) {
 		WARN();
@@ -936,6 +942,12 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (unlikely(err)) {
 		WARN();
 		return err;
+	}
+
+	if (get_md_handle == put_md_handle) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
 
 	err = md_get(get_md_handle, &get_md);

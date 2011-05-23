@@ -106,6 +106,21 @@
     </ptl>
   </subtest>
   <subtest>
+    <desc>Test PtlFetchAtomic with same source and destination</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_fetch target_id="SELF" ret="ARG_INVALID"/>
+              <msleep count="10"/>
+            </ptl_md>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
     <desc>Test PtlSwap with get_md_handle = NONE</desc>
     <ptl>
       <ptl_ni>
@@ -178,7 +193,9 @@
     <ptl>
       <ptl_ni>
         <ptl_md>
+        <ptl_md>
           <ptl_fetch atom_op="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
         </ptl_md>
       </ptl_ni>
     </ptl>
@@ -188,7 +205,9 @@
     <ptl>
       <ptl_ni>
         <ptl_md>
+        <ptl_md>
           <ptl_fetch atom_op="CSWAP" ret="ARG_INVALID"/>
+        </ptl_md>
         </ptl_md>
       </ptl_ni>
     </ptl>
@@ -198,7 +217,9 @@
     <ptl>
       <ptl_ni>
         <ptl_md>
+        <ptl_md>
           <ptl_swap atom_op="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
         </ptl_md>
       </ptl_ni>
     </ptl>
@@ -208,8 +229,25 @@
     <ptl>
       <ptl_ni>
         <ptl_md>
+        <ptl_md>
           <ptl_swap atom_op="XOR" ret="ARG_INVALID"/>
         </ptl_md>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <subtest>
+    <desc>Test PtlSwap with same source and destination</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_swap target_id="SELF" ret="ARG_INVALID"/>
+              <msleep count="10"/>
+            </ptl_md>
+          </ptl_me>
+        </ptl_pt>
       </ptl_ni>
     </ptl>
   </subtest>
