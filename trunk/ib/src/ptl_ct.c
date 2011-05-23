@@ -503,6 +503,8 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	gbl_t *gbl;
 	ct_t *ct;
 	ni_t *ni;
+	struct list_head *l;
+	struct list_head *t;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -521,11 +523,16 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	pthread_mutex_lock(&ct->mutex);
 
-	if (!list_empty(&ct->xi_list)) {
-		list_del(&ct->xi_list);
+	list_for_each_prev_safe(l, t, &ct->xi_list) {
+		xi_t *xi = list_entry(l, xi_t, list);
+		list_del(l);
+		xi_put(xi);
 	}
-	else if (!list_empty(&ct->xl_list)) {
-		list_del(&ct->xl_list);
+
+	list_for_each_prev_safe(l, t, &ct->xl_list) {
+		xl_t *xl = list_entry(l, xl_t, list);
+		list_del(l);
+		free(xl);
 	}
 
 	pthread_mutex_unlock(&ct->mutex);

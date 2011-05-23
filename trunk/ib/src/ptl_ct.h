@@ -82,7 +82,6 @@ void post_ct_local(xl_t *xl, ct_t *ct);
 void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail,
 		   ptl_size_t length, int bytes);
 
-/* TODO: make an object in a pool instead ? */
 static inline xl_t *xl_alloc(void)
 {
 	return malloc(sizeof(xl_t));
