@@ -63,6 +63,10 @@ static void PtlInternalHandleCmd(ptl_internal_header_t *restrict hdr)
         case CMD_TYPE_ENQUEUE:
             PtlInternalCTUnorderedEnqueue(hdr);
             break;
+        case CMD_TYPE_NOOP:
+            __sync_synchronize();
+            PTL_CMD_LOCK_PROGRESS(hdr->data);
+            break;
         default:
             abort();
     }
@@ -104,9 +108,9 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     PtlInternalCTPullTriggers(cth);
                 }
                 if ((eqh != PTL_EQ_NONE) &&
-                        ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
+                    ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
                     PtlInternalEQPushESEND(eqh, hdr->length,
-                            hdr->local_offset1, hdr->user_ptr);
+                                           hdr->local_offset1, hdr->user_ptr);
                 }
 
 #ifndef REGISTER_ON_BIND
@@ -145,7 +149,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             mdptr     = PtlInternalMDFetch(md_handle);
             if (hdr->xfe_handle1) {
                 /* the transfer engine copy is done on the target,
-                   so announce that we're done with the send-buffer */
+                 * so announce that we're done with the send-buffer */
                 const ptl_handle_eq_t eqh     = mdptr->eq_handle;
                 const ptl_handle_ct_t cth     = mdptr->ct_handle;
                 const unsigned int    options = mdptr->options;
@@ -164,7 +168,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                 if ((eqh != PTL_EQ_NONE) &&
                     ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
                     PtlInternalEQPushESEND(eqh, hdr->length,
-                            hdr->local_offset1, hdr->user_ptr);
+                                           hdr->local_offset1, hdr->user_ptr);
                 }
 
 #ifndef REGISTER_ON_BIND
@@ -180,14 +184,14 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             }
             /* the Get MD handle */
             md_handle = hdr->md_handle2.a;
-            mdptr = PtlInternalMDFetch(md_handle);
+            mdptr     = PtlInternalMDFetch(md_handle);
 
             if (hdr->xfe_handle1) {
-                ptl_handle_md_t  put_md_handle = hdr->md_handle1.a;
-                ptl_md_t        *put_mdptr     = PtlInternalMDFetch(put_md_handle);
-                unsigned int     options       = put_mdptr->options;
-                ptl_handle_eq_t  eqh           = put_mdptr->eq_handle;
-                ptl_handle_ct_t  cth           = put_mdptr->ct_handle;
+                ptl_handle_md_t put_md_handle = hdr->md_handle1.a;
+                ptl_md_t       *put_mdptr     = PtlInternalMDFetch(put_md_handle);
+                unsigned int    options       = put_mdptr->options;
+                ptl_handle_eq_t eqh           = put_mdptr->eq_handle;
+                ptl_handle_ct_t cth           = put_mdptr->ct_handle;
                 /* allow the Put MD to be deleted */
                 if (put_md_handle != md_handle) {
                     PtlInternalMDCleared(put_md_handle);
@@ -232,14 +236,14 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             }
             /* the Get MD handle */
             md_handle = hdr->md_handle2.a;
-            mdptr = PtlInternalMDFetch(md_handle);
+            mdptr     = PtlInternalMDFetch(md_handle);
 
             if (hdr->xfe_handle1) {
-                ptl_handle_md_t  put_md_handle = hdr->md_handle1.a;
-                ptl_md_t        *put_mdptr     = PtlInternalMDFetch(put_md_handle);
-                unsigned int     options       = put_mdptr->options;
-                ptl_handle_eq_t  eqh           = put_mdptr->eq_handle;
-                ptl_handle_ct_t  cth           = put_mdptr->ct_handle;
+                ptl_handle_md_t put_md_handle = hdr->md_handle1.a;
+                ptl_md_t       *put_mdptr     = PtlInternalMDFetch(put_md_handle);
+                unsigned int    options       = put_mdptr->options;
+                ptl_handle_eq_t eqh           = put_mdptr->eq_handle;
+                ptl_handle_ct_t cth           = put_mdptr->ct_handle;
                 /* allow the Put MD to be deleted */
                 if (put_md_handle != md_handle) {
                     PtlInternalMDCleared(put_md_handle);
@@ -410,7 +414,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
 }                                      /*}}} */
 
 static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk)
- Q_NORETURN
+Q_NORETURN
 {                                      /*{{{ */
     while (1) {
         ptl_pid_t              src;
@@ -631,8 +635,8 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized put, we could
-       just use a small fragment to pass the xfe handle... */
-    //hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+     * just use a small fragment to pass the xfe handle... */
+    // hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     // printf("got fragment %p, commpad = %p\n", hdr, comm_pad);
     /* step 2: fill the op structure */
@@ -671,7 +675,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, dataptr, length);
-        quick_exit    = 1;
+        quick_exit       = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
     } else {
 #ifdef REGISTER_ON_BIND
@@ -780,8 +784,8 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized get, we could
-       just use a small fragment to pass the xfe handle... */
-    //hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+     * just use a small fragment to pass the xfe handle... */
+    // hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_GET;
@@ -843,7 +847,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
 {                                      /*{{{ */
     ptl_internal_header_t *restrict       hdr;
     int                                   quick_exit = 0;
-    const ptl_internal_handle_converter_t md = { md_handle };
+    const ptl_internal_handle_converter_t md         = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -970,8 +974,8 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized atomic, we could
-       just use a small fragment to pass the xfe handle... */
-    //hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+     * just use a small fragment to pass the xfe handle... */
+    // hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_ATOMIC;
@@ -1010,7 +1014,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, dataptr, length);
-        quick_exit    = 1;
+        quick_exit       = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
     } else {
 #ifdef REGISTER_ON_BIND
@@ -1073,7 +1077,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 {                                      /*{{{ */
     ptl_internal_header_t *restrict       hdr;
     int                                   quick_exit = 0;
-    const ptl_internal_handle_converter_t get_md = { get_md_handle };
+    const ptl_internal_handle_converter_t get_md     = { get_md_handle };
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -1220,8 +1224,8 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     }
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized atomic, we could
-       just use a small fragment to pass the xfe handle... */
-    //hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+     * just use a small fragment to pass the xfe handle... */
+    // hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_FETCHATOMIC;
@@ -1261,7 +1265,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
         length) {
         memcpy(hdr->data, put_dataptr, length);
-        quick_exit    = 1;
+        quick_exit       = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;
     } else {
@@ -1276,9 +1280,9 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
             hdr->xfe_handle2 = xfe_register(get_dataptr, length, PROT_WRITE);
         } else {
             hdr->xfe_handle1 = hdr->xfe_handle2 =
-                xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
+                                   xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
         }
-#endif
+#endif /* ifdef REGISTER_ON_BIND */
     }
     /* step 4: enqueue the op structure on the target */
     PtlInternalFragmentToss(hdr, hdr->target);
@@ -1480,8 +1484,8 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     }
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized atomic, we could
-       just use a small fragment to pass the xfe handle... */
-    //hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+     * just use a small fragment to pass the xfe handle... */
+    // hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
     hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + length + 32);
     /* step 2: fill the op structure */
     hdr->type = HDR_TYPE_SWAP;
@@ -1518,7 +1522,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     // PtlInternalPAPISaveC(PTL_SWAP, 0);
     /* step 3: load up the data */
     uint8_t *hdr_dataptr = hdr->data;
-    char *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
+    char    *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
     if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
         switch (datatype) {
             case PTL_CHAR:
@@ -1554,7 +1558,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) - 32 >=
         length) {
         memcpy(hdr_dataptr, put_dataptr, length);
-        quick_exit    = 1;
+        quick_exit       = 1;
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;
     } else {
@@ -1562,7 +1566,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         hdr->xfe_handle1 = PtlInternalMDXFEHandle(put_md_handle);
         hdr->xfe_handle2 = PtlInternalMDXFEHandle(get_md_handle);
 #else
-        //hdr->xfe_handle = xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
+        // hdr->xfe_handle = xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
         char *get_dataptr = PtlInternalMDDataPtr(get_md_handle) +
                             local_get_offset;
         if (put_dataptr != get_dataptr) {
@@ -1570,9 +1574,9 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
             hdr->xfe_handle2 = xfe_register(get_dataptr, length, PROT_WRITE);
         } else {
             hdr->xfe_handle1 = hdr->xfe_handle2 =
-                xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
+                                   xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
         }
-#endif
+#endif /* ifdef REGISTER_ON_BIND */
     }
     /* step 4: enqueue the op structure on the target */
     PtlInternalFragmentToss(hdr, hdr->target);
@@ -1610,5 +1614,36 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     // PtlInternalPAPIDoneC(PTL_SWAP, 2);
     return PTL_OK;
 }                                      /*}}} */
+
+int API_FUNC PtlAtomicSync(void)
+{/*{{{*/
+    ptl_internal_header_t *restrict       hdr;
+
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        return PTL_NO_INIT;
+    }
+#endif
+    /* step 1: get a local memory fragment */
+    hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
+    /* step 2: fill the op structure */
+    hdr->type     = HDR_TYPE_CMD;
+    hdr->ni       = 0;
+    hdr->src      = proc_number;
+    hdr->target   = proc_number;
+    hdr->pt_index = CMD_TYPE_NOOP;
+
+    /* step 3: initialize the fragment's data (so I can wait for the
+     * progress thread to touch it) */
+    PTL_CMD_LOCK_SENDER1(hdr->data);
+
+    /* step 4: enqueue the op structure */
+    PtlInternalFragmentToss(hdr, proc_number);
+
+    /* step 5: wait for the progress thread to touch my fragment */
+    PTL_CMD_LOCK_SENDER2(hdr->data);
+
+    return PTL_OK;
+}/*}}}*/
 
 /* vim:set expandtab: */
