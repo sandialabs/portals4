@@ -1,116 +1,116 @@
 <?xml version="1.0"?>
 <test>
   <repeat count="2">
-  <subtest>
-    <desc>Test PtlNIInit without init</desc>
-    <ptl_ni_init ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIFini without init</desc>
-    <ptl_ni_fini ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIStatus without init</desc>
-    <ptl_ni_status ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIHandle without init</desc>
-    <ptl_ni_handle ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIFini with bad ni_handle</desc>
-    <ptl>
-      <ptl_ni_fini ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIStatus with bad ni_handle</desc>
-    <ptl>
-      <ptl_ni_status ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIHandle with bad handle</desc>
-    <ptl>
-      <ptl_ni_handle ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad options (1)</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="0" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad options (2)</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="MATCH NO_MATCH" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad options (3)</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="LOGICAL PHYSICAL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with bad options (4)</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="MATCH NO_MATCH LOGICAL PHYSICAL" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit unsupported options</desc>
-    <ptl>
-      <ptl_ni_init ni_opt="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with default iface</desc>
-    <ptl>
-      <ptl_ni/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIInit with default iface create all 4 ni types</desc>
-    <ptl>
-      <ptl_ni ni_opt="MATCH PHYSICAL">
-        <ompi_rt>
-          <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-            <ptl_ni ni_opt="MATCH LOGICAL">
-              <ptl_ni ni_opt="NO_MATCH LOGICAL">
+    <subtest>
+      <desc>Test PtlNIInit without init</desc>
+      <ptl_ni_init ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIFini without init</desc>
+      <ptl_ni_fini ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIStatus without init</desc>
+      <ptl_ni_status ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIHandle without init</desc>
+      <ptl_ni_handle ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIFini with bad ni_handle</desc>
+      <ptl>
+        <ptl_ni_fini ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIStatus with bad ni_handle</desc>
+      <ptl>
+        <ptl_ni_status ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIHandle with bad handle</desc>
+      <ptl>
+        <ptl_ni_handle ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with bad options (1)</desc>
+      <ptl>
+        <ptl_ni_init ni_opt="0" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with bad options (2)</desc>
+      <ptl>
+        <ptl_ni_init ni_opt="MATCH NO_MATCH" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with bad options (3)</desc>
+      <ptl>
+        <ptl_ni_init ni_opt="LOGICAL PHYSICAL" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with bad options (4)</desc>
+      <ptl>
+        <ptl_ni_init ni_opt="MATCH NO_MATCH LOGICAL PHYSICAL" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit unsupported options</desc>
+      <ptl>
+        <ptl_ni_init ni_opt="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with default iface</desc>
+      <ptl>
+        <ptl_ni/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with default iface create all 4 ni types</desc>
+      <ptl>
+        <ptl_ni ni_opt="MATCH PHYSICAL">
+          <ompi_rt>
+            <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+              <ptl_ni ni_opt="MATCH LOGICAL">
+                <ptl_ni ni_opt="NO_MATCH LOGICAL">
+                </ptl_ni>
               </ptl_ni>
             </ptl_ni>
-          </ptl_ni>
-	</ompi_rt>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIStatus with INVALID register index</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_ni_status reg="0x7fffffff" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIStatus with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_ni_status/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlNIHandle with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-	<ptl_md>
-          <ptl_ni_handle handle="md[0]"/>
-	</ptl_md>
-      </ptl_ni>
-    </ptl>
-  </subtest>
+          </ompi_rt>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIStatus with INVALID register index</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ni_status reg="0x7fffffff" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIStatus with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ni_status/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIHandle with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_md>
+            <ptl_ni_handle handle="md[0]"/>
+          </ptl_md>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

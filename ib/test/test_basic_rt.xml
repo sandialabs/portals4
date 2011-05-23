@@ -21,9 +21,9 @@
     <ptl>
       <ptl_ni>
         <ptl_set_jid jid="1234"/>
-	<set jid="0"/>
+        <set jid="0"/>
         <ptl_get_jid>
-	  <check jid="1234"/>
+          <check jid="1234"/>
         </ptl_get_jid>
       </ptl_ni>
     </ptl>

@@ -1,24 +1,24 @@
 <?xml version="1.0"?>
 <test>
   <repeat count="2">
-  <subtest>
-    <desc>Test PtlInit</desc>
-    <ptl_init ret="OK"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlFini</desc>
-    <ptl_fini ret="OK"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlInit 2x</desc>
-    <ptl_init ret="OK"/>
-    <ptl_init ret="OK"/>
-    <ptl_fini ret="OK"/>
-    <ptl_fini ret="OK"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlFini without init</desc>
-    <ptl_fini ret="FAIL"/>
-  </subtest>
+    <subtest>
+      <desc>Test PtlInit</desc>
+      <ptl_init ret="OK"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlFini</desc>
+      <ptl_fini ret="OK"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlInit 2x</desc>
+      <ptl_init ret="OK"/>
+      <ptl_init ret="OK"/>
+      <ptl_fini ret="OK"/>
+      <ptl_fini ret="OK"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlFini without init</desc>
+      <ptl_fini ret="FAIL"/>
+    </subtest>
   </repeat>
 </test>
