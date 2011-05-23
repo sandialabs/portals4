@@ -1261,7 +1261,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 /*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
  * PTL_EVENT_ATOMIC_OVERFLOW). When an overflow event would be posted, the
  * count is incremented by the \a mlength (modified length). */
-#define PTL_ME_EVENT_CT_OVERFLOW        PTL_ME_EVENT_CT_OVERFLOW
+#define PTL_ME_EVENT_CT_OVERFLOW        PTL_LE_EVENT_CT_OVERFLOW
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
