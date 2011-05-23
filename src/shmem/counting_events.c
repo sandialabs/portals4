@@ -401,6 +401,55 @@ void INTERNAL PtlInternalCTPullTriggers(ptl_handle_ct_t ct_handle)
     }
 } /*}}}*/
 
+void INTERNAL PtlInternalCTCancelTriggers(ptl_handle_ct_t ct_handle)
+{   /*{{{*/
+    const ptl_internal_handle_converter_t ct = { ct_handle };
+    ordered_NEMESIS_queue                *q  = &(ct_event_triggers[ct.s.ni][ct.s.code]);
+    ptl_internal_trigger_t               *trigger;
+
+    trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
+    while (trigger != NULL) {
+        PtlInternalCTFreeTrigger(trigger, ct.s.ni);
+        trigger = PtlInternalOrderedNEMESISDequeue(q, CT_ERR_VAL);
+    }
+} /*}}}*/
+
+int API_FUNC PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+{
+    const ptl_internal_handle_converter_t ct = { ct_handle };
+
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        return PTL_NO_INIT;
+    }
+    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
+        return PTL_ARG_INVALID;
+    }
+#endif
+
+    if (ct_event_triggers[ct.s.ni][ct.s.code].head.ptr != NULL) {
+        ptl_internal_header_t *restrict hdr;
+        /* step 1: get a local memory fragment */
+        hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t));
+        /* step 2: fill the op structure */
+        hdr->type     = HDR_TYPE_CMD;
+        hdr->ni       = ct.s.ni;
+        hdr->src      = proc_number;
+        hdr->target   = proc_number;
+        hdr->pt_index = CMD_TYPE_CANCEL;
+        hdr->hdr_data = ct_handle;
+
+        /* step 3: prepare to wait for the progress thread... */
+        PTL_CMD_LOCK_SENDER1(hdr->data);
+
+        /* step 4: enqueue the op structure on the target */
+        PtlInternalFragmentToss(hdr, proc_number);
+
+        /* step 5: wait for the progress thread to touch my fragment */
+        PTL_CMD_LOCK_SENDER2(hdr->data);
+    }
+}
+
 int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t *event)
 {                                      /*{{{ */

@@ -34,6 +34,7 @@ enum cmd_types {
     CMD_TYPE_CTFREE,
     CMD_TYPE_CHECK,
     CMD_TYPE_ENQUEUE,
+    CMD_TYPE_CANCEL,
     CMD_TYPE_NOOP
 };
 
