@@ -13,33 +13,15 @@
     <ptl_get_jid ret="NO_INIT"/>
   </subtest>
   <subtest>
-    <desc>Test PtlGetUid with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_get_uid ni_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlGetUid with ni_handle = INVALID</desc>
     <ptl>
       <ptl_get_uid ni_handle="INVALID" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
   <subtest>
-    <desc>Test PtlGetId with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_get_id ni_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
     <desc>Test PtlGetId with ni_handle = INVALID</desc>
     <ptl>
       <ptl_get_id ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlGetJid with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_get_jid ni_handle="NONE" ret="ARG_INVALID"/>
     </ptl>
   </subtest>
   <subtest>

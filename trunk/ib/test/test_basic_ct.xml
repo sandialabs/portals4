@@ -30,21 +30,15 @@
       <ptl_ct_inc ret="NO_INIT"/>
     </subtest>
     <subtest>
-      <desc>Test PtlCTAlloc with ni_handle = NONE</desc>
-      <ptl>
-        <ptl_ct_alloc ni_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlCTAlloc with bad ni_handle</desc>
       <ptl>
         <ptl_ct_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTFree with ct_handle = NONE</desc>
+      <desc>Test PtlCTFree with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_free ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_free ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -54,9 +48,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTGet with ct_handle = NONE</desc>
+      <desc>Test PtlCTGet with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_get ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_get ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -66,9 +60,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTWait with ct_handle = NONE</desc>
+      <desc>Test PtlCTWait with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_wait ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_wait ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -78,9 +72,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTPoll with ct_handle = NONE</desc>
+      <desc>Test PtlCTPoll with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_poll ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_poll ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -90,9 +84,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTSet with ct_handle = NONE</desc>
+      <desc>Test PtlCTSet with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_set ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_set ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -102,9 +96,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTInc with ct_handle = NONE</desc>
+      <desc>Test PtlCTInc with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_inc ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_inc ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -333,9 +327,9 @@
       <ptl_ct_cancel_trig ret="NO_INIT"/>
     </subtest>
     <subtest>
-      <desc>Test PtlCTCancelTriggered with ct_handle = NONE</desc>
+      <desc>Test PtlCTCancelTriggered with ct_handle = CT_NONE</desc>
       <ptl>
-        <ptl_ct_cancel_trig ct_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_ct_cancel_trig ct_handle="CT_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>

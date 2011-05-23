@@ -22,21 +22,9 @@
       <ptl_eq_poll ret="NO_INIT"/>
     </subtest>
     <subtest>
-      <desc>Test PtlEQAlloc with ni_handle = NONE</desc>
-      <ptl>
-        <ptl_eq_alloc ni_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlEQAlloc with ni_handle = INVALID</desc>
       <ptl>
         <ptl_eq_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlEQFree with eq_handle = NONE</desc>
-      <ptl>
-        <ptl_eq_free eq_handle="NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -46,9 +34,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlEQGet with eq_handle = NONE</desc>
+      <desc>Test PtlEQGet with eq_handle = EQ_NONE</desc>
       <ptl>
-        <ptl_eq_get eq_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_eq_get eq_handle="EQ_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -58,9 +46,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlEQWait with eq_handle = NONE</desc>
+      <desc>Test PtlEQWait with eq_handle = EQ_NONE</desc>
       <ptl>
-        <ptl_eq_wait eq_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_eq_wait eq_handle="EQ_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -70,9 +58,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlEQPoll with eq_handle = NONE</desc>
+      <desc>Test PtlEQPoll with eq_handle = EQ_NONE</desc>
       <ptl>
-        <ptl_eq_poll eq_handle="NONE" ret="ARG_INVALID"/>
+        <ptl_eq_poll eq_handle="EQ_NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>

@@ -10,8 +10,10 @@ static ptl_handle_any_t get_handle(struct node_info *info, char *val)
 
 	if (!strcmp("INVALID", val))
 		handle = PTL_INVALID_HANDLE;
-	else if (!strcmp("NONE", val))
-		handle = PTL_HANDLE_NONE;
+	else if (!strcmp("CT_NONE", val))
+		handle = PTL_CT_NONE;
+	else if (!strcmp("EQ_NONE", val))
+		handle = PTL_EQ_NONE;
 	else if (sscanf(val, "%2s[%d]", obj, &n) == 2) {
 		if (n < 0 || n >= STACK_SIZE) {
 			printf("invalid index n = %d\n", n);
@@ -35,8 +37,12 @@ static ptl_handle_any_t get_handle(struct node_info *info, char *val)
 			printf("invalid object %s\n", obj);
 			handle =  0xffffffffffffffffULL;
 		}
-	} else
-		handle = (ptl_handle_any_t)strtoull(val, NULL, 0);
+	} else {
+		char *endptr;
+		handle = (ptl_handle_any_t)strtoull(val, &endptr, 0);
+		if (*endptr)
+			printf("Invalid handle value: %s\n", val);
+	}
 
 	return handle;
 }
@@ -365,8 +371,8 @@ static struct node_info *push_info(struct node_info *head, int tok)
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
-			info->get_md_handle = get_handle(info, "NONE");
-			info->put_md_handle = get_handle(info, "NONE");
+			info->get_md_handle = get_handle(info, "INVALID");
+			info->put_md_handle = get_handle(info, "INVALID");
 		}
 		info->ptr = &info->operand;
 		break;
@@ -376,8 +382,8 @@ static struct node_info *push_info(struct node_info *head, int tok)
 			info->get_md_handle = info->md_stack[info->next_md - 1];
 			info->put_md_handle = info->md_stack[info->next_md - 2];
 		} else {
-			info->get_md_handle = get_handle(info, "NONE");
-			info->put_md_handle = get_handle(info, "NONE");
+			info->get_md_handle = get_handle(info, "INVALID");
+			info->put_md_handle = get_handle(info, "INVALID");
 		}
 		info->ptr = &info->operand;
 		info->atom_op = PTL_SWAP;
