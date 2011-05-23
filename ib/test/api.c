@@ -428,6 +428,11 @@ int test_ptl_atomic(struct node_info *info)
 
 }
 
+int test_ptl_atomic_sync(struct node_info *info)
+{
+	return info->ret != PtlAtomicSync();
+}
+
 int test_ptl_fetch_atomic(struct node_info *info)
 {
 	return info->ret != PtlFetchAtomic(info->get_md_handle,

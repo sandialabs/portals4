@@ -14,6 +14,10 @@
       <ptl_atomic ret="NO_INIT"/>
     </subtest>
     <subtest>
+      <desc>Test PtlAtomicSync without init</desc>
+      <ptl_atomic_sync ret="NO_INIT"/>
+    </subtest>
+    <subtest>
       <desc>Test PtlFetchAtomic without init</desc>
       <ptl_fetch ret="NO_INIT"/>
     </subtest>

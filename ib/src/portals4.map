@@ -1,6 +1,7 @@
 {
 	global:
 		PtlAtomic;
+		PtlAtomicSync;
 		PtlCTAlloc;
 		PtlCTCancelTriggered;
 		PtlCTFree;

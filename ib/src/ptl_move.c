@@ -865,6 +865,24 @@ err1:
 	return err;
 }
 
+int PtlAtomicSync(void)
+{
+	int err;
+	gbl_t *gbl;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err)) {
+		WARN();
+		return err;
+	}
+
+	/* TODO */
+	err = PTL_OK;
+
+	gbl_put(gbl);
+	return err;
+}
+
 static int check_swap(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 		      ni_t *ni,
 		      ptl_op_t atom_op, ptl_datatype_t atom_type)
