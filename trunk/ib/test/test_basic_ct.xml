@@ -328,5 +328,38 @@
         </ptl_ni>
       </ptl>
     </subtest>
+    <subtest>
+      <desc>Test PtlCTCancelTriggered without init</desc>
+      <ptl_ct_cancel_trig ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTCancelTriggered with ct_handle = NONE</desc>
+      <ptl>
+        <ptl_ct_cancel_trig ct_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTCancelTriggered with ct_handle = INVALID</desc>
+      <ptl>
+        <ptl_ct_cancel_trig ct_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTCancelTriggered with valid operation</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt>
+            <ptl_me me_opt="OP_PUT">
+              <ptl_md>
+                <ptl_ct>
+                  <ptl_trig_put target_id="SELF"/>
+                  <ptl_ct_cancel_trig/>
+                </ptl_ct>
+              </ptl_md>
+            </ptl_me>
+          </ptl_pt>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

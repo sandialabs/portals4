@@ -496,3 +496,45 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
 {
 	return PtlCTInc_lock(ct_handle, increment, 1);
 }
+
+int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+{
+	int err;
+	gbl_t *gbl;
+	ct_t *ct;
+	ni_t *ni;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err))
+		return err;
+
+	err = ct_get(ct_handle, &ct);
+	if (unlikely(err))
+		goto err1;
+
+	if (unlikely(!ct)) {
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+
+	ni = to_ni(ct);
+
+	pthread_mutex_lock(&ct->mutex);
+
+	if (!list_empty(&ct->xi_list)) {
+		list_del(&ct->xi_list);
+	}
+	else if (!list_empty(&ct->xl_list)) {
+		list_del(&ct->xl_list);
+	}
+
+	pthread_mutex_unlock(&ct->mutex);
+
+	err = PTL_OK;
+
+	ct_put(ct);
+	
+ err1:
+ 	gbl_put(gbl);
+ 	return err;
+}

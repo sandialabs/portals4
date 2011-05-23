@@ -1582,6 +1582,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_ct_inc(info);
 				errs += walk_tree(info, node->children);
 				break;
+			case NODE_PTL_CT_CANCEL_TRIG:
+				errs = test_ptl_ct_cancel_trig(info);
+				errs += walk_tree(info, node->children);
+				break;
 			case NODE_PTL_PUT:
 				errs = test_ptl_put(info);
 				errs += walk_tree(info, node->children);
