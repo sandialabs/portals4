@@ -1990,15 +1990,26 @@ int PtlGet(ptl_handle_md_t  md_handle,
  * atomically swaps data (including compare-and-swap and swap-under-mask, which
  * require an \a operand argument).
  *
- * The length of the operations performed by a PtlAtomic() or PtlFetchAtomic()
- * is restricted to no more than \a max_atomic_size bytes. PtlSwap() operations
- * can also be up to \a max_atomic_size bytes, except for \c PTL_CSWAP and \c
- * PTL_MSWAP operations, which are further restricted to 8 bytes (the length of
- * the longest native data type) in all implementations. While the length of an
- * atomic operation is potentially multiple data items, the granularity of the
- * atomic access is limited to the basic datatype. That is, atomic operations
- * from different sources may be interleaved at the level of the datatype being
- * accessed.
+ * The length of the operations performed by a PtlAtomic() are restricted to no
+ * more than \a max_atomic_size bytes. PtlFetchAtomic() and PtlSwap() operations
+ * can be up to \a max_fetch_atomic_size bytes, except for \c PTL_CSWAP and \c
+ * PTL_MSWAP operations and their variants, which are further restricted to the
+ * length of the longest native data type in all implementations.
+ *
+ * While the length of an atomic operation is potentially multiple data items,
+ * the granularity of the atomic access is limited to the basic datatype. That
+ * is, atomic operations from different sources may be interleaved at the level
+ * of the datatype being accessed. Furthermore, atomic operations are only
+ * atomic with respect to other calls to the Portals API on the same network
+ * interface (\a ni_handle). In addition, an implementation is only required to
+ * support Portals atomic operations that are natively aligned to the size of
+ * the datatype, but it may choose to provide support for unaligned accesses.
+ * Atomicity is only guaranteed for two atomic operations using the same
+ * datatype, and overlapping atomic operations that use different datatypes are
+ * not atomic with respect to each other. The routine PtlAtomicSync() is
+ * provided to enable the host (or atomic operations using other datatypes) to
+ * modify memory locations that have been previously touched by an atomic
+ * operation.
  *
  * The \e target match list entry must be configured to respond to \p put
  * operations and to \p get operations if a reply is desired. The \a length
@@ -2359,6 +2370,29 @@ int PtlSwap(ptl_handle_md_t     get_md_handle,
             void *              operand,
             ptl_op_t            operation,
             ptl_datatype_t      datatype);
+/*!
+ * @fn PtlAtomicSync(void)
+ * @brief Synchronize atomic accesses through the API.
+ * @details Synchronizes the atomic accesses through the Portals API with
+ *	accesses by the host. When a data item is accessed by a Portals atomic
+ *	operation, modification of the same data item by the host or by an
+ *	atomic operation using a different datatype can lead to undefined
+ *	behavior. When PtlAtomicSync() is called, it will block until it is
+ *	safe for the host (or other atomic operations with a different
+ *	datatype) to modify the data items touched by previous Portals atomic
+ *	operations. PtlAtomicSync() is called at the target of atomic
+ *	operations.
+ * @retval PTL_OK               Indicates success
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @implnote The atomicity definition for Portals allows a network interface to
+ *	offload atomic operations and to have a noncoherent cache on the
+ *	network interface. With a noncoherent cache, any access to a memory
+ *	location by an atomic operation makes it impossible to safely modify
+ *	that location on the host. PtlAtomicSync() is provided to make
+ *	modifications from the host safe again.
+ */
+int PtlAtomicSync(void);
 /*! @} */
 /*! @} */
 
