@@ -83,6 +83,8 @@ int test_ptl_get(struct node_info *info);
 
 int test_ptl_atomic(struct node_info *info);
 
+int test_ptl_atomic_sync(struct node_info *info);
+
 int test_ptl_fetch_atomic(struct node_info *info);
 
 int test_ptl_swap(struct node_info *info);
