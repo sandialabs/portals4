@@ -1259,8 +1259,9 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 #define PTL_ME_EVENT_CT_COMM            PTL_LE_EVENT_CT_COMM
 
 /*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). */
-#define PTL_ME_EVENT_CT_OVERFLOW        PTL_LE_EVENT_CT_OVERFLOW
+ * PTL_EVENT_ATOMIC_OVERFLOW). When an overflow event would be posted, the
+ * count is incremented by the \a mlength (modified length). */
+#define PTL_ME_EVENT_CT_OVERFLOW        PTL_ME_EVENT_CT_OVERFLOW
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
@@ -1375,15 +1376,6 @@ typedef struct {
      */
     unsigned int        options;
 
-	/* ME specific fields */
-
-    /*! When the unused portion of a match list entry (length - local offset)
-     * falls below this value, the match list entry automatically unlinks. A \a
-     * min_free value of 0 disables the \a min_free capability (thre free space
-     * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
-     * is set. */
-    ptl_size_t          min_free;
-
     /*! Specifies the match criteria for the process identifier of the
      * requester. The constants \c PTL_PID_ANY and \c PTL_NID_ANY can be used
      * to wildcard either of the physical identifiers in the ptl_process_t
@@ -1401,6 +1393,13 @@ typedef struct {
     /*! The \a ignore_bits are used to mask out insignificant bits in the
      * incoming match bits. */
     ptl_match_bits_t    ignore_bits;
+
+    /*! When the unused portion of a match list entry (length - local offset)
+     * falls below this value, the match list entry automatically unlinks. A \a
+     * min_free value of 0 disables the \a min_free capability (thre free space
+     * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
+     * is set. */
+    ptl_size_t          min_free;
 } ptl_me_t;
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t      ni_handle,
@@ -1623,6 +1622,26 @@ int PtlCTAlloc(ptl_handle_ni_t      ni_handle,
  * @see PtlCTAlloc()
  */
 int PtlCTFree(ptl_handle_ct_t ct_handle);
+/*!
+ * @fn PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+ * @brief Cancel pending triggered operations.
+ * @details In certain circumstances, it may be necessary to cancel triggered
+ *	operations that are pending. For example, an error condition may mean
+ *	that a counting event will never reach the designated threshold.
+ *	PtlCTCancelTriggered() is provided to handle these circumstances. Upon
+ *	return from PtlCTCancelTriggered(), all triggered operations waiting on
+ *	\a ct_handle are permanently destroyed. The operations are not
+ *	triggered, and will not modify any application-visible state. The other
+ *	state associated with ct_handle is left unchanged.
+ * @param[in] ct_handle The counting event handle associated with the triggered
+ *			operations to be canceled.
+ * @retval PTL_OK               Indicates success
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @retval PTL_ARG_INVALID      Indicates that \a ct_handle is not a valid
+ *                              counting event handle.
+ */
+int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle);
 /*!
  * @fn PtlCTGet(ptl_handle_ct_t     ct_handle,
  *              ptl_ct_event_t *    event)
@@ -1998,15 +2017,26 @@ int PtlGet(ptl_handle_md_t  md_handle,
  * atomically swaps data (including compare-and-swap and swap-under-mask, which
  * require an \a operand argument).
  *
- * The length of the operations performed by a PtlAtomic() or PtlFetchAtomic()
- * is restricted to no more than \a max_atomic_size bytes. PtlSwap() operations
- * can also be up to \a max_atomic_size bytes, except for \c PTL_CSWAP and \c
- * PTL_MSWAP operations, which are further restricted to 8 bytes (the length of
- * the longest native data type) in all implementations. While the length of an
- * atomic operation is potentially multiple data items, the granularity of the
- * atomic access is limited to the basic datatype. That is, atomic operations
- * from different sources may be interleaved at the level of the datatype being
- * accessed.
+ * The length of the operations performed by a PtlAtomic() are restricted to no
+ * more than \a max_atomic_size bytes. PtlFetchAtomic() and PtlSwap() operations
+ * can be up to \a max_fetch_atomic_size bytes, except for \c PTL_CSWAP and \c
+ * PTL_MSWAP operations and their variants, which are further restricted to the
+ * length of the longest native data type in all implementations.
+ *
+ * While the length of an atomic operation is potentially multiple data items,
+ * the granularity of the atomic access is limited to the basic datatype. That
+ * is, atomic operations from different sources may be interleaved at the level
+ * of the datatype being accessed. Furthermore, atomic operations are only
+ * atomic with respect to other calls to the Portals API on the same network
+ * interface (\a ni_handle). In addition, an implementation is only required to
+ * support Portals atomic operations that are natively aligned to the size of
+ * the datatype, but it may choose to provide support for unaligned accesses.
+ * Atomicity is only guaranteed for two atomic operations using the same
+ * datatype, and overlapping atomic operations that use different datatypes are
+ * not atomic with respect to each other. The routine PtlAtomicSync() is
+ * provided to enable the host (or atomic operations using other datatypes) to
+ * modify memory locations that have been previously touched by an atomic
+ * operation.
  *
  * The \e target match list entry must be configured to respond to \p put
  * operations and to \p get operations if a reply is desired. The \a length
@@ -2207,14 +2237,19 @@ int PtlAtomic(ptl_handle_md_t   md_handle,
  *      PtlPut() and PtlGet() style events can be delivered. When data is sent
  *      from the initiator node, a \c PTL_EVENT_SEND event is registered on the
  *      \e initiator node in the event queue specified by the \a put_md_handle.
- *      The even t\c PTL_EVENT_ATOMIC is registered on the \e target node to
+ *      The event \c PTL_EVENT_ATOMIC is registered on the \e target node to
  *      indicate completion of an atomic operation; and if data is returned
  *      from the \e target node, a \c PTL_EVENT_REPLY event is registered on
- *      the \e initiator node in the even tqueue specified by the \a
+ *      the \e initiator node in the event queue specified by the \a
  *      get_md_handle. Note that receiving a \c PTL_EVENT_REPLY inherently
  *      implies that the flow control check has passed on the target node. In
  *      addition, it is an error to use memory descriptors bound to different
- *      network interfaces in a single PtlFetchAtomic() call.
+ *      network interfaces in a single PtlFetchAtomic() call. The behavior that
+ *      occurs when the \a local_get_offset into the \a get_md_handle overlaps
+ *      with the \a local_put_offset into the \a put_md_handle is undefined.
+ *      Operations performed by PtlFetchAtomic() are constrained to be no more
+ *      than \a max_fetch_atomic_size bytes and must be aligned at the target
+ *      to the size of ptl_datatype_t passed in the \a datatype argument.
  * @param[in] get_md_handle     The memory descriptor handle that describes the
  *                              memory into which the result of the operation
  *                              will be placed. The memory descriptor can have
@@ -2298,7 +2333,14 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *      Like PtlFetchAtomic(), receiving a \c PTL_EVENT_REPLY inherently
  *      implies that the flow control check has passed on the target node. In
  *      addition, it is an error to use memory descriptors bound to different
- *      network interfaces in a single PtlSwap() call.
+ *      network interfaces in a single PtlSwap() call. The behavior that
+ *      occurs when the \a local_get_offset into the \a get_md_handle overlaps
+ *      with the \a local_put_offset into the \a put_md_handle is undefined.
+ *      Operations performed by PtlSwap() are constrained to be no more than \a
+ *      max_fetch_atomic_size bytes and must be aligned at the target
+ *      to the size of ptl_datatype_t passed in the \a datatype argument. \c
+ *      PTL_CSWAP and \c PTL_MSWAP operations are further restricted to one
+ *      item, whose size is defined by the size of the datatype used.
  * @param[in] get_md_handle     The memory descriptor handle that describes the
  *                              memory into which the result of the operation
  *                              will be placed. The memory descriptor can have
@@ -2367,6 +2409,29 @@ int PtlSwap(ptl_handle_md_t     get_md_handle,
             void *              operand,
             ptl_op_t            operation,
             ptl_datatype_t      datatype);
+/*!
+ * @fn PtlAtomicSync(void)
+ * @brief Synchronize atomic accesses through the API.
+ * @details Synchronizes the atomic accesses through the Portals API with
+ *	accesses by the host. When a data item is accessed by a Portals atomic
+ *	operation, modification of the same data item by the host or by an
+ *	atomic operation using a different datatype can lead to undefined
+ *	behavior. When PtlAtomicSync() is called, it will block until it is
+ *	safe for the host (or other atomic operations with a different
+ *	datatype) to modify the data items touched by previous Portals atomic
+ *	operations. PtlAtomicSync() is called at the target of atomic
+ *	operations.
+ * @retval PTL_OK               Indicates success
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @implnote The atomicity definition for Portals allows a network interface to
+ *	offload atomic operations and to have a noncoherent cache on the
+ *	network interface. With a noncoherent cache, any access to a memory
+ *	location by an atomic operation makes it impossible to safely modify
+ *	that location on the host. PtlAtomicSync() is provided to make
+ *	modifications from the host safe again.
+ */
+int PtlAtomicSync(void);
 /*! @} */
 /*! @} */
 
@@ -2458,21 +2523,25 @@ typedef enum {
  *      type and a union of the \e target specific event structure and the \e
  *      initiator specific event structure. */
 typedef struct {
-    /*! Indicates the type of the event. */
-    ptl_event_kind_t    type;
+    /*! The starting location (virtual, byte address) where the message has
+     * been placed. The \a start variable is the sum of the \a start variable
+     * in the match list entry and the offset used for the operation. The
+     * offset can be determined by the operation for a remote managed match
+     * list entry or by the local memory descriptor.
+     *
+     * When the PtlMEAppend() call matches a message that has arrived in the
+     * overflow list, the start address points to the addres in the overflow
+     * list where the matching message resides. This may require the
+     * application to copy the message to the desired buffer.
+     */
+    void *              start;
 
-    /*! The identifier of the \e initiator. */
-    ptl_process_t       initiator;
+    /*! A user-specified value that is associated with each command that can
+     * generate an event. */
+    void *              user_ptr;
 
-    /*! The portal table index where the message arrived. */
-    ptl_pt_index_t      pt_index;
-
-    /*! The user identifier of the \e initiator. */
-    ptl_uid_t           uid;
-
-    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
-     * implementations that do not support job identifiers. */
-    ptl_jid_t           jid;
+    /*! 64 bits of out-of-band user data. */
+    ptl_hdr_data_t      hdr_data;
 
     /*! The match bits specified by the \e initiator. */
     ptl_match_bits_t    match_bits;
@@ -2495,25 +2564,21 @@ typedef struct {
      * target, this is the offset requested by th initiator. */
     ptl_size_t          remote_offset;
 
-    /*! The starting location (virtual, byte address) where the message has
-     * been placed. The \a start variable is the sum of the \a start variable
-     * in the match list entry and the offset used for the operation. The
-     * offset can be determined by the operation for a remote managed match
-     * list entry or by the local memory descriptor.
-     *
-     * When the PtlMEAppend() call matches a message that has arrived in the
-     * overflow list, the start address points to the addres in the overflow
-     * list where the matching message resides. This may require the
-     * application to copy the message to the desired buffer.
-     */
-    void *              start;
+    /*! The user identifier of the \e initiator. */
+    ptl_uid_t           uid;
 
-    /*! A user-specified value that is associated with each command that can
-     * generate an event. */
-    void *              user_ptr;
+    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
+     * implementations that do not support job identifiers. */
+    ptl_jid_t           jid;
 
-    /*! 64 bits of out-of-band user data. */
-    ptl_hdr_data_t      hdr_data;
+    /*! The identifier of the \e initiator. */
+    ptl_process_t       initiator;
+
+    /*! Indicates the type of the event. */
+    ptl_event_kind_t    type;
+
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t      pt_index;
 
     /*! Is used to convey the failure of an operation. Success is indicated by
      * \c PTL_NI_OK. */
@@ -2737,7 +2802,11 @@ int PtlEQPoll(ptl_handle_eq_t *     eq_handles,
  * argument reaches or exceeds the \a threshold (equal to or greater), the
  * operation proceeds \e at \e the \e initiator \e of \e the \e operation. For
  * example, a PtlTriggeredGet() or a PtlTriggeredAtomic() will not leave the \e
- * initiator until the threshold is reached.
+ * initiator until the threshold is reached. A triggered operation does not use
+ * the state of the buffer when the application calls the Portals function.
+ * Instead, it uses the state of the buffer after the threshold condition is
+ * met. Pending triggered operations can be canceled using
+ * PtlCTCancelTriggered().
  *
  * @note The use of a \a trig_ct_handle and \a threshold enables a variety of
  *      usage models. A single match list entry can trigger one operation (or
