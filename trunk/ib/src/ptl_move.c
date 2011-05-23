@@ -498,6 +498,28 @@ static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	return PTL_OK;
 }
 
+static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
+						 md_t *put_md, ptl_size_t local_put_offset,
+						 ptl_size_t length)
+{
+	unsigned char *get_start = get_md->start + local_get_offset;
+	unsigned char *put_start = put_md->start + local_put_offset;
+
+	if (get_start >= put_start &&
+		get_start < put_start + length) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	if (get_start + length >= put_start &&
+		get_start + length < put_start + length) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	return PTL_OK;
+}
+
 int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_size_t length, ptl_ack_req_t ack_req,
 	      ptl_process_t target_id, ptl_pt_index_t pt_index,
@@ -667,12 +689,6 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
-	if (get_md_handle == put_md_handle) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = md_get(get_md_handle, &get_md);
 	if (unlikely(err)) {
 		WARN();
@@ -694,6 +710,11 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	err = check_atomic(put_md, local_put_offset, length, ni,
 			   PTL_NO_ACK_REQ, atom_op, atom_type);
+	if (err)
+		goto err3;
+
+	err = check_overlap(get_md, local_get_offset,
+						put_md, local_put_offset, length);
 	if (err)
 		goto err3;
 
@@ -810,6 +831,11 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	if (err)
 		goto err4;
 
+	err = check_overlap(get_md, local_get_offset,
+						put_md, local_put_offset, length);
+	if (err)
+		goto err4;
+
 	if (unlikely(to_ni(put_md) != ni)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -883,16 +909,32 @@ int PtlAtomicSync(void)
 	return err;
 }
 
-static int check_swap(md_t *md, ptl_size_t local_offset, ptl_size_t length,
-		      ni_t *ni,
-		      ptl_op_t atom_op, ptl_datatype_t atom_type)
+static int check_swap(md_t *get_md, ptl_size_t local_get_offset,
+					  md_t *put_md, ptl_size_t local_put_offset,
+					  ptl_size_t length, ni_t *ni,
+					  ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
-	if (unlikely(!md)) {
+	if (unlikely(!get_md)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(local_offset + length > md->length)) {
+	if (unlikely(!put_md)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	if (unlikely(get_md->obj.obj_ni != put_md->obj.obj_ni)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	if (unlikely(local_get_offset + length > get_md->length)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	if (unlikely(local_put_offset + length > put_md->length)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
@@ -962,12 +1004,6 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
-	if (get_md_handle == put_md_handle) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	err = md_get(get_md_handle, &get_md);
 	if (unlikely(err)) {
 		WARN();
@@ -987,8 +1023,14 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (err)
 		goto err3;
 
-	err = check_swap(put_md, local_put_offset, length, ni,
-		  	 atom_op, atom_type);
+	err = check_swap(get_md, local_get_offset,
+					 put_md, local_put_offset, 
+					 length, ni, atom_op, atom_type);
+	if (err)
+		goto err3;
+
+	err = check_overlap(get_md, local_get_offset,
+						put_md, local_put_offset, length);
 	if (err)
 		goto err3;
 
@@ -1106,8 +1148,14 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (err)
 		goto err4;
 
-	err = check_swap(put_md, local_put_offset, length, ni,
+	err = check_swap(get_md, local_get_offset,
+					 put_md, local_put_offset, length, ni,
 		  	 atom_op, atom_type);
+	if (err)
+		goto err4;
+
+	err = check_overlap(get_md, local_get_offset,
+						put_md, local_put_offset, length);
 	if (err)
 		goto err4;
 
