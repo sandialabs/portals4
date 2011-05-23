@@ -26,18 +26,6 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlMEAppend with ni_handle = NONE</desc>
-      <ptl>
-        <ptl_me_append ni_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlMESearch with ni_handle = NONE</desc>
-      <ptl>
-        <ptl_me_search ni_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlMEAppend with ni_handle = INVALID</desc>
       <ptl>
         <ptl_me_append ni_handle="INVALID" ret="ARG_INVALID"/>

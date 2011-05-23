@@ -375,7 +375,8 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 	unsigned int handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
 #endif
 
-	if (handle == PTL_HANDLE_NONE)
+	if ((type == POOL_CT && handle == PTL_CT_NONE) ||
+		(type == POOL_EQ && handle == PTL_EQ_NONE))
 		goto done;
 
 	if (handle == PTL_INVALID_HANDLE) {

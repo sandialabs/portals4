@@ -62,7 +62,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_put ack_req="NO_ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
                       <barrier/>
@@ -193,7 +193,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
                       <barrier/>
@@ -326,7 +326,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_atomic ack_req="NO_ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
                       <barrier/>
@@ -466,7 +466,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <ptl_eq>
                         <ptl_md>
                           <barrier/>
@@ -518,7 +518,7 @@
                   
                   <if rank="0">
                     <ptl_md>
-                      <ptl_md eq_handle="NONE">
+                      <ptl_md eq_handle="EQ_NONE">
                         <barrier/>
                         <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
                         <barrier/>
@@ -666,7 +666,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <ptl_eq>
                         <ptl_md>
                           <barrier/>
@@ -719,7 +719,7 @@
                   
                   <if rank="0">
                     <ptl_md>
-                      <ptl_md eq_handle="NONE">
+                      <ptl_md eq_handle="EQ_NONE">
                         <barrier/>
                         <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
                         <barrier/>
@@ -864,7 +864,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_put ack_req="NO_ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
                       <barrier/>
@@ -994,7 +994,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
                       <barrier/>
@@ -1125,7 +1125,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <barrier/>
                       <ptl_atomic ack_req="NO_ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
                       <barrier/>
@@ -1264,7 +1264,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <ptl_eq>
                         <ptl_md>
                           <barrier/>
@@ -1315,7 +1315,7 @@
                   
                   <if rank="0">
                     <ptl_md>
-                      <ptl_md eq_handle="NONE">
+                      <ptl_md eq_handle="EQ_NONE">
                         <barrier/>
                         <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
                         <barrier/>
@@ -1462,7 +1462,7 @@
                   <ptl_get_id/>
                   
                   <if rank="0">
-                    <ptl_md eq_handle="NONE">
+                    <ptl_md eq_handle="EQ_NONE">
                       <ptl_eq>
                         <ptl_md>
                           <barrier/>
@@ -1513,7 +1513,7 @@
                   
                   <if rank="0">
                     <ptl_md>
-                      <ptl_md eq_handle="NONE">
+                      <ptl_md eq_handle="EQ_NONE">
                         <barrier/>
                         <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
                         <barrier/>

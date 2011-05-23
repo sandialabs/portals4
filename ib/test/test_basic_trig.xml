@@ -22,21 +22,9 @@
       <ptl_trig_swap ret="NO_INIT"/>
     </subtest>
     <subtest>
-      <desc>Test PtlTriggeredPut with md_handle = NONE</desc>
-      <ptl>
-        <ptl_trig_put md_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlTriggeredPut with md_handle = INVALID</desc>
       <ptl>
         <ptl_trig_put md_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlTriggeredGet with md_handle = NONE</desc>
-      <ptl>
-        <ptl_trig_get md_handle="NONE" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
@@ -46,27 +34,9 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlTriggeredAtomic with md_handle = NONE</desc>
-      <ptl>
-        <ptl_trig_atomic md_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlTriggeredAtomic with md_handle = INVALID</desc>
       <ptl>
         <ptl_trig_atomic md_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlTriggeredFetchAtomic with get_md_handle = NONE</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_md>
-            <ptl_md>
-              <ptl_trig_fetch get_md_handle="NONE" ret="ARG_INVALID"/>
-            </ptl_md>
-          </ptl_md>
-        </ptl_ni>
       </ptl>
     </subtest>
     <subtest>
@@ -76,18 +46,6 @@
           <ptl_md>
             <ptl_md>
               <ptl_trig_fetch get_md_handle="INVALID" ret="ARG_INVALID"/>
-            </ptl_md>
-          </ptl_md>
-        </ptl_ni>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlTriggeredFetchAtomic with put_md_handle = NONE</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_md>
-            <ptl_md>
-              <ptl_trig_fetch put_md_handle="NONE" ret="ARG_INVALID"/>
             </ptl_md>
           </ptl_md>
         </ptl_ni>
@@ -106,36 +64,12 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlTriggeredSwap with get_md_handle = NONE</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_md>
-            <ptl_md>
-              <ptl_trig_swap get_md_handle="NONE" ret="ARG_INVALID"/>
-            </ptl_md>
-          </ptl_md>
-        </ptl_ni>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlTriggeredSwap with get_md_handle = INVALID</desc>
       <ptl>
         <ptl_ni>
           <ptl_md>
             <ptl_md>
               <ptl_trig_swap get_md_handle="INVALID" ret="ARG_INVALID"/>
-            </ptl_md>
-          </ptl_md>
-        </ptl_ni>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlTriggeredSwap with put_md_handle = NONE</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_md>
-            <ptl_md>
-              <ptl_trig_swap put_md_handle="NONE" ret="ARG_INVALID"/>
             </ptl_md>
           </ptl_md>
         </ptl_ni>

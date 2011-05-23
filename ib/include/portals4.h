@@ -290,13 +290,11 @@ typedef struct {
 /*************
  * Constants *
  *************/
-static const ptl_handle_eq_t PTL_HANDLE_NONE = 0xff000000;
-
 /*! Indicate the absence of an event queue. */
 static const ptl_handle_eq_t PTL_EQ_NONE = 0xff000000;
 
 /*! Indicate the absence of a counting type event. */
-static const ptl_handle_ct_t PTL_CT_NONE = 0xff000000;
+static const ptl_handle_ct_t PTL_CT_NONE = 0xff000001;
 
 /*! Represent an invalid handle. */
 static const ptl_handle_any_t PTL_INVALID_HANDLE = 0xffffffff;

@@ -79,12 +79,6 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlPTFree with ni_handle = NONE</desc>
-      <ptl>
-        <ptl_pt_free ni_handle="NONE" ret="ARG_INVALID"/>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlPTFree with ni_handle = INVALID</desc>
       <ptl>
         <ptl_pt_free ni_handle="INVALID" ret="ARG_INVALID"/>
