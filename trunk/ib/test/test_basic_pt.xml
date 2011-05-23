@@ -1,182 +1,182 @@
 <?xml version="1.0"?>
 <test>
   <repeat count="2">
-  <subtest>
-    <desc>Test PtlPTAlloc without init</desc>
-    <ptl_pt_alloc ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree without init</desc>
-    <ptl_pt_free ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTDisable without init</desc>
-    <ptl_pt_disable ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTEnable without init</desc>
-    <ptl_pt_enable ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with unsupported options</desc>
-    <ptl>
-      <ptl_pt_alloc pt_opt="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with bad ni_handle</desc>
-    <ptl>
-      <ptl_pt_alloc ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with missing EQ</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_pt_alloc pt_opt="FLOW" ret="PT_EQ_NEEDED"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with good parameters, index = ANY</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc pt_index="ANY"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with index = BIG</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc pt_index="BIG" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with index = INVALID</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc pt_index="INVALID" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTAlloc with req = 0 and slot busy</desc>
-    <ptl>
-      <ptl_ni>
-	<ptl_pt_alloc pt_index="0"/>
-        <ptl_pt_alloc pt_index="0" ret="PT_IN_USE"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_pt_free ni_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree with ni_handle = INVALID</desc>
-    <ptl>
-      <ptl_pt_free ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree with no PtlPTAlloc</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_free ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree index out of range</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_free pt_index="9999" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTFree with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc>
-          <ptl_pt_free/>
-        </ptl_pt_alloc>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTDisable with invalid ni_handle</desc>
-    <ptl>
-      <ptl_pt_disable ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTDisable with no PtlPTAlloc</desc>
-    <ptl>
-      <ptl_ni>
+    <subtest>
+      <desc>Test PtlPTAlloc without init</desc>
+      <ptl_pt_alloc ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree without init</desc>
+      <ptl_pt_free ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTDisable without init</desc>
+      <ptl_pt_disable ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTEnable without init</desc>
+      <ptl_pt_enable ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with unsupported options</desc>
+      <ptl>
+        <ptl_pt_alloc pt_opt="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with bad ni_handle</desc>
+      <ptl>
+        <ptl_pt_alloc ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with missing EQ</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_pt_alloc pt_opt="FLOW" ret="PT_EQ_NEEDED"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with good parameters, index = ANY</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc pt_index="ANY"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with index = BIG</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc pt_index="BIG" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with index = INVALID</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc pt_index="INVALID" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTAlloc with req = 0 and slot busy</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc pt_index="0"/>
+          <ptl_pt_alloc pt_index="0" ret="PT_IN_USE"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree with ni_handle = NONE</desc>
+      <ptl>
+        <ptl_pt_free ni_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree with ni_handle = INVALID</desc>
+      <ptl>
+        <ptl_pt_free ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree with no PtlPTAlloc</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_free ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree index out of range</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_free pt_index="9999" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTFree with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc>
+            <ptl_pt_free/>
+          </ptl_pt_alloc>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTDisable with invalid ni_handle</desc>
+      <ptl>
         <ptl_pt_disable ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTDisable index out of range</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_disable pt_index="9999" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTDisable with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc/>
-        <ptl_pt_disable/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTEnable with invalid ni_handle</desc>
-    <ptl>
-    <ptl_pt_enable ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTEnable with no PtlPTAlloc</desc>
-    <ptl>
-      <ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTDisable with no PtlPTAlloc</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_disable ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTDisable index out of range</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_disable pt_index="9999" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTDisable with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc/>
+          <ptl_pt_disable/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTEnable with invalid ni_handle</desc>
+      <ptl>
         <ptl_pt_enable ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTEnable index out of range</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_enable pt_index="9999" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlPTEnable with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_pt_alloc/>
-        <ptl_pt_enable/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTEnable with no PtlPTAlloc</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_enable ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTEnable index out of range</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_enable pt_index="9999" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlPTEnable with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_pt_alloc/>
+          <ptl_pt_enable/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

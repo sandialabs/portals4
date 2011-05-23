@@ -2,15 +2,15 @@
 <test>
   <subtest>
     <desc>Test PtlGetUid without init</desc>
-      <ptl_get_uid ret="NO_INIT"/>
+    <ptl_get_uid ret="NO_INIT"/>
   </subtest>
   <subtest>
     <desc>Test PtlGetId without init</desc>
-      <ptl_get_id ret="NO_INIT"/>
+    <ptl_get_id ret="NO_INIT"/>
   </subtest>
   <subtest>
     <desc>Test PtlGetJid without init</desc>
-      <ptl_get_jid ret="NO_INIT"/>
+    <ptl_get_jid ret="NO_INIT"/>
   </subtest>
   <subtest>
     <desc>Test PtlGetUid with ni_handle = NONE</desc>

@@ -1,103 +1,103 @@
 <?xml version="1.0"?>
 <test>
   <repeat count="2">
-  <subtest>
-    <desc>Test PtlEQAlloc without init</desc>
-    <ptl_eq_alloc ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQFree without init</desc>
-    <ptl_eq_free ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet without init</desc>
-    <ptl_eq_get ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQWait without init</desc>
-    <ptl_eq_wait ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll without init</desc>
-    <ptl_eq_poll ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQAlloc with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_eq_alloc ni_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQAlloc with ni_handle = INVALID</desc>
-    <ptl>
-      <ptl_eq_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQFree with eq_handle = NONE</desc>
-    <ptl>
-      <ptl_eq_free eq_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQFree with eq_handle = INVALID</desc>
-    <ptl>
-      <ptl_eq_free eq_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet with eq_handle = NONE</desc>
-    <ptl>
-      <ptl_eq_get eq_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet with eq_handle = INVALID</desc>
-    <ptl>
-      <ptl_eq_get eq_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQWait with eq_handle = NONE</desc>
-    <ptl>
-      <ptl_eq_wait eq_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQWait with eq_handle = INVALID</desc>
-    <ptl>
-      <ptl_eq_wait eq_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with eq_handle = NONE</desc>
-    <ptl>
-      <ptl_eq_poll eq_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQPoll with eq_handle = INVALID</desc>
-    <ptl>
-      <ptl_eq_poll eq_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQAlloc/PtlEQFree with good parameters</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_eq/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlEQGet with empty queue</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-        <ptl_eq>
-          <ptl_eq_get ret="EQ_EMPTY"/>
-        </ptl_eq>
-      </ptl_ni>
-    </ptl>
-  </subtest>
+    <subtest>
+      <desc>Test PtlEQAlloc without init</desc>
+      <ptl_eq_alloc ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQFree without init</desc>
+      <ptl_eq_free ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQGet without init</desc>
+      <ptl_eq_get ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQWait without init</desc>
+      <ptl_eq_wait ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQPoll without init</desc>
+      <ptl_eq_poll ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQAlloc with ni_handle = NONE</desc>
+      <ptl>
+        <ptl_eq_alloc ni_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQAlloc with ni_handle = INVALID</desc>
+      <ptl>
+        <ptl_eq_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQFree with eq_handle = NONE</desc>
+      <ptl>
+        <ptl_eq_free eq_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQFree with eq_handle = INVALID</desc>
+      <ptl>
+        <ptl_eq_free eq_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQGet with eq_handle = NONE</desc>
+      <ptl>
+        <ptl_eq_get eq_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQGet with eq_handle = INVALID</desc>
+      <ptl>
+        <ptl_eq_get eq_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQWait with eq_handle = NONE</desc>
+      <ptl>
+        <ptl_eq_wait eq_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQWait with eq_handle = INVALID</desc>
+      <ptl>
+        <ptl_eq_wait eq_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQPoll with eq_handle = NONE</desc>
+      <ptl>
+        <ptl_eq_poll eq_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQPoll with eq_handle = INVALID</desc>
+      <ptl>
+        <ptl_eq_poll eq_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQAlloc/PtlEQFree with good parameters</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_eq/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlEQGet with empty queue</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_eq>
+            <ptl_eq_get ret="EQ_EMPTY"/>
+          </ptl_eq>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

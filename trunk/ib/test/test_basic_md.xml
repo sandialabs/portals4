@@ -1,79 +1,79 @@
 <?xml version="1.0"?>
 <test>
   <repeat count="2">
-  <subtest>
-    <desc>Test PtlMDBind without init</desc>
-    <ptl_md_bind ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDRelease without init</desc>
-    <ptl_md_release ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with unsupported options</desc>
-    <ptl>
-      <ptl_md_bind md_opt="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with ni_handle = NONE</desc>
-    <ptl>
-      <ptl_md_bind ni_handle="NONE" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with ni_handle = INVALID</desc>
-    <ptl>
-      <ptl_md_bind ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with eq_handle = INVALID</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind eq_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with eq from wrong ni</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-	<ptl_eq>
-          <ptl_ni>
-            <ptl_md_bind ret="ARG_INVALID"/>
-          </ptl_ni>
-	</ptl_eq>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with ct_handle = INVALID</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md_bind ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind with ct from wrong ni</desc>
-    <ptl>
-      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-	<ptl_ct>
-          <ptl_ni>
-            <ptl_md_bind ret="ARG_INVALID"/>
-          </ptl_ni>
-	</ptl_ct>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlMDBind/Release with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_md/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
+    <subtest>
+      <desc>Test PtlMDBind without init</desc>
+      <ptl_md_bind ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDRelease without init</desc>
+      <ptl_md_release ret="NO_INIT"/>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with unsupported options</desc>
+      <ptl>
+        <ptl_md_bind md_opt="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with ni_handle = NONE</desc>
+      <ptl>
+        <ptl_md_bind ni_handle="NONE" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with ni_handle = INVALID</desc>
+      <ptl>
+        <ptl_md_bind ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with eq_handle = INVALID</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_md_bind eq_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with eq from wrong ni</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_eq>
+            <ptl_ni>
+              <ptl_md_bind ret="ARG_INVALID"/>
+            </ptl_ni>
+          </ptl_eq>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with ct_handle = INVALID</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_md_bind ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind with ct from wrong ni</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_ct>
+            <ptl_ni>
+              <ptl_md_bind ret="ARG_INVALID"/>
+            </ptl_ni>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMDBind/Release with good parameters</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_md/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>
