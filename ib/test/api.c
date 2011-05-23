@@ -241,6 +241,11 @@ int test_ptl_ct_inc(struct node_info *info)
 	return info->ret != PtlCTInc(info->ct_handle, info->ct_event);
 }
 
+int test_ptl_ct_cancel_trig(struct node_info *info)
+{
+	return info->ret != PtlCTCancelTriggered(info->ct_handle);
+}
+
 int test_ptl_md_bind(struct node_info *info)
 {
 	int ret;

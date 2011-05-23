@@ -59,6 +59,8 @@ int test_ptl_ct_set(struct node_info *info);
 
 int test_ptl_ct_inc(struct node_info *info);
 
+int test_ptl_ct_cancel_trig(struct node_info *info);
+
 int test_ptl_md_bind(struct node_info *info);
 
 int test_ptl_md_release(struct node_info *info);

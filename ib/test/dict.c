@@ -67,6 +67,7 @@ static struct dict_init {
 	{"ptl_ct_poll",			TYPE_NODE,		NODE_PTL_CT_POLL},
 	{"ptl_ct_set",			TYPE_NODE,		NODE_PTL_CT_SET},
 	{"ptl_ct_inc",			TYPE_NODE,		NODE_PTL_CT_INC},
+	{"ptl_ct_cancel_trig",  TYPE_NODE,		NODE_PTL_CT_CANCEL_TRIG},
 	{"ptl_put",			TYPE_NODE,		NODE_PTL_PUT},
 	{"ptl_get",			TYPE_NODE,		NODE_PTL_GET},
 	{"ptl_atomic",			TYPE_NODE,		NODE_PTL_ATOMIC},
