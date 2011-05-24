@@ -34,6 +34,8 @@
 #include <search.h>
 #include <sys/ioctl.h>
 
+#include "config.h"
+
 #include "portals4.h"
 
 /* branch prediction hints for compiler */

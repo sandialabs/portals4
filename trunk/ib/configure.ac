@@ -23,6 +23,26 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AM_PROG_CC_C_O
 
+#
+AC_ARG_ENABLE([fast],
+              [AS_HELP_STRING([--enable-fast],
+                              [Sets the available configuration options to run as quickly as possible. This makes assumptions and CAN result in bad things happening.])])
+
+AS_IF([test "x$enable_fast" == xyes],
+      [CPPFLAGS="$CPPFLAGS -DNDEBUG"
+       CFLAGS="-O3 $CFLAGS"
+       enable_arg_checking=no
+       enable_strict_uidjid=no
+       enable_hard_polling=yes
+       enable_register_on_bind=yes
+       AS_IF([test "x$enable_debug_symbols" == xyes],
+             [CFLAGS="-g $CFLAGS"])])
+AC_ARG_ENABLE([arg-checking],
+              [AS_HELP_STRING([--disable-arg-checking],
+                              [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
+AS_IF([test "x$enable_arg_checking" == xno],
+      [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
+
 # Checks for libraries.
 AC_CHECK_LIB(ev, ev_loop_new,,AC_MSG_ERROR([libev not found.])) 
 
@@ -56,7 +76,6 @@ AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
         LD_VERSION_SCRIPT=
     fi])
 AC_SUBST(LD_VERSION_SCRIPT)
-
 
 AC_CONFIG_FILES([Makefile
 		 include/Makefile
