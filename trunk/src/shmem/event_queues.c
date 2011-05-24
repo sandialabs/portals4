@@ -34,8 +34,6 @@ const ptl_internal_handle_converter_t eq_none = {
     }
 };
 
-const ptl_handle_eq_t PTL_EQ_NONE = 0x3fffffff; /* (1<<29) & 0x1fffffff */
-
 typedef union {
     struct {
         uint16_t sequence;
