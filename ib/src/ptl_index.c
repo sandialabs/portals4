@@ -193,7 +193,7 @@ int index_lookup(unsigned int index, obj_t **obj_p)
 	segment = index >> SEGMENT_SHIFT;
 	offset = index & (SEGMENT_SIZE - 1);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (!index_is_init) {
 		WARN();
 		return PTL_FAIL;

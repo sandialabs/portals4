@@ -80,6 +80,7 @@ static int get_operand(ptl_datatype_t type, void *operand, uint64_t *opval)
 	return PTL_OK;
 }
 
+#ifndef NO_ARG_VALIDATION
 static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	      ptl_ack_req_t ack_req, ni_t *ni)
 {
@@ -115,6 +116,7 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 
 	return PTL_OK;
 }
+#endif
 
 int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
@@ -141,7 +143,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = to_ni(md);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	err = check_put(md, local_offset, length, ack_req, ni);
 	if (err)
 		goto err2;
@@ -219,7 +221,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 	}
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (unlikely(!ct)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -272,6 +274,7 @@ err1:
 	return err;
 }
 
+#ifndef NO_ARG_VALIDATION
 static int check_get(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	      ni_t *ni)
 {
@@ -292,6 +295,7 @@ static int check_get(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 
 	return PTL_OK;
 }
+#endif
 
 static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
 								 ptl_size_t local_offset,
@@ -338,7 +342,7 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = to_ni(md);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	err = check_get(md, local_offset, length, ni);
 	if (err)
 		goto err2;
@@ -392,7 +396,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err2;
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (unlikely(!ct)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -432,6 +436,7 @@ err1:
 	return err;
 }
 
+#ifndef NO_ARG_VALIDATION
 static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 			ni_t *ni, ptl_ack_req_t ack_req,
 			ptl_op_t atom_op, ptl_datatype_t atom_type)
@@ -519,6 +524,7 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
 
 	return PTL_OK;
 }
+#endif
 
 int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_size_t length, ptl_ack_req_t ack_req,
@@ -543,7 +549,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = to_ni(md);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	err = check_atomic(md, local_offset, length, ni, ack_req, atom_op, atom_type);
 	if (err)
 		goto err2;
@@ -615,7 +621,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err2;
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (unlikely(!ct)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -703,7 +709,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	ni = to_ni(get_md);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	err = check_get(get_md, local_get_offset, length, ni);
 	if (err)
 		goto err3;
@@ -815,7 +821,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 		goto err3;
 	}
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (unlikely(!ct)) {
 		WARN();
 		err = PTL_ARG_INVALID;
@@ -909,6 +915,7 @@ int PtlAtomicSync(void)
 	return err;
 }
 
+#ifndef NO_ARG_VALIDATION
 static int check_swap(md_t *get_md, ptl_size_t local_get_offset,
 					  md_t *put_md, ptl_size_t local_put_offset,
 					  ptl_size_t length, ni_t *ni,
@@ -981,6 +988,7 @@ static int check_swap(md_t *get_md, ptl_size_t local_get_offset,
 
 	return PTL_OK;
 }
+#endif
 
 int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	    ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
@@ -1018,7 +1026,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	ni = to_ni(get_md);
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	err = check_get(get_md, local_get_offset, length, ni);
 	if (err)
 		goto err3;
@@ -1137,7 +1145,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		goto err3;
 	}
 
-#ifdef PTL_CHECK_BUILD
+#ifndef NO_ARG_VALIDATION
 	if (unlikely(!ct)) {
 		WARN();
 		err = PTL_ARG_INVALID;
