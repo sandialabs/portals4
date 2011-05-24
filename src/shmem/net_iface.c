@@ -44,9 +44,6 @@ ptl_ni_limits_t    nit_limits[4];
 
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
-const ptl_interface_t  PTL_IFACE_DEFAULT = UINT_MAX;
-const ptl_handle_any_t PTL_INVALID_HADLE = { UINT_MAX };
-
 int API_FUNC PtlNIInit(ptl_interface_t         iface,
                        unsigned int            options,
                        ptl_pid_t               pid,

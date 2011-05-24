@@ -36,8 +36,6 @@
 #include "ptl_internal_locks.h"
 #include "ptl_internal_fragments.h"
 
-const ptl_handle_ct_t PTL_CT_NONE = 0x5fffffff; /* (2<<29) & 0x1fffffff */
-
 #define CT_FREE    0
 #define CT_BUSY    1
 #define CT_READY   2

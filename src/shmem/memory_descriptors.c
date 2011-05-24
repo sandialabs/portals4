@@ -26,8 +26,6 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_alignment.h"
 
-const ptl_handle_any_t PTL_INVALID_HANDLE = { UINT_MAX };
-
 #define MD_FREE   0
 #define MD_IN_USE 1
 
