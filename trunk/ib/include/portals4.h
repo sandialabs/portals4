@@ -291,16 +291,16 @@ typedef struct {
  * Constants *
  *************/
 /*! Indicate the absence of an event queue. */
-static const ptl_handle_eq_t PTL_EQ_NONE = 0xff000000;
+#define PTL_EQ_NONE ((ptl_handle_eq_t) 0x3fffffff)
 
 /*! Indicate the absence of a counting type event. */
-static const ptl_handle_ct_t PTL_CT_NONE = 0xff000001;
+#define PTL_CT_NONE ((ptl_handle_ct_t) 0x5fffffff)
 
 /*! Represent an invalid handle. */
-static const ptl_handle_any_t PTL_INVALID_HANDLE = 0xffffffff;
+#define PTL_INVALID_HANDLE ((ptl_handle_any_t) 0xffffffff)
 
 /*! Identify the default interface. */
-static const ptl_interface_t PTL_IFACE_DEFAULT = 0xff000002;
+#define PTL_IFACE_DEFAULT ((ptl_interface_t) 0xffffffff)
 
 /*! Match any process identifier. */
 #define PTL_PID_ANY ((ptl_pid_t) 0xffff)
@@ -1046,7 +1046,7 @@ typedef enum {
  * must match to allow a message to access a list entry. */
 #define PTL_LE_AUTH_USE_JID             (1<<13)
 
-#define PTL_LE_APPEND_OPTIONS_MASK      ((1<<14) - 1)
+#define PTL_LE_APPEND_OPTIONS_MASK	((1<<14)-1)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
@@ -1296,7 +1296,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * */
 #define PTL_ME_MAY_ALIGN                (1<<16)
 
-#define PTL_ME_APPEND_OPTIONS_MASK      ((1<<17) - 1)
+#define PTL_ME_APPEND_OPTIONS_MASK	((1<<17)-1)
 
 /*!
  * @struct ptl_me_t
