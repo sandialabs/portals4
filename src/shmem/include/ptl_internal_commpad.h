@@ -47,10 +47,14 @@ typedef struct {
     ptl_jid_t        jid;
 #endif
     /* data used for long & truncated messages */
-    void                           *entry;
-    uint32_t                        remaining;
-    uint64_t                        xfe_handle1; // always used for XFE transfers
-    uint64_t                        xfe_handle2; // only used for FetchAtomic & Swap
+    void    *entry;
+    uint32_t remaining;
+#ifdef USE_TRANSFER_ENGINE
+    uint64_t xfe_handle1;                        // always used for XFE transfers
+    uint64_t xfe_handle2;                        // only used for FetchAtomic & Swap
+#else
+    uint8_t *moredata;
+#endif
     /* data used for GETs and properly processing events */
     ptl_internal_handle_converter_t md_handle1;
     ptl_internal_handle_converter_t md_handle2;

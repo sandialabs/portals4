@@ -237,7 +237,7 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
     return PTL_OK;
 }                                      /*}}} */
 
-char INTERNAL *PtlInternalMDDataPtr(ptl_handle_md_t handle)
+uint8_t INTERNAL *PtlInternalMDDataPtr(ptl_handle_md_t handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
 

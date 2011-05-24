@@ -21,22 +21,22 @@ libportals_la_SOURCES += \
 			 shmem/runtime.c \
 			 shmem/uid.c \
 			 shmem/jid.c \
-			 shmem/init.c \
-			 shmem/transfer_engine.c
+			 shmem/init.c
+
+if USE_TRANSFER_ENGINE
+libportals_la_SOURCES += shmem/transfer_engine.c
+endif
 
 if USE_KNEM
-libportals_la_SOURCES += \
-			  shmem/knem.c
+libportals_la_SOURCES += shmem/knem.c
 endif
 
 if USE_PAPI
-libportals_la_SOURCES += \
-			 shmem/papi.c
+libportals_la_SOURCES += shmem/papi.c
 endif
 
 if USE_RDTSC
-libportals_la_SOURCES += \
-			 shmem/rdtsc.c
+libportals_la_SOURCES += shmem/rdtsc.c
 endif
 
 yod_SOURCES += shmem/yod.c

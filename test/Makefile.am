@@ -33,13 +33,18 @@ TESTS = test_init \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
 	test_ME_oversize_put \
-	test_ME_unexpected_put \
+	test_ME_unexpected_put
+
+if USE_TRANSFER_ENGINE
+TESTS += \
 	test_LE_oversize_atomic \
 	test_ME_oversize_atomic \
 	test_LE_oversize_fetchatomic \
 	test_ME_oversize_fetchatomic \
 	test_LE_oversize_swap \
 	test_ME_oversize_swap
+endif
+
 BENCHMARKS =
 
 INCLUDES = -I$(top_srcdir)/include

@@ -95,6 +95,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             ack_printf("it's an ACK for a PUT\n");
             md_handle = hdr->md_handle1.a;
             mdptr     = PtlInternalMDFetch(md_handle);
+#ifdef USE_TRANSFER_ENGINE
             if (hdr->xfe_handle1) {
                 /* announce that we're done with the send-buffer */
                 const ptl_handle_eq_t eqh     = mdptr->eq_handle;
@@ -116,27 +117,122 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                                            hdr->local_offset1, hdr->user_ptr);
                 }
 
-#ifndef REGISTER_ON_BIND
+# ifndef REGISTER_ON_BIND
                 /* no need for xfe_unregister - we used a singleuse registration */
-#endif
+# endif
             }
+#else   /* ifdef USE_TRANSFER_ENGINE */
+            if (hdr->moredata) {
+                /* we only sent partial data; need to refill the fragment and toss it back */
+                size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+                /* update the value of remaining... */
+                if (payload > hdr->remaining) {
+                    hdr->remaining = 0;
+                } else {
+                    hdr->remaining -= payload;
+                }
+                if (hdr->remaining > 0) {
+                    /* there are more fragments to go */
+                    if (hdr->remaining < payload) {
+                        /* this will be the last fragment */
+                        payload = hdr->remaining;
+                    }
+                    ack_printf("refilling with %i data\n", (int)payload);
+                    memcpy(hdr->data, hdr->moredata, payload);
+                    hdr->moredata += payload;
+                    if (hdr->remaining == payload) {
+                        /* this will be the last fragment */
+                        /* announce that we're done with the send-buffer */
+                        const ptl_handle_eq_t eqh     = mdptr->eq_handle;
+                        const ptl_handle_ct_t cth     = mdptr->ct_handle;
+                        const unsigned int    options = mdptr->options;
+                        ack_printf("announce that we're done with the send-buffer\n");
+                        PtlInternalMDCleared(md_handle);
+                        if (options & PTL_MD_EVENT_CT_SEND) {
+                            if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
+                                PtlInternalCTSuccessInc(cth, 1);
+                            } else {
+                                PtlInternalCTSuccessInc(cth, hdr->length);
+                            }
+                            PtlInternalCTPullTriggers(cth);
+                        }
+                        if ((eqh != PTL_EQ_NONE) &&
+                            ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
+                            PtlInternalEQPushESEND(eqh,
+                                                   hdr->length,
+                                                   hdr->local_offset1,
+                                                   hdr->user_ptr);
+                        }
+                    }
+                    hdr->src = proc_number;
+                    PtlInternalFragmentToss(hdr, hdr->target);
+                    return;            // do not free fragment, because we just sent it
+                } else if (truncated) {
+                    /* announce that we're done with the send-buffer */
+                    const ptl_handle_eq_t eqh     = mdptr->eq_handle;
+                    const ptl_handle_ct_t cth     = mdptr->ct_handle;
+                    const unsigned int    options = mdptr->options;
+                    ack_printf
+                        ("announce that we're done with the send-buffer\n");
+                    PtlInternalMDCleared(md_handle);
+                    if (options & PTL_MD_EVENT_CT_SEND) {
+                        if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
+                            PtlInternalCTSuccessInc(cth, 1);
+                        } else {
+                            PtlInternalCTSuccessInc(cth, hdr->length);
+                        }
+                        PtlInternalCTPullTriggers(cth);
+                    }
+                    if ((eqh != PTL_EQ_NONE) &&
+                        ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
+                        PtlInternalEQPushESEND(eqh,
+                                               hdr->length,
+                                               hdr->local_offset1,
+                                               hdr->user_ptr);
+                    }
+                }
+            }
+#endif  /* ifdef USE_TRANSFER_ENGINE */
             break;
         case HDR_TYPE_GET:
             ack_printf("it's an ACK for a GET\n");
             md_handle = hdr->md_handle1.a;
             mdptr     = PtlInternalMDFetch(md_handle);
+#ifdef USE_TRANSFER_ENGINE
             if (hdr->xfe_handle1) {
                 /* already have the data */
-#ifndef REGISTER_ON_BIND
+# ifndef REGISTER_ON_BIND
                 /* no need for xfe_unregister - we used a singleuse registration */
-#endif
-            } else {
+# endif
+            }
+#else
+            if (hdr->moredata) {
+                /* this ack contains partial data */
+                size_t reply_size =
+                    PtlInternalFragmentSize(hdr) -
+                    sizeof(ptl_internal_header_t);
+                if (reply_size > hdr->remaining) {
+                    reply_size = hdr->remaining;
+                }
+                ack_printf("replied with %i data\n", (int)reply_size);
+                /* pull out the partial data */
+                memcpy(hdr->moredata, hdr->data, reply_size);
+                hdr->moredata  += reply_size;
+                hdr->remaining -= reply_size;
+                if (hdr->remaining > 0) {
+                    hdr->src = proc_number;
+                    PtlInternalFragmentToss(hdr, hdr->target);
+                    return;            // do not free fragment, because we just sent it
+                }
+            }
+#endif  /* ifdef USE_TRANSFER_ENGINE */
+            else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
                 if ((mdptr != NULL) &&
                     ((hdr->src == 1) || (hdr->src == 0))) {
-                    memcpy((uint8_t *)(mdptr->start) +
-                           hdr->local_offset1, hdr->data,
+                    memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
+                           hdr->data,
                            hdr->length);
                 }
             }
@@ -150,6 +246,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             }
             md_handle = hdr->md_handle1.a;
             mdptr     = PtlInternalMDFetch(md_handle);
+#ifdef USE_TRANSFER_ENGINE
             if (hdr->xfe_handle1) {
                 /* the transfer engine copy is done on the target,
                  * so announce that we're done with the send-buffer */
@@ -174,10 +271,11 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                                            hdr->local_offset1, hdr->user_ptr);
                 }
 
-#ifndef REGISTER_ON_BIND
+# ifndef REGISTER_ON_BIND
                 xfe_unregister(hdr->xfe_handle1);
-#endif
+# endif
             }
+#endif  /* ifdef USE_TRANSFER_ENGINE */
             break;
         case HDR_TYPE_FETCHATOMIC:
             ack_printf("it's an ACK for a FETCHATOMIC\n");
@@ -185,10 +283,10 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                 fprintf(stderr, "PORTALS4-> truncated FETCHATOMICs not yet supported\n");
                 abort();
             }
+#ifdef USE_TRANSFER_ENGINE
             /* the Get MD handle */
             md_handle = hdr->md_handle2.a;
             mdptr     = PtlInternalMDFetch(md_handle);
-
             if (hdr->xfe_handle1) {
                 ptl_handle_md_t put_md_handle = hdr->md_handle1.a;
                 ptl_md_t       *put_mdptr     = PtlInternalMDFetch(put_md_handle);
@@ -214,21 +312,36 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                                            hdr->local_offset1,
                                            hdr->user_ptr);
                 }
-#ifndef REGISTER_ON_BIND
+# ifndef REGISTER_ON_BIND
                 xfe_unregister(hdr->xfe_handle1);
                 if (hdr->xfe_handle1 != hdr->xfe_handle2) {
                     xfe_unregister(hdr->xfe_handle2);
                 }
-#endif
+# endif
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
                 if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
-                    memcpy((uint8_t *)(mdptr->start) +
-                           hdr->local_offset2,
-                           hdr->data, hdr->length);
+                    memcpy((uint8_t *)(mdptr->start) + hdr->local_offset2,
+                           hdr->data,
+                           hdr->length);
                 }
             }
+#else   /* ifdef USE_TRANSFER_ENGINE */
+            md_handle = hdr->md_handle1.a;
+            if ((hdr->md_handle2.a != PTL_INVALID_HANDLE) &&
+                (hdr->md_handle2.a != md_handle)) {
+                PtlInternalMDCleared(hdr->md_handle2.a);
+            }
+            mdptr = PtlInternalMDFetch(md_handle);
+            /* pull the data out of the reply */
+            ack_printf("replied with %i data\n", (int)hdr->length);
+            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
+                       hdr->data,
+                       hdr->length);
+            }
+#endif      /* ifdef USE_TRANSFER_ENGINE */
             break;
         case HDR_TYPE_SWAP:
             ack_printf("it's an ACK for a SWAP\n");
@@ -237,10 +350,10 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                         "PORTALS4-> truncated SWAPs not yet supported\n");
                 abort();
             }
+#ifdef USE_TRANSFER_ENGINE
             /* the Get MD handle */
             md_handle = hdr->md_handle2.a;
             mdptr     = PtlInternalMDFetch(md_handle);
-
             if (hdr->xfe_handle1) {
                 ptl_handle_md_t put_md_handle = hdr->md_handle1.a;
                 ptl_md_t       *put_mdptr     = PtlInternalMDFetch(put_md_handle);
@@ -266,21 +379,36 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                                            hdr->local_offset1,
                                            hdr->user_ptr);
                 }
-#ifndef REGISTER_ON_BIND
+# ifndef REGISTER_ON_BIND
                 xfe_unregister(hdr->xfe_handle1);
                 if (hdr->xfe_handle1 != hdr->xfe_handle2) {
                     xfe_unregister(hdr->xfe_handle2);
                 }
-#endif
+# endif
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
                 if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
-                    memcpy((uint8_t *)(mdptr->start) +
-                           hdr->local_offset2,
-                           hdr->data + 32, hdr->length);
+                    memcpy((uint8_t *)(mdptr->start) + hdr->local_offset2,
+                           hdr->data + 32,
+                           hdr->length);
                 }
             }
+#else   /* ifdef USE_TRANSFER_ENGINE */
+            md_handle = hdr->md_handle1.a;
+            if ((hdr->md_handle2.a != PTL_INVALID_HANDLE) &&
+                (hdr->md_handle2.a != md_handle)) {
+                PtlInternalMDCleared(hdr->md_handle2.a);
+            }
+            mdptr = PtlInternalMDFetch(md_handle);
+            /* pull the data out of the reply */
+            ack_printf("replied with %i data\n", (int)hdr->length);
+            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
+                       hdr->data + 32,
+                       hdr->length);
+            }
+#endif  /* ifdef USE_TRANSFER_ENGINE */
             break;
         default:                      // impossible
             UNREACHABLE;
@@ -416,8 +544,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
     ack_printf("freed\n");
 }                                      /*}}} */
 
-static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk)
-Q_NORETURN
+static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETURN
 {                                      /*{{{ */
     while (1) {
         ptl_pid_t              src;
@@ -633,7 +760,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif /* ifndef NO_ARG_VALIDATION */
+#endif  /* ifndef NO_ARG_VALIDATION */
     PtlInternalPAPIStartC();
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
@@ -672,19 +799,28 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     }
 #endif
     hdr->ack_req = ack_req;
-    char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+    uint8_t *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
     // PtlInternalPAPISaveC(PTL_PUT, 0);
     /* step 3: load up the data */
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
-        length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
         memcpy(hdr->data, dataptr, length);
-        quick_exit       = 1;
+        quick_exit = 1;
+#ifdef USE_TRANSFER_ENGINE
         hdr->xfe_handle1 = (uint64_t)NULL;
-    } else {
-#ifdef REGISTER_ON_BIND
-        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
 #else
+        hdr->moredata = NULL;
+#endif
+    } else {
+#ifdef USE_TRANSFER_ENGINE
+# ifdef REGISTER_ON_BIND
+        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
+# else
         hdr->xfe_handle1 = xfe_register_singleuse(dataptr, length, PROT_READ);
+# endif
+#else
+        size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+        memcpy(hdr->data, dataptr, payload);
+        hdr->moredata = dataptr + payload;
 #endif
     }
     /* step 4: enqueue the op structure on the target */
@@ -783,7 +919,7 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif /* ifndef NO_ARG_VALIDATION */
+#endif  /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized get, we could
@@ -818,15 +954,22 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
     hdr->local_offset1 = local_offset;
     hdr->entry         = NULL;
     hdr->remaining     = length;
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
-        length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
+#ifdef USE_TRANSFER_ENGINE
         hdr->xfe_handle1 = (uint64_t)NULL;
-    } else {
-#ifdef REGISTER_ON_BIND
-        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
 #else
-        char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+        hdr->moredata = NULL;
+#endif
+    } else {
+#ifdef USE_TRANSFER_ENGINE
+# ifdef REGISTER_ON_BIND
+        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
+# else
+        uint8_t *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
         hdr->xfe_handle1 = xfe_register_singleuse(dataptr, length, PROT_WRITE);
+# endif
+#else
+        hdr->moredata = PtlInternalMDDataPtr(md_handle) + local_offset;
 #endif
     }
     /* step 3: enqueue the op structure on the target */
@@ -973,7 +1116,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif /* ifndef NO_ARG_VALIDATION */
+#endif  /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(md_handle);
     /* step 1: get a local memory fragment */
     /* TODO: If this turns out to be an oversized atomic, we could
@@ -1011,19 +1154,29 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
     hdr->atomic_operation = operation;
     hdr->atomic_datatype  = datatype;
     hdr->remaining        = length;
-    char *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
+    uint8_t *dataptr = PtlInternalMDDataPtr(md_handle) + local_offset;
     // PtlInternalPAPISaveC(PTL_ATOMIC, 0);
     /* step 3: load up the data */
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
-        length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
         memcpy(hdr->data, dataptr, length);
-        quick_exit       = 1;
+        quick_exit = 1;
+#ifdef USE_TRANSFER_ENGINE
         hdr->xfe_handle1 = (uint64_t)NULL;
-    } else {
-#ifdef REGISTER_ON_BIND
-        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
 #else
+        hdr->moredata = NULL;
+#endif
+    } else {
+#ifdef USE_TRANSFER_ENGINE
+# ifdef REGISTER_ON_BIND
+        hdr->xfe_handle1 = PtlInternalMDXFEHandle(md_handle);
+# else
         hdr->xfe_handle1 = xfe_register(dataptr, length, PROT_READ);
+# endif
+#else
+        size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+        memcpy(hdr->data, dataptr, payload);
+        hdr->moredata = dataptr + payload;
+        quick_exit    = 1;
 #endif
     }
     /* step 4: enqueue the op structure on the target */
@@ -1055,8 +1208,8 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         } else {
             // printf("%u PtlAtomic NOT incrementing ct\n", (unsigned)proc_number);
         }
-        if ((eqh != PTL_EQ_NONE) && ((options & PTL_MD_EVENT_SUCCESS_DISABLE)
-                                     == 0)) {
+        if ((eqh != PTL_EQ_NONE) &&
+            ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
             PtlInternalEQPushESEND(eqh, length, local_offset, user_ptr);
         }
     }
@@ -1220,7 +1373,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif /* ifndef NO_ARG_VALIDATION */
+#endif  /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(put_md_handle);
     if (get_md_handle != put_md_handle) {
         PtlInternalMDPosted(get_md_handle);
@@ -1248,44 +1401,58 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         hdr->jid = the_ptl_jid;
     }
 #endif
-    hdr->pt_index         = pt_index;
-    hdr->match_bits       = match_bits;
-    hdr->dest_offset      = remote_offset;
-    hdr->length           = length;
-    hdr->user_ptr         = user_ptr;
-    hdr->entry            = NULL;
-    hdr->md_handle1.a     = put_md_handle;
-    hdr->local_offset1    = local_put_offset;
-    hdr->md_handle2.a     = get_md_handle;
-    hdr->local_offset2    = local_get_offset;
+    hdr->pt_index    = pt_index;
+    hdr->match_bits  = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length      = length;
+    hdr->user_ptr    = user_ptr;
+    hdr->entry       = NULL;
+#ifdef USE_TRANSFER_ENGINE
+    hdr->md_handle1.a  = put_md_handle;
+    hdr->local_offset1 = local_put_offset;
+    hdr->md_handle2.a  = get_md_handle;
+    hdr->local_offset2 = local_get_offset;
+#else
+    hdr->md_handle1.a  = get_md_handle;
+    hdr->local_offset1 = local_get_offset;
+    hdr->md_handle2.a  = put_md_handle;
+    hdr->local_offset2 = local_put_offset;
+#endif
     hdr->hdr_data         = hdr_data;
     hdr->atomic_operation = operation;
     hdr->atomic_datatype  = datatype;
     hdr->remaining        = length;
-    char *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
+    uint8_t *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
     // PtlInternalPAPISaveC(PTL_FETCHATOMIC, 0);
     /* step 3: load up the data */
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >=
-        length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) >= length) {
         memcpy(hdr->data, put_dataptr, length);
-        quick_exit       = 1;
+        quick_exit = 1;
+#ifdef USE_TRANSFER_ENGINE
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;
+#else
+        hdr->moredata = NULL;
+#endif
     } else {
-#ifdef REGISTER_ON_BIND
+#ifdef USE_TRANSFER_ENGINE
+# ifdef REGISTER_ON_BIND
         hdr->xfe_handle1 = PtlInternalMDXFEHandle(put_md_handle);
         hdr->xfe_handle2 = PtlInternalMDXFEHandle(get_md_handle);
-#else
-        char *get_dataptr = PtlInternalMDDataPtr(get_md_handle) +
-                            local_get_offset;
+# else
+        uint8_t *get_dataptr = PtlInternalMDDataPtr(get_md_handle) + local_get_offset;
         if (put_dataptr != get_dataptr) {
             hdr->xfe_handle1 = xfe_register(put_dataptr, length, PROT_READ);
             hdr->xfe_handle2 = xfe_register(get_dataptr, length, PROT_WRITE);
         } else {
-            hdr->xfe_handle1 = hdr->xfe_handle2 =
-                                   xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
+            hdr->xfe_handle1 = hdr->xfe_handle2 = xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
         }
-#endif /* ifdef REGISTER_ON_BIND */
+# endif /* ifdef REGISTER_ON_BIND */
+#else /* ifdef USE_TRANSFER_ENGINE */
+        size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+        memcpy(hdr->data, put_dataptr, payload);
+        hdr->moredata = put_dataptr + payload;
+#endif  /* ifdef USE_TRANSFER_ENGINE */
     }
     /* step 4: enqueue the op structure on the target */
     PtlInternalFragmentToss(hdr, hdr->target);
@@ -1480,7 +1647,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
-#endif /* ifndef NO_ARG_VALIDATION */
+#endif  /* ifndef NO_ARG_VALIDATION */
     PtlInternalMDPosted(put_md_handle);
     if (get_md_handle != put_md_handle) {
         PtlInternalMDPosted(get_md_handle);
@@ -1508,24 +1675,31 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
         hdr->jid = the_ptl_jid;
     }
 #endif
-    hdr->pt_index         = pt_index;
-    hdr->match_bits       = match_bits;
-    hdr->dest_offset      = remote_offset;
-    hdr->length           = length;
-    hdr->user_ptr         = user_ptr;
-    hdr->entry            = NULL;
-    hdr->remaining        = length;
-    hdr->md_handle1.a     = put_md_handle;
-    hdr->local_offset1    = local_put_offset;
-    hdr->md_handle2.a     = get_md_handle;
-    hdr->local_offset2    = local_get_offset;
+    hdr->pt_index    = pt_index;
+    hdr->match_bits  = match_bits;
+    hdr->dest_offset = remote_offset;
+    hdr->length      = length;
+    hdr->user_ptr    = user_ptr;
+    hdr->entry       = NULL;
+    hdr->remaining   = length;
+#ifdef USE_TRANSFER_ENGINE
+    hdr->md_handle1.a  = put_md_handle;
+    hdr->local_offset1 = local_put_offset;
+    hdr->md_handle2.a  = get_md_handle;
+    hdr->local_offset2 = local_get_offset;
+#else
+    hdr->md_handle1.a  = get_md_handle;
+    hdr->local_offset1 = local_get_offset;
+    hdr->md_handle2.a  = put_md_handle;
+    hdr->local_offset2 = local_put_offset;
+#endif
     hdr->hdr_data         = hdr_data;
     hdr->atomic_operation = operation;
     hdr->atomic_datatype  = datatype;
     // PtlInternalPAPISaveC(PTL_SWAP, 0);
     /* step 3: load up the data */
     uint8_t *hdr_dataptr = hdr->data;
-    char    *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
+    uint8_t *put_dataptr = PtlInternalMDDataPtr(put_md_handle) + local_put_offset;
     if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
         switch (datatype) {
             case PTL_CHAR:
@@ -1558,28 +1732,33 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
     }
     hdr_dataptr += 32;
 
-    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) - 32 >=
-        length) {
+    if (PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t) - 32 >= length) {
         memcpy(hdr_dataptr, put_dataptr, length);
-        quick_exit       = 1;
+        quick_exit = 1;
+#ifdef USE_TRANSFER_ENGINE
         hdr->xfe_handle1 = (uint64_t)NULL;
         hdr->xfe_handle2 = (uint64_t)NULL;
+#else
+        hdr->moredata = NULL;
+#endif
     } else {
-#ifdef REGISTER_ON_BIND
+#ifdef USE_TRANSFER_ENGINE
+# ifdef REGISTER_ON_BIND
         hdr->xfe_handle1 = PtlInternalMDXFEHandle(put_md_handle);
         hdr->xfe_handle2 = PtlInternalMDXFEHandle(get_md_handle);
-#else
+# else
         // hdr->xfe_handle = xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
-        char *get_dataptr = PtlInternalMDDataPtr(get_md_handle) +
-                            local_get_offset;
+        uint8_t *get_dataptr = PtlInternalMDDataPtr(get_md_handle) + local_get_offset;
         if (put_dataptr != get_dataptr) {
             hdr->xfe_handle1 = xfe_register(put_dataptr, length, PROT_READ);
             hdr->xfe_handle2 = xfe_register(get_dataptr, length, PROT_WRITE);
         } else {
-            hdr->xfe_handle1 = hdr->xfe_handle2 =
-                                   xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
+            hdr->xfe_handle1 = hdr->xfe_handle2 = xfe_register(put_dataptr, length, PROT_READ | PROT_WRITE);
         }
-#endif /* ifdef REGISTER_ON_BIND */
+# endif /* ifdef REGISTER_ON_BIND */
+#else /* ifdef USE_TRANSFER_ENGINE */
+        abort();
+#endif  /* ifdef USE_TRANSFER_ENGINE */
     }
     /* step 4: enqueue the op structure on the target */
     PtlInternalFragmentToss(hdr, hdr->target);
@@ -1619,8 +1798,8 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
 }                                      /*}}} */
 
 int API_FUNC PtlAtomicSync(void)
-{/*{{{*/
-    ptl_internal_header_t *restrict       hdr;
+{   /*{{{*/
+    ptl_internal_header_t *restrict hdr;
 
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
@@ -1647,6 +1826,6 @@ int API_FUNC PtlAtomicSync(void)
     PTL_CMD_LOCK_SENDER2(hdr->data);
 
     return PTL_OK;
-}/*}}}*/
+} /*}}}*/
 
 /* vim:set expandtab: */

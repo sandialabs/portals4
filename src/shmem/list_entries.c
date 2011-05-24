@@ -76,6 +76,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
                                           const uint_fast8_t                    overflow,
                                           void *const                           user_ptr,
                                           ptl_internal_header_t *const restrict hdr);
+#ifdef USE_TRANSFER_ENGINE
 static inline void PtlInternalPerformDelivery2(const uint_fast8_t                    type,
                                                void *const restrict                  local_data,
                                                uint8_t *const restrict               message_data,
@@ -91,6 +92,7 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t                    
                                           const size_t                          nbytes,
                                           ptl_internal_header_t *const restrict hdr,
                                           uint8_t *const restrict               op);
+#endif /* ifdef USE_TRANSFER_ENGINE */
 
 void INTERNAL PtlInternalLENISetup(const uint_fast8_t ni,
                                    const ptl_size_t   limit)
@@ -766,7 +768,9 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
     uint_fast8_t             need_more_data = 0;
     uint_fast8_t             need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
-    uint_fast8_t             use_xfe        = 0; // whether we're using the transfer engine
+#ifdef USE_TRANSFER_ENGINE
+    uint_fast8_t use_xfe = 0;                    // whether we're using the transfer engine
+#endif
 
     PtlInternalPAPIStartC();
     assert(t);
@@ -866,15 +870,18 @@ check_lengths:
         {
             size_t max_payload;
 
+#ifdef USE_TRANSFER_ENGINE
             if (hdr->xfe_handle1) {
                 /* we can actually do the entire transfer now, so fake our
                  * max_payload value */
                 max_payload = hdr->length;
                 use_xfe     = 1;
             } else {
-                max_payload = PtlInternalFragmentSize(hdr) -
-                              sizeof(ptl_internal_header_t);
+                max_payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
             }
+#else
+            max_payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
+#endif
 
             /* msg_mlength is the total number of bytes that will be modified by this message */
             /* fragment_mlength is the total number of bytes that will by modified by this fragment */
@@ -932,18 +939,19 @@ check_lengths:
                                                       hdr->remaining);
         if (foundin == PRIORITY) {
             if (fragment_mlength > 0) {
+#ifdef USE_TRANSFER_ENGINE
                 if (use_xfe) {
 /* One subtle difference with register-on-data-movement is that we only
  * register the exact range of memory being transfered. As opposed to
  * register-on-bind, where the entire MD memory region is registered.
  * So we need to be careful with our use of offsets... */
-#ifdef REGISTER_ON_BIND
+# ifdef REGISTER_ON_BIND
                     const size_t xfe_offset1 = hdr->local_offset1;
                     const size_t xfe_offset2 = hdr->local_offset2;
-#else
+# else
                     const size_t xfe_offset1 = 0;
                     const size_t xfe_offset2 = 0;
-#endif
+# endif
                     PtlInternalPerformDeliveryXFE(hdr->type, effective_start,
                                                   hdr->xfe_handle1,
                                                   xfe_offset1,
@@ -956,6 +964,11 @@ check_lengths:
                                                hdr->data, fragment_mlength,
                                                hdr);
                 }
+#else           /* ifdef USE_TRANSFER_ENGINE */
+                PtlInternalPerformDelivery(hdr->type, effective_start,
+                                           hdr->data, fragment_mlength,
+                                           hdr);
+#endif          /* ifdef USE_TRANSFER_ENGINE */
             }
             if (need_more_data == 0) {
                 PtlInternalAnnounceLEDelivery(tEQ, le.ct_handle, hdr->type,
@@ -1019,6 +1032,7 @@ check_lengths:
     return 0;                          // silent ACK
 }                                      /*}}} */
 
+#ifdef USE_TRANSFER_ENGINE
 static void PtlInternalPerformDeliveryXFE(const uint_fast8_t              type,
                                           void *const restrict            local_data,
                                           const uint64_t                  msg_xfe_handle1,
@@ -1176,6 +1190,44 @@ static void PtlInternalPerformDelivery(const uint_fast8_t              type,
             abort();
     }
 }                                      /*}}} */
+
+#else /* ifdef USE_TRANSFER_ENGINE */
+static void PtlInternalPerformDelivery(const uint_fast8_t              type,
+                                       void *const restrict            local_data,
+                                       uint8_t *const restrict         message_data,
+                                       const size_t                    nbytes,
+                                       ptl_internal_header_t *restrict hdr)
+{   /*{{{*/
+    switch (type & HDR_TYPE_BASICMASK) {
+        case HDR_TYPE_PUT:
+            memcpy(local_data, message_data, nbytes);
+            break;
+        case HDR_TYPE_ATOMIC:
+        case HDR_TYPE_FETCHATOMIC:
+            PtlInternalPerformAtomic(local_data,
+                                     message_data,
+                                     nbytes,
+                                     (ptl_op_t)hdr->atomic_operation,
+                                     (ptl_datatype_t)hdr->atomic_datatype);
+            break;
+        case HDR_TYPE_GET:
+            memcpy(message_data, local_data, nbytes);
+            break;
+        case HDR_TYPE_SWAP:
+            PtlInternalPerformAtomicArg(local_data,
+                                        message_data + 32,
+                                        message_data,
+                                        nbytes,
+                                        (ptl_op_t)hdr->atomic_operation,
+                                        (ptl_datatype_t)hdr->atomic_datatype);
+            break;
+        default:
+            UNREACHABLE;
+            abort();
+    }
+} /*}}}*/
+
+#endif /* ifdef USE_TRANSFER_ENGINE */
 
 static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 eq_handle,
                                           const ptl_handle_ct_t                 ct_handle,

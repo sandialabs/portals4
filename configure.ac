@@ -69,6 +69,9 @@ AC_ARG_ENABLE([hard-polling],
 AC_ARG_ENABLE([papi],
 			  [AS_HELP_STRING([--enable-papi],
 							  [Enables PAPI performance counters support])])
+AC_ARG_ENABLE([transfer-engine],
+			  [AS_HELP_STRING([--enable-transfer-engine],
+							  [Enables KNEM and other direct SHMEM support])])
 AC_ARG_ENABLE([rdtsc],
                           [AS_HELP_STRING([--enable-rdtsc],
                                                           [Enables rdtsc performance counters support])])
@@ -240,7 +243,13 @@ AC_SEARCH_LIBS([shm_open],
 AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 SANDIA_CHOOSE_TIMER
-SANDIA_DETECT_KNEM
+AS_IF([test "x$enable_transfer_engine" != xno],
+	  [SANDIA_DETECT_KNEM([enable_transfer_engine=yes],
+						  [AS_IF([test "x$enable_transfer_engine" == xyes],
+								 [AC_MSG_ERROR([No transfer engine detected.])],
+								 [enable_transfer_engine=no])])])
+AS_IF([test "x$enable_transfer_engine" == xyes],
+	  [AC_DEFINE([USE_TRANSFER_ENGINE], [1], [Define to enable the use of a transfer engine (e.g. KNEM)])])
 
 ## -------------------------- ##
 ## Check for library behavior ##
@@ -264,6 +273,7 @@ AC_CACHE_SAVE
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
 AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
 AM_CONDITIONAL([USE_RDTSC], [test "x$enable_rdtsc" == xyes])
+AM_CONDITIONAL([USE_TRANSFER_ENGINE], [test "x$enable_transfer_engine" == xyes])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
