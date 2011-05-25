@@ -1,27 +1,38 @@
+Portals4 on Infiniband
 Quickstart guide
+2011/5/25
 
 -= This is a work in progress =-
 
 Pre-requisite
-* openmpi 1.4.x or 1.5.x: the test program is MPI based, and starting a task necessitate mpirun.
-* OFED 1.5.2 with patches to librdmacm (see patches/rdmacm-xrc-v?.diff). patches/rdma-bw-xrc-v?.diff is not necessary, but allows to test XRC+RDMA CM with the rdma_bw test.
-* libev-4.0.4 (or similar), available at http://software.schmorp.de/pkg/libev.html
+  * openmpi 1.4.x or 1.5.x: the test program is MPI based, and
+    starting a task necessitate mpirun.
+  * only if using XRC: OFED 1.5.2 with patches to librdmacm (see
+    patches/rdmacm-xrc-v?.diff). patches/rdma-bw-xrc-v?.diff is not necessary,
+    but allows to test XRC+RDMA CM with the rdma_bw test.
+  * libev-4.0.4 (or similar), available at
+      http://software.schmorp.de/pkg/libev.html
 
 Build:
-* ./autogen.sh
-* i686: ./configure CFLAGS="-march=i686 -I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
-* x86_64: ./configure CFLAGS="-I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
-* make
+  * ./autogen.sh
+  * i686: 
+      ./configure CFLAGS="-march=i686 -I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
+  * x86_64:
+      ./configure CFLAGS="-I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
+    or:
+      ./configure CFLAGS="-I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib"
+  * add --enable-xrc if XRC support is desired.
+  * make
 
 Test:
-* cd test
-* mpirun --mca mpi_warn_on_fork 0 --mca btl_openib_warn_default_gid_prefix 0 -H localhost -n 2 ./ptl_test -f ./test_put.xml
-* with several nodes: mpirun --mca mpi_warn_on_fork 0 --mca btl_openib_warn_default_gid_prefix 0 -H puff3,puff4 -n 2 -x PORTALS4_MASTER_NID=192.168.221.13 ./ptl_test -f ./test_put.xml
+  * cd test
+  * standalone tests: ./test_all
+  * with 2 ranks, use mpirun:
+      mpirun  -H localhost -n 2 ./test_all_2_ranks
+  * make_test_relay.pl can build a special script for a given amount
+    of ranks. Use mpirun to start the test:
+      -  ./make_test_relay.pl  > test_relay.xml
+      -  mpirun  -H localhost -n 9 ./ptl_test -f test_relay.xml 
 
 Limitations:
 - A program may not open more than one NID in its lifetime.
-- There is a hardcoded limit of 200 nods with 10 ranks each.
-- If mpirun is started on a node not part of the cluster, then
-  PORTALS4_MASTER_NID must be set to indicate which node will host the
-  master control process.
-
