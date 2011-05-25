@@ -149,7 +149,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	init_attr.srq = ni->srq;
 	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
 
-	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
 		return PTL_FAIL;
 	}
@@ -242,7 +242,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 				    get_param(PTL_MAX_RDMA_WR_OUT);
 	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
 
-	if (rdma_create_qp(event->id, NULL, &init_attr)) {
+	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
 		return PTL_FAIL;
 	}
@@ -482,7 +482,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		pthread_mutex_lock(&conn->mutex);
 
-		if (rdma_create_qp(conn->cm_id, NULL, &init)) {
+		if (rdma_create_qp(conn->cm_id, ni->iface->pd, &init)) {
 			WARN();
 			//todo
 			abort();
@@ -513,10 +513,10 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 			/* If we have private data, it's that side asked for the
 			 * connection (as opposed to accepting an incoming
 			 * request). */
+#ifdef USE_XRC
 			const struct cm_priv_accept *priv_accept = event->param.conn.private_data;
 			struct rank_entry *entry = container_of(conn, struct rank_entry, connect);
 
-#ifdef USE_XRC
 			/* Should not be set yet. */
 			assert(entry->remote_xrc_srq_num == 0);
 

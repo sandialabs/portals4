@@ -220,7 +220,9 @@ static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
 
 static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 {
+#ifdef USE_XRC
 	ni_t *ni = to_ni(xi);
+#endif
 
 	xi->dest.qp = connect->cm_id->qp;
 #ifdef USE_XRC
@@ -231,7 +233,9 @@ static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 
 static inline void set_xt_dest(xt_t *xt, conn_t *connect)
 {
+#ifdef USE_XRC
 	ni_t *ni = to_ni(xt);
+#endif
 
 	xt->dest.qp = connect->cm_id->qp;
 #ifdef USE_XRC

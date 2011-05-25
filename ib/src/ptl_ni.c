@@ -237,7 +237,14 @@ static int bind_iface(iface_t *iface, unsigned int port)
 
 	iface->sin.sin_port = rdma_get_src_port(iface->listen_id);
 
+#ifdef USE_XRC
 	rdma_query_id(iface->listen_id, &iface->ibv_context, &iface->pd);
+#else
+	iface->ibv_context = iface->listen_id->verbs;
+
+	iface->pd = ibv_alloc_pd(iface->ibv_context);
+#endif
+
 	if (iface->ibv_context == NULL || iface->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
 		goto err1;
