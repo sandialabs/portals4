@@ -522,9 +522,11 @@ static int tgt_wait_conn(xt_t *xt)
 	pthread_mutex_unlock(&conn->mutex);
 
 out2:
+#ifdef USE_XRC
 	if (conn->state == CONN_STATE_XRC_CONNECTED)
 		set_xt_dest(xt, conn->main_connect);
 	else
+#endif
 		set_xt_dest(xt, conn);
 
 out1:

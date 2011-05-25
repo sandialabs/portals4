@@ -208,9 +208,11 @@ static int wait_conn(xi_t *xi)
 	pthread_mutex_unlock(&conn->mutex);
 
 out:
+#ifdef USE_XRC
 	if (conn->state == CONN_STATE_XRC_CONNECTED)
 		set_xi_dest(xi, conn->main_connect);
 	else
+#endif
 		set_xi_dest(xi, conn);
 
 	return STATE_INIT_SEND_REQ;

@@ -43,6 +43,12 @@ AC_ARG_ENABLE([arg-checking],
 AS_IF([test "x$enable_arg_checking" == xno],
       [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 
+# Whether to use XRC or not. If RC is selected then they are used like
+# an XRC qp (ie. half-duplex connection). This is a temporary mesure.
+AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])
+AS_IF([test "x$enable_xrc" == xyes],
+      [AC_DEFINE([USE_XRC], [1], [Define to use XRC instead of RC])])
+
 # Checks for libraries.
 AC_CHECK_LIB(ev, ev_loop_new,,AC_MSG_ERROR([libev not found.])) 
 

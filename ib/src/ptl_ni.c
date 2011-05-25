@@ -117,8 +117,11 @@ static void ni_rcqp_stop(ni_t *ni)
 			conn_t *connect = &ni->logical.rank_table[i].connect;
 		
 			pthread_mutex_lock(&connect->mutex);
-			if (connect->state != CONN_STATE_DISCONNECTED &&
-			    connect->state != CONN_STATE_XRC_CONNECTED) {
+			if (connect->state != CONN_STATE_DISCONNECTED
+#ifdef USE_XRC
+				&& connect->state != CONN_STATE_XRC_CONNECTED
+#endif
+				) {
 				rdma_disconnect(connect->cm_id);
 			}
 			pthread_mutex_unlock(&connect->mutex);
@@ -176,11 +179,14 @@ static int init_ib_srq(ni_t *ni)
 	srq_init_attr.attr.max_sge = 1;
 	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
 
+#ifdef USE_XRC
 	if (ni->options & PTL_NI_LOGICAL) {
 		/* Create XRC SRQ. */
 		ni->srq = ibv_create_xrc_srq(iface->pd, ni->logical.xrc_domain,
 					     ni->cq, &srq_init_attr);
-	} else {
+	} else
+#endif
+	{
 		/* Create regular SRQ. */
 		ni->srq = ibv_create_srq(iface->pd, &srq_init_attr);
 	}
@@ -257,6 +263,7 @@ static int cleanup_ib(ni_t *ni)
 		ni->srq = NULL;
 	}
 
+#ifdef USE_XRC
 	if (ni->logical.xrc_domain_fd != -1) {
 		close(ni->logical.xrc_domain_fd);
 		ni->logical.xrc_domain_fd = -1;
@@ -266,6 +273,7 @@ static int cleanup_ib(ni_t *ni)
 		ibv_close_xrc_domain(ni->logical.xrc_domain);
 		ni->logical.xrc_domain = NULL;
 	}
+#endif
 
 	if (ni->cq) {
 		ibv_destroy_cq(ni->cq);
@@ -536,8 +544,10 @@ static int create_tables(ni_t *ni, ptl_size_t map_size,
 			curr_nid = entry->nid;
 			main_rank = entry->rank;
 
+#ifdef USE_XRC
 			if (ni->id.rank == main_rank)
 				ni->logical.is_main = 1;
+#endif
 		}
 
 		entry->main_rank = main_rank;
@@ -550,6 +560,7 @@ static int create_tables(ni_t *ni, ptl_size_t map_size,
 	return PTL_OK;
 }
 
+#ifdef USE_XRC
 /* If this rank is the main one on the NID, create the domain, else
  * attach to an existing one. */
 static int get_xrc_domain(ni_t *ni)
@@ -614,6 +625,7 @@ static int get_xrc_domain(ni_t *ni)
 
 	return PTL_OK;
 }
+#endif
 
 /*
  * init_mapping
@@ -666,12 +678,14 @@ static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
 		return err;
 	}
 
+#ifdef USE_XRC
 	/* Retrieve the XRC domain name. */
 	err = get_xrc_domain(ni);
 	if (err) {
 		WARN();
 		return err;
 	}
+#endif
 
 	return PTL_OK;
 }
@@ -788,7 +802,9 @@ int PtlNIInit(ptl_interface_t iface_id,
 	ni->options = options;
 	ni->last_pt = -1;
 	ni->gbl = gbl;
+#ifdef USE_XRC
 	ni->logical.xrc_domain_fd = -1;
+#endif
 	set_limits(ni, desired);
 	ni->uid = geteuid();
 	INIT_LIST_HEAD(&ni->md_list);

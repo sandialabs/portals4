@@ -14,7 +14,9 @@ enum {
 	CONN_STATE_RESOLVING_ROUTE,
 	CONN_STATE_CONNECTING,
 	CONN_STATE_CONNECTED,
+#ifdef USE_XRC
 	CONN_STATE_XRC_CONNECTED,
+#endif
 };
 
 /*
@@ -37,7 +39,9 @@ typedef struct conn {
 
 	/* logical NI only */
 	struct list_head	list;
+#ifdef USE_XRC
 	struct conn		*main_connect;
+#endif
 } conn_t;
 
 /* RDMA CM private data */
@@ -55,11 +59,15 @@ struct cm_priv_request {
 
 struct cm_priv_reject {
 	uint32_t		reason;
+#ifdef USE_XRC
 	uint32_t		xrc_srq_num;
+#endif
 };
 
 struct cm_priv_accept {
+#ifdef USE_XRC
 	uint32_t		xrc_srq_num;
+#endif
 };
 
 /*
