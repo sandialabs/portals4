@@ -15,7 +15,9 @@ typedef struct rank_entry {
 	ptl_rank_t		main_rank;		/* main rank on NID */
 	ptl_nid_t		nid;
 	ptl_pid_t		pid;
+#ifdef USE_XRC
 	uint32_t		remote_xrc_srq_num;
+#endif
 	conn_t			connect;
 } entry_t;
 
@@ -113,7 +115,9 @@ typedef struct ni {
 			 * the other PIDs will be rejected. Also, locally, the
 			 * XI/XT will not be queued on the non-main ranks, but on
 			 * the main rank. */
+#ifdef USE_XRC
 			int			is_main;
+#endif
 			int			main_rank;
 
 			/* Rank table. This is used to connection TO remote ranks */
@@ -125,10 +129,12 @@ typedef struct ni {
 			pthread_mutex_t		lock;
 			struct list_head	connect_list;
 
+#ifdef USE_XRC
 			/* IB XRC support. */
 			int			xrc_domain_fd;
 			struct ibv_xrc_domain	*xrc_domain;
 			uint32_t		xrc_rcv_qpn;
+#endif
 	
 		} logical;
 

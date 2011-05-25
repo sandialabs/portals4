@@ -154,6 +154,9 @@
 /* Define to 1 if strerror_r returns char *. */
 #undef STRERROR_R_CHAR_P
 
+/* Define to use XRC instead of RC */
+#undef USE_XRC
+
 /* Version number of package */
 #undef VERSION
 

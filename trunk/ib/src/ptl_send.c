@@ -20,7 +20,9 @@ int send_message(buf_t *buf)
 	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 	buf->sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
+#ifdef USE_XRC
 	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
+#endif
 
 	pthread_spin_lock(&ni->send_list_lock);
 	list_add_tail(&buf->list, &ni->send_list);

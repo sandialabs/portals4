@@ -132,11 +132,14 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	memset(&init_attr, 0, sizeof(init_attr));
 
+#ifdef USE_XRC
 	if (ni->options & PTL_NI_LOGICAL) {
 		init_attr.qp_type = IBV_QPT_XRC;
 		init_attr.xrc_domain = ni->logical.xrc_domain;
 		init_attr.cap.max_send_wr = 0;
-	} else {
+	} else
+#endif
+	{
 		init_attr.qp_type = IBV_QPT_RC;
 		init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 					    get_param(PTL_MAX_RDMA_WR_OUT);
@@ -162,7 +165,9 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		conn_param.private_data = &priv;
 		conn_param.private_data_len = sizeof(priv);
 
+#ifdef USE_XRC
 		priv.xrc_srq_num = ni->srq->xrc_srq_num;
+#endif
 	}
 
 	if (rdma_accept(event->id, &conn_param)) {
@@ -312,6 +317,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 	}
 
 	if (ni->options & PTL_NI_LOGICAL) {
+#ifdef USE_XRC
 		if (ni->logical.is_main) {
 			ret = accept_connection_request_logical(ni, event);
 			if (!ret) {
@@ -321,13 +327,22 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 			WARN();
 			rej.reason = REJECT_REASON_ERROR;
 			rej.xrc_srq_num = ni->srq->xrc_srq_num;
-
-		} else {
+		}
+		else {
 			/* If this is not the main process on this node, reject
 			 * the connection but give out SRQ number. */	
 			rej.reason = REJECT_REASON_GOOD_SRQ;
 			rej.xrc_srq_num = ni->srq->xrc_srq_num;
 		}
+#else
+		ret = accept_connection_request_logical(ni, event);
+		if (!ret) {
+			goto done;
+		}
+			
+		WARN();
+		rej.reason = REJECT_REASON_ERROR;
+#endif
 
 		goto reject;
 	}
@@ -451,11 +466,14 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.cap.max_send_sge		= get_param(PTL_MAX_INLINE_SGE);
 		init.cap.max_recv_sge		= 10;
 
+#ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL) {
 			init.qp_type			= IBV_QPT_XRC;
 			init.xrc_domain			= ni->logical.xrc_domain;
 			priv.src_id.rank		= ni->id.rank;
-		} else {
+		} else
+#endif
+		{
 			init.qp_type			= IBV_QPT_RC;
 			init.srq			= ni->srq;
 			priv.src_id			= conn->id;
@@ -498,10 +516,12 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 			const struct cm_priv_accept *priv_accept = event->param.conn.private_data;
 			struct rank_entry *entry = container_of(conn, struct rank_entry, connect);
 
+#ifdef USE_XRC
 			/* Should not be set yet. */
 			assert(entry->remote_xrc_srq_num == 0);
 
 			entry->remote_xrc_srq_num = priv_accept->xrc_srq_num;
+#endif
 
 			/* Flush the posted requests/replies. */
 			while(!list_empty(&conn->list)) {
@@ -547,6 +567,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		/* TODO: handle other reject cases. */
 		assert(rej->reason == REJECT_REASON_GOOD_SRQ);
 
+#ifdef USE_XRC
 		if ((conn->ni->options & PTL_NI_LOGICAL) &&
 			rej->reason == REJECT_REASON_GOOD_SRQ) {
 
@@ -592,6 +613,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 				pthread_spin_unlock(&main_connect->wait_list_lock);
 			}
 		}
+#endif
 
 		pthread_mutex_unlock(&conn->mutex);
 
