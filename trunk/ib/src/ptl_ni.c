@@ -721,6 +721,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 
 	iface = get_iface(gbl, iface_id);
 	if (unlikely(!iface)) {
+		err = PTL_NO_INIT;
 		WARN();
 		goto err1;
 	}
