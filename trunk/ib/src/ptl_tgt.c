@@ -30,7 +30,6 @@ static char *tgt_state_name[] = {
  */
 static int make_comm_event(xt_t *xt)
 {
-	int err = PTL_OK;
 	ptl_event_kind_t type;
 
 	if (xt->operation == OP_PUT)
@@ -46,14 +45,12 @@ static int make_comm_event(xt_t *xt)
 	}
 
 	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
-		err = make_target_event(xt, xt->pt->eq, type, xt->le->start+xt->moffset);
-		if (err)
-			WARN();
+		make_target_event(xt, xt->pt->eq, type, xt->le->start+xt->moffset);
 	}
 
 	xt->event_mask &= ~XT_COMM_EVENT;
 
-	return err;
+	return PTL_OK;
 }
 
 /*
@@ -1382,10 +1379,7 @@ static int tgt_cleanup(xt_t *xt)
 		xt->pt->enabled = 0;
 		xt->pt->disable &= ~PT_AUTO_DISABLE;
 		pthread_spin_unlock(&xt->pt->lock);
-		if (make_target_event(xt, xt->pt->eq,
-				      PTL_EVENT_PT_DISABLED, NULL))
-			WARN();
-	
+		make_target_event(xt, xt->pt->eq, PTL_EVENT_PT_DISABLED, NULL);
 	} else
 		pthread_spin_unlock(&xt->pt->lock);
 
