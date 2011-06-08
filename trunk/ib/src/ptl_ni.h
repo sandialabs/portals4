@@ -200,12 +200,12 @@ err:
 	return err;
 }
 
-static inline ptl_handle_ni_t ni_to_handle(ni_t *ni)
+static inline ptl_handle_ni_t ni_to_handle(const ni_t *ni)
 {
 	return (ptl_handle_ni_t)ni->obj.obj_handle;
 }
 
-static inline ni_t *to_ni(void *obj)
+static inline ni_t *to_ni(const void *obj)
 {
 	return obj ? ((obj_t *)obj)->obj_ni : NULL;
 }

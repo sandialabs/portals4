@@ -242,9 +242,9 @@ static int request_drop(xt_t *xt)
  * check_match
  *	determine if ME matches XT request info.
  */
-static int check_match(xt_t *xt)
+static int check_match(const xt_t *xt)
 {
-	ni_t *ni = to_ni(xt);
+	const ni_t *ni = to_ni(xt);
 	ptl_size_t offset;
 	ptl_size_t length;
 
@@ -277,7 +277,7 @@ static int check_match(xt_t *xt)
  * check_perm
  *	check permission on incoming request packet
  */
-static int check_perm(xt_t *xt)
+static int check_perm(const xt_t *xt)
 {
 	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
 		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
@@ -410,8 +410,8 @@ done:
  */
 static int tgt_get_length(xt_t *xt)
 {
-	ni_t *ni = to_ni(xt);
-	me_t *me = xt->me;
+	const ni_t *ni = to_ni(xt);
+	const me_t *me = xt->me;
 	ptl_size_t room;
 	ptl_size_t offset;
 	ptl_size_t length;
