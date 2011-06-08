@@ -359,7 +359,7 @@ void event_dump(ptl_event_t *ev)
 	printf("\n");
 }
 
-int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
+void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -402,11 +402,9 @@ int make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
 	if (debug) event_dump(ev);
-
-	return PTL_OK;
 }
 
-int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
+void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -449,6 +447,4 @@ int make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
 	if (debug) event_dump(ev);
-
-	return PTL_OK;
 }

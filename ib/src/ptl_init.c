@@ -22,57 +22,42 @@ static char *init_state_name[] = {
 	[STATE_INIT_DONE]		= "init_done",
 };
 
-static int make_send_event(xi_t *xi)
+static void make_send_event(xi_t *xi)
 {
-	int err = PTL_OK;
 	md_t *md = xi->put_md;
 	eq_t *eq = md->eq;
 
 	/* note: mlength and rem offset may or may not contain valid
 	 * values depending on whether we have seen an ack/reply or not */
 	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		err = make_init_event(xi, eq, PTL_EVENT_SEND, NULL);
-		if (err)
-			WARN();
+		make_init_event(xi, eq, PTL_EVENT_SEND, NULL);
 	}
 
 	xi->event_mask &= ~XI_SEND_EVENT;
-
-	return err;
 }
 
-static int make_ack_event(xi_t *xi)
+static void make_ack_event(xi_t *xi)
 {
-	int err = PTL_OK;
 	md_t *md = xi->put_md;
 	eq_t *eq = md->eq;
 	
 	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		err = make_init_event(xi, eq, PTL_EVENT_ACK, NULL);
-		if (err)
-			WARN();
+		make_init_event(xi, eq, PTL_EVENT_ACK, NULL);
 	}
 
 	xi->event_mask &= ~XI_ACK_EVENT;
-
-	return err;
 }
 
-static int make_reply_event(xi_t *xi)
+static void make_reply_event(xi_t *xi)
 {
-	int err = PTL_OK;
 	md_t *md = xi->get_md;
 	eq_t *eq = md->eq;
 	
 	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		err = make_init_event(xi, eq, PTL_EVENT_REPLY, NULL);
-		if (err)
-			WARN();
+		make_init_event(xi, eq, PTL_EVENT_REPLY, NULL);
 	}
 
 	xi->event_mask &= ~XI_REPLY_EVENT;
-
-	return err;
 }
 
 static inline void make_ct_send_event(xi_t *xi)
