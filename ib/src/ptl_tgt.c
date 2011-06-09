@@ -239,49 +239,49 @@ static int request_drop(xt_t *xt)
  * check_match
  *	determine if ME matches XT request info.
  */
-static int check_match(const xt_t *xt)
+static int check_match(const xt_t *xt, const me_t *me)
 {
 	const ni_t *ni = to_ni(xt);
 	ptl_size_t offset;
 	ptl_size_t length;
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		if (!(xt->me->id.rank == PTL_RANK_ANY ||
-		     (xt->me->id.rank == xt->initiator.rank)))
+		if (!(me->id.rank == PTL_RANK_ANY ||
+		     (me->id.rank == xt->initiator.rank)))
 			return 0;
 	} else {
-		if (!(xt->me->id.phys.nid == PTL_NID_ANY ||
-		     (xt->me->id.phys.nid == xt->initiator.phys.nid)))
+		if (!(me->id.phys.nid == PTL_NID_ANY ||
+		     (me->id.phys.nid == xt->initiator.phys.nid)))
 			return 0;
-		if (!(xt->me->id.phys.pid == PTL_PID_ANY ||
-		     (xt->me->id.phys.pid == xt->initiator.phys.pid)))
+		if (!(me->id.phys.pid == PTL_PID_ANY ||
+		     (me->id.phys.pid == xt->initiator.phys.pid)))
 			return 0;
 	}
 
 	length = xt->rlength;
-	offset = (xt->me->options & PTL_ME_MANAGE_LOCAL) ?
-			xt->me->offset : xt->roffset;
+	offset = (me->options & PTL_ME_MANAGE_LOCAL) ?
+			me->offset : xt->roffset;
 
-	if ((xt->me->options & PTL_ME_NO_TRUNCATE) &&
-	    ((offset + length) > xt->me->length))
+	if ((me->options & PTL_ME_NO_TRUNCATE) &&
+	    ((offset + length) > me->length))
 			return 0;
 
-	return (xt->match_bits | xt->me->ignore_bits) ==
-		(xt->me->match_bits | xt->me->ignore_bits);
+	return (xt->match_bits | me->ignore_bits) ==
+		(me->match_bits | me->ignore_bits);
 }
 
 /*
  * check_perm
  *	check permission on incoming request packet
  */
-static int check_perm(const xt_t *xt)
+static int check_perm(const xt_t *xt, const le_t *le)
 {
-	if (xt->le->options & PTL_ME_AUTH_USE_JID) {
-		if (!(xt->le->jid == PTL_JID_ANY || (xt->le->jid == xt->jid))) {
+	if (le->options & PTL_ME_AUTH_USE_JID) {
+		if (!(le->jid == PTL_JID_ANY || (le->jid == xt->jid))) {
 			WARN();
 			goto no_perm;
 		}
-		if (!(xt->le->uid == PTL_UID_ANY || (xt->le->uid == xt->uid))) {
+		if (!(le->uid == PTL_UID_ANY || (le->uid == xt->uid))) {
 			WARN();
 			goto no_perm;
 		}
@@ -290,14 +290,14 @@ static int check_perm(const xt_t *xt)
 	switch (xt->operation) {
 	case OP_ATOMIC:
 	case OP_PUT:
-		if (!(xt->le->options & PTL_ME_OP_PUT)) {
+		if (!(le->options & PTL_ME_OP_PUT)) {
 			WARN();
 			goto no_perm;
 		}
 		break;
 
 	case OP_GET:
-		if (!(xt->le->options & PTL_ME_OP_GET)) {
+		if (!(le->options & PTL_ME_OP_GET)) {
 			WARN();
 			goto no_perm;
 		}
@@ -305,7 +305,7 @@ static int check_perm(const xt_t *xt)
 
 	case OP_FETCH:
 	case OP_SWAP:
-		if ((xt->le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
+		if ((le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
 		    != (PTL_ME_OP_PUT | PTL_ME_OP_GET)) {
 			WARN();
 			goto no_perm;
@@ -354,8 +354,8 @@ static int tgt_get_match(xt_t *xt)
 			goto done;
 		}
 
-		if (check_match(xt)) {
-			me_ref((me_t *)xt->le);
+		if (check_match(xt, xt->me)) {
+			me_ref(xt->me);
 			goto done;
 		}
 	}
@@ -367,8 +367,8 @@ static int tgt_get_match(xt_t *xt)
 			goto done;
 		}
 
-		if (check_match(xt)) {
-			me_ref((me_t *)xt->le);
+		if (check_match(xt, xt->me)) {
+			me_ref(xt->me);
 			goto done;
 		}
 	}
@@ -380,7 +380,7 @@ static int tgt_get_match(xt_t *xt)
 	return STATE_TGT_DROP;
 
 done:
-	if (check_perm(xt)) {
+	if (check_perm(xt, xt->le)) {
 		pthread_spin_unlock(&xt->pt->lock);
 		if (xt->le->type == TYPE_LE)
 			le_put(xt->le);
