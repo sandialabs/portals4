@@ -8,7 +8,7 @@
  * me_init
  *	initialize new me
  */
-int me_init(void *arg)
+int me_init(void *arg, void *unused)
 {
 	me_t *me = arg;
 

@@ -8,7 +8,7 @@
  * le_init
  *	initialize new le
  */
-int le_init(void *arg)
+int le_init(void *arg, void *unused)
 {
 	le_t *le = arg;
 

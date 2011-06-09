@@ -408,7 +408,7 @@ static int init_pools(ni_t *ni)
 	ni->mr_pool.free = mr_release;
 
 	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
-			POOL_MR, (obj_t *)ni);
+					POOL_MR, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -417,34 +417,38 @@ static int init_pools(ni_t *ni)
 	ni->md_pool.free = md_release;
 
 	err = pool_init(&ni->md_pool, "md", sizeof(md_t),
-			POOL_MD, (obj_t *)ni);
+					POOL_MD, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
 	}
 
-	ni->me_pool.free = me_release;
+	if (ni->options & PTL_NI_MATCHING) {
+		ni->me_pool.init = me_init;
+		ni->me_pool.free = me_release;
 
-	err = pool_init(&ni->me_pool, "me", sizeof(me_t),
-			POOL_ME, (obj_t *)ni);
-	if (err) {
-		WARN();
-		return err;
-	}
+		err = pool_init(&ni->me_pool, "me", sizeof(me_t),
+						POOL_ME, (obj_t *)ni);
+		if (err) {
+			WARN();
+			return err;
+		}
+	} else {
+		ni->le_pool.free = le_release;
+		ni->le_pool.init = le_init;
 
-	ni->le_pool.free = le_release;
-
-	err = pool_init(&ni->le_pool, "le", sizeof(le_t),
-			POOL_LE, (obj_t *)ni);
-	if (err) {
-		WARN();
-		return err;
+		err = pool_init(&ni->le_pool, "le", sizeof(le_t),
+						POOL_LE, (obj_t *)ni);
+		if (err) {
+			WARN();
+			return err;
+		}
 	}
 
 	ni->eq_pool.free = eq_release;
 
 	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
-			POOL_EQ, (obj_t *)ni);
+					POOL_EQ, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -453,7 +457,7 @@ static int init_pools(ni_t *ni)
 	ni->ct_pool.free = ct_release;
 
 	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
-			POOL_CT, (obj_t *)ni);
+					POOL_CT, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -466,7 +470,7 @@ static int init_pools(ni_t *ni)
 	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
 
 	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
-			POOL_XI, (obj_t *)ni);
+					POOL_XI, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -477,7 +481,7 @@ static int init_pools(ni_t *ni)
 	ni->xt_pool.alloc = xt_new;
 
 	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
-			POOL_XT, (obj_t *)ni);
+					POOL_XT, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -488,7 +492,7 @@ static int init_pools(ni_t *ni)
 	ni->buf_pool.segment_size = 128*1024;
 
 	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t),
-			POOL_BUF, (obj_t *)ni);
+					POOL_BUF, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;

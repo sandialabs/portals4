@@ -285,7 +285,7 @@ void obj_release(ref_t *ref)
 int obj_alloc(pool_t *pool, obj_t **p_obj)
 {
 	int err;
-        obj_t *obj;
+	obj_t *obj;
 	struct list_head *l;
 	unsigned int index = 0;
 	struct timespec timeout;
@@ -342,7 +342,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	ref_init(&obj->obj_ref);
 
-        pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	/*
 	 * if any type specific per allocation initialization do it
@@ -359,7 +359,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	obj->obj_free = 0;
 	*p_obj = obj;
 
-        return PTL_OK;
+	return PTL_OK;
 }
 
 /*
