@@ -92,6 +92,6 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le);
 
 int le_append_pt(ni_t *ni, le_t *le);
 
-void le_unlink(le_t *le);
+void le_unlink(le_t *le, int send_event);
 
 #endif /* PTL_LE_H */

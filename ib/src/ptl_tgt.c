@@ -16,11 +16,13 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
 	[STATE_TGT_DATA_OUT]		= "tgt_data_out",
 	[STATE_TGT_RDMA_DESC]		= "tgt_rdma_desc",
-	[STATE_TGT_UNLINK]	        = "tgt_unlink",
 	[STATE_TGT_SEND_ACK]		= "tgt_send_ack",
 	[STATE_TGT_SEND_REPLY]		= "tgt_send_reply",
 	[STATE_TGT_COMM_EVENT]		= "tgt_comm_event",
+	[STATE_TGT_OVERFLOW_EVENT]	= "tgt_overflow_event",
+	[STATE_TGT_WAIT_APPEND]		= "tgt_wait_append",
 	[STATE_TGT_CLEANUP]		= "tgt_cleanup",
+	[STATE_TGT_CLEANUP_2]		= "tgt_cleanup_2",
 	[STATE_TGT_ERROR]		= "tgt_error",
 	[STATE_TGT_DONE]		= "tgt_done",
 };
@@ -272,7 +274,7 @@ static int check_match(const xt_t *xt, const me_t *me)
 
 /*
  * check_perm
- *	check permission on incoming request packet
+ *	check permission on incoming request packet against ME/LE
  */
 static int check_perm(const xt_t *xt, const le_t *le)
 {
@@ -382,20 +384,16 @@ static int tgt_get_match(xt_t *xt)
 done:
 	if (check_perm(xt, xt->le)) {
 		pthread_spin_unlock(&xt->pt->lock);
-		if (xt->le->type == TYPE_LE)
-			le_put(xt->le);
-		else
-			me_put(xt->me);
-
+		le_put(xt->le);
 		xt->le = NULL;
 
 		xt->ni_fail = PTL_NI_PERM_VIOLATION;
 		return STATE_TGT_DROP;
 	}
 
-	/* save the header */
-	if (xt->le->ptl_list == PTL_OVERFLOW)
+	if (xt->le->ptl_list == PTL_OVERFLOW) {
 		list_add(&xt->unexpected_list, &xt->le->pt->unexpected_list);
+	}
 
 	pthread_spin_unlock(&xt->pt->lock);
 	return STATE_TGT_GET_LENGTH;
@@ -408,7 +406,7 @@ done:
 static int tgt_get_length(xt_t *xt)
 {
 	const ni_t *ni = to_ni(xt);
-	const me_t *me = xt->me;
+	me_t *me = xt->me;
 	ptl_size_t room;
 	ptl_size_t offset;
 	ptl_size_t length;
@@ -461,6 +459,26 @@ static int tgt_get_length(xt_t *xt)
 	xt->moffset = offset;
 
 	init_events(xt);
+
+	/*
+	 * If locally managed update to reserve space for the
+	 * associated RDMA data.
+	 */
+	if (me->options & PTL_ME_MANAGE_LOCAL)
+		me->offset += length;
+
+	/*
+	 * Unlink if required to prevent further use of this
+	 * ME/LE.
+	 */
+	if ((me->options & PTL_ME_USE_ONCE) ||
+		((me->options & PTL_ME_MANAGE_LOCAL) &&
+		 ((me->length - me->offset) < me->min_free))) {
+		if (me->type == TYPE_ME)
+			me_unlink(xt->me, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
+		else
+			le_unlink(xt->le, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
+	}
 
 	return STATE_TGT_WAIT_CONN;
 }
@@ -535,14 +553,6 @@ out1:
 						    : STATE_TGT_DATA_IN;
 
 	return STATE_TGT_COMM_EVENT;
-}
-
-static void tgt_unlink(xt_t *xt)
-{
-	if (xt->me->type == TYPE_ME)
-		me_unlink(xt->me);
-	else
-		le_unlink(xt->le);
 }
 
 static int tgt_alloc_rdma_buf(xt_t *xt)
@@ -621,7 +631,6 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 
 static int tgt_data_out(xt_t *xt)
 {
-	me_t *me = xt->me;
 	data_t *data = xt->data_out;
 	int next;
 
@@ -656,22 +665,6 @@ static int tgt_data_out(xt_t *xt)
 		return STATE_TGT_ERROR;
 		break;
 	}
-
-	/*
-	 * If locally managed update to reserve space for the
-	 * associated RDMA data.
-	 */
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += xt->mlength;
-
-	/*
-	 * Unlink if required to prevent further use of this
-	 * ME/LE.
-	 */
-	if ((me->options & PTL_ME_USE_ONCE) ||
-	    ((me->options & PTL_ME_MANAGE_LOCAL) &&
-	    ((me->length - me->offset) < me->min_free)))
-		tgt_unlink(xt);
 
 	return next;
 }
@@ -846,24 +839,6 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_ERROR;
 	}
 
-	/*
-	 * If locally managed update to reserve space for the
-	 * associated RDMA data.
-	 */
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += xt->mlength;
-// TODO double counting for SWAP/FETCH fix me
-
-	/*
-	 * Unlink if required to prevent further use of this
-	 * ME/LE.
-	 */
-	if (me->options & PTL_ME_USE_ONCE)
-		tgt_unlink(xt);
-	else if  ((me->options & PTL_ME_MANAGE_LOCAL) &&
-	    ((me->length - me->offset) < me->min_free))
-		tgt_unlink(xt);
-
 	return next;
 }
 
@@ -892,16 +867,6 @@ static int tgt_atomic_data_in(xt_t *xt)
 	err = atomic_in(xt, me, data->data);
 	if (err)
 		return STATE_TGT_ERROR;
-
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += xt->mlength;
-
-	if (me->options & PTL_ME_USE_ONCE)
-		return STATE_TGT_UNLINK;
-
-	if ((me->options & PTL_ME_MANAGE_LOCAL) &&
-	    ((me->length - me->offset) < me->min_free))
-		return STATE_TGT_UNLINK;
 
 	return STATE_TGT_COMM_EVENT;
 }
@@ -1217,16 +1182,6 @@ static int tgt_swap_data_in(xt_t *xt)
 	if (err)
 		return STATE_TGT_ERROR;
 
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += xt->mlength;
-
-	if (me->options & PTL_ME_USE_ONCE)
-		return STATE_TGT_UNLINK;
-
-	if ((me->options & PTL_ME_MANAGE_LOCAL) &&
-	    ((me->length - me->offset) < me->min_free))
-		return STATE_TGT_UNLINK;
-
 	return STATE_TGT_COMM_EVENT;
 }
 
@@ -1344,12 +1299,21 @@ static int tgt_send_reply(xt_t *xt)
 
 static int tgt_cleanup(xt_t *xt)
 {
+	int state;
+
+	if (xt->matching.le) {
+		/* On the overflow list, and was already matched by an
+		 * ME/LE. */
+		assert(xt->le->ptl_list == PTL_OVERFLOW);
+		state = STATE_TGT_OVERFLOW_EVENT;
+	} else if (xt->le && xt->le->ptl_list == PTL_OVERFLOW)
+		state = STATE_TGT_WAIT_APPEND;
+	else
+		state = STATE_TGT_CLEANUP_2;
+
 	/* tgt must release reference to any LE/ME */
 	if (xt->le) {
-		if (xt->le->type == TYPE_ME)
-			me_put(xt->me);
-		else
-			le_put(xt->le);
+		le_put(xt->le);
 		xt->le = NULL;
 	}
 
@@ -1373,7 +1337,6 @@ static int tgt_cleanup(xt_t *xt)
 	}
 
 	pthread_spin_lock(&xt->pt->lock);
-	list_del(&xt->unexpected_list);
 	xt->pt->num_xt_active--;
 	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
 		xt->pt->enabled = 0;
@@ -1383,8 +1346,42 @@ static int tgt_cleanup(xt_t *xt)
 	} else
 		pthread_spin_unlock(&xt->pt->lock);
 
+	return state;
+}
+
+static int tgt_cleanup_2(xt_t *xt)
+{
 	xt_put(xt);
+
 	return STATE_TGT_DONE;
+}
+
+
+static int tgt_overflow_event(xt_t *xt)
+{
+	assert(xt->le == NULL);
+	assert(xt->matching.le);
+
+	// TODO: start address
+	make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, NULL);
+
+	le_put(xt->matching.le);
+	xt->matching.le = NULL;
+
+	return STATE_TGT_CLEANUP_2;
+}
+
+/* The XT is on the overflow list and waiting for a ME/LE search/append. */
+static int tgt_wait_append(xt_t *xt)
+{
+	int state;
+
+	if (xt->matching.le)
+		state = STATE_TGT_OVERFLOW_EVENT;
+	else
+		state = STATE_TGT_WAIT_APPEND;
+
+	return state;
 }
 
 /*
@@ -1472,10 +1469,6 @@ int process_tgt(xt_t *xt)
 			case STATE_TGT_DATA_OUT:
 				state = tgt_data_out(xt);
 				break;
-			case STATE_TGT_UNLINK:
-				tgt_unlink(xt);
-				state = STATE_TGT_COMM_EVENT;
-				break;
 			case STATE_TGT_COMM_EVENT:
 				state = tgt_comm_event(xt);
 				break;
@@ -1492,8 +1485,19 @@ int process_tgt(xt_t *xt)
 			case STATE_TGT_DROP:
 				state = request_drop(xt);
 				break;
+			case STATE_TGT_OVERFLOW_EVENT:
+				state = tgt_overflow_event(xt);
+				break;
+			case STATE_TGT_WAIT_APPEND:
+				state = tgt_wait_append(xt);
+				if (state == STATE_TGT_WAIT_APPEND)
+					goto exit;
+				break;
 			case STATE_TGT_CLEANUP:
 				state = tgt_cleanup(xt);
+				break;
+			case STATE_TGT_CLEANUP_2:
+				state = tgt_cleanup_2(xt);
 				break;
 			case STATE_TGT_ERROR:
 				tgt_cleanup(xt);
@@ -1510,4 +1514,59 @@ exit:
 	} while(xt->state_again);
 
 	return err;
+}
+
+/* Check whether that LE/ME matches one or more XT on the unexpected
+ * list. Return true is at least one XT was processed..
+ */
+int check_overflow(le_t *le)
+{
+	xt_t *xt;
+	xt_t *n;
+	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
+	struct list_head xt_list;
+	int ret;
+	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
+
+	INIT_LIST_HEAD(&xt_list);
+
+	/* Check this new LE against the overflowlist. */
+	pthread_spin_lock(&pt->lock);
+
+	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
+
+		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+			list_del(&xt->unexpected_list);
+			list_add_tail(&xt->unexpected_list, &xt_list);
+
+			if (le->options & PTL_LE_USE_ONCE)
+				break;
+		}
+	}
+
+	pthread_spin_unlock(&pt->lock);
+
+	ret = !list_empty(&xt_list);
+
+	list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
+		int err;
+
+		pthread_spin_lock(&xt->state_lock);
+
+		xt->matching.le = le;
+
+		le_ref(le);
+
+		assert(xt->state == STATE_TGT_WAIT_APPEND);
+
+		list_del(&xt->unexpected_list);
+
+		pthread_spin_unlock(&xt->state_lock);
+
+		err = process_tgt(xt);
+		if (err)
+			WARN();
+	}
+
+	return ret;
 }

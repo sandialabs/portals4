@@ -152,10 +152,19 @@ typedef struct xt {
 	ptl_handle_xi_t		xi_handle;
 	ptl_process_t		initiator;
 	pt_t			*pt;
+
+	/* ME/LE used to process this XT. */
 	union {
 		le_t			*le;
 		me_t			*me;
 	};
+
+	/* If the XT is on the overflow list, and a matching PtlMEAppend
+	 * occurs while being processed, remember which one matches. */
+	union {
+		le_t			*le;
+		me_t			*me;
+	} matching;
 
 	/* This xt is waiting for connection to be established. */
 	struct list_head	connect_pending_list;

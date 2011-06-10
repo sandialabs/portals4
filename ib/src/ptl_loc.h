@@ -163,11 +163,13 @@ enum {
 	STATE_TGT_RDMA_WAIT_DESC,
 	STATE_TGT_SHORT_DATA_IN,
 	STATE_TGT_SHORT_DATA_OUT,
-	STATE_TGT_UNLINK,
 	STATE_TGT_SEND_ACK,
 	STATE_TGT_SEND_REPLY,
 	STATE_TGT_COMM_EVENT,
+	STATE_TGT_WAIT_APPEND,
+	STATE_TGT_OVERFLOW_EVENT,
 	STATE_TGT_CLEANUP,
+	STATE_TGT_CLEANUP_2,
 	STATE_TGT_ERROR,
 	STATE_TGT_DONE,
 };
@@ -239,5 +241,7 @@ void process_recv(EV_P_ ev_io *w, int revents);
 int process_init(xi_t *xi);
 
 int process_tgt(xt_t *xt);
+
+int check_overflow(le_t *le);
 
 #endif /* PTL_LOC_H */

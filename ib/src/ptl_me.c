@@ -34,9 +34,9 @@ void me_release(void *arg)
  *	called to unlink the ME entr for the PT list and remove
  *	the reference held by the PT list.
  */
-void me_unlink(me_t *me)
+void me_unlink(me_t *me, int send_event)
 {
-        pt_t *pt = me->pt;
+	pt_t *pt = me->pt;
 
 	if (pt) {
 		pthread_spin_lock(&pt->lock);
@@ -46,11 +46,15 @@ void me_unlink(me_t *me)
 			pt->overflow_size--;
 		list_del_init(&me->list);
 		pthread_spin_unlock(&pt->lock);
+
+		if (send_event)
+			make_le_event((le_t *)me, me->pt->eq, PTL_EVENT_AUTO_UNLINK);
+
 		me->pt = NULL;
+
 		me_put(me);
 	} else
 		WARN();
-
 }
 
 /*
@@ -162,6 +166,21 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 		goto err3;
 	}
 
+	if (ptl_list == PTL_PRIORITY_LIST) {
+		if (check_overflow((le_t *)me)) {
+			/* Some XT were processed. */
+			if (me->options & PTL_ME_USE_ONCE) {
+				if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+					make_le_event((le_t *)me, ni->pt[me->pt_index].eq, PTL_EVENT_AUTO_UNLINK);
+				}
+				*me_handle = me_to_handle(me);
+				me_put(me);
+
+				goto done;
+			}
+		}
+	}
+
 	err = le_append_pt(ni, (le_t *)me);
 	if (unlikely(err)) {
 		WARN();
@@ -170,6 +189,7 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 
 	*me_handle = me_to_handle(me);
 
+ done:
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
@@ -205,7 +225,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 		goto err1;
 	}
 
-	me_unlink(me);
+	me_unlink(me, 0);
 
 	me_put(me);
 	gbl_put(gbl);

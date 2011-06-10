@@ -426,11 +426,52 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	ev->mlength		= xt->mlength;
 	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
-	ev->user_ptr		=  xt->le ? xt->le->user_ptr : NULL;
+	if (xt->le)
+		ev->user_ptr = xt->le->user_ptr;
+	else if (xt->matching.le)
+		ev->user_ptr = xt->matching.le->user_ptr;
+	else
+		/* Note: can that case happen ? */
+		ev->user_ptr = NULL;
 	ev->hdr_data		= xt->hdr_data;
 	ev->ni_fail_type	= xt->ni_fail;
 	ev->atomic_operation	= xt->atom_op;
 	ev->atomic_type		= xt->atom_type;
+
+	eq->producer++;
+	if (eq->producer >= eq->count) {
+		eq->producer = 0;
+		eq->prod_gen++;
+	}
+	pthread_spin_unlock(&eq->obj.obj_lock);
+
+	/* Handle case where waiters have blocked */
+	ni = to_ni(eq);
+	pthread_mutex_lock(&ni->eq_wait_mutex);
+	if (ni->eq_waiting)
+		pthread_cond_broadcast(&ni->eq_wait_cond);
+	pthread_mutex_unlock(&ni->eq_wait_mutex);
+
+	if (debug) event_dump(ev);
+}
+
+/* Makes an LE/ME event */
+void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type)
+{
+	ptl_event_t *ev;
+	ni_t *ni;
+
+	pthread_spin_lock(&eq->obj.obj_lock);
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+		eq->overflow = 1;
+
+	eq->eqe_list[eq->producer].generation = eq->prod_gen;
+	ev = &eq->eqe_list[eq->producer].event;
+
+	ev->type = type;
+	ev->pt_index = le->pt_index;
+	ev->user_ptr = le->user_ptr;
+	ev->ni_fail_type = PTL_NI_OK; /* may become a parameter */
 
 	eq->producer++;
 	if (eq->producer >= eq->count) {
