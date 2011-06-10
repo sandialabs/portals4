@@ -115,8 +115,12 @@ static int copy_in(xt_t *xt, me_t *me, void *data)
 			WARN();
 			return STATE_TGT_ERROR;
 		}
-	} else
-		memcpy(me->start + offset, data, length);
+
+		xt->start = 0x123;
+	} else {
+		xt->start = me->start + offset;
+		memcpy(xt->start, data, length);
+	}
 
 	return PTL_OK;
 }
@@ -618,8 +622,12 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 
 		xt->cur_loc_iov_index = i;
 		xt->cur_loc_iov_off = iov_offset;
+
+		/* This has no meaning. Spec needs fixing. */
+		xt->start = 0x123;
 	} else {
 		xt->cur_loc_iov_off = xt->moffset;
+		xt->start = me->start + xt->moffset;
 	}
 
 	if (debug)
@@ -1362,8 +1370,7 @@ static int tgt_overflow_event(xt_t *xt)
 	assert(xt->le == NULL);
 	assert(xt->matching.le);
 
-	// TODO: start address
-	make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, NULL);
+	make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->start);
 
 	le_put(xt->matching.le);
 	xt->matching.le = NULL;

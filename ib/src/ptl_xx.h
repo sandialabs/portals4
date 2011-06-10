@@ -176,6 +176,8 @@ typedef struct xt {
 
 	struct ibv_sge		*indir_sge;
 	mr_t			*indir_mr;
+
+	void *start;
 } xt_t;
 
 int xt_init(void *arg, void *parm);
