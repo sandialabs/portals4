@@ -64,6 +64,6 @@ static inline ptl_handle_me_t me_to_handle(me_t *me)
         return (ptl_handle_me_t)me->obj.obj_handle;
 }
 
-void me_unlink(me_t *me);
+void me_unlink(me_t *me, int send_event);
 
 #endif /* PTL_ME_H */

@@ -64,7 +64,7 @@ void le_release(void *arg)
  *	called to unlink the entry from the PT list and remove
  *	the reference held by the PT list.
  */
-void le_unlink(le_t *le)
+void le_unlink(le_t *le, int send_event)
 {
 	pt_t *pt = le->pt;
 
@@ -76,6 +76,10 @@ void le_unlink(le_t *le)
 			pt->overflow_size--;
 		list_del_init(&le->list);
 		pthread_spin_unlock(&pt->lock);
+
+		if (send_event)
+			make_le_event(le, le->pt->eq, PTL_EVENT_AUTO_UNLINK);
+
 		le->pt = NULL;
 		le_put(le);
 	} else
@@ -297,7 +301,7 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		goto err1;
 
 	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
-			      ptl_list, le_handle);
+						  ptl_list, le_handle);
 	if (unlikely(err))
 		goto err2;
 
@@ -326,21 +330,37 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		goto err3;
 	}
 
+	if (ptl_list == PTL_PRIORITY_LIST) {
+		if (check_overflow(le)) {
+			/* Some XT were processed. */
+			if (le->options & PTL_ME_USE_ONCE) {
+				if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+					make_le_event(le, ni->pt[le->pt_index].eq, PTL_EVENT_AUTO_UNLINK);
+				}
+				*le_handle = le_to_handle(le);
+				le_put(le);
+
+				goto done;
+			}
+		}
+	}
+
 	err = le_append_pt(ni, le);
 	if (unlikely(err))
 		goto err3;
 
 	*le_handle = le_to_handle(le);
 
+ done:
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
 
-err3:
+ err3:
 	le_put(le);
-err2:
+ err2:
 	ni_put(ni);
-err1:
+ err1:
 	gbl_put(gbl);
 	return err;
 }
@@ -359,7 +379,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	if (unlikely(err))
 		goto err1;
 
-	le_unlink(le);
+	le_unlink(le, 0);
 
 	le_put(le);
 	gbl_put(gbl);

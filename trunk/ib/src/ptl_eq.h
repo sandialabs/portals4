@@ -69,4 +69,6 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start);
 
 void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start);
 
+void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type);
+
 #endif /* PTL_EQ_H */
