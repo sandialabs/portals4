@@ -476,7 +476,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		{
 			init.qp_type			= IBV_QPT_RC;
 			init.srq			= ni->srq;
-			priv.src_id			= conn->id;
+			priv.src_id			= ni->id;
 		}
 		priv.options			= ni->options;
 
