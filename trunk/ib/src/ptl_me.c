@@ -47,7 +47,7 @@ void me_unlink(me_t *me, int send_event)
 		list_del_init(&me->list);
 		pthread_spin_unlock(&pt->lock);
 
-		if (send_event)
+		if (send_event && me->pt->eq)
 			make_le_event((le_t *)me, me->pt->eq, PTL_EVENT_AUTO_UNLINK);
 
 		me->pt = NULL;
@@ -170,8 +170,10 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 		if (check_overflow((le_t *)me)) {
 			/* Some XT were processed. */
 			if (me->options & PTL_ME_USE_ONCE) {
-				if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
-					make_le_event((le_t *)me, ni->pt[me->pt_index].eq, PTL_EVENT_AUTO_UNLINK);
+				eq_t *eq = ni->pt[me->pt_index].eq;
+
+				if (eq && !(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+					make_le_event((le_t *)me, eq, PTL_EVENT_AUTO_UNLINK);
 				}
 				*me_handle = me_to_handle(me);
 				me_put(me);

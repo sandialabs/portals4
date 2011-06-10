@@ -77,7 +77,7 @@ void le_unlink(le_t *le, int send_event)
 		list_del_init(&le->list);
 		pthread_spin_unlock(&pt->lock);
 
-		if (send_event)
+		if (send_event && le->pt->eq)
 			make_le_event(le, le->pt->eq, PTL_EVENT_AUTO_UNLINK);
 
 		le->pt = NULL;
@@ -334,8 +334,10 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		if (check_overflow(le)) {
 			/* Some XT were processed. */
 			if (le->options & PTL_ME_USE_ONCE) {
-				if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
-					make_le_event(le, ni->pt[le->pt_index].eq, PTL_EVENT_AUTO_UNLINK);
+				eq_t *eq = ni->pt[le->pt_index].eq;
+
+				if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+					make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK);
 				}
 				*le_handle = le_to_handle(le);
 				le_put(le);
