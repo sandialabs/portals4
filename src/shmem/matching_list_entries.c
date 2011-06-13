@@ -438,6 +438,7 @@ permission_violation:
                             // notify
                             if ((tEQ != PTL_EQ_NONE) ||
                                 (me->ct_handle != PTL_CT_NONE)) {
+                                __sync_synchronize();
                                 PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
                                                               me->options,
@@ -457,6 +458,7 @@ permission_violation:
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
                             if ((tEQ != PTL_EQ_NONE) ||
                                 (me->ct_handle != PTL_CT_NONE)) {
+                                __sync_synchronize();
                                 PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
                                                               me->options,
@@ -476,6 +478,7 @@ permission_violation:
 #else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         if ((tEQ != PTL_EQ_NONE) ||
                             (me->ct_handle != PTL_CT_NONE)) {
+                            __sync_synchronize();
                             PtlInternalAnnounceMEDelivery(tEQ,
                                                           me->ct_handle,
                                                           me->options,
@@ -1112,6 +1115,7 @@ check_lengths:
 #endif          /* ifdef USE_TRANSFER_ENGINE */
             }
             if (need_more_data == 0) {
+                __sync_synchronize();
                 PtlInternalAnnounceMEDelivery(tEQ,
                                               me.ct_handle,
                                               me.options,
