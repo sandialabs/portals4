@@ -24,13 +24,10 @@ static char *init_state_name[] = {
 
 static void make_send_event(xi_t *xi)
 {
-	md_t *md = xi->put_md;
-	eq_t *eq = md->eq;
-
 	/* note: mlength and rem offset may or may not contain valid
 	 * values depending on whether we have seen an ack/reply or not */
-	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		make_init_event(xi, eq, PTL_EVENT_SEND, NULL);
+	if (xi->ni_fail || !(xi->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT)) {
+		make_init_event(xi, xi->put_eq, PTL_EVENT_SEND, NULL);
 	}
 
 	xi->event_mask &= ~XI_SEND_EVENT;
@@ -38,11 +35,8 @@ static void make_send_event(xi_t *xi)
 
 static void make_ack_event(xi_t *xi)
 {
-	md_t *md = xi->put_md;
-	eq_t *eq = md->eq;
-	
-	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		make_init_event(xi, eq, PTL_EVENT_ACK, NULL);
+	if (xi->ni_fail || !(xi->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT)) {
+		make_init_event(xi, xi->put_eq, PTL_EVENT_ACK, NULL);
 	}
 
 	xi->event_mask &= ~XI_ACK_EVENT;
@@ -50,11 +44,8 @@ static void make_ack_event(xi_t *xi)
 
 static void make_reply_event(xi_t *xi)
 {
-	md_t *md = xi->get_md;
-	eq_t *eq = md->eq;
-	
-	if (xi->ni_fail || !(md->options & PTL_MD_EVENT_SUCCESS_DISABLE)) {
-		make_init_event(xi, eq, PTL_EVENT_REPLY, NULL);
+	if (xi->ni_fail || !(xi->event_mask & XI_GET_SUCCESS_DISABLE_EVENT)) {
+		make_init_event(xi, xi->get_eq, PTL_EVENT_REPLY, NULL);
 	}
 
 	xi->event_mask &= ~XI_REPLY_EVENT;
@@ -62,37 +53,39 @@ static void make_reply_event(xi_t *xi)
 
 static inline void make_ct_send_event(xi_t *xi)
 {
-	md_t *md = xi->put_md;
-	ct_t *ct = md->ct;
-	int bytes = md->options & PTL_MD_EVENT_CT_BYTES;
-
-	make_ct_event(ct, xi->ni_fail, xi->rlength, bytes);
+	make_ct_event(xi->put_ct, xi->ni_fail, xi->rlength, xi->event_mask & XI_PUT_CT_BYTES);
 	xi->event_mask &= ~XI_CT_SEND_EVENT;
 }
 
 static inline void make_ct_ack_event(xi_t *xi)
 {
-	md_t *md = xi->put_md;
-	ct_t *ct = md->ct;
-	int bytes = md->options & PTL_MD_EVENT_CT_BYTES;
-
-	make_ct_event(ct, xi->ni_fail, xi->mlength, bytes);
+	make_ct_event(xi->put_ct, xi->ni_fail, xi->mlength, xi->event_mask & XI_PUT_CT_BYTES);
 	xi->event_mask &= ~XI_CT_ACK_EVENT;
 }
 
 static inline void make_ct_reply_event(xi_t *xi)
 {
-	md_t *md = xi->get_md;
-	ct_t *ct = md->ct;
-	int bytes = md->options & PTL_MD_EVENT_CT_BYTES;
-
-	make_ct_event(ct, xi->ni_fail, xi->mlength, bytes);
+	make_ct_event(xi->get_ct, xi->ni_fail, xi->mlength, xi->event_mask & XI_GET_CT_BYTES);
 	xi->event_mask &= ~XI_CT_REPLY_EVENT;
 }
 
 static void init_events(xi_t *xi)
 {
 	xi->event_mask = 0;
+
+	if (xi->put_md) {
+		if (xi->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
+			xi->event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
+		if (xi->put_md->options & PTL_MD_EVENT_CT_BYTES)
+			xi->event_mask |= XI_PUT_CT_BYTES;
+	}
+
+	if (xi->get_md) {
+		if (xi->get_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
+			xi->event_mask |= XI_GET_SUCCESS_DISABLE_EVENT;
+		if (xi->get_md->options & PTL_MD_EVENT_CT_BYTES)
+			xi->event_mask |= XI_GET_CT_BYTES;
+	}
 
 	switch (xi->operation) {
 	case OP_PUT:
@@ -324,6 +317,10 @@ static int handle_comp(xi_t *xi)
 
 static int early_send_event(xi_t *xi)
 {
+	/* Release the MD before posting the SEND event. */
+	md_put(xi->put_md);
+	xi->put_md = NULL;
+
 	if (xi->event_mask & XI_SEND_EVENT)
 		make_send_event(xi);
 
@@ -393,6 +390,10 @@ static int handle_recv(xi_t *xi)
 
 static int late_send_event(xi_t *xi)
 {
+	/* Release the MD before posting the SEND event. */
+	md_put(xi->put_md);
+	xi->put_md = NULL;
+
 	if (xi->event_mask & XI_SEND_EVENT)
 		make_send_event(xi);
 
@@ -409,6 +410,12 @@ static int late_send_event(xi_t *xi)
 
 static int ack_event(xi_t *xi)
 {
+	/* Release the MD before posting the ACK event. */
+	if (xi->put_md) {
+		md_put(xi->put_md);
+		xi->put_md = NULL;
+	}
+
 	if (xi->event_mask & XI_ACK_EVENT)
 		make_ack_event(xi);
 
@@ -420,6 +427,10 @@ static int ack_event(xi_t *xi)
 
 static int reply_event(xi_t *xi)
 {
+	/* Release the MD before posting the REPLY event. */
+	md_put(xi->get_md);
+	xi->get_md = NULL;
+
 	if (xi->event_mask & XI_REPLY_EVENT)
 		make_reply_event(xi);
 
