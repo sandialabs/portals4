@@ -260,21 +260,21 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
     {
         int multiple = 1;
         switch (datatype) {
-            case PTL_CHAR:
-            case PTL_UCHAR:
+            case PTL_INT8_T:
+            case PTL_UINT8_T:
                 multiple = 1;
                 break;
-            case PTL_SHORT:
-            case PTL_USHORT:
+            case PTL_INT16_T:
+            case PTL_UINT16_T:
                 multiple = 2;
                 break;
-            case PTL_INT:
-            case PTL_UINT:
-            case PTL_FLOAT:
+            case PTL_INT32_T:
+            case PTL_UINT32_T:
+            case PTL_FLOAT_T:
                 multiple = 4;
                 break;
-            case PTL_LONG:
-            case PTL_ULONG:
+            case PTL_INT64_T:
+            case PTL_UINT64_T:
             case PTL_DOUBLE:
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
@@ -442,21 +442,21 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
     {
         int multiple = 1;
         switch (datatype) {
-            case PTL_CHAR:
-            case PTL_UCHAR:
+            case PTL_INT8_T:
+            case PTL_UINT8_T:
                 multiple = 1;
                 break;
-            case PTL_SHORT:
-            case PTL_USHORT:
+            case PTL_INT16_T:
+            case PTL_UINT16_T:
                 multiple = 2;
                 break;
-            case PTL_INT:
-            case PTL_UINT:
-            case PTL_FLOAT:
+            case PTL_INT32_T:
+            case PTL_UINT32_T:
+            case PTL_FLOAT_T:
                 multiple = 4;
                 break;
-            case PTL_LONG:
-            case PTL_ULONG:
+            case PTL_INT64_T:
+            case PTL_UINT64_T:
             case PTL_DOUBLE:
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
@@ -629,21 +629,21 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
     {
         int multiple = 1;
         switch (datatype) {
-            case PTL_CHAR:
-            case PTL_UCHAR:
+            case PTL_INT8_T:
+            case PTL_UINT8_T:
                 multiple = 1;
                 break;
-            case PTL_SHORT:
-            case PTL_USHORT:
+            case PTL_INT16_T:
+            case PTL_UINT16_T:
                 multiple = 2;
                 break;
-            case PTL_INT:
-            case PTL_UINT:
-            case PTL_FLOAT:
+            case PTL_INT32_T:
+            case PTL_UINT32_T:
+            case PTL_FLOAT_T:
                 multiple = 4;
                 break;
-            case PTL_LONG:
-            case PTL_ULONG:
+            case PTL_INT64_T:
+            case PTL_UINT64_T:
             case PTL_DOUBLE:
             case PTL_FLOAT_COMPLEX:
                 multiple = 8;
@@ -751,21 +751,21 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
     t->args.swap.hdr_data         = hdr_data;
     if ((operation == PTL_CSWAP) || (operation == PTL_MSWAP)) {
         switch (datatype) {
-            case PTL_CHAR:
-            case PTL_UCHAR:
+            case PTL_INT8_T:
+            case PTL_UINT8_T:
                 memcpy(t->args.swap.operand, operand, 1);
                 break;
-            case PTL_SHORT:
-            case PTL_USHORT:
+            case PTL_INT16_T:
+            case PTL_UINT16_T:
                 memcpy(t->args.swap.operand, operand, 2);
                 break;
-            case PTL_INT:
-            case PTL_UINT:
+            case PTL_INT32_T:
+            case PTL_UINT32_T:
             case PTL_FLOAT:
                 memcpy(t->args.swap.operand, operand, 4);
                 break;
-            case PTL_LONG:
-            case PTL_ULONG:
+            case PTL_INT64_T:
+            case PTL_UINT64_T:
             case PTL_DOUBLE:
             case PTL_FLOAT_COMPLEX:
                 memcpy(t->args.swap.operand, operand, 8);
