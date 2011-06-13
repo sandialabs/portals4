@@ -1560,11 +1560,9 @@ int check_overflow(le_t *le)
 
 		pthread_spin_lock(&xt->state_lock);
 
+		assert(xt->matching.le == NULL);
 		xt->matching.le = le;
-
 		le_ref(le);
-
-		assert(xt->state == STATE_TGT_WAIT_APPEND);
 
 		list_del(&xt->unexpected_list);
 
