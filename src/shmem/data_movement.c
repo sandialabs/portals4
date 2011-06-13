@@ -1031,7 +1031,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
                 break;
             case PTL_INT32_T:
             case PTL_UINT32_T:
-            case PTL_FLOAT_T:
+            case PTL_FLOAT:
                 multiple = 4;
                 break;
             case PTL_INT64_T:
@@ -1286,7 +1286,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
                 break;
             case PTL_INT32_T:
             case PTL_UINT32_T:
-            case PTL_FLOAT_T:
+            case PTL_FLOAT:
                 multiple = 4;
                 break;
             case PTL_INT64_T:
@@ -1555,7 +1555,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
                 break;
             case PTL_INT32_T:
             case PTL_UINT32_T:
-            case PTL_FLOAT_T:
+            case PTL_FLOAT:
                 multiple = 4;
                 break;
             case PTL_INT64_T:
