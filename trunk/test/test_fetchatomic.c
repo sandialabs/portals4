@@ -95,7 +95,7 @@ int main(
         CHECK_RETURNVAL(PtlFetchAtomic(read_md_handle, 0, read_md_handle, 0,
                                        sizeof(uint64_t), r0, logical_pt_index,
                                        1, 0, NULL, 0, PTL_SUM,
-                                       PTL_ULONG));
+                                       PTL_UINT64_T));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
