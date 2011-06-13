@@ -585,18 +585,14 @@ static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETUR
                         abort();
                         break;
                 }
-                if (hdr->type == HDR_TYPE_PUT) {
-                    dm_printf("received NI = %u, pt_index = %u, PUT hdr_data = %u -> priority=%p, overflow=%p\n",
-                              (unsigned int)hdr->ni, hdr->pt_index,
+                    dm_printf("received NI = %u, pt_index = %u, %s hdr_data = %u -> priority=%p, overflow=%p\n",
+                              (unsigned int)hdr->ni,
+                              hdr->pt_index,
+                              (hdr->type == HDR_TYPE_PUT)?"PUT":
+                                ((hdr->type == HDR_TYPE_FETCHATOMIC)?"FETCHATOMIC":"___"),
                               (unsigned)hdr->hdr_data,
                               table_entry->priority.head,
                               table_entry->overflow.head);
-                } else {
-                    dm_printf("received NI = %u, pt_index = %u, hdr_type = %u -> priority=%p, overflow=%p\n",
-                              (unsigned int)hdr->ni, hdr->pt_index,
-                              (unsigned)hdr->type, table_entry->priority.head,
-                              table_entry->overflow.head);
-                }
                 switch (hdr->ni) {
                     case 0:
                     case 2:           // Matching (ME)
