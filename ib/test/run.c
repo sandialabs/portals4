@@ -100,28 +100,28 @@ static datatype_t get_datatype(ptl_datatype_t type, char *val)
 	num.u64 = 0;
 
 	switch (type) {
-	case PTL_CHAR:
+	case PTL_INT8_T:
 		num.s8 = strtol(val, NULL, 0);
 		break;
-	case PTL_UCHAR:
+	case PTL_UINT8_T:
 		num.u8 = strtoul(val, NULL, 0);
 		break;
-	case PTL_SHORT:
+	case PTL_INT16_T:
 		num.s16 = strtol(val, NULL, 0);
 		break;
-	case PTL_USHORT:
+	case PTL_UINT16_T:
 		num.u16 = strtoul(val, NULL, 0);
 		break;
-	case PTL_INT:
+	case PTL_INT32_T:
 		num.s32 = strtol(val, NULL, 0);
 		break;
-	case PTL_UINT:
+	case PTL_UINT32_T:
 		num.u32 = strtoul(val, NULL, 0);
 		break;
-	case PTL_LONG:
+	case PTL_INT64_T:
 		num.s64 = strtoll(val, NULL, 0);
 		break;
-	case PTL_ULONG:
+	case PTL_UINT64_T:
 		num.u64 = strtoull(val, NULL, 0);
 		break;
 	case PTL_FLOAT:
@@ -242,7 +242,7 @@ static struct node_info *push_info(struct node_info *head, int tok)
 	/* defaults */
 	info->count = 1;
 	info->ret = PTL_OK;
-	info->type = PTL_UCHAR;
+	info->type = PTL_UINT8_T;
 
 	/* If token is MD/LE/ME then allocate current largest buffer */
 	switch(tok) {
@@ -428,42 +428,42 @@ static int set_data(datatype_t val, void *data, int type, int length)
 	int i;
 
 	switch(type) {
-	case PTL_CHAR:
+	case PTL_INT8_T:
 		p_8 = data;
 		for (i = 0; i < length; i++, p_8++)
 			*p_8 = val.s8;
 		break;
-	case PTL_UCHAR:
+	case PTL_UINT8_T:
 		p_u8 = data;
 		for (i = 0; i < length; i++, p_u8++)
 			*p_u8 = val.u8;
 		break;
-	case PTL_SHORT:
+	case PTL_INT16_T:
 		p_16 = data;
 		for (i = 0; i < length/2; i++, p_16++)
 			*p_16 = val.s16;
 		break;
-	case PTL_USHORT:
+	case PTL_UINT16_T:
 		p_u16 = data;
 		for (i = 0; i < length/2; i++, p_u16++)
 			*p_u16 = val.u16;
 		break;
-	case PTL_INT:
+	case PTL_INT32_T:
 		p_32 = data;
 		for (i = 0; i < length/4; i++, p_32++)
 			*p_32 = val.s32;
 		break;
-	case PTL_UINT:
+	case PTL_UINT32_T:
 		p_u32 = data;
 		for (i = 0; i < length/4; i++, p_u32++)
 			*p_u32 = val.u32;
 		break;
-	case PTL_LONG:
+	case PTL_INT64_T:
 		p_64 = data;
 		for (i = 0; i < length/8; i++, p_64++)
 			*p_64 = val.s64;
 		break;
-	case PTL_ULONG:
+	case PTL_UINT64_T:
 		p_u64 = data;
 		for (i = 0; i < length/8; i++, p_u64++)
 			*p_u64 = val.u64;
@@ -816,7 +816,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 	num = get_datatype(type, val);
 
 	switch(type) {
-	case PTL_CHAR:
+	case PTL_INT8_T:
 		p_8 = data;
 		for (i = 0; i < length; i++, p_8++)
 			if (*p_8 != num.s8) {
@@ -826,7 +826,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_UCHAR:
+	case PTL_UINT8_T:
 		p_u8 = data;
 		for (i = 0; i < length; i++, p_u8++)
 			if (*p_u8 != num.u8) {
@@ -836,7 +836,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_SHORT:
+	case PTL_INT16_T:
 		p_16 = data;
 		for (i = 0; i < length/2; i++, p_16++)
 			if (*p_16 != num.s16) {
@@ -846,7 +846,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_USHORT:
+	case PTL_UINT16_T:
 		p_u16 = data;
 		for (i = 0; i < length/2; i++, p_u16++)
 			if (*p_u16 != num.u16) {
@@ -856,7 +856,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_INT:
+	case PTL_INT32_T:
 		p_32 = data;
 		for (i = 0; i < length/4; i++, p_32++)
 			if (*p_32 != num.s32) {
@@ -866,7 +866,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_UINT:
+	case PTL_UINT32_T:
 		p_u32 = data;
 		for (i = 0; i < length/4; i++, p_u32++)
 			if (*p_u32 != num.u32) {
@@ -876,7 +876,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_LONG:
+	case PTL_INT64_T:
 		p_64 = data;
 		for (i = 0; i < length/8; i++, p_64++)
 			if (*p_64 != num.s64) {
@@ -888,7 +888,7 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 				return 1;
 			}
 		break;
-	case PTL_ULONG:
+	case PTL_UINT64_T:
 		p_u64 = data;
 		for (i = 0; i < length/8; i++, p_u64++)
 			if (*p_u64 != num.u64) {
@@ -968,7 +968,7 @@ static int check_attr(struct node_info *info, xmlNode *node)
 	struct dict_entry *e;
 	unsigned int offset = 0;
 	unsigned int length = 1;
-	int type = PTL_UCHAR;
+	int type = PTL_UINT8_T;
 
 	for (attr = node->properties; attr; attr = attr->next) {
 		val = (char *)attr->children->content;

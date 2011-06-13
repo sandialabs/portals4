@@ -912,28 +912,28 @@ static int tgt_swap_data_in(xt_t *xt)
 	switch (xt->atom_op) {
 	case PTL_CSWAP:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 == src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 == src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 == src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 == src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 == src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 == src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 == src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 == src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -964,28 +964,28 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_CSWAP_NE:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 != src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 != src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 != src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 != src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 != src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 != src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 != src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 != src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -1016,28 +1016,28 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_CSWAP_LE:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 <= src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 <= src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 <= src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 <= src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 <= src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 <= src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 <= src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 <= src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -1052,28 +1052,28 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_CSWAP_LT:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 < src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 < src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 < src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 < src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 < src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 < src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 < src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 < src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -1088,28 +1088,28 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_CSWAP_GE:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 >= src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 >= src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 >= src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 >= src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 >= src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 >= src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 >= src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 >= src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -1124,28 +1124,28 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_CSWAP_GT:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			dst.s8 = (opr.s8 > src.s8) ? d->s8 : src.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 > src.u8) ? d->u8 : src.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			dst.s16 = (opr.s16 > src.s16) ? d->s16 : src.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 > src.u16) ? d->u16 : src.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			dst.s32 = (opr.s32 > src.s32) ? d->s32 : src.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			dst.u32 = (opr.u32 > src.u32) ? d->u32 : src.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			dst.s64 = (opr.s64 > src.s64) ? d->s64 : src.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			dst.u64 = (opr.u64 > src.u64) ? d->u64 : src.u64;
 			break;
 		case PTL_FLOAT:
@@ -1160,21 +1160,21 @@ static int tgt_swap_data_in(xt_t *xt)
 		break;
 	case PTL_MSWAP:
 		switch (xt->atom_type) {
-		case PTL_CHAR:
-		case PTL_UCHAR:
+		case PTL_INT8_T:
+		case PTL_UINT8_T:
 			dst.u8 = (opr.u8 & d->u8) | (~opr.u8 & src.u8);
 			break;
-		case PTL_SHORT:
-		case PTL_USHORT:
+		case PTL_INT16_T:
+		case PTL_UINT16_T:
 			dst.u16 = (opr.u16 & d->u16) | (~opr.u16 & src.u16);
 			break;
-		case PTL_INT:
-		case PTL_UINT:
+		case PTL_INT32_T:
+		case PTL_UINT32_T:
 		case PTL_FLOAT:
 			dst.u32 = (opr.u32 & d->u32) | (~opr.u32 & src.u32);
 			break;
-		case PTL_LONG:
-		case PTL_ULONG:
+		case PTL_INT64_T:
+		case PTL_UINT64_T:
 		case PTL_DOUBLE:
 			dst.u64 = (opr.u64 & d->u64) | (~opr.u64 & src.u64);
 			break;
