@@ -1420,29 +1420,30 @@ static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_h
         }
         PtlInternalCTPullTriggers(ct_handle);
     }
-    if ((eq_handle != PTL_EQ_NONE) &&
-        ((options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE))
-         == 0)) {
-        ptl_internal_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr, priority_entry->user_ptr);
-        if (foundin == OVERFLOW) {
-            switch (e.type) {
-                case PTL_EVENT_PUT:
-                    e.type = PTL_EVENT_PUT_OVERFLOW;
-                    break;
-                case PTL_EVENT_ATOMIC:
-                    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
-                    break;
-                default:
-                    UNREACHABLE;
-                    abort();
+    if (eq_handle != PTL_EQ_NONE) {
+        if (((foundin == OVERFLOW) && ((options & PTL_ME_EVENT_OVER_DISABLE) == 0)) ||
+            ((foundin == PRIORITY) && ((options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) == 0))) {
+            ptl_internal_event_t e;
+            PTL_INTERNAL_INIT_TEVENT(e, hdr, priority_entry->user_ptr);
+            if (foundin == OVERFLOW) {
+                switch (e.type) {
+                    case PTL_EVENT_PUT:
+                        e.type = PTL_EVENT_PUT_OVERFLOW;
+                        break;
+                    case PTL_EVENT_ATOMIC:
+                        e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                        break;
+                    default:
+                        UNREACHABLE;
+                        abort();
+                }
             }
+            e.mlength = mlength;
+            e.start   = (void *)start;
+            // PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
+            PtlInternalEQPush(eq_handle, &e);
+            // PtlInternalPAPIStartC();
         }
-        e.mlength = mlength;
-        e.start   = (void *)start;
-        // PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
-        PtlInternalEQPush(eq_handle, &e);
-        // PtlInternalPAPIStartC();
     }
 }                                      /*}}} */
 

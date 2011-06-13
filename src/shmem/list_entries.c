@@ -1260,27 +1260,28 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
         }
         PtlInternalCTPullTriggers(ct_handle);
     }
-    if ((eq_handle != PTL_EQ_NONE) &&
-        ((options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE))
-         == 0)) {
-        ptl_internal_event_t e;
-        PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
-        if (overflow) {
-            switch (type) {
-                case HDR_TYPE_PUT:
-                    e.type = PTL_EVENT_PUT_OVERFLOW;
-                    break;
-                case HDR_TYPE_ATOMIC:
-                    e.type = PTL_EVENT_ATOMIC_OVERFLOW;
-                    break;
-                default:
-                    UNREACHABLE;
-                    *(int *)0 = 0;
+    if (eq_handle != PTL_EQ_NONE) {
+        if (((overflow) && ((options & PTL_LE_EVENT_OVER_DISABLE) == 0)) ||
+            ((!overflow) && ((options & (PTL_LE_EVENT_COMM_DISABLE | PTL_LE_EVENT_SUCCESS_DISABLE)) == 0))) {
+            ptl_internal_event_t e;
+            PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
+            if (overflow) {
+                switch (type) {
+                    case HDR_TYPE_PUT:
+                        e.type = PTL_EVENT_PUT_OVERFLOW;
+                        break;
+                    case HDR_TYPE_ATOMIC:
+                        e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                        break;
+                    default:
+                        UNREACHABLE;
+                        *(int *)0 = 0;
+                }
             }
+            e.mlength = mlength;
+            e.start   = (void *)start;
+            PtlInternalEQPush(eq_handle, &e);
         }
-        e.mlength = mlength;
-        e.start   = (void *)start;
-        PtlInternalEQPush(eq_handle, &e);
     }
 }                                      /*}}} */
 
