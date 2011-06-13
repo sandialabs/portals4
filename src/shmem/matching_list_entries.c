@@ -101,7 +101,6 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t                    
 #endif /* ifdef USE_TRANSFER_ENGINE */
 static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
-                                          const uint_fast8_t                type,
                                           const unsigned int                options,
                                           const uint_fast64_t               mlength,
                                           const uintptr_t                   start,
@@ -441,7 +440,6 @@ permission_violation:
                                 (me->ct_handle != PTL_CT_NONE)) {
                                 PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
-                                                              cur->hdr.type,
                                                               me->options,
                                                               mlength,
                                                               (uintptr_t)realstart,
@@ -461,7 +459,6 @@ permission_violation:
                                 (me->ct_handle != PTL_CT_NONE)) {
                                 PtlInternalAnnounceMEDelivery(tEQ,
                                                               me->ct_handle,
-                                                              cur->hdr.type,
                                                               me->options,
                                                               mlength,
                                                               (uintptr_t)0,
@@ -481,7 +478,6 @@ permission_violation:
                             (me->ct_handle != PTL_CT_NONE)) {
                             PtlInternalAnnounceMEDelivery(tEQ,
                                                           me->ct_handle,
-                                                          cur->hdr.type,
                                                           me->options,
                                                           mlength,
                                                           (uintptr_t)cur->buffered_data,
@@ -1116,10 +1112,14 @@ check_lengths:
 #endif          /* ifdef USE_TRANSFER_ENGINE */
             }
             if (need_more_data == 0) {
-                PtlInternalAnnounceMEDelivery(tEQ, me.ct_handle, hdr->type,
-                                              me.options, msg_mlength,
+                PtlInternalAnnounceMEDelivery(tEQ,
+                                              me.ct_handle,
+                                              me.options,
+                                              msg_mlength,
                                               (uintptr_t)report_this_start,
-                                              PRIORITY, entry, hdr,
+                                              PRIORITY,
+                                              entry,
+                                              hdr,
                                               entry->me_handle.a);
                 if (entry->unlinked == 1) {
                     if (PtlInternalMarkMEReusable(entry->me_handle.a) !=
@@ -1391,7 +1391,6 @@ static void PtlInternalPerformDelivery(const uint_fast8_t              type,
 
 static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
-                                          const uint_fast8_t                type,
                                           const unsigned int                options,
                                           const uint_fast64_t               mlength,
                                           const uintptr_t                   start,
