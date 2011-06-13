@@ -69,28 +69,28 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 	switch(op) {
 	case PTL_MIN:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = ((x.s8 < y.s8) ? x.s8 : y.s8);
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = ((x.u8 < y.u8) ? x.u8 : y.u8);
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = ((x.s16 < y.s16) ? x.s16 : y.s16);
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = ((x.u16 < y.u16) ? x.u16 : y.u16);
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = ((x.s32 < y.s32) ? x.s32 : y.s32);
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = ((x.u32 < y.u32) ? x.u32 : y.u32);
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = ((x.s64 < y.s64) ? x.s64 : y.s64);
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = ((x.u64 < y.u64) ? x.u64 : y.u64);
 			break;
 		case PTL_FLOAT:
@@ -103,28 +103,28 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		break;
 	case PTL_MAX:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = ((x.s8 > y.s8) ? x.s8 : y.s8);
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = ((x.u8 > y.u8) ? x.u8 : y.u8);
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = ((x.s16 > y.s16) ? x.s16 : y.s16);
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = ((x.u16 > y.u16) ? x.u16 : y.u16);
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = ((x.s32 > y.s32) ? x.s32 : y.s32);
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = ((x.u32 > y.u32) ? x.u32 : y.u32);
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = ((x.s64 > y.s64) ? x.s64 : y.s64);
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = ((x.u64 > y.u64) ? x.u64 : y.u64);
 			break;
 		case PTL_FLOAT:
@@ -137,28 +137,28 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		break;
 	case PTL_SUM:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 + y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 + y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 + y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 + y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 + y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 + y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 + y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 + y.u64;
 			break;
 		case PTL_FLOAT:
@@ -171,28 +171,28 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		break;
 	case PTL_PROD:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 * y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 * y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 * y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 * y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 * y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 * y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 * y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 * y.u64;
 			break;
 		case PTL_FLOAT:
@@ -205,168 +205,168 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		break;
 	case PTL_LOR:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 || y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 || y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 || y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 || y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 || y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 || y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 || y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 || y.u64;
 			break;
 		}
 		break;
 	case PTL_LAND:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 && y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 && y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 && y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 && y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 && y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 && y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 && y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 && y.u64;
 			break;
 		}
 		break;
 	case PTL_BOR:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 | y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 | y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 | y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 | y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 | y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 | y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 | y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 | y.u64;
 			break;
 		}
 		break;
 	case PTL_BAND:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 & y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 & y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 & y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 & y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 & y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 & y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 & y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 & y.u64;
 			break;
 		}
 		break;
 	case PTL_LXOR:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = (x.s8 && !y.s8) || (!x.s8 && y.s8);
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = (x.u8 && !y.u8) || (!x.u8 && y.u8);
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = (x.s16 && !y.s16) || (!x.s16 && y.s16);
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = (x.u16 && !y.u16) || (!x.u16 && y.u16);
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = (x.s32 && !y.s32) || (!x.s32 && y.s32);
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = (x.u32 && !y.u32) || (!x.u32 && y.u32);
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = (x.s64 && !y.s64) || (!x.s64 && y.s64);
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = (x.u64 && !y.u64) || (!x.u64 && y.u64);
 			break;
 		}
 		break;
 	case PTL_BXOR:
 		switch (type) {
-		case PTL_CHAR:
+		case PTL_INT8_T:
 			z.s8 = x.s8 ^ y.s8;
 			break;
-		case PTL_UCHAR:
+		case PTL_UINT8_T:
 			z.u8 = x.u8 ^ y.u8;
 			break;
-		case PTL_SHORT:
+		case PTL_INT16_T:
 			z.s16 = x.s16 ^ y.s16;
 			break;
-		case PTL_USHORT:
+		case PTL_UINT16_T:
 			z.u16 = x.u16 ^ y.u16;
 			break;
-		case PTL_INT:
+		case PTL_INT32_T:
 			z.s32 = x.s32 ^ y.s32;
 			break;
-		case PTL_UINT:
+		case PTL_UINT32_T:
 			z.u32 = x.u32 ^ y.u32;
 			break;
-		case PTL_LONG:
+		case PTL_INT64_T:
 			z.s64 = x.s64 ^ y.s64;
 			break;
-		case PTL_ULONG:
+		case PTL_UINT64_T:
 			z.u64 = x.u64 ^ y.u64;
 			break;
 		}
@@ -496,7 +496,7 @@ static void get_random_param(param_t *p)
 
 	else {
 		p->atom_op = PTL_MIN;
-		p->type = PTL_UCHAR;
+		p->type = PTL_UINT8_T;
 	}
 
 	p->length = random() % (p->max_length/atom_type[p->type].size);

@@ -31,14 +31,14 @@ char *atom_op_name[] = {
 };
 
 atom_type_t atom_type[] = {
-	[PTL_CHAR] = {.name = "CHAR", .size = 1,},
-	[PTL_UCHAR] = {.name = "UCHAR", .size = 1,},
-	[PTL_SHORT] = {.name = "SHORT", .size = 2,},
-	[PTL_USHORT] = {.name = "USHORT", .size = 2,},
-	[PTL_INT] = {.name = "INT", .size = 4,},
-	[PTL_UINT] = {.name = "UINT", .size = 4,},
-	[PTL_LONG] = {.name = "LONG", .size = 8,},
-	[PTL_ULONG] = {.name = "ULONG", .size = 8,},
+	[PTL_INT8_T] = {.name = "CHAR", .size = 1,},
+	[PTL_UINT8_T] = {.name = "UCHAR", .size = 1,},
+	[PTL_INT16_T] = {.name = "SHORT", .size = 2,},
+	[PTL_UINT16_T] = {.name = "USHORT", .size = 2,},
+	[PTL_INT32_T] = {.name = "INT", .size = 4,},
+	[PTL_UINT32_T] = {.name = "UINT", .size = 4,},
+	[PTL_INT64_T] = {.name = "LONG", .size = 8,},
+	[PTL_UINT64_T] = {.name = "ULONG", .size = 8,},
 	[PTL_FLOAT] = {.name = "FLOAT", .size = 4,},
 	[PTL_FLOAT_COMPLEX] = {.name = "COMPLEX", .size = 8,},
 	[PTL_DOUBLE] = {.name = "DOUBLE", .size = 8,},
@@ -52,20 +52,20 @@ datatype_t get_data(int type)
 	data.u64 = 0;
 
 	switch (type) {
-	case PTL_CHAR:
-	case PTL_UCHAR:
+	case PTL_INT8_T:
+	case PTL_UINT8_T:
 		data.u8 = random();
 		break;
-	case PTL_SHORT:
-	case PTL_USHORT:
+	case PTL_INT16_T:
+	case PTL_UINT16_T:
 		data.u16 = random();
 		break;
-	case PTL_INT:
-	case PTL_UINT:
+	case PTL_INT32_T:
+	case PTL_UINT32_T:
 		data.u32 = random();
 		break;
-	case PTL_LONG:
-	case PTL_ULONG:
+	case PTL_INT64_T:
+	case PTL_UINT64_T:
 		data.u64 = random();
 		data.u64 = data.u64 << 32 | random();
 		break;
@@ -93,22 +93,22 @@ char *datatype_str(int type, datatype_t data)
 	static char str[64];
 
 	switch(type) {
-	case PTL_CHAR:
-	case PTL_UCHAR:
+	case PTL_INT8_T:
+	case PTL_UINT8_T:
 		sprintf(str, "0x%02x", data.u8);
 		break;
-	case PTL_SHORT:
-	case PTL_USHORT:
+	case PTL_INT16_T:
+	case PTL_UINT16_T:
 		sprintf(str, "0x%04x", data.u16);
 		break;
-	case PTL_INT:
-	case PTL_UINT:
+	case PTL_INT32_T:
+	case PTL_UINT32_T:
 		sprintf(str, "0x%08x", data.u32);
 		break;
-	case PTL_LONG:
+	case PTL_INT64_T:
 		sprintf(str, "%" PRId64 , data.s64);
 		break;
-	case PTL_ULONG:
+	case PTL_UINT64_T:
 		sprintf(str, "0x%016" PRIx64 , data.u64);
 		break;
 	case PTL_FLOAT:

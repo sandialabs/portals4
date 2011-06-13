@@ -52,14 +52,14 @@ int get_atom_op(char *val)
 
 int get_atom_type(char *val)
 {
-	     if (!strcmp("CHAR", val))		return PTL_CHAR;
-	else if (!strcmp("UCHAR", val))		return PTL_UCHAR;
-	else if (!strcmp("SHORT", val))		return PTL_SHORT;
-	else if (!strcmp("USHORT", val))	return PTL_USHORT;
-	else if (!strcmp("INT", val))		return PTL_INT;
-	else if (!strcmp("UINT", val))		return PTL_UINT;
-	else if (!strcmp("LONG", val))		return PTL_LONG;
-	else if (!strcmp("ULONG", val))		return PTL_ULONG;
+	     if (!strcmp("CHAR", val))		return PTL_INT8_T;
+	else if (!strcmp("UCHAR", val))		return PTL_UINT8_T;
+	else if (!strcmp("SHORT", val))		return PTL_INT16_T;
+	else if (!strcmp("USHORT", val))	return PTL_UINT16_T;
+	else if (!strcmp("INT", val))		return PTL_INT32_T;
+	else if (!strcmp("UINT", val))		return PTL_UINT32_T;
+	else if (!strcmp("LONG", val))		return PTL_INT64_T;
+	else if (!strcmp("ULONG", val))		return PTL_UINT64_T;
 	else if (!strcmp("FLOAT", val))		return PTL_FLOAT;
 	else if (!strcmp("COMPLEX", val))	return PTL_FLOAT_COMPLEX;
 	else if (!strcmp("DOUBLE", val))	return PTL_DOUBLE;

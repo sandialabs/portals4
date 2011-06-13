@@ -33,14 +33,14 @@ static struct atom_op_info {
 
 int atom_type_size[] = 
 {
-	[PTL_CHAR]		= 1,
-	[PTL_UCHAR]		= 1,
-	[PTL_SHORT]		= 2,
-	[PTL_USHORT]		= 2,
-	[PTL_INT]		= 4,
-	[PTL_UINT]		= 4,
-	[PTL_LONG]		= 8,
-	[PTL_ULONG]		= 8,
+	[PTL_INT8_T]		= 1,
+	[PTL_UINT8_T]		= 1,
+	[PTL_INT16_T]		= 2,
+	[PTL_UINT16_T]		= 2,
+	[PTL_INT32_T]		= 4,
+	[PTL_UINT32_T]		= 4,
+	[PTL_INT64_T]		= 8,
+	[PTL_UINT64_T]		= 8,
 	[PTL_FLOAT]		= 4,
 	[PTL_FLOAT_COMPLEX]	= 8,
 	[PTL_DOUBLE]		= 8,
@@ -487,7 +487,7 @@ static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(atom_type < PTL_CHAR || atom_type >= PTL_DATATYPE_LAST)) {
+	if (unlikely(atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
@@ -979,7 +979,7 @@ static int check_swap(md_t *get_md, ptl_size_t local_get_offset,
 		return PTL_ARG_INVALID;
 	}
 
-	if (unlikely(atom_type < PTL_CHAR || atom_type >= PTL_DATATYPE_LAST)) {
+	if (unlikely(atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
