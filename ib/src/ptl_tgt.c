@@ -1367,10 +1367,12 @@ static int tgt_cleanup_2(xt_t *xt)
 
 static int tgt_overflow_event(xt_t *xt)
 {
+	le_t *le = xt->matching.le;
+
 	assert(xt->le == NULL);
 	assert(xt->matching.le);
 
-	if (!(xt->matching.le->options & PTL_LE_EVENT_OVER_DISABLE)) {
+	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
 		switch (xt->operation) {
 		case OP_PUT:
 			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->start);
@@ -1388,9 +1390,12 @@ static int tgt_overflow_event(xt_t *xt)
 			return STATE_TGT_ERROR;
 			break;
 		}
+
+		if (le->options & PTL_LE_EVENT_CT_OVERFLOW && le->ct)
+			make_ct_event(le->ct, xt->ni_fail, xt->mlength, 1);
 	}
 
-	le_put(xt->matching.le);
+	le_put(le);
 	xt->matching.le = NULL;
 
 	return STATE_TGT_CLEANUP_2;
