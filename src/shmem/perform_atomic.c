@@ -5,6 +5,9 @@
 #include <complex.h>
 #include <string.h> /* for memcpy() */
 
+#include <stdio.h>
+#include <inttypes.h>
+
 /* Internal headers */
 #include "ptl_internal_performatomic.h"
 #include "ptl_visibility.h"
@@ -311,7 +314,13 @@ static void inline PtlInternalPerformAtomicSwap(volatile uint8_t *restrict dest,
     }
 }
 
-static uint8_t datatype_size_table[] = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8 };
+static uint8_t datatype_size_table[] = {
+    1, 1, 2, 2, 4, 4, 4, 8, 8,
+    sizeof(float complex),
+    sizeof(double complex),
+    sizeof(long double),
+    sizeof(long double complex)
+};
 
 void INTERNAL PtlInternalPerformAtomic(uint8_t *restrict dest,
                                        uint8_t *restrict src,
