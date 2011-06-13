@@ -45,3 +45,5 @@ echo "===== test_swap_logical_lb.xml ====="
 ./ptl_test -f test_swap_logical_lb.xml
 echo "===== test_put_overflow.xml ====="
 ./ptl_test -f test_put_overflow.xml
+echo "===== test_atomic_overflow.xml ====="
+./ptl_test -f test_atomic_overflow.xml
