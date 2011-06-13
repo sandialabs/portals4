@@ -51,11 +51,14 @@ struct cm_priv_request {
 	ptl_process_t		src_id;		/* rank or NID/PID requesting that connection */
 };
 
-#define REJECT_REASON_NO_NI			1 /* NI options don't match */
-#define REJECT_REASON_GOOD_SRQ			2 /* no main process, SRQ # is good */
-#define REJECT_REASON_BAD_PARAM			3 /* request parm is invalid */
-#define REJECT_REASON_CONNECTED			4 /* already connected */
-#define REJECT_REASON_ERROR			5 /* something unexpected happened; catch all */
+enum {
+	REJECT_REASON_NO_NI	= 1, /* NI options don't match */
+	REJECT_REASON_GOOD_SRQ,		/* no main process, SRQ # is good */
+	REJECT_REASON_BAD_PARAM,	/* request parm is invalid */
+	REJECT_REASON_CONNECTED,	/* already connected */
+	REJECT_REASON_CONNECTING,	/* already connected */
+	REJECT_REASON_ERROR, /* something unexpected happened; catch all */
+};
 
 struct cm_priv_reject {
 	uint32_t		reason;

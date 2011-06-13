@@ -359,24 +359,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		/* We received a connection request but we are already connected. Reject it. */
 		rej.reason = REJECT_REASON_CONNECTED;
 		pthread_mutex_unlock(&conn->mutex);
-
 		goto reject;
-		break;
-
-	case CONN_STATE_CONNECTING:
-
-		/* we received a connection request but we are already connecting
-		 * - accept connection from higher id
-		 * - reject connection from lower id
-		 * - accept connection from self, but cleanup
-		 */
-		c = compare_id(&priv->src_id, &ni->id);
-		if (c > 0)
-			ret = accept_connection_request(ni, conn, event);
-		else if (c < 0)
-			ret = rdma_reject (event->id, NULL, 0);
-		else
-			ret = accept_connection_self(ni, conn, event);
 		break;
 
 	case CONN_STATE_DISCONNECTED:
@@ -387,8 +370,21 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		break;
 
 	default:
-		/* should never happen */
-		assert(0);
+		/* we received a connection request but we are already connecting
+		 * - accept connection from higher id
+		 * - reject connection from lower id
+		 * - accept connection from self, but cleanup
+		 */
+		c = compare_id(&priv->src_id, &ni->id);
+		if (c > 0)
+			ret = accept_connection_request(ni, conn, event);
+		else if (c < 0) {
+			rej.reason = REJECT_REASON_CONNECTING;
+			pthread_mutex_unlock(&conn->mutex);
+			goto reject;
+		}
+		else
+			ret = accept_connection_self(ni, conn, event);
 		break;
 	}
 
@@ -432,19 +428,24 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
 		pthread_mutex_lock(&conn->mutex);
 
-		assert(conn->cm_id == event->id);
-		if (rdma_resolve_route(conn->cm_id, get_param(PTL_RDMA_TIMEOUT))) {
-			//todo 
-			abort();
+		if (conn->cm_id == event->id) {
+			if (rdma_resolve_route(conn->cm_id, get_param(PTL_RDMA_TIMEOUT))) {
+				//todo 
+				abort();
+			} else {
+				conn->state = CONN_STATE_RESOLVING_ROUTE;
+			}
 		} else {
-			conn->state = CONN_STATE_RESOLVING_ROUTE;
+			/* That connection attempt got overriden by a higher
+			 * priority connect request from the same node we were
+			 * trying to connect to. See process_connect_request(). Do
+			 * nothing. */	
 		}
+
 		pthread_mutex_unlock(&conn->mutex);
 		break;
 
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
-		assert(conn->cm_id == event->id);
-
 		memset(&conn_param, 0, sizeof conn_param);
 
 		conn_param.responder_resources	= 1;
@@ -482,19 +483,26 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		pthread_mutex_lock(&conn->mutex);
 
-		if (rdma_create_qp(conn->cm_id, ni->iface->pd, &init)) {
-			WARN();
-			//todo
-			abort();
-			//err = PTL_FAIL;
-			//goto err1;
-		}
+		if (conn->cm_id == event->id) {
+			if (rdma_create_qp(conn->cm_id, ni->iface->pd, &init)) {
+				WARN();
+				//todo
+				abort();
+				//err = PTL_FAIL;
+				//goto err1;
+			}
 
-		if (rdma_connect(conn->cm_id, &conn_param)) {
-			//todo 
-			abort();
-		} else {
-			conn->state = CONN_STATE_CONNECTING;
+			if (rdma_connect(conn->cm_id, &conn_param)) {
+				//todo 
+				abort();
+			} else {
+				conn->state = CONN_STATE_CONNECTING;
+			}
+		}  else {
+			/* That connection attempt got overriden by a higher
+			 * priority connect request from the same node we were
+			 * trying to connect to. See process_connect_request(). Do
+			 * nothing. */	
 		}
 
 		pthread_mutex_unlock(&conn->mutex);
@@ -551,8 +559,6 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_REJECTED:
 		pthread_mutex_lock(&conn->mutex);
 
-		conn->state = CONN_STATE_DISCONNECTED;
-
 		if (!event->param.conn.private_data ||
 			(event->param.conn.private_data_len < sizeof(struct cm_priv_reject))) {
 			ptl_warn("Invalid reject private data size (%d, %zd)\n",
@@ -564,8 +570,16 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		rej = event->param.conn.private_data;
 
+		if (rej->reason == REJECT_REASON_CONNECTED ||
+			rej->reason == REJECT_REASON_CONNECTING) {
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
+			
 		/* TODO: handle other reject cases. */
 		assert(rej->reason == REJECT_REASON_GOOD_SRQ);
+
+		conn->state = CONN_STATE_DISCONNECTED;
 
 #ifdef USE_XRC
 		if ((conn->ni->options & PTL_NI_LOGICAL) &&
