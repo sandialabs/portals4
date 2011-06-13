@@ -2052,7 +2052,17 @@ int PtlGet(ptl_handle_md_t  md_handle,
  * also set the \c PTL_ME_OP_GET flag to enable a reply.
  *
  * The three atomic functions share two new arguments introduced in Portals
- * 4.0: an operation (ptl_op_t) and a datatype (ptl_datatype_t).
+ * 4.0: an operation (ptl_op_t) and a datatype (ptl_datatype_t). All three
+ * atomic functions are required to be natively aligned at the target to the
+ * size of the ptl_datatype_t used.
+ *
+ * @implnote To allow upper level libraries with both system-defined datatype
+ *	widths and fixed width datatypes to easily map to Portals, Portals
+ *	provides fixed width integer types. The one exception is the long
+ *	double floating point types (PTL_LONG_DOUBLE). Because of the
+ *	variability in long double encodings across systems and the lack of
+ *	standard syntax for fixed width floating-point types, Portals uses a
+ *	system defined width for PTL_LONG_DOUBLE and PTL_LONG_DOUBLE_COMPLEX.
  *
  * @enum ptl_op_t
  * @brief An atomic operation type
@@ -2128,19 +2138,19 @@ typedef enum {
  * @brief The type of data an atomic operation is operating on
  */
 typedef enum {
-    PTL_CHAR, /*!< 8-bit signed integer */
-    PTL_UCHAR, /*!< 8-bit unsigned integer */
-    PTL_SHORT, /*!< 16-bit signed integer */
-    PTL_USHORT, /*!< 16-bit unsigned integer */
-    PTL_INT, /*!< 32-bit signed integer */
-    PTL_UINT, /*!< 32-bit unsigned integer */
-    PTL_LONG, /*!< 64-bit signed integer */
-    PTL_ULONG, /*!< 64-bit unsigned integer */
-    PTL_FLOAT, /*!< 32-bit floating-point number */
-    PTL_DOUBLE, /*!< 64-bit floating-point number */
+    PTL_INT8_T,   /*!< 8-bit signed integer */
+    PTL_UINT8_T,  /*!< 8-bit unsigned integer */
+    PTL_INT16_T,  /*!< 16-bit signed integer */
+    PTL_UINT16_T, /*!< 16-bit unsigned integer */
+    PTL_INT32_T,  /*!< 32-bit signed integer */
+    PTL_UINT32_T, /*!< 32-bit unsigned integer */
+    PTL_FLOAT,    /*!< 32-bit floating-point number */
+    PTL_INT64_T,  /*!< 64-bit signed integer */
+    PTL_UINT64_T, /*!< 64-bit unsigned integer */
+    PTL_DOUBLE,   /*!< 64-bit floating-point number */
+    PTL_FLOAT_COMPLEX,  /*!< 32-bit floating-point complex number */
+    PTL_DOUBLE_COMPLEX, /*!< 64-bit floating-point complex number */
     PTL_LONG_DOUBLE,
-    PTL_FLOAT_COMPLEX,
-    PTL_DOUBLE_COMPLEX,
     PTL_LONG_DOUBLE_COMPLEX
 } ptl_datatype_t;
 #define PTL_DATATYPE_LAST (PTL_LONG_DOUBLE_COMPLEX+1)

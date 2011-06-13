@@ -200,16 +200,16 @@
                                                          ptl_datatype_t dt)                \
     {                                                                                      \
         switch (dt) {                                                                      \
-            case PTL_CHAR:   NONBUILTIN_INT_CAS(int8_t, op); break;                        \
-            case PTL_UCHAR:  NONBUILTIN_INT_CAS(uint8_t, op); break;                       \
-            case PTL_SHORT:  NONBUILTIN_INT_CAS(int16_t, op); break;                       \
-            case PTL_USHORT: NONBUILTIN_INT_CAS(uint16_t, op); break;                      \
-            case PTL_INT:    NONBUILTIN_INT_CAS(int32_t, op); break;                       \
-            case PTL_UINT:   NONBUILTIN_INT_CAS(uint32_t, op); break;                      \
-            case PTL_LONG:   NONBUILTIN_INT_CAS(int64_t, op); break;                       \
-            case PTL_ULONG:  NONBUILTIN_INT_CAS(uint64_t, op); break;                      \
-            case PTL_FLOAT:  NONBUILTIN_CAS(float, uint32_t, op); break;                   \
-            case PTL_DOUBLE: NONBUILTIN_CAS(double, uint64_t, op); break;                  \
+            case PTL_INT8_T:      NONBUILTIN_INT_CAS(int8_t, op); break;                   \
+            case PTL_UINT8_T:     NONBUILTIN_INT_CAS(uint8_t, op); break;                  \
+            case PTL_INT16_T:     NONBUILTIN_INT_CAS(int16_t, op); break;                  \
+            case PTL_UINT16_T:    NONBUILTIN_INT_CAS(uint16_t, op); break;                 \
+            case PTL_INT32_T:     NONBUILTIN_INT_CAS(int32_t, op); break;                  \
+            case PTL_UINT32_T:    NONBUILTIN_INT_CAS(uint32_t, op); break;                 \
+            case PTL_INT64_T:     NONBUILTIN_INT_CAS(int64_t, op); break;                  \
+            case PTL_UINT64_T:    NONBUILTIN_INT_CAS(uint64_t, op); break;                 \
+            case PTL_FLOAT:       NONBUILTIN_CAS(float, uint32_t, op); break;              \
+            case PTL_DOUBLE:      NONBUILTIN_CAS(double, uint64_t, op); break;             \
             case PTL_LONG_DOUBLE: NONBUILTIN_INT_CAS(long double, op); break;              \
             default: abort();                                                              \
         }                                                                                  \
@@ -220,20 +220,20 @@
                                                          ptl_datatype_t dt)                   \
     {                                                                                         \
         switch (dt) {                                                                         \
-            case PTL_CHAR:   NONBUILTIN_INT_CAS(int8_t, op); break;                           \
-            case PTL_UCHAR:  NONBUILTIN_INT_CAS(uint8_t, op); break;                          \
-            case PTL_SHORT:  NONBUILTIN_INT_CAS(int16_t, op); break;                          \
-            case PTL_USHORT: NONBUILTIN_INT_CAS(uint16_t, op); break;                         \
-            case PTL_INT:    NONBUILTIN_INT_CAS(int32_t, op); break;                          \
-            case PTL_UINT:   NONBUILTIN_INT_CAS(uint32_t, op); break;                         \
-            case PTL_LONG:   NONBUILTIN_INT_CAS(int64_t, op); break;                          \
-            case PTL_ULONG:  NONBUILTIN_INT_CAS(uint64_t, op); break;                         \
-            case PTL_FLOAT:  NONBUILTIN_CAS(float, uint32_t, op); break;                      \
-            case PTL_DOUBLE: NONBUILTIN_CAS(double, uint64_t, op); break;                     \
-            case PTL_LONG_DOUBLE: NONBUILTIN_INT_CAS(long double, op); break;                 \
+            case PTL_INT8_T:              NONBUILTIN_INT_CAS(int8_t, op); break;              \
+            case PTL_UINT8_T:             NONBUILTIN_INT_CAS(uint8_t, op); break;             \
+            case PTL_INT16_T:             NONBUILTIN_INT_CAS(int16_t, op); break;             \
+            case PTL_UINT16_T:            NONBUILTIN_INT_CAS(uint16_t, op); break;            \
+            case PTL_INT32_T:             NONBUILTIN_INT_CAS(int32_t, op); break;             \
+            case PTL_UINT32_T:            NONBUILTIN_INT_CAS(uint32_t, op); break;            \
+            case PTL_INT64_T:             NONBUILTIN_INT_CAS(int64_t, op); break;             \
+            case PTL_UINT64_T:            NONBUILTIN_INT_CAS(uint64_t, op); break;            \
+            case PTL_FLOAT:               NONBUILTIN_CAS(float, uint32_t, op); break;         \
+            case PTL_DOUBLE:              NONBUILTIN_CAS(double, uint64_t, op); break;        \
+            case PTL_LONG_DOUBLE:         NONBUILTIN_INT_CAS(long double, op); break;         \
             case PTL_LONG_DOUBLE_COMPLEX: NONBUILTIN_INT_CAS(long double complex, op); break; \
-            case PTL_DOUBLE_COMPLEX: NONBUILTIN_INT_CAS(double complex, op); break;           \
-            case PTL_FLOAT_COMPLEX: NONBUILTIN_INT_CAS(float complex, op); break;             \
+            case PTL_DOUBLE_COMPLEX:      NONBUILTIN_INT_CAS(double complex, op); break;      \
+            case PTL_FLOAT_COMPLEX:       NONBUILTIN_INT_CAS(float complex, op); break;       \
         }                                                                                     \
     }
 #define PERFORM_INTEGER_DATATYPE_FUNC(fname, op)                                           \
@@ -242,14 +242,14 @@
                                                          ptl_datatype_t dt)                \
     {                                                                                      \
         switch (dt) {                                                                      \
-            case PTL_CHAR:   NONBUILTIN_INT_CAS(int8_t, op); break;                        \
-            case PTL_UCHAR:  NONBUILTIN_INT_CAS(uint8_t, op); break;                       \
-            case PTL_SHORT:  NONBUILTIN_INT_CAS(int16_t, op); break;                       \
-            case PTL_USHORT: NONBUILTIN_INT_CAS(uint16_t, op); break;                      \
-            case PTL_INT:    NONBUILTIN_INT_CAS(int32_t, op); break;                       \
-            case PTL_UINT:   NONBUILTIN_INT_CAS(uint32_t, op); break;                      \
-            case PTL_LONG:   NONBUILTIN_INT_CAS(int64_t, op); break;                       \
-            case PTL_ULONG:  NONBUILTIN_INT_CAS(uint64_t, op); break;                      \
+            case PTL_INT8_T:   NONBUILTIN_INT_CAS(int8_t, op); break;                      \
+            case PTL_UINT8_T:  NONBUILTIN_INT_CAS(uint8_t, op); break;                     \
+            case PTL_INT16_T:  NONBUILTIN_INT_CAS(int16_t, op); break;                     \
+            case PTL_UINT16_T: NONBUILTIN_INT_CAS(uint16_t, op); break;                    \
+            case PTL_INT32_T:  NONBUILTIN_INT_CAS(int32_t, op); break;                     \
+            case PTL_UINT32_T: NONBUILTIN_INT_CAS(uint32_t, op); break;                    \
+            case PTL_INT64_T:  NONBUILTIN_INT_CAS(int64_t, op); break;                     \
+            case PTL_UINT64_T: NONBUILTIN_INT_CAS(uint64_t, op); break;                    \
             default: abort();                                                              \
         }                                                                                  \
     }
@@ -272,16 +272,16 @@ static void inline PtlInternalPerformAtomicSum(volatile uint8_t *restrict dest,
                                                ptl_datatype_t             dt)
 {
     switch (dt) {
-        case PTL_CHAR:                INT_BUILTIN(int8_t, ADD_OPERATION); break;
-        case PTL_UCHAR:               INT_BUILTIN(uint8_t, ADD_OPERATION); break;
-        case PTL_SHORT:               INT_BUILTIN(int16_t, ADD_OPERATION); break;
-        case PTL_USHORT:              INT_BUILTIN(uint16_t, ADD_OPERATION); break;
-        case PTL_INT:                 INT_BUILTIN(int32_t, ADD_OPERATION); break;
-        case PTL_UINT:                INT_BUILTIN(uint32_t, ADD_OPERATION); break;
-        case PTL_LONG:                INT_BUILTIN(int64_t, ADD_OPERATION); break;
-        case PTL_ULONG:               INT_BUILTIN(uint64_t, ADD_OPERATION); break;
-        case PTL_FLOAT: NONBUILTIN_CAS(float, uint32_t, ADD_OP); break;
-        case PTL_DOUBLE: NONBUILTIN_CAS(double, uint64_t, ADD_OP); break;
+        case PTL_INT8_T:              INT_BUILTIN(int8_t, ADD_OPERATION); break;
+        case PTL_UINT8_T:             INT_BUILTIN(uint8_t, ADD_OPERATION); break;
+        case PTL_INT16_T:             INT_BUILTIN(int16_t, ADD_OPERATION); break;
+        case PTL_UINT16_T:            INT_BUILTIN(uint16_t, ADD_OPERATION); break;
+        case PTL_INT32_T:             INT_BUILTIN(int32_t, ADD_OPERATION); break;
+        case PTL_UINT32_T:            INT_BUILTIN(uint32_t, ADD_OPERATION); break;
+        case PTL_INT64_T:             INT_BUILTIN(int64_t, ADD_OPERATION); break;
+        case PTL_UINT64_T:            INT_BUILTIN(uint64_t, ADD_OPERATION); break;
+        case PTL_FLOAT:               NONBUILTIN_CAS(float, uint32_t, ADD_OP); break;
+        case PTL_DOUBLE:              NONBUILTIN_CAS(double, uint64_t, ADD_OP); break;
         case PTL_LONG_DOUBLE:         INT_BUILTIN(long double, ADD_OPERATION); break;
         case PTL_LONG_DOUBLE_COMPLEX: INT_BUILTIN(long double complex, ADD_OPERATION); break;
         case PTL_DOUBLE_COMPLEX:      INT_BUILTIN(double complex, ADD_OPERATION); break;
@@ -294,14 +294,14 @@ static void inline PtlInternalPerformAtomicSwap(volatile uint8_t *restrict dest,
                                                 ptl_datatype_t             dt)
 {
     switch (dt) {
-        case PTL_CHAR:                BUILTINSWAP(int8_t); break;
-        case PTL_UCHAR:               BUILTINSWAP(uint8_t); break;
-        case PTL_SHORT:               BUILTINSWAP(int16_t); break;
-        case PTL_USHORT:              BUILTINSWAP(uint16_t); break;
-        case PTL_INT:                 BUILTINSWAP(int32_t); break;
-        case PTL_UINT:                BUILTINSWAP(uint32_t); break;
-        case PTL_LONG:                BUILTINSWAP(int64_t); break;
-        case PTL_ULONG:               BUILTINSWAP(uint64_t); break;
+        case PTL_INT8_T:              BUILTINSWAP(int8_t); break;
+        case PTL_UINT8_T:             BUILTINSWAP(uint8_t); break;
+        case PTL_INT16_T:             BUILTINSWAP(int16_t); break;
+        case PTL_UINT16_T:            BUILTINSWAP(uint16_t); break;
+        case PTL_INT32_T:             BUILTINSWAP(int32_t); break;
+        case PTL_UINT32_T:            BUILTINSWAP(uint32_t); break;
+        case PTL_INT64_T:             BUILTINSWAP(int64_t); break;
+        case PTL_UINT64_T:            BUILTINSWAP(uint64_t); break;
         case PTL_FLOAT:               BUILTINSWAP(uint32_t); break;
         case PTL_DOUBLE:              BUILTINSWAP(uint64_t); break;
         case PTL_FLOAT_COMPLEX:       BUILTINSWAP(uint64_t); break;
@@ -446,15 +446,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
         }
         case PTL_CSWAP:
             switch (dt) {
-                case PTL_CHAR:                CAS(int8_t); break;
-                case PTL_UCHAR:               CAS(uint8_t); break;
-                case PTL_SHORT:               CAS(int16_t); break;
-                case PTL_USHORT:              CAS(uint16_t); break;
-                case PTL_INT:                 CAS(int32_t); break;
-                case PTL_UINT:                CAS(uint32_t); break;
+                case PTL_INT8_T:              CAS(int8_t); break;
+                case PTL_UINT8_T:             CAS(uint8_t); break;
+                case PTL_INT16_T:             CAS(int16_t); break;
+                case PTL_UINT16_T:            CAS(uint16_t); break;
+                case PTL_INT32_T:             CAS(int32_t); break;
+                case PTL_UINT32_T:            CAS(uint32_t); break;
                 case PTL_FLOAT:               CAS(float); break;
-                case PTL_LONG:                CAS(uint64_t); break;
-                case PTL_ULONG:               CAS(uint64_t); break;
+                case PTL_INT64_T:             CAS(uint64_t); break;
+                case PTL_UINT64_T:            CAS(uint64_t); break;
                 case PTL_DOUBLE:              CAS(double); break;
                 case PTL_LONG_DOUBLE:         CAS(long double); break;
                 case PTL_FLOAT_COMPLEX:       CAS(float complex); break;
@@ -464,15 +464,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_CSWAP_NE:
             switch (dt) {
-                case PTL_CHAR:                CAS_NE(int8_t); break;
-                case PTL_UCHAR:               CAS_NE(uint8_t); break;
-                case PTL_SHORT:               CAS_NE(int16_t); break;
-                case PTL_USHORT:              CAS_NE(uint16_t); break;
-                case PTL_INT:                 CAS_NE(int32_t); break;
-                case PTL_UINT:                CAS_NE(uint32_t); break;
+                case PTL_INT8_T:              CAS_NE(int8_t); break;
+                case PTL_UINT8_T:             CAS_NE(uint8_t); break;
+                case PTL_INT16_T:             CAS_NE(int16_t); break;
+                case PTL_UINT16_T:            CAS_NE(uint16_t); break;
+                case PTL_INT32_T:             CAS_NE(int32_t); break;
+                case PTL_UINT32_T:            CAS_NE(uint32_t); break;
                 case PTL_FLOAT:               CAS_NE(float); break;
-                case PTL_LONG:                CAS_NE(uint64_t); break;
-                case PTL_ULONG:               CAS_NE(uint64_t); break;
+                case PTL_INT64_T:             CAS_NE(uint64_t); break;
+                case PTL_UINT64_T:            CAS_NE(uint64_t); break;
                 case PTL_DOUBLE:              CAS_NE(double); break;
                 case PTL_LONG_DOUBLE:         CAS_NE(long double); break;
                 case PTL_FLOAT_COMPLEX:       CAS_NE(float complex); break;
@@ -482,15 +482,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_CSWAP_LE:
             switch (dt) {
-                case PTL_CHAR:                CAS_LE(int8_t); break;
-                case PTL_UCHAR:               CAS_LE(uint8_t); break;
-                case PTL_SHORT:               CAS_LE(int16_t); break;
-                case PTL_USHORT:              CAS_LE(uint16_t); break;
-                case PTL_INT:                 CAS_LE(int32_t); break;
-                case PTL_UINT:                CAS_LE(uint32_t); break;
+                case PTL_INT8_T:              CAS_LE(int8_t); break;
+                case PTL_UINT8_T:             CAS_LE(uint8_t); break;
+                case PTL_INT16_T:             CAS_LE(int16_t); break;
+                case PTL_UINT16_T:            CAS_LE(uint16_t); break;
+                case PTL_INT32_T:             CAS_LE(int32_t); break;
+                case PTL_UINT32_T:            CAS_LE(uint32_t); break;
                 case PTL_FLOAT:               CAS_LE(float); break;
-                case PTL_LONG:                CAS_LE(uint64_t); break;
-                case PTL_ULONG:               CAS_LE(uint64_t); break;
+                case PTL_INT64_T:             CAS_LE(uint64_t); break;
+                case PTL_UINT64_T:            CAS_LE(uint64_t); break;
                 case PTL_DOUBLE:              CAS_LE(double); break;
                 case PTL_LONG_DOUBLE:         CAS_LE(long double); break;
                 default:                      abort();
@@ -498,15 +498,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_CSWAP_LT:
             switch (dt) {
-                case PTL_CHAR:                CAS_LT(int8_t); break;
-                case PTL_UCHAR:               CAS_LT(uint8_t); break;
-                case PTL_SHORT:               CAS_LT(int16_t); break;
-                case PTL_USHORT:              CAS_LT(uint16_t); break;
-                case PTL_INT:                 CAS_LT(int32_t); break;
-                case PTL_UINT:                CAS_LT(uint32_t); break;
+                case PTL_INT8_T:              CAS_LT(int8_t); break;
+                case PTL_UINT8_T:             CAS_LT(uint8_t); break;
+                case PTL_INT16_T:             CAS_LT(int16_t); break;
+                case PTL_UINT16_T:            CAS_LT(uint16_t); break;
+                case PTL_INT32_T:             CAS_LT(int32_t); break;
+                case PTL_UINT32_T:            CAS_LT(uint32_t); break;
                 case PTL_FLOAT:               CAS_LT(float); break;
-                case PTL_LONG:                CAS_LT(uint64_t); break;
-                case PTL_ULONG:               CAS_LT(uint64_t); break;
+                case PTL_INT64_T:             CAS_LT(uint64_t); break;
+                case PTL_UINT64_T:            CAS_LT(uint64_t); break;
                 case PTL_DOUBLE:              CAS_LT(double); break;
                 case PTL_LONG_DOUBLE:         CAS_LT(long double); break;
                 default:                      abort();
@@ -514,15 +514,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_CSWAP_GE:
             switch (dt) {
-                case PTL_CHAR:                CAS_GE(int8_t); break;
-                case PTL_UCHAR:               CAS_GE(uint8_t); break;
-                case PTL_SHORT:               CAS_GE(int16_t); break;
-                case PTL_USHORT:              CAS_GE(uint16_t); break;
-                case PTL_INT:                 CAS_GE(int32_t); break;
-                case PTL_UINT:                CAS_GE(uint32_t); break;
+                case PTL_INT8_T:              CAS_GE(int8_t); break;
+                case PTL_UINT8_T:             CAS_GE(uint8_t); break;
+                case PTL_INT16_T:             CAS_GE(int16_t); break;
+                case PTL_UINT16_T:            CAS_GE(uint16_t); break;
+                case PTL_INT32_T:             CAS_GE(int32_t); break;
+                case PTL_UINT32_T:            CAS_GE(uint32_t); break;
                 case PTL_FLOAT:               CAS_GE(float); break;
-                case PTL_LONG:                CAS_GE(uint64_t); break;
-                case PTL_ULONG:               CAS_GE(uint64_t); break;
+                case PTL_INT64_T:             CAS_GE(uint64_t); break;
+                case PTL_UINT64_T:            CAS_GE(uint64_t); break;
                 case PTL_DOUBLE:              CAS_GE(double); break;
                 case PTL_LONG_DOUBLE:         CAS_GE(long double); break;
                 default:                      abort();
@@ -530,15 +530,15 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_CSWAP_GT:
             switch (dt) {
-                case PTL_CHAR:                CAS_GT(int8_t); break;
-                case PTL_UCHAR:               CAS_GT(uint8_t); break;
-                case PTL_SHORT:               CAS_GT(int16_t); break;
-                case PTL_USHORT:              CAS_GT(uint16_t); break;
-                case PTL_INT:                 CAS_GT(int32_t); break;
-                case PTL_UINT:                CAS_GT(uint32_t); break;
+                case PTL_INT8_T:              CAS_GT(int8_t); break;
+                case PTL_UINT8_T:             CAS_GT(uint8_t); break;
+                case PTL_INT16_T:             CAS_GT(int16_t); break;
+                case PTL_UINT16_T:            CAS_GT(uint16_t); break;
+                case PTL_INT32_T:             CAS_GT(int32_t); break;
+                case PTL_UINT32_T:            CAS_GT(uint32_t); break;
                 case PTL_FLOAT:               CAS_GT(float); break;
-                case PTL_LONG:                CAS_GT(uint64_t); break;
-                case PTL_ULONG:               CAS_GT(uint64_t); break;
+                case PTL_INT64_T:             CAS_GT(uint64_t); break;
+                case PTL_UINT64_T:            CAS_GT(uint64_t); break;
                 case PTL_DOUBLE:              CAS_GT(double); break;
                 case PTL_LONG_DOUBLE:         CAS_GT(long double); break;
                 default:                      abort();
@@ -546,20 +546,20 @@ void INTERNAL PtlInternalPerformAtomicArg(uint8_t *restrict dest,
             break;
         case PTL_MSWAP:
             switch (dt) {
-                case PTL_CHAR:
-                case PTL_UCHAR:
+                case PTL_INT8_T:
+                case PTL_UINT8_T:
                     MAS(uint8_t);
                     break;
-                case PTL_SHORT:
-                case PTL_USHORT:
+                case PTL_INT16_T:
+                case PTL_UINT16_T:
                     MAS(uint16_t);
                     break;
-                case PTL_INT:
-                case PTL_UINT:
+                case PTL_INT32_T:
+                case PTL_UINT32_T:
                     MAS(uint32_t);
                     break;
-                case PTL_LONG:
-                case PTL_ULONG:
+                case PTL_INT64_T:
+                case PTL_UINT64_T:
                     MAS(uint64_t);
                     break;
                 default:              /* should never happen */
