@@ -163,6 +163,8 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
 	xi->put_md = md;
+	xi->put_eq = md->eq;
+	xi->put_ct = md->ct;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
 	xi->threshold = 0;
@@ -247,6 +249,8 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
 	xi->put_md = md;
+	xi->put_eq = md->eq;
+	xi->put_ct = md->ct;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
 	xi->threshold = threshold;
@@ -310,6 +314,8 @@ static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->get_md = md;
+	xi->get_eq = md->eq;
+	xi->get_ct = md->ct;
 	xi->user_ptr = user_ptr;
 
 	xi->rlength = length;
@@ -567,6 +573,8 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
 	xi->put_md = md;
+	xi->put_eq = md->eq;
+	xi->put_ct = md->ct;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
 	xi->atom_op = atom_op;
@@ -645,6 +653,8 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
 	xi->put_md = md;
+	xi->put_eq = md->eq;
+	xi->put_ct = md->ct;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
 	xi->atom_op = atom_op;
@@ -744,7 +754,11 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
+	xi->put_eq = put_md->eq;
+	xi->put_ct = put_md->ct;
 	xi->get_md = get_md;
+	xi->get_eq = get_md->eq;
+	xi->get_ct = get_md->ct;
 	xi->rlength = length;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
@@ -862,7 +876,11 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
+	xi->put_eq = put_md->eq;
+	xi->put_ct = put_md->ct;
 	xi->get_md = get_md;
+	xi->get_eq = get_md->eq;
+	xi->get_ct = get_md->ct;
 	xi->rlength = length;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
@@ -1070,7 +1088,11 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
+	xi->put_eq = put_md->eq;
+	xi->put_ct = put_md->ct;
 	xi->get_md = get_md;
+	xi->get_eq = get_md->eq;
+	xi->get_ct = get_md->ct;
 	xi->hdr_data = hdr_data;
 	xi->operand = opval;
 	xi->user_ptr = user_ptr;
@@ -1195,7 +1217,11 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
+	xi->put_eq = put_md->eq;
+	xi->put_ct = put_md->ct;
 	xi->get_md = get_md;
+	xi->get_eq = get_md->eq;
+	xi->get_ct = get_md->ct;
 	xi->hdr_data = hdr_data;
 	xi->operand = opval;
 	xi->user_ptr = user_ptr;

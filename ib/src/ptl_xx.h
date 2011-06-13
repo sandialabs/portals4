@@ -11,12 +11,16 @@ typedef ptl_handle_any_t ptl_handle_xt_t;
 
 /* Event mask */
 enum {
-	XI_SEND_EVENT		= (1 << 0),
-	XI_ACK_EVENT		= (1 << 1),
-	XI_REPLY_EVENT		= (1 << 2),
-	XI_CT_SEND_EVENT	= (1 << 3),
-	XI_CT_ACK_EVENT		= (1 << 4),
-	XI_CT_REPLY_EVENT	= (1 << 5),
+	XI_PUT_SUCCESS_DISABLE_EVENT= (1 << 0),
+	XI_GET_SUCCESS_DISABLE_EVENT= (1 << 1),
+	XI_SEND_EVENT				= (1 << 2),
+	XI_ACK_EVENT				= (1 << 3),
+	XI_REPLY_EVENT				= (1 << 4),
+	XI_CT_SEND_EVENT			= (1 << 5),
+	XI_PUT_CT_BYTES				= (1 << 6),
+	XI_GET_CT_BYTES				= (1 << 7),
+	XI_CT_ACK_EVENT				= (1 << 8),
+	XI_CT_REPLY_EVENT			= (1 << 9),
 
 	XT_COMM_EVENT		= (1 << 0),
 	XT_CT_COMM_EVENT	= (1 << 1),
@@ -84,7 +88,11 @@ typedef struct xi {
 	ptl_size_t		put_offset;
 	ptl_size_t		get_offset;
 	md_t			*put_md;
+	struct eq		*put_eq;
 	md_t			*get_md;
+	struct eq		*get_eq;
+	struct ct       *put_ct;
+	struct ct       *get_ct;
 	void			*user_ptr;
 	ptl_process_t		target;
 
