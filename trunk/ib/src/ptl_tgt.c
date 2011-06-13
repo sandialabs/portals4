@@ -1370,7 +1370,25 @@ static int tgt_overflow_event(xt_t *xt)
 	assert(xt->le == NULL);
 	assert(xt->matching.le);
 
-	make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->start);
+	if (!(xt->matching.le->options & PTL_LE_EVENT_OVER_DISABLE)) {
+		switch (xt->operation) {
+		case OP_PUT:
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->start);
+			break;
+
+		case OP_ATOMIC:
+		case OP_FETCH:
+		case OP_SWAP:
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->start);
+			break;
+
+		default:
+			/* Not possible. */
+			abort();
+			return STATE_TGT_ERROR;
+			break;
+		}
+	}
 
 	le_put(xt->matching.le);
 	xt->matching.le = NULL;
