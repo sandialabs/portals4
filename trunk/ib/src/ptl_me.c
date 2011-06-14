@@ -47,8 +47,8 @@ void me_unlink(me_t *me, int send_event)
 		list_del_init(&me->list);
 		pthread_spin_unlock(&pt->lock);
 
-		if (send_event && me->pt->eq)
-			make_le_event((le_t *)me, me->pt->eq, PTL_EVENT_AUTO_UNLINK);
+		if (send_event && me->eq)
+			make_le_event((le_t *)me, me->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
 
 		me->pt = NULL;
 
@@ -92,19 +92,18 @@ static int me_get_me(ni_t *ni, me_t **me_p)
  *	check call parameters for PtlMEAppend
  */
 static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
-		    ptl_me_t *me_init, ptl_list_t ptl_list,
-		    ptl_handle_me_t *me_handle)
+						   ptl_me_t *me_init, ptl_list_t ptl_list,
+						   ptl_search_op_t search_op,
+						   ptl_handle_le_t *me_handle)
 {
 	return le_append_check(TYPE_ME, ni, pt_index, (ptl_le_t *)me_init,
-			       ptl_list, (ptl_handle_le_t *)me_handle);
+						   ptl_list, search_op, (ptl_handle_le_t *)me_handle);
 }
 
-int PtlMEAppend(ptl_handle_ni_t ni_handle,
-		ptl_pt_index_t pt_index,
-		ptl_me_t *me_init,
-		ptl_list_t ptl_list,
-		void *user_ptr,
-		ptl_handle_me_t *me_handle)
+static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+							   ptl_me_t *me_init, ptl_list_t ptl_list,
+							   ptl_search_op_t search_op, void *user_ptr,
+							   ptl_handle_me_t *me_handle)
 {
 	int err;
 	gbl_t *gbl;
@@ -123,7 +122,7 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 
-	err = me_append_check(ni, pt_index, me_init, ptl_list, me_handle);
+	err = me_append_check(ni, pt_index, me_init, ptl_list, search_op, me_handle);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
@@ -142,6 +141,7 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 	}
 
 	me->pt_index = pt_index;
+	me->eq = ni->pt[me->pt_index].eq;
 	me->uid = me_init->ac_id.uid;
 	me->user_ptr = user_ptr;
 	me->start = me_init->start;
@@ -166,43 +166,77 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle,
 		goto err3;
 	}
 
-	if (ptl_list == PTL_PRIORITY_LIST) {
-		if (check_overflow((le_t *)me)) {
-			/* Some XT were processed. */
-			if (me->options & PTL_ME_USE_ONCE) {
-				eq_t *eq = ni->pt[me->pt_index].eq;
+	if (me_handle) {
+		if (ptl_list == PTL_PRIORITY_LIST) {
+			if (check_overflow((le_t *)me)) {
+				/* Some XT were processed. */
+				if (me->options & PTL_ME_USE_ONCE) {
+					eq_t *eq = ni->pt[me->pt_index].eq;
 
-				if (eq && !(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
-					make_le_event((le_t *)me, eq, PTL_EVENT_AUTO_UNLINK);
+					if (eq && !(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+						make_le_event((le_t *)me, eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
+					}
+					*me_handle = me_to_handle(me);
+					me_put(me);
+
+					goto done;
 				}
-				*me_handle = me_to_handle(me);
-				me_put(me);
-
-				goto done;
 			}
 		}
-	}
 
-	err = le_append_pt(ni, (le_t *)me);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
-	}
+		err = le_append_pt(ni, (le_t *)me);
+		if (unlikely(err)) {
+			WARN();
+			goto err3;
+		}
 
-	*me_handle = me_to_handle(me);
+		*me_handle = me_to_handle(me);
+
+	} else {
+		if (search_op == PTL_SEARCH_ONLY)
+			err = check_overflow_search_only((le_t *)me);
+		else
+			err = check_overflow_search_delete((le_t *)me);
+
+		if (err)
+			goto err3;
+
+		me_put(me);
+	}
 
  done:
 	ni_put(ni);
 	gbl_put(gbl);
 	return PTL_OK;
 
-err3:
+ err3:
 	me_put(me);
-err2:
+ err2:
 	ni_put(ni);
-err1:
+ err1:
 	gbl_put(gbl);
 	return err;
+}
+
+int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+                ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
+                ptl_handle_me_t *me_handle)
+{
+	return me_append_or_search(ni_handle, pt_index,
+							   me_init, ptl_list, 0, user_ptr,
+							   me_handle);
+}
+
+int PtlMESearch(
+	ptl_handle_ni_t		ni_handle,
+	ptl_pt_index_t		pt_index,
+	ptl_me_t		*me_init,
+	ptl_search_op_t		search_op,
+	void			*user_ptr)
+{
+	return me_append_or_search(ni_handle, pt_index,
+							   me_init, 0, search_op, user_ptr,
+							   NULL);
 }
 
 int PtlMEUnlink(ptl_handle_me_t me_handle)
@@ -233,63 +267,6 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	gbl_put(gbl);
 	return PTL_OK;
 
-err1:
-	gbl_put(gbl);
-	return err;
-}
-
-/*
- * PtlMESearch
- * returns:
- *	PTL_OK
- *	PTL_ARG_INVALID
- *	PTL_NO_INIT
- */
-int PtlMESearch(
-	ptl_handle_ni_t		ni_handle,
-	ptl_pt_index_t		pt_index,
-	ptl_me_t		*me_init,
-	ptl_search_op_t		search_op,
-	void			*user_ptr)
-{
-	int err;
-	gbl_t *gbl;
-	ni_t *ni;
-	ct_t *ct;
-
-	err = get_gbl(&gbl);
-	if (unlikely(err))
-		return err;
-
-	err = ni_get(ni_handle, &ni);
-	if (unlikely(err))
-		goto err1;
-
-	err = le_search_check(TYPE_ME, ni, pt_index,
-			      (ptl_le_t *)me_init, search_op);
-	if (unlikely(err))
-		goto err2;
-
-	err = ct_get(me_init->ct_handle, &ct);
-	if (unlikely(err))
-		goto err3;
-
-	if (unlikely(ct && (to_ni(ct) != ni))) {
-		err = PTL_ARG_INVALID;
-		goto err3;
-	}
-
-	/* TODO implement rest of PtlMESearch */
-
-	ct_put(ct);
-	ni_put(ni);
-	gbl_put(gbl);
-	return PTL_OK;
-
-err3:
-	ct_put(ct);
-err2:
-	ni_put(ni);
 err1:
 	gbl_put(gbl);
 	return err;

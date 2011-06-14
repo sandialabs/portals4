@@ -243,5 +243,8 @@ int process_init(xi_t *xi);
 int process_tgt(xt_t *xt);
 
 int check_overflow(le_t *le);
+int check_overflow_search_only(le_t *le);
+int check_overflow_search_delete(le_t *le);
+
 
 #endif /* PTL_LOC_H */
