@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 	if (!doc)
 		exit(-1);
 
-	run_doc(doc);
+	ret = run_doc(doc);
 
 	cio_free_input(doc);
 
@@ -153,5 +153,5 @@ int main(int argc, char *argv[])
 
 	MPI_Finalize();
 
-	return 0;
+	return ret;
 }
