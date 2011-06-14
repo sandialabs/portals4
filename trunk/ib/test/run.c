@@ -1714,7 +1714,7 @@ static void set_default_info(struct node_info *info)
 	info->ack_req				= PTL_NO_ACK_REQ;
 }
 
-void run_doc(xmlDocPtr doc)
+int run_doc(xmlDocPtr doc)
 {
 	int errs;
 	struct node_info *info;
@@ -1723,7 +1723,7 @@ void run_doc(xmlDocPtr doc)
 	info = malloc(sizeof(*info));
 	if (!info) {
 		printf("unable to allocate memory for node info\n");
-		return;
+		return 1;
 	}
 
 	set_default_info(info);
@@ -1735,4 +1735,6 @@ void run_doc(xmlDocPtr doc)
 	free(info);
 
 	printf("	Total Errors %d\n\n", errs);
+
+	return errs != 0;
 }

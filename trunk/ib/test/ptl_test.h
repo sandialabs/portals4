@@ -230,7 +230,7 @@ unsigned int get_me_opt(char *val);
 unsigned int get_le_opt(char *val);
 
 /* run.c */
-void run_doc(xmlDocPtr doc);
+int run_doc(xmlDocPtr doc);
 
 /* rt.c */
 int ompi_rt_init(struct node_info *info);
