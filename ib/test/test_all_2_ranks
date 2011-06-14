@@ -47,3 +47,5 @@ echo "===== test_put_overflow.xml ====="
 ./ptl_test -f test_put_overflow.xml
 echo "===== test_atomic_overflow.xml ====="
 ./ptl_test -f test_atomic_overflow.xml
+echo "===== test_search.xml ====="
+./ptl_test -f test_search.xml

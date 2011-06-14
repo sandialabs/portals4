@@ -47,7 +47,7 @@ static int make_comm_event(xt_t *xt)
 	}
 
 	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
-		make_target_event(xt, xt->pt->eq, type, xt->le->start+xt->moffset);
+		make_target_event(xt, xt->pt->eq, type, xt->le->user_ptr, xt->le->start+xt->moffset);
 	}
 
 	xt->event_mask &= ~XT_COMM_EVENT;
@@ -1350,7 +1350,8 @@ static int tgt_cleanup(xt_t *xt)
 		xt->pt->enabled = 0;
 		xt->pt->disable &= ~PT_AUTO_DISABLE;
 		pthread_spin_unlock(&xt->pt->lock);
-		make_target_event(xt, xt->pt->eq, PTL_EVENT_PT_DISABLED, NULL);
+		make_target_event(xt, xt->pt->eq, PTL_EVENT_PT_DISABLED,
+						  xt->matching.le ? xt->matching.le->user_ptr : NULL, NULL);
 	} else
 		pthread_spin_unlock(&xt->pt->lock);
 
@@ -1375,13 +1376,13 @@ static int tgt_overflow_event(xt_t *xt)
 	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
 		switch (xt->operation) {
 		case OP_PUT:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->matching.le->user_ptr, xt->start);
 			break;
 
 		case OP_ATOMIC:
 		case OP_FETCH:
 		case OP_SWAP:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
 			break;
 
 		default:
@@ -1547,7 +1548,8 @@ exit:
 }
 
 /* Check whether that LE/ME matches one or more XT on the unexpected
- * list. Return true is at least one XT was processed..
+ * list. Return true is at least one XT was processed.
+ * search_op can 
  */
 int check_overflow(le_t *le)
 {
@@ -1597,4 +1599,103 @@ int check_overflow(le_t *le)
 	}
 
 	return ret;
+}
+
+/* Check whether that LE/ME matches one or more XT on the unexpected
+ * list.
+ */
+int check_overflow_search_only(le_t *le)
+{
+	xt_t *xt;
+	xt_t xt_dup;
+	xt_t *n;
+	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
+	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
+	int found = 0;
+
+	/* Check this new LE against the overflowlist. */
+	pthread_spin_lock(&pt->lock);
+
+	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
+
+		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+			found = 1;
+
+			/* Work on a copy of XT because it might be disposed
+			 * before we can post the event and because we have to
+			 * set the ni_fail field. */
+			xt_dup = *xt;
+			break;
+		}
+	}
+
+	pthread_spin_unlock(&pt->lock);
+
+	if (le->eq) {
+		if (found) {
+			xt_dup.ni_fail = PTL_NI_OK; /* is that really necessary ? */
+			make_target_event(&xt_dup, le->eq, PTL_EVENT_SEARCH, le->user_ptr, NULL);
+		}
+		else
+			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_UNDELIVERABLE);
+	}
+
+	return PTL_OK;
+}
+
+int check_overflow_search_delete(le_t *le)
+{
+	xt_t *xt;
+	xt_t *n;
+	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
+	struct list_head xt_list;
+	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
+
+	INIT_LIST_HEAD(&xt_list);
+
+	/* Check this new LE against the overflowlist. */
+	pthread_spin_lock(&pt->lock);
+
+	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
+
+		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+			list_del(&xt->unexpected_list);
+			list_add_tail(&xt->unexpected_list, &xt_list);
+
+			if (le->options & PTL_LE_USE_ONCE)
+				break;
+		}
+	}
+
+	pthread_spin_unlock(&pt->lock);
+
+	if (list_empty(&xt_list)) {
+			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_UNDELIVERABLE);
+	} else {
+
+		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
+			int err;
+
+			pthread_spin_lock(&xt->state_lock);
+
+			assert(xt->matching.le == NULL);
+			xt->matching.le = le;
+			le_ref(le);
+
+			list_del(&xt->unexpected_list);
+
+			/* tgt must release reference to any LE/ME */
+			if (xt->le) {
+				le_put(xt->le);
+				xt->le = NULL;
+			}
+
+			pthread_spin_unlock(&xt->state_lock);
+
+			tgt_overflow_event(xt);
+			xt_put(xt);
+		}
+	}
+
+	return PTL_NI_OK;
 }

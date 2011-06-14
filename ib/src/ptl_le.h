@@ -14,6 +14,7 @@ struct ct;
 	ptl_pt_index_t		pt_index;	\
 	pt_t			*pt;		\
 	ptl_list_t		ptl_list;	\
+	struct eq       *eq;		\
 	void			*user_ptr;	\
 	void			*start;		\
 	unsigned int		num_iov;	\
@@ -82,11 +83,8 @@ static inline ptl_handle_le_t le_to_handle(le_t *le)
 }
 
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
-		    ptl_le_t *le_init, ptl_list_t ptl_list,
-		    ptl_handle_le_t *le_handle);
-
-int le_search_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
-		    ptl_le_t *le_init, ptl_search_op_t search_op);
+					ptl_le_t *le_init, ptl_list_t ptl_list, ptl_search_op_t search_op,
+					ptl_handle_le_t *le_handle);
 
 int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le);
 

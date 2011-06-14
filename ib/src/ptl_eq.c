@@ -404,7 +404,7 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	if (debug) event_dump(ev);
 }
 
-void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
+void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr, void *start)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -426,13 +426,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 	ev->mlength		= xt->mlength;
 	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
-	if (xt->le)
-		ev->user_ptr = xt->le->user_ptr;
-	else if (xt->matching.le)
-		ev->user_ptr = xt->matching.le->user_ptr;
-	else
-		/* Note: can that case happen ? */
-		ev->user_ptr = NULL;
+	ev->user_ptr = user_ptr;
 	ev->hdr_data		= xt->hdr_data;
 	ev->ni_fail_type	= xt->ni_fail;
 	ev->atomic_operation	= xt->atom_op;
@@ -456,7 +450,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *start)
 }
 
 /* Makes an LE/ME event */
-void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type)
+void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail_type)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -471,7 +465,7 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type)
 	ev->type = type;
 	ev->pt_index = le->pt_index;
 	ev->user_ptr = le->user_ptr;
-	ev->ni_fail_type = PTL_NI_OK; /* may become a parameter */
+	ev->ni_fail_type = fail_type;
 
 	eq->producer++;
 	if (eq->producer >= eq->count) {
