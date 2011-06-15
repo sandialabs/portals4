@@ -1549,7 +1549,7 @@ exit:
 
 /* Check whether that LE/ME matches one or more XT on the unexpected
  * list. Return true is at least one XT was processed.
- * search_op can 
+ * PT lock must be taken.
  */
 int check_overflow(le_t *le)
 {
@@ -1560,11 +1560,11 @@ int check_overflow(le_t *le)
 	int ret;
 	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
 
+	assert(pthread_spin_trylock(&pt->lock) != 0);
+
 	INIT_LIST_HEAD(&xt_list);
 
 	/* Check this new LE against the overflowlist. */
-	pthread_spin_lock(&pt->lock);
-
 	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
 
 		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
@@ -1576,26 +1576,31 @@ int check_overflow(le_t *le)
 		}
 	}
 
-	pthread_spin_unlock(&pt->lock);
-
 	ret = !list_empty(&xt_list);
 
-	list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
-		int err;
+	if (ret) {
+		/* Process the elements of the list. */
+		pthread_spin_unlock(&pt->lock);
 
-		pthread_spin_lock(&xt->state_lock);
+		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
+			int err;
 
-		assert(xt->matching.le == NULL);
-		xt->matching.le = le;
-		le_ref(le);
+			pthread_spin_lock(&xt->state_lock);
 
-		list_del(&xt->unexpected_list);
+			assert(xt->matching.le == NULL);
+			xt->matching.le = le;
+			le_ref(le);
 
-		pthread_spin_unlock(&xt->state_lock);
+			list_del(&xt->unexpected_list);
 
-		err = process_tgt(xt);
-		if (err)
-			WARN();
+			pthread_spin_unlock(&xt->state_lock);
+
+			err = process_tgt(xt);
+			if (err)
+				WARN();
+		}
+
+		pthread_spin_lock(&pt->lock);
 	}
 
 	return ret;

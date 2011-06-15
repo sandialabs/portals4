@@ -264,7 +264,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 {
 	pt_t *pt = &ni->pt[le->pt_index];
 
-	pthread_spin_lock(&pt->lock);
+	assert(pthread_spin_trylock(&pt->lock) != 0);
 
 	if (le->ptl_list == PTL_PRIORITY_LIST) {
 		pt->priority_size++;
@@ -285,7 +285,6 @@ int le_append_pt(ni_t *ni, le_t *le)
 	}
 
 	le->pt = pt;
-	pthread_spin_unlock(&pt->lock);
 
 	return PTL_OK;
 }
@@ -301,6 +300,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	gbl_t *gbl;
 	ni_t *ni;
 	le_t *le;
+	pt_t *pt;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -323,8 +323,10 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	if (unlikely(err))
 		goto err3;
 
+	pt = &ni->pt[pt_index];
+
 	le->pt_index = pt_index;
-	le->eq = ni->pt[le->pt_index].eq;
+	le->eq = pt->eq;
 	le->uid = le_init->ac_id.uid;
 	le->user_ptr = user_ptr;
 	le->start = le_init->start;
@@ -345,11 +347,17 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	}
 
 	if (le_handle) {
+		pthread_spin_lock(&pt->lock);
+
 		if (ptl_list == PTL_PRIORITY_LIST) {
-			if (check_overflow(le)) {
+			/* To avoid races we must cycle through the list until
+			 * nothing matches anymore. */
+			while(check_overflow(le)) {
 				/* Some XT were processed. */
 				if (le->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[le->pt_index].eq;
+
+					pthread_spin_unlock(&pt->lock);					
 
 					if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
 						make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
@@ -363,6 +371,9 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 		}
 
 		err = le_append_pt(ni, le);
+
+		pthread_spin_unlock(&pt->lock);
+
 		if (unlikely(err))
 			goto err3;
 
