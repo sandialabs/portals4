@@ -266,6 +266,8 @@ int le_append_pt(ni_t *ni, le_t *le)
 
 	assert(pthread_spin_trylock(&pt->lock) != 0);
 
+	le->pt = pt;
+
 	if (le->ptl_list == PTL_PRIORITY_LIST) {
 		pt->priority_size++;
 		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
@@ -283,8 +285,6 @@ int le_append_pt(ni_t *ni, le_t *le)
 		}
 		list_add(&le->list, &pt->overflow_list);
 	}
-
-	le->pt = pt;
 
 	return PTL_OK;
 }
