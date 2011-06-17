@@ -20,8 +20,7 @@ void ref_get(struct ref *ref)
 
 	ref_cnt = __sync_fetch_and_add(&ref->ref_cnt, 1);
 
-	if (ref_cnt <= 0)
-		ptl_warn("ref_cnt = %d <= 0", ref->ref_cnt);
+	assert(ref_cnt >= 1);
 }
 
 int ref_put(struct ref *ref, void (*release)(ref_t *ref))
