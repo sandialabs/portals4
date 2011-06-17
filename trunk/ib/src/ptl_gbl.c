@@ -7,6 +7,9 @@
 #include <netdb.h>
 #include <sys/wait.h>
 
+/* Define to be able to get a dump of some of the data structures. */
+#undef DEBUG_DUMP
+
 /*
  * per process global state
  * acquire proc_gbl_mutex before making changes
@@ -61,9 +64,162 @@ static void *event_loop_func(void *arg)
 	return NULL;
 }
 
+#ifdef DEBUG_DUMP
+static void dump_xi(xi_t *xi)
+{
+	printf("  XI %x\n", xi_to_handle(xi));
+
+	printf("    state = %d\n", xi->state);
+	printf("    next_state = %d\n", xi->next_state);
+	printf("    event_mask = %x\n", xi->event_mask);
+	printf("    recv_buf = %p\n", xi->recv_buf);
+	printf("    ack_req = %d\n", xi->ack_req);
+	printf("    state_waiting = %d\n", xi->state_waiting);
+	if (xi->send_buf) {
+		buf_t *buf = xi->send_buf;
+		req_hdr_t *hdr = (req_hdr_t *)buf->data;
+		printf("    hdr ack_req = %d\n", hdr->ack_req);
+		printf("    hdr pt_index = %d\n", be32_to_cpu(hdr->pt_index));
+	}
+	printf("    ref = %d\n", xi->obj.obj_ref.ref_cnt);
+}
+
+static void dump_everything(int unused)
+{
+	int i, j, k;
+	gbl_t *gbl;
+
+	printf("Dumping gbl\n");
+	
+	get_gbl(&gbl);
+
+	for (i=0; i<gbl->num_iface; i++) {
+
+		for(j=0; j<4; j++) {
+			ni_t *ni = gbl->iface[i].ni[j];
+			xi_t *xi;
+			obj_t *obj;
+
+			if (!ni)
+				continue;
+
+			printf("Dumping NI %d:\n", j);
+			printf("  options: %x\n", ni->options);
+			printf("  xi_wait_list: %d\n", list_empty(&ni->xi_wait_list));
+			printf("  xt_wait_list: %d\n", list_empty(&ni->xt_wait_list));
+			printf("  send_list: %d\n", list_empty(&ni->send_list));
+			printf("  recv_list: %d\n", list_empty(&ni->recv_list));
+
+			printf("  limits.max_entries = %d\n", ni->limits.max_entries);
+			printf("  limits.max_unexpected_headers = %d\n", ni->limits.max_unexpected_headers);
+			printf("  limits.max_mds = %d\n", ni->limits.max_mds);
+			printf("  limits.max_cts = %d\n", ni->limits.max_cts);
+			printf("  limits.max_eqs = %d\n", ni->limits.max_eqs);
+			printf("  limits.max_pt_index = %d\n", ni->limits.max_pt_index);
+			printf("  limits.max_iovecs = %d\n", ni->limits.max_iovecs);
+			printf("  limits.max_list_size = %d\n", ni->limits.max_list_size);
+			printf("  limits.max_triggered_ops = %d\n", ni->limits.max_triggered_ops);
+			printf("  limits.max_msg_size = %zd\n", ni->limits.max_msg_size);
+			printf("  limits.max_atomic_size = %zd\n", ni->limits.max_atomic_size);
+			printf("  limits.max_fetch_atomic_size = %zd\n", ni->limits.max_fetch_atomic_size);
+			printf("  limits.max_waw_ordered_size = %zd\n", ni->limits.max_waw_ordered_size);
+			printf("  limits.max_war_ordered_size = %zd\n", ni->limits.max_war_ordered_size);
+			printf("  limits.max_volatile_size = %zd\n", ni->limits.max_volatile_size);
+			printf("  limits.features = %d\n", ni->limits.features);
+
+
+			printf("  current.max_entries = %d\n", ni->current.max_entries);
+			printf("  current.max_unexpected_headers = %d\n", ni->current.max_unexpected_headers);
+			printf("  current.max_mds = %d\n", ni->current.max_mds);
+			printf("  current.max_cts = %d\n", ni->current.max_cts);
+			printf("  current.max_eqs = %d\n", ni->current.max_eqs);
+			printf("  current.max_pt_index = %d\n", ni->current.max_pt_index);
+			printf("  current.max_iovecs = %d\n", ni->current.max_iovecs);
+			printf("  current.max_list_size = %d\n", ni->current.max_list_size);
+			printf("  current.max_triggered_ops = %d\n", ni->current.max_triggered_ops);
+			printf("  current.max_msg_size = %zd\n", ni->current.max_msg_size);
+			printf("  current.max_atomic_size = %zd\n", ni->current.max_atomic_size);
+			printf("  current.max_fetch_atomic_size = %zd\n", ni->current.max_fetch_atomic_size);
+			printf("  current.max_waw_ordered_size = %zd\n", ni->current.max_waw_ordered_size);
+			printf("  current.max_war_ordered_size = %zd\n", ni->current.max_war_ordered_size);
+			printf("  current.max_volatile_size = %zd\n", ni->current.max_volatile_size);
+			printf("  current.features = %d\n", ni->current.features);
+
+
+			printf("  XI:\n");
+			list_for_each_entry(xi, &ni->xi_wait_list, list) {
+				dump_xi(xi);
+			}
+
+			printf("  PTs:\n");
+			for (k=0; k<ni->limits.max_pt_index; k++) {
+				pt_t *pt = &ni->pt[k];
+				if (!pt->in_use)
+					continue;
+
+				printf("  PT %d:\n", k);
+				printf("    	priority_size = %d\n", pt->priority_size);
+				printf("    	priority_list = %d\n", list_empty(&pt->priority_list));
+				printf("    	overflow_size = %d\n", pt->overflow_size);
+				printf("    	overflow_list = %d\n", list_empty(&pt->overflow_list));
+				printf("    	unexpected_size = %d\n", pt->unexpected_size);
+				printf("    	unexpected_list = %d\n", list_empty(&pt->unexpected_list));
+			}
+
+			printf("  EQs:\n");
+			list_for_each_entry(obj, &ni->eq_pool.busy_list, obj_list) {
+				eq_t *eq = container_of(obj, eq_t, obj);
+
+				printf("  EQ: %x\n", eq_to_handle(eq));
+				printf("    count = %d\n", eq->count);
+				printf("    producer = %d\n", eq->producer);
+				printf("    consumer = %d\n", eq->consumer);
+				printf("    prod_gen = %d\n", eq->prod_gen);
+				printf("    cons_gen = %d\n", eq->cons_gen);
+				printf("    interrupt = %d\n", eq->interrupt);
+				printf("    overflow = %d\n", eq->overflow);
+			}
+
+			printf("  XIs:\n");
+			list_for_each_entry(obj, &ni->xi_pool.busy_list, obj_list) {
+				xi_t *xi = container_of(obj, xi_t, obj);
+
+				dump_xi(xi);
+			}
+
+			printf("  XTs:\n");
+			list_for_each_entry(obj, &ni->xt_pool.busy_list, obj_list) {
+				xt_t *xt = container_of(obj, xt_t, obj);
+
+				printf("  XT %x\n", xt_to_handle(xt));
+				printf("    state = %d\n", xt->state);
+			}
+
+
+#if 0
+			{
+				/* Note: This will break everything if the process is not stuck
+				 * on something. */
+				struct ibv_wc wc;
+				printf("  polling CQ: ret=%d\n", ibv_poll_cq(ni->cq, 1, &wc));
+			}
+#endif
+			
+
+		}
+	}
+
+	gbl_put(gbl);
+}
+#endif
+
 static int gbl_init(gbl_t *gbl)
 {
 	int err;
+
+#ifdef DEBUG_DUMP
+	signal(SIGUSR1, dump_everything);
+#endif
 
 	err = iface_init(gbl);
 	if (err)

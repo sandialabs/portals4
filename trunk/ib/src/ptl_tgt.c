@@ -1531,6 +1531,7 @@ int process_tgt(xt_t *xt)
 				state = tgt_cleanup_2(xt);
 				break;
 			case STATE_TGT_ERROR:
+				WARN();
 				tgt_cleanup(xt);
 				err = PTL_FAIL;
 				goto exit;

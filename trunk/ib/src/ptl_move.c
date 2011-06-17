@@ -355,8 +355,10 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = xi_alloc(ni, &xi);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err2;
+	}
 
 	preparePtlGet(xi, ni, md, local_offset,
 				  length, target_id,
@@ -562,8 +564,10 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = xi_alloc(ni, &xi);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err2;
+	}
 
 	xi->operation = OP_ATOMIC;
 	xi->target = target_id;
@@ -642,8 +646,10 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = xi_alloc(ni, &xi);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
 	xi->operation = OP_ATOMIC;
 	xi->target = target_id;
