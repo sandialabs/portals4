@@ -8,11 +8,8 @@ static char *init_state_name[] = {
 	[STATE_INIT_WAIT_CONN]		= "init_wait_conn",
 	[STATE_INIT_SEND_REQ]		= "init_send_req",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
-	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
-	[STATE_INIT_HANDLE_COMP]	= "init_handle_comp",
 	[STATE_INIT_EARLY_SEND_EVENT]	= "init_early_send_event",
 	[STATE_INIT_GET_RECV]		= "init_get_recv",
-	[STATE_INIT_WAIT_RECV]		= "init_wait_recv",
 	[STATE_INIT_HANDLE_RECV]	= "init_handle_recv",
 	[STATE_INIT_LATE_SEND_EVENT]	= "init_late_send_event",
 	[STATE_INIT_ACK_EVENT]		= "init_ack_event",
@@ -272,16 +269,15 @@ static int init_send_req(xi_t *xi)
 		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
 	else 
 #endif
-	if (xi->event_mask)
-		xi->next_state = STATE_INIT_GET_RECV;
-	else
-		xi->next_state = STATE_INIT_CLEANUP;
-
 	err = send_message(buf);
-	if (err)
+	if (err) {
 		return STATE_INIT_SEND_ERROR;
+	}
 
-	return STATE_INIT_WAIT_COMP;
+	if (xi->event_mask)
+		return STATE_INIT_GET_RECV;
+	else
+		return STATE_INIT_CLEANUP;
 }
 
 static int init_send_error(xi_t *xi)
@@ -296,23 +292,6 @@ static int init_send_error(xi_t *xi)
 		return STATE_INIT_REPLY_EVENT;
 	else
 		return STATE_INIT_CLEANUP;
-}
-
-static int wait_comp(xi_t *xi)
-{
-	pthread_spin_lock(&xi->send_lock);
-	if (xi->send_buf) {
-		pthread_spin_unlock(&xi->send_lock);
-		return STATE_INIT_WAIT_COMP;
-	} else {
-		pthread_spin_unlock(&xi->send_lock);
-		return STATE_INIT_HANDLE_COMP;
-	}
-}
-
-static int handle_comp(xi_t *xi)
-{
-	return xi->next_state;
 }
 
 static int early_send_event(xi_t *xi)
@@ -335,6 +314,8 @@ static int early_send_event(xi_t *xi)
 
 static int get_recv(xi_t *xi)
 {
+	ni_t *ni = to_ni(xi);
+
 	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
 		xi->next_state = STATE_INIT_LATE_SEND_EVENT;
 	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
@@ -344,27 +325,12 @@ static int get_recv(xi_t *xi)
 	else
 		xi->next_state = STATE_INIT_CLEANUP;
 
-	return STATE_INIT_WAIT_RECV;
-}
+	pthread_spin_lock(&ni->xi_wait_list_lock);
+	list_add(&xi->list, &ni->xi_wait_list);
+	pthread_spin_unlock(&ni->xi_wait_list_lock);
+	xi->state_waiting = 1;
 
-static int wait_recv(xi_t *xi)
-{
-	ni_t *ni = to_ni(xi);
-	int ret;
-
-	pthread_spin_lock(&xi->recv_lock);
-	if (!xi->recv_buf) {
-		pthread_spin_lock(&ni->xi_wait_list_lock);
-		list_add(&xi->list, &ni->xi_wait_list);
-		pthread_spin_unlock(&ni->xi_wait_list_lock);
-		xi->state_waiting = 1;
-		ret = STATE_INIT_WAIT_RECV;
-	} else {
-		ret = STATE_INIT_HANDLE_RECV;
-	}
-	pthread_spin_unlock(&xi->recv_lock);
-
-	return ret;
+	return STATE_INIT_HANDLE_RECV;
 }
 
 static int handle_recv(xi_t *xi)
@@ -474,22 +440,8 @@ int process_init(xi_t *xi)
 	int state;
 	ni_t *ni = to_ni(xi);
 
-	xi->state_again = 1;
-
 	do {
-		err = pthread_spin_trylock(&xi->state_lock);
-		if (err) {
-			if (err == EBUSY) {
-				/* we've set state_again so the current
-				 * thread will take another crack at it */
-				return PTL_OK;
-			} else {
-				WARN();
-				return PTL_FAIL;
-			}
-		}
-
-		xi->state_again = 0;
+		pthread_spin_lock(&xi->state_lock);
 
 		/* we keep xi on a list in the NI in case we never
 		 * get done so that cleanup is possible
@@ -524,24 +476,16 @@ int process_init(xi_t *xi)
 			case STATE_INIT_SEND_ERROR:
 				state = init_send_error(xi);
 				break;
-			case STATE_INIT_WAIT_COMP:
-				state = wait_comp(xi);
-				if (state == STATE_INIT_WAIT_COMP)
-					goto exit;
-				break;
-			case STATE_INIT_HANDLE_COMP:
-				state = handle_comp(xi);
-				break;
 			case STATE_INIT_EARLY_SEND_EVENT:
 				state = early_send_event(xi);
 				break;
 			case STATE_INIT_GET_RECV:
 				state = get_recv(xi);
-				break;
-			case STATE_INIT_WAIT_RECV:
-				state = wait_recv(xi);
-				if (state == STATE_INIT_WAIT_RECV)
+				if (state == STATE_INIT_HANDLE_RECV) {
+					/* Never finish that on application thread, 
+					 * else a race with the receive thread will occur. */
 					goto exit;
+				}
 				break;
 			case STATE_INIT_HANDLE_RECV:
 				state = handle_recv(xi);
@@ -564,12 +508,15 @@ int process_init(xi_t *xi)
 				break;
 			case STATE_INIT_DONE:
 				goto exit;
+			default:
+				abort();
 			}
 		}
 exit:
 		xi->state = state;
+
 		pthread_spin_unlock(&xi->state_lock);
-	} while(xi->state_again);
+	} while(0);
 
 	return err;
 }
