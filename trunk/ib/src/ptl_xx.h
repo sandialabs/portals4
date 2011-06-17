@@ -37,9 +37,7 @@ struct xremote {
 
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
-	pthread_spinlock_t	recv_lock;		\
-	pthread_spinlock_t	send_lock;		\
-	struct buf		*send_buf;		\
+	struct buf		*send_buf;		/* TODO: remove */ \
 	struct buf		*recv_buf;		\
 	struct buf		*rdma_buf;		\
 	ptl_size_t		rlength;		\
@@ -99,7 +97,6 @@ typedef struct xi {
 	/* This xi is waiting for connection to be established. */
 
 	struct xremote		dest;
-
 
 } xi_t;
 

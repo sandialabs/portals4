@@ -139,14 +139,8 @@ static int send_comp(buf_t *buf)
 	list_del(&buf->list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	if (buf->xi) {
+	if (buf->xi)
 		buf->xi->send_buf = NULL;
-		err = process_init(buf->xi);
-		if (err) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-	}
 
 	if (buf->xt) {
 		buf->xt->send_buf = NULL;
@@ -295,7 +289,6 @@ static int recv_init(buf_t *buf)
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
-
 	xi->recv_buf = buf;
 
 	/* note process_init must drop recv_buf */
