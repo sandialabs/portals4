@@ -56,6 +56,7 @@ typedef struct pool {
 	void			(*free)(void *arg);
 	struct list_head	chunk_list;
 	struct list_head	free_list;
+	struct list_head	busy_list;
 	pthread_mutex_t		mutex;
 	pthread_cond_t		cond;
 	enum pool_type		type;
