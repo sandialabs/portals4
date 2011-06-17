@@ -365,8 +365,10 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	ni_t *ni;
 
 	pthread_spin_lock(&eq->obj.obj_lock);
-	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer)) {
+		WARN();
 		eq->overflow = 1;
+	}
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
@@ -410,8 +412,10 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 	ni_t *ni;
 
 	pthread_spin_lock(&eq->obj.obj_lock);
-	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer)) {
+		WARN();
 		eq->overflow = 1;
+	}
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
@@ -456,8 +460,10 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail
 	ni_t *ni;
 
 	pthread_spin_lock(&eq->obj.obj_lock);
-	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer))
+	if ((eq->prod_gen != eq->cons_gen) && (eq->producer >= eq->consumer)) {
+		WARN();
 		eq->overflow = 1;
+	}
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer].event;
