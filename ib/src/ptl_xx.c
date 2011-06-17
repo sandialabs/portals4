@@ -36,7 +36,7 @@ int xi_init(void *arg, void *parm)
 
 /*
  * xi_new
- *	called when new xi is alocated
+ *	called when new xi is allocated
  */
 int xi_new(void *arg)
 {
@@ -83,7 +83,7 @@ int xt_init(void *arg, void *parm)
 
 /*
  * xt_new
- *	called when new xt is alocated
+ *	called when new xt is allocated
  */
 int xt_new(void *arg)
 {
