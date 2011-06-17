@@ -55,6 +55,7 @@ int pool_init(pool_t *pool, char *name, int size,
 
 	INIT_LIST_HEAD(&pool->free_list);
 	INIT_LIST_HEAD(&pool->chunk_list);
+	INIT_LIST_HEAD(&pool->busy_list);
 
 	/* would like to use spinlock but need a mutex for
 	 * cond_wait and posix_memalign which can schedule */
@@ -264,12 +265,14 @@ void obj_release(ref_t *ref)
 	if (obj->obj_parent)
 		obj_put(obj->obj_parent);
 
+	assert(obj->obj_free == 0);
 	obj->obj_free = 1;
 
 	pthread_mutex_lock(&pool->mutex);
+	list_del(l);
 	list_add_tail(l, &pool->free_list);
 	pool->count--;
-	if (pool->max_count && pool->count < pool->min_count && pool->waiters)
+	if (/*pool->max_count && pool->count < pool->min_count && */ pool->waiters)
 		do_signal = 1;
 	pthread_mutex_unlock(&pool->mutex);
 
@@ -305,6 +308,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 			err = pthread_cond_timedwait(&pool->cond, &pool->mutex, &timeout);
 			if (err) {
 				pthread_mutex_unlock(&pool->mutex);
+				WARN();
 				return PTL_FAIL;
 			}
 		} while(pool->count >= pool->max_count);
@@ -322,6 +326,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 		if (unlikely(err)) {
 			pool->count--;
 			pthread_mutex_unlock(&pool->mutex);
+			WARN();
 			return err;
 		}
 	}
@@ -330,14 +335,20 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	list_del(l);
 	obj = list_entry(l, obj_t, obj_list);
 
+	assert(obj->obj_free == 1);
+
+	list_add_tail(l, &pool->busy_list);
+
 	pthread_mutex_unlock(&pool->mutex);
 
 	if (pool->parent)
 		obj_ref(pool->parent);
 
 	err = index_get(obj, &index);
-	if (err)
+	if (err) {
+		WARN();
 		return err;
+	}
 	obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
 
 	ref_init(&obj->obj_ref);
