@@ -466,8 +466,6 @@ static int init_pools(ni_t *ni)
 	ni->xi_pool.init = xi_init;
 	ni->xi_pool.fini = xi_fini;
 	ni->xi_pool.alloc = xi_new;
-	ni->xi_pool.max_count = 50;	// TODO make this a tunable parameter
-	ni->xi_pool.min_count = 25;	// TODO make this a tunable parameter
 
 	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
 					POOL_XI, (obj_t *)ni);
