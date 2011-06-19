@@ -58,7 +58,6 @@ struct xremote {
 	pthread_spinlock_t	state_lock;		\
 	int			state;			\
 	int			next_state;		\
-	int			state_again;		\
 	int			state_waiting;		\
 	unsigned		operation;		\
 	int			pkt_len;		\

@@ -209,6 +209,8 @@ static int init_send_req(xi_t *xi)
 	}
 	hdr = (req_hdr_t *)buf->data;
 
+	memset(hdr, 0, sizeof(req_hdr_t));
+
 	xi->send_buf = buf;
 
 	xport_hdr_from_xi((hdr_t *)hdr, xi);
@@ -376,17 +378,22 @@ static int late_send_event(xi_t *xi)
 
 static int ack_event(xi_t *xi)
 {
+	buf_t *buf = xi->recv_buf;
+	hdr_t *hdr = (hdr_t *)buf->data;
+
 	/* Release the MD before posting the ACK event. */
 	if (xi->put_md) {
 		md_put(xi->put_md);
 		xi->put_md = NULL;
 	}
 
-	if (xi->event_mask & XI_ACK_EVENT)
-		make_ack_event(xi);
+	if (hdr->operation != OP_NO_ACK) {
+		if (xi->event_mask & XI_ACK_EVENT)
+			make_ack_event(xi);
 
-	if (xi->event_mask & XI_CT_ACK_EVENT)
-		make_ct_ack_event(xi);
+		if (xi->event_mask & XI_CT_ACK_EVENT)
+			make_ct_ack_event(xi);
+	}
 	
 	return STATE_INIT_CLEANUP;
 }

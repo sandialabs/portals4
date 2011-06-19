@@ -142,6 +142,9 @@ int data_size(data_t *data)
 	case DATA_FMT_INDIRECT:
 		size += sizeof(struct ibv_sge);
 		break;
+	default:
+		assert(0);
+		break;
 	}
 
 	return size;

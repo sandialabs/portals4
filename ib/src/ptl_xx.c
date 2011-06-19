@@ -23,8 +23,6 @@ int xi_init(void *arg, void *parm)
 {
 	xi_t *xi = arg;
 
-	xi->ack_req = PTL_NO_ACK_REQ;
-
 	pthread_spin_init(&xi->state_lock, PTHREAD_PROCESS_PRIVATE);
 
 	return 0;
@@ -41,6 +39,8 @@ int xi_new(void *arg)
 	xi->data_in = NULL;
 	xi->data_out = NULL;
 	xi->conn = NULL;
+	xi->ack_req = PTL_NO_ACK_REQ;
+	xi->state = STATE_INIT_START;
 
 	return PTL_OK;
 }
@@ -84,6 +84,11 @@ int xt_new(void *arg)
 	xt->data_in = NULL;
 	xt->data_out = NULL;
 	xt->conn = NULL;
+	xt->put_resid = 0;
+	xt->get_resid = 0;
+	xt->data_in = NULL;
+	xt->data_out = NULL;
+
 	INIT_LIST_HEAD(&xt->unexpected_list);
 
 	return PTL_OK;
