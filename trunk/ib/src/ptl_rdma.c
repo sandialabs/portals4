@@ -207,8 +207,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	ptl_size_t iov_off = xt->cur_loc_iov_off;;
 	uint32_t rlength;
 	uint32_t rseg_length;
-	ptl_size_t *resid = dir == DATA_DIR_IN ? &xt->put_resid :
-		&xt->get_resid;
+	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &xt->put_resid : &xt->get_resid;
 	int err;
 	int comp = 0;
 
@@ -239,6 +238,11 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		if (*resid == bytes || xt->interim_rdma >= get_param(PTL_MAX_RDMA_WR_OUT))
 			comp = 1;
 
+ 		if (comp) {
+ 			xt->rdma_comp++;
+ 			xt->interim_rdma = 0;
+ 		}
+
 		if (dir == DATA_DIR_IN)
 			err = rdma_read(xt->rdma_buf, raddr, rkey, sge,
 				entries, comp);
@@ -249,11 +253,6 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		if (err) {
 			WARN();
 			return err;
-		}
-
-		if (comp) {
-			xt->rdma_comp++;
-			xt->interim_rdma = 0;
 		}
 
 		*resid -= bytes;

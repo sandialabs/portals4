@@ -175,7 +175,8 @@ static int rdma_comp(buf_t *buf)
 			WARN();
 			return STATE_RECV_ERROR;
 		}
-	}
+	} else
+		WARN();
 
 	return STATE_RECV_COMP_REARM;
 }
@@ -225,6 +226,7 @@ static int recv_packet(buf_t *buf)
 	case OP_ACK:
 	case OP_CT_ACK:
 	case OP_OC_ACK:
+	case OP_NO_ACK:
 		return STATE_RECV_INIT;
 
 	default:

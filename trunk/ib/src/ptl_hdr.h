@@ -30,6 +30,7 @@ typedef enum {
 	OP_ACK,
 	OP_CT_ACK,
 	OP_OC_ACK,
+	OP_NO_ACK,					/* when remote ME has ACK_DISABLE */
 
 	OP_LAST,
 } op_t;

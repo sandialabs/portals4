@@ -396,6 +396,7 @@ done:
 	}
 
 	if (xt->le->ptl_list == PTL_OVERFLOW) {
+		xt_ref(xt);
 		list_add(&xt->unexpected_list, &xt->le->pt->unexpected_list);
 	}
 
@@ -476,7 +477,7 @@ static int tgt_get_length(xt_t *xt)
 	 * ME/LE.
 	 */
 	if ((me->options & PTL_ME_USE_ONCE) ||
-		((me->options & PTL_ME_MANAGE_LOCAL) &&
+		((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
 		 ((me->length - me->offset) < me->min_free))) {
 		if (me->type == TYPE_ME)
 			me_unlink(xt->me, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
@@ -843,6 +844,7 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_RDMA_DESC;
 		break;
 	default:
+		assert(0);
 		WARN();
 		next = STATE_TGT_ERROR;
 	}
@@ -1237,6 +1239,8 @@ static int tgt_send_ack(xt_t *xt)
 
 	hdr = (hdr_t *)buf->data;
 
+	memset(hdr, 0, sizeof(*hdr));
+
 	xport_hdr_from_xt(hdr, xt);
 	base_hdr_from_xt(hdr, xt);
 
@@ -1257,6 +1261,9 @@ static int tgt_send_ack(xt_t *xt)
 		WARN();
 		return STATE_TGT_ERROR;
 	}
+
+	if (xt->le->options & PTL_LE_ACK_DISABLE)
+		hdr->operation = OP_NO_ACK;
 
 	buf->length = sizeof(*hdr);
 
@@ -1289,6 +1296,8 @@ static int tgt_send_reply(xt_t *xt)
 	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
+
+	memset(hdr, 0, sizeof(*hdr));
 
 	xport_hdr_from_xt(hdr, xt);
 	base_hdr_from_xt(hdr, xt);
@@ -1428,20 +1437,8 @@ int process_tgt(xt_t *xt)
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);
 
-	xt->state_again = 1;
-
 	do {
-		err = pthread_spin_trylock(&xt->state_lock);
-		if (err) {
-			if (err == EBUSY) {
-				return PTL_OK;
-			} else {
-				WARN();
-				return PTL_FAIL;
-			}
-		}
-
-		xt->state_again = 0;
+		pthread_spin_lock(&xt->state_lock);
 
 		if (xt->state_waiting) {
 			if (debug)
@@ -1543,7 +1540,7 @@ int process_tgt(xt_t *xt)
 exit:
 		xt->state = state;
 		pthread_spin_unlock(&xt->state_lock);
-	} while(xt->state_again);
+	} while(0);
 
 	return err;
 }
@@ -1585,6 +1582,7 @@ int check_overflow(le_t *le)
 
 		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
 			int err;
+			int state;
 
 			pthread_spin_lock(&xt->state_lock);
 
@@ -1594,11 +1592,18 @@ int check_overflow(le_t *le)
 
 			list_del(&xt->unexpected_list);
 
+			state = xt->state;
+
 			pthread_spin_unlock(&xt->state_lock);
 
-			err = process_tgt(xt);
-			if (err)
-				WARN();
+			if (state == STATE_TGT_WAIT_APPEND) {
+				err = process_tgt(xt);
+				if (err)
+					WARN();
+			}
+
+			/* From get_match(). */
+			xt_put(xt);
 		}
 
 		pthread_spin_lock(&pt->lock);
