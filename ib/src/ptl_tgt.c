@@ -479,10 +479,7 @@ static int tgt_get_length(xt_t *xt)
 	if ((me->options & PTL_ME_USE_ONCE) ||
 		((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
 		 ((me->length - me->offset) < me->min_free))) {
-		if (me->type == TYPE_ME)
-			me_unlink(xt->me, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
-		else
-			le_unlink(xt->le, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
+		le_unlink(xt->le, !(me->options & PTL_ME_EVENT_UNLINK_DISABLE));
 	}
 
 	return STATE_TGT_WAIT_CONN;
