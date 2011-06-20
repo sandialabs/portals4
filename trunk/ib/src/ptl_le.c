@@ -70,20 +70,28 @@ void le_unlink(le_t *le, int send_event)
 
 	if (pt) {
 		pthread_spin_lock(&pt->lock);
-		if (le->ptl_list == PTL_PRIORITY_LIST)
-			pt->priority_size--;
-		else if (le->ptl_list == PTL_OVERFLOW)
-			pt->overflow_size--;
-		list_del_init(&le->list);
+
+		/* Avoid a race between PTLMeUnlink and autounlink. */ 
+		if (le->pt) {
+			if (le->ptl_list == PTL_PRIORITY_LIST)
+				pt->priority_size--;
+			else if (le->ptl_list == PTL_OVERFLOW)
+				pt->overflow_size--;
+			list_del_init(&le->list);
+
+			if (send_event && le->eq)
+				make_le_event(le, le->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
+
+			le->pt = NULL;
+		}
+
 		pthread_spin_unlock(&pt->lock);
 
-		if (send_event && le->eq)
-			make_le_event(le, le->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
-
-		le->pt = NULL;
-		le_put(le);
-	} else
-		WARN();
+		if (le->type == TYPE_ME)
+			me_put((me_t *)le);
+		else
+			le_put(le);
+	}
 }
 
 /*
