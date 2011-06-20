@@ -1434,110 +1434,108 @@ int process_tgt(xt_t *xt)
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);
 
-	do {
-		pthread_spin_lock(&xt->state_lock);
+	pthread_spin_lock(&xt->state_lock);
 
-		if (xt->state_waiting) {
-			if (debug)
-				printf("remove from xt_wait_list\n");
-			pthread_spin_lock(&ni->xt_wait_list_lock);
-			list_del(&xt->list);
-			pthread_spin_unlock(&ni->xt_wait_list_lock);
-			xt->state_waiting = 0;
-		}
+	if (xt->state_waiting) {
+		if (debug)
+			printf("remove from xt_wait_list\n");
+		pthread_spin_lock(&ni->xt_wait_list_lock);
+		list_del(&xt->list);
+		pthread_spin_unlock(&ni->xt_wait_list_lock);
+		xt->state_waiting = 0;
+	}
 
-		state = xt->state;
+	state = xt->state;
 
-		while(1) {
-			if (debug)
-				printf("%p: tgt state = %s\n",
-					xt, tgt_state_name[state]);
-			switch (state) {
-			case STATE_TGT_START:
-				state = tgt_start(xt);
-				break;
-			case STATE_TGT_GET_MATCH:
-				state = tgt_get_match(xt);
-				break;
-			case STATE_TGT_GET_LENGTH:
-				state = tgt_get_length(xt);
-				break;
-			case STATE_TGT_WAIT_CONN:
-				state = tgt_wait_conn(xt);
-				if (state == STATE_TGT_WAIT_CONN)
-					goto exit;
-				break;
-			case STATE_TGT_DATA_IN:
-				state = tgt_data_in(xt);
-				break;
-			case STATE_TGT_RDMA_DESC:
-				state = tgt_rdma_desc(xt);
-				if (state == STATE_TGT_RDMA_DESC)
-					goto exit;
-				if (state == STATE_TGT_RDMA_WAIT_DESC)
-					goto exit;
-				break;
-			case STATE_TGT_RDMA_WAIT_DESC:
-				state = tgt_rdma_wait_desc(xt);
-				break;
-			case STATE_TGT_RDMA:
-				state = tgt_rdma(xt);
-				if (state == STATE_TGT_RDMA)
-					goto exit;
-				break;
-			case STATE_TGT_ATOMIC_DATA_IN:
-				state = tgt_atomic_data_in(xt);
-				break;
-			case STATE_TGT_SWAP_DATA_IN:
-				state = tgt_swap_data_in(xt);
-				break;
-			case STATE_TGT_DATA_OUT:
-				state = tgt_data_out(xt);
-				break;
-			case STATE_TGT_COMM_EVENT:
-				state = tgt_comm_event(xt);
-				break;
-			case STATE_TGT_SEND_ACK:
-				state = tgt_send_ack(xt);
-				if (state == STATE_TGT_SEND_ACK)
-					goto exit;
-				break;
-			case STATE_TGT_SEND_REPLY:
-				state = tgt_send_reply(xt);
-				if (state == STATE_TGT_SEND_REPLY)
-					goto exit;
-				break;
-			case STATE_TGT_DROP:
-				state = request_drop(xt);
-				break;
-			case STATE_TGT_OVERFLOW_EVENT:
-				state = tgt_overflow_event(xt);
-				break;
-			case STATE_TGT_WAIT_APPEND:
-				state = tgt_wait_append(xt);
-				if (state == STATE_TGT_WAIT_APPEND)
-					goto exit;
-				break;
-			case STATE_TGT_CLEANUP:
-				state = tgt_cleanup(xt);
-				break;
-			case STATE_TGT_CLEANUP_2:
-				state = tgt_cleanup_2(xt);
-				break;
-			case STATE_TGT_ERROR:
-				WARN();
-				tgt_cleanup(xt);
-				err = PTL_FAIL;
+	while(1) {
+		if (debug)
+			printf("%p: tgt state = %s\n",
+				   xt, tgt_state_name[state]);
+		switch (state) {
+		case STATE_TGT_START:
+			state = tgt_start(xt);
+			break;
+		case STATE_TGT_GET_MATCH:
+			state = tgt_get_match(xt);
+			break;
+		case STATE_TGT_GET_LENGTH:
+			state = tgt_get_length(xt);
+			break;
+		case STATE_TGT_WAIT_CONN:
+			state = tgt_wait_conn(xt);
+			if (state == STATE_TGT_WAIT_CONN)
 				goto exit;
-			case STATE_TGT_DONE:
+			break;
+		case STATE_TGT_DATA_IN:
+			state = tgt_data_in(xt);
+			break;
+		case STATE_TGT_RDMA_DESC:
+			state = tgt_rdma_desc(xt);
+			if (state == STATE_TGT_RDMA_DESC)
 				goto exit;
-			}
+			if (state == STATE_TGT_RDMA_WAIT_DESC)
+				goto exit;
+			break;
+		case STATE_TGT_RDMA_WAIT_DESC:
+			state = tgt_rdma_wait_desc(xt);
+			break;
+		case STATE_TGT_RDMA:
+			state = tgt_rdma(xt);
+			if (state == STATE_TGT_RDMA)
+				goto exit;
+			break;
+		case STATE_TGT_ATOMIC_DATA_IN:
+			state = tgt_atomic_data_in(xt);
+			break;
+		case STATE_TGT_SWAP_DATA_IN:
+			state = tgt_swap_data_in(xt);
+			break;
+		case STATE_TGT_DATA_OUT:
+			state = tgt_data_out(xt);
+			break;
+		case STATE_TGT_COMM_EVENT:
+			state = tgt_comm_event(xt);
+			break;
+		case STATE_TGT_SEND_ACK:
+			state = tgt_send_ack(xt);
+			if (state == STATE_TGT_SEND_ACK)
+				goto exit;
+			break;
+		case STATE_TGT_SEND_REPLY:
+			state = tgt_send_reply(xt);
+			if (state == STATE_TGT_SEND_REPLY)
+				goto exit;
+			break;
+		case STATE_TGT_DROP:
+			state = request_drop(xt);
+			break;
+		case STATE_TGT_OVERFLOW_EVENT:
+			state = tgt_overflow_event(xt);
+			break;
+		case STATE_TGT_WAIT_APPEND:
+			state = tgt_wait_append(xt);
+			if (state == STATE_TGT_WAIT_APPEND)
+				goto exit;
+			break;
+		case STATE_TGT_CLEANUP:
+			state = tgt_cleanup(xt);
+			break;
+		case STATE_TGT_CLEANUP_2:
+			state = tgt_cleanup_2(xt);
+			break;
+		case STATE_TGT_ERROR:
+			WARN();
+			tgt_cleanup(xt);
+			err = PTL_FAIL;
+			goto exit;
+		case STATE_TGT_DONE:
+			goto exit;
 		}
+	}
 
-exit:
-		xt->state = state;
-		pthread_spin_unlock(&xt->state_lock);
-	} while(0);
+ exit:
+	xt->state = state;
+	pthread_spin_unlock(&xt->state_lock);
 
 	return err;
 }
@@ -1682,8 +1680,6 @@ int check_overflow_search_delete(le_t *le)
 	} else {
 
 		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
-			int err;
-
 			pthread_spin_lock(&xt->state_lock);
 
 			assert(xt->matching.le == NULL);
