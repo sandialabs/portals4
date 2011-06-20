@@ -30,34 +30,6 @@ void me_release(void *arg)
 }
 
 /*
- * me_unlink
- *	called to unlink the ME entr for the PT list and remove
- *	the reference held by the PT list.
- */
-void me_unlink(me_t *me, int send_event)
-{
-	pt_t *pt = me->pt;
-
-	if (pt) {
-		pthread_spin_lock(&pt->lock);
-		if (me->ptl_list == PTL_PRIORITY_LIST)
-			pt->priority_size--;
-		else if (me->ptl_list == PTL_OVERFLOW)
-			pt->overflow_size--;
-		list_del_init(&me->list);
-		pthread_spin_unlock(&pt->lock);
-
-		if (send_event && me->eq)
-			make_le_event((le_t *)me, me->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
-
-		me->pt = NULL;
-
-		me_put(me);
-	} else
-		WARN();
-}
-
-/*
  * me_get_me
  *	allocate an me after checking to see if there
  *	is room in the limit
@@ -274,7 +246,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 		goto err1;
 	}
 
-	me_unlink(me, 0);
+	le_unlink((le_t *)me, 0);
 
 	me_put(me);
 	gbl_put(gbl);
