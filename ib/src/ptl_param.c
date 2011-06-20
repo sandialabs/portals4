@@ -147,7 +147,7 @@ static param_t param[] = {
 						.name	= "PTL_MAX_SRQ_RECV_WR",
 						.min	= 0,
 						.max	= LONG_MAX,
-						.val	= 100,
+						.val	= 1000,
 					  },
 	[PTL_MAX_RDMA_WR_OUT]			= {
 						.name	= "PTL_MAX_RDMA_WR_OUT",
