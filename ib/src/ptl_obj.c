@@ -406,7 +406,6 @@ int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 
 	err = index_lookup(index, &obj);
 	if (err) {
-		WARN();
 		goto err1;
 	}
 

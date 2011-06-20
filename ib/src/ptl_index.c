@@ -199,8 +199,10 @@ int index_lookup(unsigned int index, obj_t **obj_p)
 		return PTL_FAIL;
 	}
 
-	if (segment >= SEGMENT_SIZE)
+	if (segment >= SEGMENT_SIZE) {
+		WARN();
 		return PTL_FAIL;
+	}
 #endif
 
 	map = index_maps[segment];
