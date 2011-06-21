@@ -80,7 +80,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	int err;
 	gbl_t *gbl;
 	ni_t *ni;
-	me_t *me;
+	me_t *me = me;
 	pt_t *pt;
 
 	err = get_gbl(&gbl);
