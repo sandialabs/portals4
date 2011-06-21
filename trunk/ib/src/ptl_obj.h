@@ -57,8 +57,10 @@ typedef struct pool {
 	struct list_head	chunk_list;
 	struct list_head	free_list;
 	struct list_head	busy_list;
-	pthread_mutex_t		mutex;
+	pthread_spinlock_t		mutex;
+#if 0
 	pthread_cond_t		cond;
+#endif
 	enum pool_type		type;
 	int			count;
 	int			max_count;	/* hi water mark */
