@@ -4,6 +4,10 @@
 
 #include "ptl_loc.h"
 
+/* HACK - Do not free MRs between registration calls, and try to reuse
+ * existing regions. */
+#define WITH_CACHE_MR
+
 void mr_release(void *arg)
 {
 	int err;
@@ -55,8 +59,10 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 
 	mr->ibmr = ibmr;
 
+#ifdef WITH_CACHE_MR
 	/* For now do not drop mr's take one more reference */
-	//	mr_ref(mr);
+	mr_ref(mr);
+#endif
 
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_add(&mr->list, &ni->mr_list);
@@ -76,7 +82,7 @@ err1:
  */
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
-#if 0
+#ifdef WITH_CACHE_MR
 	mr_t *mr;
 	struct list_head *l;
 #endif
@@ -85,7 +91,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		printf("mr_lookup: start = %p, length = %" PRIu64 "\n",
 			start, length);
 
-#if 0
+#ifdef WITH_CACHE_MR
 	pthread_spin_lock(&ni->mr_list_lock);
 	list_for_each(l, &ni->mr_list) {
 		mr = list_entry(l, mr_t , list);
@@ -98,11 +104,13 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 	pthread_spin_unlock(&ni->mr_list_lock);
 #endif
+	//	printf("FZ - creating MR at %p length %ld\n", start, length);
 
 	return mr_create(ni, start, length, mr_p);
 
-#if 0
+#ifdef WITH_CACHE_MR
  found:
+	//	printf("FZ- found existing MR\n");
 	*mr_p = mr;
 	return PTL_OK;
 #endif
