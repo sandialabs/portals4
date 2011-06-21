@@ -1232,7 +1232,6 @@ static int tgt_send_ack(xt_t *xt)
 
 	buf->xt = xt;
 	buf->dest = &xt->dest;
-	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
 
@@ -1290,7 +1289,6 @@ static int tgt_send_reply(xt_t *xt)
 
 	buf->xt = xt;
 	buf->dest = &xt->dest;
-	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
 
@@ -1434,7 +1432,7 @@ int process_tgt(xt_t *xt)
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);
 
-	pthread_spin_lock(&xt->state_lock);
+	pthread_spin_lock(&xt->obj.obj_lock);
 
 	if (xt->state_waiting) {
 		if (debug)
@@ -1535,7 +1533,7 @@ int process_tgt(xt_t *xt)
 
  exit:
 	xt->state = state;
-	pthread_spin_unlock(&xt->state_lock);
+	pthread_spin_unlock(&xt->obj.obj_lock);
 
 	return err;
 }
@@ -1594,7 +1592,7 @@ int check_overflow(le_t *le)
 			int err;
 			int state;
 
-			pthread_spin_lock(&xt->state_lock);
+			pthread_spin_lock(&xt->obj.obj_lock);
 
 			assert(xt->matching.le == NULL);
 			xt->matching.le = le;
@@ -1604,7 +1602,7 @@ int check_overflow(le_t *le)
 
 			state = xt->state;
 
-			pthread_spin_unlock(&xt->state_lock);
+			pthread_spin_unlock(&xt->obj.obj_lock);
 
 			if (state == STATE_TGT_WAIT_APPEND) {
 				err = process_tgt(xt);
@@ -1686,7 +1684,7 @@ int check_overflow_search_delete(le_t *le)
 			int err;
 			int state;
 
-			pthread_spin_lock(&xt->state_lock);
+			pthread_spin_lock(&xt->obj.obj_lock);
 
 			assert(xt->matching.le == NULL);
 			xt->matching.le = le;
@@ -1702,7 +1700,7 @@ int check_overflow_search_delete(le_t *le)
 				xt->le = NULL;
 			}
 
-			pthread_spin_unlock(&xt->state_lock);
+			pthread_spin_unlock(&xt->obj.obj_lock);
 
 			if (state == STATE_TGT_WAIT_APPEND) {
 				err = process_tgt(xt);

@@ -167,7 +167,6 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->put_ct = md->ct;
 	xi->hdr_data = hdr_data;
 	xi->user_ptr = user_ptr;
-	xi->threshold = 0;
 
 	xi->rlength = length;
 	xi->put_offset = local_offset;

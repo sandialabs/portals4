@@ -139,18 +139,6 @@ static int send_comp(buf_t *buf)
 	list_del(&buf->list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	if (buf->xi)
-		buf->xi->send_buf = NULL;
-
-	if (buf->xt) {
-		buf->xt->send_buf = NULL;
-		err = process_tgt(buf->xt);
-		if (err) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-	}
-
 	buf_put(buf);
 	return STATE_RECV_COMP_REARM;
 }

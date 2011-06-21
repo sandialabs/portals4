@@ -37,7 +37,6 @@ struct xremote {
 
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
-	struct buf		*send_buf;		/* TODO: remove */ \
 	struct buf		*recv_buf;		\
 	struct buf		*rdma_buf;		\
 	ptl_size_t		rlength;		\
