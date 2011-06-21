@@ -68,8 +68,6 @@ static inline void make_ct_reply_event(xi_t *xi)
 
 static void init_events(xi_t *xi)
 {
-	xi->event_mask = 0;
-
 	if (xi->put_md) {
 		if (xi->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
 			xi->event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
@@ -210,8 +208,6 @@ static int init_send_req(xi_t *xi)
 	hdr = (req_hdr_t *)buf->data;
 
 	memset(hdr, 0, sizeof(req_hdr_t));
-
-	xi->send_buf = buf;
 
 	xport_hdr_from_xi((hdr_t *)hdr, xi);
 	base_hdr_from_xi((hdr_t *)hdr, xi);

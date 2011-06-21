@@ -75,12 +75,6 @@ static void dump_xi(xi_t *xi)
 	printf("    recv_buf = %p\n", xi->recv_buf);
 	printf("    ack_req = %d\n", xi->ack_req);
 	printf("    state_waiting = %d\n", xi->state_waiting);
-	if (xi->send_buf) {
-		buf_t *buf = xi->send_buf;
-		req_hdr_t *hdr = (req_hdr_t *)buf->data;
-		printf("    hdr ack_req = %d\n", hdr->ack_req);
-		printf("    hdr pt_index = %d\n", be32_to_cpu(hdr->pt_index));
-	}
 	printf("    ref = %d\n", xi->obj.obj_ref.ref_cnt);
 }
 
