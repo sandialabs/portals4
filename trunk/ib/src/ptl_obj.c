@@ -180,7 +180,6 @@ static int type_get_segment_list_pointer(pool_t *pool, segment_list_t **pp)
 /*
  * pool_alloc_segment
  *	allocate a new segment of objects for a given pool
- *	caller should hold pool->mutex
  */
 static int pool_alloc_segment(pool_t *pool)
 {
@@ -191,6 +190,7 @@ static int pool_alloc_segment(pool_t *pool)
 	obj_t *obj;
 	struct ibv_mr *mr = NULL;
 	ni_t *ni;
+	struct list_head temp_list;
 
 	err = type_get_segment_list_pointer(pool, &pp);
 	if (unlikely(err))
@@ -215,6 +215,7 @@ static int pool_alloc_segment(pool_t *pool)
 	}
 
 	pp->segment_list[pp->num_segments++].addr = p;
+	INIT_LIST_HEAD(&temp_list);
 
 	for (i = 0; i < pool->obj_per_segment; i++) {
 		obj = (obj_t *)p;
@@ -231,9 +232,13 @@ static int pool_alloc_segment(pool_t *pool)
 				return PTL_FAIL;
 			}
 		}
-		list_add(&obj->obj_list, &pool->free_list);
+		list_add(&obj->obj_list, &temp_list);
 		p += pool->round_size;
 	}
+
+	pthread_mutex_lock(&pool->mutex);
+	list_splice(&temp_list, &pool->free_list);
+	pthread_mutex_unlock(&pool->mutex);
 
 	return PTL_OK;
 }
@@ -321,11 +326,17 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	/*
 	 * if the pool free list is empty make up a new batch of objects
 	 */
-	if (list_empty(&pool->free_list)) {
+	while (list_empty(&pool->free_list)) {
+		pthread_mutex_unlock(&pool->mutex);
+
 		err = pool_alloc_segment(pool);
+
+		pthread_mutex_lock(&pool->mutex);
+
 		if (unlikely(err)) {
 			pool->count--;
 			pthread_mutex_unlock(&pool->mutex);
+
 			WARN();
 			return err;
 		}
@@ -333,13 +344,12 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	l = pool->free_list.next;
 	list_del(l);
-	obj = list_entry(l, obj_t, obj_list);
-
-	assert(obj->obj_free == 1);
-
 	list_add_tail(l, &pool->busy_list);
 
 	pthread_mutex_unlock(&pool->mutex);
+
+	obj = list_entry(l, obj_t, obj_list);
+	assert(obj->obj_free == 1);
 
 	if (pool->parent)
 		obj_ref(pool->parent);
