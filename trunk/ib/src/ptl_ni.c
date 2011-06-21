@@ -463,8 +463,6 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
-	ni->xi_pool.init = xi_init;
-	ni->xi_pool.fini = xi_fini;
 	ni->xi_pool.alloc = xi_new;
 
 	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
@@ -474,8 +472,6 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
-	ni->xt_pool.init = xt_init;
-	ni->xt_pool.fini = xt_fini;
 	ni->xt_pool.alloc = xt_new;
 
 	err = pool_init(&ni->xt_pool, "xt", sizeof(xt_t),
@@ -778,6 +774,8 @@ int PtlNIInit(ptl_interface_t iface_id,
 		WARN();
 		goto err2;
 	}
+
+	OBJ_NEW(ni);
 
 	if (options & PTL_NI_PHYSICAL) {
 		ni->id.phys.nid = PTL_NID_ANY;

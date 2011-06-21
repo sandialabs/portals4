@@ -55,7 +55,6 @@ struct xremote {
 	uint32_t  		rdma_dir;		\
 	int			rdma_comp;		\
 	int			interim_rdma;		\
-	pthread_spinlock_t	state_lock;		\
 	int			state;			\
 	int			next_state;		\
 	int			state_waiting;		\
@@ -99,8 +98,6 @@ typedef struct xi {
 
 } xi_t;
 
-int xi_init(void *arg, void *parm);
-void xi_fini(void *arg);
 int xi_new(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
@@ -184,8 +181,6 @@ typedef struct xt {
 	void *start;
 } xt_t;
 
-int xt_init(void *arg, void *parm);
-void xt_fini(void *arg);
 int xt_new(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)

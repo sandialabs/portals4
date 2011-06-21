@@ -88,6 +88,11 @@ typedef struct obj {
 } obj_t;
 
 /*
+ * Reset an object.
+ */
+#define OBJ_NEW(obj) memset((char *)(obj) + sizeof(obj_t), 0, sizeof(*(obj))-sizeof(obj_t))
+
+/*
  * pool_init
  *	initialize a pool of objects
  */
