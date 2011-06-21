@@ -1540,6 +1540,34 @@ int process_tgt(xt_t *xt)
 	return err;
 }
 
+/* Matches an ME/LE against entries in the unexpected list. 
+ * PT lock must be taken.
+ */
+static void match_le_unexpected(const le_t *le, struct list_head *xt_list)
+{
+	xt_t *xt;
+	xt_t *n;
+	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
+	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
+
+	INIT_LIST_HEAD(xt_list);
+
+	/* Check this new LE against the overflowlist. */
+	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
+
+		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+			list_del(&xt->unexpected_list);
+			list_add_tail(&xt->unexpected_list, xt_list);
+
+			if (le->options & PTL_LE_USE_ONCE)
+				break;
+		}
+	}
+
+	return;
+}
+
+
 /* Check whether that LE/ME matches one or more XT on the unexpected
  * list. Return true is at least one XT was processed.
  * PT lock must be taken.
@@ -1551,23 +1579,10 @@ int check_overflow(le_t *le)
 	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
 	struct list_head xt_list;
 	int ret;
-	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
 
 	assert(pthread_spin_trylock(&pt->lock) != 0);
 
-	INIT_LIST_HEAD(&xt_list);
-
-	/* Check this new LE against the overflowlist. */
-	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
-
-		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
-			list_del(&xt->unexpected_list);
-			list_add_tail(&xt->unexpected_list, &xt_list);
-
-			if (le->options & PTL_LE_USE_ONCE)
-				break;
-		}
-	}
+	match_le_unexpected(le, &xt_list);
 
 	ret = !list_empty(&xt_list);
 
@@ -1649,29 +1664,17 @@ int check_overflow_search_only(le_t *le)
 	return PTL_OK;
 }
 
+/* Search for matching entries in the unexpected and delete them.
+ * PT lock must be taken.
+ */
 int check_overflow_search_delete(le_t *le)
 {
 	xt_t *xt;
 	xt_t *n;
 	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
 	struct list_head xt_list;
-	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
 
-	INIT_LIST_HEAD(&xt_list);
-
-	/* Check this new LE against the overflowlist. */
-	pthread_spin_lock(&pt->lock);
-
-	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
-
-		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
-			list_del(&xt->unexpected_list);
-			list_add_tail(&xt->unexpected_list, &xt_list);
-
-			if (le->options & PTL_LE_USE_ONCE)
-				break;
-		}
-	}
+	match_le_unexpected(le, &xt_list);
 
 	pthread_spin_unlock(&pt->lock);
 
@@ -1680,6 +1683,9 @@ int check_overflow_search_delete(le_t *le)
 	} else {
 
 		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
+			int err;
+			int state;
+
 			pthread_spin_lock(&xt->state_lock);
 
 			assert(xt->matching.le == NULL);
@@ -1687,6 +1693,8 @@ int check_overflow_search_delete(le_t *le)
 			le_ref(le);
 
 			list_del(&xt->unexpected_list);
+
+			state = xt->state;
 
 			/* tgt must release reference to any LE/ME */
 			if (xt->le) {
@@ -1696,7 +1704,13 @@ int check_overflow_search_delete(le_t *le)
 
 			pthread_spin_unlock(&xt->state_lock);
 
-			tgt_overflow_event(xt);
+			if (state == STATE_TGT_WAIT_APPEND) {
+				err = process_tgt(xt);
+				if (err)
+					WARN();
+			}
+
+			/* From get_match. */
 			xt_put(xt);
 		}
 	}
