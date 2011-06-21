@@ -465,7 +465,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 						  get_param(PTL_MAX_RDMA_WR_OUT);
 		init.cap.max_recv_wr		= 0;
 		init.cap.max_send_sge		= get_param(PTL_MAX_INLINE_SGE);
-		init.cap.max_recv_sge		= 10;
+		init.cap.max_recv_sge		= get_param(PTL_MAX_QP_RECV_SGE);
 
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL) {
