@@ -448,7 +448,7 @@ int process_init(xi_t *xi)
 	ni_t *ni = to_ni(xi);
 
 	do {
-		pthread_spin_lock(&xi->state_lock);
+		pthread_spin_lock(&xi->obj.obj_lock);
 
 		/* we keep xi on a list in the NI in case we never
 		 * get done so that cleanup is possible
@@ -522,7 +522,7 @@ int process_init(xi_t *xi)
 exit:
 		xi->state = state;
 
-		pthread_spin_unlock(&xi->state_lock);
+		pthread_spin_unlock(&xi->obj.obj_lock);
 	} while(0);
 
 	return err;
