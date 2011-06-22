@@ -212,9 +212,7 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
     /* find an LE handle */
     for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries; ++offset) {
         if (les[ni.s.ni][offset].status == 0) {
-            if (PtlInternalAtomicCas32
-                    (&(les[ni.s.ni][offset].status), LE_FREE,
-                    LE_ALLOCATED) == LE_FREE) {
+            if (PtlInternalAtomicCas32(&(les[ni.s.ni][offset].status), LE_FREE, LE_ALLOCATED) == LE_FREE) {
                 leh.s.code                    = offset;
                 les[ni.s.ni][offset].visible  = *le;
                 les[ni.s.ni][offset].pt_index = pt_index;
@@ -311,6 +309,7 @@ permission_violation:
                         // etc.
                     } else {
                         size_t mlength;
+                        ptl_handle_eq_t tEQ = t->EQ;
                         // deliver
                         if (le->length == 0) {
                             mlength = 0;
@@ -332,10 +331,10 @@ permission_violation:
                                                        cur->buffered_data,
                                                        mlength, &(cur->hdr));
                             // notify
-                            if ((t->EQ != PTL_EQ_NONE) ||
+                            if ((tEQ != PTL_EQ_NONE) ||
                                 (le->ct_handle != PTL_CT_NONE)) {
                                 __sync_synchronize();
-                                PtlInternalAnnounceLEDelivery(t->EQ,
+                                PtlInternalAnnounceLEDelivery(tEQ,
                                                               le->ct_handle,
                                                               cur->hdr.type,
                                                               le->options,
@@ -347,10 +346,10 @@ permission_violation:
                             }
                         } else {
                             /* Cannot deliver buffered messages without local data; so just emit the OVERFLOW event */
-                            if ((t->EQ != PTL_EQ_NONE) ||
+                            if ((tEQ != PTL_EQ_NONE) ||
                                 (le->ct_handle != PTL_CT_NONE)) {
                                 __sync_synchronize();
-                                PtlInternalAnnounceLEDelivery(t->EQ,
+                                PtlInternalAnnounceLEDelivery(tEQ,
                                                               le->ct_handle,
                                                               cur->hdr.type,
                                                               le->options,
@@ -361,10 +360,10 @@ permission_violation:
                             }
                         }
 #else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
-                        if ((t->EQ != PTL_EQ_NONE) ||
+                        if ((tEQ != PTL_EQ_NONE) ||
                             (le->ct_handle != PTL_CT_NONE)) {
                             __sync_synchronize();
-                            PtlInternalAnnounceLEDelivery(t->EQ,
+                            PtlInternalAnnounceLEDelivery(tEQ,
                                                           le->ct_handle,
                                                           cur->hdr.type,
                                                           le->options,
@@ -745,8 +744,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
     }
 
     PTL_LOCK_UNLOCK(t->lock);
-    switch (PtlInternalAtomicCas32
-                (&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
+    switch (PtlInternalAtomicCas32(&(les[le.s.ni][le.s.code].status), LE_ALLOCATED, LE_FREE)) {
         case LE_IN_USE:
             return PTL_IN_USE;
 
