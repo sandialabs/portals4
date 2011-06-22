@@ -279,9 +279,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
     for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries;
          ++offset) {
         if (mes[ni.s.ni][offset].status == 0) {
-            if (PtlInternalAtomicCas32
-                    (&(mes[ni.s.ni][offset].status), ME_FREE,
-                    ME_ALLOCATED) == ME_FREE) {
+            if (PtlInternalAtomicCas32(&(mes[ni.s.ni][offset].status), ME_FREE, ME_ALLOCATED) == ME_FREE) {
                 meh.s.code                    = offset;
                 mes[ni.s.ni][offset].visible  = *me;
                 mes[ni.s.ni][offset].pt_index = pt_index;
@@ -313,9 +311,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
         case PTL_PRIORITY_LIST:
             if (t->buffered_headers.head != NULL) {     // implies that overflow.head != NULL
                 /* If there are buffered headers, then they get first priority on matching this priority append. */
-                ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *)(t->
-                                                       buffered_headers.head);
+                ptl_internal_buffered_header_t *cur              = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
                 ptl_internal_buffered_header_t *prev             = NULL;
                 const ptl_match_bits_t          dont_ignore_bits = ~(me->ignore_bits);
                 for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
@@ -408,7 +404,8 @@ permission_violation:
                         // etc.
                     } else {
                         size_t          mlength;
-                        ptl_handle_eq_t tEQ = t->EQ;
+                        ptl_handle_eq_t tEQ        = t->EQ;
+                        unsigned int    me_options = me->options;
                         // deliver
                         if (me->length == 0) {
                             mlength = 0;
@@ -422,7 +419,7 @@ permission_violation:
                         } else {
                             mlength = cur->hdr.length;
                         }
-#ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS
+#ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS /*{{{*/
                         if (cur->buffered_data != NULL) {
                             /* we're assuming that this buffered_data includes ALLLLL of the necessary data; partial data is not supported. Bad things will happen. */
                             uint8_t *realstart = ((uint8_t *)me->start) + cur->hdr.dest_offset;
@@ -476,13 +473,13 @@ permission_violation:
                             }
                             PtlInternalValidateMEPT(t);
                         }
-#else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
+#else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS *//*}}}*/
                         if ((tEQ != PTL_EQ_NONE) ||
                             (me->ct_handle != PTL_CT_NONE)) {
                             __sync_synchronize();
                             PtlInternalAnnounceMEDelivery(tEQ,
                                                           me->ct_handle,
-                                                          me->options,
+                                                          me_options,
                                                           mlength,
                                                           (uintptr_t)cur->buffered_data,
                                                           OVERFLOW,
@@ -496,28 +493,34 @@ permission_violation:
 #endif              /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
                         PtlInternalValidateMEPT(t);
                         PTL_LOCK_UNLOCK(t->lock);
-                        /* technically, the ME was never actually *linked*, but for symmetry of the interface, we need to pretend like it was linked and announce the unlink */
-                        if ((tEQ != PTL_EQ_NONE) &&
-                            ((me->options & PTL_ME_EVENT_UNLINK_DISABLE) ==
-                             0)) {
-                            ptl_internal_event_t e;
-                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
-                                                     user_ptr);
-                            e.type  = PTL_EVENT_AUTO_UNLINK;
-                            e.start = (uint8_t *)me->start + cur->hdr.dest_offset;
-                            PtlInternalEQPush(tEQ, &e);
+                        /* technically, the ME was never actually *linked*, but
+                         * for symmetry of the interface, we need to pretend
+                         * like it was linked and announce the unlink */
+                        if (tEQ != PTL_EQ_NONE) {
+                            if ((me_options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
+                                ptl_internal_event_t e;
+                                PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                                printf("append unlink\n");
+                                e.type  = PTL_EVENT_AUTO_UNLINK;
+                                e.start = (uint8_t *)me->start + cur->hdr.dest_offset;
+                                PtlInternalEQPush(tEQ, &e);
+                            }
 #ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                             ptl_internal_appendME_t *const restrict overflow_entry = (ptl_internal_appendME_t *)cur->unexpected_entry;
-                            if (overflow_entry != NULL) {
-                                if (mlength > 0) {
-                                    ++(overflow_entry->announced);
-                                }
-                                if ((overflow_entry->unlinked == 1) &&
-                                    (overflow_entry->announced ==
-                                     overflow_entry->messages)) {
-                                    e.type     = PTL_EVENT_AUTO_FREE;
-                                    e.user_ptr = overflow_entry->user_ptr;
-                                    PtlInternalEQPush(tEQ, &e);
+                            ptl_internal_me_t                      *overflow_me    = &mes[overflow_entry->me_handle.s.ni][overflow_entry->me_handle.s.code];
+                            if ((overflow_me->visible.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
+                                ptl_internal_event_t e;
+                                if (overflow_entry != NULL) {
+                                    if (mlength > 0) {
+                                        ++(overflow_entry->announced);
+                                    }
+                                    if ((overflow_entry->unlinked == 1) &&
+                                        (overflow_entry->announced == overflow_entry->messages)) {
+                                        PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                                        e.type     = PTL_EVENT_AUTO_FREE;
+                                        e.user_ptr = overflow_entry->user_ptr;
+                                        PtlInternalEQPush(tEQ, &e);
+                                    }
                                 }
                             }
 #endif                  /* ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS */
@@ -710,7 +713,8 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
                 dq   = dq->next;
             }
             if (dq == NULL) {
-                fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued ME from the PRIORITY list\n");
+                PTL_LOCK_UNLOCK(t->lock);
                 return PTL_FAIL;
             }
             prev->next = dq->next;
@@ -737,7 +741,8 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
                 dq   = dq->next;
             }
             if (dq == NULL) {
-                fprintf(stderr, "PORTALS4-> attempted to link an un-queued ME\n");
+                fprintf(stderr, "PORTALS4-> attempted to unlink an un-queued ME from the OVERFLOW list\n");
+                PTL_LOCK_UNLOCK(t->lock);
                 return PTL_FAIL;
             }
             prev->next = dq->next;
@@ -976,15 +981,16 @@ permission_violation:
              */
             need_to_unlock = 0;
             PTL_LOCK_UNLOCK(t->lock);
-            if ((tEQ != PTL_EQ_NONE) &&
-                ((me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0)) {
-                ptl_internal_event_t e;
-                PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
-                e.type  = PTL_EVENT_AUTO_UNLINK;
-                e.start = (uint8_t *)me.start + hdr->dest_offset;
-                PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
-                PtlInternalEQPush(tEQ, &e);
-                PtlInternalPAPIStartC();
+            if ((tEQ != PTL_EQ_NONE)) {
+                if ((me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
+                    ptl_internal_event_t e;
+                    PTL_INTERNAL_INIT_TEVENT(e, hdr, entry->user_ptr);
+                    e.type  = PTL_EVENT_AUTO_UNLINK;
+                    e.start = (uint8_t *)me.start + hdr->dest_offset;
+                    PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
+                    PtlInternalEQPush(tEQ, &e);
+                    PtlInternalPAPIStartC();
+                }
             }
         }
 check_lengths:
