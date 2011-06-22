@@ -22,6 +22,7 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_CT.h"
 #include "ptl_internal_PT.h"
+#include "ptl_internal_DM.h"
 #ifndef NO_ARG_VALIDATION
 # include "ptl_internal_error.h"
 #endif
@@ -1258,7 +1259,11 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
         } else {
             PtlInternalCTSuccessInc(ct_handle, mlength);
         }
-        PtlInternalCTPullTriggers(ct_handle);
+        if (PtlInternalAmITheCatcher()) {
+            PtlInternalCTPullTriggers(ct_handle);
+        } else {
+            PtlInternalCTTriggerCheck(ct_handle);
+        }
     }
     if (eq_handle != PTL_EQ_NONE) {
         if (((overflow) && ((options & PTL_LE_EVENT_OVER_DISABLE) == 0)) ||
