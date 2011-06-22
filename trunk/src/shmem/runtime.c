@@ -263,7 +263,7 @@ void API_FUNC runtime_barrier(void)
         ptl_assert(PtlMDRelease(mdh),
                    PTL_OK);
 
-        if (0 == my_rank) {
+        if (0 == my_rank && num_procs != 2) {
             /* to make counting easier */
             PtlInternalCTSuccessInc(barrier_ct_h, num_procs - 2);
         }
