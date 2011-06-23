@@ -27,9 +27,9 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
-		pthread_spin_lock(&ni->send_list_lock);
-		list_add_tail(&rdma_buf->list, &ni->send_list);
-		pthread_spin_unlock(&ni->send_list_lock);
+		pthread_spin_lock(&ni->rdma_list_lock);
+		list_add_tail(&rdma_buf->list, &ni->rdma_list);
+		pthread_spin_unlock(&ni->rdma_list_lock);
 	} else {
 		wr.wr_id = 0;
 		wr.send_flags = 0;
@@ -49,9 +49,9 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (err) {
 		WARN();
 		if (comp) {
-			pthread_spin_lock(&ni->send_list_lock);
+			pthread_spin_lock(&ni->rdma_list_lock);
 			list_del(&rdma_buf->list);
-			pthread_spin_unlock(&ni->send_list_lock);
+			pthread_spin_unlock(&ni->rdma_list_lock);
 		}
 
 		return PTL_FAIL;
@@ -85,9 +85,9 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
-		pthread_spin_lock(&ni->send_list_lock);
-		list_add_tail(&rdma_buf->list, &ni->send_list);
-		pthread_spin_unlock(&ni->send_list_lock);
+		pthread_spin_lock(&ni->rdma_list_lock);
+		list_add_tail(&rdma_buf->list, &ni->rdma_list);
+		pthread_spin_unlock(&ni->rdma_list_lock);
 	} else {
 		wr.wr_id = 0;
 		wr.send_flags = 0;
@@ -112,9 +112,9 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (err) {
 		WARN();
 		if (comp) {
-			pthread_spin_lock(&ni->send_list_lock);
+			pthread_spin_lock(&ni->rdma_list_lock);
 			list_del(&rdma_buf->list);
-			pthread_spin_unlock(&ni->send_list_lock);
+			pthread_spin_unlock(&ni->rdma_list_lock);
 		}
 		return PTL_FAIL;
 	}
