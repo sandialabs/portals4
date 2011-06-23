@@ -102,6 +102,7 @@ static void dump_everything(int unused)
 			printf("  xi_wait_list: %d\n", list_empty(&ni->xi_wait_list));
 			printf("  xt_wait_list: %d\n", list_empty(&ni->xt_wait_list));
 			printf("  send_list: %d\n", list_empty(&ni->send_list));
+			printf("  rdma_list: %d\n", list_empty(&ni->rdma_list));
 			printf("  recv_list: %d\n", list_empty(&ni->recv_list));
 
 			printf("  limits.max_entries = %d\n", ni->limits.max_entries);

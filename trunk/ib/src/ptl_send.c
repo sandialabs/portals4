@@ -25,18 +25,19 @@ int send_message(buf_t *buf)
 #endif
 
 	pthread_spin_lock(&ni->send_list_lock);
-	list_add_tail(&buf->list, &ni->send_list);
-	pthread_spin_unlock(&ni->send_list_lock);
 
 	err = ibv_post_send(buf->dest->qp, &buf->send_wr, &bad_wr);
 	if (err) {
-		WARN();
-		pthread_spin_lock(&ni->send_list_lock);
-		list_del(&buf->list);
 		pthread_spin_unlock(&ni->send_list_lock);
 
+		WARN();
+
 		return PTL_FAIL;
+	} else {
+		list_add_tail(&buf->list, &ni->send_list);
 	}
+
+	pthread_spin_unlock(&ni->send_list_lock);
 
 	return PTL_OK;
 }

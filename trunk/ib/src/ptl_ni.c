@@ -149,10 +149,14 @@ static int ni_rcqp_cleanup(ni_t *ni)
 
 		switch (buf->type) {
 		case BUF_SEND:
-		case BUF_RDMA:
 			pthread_spin_lock(&ni->send_list_lock);
 			list_del(&buf->list);
 			pthread_spin_unlock(&ni->send_list_lock);
+			break;
+		case BUF_RDMA:
+			pthread_spin_lock(&ni->rdma_list_lock);
+			list_del(&buf->list);
+			pthread_spin_unlock(&ni->rdma_list_lock);
 			break;
 		case BUF_RECV:
 			pthread_spin_lock(&ni->recv_list_lock);
@@ -385,6 +389,13 @@ static void release_buffers(ni_t *ni)
 
 	while(!list_empty(&ni->send_list)) {
 		struct list_head *entry = ni->send_list.next;
+		list_del(entry);
+		buf = list_entry(entry, buf_t, list);
+		buf_put(buf);
+	}
+
+	while(!list_empty(&ni->rdma_list)) {
+		struct list_head *entry = ni->rdma_list.next;
 		list_del(entry);
 		buf = list_entry(entry, buf_t, list);
 		buf_put(buf);
@@ -821,6 +832,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 	INIT_LIST_HEAD(&ni->xt_wait_list);
 	INIT_LIST_HEAD(&ni->mr_list);
 	INIT_LIST_HEAD(&ni->send_list);
+	INIT_LIST_HEAD(&ni->rdma_list);
 	INIT_LIST_HEAD(&ni->recv_list);
 	INIT_LIST_HEAD(&ni->logical.connect_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -829,6 +841,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->send_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&ni->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
@@ -981,6 +994,7 @@ static void ni_cleanup(ni_t *ni)
 	pthread_spin_destroy(&ni->xt_wait_list_lock);
 	pthread_spin_destroy(&ni->mr_list_lock);
 	pthread_spin_destroy(&ni->send_list_lock);
+	pthread_spin_destroy(&ni->rdma_list_lock);
 	pthread_spin_destroy(&ni->recv_list_lock);
 }
 

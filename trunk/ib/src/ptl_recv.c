@@ -132,14 +132,22 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
  */
 static int send_comp(buf_t *buf)
 {
-	int err;
 	ni_t *ni = to_ni(buf);
+	struct list_head temp_list;
 
 	pthread_spin_lock(&ni->send_list_lock);
-	list_del(&buf->list);
+
+	list_cut_position(&temp_list, &ni->send_list, &buf->list);
 	pthread_spin_unlock(&ni->send_list_lock);
 
-	buf_put(buf);
+	while(!list_empty(&temp_list)) {
+		buf = list_first_entry(&temp_list, buf_t, list);
+
+		list_del(&buf->list);
+
+		buf_put(buf);
+	}
+
 	return STATE_RECV_COMP_REARM;
 }
 
@@ -152,9 +160,9 @@ static int rdma_comp(buf_t *buf)
 	int err;
 	ni_t *ni = to_ni(buf);
 
-	pthread_spin_lock(&ni->send_list_lock);
+	pthread_spin_lock(&ni->rdma_list_lock);
 	list_del(&buf->list);
-	pthread_spin_unlock(&ni->send_list_lock);
+	pthread_spin_unlock(&ni->rdma_list_lock);
 
 	if (buf->xt) {
 		buf->xt->rdma_comp--;
