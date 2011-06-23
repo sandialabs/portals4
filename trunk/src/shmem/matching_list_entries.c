@@ -516,7 +516,7 @@ permission_violation:
                                     }
                                     if ((overflow_entry->unlinked == 1) &&
                                         (overflow_entry->announced == overflow_entry->messages)) {
-                                        PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                                        PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), overflow_entry->user_ptr);
                                         e.type     = PTL_EVENT_AUTO_FREE;
                                         e.user_ptr = overflow_entry->user_ptr;
                                         PtlInternalEQPush(tEQ, &e);
@@ -1368,7 +1368,7 @@ static void PtlInternalPerformDelivery(const uint_fast8_t              type,
                                        uint8_t *const restrict         message_data,
                                        const size_t                    nbytes,
                                        ptl_internal_header_t *restrict hdr)
-{
+{   /*{{{*/
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
             memcpy(local_data, message_data, nbytes);
@@ -1396,7 +1396,7 @@ static void PtlInternalPerformDelivery(const uint_fast8_t              type,
             UNREACHABLE;
             abort();
     }
-}
+} /*}}}*/
 
 #endif /* ifdef USE_TRANSFER_ENGINE */
 
