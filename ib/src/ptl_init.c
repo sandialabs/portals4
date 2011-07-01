@@ -510,7 +510,8 @@ int process_init(xi_t *xi)
 				err = PTL_FAIL;
 				break;
 			case STATE_INIT_DONE:
-				goto exit;
+				/* xi is not valid anymore. */
+				goto done;
 			default:
 				abort();
 			}
@@ -518,6 +519,7 @@ int process_init(xi_t *xi)
 exit:
 		xi->state = state;
 
+done:
 		pthread_spin_unlock(&xi->obj.obj_lock);
 	} while(0);
 

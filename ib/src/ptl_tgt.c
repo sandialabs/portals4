@@ -1527,12 +1527,15 @@ int process_tgt(xt_t *xt)
 			err = PTL_FAIL;
 			goto exit;
 		case STATE_TGT_DONE:
-			goto exit;
+			/* xt isn't valid anymore. */
+			goto done;
 		}
 	}
 
  exit:
 	xt->state = state;
+
+ done:
 	pthread_spin_unlock(&xt->obj.obj_lock);
 
 	return err;
