@@ -1258,7 +1258,7 @@ static int tgt_send_ack(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
-	if (xt->le->options & PTL_LE_ACK_DISABLE)
+	if (xt->le && xt->le->options & PTL_LE_ACK_DISABLE)
 		hdr->operation = OP_NO_ACK;
 
 	buf->length = sizeof(*hdr);
