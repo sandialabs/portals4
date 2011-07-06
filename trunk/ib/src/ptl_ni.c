@@ -830,7 +830,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 	INIT_LIST_HEAD(&ni->ct_list);
 	INIT_LIST_HEAD(&ni->xi_wait_list);
 	INIT_LIST_HEAD(&ni->xt_wait_list);
-	INIT_LIST_HEAD(&ni->mr_list);
+	RB_INIT(&ni->mr_tree);
 	INIT_LIST_HEAD(&ni->send_list);
 	INIT_LIST_HEAD(&ni->rdma_list);
 	INIT_LIST_HEAD(&ni->recv_list);
@@ -839,7 +839,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->mr_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->send_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->recv_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -937,26 +937,10 @@ static void interrupt_cts(ni_t *ni)
 	pthread_spin_unlock(&ni->ct_list_lock);
 }
 
-static void cleanup_mr_list(ni_t *ni)
-{
-#if 0
-	struct list_head *l, *t;
-	mr_t *mr;
-
-	pthread_spin_lock(&ni->mr_list_lock);
-	list_for_each_safe(l, t, &ni->mr_list) {
-		list_del(l);
-		mr = list_entry(l, mr_t, list);
-		mr_put(mr);
-	}
-	pthread_spin_unlock(&ni->mr_list_lock);
-#endif
-}
-
 static void ni_cleanup(ni_t *ni)
 {
 	interrupt_cts(ni);
-	cleanup_mr_list(ni);
+	cleanup_mr_tree(ni);
 
 	ni_rcqp_stop(ni);
 
@@ -992,7 +976,7 @@ static void ni_cleanup(ni_t *ni)
 	pthread_spin_destroy(&ni->ct_list_lock);
 	pthread_spin_destroy(&ni->xi_wait_list_lock);
 	pthread_spin_destroy(&ni->xt_wait_list_lock);
-	pthread_spin_destroy(&ni->mr_list_lock);
+	pthread_spin_destroy(&ni->mr_tree_lock);
 	pthread_spin_destroy(&ni->send_list_lock);
 	pthread_spin_destroy(&ni->rdma_list_lock);
 	pthread_spin_destroy(&ni->recv_list_lock);

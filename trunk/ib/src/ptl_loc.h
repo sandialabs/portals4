@@ -34,6 +34,8 @@
 #include <search.h>
 #include <sys/ioctl.h>
 
+#include "tree.h"
+
 #include "config.h"
 
 #include "portals4.h"
@@ -242,6 +244,5 @@ int process_tgt(xt_t *xt);
 int check_overflow(le_t *le);
 int check_overflow_search_only(le_t *le);
 int check_overflow_search_delete(le_t *le);
-
 
 #endif /* PTL_LOC_H */
