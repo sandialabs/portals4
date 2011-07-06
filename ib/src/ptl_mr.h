@@ -6,7 +6,8 @@ typedef ptl_handle_any_t ptl_handle_mr_t;
 typedef struct mr {
 	obj_t			obj;
 	struct ibv_mr		*ibmr;
-	struct list_head	list;
+
+	RB_ENTRY(mr) entry;
 } mr_t;
 
 void mr_release(void *arg);
@@ -57,5 +58,6 @@ static inline ptl_handle_mr_t mr_to_handle(mr_t *mr)
 }
 
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr);
+void cleanup_mr_tree(ni_t *ni);
 
 #endif /* PTL_MR_H */

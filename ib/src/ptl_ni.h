@@ -65,8 +65,8 @@ typedef struct ni {
 	struct list_head	xt_wait_list;
 	pthread_spinlock_t	xt_wait_list_lock;
 
-	struct list_head	mr_list;
-	pthread_spinlock_t	mr_list_lock;
+	RB_HEAD(the_root, mr) mr_tree;
+	pthread_spinlock_t	mr_tree_lock;
 
 	/* Can be held outside of EQ object lock */
 	pthread_mutex_t		eq_wait_mutex;
