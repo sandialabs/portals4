@@ -33,9 +33,9 @@ int send_message(buf_t *buf)
 		WARN();
 
 		return PTL_FAIL;
-	} else {
-		list_add_tail(&buf->list, &ni->send_list);
 	}
+
+	list_add_tail(&buf->list, &ni->send_list);
 
 	pthread_spin_unlock(&ni->send_list_lock);
 

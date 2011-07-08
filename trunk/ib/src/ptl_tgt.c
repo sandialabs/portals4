@@ -1243,6 +1243,7 @@ static int tgt_send_ack(xt_t *xt)
 	switch (xt->ack_req) {
 	case PTL_NO_ACK_REQ:
 		WARN();
+		buf_put(buf);
 		return STATE_TGT_ERROR;
 	case PTL_ACK_REQ:
 		hdr->operation = OP_ACK;
@@ -1255,6 +1256,7 @@ static int tgt_send_ack(xt_t *xt)
 		break;
 	default:
 		WARN();
+		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
@@ -1266,6 +1268,7 @@ static int tgt_send_ack(xt_t *xt)
 	err = send_message(buf);
 	if (err) {
 		WARN();
+		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
@@ -1303,6 +1306,7 @@ static int tgt_send_reply(xt_t *xt)
 	err = send_message(buf);
 	if (err) {
 		WARN();
+		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
