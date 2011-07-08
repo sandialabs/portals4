@@ -269,6 +269,7 @@ static int init_send_req(xi_t *xi)
 #endif
 	err = send_message(buf);
 	if (err) {
+		buf_put(buf);
 		return STATE_INIT_SEND_ERROR;
 	}
 
