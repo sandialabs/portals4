@@ -228,14 +228,14 @@ static int init_send_req(xi_t *xi)
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
 							   length, buf);
 		if (err)
-			return STATE_INIT_ERROR;
+			goto error;
 		break;
 
 	case OP_GET:
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
 							   length, buf);
 		if (err)
-			return STATE_INIT_ERROR;
+			goto error;
 		break;
 
 	case OP_FETCH:
@@ -243,13 +243,13 @@ static int init_send_req(xi_t *xi)
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
 							   length, buf);
 		if (err)
-			return STATE_INIT_ERROR;
+			goto error;
 
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
 							   length, buf);
 		if (err)
-			return STATE_INIT_ERROR;
+			goto error;
 		break;
 
 	default:
@@ -276,6 +276,10 @@ static int init_send_req(xi_t *xi)
 		return STATE_INIT_GET_RECV;
 	else
 		return STATE_INIT_CLEANUP;
+
+ error:
+	buf_put(buf);
+	return STATE_INIT_ERROR;
 }
 
 static int init_send_error(xi_t *xi)
