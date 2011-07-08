@@ -65,36 +65,28 @@ int ptl_post_recv(ni_t *ni)
 	err = buf_alloc(ni, &buf);
 	if (err) {
 		WARN();
-		err = PTL_FAIL;
-		goto err1;
+		return PTL_FAIL;
 	}
 
 	buf->sg_list[0].length = buf->size;
 	buf->type = BUF_RECV;
 
 	pthread_spin_lock(&ni->recv_list_lock);
-	list_add_tail(&buf->list, &ni->recv_list);
-	pthread_spin_unlock(&ni->recv_list_lock);
 
 	err = ibv_post_srq_recv(ni->srq, &buf->recv_wr, &bad_wr);
+
 	if (err) {
-		WARN();
-		pthread_spin_lock(&ni->recv_list_lock);
-		list_del(&buf->list);
 		pthread_spin_unlock(&ni->recv_list_lock);
-		err = PTL_FAIL;
-		goto err2;
+
+		WARN();
+		buf_put(buf);
+		
+		return PTL_FAIL;
 	}
 
-	return PTL_OK;
-
-err2:
-	pthread_spin_lock(&ni->recv_list_lock);
-	list_del(&buf->list);
+	list_add_tail(&buf->list, &ni->recv_list);
+	
 	pthread_spin_unlock(&ni->recv_list_lock);
 
-	buf_put(buf);
-
-err1:
-	return err;
+	return PTL_OK;
 }
