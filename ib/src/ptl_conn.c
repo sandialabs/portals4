@@ -4,6 +4,8 @@
 
 #include "ptl_loc.h"
 
+#define max(a,b)	(((a) > (b)) ? (a) : (b))
+
 void conn_init(ni_t *ni, conn_t *conn)
 {
 	memset(conn, 0, sizeof(*conn));
@@ -147,7 +149,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	init_attr.send_cq = ni->cq;
 	init_attr.recv_cq = ni->cq;
 	init_attr.srq = ni->srq;
-	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
+	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -240,7 +242,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	init_attr.srq = ni->srq;
 	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 				    get_param(PTL_MAX_RDMA_WR_OUT);
-	init_attr.cap.max_send_sge = get_param(PTL_MAX_INLINE_SGE);
+	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -464,7 +466,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.cap.max_send_wr		= get_param(PTL_MAX_QP_SEND_WR) +
 						  get_param(PTL_MAX_RDMA_WR_OUT);
 		init.cap.max_recv_wr		= 0;
-		init.cap.max_send_sge		= get_param(PTL_MAX_INLINE_SGE);
+		init.cap.max_send_sge		= max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 		init.cap.max_recv_sge		= get_param(PTL_MAX_QP_RECV_SGE);
 
 #ifdef USE_XRC
