@@ -260,7 +260,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		xt->cur_loc_iov_off = iov_off;
 		xt->cur_rem_off += bytes;
 
-		if (*resid && xt->cur_rem_off >= rseg_length)
+		if (*resid && xt->cur_rem_off >= rseg_length) {
 			if (xt->num_rem_sge) {
 				xt->cur_rem_sge++;
 				rseg_length =
@@ -271,8 +271,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 				WARN();
 				return PTL_FAIL;
 			}
-		else
-			xt->cur_rem_off += bytes;
+		}
 	}
 
 	if (debug)
