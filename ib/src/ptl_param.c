@@ -73,7 +73,7 @@ static param_t param[] = {
 	[PTL_LIM_MAX_ATOMIC_SIZE]		= {
 						.name	= "PTL_LIM_MAX_ATOMIC_SIZE",
 						.min	= 0,
-						.max	= LONG_MAX,
+						.max	= 512, /* not more than MAX_INLINE_DATA */
 						.val	= 512,
 					  },
 	[PTL_LIM_MAX_FETCH_ATOMIC_SIZE]	= {
@@ -159,7 +159,7 @@ static param_t param[] = {
 						.name	= "PTL_MAX_INLINE_DATA",
 						.min	= 0,
 						.max	= LONG_MAX,
-						.val	= 256,
+						.val	= 512,
 					  },
 	[PTL_MAX_INLINE_SGE]			= {
 						.name	= "PTL_MAX_INLINE_SGE",
