@@ -127,7 +127,7 @@ static param_t param[] = {
 					  },
 	[PTL_MAX_QP_SEND_SGE]			= {
 						.name	= "PTL_MAX_QP_SEND_SGE",
-						.min	= 0,
+						.min	= 1,
 						.max	= LONG_MAX,
 						.val	= 16,
 					  },
@@ -139,9 +139,9 @@ static param_t param[] = {
 					  },
 	[PTL_MAX_QP_RECV_SGE]			= {
 						.name	= "PTL_MAX_QP_RECV_SGE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 10,
+						.min	= 1,
+						.max	= 1,
+						.val	= 1,
 					  },
 	[PTL_MAX_SRQ_RECV_WR]			= {
 						.name	= "PTL_MAX_SRQ_RECV_WR",
