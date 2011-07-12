@@ -150,6 +150,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	init_attr.recv_cq = ni->cq;
 	init_attr.srq = ni->srq;
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
+	init_attr.cap.max_inline_data = 512;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -243,6 +244,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 				    get_param(PTL_MAX_RDMA_WR_OUT);
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
+	init_attr.cap.max_inline_data = 512;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -468,6 +470,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.cap.max_recv_wr		= 0;
 		init.cap.max_send_sge		= max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 		init.cap.max_recv_sge		= get_param(PTL_MAX_QP_RECV_SGE);
+		init.cap.max_inline_data = 512;
 
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL) {
