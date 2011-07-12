@@ -29,7 +29,7 @@ typedef struct buf {
 
 	unsigned int		size;
 	unsigned int		length;
-	uint8_t			data[512];
+	uint8_t			data[1024];
 
 	union {
 		struct ibv_send_wr	send_wr;
