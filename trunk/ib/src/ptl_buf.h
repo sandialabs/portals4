@@ -22,8 +22,10 @@ typedef struct buf {
 	/* To hang on NI's send_list or recv_list. */
 	struct list_head	list;
 
-	struct xi		*xi;
-	struct xt		*xt;
+	union {
+		struct xi		*xi;
+		struct xt		*xt;
+	};
 
 	struct xremote *dest;
 
