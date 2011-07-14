@@ -689,7 +689,7 @@ static int tgt_rdma(xt_t *xt)
 	}
 
 	/* more work to do */
-	if (*resid || xt->rdma_comp)
+	if (*resid || atomic_read(&xt->rdma_comp))
 		return STATE_TGT_RDMA;
 
 	/* check to see if we still need data in phase */
@@ -757,7 +757,7 @@ static int tgt_rdma_desc(xt_t *xt)
 	sge.lkey = xt->indir_mr->ibmr->lkey;
 	sge.length = rlen;
 
-	xt->rdma_comp = 1;
+	atomic_set(&xt->rdma_comp, 1);
 
 	rdma_buf = tgt_alloc_rdma_buf(xt);
 	if (!rdma_buf) {

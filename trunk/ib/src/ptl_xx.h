@@ -51,7 +51,7 @@ struct xremote {
 	ptl_size_t		cur_loc_iov_index;	\
 	ptl_size_t		cur_loc_iov_off;	\
 	uint32_t  		rdma_dir;		\
-	int			rdma_comp;		\
+	atomic_t 		rdma_comp;		\
 	int			interim_rdma;		\
 	int			state;			\
 	int			next_state;		\
