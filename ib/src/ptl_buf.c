@@ -13,6 +13,7 @@ int buf_new(void *arg)
 
 	/* Put the MR list in the private data. */
 	buf->mr_list = (void *)buf + sizeof(buf_t);
+	buf->xt = NULL;
 
 	return PTL_OK;
 }
