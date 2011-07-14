@@ -91,6 +91,8 @@ static inline void buf_ref(buf_t *buf)
 
 static inline int buf_put(buf_t *buf)
 {
+	if (buf->xi)
+		xi_put(buf->xi);
 	return obj_put(&buf->obj);
 }
 
