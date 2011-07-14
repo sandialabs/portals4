@@ -1,6 +1,5 @@
 lib_LTLIBRARIES = libportals.la
-libportals_la_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include
-#libportals_la_CPPFLAGS = -Wall -I$(top_srcdir)/include -DPTL_LOG_ENABLE=4
+libportals_la_CPPFLAGS = -I$(top_srcdir)/include
 libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
 libportals_la_SOURCES = \
