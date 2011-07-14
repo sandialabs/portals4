@@ -141,9 +141,7 @@ static int send_comp(buf_t *buf)
 
 	while(!list_empty(&temp_list)) {
 		buf = list_first_entry(&temp_list, buf_t, list);
-
 		list_del(&buf->list);
-
 		buf_put(buf);
 	}
 
@@ -172,7 +170,7 @@ static int rdma_comp(buf_t *buf)
 	}
 
 	if (xt) {
-		xt->rdma_comp--;
+		atomic_dec(&xt->rdma_comp);
 		err = process_tgt(xt);
 		if (err) {
 			WARN();

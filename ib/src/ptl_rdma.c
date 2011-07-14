@@ -242,7 +242,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	rseg_length = be32_to_cpu(xt->cur_rem_sge->length);
 	rkey  = be32_to_cpu(xt->cur_rem_sge->lkey);
 
-	while (*resid > 0 && !xt->rdma_comp) {
+	while (*resid > 0 && !atomic_read(&xt->rdma_comp)) {
 		raddr = be64_to_cpu(xt->cur_rem_sge->addr) + xt->cur_rem_off;
 		rlength = rseg_length - xt->cur_rem_off;
 
@@ -276,7 +276,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			comp = 1;
 
  		if (comp) {
- 			xt->rdma_comp++;
+ 			atomic_inc(&xt->rdma_comp);
  			xt->interim_rdma = 0;
  		}
 
@@ -316,7 +316,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 
 	if (debug)
 		printf("RDMA posted, resid(%d), rdma_comp(%d)\n",
-			(int) *resid, (int) xt->rdma_comp);
+			   (int) *resid, atomic_read(&xt->rdma_comp));
 
 	return PTL_OK;
 }

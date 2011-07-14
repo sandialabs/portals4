@@ -168,4 +168,31 @@ static inline void list_splice(const struct list_head *list,
     for (pos = (head)->prev, n = pos->prev; \
          pos != (head); pos = n, n = pos->prev)
 
+/*
+ * Atomic type.
+ */
+typedef struct {
+	volatile int val;
+} atomic_t;
+
+static inline void atomic_set(atomic_t *var, int val)
+{
+    var->val = val;
+}
+
+static inline int atomic_read(atomic_t *var)
+{
+    return var->val;
+}
+
+static inline void atomic_inc(atomic_t *var)
+{
+    (void)__sync_add_and_fetch(&var->val, 1);
+}
+
+static inline void atomic_dec(atomic_t *var)
+{
+    (void)__sync_sub_and_fetch(&var->val, 1);
+}
+
 #endif /* PTL_TYPES_H */
