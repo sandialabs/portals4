@@ -572,6 +572,7 @@ buf_t *tgt_alloc_rdma_buf(xt_t *xt)
 	}
 	buf->type = BUF_RDMA;
 	buf->xt = xt;
+	xt_ref(xt);
 	buf->dest = &xt->dest;
 
 	return buf;
@@ -1231,6 +1232,7 @@ static int tgt_send_ack(xt_t *xt)
 	}
 
 	buf->xt = xt;
+	xt_ref(xt);
 	buf->dest = &xt->dest;
 
 	hdr = (hdr_t *)buf->data;
@@ -1291,6 +1293,7 @@ static int tgt_send_reply(xt_t *xt)
 	}
 
 	buf->xt = xt;
+	xt_ref(xt);
 	buf->dest = &xt->dest;
 
 	hdr = (hdr_t *)buf->data;

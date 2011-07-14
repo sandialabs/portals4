@@ -157,7 +157,12 @@ static int rdma_comp(buf_t *buf)
 	struct list_head temp_list;
 	int err;
 	xt_t *xt = buf->xt;
-	buf_t *buf2;
+
+	/* Take a ref on the XT since freeing all its buffers will also
+	 * free it. */
+	assert(xt);
+	assert(atomic_read(&xt->rdma_comp) < 5000);
+	xt_ref(xt);
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);
@@ -169,16 +174,15 @@ static int rdma_comp(buf_t *buf)
 		buf_put(buf);
 	}
 
-	if (xt) {
-		atomic_dec(&xt->rdma_comp);
-		err = process_tgt(xt);
-		if (err) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-	} else
+	atomic_dec(&xt->rdma_comp);
+	err = process_tgt(xt);
+	if (err) {
 		WARN();
+		xt_put(xt);
+		return STATE_RECV_ERROR;
+	}
 
+	xt_put(xt);
 	return STATE_RECV_COMP_REARM;
 }
 
