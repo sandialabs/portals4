@@ -132,13 +132,12 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
  */
 static int send_comp(buf_t *buf)
 {
-	ni_t *ni = to_ni(buf);
 	struct list_head temp_list;
+	xt_t *xt = buf->xt;
 
-	pthread_spin_lock(&ni->send_list_lock);
-
-	list_cut_position(&temp_list, &ni->send_list, &buf->list);
-	pthread_spin_unlock(&ni->send_list_lock);
+	pthread_spin_lock(&xt->send_list_lock);
+	list_cut_position(&temp_list, &xt->send_list, &buf->list);
+	pthread_spin_unlock(&xt->send_list_lock);
 
 	while(!list_empty(&temp_list)) {
 		buf = list_first_entry(&temp_list, buf_t, list);
@@ -153,20 +152,28 @@ static int send_comp(buf_t *buf)
 
 /*
  * rdma_comp
- *	process an send rdma completion event
+ *	process a send rdma completion event
  */
 static int rdma_comp(buf_t *buf)
 {
+	struct list_head temp_list;
 	int err;
-	ni_t *ni = to_ni(buf);
+	xt_t *xt = buf->xt;
+	buf_t *buf2;
 
-	pthread_spin_lock(&ni->rdma_list_lock);
-	list_del(&buf->list);
-	pthread_spin_unlock(&ni->rdma_list_lock);
+	pthread_spin_lock(&xt->rdma_list_lock);
+	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);
+	pthread_spin_unlock(&xt->rdma_list_lock);
 
-	if (buf->xt) {
-		buf->xt->rdma_comp--;
-		err = process_tgt(buf->xt);
+	while(!list_empty(&temp_list)) {
+		buf = list_first_entry(&temp_list, buf_t, list);
+		list_del(&buf->list);
+		buf_put(buf);
+	}
+
+	if (xt) {
+		xt->rdma_comp--;
+		err = process_tgt(xt);
 		if (err) {
 			WARN();
 			return STATE_RECV_ERROR;

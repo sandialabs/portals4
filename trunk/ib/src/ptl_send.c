@@ -10,7 +10,7 @@
 int send_message(buf_t *buf)
 {
 	int err;
-	ni_t *ni = to_ni(buf);
+	xi_t *xi = buf->xi;
 	struct ibv_send_wr *bad_wr;
 
 	if (debug)
@@ -24,20 +24,20 @@ int send_message(buf_t *buf)
 	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
 #endif
 
-	pthread_spin_lock(&ni->send_list_lock);
+	pthread_spin_lock(&xi->send_list_lock);
 
 	err = ibv_post_send(buf->dest->qp, &buf->send_wr, &bad_wr);
 	if (err) {
-		pthread_spin_unlock(&ni->send_list_lock);
+		pthread_spin_unlock(&xi->send_list_lock);
 
 		WARN();
 
 		return PTL_FAIL;
 	}
 
-	list_add_tail(&buf->list, &ni->send_list);
+	list_add_tail(&buf->list, &xi->send_list);
 
-	pthread_spin_unlock(&ni->send_list_lock);
+	pthread_spin_unlock(&xi->send_list_lock);
 
 	return PTL_OK;
 }

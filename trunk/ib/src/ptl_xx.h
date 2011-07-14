@@ -38,7 +38,6 @@ struct xremote {
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
 	struct buf		*recv_buf;		\
-	struct buf		*rdma_buf;		\
 	ptl_size_t		rlength;		\
 	ptl_size_t		mlength;		\
 	ptl_size_t		roffset;		\
@@ -72,7 +71,12 @@ struct xremote {
 	ptl_size_t		threshold;		\
 	struct data		*data_in;		\
 	struct data		*data_out;		\
-	conn_t			*conn;
+	conn_t			*conn;			\
+	struct list_head	send_list; \
+	pthread_spinlock_t	send_list_lock; \
+	struct list_head	rdma_list; \
+	pthread_spinlock_t	rdma_list_lock;
+
 
 /* initiator side transaction descriptor */
 typedef struct xi {

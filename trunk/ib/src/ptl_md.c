@@ -20,17 +20,9 @@ void md_release(void *arg)
 		md->ct = NULL;
 	}
 
-	if (md->mr_list) {
-		for (i = 0; i < md->num_iov; i++)
-			if (md->mr_list[i])
-				mr_put(md->mr_list[i]);
-		free(md->mr_list);
-		md->mr_list = NULL;
-	}
-
-	if (md->mr) {
-		mr_put(md->mr);
-		md->mr = NULL;
+	if (md->sge_list_mr) {
+		mr_put(md->sge_list_mr);
+		md->sge_list_mr = NULL;
 	}
 
 	if (md->sge_list) {
@@ -49,15 +41,8 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	int i;
 	ptl_iovec_t *iov;
 	struct ibv_sge *sge;
-	mr_t *mr;
 
 	md->num_iov = num_iov;
-
-	md->mr_list = calloc(num_iov, sizeof(mr_t *));
-	if (!md->mr_list) {
-		WARN();
-		return PTL_NO_SPACE;
-	}
 
 	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		md->sge_list = calloc(num_iov, sizeof(struct ibv_sge));
@@ -68,7 +53,7 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 		err = mr_lookup(ni, md->sge_list,
 				num_iov * sizeof(*sge),
-				&md->mr);
+				&md->sge_list_mr);
 		if (err) {
 			WARN();
 			return err;
@@ -81,19 +66,11 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	sge = md->sge_list;
 
 	for (i = 0; i < num_iov; i++) {
-		err = mr_lookup(ni, iov->iov_base, iov->iov_len, &mr);
-		if (err) {
-			WARN();
-			return err;
-		}
-
-		md->mr_list[i] = mr;
 		md->length += iov->iov_len;
 
 		if (md->sge_list) {
 			sge->addr = cpu_to_be64((uintptr_t)iov->iov_base);
 			sge->length = cpu_to_be32(iov->iov_len);
-			sge->lkey = cpu_to_be32(mr->ibmr->rkey);
 		}
 
 		iov++;
@@ -156,10 +133,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 			goto err3;
 		}
 	} else {
-		err = mr_lookup(ni, md_init->start, md_init->length, &md->mr);
-		if (err)
-			goto err3;
-
 		md->length = md_init->length;
 	}
 

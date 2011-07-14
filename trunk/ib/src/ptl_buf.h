@@ -41,8 +41,16 @@ typedef struct buf {
 	buf_type_t		type;
 
 	struct ibv_sge		sg_list[1];
+
+	/* List of MRs used for that buffer. */
+	int num_mr;
+	mr_t **mr_list;
+
+	char internal_data[0];
+
 } buf_t;
 
+int buf_new(void *arg);
 int buf_init(void *arg, void *parm);
 void buf_release(void *arg);
 

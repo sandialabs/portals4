@@ -136,6 +136,7 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	struct ibv_wc wc;
 	int n;
 	buf_t *buf;
+	xi_t *xi;					/* used for xt too */
 
 	while(1) {
 		n = ibv_poll_cq(ni->cq, 1, &wc);
@@ -146,17 +147,18 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			break;
 
 		buf = (buf_t *)(uintptr_t)wc.wr_id;
+		xi = buf->xi;
 
 		switch (buf->type) {
 		case BUF_SEND:
-			pthread_spin_lock(&ni->send_list_lock);
+			pthread_spin_lock(&xi->send_list_lock);
 			list_del(&buf->list);
-			pthread_spin_unlock(&ni->send_list_lock);
+			pthread_spin_unlock(&xi->send_list_lock);
 			break;
 		case BUF_RDMA:
-			pthread_spin_lock(&ni->rdma_list_lock);
+			pthread_spin_lock(&xi->rdma_list_lock);
 			list_del(&buf->list);
-			pthread_spin_unlock(&ni->rdma_list_lock);
+			pthread_spin_unlock(&xi->rdma_list_lock);
 			break;
 		case BUF_RECV:
 			pthread_spin_lock(&ni->recv_list_lock);
@@ -387,19 +389,9 @@ static void release_buffers(ni_t *ni)
 {
 	buf_t *buf;
 
-	while(!list_empty(&ni->send_list)) {
-		struct list_head *entry = ni->send_list.next;
-		list_del(entry);
-		buf = list_entry(entry, buf_t, list);
-		buf_put(buf);
-	}
-
-	while(!list_empty(&ni->rdma_list)) {
-		struct list_head *entry = ni->rdma_list.next;
-		list_del(entry);
-		buf = list_entry(entry, buf_t, list);
-		buf_put(buf);
-	}
+	/* TODO: cleanup of the XT/XI and their buffers that might still
+	 * be in flight. It's only usefull when something bad happens, so
+	 * it's not critical. */
 
 	while(!list_empty(&ni->recv_list)) {
 		struct list_head *entry = ni->recv_list.next;
@@ -415,6 +407,7 @@ static void release_buffers(ni_t *ni)
 static int init_pools(ni_t *ni)
 {
 	int err;
+	unsigned int max_sge;
 
 	ni->mr_pool.free = mr_release;
 
@@ -492,11 +485,14 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
+	ni->buf_pool.alloc = buf_new;
 	ni->buf_pool.init = buf_init;
 	ni->buf_pool.fini = buf_release;
 	ni->buf_pool.segment_size = 128*1024;
 
-	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t),
+	max_sge = get_param(PTL_MAX_QP_SEND_SGE);
+	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t) + 
+					max_sge * sizeof(mr_t *),
 					POOL_BUF, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -831,8 +827,6 @@ int PtlNIInit(ptl_interface_t iface_id,
 	INIT_LIST_HEAD(&ni->xi_wait_list);
 	INIT_LIST_HEAD(&ni->xt_wait_list);
 	RB_INIT(&ni->mr_tree);
-	INIT_LIST_HEAD(&ni->send_list);
-	INIT_LIST_HEAD(&ni->rdma_list);
 	INIT_LIST_HEAD(&ni->recv_list);
 	INIT_LIST_HEAD(&ni->logical.connect_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -840,8 +834,6 @@ int PtlNIInit(ptl_interface_t iface_id,
 	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->send_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
@@ -977,8 +969,6 @@ static void ni_cleanup(ni_t *ni)
 	pthread_spin_destroy(&ni->xi_wait_list_lock);
 	pthread_spin_destroy(&ni->xt_wait_list_lock);
 	pthread_spin_destroy(&ni->mr_tree_lock);
-	pthread_spin_destroy(&ni->send_list_lock);
-	pthread_spin_destroy(&ni->rdma_list_lock);
 	pthread_spin_destroy(&ni->recv_list_lock);
 }
 

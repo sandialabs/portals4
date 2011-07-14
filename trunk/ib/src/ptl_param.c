@@ -79,7 +79,7 @@ static param_t param[] = {
 	[PTL_LIM_MAX_FETCH_ATOMIC_SIZE]	= {
 						.name	= "PTL_LIM_MAX_FETCH_ATOMIC_SIZE",
 						.min	= 0,
-						.max	= LONG_MAX,
+						.max	= 512, /* not more than MAX_INLINE_DATA */
 						.val	= 512,
 					  },
 	[PTL_LIM_MAX_WAW_ORDERED_SIZE]	= {
@@ -129,7 +129,7 @@ static param_t param[] = {
 						.name	= "PTL_MAX_QP_SEND_SGE",
 						.min	= 1,
 						.max	= LONG_MAX,
-						.val	= 16,
+						.val	= 30,
 					  },
 	[PTL_MAX_QP_RECV_WR]			= {
 						.name	= "PTL_MAX_QP_RECV_WR",

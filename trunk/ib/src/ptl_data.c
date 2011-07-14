@@ -60,7 +60,7 @@ static int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
  * iov_to_sge - Build a SG list from an IO vector starting at the IO vector
  * offset for the specified length.
  */
-static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
+static int iov_to_sge(ni_t *ni, buf_t *buf, struct ibv_sge *sge_list,
 		      ptl_iovec_t *iov, ptl_size_t num_iov,
 		      ptl_size_t offset, ptl_size_t length)
 {
@@ -69,6 +69,7 @@ static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
+	int err;
 
 	for (i = 0; i < num_iov && src_offset < offset; i++, iov++) {
 		iov_offset = offset - src_offset;
@@ -82,7 +83,11 @@ static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 		return PTL_FAIL;
 	}
 
+	assert(buf->num_mr == 0);
+
 	for (j = 0; i < num_iov && dst_offset < length; i++, iov++) {
+		void * addr;
+
 		bytes = iov->iov_len - iov_offset;
 		if (bytes == 0)
 			continue;
@@ -95,10 +100,18 @@ static int iov_to_sge(mr_t **mr_list, struct ibv_sge *sge_list,
 			return PTL_FAIL;
 		}
 
-		sge_list[j].addr = cpu_to_be64((uintptr_t)iov->iov_base +
-					       iov_offset);
+		addr = iov->iov_base + iov_offset;
+		sge_list[j].addr = cpu_to_be64((uintptr_t)addr);
 		sge_list[j].length = cpu_to_be32(bytes);
-		sge_list[j].lkey = cpu_to_be32(mr_list[i]->ibmr->lkey);
+
+		err = mr_lookup(ni, addr, bytes, &buf->mr_list[j]);
+		if (err) {
+			WARN();
+			return PTL_FAIL;
+		}
+		buf->num_mr++;
+		
+		sge_list[j].lkey = cpu_to_be32(buf->mr_list[j]->ibmr->lkey);
 
 #if 0
 		if (debug) {
@@ -203,7 +216,33 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				= cpu_to_be32(num_sge *
 					      sizeof(struct ibv_sge));
 			data->sge_list->lkey
-				= cpu_to_be32(md->mr->ibmr->lkey);
+				= cpu_to_be32(md->sge_list_mr->ibmr->lkey);
+
+
+			{
+				ptl_iovec_t *iov;
+				struct ibv_sge *sge;
+				int i;
+
+				iov = (ptl_iovec_t *)md->start;
+				sge = md->sge_list;
+
+				for (i = 0; i < num_sge; i++) {
+					err = mr_lookup(md->obj.obj_ni, iov->iov_base, iov->iov_len, &buf->mr_list[buf->num_mr]);
+					if (err) {
+						WARN();
+						return err;
+					}
+
+					assert(sge->addr == cpu_to_be64((uintptr_t)iov->iov_base));
+					assert(sge->length == cpu_to_be32(iov->iov_len));
+					sge->lkey = cpu_to_be32(buf->mr_list[buf->num_mr]->ibmr->rkey);
+
+					buf->num_mr++;
+					sge++;
+					iov++;
+				}
+			}
 
 			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 			goto done;
@@ -213,7 +252,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
 
-			err = iov_to_sge(md->mr_list, data->sge_list,
+			err = iov_to_sge(md->obj.obj_ni, buf, data->sge_list,
 					 (ptl_iovec_t *)md->start, md->num_iov,
 					 offset, length);
 			if (err) {
@@ -227,7 +266,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		buf->length += sizeof(*data) +
 			md->num_iov * sizeof(struct ibv_sge);
 
-		err = iov_to_sge(md->mr_list, data->sge_list,
+		err = iov_to_sge(md->obj.obj_ni, buf, data->sge_list,
 				 (ptl_iovec_t *)md->start,
 				 md->num_iov, offset, length);
 		if (err) {
@@ -235,14 +274,26 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			return err;
 		}
 	} else {
+		void *addr;
+		
 		data->data_fmt = DATA_FMT_DMA;
 		data->num_sge = cpu_to_be32(1);
 		buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 
-		data->sge_list[0].addr = cpu_to_be64((uintptr_t)md->start +
-						    offset);
+		addr = md->start + offset;
+
+		data->sge_list[0].addr = cpu_to_be64((uintptr_t)addr);
 		data->sge_list[0].length = cpu_to_be32(length);
-		data->sge_list[0].lkey = cpu_to_be32(md->mr->ibmr->rkey);
+
+		err = mr_lookup(md->obj.obj_ni, addr, length, &buf->mr_list[buf->num_mr]);
+		if (err) {
+			WARN();
+			return err;
+		}
+
+		data->sge_list[0].lkey = cpu_to_be32(buf->mr_list[buf->num_mr]->ibmr->rkey);
+
+		buf->num_mr ++;
 #if 0
 		if (debug) {
 			printf("md->mr->ibmr->addr(%p), lkey(%d), rkey(%d)\n",

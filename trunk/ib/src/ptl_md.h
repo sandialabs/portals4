@@ -12,8 +12,8 @@ typedef struct md {
 	unsigned int		options;
 	struct eq		*eq;
 	struct ct		*ct;
-	mr_t			*mr;
-	mr_t			**mr_list;
+
+	mr_t *sge_list_mr;
 	struct ibv_sge		*sge_list;
 
 	struct list_head	list;

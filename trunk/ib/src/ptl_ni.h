@@ -78,12 +78,6 @@ typedef struct ni {
 	pthread_cond_t		ct_wait_cond;
 
 	/* Pending send and receive operations. */
-	struct list_head	send_list;
-	pthread_spinlock_t	send_list_lock;
-
-	struct list_head	rdma_list;
-	pthread_spinlock_t	rdma_list_lock;
-
 	struct list_head	recv_list;
 	pthread_spinlock_t	recv_list_lock;
 

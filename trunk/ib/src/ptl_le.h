@@ -25,8 +25,7 @@ struct ct;
 	uint32_t		jid;		\
 	};					\
 	unsigned int		options;	\
-	mr_t			*mr;		\
-	mr_t			**mr_list;	\
+	mr_t			*sge_list_mr;	\
 	struct ibv_sge		*sge_list;
 
 typedef struct le {
