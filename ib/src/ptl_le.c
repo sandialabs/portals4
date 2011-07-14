@@ -24,8 +24,7 @@ int le_init(void *arg, void *unused)
  */
 void le_release(void *arg)
 {
-	int i;
-        le_t *le = arg;
+	le_t *le = arg;
 	ni_t *ni = to_ni(le);
 	pt_t *pt = le->pt;
 
@@ -40,18 +39,9 @@ void le_release(void *arg)
 		le->sge_list = NULL;
 	}
 
-	if (le->mr_list) {
-		for (i = 0; i < le->num_iov; i++) {
-			if (le->mr_list[i])
-				mr_put(le->mr_list[i]);
-		}
-		free(le->mr_list);
-		le->mr_list = NULL;
-	}
-
-	if (le->mr) {
-		mr_put(le->mr);
-		le->mr = NULL;
+	if (le->sge_list_mr) {
+		mr_put(le->sge_list_mr);
+		le->sge_list_mr = NULL;
 	}
 
 	pthread_spin_lock(&ni->obj.obj_lock);
@@ -209,15 +199,11 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 {
 	int err;
 	int i;
-	mr_t *mr;
 	ptl_iovec_t *iov;
 	struct ibv_sge *sge;
 
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
-		le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
-		if (!le->mr_list)
-			return PTL_NO_SPACE;
 
 		if (le->num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 			le->sge_list = calloc(le->num_iov, sizeof(*sge));
@@ -225,37 +211,20 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 				return PTL_NO_SPACE;
 
 			err = mr_lookup(ni, le->sge_list,
-					le->num_iov * sizeof(*sge), &le->mr);
+					le->num_iov * sizeof(*sge), &le->sge_list_mr);
 			if (err)
 				return err;
 		}
 
 		le->length = 0;
 		iov = (ptl_iovec_t *)le_init->start;
-		sge = le->sge_list;
 
 		for (i = 0; i < le->num_iov; i++) {
-			err = mr_lookup(ni, iov->iov_base, iov->iov_len, &mr);
-			if (err)
-				return err;
-
-			if (le->sge_list) {
-				sge->addr =
-					cpu_to_be64((uintptr_t)iov->iov_base);
-				sge->length = cpu_to_be32(iov->iov_len);
-				sge->lkey = cpu_to_be32(mr->ibmr->rkey);
-			}
-
 			le->length += iov->iov_len;
-			le->mr_list[i] = mr;
 			iov++;
-			sge++;
 		}
 	} else {
 		le->length = le_init->length;
-		err = mr_lookup(ni, le_init->start, le_init->length, &le->mr);
-		if (err)
-			return err;
 	}
 
 	return PTL_OK;

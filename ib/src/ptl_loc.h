@@ -245,4 +245,6 @@ int check_overflow(le_t *le);
 int check_overflow_search_only(le_t *le);
 int check_overflow_search_delete(le_t *le);
 
+buf_t *tgt_alloc_rdma_buf(xt_t *xt);
+
 #endif /* PTL_LOC_H */

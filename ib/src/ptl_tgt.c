@@ -557,7 +557,7 @@ out1:
 	return STATE_TGT_COMM_EVENT;
 }
 
-static int tgt_alloc_rdma_buf(xt_t *xt)
+buf_t *tgt_alloc_rdma_buf(xt_t *xt)
 {
 	buf_t *buf;
 	int err;
@@ -568,14 +568,13 @@ static int tgt_alloc_rdma_buf(xt_t *xt)
 	err = buf_alloc(to_ni(xt), &buf);
 	if (err) {
 		WARN();
-		return err;
+		return NULL;
 	}
 	buf->type = BUF_RDMA;
 	buf->xt = xt;
 	buf->dest = &xt->dest;
-	xt->rdma_buf = buf;
 
-	return 0;
+	return buf;
 }
 
 /*
@@ -644,9 +643,6 @@ static int tgt_data_out(xt_t *xt)
 		WARN();
 		return STATE_TGT_ERROR;
 	}
-
-	if (tgt_alloc_rdma_buf(xt))
-		return STATE_TGT_ERROR;
 
 	xt->rdma_dir = DATA_DIR_OUT;
 
@@ -724,6 +720,7 @@ static int tgt_rdma_desc(xt_t *xt)
 	struct ibv_sge sge;
 	int err;
 	int next;
+	buf_t *rdma_buf;
 
 	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
 
@@ -761,9 +758,18 @@ static int tgt_rdma_desc(xt_t *xt)
 	sge.length = rlen;
 
 	xt->rdma_comp = 1;
-	err = rdma_read(xt->rdma_buf, raddr, rkey, &sge, 1, 1);
+
+	rdma_buf = tgt_alloc_rdma_buf(xt);
+	if (!rdma_buf) {
+		WARN();
+		next = STATE_TGT_ERROR;
+		goto done;
+	}
+
+	err = rdma_read(rdma_buf, raddr, rkey, &sge, 1, 1);
 	if (err) {
 		WARN();
+		buf_put(rdma_buf);
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
 	}
@@ -815,9 +821,6 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_COMM_EVENT;
 		break;
 	case DATA_FMT_DMA:
-		if (tgt_alloc_rdma_buf(xt))
-			return STATE_TGT_ERROR;
-
 		/* Read from SG list provided directly in request */
 		xt->cur_rem_sge = &data->sge_list[0];
 		xt->cur_rem_off = 0;
@@ -834,9 +837,6 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_RDMA;
 		break;
 	case DATA_FMT_INDIRECT:
-		if (tgt_alloc_rdma_buf(xt))
-			return STATE_TGT_ERROR;
-
 		xt->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA_DESC;
 		break;
@@ -859,7 +859,7 @@ static int tgt_atomic_data_in(xt_t *xt)
 	data_t *data = xt->data_in;
 	me_t *me = xt->me;
 
-	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
+	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -893,7 +893,7 @@ static int tgt_swap_data_in(xt_t *xt)
 	dst.u64 = 0;
 	d = (union datatype *)data->data;
 
-	/* assumes that max_atomic_size is <= MAX_INLINE_BYTES */
+	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -1342,10 +1342,16 @@ static int tgt_cleanup(xt_t *xt)
 		xt->indir_sge = NULL;
 	}
 
-	if (xt->rdma_buf) {
-		buf_put(xt->rdma_buf);
-		xt->rdma_buf = NULL;
+	pthread_spin_lock(&xt->rdma_list_lock);
+	while(!list_empty(&xt->rdma_list)) {
+		buf_t *buf = list_first_entry(&xt->rdma_list, buf_t, list);
+		list_del(&buf->list);
+
+		buf_put(buf);
+
+		abort();				/* this should not happen */
 	}
+	pthread_spin_unlock(&xt->rdma_list_lock);
 
 	if (xt->recv_buf) {
 		buf_put(xt->recv_buf);

@@ -11,9 +11,9 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp)
 {
 	int err;
-	ni_t *ni = to_ni(rdma_buf);
 	struct ibv_send_wr wr;
 	struct ibv_send_wr *bad_wr;
+	xt_t *xt = rdma_buf->xt;
 
 	if (debug) {
 		printf("send RDMA message, buf(%p)\n", rdma_buf);
@@ -24,12 +24,13 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
+	pthread_spin_lock(&xt->rdma_list_lock);
+	list_add_tail(&rdma_buf->list, &xt->rdma_list);
+	pthread_spin_unlock(&xt->rdma_list_lock);
+
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
-		pthread_spin_lock(&ni->rdma_list_lock);
-		list_add_tail(&rdma_buf->list, &ni->rdma_list);
-		pthread_spin_unlock(&ni->rdma_list_lock);
 	} else {
 		wr.wr_id = 0;
 		wr.send_flags = 0;
@@ -49,9 +50,9 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (err) {
 		WARN();
 		if (comp) {
-			pthread_spin_lock(&ni->rdma_list_lock);
+			pthread_spin_lock(&xt->rdma_list_lock);
 			list_del(&rdma_buf->list);
-			pthread_spin_unlock(&ni->rdma_list_lock);
+			pthread_spin_unlock(&xt->rdma_list_lock);
 		}
 
 		return PTL_FAIL;
@@ -69,9 +70,9 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	uint8_t imm, uint8_t comp)
 {
 	int err;
-	ni_t *ni = to_ni(rdma_buf);
 	struct ibv_send_wr wr;
 	struct ibv_send_wr *bad_wr;
+	xt_t *xt = rdma_buf->xt;
 
 	if (debug) {
 		printf("post RDMA work, buf(%p)\n", rdma_buf);
@@ -82,12 +83,13 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
+	pthread_spin_lock(&xt->rdma_list_lock);
+	list_add_tail(&rdma_buf->list, &xt->rdma_list);
+	pthread_spin_unlock(&xt->rdma_list_lock);
+
 	if (likely(comp)) {
 		wr.wr_id = (uintptr_t) rdma_buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
-		pthread_spin_lock(&ni->rdma_list_lock);
-		list_add_tail(&rdma_buf->list, &ni->rdma_list);
-		pthread_spin_unlock(&ni->rdma_list_lock);
 	} else {
 		wr.wr_id = 0;
 		wr.send_flags = 0;
@@ -112,9 +114,11 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (err) {
 		WARN();
 		if (comp) {
-			pthread_spin_lock(&ni->rdma_list_lock);
+			xt_t *xt = rdma_buf->xt;
+
+			pthread_spin_lock(&xt->rdma_list_lock);
 			list_del(&rdma_buf->list);
-			pthread_spin_unlock(&ni->rdma_list_lock);
+			pthread_spin_unlock(&xt->rdma_list_lock);
 		}
 		return PTL_FAIL;
 	}
@@ -128,12 +132,11 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
  *
  * Returns the number of bytes to be transferred by the SG list.
  */
-static ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
+static ptl_size_t build_rdma_sge(xt_t *xt, buf_t *buf, ptl_size_t rem_len,
 	struct ibv_sge *sge, int num_sge, int *entries, ptl_size_t *loc_index,
 	ptl_size_t *loc_off, int max_loc_index)
 {
 	me_t *me = xt->me;
-	mr_t *mr;
 	ptl_iovec_t *iov;
 	ptl_size_t tot_len = 0;
 	ptl_size_t len;
@@ -142,17 +145,30 @@ static ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 	while (i < num_sge && tot_len < rem_len) {
 		len = rem_len - tot_len;
 		if (me->num_iov) {
+			void * addr;
+			int err;
+
 			if (*loc_index >= max_loc_index) {
 				WARN();
 				break;
 			}
 			iov = ((ptl_iovec_t *)me->start) + *loc_index;
-			mr = me->mr_list[*loc_index];
-			sge->addr = (uintptr_t)iov->iov_base + *loc_off;
+
+			addr = iov->iov_base + *loc_off;
 			if (len > iov->iov_len - *loc_off)
 				len = iov->iov_len - *loc_off;
-			sge->lkey = mr->ibmr->lkey;
+
+			err = mr_lookup(xt->obj.obj_ni, addr, len, &buf->mr_list[buf->num_mr]);
+			if (err) {
+				WARN();
+				break;
+			}
+
+			sge->addr = (uintptr_t)addr;
 			sge->length = len;
+			sge->lkey = buf->mr_list[buf->num_mr]->ibmr->lkey;
+
+			buf->num_mr++;
 
 			tot_len += len;
 			*loc_off += len;
@@ -164,13 +180,24 @@ static ptl_size_t build_rdma_sge(xt_t *xt, ptl_size_t rem_len,
 					break;
 			}
 		} else {
-			mr = me->mr;
+			int err;
+			mr_t *mr;
+
 			sge->addr = (uintptr_t)me->start + *loc_off;
+
+			err = mr_lookup(me->obj.obj_ni, (void *)sge->addr, len, &mr);
+			if (err) {
+				WARN();
+				break;
+			}
 
 			if (len > mr->ibmr->length - *loc_off)
 				len = mr->ibmr->length - *loc_off;
 			sge->lkey = mr->ibmr->lkey;
 			sge->length = len;
+
+			buf->mr_list[buf->num_mr] = mr;
+			buf->num_mr ++;
 
 			tot_len += len;
 			*loc_off += len;
@@ -210,6 +237,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &xt->put_resid : &xt->get_resid;
 	int err;
 	int comp = 0;
+	buf_t *rdma_buf = NULL;
 
 	rseg_length = be32_to_cpu(xt->cur_rem_sge->length);
 	rkey  = be32_to_cpu(xt->cur_rem_sge->lkey);
@@ -225,11 +253,20 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		if (rlength > *resid)
 			rlength = *resid;
 
-		bytes = build_rdma_sge(xt, rlength, sge, get_param(PTL_MAX_QP_SEND_SGE),
+		if (!rdma_buf) {
+			rdma_buf = tgt_alloc_rdma_buf(xt);
+			if (!rdma_buf) {
+				WARN();
+				return PTL_FAIL;
+			}
+		}
+
+		bytes = build_rdma_sge(xt, rdma_buf, rlength, sge, get_param(PTL_MAX_QP_SEND_SGE),
 				&entries, &iov_index,  &iov_off,
 				xt->le->num_iov);
 		if (!bytes) {
 			WARN();
+			buf_put(rdma_buf);
 			return PTL_FAIL;
 		}
 
@@ -244,16 +281,19 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
  		}
 
 		if (dir == DATA_DIR_IN)
-			err = rdma_read(xt->rdma_buf, raddr, rkey, sge,
+			err = rdma_read(rdma_buf, raddr, rkey, sge,
 				entries, comp);
 		else
-			err = rdma_write(xt->rdma_buf, raddr, rkey, sge,
+			err = rdma_write(rdma_buf, raddr, rkey, sge,
 				entries, 0, 0, comp);
 
 		if (err) {
 			WARN();
+			buf_put(rdma_buf);
 			return err;
 		}
+
+		rdma_buf = NULL;
 
 		*resid -= bytes;
 		xt->cur_loc_iov_index = iov_index;

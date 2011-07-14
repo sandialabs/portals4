@@ -5,10 +5,28 @@
 #include "ptl_loc.h"
 
 /*
+ * buf_new - called once per buffer when the pool is created.
+ */
+int buf_new(void *arg)
+{
+	buf_t *buf = arg;
+
+	/* Put the MR list in the private data. */
+	buf->mr_list = (void *)buf + sizeof(buf_t);
+
+	return PTL_OK;
+}
+
+/*
  * buf_release - release buffers reference to associated memory region.
  */ 
 void buf_release(void *arg)
 {
+	buf_t *buf = arg;
+	int i;
+
+	for (i=0; i<buf->num_mr; i++)
+		mr_put(buf->mr_list[i]);
 }
 
 /*
@@ -31,6 +49,8 @@ int buf_init(void *arg, void *parm)
 
 	buf->sg_list[0].addr = (uintptr_t)buf->data;
 	buf->sg_list[0].lkey = mr->lkey;
+
+	buf->num_mr = 0;
 
 	return 0;
 }
