@@ -121,7 +121,7 @@ void obj_release(ref_t *ref);
 int obj_alloc(pool_t *pool, obj_t **p_obj);
 
 /*
- * obj_get
+ * to_obj
  *	lookup object from its handle. If type is specified
  *	and handle has a type set then they must match
  *	takes a reference on the object

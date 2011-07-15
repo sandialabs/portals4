@@ -47,7 +47,6 @@ libportals_la_SOURCES = \
 	ptl_pt.h \
 	ptl_rdma.c \
 	ptl_recv.c \
-	ptl_ref.c \
 	ptl_ref.h \
 	ptl_send.c \
 	ptl_tgt.c \
