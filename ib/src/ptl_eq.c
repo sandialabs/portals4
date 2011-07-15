@@ -4,7 +4,7 @@
 
 #include "ptl_loc.h"
 
-void eq_release(void *arg)
+void eq_cleanup(void *arg)
 {
 	eq_t *eq = arg;
 	ni_t *ni = obj_to_ni(eq);

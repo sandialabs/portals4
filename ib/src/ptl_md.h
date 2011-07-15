@@ -19,7 +19,7 @@ typedef struct md {
 	struct list_head	list;
 } md_t;
 
-void md_release(void *arg);
+void md_cleanup(void *arg);
 
 static inline int md_alloc(ni_t *ni, md_t **md_p)
 {

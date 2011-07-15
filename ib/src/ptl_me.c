@@ -22,11 +22,11 @@ int me_init(void *arg, void *unused)
  * note:
  *	common between LE and ME
  */
-void me_release(void *arg)
+void me_cleanup(void *arg)
 {
 	me_t *me = arg;
 
-	le_release((le_t *)me);
+	le_cleanup((le_t *)me);
 }
 
 /*

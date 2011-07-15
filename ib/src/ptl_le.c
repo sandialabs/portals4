@@ -22,7 +22,7 @@ int le_init(void *arg, void *unused)
  * note:
  *	common between LE and ME
  */
-void le_release(void *arg)
+void le_cleanup(void *arg)
 {
 	le_t *le = arg;
 	ni_t *ni = obj_to_ni(le);

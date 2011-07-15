@@ -18,7 +18,7 @@ typedef struct eq {
 	int			overflow;
 } eq_t;
 
-void eq_release(void *arg);
+void eq_cleanup(void *arg);
 
 static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
 {

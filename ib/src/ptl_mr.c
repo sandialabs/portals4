@@ -4,7 +4,7 @@
 
 #include "ptl_loc.h"
 
-void mr_release(void *arg)
+void mr_cleanup(void *arg)
 {
 	int err;
 	mr_t *mr = (mr_t *)arg;
