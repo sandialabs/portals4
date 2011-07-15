@@ -6,7 +6,7 @@
 
 static void xport_hdr_from_xx(hdr_t *hdr, xi_t *xi)
 {
-	ni_t *ni = to_ni(xi);
+	ni_t *ni = obj_to_ni(xi);
 
 	hdr->version = PTL_HDR_VER_1;
 	hdr->atom_op = xi->atom_op;

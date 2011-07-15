@@ -27,12 +27,12 @@ static inline int mr_alloc(ni_t *ni, mr_t **mr_p)
 	return PTL_OK;
 }
 
-static inline int mr_get(ptl_handle_mr_t handle, mr_t **mr_p)
+static inline int to_mr(ptl_handle_mr_t handle, mr_t **mr_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_MR, (ptl_handle_any_t)handle, &obj);
+	err = to_obj(POOL_MR, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*mr_p = NULL;
 		return err;

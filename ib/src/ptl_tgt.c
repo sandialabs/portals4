@@ -186,7 +186,7 @@ static int copy_out(xt_t *xt, me_t *me, void *data)
  */
 static int tgt_start(xt_t *xt)
 {
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 
 	if (xt->pt_index >= ni->limits.max_pt_index) {
 		WARN();
@@ -247,7 +247,7 @@ static int request_drop(xt_t *xt)
  */
 static int check_match(const xt_t *xt, const me_t *me)
 {
-	const ni_t *ni = to_ni(xt);
+	const ni_t *ni = obj_to_ni(xt);
 	ptl_size_t offset;
 	ptl_size_t length;
 
@@ -334,7 +334,7 @@ no_perm:
  */
 static int tgt_get_match(xt_t *xt)
 {
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 	struct list_head *l;
 
 	/* have to protect against a race with le/me append/search
@@ -410,7 +410,7 @@ done:
  */
 static int tgt_get_length(xt_t *xt)
 {
-	const ni_t *ni = to_ni(xt);
+	const ni_t *ni = obj_to_ni(xt);
 	me_t *me = xt->me;
 	ptl_size_t room;
 	ptl_size_t offset;
@@ -492,7 +492,7 @@ static int tgt_get_length(xt_t *xt)
  */
 static int tgt_wait_conn(xt_t *xt)
 {
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 	conn_t *conn = xt->conn;
 
 	/* we need a connection if we are sending an ack/reply
@@ -565,7 +565,7 @@ buf_t *tgt_alloc_rdma_buf(xt_t *xt)
 	if (debug)
 		printf("tgt_alloc_rdma_buf\n");
 
-	err = buf_alloc(to_ni(xt), &buf);
+	err = buf_alloc(obj_to_ni(xt), &buf);
 	if (err) {
 		WARN();
 		return NULL;
@@ -744,7 +744,7 @@ static int tgt_rdma_desc(xt_t *xt)
 		goto done;
 	}
 
-	if (mr_lookup(to_ni(xt), xt->indir_sge, rlen,
+	if (mr_lookup(obj_to_ni(xt), xt->indir_sge, rlen,
 		      &xt->indir_mr)) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
@@ -1219,7 +1219,7 @@ static int tgt_comm_event(xt_t *xt)
 static int tgt_send_ack(xt_t *xt)
 {
 	int err;
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 	buf_t *buf;
 	hdr_t *hdr;
 
@@ -1280,7 +1280,7 @@ static int tgt_send_ack(xt_t *xt)
 static int tgt_send_reply(xt_t *xt)
 {
 	int err;
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 	buf_t *buf;
 	hdr_t *hdr;
 
@@ -1440,7 +1440,7 @@ int process_tgt(xt_t *xt)
 {
 	int err = PTL_OK;
 	int state;
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = obj_to_ni(xt);
 
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);

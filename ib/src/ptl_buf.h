@@ -69,12 +69,12 @@ static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 	return PTL_OK;
 }
 
-static inline int buf_get(ptl_handle_buf_t buf_handle, buf_t **buf_p)
+static inline int to_buf(ptl_handle_buf_t buf_handle, buf_t **buf_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_BUF, (ptl_handle_any_t)buf_handle, &obj);
+	err = to_obj(POOL_BUF, (ptl_handle_any_t)buf_handle, &obj);
 	if (err) {
 		*buf_p = NULL;
 		return err;

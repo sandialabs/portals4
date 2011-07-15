@@ -126,7 +126,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj);
  *	and handle has a type set then they must match
  *	takes a reference on the object
  */
-int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p);
+int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p);
 
 /*
  * obj_ref

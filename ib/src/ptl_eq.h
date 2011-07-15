@@ -35,12 +35,12 @@ static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
 	return PTL_OK;
 }
 
-static inline int eq_get(ptl_handle_eq_t eq_handle, eq_t **eq_p)
+static inline int to_eq(ptl_handle_eq_t eq_handle, eq_t **eq_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_EQ, (ptl_handle_any_t)eq_handle, &obj);
+	err = to_obj(POOL_EQ, (ptl_handle_any_t)eq_handle, &obj);
 	if (err) {
 		*eq_p = NULL;
 		return err;

@@ -25,7 +25,7 @@ int le_init(void *arg, void *unused)
 void le_release(void *arg)
 {
 	le_t *le = arg;
-	ni_t *ni = to_ni(le);
+	ni_t *ni = obj_to_ni(le);
 	pt_t *pt = le->pt;
 
 	if (le->ct)
@@ -283,7 +283,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -313,12 +313,12 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
 	if (le_handle) {
 		/* Only append can modify counters. */
-		err = ct_get(le_init->ct_handle, &le->ct);
+		err = to_ct(le_init->ct_handle, &le->ct);
 		if (unlikely(err))
 			goto err3;
 	}
 
-	if (unlikely(le->ct && (to_ni(le->ct) != ni))) {
+	if (unlikely(le->ct && (obj_to_ni(le->ct) != ni))) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
@@ -412,7 +412,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	if (unlikely(err))
 		return err;
 
-	err = le_get(le_handle, &le);
+	err = to_le(le_handle, &le);
 	if (unlikely(err))
 		goto err1;
 

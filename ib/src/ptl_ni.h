@@ -168,13 +168,13 @@ static inline int ni_put(ni_t *ni)
 	return obj_put(&ni->obj);
 }
 
-static inline int ni_get(ptl_handle_ni_t handle, ni_t **ni_p)
+static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
 {
 	int err;
 	obj_t *obj;
 	ni_t *ni;
 
-	err = obj_get(POOL_NI, (ptl_handle_any_t)handle, &obj);
+	err = to_obj(POOL_NI, (ptl_handle_any_t)handle, &obj);
 	if (err)
 		goto err;
 
@@ -202,7 +202,7 @@ static inline ptl_handle_ni_t ni_to_handle(const ni_t *ni)
 	return (ptl_handle_ni_t)ni->obj.obj_handle;
 }
 
-static inline ni_t *to_ni(const void *obj)
+static inline ni_t *obj_to_ni(const void *obj)
 {
 	return obj ? ((obj_t *)obj)->obj_ni : NULL;
 }

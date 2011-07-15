@@ -983,7 +983,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 		return err;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -1027,7 +1027,7 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 		goto err1;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -1057,7 +1057,7 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	if (unlikely(err))
 		return err;
 
-	err = obj_get(0, handle, &obj);
+	err = to_obj(0, handle, &obj);
 	if (unlikely(err))
 		goto err1;
 
@@ -1066,7 +1066,7 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 		goto err1;
 	}
 
-	*ni_handle = ni_to_handle(to_ni(obj));
+	*ni_handle = ni_to_handle(obj_to_ni(obj));
 
 	obj_put(obj);
 	gbl_put(gbl);

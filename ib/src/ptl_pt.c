@@ -66,7 +66,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -75,7 +75,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 
-	err = eq_get(eq_handle, &eq);
+	err = to_eq(eq_handle, &eq);
 	if (unlikely(err))
 		goto err2;
 
@@ -132,7 +132,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -191,7 +191,7 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -242,7 +242,7 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 

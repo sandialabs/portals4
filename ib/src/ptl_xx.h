@@ -118,12 +118,12 @@ static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 	return PTL_OK;
 }
 
-static inline int xi_get(ptl_handle_xi_t xi_handle, xi_t **xi_p)
+static inline int to_xi(ptl_handle_xi_t xi_handle, xi_t **xi_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_XI, (ptl_handle_any_t)xi_handle, &obj);
+	err = to_obj(POOL_XI, (ptl_handle_any_t)xi_handle, &obj);
 	if (err) {
 		*xi_p = NULL;
 		return err;
@@ -198,12 +198,12 @@ static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 	return PTL_OK;
 }
 
-static inline int xt_get(ptl_handle_xt_t xt_handle, xt_t **xt_p)
+static inline int to_xt(ptl_handle_xt_t xt_handle, xt_t **xt_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_XT, (ptl_handle_any_t)xt_handle, &obj);
+	err = to_obj(POOL_XT, (ptl_handle_any_t)xt_handle, &obj);
 	if (err) {
 		*xt_p = NULL;
 		return err;

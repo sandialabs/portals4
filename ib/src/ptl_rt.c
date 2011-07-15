@@ -16,7 +16,7 @@ int PtlSetJid(ptl_handle_ni_t ni_handle, ptl_jid_t jid)
 		return err;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;
