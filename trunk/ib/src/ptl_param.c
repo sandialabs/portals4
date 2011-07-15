@@ -123,7 +123,7 @@ static param_t param[] = {
 						.name	= "PTL_MAX_QP_SEND_WR",
 						.min	= 0,
 						.max	= LONG_MAX,
-						.val	= 100,
+						.val	= 1000,
 					  },
 	[PTL_MAX_QP_SEND_SGE]			= {
 						.name	= "PTL_MAX_QP_SEND_SGE",
