@@ -398,7 +398,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 }
 
 /*
- * obj_get
+ * to_obj
  *	return an object from handle and optionally type
  */
 int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
