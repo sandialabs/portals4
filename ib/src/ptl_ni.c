@@ -360,7 +360,7 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	}
 
 	cqe = get_param(PTL_MAX_QP_SEND_WR) + get_param(PTL_MAX_RDMA_WR_OUT) +
-	      get_param(PTL_MAX_QP_RECV_WR) + 10;
+	      get_param(PTL_MAX_SRQ_RECV_WR) + 10;
 
 	ni->cq = ibv_create_cq(iface->ibv_context, cqe, ni, ni->ch, 0);
 	if (!ni->cq) {
