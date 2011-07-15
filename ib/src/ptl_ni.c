@@ -487,7 +487,7 @@ static int init_pools(ni_t *ni)
 
 	ni->buf_pool.setup = buf_setup;
 	ni->buf_pool.init = buf_init;
-	ni->buf_pool.fini = buf_cleanup;
+	ni->buf_pool.cleanup = buf_cleanup;
 	ni->buf_pool.segment_size = 128*1024;
 
 	max_sge = get_param(PTL_MAX_QP_SEND_SGE);
