@@ -182,6 +182,12 @@ static ptl_size_t build_rdma_sge(xt_t *xt, buf_t *buf, ptl_size_t rem_len,
 		} else {
 			int err;
 			mr_t *mr;
+			ptl_size_t len_available = me->length - *loc_off;
+
+			assert(me->length > *loc_off);
+				
+			if (len > len_available)
+				len = len_available;
 
 			sge->addr = (uintptr_t)me->start + *loc_off;
 
@@ -191,8 +197,6 @@ static ptl_size_t build_rdma_sge(xt_t *xt, buf_t *buf, ptl_size_t rem_len,
 				break;
 			}
 
-			if (len > mr->ibmr->length - *loc_off)
-				len = mr->ibmr->length - *loc_off;
 			sge->lkey = mr->ibmr->lkey;
 			sge->length = len;
 
