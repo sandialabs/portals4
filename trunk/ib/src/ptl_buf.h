@@ -50,9 +50,9 @@ typedef struct buf {
 
 } buf_t;
 
-int buf_new(void *arg);
+int buf_setup(void *arg);
 int buf_init(void *arg, void *parm);
-void buf_release(void *arg);
+void buf_cleanup(void *arg);
 
 static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 {

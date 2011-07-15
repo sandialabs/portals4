@@ -50,10 +50,10 @@ typedef struct segment_list {
 typedef struct pool {
 	struct obj		*parent;
 	char			*name;
-	int			(*init)(void *arg, void *parm);
-	void			(*fini)(void *arg);
-	int			(*alloc)(void *arg);
-	void			(*free)(void *arg);
+	int			(*init)(void *arg, void *parm);	/* once per object, when created */
+	void			(*fini)(void *arg);	/* once per object, when destroyed */
+	int			(*setup)(void *arg); /* when allocated from the free list */
+	void			(*cleanup)(void *arg); /* when moved back to the free list */
 	struct list_head	chunk_list;
 	struct list_head	free_list;
 	struct list_head	busy_list;

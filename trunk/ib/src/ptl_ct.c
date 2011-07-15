@@ -14,7 +14,7 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 						 ptl_ct_event_t new_ct,
 						 int do_lock);
 
-void ct_release(void *arg)
+void ct_cleanup(void *arg)
 {
 	ct_t *ct = arg;
 	ni_t *ni = obj_to_ni(ct);

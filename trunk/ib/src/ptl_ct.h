@@ -29,7 +29,7 @@ typedef struct xl {
 
 } xl_t;
 
-void ct_release(void *arg);
+void ct_cleanup(void *arg);
 
 static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
 {

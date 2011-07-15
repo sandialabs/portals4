@@ -5,9 +5,9 @@
 #include "ptl_loc.h"
 
 /*
- * buf_new - called once per buffer when the pool is created.
+ * buf_alloc - called once per buffer when the pool is created.
  */
-int buf_new(void *arg)
+int buf_setup(void *arg)
 {
 	buf_t *buf = arg;
 
@@ -21,7 +21,7 @@ int buf_new(void *arg)
 /*
  * buf_release - release buffers reference to associated memory region.
  */ 
-void buf_release(void *arg)
+void buf_cleanup(void *arg)
 {
 	buf_t *buf = arg;
 	int i;

@@ -10,7 +10,7 @@ typedef struct mr {
 	RB_ENTRY(mr) entry;
 } mr_t;
 
-void mr_release(void *arg);
+void mr_cleanup(void *arg);
 
 static inline int mr_alloc(ni_t *ni, mr_t **mr_p)
 {

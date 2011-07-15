@@ -34,7 +34,7 @@ typedef struct le {
 } le_t;
 
 int le_init(void *arg, void *unused);
-void le_release(void *arg);
+void le_cleanup(void *arg);
 
 static inline int le_alloc(ni_t *ni, le_t **le_p)
 {

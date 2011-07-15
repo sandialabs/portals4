@@ -4,10 +4,9 @@
 
 #include "ptl_loc.h"
 
-void md_release(void *arg)
+void md_cleanup(void *arg)
 {
-	int i;
-        md_t *md = arg;
+	md_t *md = arg;
 	ni_t *ni = obj_to_ni(md);
 
 	if (md->eq) {

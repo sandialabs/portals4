@@ -270,8 +270,8 @@ void obj_release(ref_t *ref)
 
 	obj->obj_handle = 0;
 
-	if (pool->free)
-		pool->free(obj);
+	if (pool->cleanup)
+		pool->cleanup(obj);
 
 	if (obj->obj_parent)
 		obj_put(obj->obj_parent);
@@ -382,8 +382,8 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	/*
 	 * if any type specific per allocation initialization do it
 	 */
-	if (pool->alloc) {
-		err = pool->alloc(obj);
+	if (pool->setup) {
+		err = pool->setup(obj);
 		if (err) {
 			WARN();
 			obj_release(&obj->obj_ref);

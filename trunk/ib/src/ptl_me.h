@@ -17,7 +17,7 @@ typedef struct me {
 } me_t;
 
 int me_init(void *arg, void *unused);
-void me_release(void *arg);
+void me_cleanup(void *arg);
 
 static inline int me_alloc(ni_t *ni, me_t **me_p)
 {

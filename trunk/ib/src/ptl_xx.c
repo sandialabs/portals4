@@ -5,10 +5,10 @@
 #include "ptl_loc.h"
 
 /*
- * xi_new
+ * xi_setup
  *	called when new xi is allocated
  */
-int xi_new(void *arg)
+int xi_setup(void *arg)
 {
 	xi_t *xi = arg;
 
@@ -21,7 +21,7 @@ int xi_new(void *arg)
 	return PTL_OK;
 }
 
-void xi_release(void *arg)
+void xi_cleanup(void *arg)
 {
 	xi_t *xi = arg;
 
@@ -30,10 +30,10 @@ void xi_release(void *arg)
 }
 
 /*
- * xt_new
+ * xt_setup
  *	called when new xt is allocated
  */
-int xt_new(void *arg)
+int xt_setup(void *arg)
 {
 	xt_t *xt = arg;
 
@@ -48,7 +48,7 @@ int xt_new(void *arg)
 	return PTL_OK;
 }
 
-void xt_release(void *arg)
+void xt_cleanup(void *arg)
 {
 	xt_t *xt = arg;
 
