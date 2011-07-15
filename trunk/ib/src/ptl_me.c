@@ -89,7 +89,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 		return err;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;
@@ -129,13 +129,13 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	me->ignore_bits = me_init->ignore_bits;
 	INIT_LIST_HEAD(&me->list);
 
-	err = ct_get(me_init->ct_handle, &me->ct);
+	err = to_ct(me_init->ct_handle, &me->ct);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	if (unlikely(me->ct && (to_ni(me->ct) != ni))) {
+	if (unlikely(me->ct && (obj_to_ni(me->ct) != ni))) {
 		err = PTL_ARG_INVALID;
 		WARN();
 		goto err3;
@@ -234,7 +234,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	if (unlikely(err))
 		return err;
 
-	err = me_get(me_handle, &me);
+	err = to_me(me_handle, &me);
 	if (unlikely(err))
 		goto err1;
 

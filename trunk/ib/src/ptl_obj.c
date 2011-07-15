@@ -401,7 +401,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
  * obj_get
  *	return an object from handle and optionally type
  */
-int obj_get(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
+int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 {
 	int err;
 	obj_t *obj = NULL;

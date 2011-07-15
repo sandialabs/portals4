@@ -7,7 +7,7 @@
 void eq_release(void *arg)
 {
 	eq_t *eq = arg;
-	ni_t *ni = to_ni(eq);
+	ni_t *ni = obj_to_ni(eq);
 
 	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_eqs--;
@@ -38,7 +38,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -106,7 +106,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	if (unlikely(err))
 		return err;
 
-	err = eq_get(eq_handle, &eq);
+	err = to_eq(eq_handle, &eq);
 	if (unlikely(err))
 		goto err1;
 
@@ -115,7 +115,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 		goto err1;
 	}
 
-	ni = to_ni(eq);
+	ni = obj_to_ni(eq);
 	if (!ni) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -175,7 +175,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	if (unlikely(err))
 		return err;
 
-	err = eq_get(eq_handle, &eq);
+	err = to_eq(eq_handle, &eq);
 	if (unlikely(err))
 		goto err1;
 
@@ -206,7 +206,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	if (unlikely(ret))
 		return ret;
 
-	ret = eq_get(eq_handle, &eq);
+	ret = to_eq(eq_handle, &eq);
 	if (unlikely(ret))
 		goto err1;
 
@@ -215,7 +215,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 
-	ni = to_ni(eq);
+	ni = obj_to_ni(eq);
 	if (!ni) {
 		ret = PTL_ARG_INVALID;
 		goto done;
@@ -282,7 +282,7 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	}
 
 	for (i = 0; i < size; i++) {
-		err = eq_get(eq_handles[i], &eq[i]);
+		err = to_eq(eq_handles[i], &eq[i]);
 		if (unlikely(err || !eq[i])) {
 			last_eq = i;
 			WARN();
@@ -293,10 +293,10 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 
 	last_eq = size;
 
-	ni = to_ni(eq[0]);
+	ni = obj_to_ni(eq[0]);
 
 	for (i = 1; i < size; i++) {
-		if (to_ni(eq[i]) != ni) {
+		if (obj_to_ni(eq[i]) != ni) {
 			WARN();
 			err = PTL_ARG_INVALID;
 			goto done2;
@@ -397,7 +397,7 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	pthread_spin_unlock(&eq->obj.obj_lock);
 
 	/* Handle case where waiters have blocked */
-	ni = to_ni(eq);
+	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
 	if (ni->eq_waiting)
 		pthread_cond_broadcast(&ni->eq_wait_cond);
@@ -444,7 +444,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 	pthread_spin_unlock(&eq->obj.obj_lock);
 
 	/* Handle case where waiters have blocked */
-	ni = to_ni(eq);
+	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
 	if (ni->eq_waiting)
 		pthread_cond_broadcast(&ni->eq_wait_cond);
@@ -481,7 +481,7 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail
 	pthread_spin_unlock(&eq->obj.obj_lock);
 
 	/* Handle case where waiters have blocked */
-	ni = to_ni(eq);
+	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
 	if (ni->eq_waiting)
 		pthread_cond_broadcast(&ni->eq_wait_cond);

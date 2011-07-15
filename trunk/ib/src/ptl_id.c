@@ -20,7 +20,7 @@ int PtlGetUid(ptl_handle_ni_t ni_handle, ptl_uid_t *uid)
 	if (err)
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -58,7 +58,7 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 		return err;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;
@@ -103,7 +103,7 @@ int PtlGetJid(ptl_handle_ni_t ni_handle, ptl_jid_t *jid)
 		return err;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;

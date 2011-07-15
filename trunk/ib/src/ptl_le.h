@@ -51,12 +51,12 @@ static inline int le_alloc(ni_t *ni, le_t **le_p)
 	return PTL_OK;
 }
 
-static inline int le_get(ptl_handle_le_t handle, le_t **le_p)
+static inline int to_le(ptl_handle_le_t handle, le_t **le_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_LE, (ptl_handle_any_t)handle, &obj);
+	err = to_obj(POOL_LE, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*le_p = NULL;
 		return err;

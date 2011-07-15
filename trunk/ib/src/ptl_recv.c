@@ -192,7 +192,7 @@ static int rdma_comp(buf_t *buf)
  */
 static int recv_packet(buf_t *buf)
 {
-	ni_t *ni = to_ni(buf);
+	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	pthread_spin_lock(&ni->recv_list_lock);
@@ -248,7 +248,7 @@ static int recv_req(buf_t *buf)
 {
 	int err;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ni_t *ni = to_ni(buf);
+	ni_t *ni = obj_to_ni(buf);
 	xt_t *xt;
 
 	err = xt_alloc(ni, &xt);
@@ -291,7 +291,7 @@ static int recv_init(buf_t *buf)
 	xi_t *xi;
 	hdr_t *hdr = (hdr_t *)buf->data;
 
-	err = xi_get(be64_to_cpu(hdr->handle), &xi);
+	err = to_xi(be64_to_cpu(hdr->handle), &xi);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
@@ -312,7 +312,7 @@ static int recv_init(buf_t *buf)
  */
 static int recv_drop_buf(buf_t *buf)
 {
-	ni_t *ni = to_ni(buf);
+	ni_t *ni = obj_to_ni(buf);
 
 	buf_put(buf);
 	ni->num_recv_drops++;

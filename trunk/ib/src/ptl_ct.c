@@ -17,7 +17,7 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 void ct_release(void *arg)
 {
 	ct_t *ct = arg;
-	ni_t *ni = to_ni(ct);
+	ni_t *ni = obj_to_ni(ct);
 
 	pthread_spin_lock(&ni->ct_list_lock);
 	list_del(&ct->list);
@@ -72,7 +72,7 @@ static void ct_check(ct_t *ct)
 {
 	struct list_head *l;
 	struct list_head *t;
-	ni_t *ni = to_ni(ct);
+	ni_t *ni = obj_to_ni(ct);
 
 	pthread_cond_broadcast(&ct->cond);
 	pthread_cond_broadcast(&ni->ct_wait_cond);
@@ -97,7 +97,7 @@ static void ct_check(ct_t *ct)
 void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail, ptl_size_t length,
 		   int bytes)
 {
-	ni_t *ni = to_ni(ct);
+	ni_t *ni = obj_to_ni(ct);
 
 	/* Must take mutex because of poll API */
 	pthread_mutex_lock(&ni->ct_wait_mutex);
@@ -123,7 +123,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -180,7 +180,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -189,7 +189,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 		goto err1;
 	}
 
-	ni = to_ni(ct);
+	ni = obj_to_ni(ct);
 
 	ct->interrupt = 1;
 	pthread_cond_broadcast(&ct->cond);
@@ -219,7 +219,7 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -251,7 +251,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -323,7 +323,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	 * they all belong to the same NI
 	 */
 	for (i = 0; i < size; i++) {
-		err = ct_get(ct_handles[i], &cts[i]);
+		err = to_ct(ct_handles[i], &cts[i]);
 		if (unlikely(err || !cts[i])) {
 			WARN();
 			err = PTL_ARG_INVALID;
@@ -331,9 +331,9 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		}
 
 		if (i == 0)
-			ni = to_ni(cts[0]);
+			ni = obj_to_ni(cts[0]);
 		else
-			if (to_ni(cts[i]) != ni) {
+			if (obj_to_ni(cts[i]) != ni) {
 				WARN();
 				ct_put(cts[i]);
 				err = PTL_ARG_INVALID;
@@ -413,7 +413,7 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -423,7 +423,7 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 	}
 
 	/* Must take mutex because of poll API */
-	ni = to_ni(ct);
+	ni = obj_to_ni(ct);
 	if (do_lock)
 		pthread_mutex_lock(&ni->ct_wait_mutex);
 	pthread_mutex_lock(&ct->mutex);
@@ -461,7 +461,7 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -471,7 +471,7 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 	}
 
 	/* Must take mutex because of poll API */
-	ni = to_ni(ct);
+	ni = obj_to_ni(ct);
 	if (do_lock)
 		pthread_mutex_lock(&ni->ct_wait_mutex);
 	pthread_mutex_lock(&ct->mutex);
@@ -510,7 +510,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	if (unlikely(err))
 		return err;
 
-	err = ct_get(ct_handle, &ct);
+	err = to_ct(ct_handle, &ct);
 	if (unlikely(err))
 		goto err1;
 
@@ -519,7 +519,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 		goto err1;
 	}
 
-	ni = to_ni(ct);
+	ni = obj_to_ni(ct);
 
 	pthread_mutex_lock(&ct->mutex);
 

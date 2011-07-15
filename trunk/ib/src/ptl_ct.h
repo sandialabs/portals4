@@ -46,12 +46,12 @@ static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
 	return PTL_OK;
 }
 
-static inline int ct_get(ptl_handle_ct_t ct_handle, ct_t **ct_p)
+static inline int to_ct(ptl_handle_ct_t ct_handle, ct_t **ct_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_CT, (ptl_handle_any_t)ct_handle, &obj);
+	err = to_obj(POOL_CT, (ptl_handle_any_t)ct_handle, &obj);
 	if (err) {
 		*ct_p = NULL;
 		return err;

@@ -8,7 +8,7 @@ void md_release(void *arg)
 {
 	int i;
         md_t *md = arg;
-	ni_t *ni = to_ni(md);
+	ni_t *ni = obj_to_ni(md);
 
 	if (md->eq) {
 		eq_put(md->eq);
@@ -100,7 +100,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 		goto err1;
 	}
 
-	err = ni_get(ni_handle, &ni);
+	err = to_ni(ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;
@@ -136,25 +136,25 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 		md->length = md_init->length;
 	}
 
-	err = eq_get(md_init->eq_handle, &md->eq);
+	err = to_eq(md_init->eq_handle, &md->eq);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	if (unlikely(md->eq && (to_ni(md->eq) != ni))) {
+	if (unlikely(md->eq && (obj_to_ni(md->eq) != ni))) {
 		WARN();
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
 
-	err = ct_get(md_init->ct_handle, &md->ct);
+	err = to_ct(md_init->ct_handle, &md->ct);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	if (unlikely(md->ct && (to_ni(md->ct) != ni))) {
+	if (unlikely(md->ct && (obj_to_ni(md->ct) != ni))) {
 		WARN();
 		err = PTL_ARG_INVALID;
 		goto err3;
@@ -200,7 +200,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 		return err;
 	}
 
-	err = md_get(md_handle, &md);
+	err = to_md(md_handle, &md);
 	if (unlikely(err)) {
 		WARN();
 		goto err1;
@@ -215,13 +215,13 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	/* There should only be 2 references on the object before we can
 	 * release it. */
 	if (md->obj.obj_ref.ref_cnt > 2) {
-		md_put(md);	/* from md_get */
+		md_put(md);	/* from to_md */
 		WARN();
 		err = PTL_IN_USE;
 		goto err1;
 	}
 
-	md_put(md);	/* from md_get */
+	md_put(md);	/* from to_md */
 	md_put(md);	/* from alloc_md */
 	gbl_put(gbl);
 	return PTL_OK;

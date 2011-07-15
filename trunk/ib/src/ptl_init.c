@@ -141,7 +141,7 @@ static int init_start(xi_t *xi)
 
 static int wait_conn(xi_t *xi)
 {
-	ni_t *ni = to_ni(xi);
+	ni_t *ni = obj_to_ni(xi);
 	conn_t *conn = xi->conn;
 
 	/* get per conn info */
@@ -194,7 +194,7 @@ out:
 static int init_send_req(xi_t *xi)
 {
 	int err;
-	ni_t *ni = to_ni(xi);
+	ni_t *ni = obj_to_ni(xi);
 	buf_t *buf;
 	req_hdr_t *hdr;
 	data_t *put_data = NULL;
@@ -318,7 +318,7 @@ static int early_send_event(xi_t *xi)
 
 static int get_recv(xi_t *xi)
 {
-	ni_t *ni = to_ni(xi);
+	ni_t *ni = obj_to_ni(xi);
 
 	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
 		xi->next_state = STATE_INIT_LATE_SEND_EVENT;
@@ -447,7 +447,7 @@ int process_init(xi_t *xi)
 {
 	int err = PTL_OK;
 	int state;
-	ni_t *ni = to_ni(xi);
+	ni_t *ni = obj_to_ni(xi);
 
 	do {
 		pthread_spin_lock(&xi->obj.obj_lock);

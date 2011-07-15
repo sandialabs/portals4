@@ -36,12 +36,12 @@ static inline int md_alloc(ni_t *ni, md_t **md_p)
 	return PTL_OK;
 }
 
-static inline int md_get(ptl_handle_md_t handle, md_t **md_p)
+static inline int to_md(ptl_handle_md_t handle, md_t **md_p)
 {
 	int err;
 	obj_t *obj;
 
-	err = obj_get(POOL_MD, (ptl_handle_any_t)handle, &obj);
+	err = to_obj(POOL_MD, (ptl_handle_any_t)handle, &obj);
 	if (err) {
 		*md_p = NULL;
 		return err;
