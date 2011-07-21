@@ -219,7 +219,7 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 	return ntohs(port);
 }
 
-int send_message(buf_t *buf);
+int send_message(buf_t *buf, int signaled);
 
 int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length);

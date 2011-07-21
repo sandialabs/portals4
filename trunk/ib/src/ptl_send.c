@@ -7,7 +7,7 @@
  * send_message
  *	send a message to remote end
  */
-int send_message(buf_t *buf)
+int send_message(buf_t *buf, int signaled)
 {
 	int err;
 	xi_t *xi = buf->xi;
@@ -17,12 +17,15 @@ int send_message(buf_t *buf)
 		printf("send_message\n");
 
 	buf->send_wr.opcode = IBV_WR_SEND;
-	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
+	if (signaled)
+		buf->send_wr.send_flags = IBV_SEND_SIGNALED;
 	buf->sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
 #ifdef USE_XRC
 	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
 #endif
+
+	buf->comp = signaled;
 
 	pthread_spin_lock(&xi->send_list_lock);
 
@@ -35,7 +38,12 @@ int send_message(buf_t *buf)
 		return PTL_FAIL;
 	}
 
-	list_add_tail(&buf->list, &xi->send_list);
+	if (signaled) {
+		assert(buf->num_mr == 0);
+		list_add_tail(&buf->list, &xi->send_list);
+	} else {
+		list_add_tail(&buf->list, &xi->ack_list);
+	}
 
 	pthread_spin_unlock(&xi->send_list_lock);
 

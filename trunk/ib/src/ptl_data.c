@@ -9,20 +9,33 @@
  * from offset for length.
  */
 static int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
-						 ptl_size_t offset, ptl_size_t length)
+						 ptl_size_t offset, ptl_size_t length,
+						 int *iov_start_p, ptl_size_t *iov_offset_p)
 {
 	ptl_size_t i, j;
 	ptl_size_t iov_offset = 0;
 	ptl_size_t src_offset = 0;
-	ptl_size_t dst_offset = 0;
+	ptl_size_t cur_length;
 	ptl_size_t bytes;
+	ptl_size_t start_offset;	/* offset of the beginning of iov_start. */
 
-	for (i = 0; i < num_iov && src_offset < offset; i++, iov++) {
+	assert(num_iov > 0);
+
+	start_offset = 0;
+	for (i = 0; i < num_iov; i++, iov++) {
 		iov_offset = offset - src_offset;
 		if (iov_offset > iov->iov_len)
 			iov_offset = iov->iov_len;
 		src_offset += iov_offset;
+
+		if (src_offset >= offset)
+			break;
+
+		start_offset += iov->iov_len;
 	}
+
+	*iov_start_p = i;
+	*iov_offset_p = start_offset;
 
 	if (src_offset < offset) {
 		/* iovec too small for offset
@@ -32,20 +45,20 @@ static int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
 		return -1;
 	}
 
-	for (j = 0; i < num_iov && dst_offset < length; i++, iov++) {
+	cur_length = 0;
+	for (j = 0;
+		 i < num_iov && cur_length < length; i++, iov++) {
 		bytes = iov->iov_len - iov_offset;
-		if (bytes == 0)
-			continue;
 
-		if (dst_offset + bytes > length)
-			bytes = length - dst_offset;
+		if (bytes > length - cur_length)
+			bytes = length - cur_length;
 
 		j++;
 		iov_offset = 0;
-		dst_offset += bytes;
+		cur_length += bytes;
 	}
 
-	if (dst_offset < length) {
+	if (cur_length < length) {
 		/* iovec too small for offset+length
 		 * should never happen
 		 */
@@ -54,85 +67,6 @@ static int iov_count_sge(ptl_iovec_t *iov, ptl_size_t num_iov,
 	}
 
 	return j;
-}
-
-/*
- * iov_to_sge - Build a SG list from an IO vector starting at the IO vector
- * offset for the specified length.
- */
-static int iov_to_sge(ni_t *ni, buf_t *buf, struct ibv_sge *sge_list,
-		      ptl_iovec_t *iov, ptl_size_t num_iov,
-		      ptl_size_t offset, ptl_size_t length)
-{
-	ptl_size_t i, j;
-	ptl_size_t iov_offset = 0;
-	ptl_size_t src_offset = 0;
-	ptl_size_t dst_offset = 0;
-	ptl_size_t bytes;
-	int err;
-
-	for (i = 0; i < num_iov && src_offset < offset; i++, iov++) {
-		iov_offset = offset - src_offset;
-		if (iov_offset > iov->iov_len)
-			iov_offset = iov->iov_len;
-		src_offset += iov_offset;
-	}
-
-	if (src_offset < offset) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	assert(buf->num_mr == 0);
-
-	for (j = 0; i < num_iov && dst_offset < length; i++, iov++) {
-		void * addr;
-
-		bytes = iov->iov_len - iov_offset;
-		if (bytes == 0)
-			continue;
-
-		if (dst_offset + bytes > length)
-			bytes = length - dst_offset;
-
-		if (j >= get_param(PTL_MAX_INLINE_SGE)) {
-			WARN();
-			return PTL_FAIL;
-		}
-
-		addr = iov->iov_base + iov_offset;
-		sge_list[j].addr = cpu_to_be64((uintptr_t)addr);
-		sge_list[j].length = cpu_to_be32(bytes);
-
-		err = mr_lookup(ni, addr, bytes, &buf->mr_list[j]);
-		if (err) {
-			WARN();
-			return PTL_FAIL;
-		}
-		buf->num_mr++;
-		
-		sge_list[j].lkey = cpu_to_be32(buf->mr_list[j]->ibmr->lkey);
-
-#if 0
-		if (debug) {
-			printf("sge_list[%d].addr(0x%lx), length(%d),"
-				" lkey(%d)\n", (int)j,
-				be64_to_cpu(sge_list[j].addr),
-				be32_to_cpu(sge_list[j].length),
-				be32_to_cpu(sge_list[j].lkey));
-		}
-#endif
-		j++;
-		iov_offset = 0;
-		dst_offset += bytes;
-	}
-
-	if (dst_offset < length) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	return PTL_OK;
 }
 
 /*
@@ -173,6 +107,8 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *data = (data_t *)(buf->data + buf->length);
 	int num_sge;
+	int iov_start;
+	ptl_size_t iov_offset;
 
 	if (dir == DATA_DIR_IN)
 		hdr->data_in = 1;
@@ -195,84 +131,49 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		}
 
 		buf->length += sizeof(*data) + length;
-		goto done;
-	}
-
-	if (md->options & PTL_IOVEC && md->num_iov > get_param(PTL_MAX_INLINE_SGE)) {
+		assert(buf->length <= buf->size);
+	} 
+	else if (md->options & PTL_IOVEC) {
+		/* Find the index and offset of the first IOV as well as the
+		 * total number of IOVs to transfer. */
 		num_sge = iov_count_sge((ptl_iovec_t *)md->start,
-					md->num_iov, offset, length);
+								md->num_iov, offset, length,
+								&iov_start,	&iov_offset);
 		if (num_sge < 0) {
 			WARN();
 			return PTL_FAIL;
 		}
 
 		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
+			/* Indirect case. The IOVs do not fit in a buf_t. */
 			data->data_fmt = DATA_FMT_INDIRECT;
 			data->num_sge = cpu_to_be32(1);
 
 			data->sge_list->addr
-				= cpu_to_be64((uintptr_t)md->sge_list);
+				= cpu_to_be64((uintptr_t)&md->sge_list[iov_start]);
 			data->sge_list->length
 				= cpu_to_be32(num_sge *
 					      sizeof(struct ibv_sge));
 			data->sge_list->lkey
-				= cpu_to_be32(md->sge_list_mr->ibmr->lkey);
-
-
-			{
-				ptl_iovec_t *iov;
-				struct ibv_sge *sge;
-				int i;
-
-				iov = (ptl_iovec_t *)md->start;
-				sge = md->sge_list;
-
-				for (i = 0; i < num_sge; i++) {
-					err = mr_lookup(md->obj.obj_ni, iov->iov_base, iov->iov_len, &buf->mr_list[buf->num_mr]);
-					if (err) {
-						WARN();
-						return err;
-					}
-
-					assert(sge->addr == cpu_to_be64((uintptr_t)iov->iov_base));
-					assert(sge->length == cpu_to_be32(iov->iov_len));
-					sge->lkey = cpu_to_be32(buf->mr_list[buf->num_mr]->ibmr->rkey);
-
-					buf->num_mr++;
-					sge++;
-					iov++;
-				}
-			}
+				= cpu_to_be32(md->sge_list_mr->ibmr->rkey);
 
 			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-			goto done;
+
 		} else {
 			data->data_fmt = DATA_FMT_DMA;
 			data->num_sge = cpu_to_be32(num_sge);
 			buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
 
-			err = iov_to_sge(md->obj.obj_ni, buf, data->sge_list,
-					 (ptl_iovec_t *)md->start, md->num_iov,
-					 offset, length);
-			if (err) {
-				WARN();
-				return err;
-			}
+			memcpy(data->sge_list,
+				   &md->sge_list[iov_start],
+				   num_sge*sizeof(struct ibv_sge));
 		}
-	} else if (md->options & PTL_IOVEC) {
-		data->data_fmt = DATA_FMT_DMA;
-		data->num_sge = cpu_to_be32(md->num_iov);
-		buf->length += sizeof(*data) +
-			md->num_iov * sizeof(struct ibv_sge);
 
-		err = iov_to_sge(md->obj.obj_ni, buf, data->sge_list,
-				 (ptl_iovec_t *)md->start,
-				 md->num_iov, offset, length);
-		if (err) {
-			WARN();
-			return err;
-		}
+		/* Adjust the header offset for iov start. */
+		hdr->offset = cpu_to_be64(be64_to_cpu(hdr->offset) - iov_offset);
+
+		assert(buf->length <= buf->size);
 	} else {
 		void *addr;
 		
@@ -310,6 +211,5 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 #endif
 	}
 
-done:
 	return err;
 }

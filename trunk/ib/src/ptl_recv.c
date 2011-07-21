@@ -75,6 +75,8 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 	int n;
 	buf_t *buf;
 
+	*buf_p = NULL;
+
 	/* if queue is empty and we are rearmed
 	 * then we are done for this cycle */
 	n = ibv_poll_cq(ni->cq, 1, &wc);
@@ -100,12 +102,18 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 			   (int) wc.status, (int) wc.byte_len);
 	}
 
-	if (wc.status == IBV_WC_WR_FLUSH_ERR)
-		return STATE_RECV_DROP_BUF;
-
-	if (wc.status != IBV_WC_SUCCESS) {
+	if (wc.status) {
 		WARN();
-		return STATE_RECV_ERROR;
+
+		if (buf->type == BUF_SEND) {
+			buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
+		} 
+		else if (buf->type == BUF_RDMA) {
+			return STATE_RECV_ERROR;
+		}
+		else {
+			return STATE_RECV_DROP_BUF;
+		}
 	}
 
 	buf->length = wc.byte_len;
@@ -135,6 +143,9 @@ static int send_comp(buf_t *buf)
 	struct list_head temp_list;
 	xt_t *xt = buf->xt;
 
+	if (!buf->comp)
+		return STATE_RECV_COMP_REARM;
+
 	pthread_spin_lock(&xt->send_list_lock);
 	list_cut_position(&temp_list, &xt->send_list, &buf->list);
 	pthread_spin_unlock(&xt->send_list_lock);
@@ -158,6 +169,9 @@ static int rdma_comp(buf_t *buf)
 	int err;
 	xt_t *xt = buf->xt;
 
+	if (!buf->comp)
+		return STATE_RECV_COMP_REARM;
+
 	/* Take a ref on the XT since freeing all its buffers will also
 	 * free it. */
 	assert(xt);
@@ -168,13 +182,14 @@ static int rdma_comp(buf_t *buf)
 	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);
 	pthread_spin_unlock(&xt->rdma_list_lock);
 
+	atomic_dec(&xt->rdma_comp);
+
 	while(!list_empty(&temp_list)) {
 		buf = list_first_entry(&temp_list, buf_t, list);
 		list_del(&buf->list);
 		buf_put(buf);
 	}
 
-	atomic_dec(&xt->rdma_comp);
 	err = process_tgt(xt);
 	if (err) {
 		WARN();
@@ -361,8 +376,10 @@ void process_recv(EV_P_ ev_io *w, int revents)
 			state = recv_drop_buf(buf);
 			break;
 		case STATE_RECV_ERROR:
-			buf_put(buf);
-			ni->num_recv_errs++;
+			if (buf) {
+				buf_put(buf);
+				ni->num_recv_errs++;
+			}
 			goto fail;
 		case STATE_RECV_DONE:
 			goto done;

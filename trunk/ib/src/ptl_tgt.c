@@ -1267,7 +1267,7 @@ static int tgt_send_ack(xt_t *xt)
 
 	buf->length = sizeof(*hdr);
 
-	err = send_message(buf);
+	err = send_message(buf, 1);
 	if (err) {
 		WARN();
 		buf_put(buf);
@@ -1306,7 +1306,7 @@ static int tgt_send_reply(xt_t *xt)
 	hdr->operation = OP_REPLY;
 	buf->length = sizeof(*hdr);
 
-	err = send_message(buf);
+	err = send_message(buf, 1);
 	if (err) {
 		WARN();
 		buf_put(buf);

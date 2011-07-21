@@ -8,6 +8,7 @@ void md_cleanup(void *arg)
 {
 	md_t *md = arg;
 	ni_t *ni = obj_to_ni(md);
+	int i;
 
 	if (md->eq) {
 		eq_put(md->eq);
@@ -24,9 +25,14 @@ void md_cleanup(void *arg)
 		md->sge_list_mr = NULL;
 	}
 
-	if (md->sge_list) {
-		free(md->sge_list);
-		md->sge_list = NULL;
+	for (i=0; i<md->num_iov; i++) {
+		if (md->mr_list[i])
+			mr_put(md->mr_list[i]);
+	}
+
+	if (md->internal_data) {
+		free(md->internal_data);
+		md->internal_data = NULL;
 	}
 
 	pthread_spin_lock(&ni->obj.obj_lock);
@@ -43,20 +49,25 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	md->num_iov = num_iov;
 
-	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
-		md->sge_list = calloc(num_iov, sizeof(struct ibv_sge));
-		if (!md->sge_list) {
-			WARN();
-			return PTL_NO_SPACE;
-		}
+	md->internal_data = calloc(num_iov, sizeof(struct ibv_sge) + sizeof(mr_t));
+	if (!md->internal_data) {
+		WARN();
+		return PTL_NO_SPACE;
+	}
 
+	md->sge_list = md->internal_data;
+	md->mr_list = md->internal_data + num_iov*sizeof(struct ibv_sge);
+
+	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		err = mr_lookup(ni, md->sge_list,
-				num_iov * sizeof(*sge),
-				&md->sge_list_mr);
+						num_iov * sizeof(*sge),
+						&md->sge_list_mr);
 		if (err) {
 			WARN();
 			return err;
 		}
+	} else {
+		md->sge_list_mr = NULL;
 	}
 
 	md->length = 0;
@@ -67,10 +78,16 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	for (i = 0; i < num_iov; i++) {
 		md->length += iov->iov_len;
 
-		if (md->sge_list) {
-			sge->addr = cpu_to_be64((uintptr_t)iov->iov_base);
-			sge->length = cpu_to_be32(iov->iov_len);
+		sge->addr = cpu_to_be64((uintptr_t)iov->iov_base);
+		sge->length = cpu_to_be32(iov->iov_len);
+
+		err = mr_lookup(md->obj.obj_ni, iov->iov_base, iov->iov_len, &md->mr_list[i]);
+		if (err) {
+			WARN();
+			return PTL_FAIL;
 		}
+
+		sge->lkey = cpu_to_be32(md->mr_list[i]->ibmr->rkey);
 
 		iov++;
 		sge++;
@@ -133,6 +150,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 		}
 	} else {
 		md->length = md_init->length;
+		md->num_iov = 0;
 	}
 
 	err = to_eq(md_init->eq_handle, &md->eq);

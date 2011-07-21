@@ -218,10 +218,6 @@ static int init_send_req(xi_t *xi)
 	xi_ref(xi);
 	buf->dest = &xi->dest;
 
-	/* ask for a response - they are all the same */
-	if (xi->event_mask)
-		hdr->ack_req = PTL_ACK_REQ;
-
 	switch (xi->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
@@ -258,9 +254,9 @@ static int init_send_req(xi_t *xi)
 		break;
 	}
 
-	buf->send_wr.opcode = IBV_WR_SEND;
-	buf->sg_list[0].length = buf->length;
-	buf->send_wr.send_flags = IBV_SEND_SIGNALED;
+	/* ask for a response - they are all the same */
+	if (xi->event_mask || buf->num_mr)
+		hdr->ack_req = PTL_ACK_REQ;
 
 #if 0
 	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
@@ -268,13 +264,16 @@ static int init_send_req(xi_t *xi)
 		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
 	else 
 #endif
-	err = send_message(buf);
+		/* If we want an event, then do not request a completion for
+		 * that message. It will be freed when we receive the ACK or
+		 * reply. */
+		err = send_message(buf, !hdr->ack_req);
 	if (err) {
 		buf_put(buf);
 		return STATE_INIT_SEND_ERROR;
 	}
 
-	if (xi->event_mask)
+	if (hdr->ack_req)
 		return STATE_INIT_GET_RECV;
 	else
 		return STATE_INIT_CLEANUP;
@@ -417,6 +416,8 @@ static int reply_event(xi_t *xi)
 
 static int init_cleanup(xi_t *xi)
 {
+	buf_t *buf;
+
 	if (xi->get_md) {
 		md_put(xi->get_md);
 		xi->get_md = NULL;
@@ -430,6 +431,12 @@ static int init_cleanup(xi_t *xi)
 	if (xi->recv_buf) {
 		buf_put(xi->recv_buf);
 		xi->recv_buf = NULL;
+	}
+
+	while(!list_empty(&xi->ack_list)) {
+		buf = list_first_entry(&xi->ack_list, buf_t, list);
+		list_del(&buf->list);
+		buf_put(buf);
 	}
 
 	xi_put(xi);
