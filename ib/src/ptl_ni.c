@@ -216,6 +216,8 @@ static int init_ib_srq(ni_t *ni)
 /* Must be locked by gbl_mutex. port is in network order. */
 static int bind_iface(iface_t *iface, unsigned int port)
 {
+	int flags;
+
 	if (iface->listen_id) {
 		/* Already bound. If we want to bind to the same port, or a
 		 * random port then it's ok. */
@@ -253,6 +255,14 @@ static int bind_iface(iface_t *iface, unsigned int port)
 
 	if (iface->ibv_context == NULL || iface->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
+		goto err1;
+	}
+
+	/* change the blocking mode of the async event queue */
+	flags = fcntl(iface->ibv_context->async_fd, F_GETFL);
+	if (fcntl(iface->ibv_context->async_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		ptl_warn("Cannot set asynchronous fd to non blocking\n");
+		WARN();
 		goto err1;
 	}
 
@@ -702,6 +712,34 @@ static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
 	return PTL_OK;
 }
 
+static void process_async(EV_P_ ev_io *w, int revents)
+{
+	ni_t *ni = w->data;
+	struct ibv_async_event event;
+	int err;
+	gbl_t *gbl;
+
+	return;
+
+	err = get_gbl(&gbl);
+	if (unlikely(err)) {
+		return;
+	}
+
+	/* Get the async event */
+	if (ni->iface && ibv_get_async_event(ni->iface->ibv_context, &event)) {
+		ptl_warn("Failed to get the asynchronous event\n");
+		return;
+	}
+
+	ptl_warn("Got an unexpected asynchronous event: %d\n", event.event_type);
+
+	/* Ack the event */
+	ibv_ack_async_event(&event);
+
+	gbl_put(gbl);
+}
+
 int PtlNIInit(ptl_interface_t iface_id,
 	      unsigned int options,
 	      ptl_pid_t pid,
@@ -875,6 +913,11 @@ int PtlNIInit(ptl_interface_t iface_id,
 	ni->cq_watcher.data = ni;
 	EVL_WATCH(ev_io_start(evl.loop, &ni->cq_watcher));
 
+	/* Add a watcher for asynchronous events. */
+	ev_io_init(&ni->async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
+	ni->async_watcher.data = ni;
+	EVL_WATCH(ev_io_start(evl.loop, &ni->async_watcher));
+
 	/* Ready to listen. */
 	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
 		if (rdma_listen(iface->listen_id, 0)) {
@@ -936,6 +979,7 @@ static void ni_cleanup(ni_t *ni)
 
 	ni_rcqp_stop(ni);
 
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->async_watcher));
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->cq_watcher));
 
 	ni_rcqp_cleanup(ni);
