@@ -88,6 +88,7 @@ typedef struct ni {
 	/* IB */
 	struct ibv_cq		*cq;
 	struct ibv_comp_channel	*ch;
+	ev_io			async_watcher;
 	ev_io			cq_watcher;
 	struct ibv_srq		*srq;	/* either regular or XRC */
 
