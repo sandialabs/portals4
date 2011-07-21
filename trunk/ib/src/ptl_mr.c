@@ -33,7 +33,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int err;
 	mr_t *mr;
 	void *end = start + length;
-	struct ibv_mr *ibmr;
+	struct ibv_mr *ibmr = NULL;
 	int access;
 
 	start = (void *)((uintptr_t)start & ~((uintptr_t)pagesize - 1));
@@ -69,6 +69,8 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	return PTL_OK;
 
 err1:
+	if (ibmr)
+		ibv_dereg_mr(ibmr);
 	return err;
 }
 
