@@ -14,6 +14,7 @@ int xi_setup(void *arg)
 
 	OBJ_NEW(xi);
 	INIT_LIST_HEAD(&xi->send_list);
+	INIT_LIST_HEAD(&xi->ack_list);
 	INIT_LIST_HEAD(&xi->rdma_list);
 	pthread_spin_init(&xi->send_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&xi->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -40,6 +41,7 @@ int xt_setup(void *arg)
 	OBJ_NEW(xt);
 
 	INIT_LIST_HEAD(&xt->unexpected_list);
+	INIT_LIST_HEAD(&xt->ack_list);
 	INIT_LIST_HEAD(&xt->send_list);
 	INIT_LIST_HEAD(&xt->rdma_list);
 	pthread_spin_init(&xt->send_list_lock, PTHREAD_PROCESS_PRIVATE);

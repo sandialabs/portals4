@@ -13,6 +13,7 @@ int buf_setup(void *arg)
 
 	buf->num_mr = 0;
 	buf->xt = NULL;
+	buf->comp = 0;
 
 	return PTL_OK;
 }

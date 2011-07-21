@@ -24,6 +24,8 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
+	rdma_buf->comp = comp;
+
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
 	pthread_spin_unlock(&xt->rdma_list_lock);
@@ -42,6 +44,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.opcode = IBV_WR_RDMA_READ;
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
+
 #ifdef USE_XRC
 	wr.xrc_remote_srq_num = rdma_buf->dest->xrc_remote_srq_num;
 #endif
@@ -82,6 +85,8 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
+
+	rdma_buf->comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);

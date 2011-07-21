@@ -13,8 +13,10 @@ typedef struct md {
 	struct eq		*eq;
 	struct ct		*ct;
 
-	mr_t *sge_list_mr;
-	struct ibv_sge		*sge_list;
+	void *internal_data;
+	mr_t *sge_list_mr;			/* MR for sge_list */
+	struct ibv_sge		*sge_list; /* list of SGE */
+	mr_t **mr_list;				/* MRs for the SGEs */
 
 	struct list_head	list;
 } md_t;

@@ -40,6 +40,13 @@ typedef struct buf {
 
 	buf_type_t		type;
 
+	/* HACK - Mellanox driver bug workaround. We get completions even
+	 * if they were not requested. Happens on mthca and mlx4. Querying
+	 * a QP after it's created indicates that sq_sig_all is set
+	 * although it was requested at creation. This variable should go
+	 * away when the bug is fixed. */
+	int comp;
+
 	struct ibv_sge		sg_list[1];
 
 	/* List of MRs used for that buffer. */
