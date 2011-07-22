@@ -91,9 +91,9 @@ static inline int to_buf(ptl_handle_buf_t buf_handle, buf_t **buf_p)
 	return PTL_OK;
 }
 
-static inline void buf_ref(buf_t *buf)
+static inline void buf_get(buf_t *buf)
 {
-	obj_ref(&buf->obj);
+	obj_get(&buf->obj);
 }
 
 static inline int buf_put(buf_t *buf)

@@ -366,7 +366,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	assert(obj->obj_free == 1);
 
 	if (pool->parent)
-		obj_ref(pool->parent);
+		obj_get(pool->parent);
 
 	err = index_get(obj, &index);
 	if (err) {
@@ -450,7 +450,7 @@ int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
 	}
 #endif
 
-	obj_ref(obj);
+	obj_get(obj);
 
 done:
 	*obj_p = obj;

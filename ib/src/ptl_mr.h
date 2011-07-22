@@ -42,9 +42,9 @@ static inline int to_mr(ptl_handle_mr_t handle, mr_t **mr_p)
 	return PTL_OK;
 }
 
-static inline void mr_ref(mr_t *mr)
+static inline void mr_get(mr_t *mr)
 {
-	obj_ref(&mr->obj);
+	obj_get(&mr->obj);
 }
 
 static inline int mr_put(mr_t *mr)

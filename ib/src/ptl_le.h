@@ -66,9 +66,9 @@ static inline int to_le(ptl_handle_le_t handle, le_t **le_p)
 	return PTL_OK;
 }
 
-static inline void le_ref(le_t *le)
+static inline void le_get(le_t *le)
 {
-	obj_ref(&le->obj);
+	obj_get(&le->obj);
 }
 
 static inline int le_put(le_t *le)

@@ -129,10 +129,10 @@ int obj_alloc(pool_t *pool, obj_t **p_obj);
 int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p);
 
 /*
- * obj_ref
+ * obj_get
  *	take a reference on an object
  */
-static inline void obj_ref(obj_t *obj)
+static inline void obj_get(obj_t *obj)
 {
 	if (obj)
 		ref_get(&obj->obj_ref);

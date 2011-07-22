@@ -50,9 +50,9 @@ static inline int to_eq(ptl_handle_eq_t eq_handle, eq_t **eq_p)
 	return PTL_OK;
 }
 
-static inline void eq_ref(eq_t *eq)
+static inline void eq_get(eq_t *eq)
 {
-	obj_ref(&eq->obj);
+	obj_get(&eq->obj);
 }
 
 static inline int eq_put(eq_t *eq)
