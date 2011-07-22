@@ -61,9 +61,9 @@ static inline int to_ct(ptl_handle_ct_t ct_handle, ct_t **ct_p)
 	return PTL_OK;
 }
 
-static inline void ct_ref(ct_t *ct)
+static inline void ct_get(ct_t *ct)
 {
-	obj_ref(&ct->obj);
+	obj_get(&ct->obj);
 }
 
 static inline int ct_put(ct_t *ct)

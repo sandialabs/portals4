@@ -134,9 +134,9 @@ static inline int to_xi(ptl_handle_xi_t xi_handle, xi_t **xi_p)
 	return PTL_OK;
 }
 
-static inline void xi_ref(xi_t *xi)
+static inline void xi_get(xi_t *xi)
 {
-	obj_ref(&xi->obj);
+	obj_get(&xi->obj);
 }
 
 static inline int xi_put(xi_t *xi)
@@ -214,9 +214,9 @@ static inline int to_xt(ptl_handle_xt_t xt_handle, xt_t **xt_p)
 	return PTL_OK;
 }
 
-static inline void xt_ref(xt_t *xt)
+static inline void xt_get(xt_t *xt)
 {
-	obj_ref(&xt->obj);
+	obj_get(&xt->obj);
 }
 
 static inline int xt_put(xt_t *xt)

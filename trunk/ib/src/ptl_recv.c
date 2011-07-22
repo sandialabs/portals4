@@ -176,7 +176,7 @@ static int rdma_comp(buf_t *buf)
 	 * free it. */
 	assert(xt);
 	assert(atomic_read(&xt->rdma_comp) < 5000);
-	xt_ref(xt);
+	xt_get(xt);
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);

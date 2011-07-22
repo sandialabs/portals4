@@ -53,9 +53,9 @@ static inline int to_md(ptl_handle_md_t handle, md_t **md_p)
 	return PTL_OK;
 }
 
-static inline void md_ref(md_t *md)
+static inline void md_get(md_t *md)
 {
-	obj_ref(&md->obj);
+	obj_get(&md->obj);
 }
 
 static inline int md_put(md_t *md)

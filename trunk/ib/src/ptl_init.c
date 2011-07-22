@@ -215,7 +215,7 @@ static int init_send_req(xi_t *xi)
 	hdr->operation = xi->operation;
 	buf->length = sizeof(req_hdr_t);
 	buf->xi = xi;
-	xi_ref(xi);
+	xi_get(xi);
 	buf->dest = &xi->dest;
 
 	switch (xi->operation) {

@@ -49,9 +49,9 @@ static inline int to_me(ptl_handle_me_t handle, me_t **me_p)
 	return PTL_OK;
 }
 
-static inline void me_ref(me_t *me)
+static inline void me_get(me_t *me)
 {
-	obj_ref(&me->obj);
+	obj_get(&me->obj);
 }
 
 static inline int me_put(me_t *me)

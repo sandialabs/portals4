@@ -159,9 +159,9 @@ static inline int ni_alloc(pool_t *pool, ni_t **ni_p)
 	return PTL_OK;
 }
 
-static inline void ni_ref(ni_t *ni)
+static inline void ni_get(ni_t *ni)
 {
-	obj_ref(&ni->obj);
+	obj_get(&ni->obj);
 }
 
 static inline int ni_put(ni_t *ni)

@@ -356,12 +356,12 @@ static int tgt_get_match(xt_t *xt)
 	list_for_each(l, &xt->pt->priority_list) {
 		xt->le = list_entry(l, le_t, list);
 		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_ref(xt->le);
+			le_get(xt->le);
 			goto done;
 		}
 
 		if (check_match(xt, xt->me)) {
-			me_ref(xt->me);
+			me_get(xt->me);
 			goto done;
 		}
 	}
@@ -369,12 +369,12 @@ static int tgt_get_match(xt_t *xt)
 	list_for_each(l, &xt->pt->overflow_list) {
 		xt->le = list_entry(l, le_t, list);
 		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_ref(xt->le);
+			le_get(xt->le);
 			goto done;
 		}
 
 		if (check_match(xt, xt->me)) {
-			me_ref(xt->me);
+			me_get(xt->me);
 			goto done;
 		}
 	}
@@ -396,7 +396,7 @@ done:
 	}
 
 	if (xt->le->ptl_list == PTL_OVERFLOW) {
-		xt_ref(xt);
+		xt_get(xt);
 		list_add(&xt->unexpected_list, &xt->le->pt->unexpected_list);
 	}
 
@@ -572,7 +572,7 @@ buf_t *tgt_alloc_rdma_buf(xt_t *xt)
 	}
 	buf->type = BUF_RDMA;
 	buf->xt = xt;
-	xt_ref(xt);
+	xt_get(xt);
 	buf->dest = &xt->dest;
 
 	return buf;
@@ -1232,7 +1232,7 @@ static int tgt_send_ack(xt_t *xt)
 	}
 
 	buf->xt = xt;
-	xt_ref(xt);
+	xt_get(xt);
 	buf->dest = &xt->dest;
 
 	hdr = (hdr_t *)buf->data;
@@ -1293,7 +1293,7 @@ static int tgt_send_reply(xt_t *xt)
 	}
 
 	buf->xt = xt;
-	xt_ref(xt);
+	xt_get(xt);
 	buf->dest = &xt->dest;
 
 	hdr = (hdr_t *)buf->data;
@@ -1612,7 +1612,7 @@ int check_overflow(le_t *le)
 
 			assert(xt->matching.le == NULL);
 			xt->matching.le = le;
-			le_ref(le);
+			le_get(le);
 
 			list_del(&xt->unexpected_list);
 
@@ -1704,7 +1704,7 @@ int check_overflow_search_delete(le_t *le)
 
 			assert(xt->matching.le == NULL);
 			xt->matching.le = le;
-			le_ref(le);
+			le_get(le);
 
 			list_del(&xt->unexpected_list);
 

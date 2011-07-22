@@ -105,7 +105,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		else {
 			if (mr->ibmr->addr+mr->ibmr->length >= start+length) {
 				/* Requested MR fits in an existing region. */
-				mr_ref(mr);
+				mr_get(mr);
 				ret = 0;
 				*mr_p = mr;
 				goto done;
@@ -175,7 +175,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		void *res;
 
 		mr = *mr_p;
-		mr_ref(mr);
+		mr_get(mr);
 
 		res = RB_INSERT(the_root, &ni->mr_tree, mr);
 		assert(res == NULL);			/* should never happen */
