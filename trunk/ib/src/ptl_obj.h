@@ -56,7 +56,6 @@ typedef struct pool {
 	void			(*cleanup)(void *arg); /* when moved back to the free list */
 	struct list_head	chunk_list;
 	struct list_head	free_list;
-	struct list_head	busy_list;
 	pthread_spinlock_t		mutex;
 #if 0
 	pthread_cond_t		cond;
