@@ -500,7 +500,6 @@ permission_violation:
                             if ((me_options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
                                 ptl_internal_event_t e;
                                 PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
-                                printf("append unlink\n");
                                 e.type  = PTL_EVENT_AUTO_UNLINK;
                                 e.start = (uint8_t *)me->start + cur->hdr.dest_offset;
                                 PtlInternalEQPush(tEQ, &e);
