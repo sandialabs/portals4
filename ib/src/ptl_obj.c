@@ -262,7 +262,6 @@ void obj_release(ref_t *ref)
 	obj->obj_free = 1;
 
 	pthread_spin_lock(&pool->mutex);
-	list_del(l);
 	list_add_tail(l, &pool->free_list);
 	pool->count--;
 	pthread_spin_unlock(&pool->mutex);
