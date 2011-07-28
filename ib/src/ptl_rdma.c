@@ -24,7 +24,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->comp = comp;
+	rdma_buf->ib.comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
@@ -86,7 +86,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->comp = comp;
+	rdma_buf->ib.comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
