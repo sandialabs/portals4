@@ -16,20 +16,20 @@ int send_message(buf_t *buf, int signaled)
 	if (debug)
 		printf("send_message\n");
 
-	buf->send_wr.opcode = IBV_WR_SEND;
+	buf->ib.send_wr.opcode = IBV_WR_SEND;
 	if (signaled)
-		buf->send_wr.send_flags = IBV_SEND_SIGNALED;
-	buf->sg_list[0].length = buf->length;
+		buf->ib.send_wr.send_flags = IBV_SEND_SIGNALED;
+	buf->ib.sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
 #ifdef USE_XRC
 	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
 #endif
 
-	buf->comp = signaled;
+	buf->ib.comp = signaled;
 
 	pthread_spin_lock(&xi->send_list_lock);
 
-	err = ibv_post_send(buf->dest->qp, &buf->send_wr, &bad_wr);
+	err = ibv_post_send(buf->dest->qp, &buf->ib.send_wr, &bad_wr);
 	if (err) {
 		pthread_spin_unlock(&xi->send_list_lock);
 

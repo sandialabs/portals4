@@ -143,7 +143,7 @@ static int send_comp(buf_t *buf)
 	struct list_head temp_list;
 	xt_t *xt = buf->xt;
 
-	if (!buf->comp)
+	if (!buf->ib.comp)
 		return STATE_RECV_COMP_REARM;
 
 	pthread_spin_lock(&xt->send_list_lock);
@@ -169,7 +169,7 @@ static int rdma_comp(buf_t *buf)
 	int err;
 	xt_t *xt = buf->xt;
 
-	if (!buf->comp)
+	if (!buf->ib.comp)
 		return STATE_RECV_COMP_REARM;
 
 	/* Take a ref on the XT since freeing all its buffers will also

@@ -34,20 +34,25 @@ typedef struct buf {
 	uint8_t			data[1024];
 
 	union {
-		struct ibv_send_wr	send_wr;
-		struct ibv_recv_wr	recv_wr;
+		struct {
+			union {
+				struct ibv_send_wr	send_wr;
+				struct ibv_recv_wr	recv_wr;
+			};
+
+			/* HACK - Mellanox driver bug workaround. We get completions even
+			 * if they were not requested. Happens on mthca and mlx4. Querying
+			 * a QP after it's created indicates that sq_sig_all is set
+			 * although it was requested at creation. This variable should go
+			 * away when the bug is fixed. */
+			int comp;
+
+			struct ibv_sge		sg_list[1];
+
+		} ib;
 	};
 
 	buf_type_t		type;
-
-	/* HACK - Mellanox driver bug workaround. We get completions even
-	 * if they were not requested. Happens on mthca and mlx4. Querying
-	 * a QP after it's created indicates that sq_sig_all is set
-	 * although it was requested at creation. This variable should go
-	 * away when the bug is fixed. */
-	int comp;
-
-	struct ibv_sge		sg_list[1];
 
 	/* List of MRs used for that buffer. */
 	int num_mr;
