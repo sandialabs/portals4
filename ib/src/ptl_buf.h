@@ -57,11 +57,9 @@ typedef struct buf {
 
 	buf_type_t		type;
 
-	/* List of MRs used for that buffer in case of a long transfer. */
+	/* List of MRs used with that buffer for a long message. */
 	int num_mr;
-	mr_t **mr_list;
-
-	char internal_data[0];
+	mr_t *mr_list[0];
 
 } buf_t;
 
