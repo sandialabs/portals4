@@ -621,6 +621,62 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle,
  */
 int PtlNIHandle(ptl_handle_any_t    handle,
                 ptl_handle_ni_t*    ni_handle);
+/*!
+ * @fn PtlSetMap(ptl_interface_t iface,
+ *               ptl_size_t      map_size,
+ *               ptl_process_t  *mapping)
+ * @brief Initialize the mapping from logical identifiers (rank) to physical
+ *	identifiers (nid/pid).
+ * @details A process using a logical network interface must call this function
+ *	at least once before any other functions that apply to that interface.
+ *	Subsequent calls (either by different threads or the same thread) to
+ *	PtlSetMap() will overwrite any mapping associated with the network
+ *	interface; hence, libraries must take care to ensure reasonable
+ *	interoperability.
+ * @param[in] iface    Identifies the network interface to be initialized with
+ *		       a map.
+ * @param[in] map_size Contains the size of the map being passed in.
+ * @param[in] mapping  Points to an array of ptl_process_t structures where
+ *		       entry N in the array contains the NID/PID pair that is
+ *		       associated with the logical rank N.
+ * @retval PTL_OK               Indicates success.
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @retval PTL_ARG_INVALID      Indicates that an invalid argument was passed.
+ * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
+ *				allocate the memory required to initialize the
+ *				map.
+ */
+int PtlSetMap(ptl_interface_t iface,
+	      ptl_size_t      map_size,
+	      ptl_process_t  *mapping);
+/*!
+ * @fn PtlGetMap(ptl_interface_t iface,
+ *               ptl_size_t      map_size,
+ *               ptl_process_t  *mapping,
+ *               ptl_size_t     *actual_map_size)
+ * @brief Retrieves the mapping from logical identifiers (rank) to physical
+ *	identifiers (nid/pid).
+ * @param[in] iface            Identifies the network interface to be
+ *                             initialized with a map.
+ * @param[in] map_size	       Contains the size of the size of the buffer
+ *			       being passed in elements.
+ * @param[out] mapping         Points to an array of ptl_process_t structures
+ *			       where entry N in the array will be populated
+ *			       with the NID/PID pair that is associated with
+ *			       the logical rank N.
+ * @param[out] actual_map_size Contains the size of the map currently
+ *			       associated with the logical interface. May be
+ *			       bigger than map_size or the mapping array.
+ * @retval PTL_OK              Indicates success.
+ * @retval PTL_NO_INIT         Indicates that the portals API has not been
+ *                             successfully initialized.
+ * @retval PTL_ARG_INVALID     Indicates that an invalid argument was passed.
+ */
+int PtlGetMap(ptl_interface_t iface,
+	      ptl_size_t      map_size,
+	      ptl_process_t  *mapping,
+	      ptl_size_t     *actual_map_size);
 /*! @} */
 
 /************************
