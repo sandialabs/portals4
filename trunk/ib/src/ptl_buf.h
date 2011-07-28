@@ -29,8 +29,10 @@ typedef struct buf {
 
 	struct xremote *dest;
 
-	unsigned int		size;
+	/* Size of data to send. */
 	unsigned int		length;
+
+	/* Internal buffer for short messages (send or receive). */
 	uint8_t			data[1024];
 
 	union {
@@ -47,6 +49,7 @@ typedef struct buf {
 			 * away when the bug is fixed. */
 			int comp;
 
+			/* SG list to register the data field. */
 			struct ibv_sge		sg_list[1];
 
 		} ib;
@@ -54,7 +57,7 @@ typedef struct buf {
 
 	buf_type_t		type;
 
-	/* List of MRs used for that buffer. */
+	/* List of MRs used for that buffer in case of a long transfer. */
 	int num_mr;
 	mr_t **mr_list;
 
