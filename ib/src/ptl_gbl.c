@@ -161,6 +161,7 @@ static void dump_everything(int unused)
 				printf("    	unexpected_list = %d\n", list_empty(&pt->unexpected_list));
 			}
 
+#if 0
 			printf("  EQs:\n");
 			list_for_each_entry(obj, &ni->eq_pool.busy_list, obj_list) {
 				eq_t *eq = container_of(obj, eq_t, obj);
@@ -193,6 +194,7 @@ static void dump_everything(int unused)
 				printf("    put_resid = %ld\n", xt->put_resid);
 				printf("    get_resid = %ld\n", xt->get_resid);
 			}
+#endif
 
 #if 0
 			{

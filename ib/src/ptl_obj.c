@@ -55,7 +55,6 @@ int pool_init(pool_t *pool, char *name, int size,
 
 	INIT_LIST_HEAD(&pool->free_list);
 	INIT_LIST_HEAD(&pool->chunk_list);
-	INIT_LIST_HEAD(&pool->busy_list);
 
 	/* would like to use spinlock but need a mutex for
 	 * cond_wait and posix_memalign which can schedule */
@@ -358,7 +357,6 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	l = pool->free_list.next;
 	list_del(l);
-	list_add_tail(l, &pool->busy_list);
 
 	pthread_spin_unlock(&pool->mutex);
 
