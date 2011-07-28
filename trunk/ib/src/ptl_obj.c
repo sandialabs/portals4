@@ -64,14 +64,6 @@ int pool_init(pool_t *pool, char *name, int size,
 		return PTL_FAIL;
 	}
 
-#if 0
-	err = pthread_cond_init(&pool->cond, NULL);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
-#endif
-
 	return PTL_OK;
 }
 
@@ -109,12 +101,6 @@ void pool_fini(pool_t *pool)
 		}
 		pthread_spin_unlock(&pool->mutex);
 	}
-
-#if 0
-	err = pthread_cond_destroy(&pool->cond);
-	if (err)
-		WARN();
-#endif
 
 	err = pthread_spin_destroy(&pool->mutex);
 	if (err)
@@ -259,9 +245,6 @@ void obj_release(ref_t *ref)
 	struct list_head *l = &obj->obj_list;
 	pool_t *pool = obj->obj_pool;
 	unsigned int index = obj_handle_to_index(obj->obj_handle);
-#if 0
-	int do_signal = 0;
-#endif
 
 	err = index_free(index);
 	if (err)
@@ -282,16 +265,7 @@ void obj_release(ref_t *ref)
 	list_del(l);
 	list_add_tail(l, &pool->free_list);
 	pool->count--;
-#if 0
-	if (/*pool->max_count && pool->count < pool->min_count && */ pool->waiters)
-		do_signal = 1;
-#endif
 	pthread_spin_unlock(&pool->mutex);
-
-#if 0
-	if (do_signal)
-		pthread_cond_signal(&pool->cond);
-#endif
 }
 
 /*
@@ -305,33 +279,8 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	obj_t *obj;
 	struct list_head *l;
 	unsigned int index = 0;
-#if 0
-	struct timespec timeout;
-#endif
 
 	pthread_spin_lock(&pool->mutex);
-
-#if 0
-	/*
-	 * if the pool has a size limit and we are over it
-	 * wait until enough objects have been freed to get
-	 * under the limit, give up after a few seconds
-	 */
-	if (pool->max_count && pool->count >= pool->max_count) {
-		pool->waiters++;
-		clock_gettime(CLOCK_REALTIME, &timeout);
-		timeout.tv_sec += get_param(PTL_OBJ_ALLOC_TIMEOUT);
-		do {
-			err = pthread_cond_timedwait(&pool->cond, &pool->mutex, &timeout);
-			if (err) {
-				pthread_spin_unlock(&pool->mutex);
-				WARN();
-				return PTL_FAIL;
-			}
-		} while(pool->count >= pool->max_count);
-		pool->waiters--;
-	}
-#endif
 
 	/* reserve an object */
 	pool->count++;
