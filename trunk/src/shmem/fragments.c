@@ -54,7 +54,9 @@ static fragment_hdr_t         *large_free_list = NULL;
 static NEMESIS_blocking_queue *receiveQ        = NULL;
 
 #define C_VALIDPTR(x) assert(((uintptr_t)(x)) >= (uintptr_t)comm_pad && \
-                             ((uintptr_t)(x)) < ((uintptr_t)comm_pad + per_proc_comm_buf_size * (num_siblings + 1)))
+                             ((uintptr_t)(x)) < ((uintptr_t)comm_pad +  \
+                                                 firstpagesize +        \
+                                                 per_proc_comm_buf_size * (num_siblings + 1)))
 #ifdef PARANOID
 static uintptr_t small_bufstart, small_bufend;
 static uintptr_t large_bufstart, large_bufend;
@@ -70,6 +72,7 @@ static void PtlInternalValidateFragmentLists(void)
     while (cursor != NULL) {
         count++;
         VALIDPTR(cursor, small);
+        C_VALIDPTR(cursor);
         if (cursor->size != SMALL_FRAG_PAYLOAD) {
             fprintf(stderr, "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
                     count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD, prev);
@@ -84,6 +87,7 @@ static void PtlInternalValidateFragmentLists(void)
     while (cursor != NULL) {
         count++;
         VALIDPTR(cursor, large);
+        C_VALIDPTR(cursor);
         if (cursor->size != LARGE_FRAG_PAYLOAD) {
             fprintf(stderr, "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
                     count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD, prev);
@@ -127,6 +131,7 @@ void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
     /* and finally, initialize the large fragment free-list */
     PARANOID_STEP(large_bufstart = small_bufend = (uintptr_t)fptr);
     for (i = 0; i < LARGE_FRAG_COUNT; ++i) {
+        C_VALIDPTR(fptr);
         fptr->next = large_free_list;
         fptr->size = LARGE_FRAG_PAYLOAD;
         PARANOID_STEP(fptr->owner_rank = proc_number);
@@ -170,6 +175,7 @@ void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
     }
     retv->next = NULL;
     PtlInternalValidateFragmentLists();
+    C_VALIDPTR(retv->data);
     return retv->data;
 }                                      /*}}} */
 
