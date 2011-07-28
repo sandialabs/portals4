@@ -50,9 +50,6 @@ int buf_init(void *arg, void *parm)
 	buf->ib.sg_list[0].addr = (uintptr_t)buf->data;
 	buf->ib.sg_list[0].lkey = mr->lkey;
 
-	/* Put the MR list in the private data. */
-	buf->mr_list = (void *)buf + sizeof(buf_t);
-
 	return 0;
 }
 
