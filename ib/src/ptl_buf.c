@@ -40,7 +40,6 @@ int buf_init(void *arg, void *parm)
 
 	INIT_LIST_HEAD(&buf->list);
 
-	buf->size = sizeof(buf->data);
 	buf->length = 0;
 
 	buf->ib.send_wr.next = NULL;
@@ -65,7 +64,7 @@ void buf_dump(buf_t *buf)
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	printf("buf: %p\n", buf);
-	printf("buf->size	= %d\n", buf->size);
+	printf("buf->size	= %d\n", sizeof(buf->data));
 	printf("buf->length	= %d\n", buf->length);
 	printf("hdr->version	= %d\n", hdr->version);
 	printf("hdr->operation	= %d\n", hdr->operation);
@@ -90,7 +89,7 @@ int ptl_post_recv(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	buf->ib.sg_list[0].length = buf->size;
+	buf->ib.sg_list[0].length = sizeof(buf->data);
 	buf->type = BUF_RECV;
 
 	pthread_spin_lock(&ni->recv_list_lock);
