@@ -53,16 +53,8 @@ int pool_init(pool_t *pool, char *name, int size,
 
 	pool->count = 0;
 
-	INIT_LIST_HEAD(&pool->free_list);
+	pool->free_list = NULL;
 	INIT_LIST_HEAD(&pool->chunk_list);
-
-	/* would like to use spinlock but need a mutex for
-	 * cond_wait and posix_memalign which can schedule */
-	err = pthread_spin_init(&pool->mutex, PTHREAD_PROCESS_PRIVATE);
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
 
 	return PTL_OK;
 }
@@ -94,17 +86,12 @@ void pool_fini(pool_t *pool)
 	 * if pool has a cleanup routine call it
 	 */
 	if (pool->fini) {
-		pthread_spin_lock(&pool->mutex);
-		list_for_each(l, &pool->free_list) {
-			obj = list_entry(l, obj_t, obj_list);
+		while(pool->free_list) {
+			obj = pool->free_list;
+			pool->free_list = obj->next;
 			pool->fini(obj);
 		}
-		pthread_spin_unlock(&pool->mutex);
 	}
-
-	err = pthread_spin_destroy(&pool->mutex);
-	if (err)
-		WARN();
 
 	/*
 	 * free the segments
@@ -221,13 +208,9 @@ static int pool_alloc_segment(pool_t *pool)
 				return PTL_FAIL;
 			}
 		}
-		list_add(&obj->obj_list, &temp_list);
+		enqueue_free_obj(pool, obj);
 		p += pool->round_size;
 	}
-
-	pthread_spin_lock(&pool->mutex);
-	list_splice(&temp_list, &pool->free_list);
-	pthread_spin_unlock(&pool->mutex);
 
 	return PTL_OK;
 }
@@ -242,7 +225,6 @@ void obj_release(ref_t *ref)
 {
 	int err;
 	obj_t *obj = container_of(ref, obj_t, obj_ref);
-	struct list_head *l = &obj->obj_list;
 	pool_t *pool = obj->obj_pool;
 	unsigned int index = obj_handle_to_index(obj->obj_handle);
 
@@ -261,10 +243,8 @@ void obj_release(ref_t *ref)
 	assert(obj->obj_free == 0);
 	obj->obj_free = 1;
 
-	pthread_spin_lock(&pool->mutex);
-	list_add_tail(l, &pool->free_list);
+	enqueue_free_obj(pool, obj);
 	pool->count--;
-	pthread_spin_unlock(&pool->mutex);
 }
 
 /*
@@ -279,36 +259,23 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	struct list_head *l;
 	unsigned int index = 0;
 
-	pthread_spin_lock(&pool->mutex);
-
 	/* reserve an object */
 	pool->count++;
 
 	/*
 	 * if the pool free list is empty make up a new batch of objects
 	 */
-	while (list_empty(&pool->free_list)) {
-		pthread_spin_unlock(&pool->mutex);
+	while ((obj = dequeue_free_obj(pool)) == NULL) {
 
 		err = pool_alloc_segment(pool);
 
-		pthread_spin_lock(&pool->mutex);
-
 		if (unlikely(err)) {
 			pool->count--;
-			pthread_spin_unlock(&pool->mutex);
-
 			WARN();
 			return err;
 		}
 	}
 
-	l = pool->free_list.next;
-	list_del(l);
-
-	pthread_spin_unlock(&pool->mutex);
-
-	obj = list_entry(l, obj_t, obj_list);
 	assert(obj->obj_free == 1);
 
 	if (pool->parent)

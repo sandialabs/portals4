@@ -55,8 +55,7 @@ typedef struct pool {
 	int			(*setup)(void *arg); /* when allocated from the free list */
 	void			(*cleanup)(void *arg); /* when moved back to the free list */
 	struct list_head	chunk_list;
-	struct list_head	free_list;
-	pthread_spinlock_t		mutex;
+	struct obj *free_list;
 	enum pool_type		type;
 	int			count;
 	int			max_count;	/* hi water mark */
@@ -80,7 +79,7 @@ typedef struct obj {
 	ptl_handle_any_t	obj_handle;
 	pthread_spinlock_t	obj_lock;
 	ref_t			obj_ref;
-	struct list_head	obj_list;
+	struct obj      *next;		/* free list link */
 } obj_t;
 
 /*
@@ -152,6 +151,36 @@ static inline int obj_put(obj_t *obj)
 static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 {
 	return handle & HANDLE_INDEX_MASK;
+}
+
+static inline obj_t *dequeue_free_obj(pool_t *pool)
+{
+    obj_t *oldv, *newv, *retv;
+
+	retv = pool->free_list;
+	do {
+		oldv = retv;
+		if (retv != NULL) {
+			newv = retv->next;
+		} else {
+			newv = NULL;
+		}
+		retv = __sync_val_compare_and_swap(&pool->free_list, oldv, newv);
+	} while (retv != oldv);
+
+    return retv;
+}
+
+static inline obj_t *enqueue_free_obj(pool_t *pool, obj_t *obj)
+{
+	obj_t *oldv, *newv, *tmpv;
+
+	tmpv = pool->free_list;
+	do {
+		oldv = obj->next = tmpv;
+		newv = obj;
+		tmpv = __sync_val_compare_and_swap(&pool->free_list, oldv, newv);
+	} while (tmpv != oldv);
 }
 
 #endif /* PTL_OBJ_H */
