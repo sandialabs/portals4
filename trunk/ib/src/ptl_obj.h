@@ -58,9 +58,6 @@ typedef struct pool {
 	struct obj *free_list;
 	enum pool_type		type;
 	int			count;
-	int			max_count;	/* hi water mark */
-	int			min_count;	/* lo water mark */
-	int			waiters;
 	int			size;
 	int			round_size;
 	int			segment_size;
