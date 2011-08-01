@@ -542,12 +542,6 @@ int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
             * 3a. Queue buffered header to LE buffer
             * 4a. When done processing entire unexpected header list, send retransmit request
             * ... else: deliver and return */
-            if (ptl_search_op == PTL_SEARCH_DELETE) {
-                // dequeue header
-                prev->hdr.next = cur->hdr.next;
-            } else {
-                t->buffered_headers.head = cur->hdr.next;
-            }
             // (1) check permissions
             if (le->options & PTL_LE_AUTH_USE_JID) {
                 if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
@@ -582,6 +576,12 @@ permission_violationPO:
                 continue;
             }
             found = 1;
+            if (ptl_search_op == PTL_SEARCH_DELETE) {
+                // dequeue header
+                prev->hdr.next = cur->hdr.next;
+            } else {
+                t->buffered_headers.head = cur->hdr.next;
+            }
             {
                 size_t mlength;
                 // deliver
@@ -627,6 +627,7 @@ permission_violationPO:
             }
         }
     }
+done_searching:
     if (!found) {
         if (t->EQ != PTL_EQ_NONE) {
             ptl_internal_event_t e;
@@ -653,7 +654,6 @@ permission_violationPO:
             e.ni_fail_type  = PTL_NI_UNDELIVERABLE;
         }
     }
-done_searching:
     PTL_LOCK_UNLOCK(t->lock);
     return PTL_OK;
 }
