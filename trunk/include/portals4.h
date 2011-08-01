@@ -913,8 +913,9 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
 #define PTL_MD_EVENT_CT_ACK          (1<<3)
 
 /*! By default, counting events count events. When set, this option causes
- * successful bytes to be counted instead. Failure events always increment the
- * count by one. */
+ * successful bytes to be counted instead. The increment is by the number of
+ * bytes counted (\e length for \c PTL_EVENT_SEND events and \e mlength for
+ * other events). Failure events always increment the count by one. */
 #define PTL_MD_EVENT_CT_BYTES        (1<<14)
 
 /*! Indicate to the portals implementation that messages sent from this memory
@@ -1894,14 +1895,19 @@ int PtlCTInc(ptl_handle_ct_t    ct_handle,
  * @brief Values of the type ptl_ack_req_t are used to control whether an
  *      acknowledgment should be sent when the operation completes (i.e., when
  *      the data has been written to a match list entry of the \e target
- *      process).
- *
- *      When a counting acknowledgment is requested, either \c PTL_CT_OPERATION
- *      or \c PTL_CT_BYTE can be set in the \a ct_handle. If \c
- *      PTL_CT_OPERATION is set, the number of acknowledgments is counted. If
- *      \c PTL_CT_BYTE is set, the modified length (\a mlength) from the target
- *      is counted at the initiator. The operation completed acknowledgment is
- *      an acknowledgment that simply indicated that the operation has
+ *      process). The value \c PTL_ACK_REQ requests an acknowledgment, the
+ *      value \c PTL_NO_ACK_REQ requests that no acknowledgment should be
+ *      generated, the value \c PTL_CT_ACK_REQ requests a simple counting
+ *      acknowledgment, and the value \c PTL_OC_ACK_REQ requests an operation
+ *      completed acknowledgment. When a counting acknowledgment is requested,
+ *      the operations in the requesting memory descriptor can be set to count
+ *      either events or bytes. If the \c PTL_MD_EVENT_CT_BYTES option is set
+ *      and the operation is successful, the requested length (\a rlength) is
+ *      counted for a \c PTL_EVENT_SEND event and the modified length (\a
+ *      mlength) from the target is counted. If the event would indicate
+ *      "failure" or the \c PTL_MD_EVENT_CT_BYTES option is not set, the number
+ *      of acknowledgments is counted. The operation completed acknowledgment
+ *      is an acknowledgment that simply indicates that the operation has
  *      completed at the target. It \e does \e not indicate what was done with
  *      the message. The message may have been dropped due to a permission
  *      violation or may not have matched in the priority list or overflow
@@ -2556,7 +2562,9 @@ typedef enum {
     PTL_EVENT_SEND,
 
     /*! An \p acknowledgment was received. This event is logged when the
-     * acknowledgment is received. */
+     * acknowledgment is received. Receipt of a \c PTL_EVENT_ACK indicates
+     * remote completion of the operation. Remote completion indicates that
+     * local completion has also occurred. */
     PTL_EVENT_ACK,
 
     /*! Resource exhaustion has occurred on this portal table entry. */
