@@ -139,7 +139,6 @@ typedef struct {
     - \c PTL_MD_EVENT_CT_ACK
     - \c PTL_MD_EVENT_CT_BYTES
     - \c PTL_MD_UNORDERED
-    - \c PTL_MD_REMOTE_FAILURE_DISABLE
     - \c PTL_IOVEC
                                */
     ptl_handle_eq_t eq_handle; /*!< The event queue handle used to log the
@@ -248,8 +247,7 @@ typedef struct {
      *  Portals state. This is treated as a permissions failure and the
      *  PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
      *  incremented. This failure is also indicated to the initiator through
-     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
-     *  PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event. */
     ptl_ac_id_t     ac_id;
 
     /*! Specifies the behavior of the list entry. The following options can be
@@ -1400,8 +1398,7 @@ typedef struct {
      * Portals state. This is treated as a permissions failure and the
      * PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
      * incremented. This failure is also indicated to the initiator through the
-     * \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
-     * PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+     * \a ni_fail_type in the \c PTL_EVENT_SEND event. */
     ptl_ac_id_t         ac_id;
 
     /*! Specifies the behavior of the match list entry. The following options
