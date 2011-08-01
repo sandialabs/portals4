@@ -276,8 +276,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
     assert(mes[ni.s.ni] != NULL);
     meh.s.ni = ni.s.ni;
     /* find an ME handle */
-    for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries;
-         ++offset) {
+    for (int offset = 0; offset < nit_limits[ni.s.ni].max_entries; ++offset) {
         if (mes[ni.s.ni][offset].status == 0) {
             if (PtlInternalAtomicCas32(&(mes[ni.s.ni][offset].status), ME_FREE, ME_ALLOCATED) == ME_FREE) {
                 meh.s.code                    = offset;
@@ -548,116 +547,6 @@ permission_violation:
             }
             t->overflow.tail = Qentry;
             break;
-#if 0
-        case PTL_PROBE_ONLY:
-            if (t->buffered_headers.head != NULL) {
-                ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *)(t->
-                                                       buffered_headers.head);
-                ptl_internal_buffered_header_t *prev             = NULL;
-                const ptl_match_bits_t          dont_ignore_bits = ~(me->ignore_bits);
-                for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
-                    /* check the match_bits */
-                    if (((cur->hdr.
-                          match_bits ^ me->match_bits) & dont_ignore_bits) !=
-                        0) {
-                        continue;
-                    }
-                    /* check for forbidden truncation */
-                    if (((me->options & PTL_ME_NO_TRUNCATE) != 0) &&
-                        ((cur->hdr.length + cur->hdr.dest_offset) >
-                         me->length)) {
-                        continue;
-                    }
-                    /* check for match_id */
-                    if (ni.s.ni <= 1) { // Logical
-                        if ((me->match_id.rank != PTL_RANK_ANY) &&
-                            (me->match_id.rank != cur->hdr.src)) {
-                            continue;
-                        }
-                    } else {           // Physical
-                        if ((me->match_id.phys.nid != PTL_NID_ANY) &&
-                            (me->match_id.phys.nid != 0)) {
-                            continue;
-                        }
-                        if ((me->match_id.phys.pid != PTL_PID_ANY) &&
-                            (me->match_id.phys.pid != cur->hdr.src)) {
-                            continue;
-                        }
-                    }
-                    /* now, act like there was a delivery;
-                     * 1. Check permissions 2. Queue buffered header to ME buffer 4a. When done processing entire unexpected header list, send retransmit request
-                     * ... else: deliver and return */
-                    // (1) check permissions
-                    if (me->options & PTL_ME_AUTH_USE_JID) {
-                        if (me->ac_id.jid == PTL_JID_NONE) {
-                            goto permission_violationPO;
-                        }
-                        if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
-                            goto permission_violationPO;
-                        }
-                    } else {
-                        EXT_UID;
-                        if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
-                            goto permission_violationPO;
-                        }
-                    }
-                    switch (cur->hdr.type) {
-                        case HDR_TYPE_PUT:
-                        case HDR_TYPE_ATOMIC:
-                        case HDR_TYPE_FETCHATOMIC:
-                        case HDR_TYPE_SWAP:
-                            if ((me->options & PTL_ME_OP_PUT) == 0) {
-                                goto permission_violationPO;
-                            }
-                    }
-                    switch (cur->hdr.type) {
-                        case HDR_TYPE_GET:
-                        case HDR_TYPE_FETCHATOMIC:
-                        case HDR_TYPE_SWAP:
-                            if ((me->options & PTL_ME_OP_GET) == 0) {
-                                goto permission_violationPO;
-                            }
-                    }
-                    if (0) {
-permission_violationPO:
-                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                        continue;
-                    }
-                    {
-                        size_t mlength;
-                        // deliver
-                        if (me->length == 0) {
-                            mlength = 0;
-                        } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   me->length) {
-                            if (me->length > cur->hdr.dest_offset) {
-                                mlength = me->length - cur->hdr.dest_offset;
-                            } else {
-                                mlength = 0;
-                            }
-                        } else {
-                            mlength = cur->hdr.length;
-                        }
-                        // notify
-                        if (t->EQ != PTL_EQ_NONE) {
-                            ptl_internal_event_t e;
-                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
-                                                     user_ptr);
-                            e.type    = PTL_EVENT_PROBE;
-                            e.mlength = mlength;
-                            e.start   = cur->buffered_data;
-                            PtlInternalEQPush(t->EQ, &e);
-                        }
-                    }
-                    // IFF ME is *not* persistent...
-                    if (me->options & PTL_ME_USE_ONCE) {
-                        goto done_appending;
-                    }
-                }
-            }
-            break;
-#endif  /* if 0 */
     }
     PtlInternalValidateMEPT(t);
     PTL_LOCK_UNLOCK(t->lock);
@@ -665,6 +554,209 @@ done_appending_unlocked:
     PtlInternalPAPIDoneC(PTL_ME_APPEND, 1);
     return PTL_OK;
 }                                      /*}}} */
+
+int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
+                         ptl_pt_index_t  pt_index,
+                         ptl_me_t       *me,
+                         ptl_search_op_t ptl_search_op,
+                         void           *user_ptr)
+{
+    const ptl_internal_handle_converter_t ni  = { ni_handle };
+    ptl_internal_handle_converter_t       meh = { .s.selector = HANDLE_ME_CODE };
+    ptl_table_entry_t                    *t;
+    int                                   found = 0;
+
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        VERBOSE_ERROR("communication pad not initialized\n");
+        return PTL_NO_INIT;
+    }
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("ni code wrong\n");
+        return PTL_ARG_INVALID;
+    }
+    if ((ni.s.ni == 0) || (ni.s.ni == 2)) { // must be a non-matching NI
+        VERBOSE_ERROR("must be a non-matching NI\n");
+        return PTL_ARG_INVALID;
+    }
+    if (nit.tables[ni.s.ni] == NULL) { // this should never happen
+        assert(nit.tables[ni.s.ni] != NULL);
+        return PTL_ARG_INVALID;
+    }
+    if (pt_index > nit_limits[ni.s.ni].max_pt_index) {
+        VERBOSE_ERROR("pt_index too high (%u > %u)\n", pt_index,
+                      nit_limits[ni.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
+    }
+    {
+        int ptv = PtlInternalPTValidate(&nit.tables[ni.s.ni][pt_index]);
+        if ((ptv == 1) || (ptv == 3)) {    // Unallocated or bad EQ (enabled/disabled both allowed)
+            VERBOSE_ERROR("LEAppend sees an invalid PT\n");
+            return PTL_ARG_INVALID;
+        }
+    }
+#endif /* ifndef NO_ARG_VALIDATION */
+    assert(mes[ni.s.ni] != NULL);
+    meh.s.ni = ni.s.ni;
+    /* append to associated list */
+    assert(nit.tables[ni.s.ni] != NULL);
+    t = &(nit.tables[ni.s.ni][pt_index]);
+    PTL_LOCK_LOCK(t->lock);
+    PtlInternalValidateMEPT(t);
+    if (t->buffered_headers.head != NULL) {
+        ptl_internal_buffered_header_t *cur              = (ptl_internal_buffered_header_t *)(t->buffered_headers.head);
+        ptl_internal_buffered_header_t *prev             = NULL;
+        const ptl_match_bits_t          dont_ignore_bits = ~(me->ignore_bits);
+        for (; cur != NULL; prev = cur, cur = cur->hdr.next) {
+            /* check the match_bits */
+            if (((cur->hdr.match_bits ^ me->match_bits) & dont_ignore_bits) != 0) {
+                continue;
+            }
+            /* check for forbidden truncation */
+            if (((me->options & PTL_ME_NO_TRUNCATE) != 0) &&
+                ((cur->hdr.length + cur->hdr.dest_offset) > me->length)) {
+                continue;
+            }
+            /* check for match_id */
+            if (ni.s.ni <= 1) { // Logical
+                if ((me->match_id.rank != PTL_RANK_ANY) &&
+                    (me->match_id.rank != cur->hdr.src)) {
+                    continue;
+                }
+            } else {           // Physical
+                if ((me->match_id.phys.nid != PTL_NID_ANY) &&
+                    (me->match_id.phys.nid != 0)) {
+                    continue;
+                }
+                if ((me->match_id.phys.pid != PTL_PID_ANY) &&
+                    (me->match_id.phys.pid != cur->hdr.src)) {
+                    continue;
+                }
+            }
+            /* now, act like there was a delivery;
+             * 1. Check permissions
+             * 2. Queue buffered header to ME buffer
+             * 4a. When done processing entire unexpected header list, send retransmit request
+             * ... else: deliver and return */
+            // (1) check permissions
+            if (me->options & PTL_ME_AUTH_USE_JID) {
+                if (me->ac_id.jid == PTL_JID_NONE) {
+                    goto permission_violationPO;
+                }
+                if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
+                    goto permission_violationPO;
+                }
+            } else {
+                EXT_UID;
+                if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
+                    goto permission_violationPO;
+                }
+            }
+            switch (cur->hdr.type) {
+                case HDR_TYPE_PUT:
+                case HDR_TYPE_ATOMIC:
+                case HDR_TYPE_FETCHATOMIC:
+                case HDR_TYPE_SWAP:
+                    if ((me->options & PTL_ME_OP_PUT) == 0) {
+                        goto permission_violationPO;
+                    }
+            }
+            switch (cur->hdr.type) {
+                case HDR_TYPE_GET:
+                case HDR_TYPE_FETCHATOMIC:
+                case HDR_TYPE_SWAP:
+                    if ((me->options & PTL_ME_OP_GET) == 0) {
+                        goto permission_violationPO;
+                    }
+            }
+            if (0) {
+permission_violationPO:
+                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                continue;
+            }
+            found = 1;
+            if (ptl_search_op == PTL_SEARCH_DELETE) {
+                // dequeue header
+                prev->hdr.next = cur->hdr.next;
+            } else {
+                t->buffered_headers.head = cur->hdr.next;
+            }
+            {
+                size_t mlength;
+                // deliver
+                if (me->length == 0) {
+                    mlength = 0;
+                } else if (cur->hdr.length + cur->hdr.dest_offset >
+                           me->length) {
+                    if (me->length > cur->hdr.dest_offset) {
+                        mlength = me->length - cur->hdr.dest_offset;
+                    } else {
+                        mlength = 0;
+                    }
+                } else {
+                    mlength = cur->hdr.length;
+                }
+                // notify
+                if (t->EQ != PTL_EQ_NONE) {
+                    ptl_internal_event_t e;
+                    PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
+                    if (ptl_search_op == PTL_SEARCH_ONLY) {
+                        e.type = PTL_EVENT_SEARCH;
+                    } else {
+                        switch(cur->hdr.type) {
+                            case 0: /* put */
+                                e.type = PTL_EVENT_PUT_OVERFLOW;
+                                break;
+                            case 1: /* get */
+                                abort();
+                            case 2: /* atomic */
+                            case 3: /* fetchatomic */
+                            case 4: /* swap */
+                                e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                                break;
+                        }
+                    }
+                    e.mlength = mlength;
+                    e.start   = cur->buffered_data;
+                    PtlInternalEQPush(t->EQ, &e);
+                }
+            }
+            // IFF ME is *not* persistent...
+            if (me->options & PTL_ME_USE_ONCE) {
+                goto done_searching;
+            }
+        }
+    }
+done_searching:
+    if (!found) {
+        if (t->EQ != PTL_EQ_NONE) {
+            ptl_internal_event_t e;
+            e.type           = PTL_EVENT_SEARCH;
+            e.initiator.rank = proc_number;
+            e.pt_index       = pt_index;
+            {
+                ptl_uid_t tmp;
+                PtlGetUid(ni_handle, &tmp);
+                e.uid = tmp;
+            }
+            {
+                ptl_jid_t tmp;
+                PtlGetJid(ni_handle, &tmp);
+                e.jid = tmp;
+            }
+            e.match_bits    = me->match_bits;
+            e.rlength       = 0;
+            e.mlength       = 0;
+            e.remote_offset = 0;
+            e.start         = 0;
+            e.user_ptr      = user_ptr;
+            e.hdr_data      = 0;
+            e.ni_fail_type  = PTL_NI_UNDELIVERABLE;
+        }
+    }
+    PTL_LOCK_UNLOCK(t->lock);
+    return PTL_OK;
+}
 
 int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
 {                                      /*{{{ */
