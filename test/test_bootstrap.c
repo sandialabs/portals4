@@ -8,20 +8,19 @@
 
 #include "testing.h"
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    ptl_process_t *dmapping, *amapping;
-    int my_rank, num_procs, i;
+    ptl_handle_ni_t        ni_logical;
+    ptl_process_t          myself;
+    ptl_pt_index_t         logical_pt_index;
+    ptl_process_t         *dmapping, *amapping;
+    int                    my_rank, num_procs, i;
     struct runtime_proc_t *rtprocs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
     runtime_get_nidpid_map(&rtprocs);
 
@@ -36,7 +35,7 @@ int main(
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
                               PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
-                              num_procs, dmapping, amapping,
+                              //num_procs, dmapping, amapping,
                               &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(myself.rank == my_rank);

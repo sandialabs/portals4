@@ -77,7 +77,7 @@ void runtime_init(void)
     }
 
     ptl_assert(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                         PTL_PID_ANY, NULL, NULL, 0, NULL, NULL, &ni_physical),
+                         PTL_PID_ANY, NULL, NULL, &ni_physical),
                PTL_OK);
 
     ptl_assert(PtlGetId(ni_physical, &myself),

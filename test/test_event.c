@@ -15,7 +15,6 @@ int main(int   argc,
     ptl_handle_ni_t ni_logical;
     ptl_process_t   myself;
     ptl_pt_index_t  logical_pt_index;
-    ptl_process_t  *amapping;
     uint64_t        value, readval;
     ptl_le_t        value_le;
     ptl_handle_le_t value_le_handle;
@@ -30,11 +29,8 @@ int main(int   argc,
     my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    amapping = malloc(sizeof(ptl_process_t) * num_procs);
-
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
                               PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
-                              num_procs, NULL, amapping,
                               &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
@@ -55,8 +51,6 @@ int main(int   argc,
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
-    /* don't need this anymore, so free up resources */
-    free(amapping);
 
     /* now I can communicate between ranks with ni_logical */
 

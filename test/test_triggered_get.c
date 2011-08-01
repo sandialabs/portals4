@@ -46,8 +46,7 @@ int main(int   argc,
     num_procs = runtime_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, NULL, NULL, 0, NULL,
-                              NULL, &ni_logical));
+                              PTL_PID_ANY, NULL, NULL, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     /* Now do the initial setup on ni_logical */

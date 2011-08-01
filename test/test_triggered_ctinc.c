@@ -23,8 +23,7 @@ int main(int   argc,
     num_procs = runtime_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, NULL, NULL, 0, NULL,
-                              NULL, &ni_logical));
+                              PTL_PID_ANY, NULL, NULL, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &trigger));

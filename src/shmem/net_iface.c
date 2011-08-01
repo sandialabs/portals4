@@ -49,9 +49,6 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
                        ptl_pid_t               pid,
                        ptl_ni_limits_t        *desired,
                        ptl_ni_limits_t        *actual,
-                       ptl_size_t              map_size,
-                       Q_UNUSED ptl_process_t *desired_mapping,
-                       ptl_process_t          *actual_mapping,
                        ptl_handle_ni_t        *ni_handle)
 {   /*{{{*/
     ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
@@ -87,10 +84,6 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
     }
     if (ni_handle == NULL) {
         VERBOSE_ERROR("ni_handle == NULL\n");
-        return PTL_ARG_INVALID;
-    }
-    if ((map_size > 0) && (actual_mapping == NULL)) {
-        VERBOSE_ERROR("asked for a map size (%" PRIu64 ") without a place to put it (actual_mapping == NULL)\n", map_size);
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
@@ -191,17 +184,6 @@ int API_FUNC PtlNIInit(ptl_interface_t         iface,
     while (nit_limits_init[ni.s.ni] == 1) SPINLOCK_BODY();     /* if being initialized by another thread, wait for it to be initialized */
     if (actual != NULL) {
         *actual = nit_limits[ni.s.ni];
-    }
-    if (((options & PTL_NI_LOGICAL) != 0) && (actual_mapping != NULL)) {
-        for (int i = 0; i < map_size; ++i) {
-            if (i >= num_siblings) {
-                actual_mapping[i].phys.nid = PTL_NID_ANY;       // aka "invalid"
-                actual_mapping[i].phys.pid = PTL_PID_ANY;       // aka "invalid"
-            } else {
-                actual_mapping[i].phys.nid = 0;
-                actual_mapping[i].phys.pid = (ptl_pid_t)i;
-            }
-        }
     }
     /* BWB: FIX ME: This isn't thread safe (parallel NIInit calls may return too quickly) */
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1) == 0) {
