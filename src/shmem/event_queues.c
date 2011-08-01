@@ -267,10 +267,10 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
                 e->pt_index     = ie.pt_index;                                             \
                 e->ni_fail_type = ie.ni_fail_type;                                         \
                 break;                                                                     \
+            case PTL_EVENT_SEND:                                                           \
             case PTL_EVENT_REPLY: case PTL_EVENT_ACK: /* initiator */                      \
                 e->mlength       = ie.mlength;                                             \
                 e->remote_offset = ie.remote_offset;                                       \
-            case PTL_EVENT_SEND:                                                           \
                 e->user_ptr     = ie.user_ptr;                                             \
                 e->ni_fail_type = ie.ni_fail_type;                                         \
                 break;                                                                     \
