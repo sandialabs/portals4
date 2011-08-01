@@ -275,7 +275,6 @@ int npeers;
 int niters;
 int nmsgs;
 int nbytes;
-ptl_process_t *amapping;
 ptl_handle_ni_t ni_logical;
 ptl_handle_ni_t ni_collectives;
 int cache_size;
@@ -303,12 +302,6 @@ int test_type;
     rank= runtime_get_rank();
     world_size= runtime_get_size();
 
-
-    amapping= malloc(sizeof(ptl_process_t) * world_size);
-    if (amapping == NULL)   {
-	fprintf(stderr, "Out of memory on rank %d\n", rank);
-	exit(2);
-    }
 
     /* Handle command line arguments */
     while (start_err != 1 && 
@@ -405,14 +398,14 @@ int test_type;
     ptl_ni_limits_t actual;
 
     rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-	    NULL, world_size, NULL, amapping, &ni_collectives);
+	    NULL, &ni_collectives);
 
     if (test_type == LEwithCT)   {
 	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-		&actual, world_size, NULL, amapping, &ni_logical);
+		&actual, &ni_logical);
     } else if (test_type == MEwithEQ)   {
 	rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-		&actual, world_size, NULL, amapping, &ni_logical);
+		&actual, &ni_logical);
     } else   {
 	rc= PTL_NO_INIT;
     }
@@ -533,7 +526,6 @@ int test_type;
     __PtlBarrierInit(ni_collectives, rank, world_size);
     __PtlAllreduceDouble_init(ni_collectives);
     runtime_barrier();
-    free(amapping);  /* Not needed anymore */
 
     /* run tests */
     if (verbose > 0)   {

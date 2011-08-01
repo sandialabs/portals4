@@ -42,7 +42,6 @@ int main(
     ptl_handle_ni_t ni_logical;
     ptl_pt_index_t logical_pt_index;
     ptl_process_t myself;
-    ptl_process_t *amapping;
     struct timeval start, stop;
     int potato = 0;
     ENTRY_T potato_catcher;
@@ -57,11 +56,9 @@ int main(
     my_rank = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    amapping = malloc(sizeof(ptl_process_t) * num_procs);
-
     CHECK_RETURNVAL(PtlNIInit
                     (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
-                     NULL, NULL, num_procs, NULL, amapping, &ni_logical));
+                     NULL, NULL, &ni_logical));
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &pt_eq_handle));

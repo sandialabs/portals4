@@ -481,9 +481,6 @@ typedef struct {
  *               ptl_pid_t          pid,
  *               ptl_ni_limits_t *  desired,
  *               ptl_ni_limits_t *  actual,
- *               ptl_size_t         map_size,
- *               ptl_process_t *    desired_mapping,
- *               ptl_process_t *    actual_mapping,
  *               ptl_handle_ni_t *  ni_handle)
  * @brief Initialize a network interface.
  * @details Initializes the portals API for a network interface (NI). A process
@@ -511,24 +508,8 @@ typedef struct {
  * @param[out] actual       If not \c NULL, on successful return, the location
  *                          pointed to by \a actual will hold the actual
  *                          limits.
- * @param[in] map_size      Contains the size of the map being passed in. If \a
- *                          map_size is non-zero and \a desired_mapping is \c
- *                          NULL, PtlNIInit() simply returns the actual mapping
- *                          in \a actual_mapping. This field is ignored if the
- *                          \c PTL_NI_LOGICAL option is set.
- * @param[in] desired_mapping   If not \c NULL, points to an array of
- *                              structures that holds the desired mapping of
- *                              logical identifiers to NID/PID pairs. This
- *                              field is ignored if the PTL_NI_LOGICAL option
- *                              is \b not set.
- * @param[out] actual_mapping   If the \c PTL_NI_LOGICAL option is set,
- *                              on successful return, the location pointed to
- *                              by \a actual_mapping will hold the actual
- *                              mapping of logical identifiers to NID/PID
- *                              pairs. The mapping returned will be no longer
- *                              than \a map_size.
- * @param[out] ni_handle        On successful return, this location
- *                              will hold the interface handle.
+ * @param[out] ni_handle    On successful return, this location will hold the
+ *			    interface handle.
  * @retval PTL_OK               Indicates success.
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -549,9 +530,6 @@ int PtlNIInit(ptl_interface_t   iface,
               ptl_pid_t         pid,
               ptl_ni_limits_t   *desired,
               ptl_ni_limits_t   *actual,
-              ptl_size_t        map_size,
-              ptl_process_t     *desired_mapping,
-              ptl_process_t     *actual_mapping,
               ptl_handle_ni_t   *ni_handle);
 /*!
  * @fn PtlNIFini(ptl_handle_ni_t ni_handle)
@@ -927,7 +905,7 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * from a portals operation. Operations should not return until it is safe for
  * the application to reuse the buffer. The Portals implementation is not
  * required to honor this option unless the size of the operation is less than
- * or equal to max_volatile_size. */
+ * or equal to \a max_volatile_size. */
 #define PTL_MD_VOLATILE              (1<<6)
 
 #define PTL_MD_OPTIONS_MASK	     (((1<<7)-1) | PTL_MD_EVENT_CT_BYTES)
