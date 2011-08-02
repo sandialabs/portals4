@@ -235,46 +235,48 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
     return PTL_OK;
 } /*}}}*/
 
-#define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/                                               \
-        e->type = (ptl_event_kind_t)(ie.type);                                             \
-        switch (e->type) {                                                                 \
-            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:          /* target */   \
-                e->atomic_operation = (ptl_op_t)ie.atomic_operation;                       \
-                e->atomic_type      = (ptl_datatype_t)ie.atomic_type;                      \
-            case PTL_EVENT_GET: case PTL_EVENT_PUT:                                        \
-            case PTL_EVENT_PUT_OVERFLOW:                                                   \
-            case PTL_EVENT_SEARCH:                                          /* target */   \
-                e->hdr_data = ie.hdr_data;                                                 \
-                if (ni <= 1) { /* logical */                                               \
-                    e->initiator.rank = ie.initiator.rank;                                 \
-                } else { /* physical */                                                    \
-                    e->initiator.phys.pid = ie.initiator.phys.pid;                         \
-                    e->initiator.phys.nid = ie.initiator.phys.nid;                         \
-                }                                                                          \
-                e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */ \
-                e->initiator.phys.pid = ie.initiator.phys.pid;                             \
-                e->uid                = ie.uid;                                            \
-                e->jid                = ie.jid;                                            \
-                e->match_bits         = ie.match_bits;                                     \
-                e->rlength            = ie.rlength;                                        \
-                e->mlength            = ie.mlength;                                        \
-                e->remote_offset      = ie.remote_offset;                                  \
-                e->start              = ie.start;                                          \
-            case PTL_EVENT_AUTO_UNLINK:                                     /* target */   \
-            case PTL_EVENT_AUTO_FREE:                                       /* target */   \
-                e->user_ptr = ie.user_ptr;                                                 \
-            case PTL_EVENT_PT_DISABLED:                                                    \
-                e->pt_index     = ie.pt_index;                                             \
-                e->ni_fail_type = ie.ni_fail_type;                                         \
-                break;                                                                     \
-            case PTL_EVENT_SEND:                                                           \
-            case PTL_EVENT_REPLY: case PTL_EVENT_ACK: /* initiator */                      \
-                e->mlength       = ie.mlength;                                             \
-                e->remote_offset = ie.remote_offset;                                       \
-                e->user_ptr     = ie.user_ptr;                                             \
-                e->ni_fail_type = ie.ni_fail_type;                                         \
-                break;                                                                     \
-        }                                                                                  \
+#define ASSIGN_EVENT(e, ie, ni) do { /*{{{*/                                                \
+        e->type = (ptl_event_kind_t)(ie.type);                                              \
+        switch (e->type) {                                                                  \
+            case PTL_EVENT_ATOMIC: case PTL_EVENT_ATOMIC_OVERFLOW:             /* target */ \
+            case PTL_EVENT_FETCH_ATOMIC: case PTL_EVENT_FETCH_ATOMIC_OVERFLOW: /* target */ \
+                e->atomic_operation = (ptl_op_t)ie.atomic_operation;                        \
+                e->atomic_type      = (ptl_datatype_t)ie.atomic_type;                       \
+            case PTL_EVENT_PUT:                                                             \
+            case PTL_EVENT_PUT_OVERFLOW:                                                    \
+            case PTL_EVENT_SEARCH:                                          /* target */    \
+                e->hdr_data = ie.hdr_data;                                                  \
+            case PTL_EVENT_GET: case PTL_EVENT_GET_OVERFLOW:                                \
+                if (ni <= 1) { /* logical */                                                \
+                    e->initiator.rank = ie.initiator.rank;                                  \
+                } else { /* physical */                                                     \
+                    e->initiator.phys.pid = ie.initiator.phys.pid;                          \
+                    e->initiator.phys.nid = ie.initiator.phys.nid;                          \
+                }                                                                           \
+                e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */  \
+                e->initiator.phys.pid = ie.initiator.phys.pid;                              \
+                e->uid                = ie.uid;                                             \
+                e->jid                = ie.jid;                                             \
+                e->match_bits         = ie.match_bits;                                      \
+                e->rlength            = ie.rlength;                                         \
+                e->mlength            = ie.mlength;                                         \
+                e->remote_offset      = ie.remote_offset;                                   \
+                e->start              = ie.start;                                           \
+            case PTL_EVENT_AUTO_UNLINK:                                     /* target */    \
+            case PTL_EVENT_AUTO_FREE:                                       /* target */    \
+                e->user_ptr = ie.user_ptr;                                                  \
+            case PTL_EVENT_PT_DISABLED:                                                     \
+                e->pt_index     = ie.pt_index;                                              \
+                e->ni_fail_type = ie.ni_fail_type;                                          \
+                break;                                                                      \
+            case PTL_EVENT_REPLY: case PTL_EVENT_ACK: /* initiator */                       \
+                e->mlength       = ie.mlength;                                              \
+                e->remote_offset = ie.remote_offset;                                        \
+            case PTL_EVENT_SEND:                                                            \
+                e->user_ptr      = ie.user_ptr;                                             \
+                e->ni_fail_type  = ie.ni_fail_type;                                         \
+                break;                                                                      \
+        }                                                                                   \
 } while (0) /*}}}*/
 
 int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
