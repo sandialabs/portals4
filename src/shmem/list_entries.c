@@ -255,38 +255,43 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
                     // (1) check permissions
                     if (le->options & PTL_LE_AUTH_USE_JID) {
                         if (le->ac_id.jid == PTL_JID_NONE) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                         if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                     } else {
                         EXT_UID;
                         if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                     }
-                    switch (cur->hdr.type) {
+                    // check operations
+                    switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                         case HDR_TYPE_PUT:
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
                             if ((le->options & PTL_LE_OP_PUT) == 0) {
+                                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
                     }
-                    switch (cur->hdr.type) {
+                    switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
                             if ((le->options & PTL_LE_OP_GET) == 0) {
+                                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
                     }
                     if (0) {
                         ptl_internal_buffered_header_t *tmp;
 permission_violation:
-                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         tmp            = cur;
                         prev->hdr.next = cur->hdr.next;
                         cur            = prev;
@@ -399,86 +404,6 @@ permission_violation:
             }
             t->overflow.tail = Qentry;
             break;
-#if 0
-        case PTL_PROBE_ONLY:
-            if (t->buffered_headers.head != NULL) {
-                ptl_internal_buffered_header_t *cur =
-                    (ptl_internal_buffered_header_t *)(t->buffered_headers.
-                                                       head);
-                for (; cur != NULL; cur = cur->hdr.next) {
-                    /* act like there was a delivery;
-                    * 1. Check permissions
-                    * 2. Iff LE is persistent...
-                    * 3a. Queue buffered header to LE buffer
-                    * 4a. When done processing entire unexpected header list, send retransmit request
-                    * ... else: deliver and return */
-                    // (1) check permissions
-                    if (le->options & PTL_LE_AUTH_USE_JID) {
-                        if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
-                            goto permission_violationPO;
-                        }
-                    } else {
-                        EXT_UID;
-                        if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
-                            goto permission_violationPO;
-                        }
-                    }
-                    switch (cur->hdr.type) {
-                        case HDR_TYPE_PUT:
-                        case HDR_TYPE_ATOMIC:
-                        case HDR_TYPE_FETCHATOMIC:
-                        case HDR_TYPE_SWAP:
-                            if ((le->options & PTL_LE_OP_PUT) == 0) {
-                                goto permission_violationPO;
-                            }
-                    }
-                    switch (cur->hdr.type) {
-                        case HDR_TYPE_GET:
-                        case HDR_TYPE_FETCHATOMIC:
-                        case HDR_TYPE_SWAP:
-                            if ((le->options & PTL_LE_OP_GET) == 0) {
-                                goto permission_violationPO;
-                            }
-                    }
-                    if (0) {
-permission_violationPO:
-                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                        continue;
-                    }
-                    {
-                        size_t mlength;
-                        // deliver
-                        if (le->length == 0) {
-                            mlength = 0;
-                        } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   le->length) {
-                            if (le->length > cur->hdr.dest_offset) {
-                                mlength = le->length - cur->hdr.dest_offset;
-                            } else {
-                                mlength = 0;
-                            }
-                        } else {
-                            mlength = cur->hdr.length;
-                        }
-                        // notify
-                        if (t->EQ != PTL_EQ_NONE) {
-                            ptl_internal_event_t e;
-                            PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)),
-                                                     user_ptr);
-                            e.type    = PTL_EVENT_PROBE;
-                            e.mlength = mlength;
-                            e.start   = cur->buffered_data;
-                            PtlInternalEQPush(t->EQ, &e);
-                        }
-                    }
-                    // (2) iff LE is NOT persistent
-                    if (le->options & PTL_LE_USE_ONCE) {
-                        goto done_appending;
-                    }
-                }
-            }
-            break;
-#endif  /* if 0 */
     }
 done_appending:
     PTL_LOCK_UNLOCK(t->lock);
@@ -545,35 +470,34 @@ int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
             // (1) check permissions
             if (le->options & PTL_LE_AUTH_USE_JID) {
                 if (CHECK_JID(le->ac_id.jid, cur->hdr.jid)) {
-                    goto permission_violationPO;
+                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                    continue;
                 }
             } else {
                 EXT_UID;
                 if (CHECK_UID(le->ac_id.uid, the_ptl_uid)) {
-                    goto permission_violationPO;
+                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                    continue;
                 }
             }
-            switch (cur->hdr.type) {
+            switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                 case HDR_TYPE_PUT:
                 case HDR_TYPE_ATOMIC:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
                     if ((le->options & PTL_LE_OP_PUT) == 0) {
-                        goto permission_violationPO;
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
+                        continue;
                     }
             }
-            switch (cur->hdr.type) {
+            switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                 case HDR_TYPE_GET:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
                     if ((le->options & PTL_LE_OP_GET) == 0) {
-                        goto permission_violationPO;
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
+                        continue;
                     }
-            }
-            if (0) {
-permission_violationPO:
-                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                continue;
             }
             found = 1;
             if (ptl_search_op == PTL_SEARCH_DELETE) {
@@ -603,7 +527,7 @@ permission_violationPO:
                     if (ptl_search_op == PTL_SEARCH_ONLY) {
                         e.type = PTL_EVENT_SEARCH;
                     } else {
-                        switch(cur->hdr.type) {
+                        switch(cur->hdr.type & HDR_TYPE_BASICMASK) {
                             case 0: /* put */
                                 e.type = PTL_EVENT_PUT_OVERFLOW;
                                 break;
@@ -802,11 +726,13 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
         // check the permissions on the LE
         if (le.options & PTL_LE_AUTH_USE_JID) {
             if (CHECK_JID(le.ac_id.jid, hdr->jid)) {
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                 goto permission_violation;
             }
         } else {
             EXT_UID;
             if (CHECK_UID(le.ac_id.uid, the_ptl_uid)) {
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                 goto permission_violation;
             }
         }
@@ -816,6 +742,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
                 if ((le.options & PTL_LE_OP_PUT) == 0) {
+                    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto permission_violation;
                 }
         }
@@ -823,15 +750,13 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
-                if ((le.options & (PTL_LE_ACK_DISABLE | PTL_LE_OP_GET)) ==
-                    0) {
+                if ((le.options & (PTL_LE_ACK_DISABLE | PTL_LE_OP_GET)) == 0) {
+                    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto permission_violation;
                 }
         }
         if (0) {
 permission_violation:
-            (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
-                                       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             // PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
             PTL_LOCK_UNLOCK(t->lock);
             return (ptl_pid_t)3;
@@ -1269,7 +1194,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
             ptl_internal_event_t e;
             PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
             if (overflow) {
-                switch (type) {
+                switch (type & HDR_TYPE_BASICMASK) {
                     case HDR_TYPE_PUT:
                         e.type = PTL_EVENT_PUT_OVERFLOW;
                         break;

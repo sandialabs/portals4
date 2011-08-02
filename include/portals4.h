@@ -68,9 +68,12 @@ typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
 typedef enum {
     PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
 			 dropped requests for the interface. */
-    PTL_SR_PERMISSIONS_VIOLATIONS  /*!< Specifies the status register that
+    PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
 				     counts the number of attempted permission
 				     violations. */
+    PTL_SR_OPERATIONS_VIOLATIONS /*!< Specifies the status register that counts
+				   the number of attempted operation
+				   violations. */
 } ptl_sr_index_t;
 #define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS+1)
 typedef int             ptl_sr_value_t; /*!< Signed integral type that defines

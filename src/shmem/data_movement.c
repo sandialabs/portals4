@@ -625,8 +625,7 @@ static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETUR
             } else {
                 /* Invalid PT: increment the dropped counter */
                 (void)
-                PtlInternalAtomicInc(&nit.regs[hdr->ni]
-                                     [PTL_SR_DROP_COUNT], 1);
+                PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
 #ifdef LOUD_DROPS
                 fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
                         (unsigned)proc_number, (unsigned)hdr->src,
