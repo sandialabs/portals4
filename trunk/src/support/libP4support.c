@@ -76,9 +76,6 @@ char *__StrPtlError(int error_code)
         case PTL_PT_IN_USE:
             return "PTL_PT_IN_USE";
 
-        case PTL_SIZE_INVALID:
-            return "PTL_SIZE_INVALID";
-
         default:
             return "Unknown Portals return code";
     }

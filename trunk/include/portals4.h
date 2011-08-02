@@ -30,8 +30,7 @@ enum ptl_retvals {
     PTL_PID_IN_USE,     /*!< PID is in use. */
     PTL_PT_FULL,        /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
-    PTL_PT_IN_USE,      /*!< Portal table index is busy. */
-    PTL_SIZE_INVALID    /*!< The requested map size is invalid. */
+    PTL_PT_IN_USE       /*!< Portal table index is busy. */
 };
 #define PTL_STATUS_LAST (PTL_SIZE_INVALID+1)
 
