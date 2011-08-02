@@ -13,7 +13,7 @@ int buf_setup(void *arg)
 
 	buf->num_mr = 0;
 	buf->xt = NULL;
-	buf->ib.comp = 0;
+	buf->rdma.comp = 0;
 
 	return PTL_OK;
 }
@@ -42,13 +42,13 @@ int buf_init(void *arg, void *parm)
 
 	buf->length = 0;
 
-	buf->ib.send_wr.next = NULL;
-	buf->ib.send_wr.wr_id = (uintptr_t)buf;
-	buf->ib.send_wr.sg_list = buf->ib.sg_list;
-	buf->ib.send_wr.num_sge = 1;
+	buf->rdma.send_wr.next = NULL;
+	buf->rdma.send_wr.wr_id = (uintptr_t)buf;
+	buf->rdma.send_wr.sg_list = buf->rdma.sg_list;
+	buf->rdma.send_wr.num_sge = 1;
 
-	buf->ib.sg_list[0].addr = (uintptr_t)buf->data;
-	buf->ib.sg_list[0].lkey = mr->lkey;
+	buf->rdma.sg_list[0].addr = (uintptr_t)buf->data;
+	buf->rdma.sg_list[0].lkey = mr->lkey;
 
 	return 0;
 }
@@ -86,12 +86,12 @@ int ptl_post_recv(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	buf->ib.sg_list[0].length = sizeof(buf->data);
+	buf->rdma.sg_list[0].length = sizeof(buf->data);
 	buf->type = BUF_RECV;
 
 	pthread_spin_lock(&ni->recv_list_lock);
 
-	err = ibv_post_srq_recv(ni->srq, &buf->ib.recv_wr, &bad_wr);
+	err = ibv_post_srq_recv(ni->srq, &buf->rdma.recv_wr, &bad_wr);
 
 	if (err) {
 		pthread_spin_unlock(&ni->recv_list_lock);

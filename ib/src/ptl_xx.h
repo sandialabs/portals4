@@ -45,14 +45,16 @@ struct xremote {
 	ptl_size_t		put_resid;		\
 	ptl_size_t		get_resid;		\
 	unsigned int		event_mask;		\
-	struct ibv_sge		*cur_rem_sge;		\
-	ptl_size_t		num_rem_sge;		\
-	ptl_size_t		cur_rem_off;		\
+	struct {								\
+		struct ibv_sge		*cur_rem_sge;	\
+		ptl_size_t		num_rem_sge;		\
+		ptl_size_t		cur_rem_off;		\
+		atomic_t 		rdma_comp;			\
+		int			interim_rdma;			\
+	} rdma;									\
 	ptl_size_t		cur_loc_iov_index;	\
 	ptl_size_t		cur_loc_iov_off;	\
 	uint32_t  		rdma_dir;		\
-	atomic_t 		rdma_comp;		\
-	int			interim_rdma;		\
 	int			state;			\
 	int			next_state;		\
 	int			state_waiting;		\

@@ -24,7 +24,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->ib.comp = comp;
+	rdma_buf->rdma.comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
@@ -86,7 +86,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->ib.comp = comp;
+	rdma_buf->rdma.comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
@@ -248,12 +248,12 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	int comp = 0;
 	buf_t *rdma_buf = NULL;
 
-	rseg_length = be32_to_cpu(xt->cur_rem_sge->length);
-	rkey  = be32_to_cpu(xt->cur_rem_sge->lkey);
+	rseg_length = be32_to_cpu(xt->rdma.cur_rem_sge->length);
+	rkey  = be32_to_cpu(xt->rdma.cur_rem_sge->lkey);
 
-	while (*resid > 0 && !atomic_read(&xt->rdma_comp)) {
-		raddr = be64_to_cpu(xt->cur_rem_sge->addr) + xt->cur_rem_off;
-		rlength = rseg_length - xt->cur_rem_off;
+	while (*resid > 0 && !atomic_read(&xt->rdma.rdma_comp)) {
+		raddr = be64_to_cpu(xt->rdma.cur_rem_sge->addr) + xt->rdma.cur_rem_off;
+		rlength = rseg_length - xt->rdma.cur_rem_off;
 
 		if (debug)
 			printf("raddr(0x%" PRIx64 "), rlen(%d), rkey(0x%x)\n",
@@ -279,14 +279,14 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 			return PTL_FAIL;
 		}
 
-		xt->interim_rdma++;
+		xt->rdma.interim_rdma++;
 
-		if (*resid == bytes || xt->interim_rdma >= get_param(PTL_MAX_RDMA_WR_OUT))
+		if (*resid == bytes || xt->rdma.interim_rdma >= get_param(PTL_MAX_RDMA_WR_OUT))
 			comp = 1;
 
  		if (comp) {
- 			atomic_inc(&xt->rdma_comp);
- 			xt->interim_rdma = 0;
+ 			atomic_inc(&xt->rdma.rdma_comp);
+ 			xt->rdma.interim_rdma = 0;
  		}
 
 		if (dir == DATA_DIR_IN)
@@ -307,15 +307,15 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 		*resid -= bytes;
 		xt->cur_loc_iov_index = iov_index;
 		xt->cur_loc_iov_off = iov_off;
-		xt->cur_rem_off += bytes;
+		xt->rdma.cur_rem_off += bytes;
 
-		if (*resid && xt->cur_rem_off >= rseg_length) {
-			if (xt->num_rem_sge) {
-				xt->cur_rem_sge++;
+		if (*resid && xt->rdma.cur_rem_off >= rseg_length) {
+			if (xt->rdma.num_rem_sge) {
+				xt->rdma.cur_rem_sge++;
 				rseg_length =
-					be32_to_cpu(xt->cur_rem_sge->length);
-				rkey  = be32_to_cpu(xt->cur_rem_sge->lkey);
-				xt->cur_rem_off = 0;
+					be32_to_cpu(xt->rdma.cur_rem_sge->length);
+				rkey  = be32_to_cpu(xt->rdma.cur_rem_sge->lkey);
+				xt->rdma.cur_rem_off = 0;
 			} else {
 				WARN();
 				return PTL_FAIL;
@@ -325,7 +325,7 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 
 	if (debug)
 		printf("RDMA posted, resid(%d), rdma_comp(%d)\n",
-			   (int) *resid, atomic_read(&xt->rdma_comp));
+			   (int) *resid, atomic_read(&xt->rdma.rdma_comp));
 
 	return PTL_OK;
 }

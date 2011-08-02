@@ -22,12 +22,14 @@ typedef struct data {
 	uint8_t			data_fmt;
 	uint8_t			data_reserved[3];
 	union {
-		__be32			data_length;
-		__be32			num_sge;
-	};
-	union {
-		uint8_t			data[0];
-		struct ibv_sge		sge_list[0];
+		struct {
+			__be32			data_length;
+			uint8_t			data[0];
+		} immediate;
+		struct {
+			__be32			num_sge;
+			struct ibv_sge	sge_list[0];
+		} rdma;
 	};
 } __attribute__((__packed__)) data_t;
 

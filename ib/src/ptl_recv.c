@@ -143,7 +143,7 @@ static int send_comp(buf_t *buf)
 	struct list_head temp_list;
 	xt_t *xt = buf->xt;
 
-	if (!buf->ib.comp)
+	if (!buf->rdma.comp)
 		return STATE_RECV_COMP_REARM;
 
 	pthread_spin_lock(&xt->send_list_lock);
@@ -169,20 +169,20 @@ static int rdma_comp(buf_t *buf)
 	int err;
 	xt_t *xt = buf->xt;
 
-	if (!buf->ib.comp)
+	if (!buf->rdma.comp)
 		return STATE_RECV_COMP_REARM;
 
 	/* Take a ref on the XT since freeing all its buffers will also
 	 * free it. */
 	assert(xt);
-	assert(atomic_read(&xt->rdma_comp) < 5000);
+	assert(atomic_read(&xt->rdma.rdma_comp) < 5000);
 	xt_get(xt);
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);
 	pthread_spin_unlock(&xt->rdma_list_lock);
 
-	atomic_dec(&xt->rdma_comp);
+	atomic_dec(&xt->rdma.rdma_comp);
 
 	while(!list_empty(&temp_list)) {
 		buf = list_first_entry(&temp_list, buf_t, list);

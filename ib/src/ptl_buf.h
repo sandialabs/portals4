@@ -52,7 +52,7 @@ typedef struct buf {
 			/* SG list to register the data field. */
 			struct ibv_sge		sg_list[1];
 
-		} ib;
+		} rdma;
 	};
 
 	buf_type_t		type;

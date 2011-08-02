@@ -649,9 +649,9 @@ static int tgt_data_out(xt_t *xt)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_DMA:
-		xt->cur_rem_sge = &data->sge_list[0];
-		xt->cur_rem_off = 0;
-		xt->num_rem_sge = be32_to_cpu(data->num_sge);
+		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
+		xt->rdma.cur_rem_off = 0;
+		xt->rdma.num_rem_sge = be32_to_cpu(data->rdma.num_sge);
 
 		if (tgt_rdma_init_loc_off(xt))
 			return STATE_TGT_ERROR;
@@ -690,7 +690,7 @@ static int tgt_rdma(xt_t *xt)
 	}
 
 	/* more work to do */
-	if (*resid || atomic_read(&xt->rdma_comp))
+	if (*resid || atomic_read(&xt->rdma.rdma_comp))
 		return STATE_TGT_RDMA;
 
 	/* check to see if we still need data in phase */
@@ -729,9 +729,9 @@ static int tgt_rdma_desc(xt_t *xt)
 	 * Allocate and map indirect buffer and setup to read
 	 * descriptor list from initiator memory.
 	 */
-	raddr = be64_to_cpu(data->sge_list[0].addr);
-	rkey = be32_to_cpu(data->sge_list[0].lkey);
-	rlen = be32_to_cpu(data->sge_list[0].length);
+	raddr = be64_to_cpu(data->rdma.sge_list[0].addr);
+	rkey = be32_to_cpu(data->rdma.sge_list[0].lkey);
+	rlen = be32_to_cpu(data->rdma.sge_list[0].length);
 
 	if (debug)
 		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
@@ -758,7 +758,7 @@ static int tgt_rdma_desc(xt_t *xt)
 	sge.lkey = xt->indir_mr->ibmr->lkey;
 	sge.length = rlen;
 
-	atomic_set(&xt->rdma_comp, 1);
+	atomic_set(&xt->rdma.rdma_comp, 1);
 
 	rdma_buf = tgt_alloc_rdma_buf(xt);
 	if (!rdma_buf) {
@@ -791,9 +791,9 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 
 	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
 
-	xt->cur_rem_sge = xt->indir_sge;
-	xt->cur_rem_off = 0;
-	xt->num_rem_sge = (be32_to_cpu(data->sge_list[0].length)) /
+	xt->rdma.cur_rem_sge = xt->indir_sge;
+	xt->rdma.cur_rem_off = 0;
+	xt->rdma.num_rem_sge = (be32_to_cpu(data->rdma.sge_list[0].length)) /
 			  sizeof(struct ibv_sge);
 
 	if (tgt_rdma_init_loc_off(xt))
@@ -815,7 +815,7 @@ static int tgt_data_in(xt_t *xt)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
-		err = copy_in(xt, me, data->data);
+		err = copy_in(xt, me, data->immediate.data);
 		if (err)
 			return STATE_TGT_ERROR;
 
@@ -823,13 +823,13 @@ static int tgt_data_in(xt_t *xt)
 		break;
 	case DATA_FMT_DMA:
 		/* Read from SG list provided directly in request */
-		xt->cur_rem_sge = &data->sge_list[0];
-		xt->cur_rem_off = 0;
-		xt->num_rem_sge = be32_to_cpu(data->num_sge);
+		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
+		xt->rdma.cur_rem_off = 0;
+		xt->rdma.num_rem_sge = be32_to_cpu(data->rdma.num_sge);
 
 		if (debug)
 			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
-				xt->cur_rem_sge, (int)xt->num_rem_sge);
+				xt->rdma.cur_rem_sge, (int)xt->rdma.num_rem_sge);
 
 		if (tgt_rdma_init_loc_off(xt))
 			return STATE_TGT_ERROR;
@@ -872,7 +872,7 @@ static int tgt_atomic_data_in(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
-	err = atomic_in(xt, me, data->data);
+	err = atomic_in(xt, me, data->immediate.data);
 	if (err)
 		return STATE_TGT_ERROR;
 
@@ -892,7 +892,7 @@ static int tgt_swap_data_in(xt_t *xt)
 
 	opr.u64 = xt->operand;
 	dst.u64 = 0;
-	d = (union datatype *)data->data;
+	d = (union datatype *)data->immediate.data;
 
 	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
