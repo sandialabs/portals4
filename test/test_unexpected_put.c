@@ -49,23 +49,27 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                 if (verb) {
                     printf("%i ", (int)myself.rank);
                     switch (event.type) {
-                        case PTL_EVENT_GET:             printf("GET: "); break;
-                        case PTL_EVENT_PUT:             printf("PUT: "); break;
-                        case PTL_EVENT_PUT_OVERFLOW:    printf("PUT-OVERFLOW: "); break;
-                        case PTL_EVENT_ATOMIC:          printf("ATOMIC: "); break;
-                        case PTL_EVENT_ATOMIC_OVERFLOW: printf("ATOMIC-OVERFLOW: "); break;
-                        case PTL_EVENT_REPLY:           printf("REPLY: "); break;
-                        case PTL_EVENT_SEND:            printf("SEND: "); break;
-                        case PTL_EVENT_ACK:             printf("ACK: "); break;
-                        case PTL_EVENT_PT_DISABLED:     printf("PT-DISABLED: "); break;
-                        case PTL_EVENT_AUTO_UNLINK:     printf("UNLINK: "); break;
-                        case PTL_EVENT_AUTO_FREE:       printf("FREE: "); break;
-                        case PTL_EVENT_SEARCH:          printf("SEARCH: "); break;
+                        case PTL_EVENT_GET:                   printf("GET: "); break;
+                        case PTL_EVENT_GET_OVERFLOW:          printf("GET-OVERFLOW: "); break;
+                        case PTL_EVENT_PUT:                   printf("PUT: "); break;
+                        case PTL_EVENT_PUT_OVERFLOW:          printf("PUT-OVERFLOW: "); break;
+                        case PTL_EVENT_ATOMIC:                printf("ATOMIC: "); break;
+                        case PTL_EVENT_ATOMIC_OVERFLOW:       printf("ATOMIC-OVERFLOW: "); break;
+                        case PTL_EVENT_FETCH_ATOMIC:          printf("FETCHATOMIC: "); break;
+                        case PTL_EVENT_FETCH_ATOMIC_OVERFLOW: printf("FETCHATOMIC-OVERFLOW: "); break;
+                        case PTL_EVENT_REPLY:                 printf("REPLY: "); break;
+                        case PTL_EVENT_SEND:                  printf("SEND: "); break;
+                        case PTL_EVENT_ACK:                   printf("ACK: "); break;
+                        case PTL_EVENT_PT_DISABLED:           printf("PT-DISABLED: "); break;
+                        case PTL_EVENT_AUTO_UNLINK:           printf("UNLINK: "); break;
+                        case PTL_EVENT_AUTO_FREE:             printf("FREE: "); break;
+                        case PTL_EVENT_SEARCH:                printf("SEARCH: "); break;
                     }
                 }
                 switch (event.type) {
                     case PTL_EVENT_SEARCH:
                     case PTL_EVENT_GET:
+                    case PTL_EVENT_GET_OVERFLOW:
                     case PTL_EVENT_PUT:
                     case PTL_EVENT_PUT_OVERFLOW:
                         /* target */
@@ -86,6 +90,8 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                         break;
                     case PTL_EVENT_ATOMIC:
                     case PTL_EVENT_ATOMIC_OVERFLOW:
+                    case PTL_EVENT_FETCH_ATOMIC:
+                    case PTL_EVENT_FETCH_ATOMIC_OVERFLOW:
                         /* target */
                         if (verb) {
                             printf("initiator.rank(%u), ", (unsigned)event.initiator.rank);
