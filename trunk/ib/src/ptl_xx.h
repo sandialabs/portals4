@@ -29,10 +29,12 @@ enum {
 };
 
 struct xremote {
-	struct ibv_qp *qp;					   /* from RDMA CM */
+	struct {
+		struct ibv_qp *qp;					   /* from RDMA CM */
 #ifdef USE_XRC
-	uint32_t xrc_remote_srq_num;
+		uint32_t xrc_remote_srq_num;
 #endif
+	} rdma;
 };
 
 #define PTL_BASE_XX					\
@@ -237,11 +239,13 @@ static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 	ni_t *ni = to_ni(xi);
 #endif
 
-	xi->dest.qp = connect->cm_id->qp;
+	if (connect->cm_id) {
+		xi->dest.rdma.qp = connect->cm_id->qp;
 #ifdef USE_XRC
-	if (ni->options & PTL_NI_LOGICAL)
-		xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
+		if (ni->options & PTL_NI_LOGICAL)
+			xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
 #endif
+	}
 }
 
 static inline void set_xt_dest(xt_t *xt, conn_t *connect)
@@ -250,11 +254,13 @@ static inline void set_xt_dest(xt_t *xt, conn_t *connect)
 	ni_t *ni = to_ni(xt);
 #endif
 
-	xt->dest.qp = connect->cm_id->qp;
+	if (connect->cm_id) {
+		xt->dest.rdma.qp = connect->cm_id->qp;
 #ifdef USE_XRC
-	if (ni->options & PTL_NI_LOGICAL)
-		xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
+		if (ni->options & PTL_NI_LOGICAL)
+			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
 #endif
+	}
 }
 
 #endif /* PTL_XX_H */

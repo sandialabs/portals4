@@ -29,7 +29,7 @@ int send_message(buf_t *buf, int signaled)
 
 	pthread_spin_lock(&xi->send_list_lock);
 
-	err = ibv_post_send(buf->dest->qp, &buf->rdma.send_wr, &bad_wr);
+	err = ibv_post_send(buf->dest->rdma.qp, &buf->rdma.send_wr, &bad_wr);
 	if (err) {
 		pthread_spin_unlock(&xi->send_list_lock);
 

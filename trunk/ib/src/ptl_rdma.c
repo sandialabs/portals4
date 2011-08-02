@@ -49,7 +49,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.xrc_remote_srq_num = rdma_buf->dest->xrc_remote_srq_num;
 #endif
 
-	err = ibv_post_send(rdma_buf->dest->qp, &wr, &bad_wr);
+	err = ibv_post_send(rdma_buf->dest->rdma.qp, &wr, &bad_wr);
 	if (err) {
 		WARN();
 		if (comp) {
@@ -115,7 +115,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	wr.xrc_remote_srq_num = rdma_buf->dest->xrc_remote_srq_num;
 #endif
 
-	err = ibv_post_send(rdma_buf->dest->qp, &wr, &bad_wr);
+	err = ibv_post_send(rdma_buf->dest->rdma.qp, &wr, &bad_wr);
 	if (err) {
 		WARN();
 		if (comp) {
