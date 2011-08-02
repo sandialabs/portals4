@@ -355,38 +355,42 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                     // check permissions
                     if (me->options & PTL_ME_AUTH_USE_JID) {
                         if (me->ac_id.jid == PTL_JID_NONE) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                         if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                     } else {
                         EXT_UID;
                         if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
+                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                             goto permission_violation;
                         }
                     }
-                    switch (cur->hdr.type) {
+                    switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                         case HDR_TYPE_PUT:
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
                             if ((me->options & PTL_ME_OP_PUT) == 0) {
+                                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
                     }
-                    switch (cur->hdr.type) {
+                    switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
                             if ((me->options & PTL_ME_OP_GET) == 0) {
+                                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
                     }
                     if (0) {
                         ptl_internal_buffered_header_t *tmp;
 permission_violation:
-                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                         tmp            = cur;
                         prev->hdr.next = cur->hdr.next;
                         cur            = prev;
@@ -641,38 +645,38 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
             // (1) check permissions
             if (me->options & PTL_ME_AUTH_USE_JID) {
                 if (me->ac_id.jid == PTL_JID_NONE) {
-                    goto permission_violationPO;
+                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                    continue;
                 }
                 if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
-                    goto permission_violationPO;
+                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                    continue;
                 }
             } else {
                 EXT_UID;
                 if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
-                    goto permission_violationPO;
+                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
+                    continue;
                 }
             }
-            switch (cur->hdr.type) {
+            switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                 case HDR_TYPE_PUT:
                 case HDR_TYPE_ATOMIC:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
                     if ((me->options & PTL_ME_OP_PUT) == 0) {
-                        goto permission_violationPO;
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
+                        continue;
                     }
             }
-            switch (cur->hdr.type) {
+            switch (cur->hdr.type & HDR_TYPE_BASICMASK) {
                 case HDR_TYPE_GET:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
                     if ((me->options & PTL_ME_OP_GET) == 0) {
-                        goto permission_violationPO;
+                        (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
+                        continue;
                     }
-            }
-            if (0) {
-permission_violationPO:
-                (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                continue;
             }
             found = 1;
             if (ptl_search_op == PTL_SEARCH_DELETE) {
@@ -703,7 +707,7 @@ permission_violationPO:
                     if (ptl_search_op == PTL_SEARCH_ONLY) {
                         e.type = PTL_EVENT_SEARCH;
                     } else {
-                        switch(cur->hdr.type) {
+                        switch(cur->hdr.type & HDR_TYPE_BASICMASK) {
                             case 0: /* put */
                                 e.type = PTL_EVENT_PUT_OVERFLOW;
                                 break;
@@ -1002,14 +1006,17 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
         // check permissions on the ME
         if (me.options & PTL_ME_AUTH_USE_JID) {
             if (me.ac_id.jid == PTL_JID_NONE) {
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                 goto permission_violation;
             }
             if (CHECK_JID(me.ac_id.jid, hdr->jid)) {
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                 goto permission_violation;
             }
         } else {
             EXT_UID;
             if (CHECK_UID(me.ac_id.uid, the_ptl_uid)) {
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
                 goto permission_violation;
             }
         }
@@ -1019,6 +1026,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
                 if ((me.options & PTL_ME_OP_PUT) == 0) {
+                    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto permission_violation;
                 }
         }
@@ -1026,15 +1034,13 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
-                if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) ==
-                    0) {
+                if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
+                    (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto permission_violation;
                 }
         }
         if (0) {
 permission_violation:
-            (void)PtlInternalAtomicInc(&nit.regs[hdr->ni]
-                                       [PTL_SR_PERMISSIONS_VIOLATIONS], 1);
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
             return (ptl_pid_t)3;
