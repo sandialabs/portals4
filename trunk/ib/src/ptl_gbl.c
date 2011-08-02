@@ -189,7 +189,7 @@ static void dump_everything(int unused)
 
 				printf("  XT %x\n", xt_to_handle(xt));
 				printf("    state = %d\n", xt->state);
-				printf("    rdma_comp = %d\n", xt->rdma_comp);
+				printf("    rdma_comp = %d\n", xt->rdma.rdma_comp);
 				printf("    rdma_dir = %d\n", xt->rdma_dir);
 				printf("    put_resid = %ld\n", xt->put_resid);
 				printf("    get_resid = %ld\n", xt->get_resid);
