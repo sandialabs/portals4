@@ -627,7 +627,6 @@ permission_violationPO:
             }
         }
     }
-done_searching:
     if (!found) {
         if (t->EQ != PTL_EQ_NONE) {
             ptl_internal_event_t e;
@@ -651,9 +650,10 @@ done_searching:
             e.start         = 0;
             e.user_ptr      = user_ptr;
             e.hdr_data      = 0;
-            e.ni_fail_type  = PTL_NI_UNDELIVERABLE;
+            e.ni_fail_type  = PTL_NI_NO_MATCH;
         }
     }
+done_searching:
     PTL_LOCK_UNLOCK(t->lock);
     return PTL_OK;
 }
