@@ -44,12 +44,12 @@ ptl_ni_limits_t    nit_limits[4];
 
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
-int API_FUNC PtlNIInit(ptl_interface_t         iface,
-                       unsigned int            options,
-                       ptl_pid_t               pid,
-                       ptl_ni_limits_t        *desired,
-                       ptl_ni_limits_t        *actual,
-                       ptl_handle_ni_t        *ni_handle)
+int API_FUNC PtlNIInit(ptl_interface_t  iface,
+                       unsigned int     options,
+                       ptl_pid_t        pid,
+                       ptl_ni_limits_t *desired,
+                       ptl_ni_limits_t *actual,
+                       ptl_handle_ni_t *ni_handle)
 {   /*{{{*/
     ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
     ptl_table_entry_t              *tmp;
@@ -323,6 +323,63 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
     }
     return PTL_OK;
 } /*}}}*/
+
+int API_FUNC PtlSetMap(ptl_interface_t iface,
+                       ptl_size_t      map_size,
+                       ptl_process_t  *mapping)
+{
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        return PTL_NO_INIT;
+    }
+    if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
+        VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
+        return PTL_ARG_INVALID;
+    }
+    if (map_size == 0) {
+        VERBOSE_ERROR("Input map_size is zero\n");
+        return PTL_ARG_INVALID;
+    }
+    if (mapping == NULL) {
+        VERBOSE_ERROR("Input mapping is NULL\n");
+        return PTL_ARG_INVALID;
+    }
+#endif
+    /* The mapping in the shmem Portals4 implementation is fixed and static. It cannot be changed. */
+    return PTL_OK;
+}
+
+int API_FUNC PtlGetMap(ptl_interface_t iface,
+        ptl_size_t map_size,
+        ptl_process_t *mapping,
+        ptl_size_t *actual_map_size)
+{
+#ifndef NO_ARG_VALIDATION
+    if (comm_pad == NULL) {
+        return PTL_NO_INIT;
+    }
+    if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
+        VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
+        return PTL_ARG_INVALID;
+    }
+    if (map_size == 0 && (mapping != NULL || actual_map_size == NULL)) {
+        VERBOSE_ERROR("Input map_size is zero\n");
+        return PTL_ARG_INVALID;
+    }
+    if (mapping == NULL && (map_size != 0 || actual_map_size == NULL)) {
+        VERBOSE_ERROR("Output mapping ptr is NULL\n");
+        return PTL_ARG_INVALID;
+    }
+#endif
+    if (actual_map_size != NULL) {
+        *actual_map_size = num_siblings;
+    }
+    for (int i = 0; i < map_size && i < num_siblings; ++i) {
+        mapping[i].phys.nid = 0;
+        mapping[i].phys.pid = (ptl_pid_t)i;
+    }
+    return PTL_OK;
+}
 
 int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
 {   /*{{{*/
