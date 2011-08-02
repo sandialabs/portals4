@@ -413,6 +413,9 @@ typedef unsigned char ptl_ni_fail_t;
  * violation for this message. */
 #define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
 
+/*! Indicates that the search did not find an entry in the unexpected list */
+#define PTL_NI_NO_MATCH         ((ptl_ni_fail_t) 5)
+
 /*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
 #define PTL_TARGET_BIND_INACCESSIBLE (1<<0)
 
