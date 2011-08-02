@@ -1071,8 +1071,7 @@ typedef enum {
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
 #define PTL_LE_EVENT_CT_COMM            PTL_ME_EVENT_CT_COMM
 
-/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). */
+/*! Enable the counting of overflow events. */
 #define PTL_LE_EVENT_CT_OVERFLOW        PTL_ME_EVENT_CT_OVERFLOW
 
 /*! By default, counting events count events. When set, this option causes
@@ -1174,34 +1173,30 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  *      unexpected list as PtlLEAppend(); however, the list entry specified in
  *      the PtlLESearch() call is never linked into a priority list.
  *
- *      The PtlLESearch() function can be called in two modes. If
- *      ptl_search_op_t is set to PTL_SEARCH_ONLY, the unexpected list is
- *      searched to support the MPI_Probe functionality. If ptl_search_op_t is
- *      set to PTL_SEARCH_DELETE, the unexpected list is searched and any
- *      matching items are deleted. A search of the overflow list will always
- *      generate an event. When used with PTL_SEARCH_ONLY, a PTL_EVENT_SEARCH
- *      event is always generated. If a matching message was found in the
- *      overflow list, PTL_NI_OK is returned in the event. Otherwise, the event
- *      indicates that the search operation failed. When used with
- *      PTL_SEARCH_DELETE, the event that is generated corresponds to the type
- *      of operation that is found (e.g. PTL_EVENT_PUT_OVERFLOW or
- *      PTL_EVENT_ATOMIC_OVERFLOW). If no operation is found, a
- *      PTL_EVENT_SEARCH is generated with a failure indication.
+ *      The PtlLESearch() function can be called in two modes. If \a ptl_search_op
+ *      is set to PTL_SEARCH_ONLY, the unexpected list is searched to support
+ *      the MPI_Probe functionality. If \a ptl_search_op is set to
+ *      PTL_SEARCH_DELETE, the unexpected list is searched and any matching
+ *      items are deleted. A search of the unexpected list will \e always
+ *      generate a detailed event. When used with PTL_SEARCH_ONLY, a
+ *      PTL_EVENT_SEARCH detailed event is always generated. If a matching
+ *      message was found in the unexpected list, PTL_NI_OK is returned in the
+ *      detailed event. Otherwise, the detailed event indicates that the search
+ *      operation failed. When used with PTL_SEARCH_DELETE, the event that is
+ *      generated corresponds to the type of operation that is found (e.g.
+ *      PTL_EVENT_PUT_OVERFLOW or PTL_EVENT_ATOMIC_OVERFLOW). If no operation
+ *      is found, a PTL_EVENT_SEARCH is generated with a failure indication of
+ *      \c PTL_NI_NO_MATCH. If the list entry specified in the PtlLESearch()
+ *      call is persistent, an event is generated for every match in the
+ *      unexpected list.
  *
  *      Event generation for the search function works just as it would for an
- *      append function. If a search is performed with events disabled (either
- *      through option or through the absence of an event queue on the portal
- *      table entry), the search will succeed, but no events will be generated.
- *      Status registers, however, are handled slightly differently for a
- *      search in that a PtlLESearch()never causes a status register to be
- *      incremented.
- * @implnote When a persistent LE (or ME) is used to search a list, the entire
- *      overflow list is traversed and multiple matches can be found. This is
- *      because messages arriving in the overflow list are treated like
- *      messages that match in the priority list: a persistent ME/LE would be
- *      able to match multiple incoming messages if it were in the priority
- *      list; hence, it should be able to match multiple unexpected messages in
- *      the overflow list.
+ *      append function. If a search is performed with detailed events disabled
+ *      (either through option or through the absence of an event queue on the
+ *      portal table entry), the search will succeed, but no detailed events
+ *      will be generated. Status registers, however, are handled slightly
+ *      differently for a search in that a PtlLESearch()never causes a status
+ *      register to be incremented.
  * @note Searches with persistent entries could have unexpected performance and
  *      resource usage characteristics if a large overflow list has
  *      accumulated, since a PtlLESearch() that uses a persistent LE can cause
@@ -1283,7 +1278,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 #define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<7)
 
 /*! Specifies that this match list entry should not generate overflow list
- * events (\c PTL_EVENT_PUT_OVERFLOW events). */
+ * events. */
 #define PTL_ME_EVENT_OVER_DISABLE       (1<<8)
 
 /*! Specifies that this match list entry should not generate unlink (\c
@@ -1294,9 +1289,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
 #define PTL_ME_EVENT_CT_COMM            (1<<10)
 
-/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). When an overflow event would be posted, the
- * count is incremented by the \a mlength (modified length). */
+/*! Enable the counting of overflow events. */
 #define PTL_ME_EVENT_CT_OVERFLOW        (1<<11)
 
 /*! By default, counting events count events. When set, this option causes
@@ -1999,9 +1992,13 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *            void *            user_ptr)
  * @brief Perform a \e get operation.
  * @details Initiates a remote read operation. There are two events associated
- *      with a get operation. When the data is sent from the \e target node, a
- *      \c PTL_EVENT_GET event is registered on the \e target node. When the
- *      data is returned from the \e target node, a \c PTL_EVENT_REPLY event is
+ *      with a get operation. When the data is sent from the \e target node if
+ *      the message matched in the priority list. The message can also match in
+ *      the overflow list, which will cause a \c PTL_EVENT_GET event to be
+ *      registered on the \e target node and will later cause a \c
+ *      PTL_EVENT_GET_OVERFLOW to be registered on the \e target node when a
+ *      matching entry is appended. In either case, when the data is returned
+ *      from the \e target node, a \c PTL_EVENT_REPLY event is
  *      registered on the \e initiator node.
  *
  *      The local (\e initiator) offset is used to determine the starting
@@ -2501,47 +2498,52 @@ int PtlAtomicSync(void);
  *      eventually be posted.
  */
 typedef enum {
-    /*! A previously initiated \p get operation completed successfully. */
+    /*! A \p get operation completed on the \e target. Portals will not read
+     * from memory on behalf of this operation once this event has been logged.
+     */
     PTL_EVENT_GET,
 
-    /*! A previously initiated \p put operation completed successfully. The
-     * underlying layers will not alter the memory (on behalf of this
-     * operation) once this event has been logged. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p get
+     * header in the unexpected list. */
+    PTL_EVENT_GET_OVERFLOW,
+
+    /*! A \p put operation completed at the \e target. Portals will not alter
+     * the memory (on behalf of this operation) once this event has been
+     * logged. */
     PTL_EVENT_PUT,
 
-    /*! A match list entry posted by PtMEAppend() matched a message that has
-     * already arrived and is managed within the overflow list. All, some, or
-     * none of the message may have been captured in local memory as requested
-     * by the match list entry and described by the \a rlength and \a mlength
-     * in the event. The event will point to the start of the message in the
-     * memory region described by the match list entry from the overflow list,
-     * if any of the message was captured. When the \a rlength and \a mlength
-     * fields do not match (i.e. the message was truncated), the application is
-     * responsible for performing the remaining transfer. This typically occurs
-     * when the application has provided an overflow list entry designed to
-     * accept headers but not message bodies. The transfer is typically done by
-     * the initiator creating a match list entry using a unique set of bits and
-     * then placing the match bits in the \a hdr_data field. The target can
-     * then use the \a hdr_data field (along with other information in the
-     * event) to retrieve the message. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p put
+     * header in the unexpected list. */
     PTL_EVENT_PUT_OVERFLOW,
 
-    /*! A previously initiated \p atomic operation completed successfully. */
+    /*! An \p atomic operation that does not return data to the \e initiator
+     * completed at the \e target. Portals will not read from or alter memory
+     * on behalf of this operation once this event has been logged. */
     PTL_EVENT_ATOMIC,
 
-    /*! A match list entry posted by PtlMEAppend() matched an atomic operation
-     * message that has already arrived and is managed within the overflow
-     * list. The behavior is the same as with the \c PTL_EVENT_PUT_OVERFLOW. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+     * header in the unexpected list for an operation which does not return
+     * data to the \e initiator. */
     PTL_EVENT_ATOMIC_OVERFLOW,
 
-    /*! A previously initiated \p reply operation has completed successfully.
-     * This event is logged after the data (if any) from the reply has been
-     * written into the memory descriptor. */
+    /*! An \p atomic operation that returns data to the \e initiator completed
+     * at the \e target. Portals will not read from or alter memory on behalf
+     * of this operation once this event has been logged. */
+    PTL_EVENT_FETCH_ATOMIC,
+
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+     * header in the unexpected list for an operation which returns data to the
+     * \e initiator. */
+    PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+
+    /*! A \p reply operation has completed at the \e initiator. This event is
+     * logged after the data (if any) from the reply has been written into the
+     * memory descriptor. */
     PTL_EVENT_REPLY,
 
-    /*! A previously initiated \p send operation has completed. This event is
-     * logged after the entire buffer has been sent and it is safe to reuse the
-     * buffer. */
+    /*! A \p send operation has completed at the \e initiator. This event is
+     * logged after it is safe to reuse the buffer, but does not mean the
+     * message has been processed by the \e target. */
     PTL_EVENT_SEND,
 
     /*! An \p acknowledgment was received. This event is logged when the
@@ -2550,23 +2552,32 @@ typedef enum {
      * local completion has also occurred. */
     PTL_EVENT_ACK,
 
-    /*! Resource exhaustion has occurred on this portal table entry. */
+    /*! Resource exhaustion has occurred on this portal table entry, which has
+     * entered a flow control situation. */
     PTL_EVENT_PT_DISABLED,
 
-    /*! A match list entry was unlinked. */
+    /*! A list entry/match list entry was automatically unlinked. A \c
+     * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match
+     * list entry passed into the PtlLEAppend()/PtlMEAppend() operation was
+     * marked with the \c PTL_LE_USE_ONCE / \c PTL_ME_USE_ONCE option and found
+     * a corresponding unexpected message before being "linked" into the
+     * priority list. */
     PTL_EVENT_AUTO_UNLINK,
 
-    /*! A match list entry in the overflow list that was previously unlinked is
-     * now free to be reused by the application. */
+    /*! A list entry/match list entry previously automatically unlinked from
+     * the overflow list is now free to be reused by the application. A \c
+     * PTL_EVENT_AUTO_FREE event is generated when Portals will not generate
+     * any further events which resulted from messages delivered into the
+     * specified overflow list entry. This also indicates that the unexpected
+     * list contains no more items associated with this entry. */
     PTL_EVENT_AUTO_FREE,
 
-    /*! A previously initiated PtlMEAppend() call that was set to "probe only"
-     * completed. If a match message was found in the overflow list, \c
-     * PTL_NI_OK is returned in the \a ni_fail_type field of the event and the
-     * event queue entries are filled in as if it were a \c
-     * PTL_EVENT_PUT_OVERFLOW event. Otherwise, a failure is recorded in the \a
-     * ni_fail_type field, and the \a user_ptr is filled in correctly, and the
-     * other fields are undefined. */
+    /*! A PtlLESearch() or PtlMESearch() call completed. If a matching message was
+     * found in the overflow list, \c PTL_NI_OK is returned in the \a
+     * ni_fail_type field of the event and the event queue entries are filled
+     * in as if it were an overflow event. Otherwise, a failure is recorded in
+     * the \a ni_fail_type field using \c PTL_NI_NO_MATCH, the \a user_ptr is
+     * filled in correctly, and the other fields are undefined. */
     PTL_EVENT_SEARCH
 } ptl_event_kind_t;
 /*!
