@@ -327,7 +327,7 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
 int API_FUNC PtlSetMap(ptl_interface_t iface,
                        ptl_size_t      map_size,
                        ptl_process_t  *mapping)
-{
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -344,16 +344,16 @@ int API_FUNC PtlSetMap(ptl_interface_t iface,
         VERBOSE_ERROR("Input mapping is NULL\n");
         return PTL_ARG_INVALID;
     }
-#endif
-    /* The mapping in the shmem Portals4 implementation is fixed and static. It cannot be changed. */
+#endif /* ifndef NO_ARG_VALIDATION */
+       /* The mapping in the shmem Portals4 implementation is fixed and static. It cannot be changed. */
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlGetMap(ptl_interface_t iface,
-        ptl_size_t map_size,
-        ptl_process_t *mapping,
-        ptl_size_t *actual_map_size)
-{
+                       ptl_size_t      map_size,
+                       ptl_process_t  *mapping,
+                       ptl_size_t     *actual_map_size)
+{   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
@@ -362,15 +362,15 @@ int API_FUNC PtlGetMap(ptl_interface_t iface,
         VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
         return PTL_ARG_INVALID;
     }
-    if (map_size == 0 && (mapping != NULL || actual_map_size == NULL)) {
+    if ((map_size == 0) && ((mapping != NULL) || (actual_map_size == NULL))) {
         VERBOSE_ERROR("Input map_size is zero\n");
         return PTL_ARG_INVALID;
     }
-    if (mapping == NULL && (map_size != 0 || actual_map_size == NULL)) {
+    if ((mapping == NULL) && ((map_size != 0) || (actual_map_size == NULL))) {
         VERBOSE_ERROR("Output mapping ptr is NULL\n");
         return PTL_ARG_INVALID;
     }
-#endif
+#endif /* ifndef NO_ARG_VALIDATION */
     if (actual_map_size != NULL) {
         *actual_map_size = num_siblings;
     }
@@ -379,7 +379,7 @@ int API_FUNC PtlGetMap(ptl_interface_t iface,
         mapping[i].phys.pid = (ptl_pid_t)i;
     }
     return PTL_OK;
-}
+} /*}}}*/
 
 int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
 {   /*{{{*/
