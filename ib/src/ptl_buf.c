@@ -14,6 +14,7 @@ int buf_setup(void *arg)
 	buf->num_mr = 0;
 	buf->xt = NULL;
 	buf->rdma.comp = 0;
+	buf->data = buf->internal_data;
 
 	return PTL_OK;
 }
@@ -47,7 +48,7 @@ int buf_init(void *arg, void *parm)
 	buf->rdma.send_wr.sg_list = buf->rdma.sg_list;
 	buf->rdma.send_wr.num_sge = 1;
 
-	buf->rdma.sg_list[0].addr = (uintptr_t)buf->data;
+	buf->rdma.sg_list[0].addr = (uintptr_t)buf->internal_data;
 	buf->rdma.sg_list[0].lkey = mr->lkey;
 
 	return 0;
@@ -61,7 +62,7 @@ void buf_dump(buf_t *buf)
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	printf("buf: %p\n", buf);
-	printf("buf->size	= %d\n", sizeof(buf->data));
+	printf("buf->size	= %d\n", BUF_DATA_SIZE);
 	printf("buf->length	= %d\n", buf->length);
 	printf("hdr->version	= %d\n", hdr->version);
 	printf("hdr->operation	= %d\n", hdr->operation);
@@ -86,7 +87,7 @@ int ptl_post_recv(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	buf->rdma.sg_list[0].length = sizeof(buf->data);
+	buf->rdma.sg_list[0].length = BUF_DATA_SIZE;
 	buf->type = BUF_RECV;
 
 	pthread_spin_lock(&ni->recv_list_lock);
