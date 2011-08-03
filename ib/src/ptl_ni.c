@@ -122,7 +122,7 @@ static void ni_rcqp_stop(ni_t *ni)
 				&& connect->state != CONN_STATE_XRC_CONNECTED
 #endif
 				) {
-				rdma_disconnect(connect->cm_id);
+				rdma_disconnect(connect->rdma.cm_id);
 			}
 			pthread_mutex_unlock(&connect->mutex);
 		}

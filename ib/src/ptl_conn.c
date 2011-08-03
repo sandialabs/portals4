@@ -15,6 +15,7 @@ void conn_init(ni_t *ni, conn_t *conn)
 
 	conn->ni = ni;
 	conn->state = CONN_STATE_DISCONNECTED;
+	conn->transport_type = CONN_TYPE_RDMA;
 
 	INIT_LIST_HEAD(&conn->xi_list);
 	INIT_LIST_HEAD(&conn->xt_list);
@@ -96,11 +97,11 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
 
-	conn->retry_resolve_addr = 3;
-	conn->retry_resolve_route = 3;
-	conn->retry_connect = 3;
+	conn->rdma.retry_resolve_addr = 3;
+	conn->rdma.retry_resolve_route = 3;
+	conn->rdma.retry_connect = 3;
 
-	if (rdma_create_id(ni->iface->cm_channel, &conn->cm_id,
+	if (rdma_create_id(ni->iface->cm_channel, &conn->rdma.cm_id,
 			   conn, RDMA_PS_TCP)) {
 		WARN();
 		return PTL_FAIL;
@@ -108,7 +109,7 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	conn->state = CONN_STATE_RESOLVING_ADDR;
 
-	if (rdma_resolve_addr(conn->cm_id, NULL,
+	if (rdma_resolve_addr(conn->rdma.cm_id, NULL,
 			      (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
@@ -157,7 +158,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		return PTL_FAIL;
 	}
 
-	conn->cm_id = event->id;
+	conn->rdma.cm_id = event->id;
 	event->id->context = conn;
 
 	memset(&conn_param, 0, sizeof conn_param);
@@ -251,7 +252,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 		return PTL_FAIL;
 	}
 
-	conn->cm_id = event->id;
+	conn->rdma.cm_id = event->id;
 	event->id->context = conn;
 
 	memset(&conn_param, 0, sizeof conn_param);
@@ -432,8 +433,8 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
 		pthread_mutex_lock(&conn->mutex);
 
-		if (conn->cm_id == event->id) {
-			if (rdma_resolve_route(conn->cm_id, get_param(PTL_RDMA_TIMEOUT))) {
+		if (conn->rdma.cm_id == event->id) {
+			if (rdma_resolve_route(conn->rdma.cm_id, get_param(PTL_RDMA_TIMEOUT))) {
 				//todo 
 				abort();
 			} else {
@@ -488,8 +489,8 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		pthread_mutex_lock(&conn->mutex);
 
-		if (conn->cm_id == event->id) {
-			if (rdma_create_qp(conn->cm_id, ni->iface->pd, &init)) {
+		if (conn->rdma.cm_id == event->id) {
+			if (rdma_create_qp(conn->rdma.cm_id, ni->iface->pd, &init)) {
 				WARN();
 				//todo
 				abort();
@@ -497,7 +498,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 				//goto err1;
 			}
 
-			if (rdma_connect(conn->cm_id, &conn_param)) {
+			if (rdma_connect(conn->rdma.cm_id, &conn_param)) {
 				//todo 
 				abort();
 			} else {

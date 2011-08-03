@@ -239,8 +239,8 @@ static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 	ni_t *ni = to_ni(xi);
 #endif
 
-	if (connect->cm_id) {
-		xi->dest.rdma.qp = connect->cm_id->qp;
+	if (connect->transport_type == CONN_TYPE_RDMA) {
+		xi->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
@@ -254,8 +254,8 @@ static inline void set_xt_dest(xt_t *xt, conn_t *connect)
 	ni_t *ni = to_ni(xt);
 #endif
 
-	if (connect->cm_id) {
-		xt->dest.rdma.qp = connect->cm_id->qp;
+	if (connect->transport_type == CONN_TYPE_RDMA) {
+		xt->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
