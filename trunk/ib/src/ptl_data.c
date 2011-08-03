@@ -131,7 +131,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		}
 
 		buf->length += sizeof(*data) + length;
-		assert(buf->length <= sizeof(buf->data));
+		assert(buf->length <= BUF_DATA_SIZE);
 	} 
 	else if (md->options & PTL_IOVEC) {
 		/* Find the index and offset of the first IOV as well as the
@@ -173,7 +173,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		/* Adjust the header offset for iov start. */
 		hdr->offset = cpu_to_be64(be64_to_cpu(hdr->offset) - iov_offset);
 
-		assert(buf->length <= sizeof(buf->data));
+		assert(buf->length <= BUF_DATA_SIZE);
 	} else {
 		void *addr;
 		

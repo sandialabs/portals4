@@ -16,6 +16,8 @@ typedef enum {
 	BUF_RDMA
 } buf_type_t;
 
+#define BUF_DATA_SIZE 1024
+
 typedef struct buf {
 	obj_t			obj;
 
@@ -33,7 +35,11 @@ typedef struct buf {
 	unsigned int		length;
 
 	/* Internal buffer for short messages (send or receive). */
-	uint8_t			data[1024];
+	uint8_t	internal_data[BUF_DATA_SIZE];
+
+	/* Usually points to internal_data, except with SHMEM where it
+	 * might be the data in another buffer */
+	uint8_t *data;
 
 	union {
 		struct {
