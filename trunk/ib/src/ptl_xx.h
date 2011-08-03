@@ -59,6 +59,7 @@ struct xremote {
 	uint32_t  		rdma_dir;		\
 	int			state;			\
 	int			next_state;		\
+	struct xremote		dest;		\
 	int			state_waiting;		\
 	unsigned		operation;		\
 	int			pkt_len;		\
@@ -99,11 +100,6 @@ typedef struct xi {
 	struct ct       *get_ct;
 	void			*user_ptr;
 	ptl_process_t		target;
-
-	/* This xi is waiting for connection to be established. */
-
-	struct xremote		dest;
-
 } xi_t;
 
 int xi_setup(void *arg);
@@ -177,8 +173,6 @@ typedef struct xt {
 
 	/* used to put xt on unexpected list */
 	struct list_head	unexpected_list;
-
-	struct xremote dest;
 
 	struct ibv_sge		*indir_sge;
 	mr_t			*indir_mr;
