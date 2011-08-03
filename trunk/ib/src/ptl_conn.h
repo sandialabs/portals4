@@ -19,6 +19,12 @@ enum {
 #endif
 };
 
+/* Transport type. */
+enum transport_type {
+	CONN_TYPE_NONE,
+	CONN_TYPE_RDMA,
+};
+
 /*
  * conn_t
  *	 per connection info
@@ -28,14 +34,21 @@ typedef struct conn {
 	pthread_mutex_t		mutex;
 	struct ni		*ni;
 	int			state;
-	struct rdma_cm_id	*cm_id;
 	struct sockaddr_in	sin;
-	int			retry_resolve_addr;
-	int			retry_resolve_route;
-	int			retry_connect;
 	struct list_head	xi_list;
 	struct list_head	xt_list;
 	pthread_spinlock_t	wait_list_lock;
+
+	enum transport_type transport_type;
+
+	union {
+		struct {
+			struct rdma_cm_id	*cm_id;
+			int			retry_resolve_addr;
+			int			retry_resolve_route;
+			int			retry_connect;
+		} rdma;
+	};
 
 	/* logical NI only */
 	struct list_head	list;
