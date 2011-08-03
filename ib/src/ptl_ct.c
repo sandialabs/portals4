@@ -526,6 +526,17 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	list_for_each_prev_safe(l, t, &ct->xi_list) {
 		xi_t *xi = list_entry(l, xi_t, list);
 		list_del(l);
+
+		if (xi->get_md) {
+			md_put(xi->get_md);
+			xi->get_md = NULL;
+		}
+
+		if (xi->put_md) {
+			md_put(xi->put_md);
+			xi->put_md = NULL;
+		}
+
 		xi_put(xi);
 	}
 
