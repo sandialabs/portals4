@@ -346,7 +346,7 @@
             <ptl_me me_opt="OP_PUT">
               <ptl_md>
                 <ptl_ct>
-                  <ptl_trig_put target_id="SELF"/>
+                  <ptl_trig_put target_id="SELF" threshold="1"/>
                   <ptl_ct_cancel_trig/>
                 </ptl_ct>
               </ptl_md>
