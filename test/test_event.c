@@ -181,6 +181,8 @@ int main(int   argc,
                             assert(event.remote_offset == event.initiator.rank % sizeof(uint64_t));
                             assert(event.user_ptr == (void *)(0xcafecafe00UL + myself.rank));
                             switch (event.type) {
+                                default:
+                                    break;
                                 case PTL_EVENT_PUT:
                                 case PTL_EVENT_PUT_OVERFLOW:
                                 case PTL_EVENT_ATOMIC:
