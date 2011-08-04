@@ -171,40 +171,38 @@ static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restric
 # define HDRJID(hdr) ((ptl_internal_uid_t)PTL_JID_NONE)
 #endif
 
-#define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do {               \
-        EXT_UID;                                                  \
-        e.pt_index      = hdr->pt_index;                          \
-        e.uid           = HDRUID;                                 \
-        e.jid           = HDRJID(hdr);                            \
-        e.match_bits    = hdr->match_bits;                        \
-        e.rlength       = hdr->length;                            \
-        e.mlength       = 0;                                      \
-        e.remote_offset = hdr->dest_offset;                       \
-        e.user_ptr      = uptr;                                   \
-        e.ni_fail_type  = PTL_NI_OK;                              \
-        if (hdr->ni <= 1) {            /* Logical */              \
-            e.initiator.rank = hdr->src;                          \
-        } else {                       /* Physical */             \
-            e.initiator.phys.pid = hdr->src;                      \
-            e.initiator.phys.nid = 0;                             \
-        }                                                         \
-        switch (hdr->type & HDR_TYPE_BASICMASK) {                 \
-            case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT;            \
-                e.hdr_data            = hdr->hdr_data;            \
-                break;                                            \
-            case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC;      \
-                e.hdr_data               = hdr->hdr_data;         \
-                break;                                            \
-            case HDR_TYPE_FETCHATOMIC: e.type = PTL_EVENT_ATOMIC; \
-                e.hdr_data                    = hdr->hdr_data;    \
-                break;                                            \
-            case HDR_TYPE_SWAP: e.type = PTL_EVENT_ATOMIC;        \
-                e.hdr_data             = hdr->hdr_data;           \
-                break;                                            \
-            case HDR_TYPE_GET: e.type = PTL_EVENT_GET;            \
-                e.hdr_data            = 0;                        \
-                break;                                            \
-        }                                                         \
+#define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do {          \
+        EXT_UID;                                             \
+        e.pt_index      = hdr->pt_index;                     \
+        e.uid           = HDRUID;                            \
+        e.jid           = HDRJID(hdr);                       \
+        e.match_bits    = hdr->match_bits;                   \
+        e.rlength       = hdr->length;                       \
+        e.mlength       = 0;                                 \
+        e.remote_offset = hdr->dest_offset;                  \
+        e.user_ptr      = uptr;                              \
+        e.ni_fail_type  = PTL_NI_OK;                         \
+        if (hdr->ni <= 1) {            /* Logical */         \
+            e.initiator.rank = hdr->src;                     \
+        } else {                       /* Physical */        \
+            e.initiator.phys.pid = hdr->src;                 \
+            e.initiator.phys.nid = 0;                        \
+        }                                                    \
+        switch (hdr->type & HDR_TYPE_BASICMASK) {            \
+            case HDR_TYPE_PUT: e.type = PTL_EVENT_PUT;       \
+                e.hdr_data            = hdr->hdr_data;       \
+                break;                                       \
+            case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
+                e.hdr_data               = hdr->hdr_data;    \
+                break;                                       \
+            case HDR_TYPE_SWAP:                              \
+            case HDR_TYPE_FETCHATOMIC:                       \
+                e.type     = PTL_EVENT_FETCH_ATOMIC;         \
+                e.hdr_data = hdr->hdr_data;                  \
+                break;                                       \
+            case HDR_TYPE_GET: e.type = PTL_EVENT_GET;       \
+                break;                                       \
+        }                                                    \
 } while (0)
 
 static int PtlInternalMarkMEReusable(const ptl_handle_me_t me_handle)
@@ -712,11 +710,14 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                                 e.type = PTL_EVENT_PUT_OVERFLOW;
                                 break;
                             case 1: /* get */
-                                abort();
+                                e.type = PTL_EVENT_GET_OVERFLOW;
+                                break;
                             case 2: /* atomic */
+                                e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                                break;
                             case 3: /* fetchatomic */
                             case 4: /* swap */
-                                e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                                e.type = PTL_EVENT_FETCH_ATOMIC_OVERFLOW;
                                 break;
                         }
                     }
@@ -1538,8 +1539,14 @@ static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_h
                     case PTL_EVENT_PUT:
                         e.type = PTL_EVENT_PUT_OVERFLOW;
                         break;
+                    case PTL_EVENT_GET:
+                        e.type = PTL_EVENT_GET_OVERFLOW;
+                        break;
                     case PTL_EVENT_ATOMIC:
                         e.type = PTL_EVENT_ATOMIC_OVERFLOW;
+                        break;
+                    case PTL_EVENT_FETCH_ATOMIC:
+                        e.type = PTL_EVENT_FETCH_ATOMIC_OVERFLOW;
                         break;
                     default:
                         UNREACHABLE;
