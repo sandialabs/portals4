@@ -324,16 +324,18 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
     return PTL_OK;
 } /*}}}*/
 
-int API_FUNC PtlSetMap(ptl_interface_t iface,
+int API_FUNC PtlSetMap(ptl_handle_ni_t ni_handle,
                        ptl_size_t      map_size,
                        ptl_process_t  *mapping)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t ni = { ni_handle };
+
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
-        VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
     if (map_size == 0) {
@@ -346,20 +348,22 @@ int API_FUNC PtlSetMap(ptl_interface_t iface,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
        /* The mapping in the shmem Portals4 implementation is fixed and static. It cannot be changed. */
-    return PTL_OK;
+    return PTL_IGNORED;
 } /*}}}*/
 
-int API_FUNC PtlGetMap(ptl_interface_t iface,
+int API_FUNC PtlGetMap(ptl_handle_ni_t ni_handle,
                        ptl_size_t      map_size,
                        ptl_process_t  *mapping,
                        ptl_size_t     *actual_map_size)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
+    const ptl_internal_handle_converter_t ni = { ni_handle };
+
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
-    if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
-        VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
     if ((map_size == 0) && ((mapping != NULL) || (actual_map_size == NULL))) {
