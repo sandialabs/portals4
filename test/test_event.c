@@ -180,7 +180,15 @@ int main(int   argc,
                             assert(event.rlength == sizeof(uint64_t) - event.remote_offset);
                             assert(event.remote_offset == event.initiator.rank % sizeof(uint64_t));
                             assert(event.user_ptr == (void *)(0xcafecafe00UL + myself.rank));
-                            assert(event.hdr_data == 0);
+                            switch (event.type) {
+                                case PTL_EVENT_PUT:
+                                case PTL_EVENT_PUT_OVERFLOW:
+                                case PTL_EVENT_ATOMIC:
+                                case PTL_EVENT_ATOMIC_OVERFLOW:
+                                case PTL_EVENT_FETCH_ATOMIC:
+                                case PTL_EVENT_FETCH_ATOMIC_OVERFLOW:
+                                    assert(event.hdr_data == 0);
+                            }
                             break;
                         case PTL_EVENT_REPLY:
                         case PTL_EVENT_SEND:
