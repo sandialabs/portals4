@@ -1254,8 +1254,10 @@ check_lengths:
                                                        me.length, me.options,
                                                        fragment_mlength, hdr);
             }
-            PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
-                                                (uintptr_t)report_this_start);
+            if ((me.options & PTL_ME_UNEXPECTED_HDR_DISABLE) == 0) {
+                PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
+                                                    (uintptr_t)report_this_start);
+            }
         }
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
