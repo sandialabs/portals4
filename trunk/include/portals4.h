@@ -22,6 +22,7 @@ enum ptl_retvals {
     PTL_EQ_DROPPED,     /*!< At least one event has been dropped. */
     PTL_EQ_EMPTY,       /*!< No events available in an event queue. */
     PTL_FAIL,           /*!< Indicates a non-specific error */
+    PTL_IGNORED,        /*!< Logical map set failed. */
     PTL_IN_USE,         /*!< The specified resource is currently in use. */
     PTL_INTERRUPTED,    /*!< Wait/get operation was interrupted. */
     PTL_LIST_TOO_LONG,  /*!< The resulting list is too long (interface-dependent). */
@@ -604,7 +605,7 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle,
 int PtlNIHandle(ptl_handle_any_t    handle,
                 ptl_handle_ni_t*    ni_handle);
 /*!
- * @fn PtlSetMap(ptl_interface_t iface,
+ * @fn PtlSetMap(ptl_handle_ni_t ni_handle,
  *               ptl_size_t      map_size,
  *               ptl_process_t  *mapping)
  * @brief Initialize the mapping from logical identifiers (rank) to physical
@@ -615,12 +616,12 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  *	PtlSetMap() will overwrite any mapping associated with the network
  *	interface; hence, libraries must take care to ensure reasonable
  *	interoperability.
- * @param[in] iface    Identifies the network interface to be initialized with
- *		       a map.
- * @param[in] map_size Contains the size of the map being passed in.
- * @param[in] mapping  Points to an array of ptl_process_t structures where
- *		       entry N in the array contains the NID/PID pair that is
- *		       associated with the logical rank N.
+ * @param[in] ni_handle The interface handle identifying the network interface
+ *			which should be initialized with \a mapping.
+ * @param[in] map_size	Contains the size of the map being passed in.
+ * @param[in] mapping	Points to an array of ptl_process_t structures where
+ *			entry N in the array contains the NID/PID pair that is
+ *			associated with the logical rank N.
  * @retval PTL_OK               Indicates success.
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -628,19 +629,23 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
  *				allocate the memory required to initialize the
  *				map.
+ * @retval PTL_IGNORED		Indicates that the implementation does not
+ *				support dynamic changing of the logical
+ *				identifier map, likely due to integration with
+ *				a static run-time system.
  */
-int PtlSetMap(ptl_interface_t iface,
+int PtlSetMap(ptl_handle_ni_t ni_handle,
 	      ptl_size_t      map_size,
 	      ptl_process_t  *mapping);
 /*!
- * @fn PtlGetMap(ptl_interface_t iface,
+ * @fn PtlGetMap(ptl_handle_ni_t ni_handle,
  *               ptl_size_t      map_size,
  *               ptl_process_t  *mapping,
  *               ptl_size_t     *actual_map_size)
  * @brief Retrieves the mapping from logical identifiers (rank) to physical
  *	identifiers (nid/pid).
- * @param[in] iface            Identifies the network interface to be
- *                             initialized with a map.
+ * @param[in] ni_handle        The network interface hadle from which the map
+ *			       should be retrieved.
  * @param[in] map_size	       Contains the size of the size of the buffer
  *			       being passed in elements.
  * @param[out] mapping         Points to an array of ptl_process_t structures
@@ -655,7 +660,7 @@ int PtlSetMap(ptl_interface_t iface,
  *                             successfully initialized.
  * @retval PTL_ARG_INVALID     Indicates that an invalid argument was passed.
  */
-int PtlGetMap(ptl_interface_t iface,
+int PtlGetMap(ptl_handle_ni_t ni_handle,
 	      ptl_size_t      map_size,
 	      ptl_process_t  *mapping,
 	      ptl_size_t     *actual_map_size);
