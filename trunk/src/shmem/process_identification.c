@@ -54,7 +54,7 @@ int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
             break;
         default:
             UNREACHABLE;
-            *(int *)0 = 0;             // should never happen
+            abort();
     }
     return PTL_OK;
 } /*}}}*/
