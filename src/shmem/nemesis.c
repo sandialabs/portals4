@@ -12,6 +12,7 @@
 /* Internal headers */
 #include "ptl_internal_assert.h"
 #include "ptl_internal_nemesis.h"
+#include "ptl_internal_commpad.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_visibility.h"
 
@@ -53,7 +54,7 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(NEMESIS_blocking_queue *re
                                                       NEMESIS_entry *restrict          f)
 {                                      /*{{{ */
     assert(f->next == NULL);
-    PtlInternalNEMESISOffsetEnqueue(&q->q, f);
+    PtlInternalNEMESISOffsetEnqueue((uintptr_t)comm_pad, &q->q, f);
     /* awake waiter */
 #ifndef USE_HARD_POLLING
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
@@ -77,11 +78,11 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking
     char junk;
     ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
-    NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
+    NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue((uintptr_t)comm_pad, &q->q);
     if (retval == NULL) {
         while (q->q.shadow_head == NULL && q->q.head == NULL) {
 #ifdef USE_HARD_POLLING
-            __asm__ __volatile__ ("pause" ::: "memory");
+            SPINLOCK_BODY();
 #else
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
@@ -97,7 +98,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking
 # endif
 #endif /* ifdef USE_HARD_POLLING */
         }
-        retval = PtlInternalNEMESISOffsetDequeue(&q->q);
+        retval = PtlInternalNEMESISOffsetDequeue((uintptr_t)comm_pad, &q->q);
         assert(retval != NULL);
     }
     assert(retval);

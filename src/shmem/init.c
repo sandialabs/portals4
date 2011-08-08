@@ -33,7 +33,7 @@
 
 volatile uint8_t *comm_pad               = NULL;
 size_t            num_siblings           = 0;
-size_t            proc_number            = 0;
+ptl_pid_t         proc_number            = PTL_PID_ANY;
 size_t            per_proc_comm_buf_size = 0;
 size_t            firstpagesize          = 0;
 
@@ -149,15 +149,15 @@ int API_FUNC PtlInit(void)
             nit_limits[ni].max_triggered_ops      = 128;                              // Arbitrary
             nit_limits[ni].max_msg_size           = UINT32_MAX;
 #ifdef USE_TRANSFER_ENGINE
-            nit_limits[ni].max_atomic_size        = UINT32_MAX;
-            nit_limits[ni].max_fetch_atomic_size  = UINT32_MAX;
+            nit_limits[ni].max_atomic_size       = UINT32_MAX;
+            nit_limits[ni].max_fetch_atomic_size = UINT32_MAX;
 #else
-            nit_limits[ni].max_atomic_size        = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);
-            nit_limits[ni].max_fetch_atomic_size  = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);
+            nit_limits[ni].max_atomic_size       = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);
+            nit_limits[ni].max_fetch_atomic_size = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);
 #endif
-            nit_limits[ni].max_waw_ordered_size   = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t); // single payload
-            nit_limits[ni].max_war_ordered_size   = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t); // single payload
-            nit_limits[ni].max_volatile_size      = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t); // single payload
+            nit_limits[ni].max_waw_ordered_size = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);   // single payload
+            nit_limits[ni].max_war_ordered_size = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);   // single payload
+            nit_limits[ni].max_volatile_size    = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);   // single payload
         }
         PtlInternalPAPIInit();
 
