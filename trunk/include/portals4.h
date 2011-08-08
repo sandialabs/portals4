@@ -307,6 +307,9 @@ typedef struct {
 /*! Match any process identifier. */
 #define PTL_PID_ANY ((ptl_pid_t) 0xffff)
 
+/* The biggest process identifier. */
+#define PTL_PID_MAX ((ptl_pid_t) 1024)
+
 /*! Match any node identifier. */
 #define PTL_NID_ANY ((ptl_nid_t) 0xffff)
 
@@ -558,9 +561,8 @@ int PtlNIInit(ptl_interface_t   iface,
  *                          interface handle.
  * @see PtlNIInit(), PtlNIStatus()
  * @implnote If PtlNIInit() gets called more than once per logical interface,
- * then the implementation should fill in \a actual, \a actual_mapping, and \a
- * ni_handle. It should ignore \a pid. PtlGetId() can be used to retrieve the
- * \a pid.
+ * then the implementation should fill in \a actual and \a ni_handle. It should
+ * ignore \a pid. PtlGetId() can be used to retrieve the \a pid.
  */
 int PtlNIFini(ptl_handle_ni_t ni_handle);
 /*!

@@ -8,13 +8,15 @@
 #endif
 
 #include <stddef.h>                    /* for size_t */
+#include <sys/types.h>                 /* for pid_t, according to P90 */
 
+#include "ptl_internal_nemesis.h"
 #include "ptl_internal_handles.h"
 #include "ptl_internal_transfer_engine.h"
 
 extern volatile uint8_t *comm_pad;
 extern size_t            num_siblings;
-extern size_t            proc_number;
+extern ptl_pid_t         proc_number;
 extern size_t            per_proc_comm_buf_size;
 extern size_t            firstpagesize;
 
@@ -78,6 +80,14 @@ typedef struct {
     void                 *unexpected_entry;
     void                 *buffered_data;
 } ptl_internal_buffered_header_t;
+
+struct rank_comm_pad {
+    NEMESIS_blocking_queue receiveQ;
+    uint64_t owner;
+    uint8_t  data[];
+};
+
+extern struct rank_comm_pad *comm_pads[PTL_PID_MAX];
 
 #endif /* ifndef PTL_INTERNAL_COMMPAD_H */
 /* vim:set expandtab: */

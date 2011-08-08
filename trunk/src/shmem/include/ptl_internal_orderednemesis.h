@@ -1,5 +1,5 @@
-#ifndef PTL_INTERNAL_NEMESIS_H
-#define PTL_INTERNAL_NEMESIS_H
+#ifndef PTL_INTERNAL_ORDERED_NEMESIS_H
+#define PTL_INTERNAL_ORDERED_NEMESIS_H
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -15,7 +15,6 @@
 #include "ptl_internal_alignment.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
-#include "ptl_internal_commpad.h"
 #include "ptl_internal_locks.h"
 
 typedef struct ordered_NEMESIS_entry_s ordered_NEMESIS_entry;

@@ -10,6 +10,13 @@
 #include <limits.h>                    /* for UINT_MAX */
 #include <inttypes.h>
 #include <string.h>                    /* for memcpy() */
+#include <sys/types.h>
+#include <sys/stat.h>                  /* for S_IRUSR */
+#include <sys/shm.h>                   /* for shmget() */
+#include <unistd.h>                    /* for getpid() */
+#ifndef IPC_RMID_IS_CLEANUP
+# include <signal.h>                   /* for kill() */
+#endif
 
 #include <stdio.h>
 
@@ -44,6 +51,67 @@ ptl_ni_limits_t    nit_limits[4];
 
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
+struct rank_comm_pad   *comm_pads[PTL_PID_MAX];
+static volatile int64_t my_shmid = -2;
+
+#define PTL_SHM_HIGH_BIT (PTL_PID_MAX << 10)
+
+static int64_t PtlInternalGetShmPid(int pid)
+{
+    // Note: This is not thread-safe
+    /* I want a specific pid */
+    int64_t shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+
+    if (shmid == -1) {
+#ifdef IPC_RMID_IS_CLEANUP
+        /* e.g. Linux */
+        return -1;
+
+#else
+        /* e.g. MacOS X; attempt to recover */
+        shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), IPC_CREAT | S_IRUSR | S_IWUSR);
+        if (shmid != -1) {
+            uint64_t the_owner;
+            comm_pads[pid] = shmat(shmid, NULL, 0);
+            the_owner      = comm_pads[pid]->owner;
+            if ((the_owner == getpid()) || (kill(the_owner, 0) == -1)) {
+                if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, getpid()) == the_owner) {
+                    /* it's mine! */
+                    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+                    return shmid;
+                }
+            }
+            shmdt(comm_pads[pid]);
+            return -1;
+        }
+#endif  /* ifdef IPC_RMID_IS_CLEANUP */
+    } else {
+        // attach
+        comm_pads[pid] = shmat(shmid, NULL, 0);
+        assert(comm_pads[pid] != NULL);
+#ifdef IPC_RMID_IS_CLEANUP
+        comm_pads[pid]->owner = getpid();
+        ptl_assert(shmctl(shmid, IPC_RMID, NULL), 0);
+#else
+        {
+            uint64_t the_owner = comm_pads[pid]->owner;
+            uint64_t mypid     = getpid();
+            if ((the_owner == mypid) || (the_owner == 0) || (kill(the_owner, 0) == -1)) {
+                if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, mypid) == the_owner) {
+                    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+                    return shmid;
+                }
+            }
+            /* it must have been "recovered" out from under me :P */
+            shmdt(comm_pads[pid]);
+            return -1;
+        }
+#endif  /* ifdef IPC_RMID_IS_CLEANUP */
+    }
+    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+    return shmid;
+}
+
 int API_FUNC PtlNIInit(ptl_interface_t  iface,
                        unsigned int     options,
                        ptl_pid_t        pid,
@@ -58,12 +126,18 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
     if (comm_pad == NULL) {
         return PTL_NO_INIT;
     }
+    if (pid != PTL_PID_ANY) {
+        if ((proc_number != -1) && (pid != proc_number)) {
+            VERBOSE_ERROR("Invalid pid (%i), rank may already be set (%i)\n", (int)pid, (int)proc_number);
+            return PTL_ARG_INVALID;
+        }
+        if (pid > PTL_PID_MAX) {
+            VERBOSE_ERROR("Pid too large (%li > %li)\n", (long)pid, (long)PTL_PID_MAX);
+            return PTL_ARG_INVALID;
+        }
+    }
     if ((iface != 0) && (iface != PTL_IFACE_DEFAULT)) {
         VERBOSE_ERROR("Invalid Interface (%i)\n", (int)iface);
-        return PTL_ARG_INVALID;
-    }
-    if ((pid != PTL_PID_ANY) && (pid != proc_number)) {
-        VERBOSE_ERROR("Weird PID (%i)\n", (int)pid);
         return PTL_ARG_INVALID;
     }
     if (options & ~(PTL_NI_INIT_OPTIONS_MASK)) {
@@ -76,10 +150,6 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
     }
     if (options & PTL_NI_LOGICAL && options & PTL_NI_PHYSICAL) {
         VERBOSE_ERROR("Neither logical nor physical\n");
-        return PTL_ARG_INVALID;
-    }
-    if ((pid > num_siblings) && (pid != PTL_PID_ANY)) {
-        VERBOSE_ERROR("pid(%i) > num_siblings(%i)\n", (int)pid, (int)num_siblings);
         return PTL_ARG_INVALID;
     }
     if (ni_handle == NULL) {
@@ -185,6 +255,48 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
     if (actual != NULL) {
         *actual = nit_limits[ni.s.ni];
     }
+
+shmid_gen:
+    if (PtlInternalAtomicCas64(&my_shmid, -2, -1) != -2) {
+        while (my_shmid == -1) SPINLOCK_BODY();  // wait for the other thread to do the allocaiton
+        if (my_shmid < 0) { goto shmid_gen; }
+    } else {
+        memset(comm_pads, 0, sizeof(struct rank_comm_pad *) * PTL_PID_MAX);
+        if ((pid == PTL_PID_ANY) && (proc_number != PTL_PID_ANY)) {
+            pid = proc_number;
+        }
+        if (pid == PTL_PID_ANY) {
+            /* I want any pid */
+            int64_t tmp_shmid;
+            /* first try my Unix pid */
+            tmp_shmid = PtlInternalGetShmPid(getpid() % PTL_PID_MAX);
+            /* next try to get a random pid */
+            if (tmp_shmid == -1) {
+                pid       = (rand() % PTL_PID_MAX) + 1; // XXX: arbitrary cap
+                tmp_shmid = PtlInternalGetShmPid(pid);
+                if (tmp_shmid == -1) {
+                    pid       = (rand() % PTL_PID_MAX) + 1; // XXX: arbitrary cap
+                    tmp_shmid = PtlInternalGetShmPid(pid);
+                }
+            }
+            if (tmp_shmid == -1) {
+                for (pid = 1; pid <= PTL_PID_MAX; ++pid) {
+                    PtlInternalGetShmPid(pid);
+                    if (tmp_shmid != -1) { break; }
+                }
+            }
+            my_shmid    = tmp_shmid;
+            proc_number = pid;
+        } else {
+            my_shmid = PtlInternalGetShmPid(pid);
+        }
+        if (my_shmid == -1) {
+            my_shmid = -2;
+            VERBOSE_ERROR("could not allocate a shmid!\n");
+            return PTL_NO_SPACE;
+        }
+    }
+
     /* BWB: FIX ME: This isn't thread safe (parallel NIInit calls may return too quickly) */
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1) == 0) {
         PtlInternalCTNISetup(ni.s.ni, nit_limits[ni.s.ni].max_cts);
@@ -241,8 +353,10 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+        VERBOSE_ERROR("Bad NI (%lu)\n", (unsigned long)ni_handle);
         return PTL_ARG_INVALID;
     }
+    assert(my_shmid != -1);
 #endif
     if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
         while (nit.internal_refcount[ni.s.ni] != 0) SPINLOCK_BODY();
@@ -261,6 +375,10 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
                 break;
         }
         /* deallocate NI */
+        ptl_assert(shmdt(comm_pads[proc_number]), 0);
+#ifndef IPC_RMID_IS_CLEANUP
+        ptl_assert(shmctl(my_shmid, IPC_RMID, NULL), 0);
+#endif
         free(nit.unexpecteds_buf[ni.s.ni]);
         ALIGNED_FREE(nit.tables[ni.s.ni], CACHELINE_WIDTH);
         nit.unexpecteds[ni.s.ni]     = NULL;
