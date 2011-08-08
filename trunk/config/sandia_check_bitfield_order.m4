@@ -24,7 +24,7 @@ fb.s.c = 1;
 if (fb.w != 1) return 1;]])],
 	[sandia_cv_bitfield_order="forward"],
 	[sandia_cv_bitfield_order="reverse"],
-	[sandia_cv_ucstack_ssflags="assuming reverse"])])
+	[sandia_cv_bitfield_order="assuming reverse"])])
 AS_IF([test "$sandia_cv_bitfield_order" == forward],
 	  [AC_DEFINE([BITFIELD_ORDER_FORWARD], [1], [Define if bitfields are in forward order])],
 	  [AC_DEFINE([BITFIELD_ORDER_REVERSE], [1], [Define if bitfields are in reverse order])])
