@@ -1061,6 +1061,11 @@ typedef enum {
  * resources. */
 #define PTL_LE_UNEXPECTED_HDR_DISABLE   PTL_ME_UNEXPECTED_HDR_DISABLE
 
+/*! Indicate that this list entry only contains memory addresses that are
+ * accessible by the application.
+ */
+#define PTL_LE_IS_ACCESSIBLE            PTL_ME_IS_ACCESSIBLE
+
 /*! Specifies that this list entry should not generate events that indicate a
  * communication operation. */
 #define PTL_LE_EVENT_COMM_DISABLE       PTL_ME_EVENT_COMM_DISABLE
@@ -1243,6 +1248,28 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
                 void           *user_ptr);
 /*! @} */
 
+enum mele_options {
+    NotAnOption = 0,
+    OP_PUT,
+    OP_GET,
+    USE_ONCE,
+    ACK_DISABLE,
+    UNEXPECTED_HDR_DISABLE,
+    IS_ACCESSIBLE,
+    EVNT_COMM_DISABLE,
+    EVNT_FLOWCTRL_DISABLE,
+    EVNT_SUCCESS_DISABLE,
+    EVNT_OVER_DISABLE,
+    EVNT_UNLINK_DISABLE,
+    EVNT_CT_COMM,
+    EVNT_CT_OVERFLOW,
+    EVNT_CT_BYTES,
+    AUTH_USE_JID,
+    MANAGE_LOCAL,
+    NO_TRUNCATE,
+    MAY_ALIGN
+};
+
 /********************************************
  * Matching List Entries and Matching Lists *
  ********************************************/
@@ -1254,7 +1281,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * default, match list entries reject \p put operations. If a \p put operation
  * targets a list entry where \c PTL_ME_OP_PUT is not set, it is treated as a
  * permissions failure. */
-#define PTL_ME_OP_PUT                   (1<<1)
+#define PTL_ME_OP_PUT                   (1<<OP_PUT)
 
 /*! Specifies that the match list entry will respond to \p get operations. by
  * default, match list entries reject \p get operations. If a \p get operation
@@ -1264,7 +1291,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  *      to both \p put and \p get operations. In fact, it is often desirable
  *      for a match list entry used in an \p atomic operation to be configured
  *      to respond to both \p put and \p get operations. */
-#define PTL_ME_OP_GET                   (1<<2)
+#define PTL_ME_OP_GET                   (1<<OP_GET)
 
 /*! Specifies that the match list entry will only be used once and then
  * unlinked. If this option is not set, the match list entry persists until
@@ -1287,43 +1314,48 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * resources. */
 #define PTL_ME_UNEXPECTED_HDR_DISABLE   (1<<5)
 
+/*! Indicate that this list entry only contains memory addresses that are
+ * accessible by the application.
+ */
+#define PTL_ME_IS_ACCESSIBLE            (1<<6)
+
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
-#define PTL_ME_EVENT_COMM_DISABLE       (1<<6)
+#define PTL_ME_EVENT_COMM_DISABLE       (1<<7)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a flow control failure. */
-#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<7)
+#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<8)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<8)
+#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<9)
 
 /*! Specifies that this match list entry should not generate overflow list
  * events. */
-#define PTL_ME_EVENT_OVER_DISABLE       (1<<9)
+#define PTL_ME_EVENT_OVER_DISABLE       (1<<10)
 
 /*! Specifies that this match list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<10)
+#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<11)
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_ME_EVENT_CT_COMM            (1<<11)
+#define PTL_ME_EVENT_CT_COMM            (1<<12)
 
 /*! Enable the counting of overflow events. */
-#define PTL_ME_EVENT_CT_OVERFLOW        (1<<12)
+#define PTL_ME_EVENT_CT_OVERFLOW        (1<<13)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_ME_EVENT_CT_BYTES           (1<<13)
+#define PTL_ME_EVENT_CT_BYTES           (1<<14)
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID             (1<<14)
+#define PTL_ME_AUTH_USE_JID             (1<<15)
 
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
@@ -1333,7 +1365,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * @note Only one offset variable exists per match list entry. If both \p put and
  *      \p get operations are performed on a match list entry, the value of that
  *      single variable is updated each time. */
-#define PTL_ME_MANAGE_LOCAL             (1<<15)
+#define PTL_ME_MANAGE_LOCAL             (1<<16)
 
 /*! Specifies that the length provided in the incoming request cannot be
  * reduced to match the memory available in the region. This can cause the
@@ -1341,7 +1373,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * subtracting the offset from the length of the memory region.) By default, if
  * the length in the incoming operation is greater than the amount of memory
  * available, the operation is truncated. */
-#define PTL_ME_NO_TRUNCATE              (1<<16)
+#define PTL_ME_NO_TRUNCATE              (1<<17)
 
 /*! Indicates that messages deposited into this match list entry may be
  * aligned by the implementation to a performance optimizing boundary.
@@ -1349,9 +1381,9 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * that the application does not care about the specific placement of the data.
  * This option is only relevant when the \c PTL_ME_MANAGE_LOCAL option is set.
  * */
-#define PTL_ME_MAY_ALIGN                (1<<17)
+#define PTL_ME_MAY_ALIGN                (1<<18)
 
-#define PTL_ME_APPEND_OPTIONS_MASK	((1<<18)-1)
+#define PTL_ME_APPEND_OPTIONS_MASK	((1<<19)-1)
 
 /*!
  * @struct ptl_me_t
