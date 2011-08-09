@@ -1249,7 +1249,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 /*! @} */
 
 enum mele_options {
-    NotAnOption = 0,
+    IOVEC = 0,
     OP_PUT,
     OP_GET,
     USE_ONCE,
@@ -1296,7 +1296,7 @@ enum mele_options {
 /*! Specifies that the match list entry will only be used once and then
  * unlinked. If this option is not set, the match list entry persists until
  * another unlink condition is triggered. */
-#define PTL_ME_USE_ONCE                 (1<<3)
+#define PTL_ME_USE_ONCE                 (1<<USE_ONCE)
 
 /*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
  * put operations, even if requested. By default, acknowledgments are sent for
@@ -1304,7 +1304,7 @@ enum mele_options {
  * and counting type events. Acknowledgments are never sent for \p get
  * operations. The data sent in the \p reply serves as an implicit
  * acknowledgment. */
-#define PTL_ME_ACK_DISABLE              (1<<4)
+#define PTL_ME_ACK_DISABLE              (1<<ACK_DISABLE)
 
 /*! Specifies that the header for a message delivered to this list entry should
  * not be added to the unexpected list. This option only has meaning if the
@@ -1312,50 +1312,50 @@ enum mele_options {
  * which truncates messages to zero bytes, disables comm events, and sets this
  * option, a user may create a list entry which consumes no target side
  * resources. */
-#define PTL_ME_UNEXPECTED_HDR_DISABLE   (1<<5)
+#define PTL_ME_UNEXPECTED_HDR_DISABLE   (1<<UNEXPECTED_HDR_DISABLE)
 
 /*! Indicate that this list entry only contains memory addresses that are
  * accessible by the application.
  */
-#define PTL_ME_IS_ACCESSIBLE            (1<<6)
+#define PTL_ME_IS_ACCESSIBLE            (1<<IS_ACCESSIBLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
-#define PTL_ME_EVENT_COMM_DISABLE       (1<<7)
+#define PTL_ME_EVENT_COMM_DISABLE       (1<<EVNT_COMM_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a flow control failure. */
-#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<8)
+#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<EVNT_FLOWCTRL_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<9)
+#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<EVNT_SUCCESS_DISABLE)
 
 /*! Specifies that this match list entry should not generate overflow list
  * events. */
-#define PTL_ME_EVENT_OVER_DISABLE       (1<<10)
+#define PTL_ME_EVENT_OVER_DISABLE       (1<<EVNT_OVER_DISABLE)
 
 /*! Specifies that this match list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<11)
+#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<EVNT_UNLINK_DISABLE)
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_ME_EVENT_CT_COMM            (1<<12)
+#define PTL_ME_EVENT_CT_COMM            (1<<EVNT_CT_COMM)
 
 /*! Enable the counting of overflow events. */
-#define PTL_ME_EVENT_CT_OVERFLOW        (1<<13)
+#define PTL_ME_EVENT_CT_OVERFLOW        (1<<EVNT_CT_OVERFLOW)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_ME_EVENT_CT_BYTES           (1<<14)
+#define PTL_ME_EVENT_CT_BYTES           (1<<EVNT_CT_BYTES)
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID             (1<<15)
+#define PTL_ME_AUTH_USE_JID             (1<<AUTH_USE_JID)
 
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
@@ -1365,7 +1365,7 @@ enum mele_options {
  * @note Only one offset variable exists per match list entry. If both \p put and
  *      \p get operations are performed on a match list entry, the value of that
  *      single variable is updated each time. */
-#define PTL_ME_MANAGE_LOCAL             (1<<16)
+#define PTL_ME_MANAGE_LOCAL             (1<<MANAGE_LOCAL)
 
 /*! Specifies that the length provided in the incoming request cannot be
  * reduced to match the memory available in the region. This can cause the
@@ -1373,7 +1373,7 @@ enum mele_options {
  * subtracting the offset from the length of the memory region.) By default, if
  * the length in the incoming operation is greater than the amount of memory
  * available, the operation is truncated. */
-#define PTL_ME_NO_TRUNCATE              (1<<17)
+#define PTL_ME_NO_TRUNCATE              (1<<NO_TRUNCATE)
 
 /*! Indicates that messages deposited into this match list entry may be
  * aligned by the implementation to a performance optimizing boundary.
@@ -1381,7 +1381,7 @@ enum mele_options {
  * that the application does not care about the specific placement of the data.
  * This option is only relevant when the \c PTL_ME_MANAGE_LOCAL option is set.
  * */
-#define PTL_ME_MAY_ALIGN                (1<<18)
+#define PTL_ME_MAY_ALIGN                (1<<MAY_ALIGN)
 
 #define PTL_ME_APPEND_OPTIONS_MASK	((1<<19)-1)
 
