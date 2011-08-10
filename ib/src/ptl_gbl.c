@@ -103,7 +103,7 @@ static void dump_everything(int unused)
 			printf("  xt_wait_list: %d\n", list_empty(&ni->xt_wait_list));
 			printf("  send_list: %d\n", list_empty(&ni->send_list));
 			printf("  rdma_list: %d\n", list_empty(&ni->rdma_list));
-			printf("  recv_list: %d\n", list_empty(&ni->recv_list));
+			printf("  recv_list: %d\n", list_empty(&ni->rdma.recv_list));
 
 			printf("  limits.max_entries = %d\n", ni->limits.max_entries);
 			printf("  limits.max_unexpected_headers = %d\n", ni->limits.max_unexpected_headers);
@@ -201,7 +201,7 @@ static void dump_everything(int unused)
 				/* Note: This will break everything if the process is not stuck
 				 * on something. */
 				struct ibv_wc wc;
-				printf("  polling CQ: ret=%d\n", ibv_poll_cq(ni->cq, 1, &wc));
+				printf("  polling CQ: ret=%d\n", ibv_poll_cq(ni->rdma.cq, 1, &wc));
 			}
 #endif
 			
