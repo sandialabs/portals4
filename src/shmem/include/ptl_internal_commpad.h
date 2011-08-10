@@ -14,23 +14,24 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_transfer_engine.h"
 
-extern volatile uint8_t *comm_pad;
 extern size_t            num_siblings;
 extern ptl_pid_t         proc_number;
 extern size_t            per_proc_comm_buf_size;
 extern size_t            firstpagesize;
 
-#define HDR_TYPE_PUT         0         /* _____ */
-#define HDR_TYPE_GET         1         /* ____1 */
-#define HDR_TYPE_ATOMIC      2         /* ___1_ */
-#define HDR_TYPE_FETCHATOMIC 3         /* ___11 */
-#define HDR_TYPE_SWAP        4         /* __1__ */
-#define HDR_TYPE_CMD         5         /* __1_1 */
-#define HDR_TYPE_ACKFLAG     8         /* _1___ */
-#define HDR_TYPE_ACKMASK     23        /* 1_111 */
-#define HDR_TYPE_TRUNCFLAG   16        /* 1____ */
-#define HDR_TYPE_BASICMASK   7         /* __111 */
-#define HDR_TYPE_TERM        31        /* 11111 */
+enum hdr_types {
+    HDR_TYPE_PUT       = 0,        /* _____ */
+    HDR_TYPE_GET       = 1,        /* ____1 */
+    HDR_TYPE_ATOMIC    = 2,        /* ___1_ */
+    HDR_TYPE_FETCHATOMIC=3,        /* ___11 */
+    HDR_TYPE_SWAP      = 4,        /* __1__ */
+    HDR_TYPE_CMD       = 5,        /* __1_1 */
+    HDR_TYPE_ACKFLAG   = 8,        /* _1___ */
+    HDR_TYPE_ACKMASK   = 23,       /* 1_111 */
+    HDR_TYPE_TRUNCFLAG = 16,       /* 1____ */
+    HDR_TYPE_BASICMASK = 7,        /* __111 */
+    HDR_TYPE_TERM      = 31        /* 11111 */
+};
 
 enum cmd_types {
     CMD_TYPE_CTFREE,
@@ -88,6 +89,8 @@ struct rank_comm_pad {
 };
 
 extern struct rank_comm_pad *comm_pads[PTL_PID_MAX];
+
+int INTERNAL PtlInternalLibraryInitialized(void);
 
 #endif /* ifndef PTL_INTERNAL_COMMPAD_H */
 /* vim:set expandtab: */

@@ -16,11 +16,21 @@
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_locks.h"
+#include "ptl_internal_shm.h"
 
 typedef struct {
     void *volatile next;
     char           data[];
 } NEMESIS_entry;
+
+typedef union {
+    void    *p;
+    uint64_t u;
+    struct {
+        uint32_t pid;
+        uint32_t off;
+    } s;
+} ptl_offset_t;
 
 typedef struct {
     /* The First Cacheline */
@@ -88,33 +98,37 @@ static inline NEMESIS_entry *PtlInternalNEMESISDequeue(NEMESIS_queue *q)
     return retval;
 }
 
-#define OFF2PTR(base, off) (((uintptr_t)off ==                                \
-                             0) ? NULL : ((NEMESIS_entry *)((uintptr_t)base + \
-                                                            (uintptr_t)off)))
-#define PTR2OFF(base, ptr) ((ptr == NULL) ? 0 : ((uintptr_t)ptr - \
-                                                 (uintptr_t)base))
+extern struct rank_comm_pad *comm_pads[PTL_PID_MAX];
 
-static inline int PtlInternalNEMESISOffsetEnqueue(uintptr_t               base,
-                                                  NEMESIS_queue *restrict q,
-                                                  NEMESIS_entry *restrict f)
+static inline NEMESIS_entry *PtlInternalNEMESISGetPtr(ptl_offset_t off)
 {
-    void *offset_f = (void *)PTR2OFF(base, f);
+    if (off.u == 0) return NULL;
+    if (comm_pads[off.s.pid] == NULL) PtlInternalMapInPid(off.s.pid);
+    return (NEMESIS_entry *)((uintptr_t)comm_pads[off.s.pid] + off.s.off);
+}
 
-    assert(f != NULL && f->next == NULL);
-    uintptr_t offset_prev =
-        (uintptr_t)PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail),
-                                            offset_f);
-    if (offset_prev == 0) {
-        q->head = offset_f;
+#define PTR2OFF(src, ptr) ((ptr == NULL) ?          \
+                           ((ptl_offset_t) { 0 }) : \
+                           ((ptl_offset_t) { .s.pid = src, .s.off = ((uint64_t)ptr - (uint64_t)comm_pads[src]) }))
+
+extern ptl_pid_t proc_number;
+
+static inline int PtlInternalNEMESISOffsetEnqueue(NEMESIS_queue *restrict q,
+                                                  ptl_offset_t            entry)
+{
+    ptl_offset_t prev_entry;
+
+    prev_entry.u = (uint64_t)PtlInternalAtomicSwap64((uint64_t *)&(q->tail), entry.u);
+    if (prev_entry.u == 0) {
+        q->head = entry.p;
         return 0;
     } else {
-        OFF2PTR(base, offset_prev)->next = offset_f;
+        PtlInternalNEMESISGetPtr(prev_entry)->next = entry.p;
     }
     return 1;
 }
 
-static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(uintptr_t      base,
-                                                             NEMESIS_queue *q)
+static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(NEMESIS_queue *q)
 {
     if (!q->shadow_head) {
         if (!q->head) {
@@ -123,7 +137,8 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(uintptr_t      base
         q->shadow_head = q->head;
         q->head        = NULL;
     }
-    NEMESIS_entry *retval = OFF2PTR(base, q->shadow_head);
+    ptl_offset_t   ret_off = (ptl_offset_t)q->shadow_head;
+    NEMESIS_entry *retval = PtlInternalNEMESISGetPtr(ret_off);
 
     if (retval != NULL) {
         if (retval->next != NULL) {
@@ -132,8 +147,8 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(uintptr_t      base
         } else {
             uintptr_t old;
             q->shadow_head = NULL;
-            old            = (uintptr_t)PtlInternalAtomicCasPtr(&(q->tail), PTR2OFF(base, retval), NULL);
-            if (old != PTR2OFF(base, retval)) {
+            old            = (uintptr_t)PtlInternalAtomicCasPtr(&(q->tail), ret_off.p, NULL);
+            if (old != ret_off.u) {
                 while (retval->next == NULL) {
                     __asm__ __volatile__ ("pause" ::: "memory");
                 }
@@ -147,8 +162,9 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(uintptr_t      base
 
 void           PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q);
 NEMESIS_entry *PtlInternalNEMESISBlockingDequeue(NEMESIS_blocking_queue *q);
-void           PtlInternalNEMESISBlockingOffsetEnqueue(NEMESIS_blocking_queue *restrict q,
-                                                       NEMESIS_entry *restrict          e);
+void INTERNAL  PtlInternalNEMESISBlockingOffsetEnqueue(struct rank_comm_pad *restrict dest,
+                                                       ptl_pid_t                      src_pid,
+                                                       NEMESIS_entry *restrict        f);
 NEMESIS_entry *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking_queue *q);
 
 #endif /* ifndef PTL_INTERNAL_NEMESIS_H */

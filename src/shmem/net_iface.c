@@ -18,6 +18,7 @@
 # include <signal.h>                   /* for kill() */
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 
 /* Internals */
@@ -36,6 +37,7 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_fragments.h"
 #include "ptl_internal_alignment.h"
+#include "ptl_internal_shm.h"
 #ifndef NO_ARG_VALIDATION
 # include "ptl_internal_error.h"
 #endif
@@ -52,6 +54,7 @@ ptl_ni_limits_t    nit_limits[4];
 static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
 struct rank_comm_pad   *comm_pads[PTL_PID_MAX];
+int                     comm_shmids[PTL_PID_MAX];
 static volatile int64_t my_shmid = -2;
 
 #define PTL_SHM_HIGH_BIT (PTL_PID_MAX << 10)
@@ -63,53 +66,76 @@ static int64_t PtlInternalGetShmPid(int pid)
     int64_t shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
     if (shmid == -1) {
-#ifdef IPC_RMID_IS_CLEANUP
-        /* e.g. Linux */
-        return -1;
-
-#else
-        /* e.g. MacOS X; attempt to recover */
+        /* attempt to recover */
         shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), IPC_CREAT | S_IRUSR | S_IWUSR);
         if (shmid != -1) {
             uint64_t the_owner;
+            comm_shmids[pid] = shmid;
             comm_pads[pid] = shmat(shmid, NULL, 0);
             the_owner      = comm_pads[pid]->owner;
             if ((the_owner == getpid()) || (kill(the_owner, 0) == -1)) {
                 if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, getpid()) == the_owner) {
                     /* it's mine! */
-                    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+                    PtlInternalFragmentInitPid(pid);
                     return shmid;
                 }
             }
             shmdt(comm_pads[pid]);
+            comm_pads[pid] = NULL;
+            comm_shmids[pid] = -1;
             return -1;
         }
-#endif  /* ifdef IPC_RMID_IS_CLEANUP */
     } else {
         // attach
+        comm_shmids[pid] = shmid;
         comm_pads[pid] = shmat(shmid, NULL, 0);
         assert(comm_pads[pid] != NULL);
-#ifdef IPC_RMID_IS_CLEANUP
-        comm_pads[pid]->owner = getpid();
-        ptl_assert(shmctl(shmid, IPC_RMID, NULL), 0);
-#else
         {
             uint64_t the_owner = comm_pads[pid]->owner;
             uint64_t mypid     = getpid();
             if ((the_owner == mypid) || (the_owner == 0) || (kill(the_owner, 0) == -1)) {
                 if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, mypid) == the_owner) {
-                    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+                    PtlInternalFragmentInitPid(pid);
                     return shmid;
                 }
             }
             /* it must have been "recovered" out from under me :P */
             shmdt(comm_pads[pid]);
+            comm_pads[pid] = NULL;
+            comm_shmids[pid] = -1;
             return -1;
         }
-#endif  /* ifdef IPC_RMID_IS_CLEANUP */
     }
-    //PtlInternalFragmentSetupShm(comm_pads[pid]->data);
+    PtlInternalFragmentInitPid(pid);
     return shmid;
+}
+
+void INTERNAL PtlInternalMapInPid(int pid)
+{
+    int64_t shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), S_IRUSR | S_IWUSR);
+
+    if (shmid == -1) {
+        VERBOSE_ERROR("failure to shmget pid %i\n", pid);
+        return;
+    }
+    comm_pads[pid] = shmat(shmid, NULL, 0);
+    comm_shmids[pid] = shmid;
+}
+
+void INTERNAL PtlInternalDetachCommPads(void)
+{
+    /* detach from peers (and self) */
+    for (int i = 0; i < PTL_PID_MAX; ++i) {
+        if (comm_pads[i] != NULL) {
+            /* deallocate NI */
+            struct shmid_ds buf;
+            ptl_assert(shmdt(comm_pads[i]), 0);
+            shmctl(comm_shmids[i], IPC_STAT, &buf);
+            if (buf.shm_nattch == 0) {
+                ptl_assert(shmctl(comm_shmids[i], IPC_RMID, NULL), 0);
+            }
+        }
+    }
 }
 
 int API_FUNC PtlNIInit(ptl_interface_t  iface,
@@ -123,7 +149,7 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
     ptl_table_entry_t              *tmp;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (pid != PTL_PID_ANY) {
@@ -262,6 +288,7 @@ shmid_gen:
         if (my_shmid < 0) { goto shmid_gen; }
     } else {
         memset(comm_pads, 0, sizeof(struct rank_comm_pad *) * PTL_PID_MAX);
+        for (int i=0; i< PTL_PID_MAX; ++i) comm_shmids[i] = -1;
         if ((pid == PTL_PID_ANY) && (proc_number != PTL_PID_ANY)) {
             pid = proc_number;
         }
@@ -349,7 +376,7 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
@@ -374,11 +401,6 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
                 PtlInternalLENITeardown(ni.s.ni);
                 break;
         }
-        /* deallocate NI */
-        ptl_assert(shmdt(comm_pads[proc_number]), 0);
-#ifndef IPC_RMID_IS_CLEANUP
-        ptl_assert(shmctl(my_shmid, IPC_RMID, NULL), 0);
-#endif
         free(nit.unexpecteds_buf[ni.s.ni]);
         ALIGNED_FREE(nit.tables[ni.s.ni], CACHELINE_WIDTH);
         nit.unexpecteds[ni.s.ni]     = NULL;
@@ -395,7 +417,7 @@ int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
@@ -418,7 +440,7 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
     ptl_internal_handle_converter_t ehandle;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
 #endif
@@ -449,7 +471,7 @@ int API_FUNC PtlSetMap(ptl_handle_ni_t ni_handle,
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
@@ -477,7 +499,7 @@ int API_FUNC PtlGetMap(ptl_handle_ni_t ni_handle,
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
 
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {

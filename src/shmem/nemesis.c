@@ -1,3 +1,6 @@
+/* The API definition */
+#include <portals4.h>
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -41,7 +44,6 @@ void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
         ptl_assert(pthread_cond_init(&q->trigger, &ca), 0);
         ptl_assert(pthread_condattr_destroy(&ca), 0);
     }
-    // printf("init q=%p(%u)\n", q, (unsigned)((uintptr_t)q - (uintptr_t)comm_pad));
 #else /* if defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING) */
       /* for the pipe to work, it has to be created by yod */
       // assert(pipe(q->pipe) == 0);
@@ -50,11 +52,17 @@ void INTERNAL PtlInternalNEMESISBlockingInit(NEMESIS_blocking_queue *q)
 #endif /* if defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING) */
 }                                      /*}}} */
 
-void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(NEMESIS_blocking_queue *restrict q,
-                                                      NEMESIS_entry *restrict          f)
+void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(struct rank_comm_pad *restrict dest,
+                                                      ptl_pid_t                      src_pid,
+                                                      NEMESIS_entry *restrict        f)
 {                                      /*{{{ */
+    NEMESIS_blocking_queue *restrict q     = &dest->receiveQ;
+    ptl_offset_t                     f_off = PTR2OFF(src_pid, f);
+
+    assert(dest);
+    assert(f);
     assert(f->next == NULL);
-    PtlInternalNEMESISOffsetEnqueue((uintptr_t)comm_pad, &q->q, f);
+    PtlInternalNEMESISOffsetEnqueue(&q->q, f_off);
     /* awake waiter */
 #ifndef USE_HARD_POLLING
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
@@ -78,7 +86,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking
     char junk;
     ptl_assert(read(q->pipe[0], &junk, 1), 1);
 #endif
-    NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue((uintptr_t)comm_pad, &q->q);
+    NEMESIS_entry *retval = PtlInternalNEMESISOffsetDequeue(&q->q);
     if (retval == NULL) {
         while (q->q.shadow_head == NULL && q->q.head == NULL) {
 #ifdef USE_HARD_POLLING
@@ -96,9 +104,9 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking
 # else
             ptl_assert(read(q->pipe[0], &junk, 1), 1);
 # endif
-#endif /* ifdef USE_HARD_POLLING */
+#endif      /* ifdef USE_HARD_POLLING */
         }
-        retval = PtlInternalNEMESISOffsetDequeue((uintptr_t)comm_pad, &q->q);
+        retval = PtlInternalNEMESISOffsetDequeue(&q->q);
         assert(retval != NULL);
     }
     assert(retval);

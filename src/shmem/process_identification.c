@@ -34,7 +34,7 @@ int API_FUNC PtlGetId(ptl_handle_ni_t ni_handle,
     ptl_internal_handle_converter_t ni = { ni_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalNIValidator(ni)) {

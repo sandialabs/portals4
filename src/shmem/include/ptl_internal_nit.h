@@ -3,6 +3,8 @@
 
 #include <stdint.h>                    /* for uint32_t */
 
+#include "ptl_visibility.h"
+
 #include "ptl_internal_handles.h"
 #include "ptl_internal_commpad.h"
 #include "ptl_internal_PT.h"
@@ -20,9 +22,10 @@ typedef struct {
 extern ptl_internal_nit_t nit;
 extern ptl_ni_limits_t    nit_limits[4];
 
-int  PtlInternalNIValidator(const ptl_internal_handle_converter_t ni);
-void PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr);
+int  INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni);
+void INTERNAL PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr);
+void INTERNAL PtlInternalDetachCommPads(void);
 
-ptl_internal_buffered_header_t *PtlInternalAllocUnexpectedHeader(const uint_fast8_t ni);
+ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const uint_fast8_t ni);
 #endif /* ifndef PTL_INTERNAL_NIT_H */
 /* vim:set expandtab: */

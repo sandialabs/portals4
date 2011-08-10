@@ -136,7 +136,7 @@ int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     ptl_internal_handle_converter_t       eqh = { .s.selector = HANDLE_EQ_CODE };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -212,7 +212,7 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
     ptl_internal_eq_t                    *eq;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -283,7 +283,7 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
                       ptl_event_t    *event)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -322,7 +322,7 @@ int API_FUNC PtlEQWait(ptl_handle_eq_t eq_handle,
                        ptl_event_t    *event)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -374,7 +374,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
     TIMER_TYPE tp;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
