@@ -16,8 +16,8 @@
 #if defined(SANDIA_BUILTIN_INCR)
 # define PtlInternalAtomicInc(ADDR, INCVAL) __sync_fetch_and_add(ADDR, INCVAL)
 #else
-# define PtlInternalAtomicInc(ADDR, INCVAL) \
-    PtlInternalAtomicIncXX((volatile void*)(ADDR), (long int)(INCVAL), \
+# define PtlInternalAtomicInc(ADDR, INCVAL)                             \
+    PtlInternalAtomicIncXX((volatile void *)(ADDR), (long int)(INCVAL), \
                            sizeof(*(ADDR)))
 
 # error Need to implement my own atomics (suggest stealing from qthreads)
@@ -46,7 +46,7 @@ static inline unsigned long PtlInternalAtomicIncXX(volatile void *addr,
 # define PtlInternalAtomicCas64(ADDR, OLDVAL, NEWVAL) \
     (uint64_t)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
 # define PtlInternalAtomicCasPtr(ADDR, OLDVAL, NEWVAL) \
-    (void*)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
+    (void *)__sync_val_compare_and_swap((ADDR), (OLDVAL), (NEWVAL))
 #else
 # error Need to implement my own CAS (suggest stealing from qthreads)
 static inline uint32_t PtlInternalAtomicCas32(volatile uint32_t *addr,
@@ -75,6 +75,17 @@ static inline void *PtlInternalAtomicCasPtr(void *volatile *addr,
 }
 
 #endif /* SANDIA_BUILTIN_CAS */
+
+static inline uint64_t PtlInternalAtomicSwap64(volatile uint64_t *addr,
+                                               uint64_t           newval)
+{
+    uint64_t tmp, oldval = *addr;
+
+    while ((tmp = PtlInternalAtomicCas64(addr, oldval, newval)) != oldval) {
+        oldval = tmp;
+    }
+    return oldval;
+}
 
 static inline void *PtlInternalAtomicSwapPtr(void *volatile *addr,
                                              void           *newval)

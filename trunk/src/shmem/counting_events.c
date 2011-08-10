@@ -293,7 +293,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     ptl_internal_handle_converter_t       ct = { .s.selector = HANDLE_CT_CODE };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -334,14 +334,14 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
     ptl_internal_header_t *restrict       hdr;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
 #endif
-    if (nit_limits[ct.s.ni].max_triggered_ops > 0) {
+    if (nit_limits[ct.s.ni].max_triggered_ops > 0 && nit.refcount[ct.s.ni] > 0) {
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
         /* step 2: fill the op structure */
@@ -417,7 +417,7 @@ int API_FUNC PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
@@ -455,7 +455,7 @@ int API_FUNC PtlCTGet(ptl_handle_ct_t ct_handle,
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
@@ -479,7 +479,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     volatile uint_fast64_t               *rc;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
@@ -525,7 +525,7 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
     TIMER_TYPE              tp;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ct_handles == NULL) || (tests == NULL) || (size == 0)) {
@@ -613,7 +613,7 @@ int API_FUNC PtlCTSet(ptl_handle_ct_t ct_handle,
     const ptl_internal_handle_converter_t ct = { ct_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
@@ -632,7 +632,7 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
     ptl_ct_event_t                       *cte;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {

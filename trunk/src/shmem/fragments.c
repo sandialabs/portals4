@@ -36,10 +36,8 @@ typedef struct fragment_hdr_s fragment_hdr_t;
 struct fragment_hdr_s {
     fragment_hdr_t *next;                 // for NEMESIS_entry
     uint64_t        size;
-#ifdef PARANOID
-    uint64_t        owner_rank;
-#endif
-    char            data[];
+    ptl_pid_t       owner_rank;
+    char            data[] ALIGNED(8);
 };
 
 size_t SMALL_FRAG_SIZE    = 256;
@@ -72,7 +70,7 @@ static void PtlInternalValidateFragmentLists(void)
     while (cursor != NULL) {
         count++;
         VALIDPTR(cursor, small);
-        C_VALIDPTR(cursor);
+        //C_VALIDPTR(cursor);
         if (cursor->size != SMALL_FRAG_PAYLOAD) {
             fprintf(stderr, "problem in small free list: item %lu size is %lu, rather than %lu, prev=%p\n",
                     count, (unsigned long)cursor->size, SMALL_FRAG_PAYLOAD, prev);
@@ -87,7 +85,7 @@ static void PtlInternalValidateFragmentLists(void)
     while (cursor != NULL) {
         count++;
         VALIDPTR(cursor, large);
-        C_VALIDPTR(cursor);
+        //C_VALIDPTR(cursor);
         if (cursor->size != LARGE_FRAG_PAYLOAD) {
             fprintf(stderr, "problem in large free list: item %lu size is %lu, rather than %lu, prev=%p\n",
                     count, (unsigned long)cursor->size, LARGE_FRAG_PAYLOAD, prev);
@@ -115,15 +113,17 @@ void INTERNAL PtlInternalFragmentInitPid(int pid)
     LARGE_FRAG_PAYLOAD = LARGE_FRAG_SIZE - sizeof(fragment_hdr_t);
     /* first, initialize the receive queue */
     PtlInternalNEMESISBlockingInit(&(comm->receiveQ));
+    receiveQ = &(comm->receiveQ);
     // printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
     /* now, initialize the small fragment free-list */
     fptr = (fragment_hdr_t *)(comm->data);
     bptr = (char *)fptr;
     PARANOID_STEP(small_bufstart = (uintptr_t)fptr);
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
+        memset(fptr, 0xaa, SMALL_FRAG_SIZE);
         fptr->next = small_free_list;
         fptr->size = SMALL_FRAG_PAYLOAD;
-        PARANOID_STEP(fptr->owner_rank = proc_number);
+        fptr->owner_rank = proc_number;
         small_free_list = fptr;
         fptr            = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i + 1)));
         // fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
@@ -134,7 +134,7 @@ void INTERNAL PtlInternalFragmentInitPid(int pid)
         assert((uintptr_t)fptr < (uintptr_t)(comm->data + per_proc_comm_buf_size));
         fptr->next = large_free_list;
         fptr->size = LARGE_FRAG_PAYLOAD;
-        PARANOID_STEP(fptr->owner_rank = proc_number);
+        fptr->owner_rank = proc_number;
         large_free_list = fptr;
         fptr            = (fragment_hdr_t *)(fptr->data + LARGE_FRAG_PAYLOAD);
     }
@@ -142,6 +142,7 @@ void INTERNAL PtlInternalFragmentInitPid(int pid)
     PtlInternalValidateFragmentLists();
 }
 
+#if 0
 void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
 {                                      /*{{{ */
     size_t          i;
@@ -162,7 +163,7 @@ void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
     for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
         fptr->next = small_free_list;
         fptr->size = SMALL_FRAG_PAYLOAD;
-        PARANOID_STEP(fptr->owner_rank = proc_number);
+        fptr->owner_rank = proc_number;
         small_free_list = fptr;
         fptr            = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i + 1)));
         // fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
@@ -173,13 +174,14 @@ void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
         assert((uintptr_t)fptr < (uintptr_t)(buf + per_proc_comm_buf_size));
         fptr->next = large_free_list;
         fptr->size = LARGE_FRAG_PAYLOAD;
-        PARANOID_STEP(fptr->owner_rank = proc_number);
+        fptr->owner_rank = proc_number;
         large_free_list = fptr;
         fptr            = (fragment_hdr_t *)(fptr->data + LARGE_FRAG_PAYLOAD);
     }
     PARANOID_STEP(large_bufend = (uintptr_t)fptr);
     PtlInternalValidateFragmentLists();
 }                                      /*}}} */
+#endif
 
 /* this pulls a fragment off the free-list(s) big enough to hold the data. */
 void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
@@ -214,7 +216,7 @@ void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
     }
     retv->next = NULL;
     PtlInternalValidateFragmentLists();
-    C_VALIDPTR(retv->data);
+    //C_VALIDPTR(retv->data);
     return retv->data;
 }                                      /*}}} */
 
@@ -222,25 +224,29 @@ void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
 void INTERNAL PtlInternalFragmentToss(void     *frag,
                                       ptl_pid_t dest)
 {                                      /*{{{ */
-    NEMESIS_blocking_queue *destQ =
-        (NEMESIS_blocking_queue *)(comm_pad + firstpagesize +
-                                   (per_proc_comm_buf_size * dest));
+    NEMESIS_blocking_queue *destQ;
+
+    if (comm_pads[dest] == NULL) {
+        PtlInternalMapInPid(dest);
+    }
+    assert(comm_pads[dest] != NULL);
+    destQ = &(comm_pads[dest]->receiveQ);
 
     PtlInternalValidateFragmentLists();
-    frag = ((fragment_hdr_t *)frag) - 1;
-    C_VALIDPTR(frag);
-    PtlInternalNEMESISBlockingOffsetEnqueue(destQ, (NEMESIS_entry *)frag);
+    //frag = ((fragment_hdr_t *)frag) - 1;
+    frag = ((uint8_t*)frag) - offsetof(fragment_hdr_t, data);
+    //C_VALIDPTR(frag);
+    PtlInternalNEMESISBlockingOffsetEnqueue(comm_pads[dest], ((fragment_hdr_t*)frag)->owner_rank, (NEMESIS_entry *)frag);
 }                                      /*}}} */
 
 /* this dequeues a fragment from my receive queue */
 void INTERNAL *PtlInternalFragmentReceive(void)
 {                                      /*{{{ */
-    fragment_hdr_t *frag =
-        (fragment_hdr_t *)PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
+    fragment_hdr_t *frag = (fragment_hdr_t *)PtlInternalNEMESISBlockingOffsetDequeue(receiveQ);
 
     PtlInternalValidateFragmentLists();
     assert(frag->next == NULL);
-    C_VALIDPTR(frag);
+    //C_VALIDPTR(frag);
     return frag->data;
 }                                      /*}}} */
 
@@ -255,7 +261,6 @@ void INTERNAL PtlInternalFragmentFree(void *data)
     fragment_hdr_t *frag = (((fragment_hdr_t *)data) - 1);
 
     assert(frag->next == NULL);
-    assert((uintptr_t)frag > (uintptr_t)comm_pad);
     PtlInternalValidateFragmentLists();
     if (frag->size == SMALL_FRAG_PAYLOAD) {
         void *oldv, *newv, *tmpv;

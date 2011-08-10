@@ -176,7 +176,7 @@ int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
     ptl_table_entry_t                    *t;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -420,7 +420,7 @@ int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
     uint_fast8_t                          found = 0;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -592,7 +592,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
         &(les[le.s.ni][le.s.code].Qentry);
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }

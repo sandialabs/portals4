@@ -31,7 +31,7 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_locks.h"
 
-volatile uint8_t *comm_pad               = NULL;
+volatile uint8_t *init_comm_pad          = NULL;
 size_t            num_siblings           = 0;
 ptl_pid_t         proc_number            = PTL_PID_ANY;
 size_t            per_proc_comm_buf_size = 0;
@@ -54,6 +54,14 @@ static const char  *comm_pad_shm_name = NULL;
             var = tmp;                                                   \
         }                                                                \
 } while (0)
+
+int INTERNAL PtlInternalLibraryInitialized(void)
+{   /*{{{*/
+    if (init_comm_pad == NULL) {
+        return PTL_FAIL;
+    }
+    return PTL_OK;
+} /*}}}*/
 
 /* The trick to this function is making it thread-safe: multiple threads can
  * all call PtlInit concurrently, and all will wait until initialization is
@@ -107,11 +115,11 @@ int API_FUNC PtlInit(void)
                 (LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
                 sizeof(NEMESIS_blocking_queue)) == per_proc_comm_buf_size);
 
-        comm_pad_size = firstpagesize +
-                        (per_proc_comm_buf_size * (num_siblings + 1));                  // the one extra is for the collator
+        comm_pad_size = firstpagesize;
+        // (per_proc_comm_buf_size * (num_siblings + 1));                  // the one extra is for the collator
 
         /* Open the communication pad */
-        assert(comm_pad == NULL);
+        assert(init_comm_pad == NULL);
         shm_fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
         assert(shm_fd >= 0);
         if (shm_fd < 0) {
@@ -121,10 +129,10 @@ int API_FUNC PtlInit(void)
 #endif
             goto exit_fail;
         }
-        comm_pad =
+        init_comm_pad =
             (uint8_t *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
                             MAP_SHARED, shm_fd, 0);
-        if (comm_pad == MAP_FAILED) {
+        if (init_comm_pad == MAP_FAILED) {
 #ifdef LOUD_DROPS
             fprintf(stderr, "PORTALS4-> PtlInit: mmap failed:");
             perror("");
@@ -133,8 +141,8 @@ int API_FUNC PtlInit(void)
         }
         ptl_assert(close(shm_fd), 0);
         /* Locate and initialize my fragments memory (beginning with a pointer to headers) */
-        PtlInternalFragmentSetup((comm_pad + firstpagesize +
-                                  (per_proc_comm_buf_size * proc_number)));
+        /*PtlInternalFragmentSetup((comm_pad + firstpagesize +
+         *                        (per_proc_comm_buf_size * proc_number)));*/
 
         memset(&nit, 0, sizeof(ptl_internal_nit_t));
         for (int ni = 0; ni < 4; ++ni) {
@@ -164,7 +172,7 @@ int API_FUNC PtlInit(void)
         /**************************************************************************
         * Can Now Announce My Presence
         **************************************************************************/
-        comm_pad[proc_number] = 1;
+        init_comm_pad[proc_number] = 1;
 
         if (proc_number != num_siblings) {
             /* Now, wait for my siblings to get here, unless I'm the COLLATOR. */
@@ -172,7 +180,7 @@ int API_FUNC PtlInit(void)
             for (i = 0; i < num_siblings; ++i) {
                 /* oddly enough, this should reduce cache traffic for large numbers
                  * of siblings */
-                while (comm_pad[i] == 0) SPINLOCK_BODY();
+                while (init_comm_pad[i] == 0) SPINLOCK_BODY();
             }
         }
 
@@ -217,9 +225,10 @@ void API_FUNC PtlFini(void)
     if (lastone == 1) {
         /* Clean up */
         PtlInternalPAPITeardown();
+        PtlInternalDetachCommPads();
         // printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
-        ptl_assert(munmap((void *)comm_pad, comm_pad_size), 0);
-        comm_pad = NULL;
+        ptl_assert(munmap((void *)init_comm_pad, comm_pad_size), 0);
+        init_comm_pad = NULL;
     }
 } /*}}}*/
 

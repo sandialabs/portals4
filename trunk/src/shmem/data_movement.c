@@ -706,7 +706,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
     const ptl_internal_handle_converter_t md         = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
@@ -874,7 +874,7 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
     ptl_internal_header_t *restrict       hdr;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
@@ -996,7 +996,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
     const ptl_internal_handle_converter_t md         = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (length > nit_limits[md.s.ni].max_atomic_size) {
@@ -1237,7 +1237,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
@@ -1512,7 +1512,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
@@ -1802,7 +1802,7 @@ int API_FUNC PtlAtomicSync(void)
     ptl_internal_header_t *restrict hdr;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
 #endif

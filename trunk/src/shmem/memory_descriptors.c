@@ -145,7 +145,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
 
 #ifndef NO_ARG_VALIDATION
     int ct_optional = 1;
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
@@ -214,7 +214,7 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
     const ptl_internal_handle_converter_t md = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(md_handle, 0)) {

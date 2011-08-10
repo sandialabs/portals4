@@ -36,7 +36,7 @@ int API_FUNC PtlPTAlloc(ptl_handle_ni_t ni_handle,
     ptl_table_entry_t                    *pt = NULL;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
@@ -109,7 +109,7 @@ int API_FUNC PtlPTFree(ptl_handle_ni_t ni_handle,
     ptl_table_entry_t                    *pt = NULL;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("Not initialized\n");
         return PTL_NO_INIT;
     }

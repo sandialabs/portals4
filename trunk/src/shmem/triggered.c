@@ -57,7 +57,7 @@ int API_FUNC PtlTriggeredPut(ptl_handle_md_t  md_handle,
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t mdh = { md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -152,7 +152,7 @@ int API_FUNC PtlTriggeredGet(ptl_handle_md_t  md_handle,
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -249,7 +249,7 @@ int API_FUNC PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t md = { md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
@@ -412,7 +412,7 @@ int API_FUNC PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
@@ -599,7 +599,7 @@ int API_FUNC PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t get_md = { get_md_handle };
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalMDHandleValidator(get_md_handle, 1)) {
@@ -795,7 +795,7 @@ int API_FUNC PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
     ptl_internal_trigger_t               *t;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
@@ -844,7 +844,7 @@ int API_FUNC PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
     ptl_internal_trigger_t               *t;
 
 #ifndef NO_ARG_VALIDATION
-    if (comm_pad == NULL) {
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
