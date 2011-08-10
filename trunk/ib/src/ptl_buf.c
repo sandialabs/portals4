@@ -90,12 +90,12 @@ int ptl_post_recv(ni_t *ni)
 	buf->rdma.sg_list[0].length = BUF_DATA_SIZE;
 	buf->type = BUF_RECV;
 
-	pthread_spin_lock(&ni->recv_list_lock);
+	pthread_spin_lock(&ni->rdma.recv_list_lock);
 
-	err = ibv_post_srq_recv(ni->srq, &buf->rdma.recv_wr, &bad_wr);
+	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
 
 	if (err) {
-		pthread_spin_unlock(&ni->recv_list_lock);
+		pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
 		WARN();
 		buf_put(buf);
@@ -103,9 +103,9 @@ int ptl_post_recv(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	list_add_tail(&buf->list, &ni->recv_list);
+	list_add_tail(&buf->list, &ni->rdma.recv_list);
 	
-	pthread_spin_unlock(&ni->recv_list_lock);
+	pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
 	return PTL_OK;
 }

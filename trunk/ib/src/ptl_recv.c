@@ -31,15 +31,15 @@ static int event_wait(ni_t *ni)
 	struct ibv_cq *cq;
 	void *unused;
 
-	err = ibv_get_cq_event(ni->ch, &cq, &unused);
+	err = ibv_get_cq_event(ni->rdma.ch, &cq, &unused);
 	if (err) {
 		WARN();
 		return STATE_RECV_ERROR;
 	}
 
-	ibv_ack_cq_events(ni->cq, 1);
+	ibv_ack_cq_events(ni->rdma.cq, 1);
 
-	if (cq != ni->cq) {
+	if (cq != ni->rdma.cq) {
 		WARN();
 		return STATE_RECV_ERROR;
 	}
@@ -53,7 +53,7 @@ static int event_wait(ni_t *ni)
  */
 static int comp_rearm(ni_t *ni)
 {
-	if (ibv_req_notify_cq(ni->cq, 0)) {
+	if (ibv_req_notify_cq(ni->rdma.cq, 0)) {
 		WARN();
 		return STATE_RECV_ERROR;
 	}
@@ -79,7 +79,7 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 
 	/* if queue is empty and we are rearmed
 	 * then we are done for this cycle */
-	n = ibv_poll_cq(ni->cq, 1, &wc);
+	n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
 	if (n == 0)
 		return STATE_RECV_DONE;
 
@@ -210,9 +210,9 @@ static int recv_packet(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
 
-	pthread_spin_lock(&ni->recv_list_lock);
+	pthread_spin_lock(&ni->rdma.recv_list_lock);
 	list_del(&buf->list);
-	pthread_spin_unlock(&ni->recv_list_lock);
+	pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
 	if (buf->length < sizeof(hdr_t)) {
 		WARN();

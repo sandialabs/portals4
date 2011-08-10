@@ -147,9 +147,9 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 					    get_param(PTL_MAX_RDMA_WR_OUT);
 	}
-	init_attr.send_cq = ni->cq;
-	init_attr.recv_cq = ni->cq;
-	init_attr.srq = ni->srq;
+	init_attr.send_cq = ni->rdma.cq;
+	init_attr.recv_cq = ni->rdma.cq;
+	init_attr.srq = ni->rdma.srq;
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 	init_attr.cap.max_inline_data = 512;
 
@@ -170,7 +170,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		conn_param.private_data_len = sizeof(priv);
 
 #ifdef USE_XRC
-		priv.xrc_srq_num = ni->srq->xrc_srq_num;
+		priv.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
 #endif
 	}
 
@@ -239,9 +239,9 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 
 	memset(&init_attr, 0, sizeof(init_attr));
 	init_attr.qp_type = IBV_QPT_RC;
-	init_attr.send_cq = ni->cq;
-	init_attr.recv_cq = ni->cq;
-	init_attr.srq = ni->srq;
+	init_attr.send_cq = ni->rdma.cq;
+	init_attr.recv_cq = ni->rdma.cq;
+	init_attr.srq = ni->rdma.srq;
 	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 				    get_param(PTL_MAX_RDMA_WR_OUT);
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
@@ -331,13 +331,13 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 			
 			WARN();
 			rej.reason = REJECT_REASON_ERROR;
-			rej.xrc_srq_num = ni->srq->xrc_srq_num;
+			rej.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
 		}
 		else {
 			/* If this is not the main process on this node, reject
 			 * the connection but give out SRQ number. */	
 			rej.reason = REJECT_REASON_GOOD_SRQ;
-			rej.xrc_srq_num = ni->srq->xrc_srq_num;
+			rej.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
 		}
 #else
 		ret = accept_connection_request_logical(ni, event);
@@ -464,8 +464,8 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 		/* Create the QP. */
 		memset(&init, 0, sizeof(init));
 		init.qp_context			= ni;
-		init.send_cq			= ni->cq;
-		init.recv_cq			= ni->cq;
+		init.send_cq			= ni->rdma.cq;
+		init.recv_cq			= ni->rdma.cq;
 		init.cap.max_send_wr		= get_param(PTL_MAX_QP_SEND_WR) +
 						  get_param(PTL_MAX_RDMA_WR_OUT);
 		init.cap.max_recv_wr		= 0;
@@ -482,7 +482,7 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 #endif
 		{
 			init.qp_type			= IBV_QPT_RC;
-			init.srq			= ni->srq;
+			init.srq			= ni->rdma.srq;
 			priv.src_id			= ni->id;
 		}
 		priv.options			= ni->options;

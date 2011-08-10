@@ -139,7 +139,7 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	xi_t *xi;					/* used for xt too */
 
 	while(1) {
-		n = ibv_poll_cq(ni->cq, 1, &wc);
+		n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
 		if (n < 0)
 			WARN();
 
@@ -161,9 +161,9 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			pthread_spin_unlock(&xi->rdma_list_lock);
 			break;
 		case BUF_RECV:
-			pthread_spin_lock(&ni->recv_list_lock);
+			pthread_spin_lock(&ni->rdma.recv_list_lock);
 			list_del(&buf->list);
-			pthread_spin_unlock(&ni->recv_list_lock);
+			pthread_spin_unlock(&ni->rdma.recv_list_lock);
 			break;
 		}
 
@@ -188,16 +188,16 @@ static int init_ib_srq(ni_t *ni)
 #ifdef USE_XRC
 	if (ni->options & PTL_NI_LOGICAL) {
 		/* Create XRC SRQ. */
-		ni->srq = ibv_create_xrc_srq(iface->pd, ni->logical.xrc_domain,
-					     ni->cq, &srq_init_attr);
+		ni->rdma.srq = ibv_create_xrc_srq(iface->pd, ni->logical.xrc_domain,
+					     ni->rdma.cq, &srq_init_attr);
 	} else
 #endif
 	{
 		/* Create regular SRQ. */
-		ni->srq = ibv_create_srq(iface->pd, &srq_init_attr);
+		ni->rdma.srq = ibv_create_srq(iface->pd, &srq_init_attr);
 	}
 
-	if (!ni->srq) {
+	if (!ni->rdma.srq) {
 		WARN();
 		return PTL_FAIL;
 	}
@@ -281,9 +281,9 @@ static int bind_iface(iface_t *iface, unsigned int port)
 
 static int cleanup_ib(ni_t *ni)
 {
-	if (ni->srq) {
-		ibv_destroy_srq(ni->srq);
-		ni->srq = NULL;
+	if (ni->rdma.srq) {
+		ibv_destroy_srq(ni->rdma.srq);
+		ni->rdma.srq = NULL;
 	}
 
 #ifdef USE_XRC
@@ -298,14 +298,14 @@ static int cleanup_ib(ni_t *ni)
 	}
 #endif
 
-	if (ni->cq) {
-		ibv_destroy_cq(ni->cq);
-		ni->cq = NULL;
+	if (ni->rdma.cq) {
+		ibv_destroy_cq(ni->rdma.cq);
+		ni->rdma.cq = NULL;
 	}
 
-	if (ni->ch) {
-		ibv_destroy_comp_channel(ni->ch);
-		ni->ch = NULL;
+	if (ni->rdma.ch) {
+		ibv_destroy_comp_channel(ni->rdma.ch);
+		ni->rdma.ch = NULL;
 	}
 
 	return PTL_OK;
@@ -355,15 +355,15 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	}
 
 	/* Create CC, CQ, SRQ. */
-	ni->ch = ibv_create_comp_channel(iface->ibv_context);
-	if (!ni->ch) {
+	ni->rdma.ch = ibv_create_comp_channel(iface->ibv_context);
+	if (!ni->rdma.ch) {
 		ptl_warn("unable to create comp channel\n");
 		WARN();
 		goto err1;
 	}
 
-	flags = fcntl(ni->ch->fd, F_GETFL);
-	if (fcntl(ni->ch->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+	flags = fcntl(ni->rdma.ch->fd, F_GETFL);
+	if (fcntl(ni->rdma.ch->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
 		ptl_warn("Cannot set completion event channel to non blocking\n");
 		WARN();
 		goto err1;
@@ -372,15 +372,15 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	cqe = get_param(PTL_MAX_QP_SEND_WR) + get_param(PTL_MAX_RDMA_WR_OUT) +
 	      get_param(PTL_MAX_SRQ_RECV_WR) + 10;
 
-	ni->cq = ibv_create_cq(iface->ibv_context, cqe, ni, ni->ch, 0);
-	if (!ni->cq) {
+	ni->rdma.cq = ibv_create_cq(iface->ibv_context, cqe, ni, ni->rdma.ch, 0);
+	if (!ni->rdma.cq) {
 		WARN();
 		ptl_warn("unable to create cq\n");
 		WARN();
 		goto err1;
 	}
 
-	err = ibv_req_notify_cq(ni->cq, 0);
+	err = ibv_req_notify_cq(ni->rdma.cq, 0);
 	if (err) {
 		ptl_warn("unable to req notify\n");
 		WARN();
@@ -403,8 +403,8 @@ static void release_buffers(ni_t *ni)
 	 * be in flight. It's only usefull when something bad happens, so
 	 * it's not critical. */
 
-	while(!list_empty(&ni->recv_list)) {
-		struct list_head *entry = ni->recv_list.next;
+	while(!list_empty(&ni->rdma.recv_list)) {
+		struct list_head *entry = ni->rdma.recv_list.next;
 		list_del(entry);
 		buf = list_entry(entry, buf_t, list);
 		buf_put(buf);
@@ -865,14 +865,14 @@ int PtlNIInit(ptl_interface_t iface_id,
 	INIT_LIST_HEAD(&ni->xi_wait_list);
 	INIT_LIST_HEAD(&ni->xt_wait_list);
 	RB_INIT(&ni->mr_tree);
-	INIT_LIST_HEAD(&ni->recv_list);
+	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	INIT_LIST_HEAD(&ni->logical.connect_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->recv_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&ni->rdma.recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
@@ -909,14 +909,14 @@ int PtlNIInit(ptl_interface_t iface_id,
 		goto err3;
 
 	/* Add a watcher for CQ events. */
-	ev_io_init(&ni->cq_watcher, process_recv, ni->ch->fd, EV_READ);
-	ni->cq_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->cq_watcher));
+	ev_io_init(&ni->rdma.cq_watcher, process_recv, ni->rdma.ch->fd, EV_READ);
+	ni->rdma.cq_watcher.data = ni;
+	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.cq_watcher));
 
 	/* Add a watcher for asynchronous events. */
-	ev_io_init(&ni->async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
-	ni->async_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->async_watcher));
+	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
+	ni->rdma.async_watcher.data = ni;
+	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
 
 	/* Ready to listen. */
 	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
@@ -979,8 +979,8 @@ static void ni_cleanup(ni_t *ni)
 
 	ni_rcqp_stop(ni);
 
-	EVL_WATCH(ev_io_stop(evl.loop, &ni->async_watcher));
-	EVL_WATCH(ev_io_stop(evl.loop, &ni->cq_watcher));
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.cq_watcher));
 
 	ni_rcqp_cleanup(ni);
 
@@ -1013,7 +1013,7 @@ static void ni_cleanup(ni_t *ni)
 	pthread_spin_destroy(&ni->xi_wait_list_lock);
 	pthread_spin_destroy(&ni->xt_wait_list_lock);
 	pthread_spin_destroy(&ni->mr_tree_lock);
-	pthread_spin_destroy(&ni->recv_list_lock);
+	pthread_spin_destroy(&ni->rdma.recv_list_lock);
 }
 
 int PtlNIFini(ptl_handle_ni_t ni_handle)

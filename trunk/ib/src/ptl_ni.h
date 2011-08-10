@@ -77,20 +77,22 @@ typedef struct ni {
 	pthread_mutex_t		ct_wait_mutex;
 	pthread_cond_t		ct_wait_cond;
 
-	/* Pending send and receive operations. */
-	struct list_head	recv_list;
-	pthread_spinlock_t	recv_list_lock;
-
 	/* NI identifications */
 	ptl_process_t		id;
 	ptl_uid_t		uid;
 
-	/* IB */
-	struct ibv_cq		*cq;
-	struct ibv_comp_channel	*ch;
-	ev_io			async_watcher;
-	ev_io			cq_watcher;
-	struct ibv_srq		*srq;	/* either regular or XRC */
+	/* RDMA transport specific */
+	struct {
+		struct ibv_cq		*cq;
+		struct ibv_comp_channel	*ch;
+		ev_io			async_watcher;
+		ev_io			cq_watcher;
+		struct ibv_srq		*srq;	/* either regular or XRC */
+
+		/* Pending send and receive operations. */
+		struct list_head	recv_list;
+		pthread_spinlock_t	recv_list_lock;
+	} rdma;
 
 	/* object allocation pools */
 	pool_t			mr_pool;
