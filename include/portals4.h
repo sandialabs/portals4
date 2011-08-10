@@ -674,15 +674,26 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 /*!
  * @addtogroup PT (PT) Portal Table Entries
  * @{ */
+enum pt_options {
+    ONLY_USE_ONCE,
+    FLOWCTRL,
+    ONLY_TRUNCATE,
+    PT_OPTIONS_MASK
+};
 /*! Hint to the underlying implementation that all entries attached to this
  * portal table entry will have the \c PTL_ME_USE_ONCE or \c PTL_LE_USE_ONCE
  * option set. */
-#define PTL_PT_ONLY_USE_ONCE    (1)
+#define PTL_PT_ONLY_USE_ONCE      (1<<ONLY_USE_ONCE)
 
 /*! Enable flow control on this portal table entry. */
-#define PTL_PT_FLOWCTRL         (1<<1)
+#define PTL_PT_FLOWCTRL           (1<<FLOWCTRL)
 
-#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<2) - 1)
+/*! Hint to the underlying implementation that all entries attached to the
+ * priority list on this portal table entry will not have the \c
+ * PTL_ME_NO_TRUNCATE option set. */
+#define PTL_PT_ONLY_TRUNCATE      (1<<ONLY_TRUNCATE)
+
+#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<PT_OPTIONS_MASK) - 1)
 
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
@@ -1267,7 +1278,8 @@ enum mele_options {
     AUTH_USE_JID,
     MANAGE_LOCAL,
     NO_TRUNCATE,
-    MAY_ALIGN
+    MAY_ALIGN,
+    MELE_OPTIONS_MASK
 };
 
 /********************************************
@@ -1383,7 +1395,7 @@ enum mele_options {
  * */
 #define PTL_ME_MAY_ALIGN                (1<<MAY_ALIGN)
 
-#define PTL_ME_APPEND_OPTIONS_MASK	((1<<19)-1)
+#define PTL_ME_APPEND_OPTIONS_MASK	((1<<MELE_OPTIONS_MASK)-1)
 
 /*!
  * @struct ptl_me_t
