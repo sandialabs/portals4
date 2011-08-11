@@ -34,6 +34,8 @@ static inline int ref_put(struct ref *ref, void (*release)(ref_t *ref))
 
 	ref_cnt = __sync_sub_and_fetch(&ref->ref_cnt, 1);
 
+	assert(ref_cnt >= 0);
+
 	if (ref_cnt == 0) {
 	        release(ref);
 	        return 1;
