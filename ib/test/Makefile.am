@@ -1,8 +1,11 @@
-bin_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
+PORTALSLIB = $(top_builddir)/src/libportals.la
 
-ptl_test_CPPFLAGS = -Wall -ggdb -O0 -I/usr/include/libxml2 -I$(top_srcdir)/include
+bin_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test $(TESTS_SHM)
+
+INCLUDES= -I$(top_srcdir)/include
+ptl_test_CPPFLAGS = -Wall -ggdb -O0 -I/usr/include/libxml2
 ptl_test_LDFLAGS = -L$(top_builddir)/src
-ptl_test_LDADD = -lpthread -lrdmacm -libverbs -lxml2 $(top_builddir)/src/libportals.la -lmpi
+ptl_test_LDADD = -lpthread -lrdmacm -libverbs -lxml2 $(PORTALSLIB) -lmpi
 ptl_test_SOURCES = \
 	api.c \
 	api.h \
