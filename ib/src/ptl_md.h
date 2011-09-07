@@ -13,12 +13,13 @@ typedef struct md {
 	struct eq		*eq;
 	struct ct		*ct;
 
-	void *internal_data;
 	mr_t *sge_list_mr;			/* MR for sge_list */
-	struct ibv_sge		*sge_list; /* list of SGE */
-	mr_t **mr_list;				/* MRs for the SGEs */
 
-	struct list_head	list;
+	void *internal_data;
+	mr_t **mr_list;				/* MRs for the SGEs */
+	struct ibv_sge		*sge_list; /* list of SGE */
+	struct shmem_iovec *knem_iovecs; /* list for KNEM */
+
 } md_t;
 
 void md_cleanup(void *arg);

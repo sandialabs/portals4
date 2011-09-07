@@ -356,6 +356,7 @@ void event_dump(ptl_event_t *ev)
 {
 	printf("ev:		%p\n", ev);
 	printf("ev->type:	%d\n", ev->type);
+	printf("ev->ni_fail_type:   %d\n", ev->ni_fail_type);
 	printf("\n");
 }
 

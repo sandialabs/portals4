@@ -75,6 +75,13 @@ extern unsigned int linesize;
 #include "ptl_data.h"
 #include "ptl_hdr.h"
 
+/* SHMEM. */
+#include "ptl_internal_assert.h"
+#include "ptl_internal_atomic.h"
+#include "ptl_internal_alignment.h"
+#include "ptl_internal_locks.h"
+#include "ptl_nemesis.h"
+
 extern int debug;
 extern int atom_type_size[];
 
@@ -163,6 +170,7 @@ enum {
 	STATE_TGT_DATA_OUT,
 	STATE_TGT_RDMA_DESC,
 	STATE_TGT_RDMA_WAIT_DESC,
+	STATE_TGT_SHMEM_DESC,
 	STATE_TGT_SHORT_DATA_IN,
 	STATE_TGT_SHORT_DATA_OUT,
 	STATE_TGT_SEND_ACK,
@@ -219,7 +227,8 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 	return ntohs(port);
 }
 
-int send_message(buf_t *buf, int signaled);
+int send_message_shmem(buf_t *buf, int signaled);
+int send_message_rdma(buf_t *buf, int signaled);
 
 int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length);
@@ -233,9 +242,10 @@ int iov_atomic_in(atom_op_t op, void *src, ptl_iovec_t *iov,
 int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
 
-int post_tgt_rdma(xt_t *xt, data_dir_t dir);
+int post_tgt_rdma(xt_t *xt);
 
 void process_recv(EV_P_ ev_io *w, int revents);
+void process_recv_shmem(ni_t *ni, buf_t *buf);
 
 int process_init(xi_t *xi);
 
@@ -246,5 +256,25 @@ int check_overflow_search_only(le_t *le);
 int check_overflow_search_delete(le_t *le);
 
 buf_t *tgt_alloc_rdma_buf(xt_t *xt);
+
+int knem_init(ni_t *ni);
+void knem_fini(ni_t *ni);
+uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot);
+void knem_unregister(ni_t *ni, uint64_t cookie);
+size_t knem_copy_from(ni_t * ni, void *dst,
+					  uint64_t cookie, uint64_t off, size_t len);
+size_t knem_copy_to(ni_t * ni, uint64_t cookie,
+					uint64_t off, void *src, size_t len);
+size_t knem_copy(ni_t * ni,
+				 uint64_t scookie, uint64_t soffset, 
+				 uint64_t dcookie, uint64_t doffset,
+				 size_t length);
+int do_knem_transfer(xt_t *xt);
+
+int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
+void cleanup_shmem(ni_t *ni);
+
+
+
 
 #endif /* PTL_LOC_H */

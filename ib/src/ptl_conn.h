@@ -23,7 +23,20 @@ enum {
 enum transport_type {
 	CONN_TYPE_NONE,
 	CONN_TYPE_RDMA,
+	CONN_TYPE_SHMEM,
 };
+
+struct xt;
+struct buf;
+struct transport {
+	enum transport_type type;
+
+	int (*post_tgt_dma)(struct xt *xt);
+	int (*send_message)(struct buf *buf, int signaled);
+};
+
+extern struct transport transport_rdma;
+extern struct transport transport_shmem;
 
 /*
  * conn_t
@@ -39,7 +52,7 @@ typedef struct conn {
 	struct list_head	xt_list;
 	pthread_spinlock_t	wait_list_lock;
 
-	enum transport_type transport_type;
+	struct transport transport;
 
 	union {
 		struct {
@@ -48,6 +61,10 @@ typedef struct conn {
 			int			retry_resolve_route;
 			int			retry_connect;
 		} rdma;
+
+		struct {
+			ptl_rank_t      local_rank;	/* local rank on that node. */
+		} shmem;
 	};
 
 	/* logical NI only */

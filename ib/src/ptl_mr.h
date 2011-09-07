@@ -6,7 +6,7 @@ typedef ptl_handle_any_t ptl_handle_mr_t;
 typedef struct mr {
 	obj_t			obj;
 	struct ibv_mr		*ibmr;
-
+	uint64_t knem_cookie;
 	RB_ENTRY(mr) entry;
 } mr_t;
 

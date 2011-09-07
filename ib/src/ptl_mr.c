@@ -16,6 +16,12 @@ void mr_cleanup(void *arg)
 		}
 		mr->ibmr = NULL;
 	}
+
+	if (mr->knem_cookie) {
+		knem_unregister(mr->obj.obj_ni, mr->knem_cookie);
+		mr->knem_cookie = 0;
+	}
+
 }
 
 /* Order the MRs in the tree by start address. */
@@ -35,6 +41,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	void *end = start + length;
 	struct ibv_mr *ibmr = NULL;
 	int access;
+	uint64_t knem_cookie = 0;
 
 	start = (void *)((uintptr_t)start & ~((uintptr_t)pagesize - 1));
 	end = (void *)(((uintptr_t)end + pagesize - 1) &
@@ -57,6 +64,13 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		goto err1;
 	}
 
+	knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
+	if (!knem_cookie) {
+		WARN();
+		err = PTL_FAIL;
+		goto err1;
+	}
+
 	err = mr_alloc(ni, &mr);
 	if (err) {
 		WARN();
@@ -64,6 +78,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 
 	mr->ibmr = ibmr;
+	mr->knem_cookie = knem_cookie;
 	*mr_p = mr;
 
 	return PTL_OK;
@@ -71,6 +86,10 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 err1:
 	if (ibmr)
 		ibv_dereg_mr(ibmr);
+
+	if (knem_cookie)
+		knem_unregister(ni, knem_cookie);
+
 	return err;
 }
 

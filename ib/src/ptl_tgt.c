@@ -648,7 +648,7 @@ static int tgt_data_out(xt_t *xt)
 	xt->rdma_dir = DATA_DIR_OUT;
 
 	switch (data->data_fmt) {
-	case DATA_FMT_DMA:
+	case DATA_FMT_RDMA_DMA:
 		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
 		xt->rdma.cur_rem_off = 0;
 		xt->rdma.num_rem_sge = be32_to_cpu(data->rdma.num_sge);
@@ -659,11 +659,27 @@ static int tgt_data_out(xt_t *xt)
 		next = STATE_TGT_RDMA;
 		break;
 
-	case DATA_FMT_INDIRECT:
+	case DATA_FMT_SHMEM_DMA:
+		xt->shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
+		xt->shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
+		xt->shmem.cur_rem_off = 0;
+
+		if (tgt_rdma_init_loc_off(xt))
+			return STATE_TGT_ERROR;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_RDMA_INDIRECT:
 		next = STATE_TGT_RDMA_DESC;
 		break;
 
+	case DATA_FMT_SHMEM_INDIRECT:
+		next = STATE_TGT_SHMEM_DESC;
+		break;
+
 	default:
+		abort();
 		WARN();
 		return STATE_TGT_ERROR;
 		break;
@@ -683,7 +699,7 @@ static int tgt_rdma(xt_t *xt)
 				&xt->put_resid : &xt->get_resid;
 
 	/* post one or more RDMA operations */
-	err = post_tgt_rdma(xt, xt->rdma_dir);
+	err = xt->conn->transport.post_tgt_dma(xt);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -803,6 +819,67 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 }
 
 /*
+ * tgt_shmem_desc
+ *	initiate read of indirect descriptors for initiator IOV.
+ * Equivalent of tgt_rdma_desc() and tgt_rdma_wait_desc() combined.
+ */
+static int tgt_shmem_desc(xt_t *xt)
+{
+	data_t *data;
+	int err;
+	int next;
+	size_t len;
+
+	data = xt->rdma_dir == DATA_DIR_IN ? xt->data_in : xt->data_out;
+	len = data->shmem.knem_iovec[0].length;
+
+	/*
+	 * Allocate and map indirect buffer and setup to read
+	 * descriptor list from initiator memory.
+	 */
+	/* TODO: alloc + double memory registration is overkill. May be we don't need that for SHMEM. Same with IB. */
+	xt->indir_sge = calloc(1, len);
+	if (!xt->indir_sge) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	if (mr_lookup(obj_to_ni(xt), xt->indir_sge, len, &xt->indir_mr)) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	err = knem_copy(xt->obj.obj_ni,
+					data->shmem.knem_iovec[0].cookie,
+					data->shmem.knem_iovec[0].offset,
+					xt->indir_mr->knem_cookie,
+					xt->indir_sge - xt->indir_mr->ibmr->addr,
+					len);
+	if (err != len) {
+		WARN();
+		next = STATE_TGT_COMM_EVENT;
+		goto done;
+	}
+
+	xt->shmem.cur_rem_iovec = xt->indir_sge;
+	xt->shmem.cur_rem_off = 0;
+	xt->shmem.num_rem_iovecs = len / sizeof(struct shmem_iovec);
+
+	if (tgt_rdma_init_loc_off(xt)) {
+		WARN();
+		next = STATE_TGT_ERROR;
+		goto done;
+	}
+
+	next = STATE_TGT_RDMA;
+
+done:
+	return next;
+}
+
+/*
  * tgt_data_in
  *	handle request for data from initiator to target
  */
@@ -821,7 +898,7 @@ static int tgt_data_in(xt_t *xt)
 
 		next = STATE_TGT_COMM_EVENT;
 		break;
-	case DATA_FMT_DMA:
+	case DATA_FMT_RDMA_DMA:
 		/* Read from SG list provided directly in request */
 		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
 		xt->rdma.cur_rem_off = 0;
@@ -837,10 +914,29 @@ static int tgt_data_in(xt_t *xt)
 		xt->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA;
 		break;
-	case DATA_FMT_INDIRECT:
+
+	case DATA_FMT_SHMEM_DMA:
+		xt->shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
+		xt->shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
+		xt->shmem.cur_rem_off = 0;
+
+		if (tgt_rdma_init_loc_off(xt))
+			return STATE_TGT_ERROR;
+
+		xt->rdma_dir = DATA_DIR_IN;
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_RDMA_INDIRECT:
 		xt->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA_DESC;
 		break;
+
+	case DATA_FMT_SHMEM_INDIRECT:
+		xt->rdma_dir = DATA_DIR_IN;
+		next = STATE_TGT_SHMEM_DESC;
+		break;
+		
 	default:
 		assert(0);
 		WARN();
@@ -896,6 +992,7 @@ static int tgt_swap_data_in(xt_t *xt)
 
 	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+		abort();
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -1225,7 +1322,10 @@ static int tgt_send_ack(xt_t *xt)
 
 	xt->event_mask &= ~XT_ACK_EVENT;
 
-	err = buf_alloc(ni, &buf);
+	if (xt->conn->transport.type == CONN_TYPE_RDMA)
+		err = buf_alloc(ni, &buf);
+	else
+		err = sbuf_alloc(ni, &buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -1267,7 +1367,7 @@ static int tgt_send_ack(xt_t *xt)
 
 	buf->length = sizeof(*hdr);
 
-	err = send_message(buf, 1);
+	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
 		WARN();
 		buf_put(buf);
@@ -1286,7 +1386,10 @@ static int tgt_send_reply(xt_t *xt)
 
 	xt->event_mask &= ~XT_REPLY_EVENT;
 
-	err = buf_alloc(ni, &buf);
+	if (xt->conn->transport.type == CONN_TYPE_RDMA)
+		err = buf_alloc(ni, &buf);
+	else
+		err = sbuf_alloc(ni, &buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -1306,7 +1409,7 @@ static int tgt_send_reply(xt_t *xt)
 	hdr->operation = OP_REPLY;
 	buf->length = sizeof(*hdr);
 
-	err = send_message(buf, 1);
+	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
 		WARN();
 		buf_put(buf);
@@ -1462,6 +1565,7 @@ int process_tgt(xt_t *xt)
 		if (debug)
 			printf("%p: tgt state = %s\n",
 				   xt, tgt_state_name[state]);
+
 		switch (state) {
 		case STATE_TGT_START:
 			state = tgt_start(xt);
@@ -1489,6 +1593,9 @@ int process_tgt(xt_t *xt)
 			break;
 		case STATE_TGT_RDMA_WAIT_DESC:
 			state = tgt_rdma_wait_desc(xt);
+			break;
+		case STATE_TGT_SHMEM_DESC:
+			state = tgt_shmem_desc(xt);
 			break;
 		case STATE_TGT_RDMA:
 			state = tgt_rdma(xt);

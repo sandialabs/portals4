@@ -29,12 +29,18 @@ enum {
 };
 
 struct xremote {
-	struct {
-		struct ibv_qp *qp;					   /* from RDMA CM */
+	union {
+		struct {
+			struct ibv_qp *qp;					   /* from RDMA CM */
 #ifdef USE_XRC
-		uint32_t xrc_remote_srq_num;
+			uint32_t xrc_remote_srq_num;
 #endif
-	} rdma;
+		} rdma;
+
+		struct {
+			ptl_rank_t local_rank;
+		} shmem;
+	};
 };
 
 #define PTL_BASE_XX					\
@@ -54,7 +60,12 @@ struct xremote {
 		atomic_t 		rdma_comp;			\
 		int			interim_rdma;			\
 	} rdma;									\
-	ptl_size_t		cur_loc_iov_index;	\
+	struct {								\
+		struct shmem_iovec *cur_rem_iovec;	\
+		ptl_size_t		num_rem_iovecs;		\
+		ptl_size_t		cur_rem_off;		\
+	} shmem;								\
+	ptl_size_t		cur_loc_iov_index;		\
 	ptl_size_t		cur_loc_iov_off;	\
 	uint32_t  		rdma_dir;		\
 	int			state;			\
@@ -146,7 +157,7 @@ static inline int xi_put(xi_t *xi)
 
 static inline ptl_handle_xi_t xi_to_handle(xi_t *xi)
 {
-        return (ptl_handle_xi_t)xi->obj.obj_handle;
+	return (ptl_handle_xi_t)xi->obj.obj_handle;
 }
 
 /* target side transaction descriptor */
@@ -174,7 +185,9 @@ typedef struct xt {
 	/* used to put xt on unexpected list */
 	struct list_head	unexpected_list;
 
-	struct ibv_sge		*indir_sge;
+	/* Holds the indirect SGE or KNEM iovecs. indir_mr describes the
+	 * memory allocated.  */
+	void			*indir_sge;
 	mr_t			*indir_mr;
 
 	void *start;
@@ -233,12 +246,16 @@ static inline void set_xi_dest(xi_t *xi, conn_t *connect)
 	ni_t *ni = to_ni(xi);
 #endif
 
-	if (connect->transport_type == CONN_TYPE_RDMA) {
+	if (connect->transport.type == CONN_TYPE_RDMA) {
 		xi->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
 #endif
+	} else {
+		assert(connect->transport.type == CONN_TYPE_SHMEM);
+		assert(connect->shmem.local_rank != -1);
+		xi->dest.shmem.local_rank = connect->shmem.local_rank;
 	}
 }
 
@@ -248,12 +265,16 @@ static inline void set_xt_dest(xt_t *xt, conn_t *connect)
 	ni_t *ni = to_ni(xt);
 #endif
 
-	if (connect->transport_type == CONN_TYPE_RDMA) {
+	if (connect->transport.type == CONN_TYPE_RDMA) {
 		xt->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
 #endif
+	} else {
+		assert(connect->transport.type == CONN_TYPE_SHMEM);
+		assert(connect->shmem.local_rank != -1);
+		xt->dest.shmem.local_rank = connect->shmem.local_rank;
 	}
 }
 

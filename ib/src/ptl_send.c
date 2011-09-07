@@ -7,7 +7,7 @@
  * send_message
  *	send a message to remote end
  */
-int send_message(buf_t *buf, int signaled)
+int send_message_rdma(buf_t *buf, int signaled)
 {
 	int err;
 	xi_t *xi = buf->xi;
@@ -25,7 +25,7 @@ int send_message(buf_t *buf, int signaled)
 	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
 #endif
 
-	buf->rdma.comp = signaled;
+	buf->comp = signaled;
 
 	pthread_spin_lock(&xi->send_list_lock);
 
@@ -37,6 +37,37 @@ int send_message(buf_t *buf, int signaled)
 
 		return PTL_FAIL;
 	}
+
+	if (signaled) {
+		assert(buf->num_mr == 0);
+		list_add_tail(&buf->list, &xi->send_list);
+	} else {
+		list_add_tail(&buf->list, &xi->ack_list);
+	}
+
+	pthread_spin_unlock(&xi->send_list_lock);
+
+	return PTL_OK;
+}
+
+int send_message_shmem(buf_t *buf, int signaled)
+{
+	xi_t *xi = buf->xi;
+
+	/* Keep a reference on the buffer so it doesn't get freed. will be
+	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
+	buf_get(buf);
+
+	buf->type = BUF_SHMEM;
+	buf->comp = signaled;
+
+	buf->shmem.source = buf->obj.obj_ni->shmem.local_rank;
+
+	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
+
+	pthread_spin_lock(&xi->send_list_lock);
+
+	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
 
 	if (signaled) {
 		assert(buf->num_mr == 0);

@@ -200,7 +200,10 @@ static int init_send_req(xi_t *xi)
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
 
-	err = buf_alloc(ni, &buf);
+	if (xi->conn->transport.type == CONN_TYPE_RDMA)
+		err = buf_alloc(ni, &buf);
+	else
+		err = sbuf_alloc(ni, &buf);
 	if (err) {
 		WARN();
 		return STATE_INIT_ERROR;
@@ -223,14 +226,14 @@ static int init_send_req(xi_t *xi)
 	case OP_ATOMIC:
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
-							   length, buf);
+							   length, buf, xi->conn->transport.type);
 		if (err)
 			goto error;
 		break;
 
 	case OP_GET:
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
-							   length, buf);
+							   length, buf, xi->conn->transport.type);
 		if (err)
 			goto error;
 		break;
@@ -238,13 +241,13 @@ static int init_send_req(xi_t *xi)
 	case OP_FETCH:
 	case OP_SWAP:
 		err = append_init_data(xi->get_md, DATA_DIR_IN, xi->get_offset,
-							   length, buf);
+							   length, buf, xi->conn->transport.type);
 		if (err)
 			goto error;
 
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(xi->put_md, DATA_DIR_OUT, xi->put_offset,
-							   length, buf);
+							   length, buf, xi->conn->transport.type);
 		if (err)
 			goto error;
 		break;
@@ -267,7 +270,7 @@ static int init_send_req(xi_t *xi)
 		/* If we want an event, then do not request a completion for
 		 * that message. It will be freed when we receive the ACK or
 		 * reply. */
-		err = send_message(buf, !hdr->ack_req);
+		err = xi->conn->transport.send_message(buf, !hdr->ack_req);
 	if (err) {
 		buf_put(buf);
 		return STATE_INIT_SEND_ERROR;
@@ -369,7 +372,9 @@ static int late_send_event(xi_t *xi)
 	if (xi->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(xi);
 	
-	if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
+	if (xi->ni_fail == PTL_NI_UNDELIVERABLE)
+		return STATE_INIT_CLEANUP;
+	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
 		return STATE_INIT_ACK_EVENT;
 	else if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
 		return STATE_INIT_REPLY_EVENT;

@@ -15,7 +15,7 @@ void conn_init(ni_t *ni, conn_t *conn)
 
 	conn->ni = ni;
 	conn->state = CONN_STATE_DISCONNECTED;
-	conn->transport_type = CONN_TYPE_RDMA;
+	conn->transport = transport_rdma;
 
 	INIT_LIST_HEAD(&conn->xi_list);
 	INIT_LIST_HEAD(&conn->xt_list);
@@ -43,9 +43,9 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 	void **ret;
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		if (unlikely(id->rank >= ni->logical.map_size)) {
-			ptl_warn("Invalid rank (%d >= %d)\n",
-				 id->rank, ni->logical.map_size);
+		if (unlikely(id->rank >= ni->iface->map_size)) {
+			ptl_warn("Invalid rank (%d >= %ld)\n",
+				 id->rank, ni->iface->map_size);
 			return NULL;
 		}
 

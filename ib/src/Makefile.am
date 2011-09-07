@@ -4,11 +4,11 @@ libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
 libportals_la_SOURCES = \
 	ptl.c \
-	ptl_param.c \
-	ptl_param.h \
 	ptl_atomic.c \
 	ptl_buf.c \
 	ptl_buf.h \
+	ptl_conn.c \
+	ptl_conn.h \
 	ptl_ct.c \
 	ptl_ct.h \
 	ptl_data.c \
@@ -26,6 +26,11 @@ libportals_la_SOURCES = \
 	ptl_index.c \
 	ptl_index.h \
 	ptl_init.c \
+	ptl_internal_alignment.h \
+	ptl_internal_assert.h \
+	ptl_internal_atomic.h \
+	ptl_internal_locks.h \
+	ptl_knem.c \
 	ptl_le.c \
 	ptl_le.h \
 	ptl_loc.h \
@@ -37,21 +42,25 @@ libportals_la_SOURCES = \
 	ptl_move.c \
 	ptl_mr.c \
 	ptl_mr.h \
+	ptl_nemesis.c \
+	ptl_nemesis.h \
 	ptl_ni.c \
 	ptl_ni.h \
-	ptl_conn.c \
-	ptl_conn.h \
 	ptl_obj.c \
 	ptl_obj.h \
+	ptl_param.c \
+	ptl_param.h \
 	ptl_pt.c \
 	ptl_pt.h \
 	ptl_rdma.c \
 	ptl_recv.c \
 	ptl_ref.h \
+	ptl_rt.c \
+	ptl_rt.h \
 	ptl_send.c \
+	ptl_shmem.c \
 	ptl_tgt.c \
 	ptl_types.h \
 	ptl_xx.c \
-	ptl_xx.h \
-	ptl_rt.c \
-	ptl_rt.h
+	ptl_xx.h
+

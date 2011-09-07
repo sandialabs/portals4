@@ -110,9 +110,10 @@ static void set_limits(ni_t *ni, ptl_ni_limits_t *desired)
 static void ni_rcqp_stop(ni_t *ni)
 {
 	int i;
-	const int map_size = ni->logical.map_size;
 
 	if (ni->options & PTL_NI_LOGICAL) {
+		const int map_size = ni->logical.map_size;
+
 		for (i = 0; i < map_size; i++) {
 			conn_t *connect = &ni->logical.rank_table[i].connect;
 		
@@ -122,7 +123,8 @@ static void ni_rcqp_stop(ni_t *ni)
 				&& connect->state != CONN_STATE_XRC_CONNECTED
 #endif
 				) {
-				rdma_disconnect(connect->rdma.cm_id);
+				if (connect->transport.type == CONN_TYPE_RDMA)
+					rdma_disconnect(connect->rdma.cm_id);
 			}
 			pthread_mutex_unlock(&connect->mutex);
 		}
@@ -165,6 +167,8 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			list_del(&buf->list);
 			pthread_spin_unlock(&ni->rdma.recv_list_lock);
 			break;
+		default:
+			abort();
 		}
 
 		buf_put(buf);
@@ -281,6 +285,8 @@ static int bind_iface(iface_t *iface, unsigned int port)
 
 static int cleanup_ib(ni_t *ni)
 {
+	ni_rcqp_cleanup(ni);
+
 	if (ni->rdma.srq) {
 		ibv_destroy_srq(ni->rdma.srq);
 		ni->rdma.srq = NULL;
@@ -417,7 +423,6 @@ static void release_buffers(ni_t *ni)
 static int init_pools(ni_t *ni)
 {
 	int err;
-	unsigned int max_sge;
 
 	ni->mr_pool.cleanup = mr_cleanup;
 
@@ -500,10 +505,36 @@ static int init_pools(ni_t *ni)
 	ni->buf_pool.cleanup = buf_cleanup;
 	ni->buf_pool.segment_size = 128*1024;
 
-	max_sge = get_param(PTL_MAX_QP_SEND_SGE);
-	err = pool_init(&ni->buf_pool, "buf", sizeof(buf_t) + 
-					max_sge * sizeof(mr_t *),
+	err = pool_init(&ni->buf_pool, "buf", real_buf_t_size(),
 					POOL_BUF, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	/* 
+	 * Buffers in shared memory. The buffers will be allocated later,
+	 * but not by the pool management. We compute the size now.
+	 */
+	//PARSE_ENV_NUM("OMPI_COMM_WORLD_LOCAL_SIZE", ni->shmem.num_siblings, 1);
+	{
+		char *str = getenv("OMPI_COMM_WORLD_LOCAL_SIZE");
+		ni->shmem.num_siblings = atoi(str);
+	}
+
+	/* Allocate a pool of buffers in the mmapped region. 
+	 * TODO: make 512 a parameter. */
+	ni->shmem.per_proc_comm_buf_numbers = 512;
+
+	ni->sbuf_pool.setup = buf_setup;
+	ni->sbuf_pool.init = buf_init;
+	ni->sbuf_pool.cleanup = buf_cleanup;
+	ni->sbuf_pool.use_pre_alloc_buffer = 1;
+	ni->sbuf_pool.round_size = real_buf_t_size();
+	ni->sbuf_pool.segment_size = ni->shmem.per_proc_comm_buf_numbers * ni->sbuf_pool.round_size;
+
+	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
+					POOL_SBUF, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -653,8 +684,8 @@ static int get_xrc_domain(ni_t *ni)
  * init_mapping
  */
 static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
-			   ptl_process_t *desired_mapping,
-			   ptl_process_t *actual_mapping)
+						ptl_process_t *desired_mapping,
+						ptl_process_t *actual_mapping)
 {
 	int i;
 	int err;
@@ -692,7 +723,7 @@ static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
 	/* return mapping to caller. */
 	if (actual_mapping)
 		memcpy(actual_mapping, iface->actual_mapping,
-		       map_size*sizeof(ptl_process_t));
+			   map_size*sizeof(ptl_process_t));
 
 	err = create_tables(ni, iface->map_size, iface->actual_mapping);
 	if (err) {
@@ -740,15 +771,68 @@ static void process_async(EV_P_ ev_io *w, int revents)
 	gbl_put(gbl);
 }
 
-int PtlNIInit(ptl_interface_t iface_id,
-	      unsigned int options,
-	      ptl_pid_t pid,
-	      ptl_ni_limits_t *desired,
-	      ptl_ni_limits_t *actual,
-	      ptl_size_t map_size,
-	      ptl_process_t *desired_mapping,
-	      ptl_process_t *actual_mapping,
-	      ptl_handle_ni_t *ni_handle)
+static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
+{
+	int err;
+
+	err = init_ib(iface, ni);
+	if (unlikely(err))
+		goto error;
+
+	/* Create shared receive queue */
+	err = init_ib_srq(ni);
+	if (unlikely(err))
+		goto error;
+
+	/* Add a watcher for CQ events. */
+	ev_io_init(&ni->rdma.cq_watcher, process_recv, ni->rdma.ch->fd, EV_READ);
+	ni->rdma.cq_watcher.data = ni;
+	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.cq_watcher));
+
+	/* Add a watcher for asynchronous events. */
+	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
+	ni->rdma.async_watcher.data = ni;
+	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
+
+	/* Ready to listen. */
+	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
+		if (rdma_listen(iface->listen_id, 0)) {
+			ptl_warn("Failed to listen\n");
+			WARN();
+			goto error;
+		}
+
+		iface->listen = 1;
+	}
+
+ error:
+	return err;
+}
+
+/* For SHMEM we need the local rank of that rank on the node. */
+int get_local_rank(ni_t *ni)
+{
+	char *env;
+
+	env = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+	if (env) {
+		ni->shmem.local_rank = atoi(env);
+		return PTL_OK;
+	} else {
+		ptl_warn("Environment variable OMPI_COMM_WORLD_LOCAL_RANK is missing\n"); 
+		return PTL_FAIL;
+	}
+}
+
+int PtlNIInit(ptl_interface_t   iface_id,
+              unsigned int      options,
+              ptl_pid_t         pid,
+              ptl_ni_limits_t   *desired,
+              ptl_ni_limits_t   *actual,
+              ptl_size_t        map_size,
+              ptl_process_t     *desired_mapping,
+              ptl_process_t     *actual_mapping,
+              ptl_handle_ni_t   *ni_handle)
 {
 	int err;
 	ni_t *ni;
@@ -860,6 +944,7 @@ int PtlNIInit(ptl_interface_t iface_id,
 #endif
 	set_limits(ni, desired);
 	ni->uid = geteuid();
+	ni->shmem.knem_fd = -1;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
 	INIT_LIST_HEAD(&ni->xi_wait_list);
@@ -892,41 +977,27 @@ int PtlNIInit(ptl_interface_t iface_id,
 	if (unlikely(err))
 		goto err3;
 
-	err = init_ib(iface, ni);
+	err = get_local_rank(ni);
 	if (unlikely(err))
 		goto err3;
 
 	if (options & PTL_NI_LOGICAL) {
 		err = init_mapping(ni, iface, map_size,
-				   desired_mapping, actual_mapping);
+						   desired_mapping, actual_mapping);
 		if (unlikely(err))
 			goto err3;
 	}
 
-	/* Create shared receive queue */
-	err = init_ib_srq(ni);
-	if (unlikely(err))
+	err = PtlNIInit_IB(iface, ni);
+	if (unlikely(err)) {
+		WARN();
 		goto err3;
+	}
 
-	/* Add a watcher for CQ events. */
-	ev_io_init(&ni->rdma.cq_watcher, process_recv, ni->rdma.ch->fd, EV_READ);
-	ni->rdma.cq_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.cq_watcher));
-
-	/* Add a watcher for asynchronous events. */
-	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
-	ni->rdma.async_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
-
-	/* Ready to listen. */
-	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
-		if (rdma_listen(iface->listen_id, 0)) {
-			ptl_warn("Failed to listen\n");
-			WARN();
-			goto err1;
-		}
-
-		iface->listen = 1;
+	err = PtlNIInit_shmem(iface, ni);
+	if (unlikely(err)) {
+		WARN();
+		goto err3;
 	}
 
 	err = iface_add_ni(iface, ni);
@@ -955,6 +1026,41 @@ int PtlNIInit(ptl_interface_t iface_id,
 	return err;
 }
 
+#if 0
+int PtlSetMap(ptl_handle_ni_t ni_handle,
+			  ptl_size_t      map_size,
+			  ptl_process_t  *mapping)
+{
+	int err;
+	ni_t *ni;
+	gbl_t *gbl;
+			  
+	err = get_gbl(&gbl);
+	if (unlikely(err)) {
+		return err;
+	}
+
+	err = to_ni(ni_handle, &ni);
+	if (unlikely(err))
+		goto err1;
+
+	err = init_mapping(ni, ni->iface, map_size, mapping);
+	if (unlikely(err))
+		goto err2;
+
+	ni_put(ni);
+	gbl_put(gbl);
+	return PTL_OK;
+
+ err2:	
+	ni_put(ni);
+ err1:
+	gbl_put(gbl);
+
+	return PTL_FAIL;
+}
+#endif
+
 static void interrupt_cts(ni_t *ni)
 {
 	struct list_head *l;
@@ -982,13 +1088,13 @@ static void ni_cleanup(ni_t *ni)
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.cq_watcher));
 
-	ni_rcqp_cleanup(ni);
-
+	cleanup_shmem(ni);
 	cleanup_ib(ni);
 
 	release_buffers(ni);
 
 	pool_fini(&ni->buf_pool);
+	pool_fini(&ni->sbuf_pool);
 	pool_fini(&ni->xt_pool);
 	pool_fini(&ni->xi_pool);
 	pool_fini(&ni->ct_pool);

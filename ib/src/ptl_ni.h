@@ -11,8 +11,8 @@
  *	only used for logical NIs
  */
 typedef struct rank_entry {
-	ptl_rank_t		rank;
-	ptl_rank_t		main_rank;		/* main rank on NID */
+	ptl_rank_t		rank;		/* world rank */
+	ptl_rank_t		main_rank;	/* main rank on NID */
 	ptl_nid_t		nid;
 	ptl_pid_t		pid;
 #ifdef USE_XRC
@@ -20,6 +20,15 @@ typedef struct rank_entry {
 #endif
 	conn_t			connect;
 } entry_t;
+
+/* Used by SHMEM to communicate the PIDs between the local ranks for a
+ * physical NI. */
+struct shmem_pid_table {
+	ptl_process_t id;
+
+	/* Set to 1 when id is valid. */
+	int valid;
+};
 
 /*
  * ni_t
@@ -94,6 +103,19 @@ typedef struct ni {
 		pthread_spinlock_t	recv_list_lock;
 	} rdma;
 
+	/* RDMA transport specific */
+	struct {
+		uint8_t *comm_pad;
+		size_t comm_pad_size;
+		size_t per_proc_comm_buf_size;
+		int per_proc_comm_buf_numbers;
+		size_t num_siblings;		/* number of ranks on the node */
+		ptl_rank_t local_rank;		/* local rank on this node [0..num_siblings[ */
+		int knem_fd;
+		struct NEMESIS_blocking_queue *receiveQ;
+		pthread_t shmem_catcher;
+	} shmem;
+
 	/* object allocation pools */
 	pool_t			mr_pool;
 	pool_t			md_pool;
@@ -104,6 +126,7 @@ typedef struct ni {
 	pool_t			xi_pool;
 	pool_t			xt_pool;
 	pool_t			buf_pool;
+	pool_t			sbuf_pool;
 
 	/* Connection mappings. */
 	union {
