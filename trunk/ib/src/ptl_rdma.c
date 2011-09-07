@@ -24,7 +24,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->rdma.comp = comp;
+	rdma_buf->comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
@@ -86,7 +86,7 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	if (num_loc_sge > get_param(PTL_MAX_QP_SEND_SGE))
 		return PTL_FAIL;
 
-	rdma_buf->rdma.comp = comp;
+	rdma_buf->comp = comp;
 
 	pthread_spin_lock(&xt->rdma_list_lock);
 	list_add_tail(&rdma_buf->list, &xt->rdma_list);
@@ -127,6 +127,181 @@ static int rdma_write(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 		}
 		return PTL_FAIL;
 	}
+
+	return PTL_OK;
+}
+
+/*
+ * build_rdma_sge
+ *	Build the local scatter gather list for a target RDMA operation.
+ *
+ * Returns the number of bytes to be transferred by the SG list.
+ */
+static ptl_size_t do_knem_copy(xt_t *xt,
+							   ptl_size_t rem_len, uint64_t rcookie, uint64_t roffset,
+							   ptl_size_t *loc_index, ptl_size_t *loc_off,
+							   int max_loc_index,
+							   data_dir_t dir)
+{
+	me_t *me = xt->me;
+	ni_t *ni = me->obj.obj_ni;
+	ptl_iovec_t *iov;
+	ptl_size_t tot_len = 0;
+	ptl_size_t len;
+	mr_t *mr;
+
+	while (tot_len < rem_len) {
+		len = rem_len - tot_len;
+		if (me->num_iov) {
+			void *addr;
+			int err;
+
+			if (*loc_index >= max_loc_index) {
+				WARN();
+				break;
+			}
+			iov = ((ptl_iovec_t *)me->start) + *loc_index;
+
+			addr = iov->iov_base + *loc_off;
+			if (len > iov->iov_len - *loc_off)
+				len = iov->iov_len - *loc_off;
+
+			err = mr_lookup(xt->obj.obj_ni, addr, len, &mr);
+			if (err) {
+				WARN();
+				break;
+			}
+
+			if (dir == DATA_DIR_IN)
+				err = knem_copy(ni, rcookie, roffset, 
+								mr->knem_cookie, addr - mr->ibmr->addr,
+								len);
+			else
+				err = knem_copy(ni, 
+								mr->knem_cookie, addr - mr->ibmr->addr,
+								rcookie, roffset,
+								len);
+
+			/* TODO: cache it ? */
+			mr_put(mr);
+
+			tot_len += len;
+			*loc_off += len;
+			roffset += len;
+			if (tot_len < rem_len && *loc_off >= iov->iov_len) {
+				if (*loc_index < max_loc_index) {
+					*loc_off = 0;
+					(*loc_index)++;
+				} else
+					break;
+			}
+		} else {
+			int err;
+			mr_t *mr;
+			void *addr;
+			ptl_size_t len_available = me->length - *loc_off;
+
+			assert(me->length > *loc_off);
+				
+			if (len > len_available)
+				len = len_available;
+
+			addr = me->start + *loc_off;
+
+			err = mr_lookup(ni, addr, len, &mr);
+			if (err) {
+				WARN();
+				break;
+			}
+
+			if (dir == DATA_DIR_IN)
+				knem_copy(ni, rcookie, roffset, 
+						  mr->knem_cookie, addr - mr->ibmr->addr,
+						  len);
+			else
+				knem_copy(ni, 
+						  mr->knem_cookie, addr - mr->ibmr->addr,
+						  rcookie, roffset,
+						  len);
+
+			/* TODO: cache it ? */
+			mr_put(mr);
+
+			tot_len += len;
+			*loc_off += len;
+			roffset += len;
+			if (tot_len < rem_len && *loc_off >= mr->ibmr->length)
+				break;
+		}
+	}
+
+	return tot_len;
+}
+
+/*
+ * post_tgt_rdma
+ *	Issue one or more RDMA from target to initiator based on target
+ * transfer state.
+ *
+ * xt - target transfer context
+ * dir - direction of transfer from target perspective
+ */
+int do_knem_transfer(xt_t *xt)
+{
+	uint64_t rcookie;
+	uint64_t roffset;
+	ptl_size_t bytes;
+	ptl_size_t iov_index = xt->cur_loc_iov_index;
+	ptl_size_t iov_off = xt->cur_loc_iov_off;
+	uint32_t rlength;
+	uint32_t rseg_length;
+	data_dir_t dir = xt->rdma_dir;
+	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &xt->put_resid : &xt->get_resid;
+
+	rseg_length = xt->shmem.cur_rem_iovec->length;
+	rcookie = xt->shmem.cur_rem_iovec->cookie;
+	roffset = xt->shmem.cur_rem_iovec->offset;
+
+	while (*resid > 0) {
+
+		roffset += xt->shmem.cur_rem_off;
+		rlength = rseg_length - xt->shmem.cur_rem_off;
+
+		if (debug)
+			printf("rcookie(0x%" PRIx64 "), rlen(%d)\n", rcookie, rlength);
+
+		if (rlength > *resid)
+			rlength = *resid;
+
+		bytes = do_knem_copy(xt, rlength, rcookie, roffset,
+							 &iov_index, &iov_off, xt->le->num_iov,
+							 dir);
+		if (!bytes) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		*resid -= bytes;
+		xt->cur_loc_iov_index = iov_index;
+		xt->cur_loc_iov_off = iov_off;
+		xt->shmem.cur_rem_off += bytes;
+
+		if (*resid && xt->shmem.cur_rem_off >= rseg_length) {
+			if (xt->shmem.num_rem_iovecs) {
+				xt->shmem.cur_rem_iovec++;
+				rseg_length = xt->shmem.cur_rem_iovec->length;
+				rcookie = xt->shmem.cur_rem_iovec->cookie;
+				roffset = xt->shmem.cur_rem_iovec->offset;
+				xt->shmem.cur_rem_off = 0;
+			} else {
+				WARN();
+				return PTL_FAIL;
+			}
+		}
+	}
+
+	if (debug)
+		printf("DMA done, resid(%d)\n", (int) *resid);
 
 	return PTL_OK;
 }
@@ -232,7 +407,7 @@ static ptl_size_t build_rdma_sge(xt_t *xt, buf_t *buf, ptl_size_t rem_len,
  * xt - target transfer context
  * dir - direction of transfer from target perspective
  */
-int post_tgt_rdma(xt_t *xt, data_dir_t dir)
+int post_tgt_rdma(xt_t *xt)
 {
 	uint64_t raddr;
 	uint32_t rkey;
@@ -240,9 +415,10 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 	struct ibv_sge sge[get_param(PTL_MAX_QP_SEND_SGE)];
 	int entries = 0;
 	ptl_size_t iov_index = xt->cur_loc_iov_index;
-	ptl_size_t iov_off = xt->cur_loc_iov_off;;
+	ptl_size_t iov_off = xt->cur_loc_iov_off;
 	uint32_t rlength;
 	uint32_t rseg_length;
+	data_dir_t dir = xt->rdma_dir;
 	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &xt->put_resid : &xt->get_resid;
 	int err;
 	int comp = 0;
@@ -329,3 +505,17 @@ int post_tgt_rdma(xt_t *xt, data_dir_t dir)
 
 	return PTL_OK;
 }
+
+struct transport transport_rdma = {
+	.type = CONN_TYPE_RDMA,
+
+	.post_tgt_dma = post_tgt_rdma,
+	.send_message = send_message_rdma,
+};
+
+struct transport transport_shmem = {
+	.type = CONN_TYPE_SHMEM,
+
+	.post_tgt_dma = do_knem_transfer,
+	.send_message = send_message_shmem,
+};

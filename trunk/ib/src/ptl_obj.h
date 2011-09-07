@@ -19,6 +19,7 @@ enum pool_type {
 	POOL_XI,
 	POOL_XT,
 	POOL_BUF,
+	POOL_SBUF,					/* SHMEM buffers */
 	POOL_LAST,		/* keep me last */
 };
 
@@ -62,6 +63,11 @@ typedef struct pool {
 	int			round_size;
 	int			segment_size;
 	int			obj_per_segment;
+
+	/* */
+	int use_pre_alloc_buffer;
+	void *pre_alloc_buffer;
+	
 } pool_t;
 
 /*
@@ -168,7 +174,7 @@ static inline obj_t *dequeue_free_obj(pool_t *pool)
     return retv;
 }
 
-static inline obj_t *enqueue_free_obj(pool_t *pool, obj_t *obj)
+static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
 {
 	obj_t *oldv, *newv, *tmpv;
 

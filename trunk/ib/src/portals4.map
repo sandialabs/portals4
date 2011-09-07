@@ -43,6 +43,7 @@
 		PtlPTEnable;
 		PtlPTFree;
 		PtlPut;
+		PtlSetMap;
 		PtlStartBundle;
 		PtlSwap;
 		PtlTriggeredAtomic;

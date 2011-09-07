@@ -43,6 +43,8 @@ AC_ARG_ENABLE([arg-checking],
 AS_IF([test "x$enable_arg_checking" == xno],
       [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 
+CFLAGS="$CFLAGS -std=gnu99"
+
 # Whether to use XRC or not. If RC is selected then they are used like
 # an XRC qp (ie. half-duplex connection). This is a temporary mesure.
 AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])

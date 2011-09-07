@@ -13,7 +13,7 @@ int buf_setup(void *arg)
 
 	buf->num_mr = 0;
 	buf->xt = NULL;
-	buf->rdma.comp = 0;
+	buf->comp = 0;
 	buf->data = buf->internal_data;
 
 	return PTL_OK;
@@ -29,6 +29,9 @@ void buf_cleanup(void *arg)
 
 	for (i=0; i<buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
+
+	if (buf->xi)
+		xi_put(buf->xi);
 }
 
 /*
@@ -37,19 +40,24 @@ void buf_cleanup(void *arg)
 int buf_init(void *arg, void *parm)
 {
 	buf_t *buf = arg;
-	struct ibv_mr *mr = parm;
 
 	INIT_LIST_HEAD(&buf->list);
 
 	buf->length = 0;
 
-	buf->rdma.send_wr.next = NULL;
-	buf->rdma.send_wr.wr_id = (uintptr_t)buf;
-	buf->rdma.send_wr.sg_list = buf->rdma.sg_list;
-	buf->rdma.send_wr.num_sge = 1;
+	if (parm) {
+		/* This buffer carries an MR, so it's an IB buffer, not a
+		 * buffer in shared memory. */
+		struct ibv_mr *mr = parm;
 
-	buf->rdma.sg_list[0].addr = (uintptr_t)buf->internal_data;
-	buf->rdma.sg_list[0].lkey = mr->lkey;
+		buf->rdma.send_wr.next = NULL;
+		buf->rdma.send_wr.wr_id = (uintptr_t)buf;
+		buf->rdma.send_wr.sg_list = buf->rdma.sg_list;
+		buf->rdma.send_wr.num_sge = 1;
+
+		buf->rdma.sg_list[0].addr = (uintptr_t)buf->internal_data;
+		buf->rdma.sg_list[0].lkey = mr->lkey;
+	}
 
 	return 0;
 }

@@ -11,11 +11,17 @@ static void *obj_get_zero_filled_segment(pool_t *pool)
 	int err;
 	void *p;
 
-	err = posix_memalign(&p, pagesize, pool->segment_size);
-	if (unlikely(err))
-		return NULL;
+	if (pool->use_pre_alloc_buffer) {
+		p = pool->pre_alloc_buffer;
+		pool->pre_alloc_buffer = NULL;
+	} else {
+		err = posix_memalign(&p, pagesize, pool->segment_size);
+		if (unlikely(err))
+			p = NULL;
+	}
 
-	memset(p, 0, pool->segment_size);
+	if (p)
+		memset(p, 0, pool->segment_size);
 
 	return p;
 }
@@ -28,20 +34,21 @@ static void *obj_get_zero_filled_segment(pool_t *pool)
 int pool_init(pool_t *pool, char *name, int size,
 		  int type, obj_t *parent)
 {
-	int err;
-
 	pool->name = name;
 	pool->size = size;
 	pool->type = type;
 	pool->parent = parent;
 
-	pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
+	if (!pool->round_size) {
+		/* The requester has not set a fixed object size and
+		 * segment_size. */
+		pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
 
-	if (pool->segment_size < pagesize)
-		pool->segment_size = pagesize;
+		if (pool->segment_size < pagesize)
+			pool->segment_size = pagesize;
 
-	pool->segment_size = (pool->segment_size + pagesize - 1) &
-			     ~(pagesize - 1);
+		pool->segment_size = (pool->segment_size + pagesize - 1) & ~(pagesize - 1);
+	}
 
 	pool->obj_per_segment = pool->segment_size/pool->round_size;
 	if (!pool->obj_per_segment) {
@@ -61,7 +68,6 @@ int pool_init(pool_t *pool, char *name, int size,
 
 void pool_fini(pool_t *pool)
 {
-	int err;
 	struct list_head *l, *t;
 	obj_t *obj;
 	segment_list_t *chunk;
@@ -72,14 +78,14 @@ void pool_fini(pool_t *pool)
 		return;
 
 	if (pool->count) {
-		/*
-		 * we shouldn't get here since we
-		 * are supposed to clean up all the
-		 * objects during processing PtlFini
-		 * so this would be a library bug
-		 */
-		ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
-		ptl_test_return = PTL_FAIL;
+			/*
+			 * we shouldn't get here since we
+			 * are supposed to clean up all the
+			 * objects during processing PtlFini
+			 * so this would be a library bug
+			 */
+			ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
+			ptl_test_return = PTL_FAIL;
 	}
 
 	/*
@@ -108,7 +114,8 @@ void pool_fini(pool_t *pool)
 				ibv_dereg_mr(mr);
 			}
 
-			free(chunk->segment_list[i].addr);
+			if (!pool->use_pre_alloc_buffer)
+				free(chunk->segment_list[i].addr);
 		}
 
 		free(chunk);
@@ -185,6 +192,7 @@ static int pool_alloc_segment(pool_t *pool)
 				IBV_ACCESS_LOCAL_WRITE);
 		if (!mr) {
 			WARN();
+			free(p);
 			return PTL_FAIL;
 		}
 		pp->segment_list[pp->num_segments].priv = mr;
@@ -256,23 +264,25 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 {
 	int err;
 	obj_t *obj;
-	struct list_head *l;
 	unsigned int index = 0;
 
 	/* reserve an object */
 	pool->count++;
 
-	/*
-	 * if the pool free list is empty make up a new batch of objects
-	 */
 	while ((obj = dequeue_free_obj(pool)) == NULL) {
 
 		err = pool_alloc_segment(pool);
 
 		if (unlikely(err)) {
-			pool->count--;
-			WARN();
-			return err;
+			if (pool->type == POOL_SBUF) {
+				/* Wait for some buffers to be released. */
+				SPINLOCK_BODY();
+			}
+			else {
+				pool->count--;
+				WARN();
+				return err;
+			}
 		}
 	}
 

@@ -46,26 +46,38 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	int i;
 	ptl_iovec_t *iov;
 	struct ibv_sge *sge;
+	struct shmem_iovec *knem_iovec;
+	void *p;
 
 	md->num_iov = num_iov;
 
-	md->internal_data = calloc(num_iov, sizeof(struct ibv_sge) + sizeof(mr_t));
+	md->internal_data = calloc(num_iov, sizeof(struct ibv_sge) + sizeof(mr_t) + sizeof(struct shmem_iovec));
 	if (!md->internal_data) {
 		WARN();
 		return PTL_NO_SPACE;
 	}
 
-	md->sge_list = md->internal_data;
-	md->mr_list = md->internal_data + num_iov*sizeof(struct ibv_sge);
+	p = md->internal_data;
+	md->sge_list = p;
+	p += num_iov*sizeof(struct ibv_sge);
+
+	md->mr_list = p;
+	p += num_iov*sizeof(mr_t);
+
+	md->knem_iovecs = p;
+	p += num_iov*sizeof(struct shmem_iovec);
 
 	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
-		err = mr_lookup(ni, md->sge_list,
-						num_iov * sizeof(*sge),
+		/* Pin the whole thing. It's not big enough to make a
+		 * difference. */
+		err = mr_lookup(ni, md->internal_data,
+						p - md->internal_data,
 						&md->sge_list_mr);
 		if (err) {
 			WARN();
 			return err;
 		}
+
 	} else {
 		md->sge_list_mr = NULL;
 	}
@@ -74,8 +86,11 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	iov = iov_list;
 	sge = md->sge_list;
+	knem_iovec = md->knem_iovecs;
 
 	for (i = 0; i < num_iov; i++) {
+		mr_t *mr;
+
 		md->length += iov->iov_len;
 
 		sge->addr = cpu_to_be64((uintptr_t)iov->iov_base);
@@ -87,10 +102,17 @@ static int init_iovec(ni_t *ni, md_t *md, ptl_iovec_t *iov_list, int num_iov)
 			return PTL_FAIL;
 		}
 
-		sge->lkey = cpu_to_be32(md->mr_list[i]->ibmr->rkey);
+		mr = md->mr_list[i];
+
+		sge->lkey = cpu_to_be32(mr->ibmr->rkey);
+
+		knem_iovec->cookie = mr->knem_cookie;
+		knem_iovec->offset = iov->iov_base - mr->ibmr->addr;
+		knem_iovec->length = iov->iov_len;
 
 		iov++;
 		sge++;
+		knem_iovec++;
 	}
 
 	return PTL_OK;

@@ -83,14 +83,20 @@ int data_size(data_t *data)
 	case DATA_FMT_IMMEDIATE:
 		size += be32_to_cpu(data->immediate.data_length);
 		break;
-	case DATA_FMT_DMA:
+	case DATA_FMT_RDMA_DMA:
 		size += be32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
 		break;
-	case DATA_FMT_INDIRECT:
+	case DATA_FMT_RDMA_INDIRECT:
 		size += sizeof(struct ibv_sge);
 		break;
+	case DATA_FMT_SHMEM_DMA:
+		size += data->shmem.num_knem_iovecs * sizeof(struct shmem_iovec);
+		break;
+	case DATA_FMT_SHMEM_INDIRECT:
+		size += sizeof(struct shmem_iovec);
+		break;
 	default:
-		assert(0);
+		abort();
 		break;
 	}
 
@@ -101,7 +107,7 @@ int data_size(data_t *data)
  * append_init_data - Build and append the data portion of a portals message.
  */
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf)
+					 ptl_size_t length, buf_t *buf, enum transport_type transport_type)
 {
 	int err = PTL_OK;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -121,7 +127,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 		if (md->options & PTL_IOVEC) {
 			err = iov_copy_out(data->immediate.data, md->start, md->num_iov,
-					   offset, length);
+							   offset, length);
 			if (err) {
 				WARN();
 				return err;
@@ -144,30 +150,54 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			return PTL_FAIL;
 		}
 
+		// TODO: is that correct for both transports ?
 		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
 			/* Indirect case. The IOVs do not fit in a buf_t. */
-			data->data_fmt = DATA_FMT_INDIRECT;
-			data->rdma.num_sge = cpu_to_be32(1);
 
-			data->rdma.sge_list->addr
-				= cpu_to_be64((uintptr_t)&md->sge_list[iov_start]);
-			data->rdma.sge_list->length
-				= cpu_to_be32(num_sge *
-					      sizeof(struct ibv_sge));
-			data->rdma.sge_list->lkey
-				= cpu_to_be32(md->sge_list_mr->ibmr->rkey);
+			if (transport_type == CONN_TYPE_RDMA) {
+				data->data_fmt = DATA_FMT_RDMA_INDIRECT;
+				data->rdma.num_sge = cpu_to_be32(1);
 
-			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+				data->rdma.sge_list->addr
+					= cpu_to_be64((uintptr_t)&md->sge_list[iov_start]);
+				data->rdma.sge_list->length
+					= cpu_to_be32(num_sge *
+								  sizeof(struct ibv_sge));
+				data->rdma.sge_list->lkey
+					= cpu_to_be32(md->sge_list_mr->ibmr->rkey);
 
+				buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+			} else {
+				data->data_fmt = DATA_FMT_SHMEM_INDIRECT;
+				data->shmem.num_knem_iovecs = num_sge;
+
+				data->shmem.knem_iovec[0].cookie = md->sge_list_mr->knem_cookie;
+				data->shmem.knem_iovec[0].offset = (void *)md->knem_iovecs - md->sge_list_mr->ibmr->addr;
+				data->shmem.knem_iovec[0].length = num_sge *
+					sizeof(struct shmem_iovec);
+
+				buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+			}
 		} else {
-			data->data_fmt = DATA_FMT_DMA;
-			data->rdma.num_sge = cpu_to_be32(num_sge);
-			buf->length += sizeof(*data) + num_sge *
+			if (transport_type == CONN_TYPE_RDMA) {
+				data->data_fmt = DATA_FMT_RDMA_DMA;
+				data->rdma.num_sge = cpu_to_be32(num_sge);
+				buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
 
-			memcpy(data->rdma.sge_list,
-				   &md->sge_list[iov_start],
-				   num_sge*sizeof(struct ibv_sge));
+				memcpy(data->rdma.sge_list,
+					   &md->sge_list[iov_start],
+					   num_sge*sizeof(struct ibv_sge));
+			} else {
+				data->data_fmt = DATA_FMT_SHMEM_DMA;
+				data->shmem.num_knem_iovecs = num_sge;
+				buf->length += sizeof(*data) + num_sge *
+					sizeof(struct shmem_iovec);
+
+				memcpy(data->shmem.knem_iovec,
+					   &md->knem_iovecs[iov_start],
+					   num_sge*sizeof(struct shmem_iovec));
+			}
 		}
 
 		/* Adjust the header offset for iov start. */
@@ -176,37 +206,50 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		assert(buf->length <= BUF_DATA_SIZE);
 	} else {
 		void *addr;
+		mr_t *mr;
 		
-		data->data_fmt = DATA_FMT_DMA;
-		data->rdma.num_sge = cpu_to_be32(1);
-		buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-
 		addr = md->start + offset;
-
-		data->rdma.sge_list[0].addr = cpu_to_be64((uintptr_t)addr);
-		data->rdma.sge_list[0].length = cpu_to_be32(length);
-
 		err = mr_lookup(md->obj.obj_ni, addr, length, &buf->mr_list[buf->num_mr]);
 		if (err) {
 			WARN();
 			return err;
 		}
 
-		data->rdma.sge_list[0].lkey = cpu_to_be32(buf->mr_list[buf->num_mr]->ibmr->rkey);
+		mr = buf->mr_list[buf->num_mr];
+
+		if (transport_type == CONN_TYPE_RDMA) {
+			data->rdma.num_sge = cpu_to_be32(1);
+			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+
+			data->rdma.sge_list[0].addr = cpu_to_be64((uintptr_t)addr);
+			data->rdma.sge_list[0].length = cpu_to_be32(length);
+			data->rdma.sge_list[0].lkey = cpu_to_be32(mr->ibmr->rkey);
+
+			data->data_fmt = DATA_FMT_RDMA_DMA;
+		} else {
+			data->shmem.num_knem_iovecs = 1;
+
+			buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+			data->shmem.knem_iovec[0].cookie = mr->knem_cookie;
+			data->shmem.knem_iovec[0].offset = addr - mr->ibmr->addr;
+			data->shmem.knem_iovec[0].length = length;
+
+			data->data_fmt = DATA_FMT_SHMEM_DMA;
+		}
 
 		buf->num_mr ++;
 #if 0
 		if (debug) {
 			printf("md->mr->ibmr->addr(%p), lkey(%d), rkey(%d)\n",
-				md->mr->ibmr->addr, md->mr->ibmr->lkey,
-				md->mr->ibmr->rkey);
+				   md->mr->ibmr->addr, md->mr->ibmr->lkey,
+				   md->mr->ibmr->rkey);
 			printf("md->start(0x%lx), offset(0x%x)\n",
-				(uintptr_t)md->start, (int) offset);
+				   (uintptr_t)md->start, (int) offset);
 			printf("sge_list[0].addr(0x%lx), length(%d),"
-				" lkey(%d)\n",
-				 be64_to_cpu(data->rdma.sge_list[0].addr),
-				be32_to_cpu(data->rdma.sge_list[0].length),
-				be32_to_cpu(data->rdma.sge_list[0].lkey));
+				   " lkey(%d)\n",
+				   be64_to_cpu(data->rdma.sge_list[0].addr),
+				   be32_to_cpu(data->rdma.sge_list[0].length),
+				   be32_to_cpu(data->rdma.sge_list[0].lkey));
 		}
 #endif
 	}

@@ -143,7 +143,7 @@ static int send_comp(buf_t *buf)
 	struct list_head temp_list;
 	xt_t *xt = buf->xt;
 
-	if (!buf->rdma.comp)
+	if (!buf->comp)
 		return STATE_RECV_COMP_REARM;
 
 	pthread_spin_lock(&xt->send_list_lock);
@@ -169,7 +169,7 @@ static int rdma_comp(buf_t *buf)
 	int err;
 	xt_t *xt = buf->xt;
 
-	if (!buf->rdma.comp)
+	if (!buf->comp)
 		return STATE_RECV_COMP_REARM;
 
 	/* Take a ref on the XT since freeing all its buffers will also
@@ -210,9 +210,13 @@ static int recv_packet(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
 
-	pthread_spin_lock(&ni->rdma.recv_list_lock);
-	list_del(&buf->list);
-	pthread_spin_unlock(&ni->rdma.recv_list_lock);
+	/* Dequeue buf is on the recv list. Todo: create another
+	 * intermediate state for IB stuff or dequeue it before. */
+	if (!list_empty(&buf->list)) {
+		pthread_spin_lock(&ni->rdma.recv_list_lock);
+		list_del(&buf->list);
+		pthread_spin_unlock(&ni->rdma.recv_list_lock);
+	}
 
 	if (buf->length < sizeof(hdr_t)) {
 		WARN();
@@ -391,5 +395,50 @@ done:
 
 fail:
 	// TODO handle failed read
+	return;
+}
+
+/*
+ * process_recv
+ *	handle ni completion queue for a buffer coming from shared memory.
+ */
+void process_recv_shmem(ni_t *ni, buf_t *buf)
+{
+	int state = STATE_RECV_PACKET;
+
+	while(1) {
+		if (debug) printf("%p: recv state local = %s\n", buf, recv_state_name[state]);
+		switch (state) {
+		case STATE_RECV_PACKET:
+			state = recv_packet(buf);
+			break;
+		case STATE_RECV_REQ:
+			state = recv_req(buf);
+			break;
+		case STATE_RECV_INIT:
+			state = recv_init(buf);
+			break;
+		case STATE_RECV_DROP_BUF:
+			state = recv_drop_buf(buf);
+			break;
+		case STATE_RECV_ERROR:
+			if (buf) {
+				buf_put(buf);
+				ni->num_recv_errs++;
+			}
+			goto fail;
+
+		case STATE_RECV_COMP_REARM:		/* COMP_REARM is a ending state for SHMEM. */
+		case STATE_RECV_DONE:
+			goto done;
+		default:
+			abort();
+		}
+	}
+
+done:
+	return;
+
+fail:
 	return;
 }
