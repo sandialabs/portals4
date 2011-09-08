@@ -994,11 +994,13 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err3;
 	}
 
+#ifdef WITH_SHMEM
 	err = PtlNIInit_shmem(iface, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
+#endif
 
 	err = iface_add_ni(iface, ni);
 	if (unlikely(err)) {
@@ -1088,7 +1090,9 @@ static void ni_cleanup(ni_t *ni)
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.cq_watcher));
 
+#ifdef WITH_SHMEM
 	cleanup_shmem(ni);
+#endif
 	cleanup_ib(ni);
 
 	release_buffers(ni);

@@ -1,6 +1,8 @@
 #ifndef PTL_LOC_H
 #define PTL_LOC_H
 
+#define WITH_SHMEM
+
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 600
 #include <arpa/inet.h>
