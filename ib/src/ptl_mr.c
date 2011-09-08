@@ -17,10 +17,12 @@ void mr_cleanup(void *arg)
 		mr->ibmr = NULL;
 	}
 
+#ifdef WITH_SHMEM
 	if (mr->knem_cookie) {
 		knem_unregister(mr->obj.obj_ni, mr->knem_cookie);
 		mr->knem_cookie = 0;
 	}
+#endif
 
 }
 
@@ -64,12 +66,14 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		goto err1;
 	}
 
+#ifdef WITH_SHMEM
 	knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
 	if (!knem_cookie) {
 		WARN();
 		err = PTL_FAIL;
 		goto err1;
 	}
+#endif
 
 	err = mr_alloc(ni, &mr);
 	if (err) {

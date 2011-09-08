@@ -224,7 +224,6 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		while (ptable[i].valid == 0)
 			SPINLOCK_BODY();
 
-#if 1
 		/* Reconfigure this connection to go through SHMEM instead of
 		 * the default. */
 		conn = get_conn(ni, &ptable[i].id);
@@ -236,7 +235,6 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		conn->transport = transport_shmem;
 		conn->state = CONN_STATE_CONNECTED;
 		conn->shmem.local_rank = i;
-#endif
 	}
 
 	/* Create the thread that will wait on the receive queue. */
