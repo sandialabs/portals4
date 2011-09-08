@@ -412,14 +412,22 @@ static int tgt_get_length(xt_t *xt)
 {
 	const ni_t *ni = obj_to_ni(xt);
 	me_t *me = xt->me;
-	ptl_size_t room;
 	ptl_size_t offset;
 	ptl_size_t length;
 
 	/* note le->options & PTL_ME_MANAGE_LOCAL is always zero */
 	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : xt->roffset;
-	room = me->length - offset;
-	length = (room >= xt->rlength) ? xt->rlength : room;
+
+	if (offset > me->length) {
+		/* Messages that are outside the bounds of the ME are
+		 * truncated to zero bytes. */
+		length = 0;
+	} else {
+		ptl_size_t room;
+
+		room = me->length - offset;
+		length = (room >= xt->rlength) ? xt->rlength : room;
+	}
 
 	switch (xt->operation) {
 	case OP_PUT:
