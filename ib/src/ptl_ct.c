@@ -264,7 +264,8 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	pthread_mutex_lock(&ct->mutex);
 	while (1) {
 		if ((ct->event.success + ct->event.failure) >= test) {
-			*event = ct->event;
+			if (event)
+				*event = ct->event;
 			err = PTL_OK;
 			break;
 		}
