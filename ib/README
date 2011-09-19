@@ -12,6 +12,7 @@ Pre-requisite
     but allows to test XRC+RDMA CM with the rdma_bw test.
   * libev-4.0.4 (or similar), available at
       http://software.schmorp.de/pkg/libev.html
+  * the KNEM driver from http://runtime.bordeaux.inria.fr/knem/. Ensure that /dev/knem is readable/writable by the user running the portals software. 
 
 Build:
   * ./autogen.sh
@@ -26,8 +27,9 @@ Build:
 
 Test:
   * cd test
-  * standalone tests: ./test_all
-  * with 2 ranks, use mpirun:
+  * standalone tests:
+      mpirun  -H localhost ./test_all
+  * with 2 ranks:
       mpirun  -H localhost -n 2 ./test_all_2_ranks
   * make_test_relay.pl can build a special script for a given amount
     of ranks. Use mpirun to start the test:
