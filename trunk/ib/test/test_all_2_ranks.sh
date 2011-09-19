@@ -2,7 +2,7 @@
 
 if [ x"$OMPI_COMM_WORLD_RANK" = x ] ; then
 	echo "Must run with mpirun. For instance:"
-	echo "   mpirun  -H localhost -n 2 ./test_all_2_ranks"
+	echo "   mpirun  -H localhost -n 2 ./test_all_2_ranks.sh"
 	exit 1
 fi
 

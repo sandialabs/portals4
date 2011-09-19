@@ -24,7 +24,7 @@ typedef struct iface {
 
 	/* Rank table, for logical NIs only. */
 	ptl_size_t		map_size;
-	ptl_process_t		*actual_mapping;
+	ptl_process_t		*mapping;
 
 	/* Listen to incoming IB connections. */
 	struct rdma_event_channel *cm_channel;

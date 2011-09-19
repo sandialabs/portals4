@@ -22,6 +22,7 @@ enum ptl_retvals {
     PTL_EQ_DROPPED,     /*!< At least one event has been dropped. */
     PTL_EQ_EMPTY,       /*!< No events available in an event queue. */
     PTL_FAIL,           /*!< Indicates a non-specific error */
+    PTL_IGNORED,        /*!< Logical map set failed. */
     PTL_IN_USE,         /*!< The specified resource is currently in use. */
     PTL_INTERRUPTED,    /*!< Wait/get operation was interrupted. */
     PTL_LIST_TOO_LONG,  /*!< The resulting list is too long (interface-dependent). */
@@ -30,10 +31,9 @@ enum ptl_retvals {
     PTL_PID_IN_USE,     /*!< PID is in use. */
     PTL_PT_FULL,        /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
-    PTL_PT_IN_USE,      /*!< Portal table index is busy. */
-    PTL_SIZE_INVALID    /*!< The requested map size is invalid. */
+    PTL_PT_IN_USE       /*!< Portal table index is busy. */
 };
-#define PTL_STATUS_LAST (PTL_SIZE_INVALID+1)
+#define PTL_STATUS_LAST (PTL_PT_IN_USE+1)
 
 /**************
  * Base Types *
@@ -69,9 +69,12 @@ typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
 typedef enum {
     PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
 			 dropped requests for the interface. */
-    PTL_SR_PERMISSIONS_VIOLATIONS  /*!< Specifies the status register that
+    PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
 				     counts the number of attempted permission
 				     violations. */
+    PTL_SR_OPERATIONS_VIOLATIONS /*!< Specifies the status register that counts
+				   the number of attempted operation
+				   violations. */
 } ptl_sr_index_t;
 #define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS+1)
 typedef int             ptl_sr_value_t; /*!< Signed integral type that defines
@@ -139,7 +142,6 @@ typedef struct {
     - \c PTL_MD_EVENT_CT_ACK
     - \c PTL_MD_EVENT_CT_BYTES
     - \c PTL_MD_UNORDERED
-    - \c PTL_MD_REMOTE_FAILURE_DISABLE
     - \c PTL_IOVEC
                                */
     ptl_handle_eq_t eq_handle; /*!< The event queue handle used to log the
@@ -248,8 +250,7 @@ typedef struct {
      *  Portals state. This is treated as a permissions failure and the
      *  PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
      *  incremented. This failure is also indicated to the initiator through
-     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
-     *  PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event. */
     ptl_ac_id_t     ac_id;
 
     /*! Specifies the behavior of the list entry. The following options can be
@@ -262,6 +263,7 @@ typedef struct {
  - \c PTL_LE_OP_GET
  - \c PTL_LE_USE_ONCE
  - \c PTL_LE_ACK_DISABLE
+ - \c PTL_LE_UNEXPECTED_HDR_DISABLE
  - \c PTL_IOVEC
  - \c PTL_LE_EVENT_COMM_DISABLE
  - \c PTL_LE_EVENT_FLOWCTRL_DISABLE
@@ -483,9 +485,6 @@ typedef struct {
  *               ptl_pid_t          pid,
  *               ptl_ni_limits_t *  desired,
  *               ptl_ni_limits_t *  actual,
- *               ptl_size_t         map_size,
- *               ptl_process_t *    desired_mapping,
- *               ptl_process_t *    actual_mapping,
  *               ptl_handle_ni_t *  ni_handle)
  * @brief Initialize a network interface.
  * @details Initializes the portals API for a network interface (NI). A process
@@ -513,24 +512,8 @@ typedef struct {
  * @param[out] actual       If not \c NULL, on successful return, the location
  *                          pointed to by \a actual will hold the actual
  *                          limits.
- * @param[in] map_size      Contains the size of the map being passed in. If \a
- *                          map_size is non-zero and \a desired_mapping is \c
- *                          NULL, PtlNIInit() simply returns the actual mapping
- *                          in \a actual_mapping. This field is ignored if the
- *                          \c PTL_NI_LOGICAL option is set.
- * @param[in] desired_mapping   If not \c NULL, points to an array of
- *                              structures that holds the desired mapping of
- *                              logical identifiers to NID/PID pairs. This
- *                              field is ignored if the PTL_NI_LOGICAL option
- *                              is \b not set.
- * @param[out] actual_mapping   If the \c PTL_NI_LOGICAL option is set,
- *                              on successful return, the location pointed to
- *                              by \a actual_mapping will hold the actual
- *                              mapping of logical identifiers to NID/PID
- *                              pairs. The mapping returned will be no longer
- *                              than \a map_size.
- * @param[out] ni_handle        On successful return, this location
- *                              will hold the interface handle.
+ * @param[out] ni_handle    On successful return, this location will hold the
+ *			    interface handle.
  * @retval PTL_OK               Indicates success.
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -551,9 +534,6 @@ int PtlNIInit(ptl_interface_t   iface,
               ptl_pid_t         pid,
               ptl_ni_limits_t   *desired,
               ptl_ni_limits_t   *actual,
-              ptl_size_t        map_size,
-              ptl_process_t     *desired_mapping,
-              ptl_process_t     *actual_mapping,
               ptl_handle_ni_t   *ni_handle);
 /*!
  * @fn PtlNIFini(ptl_handle_ni_t ni_handle)
@@ -575,9 +555,8 @@ int PtlNIInit(ptl_interface_t   iface,
  *                          interface handle.
  * @see PtlNIInit(), PtlNIStatus()
  * @implnote If PtlNIInit() gets called more than once per logical interface,
- * then the implementation should fill in \a actual, \a actual_mapping, and \a
- * ni_handle. It should ignore \a pid. PtlGetId() can be used to retrieve the
- * \a pid.
+ * then the implementation should fill in \a actual and \a ni_handle. It should
+ * ignore \a pid. PtlGetId() can be used to retrieve the \a pid.
  */
 int PtlNIFini(ptl_handle_ni_t ni_handle);
 /*!
@@ -621,6 +600,66 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle,
  */
 int PtlNIHandle(ptl_handle_any_t    handle,
                 ptl_handle_ni_t*    ni_handle);
+/*!
+ * @fn PtlSetMap(ptl_handle_ni_t ni_handle,
+ *               ptl_size_t      map_size,
+ *               ptl_process_t  *mapping)
+ * @brief Initialize the mapping from logical identifiers (rank) to physical
+ *	identifiers (nid/pid).
+ * @details A process using a logical network interface must call this function
+ *	at least once before any other functions that apply to that interface.
+ *	Subsequent calls (either by different threads or the same thread) to
+ *	PtlSetMap() will overwrite any mapping associated with the network
+ *	interface; hence, libraries must take care to ensure reasonable
+ *	interoperability.
+ * @param[in] ni_handle The interface handle identifying the network interface
+ *			which should be initialized with \a mapping.
+ * @param[in] map_size	Contains the size of the map being passed in.
+ * @param[in] mapping	Points to an array of ptl_process_t structures where
+ *			entry N in the array contains the NID/PID pair that is
+ *			associated with the logical rank N.
+ * @retval PTL_OK               Indicates success.
+ * @retval PTL_NO_INIT          Indicates that the portals API has not been
+ *                              successfully initialized.
+ * @retval PTL_ARG_INVALID      Indicates that an invalid argument was passed.
+ * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
+ *				allocate the memory required to initialize the
+ *				map.
+ * @retval PTL_IGNORED		Indicates that the implementation does not
+ *				support dynamic changing of the logical
+ *				identifier map, likely due to integration with
+ *				a static run-time system.
+ */
+int PtlSetMap(ptl_handle_ni_t ni_handle,
+	      ptl_size_t      map_size,
+	      ptl_process_t  *mapping);
+/*!
+ * @fn PtlGetMap(ptl_handle_ni_t ni_handle,
+ *               ptl_size_t      map_size,
+ *               ptl_process_t  *mapping,
+ *               ptl_size_t     *actual_map_size)
+ * @brief Retrieves the mapping from logical identifiers (rank) to physical
+ *	identifiers (nid/pid).
+ * @param[in] ni_handle        The network interface hadle from which the map
+ *			       should be retrieved.
+ * @param[in] map_size	       Contains the size of the size of the buffer
+ *			       being passed in elements.
+ * @param[out] mapping         Points to an array of ptl_process_t structures
+ *			       where entry N in the array will be populated
+ *			       with the NID/PID pair that is associated with
+ *			       the logical rank N.
+ * @param[out] actual_map_size Contains the size of the map currently
+ *			       associated with the logical interface. May be
+ *			       bigger than map_size or the mapping array.
+ * @retval PTL_OK              Indicates success.
+ * @retval PTL_NO_INIT         Indicates that the portals API has not been
+ *                             successfully initialized.
+ * @retval PTL_ARG_INVALID     Indicates that an invalid argument was passed.
+ */
+int PtlGetMap(ptl_handle_ni_t ni_handle,
+	      ptl_size_t      map_size,
+	      ptl_process_t  *mapping,
+	      ptl_size_t     *actual_map_size);
 /*! @} */
 
 /************************
@@ -2459,70 +2498,86 @@ int PtlAtomicSync(void);
  *      eventually be posted.
  */
 typedef enum {
-    /*! A previously initiated \p get operation completed successfully. */
+    /*! A \p get operation completed on the \e target. Portals will not read
+     * from memory on behalf of this operation once this event has been logged.
+     */
     PTL_EVENT_GET,
 
-    /*! A previously initiated \p put operation completed successfully. The
-     * underlying layers will not alter the memory (on behalf of this
-     * operation) once this event has been logged. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p get
+     * header in the unexpected list. */
+    PTL_EVENT_GET_OVERFLOW,
+
+    /*! A \p put operation completed at the \e target. Portals will not alter
+     * the memory (on behalf of this operation) once this event has been
+     * logged. */
     PTL_EVENT_PUT,
 
-    /*! A match list entry posted by PtMEAppend() matched a message that has
-     * already arrived and is managed within the overflow list. All, some, or
-     * none of the message may have been captured in local memory as requested
-     * by the match list entry and described by the \a rlength and \a mlength
-     * in the event. The event will point to the start of the message in the
-     * memory region described by the match list entry from the overflow list,
-     * if any of the message was captured. When the \a rlength and \a mlength
-     * fields do not match (i.e. the message was truncated), the application is
-     * responsible for performing the remaining transfer. This typically occurs
-     * when the application has provided an overflow list entry designed to
-     * accept headers but not message bodies. The transfer is typically done by
-     * the initiator creating a match list entry using a unique set of bits and
-     * then placing the match bits in the \a hdr_data field. The target can
-     * then use the \a hdr_data field (along with other information in the
-     * event) to retrieve the message. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p put
+     * header in the unexpected list. */
     PTL_EVENT_PUT_OVERFLOW,
 
-    /*! A previously initiated \p atomic operation completed successfully. */
+    /*! An \p atomic operation that does not return data to the \e initiator
+     * completed at the \e target. Portals will not read from or alter memory
+     * on behalf of this operation once this event has been logged. */
     PTL_EVENT_ATOMIC,
 
-    /*! A match list entry posted by PtlMEAppend() matched an atomic operation
-     * message that has already arrived and is managed within the overflow
-     * list. The behavior is the same as with the \c PTL_EVENT_PUT_OVERFLOW. */
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+     * header in the unexpected list for an operation which does not return
+     * data to the \e initiator. */
     PTL_EVENT_ATOMIC_OVERFLOW,
 
-    /*! A previously initiated \p reply operation has completed successfully.
-     * This event is logged after the data (if any) from the reply has been
-     * written into the memory descriptor. */
+    /*! An \p atomic operation that returns data to the \e initiator completed
+     * at the \e target. Portals will not read from or alter memory on behalf
+     * of this operation once this event has been logged. */
+    PTL_EVENT_FETCH_ATOMIC,
+
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+     * header in the unexpected list for an operation which returns data to the
+     * \e initiator. */
+    PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+
+    /*! A \p reply operation has completed at the \e initiator. This event is
+     * logged after the data (if any) from the reply has been written into the
+     * memory descriptor. */
     PTL_EVENT_REPLY,
 
-    /*! A previously initiated \p send operation has completed. This event is
-     * logged after the entire buffer has been sent and it is safe to reuse the
-     * buffer. */
+    /*! A \p send operation has completed at the \e initiator. This event is
+     * logged after it is safe to reuse the buffer, but does not mean the
+     * message has been processed by the \e target. */
     PTL_EVENT_SEND,
 
     /*! An \p acknowledgment was received. This event is logged when the
-     * acknowledgment is received. */
+     * acknowledgment is received. Receipt of a \c PTL_EVENT_ACK indicates
+     * remote completion of the operation. Remote completion indicates that
+     * local completion has also occurred. */
     PTL_EVENT_ACK,
 
-    /*! Resource exhaustion has occurred on this portal table entry. */
+    /*! Resource exhaustion has occurred on this portal table entry, which has
+     * entered a flow control situation. */
     PTL_EVENT_PT_DISABLED,
 
-    /*! A match list entry was unlinked. */
+    /*! A list entry/match list entry was automatically unlinked. A \c
+     * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match
+     * list entry passed into the PtlLEAppend()/PtlMEAppend() operation was
+     * marked with the \c PTL_LE_USE_ONCE / \c PTL_ME_USE_ONCE option and found
+     * a corresponding unexpected message before being "linked" into the
+     * priority list. */
     PTL_EVENT_AUTO_UNLINK,
 
-    /*! A match list entry in the overflow list that was previously unlinked is
-     * now free to be reused by the application. */
+    /*! A list entry/match list entry previously automatically unlinked from
+     * the overflow list is now free to be reused by the application. A \c
+     * PTL_EVENT_AUTO_FREE event is generated when Portals will not generate
+     * any further events which resulted from messages delivered into the
+     * specified overflow list entry. This also indicates that the unexpected
+     * list contains no more items associated with this entry. */
     PTL_EVENT_AUTO_FREE,
 
-    /*! A previously initiated PtlMEAppend() call that was set to "probe only"
-     * completed. If a match message was found in the overflow list, \c
-     * PTL_NI_OK is returned in the \a ni_fail_type field of the event and the
-     * event queue entries are filled in as if it were a \c
-     * PTL_EVENT_PUT_OVERFLOW event. Otherwise, a failure is recorded in the \a
-     * ni_fail_type field, and the \a user_ptr is filled in correctly, and the
-     * other fields are undefined. */
+    /*! A PtlLESearch() or PtlMESearch() call completed. If a matching message was
+     * found in the overflow list, \c PTL_NI_OK is returned in the \a
+     * ni_fail_type field of the event and the event queue entries are filled
+     * in as if it were an overflow event. Otherwise, a failure is recorded in
+     * the \a ni_fail_type field using \c PTL_NI_NO_MATCH, the \a user_ptr is
+     * filled in correctly, and the other fields are undefined. */
     PTL_EVENT_SEARCH
 } ptl_event_kind_t;
 /*!

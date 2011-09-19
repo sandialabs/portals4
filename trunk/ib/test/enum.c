@@ -21,8 +21,8 @@ int get_ret(char *val)
 	else if (!strcmp("PT_FULL", val))	return PTL_PT_FULL;
 	else if (!strcmp("PT_EQ_NEEDED", val))	return PTL_PT_EQ_NEEDED;
 	else if (!strcmp("PT_IN_USE", val))	return PTL_PT_IN_USE;
-	else if (!strcmp("SIZE_INVALID", val))	return PTL_SIZE_INVALID;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
+	else if (!strcmp("IGNORED", val))	return PTL_IGNORED;
 	else					return strtol(val, NULL, 0);
 }
 

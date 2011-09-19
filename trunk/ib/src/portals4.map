@@ -23,6 +23,7 @@
 		PtlGet;
 		PtlGetId;
 		PtlGetJid;
+		PtlGetMap;
 		PtlGetUid;
 		PtlHandleIsEqual;
 		PtlInit;
