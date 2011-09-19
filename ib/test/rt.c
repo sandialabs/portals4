@@ -82,8 +82,11 @@ int ompi_rt_init(struct node_info *info)
 	info->map_size = v;
 
 	if (info->ni_handle != PTL_INVALID_HANDLE) {
-		if (!info->desired_map_ptr)
+		if (!info->desired_map_ptr) {
 			errs += get_desired_mapping(info);
+
+			PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
+		}
 	}
 
 	return errs;

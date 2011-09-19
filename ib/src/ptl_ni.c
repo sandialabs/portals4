@@ -548,14 +548,15 @@ static int init_pools(ni_t *ni)
  *	initialize private rank table in NI
  *	we are not yet connected to remote QPs
  */
-static int create_tables(ni_t *ni, ptl_size_t map_size,
-			 ptl_process_t *actual_mapping)
+static int create_tables(ni_t *ni)
 {
 	int i;
 	ptl_nid_t curr_nid;
 	int main_rank;	/* rank of lowest pid in each nid */
 	entry_t *entry;
 	conn_t *conn;
+	const ptl_size_t map_size = ni->iface->map_size;
+	ptl_process_t *mapping = ni->iface->mapping;
 
 	ni->logical.rank_table = calloc(map_size, sizeof(entry_t));
 	if (!ni->logical.rank_table) {
@@ -570,8 +571,8 @@ static int create_tables(ni_t *ni, ptl_size_t map_size,
 		conn = &entry->connect;
 
 		entry->rank = i;
-		entry->nid = actual_mapping[i].phys.nid;
-		entry->pid = actual_mapping[i].phys.pid;
+		entry->nid = mapping[i].phys.nid;
+		entry->pid = mapping[i].phys.pid;
 
 		conn_init(ni, conn);
 
@@ -680,69 +681,6 @@ static int get_xrc_domain(ni_t *ni)
 }
 #endif
 
-/*
- * init_mapping
- */
-static int init_mapping(ni_t *ni, iface_t *iface, ptl_size_t map_size,
-						ptl_process_t *desired_mapping,
-						ptl_process_t *actual_mapping)
-{
-	int i;
-	int err;
-
-	if (!iface->actual_mapping) {
-		/* Don't have one yet. Allocate and fill-up now. */
-		const int size = map_size * sizeof(ptl_process_t);
-
-		iface->map_size = map_size;
-		iface->actual_mapping = malloc(size);
-		if (!iface->actual_mapping) {
-			WARN();
-			return PTL_NO_SPACE;
-		}
-
-		memcpy(iface->actual_mapping, desired_mapping, size);
-	}
-
-	/* lookup our nid/pid to determine rank */
-	ni->id.rank = PTL_RANK_ANY;
-
-	for (i = 0; i < iface->map_size; i++) {
-		if ((iface->actual_mapping[i].phys.nid == iface->id.phys.nid) &&
-		    (iface->actual_mapping[i].phys.pid == iface->id.phys.pid)) {
-			ni->id.rank = i;
-			ptl_test_rank = i;
-		}
-	}
-
-	if (ni->id.rank == PTL_RANK_ANY) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	/* return mapping to caller. */
-	if (actual_mapping)
-		memcpy(actual_mapping, iface->actual_mapping,
-			   map_size*sizeof(ptl_process_t));
-
-	err = create_tables(ni, iface->map_size, iface->actual_mapping);
-	if (err) {
-		WARN();
-		return err;
-	}
-
-#ifdef USE_XRC
-	/* Retrieve the XRC domain name. */
-	err = get_xrc_domain(ni);
-	if (err) {
-		WARN();
-		return err;
-	}
-#endif
-
-	return PTL_OK;
-}
-
 static void process_async(EV_P_ ev_io *w, int revents)
 {
 	ni_t *ni = w->data;
@@ -829,9 +767,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
               ptl_pid_t         pid,
               ptl_ni_limits_t   *desired,
               ptl_ni_limits_t   *actual,
-              ptl_size_t        map_size,
-              ptl_process_t     *desired_mapping,
-              ptl_process_t     *actual_mapping,
               ptl_handle_ni_t   *ni_handle)
 {
 	int err;
@@ -873,12 +808,10 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err1;
 	}
 
-	if (options & PTL_NI_LOGICAL && !iface->actual_mapping) {
-		if (!desired_mapping || map_size == 0) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
+	if (options & PTL_NI_LOGICAL && !iface->mapping) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
 
 	ni_type = ni_options_to_type(options);
@@ -939,9 +872,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	ni->options = options;
 	ni->last_pt = -1;
 	ni->gbl = gbl;
-#ifdef USE_XRC
-	ni->logical.xrc_domain_fd = -1;
-#endif
 	set_limits(ni, desired);
 	ni->uid = geteuid();
 	ni->shmem.knem_fd = -1;
@@ -951,7 +881,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	INIT_LIST_HEAD(&ni->xt_wait_list);
 	RB_INIT(&ni->mr_tree);
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
-	INIT_LIST_HEAD(&ni->logical.connect_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -963,8 +892,15 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
 	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
 	pthread_cond_init(&ni->ct_wait_cond, NULL);
-	pthread_spin_init(&ni->physical.lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_mutex_init(&ni->logical.lock, NULL);
+	if (options & PTL_NI_PHYSICAL) {
+		pthread_spin_init(&ni->physical.lock, PTHREAD_PROCESS_PRIVATE);
+	} else {
+		pthread_mutex_init(&ni->logical.lock, NULL);
+		INIT_LIST_HEAD(&ni->logical.connect_list);
+#ifdef USE_XRC
+		ni->logical.xrc_domain_fd = -1;
+#endif
+	}
 
 	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
@@ -982,10 +918,31 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err3;
 
 	if (options & PTL_NI_LOGICAL) {
-		err = init_mapping(ni, iface, map_size,
-						   desired_mapping, actual_mapping);
-		if (unlikely(err))
-			goto err3;
+		int i;
+
+		/* lookup our nid/pid to determine rank */
+		ni->id.rank = PTL_RANK_ANY;
+
+		for (i = 0; i < iface->map_size; i++) {
+			if ((iface->mapping[i].phys.nid == iface->id.phys.nid) &&
+				(iface->mapping[i].phys.pid == iface->id.phys.pid)) {
+				ni->id.rank = i;
+				ptl_test_rank = i;
+			}
+		}
+
+		if (ni->id.rank == PTL_RANK_ANY) {
+			WARN();
+			free(iface->mapping);
+			iface->map_size = 0;
+			return PTL_ARG_INVALID;
+		}
+
+		err = create_tables(ni);
+		if (err) {
+			WARN();
+			goto err2;
+		}
 	}
 
 	err = PtlNIInit_IB(iface, ni);
@@ -1028,7 +985,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	return err;
 }
 
-#if 0
 int PtlSetMap(ptl_handle_ni_t ni_handle,
 			  ptl_size_t      map_size,
 			  ptl_process_t  *mapping)
@@ -1036,7 +992,9 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	int err;
 	ni_t *ni;
 	gbl_t *gbl;
-			  
+	iface_t *iface;
+	int length;
+  
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
 		return err;
@@ -1046,9 +1004,34 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err1;
 
-	err = init_mapping(ni, ni->iface, map_size, mapping);
-	if (unlikely(err))
+	iface = ni->iface;
+
+	if (iface->mapping) {
+		/* Destroy existing mapping. */
+		free(iface->mapping);
+		iface->map_size = 0;
+	}
+
+	/* Allocate new mapping and fill-up now. */
+	length = map_size * sizeof(ptl_process_t);
+
+	iface->mapping = malloc(length);
+	if (!iface->mapping) {
+		WARN();
 		goto err2;
+	}
+	iface->map_size = map_size;
+
+	memcpy(iface->mapping, mapping, length);
+
+#ifdef USE_XRC
+	/* Retrieve the XRC domain name. */
+	err = get_xrc_domain(ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+#endif
 
 	ni_put(ni);
 	gbl_put(gbl);
@@ -1059,9 +1042,51 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
  err1:
 	gbl_put(gbl);
 
-	return PTL_FAIL;
+	return PTL_ARG_INVALID;
 }
-#endif
+
+int PtlGetMap(ptl_handle_ni_t ni_handle,
+			  ptl_size_t      map_size,
+			  ptl_process_t  *mapping,
+			  ptl_size_t     *actual_map_size)
+{
+	int err;
+	ni_t *ni;
+	gbl_t *gbl;
+	iface_t *iface;
+  
+	err = get_gbl(&gbl);
+	if (unlikely(err)) {
+		return err;
+	}
+
+	err = to_ni(ni_handle, &ni);
+	if (unlikely(err))
+		goto err1;
+
+	iface = ni->iface;
+
+	if (!iface->mapping) {
+		goto err2;
+	}
+
+	if (map_size < iface->map_size)
+		map_size = iface->map_size;
+
+	memcpy(mapping, iface->mapping, map_size * sizeof(ptl_process_t));
+	*actual_map_size = map_size;
+
+	ni_put(ni);
+	gbl_put(gbl);
+	return PTL_OK;
+
+ err2:	
+	ni_put(ni);
+ err1:
+	gbl_put(gbl);
+
+	return PTL_ARG_INVALID;
+}
 
 static void interrupt_cts(ni_t *ni)
 {

@@ -21,8 +21,7 @@ int test_ptl_ni_init(struct node_info *info)
 
 	ret = PtlNIInit(info->iface, info->ni_opt, info->pid,
 				      info->desired_ptr, info->actual_ptr,
-				      info->map_size, info->desired_map_ptr,
-				      info->actual_map_ptr, info->ptr);
+				      info->ptr);
 
 	if (ret == PTL_OK && info->ptr == &info->ni_handle) {
 		if (info->next_ni >= STACK_SIZE) {

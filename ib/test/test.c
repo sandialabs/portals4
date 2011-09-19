@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	desired.max_atomic_size		= 64;
 
 	err = PtlNIInit(iface, ni_opt, PTL_PID_ANY, &desired, &actual,
-		      0, NULL, NULL, &ni_handle);
+		      &ni_handle);
 	if (err) {
 		printf("PtlNIInit failed, err = %d\n", err);
 		return 1;

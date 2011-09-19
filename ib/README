@@ -28,9 +28,9 @@ Build:
 Test:
   * cd test
   * standalone tests:
-      mpirun  -H localhost ./test_all
+      mpirun  -H localhost ./test_all.sh
   * with 2 ranks:
-      mpirun  -H localhost -n 2 ./test_all_2_ranks
+      mpirun  -H localhost -n 2 ./test_all_2_ranks.sh
   * make_test_relay.pl can build a special script for a given amount
     of ranks. Use mpirun to start the test:
       -  ./make_test_relay.pl  > test_relay.xml
