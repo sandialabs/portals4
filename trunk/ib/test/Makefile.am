@@ -1,4 +1,4 @@
-PORTALSLIB = $(top_builddir)/src/libportals.la
+PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/src/libportals_rt.la 
 
 bin_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test $(TESTS_SHM)
 
@@ -19,12 +19,11 @@ ptl_test_SOURCES = \
 	mask.c \
 	ptl_test.h \
 	rt.c \
-	run.c \
-	shmemtest_rt.c
+	run.c
 
 test_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include
 test_LDFLAGS = -L$(top_builddir)/src
-test_LDADD = -lpthread -lrdmacm -libverbs $(top_builddir)/src/libportals.la
+test_LDADD = -lpthread -lrdmacm -libverbs $(PORTALSLIB)
 test_SOURCES = \
 	test.c
 
