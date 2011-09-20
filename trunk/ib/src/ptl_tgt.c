@@ -1787,7 +1787,7 @@ int check_overflow_search_only(le_t *le)
 			make_target_event(&xt_dup, le->eq, PTL_EVENT_SEARCH, le->user_ptr, NULL);
 		}
 		else
-			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_UNDELIVERABLE);
+			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	}
 
 	return PTL_OK;
@@ -1808,7 +1808,7 @@ int check_overflow_search_delete(le_t *le)
 	pthread_spin_unlock(&pt->lock);
 
 	if (list_empty(&xt_list)) {
-			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_UNDELIVERABLE);
+			make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	} else {
 
 		list_for_each_entry_safe(xt, n, &xt_list, unexpected_list) {
