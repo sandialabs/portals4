@@ -899,30 +899,40 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
 /*!
  * @addtogroup MD (MD) Memory Descriptors
  * @{ */
+enum md_options {
+    MD_EVNT_CT_SEND = 1,
+    MD_EVNT_CT_REPLY,
+    MD_EVNT_CT_ACK,
+    MD_UNORDERED,
+    MD_EVNT_SUCCESS_DISABLE,
+    MD_VOLATILE,
+    MD_OPTIONS_MASK,
+};
+
 /*! Specifies that this memory descriptor should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<5)
+#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<MD_EVNT_SUCCESS_DISABLE)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
-#define PTL_MD_EVENT_CT_SEND         (1<<1)
+#define PTL_MD_EVENT_CT_SEND         (1<<MD_EVNT_CT_SEND)
 
 /*! Enable the counting of \c PTL_EVENT_REPLY events. */
-#define PTL_MD_EVENT_CT_REPLY        (1<<2)
+#define PTL_MD_EVENT_CT_REPLY        (1<<MD_EVNT_CT_REPLY)
 
 /*! Enable the counting of \c PTL_EVENT_ACK events. */
-#define PTL_MD_EVENT_CT_ACK          (1<<3)
+#define PTL_MD_EVENT_CT_ACK          (1<<MD_EVNT_CT_ACK)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. The increment is by the number of
  * bytes counted (\e length for \c PTL_EVENT_SEND events and \e mlength for
  * other events). Failure events always increment the count by one. */
-#define PTL_MD_EVENT_CT_BYTES        (1<<14)
+#define PTL_MD_EVENT_CT_BYTES        (1<<MELE_EVNT_CT_BYTES)
 
 /*! Indicate to the portals implementation that messages sent from this memory
  * descriptor do not have to arrive at the target in order. */
-#define PTL_MD_UNORDERED             (1<<4)
+#define PTL_MD_UNORDERED             (1<<MD_UNORDERED)
 
 /*! Indicate to the Portals implementation that the application may modify the
  * buffer associated with this memory buffer immediately following the return
@@ -930,9 +940,9 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * the application to reuse the buffer. The Portals implementation is not
  * required to honor this option unless the size of the operation is less than
  * or equal to \a max_volatile_size. */
-#define PTL_MD_VOLATILE              (1<<6)
+#define PTL_MD_VOLATILE              (1<<MD_VOLATILE)
 
-#define PTL_MD_OPTIONS_MASK	     (((1<<7)-1) | PTL_MD_EVENT_CT_BYTES)
+#define PTL_MD_OPTIONS_MASK	     (((1<<MD_OPTIONS_MASK)-1) | PTL_MD_EVENT_CT_BYTES)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
