@@ -62,8 +62,6 @@ typedef uint32_t        ptl_rank_t; /*!< Integral type used for representing
                                       interface (PTL_NI_LOGICAL is set). */
 typedef uint32_t        ptl_uid_t; /*!< Integral type for representing user
                                      identifiers. */
-typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
-                                     identifiers. */
 /* Defines the types of indexes that can be used to access the status
  * registers. */
 typedef enum {
@@ -186,24 +184,6 @@ typedef struct {
     void* iov_base; /*!< The byte aligned start address of the vector element. */
     ptl_size_t iov_len; /*!< The length (in bytes) of the vector element. */
 } ptl_iovec_t;
-/*! @struct ptl_ac_id_t
- * @brief To facilitate access control to both list entries and match list
- *      entries, the ptl_ac_id_t is defined as a union of a job ID and a user
- *      ID. A ptl_ac_id_t is attached to each list entry or match list entry to
- *      control which user (or which job, as selected by an option) can access
- *      the entry. Either field can specify a wildcard.
- * @ingroup LEL
- */
-typedef union {
-    ptl_uid_t   uid; /*!< The user identifier of the \a initiator that may
-                       access the associated list entry or match list entry.
-                       This may be set to \c PTL_UID_ANY to allow access by any
-                       user. */
-    ptl_jid_t   jid; /*!< The job identifier of the \a initiator that may
-                       access the associated list entry or match list entry.
-                       This may be set to \c PTL_JID_ANY to allow access by any
-                       job. */
-} ptl_ac_id_t;
 /*!
  * @struct ptl_le_t
  * @brief Defines the visible parts of a list entry. Values of this type are
@@ -243,15 +223,15 @@ typedef struct {
      *  entry are not counted. */
     ptl_handle_ct_t ct_handle;
 
-    /*! Specifies either the user ID or job ID (as selected by the \a options)
-     *  that may access this list entry. Either the user ID or job ID may be
-     *  set to a wildcard (\c PTL_UID_ANY or \c PTL_JID_ANY). If the access
-     *  control check fails, then the message is dropped without modifying
-     *  Portals state. This is treated as a permissions failure and the
-     *  PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
-     *  incremented. This failure is also indicated to the initiator through
-     *  the \a ni_fail_type in the \c PTL_EVENT_SEND event. */
-    ptl_ac_id_t     ac_id;
+    /*! Specifies the user ID that may access this list entry. The user
+     * ID may be set to a wildcard (\c PTL_UID_ANY). If the access control
+     * check fails, then the message is dropped without modifying Portals
+     * state. This is treated as a permissions failure and the PtlNIStatus()
+     * register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
+     * This failure is also indicated to the initiator. If a full event is
+     * delivered to the initiator, the \a ni_fail_type in the \c PTL_EVENT_ACK
+     * must be set to \c PTL_NI_PERM_VIOLATION. */
+    ptl_uid_t     uid;
 
     /*! Specifies the behavior of the list entry. The following options can be
      *  selected: enable put operations (yes or no), enable get operations (yes
@@ -273,7 +253,6 @@ typedef struct {
  - \c PTL_LE_EVENT_CT_COMM
  - \c PTL_LE_EVENT_CT_OVERFLOW
  - \c PTL_LE_EVENT_CT_BYTES
- - \c PTL_LE_AUTH_USE_JID
  */
     unsigned int    options;
 } ptl_le_t;
@@ -315,12 +294,6 @@ typedef struct {
 
 /*! Match any user identifier. */
 #define PTL_UID_ANY ((ptl_uid_t) 0xffffffff)
-
-/*! Match any job identifier. */
-#define PTL_JID_ANY ((ptl_jid_t) 0xffffffff)
-
-/*! Match *no* job identifier. */
-#define PTL_JID_NONE ((ptl_jid_t) 0)
 
 /*! Wildcard for portal table entry identifier fields. */
 #define PTL_PT_ANY ((ptl_pt_index_t) 0xffffffff)
@@ -864,45 +837,6 @@ int PtlGetUid(ptl_handle_ni_t   ni_handle,
 int PtlGetId(ptl_handle_ni_t    ni_handle,
              ptl_process_t*     id);
 /*! @} */
-/***********************
- * Process Aggregation *
- ***********************/
-/*!
- * @addtogroup PA Process Aggregation
- * @{
- * @fn PtlGetJid(ptl_handle_ni_t    ni_handle,
- *               ptl_jid_t*         jid)
- * @brief Get the job identifier for the current process.
- * @details Retrieves the job identifier of the calling process.
- *      It is useful in the context of a parallel machine to represent all of
- *      the processes in a parallel job through an aggregate identifier. The
- *      portals API provides a mechanism for supporting such job identifiers
- *      for these systems. In order to be fully supported, job identifiers must
- *      be included as a trusted part of a message header.
- *
- *      The job identifier is an opaque identifier shared between all of the
- *      distributed processes of an application running on a parallel machine.
- *      All application processes and job-specific support programs, such as
- *      the parallel job launcher, share the same job identifier. This
- *      identifier is assigned by the runtime system upon job launch and is
- *      guaranteed to be unique among application jobs currently running on the
- *      entire distributed system. An individual serial process may be assigned
- *      a job identifier that is not shared with any other processes in the
- *      system or can be assigned the constant \c PTL_JID_NONE.
- * @param[in] ni_handle A network interface handle.
- * @param[out] jid      On successful return, this location will hold the
- *                      job identifier for the calling process. \c PTL_JID_NONE
- *                      may be returned for a serial job, if a job identifier
- *                      is not assigned.
- * @retval PTL_OK           Indicates success.
- * @retval PTL_NO_INIT      Indicates that the portals API has not been
- *                          successfully initialized.
- * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
- *                          interface handle
- */
-int PtlGetJid(ptl_handle_ni_t   ni_handle,
-             ptl_jid_t*         jid);
-/*! @} */
 /**********************
  * Memory Descriptors *
  **********************/
@@ -1131,10 +1065,6 @@ typedef enum {
  * count by one. */
 #define PTL_LE_EVENT_CT_BYTES           PTL_ME_EVENT_CT_BYTES
 
-/*! Use job ID for authentication instead of user ID. By default, the user ID
- * must match to allow a message to access a list entry. */
-#define PTL_LE_AUTH_USE_JID             PTL_ME_AUTH_USE_JID
-
 #define PTL_LE_APPEND_OPTIONS_MASK      ((1<<LE_OPTIONS_MASK)-1)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
@@ -1295,7 +1225,6 @@ enum mele_options {
     MELE_EVNT_CT_COMM,
     MELE_EVNT_CT_OVERFLOW,
     MELE_EVNT_CT_BYTES,
-    MELE_AUTH_USE_JID,
     LE_OPTIONS_MASK
 };
 
@@ -1389,10 +1318,6 @@ enum me_options {
  * events. */
 #define PTL_ME_EVENT_CT_BYTES           (1<<MELE_EVNT_CT_BYTES)
 
-/*! Use job ID for authentication instead of user ID. By default, the user ID
- * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID             (1<<MELE_AUTH_USE_JID)
-
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
  * is maintained locally, the offset is incremented by the length of the
@@ -1460,15 +1385,15 @@ typedef struct {
      * list entry are not counted. */
     ptl_handle_ct_t     ct_handle;
 
-    /*! Specifies either the user ID or job ID (as selected by the options)
-     * that may access this match list entry. Either the user ID or job ID may
-     * be set to a wildcard (\c PTL_UID_ANY or \c PTL_JID_ANY). If the access
-     * control check fails, then the message is dropped without modifying
-     * Portals state. This is treated as a permissions failure and the
-     * PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
-     * incremented. This failure is also indicated to the initiator through the
-     * \a ni_fail_type in the \c PTL_EVENT_SEND event. */
-    ptl_ac_id_t         ac_id;
+    /*! Specifies either the user ID that may access this match list entry. The
+     * user ID may be set to a wildcard (\c PTL_UID_ANY). If the access control
+     * check fails, then the message is dropped without modifying Portals
+     * state. This is treated as a permissions failure and the PtlNIStatus()
+     * register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is incremented.
+     * This failure is also indicated to the initiator. If a full event is
+     * delivered to the initiator, the \a ni_fail_type in the \c PTL_EVENT_ACK
+     * full event must be set to \c PTL_NI_PERM_VIOLATION. */
+    ptl_uid_t            uid;
 
     /*! Specifies the behavior of the match list entry. The following options
      * can be selected: enable put operations (yes or no), enable get
@@ -1492,7 +1417,6 @@ typedef struct {
      - \c PTL_ME_EVENT_CT_COMM
      - \c PTL_ME_EVENT_CT_OVERFLOW
      - \c PTL_ME_EVENT_CT_BYTES
-     - \c PTL_ME_AUTH_USE_JID
      */
     unsigned int        options;
 
@@ -2721,10 +2645,6 @@ typedef struct {
 
     /*! The user identifier of the \e initiator. */
     ptl_uid_t           uid;
-
-    /*! The job identifier of the \e initiator. May be \c PTL_JID_NONE in
-     * implementations that do not support job identifiers. */
-    ptl_jid_t           jid;
 
     /*! The identifier of the \e initiator. */
     ptl_process_t       initiator;

@@ -25,8 +25,6 @@ int test_ptl_get_uid(struct node_info *info);
 
 int test_ptl_get_id(struct node_info *info);
 
-int test_ptl_get_jid(struct node_info *info);
-
 int test_ptl_pt_alloc(struct node_info *info);
 
 int test_ptl_pt_free(struct node_info *info);
@@ -106,8 +104,5 @@ int test_ptl_trig_ct_set(struct node_info *info);
 int test_ptl_start_bundle(struct node_info *info);
 
 int test_ptl_end_bundle(struct node_info *info);
-
-/* RUNTIME APIs */
-int test_ptl_set_jid(struct node_info *info);
 
 #endif /* API_H */

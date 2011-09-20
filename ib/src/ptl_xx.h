@@ -82,7 +82,6 @@ struct xremote {
 	ptl_op_t		atom_op;		\
 	ptl_datatype_t		atom_type;		\
 	ptl_uid_t		uid;			\
-	ptl_jid_t		jid;			\
 	ptl_ni_fail_t		ni_fail;		\
 	ptl_size_t		threshold;		\
 	struct data		*data_in;		\

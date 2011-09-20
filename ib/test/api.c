@@ -76,11 +76,6 @@ int test_ptl_get_id(struct node_info *info)
 	return info->ret != PtlGetId(info->ni_handle, info->ptr);
 }
 
-int test_ptl_get_jid(struct node_info *info)
-{
-	return info->ret != PtlGetJid(info->ni_handle, info->ptr);
-}
-
 int test_ptl_pt_alloc(struct node_info *info)
 {
 	int ret;
@@ -298,6 +293,7 @@ int test_ptl_le_append(struct node_info *info)
 	int ret;
 
 	info->le.ct_handle = info->ct_handle;
+	info->le.uid = info->uid;
 
 	ret = PtlLEAppend(info->ni_handle, info->pt_index,
 					&info->le, info->list, info->user_ptr,
@@ -349,11 +345,7 @@ int test_ptl_me_append(struct node_info *info)
 	int ret;
 
 	info->me.ct_handle = info->ct_handle;
-
-	if (info->me.options & PTL_LE_AUTH_USE_JID)
-		info->me.ac_id.jid = info->jid;
-	else
-		info->me.ac_id.uid = info->uid;
+	info->me.uid = info->uid;
 
 	ret = PtlMEAppend(info->ni_handle, info->pt_index,
 					&info->me, info->list, info->user_ptr,
@@ -526,9 +518,4 @@ int test_ptl_start_bundle(struct node_info *info)
 int test_ptl_end_bundle(struct node_info *info)
 {
 	return info->ret != PtlEndBundle(info->ni_handle);
-}
-
-int test_ptl_set_jid(struct node_info *info)
-{
-	return info->ret != PtlSetJid(info->ni_handle, info->jid);
 }

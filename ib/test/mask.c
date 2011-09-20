@@ -142,8 +142,6 @@ unsigned int get_le_opt(char *orig_val)
 			le_opt |= PTL_LE_EVENT_CT_OVERFLOW;
 		} else if (!strcmp("CT_BYTES", tok)) {
 			le_opt |= PTL_LE_EVENT_CT_BYTES;
-		} else if (!strcmp("AUTH_USE_JID", tok)) {
-			le_opt |= PTL_LE_AUTH_USE_JID;
 		} else if (!strcmp("INVALID", tok)) {
 			le_opt = ~PTL_LE_APPEND_OPTIONS_MASK;
 		} else {
@@ -196,8 +194,6 @@ unsigned int get_me_opt(char *orig_val)
 			me_opt |= PTL_ME_EVENT_CT_OVERFLOW;
 		} else if (!strcmp("CT_BYTES", tok)) {
 			me_opt |= PTL_ME_EVENT_CT_BYTES;
-		} else if (!strcmp("AUTH_USE_JID", tok)) {
-			me_opt |= PTL_ME_AUTH_USE_JID;
 		} else if (!strcmp("MANAGE_LOCAL", tok)) {
 			me_opt |= PTL_ME_MANAGE_LOCAL;
 		} else if (!strcmp("NO_TRUNCATE", tok)) {

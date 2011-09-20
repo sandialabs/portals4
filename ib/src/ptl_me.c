@@ -117,7 +117,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
 	me->pt_index = pt_index;
 	me->eq = pt->eq;
-	me->uid = me_init->ac_id.uid;
+	me->uid = me_init->uid;
 	me->user_ptr = user_ptr;
 	me->start = me_init->start;
 	me->options = me_init->options;

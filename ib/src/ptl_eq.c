@@ -378,7 +378,6 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	ev->initiator		= xi->target;
 	ev->pt_index		= xi->pt_index;
 	ev->uid			= xi->uid;
-	ev->jid			= xi->jid;
 	ev->match_bits		= xi->match_bits;
 	ev->rlength		= xi->rlength;
 	ev->mlength		= xi->mlength;
@@ -425,7 +424,6 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 	ev->initiator		= xt->initiator;
 	ev->pt_index		= xt->pt_index;
 	ev->uid			= xt->uid;
-	ev->jid			= xt->jid;
 	ev->match_bits		= xt->match_bits;
 	ev->rlength		= xt->rlength;
 	ev->mlength		= xt->mlength;

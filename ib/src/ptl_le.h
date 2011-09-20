@@ -20,10 +20,7 @@ struct ct;
 	unsigned int		num_iov;	\
 	ptl_size_t		length;		\
 	struct ct		*ct;		\
-	union {					\
 	uint32_t		uid;		\
-	uint32_t		jid;		\
-	};					\
 	unsigned int		options;	\
 	mr_t			*sge_list_mr;	\
 	struct ibv_sge		*sge_list;

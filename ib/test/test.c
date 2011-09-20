@@ -28,7 +28,6 @@ static void dump_event(ptl_event_t *event)
         printf("initiator.phys.pid	= 0x%x\n", event->initiator.phys.pid);
         printf("pt_index		= %d\n", event->pt_index);
         printf("uid			= %d\n", event->uid);
-        printf("jid			= %d\n", event->jid);
         printf("match_bits		= 0x%" PRIx64 "\n", event->match_bits);
         printf("rlength			= %" PRIu64 "\n", event->rlength);
         printf("mlength			= %" PRIu64 "\n", event->mlength);
@@ -158,8 +157,7 @@ int main(int argc, char *argv[])
 	me.length	= 1024;
 	me.start	= malloc(me.length);
 	me.ct_handle	= PTL_CT_NONE;
-	me.ac_id.jid	= 0;
-	me.ac_id.uid	= PTL_UID_ANY;
+	me.uid	= PTL_UID_ANY;
 	me.options	= PTL_ME_OP_PUT | PTL_ME_OP_GET;
 	me.min_free	= 0;
 	me.match_id	= id;

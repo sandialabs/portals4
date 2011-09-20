@@ -39,8 +39,6 @@ typedef struct ni {
 
 	gbl_t			*gbl;
 
-	rt_t			rt;
-
 	ptl_ni_limits_t		limits;		/* max number of xxx */
 	ptl_ni_limits_t		current;	/* current num of xxx */
 

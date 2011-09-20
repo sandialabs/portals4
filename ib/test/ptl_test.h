@@ -105,11 +105,10 @@ struct node_info {
 	ptl_pt_index_t		pt_index;
 
 	/*
- 	 * get_uid, get_id, get_jid
+ 	 * get_uid, get_id
 	 */
 	ptl_uid_t		uid;
 	ptl_process_t		id;
-	ptl_jid_t		jid;
 
 	/*
 	 */

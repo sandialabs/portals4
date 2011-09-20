@@ -282,15 +282,10 @@ static int check_match(const xt_t *xt, const me_t *me)
  */
 static int check_perm(const xt_t *xt, const le_t *le)
 {
-	if (le->options & PTL_ME_AUTH_USE_JID) {
-		if (!(le->jid == PTL_JID_ANY || (le->jid == xt->jid))) {
-			WARN();
-			goto no_perm;
-		}
-		if (!(le->uid == PTL_UID_ANY || (le->uid == xt->uid))) {
-			WARN();
-			goto no_perm;
-		}
+	if (!(le->uid == PTL_UID_ANY || (le->uid == xt->uid))) {
+		WARN();
+		printf("FZ- check_perm %d %d %d\n", le->uid , PTL_UID_ANY, xt->uid);
+		goto no_perm;
 	}
 
 	switch (xt->operation) {

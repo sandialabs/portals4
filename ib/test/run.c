@@ -151,13 +151,6 @@ static int get_uid(struct node_info *info, char *val)
 	
 }
 
-static int get_jid(struct node_info *info, char *val)
-{
-	if (!strcmp("ANY", val)) return PTL_JID_ANY;
-	else return get_number(info, val);
-	
-}
-
 static ptl_process_t get_target_id(struct node_info *info, char *val)
 {
 	ptl_process_t id;
@@ -310,9 +303,6 @@ static struct node_info *push_info(struct node_info *head, int tok)
 		break;
 	case NODE_PTL_GET_ID:
 		info->ptr = &info->id;
-		break;
-	case NODE_PTL_GET_JID:
-		info->ptr = &info->jid;
 		break;
 	case NODE_PTL_PT:
 	case NODE_PTL_PT_ALLOC:
@@ -543,9 +533,6 @@ static int get_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_UID:
 			info->uid = get_uid(info, val);
-			break;
-		case ATTR_JID:
-			info->jid = get_jid(info, val);
 			break;
 		case ATTR_DESIRED_MAX_ENTRIES:
 			info->desired.max_entries = get_number(info, val);
@@ -1029,10 +1016,6 @@ static int check_attr(struct node_info *info, xmlNode *node)
 				return 1;
 			}
 			break;
-		case ATTR_JID:
-			if (info->jid != get_number(info, val))
-				return 1;
-			break;
 		case ATTR_WHICH:
 			if(info->which != get_number(info, val)) {
 				return 1;
@@ -1061,10 +1044,6 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_EVENT_UID:
 			if (info->eq_event.uid != get_number(info, val))
-				return 1;
-			break;
-		case ATTR_EVENT_JID:
-			if (info->eq_event.jid != get_number(info, val))
 				return 1;
 			break;
 		case ATTR_EVENT_MATCH:
@@ -1435,10 +1414,6 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_get_uid(info);
 				errs += walk_tree(info, node->children);
 				break;
-			case NODE_PTL_GET_JID:
-				errs = test_ptl_get_jid(info);
-				errs += walk_tree(info, node->children);
-				break;
 			case NODE_PTL_MD:
 				for (i = 0; i < info->count - 1; i++) {
 					errs += test_ptl_md_bind(info);
@@ -1657,12 +1632,6 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = test_ptl_handle_is_eq(info);
 				errs += walk_tree(info, node->children);
 				break;
-
-			/* runtime APIs */
-			case NODE_PTL_SET_JID:
-				errs = test_ptl_set_jid(info);
-				errs += walk_tree(info, node->children);
-				goto done;
 			}
 pop:
 			info = pop_node(info);
@@ -1709,6 +1678,7 @@ static void set_default_info(struct node_info *info)
 	info->list				= PTL_PRIORITY_LIST;
 
 	info->user_ptr				= NULL;
+	info->uid					= PTL_UID_ANY;
 
 	info->length				= 1;
 	info->loc_offset			= 0;

@@ -85,9 +85,7 @@ typedef enum {
 	__be64			hdr_data;		\
 	__be64			operand;		\
 	__be32			pt_index;		\
-	__be32			jid;			\
-	__be32			uid;			\
-	__be32			reserved_2;
+	__be32			uid;
 
 typedef struct ptl_hdr {
 	PTL_XPORT_HDR
