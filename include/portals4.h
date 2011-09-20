@@ -432,9 +432,17 @@ enum ni_types {
 /*! Indicates that the search did not find an entry in the unexpected list */
 #define PTL_NI_NO_MATCH         ((ptl_ni_fail_t) 5)
 
-/*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
-#define PTL_TARGET_BIND_INACCESSIBLE (1<<0)
+enum ni_features {
+    NI_BIND_INACCESSIBLE,
+    NI_DATA_ORDERING,
+    NI_OPTIONS_MASK
+};
 
+/*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
+#define PTL_TARGET_BIND_INACCESSIBLE (1<<NI_BIND_INACCESSIBLE)
+
+/*! Indicates that the Portals implementation supports total data ordering. */
+#define PTL_TOTAL_DATA_ORDERING      (1<<NI_DATA_ORDERING)
 
 /*!
  * @struct ptl_ni_limits_t
@@ -489,8 +497,8 @@ typedef struct {
 				    PTL_MD_VOLATILE option set. */
     unsigned int features; /*!< A bit mask of features supported by the the
 			     portals implementation. Currently, the features
-			     that are defined are PTL_LE_BIND_INACCESSIBLE and
-			     PTL_ME_BIND_INACCESSIBLE. */
+			     that are defined are PTL_TARGET_BIND_INACCESSIBLE and
+			     PTL_TOTAL_DATA_ORDERING. */
 } ptl_ni_limits_t;
 
 /*!
