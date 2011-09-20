@@ -389,7 +389,7 @@ enum ni_types {
     NI_T_NMATCHING,
     NI_T_LOGICAL,
     NI_T_PHYSICAL,
-    NI_OPTIONS_MASK
+    NI_T_OPTIONS_MASK
 };
 
 /*! Request that the interface specified in \a iface be opened with matching
@@ -410,7 +410,7 @@ enum ni_types {
  * PTL_NI_PHYSICAL are mutually exclusive */
 #define PTL_NI_PHYSICAL     (1<<NI_T_PHYSICAL)
 
-#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_OPTIONS_MASK) - 1)
+#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_T_OPTIONS_MASK) - 1)
 
 /*! Used in successful end events to indicate that there has been no failure. */
 #define PTL_NI_OK               ((ptl_ni_fail_t) 0)
