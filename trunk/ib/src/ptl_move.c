@@ -158,7 +158,6 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_PUT;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -243,7 +242,6 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_PUT;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -309,7 +307,6 @@ static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
 	xi->operation = OP_GET;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->get_md = md;
@@ -571,7 +568,6 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_ATOMIC;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -653,7 +649,6 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	xi->operation = OP_ATOMIC;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->ack_req = ack_req;
@@ -755,7 +750,6 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->operation = OP_FETCH;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
@@ -877,7 +871,6 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	xi->operation = OP_FETCH;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
@@ -1089,7 +1082,6 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->operation = OP_SWAP;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;
@@ -1218,7 +1210,6 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi->operation = OP_SWAP;
 	xi->target = target_id;
 	xi->uid = ni->uid;
-	xi->jid = ni->rt.jid;
 	xi->pt_index = pt_index;
 	xi->match_bits = match_bits,
 	xi->put_md = put_md;

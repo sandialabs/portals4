@@ -4,38 +4,4 @@
     <desc>Test ompi_rt</desc>
     <ompi_rt/>
   </subtest>
-  <subtest>
-    <desc>Test PtlSetJid without init</desc>
-    <ptl_set_jid ret="NO_INIT"/>
-  </subtest>
-  <subtest>
-    <desc>Test PtlSetJid with good parameters</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_set_jid jid="1234"/>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test PtlSetJid/PtlGetJid</desc>
-    <ptl>
-      <ptl_ni>
-        <ptl_set_jid jid="1234"/>
-        <set jid="0"/>
-        <ptl_get_jid>
-          <check jid="1234"/>
-        </ptl_get_jid>
-      </ptl_ni>
-    </ptl>
-  </subtest>
-  <subtest>
-    <desc>Test ompi_rt/PtlSetJid</desc>
-    <ompi_rt>
-      <ptl>
-        <ptl_ni>
-          <ptl_set_jid/>
-        </ptl_ni>
-      </ptl>
-    </ompi_rt>
-  </subtest>
 </test>

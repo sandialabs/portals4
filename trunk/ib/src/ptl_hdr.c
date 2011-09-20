@@ -86,7 +86,6 @@ void req_hdr_from_xi(req_hdr_t *hdr, xi_t *xi)
 	hdr->hdr_data = cpu_to_be64(xi->hdr_data);
 	hdr->operand = cpu_to_be64(xi->operand);
 	hdr->pt_index = cpu_to_be32(xi->pt_index);
-	hdr->jid = cpu_to_be32(xi->jid);
 	hdr->uid = cpu_to_be32(xi->uid);
 }
 
@@ -96,6 +95,5 @@ void req_hdr_to_xt(req_hdr_t *hdr, xt_t *xt)
 	xt->hdr_data = be64_to_cpu(hdr->hdr_data);
 	xt->operand = be64_to_cpu(hdr->operand);
 	xt->pt_index = be32_to_cpu(hdr->pt_index);
-	xt->jid = be32_to_cpu(hdr->jid);
 	xt->uid = be32_to_cpu(hdr->uid);
 }

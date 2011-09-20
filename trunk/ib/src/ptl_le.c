@@ -304,7 +304,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
 	le->pt_index = pt_index;
 	le->eq = pt->eq;
-	le->uid = le_init->ac_id.uid;
+	le->uid = le_init->uid;
 	le->user_ptr = user_ptr;
 	le->start = le_init->start;
 	le->options = le_init->options;
