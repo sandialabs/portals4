@@ -67,13 +67,11 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 # define PtlInternalValidateMEPT(x)
 #endif
 
-#ifdef STRICT_UID_JID
+#ifdef STRICT_UID
 # define EXT_UID extern ptl_uid_t the_ptl_uid
-# define CHECK_JID(a, b) (((a) != PTL_JID_ANY) && ((a) != (b)))
 # define CHECK_UID(a, b) (((a) != PTL_UID_ANY) && ((a) != (b)))
 #else
 # define EXT_UID do { } while (0)
-# define CHECK_JID(a, b) ((a) != PTL_JID_ANY)
 # define CHECK_UID(a, b) (0)
 #endif
 
@@ -163,19 +161,16 @@ static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restric
     return retval;
 }                                      /*}}} */
 
-#ifdef STRICT_UID_JID
+#ifdef STRICT_UID
 # define HDRUID the_ptl_uid
-# define HDRJID(hdr) hdr->jid
 #else
 # define HDRUID ((ptl_internal_uid_t)PTL_UID_ANY)
-# define HDRJID(hdr) ((ptl_internal_uid_t)PTL_JID_NONE)
 #endif
 
 #define PTL_INTERNAL_INIT_TEVENT(e, hdr, uptr) do {          \
         EXT_UID;                                             \
         e.pt_index      = hdr->pt_index;                     \
         e.uid           = HDRUID;                            \
-        e.jid           = HDRJID(hdr);                       \
         e.match_bits    = hdr->match_bits;                   \
         e.rlength       = hdr->length;                       \
         e.mlength       = 0;                                 \
@@ -351,16 +346,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                         t->buffered_headers.head = cur->hdr.next;
                     }
                     // check permissions
-                    if (me->options & PTL_ME_AUTH_USE_JID) {
-                        if (me->ac_id.jid == PTL_JID_NONE) {
-                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                            goto permission_violation;
-                        }
-                        if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
-                            (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                            goto permission_violation;
-                        }
-                    } else {
+                    {
                         EXT_UID;
                         if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
                             (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
@@ -641,16 +627,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
              * 4a. When done processing entire unexpected header list, send retransmit request
              * ... else: deliver and return */
             // (1) check permissions
-            if (me->options & PTL_ME_AUTH_USE_JID) {
-                if (me->ac_id.jid == PTL_JID_NONE) {
-                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                    continue;
-                }
-                if (CHECK_JID(me->ac_id.jid, cur->hdr.jid)) {
-                    (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                    continue;
-                }
-            } else {
+            {
                 EXT_UID;
                 if (CHECK_UID(me->ac_id.uid, the_ptl_uid)) {
                     (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
@@ -742,11 +719,6 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                 ptl_uid_t tmp;
                 PtlGetUid(ni_handle, &tmp);
                 e.uid = tmp;
-            }
-            {
-                ptl_jid_t tmp;
-                PtlGetJid(ni_handle, &tmp);
-                e.jid = tmp;
             }
             e.match_bits    = me->match_bits;
             e.rlength       = 0;
@@ -1005,16 +977,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
         me = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
         assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
         // check permissions on the ME
-        if (me.options & PTL_ME_AUTH_USE_JID) {
-            if (me.ac_id.jid == PTL_JID_NONE) {
-                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                goto permission_violation;
-            }
-            if (CHECK_JID(me.ac_id.jid, hdr->jid)) {
-                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);
-                goto permission_violation;
-            }
-        } else {
+        {
             EXT_UID;
             if (CHECK_UID(me.ac_id.uid, the_ptl_uid)) {
                 (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_PERMISSIONS_VIOLATIONS], 1);

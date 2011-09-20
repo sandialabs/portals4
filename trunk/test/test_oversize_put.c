@@ -46,8 +46,8 @@ int main(int   argc,
     my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    value    = malloc(sizeof(unsigned char) * BUFSIZE);
-    readval  = malloc(sizeof(unsigned char) * BUFSIZE);
+    value   = malloc(sizeof(unsigned char) * BUFSIZE);
+    readval = malloc(sizeof(unsigned char) * BUFSIZE);
 
     assert(value);
     assert(readval);
@@ -61,9 +61,9 @@ int main(int   argc,
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(value, 42, BUFSIZE);
-    value_e.start     = value;
-    value_e.length    = BUFSIZE;
-    value_e.ac_id.uid = PTL_UID_ANY;
+    value_e.start  = value;
+    value_e.length = BUFSIZE;
+    value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
     value_e.match_bits    = 1;

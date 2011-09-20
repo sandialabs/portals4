@@ -11,48 +11,47 @@
 #include "testing.h"
 
 #if INTERFACE == 1
-# define ENTRY_T        ptl_me_t
-# define HANDLE_T       ptl_handle_me_t
-# define NI_TYPE        PTL_NI_MATCHING
-# define OPTIONS        (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-# define APPEND         PtlMEAppend
-# define UNLINK         PtlMEUnlink
+# define ENTRY_T  ptl_me_t
+# define HANDLE_T ptl_handle_me_t
+# define NI_TYPE  PTL_NI_MATCHING
+# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define APPEND   PtlMEAppend
+# define UNLINK   PtlMEUnlink
 #else
-# define ENTRY_T        ptl_le_t
-# define HANDLE_T       ptl_handle_le_t
-# define NI_TYPE        PTL_NI_NO_MATCHING
-# define OPTIONS        (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-# define APPEND         PtlLEAppend
-# define UNLINK         PtlLEUnlink
+# define ENTRY_T  ptl_le_t
+# define HANDLE_T ptl_handle_le_t
+# define NI_TYPE  PTL_NI_NO_MATCHING
+# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define APPEND   PtlLEAppend
+# define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
 #define BUFSIZE 4096
 
-int main(
-         int argc,
+int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
-    unsigned char *value, *readval;
-    ENTRY_T value_e;
-    HANDLE_T value_e_handle;
-    ptl_md_t write_md;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    unsigned char  *value, *readval;
+    ENTRY_T         value_e;
+    HANDLE_T        value_e_handle;
+    ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int my_rank, num_procs;
+    int             my_rank, num_procs;
     ptl_handle_eq_t eq_handle;
-    int verb = 0;
+    int             verb = 0;
 
     if (getenv("VERBOSE")) {
         verb = 1;
     }
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank = runtime_get_rank();
+    my_rank   = runtime_get_rank();
     num_procs = runtime_get_size();
 
-    value = malloc(sizeof(unsigned char) * BUFSIZE);
+    value   = malloc(sizeof(unsigned char) * BUFSIZE);
     readval = malloc(sizeof(unsigned char) * BUFSIZE);
 
     assert(value);
@@ -71,13 +70,13 @@ int main(
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(value, 42, BUFSIZE);
-    value_e.start = value;
+    value_e.start  = value;
     value_e.length = BUFSIZE / 2;
-    value_e.ac_id.uid = PTL_UID_ANY;
+    value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
-    value_e.match_bits = 1;
-    value_e.ignore_bits = 0;
+    value_e.match_bits    = 1;
+    value_e.ignore_bits   = 0;
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
@@ -93,9 +92,9 @@ int main(
 
     /* set up the landing pad so that I can read others' values */
     memset(readval, 61, BUFSIZE);
-    write_md.start = readval;
-    write_md.length = BUFSIZE;
-    write_md.options = PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_BYTES;
+    write_md.start     = readval;
+    write_md.length    = BUFSIZE;
+    write_md.options   = PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_BYTES;
     write_md.eq_handle = eq_handle;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
@@ -103,7 +102,7 @@ int main(
     /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
-        ptl_process_t r0 = {.rank = 0 };
+        ptl_process_t  r0 = { .rank = 0 };
         CHECK_RETURNVAL(PtlPut
                             (write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ, r0,
                             logical_pt_index, 1, 0, NULL, 0));
@@ -135,11 +134,11 @@ int main(
         }
     }
     {
-        int fetched = 0;
-        size_t events = 0;
+        int    fetched = 0;
+        size_t events  = 0;
         do {
             ptl_event_t event;
-            int retval;
+            int         retval;
             fetched = 0;
             switch (retval = PtlEQGet(eq_handle, &event)) {
                 case PTL_OK:
@@ -221,13 +220,12 @@ int main(
                                 printf("%u", (unsigned)event.hdr_data);
                                 printf("%u", (unsigned)event.initiator.rank);
                                 printf("%u", event.uid);
-                                printf("%u", event.jid);
                                 printf("%u", (unsigned)event.ni_fail_type);
                                 printf("%u", (unsigned)event.pt_index);
                                 printf("%u", (unsigned)event.atomic_operation);
                                 printf("%u", (unsigned)event.atomic_type);
                                 /*printf
-                                 *  ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
+                                 *  ("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
                                  *   (unsigned)event.match_bits,
                                  *   (unsigned)event.rlength,
                                  *   (unsigned)event.mlength,
@@ -235,7 +233,7 @@ int main(
                                  *   event.start, value, event.user_ptr,
                                  *   (unsigned)event.hdr_data,
                                  *   (unsigned)event.initiator.rank,
-                                 *   event.uid, event.jid,
+                                 *   event.uid,
                                  *   (unsigned)event.ni_fail_type,
                                  *   (unsigned)event.pt_index,
                                  *   (unsigned)event.atomic_operation,

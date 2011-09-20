@@ -20,7 +20,6 @@ libportals_la_SOURCES += \
 			 shmem/bundling.c \
 			 shmem/runtime.c \
 			 shmem/uid.c \
-			 shmem/jid.c \
 			 shmem/init.c
 
 if USE_TRANSFER_ENGINE

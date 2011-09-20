@@ -4,7 +4,6 @@
 #include "ptl_internal_alignment.h"
 
 typedef uint16_t ptl_internal_uid_t;
-typedef uint16_t ptl_internal_jid_t;
 
 typedef struct {
     ptl_match_bits_t match_bits; // 8 bytes
@@ -21,9 +20,8 @@ typedef struct {
         } phys;
     } initiator;                              // 4 bytes (44)
     ptl_internal_uid_t uid;                   // 2 bytes (46)
-    ptl_internal_jid_t jid;                   // 2 bytes (48)
-    uint8_t            type;                  // 1 byte  (49)
-    uint64_t           remote_offset    : 48; // 6 bytes (55)
+    uint8_t            type;                  // 1 byte  (47)
+    uint64_t           remote_offset    : 48; // 6 bytes (53)
     uint8_t            pt_index         : 5;
     uint8_t            atomic_operation : 5;
     uint8_t            ni_fail_type     : 3;

@@ -55,7 +55,7 @@ AS_IF([test "x$enable_fast" == xyes],
 	  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
 	   CFLAGS="-O3 $CFLAGS"
 	   enable_arg_checking=no
-	   enable_strict_uidjid=no
+	   enable_strict_uid=no
 	   enable_hard_polling=yes
 	   enable_register_on_bind=yes
 	   AS_IF([test "x$enable_debug_symbols" == xyes],
@@ -78,9 +78,9 @@ AC_ARG_ENABLE([rdtsc],
 AC_ARG_ENABLE([loud-drops],
 			  [AS_HELP_STRING([--enable-loud-drops],
 							  [Makes dropped messages print an error to the console])])
-AC_ARG_ENABLE([strict-uidjid],
-			  [AS_HELP_STRING([--enable-strict-uidjid],
-							  [Makes the uid/jid checking conform strictly according to the spec. By default, the uid/jid are assumed to be correct])])
+AC_ARG_ENABLE([strict-uid],
+			  [AS_HELP_STRING([--enable-strict-uid],
+							  [Makes the uid checking conform strictly according to the spec. By default, the uid is assumed to be correct])])
 AC_ARG_WITH([cacheline-width],
 			[AS_HELP_STRING([--with-cacheline-width=bytes],
 							[Specify the cacheline width for the target machine. Defaults to 64.])],
@@ -107,8 +107,8 @@ AS_IF([test "x$enable_paranoia" == xyes],
 	  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
 AS_IF([test "x$enable_rdtsc" == xyes],
 	  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
-AS_IF([test "x$enable_strict_uidjid" == xyes],
-	  [AC_DEFINE([STRICT_UID_JID], [1], [Define to enable extra UID/JID checking per message])])
+AS_IF([test "x$enable_strict_uid" == xyes],
+	  [AC_DEFINE([STRICT_UID], [1], [Define to enable extra UID checking per message])])
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
