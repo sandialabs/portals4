@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libportals.la
+lib_LTLIBRARIES = libportals.la libportals_rt.la
 libportals_la_CPPFLAGS = -I$(top_srcdir)/include
 libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
@@ -55,8 +55,6 @@ libportals_la_SOURCES = \
 	ptl_rdma.c \
 	ptl_recv.c \
 	ptl_ref.h \
-	ptl_rt.c \
-	ptl_rt.h \
 	ptl_send.c \
 	ptl_shmem.c \
 	ptl_tgt.c \
@@ -64,5 +62,12 @@ libportals_la_SOURCES = \
 	ptl_xx.c \
 	ptl_xx.h \
 	tree.h
+
+
+libportals_rt_la_CPPFLAGS = -I$(top_srcdir)/include
+libportals_rt_la_LIBADD = -lmpi
+libportals_rt_la_SOURCES = \
+	ptl_rt.c
+
 
 EXTRA_DIST = portals4.map
