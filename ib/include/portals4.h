@@ -68,13 +68,13 @@ typedef uint32_t        ptl_jid_t; /*!< Integral type for representing job
  * registers. */
 typedef enum {
     PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
-			 dropped requests for the interface. */
+                         dropped requests for the interface. */
     PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
-				     counts the number of attempted permission
-				     violations. */
+                                     counts the number of attempted permission
+                                     violations. */
     PTL_SR_OPERATIONS_VIOLATIONS /*!< Specifies the status register that counts
-				   the number of attempted operation
-				   violations. */
+                                   the number of attempted operation
+                                   violations. */
 } ptl_sr_index_t;
 #define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS+1)
 typedef int             ptl_sr_value_t; /*!< Signed integral type that defines
@@ -379,17 +379,12 @@ void PtlFini(void);
  * logical interfaces within a single process that are associated with a single
  * physical interface must share a single node ID and Portals process ID.
  */
-/*! @typedef ptl_ni_fail_t
- * A network interface can use this integral type to define specific
- * information regarding the failure of an operation. */
-typedef unsigned char ptl_ni_fail_t;
-
 enum ni_types {
     NI_T_MATCHING,
     NI_T_NMATCHING,
     NI_T_LOGICAL,
     NI_T_PHYSICAL,
-    NI_OPTIONS_MASK
+    NI_T_OPTIONS_MASK
 };
 
 /*! Request that the interface specified in \a iface be opened with matching
@@ -410,31 +405,38 @@ enum ni_types {
  * PTL_NI_PHYSICAL are mutually exclusive */
 #define PTL_NI_PHYSICAL     (1<<NI_T_PHYSICAL)
 
-#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_OPTIONS_MASK) - 1)
+#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_T_OPTIONS_MASK) - 1)
 
-/*! Used in successful end events to indicate that there has been no failure. */
-#define PTL_NI_OK               ((ptl_ni_fail_t) 0)
+/*! @typedef ptl_ni_fail_t
+ * A network interface can use this integral type to define specific
+ * information regarding the failure of an operation. */
+typedef enum {
+    PTL_NI_OK, /*!< Used in successful end events to indicate that there has
+                 been no failure. */
+    PTL_NI_UNDELIVERABLE, /*!< Indicates a system failure that prevents message
+                            delivery. */
+    PTL_NI_DROPPED, /*!< Indicates that a message was dropped for some reason. */
+    PTL_NI_FLOW_CTRL, /*!< Indicates that the remote node has exhausted its
+                        resources, enabled flow control, and dropped this
+                        message. */
+    PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
+                             indicated a permissions violation for this
+                             message. */
+    PTL_NI_NO_MATCH /*!< Indicates that the search did not find an entry in the
+                      unexpected list. */
+} ptl_ni_fail_t;
 
-/*! Indicates a system failure that prevents message delivery. */
-#define PTL_NI_UNDELIVERABLE    ((ptl_ni_fail_t) 1)
-
-/*! Indicates that a message was dropped for some reason. */
-#define PTL_NI_DROPPED          ((ptl_ni_fail_t) 2)
-
-/*! Indicates that the remote node has exhausted its resources, enabled flow
- * control, and dropped this message. */
-#define PTL_NI_FLOW_CTRL        ((ptl_ni_fail_t) 3)
-
-/*! Indicates that the remote Portals addressing indicated a permissions
- * violation for this message. */
-#define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
-
-/*! Indicates that the search did not find an entry in the unexpected list */
-#define PTL_NI_NO_MATCH         ((ptl_ni_fail_t) 5)
+enum ni_features {
+    NI_BIND_INACCESSIBLE,
+    NI_DATA_ORDERING,
+    NI_OPTIONS_MASK
+};
 
 /*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
-#define PTL_TARGET_BIND_INACCESSIBLE (1<<0)
+#define PTL_TARGET_BIND_INACCESSIBLE (1<<NI_BIND_INACCESSIBLE)
 
+/*! Indicates that the Portals implementation supports total data ordering. */
+#define PTL_TOTAL_DATA_ORDERING      (1<<NI_DATA_ORDERING)
 
 /*!
  * @struct ptl_ni_limits_t
@@ -468,29 +470,29 @@ typedef struct {
                                   to an atomic operation that returns the prior
                                   value to the initiator. */
     ptl_size_t max_waw_ordered_size; /*!< Maximum size (in bytes) of a message
-				       that will guarantee “per-address” data
-				       ordering for a write followed by a write
-				       (consecutive put or atomic or a mixture
-				       of the two) and a write followed by a
-				       read (put followed by a get) An
-				       interface must provide a
-				       \a max_waw_ordered_size of at least 64
-				       bytes. */
+                                       that will guarantee “per-address” data
+                                       ordering for a write followed by a write
+                                       (consecutive put or atomic or a mixture
+                                       of the two) and a write followed by a
+                                       read (put followed by a get) An
+                                       interface must provide a
+                                       \a max_waw_ordered_size of at least 64
+                                       bytes. */
     ptl_size_t max_war_ordered_size; /*!< Maximum size (in bytes) of a message
-				       that will guarantee “per-address” data
-				       ordering for a read followed by a write
-				       (get followed by a put or atomic). An
-				       interface must provide a
-				       \a max_war_ordered_size of at least 8
-				       bytes. */
+                                       that will guarantee “per-address” data
+                                       ordering for a read followed by a write
+                                       (get followed by a put or atomic). An
+                                       interface must provide a
+                                       \a max_war_ordered_size of at least 8
+                                       bytes. */
     ptl_size_t max_volatile_size; /*!< Maximum size (in bytes) that can be
-				    passed as the length of a put or atomic for
-				    a memory descriptor with the
-				    PTL_MD_VOLATILE option set. */
+                                    passed as the length of a put or atomic for
+                                    a memory descriptor with the
+                                    PTL_MD_VOLATILE option set. */
     unsigned int features; /*!< A bit mask of features supported by the the
-			     portals implementation. Currently, the features
-			     that are defined are PTL_LE_BIND_INACCESSIBLE and
-			     PTL_ME_BIND_INACCESSIBLE. */
+                             portals implementation. Currently, the features
+                             that are defined are PTL_TARGET_BIND_INACCESSIBLE and
+                             PTL_TOTAL_DATA_ORDERING. */
 } ptl_ni_limits_t;
 
 /*!
@@ -527,7 +529,7 @@ typedef struct {
  *                          pointed to by \a actual will hold the actual
  *                          limits.
  * @param[out] ni_handle    On successful return, this location will hold the
- *			    interface handle.
+ *                          interface handle.
  * @retval PTL_OK               Indicates success.
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -619,61 +621,61 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  *               ptl_size_t      map_size,
  *               ptl_process_t  *mapping)
  * @brief Initialize the mapping from logical identifiers (rank) to physical
- *	identifiers (nid/pid).
+ *      identifiers (nid/pid).
  * @details A process using a logical network interface must call this function
- *	at least once before any other functions that apply to that interface.
- *	Subsequent calls (either by different threads or the same thread) to
- *	PtlSetMap() will overwrite any mapping associated with the network
- *	interface; hence, libraries must take care to ensure reasonable
- *	interoperability.
+ *      at least once before any other functions that apply to that interface.
+ *      Subsequent calls (either by different threads or the same thread) to
+ *      PtlSetMap() will overwrite any mapping associated with the network
+ *      interface; hence, libraries must take care to ensure reasonable
+ *      interoperability.
  * @param[in] ni_handle The interface handle identifying the network interface
- *			which should be initialized with \a mapping.
- * @param[in] map_size	Contains the size of the map being passed in.
- * @param[in] mapping	Points to an array of ptl_process_t structures where
- *			entry N in the array contains the NID/PID pair that is
- *			associated with the logical rank N.
+ *                      which should be initialized with \a mapping.
+ * @param[in] map_size  Contains the size of the map being passed in.
+ * @param[in] mapping   Points to an array of ptl_process_t structures where
+ *                      entry N in the array contains the NID/PID pair that is
+ *                      associated with the logical rank N.
  * @retval PTL_OK               Indicates success.
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
  * @retval PTL_ARG_INVALID      Indicates that an invalid argument was passed.
- * @retval PTL_NO_SPACE		Indicates that PtlNIInit() was not able to
- *				allocate the memory required to initialize the
- *				map.
- * @retval PTL_IGNORED		Indicates that the implementation does not
- *				support dynamic changing of the logical
- *				identifier map, likely due to integration with
- *				a static run-time system.
+ * @retval PTL_NO_SPACE         Indicates that PtlNIInit() was not able to
+ *                              allocate the memory required to initialize the
+ *                              map.
+ * @retval PTL_IGNORED          Indicates that the implementation does not
+ *                              support dynamic changing of the logical
+ *                              identifier map, likely due to integration with
+ *                              a static run-time system.
  */
 int PtlSetMap(ptl_handle_ni_t ni_handle,
-	      ptl_size_t      map_size,
-	      ptl_process_t  *mapping);
+              ptl_size_t      map_size,
+              ptl_process_t  *mapping);
 /*!
  * @fn PtlGetMap(ptl_handle_ni_t ni_handle,
  *               ptl_size_t      map_size,
  *               ptl_process_t  *mapping,
  *               ptl_size_t     *actual_map_size)
  * @brief Retrieves the mapping from logical identifiers (rank) to physical
- *	identifiers (nid/pid).
+ *      identifiers (nid/pid).
  * @param[in] ni_handle        The network interface hadle from which the map
- *			       should be retrieved.
- * @param[in] map_size	       Contains the size of the size of the buffer
- *			       being passed in elements.
+ *                             should be retrieved.
+ * @param[in] map_size         Contains the size of the size of the buffer
+ *                             being passed in elements.
  * @param[out] mapping         Points to an array of ptl_process_t structures
- *			       where entry N in the array will be populated
- *			       with the NID/PID pair that is associated with
- *			       the logical rank N.
+ *                             where entry N in the array will be populated
+ *                             with the NID/PID pair that is associated with
+ *                             the logical rank N.
  * @param[out] actual_map_size Contains the size of the map currently
- *			       associated with the logical interface. May be
- *			       bigger than map_size or the mapping array.
+ *                             associated with the logical interface. May be
+ *                             bigger than map_size or the mapping array.
  * @retval PTL_OK              Indicates success.
  * @retval PTL_NO_INIT         Indicates that the portals API has not been
  *                             successfully initialized.
  * @retval PTL_ARG_INVALID     Indicates that an invalid argument was passed.
  */
 int PtlGetMap(ptl_handle_ni_t ni_handle,
-	      ptl_size_t      map_size,
-	      ptl_process_t  *mapping,
-	      ptl_size_t     *actual_map_size);
+              ptl_size_t      map_size,
+              ptl_process_t  *mapping,
+              ptl_size_t     *actual_map_size);
 /*! @} */
 
 /************************
@@ -950,7 +952,7 @@ enum md_options {
  * or equal to \a max_volatile_size. */
 #define PTL_MD_VOLATILE              (1<<MD_VOLATILE)
 
-#define PTL_MD_OPTIONS_MASK	     (((1<<MD_OPTIONS_MASK)-1) | PTL_MD_EVENT_CT_BYTES)
+#define PTL_MD_OPTIONS_MASK          (((1<<MD_OPTIONS_MASK)-1) | PTL_MD_EVENT_CT_BYTES)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
@@ -1133,7 +1135,7 @@ typedef enum {
  * must match to allow a message to access a list entry. */
 #define PTL_LE_AUTH_USE_JID             PTL_ME_AUTH_USE_JID
 
-#define PTL_LE_APPEND_OPTIONS_MASK	((1<<LE_OPTIONS_MASK)-1)
+#define PTL_LE_APPEND_OPTIONS_MASK      ((1<<LE_OPTIONS_MASK)-1)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
@@ -1294,7 +1296,7 @@ enum mele_options {
     MELE_EVNT_CT_OVERFLOW,
     MELE_EVNT_CT_BYTES,
     MELE_AUTH_USE_JID,
-	LE_OPTIONS_MASK
+    LE_OPTIONS_MASK
 };
 
 enum me_options {
@@ -1417,7 +1419,7 @@ enum me_options {
  * */
 #define PTL_ME_MAY_ALIGN                (1<<ME_MAY_ALIGN)
 
-#define PTL_ME_APPEND_OPTIONS_MASK	((1<<ME_OPTIONS_MASK)-1)
+#define PTL_ME_APPEND_OPTIONS_MASK      ((1<<ME_OPTIONS_MASK)-1)
 
 /*!
  * @struct ptl_me_t
@@ -1744,15 +1746,15 @@ int PtlCTFree(ptl_handle_ct_t ct_handle);
  * @fn PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
  * @brief Cancel pending triggered operations.
  * @details In certain circumstances, it may be necessary to cancel triggered
- *	operations that are pending. For example, an error condition may mean
- *	that a counting event will never reach the designated threshold.
- *	PtlCTCancelTriggered() is provided to handle these circumstances. Upon
- *	return from PtlCTCancelTriggered(), all triggered operations waiting on
- *	\a ct_handle are permanently destroyed. The operations are not
- *	triggered, and will not modify any application-visible state. The other
- *	state associated with ct_handle is left unchanged.
+ *      operations that are pending. For example, an error condition may mean
+ *      that a counting event will never reach the designated threshold.
+ *      PtlCTCancelTriggered() is provided to handle these circumstances. Upon
+ *      return from PtlCTCancelTriggered(), all triggered operations waiting on
+ *      \a ct_handle are permanently destroyed. The operations are not
+ *      triggered, and will not modify any application-visible state. The other
+ *      state associated with ct_handle is left unchanged.
  * @param[in] ct_handle The counting event handle associated with the triggered
- *			operations to be canceled.
+ *                      operations to be canceled.
  * @retval PTL_OK               Indicates success
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
@@ -2186,12 +2188,12 @@ int PtlGet(ptl_handle_md_t  md_handle,
  * size of the ptl_datatype_t used.
  *
  * @implnote To allow upper level libraries with both system-defined datatype
- *	widths and fixed width datatypes to easily map to Portals, Portals
- *	provides fixed width integer types. The one exception is the long
- *	double floating point types (PTL_LONG_DOUBLE). Because of the
- *	variability in long double encodings across systems and the lack of
- *	standard syntax for fixed width floating-point types, Portals uses a
- *	system defined width for PTL_LONG_DOUBLE and PTL_LONG_DOUBLE_COMPLEX.
+ *      widths and fixed width datatypes to easily map to Portals, Portals
+ *      provides fixed width integer types. The one exception is the long
+ *      double floating point types (PTL_LONG_DOUBLE). Because of the
+ *      variability in long double encodings across systems and the lack of
+ *      standard syntax for fixed width floating-point types, Portals uses a
+ *      system defined width for PTL_LONG_DOUBLE and PTL_LONG_DOUBLE_COMPLEX.
  *
  * @enum ptl_op_t
  * @brief An atomic operation type
@@ -2550,23 +2552,23 @@ int PtlSwap(ptl_handle_md_t     get_md_handle,
  * @fn PtlAtomicSync(void)
  * @brief Synchronize atomic accesses through the API.
  * @details Synchronizes the atomic accesses through the Portals API with
- *	accesses by the host. When a data item is accessed by a Portals atomic
- *	operation, modification of the same data item by the host or by an
- *	atomic operation using a different datatype can lead to undefined
- *	behavior. When PtlAtomicSync() is called, it will block until it is
- *	safe for the host (or other atomic operations with a different
- *	datatype) to modify the data items touched by previous Portals atomic
- *	operations. PtlAtomicSync() is called at the target of atomic
- *	operations.
+ *      accesses by the host. When a data item is accessed by a Portals atomic
+ *      operation, modification of the same data item by the host or by an
+ *      atomic operation using a different datatype can lead to undefined
+ *      behavior. When PtlAtomicSync() is called, it will block until it is
+ *      safe for the host (or other atomic operations with a different
+ *      datatype) to modify the data items touched by previous Portals atomic
+ *      operations. PtlAtomicSync() is called at the target of atomic
+ *      operations.
  * @retval PTL_OK               Indicates success
  * @retval PTL_NO_INIT          Indicates that the portals API has not been
  *                              successfully initialized.
  * @implnote The atomicity definition for Portals allows a network interface to
- *	offload atomic operations and to have a noncoherent cache on the
- *	network interface. With a noncoherent cache, any access to a memory
- *	location by an atomic operation makes it impossible to safely modify
- *	that location on the host. PtlAtomicSync() is provided to make
- *	modifications from the host safe again.
+ *      offload atomic operations and to have a noncoherent cache on the
+ *      network interface. With a noncoherent cache, any access to a memory
+ *      location by an atomic operation makes it impossible to safely modify
+ *      that location on the host. PtlAtomicSync() is provided to make
+ *      modifications from the host safe again.
  */
 int PtlAtomicSync(void);
 /*! @} */
@@ -3394,30 +3396,5 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle);
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
                      ptl_handle_any_t handle2);
 /*! @} */
-
-
-/*
- * Extra SFW stuff.
- */
-
-/* private return value from APIs that do not normally return errors
- * for testing purposes */
-extern int                      ptl_test_return;
-
-/* private values for rank under test, enables rank output prior to get_id */
-extern int                      ptl_test_rank;
-
-/* private control for logging output */
-extern int                      ptl_log_level;
-
-int PtlSetJid(
-	ptl_handle_ni_t		ni_handle,
-	ptl_jid_t		jid);
-
-int PtlSetId(
-	ptl_handle_ni_t		ni_handle,
-	ptl_process_t		id);
-
-void PtlInitParam(int argc, char *argv[]);
-
 #endif
+/* vim:set expandtab: */

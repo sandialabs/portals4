@@ -1,93 +1,32 @@
 #include "ptl_test.h"
 
-#include <assert.h>
-
-struct message {
-	uint32_t nid;
-	uint32_t pid;
-	uint32_t rank;
-};
-
-static int get_desired_mapping(struct node_info *info)
-{
-	struct message msg;
-	int i, j;
-	MPI_Status status;
-	ptl_process_t my_id;
-	int errs = 0;
-
-	if (PtlGetId(info->ni_handle, &my_id)) {
-		printf("PtlGetId failed\n");
-		errs ++;
-		goto done;
-	}
-
-	if (debug)
-		printf("PtlGetId returned id = %x, %x\n", my_id.phys.nid, my_id.phys.pid);
-
-	if (debug)
-		printf("info->map_size = %" PRIu64 "\n", info->map_size);
-
-	info->desired_map_ptr = calloc(info->map_size, sizeof(ptl_process_t));
-	if (!info->desired_map_ptr) {
-		printf("calloc desired map failed\n");
-		errs ++;
-		goto done;
-	}
-
-	if (debug)
-		printf("info->rank = %d\n", info->rank);
-
-	info->desired_map_ptr[info->rank] = my_id;
-
-	for (i=0; i<info->map_size; i++) {
-		if (i == info->rank) {
-			/* Send my info. */
-			for (j=0; j<info->map_size; j++) {
-				if (j == info->rank)
-					continue;
-				msg.nid = my_id.phys.nid;
-				msg.pid = my_id.phys.pid;
-				msg.rank = info->rank;
-				MPI_Send(&msg, sizeof(msg), MPI_CHAR, j, 0, MPI_COMM_WORLD);
-if (debug)
-printf("sent desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
-			}
-		} else {
-			/* Get their info. */
-			MPI_Recv(&msg, sizeof(msg), MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
-
-			assert(i == msg.rank);
-			
-			info->desired_map_ptr[i].phys.nid = msg.nid;
-			info->desired_map_ptr[i].phys.pid = msg.pid;
-if (debug)
-printf("received desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
-		}
-	}
-
- done:
-	return errs;
-}
-
 int ompi_rt_init(struct node_info *info)
 {
 	int errs = 0;
-	int v;
 
-	MPI_Comm_rank(MPI_COMM_WORLD, &v);
-	info->rank = v;
-
-	MPI_Comm_size(MPI_COMM_WORLD, &v);
-	info->map_size = v;
+	info->rank = shmemtest_rank;
+	info->map_size = shmemtest_map_size;
 
 	if (info->ni_handle != PTL_INVALID_HANDLE) {
 		if (!info->desired_map_ptr) {
-			errs += get_desired_mapping(info);
-
-			PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
+			info->desired_map_ptr = get_desired_mapping(info->ni_handle);
+			if (!info->desired_map_ptr) {
+				errs ++;
+			} else {
+				PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
+			}
 		}
 	}
 
 	return errs;
+}
+
+int ompi_rt_fini(struct node_info *info)
+{
+	if (info->desired_map_ptr) {
+		free(info->desired_map_ptr);
+		info->desired_map_ptr = NULL;
+	}
+
+	return 0;
 }

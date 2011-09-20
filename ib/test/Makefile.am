@@ -19,7 +19,8 @@ ptl_test_SOURCES = \
 	mask.c \
 	ptl_test.h \
 	rt.c \
-	run.c
+	run.c \
+	shmemtest_rt.c
 
 test_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include
 test_LDFLAGS = -L$(top_builddir)/src
