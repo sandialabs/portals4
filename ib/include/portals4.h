@@ -418,6 +418,9 @@ typedef unsigned char ptl_ni_fail_t;
  * violation for this message. */
 #define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
 
+/*! Indicates that the search did not find an entry in the unexpected list */
+#define PTL_NI_NO_MATCH         ((ptl_ni_fail_t) 5)
+
 /*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
 #define PTL_TARGET_BIND_INACCESSIBLE (1<<0)
 
@@ -668,15 +671,26 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 /*!
  * @addtogroup PT (PT) Portal Table Entries
  * @{ */
+enum pt_options {
+    ONLY_USE_ONCE,
+    FLOWCTRL,
+    ONLY_TRUNCATE,
+    PT_OPTIONS_MASK
+};
 /*! Hint to the underlying implementation that all entries attached to this
  * portal table entry will have the \c PTL_ME_USE_ONCE or \c PTL_LE_USE_ONCE
  * option set. */
-#define PTL_PT_ONLY_USE_ONCE    (1)
+#define PTL_PT_ONLY_USE_ONCE      (1<<ONLY_USE_ONCE)
 
 /*! Enable flow control on this portal table entry. */
-#define PTL_PT_FLOWCTRL         (1<<1)
+#define PTL_PT_FLOWCTRL           (1<<FLOWCTRL)
 
-#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<2) - 1)
+/*! Hint to the underlying implementation that all entries attached to the
+ * priority list on this portal table entry will not have the \c
+ * PTL_ME_NO_TRUNCATE option set. */
+#define PTL_PT_ONLY_TRUNCATE      (1<<ONLY_TRUNCATE)
+
+#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<PT_OPTIONS_MASK) - 1)
 
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
@@ -886,35 +900,36 @@ int PtlGetJid(ptl_handle_ni_t   ni_handle,
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<2)
+#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<5)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
-#define PTL_MD_EVENT_CT_SEND         (1<<3)
+#define PTL_MD_EVENT_CT_SEND         (1<<1)
 
 /*! Enable the counting of \c PTL_EVENT_REPLY events. */
-#define PTL_MD_EVENT_CT_REPLY        (1<<4)
+#define PTL_MD_EVENT_CT_REPLY        (1<<2)
 
 /*! Enable the counting of \c PTL_EVENT_ACK events. */
-#define PTL_MD_EVENT_CT_ACK          (1<<5)
+#define PTL_MD_EVENT_CT_ACK          (1<<3)
 
 /*! By default, counting events count events. When set, this option causes
- * successful bytes to be counted instead. Failure events always increment the
- * count by one. */
-#define PTL_MD_EVENT_CT_BYTES        (1<<6)
+ * successful bytes to be counted instead. The increment is by the number of
+ * bytes counted (\e length for \c PTL_EVENT_SEND events and \e mlength for
+ * other events). Failure events always increment the count by one. */
+#define PTL_MD_EVENT_CT_BYTES        (1<<14)
 
 /*! Indicate to the portals implementation that messages sent from this memory
  * descriptor do not have to arrive at the target in order. */
-#define PTL_MD_UNORDERED             (1<<7)
+#define PTL_MD_UNORDERED             (1<<4)
 
 /*! Indicate to the Portals implementation that the application may modify the
  * buffer associated with this memory buffer immediately following the return
  * from a portals operation. Operations should not return until it is safe for
  * the application to reuse the buffer. The Portals implementation is not
  * required to honor this option unless the size of the operation is less than
- * or equal to max_volatile_size. */
-#define PTL_MD_VOLATILE              (1<<8)
+ * or equal to \a max_volatile_size. */
+#define PTL_MD_VOLATILE              (1<<6)
 
-#define PTL_MD_OPTIONS_MASK	     ((1<<9)-1)
+#define PTL_MD_OPTIONS_MASK	     (((1<<7)-1) | PTL_MD_EVENT_CT_BYTES)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
@@ -1021,7 +1036,7 @@ typedef enum {
  * default, list entries reject \p put operations. If a \p put operation
  * targets a list entry where \c PTL_LE_OP_PUT is not set, it is treated as a
  * permissions failure. */
-#define PTL_LE_OP_PUT                   (1<<1)
+#define PTL_LE_OP_PUT                   PTL_ME_OP_PUT
 
 /*! Specifies that the list entry will respond to \p get operations. By
  * default, list entries reject \p get operations. If a \p get operations
@@ -1031,12 +1046,12 @@ typedef enum {
  *      both \p put or \p get operations. In fact, it is often desirable for a
  *      list entry used in an \p atomic operation to be configured to respond
  *      to both \p put and \p get operations. */
-#define PTL_LE_OP_GET                   (1<<2)
+#define PTL_LE_OP_GET                   PTL_ME_OP_GET
 
 /*! Specifies that the list entry will only be used once and then unlinked. If
  * this option is not set, the list entry persists until it is explicitly
  * unlinked. */
-#define PTL_LE_USE_ONCE                 (1<<3)
+#define PTL_LE_USE_ONCE                 PTL_ME_USE_ONCE
 
 /*! Specifies that an acknowledgment should not be sent for incoming \p put
  * operations, even if requested. By default, acknowledgments are sent for \p
@@ -1044,48 +1059,60 @@ typedef enum {
  * and counting type events. Acknowledgments are never sent for \p get
  * operations. The data sent in the \p reply serves as an implicit
  * acknowledgment. */
-#define PTL_LE_ACK_DISABLE              (1<<4)
+#define PTL_LE_ACK_DISABLE              PTL_ME_ACK_DISABLE
+
+/*! Specifies that the header for a message delivered to this list entry should
+ * not be added to the unexpected list. This option only has meaning if the
+ * list entry is inserted into the overflow list. By creating a list entry
+ * which truncates messages to zero bytes, disables comm events, and sets this
+ * option, a user may create a list entry which consumes no target side
+ * resources. */
+#define PTL_LE_UNEXPECTED_HDR_DISABLE   PTL_ME_UNEXPECTED_HDR_DISABLE
+
+/*! Indicate that this list entry only contains memory addresses that are
+ * accessible by the application.
+ */
+#define PTL_LE_IS_ACCESSIBLE            PTL_ME_IS_ACCESSIBLE
 
 /*! Specifies that this list entry should not generate events that indicate a
  * communication operation. */
-#define PTL_LE_EVENT_COMM_DISABLE       (1<<5)
+#define PTL_LE_EVENT_COMM_DISABLE       PTL_ME_EVENT_COMM_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate a
  * flow control failure. */
-#define PTL_LE_EVENT_FLOWCTRL_DISABLE   (1<<6)
+#define PTL_LE_EVENT_FLOWCTRL_DISABLE   PTL_ME_EVENT_FLOWCTRL_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate
  * success. This is useful in scenarios where the application does not need
  * normal events, but does require failure information to enhance reliability.
  */
-#define PTL_LE_EVENT_SUCCESS_DISABLE    (1<<7)
+#define PTL_LE_EVENT_SUCCESS_DISABLE    PTL_ME_EVENT_SUCCESS_DISABLE
 
 /*! Specifies that this list entry should not generate overflow list events.
  */
-#define PTL_LE_EVENT_OVER_DISABLE       (1<<8)
+#define PTL_LE_EVENT_OVER_DISABLE       PTL_ME_EVENT_OVER_DISABLE
 
 /*! Specifies that this list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_LE_EVENT_UNLINK_DISABLE     (1<<9)
+#define PTL_LE_EVENT_UNLINK_DISABLE     PTL_ME_EVENT_UNLINK_DISABLE
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_LE_EVENT_CT_COMM            (1<<10)
+#define PTL_LE_EVENT_CT_COMM            PTL_ME_EVENT_CT_COMM
 
-/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). */
-#define PTL_LE_EVENT_CT_OVERFLOW        (1<<11)
+/*! Enable the counting of overflow events. */
+#define PTL_LE_EVENT_CT_OVERFLOW        PTL_ME_EVENT_CT_OVERFLOW
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failure events always increment the
  * count by one. */
-#define PTL_LE_EVENT_CT_BYTES           (1<<12)
+#define PTL_LE_EVENT_CT_BYTES           PTL_ME_EVENT_CT_BYTES
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a list entry. */
-#define PTL_LE_AUTH_USE_JID             (1<<13)
+#define PTL_LE_AUTH_USE_JID             PTL_ME_AUTH_USE_JID
 
-#define PTL_LE_APPEND_OPTIONS_MASK	((1<<14)-1)
+#define PTL_LE_APPEND_OPTIONS_MASK	((1<<LE_OPTIONS_MASK)-1)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
@@ -1175,34 +1202,30 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  *      unexpected list as PtlLEAppend(); however, the list entry specified in
  *      the PtlLESearch() call is never linked into a priority list.
  *
- *      The PtlLESearch() function can be called in two modes. If
- *      ptl_search_op_t is set to PTL_SEARCH_ONLY, the unexpected list is
- *      searched to support the MPI_Probe functionality. If ptl_search_op_t is
- *      set to PTL_SEARCH_DELETE, the unexpected list is searched and any
- *      matching items are deleted. A search of the overflow list will always
- *      generate an event. When used with PTL_SEARCH_ONLY, a PTL_EVENT_SEARCH
- *      event is always generated. If a matching message was found in the
- *      overflow list, PTL_NI_OK is returned in the event. Otherwise, the event
- *      indicates that the search operation failed. When used with
- *      PTL_SEARCH_DELETE, the event that is generated corresponds to the type
- *      of operation that is found (e.g. PTL_EVENT_PUT_OVERFLOW or
- *      PTL_EVENT_ATOMIC_OVERFLOW). If no operation is found, a
- *      PTL_EVENT_SEARCH is generated with a failure indication.
+ *      The PtlLESearch() function can be called in two modes. If \a ptl_search_op
+ *      is set to PTL_SEARCH_ONLY, the unexpected list is searched to support
+ *      the MPI_Probe functionality. If \a ptl_search_op is set to
+ *      PTL_SEARCH_DELETE, the unexpected list is searched and any matching
+ *      items are deleted. A search of the unexpected list will \e always
+ *      generate a detailed event. When used with PTL_SEARCH_ONLY, a
+ *      PTL_EVENT_SEARCH detailed event is always generated. If a matching
+ *      message was found in the unexpected list, PTL_NI_OK is returned in the
+ *      detailed event. Otherwise, the detailed event indicates that the search
+ *      operation failed. When used with PTL_SEARCH_DELETE, the event that is
+ *      generated corresponds to the type of operation that is found (e.g.
+ *      PTL_EVENT_PUT_OVERFLOW or PTL_EVENT_ATOMIC_OVERFLOW). If no operation
+ *      is found, a PTL_EVENT_SEARCH is generated with a failure indication of
+ *      \c PTL_NI_NO_MATCH. If the list entry specified in the PtlLESearch()
+ *      call is persistent, an event is generated for every match in the
+ *      unexpected list.
  *
  *      Event generation for the search function works just as it would for an
- *      append function. If a search is performed with events disabled (either
- *      through option or through the absence of an event queue on the portal
- *      table entry), the search will succeed, but no events will be generated.
- *      Status registers, however, are handled slightly differently for a
- *      search in that a PtlLESearch()never causes a status register to be
- *      incremented.
- * @implnote When a persistent LE (or ME) is used to search a list, the entire
- *      overflow list is traversed and multiple matches can be found. This is
- *      because messages arriving in the overflow list are treated like
- *      messages that match in the priority list: a persistent ME/LE would be
- *      able to match multiple incoming messages if it were in the priority
- *      list; hence, it should be able to match multiple unexpected messages in
- *      the overflow list.
+ *      append function. If a search is performed with detailed events disabled
+ *      (either through option or through the absence of an event queue on the
+ *      portal table entry), the search will succeed, but no detailed events
+ *      will be generated. Status registers, however, are handled slightly
+ *      differently for a search in that a PtlLESearch()never causes a status
+ *      register to be incremented.
  * @note Searches with persistent entries could have unexpected performance and
  *      resource usage characteristics if a large overflow list has
  *      accumulated, since a PtlLESearch() that uses a persistent LE can cause
@@ -1233,6 +1256,33 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
                 void           *user_ptr);
 /*! @} */
 
+enum mele_options {
+    MELE_IOVEC = 0,
+    MELE_OP_PUT,
+    MELE_OP_GET,
+    MELE_USE_ONCE,
+    MELE_ACK_DISABLE,
+    MELE_UNEXPECTED_HDR_DISABLE,
+    MELE_IS_ACCESSIBLE,
+    MELE_EVNT_COMM_DISABLE,
+    MELE_EVNT_FLOWCTRL_DISABLE,
+    MELE_EVNT_SUCCESS_DISABLE,
+    MELE_EVNT_OVER_DISABLE,
+    MELE_EVNT_UNLINK_DISABLE,
+    MELE_EVNT_CT_COMM,
+    MELE_EVNT_CT_OVERFLOW,
+    MELE_EVNT_CT_BYTES,
+    MELE_AUTH_USE_JID,
+	LE_OPTIONS_MASK
+};
+
+enum me_options {
+    ME_MANAGE_LOCAL = LE_OPTIONS_MASK,
+    ME_NO_TRUNCATE,
+    ME_MAY_ALIGN,
+    ME_OPTIONS_MASK
+};
+
 /********************************************
  * Matching List Entries and Matching Lists *
  ********************************************/
@@ -1244,7 +1294,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * default, match list entries reject \p put operations. If a \p put operation
  * targets a list entry where \c PTL_ME_OP_PUT is not set, it is treated as a
  * permissions failure. */
-#define PTL_ME_OP_PUT                   PTL_LE_OP_PUT
+#define PTL_ME_OP_PUT                   (1<<MELE_OP_PUT)
 
 /*! Specifies that the match list entry will respond to \p get operations. by
  * default, match list entries reject \p get operations. If a \p get operation
@@ -1254,12 +1304,12 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  *      to both \p put and \p get operations. In fact, it is often desirable
  *      for a match list entry used in an \p atomic operation to be configured
  *      to respond to both \p put and \p get operations. */
-#define PTL_ME_OP_GET                   PTL_LE_OP_GET
+#define PTL_ME_OP_GET                   (1<<MELE_OP_GET)
 
 /*! Specifies that the match list entry will only be used once and then
  * unlinked. If this option is not set, the match list entry persists until
  * another unlink condition is triggered. */
-#define PTL_ME_USE_ONCE                 PTL_LE_USE_ONCE
+#define PTL_ME_USE_ONCE                 (1<<MELE_USE_ONCE)
 
 /*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
  * put operations, even if requested. By default, acknowledgments are sent for
@@ -1267,47 +1317,58 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * and counting type events. Acknowledgments are never sent for \p get
  * operations. The data sent in the \p reply serves as an implicit
  * acknowledgment. */
-#define PTL_ME_ACK_DISABLE              PTL_LE_ACK_DISABLE
+#define PTL_ME_ACK_DISABLE              (1<<MELE_ACK_DISABLE)
+
+/*! Specifies that the header for a message delivered to this list entry should
+ * not be added to the unexpected list. This option only has meaning if the
+ * list entry is inserted into the overflow list. By creating a list entry
+ * which truncates messages to zero bytes, disables comm events, and sets this
+ * option, a user may create a list entry which consumes no target side
+ * resources. */
+#define PTL_ME_UNEXPECTED_HDR_DISABLE   (1<<MELE_UNEXPECTED_HDR_DISABLE)
+
+/*! Indicate that this list entry only contains memory addresses that are
+ * accessible by the application.
+ */
+#define PTL_ME_IS_ACCESSIBLE            (1<<MELE_IS_ACCESSIBLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
-#define PTL_ME_EVENT_COMM_DISABLE       PTL_LE_EVENT_COMM_DISABLE
+#define PTL_ME_EVENT_COMM_DISABLE       (1<<MELE_EVNT_COMM_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a flow control failure. */
-#define PTL_ME_EVENT_FLOWCTRL_DISABLE   PTL_LE_EVENT_FLOWCTRL_DISABLE
+#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<MELE_EVNT_FLOWCTRL_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_ME_EVENT_SUCCESS_DISABLE    PTL_LE_EVENT_SUCCESS_DISABLE
+#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<MELE_EVNT_SUCCESS_DISABLE)
 
 /*! Specifies that this match list entry should not generate overflow list
- * events (\c PTL_EVENT_PUT_OVERFLOW events). */
-#define PTL_ME_EVENT_OVER_DISABLE       PTL_LE_EVENT_OVER_DISABLE
+ * events. */
+#define PTL_ME_EVENT_OVER_DISABLE       (1<<MELE_EVNT_OVER_DISABLE)
 
 /*! Specifies that this match list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_ME_EVENT_UNLINK_DISABLE     PTL_LE_EVENT_UNLINK_DISABLE
+#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<MELE_EVNT_UNLINK_DISABLE)
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_ME_EVENT_CT_COMM            PTL_LE_EVENT_CT_COMM
+#define PTL_ME_EVENT_CT_COMM            (1<<MELE_EVNT_CT_COMM)
 
-/*! Enable the counting of overflow events (\c PTL_EVENT_PUT_OVERFLOW, \c
- * PTL_EVENT_ATOMIC_OVERFLOW). When an overflow event would be posted, the
- * count is incremented by the \a mlength (modified length). */
-#define PTL_ME_EVENT_CT_OVERFLOW        PTL_LE_EVENT_CT_OVERFLOW
+/*! Enable the counting of overflow events. */
+#define PTL_ME_EVENT_CT_OVERFLOW        (1<<MELE_EVNT_CT_OVERFLOW)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_ME_EVENT_CT_BYTES           PTL_LE_EVENT_CT_BYTES
+#define PTL_ME_EVENT_CT_BYTES           (1<<MELE_EVNT_CT_BYTES)
 
 /*! Use job ID for authentication instead of user ID. By default, the user ID
  * must match to allow a message to access a match list entry. */
-#define PTL_ME_AUTH_USE_JID             PTL_LE_AUTH_USE_JID
+#define PTL_ME_AUTH_USE_JID             (1<<MELE_AUTH_USE_JID)
 
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
@@ -1317,7 +1378,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * @note Only one offset variable exists per match list entry. If both \p put and
  *      \p get operations are performed on a match list entry, the value of that
  *      single variable is updated each time. */
-#define PTL_ME_MANAGE_LOCAL             (1<<14)
+#define PTL_ME_MANAGE_LOCAL             (1<<ME_MANAGE_LOCAL)
 
 /*! Specifies that the length provided in the incoming request cannot be
  * reduced to match the memory available in the region. This can cause the
@@ -1325,7 +1386,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * subtracting the offset from the length of the memory region.) By default, if
  * the length in the incoming operation is greater than the amount of memory
  * available, the operation is truncated. */
-#define PTL_ME_NO_TRUNCATE              (1<<15)
+#define PTL_ME_NO_TRUNCATE              (1<<ME_NO_TRUNCATE)
 
 /*! Indicates that messages deposited into this match list entry may be
  * aligned by the implementation to a performance optimizing boundary.
@@ -1333,9 +1394,9 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
  * that the application does not care about the specific placement of the data.
  * This option is only relevant when the \c PTL_ME_MANAGE_LOCAL option is set.
  * */
-#define PTL_ME_MAY_ALIGN                (1<<16)
+#define PTL_ME_MAY_ALIGN                (1<<ME_MAY_ALIGN)
 
-#define PTL_ME_APPEND_OPTIONS_MASK	((1<<17)-1)
+#define PTL_ME_APPEND_OPTIONS_MASK	((1<<ME_OPTIONS_MASK)-1)
 
 /*!
  * @struct ptl_me_t
@@ -1383,8 +1444,7 @@ typedef struct {
      * Portals state. This is treated as a permissions failure and the
      * PtlNIStatus() register indexed by \c PTL_SR_PERMISSIONS_VIOLATIONS is
      * incremented. This failure is also indicated to the initiator through the
-     * \a ni_fail_type in the \c PTL_EVENT_SEND event, unless the \c
-     * PTL_MD_REMOTE_FAILURE_DISABLE option is set. */
+     * \a ni_fail_type in the \c PTL_EVENT_SEND event. */
     ptl_ac_id_t         ac_id;
 
     /*! Specifies the behavior of the match list entry. The following options
@@ -1880,14 +1940,19 @@ int PtlCTInc(ptl_handle_ct_t    ct_handle,
  * @brief Values of the type ptl_ack_req_t are used to control whether an
  *      acknowledgment should be sent when the operation completes (i.e., when
  *      the data has been written to a match list entry of the \e target
- *      process).
- *
- *      When a counting acknowledgment is requested, either \c PTL_CT_OPERATION
- *      or \c PTL_CT_BYTE can be set in the \a ct_handle. If \c
- *      PTL_CT_OPERATION is set, the number of acknowledgments is counted. If
- *      \c PTL_CT_BYTE is set, the modified length (\a mlength) from the target
- *      is counted at the initiator. The operation completed acknowledgment is
- *      an acknowledgment that simply indicated that the operation has
+ *      process). The value \c PTL_ACK_REQ requests an acknowledgment, the
+ *      value \c PTL_NO_ACK_REQ requests that no acknowledgment should be
+ *      generated, the value \c PTL_CT_ACK_REQ requests a simple counting
+ *      acknowledgment, and the value \c PTL_OC_ACK_REQ requests an operation
+ *      completed acknowledgment. When a counting acknowledgment is requested,
+ *      the operations in the requesting memory descriptor can be set to count
+ *      either events or bytes. If the \c PTL_MD_EVENT_CT_BYTES option is set
+ *      and the operation is successful, the requested length (\a rlength) is
+ *      counted for a \c PTL_EVENT_SEND event and the modified length (\a
+ *      mlength) from the target is counted. If the event would indicate
+ *      "failure" or the \c PTL_MD_EVENT_CT_BYTES option is not set, the number
+ *      of acknowledgments is counted. The operation completed acknowledgment
+ *      is an acknowledgment that simply indicates that the operation has
  *      completed at the target. It \e does \e not indicate what was done with
  *      the message. The message may have been dropped due to a permission
  *      violation or may not have matched in the priority list or overflow
@@ -1996,9 +2061,13 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *            void *            user_ptr)
  * @brief Perform a \e get operation.
  * @details Initiates a remote read operation. There are two events associated
- *      with a get operation. When the data is sent from the \e target node, a
- *      \c PTL_EVENT_GET event is registered on the \e target node. When the
- *      data is returned from the \e target node, a \c PTL_EVENT_REPLY event is
+ *      with a get operation. When the data is sent from the \e target node if
+ *      the message matched in the priority list. The message can also match in
+ *      the overflow list, which will cause a \c PTL_EVENT_GET event to be
+ *      registered on the \e target node and will later cause a \c
+ *      PTL_EVENT_GET_OVERFLOW to be registered on the \e target node when a
+ *      matching entry is appended. In either case, when the data is returned
+ *      from the \e target node, a \c PTL_EVENT_REPLY event is
  *      registered on the \e initiator node.
  *
  *      The local (\e initiator) offset is used to determine the starting
