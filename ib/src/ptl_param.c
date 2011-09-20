@@ -105,7 +105,7 @@ static param_t param[] = {
 						.name	= "PTL_LIM_FEATURES",
 						.min	= 0,
 						.max	= LONG_MAX,
-						.val	= 0,
+						.val	= PTL_TARGET_BIND_INACCESSIBLE,
 					  },
 	[PTL_OBJ_ALLOC_TIMEOUT]			= {
 						.name	= "PTL_OBJ_ALLOC_TIMEOUT",
