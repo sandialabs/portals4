@@ -379,11 +379,6 @@ void PtlFini(void);
  * logical interfaces within a single process that are associated with a single
  * physical interface must share a single node ID and Portals process ID.
  */
-/*! @typedef ptl_ni_fail_t
- * A network interface can use this integral type to define specific
- * information regarding the failure of an operation. */
-typedef unsigned char ptl_ni_fail_t;
-
 enum ni_types {
     NI_T_MATCHING,
     NI_T_NMATCHING,
@@ -412,25 +407,24 @@ enum ni_types {
 
 #define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_T_OPTIONS_MASK) - 1)
 
-/*! Used in successful end events to indicate that there has been no failure. */
-#define PTL_NI_OK               ((ptl_ni_fail_t) 0)
-
-/*! Indicates a system failure that prevents message delivery. */
-#define PTL_NI_UNDELIVERABLE    ((ptl_ni_fail_t) 1)
-
-/*! Indicates that a message was dropped for some reason. */
-#define PTL_NI_DROPPED          ((ptl_ni_fail_t) 2)
-
-/*! Indicates that the remote node has exhausted its resources, enabled flow
- * control, and dropped this message. */
-#define PTL_NI_FLOW_CTRL        ((ptl_ni_fail_t) 3)
-
-/*! Indicates that the remote Portals addressing indicated a permissions
- * violation for this message. */
-#define PTL_NI_PERM_VIOLATION   ((ptl_ni_fail_t) 4)
-
-/*! Indicates that the search did not find an entry in the unexpected list */
-#define PTL_NI_NO_MATCH         ((ptl_ni_fail_t) 5)
+/*! @typedef ptl_ni_fail_t
+ * A network interface can use this integral type to define specific
+ * information regarding the failure of an operation. */
+typedef enum {
+    PTL_NI_OK, /*!< Used in successful end events to indicate that there has
+		 been no failure. */
+    PTL_NI_UNDELIVERABLE, /*!< Indicates a system failure that prevents message
+			    delivery. */
+    PTL_NI_DROPPED, /*!< Indicates that a message was dropped for some reason. */
+    PTL_NI_FLOW_CTRL, /*!< Indicates that the remote node has exhausted its
+			resources, enabled flow control, and dropped this
+			message. */
+    PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
+			     indicated a permissions violation for this
+			     message. */
+    PTL_NI_NO_MATCH /*!< Indicates that the search did not find an entry in the
+		      unexpected list. */
+} ptl_ni_fail_t;
 
 enum ni_features {
     NI_BIND_INACCESSIBLE,
