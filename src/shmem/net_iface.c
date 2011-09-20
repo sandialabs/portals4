@@ -274,6 +274,7 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
             (desired->max_volatile_size <= (LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t)))) {
             nit_limits[ni.s.ni].max_volatile_size = desired->max_volatile_size;
         }
+        nit_limits[ni.s.ni].features = PTL_TARGET_BIND_INACCESSIBLE | PTL_TOTAL_DATA_ORDERING;
         nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
     }
     PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 2);   /* if not yet initialized, it is now */
