@@ -19,6 +19,8 @@
 #include <sys/time.h>
 
 #include <portals4.h>
+#include <portals4_runtime.h>
+
 #include "dict.h"
 #include "api.h"
 
@@ -234,5 +236,6 @@ int run_doc(xmlDocPtr doc);
 
 /* rt.c */
 int ompi_rt_init(struct node_info *info);
+int ompi_rt_fini(struct node_info *info);
 
 #endif /* PTL_TEST_H */

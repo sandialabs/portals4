@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include "portals4.h"
+#include "portals4_runtime.h"
 
 /* branch prediction hints for compiler */
 #define unlikely(x)	__builtin_expect((x),0)

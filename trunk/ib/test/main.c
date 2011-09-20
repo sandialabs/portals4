@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 	int ret;
 	xmlDocPtr doc;
 
-	MPI_Init(&argc, &argv);
+	init_mpi(&argc, &argv);
 
 	ret = process_args(argc, argv);
 	if (ret) {
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 
 	fini();
 
-	MPI_Finalize();
+	fini_mpi();
 
 	return ret;
 }
