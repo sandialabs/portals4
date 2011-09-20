@@ -77,7 +77,6 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                             printf("initiator.rank(%u), ", (unsigned)event.initiator.rank);
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
                             printf("uid(%u), ", event.uid);
-                            printf("jid(%u), ", event.jid);
                             printf("match_bits(%u), ", (unsigned)event.match_bits);
                             printf("rlength(%u), ", (unsigned)event.rlength);
                             printf("mlength(%u), ", (unsigned)event.mlength);
@@ -97,7 +96,6 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                             printf("initiator.rank(%u), ", (unsigned)event.initiator.rank);
                             printf("pt_index(%u), ", (unsigned)event.pt_index);
                             printf("uid(%u), ", event.uid);
-                            printf("jid(%u), ", event.jid);
                             printf("match_bits(%u), ", (unsigned)event.match_bits);
                             printf("rlength(%u), ", (unsigned)event.rlength);
                             printf("mlength(%u), ", (unsigned)event.mlength);
@@ -191,9 +189,9 @@ int main(int   argc,
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
     memset(unexpected_buf, 42, BUFSIZE);
-    unexpected_e.start     = unexpected_buf;
-    unexpected_e.length    = BUFSIZE;
-    unexpected_e.ac_id.uid = PTL_UID_ANY;
+    unexpected_e.start  = unexpected_buf;
+    unexpected_e.length = BUFSIZE;
+    unexpected_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     unexpected_e.match_id.rank = PTL_RANK_ANY;
     unexpected_e.match_bits    = 0;
@@ -248,10 +246,10 @@ int main(int   argc,
         printf("\nNow... posting the receive:\n");
     }
     fflush(NULL);
-    recvval          = 0;
-    recv_e.start     = &recvval;
-    recv_e.length    = sizeof(recvval);
-    recv_e.ac_id.uid = PTL_UID_ANY;
+    recvval       = 0;
+    recv_e.start  = &recvval;
+    recv_e.length = sizeof(recvval);
+    recv_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     recv_e.match_id.rank = PTL_RANK_ANY;
     recv_e.match_bits    = 1;

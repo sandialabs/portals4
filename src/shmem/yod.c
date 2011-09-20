@@ -93,7 +93,6 @@ int main(int   argc,
     size_t       large_frag_count   = 128;
     const size_t max_count          = buffsize - 1;
     void        *commpad            = NULL;
-    ptl_jid_t    yod_jid            = PTL_JID_NONE;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -105,7 +104,7 @@ int main(int   argc,
 
     {
         int opt;
-        while ((opt = getopt(argc, argv, "l:s:hc:L:S:j:")) != -1) {
+        while ((opt = getopt(argc, argv, "l:s:hc:L:S:")) != -1) {
             switch (opt) {
                 case 'h':
                     print_usage(0);
@@ -160,16 +159,6 @@ int main(int   argc,
                     large_frag_count = strtol(optarg, &opterr, 0);
                     if ((opterr == NULL) || (opterr == optarg) || (*opterr != 0)) {
                         fprintf(stderr, "Error: Unparseable large fragment count! (%s)\n", optarg);
-                        print_usage(1);
-                    }
-                    break;
-                }
-                case 'j':
-                {
-                    char *opterr = NULL;
-                    yod_jid = strtol(optarg, &opterr, 0);
-                    if ((opterr == NULL) || (opterr == optarg) || (*opterr != 0)) {
-                        fprintf(stderr, "Error: Unparseable job ID! (%s)\n", optarg);
                         print_usage(1);
                     }
                     break;
@@ -271,11 +260,6 @@ int main(int   argc,
     pids = malloc(sizeof(pid_t) * (count + 1));
     assert(pids != NULL);
 
-    if (yod_jid == PTL_JID_NONE) {
-        yod_jid = random();
-    }
-
-    EXPORT_ENV_NUM("PORTALS4_JID", yod_jid);
     EXPORT_ENV_NUM("PORTALS4_COMM_SIZE", commsize);
     EXPORT_ENV_NUM("PORTALS4_NUM_PROCS", count);
     EXPORT_ENV_NUM("PORTALS4_COLLECTOR_NID", 0);
@@ -502,10 +486,10 @@ void *collator(void *Q_UNUSED junk) Q_NORETURN
     ptl_md_t        md;
     ptl_handle_le_t le_handle;
     ptl_handle_md_t md_handle;
-    md.start     = le.start = mapping;
-    md.length    = le.length = count * sizeof(ptl_process_t);
-    le.ac_id.uid = PTL_UID_ANY;
-    le.options   = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
+    md.start   = le.start = mapping;
+    md.length  = le.length = count * sizeof(ptl_process_t);
+    le.uid     = PTL_UID_ANY;
+    le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
     ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle), PTL_OK);
     collator_ct_handle = le.ct_handle;
     ptl_assert(PtlLEAppend
@@ -599,7 +583,6 @@ void print_usage(int ex)
     printf("\t-h                        Print this help.\n");
     printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
     printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
-    printf("\t-j [job_id]               The JID to use.\n");
     fflush(stdout);
     if (ex) {
         exit(EXIT_FAILURE);

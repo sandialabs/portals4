@@ -55,10 +55,10 @@ int main(int   argc,
     assert(logical_pt_index == 0);
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &trigger));
     /* Now do the initial setup on ni_logical and the new PT */
-    value             = myself.rank + 0xdeadbeefc0d1f1ed;
-    value_e.start     = &value;
-    value_e.length    = sizeof(value);
-    value_e.ac_id.uid = PTL_UID_ANY;
+    value          = myself.rank + 0xdeadbeefc0d1f1ed;
+    value_e.start  = &value;
+    value_e.length = sizeof(value);
+    value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
     value_e.match_bits    = 1;

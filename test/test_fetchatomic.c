@@ -53,10 +53,10 @@ int main(int   argc,
     /* Now do the initial setup on ni_logical */
     value = myself.rank + 0xdeadbeefc0d1f1ed;
     if (myself.rank == 0) {
-        value_e.start     = &value;
-        value_e.length    = sizeof(value);
-        value_e.ac_id.uid = PTL_UID_ANY;
-        value_e.options   = OPTIONS;
+        value_e.start   = &value;
+        value_e.length  = sizeof(value);
+        value_e.uid     = PTL_UID_ANY;
+        value_e.options = OPTIONS;
 #if INTERFACE == 1
         value_e.match_id.rank = PTL_RANK_ANY;
         value_e.match_bits    = 1;

@@ -108,10 +108,10 @@ void runtime_init(void)
     }
     {
         ptl_le_t le = {
-            .start     = NULL,
-            .length    = 0,
-            .ac_id.uid = PTL_UID_ANY,
-            .options   = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM
+            .start   = NULL,
+            .length  = 0,
+            .uid     = PTL_UID_ANY,
+            .options = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM
         };
         ptl_assert(PtlCTAlloc(ni_physical, &barrier_ct_h2),
                    PTL_OK);
@@ -129,10 +129,10 @@ void runtime_init(void)
                PTL_OK);
 
     /* for receiving the mapping */
-    le.start     = dmapping;
-    le.length    = num_procs * sizeof(ptl_process_t);
-    le.ac_id.uid = PTL_UID_ANY;
-    le.options   =
+    le.start   = dmapping;
+    le.length  = num_procs * sizeof(ptl_process_t);
+    le.uid     = PTL_UID_ANY;
+    le.options =
         PTL_LE_OP_PUT | PTL_LE_USE_ONCE | PTL_LE_EVENT_COMM_DISABLE |
         PTL_LE_EVENT_CT_COMM;
     ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle),
@@ -239,7 +239,7 @@ void API_FUNC runtime_barrier(void)
         barrier_count = 1;
         le.start      = md.start = NULL;
         le.length     = md.length = 0;
-        le.ac_id.uid  = PTL_UID_ANY;
+        le.uid        = PTL_UID_ANY;
         le.options    = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
         md.options    = 0;
         md.eq_handle  = PTL_EQ_NONE;
@@ -263,7 +263,7 @@ void API_FUNC runtime_barrier(void)
         ptl_assert(PtlMDRelease(mdh),
                    PTL_OK);
 
-        if (0 == my_rank && num_procs != 2) {
+        if ((0 == my_rank) && (num_procs != 2)) {
             /* to make counting easier */
             PtlInternalCTSuccessInc(barrier_ct_h, num_procs - 2);
         }

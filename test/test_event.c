@@ -39,11 +39,11 @@ int main(int   argc,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    value              = myself.rank + 0xdeadbeefc0d1f1edUL;
-    value_le.start     = &value;
-    value_le.length    = sizeof(uint64_t);
-    value_le.ac_id.uid = PTL_UID_ANY;
-    value_le.options   = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
+    value            = myself.rank + 0xdeadbeefc0d1f1edUL;
+    value_le.start   = &value;
+    value_le.length  = sizeof(uint64_t);
+    value_le.uid     = PTL_UID_ANY;
+    value_le.options = PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_le.ct_handle));
     CHECK_RETURNVAL(PtlLEAppend(ni_logical, 0, &value_le, PTL_PRIORITY_LIST,
                                 (void *)(0xcafecafe00UL + myself.rank),
@@ -159,7 +159,7 @@ int main(int   argc,
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {
-                                printf("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), jid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
+                                printf("match_bits(%u), rlength(%u), mlength(%u), remote_offset(%u), start(%p,%p), user_ptr(%p), hdr_data(%u), initiator(%u), uid(%u), ni_fail_type(%u), pt_index(%u), atomic_op(%u), atomic_type(%u)",
                                        (unsigned)event.match_bits,
                                        (unsigned)event.rlength,
                                        (unsigned)event.mlength,
@@ -167,7 +167,7 @@ int main(int   argc,
                                        event.start, &value, event.user_ptr,
                                        (unsigned)event.hdr_data,
                                        (unsigned)event.initiator.rank,
-                                       event.uid, event.jid,
+                                       event.uid,
                                        (unsigned)event.ni_fail_type,
                                        (unsigned)event.pt_index,
                                        (unsigned)event.atomic_operation,

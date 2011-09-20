@@ -64,10 +64,10 @@ int main(int   argc,
                         &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    potato_catcher.start     = &potato;
-    potato_catcher.length    = sizeof(potato);
-    potato_catcher.ac_id.uid = PTL_UID_ANY;
-    potato_catcher.options   = OPTIONS;
+    potato_catcher.start   = &potato;
+    potato_catcher.length  = sizeof(potato);
+    potato_catcher.uid     = PTL_UID_ANY;
+    potato_catcher.options = OPTIONS;
 #if INTERFACE == 1
     potato_catcher.match_id.rank = PTL_RANK_ANY;
     potato_catcher.match_bits    = 1;

@@ -1176,7 +1176,6 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
         size_t payload = PtlInternalFragmentSize(hdr) - sizeof(ptl_internal_header_t);
         memcpy(hdr->data, dataptr, payload);
         hdr->moredata = dataptr + payload;
-        quick_exit    = 1;
 #endif
     }
     /* step 4: enqueue the op structure on the target */

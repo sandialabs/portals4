@@ -76,7 +76,6 @@ int API_FUNC PtlInit(void)
     unsigned int        race              = PtlInternalAtomicInc(&init_ref_count, 1);
     static volatile int done_initializing = 0;
     static volatile int failure           = 0;
-    extern ptl_jid_t    the_ptl_jid;
     extern ptl_uid_t    the_ptl_uid;
 
     if (race == 0) {
@@ -103,7 +102,6 @@ int API_FUNC PtlInit(void)
 #endif
             goto exit_fail;
         }
-        PARSE_ENV_NUM("PORTALS4_JID", the_ptl_jid, 1);
         PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 1);
         PARSE_ENV_NUM("PORTALS4_RANK", proc_number, 1);
         PARSE_ENV_NUM("PORTALS4_COMM_SIZE", per_proc_comm_buf_size, 1);

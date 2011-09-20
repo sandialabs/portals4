@@ -256,7 +256,6 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
                 e->initiator.phys.nid = ie.initiator.phys.nid; /* this handles rank too */  \
                 e->initiator.phys.pid = ie.initiator.phys.pid;                              \
                 e->uid                = ie.uid;                                             \
-                e->jid                = ie.jid;                                             \
                 e->match_bits         = ie.match_bits;                                      \
                 e->rlength            = ie.rlength;                                         \
                 e->mlength            = ie.mlength;                                         \

@@ -159,7 +159,7 @@ void __PtlCreateLECT(ptl_handle_ni_t  ni,
 
     le.start     = start;
     le.length    = length;
-    le.ac_id.uid = PTL_UID_ANY;
+    le.uid       = PTL_UID_ANY;
     le.options   = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM;
     le.ct_handle = *ch;
     rc           = PtlLEAppend(ni, index, &le, PTL_PRIORITY_LIST, NULL, lh);
@@ -190,7 +190,7 @@ static int __PtlCreateME(ptl_handle_ni_t  ni,
         me.length      = length;
         me.ct_handle   = PTL_CT_NONE;
         me.min_free    = 0;
-        me.ac_id.uid   = PTL_UID_ANY;
+        me.uid         = PTL_UID_ANY;
         me.options     = options;
         me.match_id    = src;
         me.match_bits  = i;
