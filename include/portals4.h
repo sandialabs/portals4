@@ -33,7 +33,7 @@ enum ptl_retvals {
     PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE       /*!< Portal table index is busy. */
 };
-#define PTL_STATUS_LAST (PTL_SIZE_INVALID+1)
+#define PTL_STATUS_LAST (PTL_PT_IN_USE+1)
 
 /**************
  * Base Types *
