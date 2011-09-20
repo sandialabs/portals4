@@ -384,25 +384,33 @@ void PtlFini(void);
  * information regarding the failure of an operation. */
 typedef unsigned char ptl_ni_fail_t;
 
+enum ni_types {
+    NI_T_MATCHING,
+    NI_T_NMATCHING,
+    NI_T_LOGICAL,
+    NI_T_PHYSICAL,
+    NI_OPTIONS_MASK
+};
+
 /*! Request that the interface specified in \a iface be opened with matching
  * enabled. */
-#define PTL_NI_MATCHING     (1)
+#define PTL_NI_MATCHING     (1<<NI_T_MATCHING)
 
 /*! Request that the interface specified in \a iface be opened with matching
  * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
  * exclusive. */
-#define PTL_NI_NO_MATCHING  (1<<1)
+#define PTL_NI_NO_MATCHING  (1<<NI_T_NMATCHING)
 
 /*! Request that the interface specified in \a iface be opened with logical
  * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
-#define PTL_NI_LOGICAL      (1<<2)
+#define PTL_NI_LOGICAL      (1<<NI_T_LOGICAL)
 
 /*! Request that the interface specified in \a iface be opened with physical
  * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
  * PTL_NI_PHYSICAL are mutually exclusive */
-#define PTL_NI_PHYSICAL     (1<<3)
+#define PTL_NI_PHYSICAL     (1<<NI_T_PHYSICAL)
 
-#define PTL_NI_INIT_OPTIONS_MASK ((1<<4) - 1)
+#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_OPTIONS_MASK) - 1)
 
 /*! Used in successful end events to indicate that there has been no failure. */
 #define PTL_NI_OK               ((ptl_ni_fail_t) 0)
