@@ -121,7 +121,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 		goto err1;
 	}
 
-	if (ni->eq_waiting) {
+	if (atomic_read(&ni->eq_waiting)) {
 		eq->interrupt = 1;
 		pthread_mutex_lock(&ni->eq_wait_mutex);
 		pthread_cond_broadcast(&ni->eq_wait_cond);
@@ -229,9 +229,9 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	/* Serialize for blocking on empty */
 	pthread_mutex_lock(&ni->eq_wait_mutex);
 	while((ret = get_event(eq, event)) == PTL_EQ_EMPTY) {
-		ni->eq_waiting++;
+		atomic_inc(&ni->eq_waiting);
 		pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
-		ni->eq_waiting--;
+		atomic_dec(&ni->eq_waiting);
 		if (eq->interrupt) {
 			pthread_mutex_unlock(&ni->eq_wait_mutex);
 			ret = PTL_INTERRUPTED;
@@ -328,14 +328,14 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 			}
 		}
 
-		ni->eq_waiting++;
+		atomic_inc(&ni->eq_waiting);
 		if (timeout == PTL_TIME_FOREVER)
 			pthread_cond_wait(&ni->eq_wait_cond,
 				&ni->eq_wait_mutex);
 		else
 			err = pthread_cond_timedwait(&ni->eq_wait_cond,
 				&ni->eq_wait_mutex, &expire);
-		ni->eq_waiting--;
+		atomic_dec(&ni->eq_waiting);
 	}
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 	err = PTL_EQ_EMPTY;
@@ -399,7 +399,7 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	/* Handle case where waiters have blocked */
 	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
-	if (ni->eq_waiting)
+	if (atomic_read(&ni->eq_waiting))
 		pthread_cond_broadcast(&ni->eq_wait_cond);
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
@@ -445,7 +445,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 	/* Handle case where waiters have blocked */
 	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
-	if (ni->eq_waiting)
+	if (atomic_read(&ni->eq_waiting))
 		pthread_cond_broadcast(&ni->eq_wait_cond);
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
@@ -482,7 +482,7 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail
 	/* Handle case where waiters have blocked */
 	ni = obj_to_ni(eq);
 	pthread_mutex_lock(&ni->eq_wait_mutex);
-	if (ni->eq_waiting)
+	if (atomic_read(&ni->eq_waiting))
 		pthread_cond_broadcast(&ni->eq_wait_cond);
 	pthread_mutex_unlock(&ni->eq_wait_mutex);
 

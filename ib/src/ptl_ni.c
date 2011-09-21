@@ -890,6 +890,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
+	atomic_set(&ni->eq_waiting, 0);
 	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
 	pthread_cond_init(&ni->ct_wait_cond, NULL);
 	if (options & PTL_NI_PHYSICAL) {
