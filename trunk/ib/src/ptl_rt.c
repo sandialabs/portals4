@@ -13,19 +13,8 @@
 int shmemtest_rank;
 int shmemtest_map_size;
 
-static int debug = 0;
-
-struct message {
-	uint32_t nid;
-	uint32_t pid;
-	uint32_t rank;
-};
-
 ptl_process_t *get_desired_mapping(ptl_handle_ni_t ni)
 {
-	struct message msg;
-	int i, j;
-	MPI_Status status;
 	ptl_process_t my_id;
 	ptl_process_t *desired_map_ptr = NULL;
 
@@ -40,33 +29,9 @@ ptl_process_t *get_desired_mapping(ptl_handle_ni_t ni)
 		goto done;
 	}
 
-	desired_map_ptr[shmemtest_rank] = my_id;
-
-	for (i=0; i<shmemtest_map_size; i++) {
-		if (i == shmemtest_rank) {
-			/* Send my info. */
-			for (j=0; j<shmemtest_map_size; j++) {
-				if (j == shmemtest_rank)
-					continue;
-				msg.nid = my_id.phys.nid;
-				msg.pid = my_id.phys.pid;
-				msg.rank = shmemtest_rank;
-				MPI_Send(&msg, sizeof(msg), MPI_CHAR, j, 0, MPI_COMM_WORLD);
-				if (debug)
-					printf("sent desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
-			}
-		} else {
-			/* Get their info. */
-			MPI_Recv(&msg, sizeof(msg), MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
-
-			assert(i == msg.rank);
-			
-			desired_map_ptr[i].phys.nid = msg.nid;
-			desired_map_ptr[i].phys.pid = msg.pid;
-			if (debug)
-				printf("received desired mapping[%d].nid = %x, pid = %x\n", i, msg.nid, msg.pid);
-		}
-	}
+    MPI_Allgather(&my_id, sizeof(my_id), MPI_BYTE,
+                  desired_map_ptr, sizeof(my_id), MPI_BYTE,
+                  MPI_COMM_WORLD);
 
  done:
 	return desired_map_ptr;
