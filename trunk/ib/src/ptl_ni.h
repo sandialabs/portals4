@@ -78,7 +78,7 @@ typedef struct ni {
 	/* Can be held outside of EQ object lock */
 	pthread_mutex_t		eq_wait_mutex;
 	pthread_cond_t		eq_wait_cond;
-	int			eq_waiting;
+	atomic_t			eq_waiting;
 
 	/* Can be held outside of CT object lock */
 	pthread_mutex_t		ct_wait_mutex;
