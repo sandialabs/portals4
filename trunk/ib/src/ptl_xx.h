@@ -88,9 +88,8 @@ struct xremote {
 	struct data		*data_in;		\
 	struct data		*data_out;		\
 	conn_t			*conn;			\
-	struct list_head	send_list; \
-	struct list_head	ack_list; \
-	pthread_spinlock_t	send_list_lock; \
+	struct buf *send_buf;		/* completion is requested */ \
+	struct buf *ack_buf;		/* remote ACK is requested */ \
 	struct list_head	rdma_list; \
 	pthread_spinlock_t	rdma_list_lock;
 

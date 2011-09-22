@@ -140,33 +140,24 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
  */
 static int send_comp(buf_t *buf)
 {
-	struct list_head temp_list;
-	xt_t *xt = buf->xt;
+	xi_t *xi = buf->xi;			/* can be an XT or an XI */
 
+	assert(buf->comp);
 	if (!buf->comp)
 		return STATE_RECV_COMP_REARM;
 
-	pthread_spin_lock(&xt->send_list_lock);
-	list_cut_position(&temp_list, &xt->send_list, &buf->list);
-	pthread_spin_unlock(&xt->send_list_lock);
+	assert(buf == xi->send_buf);
 
-	while(!list_empty(&temp_list)) {
-		xi_t * xi;
-
-		buf = list_first_entry(&temp_list, buf_t, list);
-		list_del(&buf->list);
-
-		xi = buf->xi;
-		if (xi->obj.obj_pool->type == POOL_XI) {
-			int err;
-			xi->completed = 1;
-			err = process_init(xi);
-			if (err)
-				WARN();
-		}
-
-		buf_put(buf);
+	if (xi->obj.obj_pool->type == POOL_XI) {
+		/* Fox XI only, restart the initiator state machine. */
+		int err;
+		xi->completed = 1;
+		err = process_init(xi);
+		if (err)
+			WARN();
 	}
+
+	buf_put(buf);
 
 	return STATE_RECV_COMP_REARM;
 }
