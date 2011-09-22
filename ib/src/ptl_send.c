@@ -19,6 +19,8 @@ int send_message_rdma(buf_t *buf, int signaled)
 	buf->rdma.send_wr.opcode = IBV_WR_SEND;
 	if (signaled)
 		buf->rdma.send_wr.send_flags = IBV_SEND_SIGNALED;
+	else
+		buf->rdma.send_wr.send_flags = 0;
 	buf->rdma.sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
 #ifdef USE_XRC
@@ -27,24 +29,26 @@ int send_message_rdma(buf_t *buf, int signaled)
 
 	buf->comp = signaled;
 
-	pthread_spin_lock(&xi->send_list_lock);
+	assert(xi->send_buf == NULL && xi->ack_buf == NULL);
+
+	if (signaled) {
+		xi->send_buf = buf;
+	} else {
+		xi->ack_buf = buf;
+	}
 
 	err = ibv_post_send(buf->dest->rdma.qp, &buf->rdma.send_wr, &bad_wr);
 	if (err) {
-		pthread_spin_unlock(&xi->send_list_lock);
+		if (signaled) {
+			xi->send_buf = NULL;
+		} else {
+			xi->ack_buf = NULL;
+		}
 
 		WARN();
 
 		return PTL_FAIL;
 	}
-
-	if (signaled) {
-		list_add_tail(&buf->list, &xi->send_list);
-	} else {
-		list_add_tail(&buf->list, &xi->ack_list);
-	}
-
-	pthread_spin_unlock(&xi->send_list_lock);
 
 	return PTL_OK;
 }
@@ -64,17 +68,14 @@ int send_message_shmem(buf_t *buf, int signaled)
 
 	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
 
-	pthread_spin_lock(&xi->send_list_lock);
-
-	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
-
+	assert(xi->send_buf == NULL && xi->ack_buf == NULL);
 	if (signaled) {
-		list_add_tail(&buf->list, &xi->send_list);
+		xi->send_buf = buf;
 	} else {
-		list_add_tail(&buf->list, &xi->ack_list);
+		xi->ack_buf = buf;
 	}
 
-	pthread_spin_unlock(&xi->send_list_lock);
+	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
 
 	return PTL_OK;
 }

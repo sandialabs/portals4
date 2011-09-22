@@ -153,9 +153,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 
 		switch (buf->type) {
 		case BUF_SEND:
-			pthread_spin_lock(&xi->send_list_lock);
-			list_del(&buf->list);
-			pthread_spin_unlock(&xi->send_list_lock);
 			break;
 		case BUF_RDMA:
 			pthread_spin_lock(&xi->rdma_list_lock);

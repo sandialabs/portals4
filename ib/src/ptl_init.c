@@ -438,8 +438,6 @@ static int reply_event(xi_t *xi)
 
 static int init_cleanup(xi_t *xi)
 {
-	buf_t *buf;
-
 	if (xi->get_md) {
 		md_put(xi->get_md);
 		xi->get_md = NULL;
@@ -455,10 +453,8 @@ static int init_cleanup(xi_t *xi)
 		xi->recv_buf = NULL;
 	}
 
-	while(!list_empty(&xi->ack_list)) {
-		buf = list_first_entry(&xi->ack_list, buf_t, list);
-		list_del(&buf->list);
-		buf_put(buf);
+	if (xi->ack_buf) {
+		buf_put(xi->ack_buf);
 	}
 
 	xi_put(xi);

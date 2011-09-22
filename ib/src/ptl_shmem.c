@@ -10,23 +10,12 @@
  */
 static void send_comp_shmem(buf_t *buf)
 {
-	struct list_head temp_list;
-
 	if (buf->comp) {
 		xt_t *xt = buf->xt;
 
 		assert(xt);
-
-		/* On the send list. */
-		pthread_spin_lock(&xt->send_list_lock);
-		list_cut_position(&temp_list, &xt->send_list, &buf->list);
-		pthread_spin_unlock(&xt->send_list_lock);
-
-		while(!list_empty(&temp_list)) {
-			buf = list_first_entry(&temp_list, buf_t, list);
-			list_del(&buf->list);
-			buf_put(buf);
-		}
+		assert(xt->send_buf == buf);
+		buf_put(buf);
 	}
 }
 

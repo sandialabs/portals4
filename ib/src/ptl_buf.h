@@ -62,11 +62,6 @@ typedef struct buf {
 		} shmem;
 	};
 
-	/* HACK - Mellanox driver bug workaround. We get completions even
-	 * if they were not requested. Happens on mthca and mlx4. Querying
-	 * a QP after it's created indicates that sq_sig_all is set
-	 * although it was requested at creation. This variable should go
-	 * away when the bug is fixed. */
 	int comp;
 
 	buf_type_t type;
