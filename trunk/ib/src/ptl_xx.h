@@ -21,6 +21,7 @@ enum {
 	XI_GET_CT_BYTES				= (1 << 7),
 	XI_CT_ACK_EVENT				= (1 << 8),
 	XI_CT_REPLY_EVENT			= (1 << 9),
+	XI_RECEIVE_EXPECTED			= (1 << 10),
 
 	XT_COMM_EVENT		= (1 << 0),
 	XT_CT_COMM_EVENT	= (1 << 1),
@@ -109,7 +110,8 @@ typedef struct xi {
 	struct ct       *put_ct;
 	struct ct       *get_ct;
 	void			*user_ptr;
-	ptl_process_t		target;
+	ptl_process_t	target;
+	int				completed;
 } xi_t;
 
 int xi_setup(void *arg);
