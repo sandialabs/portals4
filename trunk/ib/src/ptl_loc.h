@@ -1,7 +1,9 @@
 #ifndef PTL_LOC_H
 #define PTL_LOC_H
 
-//#define WITH_SHMEM
+/* Enable or disable SHMEM, used for communication between ranks local
+ * to a node. */
+#define WITH_SHMEM
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 600
@@ -41,7 +43,6 @@
 #include "config.h"
 
 #include "portals4.h"
-#include "portals4_runtime.h"
 
 /* branch prediction hints for compiler */
 #define unlikely(x)	__builtin_expect((x),0)
@@ -277,7 +278,9 @@ int do_knem_transfer(xt_t *xt);
 int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
 void cleanup_shmem(ni_t *ni);
 
-
-
+/* For the runtime. */
+extern int ptl_test_return;
+extern int ptl_test_rank;
+extern int ptl_log_level;
 
 #endif /* PTL_LOC_H */
