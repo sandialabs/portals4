@@ -299,9 +299,10 @@
                   <ptl_eq_poll time="100" eq_handle="eq[1]">
                     <check event_type="SEND"/>
                     <check event_user_ptr="432"/>
-                    <check event_ni_fail="DROPPED"/>
+                    <check event_ni_fail="OK"/>
                   </ptl_eq_poll>
                   <ptl_eq_poll time="100" eq_handle="eq[1]">
+                    <check event_type="ACK"/>
                     <check event_user_ptr="432"/>
                     <check event_ni_fail="DROPPED"/>
                   </ptl_eq_poll>

@@ -7,6 +7,7 @@ static char *init_state_name[] = {
 	[STATE_INIT_START]		= "init_start",
 	[STATE_INIT_WAIT_CONN]		= "init_wait_conn",
 	[STATE_INIT_SEND_REQ]		= "init_send_req",
+	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
 	[STATE_INIT_EARLY_SEND_EVENT]	= "init_early_send_event",
 	[STATE_INIT_GET_RECV]		= "init_get_recv",
@@ -89,7 +90,7 @@ static void init_events(xi_t *xi)
 			xi->event_mask |= XI_SEND_EVENT;
 
 		if (xi->put_md->eq && (xi->ack_req == PTL_ACK_REQ))
-			xi->event_mask |= XI_ACK_EVENT;
+			xi->event_mask |= XI_ACK_EVENT | XI_RECEIVE_EXPECTED;
 
 		if (xi->put_md->ct &&
 		    (xi->put_md->options & PTL_MD_EVENT_CT_SEND))
@@ -98,23 +99,22 @@ static void init_events(xi_t *xi)
 		if (xi->put_md->ct && 
 			(xi->ack_req == PTL_CT_ACK_REQ || xi->ack_req == PTL_OC_ACK_REQ) &&
 		    (xi->put_md->options & PTL_MD_EVENT_CT_ACK))
-			xi->event_mask |= XI_CT_ACK_EVENT;
+			xi->event_mask |= XI_CT_ACK_EVENT | XI_RECEIVE_EXPECTED;
 		break;
 	case OP_GET:
 		if (xi->get_md->eq)
-			xi->event_mask |= XI_REPLY_EVENT;
+			xi->event_mask |= XI_REPLY_EVENT | XI_RECEIVE_EXPECTED;
 
 		if (xi->get_md->ct &&
 		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY))
-			xi->event_mask |= XI_CT_REPLY_EVENT;
+			xi->event_mask |= XI_CT_REPLY_EVENT | XI_RECEIVE_EXPECTED;
 		break;
 	case OP_FETCH:
 	case OP_SWAP:
 		if (xi->put_md->eq)
 			xi->event_mask |= XI_SEND_EVENT;
 
-		if (xi->get_md->eq)
-			xi->event_mask |= XI_REPLY_EVENT;
+		xi->event_mask |= XI_REPLY_EVENT | XI_RECEIVE_EXPECTED;
 
 		if (xi->put_md->ct &&
 		    (xi->put_md->options & PTL_MD_EVENT_CT_SEND)) {
@@ -123,7 +123,7 @@ static void init_events(xi_t *xi)
 
 		if (xi->get_md->ct &&
 		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY)) {
-			xi->event_mask |= XI_CT_REPLY_EVENT;
+			xi->event_mask |= XI_CT_REPLY_EVENT | XI_RECEIVE_EXPECTED;
 		}
 		break;
 	default:
@@ -199,6 +199,7 @@ static int init_send_req(xi_t *xi)
 	req_hdr_t *hdr;
 	data_t *put_data = NULL;
 	ptl_size_t length = xi->rlength;
+	int signaled;
 
 	if (xi->conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, &buf);
@@ -258,25 +259,30 @@ static int init_send_req(xi_t *xi)
 	}
 
 	/* ask for a response - they are all the same */
-	if (xi->event_mask || buf->num_mr)
+	if (xi->event_mask || buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
+		xi->event_mask |= XI_RECEIVE_EXPECTED;
+	}
 
-#if 0
-	if (put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
-	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)))
-		xi->next_state = STATE_INIT_EARLY_SEND_EVENT;
-	else 
-#endif
-		/* If we want an event, then do not request a completion for
-		 * that message. It will be freed when we receive the ACK or
-		 * reply. */
-		err = xi->conn->transport.send_message(buf, !hdr->ack_req);
+	/* If we want an event, then do not request a completion for
+	 * that message. It will be freed when we receive the ACK or
+	 * reply. */
+	signaled = put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
+	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT));
+		
+	err = xi->conn->transport.send_message(buf, signaled);
 	if (err) {
 		buf_put(buf);
 		return STATE_INIT_SEND_ERROR;
 	}
 
-	if (hdr->ack_req)
+	if (signaled) {
+		if (xi->conn->transport.type == CONN_TYPE_RDMA)
+			return STATE_INIT_WAIT_COMP;
+		else
+			return STATE_INIT_EARLY_SEND_EVENT;
+	}
+	else if (xi->event_mask & XI_RECEIVE_EXPECTED)
 		return STATE_INIT_GET_RECV;
 	else
 		return STATE_INIT_CLEANUP;
@@ -300,6 +306,16 @@ static int init_send_error(xi_t *xi)
 		return STATE_INIT_CLEANUP;
 }
 
+/* Wait for an IB completion event. */
+static int init_wait_comp(xi_t *xi)
+{
+	if (xi->completed) {
+		return STATE_INIT_EARLY_SEND_EVENT;
+	} else {
+		return STATE_INIT_WAIT_COMP;
+	}
+}
+
 static int early_send_event(xi_t *xi)
 {
 	/* Release the MD before posting the SEND event. */
@@ -312,7 +328,7 @@ static int early_send_event(xi_t *xi)
 	if (xi->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(xi);
 	
-	if (xi->event_mask)
+	if ((xi->event_mask & XI_RECEIVE_EXPECTED) && !xi->ni_fail)
 		return STATE_INIT_GET_RECV;
 	else
 		return STATE_INIT_CLEANUP;
@@ -410,7 +426,8 @@ static int reply_event(xi_t *xi)
 	md_put(xi->get_md);
 	xi->get_md = NULL;
 
-	if (xi->event_mask & XI_REPLY_EVENT)
+	if ((xi->event_mask & XI_REPLY_EVENT) &&
+		xi->get_eq)
 		make_reply_event(xi);
 
 	if (xi->event_mask & XI_CT_REPLY_EVENT)
@@ -482,6 +499,7 @@ int process_init(xi_t *xi)
 		while (1) {
 			if (debug) printf("%p: init state = %s\n",
 					  xi, init_state_name[state]);
+
 			switch (state) {
 			case STATE_INIT_START:
 				state = init_start(xi);
@@ -493,6 +511,17 @@ int process_init(xi_t *xi)
 				break;
 			case STATE_INIT_SEND_REQ:
 				state = init_send_req(xi);
+				if (state == STATE_INIT_WAIT_COMP) {
+					/* Never finish that on application thread, 
+					 * else a race with the receive thread will occur. */
+					goto exit;
+				}
+				break;
+			case STATE_INIT_WAIT_COMP:
+				state = init_wait_comp(xi);
+				if (state == STATE_INIT_WAIT_COMP) {
+					goto exit;
+				}
 				break;
 			case STATE_INIT_SEND_ERROR:
 				state = init_send_error(xi);

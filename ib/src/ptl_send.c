@@ -39,7 +39,6 @@ int send_message_rdma(buf_t *buf, int signaled)
 	}
 
 	if (signaled) {
-		assert(buf->num_mr == 0);
 		list_add_tail(&buf->list, &xi->send_list);
 	} else {
 		list_add_tail(&buf->list, &xi->ack_list);
@@ -70,7 +69,6 @@ int send_message_shmem(buf_t *buf, int signaled)
 	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
 
 	if (signaled) {
-		assert(buf->num_mr == 0);
 		list_add_tail(&buf->list, &xi->send_list);
 	} else {
 		list_add_tail(&buf->list, &xi->ack_list);

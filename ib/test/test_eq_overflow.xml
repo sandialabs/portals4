@@ -19,7 +19,9 @@
                        
                     </ptl_md>
                   </repeat>
-                  
+
+				  <msleep count="10"/>
+
                   <ptl_eq_wait ret="EQ_DROPPED"/>
                   <ptl_eq_wait ret="OK"/>
                 </if>
@@ -35,6 +37,7 @@
                       <barrier/>
                     </ptl_me>
                   </repeat>
+
                 </if>
               </ptl_pt>
             </ptl_eq>

@@ -151,8 +151,20 @@ static int send_comp(buf_t *buf)
 	pthread_spin_unlock(&xt->send_list_lock);
 
 	while(!list_empty(&temp_list)) {
+		xi_t * xi;
+
 		buf = list_first_entry(&temp_list, buf_t, list);
 		list_del(&buf->list);
+
+		xi = buf->xi;
+		if (xi->obj.obj_pool->type == POOL_XI) {
+			int err;
+			xi->completed = 1;
+			err = process_init(xi);
+			if (err)
+				WARN();
+		}
+
 		buf_put(buf);
 	}
 
@@ -428,7 +440,7 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 			}
 			goto fail;
 
-		case STATE_RECV_COMP_REARM:		/* COMP_REARM is a ending state for SHMEM. */
+		case STATE_RECV_COMP_REARM:		/* COMP_REARM is an ending state for SHMEM. */
 		case STATE_RECV_DONE:
 			goto done;
 		default:
