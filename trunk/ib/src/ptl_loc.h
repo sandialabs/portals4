@@ -3,7 +3,7 @@
 
 /* Enable or disable SHMEM, used for communication between ranks local
  * to a node. */
-#define WITH_SHMEM
+//#define WITH_SHMEM
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 600
@@ -233,9 +233,6 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 
 int send_message_shmem(buf_t *buf, int signaled);
 int send_message_rdma(buf_t *buf, int signaled);
-
-int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
-		ptl_size_t offset, ptl_size_t length);
 
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);

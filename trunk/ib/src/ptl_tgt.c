@@ -99,6 +99,56 @@ static void init_events(xt_t *xt)
 }
 
 /*
+ * iov_copy_in
+ *	copy length bytes to io vector starting at offset offset
+ *	from src to an array of io vectors of length num_iov
+ */
+static int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+					   ptl_size_t offset, ptl_size_t length, void **dst_start)
+{
+	ptl_size_t i;
+	ptl_size_t iov_offset = 0;
+	ptl_size_t src_offset = 0;
+	ptl_size_t dst_offset = 0;
+	ptl_size_t bytes;
+
+	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
+		iov_offset = offset - dst_offset;
+		if (iov_offset > iov->iov_len)
+			iov_offset = iov->iov_len;
+		dst_offset += iov_offset;
+	}
+
+	if (dst_offset < offset) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	/* Remember where the destination started. */
+	*dst_start = iov->iov_base + iov_offset;
+
+	for( ; i < num_iov && src_offset < length; i++, iov++) {
+		bytes = iov->iov_len - iov_offset;
+		if (bytes == 0)
+			continue;
+		if (src_offset + bytes > length)
+			bytes = length - src_offset;
+
+		memcpy(iov->iov_base + iov_offset, src + src_offset, bytes);
+
+		iov_offset = 0;
+		src_offset += bytes;
+	}
+
+	if (src_offset < length) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	return PTL_OK;
+}
+
+/*
  * copy_in
  *	copy data from data segment into le/me
  */
@@ -109,14 +159,15 @@ static int copy_in(xt_t *xt, me_t *me, void *data)
 	ptl_size_t length = xt->mlength;
 
 	if (me->num_iov) {
+		void *dst_start;
 		err = iov_copy_in(data, (ptl_iovec_t *)me->start,
-				  me->num_iov, offset, length);
+						  me->num_iov, offset, length, &dst_start);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
 		}
 
-		xt->start = 0x123;
+		xt->start = dst_start;
 	} else {
 		xt->start = me->start + offset;
 		memcpy(xt->start, data, length);
@@ -624,8 +675,7 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 		xt->cur_loc_iov_index = i;
 		xt->cur_loc_iov_off = iov_offset;
 
-		/* This has no meaning. Spec needs fixing. */
-		xt->start = 0x123;
+		xt->start = iov->iov_base + iov_offset;
 	} else {
 		xt->cur_loc_iov_off = xt->moffset;
 		xt->start = me->start + xt->moffset;
