@@ -53,33 +53,6 @@ int send_message_rdma(buf_t *buf, int signaled)
 	return PTL_OK;
 }
 
-int send_message_shmem(buf_t *buf, int signaled)
-{
-	xi_t *xi = buf->xi;
-
-	/* Keep a reference on the buffer so it doesn't get freed. will be
-	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
-	buf_get(buf);
-
-	buf->type = BUF_SHMEM;
-	buf->comp = signaled;
-
-	buf->shmem.source = buf->obj.obj_ni->shmem.local_rank;
-
-	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
-
-	assert(xi->send_buf == NULL && xi->ack_buf == NULL);
-	if (signaled) {
-		xi->send_buf = buf;
-	} else {
-		xi->ack_buf = buf;
-	}
-
-	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
-
-	return PTL_OK;
-}
-
 /*
  * iov_copy_out
  *	copy length bytes from io vector starting at offset offset

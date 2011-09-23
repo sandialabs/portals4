@@ -871,6 +871,7 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 	return STATE_TGT_RDMA;
 }
 
+#ifdef WITH_TRANSPORT_SHMEM
 /*
  * tgt_shmem_desc
  *	initiate read of indirect descriptors for initiator IOV.
@@ -931,6 +932,14 @@ static int tgt_shmem_desc(xt_t *xt)
 done:
 	return next;
 }
+#else
+static inline int tgt_shmem_desc(xt_t *xt)
+{
+	/* This state is not reachable when SHMEM is not enabled. */
+	abort();
+	return STATE_TGT_ERROR;
+}
+#endif
 
 /*
  * tgt_data_in

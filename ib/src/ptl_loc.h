@@ -1,10 +1,6 @@
 #ifndef PTL_LOC_H
 #define PTL_LOC_H
 
-/* Enable or disable SHMEM, used for communication between ranks local
- * to a node. */
-//#define WITH_SHMEM
-
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 600
 #include <arpa/inet.h>
@@ -231,7 +227,6 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 	return ntohs(port);
 }
 
-int send_message_shmem(buf_t *buf, int signaled);
 int send_message_rdma(buf_t *buf, int signaled);
 
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
@@ -258,6 +253,7 @@ int check_overflow_search_delete(le_t *le);
 
 buf_t *tgt_alloc_rdma_buf(xt_t *xt);
 
+#ifdef WITH_TRANSPORT_SHMEM
 int knem_init(ni_t *ni);
 void knem_fini(ni_t *ni);
 uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot);
@@ -270,10 +266,18 @@ size_t knem_copy(ni_t * ni,
 				 uint64_t scookie, uint64_t soffset, 
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
-int do_knem_transfer(xt_t *xt);
-
 int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
 void cleanup_shmem(ni_t *ni);
+#else
+static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
+{
+	return 1;
+}
+static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
+static inline int PtlNIInit_shmem(iface_t *iface, ni_t *ni) { return PTL_OK; }
+static inline void cleanup_shmem(ni_t *ni) { }
+
+#endif
 
 /* For the runtime. */
 extern int ptl_test_return;

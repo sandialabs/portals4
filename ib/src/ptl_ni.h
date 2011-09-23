@@ -101,7 +101,7 @@ typedef struct ni {
 		pthread_spinlock_t	recv_list_lock;
 	} rdma;
 
-	/* RDMA transport specific */
+	/* SHMEM transport specific */
 	struct {
 		uint8_t *comm_pad;
 		size_t comm_pad_size;

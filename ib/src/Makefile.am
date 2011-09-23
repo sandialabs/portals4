@@ -30,7 +30,6 @@ libportals_la_SOURCES = \
 	ptl_internal_assert.h \
 	ptl_internal_atomic.h \
 	ptl_internal_locks.h \
-	ptl_knem.c \
 	ptl_le.c \
 	ptl_le.h \
 	ptl_loc.h \
@@ -42,8 +41,6 @@ libportals_la_SOURCES = \
 	ptl_move.c \
 	ptl_mr.c \
 	ptl_mr.h \
-	ptl_nemesis.c \
-	ptl_nemesis.h \
 	ptl_ni.c \
 	ptl_ni.h \
 	ptl_obj.c \
@@ -56,13 +53,19 @@ libportals_la_SOURCES = \
 	ptl_recv.c \
 	ptl_ref.h \
 	ptl_send.c \
-	ptl_shmem.c \
 	ptl_tgt.c \
 	ptl_types.h \
 	ptl_xx.c \
 	ptl_xx.h \
 	tree.h
 
+if WITH_TRANSPORT_SHMEM
+libportals_la_SOURCES += \
+	ptl_knem.c \
+	ptl_nemesis.c \
+	ptl_nemesis.h \
+	ptl_shmem.c
+endif
 
 libportals_rt_la_CPPFLAGS = -I$(top_srcdir)/include
 libportals_rt_la_LIBADD = -lmpi

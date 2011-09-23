@@ -509,6 +509,7 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
+#ifdef WITH_TRANSPORT_SHMEM
 	/* 
 	 * Buffers in shared memory. The buffers will be allocated later,
 	 * but not by the pool management. We compute the size now.
@@ -536,6 +537,7 @@ static int init_pools(ni_t *ni)
 		WARN();
 		return err;
 	}
+#endif
 
 	return PTL_OK;
 }
@@ -745,7 +747,7 @@ static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
 }
 
 /* For SHMEM we need the local rank of that rank on the node. */
-int get_local_rank(ni_t *ni)
+static int get_local_rank(ni_t *ni)
 {
 	char *env;
 
@@ -949,13 +951,11 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err3;
 	}
 
-#ifdef WITH_SHMEM
 	err = PtlNIInit_shmem(iface, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
-#endif
 
 	err = iface_add_ni(iface, ni);
 	if (unlikely(err)) {
@@ -1113,9 +1113,7 @@ static void ni_cleanup(ni_t *ni)
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.cq_watcher));
 
-#ifdef WITH_SHMEM
 	cleanup_shmem(ni);
-#endif
 	cleanup_ib(ni);
 
 	release_buffers(ni);
