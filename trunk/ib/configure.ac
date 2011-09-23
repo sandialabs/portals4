@@ -43,6 +43,14 @@ AC_ARG_ENABLE([arg-checking],
 AS_IF([test "x$enable_arg_checking" == xno],
       [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 
+AC_ARG_ENABLE([shmem],
+              [AS_HELP_STRING([--enable-shmem],
+                              [Use Shared memory / KNEM for local communication instead of IB.])])
+AS_IF([test "x$enable_shmem" == xyes],
+      [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_shmem" == xyes)
+
+
 CFLAGS="$CFLAGS -std=gnu99"
 
 # Whether to use XRC or not. If RC is selected then they are used like

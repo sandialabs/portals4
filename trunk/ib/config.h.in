@@ -160,6 +160,9 @@
 /* Version number of package */
 #undef VERSION
 
+/* Define to enable Shared memory / KNEM support */
+#undef WITH_TRANSPORT_SHMEM
+
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */
