@@ -74,7 +74,7 @@ typedef struct buf {
 
 /* Returns the size a buf_t is really taking. That's buf_t itself plus
  * the list of MRs. */
-static inline size_t real_buf_t_size()
+static inline size_t real_buf_t_size(void)
 {
 	int max_sge = get_param(PTL_MAX_QP_SEND_SGE);
 
