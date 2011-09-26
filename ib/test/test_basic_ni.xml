@@ -32,7 +32,7 @@
     <subtest>
       <desc>Test PtlNIHandle with bad handle</desc>
       <ptl>
-        <ptl_ni_handle ret="ARG_INVALID"/>
+        <ptl_ni_handle handle="INVALID" ret="ARG_INVALID"/>
       </ptl>
     </subtest>
     <subtest>
