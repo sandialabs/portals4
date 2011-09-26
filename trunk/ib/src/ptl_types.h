@@ -185,9 +185,9 @@ static inline int atomic_read(atomic_t *var)
     return var->val;
 }
 
-static inline void atomic_inc(atomic_t *var)
+static inline int atomic_inc(atomic_t *var)
 {
-    (void)__sync_add_and_fetch(&var->val, 1);
+    return __sync_fetch_and_add(&var->val, 1);
 }
 
 static inline void atomic_dec(atomic_t *var)
