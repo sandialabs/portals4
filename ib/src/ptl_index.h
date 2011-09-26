@@ -25,13 +25,6 @@ void index_fini();
 int index_get(struct obj *obj, unsigned int *index);
 
 /*
- * index_free
- *	free an index
- *	returns PTL_OK or PTL_FAIL if index not present
- */
-int index_free(unsigned int index);
-
-/*
  * index_lookup
  *	lookup index and return data
  *	returns PTL_OK or PTL_FAIL if index not present

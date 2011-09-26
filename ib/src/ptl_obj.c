@@ -202,6 +202,8 @@ static int pool_alloc_segment(pool_t *pool)
 	INIT_LIST_HEAD(&temp_list);
 
 	for (i = 0; i < pool->obj_per_segment; i++) {
+		unsigned int index;
+
 		obj = (obj_t *)p;
 		obj->obj_free = 1;
 		obj->obj_pool = pool;
@@ -209,6 +211,14 @@ static int pool_alloc_segment(pool_t *pool)
 		obj->obj_parent = pool->parent;
 		obj->obj_ni = (pool->parent) ? pool->parent->obj_ni
 					     : (ni_t *)obj;
+
+		err = index_get(obj, &index);
+		if (err) {
+			WARN();
+			return err;
+		}
+		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
+
 		if (pool->init) {
 			err = pool->init(obj, mr);
 			if (err) {
@@ -231,16 +241,8 @@ static int pool_alloc_segment(pool_t *pool)
  */
 void obj_release(ref_t *ref)
 {
-	int err;
 	obj_t *obj = container_of(ref, obj_t, obj_ref);
 	pool_t *pool = obj->obj_pool;
-	unsigned int index = obj_handle_to_index(obj->obj_handle);
-
-	err = index_free(index);
-	if (err)
-		WARN();
-
-	obj->obj_handle = 0;
 
 	if (pool->cleanup)
 		pool->cleanup(obj);
@@ -264,10 +266,32 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 {
 	int err;
 	obj_t *obj;
-	unsigned int index = 0;
 
 	/* reserve an object */
 	pool->count++;
+
+#if 0
+	{
+		static int pools[POOL_LAST];
+		static int nloops;
+
+		if (!pools[pool->type]) {
+			printf("FZ- obj_alloc from pool %d\n", pool->type);
+		}
+			
+		pools[pool->type]++;
+
+		if ((nloops % 1000) == 0) {
+			int i;
+			printf("FZ- pools: ");
+			for (i=0; i<POOL_LAST; i++) {
+				printf("%d ", pools[i]);
+			}
+			printf("\n");
+		}
+		nloops ++;
+	}
+#endif
 
 	while ((obj = dequeue_free_obj(pool)) == NULL) {
 
@@ -290,13 +314,6 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	if (pool->parent)
 		obj_get(pool->parent);
-
-	err = index_get(obj, &index);
-	if (err) {
-		WARN();
-		return err;
-	}
-	obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
 
 	ref_init(&obj->obj_ref);
 
