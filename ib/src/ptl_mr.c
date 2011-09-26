@@ -24,7 +24,7 @@ void mr_cleanup(void *arg)
 }
 
 /* Order the MRs in the tree by start address. */
-int mr_compare(struct mr *m1, struct mr *m2)
+static int mr_compare(struct mr *m1, struct mr *m2)
 {
 	return (m1->ibmr->addr < m2->ibmr->addr ? -1 : m1->ibmr->addr > m2->ibmr->addr);
 }
