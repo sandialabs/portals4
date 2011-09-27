@@ -12,8 +12,6 @@ int ompi_rt_init(struct node_info *info)
 			info->desired_map_ptr = get_desired_mapping(info->ni_handle);
 			if (!info->desired_map_ptr) {
 				errs ++;
-			} else {
-				PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
 			}
 		}
 	}

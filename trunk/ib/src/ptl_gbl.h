@@ -22,10 +22,6 @@ typedef struct iface {
 	char			ifname[IF_NAMESIZE];
 	ptl_process_t		id;		/* physical id for this interface */
 
-	/* Rank table, for logical NIs only. */
-	ptl_size_t		map_size;
-	ptl_process_t		*mapping;
-
 	/* Listen to incoming IB connections. */
 	struct rdma_event_channel *cm_channel;
 	struct rdma_cm_id	*listen_id;	/* for physical NI. */

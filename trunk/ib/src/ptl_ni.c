@@ -554,16 +554,14 @@ static int create_tables(ni_t *ni)
 	int main_rank;	/* rank of lowest pid in each nid */
 	entry_t *entry;
 	conn_t *conn;
-	const ptl_size_t map_size = ni->iface->map_size;
-	ptl_process_t *mapping = ni->iface->mapping;
+	const ptl_size_t map_size = ni->logical.map_size;
+	ptl_process_t *mapping = ni->logical.mapping;
 
 	ni->logical.rank_table = calloc(map_size, sizeof(entry_t));
 	if (!ni->logical.rank_table) {
 		WARN();
 		return PTL_NO_SPACE;
 	}
-
-	ni->logical.map_size = map_size;
 
 	for (i = 0; i < map_size; i++) {
 		entry = &ni->logical.rank_table[i];
@@ -807,12 +805,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err1;
 	}
 
-	if (options & PTL_NI_LOGICAL && !iface->mapping) {
-		WARN();
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
 	ni_type = ni_options_to_type(options);
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
@@ -913,34 +905,6 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	if (unlikely(err))
 		goto err3;
 
-	if (options & PTL_NI_LOGICAL) {
-		int i;
-
-		/* lookup our nid/pid to determine rank */
-		ni->id.rank = PTL_RANK_ANY;
-
-		for (i = 0; i < iface->map_size; i++) {
-			if ((iface->mapping[i].phys.nid == iface->id.phys.nid) &&
-				(iface->mapping[i].phys.pid == iface->id.phys.pid)) {
-				ni->id.rank = i;
-				ptl_test_rank = i;
-			}
-		}
-
-		if (ni->id.rank == PTL_RANK_ANY) {
-			WARN();
-			free(iface->mapping);
-			iface->map_size = 0;
-			return PTL_ARG_INVALID;
-		}
-
-		err = create_tables(ni);
-		if (err) {
-			WARN();
-			goto err2;
-		}
-	}
-
 	err = PtlNIInit_IB(iface, ni);
 	if (unlikely(err)) {
 		WARN();
@@ -988,6 +952,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	gbl_t *gbl;
 	iface_t *iface;
 	int length;
+	int i;
   
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
@@ -998,25 +963,29 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err1;
 
-	iface = ni->iface;
+	if (ni->options & PTL_NI_LOGICAL == 0) {
+		/* Only valid on logical NIs. */
+		goto err2;
+	}
 
-	if (iface->mapping) {
+	if (ni->logical.mapping) {
 		/* Destroy existing mapping. */
-		free(iface->mapping);
-		iface->map_size = 0;
+		free(ni->logical.mapping);
+		ni->logical.mapping = NULL;
+		ni->logical.map_size = 0;
 	}
 
 	/* Allocate new mapping and fill-up now. */
 	length = map_size * sizeof(ptl_process_t);
 
-	iface->mapping = malloc(length);
-	if (!iface->mapping) {
+	ni->logical.mapping = malloc(length);
+	if (!ni->logical.mapping) {
 		WARN();
 		goto err2;
 	}
-	iface->map_size = map_size;
+	ni->logical.map_size = map_size;
 
-	memcpy(iface->mapping, mapping, length);
+	memcpy(ni->logical.mapping, mapping, length);
 
 #ifdef USE_XRC
 	/* Retrieve the XRC domain name. */
@@ -1026,6 +995,32 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		return err;
 	}
 #endif
+
+	/* lookup our nid/pid to determine rank */
+	ni->id.rank = PTL_RANK_ANY;
+
+	iface = ni->iface;
+
+	for (i = 0; i < map_size; i++) {
+		if ((mapping[i].phys.nid == iface->id.phys.nid) &&
+			(mapping[i].phys.pid == iface->id.phys.pid)) {
+			ni->id.rank = i;
+			ptl_test_rank = i;
+		}
+	}
+
+	if (ni->id.rank == PTL_RANK_ANY) {
+		WARN();
+		free(ni->logical.mapping);
+		ni->logical.map_size = 0;
+		goto err2;
+	}
+
+	err = create_tables(ni);
+	if (err) {
+		WARN();
+		goto err2;
+	}
 
 	ni_put(ni);
 	gbl_put(gbl);
@@ -1047,7 +1042,6 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	int err;
 	ni_t *ni;
 	gbl_t *gbl;
-	iface_t *iface;
   
 	err = get_gbl(&gbl);
 	if (unlikely(err)) {
@@ -1058,16 +1052,20 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err1;
 
-	iface = ni->iface;
 
-	if (!iface->mapping) {
+	if (ni->options & PTL_NI_LOGICAL == 0) {
+		/* Only valid on logical NIs. */
 		goto err2;
 	}
 
-	if (map_size < iface->map_size)
-		map_size = iface->map_size;
+	if (!ni->logical.mapping) {
+		goto err2;
+	}
 
-	memcpy(mapping, iface->mapping, map_size * sizeof(ptl_process_t));
+	if (map_size < ni->logical.map_size)
+		map_size = ni->logical.map_size;
+
+	memcpy(mapping, ni->logical.mapping, map_size * sizeof(ptl_process_t));
 	*actual_map_size = map_size;
 
 	ni_put(ni);
