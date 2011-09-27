@@ -299,7 +299,7 @@ int PtlInit(void)
 			ret = PTL_FAIL;
 			goto err1;
 		} else {
-			ref_init(&gbl->ref);
+			ref_set(&gbl->ref, 1);
 		}
 
 		ret = gbl_init(gbl);
@@ -344,13 +344,13 @@ void PtlFini(void)
 	/* note the order is significant here
 	   gbl->ref_cnt != 0 implies that the
 	   spinlock in gbl->ref has been init'ed
-	   so ref_init must come before the initial
+	   so ref_set must come before the initial
 	   ref_cnt++ and ref_put must come after
 	   the last ref_cnt-- */
 	gbl->ref_cnt--;
 
 	if (gbl->ref_cnt == 0)
-		ref_put(&gbl->ref, gbl_release);	/* matches ref_init */
+		ref_put(&gbl->ref, gbl_release);	/* matches ref_set */
 
 	pthread_mutex_unlock(&per_proc_gbl_mutex);
 

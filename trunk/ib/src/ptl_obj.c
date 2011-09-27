@@ -219,6 +219,8 @@ static int pool_alloc_segment(pool_t *pool)
 		}
 		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
 
+		pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
+
 		if (pool->init) {
 			err = pool->init(obj, mr);
 			if (err) {
@@ -312,12 +314,10 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	assert(obj->obj_free == 1);
 
+	ref_set(&obj->obj_ref, 1);
+
 	if (pool->parent)
 		obj_get(pool->parent);
-
-	ref_init(&obj->obj_ref);
-
-	pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
 
 	/*
 	 * if any type specific per allocation initialization do it

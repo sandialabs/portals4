@@ -876,14 +876,10 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	ni->shmem.knem_fd = -1;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
-	INIT_LIST_HEAD(&ni->xi_wait_list);
-	INIT_LIST_HEAD(&ni->xt_wait_list);
 	RB_INIT(&ni->mr_tree);
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->xi_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->xt_wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->rdma.recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
@@ -1141,8 +1137,6 @@ static void ni_cleanup(ni_t *ni)
 	pthread_mutex_destroy(&ni->pt_mutex);
 	pthread_spin_destroy(&ni->md_list_lock);
 	pthread_spin_destroy(&ni->ct_list_lock);
-	pthread_spin_destroy(&ni->xi_wait_list_lock);
-	pthread_spin_destroy(&ni->xt_wait_list_lock);
 	pthread_spin_destroy(&ni->mr_tree_lock);
 	pthread_spin_destroy(&ni->rdma.recv_list_lock);
 }

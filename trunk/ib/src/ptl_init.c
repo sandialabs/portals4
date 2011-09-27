@@ -347,11 +347,6 @@ static int get_recv(xi_t *xi)
 	else
 		xi->next_state = STATE_INIT_CLEANUP;
 
-	pthread_spin_lock(&ni->xi_wait_list_lock);
-	list_add(&xi->list, &ni->xi_wait_list);
-	pthread_spin_unlock(&ni->xi_wait_list_lock);
-	xi->state_waiting = 1;
-
 	return STATE_INIT_HANDLE_RECV;
 }
 
@@ -476,19 +471,6 @@ int process_init(xi_t *xi)
 
 	do {
 		pthread_spin_lock(&xi->obj.obj_lock);
-
-		/* we keep xi on a list in the NI in case we never
-		 * get done so that cleanup is possible
-		 * make sure we get off the list before running the
-		 * loop. If we're still blocked we will get put
-		 * back on before we leave. The send_lock will serialize
-		 * changes to send_waiting */
-		if (xi->state_waiting) {
-			pthread_spin_lock(&ni->xi_wait_list_lock);
-			list_del(&xi->list);
-			pthread_spin_unlock(&ni->xi_wait_list_lock);
-			xi->state_waiting = 0;
-		}
 
 		state = xi->state;
 

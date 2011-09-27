@@ -1612,15 +1612,6 @@ int process_tgt(xt_t *xt)
 
 	pthread_spin_lock(&xt->obj.obj_lock);
 
-	if (xt->state_waiting) {
-		if (debug)
-			printf("remove from xt_wait_list\n");
-		pthread_spin_lock(&ni->xt_wait_list_lock);
-		list_del(&xt->list);
-		pthread_spin_unlock(&ni->xt_wait_list_lock);
-		xt->state_waiting = 0;
-	}
-
 	state = xt->state;
 
 	while(1) {

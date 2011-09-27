@@ -14,11 +14,6 @@ static inline void ref_set(struct ref *ref, int num)
 	ref->ref_cnt = num;
 }
 
-static inline void ref_init(struct ref *ref)
-{
-	ref_set(ref, 1);
-}
-
 static inline void ref_get(struct ref *ref)
 {
 	int ref_cnt;
