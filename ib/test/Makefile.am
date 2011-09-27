@@ -23,7 +23,7 @@ ptl_test_SOURCES = \
 
 test_CPPFLAGS = -Wall -ggdb -O0 -I$(top_srcdir)/include
 test_LDFLAGS = -L$(top_builddir)/src
-test_LDADD = -lpthread -lrdmacm -libverbs $(PORTALSLIB)
+test_LDADD = -lpthread -lrdmacm -libverbs $(PORTALSLIB) -lmpi
 test_SOURCES = \
 	test.c
 
