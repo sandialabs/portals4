@@ -31,6 +31,9 @@ int test_ptl_ni_init(struct node_info *info)
 		info->ni_stack[info->next_ni++] = info->ni_handle;
 	}
 
+	if (info->ni_opt & PTL_NI_LOGICAL)
+		PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
+
 	return info->ret != ret;
 }
 

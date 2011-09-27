@@ -43,9 +43,9 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 	void **ret;
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		if (unlikely(id->rank >= ni->iface->map_size)) {
+		if (unlikely(id->rank >= ni->logical.map_size)) {
 			ptl_warn("Invalid rank (%d >= %ld)\n",
-				 id->rank, ni->iface->map_size);
+				 id->rank, ni->logical.map_size);
 			return NULL;
 		}
 

@@ -138,6 +138,7 @@ typedef struct ni {
 			/* Rank table. This is used to connection TO remote ranks */
 			int			map_size;
 			struct rank_entry	*rank_table;
+			ptl_process_t	*mapping;
 
 			/* Connection list. This is a set of passive connections,
 			 * used for connections FROM remote ranks. */
@@ -150,7 +151,7 @@ typedef struct ni {
 			struct ibv_xrc_domain	*xrc_domain;
 			uint32_t		xrc_rcv_qpn;
 #endif
-	
+
 		} logical;
 
 		struct {
