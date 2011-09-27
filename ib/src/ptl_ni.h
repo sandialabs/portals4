@@ -66,12 +66,6 @@ typedef struct ni {
 	struct list_head	ct_list;
 	pthread_spinlock_t	ct_list_lock;
 
-	struct list_head	xi_wait_list;
-	pthread_spinlock_t	xi_wait_list_lock;
-
-	struct list_head	xt_wait_list;
-	pthread_spinlock_t	xt_wait_list_lock;
-
 	RB_HEAD(the_root, mr) mr_tree;
 	pthread_spinlock_t	mr_tree_lock;
 

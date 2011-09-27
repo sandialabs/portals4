@@ -359,6 +359,7 @@ void process_recv(EV_P_ ev_io *w, int revents)
 			state = event_wait(ni);
 			break;
 		case STATE_RECV_COMP_REARM:
+			buf = NULL;
 			state = comp_rearm(ni);
 			break;
 		case STATE_RECV_COMP_POLL:

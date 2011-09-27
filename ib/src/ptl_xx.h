@@ -72,7 +72,6 @@ struct xremote {
 	int			state;			\
 	int			next_state;		\
 	struct xremote		dest;		\
-	int			state_waiting;		\
 	unsigned		operation;		\
 	int			pkt_len;		\
 	ptl_pt_index_t		pt_index;		\
