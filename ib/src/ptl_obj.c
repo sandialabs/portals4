@@ -55,16 +55,15 @@ static void *pool_get_slab(pool_t *pool)
 static int pool_get_chunk(pool_t *pool, chunk_t **chunk_p)
 {
 	int err;
-	struct list_head *l;
 	chunk_t *chunk;
 
 	/* see if there is a chunk with room at head of list */
-	if (likely(!list_empty(&pool->chunk_list)
-	    && (chunk->num_slabs < chunk->max_slabs))) {
-		l = pool->chunk_list.next;
-		chunk = list_entry(l, chunk_t, list);
-		*chunk_p = chunk;
-		return PTL_OK;
+	if (likely(!list_empty(&pool->chunk_list))) {
+		chunk = list_first_entry(&pool->chunk_list, chunk_t, list);
+		if (chunk->num_slabs < chunk->max_slabs) {
+			*chunk_p = chunk;
+			return PTL_OK;
+		}
 	}
 
 	/* have to allocate a new chunk */
@@ -323,13 +322,6 @@ int pool_init(pool_t *pool, char *name, int size,
 	pool->free_list = NULL;
 	INIT_LIST_HEAD(&pool->chunk_list);
 	pthread_mutex_init(&pool->mutex, NULL);
-
-	/* allocate one slab of objects */
-	err = pool_alloc_slab(pool);
-	if (err) {
-		pool_fini(pool);
-		return err;
-	}
 
 	return PTL_OK;
 }
