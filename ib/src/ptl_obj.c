@@ -1,173 +1,152 @@
-/*
- * ptl_obj.c -- object management
+/**
+ * @file ptl_obj.c
  */
 
 #include "ptl_loc.h"
 
 #define HANDLE_SHIFT ((sizeof(ptl_handle_any_t)*8)-8)
 
-static void *obj_get_zero_filled_segment(pool_t *pool)
+/**
+ * Return a new zero filled slab.
+ *
+ * The slab will be used by caller to hold a new
+ * batch of objects. Normal behavior is to allocate
+ * page aligned memory. In the special case that
+ * we are creating objects in shared memory the pool
+ * has a pre allocated chunk of shared memory that is
+ * used instead.
+ *
+ * @param pool the pool for which slab is created.
+ *
+ * @return address of slab or null if unable to allocate memory
+ */
+static void *pool_get_slab(pool_t *pool)
 {
 	int err;
-	void *p;
+	void *slab;
 
 	if (pool->use_pre_alloc_buffer) {
-		p = pool->pre_alloc_buffer;
+		slab = pool->pre_alloc_buffer;
 		pool->pre_alloc_buffer = NULL;
 	} else {
-		err = posix_memalign(&p, pagesize, pool->segment_size);
+		err = posix_memalign(&slab, pagesize, pool->slab_size);
 		if (unlikely(err))
-			p = NULL;
+			slab = NULL;
 	}
 
-	if (p)
-		memset(p, 0, pool->segment_size);
+	if (slab)
+		memset(slab, 0, pool->slab_size);
 
-	return p;
+	return slab;
 }
 
-/*
- * pool_init
- *	caller is expected to set linesize to cache line size
- *	and pagesize to system page size
+/**
+ * get chunk hold new slab.
+ * note that we currently never free objects so there are
+ * never any holes in chunk->slab_list
+ *
+ * @pre caller should hold pool->mutex
+ *
+ * @param pool the pool for which to get chunk
+ * @param chunk_p address of return value
+ *
+ * @return status
  */
-int pool_init(pool_t *pool, char *name, int size,
-		  int type, obj_t *parent)
-{
-	pool->name = name;
-	pool->size = size;
-	pool->type = type;
-	pool->parent = parent;
-
-	if (!pool->round_size) {
-		/* The requester has not set a fixed object size and
-		 * segment_size. */
-		pool->round_size = (pool->size + linesize - 1) & ~(linesize - 1);
-
-		if (pool->segment_size < pagesize)
-			pool->segment_size = pagesize;
-
-		pool->segment_size = (pool->segment_size + pagesize - 1) & ~(pagesize - 1);
-	}
-
-	pool->obj_per_segment = pool->segment_size/pool->round_size;
-	if (!pool->obj_per_segment) {
-		ptl_error("Well that's embarassing but "
-			  "can't fit any %s's in a segment\n",
-			  pool->name);
-		return PTL_FAIL;
-	}
-
-	pool->count = 0;
-
-	pool->free_list = NULL;
-	INIT_LIST_HEAD(&pool->chunk_list);
-
-	return PTL_OK;
-}
-
-void pool_fini(pool_t *pool)
-{
-	struct list_head *l, *t;
-	obj_t *obj;
-	segment_list_t *chunk;
-	int i;
-
-	/* avoid getting called from cleanup during PtlNIInit */
-	if (!pool->name)
-		return;
-
-	if (pool->count) {
-			/*
-			 * we shouldn't get here since we
-			 * are supposed to clean up all the
-			 * objects during processing PtlFini
-			 * so this would be a library bug
-			 */
-			ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
-			ptl_test_return = PTL_FAIL;
-	}
-
-	/*
-	 * if pool has a cleanup routine call it
-	 */
-	if (pool->fini) {
-		while(pool->free_list) {
-			obj = pool->free_list;
-			pool->free_list = obj->next;
-			pool->fini(obj);
-		}
-	}
-
-	/*
-	 * free the segments
-	 */
-	list_for_each_safe(l, t, &pool->chunk_list) {
-		list_del(l);
-		chunk = list_entry(l, segment_list_t, chunk_list);
-
-		for (i = 0; i < chunk->num_segments; i++) {
-			/* see below TODO make more elegant */
-			if (chunk->segment_list[i].priv) {
-				struct ibv_mr *mr = chunk->segment_list[i].priv;
-
-				ibv_dereg_mr(mr);
-			}
-
-			if (!pool->use_pre_alloc_buffer)
-				free(chunk->segment_list[i].addr);
-		}
-
-		free(chunk);
-	}
-}
-
-/*
- * type_get_segment_list_pointer
- *	get pointer to segment_list with room to hold
- *	a new segment pointer
- *	caller should hold type->mutex
- *	note that we never free object memory so there are
- *	never any holes in a segment list
- */
-static int type_get_segment_list_pointer(pool_t *pool, segment_list_t **pp)
+static int pool_get_chunk(pool_t *pool, chunk_t **chunk_p)
 {
 	int err;
-	struct list_head *l = pool->chunk_list.next;
-	segment_list_t *p = list_entry(l, segment_list_t, chunk_list);
-	void *d;
+	struct list_head *l;
+	chunk_t *chunk;
 
+	/* see if there is a chunk with room at head of list */
 	if (likely(!list_empty(&pool->chunk_list)
-	    && (p->num_segments < p->max_segments))) {
-		*pp = p;
+	    && (chunk->num_slabs < chunk->max_slabs))) {
+		l = pool->chunk_list.next;
+		chunk = list_entry(l, chunk_t, list);
+		*chunk_p = chunk;
 		return PTL_OK;
 	}
 
-	/* have to allocate a new segment list */
-	err = posix_memalign(&d, pagesize, pagesize);
+	/* have to allocate a new chunk */
+	err = posix_memalign((void *)&chunk, pagesize, pagesize);
 	if (unlikely(err))
 		return PTL_NO_SPACE;
 
-	p = d;
+	memset(chunk, 0, pagesize);
 
-	memset(p, 0, pagesize);
+	chunk->max_slabs = (pagesize - sizeof(*chunk))/
+				sizeof(chunk->slab_list[0]);
+	chunk->num_slabs = 0;
 
-	p->num_segments = 0;
-	p->max_segments = (pool->segment_size - sizeof(*p))/sizeof(void *);
-	list_add(&p->chunk_list, &pool->chunk_list);
+	list_add(&chunk->list, &pool->chunk_list);
 
-	*pp = p;
+	*chunk_p = chunk;
 	return PTL_OK;
 }
 
-/*
- * pool_alloc_segment
- *	allocate a new segment of objects for a given pool
+/**
+ * Return an object from pool freelist.
+ *
+ * This algorithm is thanks to Kyle and does not
+ * require a holding a lock.
+ *
+ * @param pool the pool
+ *
+ * @return the object
  */
-static int pool_alloc_segment(pool_t *pool)
+static inline obj_t *dequeue_free_obj(pool_t *pool)
+{
+	obj_t *oldv, *newv, *retv;
+
+	retv = pool->free_list;
+
+	do {
+		oldv = retv;
+		if (retv != NULL) {
+			newv = retv->next;
+		} else {
+			newv = NULL;
+		}
+		retv = __sync_val_compare_and_swap(&pool->free_list, oldv, newv);
+	} while (retv != oldv);
+
+	return retv;
+}
+
+/**
+ * Add an object to pool freelist.
+ *
+ * This algorithm is thanks to Kyle and does not
+ * require a holding a lock.
+ *
+ * @param pool the pool
+ * @param obj the object
+ */
+static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
+{
+	obj_t *oldv, *newv, *tmpv;
+
+	tmpv = pool->free_list;
+
+	do {
+		oldv = obj->next = tmpv;
+		newv = obj;
+		tmpv = __sync_val_compare_and_swap(&pool->free_list,
+						   oldv, newv);
+	} while (tmpv != oldv);
+}
+
+/**
+ * Allocate a new slab of objects for a given pool
+ *
+ * @param pool
+ *
+ * @return status
+ */
+static int pool_alloc_slab(pool_t *pool)
 {
 	int err;
-	segment_list_t *pp = NULL;
+	chunk_t *chunk = NULL;
 	uint8_t *p;
 	int i;
 	obj_t *obj;
@@ -175,11 +154,11 @@ static int pool_alloc_segment(pool_t *pool)
 	ni_t *ni;
 	struct list_head temp_list;
 
-	err = type_get_segment_list_pointer(pool, &pp);
+	err = pool_get_chunk(pool, &chunk);
 	if (unlikely(err))
 		return err;
 
-	p = obj_get_zero_filled_segment(pool);
+	p = pool_get_slab(pool);
 	if (unlikely(!p))
 		return PTL_NO_SPACE;
 
@@ -188,20 +167,20 @@ static int pool_alloc_segment(pool_t *pool)
 	 */
 	if (pool->type == POOL_BUF) {
 		ni = (ni_t *)pool->parent;
-		mr = ibv_reg_mr(ni->iface->pd, p, pool->segment_size,
+		mr = ibv_reg_mr(ni->iface->pd, p, pool->slab_size,
 				IBV_ACCESS_LOCAL_WRITE);
 		if (!mr) {
 			WARN();
 			free(p);
 			return PTL_FAIL;
 		}
-		pp->segment_list[pp->num_segments].priv = mr;
+		chunk->slab_list[chunk->num_slabs].priv = mr;
 	}
 
-	pp->segment_list[pp->num_segments++].addr = p;
+	chunk->slab_list[chunk->num_slabs++].addr = p;
 	INIT_LIST_HEAD(&temp_list);
 
-	for (i = 0; i < pool->obj_per_segment; i++) {
+	for (i = 0; i < pool->obj_per_slab; i++) {
 		unsigned int index;
 
 		obj = (obj_t *)p;
@@ -235,11 +214,132 @@ static int pool_alloc_segment(pool_t *pool)
 	return PTL_OK;
 }
 
-/*
- * obj_release
- *	release an object back to the free list
- *	called by obj_put when last reference
- *	is dropped
+/**
+ * Cleanup an object pool.
+ *
+ * @param pool the pool to cleanup
+ */
+void pool_fini(pool_t *pool)
+{
+	struct list_head *l, *t;
+	obj_t *obj;
+	chunk_t *chunk;
+	int i;
+
+	/* avoid getting called from cleanup during PtlNIInit */
+	if (!pool->name)
+		return;
+
+	pthread_mutex_destroy(&pool->mutex);
+
+	if (pool->count) {
+		/*
+		 * we shouldn't get here since we
+		 * are supposed to clean up all the
+		 * objects during processing PtlFini
+		 * so this would be a library bug
+		 */
+		ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
+		ptl_test_return = PTL_FAIL;
+	}
+
+	/*
+	 * if pool has a fini routine call it on
+	 * each free object
+	 */
+	if (pool->fini) {
+		while(pool->free_list) {
+			obj = pool->free_list;
+			pool->free_list = obj->next;
+			pool->fini(obj);
+		}
+	}
+
+	/*
+	 * free slabs and chunks
+	 */
+	list_for_each_safe(l, t, &pool->chunk_list) {
+		list_del(l);
+		chunk = list_entry(l, chunk_t, list);
+
+		for (i = 0; i < chunk->num_slabs; i++) {
+			/* see below TODO make more elegant */
+			if (chunk->slab_list[i].priv) {
+				struct ibv_mr *mr = chunk->slab_list[i].priv;
+
+				ibv_dereg_mr(mr);
+			}
+
+			if (!pool->use_pre_alloc_buffer)
+				free(chunk->slab_list[i].addr);
+		}
+
+		free(chunk);
+	}
+}
+
+/**
+ * Initialize a new object pool.
+ *
+ * @pre caller is expected to either set linesize to cache line size
+ * and pagesize to system page size or initialize pool->round_size
+ * and pool->slab_size to override default values.
+ *
+ * @param pool the pool to initialize
+ * @param name pool name for debugging
+ * @param size sizeof objects provided by pool
+ * @param type type of objects in pool
+ * @param parent object that owns pool
+ *
+ * @return status
+ */
+int pool_init(pool_t *pool, char *name, int size,
+		  enum obj_type type, obj_t *parent)
+{
+	int err;
+
+	pool->name = name;
+	pool->size = size;
+	pool->type = type;
+	pool->parent = parent;
+
+	if (pool->round_size == 0)
+		pool->round_size = (pool->size + linesize - 1)
+					& ~(linesize - 1);
+
+	if (pool->slab_size == 0)
+		pool->slab_size = pagesize;
+
+	pool->obj_per_slab = pool->slab_size/pool->round_size;
+
+	if (!pool->obj_per_slab) {
+		ptl_error("Well that's embarassing but "
+			  "can't fit any %s's in a slab\n",
+			  pool->name);
+		return PTL_FAIL;
+	}
+
+	pool->count = 0;
+	pool->free_list = NULL;
+	INIT_LIST_HEAD(&pool->chunk_list);
+	pthread_mutex_init(&pool->mutex, NULL);
+
+	/* allocate one slab of objects */
+	err = pool_alloc_slab(pool);
+	if (err) {
+		pool_fini(pool);
+		return err;
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * Release an object back to the free list.
+ *
+ * Called by obj_put when last reference to an object is dropped.
+ *
+ * @param ref pointer to obj->obj_ref
  */
 void obj_release(ref_t *ref)
 {
@@ -259,12 +359,18 @@ void obj_release(ref_t *ref)
 	pool->count--;
 }
 
-/*
- * obj_alloc
- *	allocate a new object of indicated type
- *	zero fill after the base type
+/**
+ * Allocate a new object.
+ *
+ * If the free list is empty allocate a new
+ * slab of objects first.
+ *
+ * @param pool pool to get object from
+ * @param obj_p pointer to returned object
+ *
+ * @return status
  */
-int obj_alloc(pool_t *pool, obj_t **p_obj)
+int obj_alloc(pool_t *pool, obj_t **obj_p)
 {
 	int err;
 	obj_t *obj;
@@ -297,7 +403,9 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 
 	while ((obj = dequeue_free_obj(pool)) == NULL) {
 
-		err = pool_alloc_segment(pool);
+		pthread_mutex_lock(&pool->mutex);
+		err = pool_alloc_slab(pool);
+		pthread_mutex_unlock(&pool->mutex);
 
 		if (unlikely(err)) {
 			if (pool->type == POOL_SBUF) {
@@ -332,22 +440,27 @@ int obj_alloc(pool_t *pool, obj_t **p_obj)
 	}
 
 	obj->obj_free = 0;
-	*p_obj = obj;
+	*obj_p = obj;
 
 	return PTL_OK;
 }
 
-/*
- * to_obj
- *	return an object from handle and optionally type
+/**
+ * Return an object from handle and type.
+ *
+ * @param type optional pool type
+ * @param handle object handle
+ * @param obj_p pointer to returned object
+ *
+ * @return status
  */
-int to_obj(unsigned int type, ptl_handle_any_t handle, obj_t **obj_p)
+int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
 {
 	int err;
 	obj_t *obj = NULL;
 	unsigned int index;
 #ifndef NO_ARG_VALIDATION
-	unsigned int handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
+	enum obj_type handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
 #endif
 
 	if ((type == POOL_CT && handle == PTL_CT_NONE) ||
