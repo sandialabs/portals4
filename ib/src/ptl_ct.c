@@ -458,6 +458,11 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 	ct_t *ct;
 	ni_t *ni;
 
+#ifndef NO_ARG_VALIDATION
+	if (increment.success != 0 && increment.failure != 0)
+		return PTL_ARG_INVALID;
+#endif
+
 	err = get_gbl(&gbl);
 	if (unlikely(err))
 		return err;
