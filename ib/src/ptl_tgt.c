@@ -443,7 +443,7 @@ done:
 
 	if (xt->le->ptl_list == PTL_OVERFLOW) {
 		xt_get(xt);
-		list_add(&xt->unexpected_list, &xt->le->pt->unexpected_list);
+		list_add_tail(&xt->unexpected_list, &xt->le->pt->unexpected_list);
 	}
 
 	pthread_spin_unlock(&xt->pt->lock);
