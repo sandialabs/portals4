@@ -336,8 +336,6 @@ static int early_send_event(xi_t *xi)
 
 static int get_recv(xi_t *xi)
 {
-	ni_t *ni = obj_to_ni(xi);
-
 	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
 		xi->next_state = STATE_INIT_LATE_SEND_EVENT;
 	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
@@ -467,7 +465,6 @@ int process_init(xi_t *xi)
 {
 	int err = PTL_OK;
 	int state;
-	ni_t *ni = obj_to_ni(xi);
 
 	do {
 		pthread_spin_lock(&xi->obj.obj_lock);

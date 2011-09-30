@@ -71,7 +71,7 @@ int get_atom_type(char *val)
 int get_list(char *val)
 {
 	     if (!strcmp("PRIORITY", val))	return PTL_PRIORITY_LIST;
-	else if (!strcmp("OVERFLOW", val))	return PTL_OVERFLOW;
+	else if (!strcmp("OVERFLOW", val))	return PTL_OVERFLOW_LIST;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
 	else					return strtol(val, NULL, 0);
 }
