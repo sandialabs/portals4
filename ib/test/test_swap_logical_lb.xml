@@ -26,7 +26,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/SHORT</desc>
@@ -54,7 +54,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/DOUBLE</desc>
     <ptl>
@@ -81,7 +81,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/DOUBLE</desc>
     <ptl>
@@ -108,7 +108,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/CHAR</desc>
     <ptl>
@@ -135,7 +135,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/ULONG</desc>
     <ptl>
@@ -162,7 +162,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/SHORT</desc>
     <ptl>
@@ -189,7 +189,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/DOUBLE</desc>
     <ptl>
@@ -216,7 +216,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/USHORT</desc>
     <ptl>
@@ -243,7 +243,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/DOUBLE</desc>
     <ptl>
@@ -270,7 +270,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/ULONG</desc>
     <ptl>
@@ -297,7 +297,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/DOUBLE</desc>
     <ptl>
@@ -324,7 +324,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/USHORT</desc>
     <ptl>
@@ -351,7 +351,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/SHORT</desc>
     <ptl>
@@ -378,7 +378,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/UINT</desc>
     <ptl>
@@ -405,7 +405,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/UINT</desc>
     <ptl>
@@ -432,7 +432,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/INT</desc>
     <ptl>
@@ -459,7 +459,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/SHORT</desc>
     <ptl>
@@ -486,7 +486,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/LONG</desc>
     <ptl>
@@ -513,7 +513,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/ULONG</desc>
     <ptl>
@@ -540,7 +540,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/DOUBLE</desc>
     <ptl>
@@ -567,7 +567,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/CHAR</desc>
     <ptl>
@@ -594,7 +594,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/SHORT</desc>
     <ptl>
@@ -621,7 +621,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/LONG</desc>
     <ptl>
@@ -648,7 +648,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/SHORT</desc>
     <ptl>
@@ -675,7 +675,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/CHAR</desc>
     <ptl>
@@ -702,7 +702,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/SHORT</desc>
     <ptl>
@@ -729,7 +729,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/USHORT</desc>
     <ptl>
@@ -756,7 +756,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/FLOAT</desc>
     <ptl>
@@ -783,7 +783,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/UCHAR</desc>
     <ptl>
@@ -810,7 +810,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/INT</desc>
     <ptl>
@@ -837,7 +837,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/DOUBLE</desc>
     <ptl>
@@ -864,7 +864,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/LONG</desc>
     <ptl>
@@ -891,7 +891,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/UINT</desc>
     <ptl>
@@ -918,7 +918,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/USHORT</desc>
     <ptl>
@@ -945,7 +945,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/FLOAT</desc>
     <ptl>
@@ -972,7 +972,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/USHORT</desc>
     <ptl>
@@ -999,7 +999,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/UINT</desc>
     <ptl>
@@ -1026,7 +1026,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/UINT</desc>
     <ptl>
@@ -1053,7 +1053,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/FLOAT</desc>
     <ptl>
@@ -1080,7 +1080,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/ULONG</desc>
     <ptl>
@@ -1107,7 +1107,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/INT</desc>
     <ptl>
@@ -1134,7 +1134,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/UINT</desc>
     <ptl>
@@ -1161,7 +1161,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/LONG</desc>
     <ptl>
@@ -1188,7 +1188,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/USHORT</desc>
     <ptl>
@@ -1215,7 +1215,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/DOUBLE</desc>
     <ptl>
@@ -1242,7 +1242,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/INT</desc>
     <ptl>
@@ -1269,7 +1269,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/SHORT</desc>
     <ptl>
@@ -1296,7 +1296,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/USHORT</desc>
     <ptl>
@@ -1323,7 +1323,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/USHORT</desc>
     <ptl>
@@ -1350,7 +1350,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/USHORT</desc>
     <ptl>
@@ -1377,7 +1377,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/ULONG</desc>
     <ptl>
@@ -1404,7 +1404,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/USHORT</desc>
     <ptl>
@@ -1431,7 +1431,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/UINT</desc>
     <ptl>
@@ -1458,7 +1458,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/CHAR</desc>
     <ptl>
@@ -1485,7 +1485,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/ULONG</desc>
     <ptl>
@@ -1512,7 +1512,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/DOUBLE</desc>
     <ptl>
@@ -1539,7 +1539,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/CHAR</desc>
     <ptl>
@@ -1566,7 +1566,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/ULONG</desc>
     <ptl>
@@ -1593,7 +1593,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/USHORT</desc>
     <ptl>
@@ -1620,7 +1620,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/UCHAR</desc>
     <ptl>
@@ -1647,7 +1647,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/ULONG</desc>
     <ptl>
@@ -1674,7 +1674,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/DOUBLE</desc>
     <ptl>
@@ -1701,7 +1701,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/UINT</desc>
     <ptl>
@@ -1728,7 +1728,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/FLOAT</desc>
     <ptl>
@@ -1755,7 +1755,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/UCHAR</desc>
     <ptl>
@@ -1782,7 +1782,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/INT</desc>
     <ptl>
@@ -1809,7 +1809,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/DOUBLE</desc>
     <ptl>
@@ -1836,7 +1836,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/LONG</desc>
     <ptl>
@@ -1863,7 +1863,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/FLOAT</desc>
     <ptl>
@@ -1890,7 +1890,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/USHORT</desc>
     <ptl>
@@ -1917,7 +1917,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/ULONG</desc>
     <ptl>
@@ -1944,7 +1944,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/ULONG</desc>
     <ptl>
@@ -1971,7 +1971,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/UCHAR</desc>
     <ptl>
@@ -1998,7 +1998,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/UINT</desc>
     <ptl>
@@ -2025,7 +2025,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/USHORT</desc>
     <ptl>
@@ -2052,7 +2052,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/USHORT</desc>
     <ptl>
@@ -2079,7 +2079,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/UINT</desc>
     <ptl>
@@ -2106,7 +2106,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/UINT</desc>
     <ptl>
@@ -2133,7 +2133,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/ULONG</desc>
     <ptl>
@@ -2160,7 +2160,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/UCHAR</desc>
     <ptl>
@@ -2187,7 +2187,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/USHORT</desc>
     <ptl>
@@ -2214,7 +2214,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/USHORT</desc>
     <ptl>
@@ -2241,7 +2241,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/UCHAR</desc>
     <ptl>
@@ -2268,7 +2268,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/LONG</desc>
     <ptl>
@@ -2295,7 +2295,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/INT</desc>
     <ptl>
@@ -2322,7 +2322,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/SHORT</desc>
     <ptl>
@@ -2349,7 +2349,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/SHORT</desc>
     <ptl>
@@ -2376,7 +2376,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/ULONG</desc>
     <ptl>
@@ -2403,7 +2403,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/DOUBLE</desc>
     <ptl>
@@ -2430,7 +2430,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/UINT</desc>
     <ptl>
@@ -2457,7 +2457,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/DOUBLE</desc>
     <ptl>
@@ -2484,7 +2484,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LT/LONG</desc>
     <ptl>
@@ -2511,7 +2511,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/FLOAT</desc>
     <ptl>
@@ -2538,7 +2538,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GE/LONG</desc>
     <ptl>
@@ -2565,7 +2565,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_LE/LONG</desc>
     <ptl>
@@ -2592,7 +2592,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_GT/ULONG</desc>
     <ptl>
@@ -2619,7 +2619,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP_NE/UCHAR</desc>
     <ptl>
@@ -2646,7 +2646,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap MSWAP/LONG</desc>
     <ptl>
@@ -2673,7 +2673,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
   <subtest>
     <desc>Test swap CSWAP/UCHAR</desc>
     <ptl>
@@ -2700,5 +2700,5 @@
       </ptl_ni>
     </ptl>
   </subtest>
-   <barrier/>
+  <barrier/>
 </test>
