@@ -114,6 +114,14 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 		return PTL_ARG_INVALID;
 	}
 
+	if ((md->options & PTL_MD_VOLATILE) &&
+		length > get_param(PTL_MAX_INLINE_DATA)) {
+		/* We can only guarantee volatile for the data that will be
+		 * copied in the request buffer. */
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
 	return PTL_OK;
 }
 #endif
