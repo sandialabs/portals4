@@ -260,13 +260,15 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 		goto err2;
 	}
 
+	err = PTL_OK;
+
 	/* Conditionally block until interrupted or CT test succeeds */
 	pthread_mutex_lock(&ct->mutex);
-	while (1) {
-		if ((ct->event.success + ct->event.failure) >= test) {
+
+	while (!ct->event.failure) {
+		if ((ct->event.success) >= test) {
 			if (event)
 				*event = ct->event;
-			err = PTL_OK;
 			break;
 		}
 
@@ -349,11 +351,9 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		expire.tv_nsec = expire.tv_nsec % 1000000000UL;
 	}
 
-	err = 0;
-
 	pthread_mutex_lock(&ni->ct_wait_mutex);
 
-	while (!err) {
+	while (1) {
 		for (j = 0; j < size; j++) {
 			ct_t *ct = cts[j];
 
@@ -361,17 +361,21 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 			if (ct->interrupt) {
 				err = PTL_INTERRUPTED;
 				pthread_mutex_unlock(&ct->mutex);
-				pthread_mutex_unlock(&ni->ct_wait_mutex);
-				goto done2;
+				goto done3;
 			}
 
-			if ((ct->event.success +
-				 ct->event.failure) >= tests[j]) {
+			if (ct->event.failure) {
+				err = PTL_OK;
+				pthread_mutex_unlock(&ct->mutex);
+				goto done3;
+			}
+
+			if (ct->event.success >= tests[j]) {
+				err = PTL_OK;
 				*event = ct->event;
 				*which = j;
 				pthread_mutex_unlock(&ct->mutex);
-				pthread_mutex_unlock(&ni->ct_wait_mutex);
-				goto done2;
+				goto done3;
 			}
 			pthread_mutex_unlock(&ct->mutex);
 		}
@@ -379,14 +383,18 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 		if (timeout == PTL_TIME_FOREVER)
 			pthread_cond_wait(&ni->ct_wait_cond,
 							  &ni->ct_wait_mutex);
-		else
+		else {
 			err = pthread_cond_timedwait(&ni->ct_wait_cond,
 										 &ni->ct_wait_mutex, &expire);
+			if (err == ETIMEDOUT) {
+				err = PTL_CT_NONE_REACHED;
+				break;
+			}
+		}
 	}
 
+ done3:
 	pthread_mutex_unlock(&ni->ct_wait_mutex);
-
-	err = PTL_CT_NONE_REACHED;
 
  done2:
 	for (j = 0; j < i; j++)
