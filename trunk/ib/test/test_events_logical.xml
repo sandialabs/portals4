@@ -31,7 +31,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -71,7 +71,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -121,7 +121,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -162,7 +162,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -202,7 +202,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -248,7 +248,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -293,7 +293,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -335,7 +335,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -387,7 +387,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -434,7 +434,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -484,7 +484,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -533,7 +533,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -587,7 +587,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -633,7 +633,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -685,7 +685,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" target_id="1" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" target_id="1" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -734,7 +734,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -788,7 +788,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
+                    <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                       <barrier/>
                       <ptl_eq_poll ret="EQ_EMPTY"/>
                       <barrier/>
@@ -833,7 +833,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -873,7 +873,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -923,7 +923,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT COMM_DISABLE" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -963,7 +963,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -1003,7 +1003,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -1048,7 +1048,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -1093,7 +1093,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1134,7 +1134,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1185,7 +1185,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -1232,7 +1232,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1282,7 +1282,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1330,7 +1330,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1383,7 +1383,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -1430,7 +1430,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1480,7 +1480,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1528,7 +1528,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="ATOMIC"/>
@@ -1581,7 +1581,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE" user_ptr="654" uid="ANY">
+                    <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                       <barrier/>
                       <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                       <barrier/>

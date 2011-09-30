@@ -128,6 +128,10 @@ unsigned int get_le_opt(char *orig_val)
 			le_opt |= PTL_LE_ACK_DISABLE;
 		} else if (!strcmp("SUCCESS_DISABLE", tok)) {
 			le_opt |= PTL_LE_EVENT_SUCCESS_DISABLE;
+		} else if (!strcmp("IS_ACCESSIBLE", tok)) {
+			le_opt |= PTL_LE_IS_ACCESSIBLE;
+		} else if (!strcmp("EVENT_LINK_DISABLE", tok)) {
+			le_opt |= PTL_LE_EVENT_LINK_DISABLE;
 		} else if (!strcmp("COMM_DISABLE", tok)) {
 			le_opt |= PTL_LE_EVENT_COMM_DISABLE;
 		} else if (!strcmp("FLOW_DISABLE", tok)) {
@@ -180,6 +184,10 @@ unsigned int get_me_opt(char *orig_val)
 			me_opt |= PTL_ME_ACK_DISABLE;
 		} else if (!strcmp("SUCCESS_DISABLE", tok)) {
 			me_opt |= PTL_ME_EVENT_SUCCESS_DISABLE;
+		} else if (!strcmp("IS_ACCESSIBLE", tok)) {
+			me_opt |= PTL_ME_IS_ACCESSIBLE;
+		} else if (!strcmp("EVENT_LINK_DISABLE", tok)) {
+			me_opt |= PTL_ME_EVENT_LINK_DISABLE;
 		} else if (!strcmp("COMM_DISABLE", tok)) {
 			me_opt |= PTL_ME_EVENT_COMM_DISABLE;
 		} else if (!strcmp("FLOW_DISABLE", tok)) {

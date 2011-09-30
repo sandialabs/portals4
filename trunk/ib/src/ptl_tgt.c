@@ -335,7 +335,6 @@ static int check_perm(const xt_t *xt, const le_t *le)
 {
 	if (!(le->uid == PTL_UID_ANY || (le->uid == xt->uid))) {
 		WARN();
-		printf("FZ- check_perm %d %d %d\n", le->uid , PTL_UID_ANY, xt->uid);
 		goto no_perm;
 	}
 

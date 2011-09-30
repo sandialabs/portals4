@@ -33,7 +33,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                  <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -94,6 +94,9 @@
                 
                 <if rank="1">
                   <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                    <ptl_eq_wait>
+                      <check event_type="LINK"/>
+                    </ptl_eq_wait>
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -159,7 +162,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_me_append me_opt="OP_PUT USE_ONCE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                  <ptl_me_append me_opt="OP_PUT USE_ONCE EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -230,7 +233,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_me_append me_opt="OP_PUT USE_ONCE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                  <ptl_me_append me_opt="OP_PUT USE_ONCE EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -245,7 +248,7 @@
                     </ptl_eq_wait>
                     
                     
-                    <ptl_me_append me_opt="OP_PUT USE_ONCE" me_match="0x5555" me_data="0x77" list="PRIORITY">
+                    <ptl_me_append me_opt="OP_PUT USE_ONCE EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="PRIORITY">
                       
                       <!-- Wait for overflow event -->
                       <ptl_eq_wait>
@@ -306,7 +309,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_le le_opt="OP_PUT" le_data="0x77" list="OVERFLOW">
+                  <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" le_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -366,7 +369,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_le le_opt="OP_PUT" le_data="0x77" list="OVERFLOW">
+                  <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" le_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -432,7 +435,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_le_append le_opt="OP_PUT USE_ONCE" le_data="0x77" list="OVERFLOW">
+                  <ptl_le_append le_opt="OP_PUT USE_ONCE EVENT_LINK_DISABLE" le_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -503,7 +506,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_le_append le_opt="OP_PUT USE_ONCE" le_data="0x77" list="OVERFLOW">
+                  <ptl_le_append le_opt="OP_PUT USE_ONCE EVENT_LINK_DISABLE" le_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -579,7 +582,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                  <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -648,7 +651,7 @@
                 </if>
                 
                 <if rank="1">
-                  <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77" list="OVERFLOW">
+                  <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_match="0x5555" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -684,7 +687,7 @@
       </ptl_ni>
     </ptl>
   </subtest>
-
+  
   <subtest>
     <desc>Test put overflow with ME with 2 unexpected PUTs</desc>
     <ptl>
@@ -704,13 +707,13 @@
                     <ptl_put ack_req="ACK" length="4" match="0" target_id="1"/>
                     <ptl_put ack_req="ACK" length="40" match="0" target_id="1"/>
                     
-				    <barrier/>
-
+                    <barrier/>
+                    
                   </ptl_md>
                 </if>
                 
                 <if rank="1">
-                  <ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="OVERFLOW">
+                  <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_match="0" me_data="0x77" list="OVERFLOW">
                     
                     <!-- Force rank 0 to wait for the buffer to be ready -->
                     <barrier/>
@@ -723,28 +726,28 @@
                       <check event_type="PUT"/>
                     </ptl_eq_wait>
                     
-
-					<ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
+                    
+                    <ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
                       
                       <!-- Wait for overflow event -->
                       <ptl_eq_wait>
                         <check event_type="PUT_OVERFLOW" event_mlength="4"/>
                       </ptl_eq_wait>
-
+                      
                     </ptl_me>
-
-
-					<ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
+                    
+                    
+                    <ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
                       
                       <!-- Wait for overflow event -->
                       <ptl_eq_wait>
                         <check event_type="PUT_OVERFLOW" event_mlength="40"/>
                       </ptl_eq_wait>
-
+                      
                     </ptl_me>
-
+                    
                     <barrier/>
-
+                    
                   </ptl_me>
                 </if>
                 

@@ -1031,6 +1031,10 @@ typedef enum {
  */
 #define PTL_LE_IS_ACCESSIBLE            PTL_ME_IS_ACCESSIBLE
 
+/*!
+ */
+#define PTL_LE_EVENT_LINK_DISABLE       PTL_ME_EVENT_LINK_DISABLE 
+
 /*! Specifies that this list entry should not generate events that indicate a
  * communication operation. */
 #define PTL_LE_EVENT_COMM_DISABLE       PTL_ME_EVENT_COMM_DISABLE
@@ -1217,6 +1221,7 @@ enum mele_options {
     MELE_ACK_DISABLE,
     MELE_UNEXPECTED_HDR_DISABLE,
     MELE_IS_ACCESSIBLE,
+	MELE_EVNT_LINK_DISABLE,
     MELE_EVNT_COMM_DISABLE,
     MELE_EVNT_FLOWCTRL_DISABLE,
     MELE_EVNT_SUCCESS_DISABLE,
@@ -1283,6 +1288,8 @@ enum me_options {
  * accessible by the application.
  */
 #define PTL_ME_IS_ACCESSIBLE            (1<<MELE_IS_ACCESSIBLE)
+
+#define PTL_ME_EVENT_LINK_DISABLE       (1<<MELE_EVNT_LINK_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
@@ -2571,6 +2578,10 @@ typedef enum {
     /*! Resource exhaustion has occurred on this portal table entry, which has
      * entered a flow control situation. */
     PTL_EVENT_PT_DISABLED,
+
+    /*!
+     */
+    PTL_EVENT_LINK,
 
     /*! A list entry/match list entry was automatically unlinked. A \c
      * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match

@@ -26,7 +26,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" me_length="32768" me_match="0x5555" type="UINT" me_data="0x00000000">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_length="32768" me_match="0x5555" type="UINT" me_data="0x00000000">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -70,7 +70,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" me_length="65536" me_match="0x5555" type="UINT" me_data="0x00000000">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_length="65536" me_match="0x5555" type="UINT" me_data="0x00000000">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -111,7 +111,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET" me_length="8192" me_match="0x5555" type="UINT" me_data="0x5a5a5a5a">
+                    <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" me_length="8192" me_match="0x5555" type="UINT" me_data="0x5a5a5a5a">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -153,7 +153,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_PUT" le_length="16384" type="UINT" le_data="0x00000000">
+                    <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" le_length="16384" type="UINT" le_data="0x00000000">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -195,7 +195,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="OP_GET" le_length="16384" type="UINT" le_data="0x0f0f0f0f">
+                    <ptl_le le_opt="OP_GET EVENT_LINK_DISABLE" le_length="16384" type="UINT" le_data="0x0f0f0f0f">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -237,7 +237,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0xa5a5a5a5">
+                    <ptl_me me_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" me_length="8" me_match="0x5555" type="UINT" me_data="0xa5a5a5a5">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -278,7 +278,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x12481248">
+                    <ptl_me me_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" me_length="8" me_match="0x5555" type="UINT" me_data="0x12481248">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -320,7 +320,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0xffff0000">
+                    <ptl_le le_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" le_length="8" type="UINT" le_data="0xffff0000">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -361,7 +361,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x12345678">
+                    <ptl_le le_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" le_length="8" type="UINT" le_data="0x12345678">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -403,7 +403,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" me_length="8192" me_match="0x5555" type="UINT" me_data="0xffffffff">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_length="8192" me_match="0x5555" type="UINT" me_data="0xffffffff">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -444,7 +444,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET" me_length="8192" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
+                    <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" me_length="8192" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -486,7 +486,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x00000000">
+                    <ptl_me me_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" me_length="8" me_match="0x5555" type="UINT" me_data="0x00000000">
                       <barrier/>
                       
                       <ptl_eq_poll time="100">
@@ -528,7 +528,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="IOVEC OP_PUT OP_GET" me_length="8" me_match="0x5555" type="UINT" me_data="0x5555aaaa">
+                    <ptl_me me_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" me_length="8" me_match="0x5555" type="UINT" me_data="0x5555aaaa">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -569,7 +569,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="IOVEC OP_PUT OP_GET" le_length="8" type="UINT" le_data="0x00000000">
+                    <ptl_le le_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" le_length="8" type="UINT" le_data="0x00000000">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -610,7 +610,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_le le_opt="IOVEC OP_GET" le_length="8" type="UINT" le_data="0x84218421">
+                    <ptl_le le_opt="IOVEC OP_GET EVENT_LINK_DISABLE" le_length="8" type="UINT" le_data="0x84218421">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
@@ -652,7 +652,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_PUT" me_length="32768" me_match="0x5555" type="UINT" me_data="0xffffffff">
+                    <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" me_length="32768" me_match="0x5555" type="UINT" me_data="0xffffffff">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="PUT"/>
@@ -692,7 +692,7 @@
                   </if>
                   
                   <if rank="1">
-                    <ptl_me me_opt="OP_GET" me_length="32768" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
+                    <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" me_length="32768" me_match="0x5555" type="UINT" me_data="0x0a5f0a5f">
                       <barrier/>
                       <ptl_eq_poll time="100">
                         <check event_type="GET"/>
