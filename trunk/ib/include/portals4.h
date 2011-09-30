@@ -392,6 +392,7 @@ typedef enum {
     PTL_NI_FLOW_CTRL, /*!< Indicates that the remote node has exhausted its
                         resources, enabled flow control, and dropped this
                         message. */
+    PTL_NI_OP_VIOLATION, /*! */
     PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
                              indicated a permissions violation for this
                              message. */
