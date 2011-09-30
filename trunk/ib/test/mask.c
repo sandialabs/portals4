@@ -93,6 +93,8 @@ unsigned int get_md_opt(char *orig_val)
 			md_opt |= PTL_MD_EVENT_CT_BYTES;
 		} else if (!strcmp("UNORDERED", tok)) {
 			md_opt |= PTL_MD_UNORDERED;
+		} else if (!strcmp("VOLATILE", tok)) {
+			md_opt |= PTL_MD_VOLATILE;
 		} else if (!strcmp("INVALID", tok)) {
 			md_opt = ~PTL_MD_OPTIONS_MASK;
 		} else {
