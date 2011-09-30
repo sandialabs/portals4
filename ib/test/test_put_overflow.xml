@@ -684,5 +684,76 @@
       </ptl_ni>
     </ptl>
   </subtest>
+
+  <subtest>
+    <desc>Test put overflow with ME with 2 unexpected PUTs</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ompi_rt>
+          <ptl_ni ni_opt="MATCH LOGICAL">
+            <ptl_eq>
+              <ptl_pt>
+                <ptl_get_id/>
+                
+                <if rank="0">
+                  <ptl_md md_data="0xaa" md_opt="SUCCESS_DISABLE">
+                    
+                    <!-- Wait for rank 1 to set up the receiving buffer -->
+                    <barrier/>
+                    
+                    <ptl_put ack_req="ACK" length="4" match="0" target_id="1"/>
+                    <ptl_put ack_req="ACK" length="40" match="0" target_id="1"/>
+                    
+				    <barrier/>
+
+                  </ptl_md>
+                </if>
+                
+                <if rank="1">
+                  <ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="OVERFLOW">
+                    
+                    <!-- Force rank 0 to wait for the buffer to be ready -->
+                    <barrier/>
+                    
+                    <ptl_eq_wait>
+                      <check event_type="PUT"/>
+                    </ptl_eq_wait>
+                    
+                    <ptl_eq_wait>
+                      <check event_type="PUT"/>
+                    </ptl_eq_wait>
+                    
+
+					<ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
+                      
+                      <!-- Wait for overflow event -->
+                      <ptl_eq_wait>
+                        <check event_type="PUT_OVERFLOW" event_mlength="4"/>
+                      </ptl_eq_wait>
+
+                    </ptl_me>
+
+
+					<ptl_me me_opt="OP_PUT" me_match="0" me_data="0x77" list="PRIORITY">
+                      
+                      <!-- Wait for overflow event -->
+                      <ptl_eq_wait>
+                        <check event_type="PUT_OVERFLOW" event_mlength="40"/>
+                      </ptl_eq_wait>
+
+                    </ptl_me>
+
+                    <barrier/>
+
+                  </ptl_me>
+                </if>
+                
+              </ptl_pt>
+            </ptl_eq>
+          </ptl_ni>
+        </ompi_rt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
   
 </test>

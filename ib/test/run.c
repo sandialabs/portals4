@@ -1340,7 +1340,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_OMPI_RT:
 				errs = ompi_rt_init(info);
 				errs += walk_tree(info, node->children);
-				errs = ompi_rt_fini(info);
+				errs += ompi_rt_fini(info);
 				break;
 			case NODE_PTL:
 				errs = test_ptl_init(info);
