@@ -209,7 +209,18 @@
       <ptl>
         <ptl_ni>
           <ptl_ct>
-            <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+            <ptl_ct_set ct_event_success="10" ct_event_failure="0"/>
+            <ptl_ct_wait ct_test="10"/>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTWait with failure set</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_set ct_event_success="1" ct_event_failure="1"/>
             <ptl_ct_wait ct_test="10"/>
           </ptl_ct>
         </ptl_ni>
@@ -272,23 +283,45 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTPoll with test already satisfied</desc>
+      <desc>Test PtlCTPoll with success already satisfied</desc>
       <ptl>
         <ptl_ni>
           <ptl_ct>
-            <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+            <ptl_ct_set ct_event_success="10" ct_event_failure="0"/>
             <ptl_ct_poll ct_test="10"/>
           </ptl_ct>
         </ptl_ni>
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTPoll until timeout</desc>
+      <desc>Test PtlCTPoll with failure</desc>
       <ptl>
         <ptl_ni>
           <ptl_ct>
-            <ptl_ct_set ct_event_success="5" ct_event_failure="2"/>
+            <ptl_ct_set ct_event_success="7" ct_event_failure="1"/>
+            <ptl_ct_poll ct_test="10"/>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTPoll until timeout, with success</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_set ct_event_success="5" ct_event_failure="0"/>
             <ptl_ct_poll time="10" ct_test="10" ret="CT_NONE_REACHED"/>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTPoll until timeout, with failure</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_set ct_event_success="5" ct_event_failure="1"/>
+            <ptl_ct_poll time="10" ct_test="10" ret="OK"/>
           </ptl_ct>
         </ptl_ni>
       </ptl>
