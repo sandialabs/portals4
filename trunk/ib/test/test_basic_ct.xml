@@ -141,27 +141,64 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTInc with good parameters</desc>
+      <desc>Test PtlCTInc with both success and failure</desc>
       <ptl>
         <ptl_ni>
           <ptl_ct>
-            <ptl_ct_inc ct_event_success="7" ct_event_failure="3"/>
+            <ptl_ct_inc ct_event_success="7" ct_event_failure="3" ret="ARG_INVALID"/>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTInc with success</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_inc ct_event_success="7" ct_event_failure="0"/>
             <ptl_ct_get>
-              <check ct_event_success="7" ct_event_failure="3"/>
+              <check ct_event_success="7" ct_event_failure="0"/>
             </ptl_ct_get>
           </ptl_ct>
         </ptl_ni>
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlCTSet and Inc with good parameters</desc>
+      <desc>Test PtlCTInc with failure</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_inc ct_event_success="0" ct_event_failure="3"/>
+            <ptl_ct_get>
+              <check ct_event_success="0" ct_event_failure="3"/>
+            </ptl_ct_get>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTSet and Inc with success</desc>
       <ptl>
         <ptl_ni>
           <ptl_ct>
             <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
-            <ptl_ct_inc ct_event_success="1" ct_event_failure="3"/>
+            <ptl_ct_inc ct_event_success="1" ct_event_failure="0"/>
             <ptl_ct_get>
-              <check ct_event_success="8" ct_event_failure="6"/>
+              <check ct_event_success="8" ct_event_failure="3"/>
+            </ptl_ct_get>
+          </ptl_ct>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlCTSet and Inc with failure</desc>
+      <ptl>
+        <ptl_ni>
+          <ptl_ct>
+            <ptl_ct_set ct_event_success="7" ct_event_failure="3"/>
+            <ptl_ct_inc ct_event_success="0" ct_event_failure="3"/>
+            <ptl_ct_get>
+              <check ct_event_success="7" ct_event_failure="6"/>
             </ptl_ct_get>
           </ptl_ct>
         </ptl_ni>
