@@ -48,8 +48,10 @@ unsigned int get_pt_opt(char *orig_val)
 	val = orig_val;
 
 	while((tok = strtok_r(val, " \t", &save))) {
-		if (!strcmp("USE_ONCE", tok)) {
+		if (!strcmp("ONLY_USE_ONCE", tok)) {
 			pt_opt |= PTL_PT_ONLY_USE_ONCE;
+		} else if (!strcmp("ONLY_TRUNCATE", tok)) {
+			pt_opt |= PTL_PT_ONLY_TRUNCATE;
 		} else if (!strcmp("FLOW", tok)) {
 			pt_opt |= PTL_PT_FLOWCTRL;
 		} else if (!strcmp("INVALID", tok)) {
