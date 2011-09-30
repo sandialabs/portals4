@@ -333,44 +333,41 @@ static int check_match(const xt_t *xt, const me_t *me)
  */
 static int check_perm(const xt_t *xt, const le_t *le)
 {
+	int ret = PTL_NI_OK;
+
 	if (!(le->uid == PTL_UID_ANY || (le->uid == xt->uid))) {
 		WARN();
-		goto no_perm;
+		ret = PTL_NI_PERM_VIOLATION;
+	} else {
+		switch (xt->operation) {
+		case OP_ATOMIC:
+		case OP_PUT:
+			if (!(le->options & PTL_ME_OP_PUT)) {
+				ret = PTL_NI_OP_VIOLATION;
+			}
+			break;
+
+		case OP_GET:
+			if (!(le->options & PTL_ME_OP_GET)) {
+				ret = PTL_NI_OP_VIOLATION;
+			}
+			break;
+
+		case OP_FETCH:
+		case OP_SWAP:
+			if ((le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
+				!= (PTL_ME_OP_PUT | PTL_ME_OP_GET)) {
+				ret = PTL_NI_OP_VIOLATION;
+			}
+			break;
+
+		default:
+			ret = PTL_NI_OP_VIOLATION;
+			break;
+		}
 	}
 
-	switch (xt->operation) {
-	case OP_ATOMIC:
-	case OP_PUT:
-		if (!(le->options & PTL_ME_OP_PUT)) {
-			WARN();
-			goto no_perm;
-		}
-		break;
-
-	case OP_GET:
-		if (!(le->options & PTL_ME_OP_GET)) {
-			WARN();
-			goto no_perm;
-		}
-		break;
-
-	case OP_FETCH:
-	case OP_SWAP:
-		if ((le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET))
-		    != (PTL_ME_OP_PUT | PTL_ME_OP_GET)) {
-			WARN();
-			goto no_perm;
-		}
-		break;
-
-	default:
-		assert(0);
-	}
-
-	return PTL_OK;
-
-no_perm:
-	return PTL_FAIL;
+	return ret;
 }
 
 /*
@@ -381,6 +378,7 @@ static int tgt_get_match(xt_t *xt)
 {
 	ni_t *ni = obj_to_ni(xt);
 	struct list_head *l;
+	int perm_ret;
 
 	/* have to protect against a race with le/me append/search
 	 * which change the pt lists */
@@ -431,12 +429,12 @@ static int tgt_get_match(xt_t *xt)
 	return STATE_TGT_DROP;
 
 done:
-	if (check_perm(xt, xt->le)) {
+	if ((perm_ret = check_perm(xt, xt->le))) {
 		pthread_spin_unlock(&xt->pt->lock);
 		le_put(xt->le);
 		xt->le = NULL;
 
-		xt->ni_fail = PTL_NI_PERM_VIOLATION;
+		xt->ni_fail = perm_ret;
 		return STATE_TGT_DROP;
 	}
 

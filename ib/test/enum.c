@@ -119,6 +119,7 @@ int get_ni_fail(char *val)
 	else if (!strcmp("UNDELIVERABLE", val))	return PTL_NI_UNDELIVERABLE;
 	else if (!strcmp("FLOW_CTRL", val))	return PTL_NI_FLOW_CTRL;
 	else if (!strcmp("DROPPED", val))	return PTL_NI_DROPPED;
+	else if (!strcmp("OP_VIOLATION", val))return PTL_NI_OP_VIOLATION;
 	else if (!strcmp("PERM_VIOLATION", val))return PTL_NI_PERM_VIOLATION;
 	else if (!strcmp("NO_MATCH", val))return PTL_NI_NO_MATCH;
 	else if (!strcmp("INVALID", val))	return 0xffffffff;
