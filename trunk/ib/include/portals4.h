@@ -971,7 +971,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  */
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
-    PTL_OVERFLOW       /*!< The overflow list associated with a portal table entry. */
+    PTL_OVERFLOW_LIST  /*!< The overflow list associated with a portal table entry. */
 } ptl_list_t;
 
 /*!
@@ -1461,11 +1461,12 @@ typedef struct {
  *                 ptl_handle_me_t *    me_handle)
  * @brief Create a match list entry and append it to a portal table.
  * @details Creates a single match list entry. If \c PTL_PRIORITY_LIST or \c
- *      PTL_OVERFLOW is specified by \a ptl_list, this entry is appended to the
- *      end of the appropriate list specified by \a ptl_list associated with
- *      the portal table entry specified by \a pt_index for the portal table
- *      for \a ni_handle. If the list is currently uninitialized, the
- *      PtlMEAppend() function creates the first entry in the list.
+ *      PTL_OVERFLOW_LIST is specified by \a ptl_list, this entry is
+ *      appended to the end of the appropriate list specified by \a
+ *      ptl_list associated with the portal table entry specified by
+ *      \a pt_index for the portal table for \a ni_handle. If the list
+ *      is currently uninitialized, the PtlMEAppend() function creates
+ *      the first entry in the list.
  *
  *      When a match list entry is posted to the priority list, the overflow
  *      list is searched to see if a matching message has arrived prior to

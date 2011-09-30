@@ -65,7 +65,7 @@ void le_unlink(le_t *le, int send_event)
 		if (le->pt) {
 			if (le->ptl_list == PTL_PRIORITY_LIST)
 				pt->priority_size--;
-			else if (le->ptl_list == PTL_OVERFLOW)
+			else if (le->ptl_list == PTL_OVERFLOW_LIST)
 				pt->overflow_size--;
 			list_del_init(&le->list);
 
@@ -175,7 +175,7 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (le_handle) {
-		if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW)) {
+		if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW_LIST)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
@@ -253,7 +253,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 			return PTL_NO_SPACE;
 		}
 		list_add(&le->list, &pt->priority_list);
-	} else if (le->ptl_list == PTL_OVERFLOW) {
+	} else if (le->ptl_list == PTL_OVERFLOW_LIST) {
 		pt->overflow_size++;
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
 			pt->overflow_size--;

@@ -440,7 +440,7 @@ done:
 		return STATE_TGT_DROP;
 	}
 
-	if (xt->le->ptl_list == PTL_OVERFLOW) {
+	if (xt->le->ptl_list == PTL_OVERFLOW_LIST) {
 		xt_get(xt);
 		list_add_tail(&xt->unexpected_list, &xt->le->pt->unexpected_list);
 	}
@@ -1487,9 +1487,9 @@ static int tgt_cleanup(xt_t *xt)
 	if (xt->matching.le) {
 		/* On the overflow list, and was already matched by an
 		 * ME/LE. */
-		assert(xt->le->ptl_list == PTL_OVERFLOW);
+		assert(xt->le->ptl_list == PTL_OVERFLOW_LIST);
 		state = STATE_TGT_OVERFLOW_EVENT;
-	} else if (xt->le && xt->le->ptl_list == PTL_OVERFLOW)
+	} else if (xt->le && xt->le->ptl_list == PTL_OVERFLOW_LIST)
 		state = STATE_TGT_WAIT_APPEND;
 	else
 		state = STATE_TGT_CLEANUP_2;
@@ -1604,7 +1604,6 @@ int process_tgt(xt_t *xt)
 {
 	int err = PTL_OK;
 	int state;
-	ni_t *ni = obj_to_ni(xt);
 
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);

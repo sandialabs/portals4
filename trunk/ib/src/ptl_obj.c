@@ -295,8 +295,6 @@ void pool_fini(pool_t *pool)
 int pool_init(pool_t *pool, char *name, int size,
 		  enum obj_type type, obj_t *parent)
 {
-	int err;
-
 	pool->name = name;
 	pool->size = size;
 	pool->type = type;

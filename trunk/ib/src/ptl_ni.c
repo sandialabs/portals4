@@ -963,7 +963,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	if (unlikely(err))
 		goto err1;
 
-	if (ni->options & PTL_NI_LOGICAL == 0) {
+	if ((ni->options & PTL_NI_LOGICAL) == 0) {
 		/* Only valid on logical NIs. */
 		goto err2;
 	}
@@ -1053,7 +1053,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 		goto err1;
 
 
-	if (ni->options & PTL_NI_LOGICAL == 0) {
+	if ((ni->options & PTL_NI_LOGICAL) == 0) {
 		/* Only valid on logical NIs. */
 		goto err2;
 	}
