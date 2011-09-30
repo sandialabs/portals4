@@ -105,6 +105,7 @@ int get_event_type(char *val)
 	else if (!strcmp("SEND", val))		return PTL_EVENT_SEND;
 	else if (!strcmp("ACK", val))		return PTL_EVENT_ACK;
 	else if (!strcmp("PT_DISABLED", val))	return PTL_EVENT_PT_DISABLED;
+	else if (!strcmp("LINK", val))		return PTL_EVENT_LINK;
 	else if (!strcmp("AUTO_UNLINK", val))	return PTL_EVENT_AUTO_UNLINK;
 	else if (!strcmp("AUTO_FREE", val))	return PTL_EVENT_AUTO_FREE;
 	else if (!strcmp("SEARCH", val))	return PTL_EVENT_SEARCH;

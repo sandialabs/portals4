@@ -16,12 +16,12 @@
                       <barrier/>
                       <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
                       <barrier/>
-                       
+                      
                     </ptl_md>
                   </repeat>
-
-				  <msleep count="10"/>
-
+                  
+                  <msleep count="10"/>
+                  
                   <ptl_eq_wait ret="EQ_DROPPED"/>
                   <ptl_eq_wait ret="OK"/>
                 </if>
@@ -29,6 +29,11 @@
                 <if rank="1">
                   <repeat count="3">
                     <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77">
+                      
+                      <ptl_eq_wait>
+                        <check event_type="LINK"/>
+                      </ptl_eq_wait>
+                      
                       <barrier/>
                       
                       <ptl_eq_wait>
@@ -37,7 +42,7 @@
                       <barrier/>
                     </ptl_me>
                   </repeat>
-
+                  
                 </if>
               </ptl_pt>
             </ptl_eq>

@@ -263,10 +263,16 @@ int le_append_pt(ni_t *ni, le_t *le)
 		list_add(&le->list, &pt->overflow_list);
 	}
 
+#if 1
+	if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE)) {
+		make_le_event(le, le->eq, PTL_EVENT_LINK, PTL_NI_OK);
+	}
+#endif
+
 	return PTL_OK;
 }
 
-/* Do the LE append or LE search. It's a append if le_handle is not
+/* Do the LE append or LE search. It's an append if le_handle is not
  * NULL. */
 static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 							   ptl_le_t *le_init, ptl_list_t ptl_list,
