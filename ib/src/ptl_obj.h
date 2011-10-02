@@ -40,6 +40,7 @@
 #ifndef PTL_OBJ_H
 #define PTL_OBJ_H
 
+
 struct ni;
 
 /**
@@ -191,6 +192,10 @@ struct obj {
 };
 
 typedef struct obj obj_t;
+
+int index_init();
+
+void index_fini();
 
 int pool_init(pool_t *pool, char *name, int size,
 	      enum obj_type type, obj_t *parent);
