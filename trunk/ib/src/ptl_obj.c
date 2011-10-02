@@ -4,6 +4,79 @@
 
 #include "ptl_loc.h"
 
+/* Maximum number of stored objects ever. */
+#define MAX_INDEX	(256*1024)
+
+static atomic_t next_index;
+static void **index_map;
+
+/**
+ * initialize indexing service
+ *
+ * @return status
+ */
+int index_init(void)
+{
+	index_map = calloc(MAX_INDEX, sizeof(void *));
+	if (!index_map)
+		return PTL_NO_SPACE;
+
+	atomic_set(&next_index, 0);
+
+	return PTL_OK;
+}
+
+/**
+ * cleanup indexing service
+ */
+void index_fini(void)
+{
+	free(index_map);
+}
+
+/**
+ * Get index for object and save address.
+ *
+ * @param obj
+ * @param index_p
+ *
+ * @output status
+ */
+static inline int index_get(obj_t *obj, unsigned int *index_p)
+{
+	unsigned int index;
+
+	index = atomic_inc(&next_index);
+
+	index_map[index] = obj;
+
+	*index_p = index;
+
+	return PTL_OK;
+}
+
+/**
+ * Convert index to object.
+ *
+ * @param obj_p address of return value
+ *
+ * @return status
+ */
+static inline int index_lookup(unsigned int index, obj_t **obj_p)
+{
+	if (index >= MAX_INDEX) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	if (index_map[index]) {
+		*obj_p = index_map[index];
+		return PTL_OK;
+	} else {
+		return PTL_FAIL;
+	}
+}
+
 #define HANDLE_SHIFT ((sizeof(ptl_handle_any_t)*8)-8)
 
 /**
@@ -106,7 +179,8 @@ static inline obj_t *dequeue_free_obj(pool_t *pool)
 		} else {
 			newv = NULL;
 		}
-		retv = __sync_val_compare_and_swap(&pool->free_list, oldv, newv);
+		retv = __sync_val_compare_and_swap(&pool->free_list,
+						   oldv, newv);
 	} while (retv != oldv);
 
 	return retv;
@@ -195,7 +269,8 @@ static int pool_alloc_slab(pool_t *pool)
 			WARN();
 			return err;
 		}
-		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) | index;
+		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) |
+					index;
 
 		pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
 
