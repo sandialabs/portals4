@@ -23,8 +23,6 @@ libportals_la_SOURCES = \
 	ptl_hdr.c \
 	ptl_hdr.h \
 	ptl_id.c \
-	ptl_index.c \
-	ptl_index.h \
 	ptl_init.c \
 	ptl_internal_alignment.h \
 	ptl_internal_assert.h \
