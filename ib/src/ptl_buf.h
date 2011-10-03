@@ -1,16 +1,18 @@
-/*
- * ptl_buf - work request
+/**
+ * @file ptl_buf.h
+ *
+ * Message buffer object declarations.
  */
-
 #ifndef PTL_BUF_H
 #define PTL_BUF_H
 
 struct xi;
 struct xt;
 
-typedef ptl_handle_any_t ptl_handle_buf_t;
-
-typedef enum {
+/**
+ * Type of buf object.
+ */
+enum buf_type {
 	BUF_SEND,
 	BUF_RECV,
 	BUF_RDMA,
@@ -18,42 +20,63 @@ typedef enum {
 	BUF_SHMEM,
 	BUF_SHMEM_STOP,
 	BUF_SHMEM_RETURN,
-} buf_type_t;
+};
+
+typedef enum buf_type buf_type_t;
 
 #define BUF_DATA_SIZE 1024
 
-typedef struct buf {
+/**
+ * A buf struct holds information about a common
+ * buffer object that is used for sending and receiving
+ * messages, shared memory messages and RDMA read and
+ * write operations.
+ *
+ * A buf struct includes room to hold either an OFA
+ * verbs send or recv work request or info if it is
+ * a shared memory message. It also includes a data buffer that
+ * can hold a short message. Additionally there
+ * is an array to hold a list of pointers to any memory
+ * regions used by the message so that they can be freed after
+ * the operation is completed.
+ *
+ * Bufs used by OFA verbs are allocated in a slab that has been
+ * registered.
+ */
+struct buf {
+	/** base object */
 	obj_t			obj;
 
-	/* To hang on NI's send_list or recv_list. */
+	/** enables holding buf on lists */
 	struct list_head	list;
 
+	/** the transaction to which this buffer is related */
 	union {
-		struct xi		*xi;
-		struct xt		*xt;
+		struct xi	*xi;
+		struct xt	*xt;
 	};
 
-	struct xremote *dest;
+	/** remote destination for message */
+	struct xremote		*dest;
 
-	/* Valid length in data. */
+	/** message length */
 	unsigned int		length;
 
-	/* Internal buffer for short messages (send or receive). */
-	uint8_t	internal_data[BUF_DATA_SIZE];
+	/** data to hold message */
+	uint8_t			internal_data[BUF_DATA_SIZE];
 
-	/* Usually points to internal_data, except with SHMEM where it
-	 * might be the data in another buffer */
-	void *data;
+	/** message (usually internal_data) */
+	void			*data;
 
 	union {
 		struct {
 			union {
-				struct ibv_send_wr	send_wr;
-				struct ibv_recv_wr	recv_wr;
+				struct ibv_send_wr send_wr;
+				struct ibv_recv_wr recv_wr;
 			};
 
 			/* SG list to register the data field. */
-			struct ibv_sge		sg_list[1];
+			struct ibv_sge sg_list[1];
 
 		} rdma;
 
@@ -62,18 +85,38 @@ typedef struct buf {
 		} shmem;
 	};
 
-	int comp;
+	/** verbs completion requested */
+	int			comp;
 
-	buf_type_t type;
+	/** type of buf */
+	buf_type_t		type;
 
-	/* List of MRs used with that buffer for a long message. */
-	int num_mr;
-	mr_t *mr_list[0];
+	/** number of mr's used in message */
+	int			num_mr;
 
-} buf_t;
+	/** mr's used in message */
+	mr_t			*mr_list[0];
+};
 
-/* Returns the size a buf_t is really taking. That's buf_t itself plus
- * the list of MRs. */
+typedef struct buf buf_t;
+
+int buf_setup(void *arg);
+
+int buf_init(void *arg, void *parm);
+
+void buf_cleanup(void *arg);
+
+int ptl_post_recv(ni_t *ni);
+
+void buf_dump(buf_t *buf);
+
+/**
+ * Compute the actual buf size.
+ *
+ * Account for room needed to hold MR addresses in the buf_t struct.
+ *
+ * @return size of buf
+ */
 static inline size_t real_buf_t_size(void)
 {
 	int max_sge = get_param(PTL_MAX_QP_SEND_SGE);
@@ -81,10 +124,14 @@ static inline size_t real_buf_t_size(void)
 	return sizeof(buf_t) + max_sge * sizeof(mr_t *);
 }
 
-int buf_setup(void *arg);
-int buf_init(void *arg, void *parm);
-void buf_cleanup(void *arg);
-
+/**
+ * Allocate a buf from the normal buf pool.
+ *
+ * @param ni from which to allocate the buf
+ * @param buf_p pointer to return value
+ *
+ * @return status
+ */
 static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 {
 	int err;
@@ -100,37 +147,14 @@ static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 	return PTL_OK;
 }
 
-static inline int to_buf(ptl_handle_buf_t buf_handle, buf_t **buf_p)
-{
-	int err;
-	obj_t *obj;
-
-	err = to_obj(POOL_BUF, (ptl_handle_any_t)buf_handle, &obj);
-	if (err) {
-		*buf_p = NULL;
-		return err;
-	}
-
-	*buf_p = container_of(obj, buf_t, obj);
-	return PTL_OK;
-}
-
-static inline void buf_get(buf_t *buf)
-{
-	obj_get(&buf->obj);
-}
-
-static inline int buf_put(buf_t *buf)
-{
-	return obj_put(&buf->obj);
-}
-
-static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
-{
-	return (ptl_handle_buf_t)buf->obj.obj_handle;
-}
-
-/* buffers in shared memory. */
+/**
+ * Allocate a buf from the shared memory pool.
+ *
+ * @param ni from which to allocate the buf
+ * @param buf_p pointer to return value
+ *
+ * @return status
+ */
 static inline int sbuf_alloc(ni_t *ni, buf_t **buf_p)
 {
 	int err;
@@ -146,23 +170,29 @@ static inline int sbuf_alloc(ni_t *ni, buf_t **buf_p)
 	return PTL_OK;
 }
 
-static inline int to_sbuf(ptl_handle_buf_t buf_handle, buf_t **buf_p)
+/**
+ * Take a reference to a buf.
+ *
+ * @param buf on which to take a reference
+ */
+static inline void buf_get(buf_t *buf)
 {
-	int err;
-	obj_t *obj;
-
-	err = to_obj(POOL_SBUF, (ptl_handle_any_t)buf_handle, &obj);
-	if (err) {
-		*buf_p = NULL;
-		return err;
-	}
-
-	*buf_p = container_of(obj, buf_t, obj);
-	return PTL_OK;
+	obj_get(&buf->obj);
 }
 
-int ptl_post_recv(ni_t *ni);
-
-void buf_dump(buf_t *buf);
+/**
+ * Drop a reference to a buf
+ *
+ * If the last reference has been dropped the buf
+ * will be freed.
+ *
+ * @param buf on which to drop a reference
+ *
+ * @return status
+ */
+static inline int buf_put(buf_t *buf)
+{
+	return obj_put(&buf->obj);
+}
 
 #endif /* PTL_BUF_H */
