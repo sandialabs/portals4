@@ -107,6 +107,10 @@ static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_h
                                           ptl_internal_appendME_t *restrict priority_entry,
                                           ptl_internal_header_t *restrict   hdr,
                                           const ptl_handle_me_t             me_handle);
+static void PtlInternalAnnounceMELink(const ptl_handle_eq_t eq_handle,
+                                      const unsigned int    options,
+                                      const ptl_pt_index_t  pt_index,
+                                      void *const           user_ptr);
 
 void INTERNAL PtlInternalMENISetup(const uint_fast8_t ni,
                                    const ptl_size_t   limit)
@@ -390,9 +394,9 @@ permission_violation:
                         // Queue buffered header to ME buffer
                         // etc.
                     } else {
-                        size_t          mlength;
-                        ptl_handle_eq_t tEQ        = t->EQ;
-                        unsigned int    me_options = me->options;
+                        size_t                mlength;
+                        const ptl_handle_eq_t tEQ        = t->EQ;
+                        const unsigned int    me_options = me->options;
                         // deliver
                         if (me->length == 0) {
                             mlength = 0;
@@ -518,15 +522,24 @@ permission_violation:
                 }
                 /* either nothing matched in the buffered_headers, or something did but we're appending a persistent ME, so go on and append to the priority list */
             }
-            if (t->priority.tail == NULL) {
-                t->priority.head = Qentry;
-            } else {
-                ((ptl_internal_appendME_t *)(t->priority.tail))->next =
-                    Qentry;
+            {
+                const ptl_handle_eq_t tEQ     = t->EQ;
+                const unsigned int    options = me->options;
+
+                if (t->priority.tail == NULL) {
+                    t->priority.head = Qentry;
+                } else {
+                    ((ptl_internal_appendME_t *)(t->priority.tail))->next = Qentry;
+                }
+                t->priority.tail = Qentry;
+                PtlInternalAnnounceMELink(tEQ, options, pt_index, user_ptr);
             }
-            t->priority.tail = Qentry;
             break;
         case PTL_OVERFLOW_LIST:
+        {
+            const ptl_handle_eq_t tEQ     = t->EQ;
+            const unsigned int    options = me->options;
+
             if (t->overflow.tail == NULL) {
                 t->overflow.head = Qentry;
             } else {
@@ -534,7 +547,9 @@ permission_violation:
                     Qentry;
             }
             t->overflow.tail = Qentry;
+            PtlInternalAnnounceMELink(tEQ, options, pt_index, user_ptr);
             break;
+        }
     }
     PtlInternalValidateMEPT(t);
     PTL_LOCK_UNLOCK(t->lock);
@@ -548,7 +563,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                          ptl_me_t       *me,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
-{
+{   /*{{{*/
     const ptl_internal_handle_converter_t ni  = { ni_handle };
     ptl_internal_handle_converter_t       meh = { .s.selector = HANDLE_ME_CODE };
     ptl_table_entry_t                    *t;
@@ -733,7 +748,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
 done_searching:
     PTL_LOCK_UNLOCK(t->lock);
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
 {                                      /*{{{ */
@@ -1526,5 +1541,20 @@ static void PtlInternalAnnounceMEDelivery(const ptl_handle_eq_t             eq_h
         }
     }
 }                                      /*}}} */
+
+static void PtlInternalAnnounceMELink(const ptl_handle_eq_t eq_handle,
+                                      const unsigned int    options,
+                                      const ptl_pt_index_t  pt_index,
+                                      void *const           user_ptr)
+{   /*{{{*/
+    if ((eq_handle != PTL_EQ_NONE) && ((options & PTL_ME_EVENT_LINK_DISABLE) == 0)) {
+        ptl_internal_event_t e;
+        e.type         = PTL_EVENT_LINK;
+        e.pt_index     = pt_index;
+        e.user_ptr     = user_ptr;
+        e.ni_fail_type = PTL_NI_OK;
+        PtlInternalEQPush(eq_handle, &e);
+    }
+} /*}}}*/
 
 /* vim:set expandtab: */

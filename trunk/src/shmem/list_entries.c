@@ -75,6 +75,10 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
                                           const uint_fast8_t                    overflow,
                                           void *const                           user_ptr,
                                           ptl_internal_header_t *const restrict hdr);
+static void PtlInternalAnnounceLELink(const ptl_handle_eq_t eq_handle,
+                                      const unsigned int    options,
+                                      const ptl_pt_index_t  pt_index,
+                                      void *const           user_ptr);
 #ifdef USE_TRANSFER_ENGINE
 static inline void PtlInternalPerformDelivery2(const uint_fast8_t                    type,
                                                void *const restrict                  local_data,
@@ -297,8 +301,8 @@ permission_violation:
                         // Queue buffered header to LE buffer
                         // etc.
                     } else {
-                        size_t          mlength;
-                        ptl_handle_eq_t tEQ = t->EQ;
+                        size_t                mlength;
+                        const ptl_handle_eq_t tEQ = t->EQ;
                         // deliver
                         if (le->length == 0) {
                             mlength = 0;
@@ -371,23 +375,35 @@ permission_violation:
                  * did but we're appending a persistent LE, so go on and append
                  * to the priority list. */
             }
-            if (t->priority.tail == NULL) {
-                t->priority.head = Qentry;
-            } else {
-                ((ptl_internal_appendLE_t *)(t->priority.tail))->next =
-                    Qentry;
+            {
+                const ptl_handle_eq_t tEQ     = t->EQ;
+                const unsigned int    options = le->options;
+
+                if (t->priority.tail == NULL) {
+                    t->priority.head = Qentry;
+                } else {
+                    ((ptl_internal_appendLE_t *)(t->priority.tail))->next = Qentry;
+                }
+                t->priority.tail = Qentry;
+                /* announce the LINK event */
+                PtlInternalAnnounceLELink(tEQ, options, pt_index, user_ptr);
             }
-            t->priority.tail = Qentry;
             break;
         case PTL_OVERFLOW_LIST:
+        {
+            const ptl_handle_eq_t tEQ     = t->EQ;
+            const unsigned int    options = le->options;
+
             if (t->overflow.tail == NULL) {
                 t->overflow.head = Qentry;
             } else {
-                ((ptl_internal_appendLE_t *)(t->overflow.tail))->next =
-                    Qentry;
+                ((ptl_internal_appendLE_t *)(t->overflow.tail))->next = Qentry;
             }
             t->overflow.tail = Qentry;
+            /* announce the LINK event */
+            PtlInternalAnnounceLELink(tEQ, options, pt_index, user_ptr);
             break;
+        }
     }
 done_appending:
     PTL_LOCK_UNLOCK(t->lock);
@@ -1193,5 +1209,20 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
         }
     }
 }                                      /*}}} */
+
+static void PtlInternalAnnounceLELink(const ptl_handle_eq_t eq_handle,
+                                      const unsigned int    options,
+                                      const ptl_pt_index_t  pt_index,
+                                      void *const           user_ptr)
+{   /*{{{*/
+    if ((eq_handle != PTL_EQ_NONE) && ((options & PTL_LE_EVENT_LINK_DISABLE) == 0)) {
+        ptl_internal_event_t e;
+        e.type         = PTL_EVENT_LINK;
+        e.pt_index     = pt_index;
+        e.user_ptr     = user_ptr;
+        e.ni_fail_type = PTL_NI_OK;
+        PtlInternalEQPush(eq_handle, &e);
+    }
+} /*}}}*/
 
 /* vim:set expandtab: */
