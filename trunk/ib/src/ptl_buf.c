@@ -1,11 +1,19 @@
-/*
- * ptl_buf.c - IO buffer
+/**
+ * @file ptl_buf.h
+ *
+ * Buf object methods.
  */
 
 #include "ptl_loc.h"
 
-/*
- * buf_setup - called when the buffer is taken from the free list
+/**
+ * Setup a buf.
+ *
+ * Called each time the buf is allocated from the buf pool freelist.
+ *
+ * @param arg opaque reference to buf
+ *
+ * @return status
  */
 int buf_setup(void *arg)
 {
@@ -19,23 +27,37 @@ int buf_setup(void *arg)
 	return PTL_OK;
 }
 
-/*
- * buf_cleanup - release buffers reference to associated memory region.
+/**
+ * Cleanup a buf.
+ *
+ * Called each time buf is freed to the buf pool.
+ *
+ * @param arg opaque reference to buf
  */ 
 void buf_cleanup(void *arg)
 {
 	buf_t *buf = arg;
 	int i;
 
-	for (i=0; i<buf->num_mr; i++)
+	for (i = 0; i < buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
 
+	/* can be xi or xt */
 	if (buf->xi)
 		xi_put(buf->xi);
 }
 
-/*
- * buf_init - initialize a buffer object and create/reference memory region.
+/**
+ * Init a buf.
+ *
+ * Called once when buf is created.
+ * Sets information that is constant for the life
+ * of the buf.
+ *
+ * @param buf which to init
+ * @param parm parameter passed that contains the mr
+ *
+ * @return status
  */
 int buf_init(void *arg, void *parm)
 {
@@ -62,8 +84,10 @@ int buf_init(void *arg, void *parm)
 	return 0;
 }
 
-/*
- * buf_dump - debug function to print buffer attributes.
+/**
+ * Debug print buf parameters.
+ *
+ * @param buf which to dump
  */
 void buf_dump(buf_t *buf)
 {
@@ -80,8 +104,19 @@ void buf_dump(buf_t *buf)
 	printf("\n");
 }
 
-/*
- * ptl_post_recv - Allocate a receive buffer for specified NI and post to SRQ.
+/**
+ * Post a receive buffer.
+ *
+ * Used to post receive buffers to the OFA verbs
+ * shared receive queue (SRQ). A buf is allocated
+ * from the ni's normal buf pool which takes a reference.
+ * The buf is initialized as a receive buffer and is
+ * posted to the SRQ. The buf is added to the ni
+ * recv_list in the order that it was posted.
+ *
+ * @param ni for which to post receive buffer
+ *
+ * @return status
  */
 int ptl_post_recv(ni_t *ni)
 {
