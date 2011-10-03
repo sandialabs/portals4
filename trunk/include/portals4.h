@@ -971,7 +971,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  */
 typedef enum {
     PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
-    PTL_OVERFLOW       /*!< The overflow list associated with a portal table entry. */
+    PTL_OVERFLOW_LIST  /*!< The overflow list associated with a portal table entry. */
 } ptl_list_t;
 
 /*!
@@ -983,9 +983,9 @@ typedef enum {
  * @ingroup MLEML
  */
 typedef enum {
-    PTL_SEARCH_ONLY, /*!< Use the LE/ME to search the overflow list, without
+    PTL_SEARCH_ONLY, /*!< Use the LE/ME to search the unexpected list, without
                        consuming an item in the list. */
-    PTL_SEARCH_DELETE /*!< Use the LE/ME to search the overflow list and
+    PTL_SEARCH_DELETE /*!< Use the LE/ME to search the unexpected list and
                          delete the item from the list. */
 } ptl_search_op_t;
 
@@ -1030,6 +1030,10 @@ typedef enum {
  * accessible by the application.
  */
 #define PTL_LE_IS_ACCESSIBLE            PTL_ME_IS_ACCESSIBLE
+
+/*! Specifies that this list entry should not generate a \c PTL_EVENT_LINK full
+ * event indicating the list entry successfully linked. */
+#define PTL_LE_EVENT_LINK_DISABLE       PTL_ME_EVENT_LINK_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate a
  * communication operation. */
@@ -1079,10 +1083,20 @@ typedef enum {
  *      list is currently uninitialized, the PtlLEAppend() function creates
  *      the first entry in the list.
  *
- *      When a list entry is posted to a list, the overflow list is checked to
- *      see if a message has arrived prior to posting the list entry. If so, a
- *      \c PTL_EVENT_PUT_OVERFLOW event is generated. No searching is performed
- *      when a list entry is posted to the overflow list.
+ *      When a list entry is posted to a list, the unexpected list is checked to
+ *      see if a message has arrived prior to posting the list entry. If so, an
+ *      appropriate overflow full event is generated, the matching header is
+ *      removed from the unexpected list, and a list entry with the \c
+ *      PTL_LE_USE_ONCE option is not inserted into the priority list. If a
+ *      persistent list entry is posted to the priority list, it may cause
+ *      multiple overflow events to be generated, one for every matching entry
+ *      in the unexpected list. No permissions check is performed on a matching
+ *      message in the unexpected list. No searching of the unexpected list is
+ *      performed when a list entry is posted to the overflow list. When the
+ *      list entry has been linked (inserted) into the specified list, a \c
+ *      PTL_EVENT_LINK event is generated; a call to PtlLEAppend() will always
+ *      result in either an overflow or \c PTL_EVENT_LINK event being
+ *      generated.
  * @param[in] ni_handle     The interface handle to use.
  * @param[in] pt_index      The portal table index where the list entry should
  *                          be appended.
@@ -1091,8 +1105,7 @@ typedef enum {
  *                          initialization, there is no linkage between this
  *                          structure and the list entry maintained by the API.
  * @param[in] ptl_list      Determines whether the list entry is appended to
- *                          the priority list, appended to the overflow list,
- *                          or simply queries the overflow list.
+ *                          the priority list or appended to the overflow list.
  * @param[in] user_ptr      A user-specified value that is associated with each
  *                          command that can generate an event. The value does
  *                          not need to be a pointer, but must fit in the space
@@ -1180,7 +1193,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  *      differently for a search in that a PtlLESearch()never causes a status
  *      register to be incremented.
  * @note Searches with persistent entries could have unexpected performance and
- *      resource usage characteristics if a large overflow list has
+ *      resource usage characteristics if a large unexpected list has
  *      accumulated, since a PtlLESearch() that uses a persistent LE can cause
  *      multiple matches.
  * @param[in] ni_handle     The interface handle to use
@@ -1217,6 +1230,7 @@ enum mele_options {
     MELE_ACK_DISABLE,
     MELE_UNEXPECTED_HDR_DISABLE,
     MELE_IS_ACCESSIBLE,
+    MELE_EVNT_LINK_DISABLE,
     MELE_EVNT_COMM_DISABLE,
     MELE_EVNT_FLOWCTRL_DISABLE,
     MELE_EVNT_SUCCESS_DISABLE,
@@ -1283,6 +1297,10 @@ enum me_options {
  * accessible by the application.
  */
 #define PTL_ME_IS_ACCESSIBLE            (1<<MELE_IS_ACCESSIBLE)
+
+/*! Specifies that this match list entry should not generate a \c
+ * PTL_EVENT_LINK full event indicating the list entry successfully linked. */
+#define PTL_ME_EVENT_LINK_DISABLE       (1<<MELE_EVNT_LINK_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
@@ -1454,17 +1472,27 @@ typedef struct {
  *                 ptl_handle_me_t *    me_handle)
  * @brief Create a match list entry and append it to a portal table.
  * @details Creates a single match list entry. If \c PTL_PRIORITY_LIST or \c
- *      PTL_OVERFLOW is specified by \a ptl_list, this entry is appended to the
- *      end of the appropriate list specified by \a ptl_list associated with
- *      the portal table entry specified by \a pt_index for the portal table
- *      for \a ni_handle. If the list is currently uninitialized, the
+ *      PTL_OVERFLOW_LIST is specified by \a ptl_list, this entry is appended
+ *      to the end of the appropriate list specified by \a ptl_list associated
+ *      with the portal table entry specified by \a pt_index for the portal
+ *      table for \a ni_handle. If the list is currently uninitialized, the
  *      PtlMEAppend() function creates the first entry in the list.
  *
- *      When a match list entry is posted to the priority list, the overflow
- *      list is searched to see if a matching message has arrived prior to
- *      posting the match list entry. If so, a \c PTL_EVENT_PUT_OVERFLOW event
- *      is generated. No searching is performed when a match list entry is
- *      posted to the overflow list.
+ *      When a match list entry is posted to the priority list, the unexpected
+ *      list is searched to see if a matching message has been delivered in the
+ *      unexpected list prior to the posting of the match list entry. If so, an
+ *      appropriate overflow event is generated, the matching header is removed
+ *      from the unexpected list, and a match list entry with the \c
+ *      PTL_ME_USE_ONCE option is not inserted into the priority list. If a
+ *      persistent match list entry is posted to the priority list, it may
+ *      cause multiple overflow events to be generated, one for every matching
+ *      entry in the unexpected list. No permissions checking is performed on a
+ *      matching message in the unexpected list. No searching of the unexpected
+ *      list is performed when a match list entry is posted to the overflow
+ *      list. When the list entry has been linked (inserted) into the specified
+ *      list, a \c PTL_EVENT_LINK event is generated; a call to PtlMEAppend
+ *      will always result in either an overflow or \c PTL_EVENT_LINK event
+ *      being generated.
  *
  * @param[in] ni_handle     The interface handle to use.
  * @param[in] pt_index      The portal table index where the match list entry
@@ -1475,8 +1503,7 @@ typedef struct {
  *                          structure and the match list entry maintained by
  *                          the API.
  * @param[in] ptl_list      Determines whether the match list entry is appended
- *                          to the priority list, appended to the overflow
- *                          list, or simply queries the overflow list.
+ *                          to the priority list or the overflow list.
  * @param[in] user_ptr      A user-specified value that is associated with each
  *                          command that can generate an event. The value does
  *                          not need to be a pointer, but must fit in the space
@@ -1552,9 +1579,9 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
  *      is set to PTL_SEARCH_ONLY, the unexpected list is searched to support
  *      the MPI_Probe functionality. If ptl_search_op is set to
  *      PTL_SEARCH_DELETE, the unexpected list is searched and any matching
- *      items are deleted. A search of the overflow list will always generate
+ *      items are deleted. A search of the unexpected list will always generate
  *      an event. When used with PTL_SEARCH_ONLY, a PTL_EVENT_SEARCH event is
- *      always generated. If a matching message was found in the overflow list,
+ *      always generated. If a matching message was found in the unexpected list,
  *      PTL_NI_OK is returned in the event. Otherwise, the event indicates that
  *      the search operation failed. When used with PTL_SEARCH_DELETE, the
  *      event that is generated corresponds to the type of operation that is
@@ -2010,7 +2037,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
  * @details Initiates a remote read operation. There are two events associated
  *      with a get operation. When the data is sent from the \e target node if
  *      the message matched in the priority list. The message can also match in
- *      the overflow list, which will cause a \c PTL_EVENT_GET event to be
+ *      the unexpected list, which will cause a \c PTL_EVENT_GET event to be
  *      registered on the \e target node and will later cause a \c
  *      PTL_EVENT_GET_OVERFLOW to be registered on the \e target node when a
  *      matching entry is appended. In either case, when the data is returned
@@ -2572,6 +2599,10 @@ typedef enum {
      * entered a flow control situation. */
     PTL_EVENT_PT_DISABLED,
 
+    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() has successfully
+     * linked into the specified list. */
+    PTL_EVENT_LINK,
+
     /*! A list entry/match list entry was automatically unlinked. A \c
      * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match
      * list entry passed into the PtlLEAppend()/PtlMEAppend() operation was
@@ -2589,7 +2620,7 @@ typedef enum {
     PTL_EVENT_AUTO_FREE,
 
     /*! A PtlLESearch() or PtlMESearch() call completed. If a matching message was
-     * found in the overflow list, \c PTL_NI_OK is returned in the \a
+     * found in the unexpected list, \c PTL_NI_OK is returned in the \a
      * ni_fail_type field of the event and the event queue entries are filled
      * in as if it were an overflow event. Otherwise, a failure is recorded in
      * the \a ni_fail_type field using \c PTL_NI_NO_MATCH, the \a user_ptr is
@@ -2609,7 +2640,7 @@ typedef struct {
      * list entry or by the local memory descriptor.
      *
      * When the PtlMEAppend() call matches a message that has arrived in the
-     * overflow list, the start address points to the addres in the overflow
+     * unexpected list, the start address points to the address in the overflow
      * list where the matching message resides. This may require the
      * application to copy the message to the desired buffer.
      */

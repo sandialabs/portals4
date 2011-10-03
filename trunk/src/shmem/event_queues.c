@@ -263,6 +263,7 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
                 e->start              = ie.start;                                           \
             case PTL_EVENT_AUTO_UNLINK:                                     /* target */    \
             case PTL_EVENT_AUTO_FREE:                                       /* target */    \
+            case PTL_EVENT_LINK:                                            /* target */    \
                 e->user_ptr = ie.user_ptr;                                                  \
             case PTL_EVENT_PT_DISABLED:                                                     \
                 e->pt_index     = ie.pt_index;                                              \
