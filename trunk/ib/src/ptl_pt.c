@@ -1,10 +1,26 @@
-/*
- * ptl_pt.c
+/**
+ * @file ptl_pt.c
+ *
+ * This file contains the implementation of
+ * pt (portals table) class methods.
  */
 
 #include "ptl_loc.h"
 
-/* caller must hold a lock which protects the list */
+/**
+ * Get pt index.
+ *
+ * @pre caller should hold ni->pt_mutex
+ *
+ * @param[in] ni for which to get index
+ * @param[in] req requested index or PTL_PT_ANY
+ * @param[out] index_p address of returned value
+ *
+ * @return PTL_OK		on success
+ * @return PTL_PT_IN_USE	if req is already in use
+ * @return PTL_PT_FULL		if no index available
+ * @return PTL_ARG_INVALID	if req is out of range
+ */
 static int get_pt_index(ni_t *ni, ptl_pt_index_t req,
 			ptl_pt_index_t *index_p)
 {
@@ -44,6 +60,23 @@ done:
 	return PTL_OK;
 }
 
+/**
+ * Allocate pt entry.
+ *
+ * @param[in] ni_handle of ni for which to allocate entry
+ * @param[in] options for entry
+ * @param[in] eq_handle of eq to associate with entry or PTL_EQ_NONE
+ * @paran[in] pt_index_req requested pt index for entry or PTL_PT_ANY
+ * @param[out] pt_index address of return value
+ *
+ * @return PTL_OK		on success
+ * @return PTL_NO_INIT		if PtlInit has not been called
+ * @return PTL_PT_IN_USE	if req is already in use
+ * @return PTL_PT_FULL		if no index available
+ * @return PTL_PT_EQ_NEEDED	if pt is flow controlled and no eq is provided
+ * @return PTL_ARG_INVALID	if req is out of range, a handle is invalid,
+ * 				or options is not supported
+ */
 int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	       unsigned int options,
 	       ptl_handle_eq_t eq_handle,
@@ -121,6 +154,21 @@ err1:
 	return err;
 }
 
+/**
+ * Free pt entry.
+ *
+ * @pre pt entry must have been allocated by a call to PtlPTAlloc
+ *
+ * @param ni_handle of ni for which to free entry
+ * @param pt_entry of entry to free
+ *
+ * @return PTL_OK		on success
+ * @return PTL_NO_INIT		if PtlInit has not been called
+ * @return PTL_PT_IN_USE	if pt entry is busy, i.e. it has
+ * 				a list or matching element on one
+ * 				of its lists
+ * @return PTL_ARG_INVALID	if req is out of range or ni handle is invalid
+ */
 int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
@@ -180,6 +228,19 @@ err1:
 	return err;
 }
 
+/**
+ * Disable pt entry.
+ *
+ * @pre pt entry must have been allocated by a call to PtlPTAlloc
+ *
+ * @param ni_handle of ni for which to disable entry
+ * @param pt_index of entry to disable
+ *
+ * @return PTL_OK		on success
+ * @return PTL_NO_INIT		if PtlInit has not been called
+ * @return PTL_ARG_INVALID	if req is out of range, ni handle is invalid,
+ * 				or pt entry is not allocated
+ */
 int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
@@ -231,6 +292,19 @@ err1:
 	return err;
 }
 
+/**
+ * Enable pt entry.
+ *
+ * @pre pt entry must have been allocated by a call to PtlPTAlloc
+ *
+ * @param ni_handle of ni for which to enable entry
+ * @param pt_index of entry to enable
+ *
+ * @return PTL_OK		on success
+ * @return PTL_NO_INIT		if PtlInit has not been called
+ * @return PTL_ARG_INVALID	if req is out of range, ni handle is invalid,
+ * 				or pt entry is not allocated
+ */
 int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
