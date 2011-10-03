@@ -64,6 +64,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                         case PTL_EVENT_AUTO_UNLINK:           printf("UNLINK: "); break;
                         case PTL_EVENT_AUTO_FREE:             printf("FREE: "); break;
                         case PTL_EVENT_SEARCH:                printf("SEARCH: "); break;
+                        case PTL_EVENT_LINK:                  printf("LINK: "); break;
                     }
                 }
                 switch (event.type) {
@@ -115,6 +116,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                             printf("ni_fail_type(%u), ", (unsigned)event.ni_fail_type);
                         }
                         break;
+                    case PTL_EVENT_LINK:
                     case PTL_EVENT_AUTO_UNLINK:
                     case PTL_EVENT_AUTO_FREE:
                         /* target */
@@ -203,7 +205,7 @@ int main(int   argc,
 #endif
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &unexpected_e.ct_handle));
     CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &unexpected_e,
-                           PTL_OVERFLOW, (void *)2, &unexpected_e_handle));
+                           PTL_OVERFLOW_LIST, (void *)2, &unexpected_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();

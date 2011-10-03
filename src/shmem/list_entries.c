@@ -379,7 +379,7 @@ permission_violation:
             }
             t->priority.tail = Qentry;
             break;
-        case PTL_OVERFLOW:
+        case PTL_OVERFLOW_LIST:
             if (t->overflow.tail == NULL) {
                 t->overflow.head = Qentry;
             } else {
