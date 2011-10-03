@@ -1,9 +1,19 @@
-/*
- * ptl_mr.c
+/**
+ * @file ptl_buf.c
+ *
+ * This file contains the implementation of
+ * mr (memory region) class methods.
  */
 
 #include "ptl_loc.h"
 
+/**
+ * Cleanup mr object.
+ *
+ * Called when the mr object is freed to the mr pool.
+ *
+ * @param[in] arg opaque reference to an mr object
+ */
 void mr_cleanup(void *arg)
 {
 	int err;
@@ -23,16 +33,40 @@ void mr_cleanup(void *arg)
 	}
 }
 
-/* Order the MRs in the tree by start address. */
+/**
+ * Compare two mrs.
+ *
+ * mrs are sorted by starting address.
+ *
+ * @param[in] m1 first mr
+ * @param[in] m2 second mr
+ *
+ * @return -1, 0, or +1 as m1 address is <, == or > m2 address
+ */
 static int mr_compare(struct mr *m1, struct mr *m2)
 {
-	return (m1->ibmr->addr < m2->ibmr->addr ? -1 : m1->ibmr->addr > m2->ibmr->addr);
+	return (m1->ibmr->addr < m2->ibmr->addr ? -1 :
+		m1->ibmr->addr > m2->ibmr->addr);
 }
 
-/* Generate RB tree internal functions. */
+/**
+ * Generate RB tree internal functions.
+ */
 RB_GENERATE(the_root, mr, entry, mr_compare);
 
-/* Allocate and register a new memory region. */
+/**
+ * Allocate and register a new memory region.
+ *
+ * For the new mr both an OFA verbs memory region and
+ * a knem cookie are created.
+ *
+ * @param[in] ni from which to allocate mr
+ * @param[in] start starting address of memory region
+ * @param[in] length length of memory region
+ * @param[out] mr_p address of return value
+ *
+ * @return status
+ */ 
 static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	int err;
@@ -92,13 +126,24 @@ err1:
 	return err;
 }
 
-/* Returns an MR satisfying the requested start/length. A new MR can
+/**
+ * Lookup an mr in the mr cache.
+ *
+ * Returns an mr satisfying the requested start/length. A new mr can
  * be allocated, or an existing one can be used. It is also possible that
- * one or more existing MRs will be merged into one. */
+ * one or more existing mrs will be merged into one.
+ *
+ * @param[in] ni in which to lookup range
+ * @param[in] start starting address of memory range
+ * @param[in] length length of range
+ * @param[out] mr_p address of return value
+ *
+ * @return status
+ */ 
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	/*
-	 * Search for an existing MR. The start address of the node must
+	 * Search for an existing mr. The start address of the node must
 	 * be less than or equal to the start address of the requested
 	 * start. Find the closest start. 
 	 */
@@ -122,7 +167,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			link = RB_LEFT(mr, entry);
 		else {
 			if (mr->ibmr->addr+mr->ibmr->length >= start+length) {
-				/* Requested MR fits in an existing region. */
+				/* Requested mr fits in an existing region. */
 				mr_get(mr);
 				ret = 0;
 				*mr_p = mr;
@@ -156,13 +201,14 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		/* Check whether new region can be merged with this node. */
 		if (start+length >= rb->ibmr->addr) {
 			/* Is it completely part of the new region ? */
-			size_t new_length = rb->ibmr->addr + rb->ibmr->length - start;
+			size_t new_length = rb->ibmr->addr +
+				rb->ibmr->length - start;
 			if (new_length > length)
 				length = new_length;
 
 			if (mr) {
-				/* Remove the node since it will be included in the
-				 * new MR. */
+				/* Remove the node since it will be included
+				 * in the new mr. */
 				RB_REMOVE(the_root, &ni->mr_tree, rb);
 				mr_put(rb);
 			} else {
@@ -177,7 +223,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 
 	if (mr) {
-		/* Remove included MR on the right. */
+		/* Remove included mr on the right. */
 		RB_REMOVE(the_root, &ni->mr_tree, mr);
 		mr_put(mr);
 		mr = NULL;
@@ -196,7 +242,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		mr_get(mr);
 
 		res = RB_INSERT(the_root, &ni->mr_tree, mr);
-		assert(res == NULL);			/* should never happen */
+		assert(res == NULL);	/* should never happen */
 	}
 
  done:
@@ -205,7 +251,11 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	return ret;
 }
 
-/* Empty the tree of MRs. Called when the NI shuts down. */
+/**
+ * Empty the mr cache.
+ *
+ * @param[in] ni for which cache is emptied
+ */
 void cleanup_mr_tree(ni_t *ni)
 {
 	mr_t *mr;
