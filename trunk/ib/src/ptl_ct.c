@@ -246,6 +246,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	int err;
 	gbl_t *gbl;
 	ct_t *ct;
+	int nloops;
 
 	err = get_gbl(&gbl);
 	if (unlikely(err))
@@ -261,9 +262,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	}
 
 	err = PTL_OK;
-
-	/* Conditionally block until interrupted or CT test succeeds */
-	pthread_mutex_lock(&ct->mutex);
+	nloops = 100000;
 
 	while (!ct->event.failure) {
 		if ((ct->event.success) >= test) {
@@ -271,15 +270,25 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 				*event = ct->event;
 			break;
 		}
-
-		pthread_cond_wait(&ct->cond, &ct->mutex);
+		
+		if (nloops) {
+			/* Spin again. */
+			nloops --;
+			SPINLOCK_BODY();
+		} else {
+			/* Done spinning. Conditionally block until interrupted or
+			 * CT test succeeds */
+			pthread_mutex_lock(&ct->mutex);
+			if (!ct->event.failure && !ct->interrupt && ct->event.success < test)
+				pthread_cond_wait(&ct->cond, &ct->mutex);
+			pthread_mutex_unlock(&ct->mutex);
+		}
 
 		if (ct->interrupt) {
 			err = PTL_INTERRUPTED;
 			break;
 		}
 	}
-	pthread_mutex_unlock(&ct->mutex);
 
  err2:
 	ct_put(ct);
@@ -372,8 +381,10 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 
 			if (ct->event.success >= tests[j]) {
 				err = PTL_OK;
-				*event = ct->event;
-				*which = j;
+				if (event)
+					*event = ct->event;
+				if (which)
+					*which = j;
 				pthread_mutex_unlock(&ct->mutex);
 				goto done3;
 			}
