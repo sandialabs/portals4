@@ -292,17 +292,20 @@ static int pool_alloc_slab(pool_t *pool)
  * Cleanup an object pool.
  *
  * @param pool the pool to cleanup
+ *
+ * @return status
  */
-void pool_fini(pool_t *pool)
+int pool_fini(pool_t *pool)
 {
 	struct list_head *l, *t;
 	obj_t *obj;
 	chunk_t *chunk;
 	int i;
+	int err = PTL_OK;
 
 	/* avoid getting called from cleanup during PtlNIInit */
 	if (!pool->name)
-		return;
+		return err;
 
 	pthread_mutex_destroy(&pool->mutex);
 
@@ -314,7 +317,7 @@ void pool_fini(pool_t *pool)
 		 * so this would be a library bug
 		 */
 		ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
-		ptl_test_return = PTL_FAIL;
+		err = PTL_FAIL;
 	}
 
 	/*
@@ -350,6 +353,8 @@ void pool_fini(pool_t *pool)
 
 		free(chunk);
 	}
+
+	return err;
 }
 
 /**

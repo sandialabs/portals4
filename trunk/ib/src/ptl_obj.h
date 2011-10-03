@@ -200,7 +200,7 @@ void index_fini();
 int pool_init(pool_t *pool, char *name, int size,
 	      enum obj_type type, obj_t *parent);
 
-void pool_fini(pool_t *pool);
+int pool_fini(pool_t *pool);
 
 void obj_release(ref_t *ref);
 
