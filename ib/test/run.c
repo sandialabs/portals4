@@ -17,7 +17,7 @@ static ptl_handle_any_t get_handle(struct node_info *info, char *val)
 	else if (sscanf(val, "%2s[%d]", obj, &n) == 2) {
 		if (n < 0 || n >= STACK_SIZE) {
 			printf("invalid index n = %d\n", n);
-			handle =  0xffffffff;
+			handle =  0xffffffffU;
 		}
 		else if (!strcmp(obj, "md"))
 			handle =  info->md_stack[n];
@@ -35,7 +35,7 @@ static ptl_handle_any_t get_handle(struct node_info *info, char *val)
 			handle =  info->ct_stack[n];
 		else {
 			printf("invalid object %s\n", obj);
-			handle =  0xffffffff;
+			handle =  0xffffffffU;
 		}
 	} else {
 		char *endptr;
