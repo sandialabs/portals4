@@ -47,7 +47,7 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
             case PTL_OK:
                 events++;
                 if (verb) {
-                    printf("%i ", (int)myself.rank);
+                    printf("\t%i ", (int)myself.rank);
                     switch (event.type) {
                         case PTL_EVENT_GET:                   printf("GET: "); break;
                         case PTL_EVENT_GET_OVERFLOW:          printf("GET-OVERFLOW: "); break;
@@ -206,6 +206,12 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &unexpected_e.ct_handle));
     CHECK_RETURNVAL(APPEND(ni_logical, logical_pt_index, &unexpected_e,
                            PTL_OVERFLOW_LIST, (void *)2, &unexpected_e_handle));
+    /* expecting one LINK event */
+    if (verb) {
+        printf("Posting the unexpected buffer to the overflow list:\n    Target-side EQ:\n");
+    }
+    emptyEQ(recv_eq, myself, 1);
+
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     runtime_barrier();
@@ -232,20 +238,18 @@ int main(int   argc,
         assert(ctc.success == 1);
     }
     fflush(NULL);
-    {
-        if (verb) {
-            printf("Initiator-side EQ:\n");
-        }
-        emptyEQ(write_md.eq_handle, myself, 1);
-        assert(emptyEQ(write_md.eq_handle, myself, 0) == 0);
-        if (verb) {
-            printf("\nTarget-side EQ:\n");
-        }
-        emptyEQ(recv_eq, myself, 1);
-        assert(emptyEQ(recv_eq, myself, 0) == 0);
-    }
     if (verb) {
-        printf("\nNow... posting the receive:\n");
+        printf("-=-=-=-=-=-=-=-=-=-=-\nSending the unexpected put...\n    Initiator-side EQ:\n");
+    }
+    emptyEQ(write_md.eq_handle, myself, 1);
+    assert(emptyEQ(write_md.eq_handle, myself, 0) == 0);
+    if (verb) {
+        printf("    Target-side EQ:\n");
+    }
+    emptyEQ(recv_eq, myself, 1);
+    assert(emptyEQ(recv_eq, myself, 0) == 0);
+    if (verb) {
+        printf("-=-=-=-=-=-=-=-=-=-=-\nNow... posting the receive:\n");
     }
     fflush(NULL);
     recvval       = 0;
@@ -266,12 +270,12 @@ int main(int   argc,
     {
         size_t count_events;
         if (verb) {
-            printf("\nInitiator-side EQ:\n");
+            printf("    Initiator-side EQ:\n");
         }
         count_events = emptyEQ(write_md.eq_handle, myself, 0);
         assert(count_events == 0);
         if (verb) {
-            printf("\nTarget-side EQ:\n");
+            printf("    Target-side EQ:\n");
         }
         count_events = emptyEQ(recv_eq, myself, 3);
         assert(count_events == 3);
