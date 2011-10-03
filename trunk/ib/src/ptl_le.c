@@ -280,12 +280,11 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 							   ptl_handle_le_t *le_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 	le_t *le = le;
 	pt_t *pt;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -375,7 +374,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
  done:
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
  err3:
@@ -383,7 +382,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
  err2:
 	ni_put(ni);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -412,9 +411,8 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 {
 	int err;
 	le_t *le;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -425,10 +423,10 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	le_unlink(le, 0);
 
 	le_put(le);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }

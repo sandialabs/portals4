@@ -124,9 +124,8 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 	int err;
 	ni_t *ni;
 	md_t *md;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (err) {
 		WARN();
 		return err;
@@ -215,7 +214,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 	*md_handle = md_to_handle(md);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -223,7 +222,7 @@ err3:
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -231,9 +230,8 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 {
 	int err;
 	md_t *md;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -262,10 +260,10 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 
 	md_put(md);	/* from to_md */
 	md_put(md);	/* from alloc_md */
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }

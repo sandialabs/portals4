@@ -115,11 +115,10 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 	       ptl_handle_ct_t *ct_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 	ct_t *ct;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -157,7 +156,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle,
 	*ct_handle = ct_to_handle(ct);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -165,18 +164,17 @@ err3:
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
 int PtlCTFree(ptl_handle_ct_t ct_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -200,11 +198,11 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 
 	ct_put(ct);
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -212,10 +210,9 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
 	     ptl_ct_event_t *event)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -231,11 +228,11 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
 	*event = ct->event;
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -244,11 +241,10 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 	      ptl_ct_event_t *event)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	int nloops;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -293,7 +289,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
  err2:
 	ct_put(ct);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -305,14 +301,13 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 			  unsigned int *which)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni = NULL;
 	ct_t **cts = NULL;
 	struct timespec expire;
 	int i;
 	int j;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -415,7 +410,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles,
 	if (cts)
 		free(cts);
 
-	gbl_put(gbl);
+	gbl_put();
 
 	return err;
 }
@@ -425,11 +420,10 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 				  int do_lock)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -454,11 +448,11 @@ static int PtlCTSet_lock(ptl_handle_ct_t ct_handle,
 		pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -473,7 +467,6 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 						 int do_lock)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	ni_t *ni;
 
@@ -482,7 +475,7 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 		return PTL_ARG_INVALID;
 #endif
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -508,11 +501,11 @@ static int PtlCTInc_lock(ptl_handle_ct_t ct_handle,
 		pthread_mutex_unlock(&ni->ct_wait_mutex);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -525,13 +518,12 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
 int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	ni_t *ni;
 	struct list_head *l;
 	struct list_head *t;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -578,6 +570,6 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	ct_put(ct);
 	
  err1:
- 	gbl_put(gbl);
+ 	gbl_put();
  	return err;
 }

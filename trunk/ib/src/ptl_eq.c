@@ -30,11 +30,10 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	       ptl_handle_eq_t *eq_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 	eq_t *eq;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -78,7 +77,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	*eq_handle = eq_to_handle(eq);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -86,7 +85,7 @@ err3:
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -98,11 +97,10 @@ PTL_ARG_INVALID
 int PtlEQFree(ptl_handle_eq_t eq_handle)
 {
 	int err;
-	gbl_t *gbl;
 	eq_t *eq;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -130,11 +128,11 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 
 	eq_put(eq);
 	eq_put(eq);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -168,10 +166,9 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	     ptl_event_t *event)
 {
 	int err;
-	gbl_t *gbl;
 	eq_t *eq;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -186,11 +183,11 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 
 	err = get_event(eq, event);
 	eq_put(eq);
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -198,11 +195,10 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	      ptl_event_t *event)
 {
 	int ret;
-	gbl_t *gbl;
 	eq_t *eq;
 	ni_t *ni;
 
-	ret = get_gbl(&gbl);
+	ret = get_gbl();
 	if (unlikely(ret))
 		return ret;
 
@@ -242,11 +238,11 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 
 done:
 	eq_put(eq);
-	gbl_put(gbl);
+	gbl_put();
 	return ret;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return ret;
 }
 
@@ -257,14 +253,13 @@ int PtlEQPoll(ptl_handle_eq_t *eq_handles,
 	      unsigned int *which)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni = NULL;
 	eq_t **eq = NULL;
 	struct timespec expire;
 	int i;
 	int last_eq;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -348,7 +343,7 @@ done:
 	if (eq)
 		free(eq);
 
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
