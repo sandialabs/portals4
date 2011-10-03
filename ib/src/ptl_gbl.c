@@ -15,7 +15,7 @@
  * acquire proc_gbl_mutex before making changes
  * that require atomicity
  */
-static gbl_t per_proc_gbl;
+gbl_t per_proc_gbl;
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 unsigned int pagesize;
@@ -29,7 +29,7 @@ static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 	ev_break(evl.loop, EVBREAK_ALL);
 }
 
-static void gbl_release(ref_t *ref)
+void gbl_release(ref_t *ref)
 {
 	gbl_t *gbl = container_of(ref, gbl_t, ref);
 
@@ -81,11 +81,10 @@ static void dump_xi(xi_t *xi)
 static void dump_everything(int unused)
 {
 	int i, j, k;
-	gbl_t *gbl;
 
 	printf("Dumping gbl\n");
 	
-	get_gbl(&gbl);
+	get_gbl();
 
 	for (i=0; i<gbl->num_iface; i++) {
 
@@ -209,7 +208,7 @@ static void dump_everything(int unused)
 		}
 	}
 
-	gbl_put(gbl);
+	gbl_put();
 }
 #endif
 
@@ -257,24 +256,6 @@ static int gbl_init(gbl_t *gbl)
 err:
 	pthread_mutex_destroy(&gbl->gbl_mutex);
 	return err;
-}
-
-int get_gbl(gbl_t **gbl_p)
-{
-	gbl_t *gbl = &per_proc_gbl;
-
-	if (gbl->ref_cnt == 0)
-		return PTL_NO_INIT;
-
-	ref_get(&gbl->ref);
-
-	*gbl_p = gbl;
-	return PTL_OK;
-}
-
-void gbl_put(gbl_t *gbl)
-{
-	ref_put(&gbl->ref, gbl_release);
 }
 
 int PtlInit(void)

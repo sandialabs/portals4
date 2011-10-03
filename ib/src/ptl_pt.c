@@ -87,10 +87,9 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt_t *pt;
 	ni_t *ni;
 	ptl_pt_index_t index = 0;
-	gbl_t *gbl;
 	eq_t *eq;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -142,7 +141,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	*pt_index = index;
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -150,7 +149,7 @@ err3:
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -174,9 +173,8 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	int err;
 	ni_t *ni;
 	pt_t *pt;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -218,13 +216,13 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	pthread_mutex_unlock(&ni->pt_mutex);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -246,9 +244,8 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	int err;
 	ni_t *ni;
 	pt_t *pt;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -282,13 +279,13 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	pthread_spin_unlock(&pt->lock);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -310,9 +307,8 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	int err;
 	ni_t *ni;
 	pt_t *pt;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -344,12 +340,12 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	pthread_spin_unlock(&pt->lock);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }

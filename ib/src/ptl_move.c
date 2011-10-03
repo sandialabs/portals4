@@ -132,12 +132,11 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t remote_offset, void *user_ptr, ptl_hdr_data_t hdr_data)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -185,13 +184,13 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	process_init(xi);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -203,13 +202,12 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -271,7 +269,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	post_ct(xi, ct);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -279,7 +277,7 @@ err3:
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -337,12 +335,11 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t remote_offset, void *user_ptr)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -371,13 +368,13 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	process_init(xi);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -388,13 +385,12 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -436,7 +432,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	post_ct(xi, ct);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -444,7 +440,7 @@ err3:
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -546,12 +542,11 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -597,13 +592,13 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	process_init(xi);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -616,13 +611,12 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		       ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -680,7 +674,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	post_ct(xi, ct);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -688,7 +682,7 @@ err3:
 err2:
 	md_put(md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -701,13 +695,12 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		   ptl_datatype_t atom_type)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -784,7 +777,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	process_init(xi);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -792,7 +785,7 @@ err3:
 err2:
 	md_put(get_md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -809,14 +802,13 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 			    ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	xi_t *xi;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -907,7 +899,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	post_ct(xi, ct);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err4:
@@ -917,16 +909,15 @@ err3:
 err2:
 	md_put(get_md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
 int PtlAtomicSync(void)
 {
 	int err;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -935,7 +926,7 @@ int PtlAtomicSync(void)
 	/* TODO */
 	err = PTL_OK;
 
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1023,14 +1014,13 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	    ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
 	xi_t *xi;
 	uint64_t opval = 0;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1116,7 +1106,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	process_init(xi);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err3:
@@ -1124,7 +1114,7 @@ err3:
 err2:
 	md_put(get_md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1138,7 +1128,6 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		     ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
@@ -1146,7 +1135,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	xi_t *xi;
 	uint64_t opval = 0;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1246,7 +1235,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	post_ct(xi, ct);
 
 	ct_put(ct);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err4:
@@ -1256,7 +1245,7 @@ err3:
 err2:
 	md_put(get_md);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1266,11 +1255,10 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
                       ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	xl_t *xl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -1295,7 +1283,7 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 	ct_put(ct);
 
  err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 	
@@ -1305,11 +1293,10 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
                       ptl_size_t threshold)
 {
 	int err;
-	gbl_t *gbl;
 	ct_t *ct;
 	xl_t *xl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -1334,7 +1321,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 	ct_put(ct);
 	
  err1:
- 	gbl_put(gbl);
+ 	gbl_put();
  	return err;
 }
 
@@ -1348,10 +1335,9 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
 int PtlStartBundle(ptl_handle_ni_t ni_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1372,12 +1358,12 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	/* TODO implement start bundle */
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1391,10 +1377,9 @@ err1:
 int PtlEndBundle(ptl_handle_ni_t ni_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1415,11 +1400,11 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	/* TODO implement end bundle */
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }

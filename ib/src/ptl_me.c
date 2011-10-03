@@ -78,12 +78,11 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 							   ptl_handle_me_t *me_handle)
 {
 	int err;
-	gbl_t *gbl;
 	ni_t *ni;
 	me_t *me = me;
 	pt_t *pt;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -191,7 +190,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
  done:
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
  err3:
@@ -199,7 +198,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
  err2:
 	ni_put(ni);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -228,9 +227,8 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 {
 	int err;
 	me_t *me;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -249,10 +247,10 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	le_unlink((le_t *)me, 0);
 
 	me_put(me);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }

@@ -47,6 +47,9 @@ typedef struct gbl {
 	pool_t			ni_pool;
 } gbl_t;
 
+extern gbl_t per_proc_gbl;
+extern void gbl_release(ref_t *ref);
+
 /*
  * get_gbl()
  *	get a reference to per process global state
@@ -59,7 +62,16 @@ typedef struct gbl {
  *	PTL_OK			success, gbl contains address of per_proc_gbl
  *	PTL_NO_INIT		failure, per_proc_gbl is not in init state
  */
-int get_gbl(gbl_t **gbl_p);
+static inline int get_gbl(void)
+{
+#ifndef NO_ARG_VALIDATION
+	if (unlikely(per_proc_gbl.ref_cnt == 0))
+		return PTL_NO_INIT;
+
+	ref_get(&per_proc_gbl.ref);
+#endif
+	return PTL_OK;
+}
 
 /*
  * gbl_put()
@@ -72,7 +84,12 @@ int get_gbl(gbl_t **gbl_p);
  * Return Value
  *	none
  */
-void gbl_put(gbl_t *gbl);
+static inline void gbl_put(void)
+{
+#ifndef NO_ARG_VALIDATION
+	ref_put(&per_proc_gbl.ref, gbl_release);
+#endif
+}
 
 struct ni *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type);
 

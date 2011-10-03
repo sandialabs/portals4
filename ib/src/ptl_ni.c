@@ -683,11 +683,10 @@ static void process_async(EV_P_ ev_io *w, int revents)
 	ni_t *ni = w->data;
 	struct ibv_async_event event;
 	int err;
-	gbl_t *gbl;
 
 	return;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		return;
 	}
@@ -703,7 +702,7 @@ static void process_async(EV_P_ ev_io *w, int revents)
 	/* Ack the event */
 	ibv_ack_async_event(&event);
 
-	gbl_put(gbl);
+	gbl_put();
 }
 
 static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
@@ -768,11 +767,11 @@ int PtlNIInit(ptl_interface_t   iface_id,
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl;
 	int ni_type;
 	iface_t *iface;
+	gbl_t *gbl = &per_proc_gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -931,7 +930,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 
 	*ni_handle = ni_to_handle(ni);
 
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
  err3:
@@ -939,7 +938,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
  err2:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -949,12 +948,11 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl;
 	iface_t *iface;
 	int length;
 	int i;
   
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -1023,13 +1021,13 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	}
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
  err2:	
 	ni_put(ni);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 
 	return PTL_ARG_INVALID;
 }
@@ -1041,9 +1039,8 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl;
   
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -1069,13 +1066,13 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	*actual_map_size = map_size;
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
  err2:	
 	ni_put(ni);
  err1:
-	gbl_put(gbl);
+	gbl_put();
 
 	return PTL_ARG_INVALID;
 }
@@ -1143,9 +1140,9 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl;
+	gbl_t *gbl = &per_proc_gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -1168,13 +1165,13 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 	pthread_mutex_unlock(&gbl->gbl_mutex);
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err2:
 	ni_put(ni);
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1183,9 +1180,8 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -1206,11 +1202,11 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 	*status = ni->status[index];
 
 	ni_put(ni);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
 
@@ -1218,9 +1214,8 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 {
 	obj_t *obj;
 	int err;
-	gbl_t *gbl;
 
-	err = get_gbl(&gbl);
+	err = get_gbl();
 	if (unlikely(err))
 		return err;
 
@@ -1236,10 +1231,10 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	*ni_handle = ni_to_handle(obj_to_ni(obj));
 
 	obj_put(obj);
-	gbl_put(gbl);
+	gbl_put();
 	return PTL_OK;
 
 err1:
-	gbl_put(gbl);
+	gbl_put();
 	return err;
 }
