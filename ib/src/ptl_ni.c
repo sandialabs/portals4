@@ -529,7 +529,7 @@ static int init_pools(ni_t *ni)
 	ni->sbuf_pool.cleanup = buf_cleanup;
 	ni->sbuf_pool.use_pre_alloc_buffer = 1;
 	ni->sbuf_pool.round_size = real_buf_t_size();
-	ni->sbuf_pool.segment_size = ni->shmem.per_proc_comm_buf_numbers * ni->sbuf_pool.round_size;
+	ni->sbuf_pool.slab_size = ni->shmem.per_proc_comm_buf_numbers * ni->sbuf_pool.round_size;
 
 	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
 					POOL_SBUF, (obj_t *)ni);
@@ -951,7 +951,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	iface_t *iface;
 	int length;
 	int i;
-  
+
 	err = get_gbl();
 	if (unlikely(err)) {
 		return err;
@@ -1019,6 +1019,8 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		WARN();
 		goto err2;
 	}
+
+	PtlNIInit_shmem_part2(ni);
 
 	ni_put(ni);
 	gbl_put();

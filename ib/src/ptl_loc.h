@@ -265,7 +265,8 @@ size_t knem_copy(ni_t * ni,
 				 uint64_t scookie, uint64_t soffset, 
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
-int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
+extern int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
+extern int PtlNIInit_shmem_part2(ni_t *ni);
 void cleanup_shmem(ni_t *ni);
 #else
 static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
@@ -274,6 +275,7 @@ static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int p
 }
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
 static inline int PtlNIInit_shmem(iface_t *iface, ni_t *ni) { return PTL_OK; }
+static inline int PtlNIInit_shmem_part2(ni_t *ni) { return PTL_OK; }
 static inline void cleanup_shmem(ni_t *ni) { }
 
 #endif

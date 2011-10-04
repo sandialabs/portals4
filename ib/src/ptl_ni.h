@@ -106,6 +106,8 @@ typedef struct ni {
 		int knem_fd;
 		struct NEMESIS_blocking_queue *receiveQ;
 		pthread_t shmem_catcher;
+		int has_shmem_catcher;
+		char *comm_pad_shm_name;
 	} shmem;
 
 	/* object allocation pools */
