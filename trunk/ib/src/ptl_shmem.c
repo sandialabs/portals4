@@ -298,7 +298,10 @@ static void PtlInternalDMTeardown(ni_t *ni)
 	buf->type = BUF_SHMEM_STOP;
 	PtlInternalFragmentToss(ni, buf, ni->shmem.local_rank);
 
-	ptl_assert(pthread_join(ni->shmem.shmem_catcher, NULL), 0);
+	if (ni->shmem.has_shmem_catcher) {
+		ptl_assert(pthread_join(ni->shmem.shmem_catcher, NULL), 0);
+		ni->shmem.has_shmem_catcher = 0;
+	}
 }
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do {							\
@@ -334,18 +337,20 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		ptl_warn("Environment variable OMPI_MCA_orte_ess_jobid missing\n"); 
 		goto exit_fail;
 	}
-	snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name), "/portals4-shmem-%s", env);
+	snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name), "/portals4-shmem-%s-%d", env, ni->options);
+	ni->shmem.comm_pad_shm_name = strdup(comm_pad_shm_name);
 
 	/* Allocate a pool of buffers in the mmapped region. */
 	ni->shmem.per_proc_comm_buf_size =
 		sizeof(NEMESIS_blocking_queue) +
-		ni->sbuf_pool.segment_size;
+		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
 		(ni->shmem.per_proc_comm_buf_size * (ni->shmem.num_siblings + 1));                  // the one extra is for the collator
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == NULL);
+
 	if (ni->shmem.local_rank == 0) {
 		/* Just in case, remove that file if it already exist. */
 		shm_unlink(comm_pad_shm_name);
@@ -401,6 +406,26 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 
 	PtlInternalFragmentSetup(ni);
 
+	return PTL_OK;
+
+ exit_fail:
+	if (shm_fd != -1)
+		close(shm_fd);
+
+	if (comm_pad_shm_name[0] != 0)
+		shm_unlink(comm_pad_shm_name);
+
+    return PTL_FAIL;
+}
+
+/* Finish the initialization. This can only be done once we know the
+ * mapping. */
+int PtlNIInit_shmem_part2(ni_t *ni)
+{
+	int i;
+	struct shmem_pid_table *ptable;
+	int ret;
+
 	/* Can Now Announce My Presence. */
 
 	/* The PID table is a the beginning of the comm pad. 
@@ -427,6 +452,7 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		conn = get_conn(ni, &ptable[i].id);
 		if (!conn) {
 			/* It's hard to recover from here. */
+			ret = PTL_FAIL;
 			goto exit_fail;
 		}
 
@@ -437,21 +463,18 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 
 	/* Create the thread that will wait on the receive queue. */
 	ptl_assert(pthread_create(&ni->shmem.shmem_catcher, NULL, PtlInternalDMCatcher, ni), 0);
+	ni->shmem.has_shmem_catcher = 1;
 
-	/* Destroy the mmaped file so it doesn't pollute. All ranks try it
-	 * in case rank 0 died. */
-	shm_unlink(comm_pad_shm_name);
-
-	return PTL_OK;
+	ret = PTL_OK;
 
  exit_fail:
-	if (shm_fd != -1)
-		close(shm_fd);
+	/* Destroy the mmaped file so it doesn't pollute. All ranks try it
+	 * in case rank 0 died. */
+	shm_unlink(ni->shmem.comm_pad_shm_name);
+	free(ni->shmem.comm_pad_shm_name);
+	ni->shmem.comm_pad_shm_name = NULL;
 
-	if (comm_pad_shm_name[0] != 0)
-		shm_unlink(comm_pad_shm_name);
-
-    return PTL_FAIL;
+	return ret;
 }
 
 void cleanup_shmem(ni_t *ni)
