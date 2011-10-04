@@ -192,6 +192,9 @@ int main(int   argc,
                             case PTL_EVENT_SEARCH:
                                 printf("SEARCH: ");
                                 break;
+                            case PTL_EVENT_LINK:
+                                printf("LINK: ");
+                                break;
                         }
                     }
                     switch (event.type) {
@@ -207,6 +210,7 @@ int main(int   argc,
                         case PTL_EVENT_AUTO_UNLINK:
                         case PTL_EVENT_AUTO_FREE:
                         case PTL_EVENT_SEARCH:
+                        case PTL_EVENT_LINK:
                             /* target */
                             assert(myself.rank == 0);
                             if (verb) {
