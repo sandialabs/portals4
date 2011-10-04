@@ -315,6 +315,7 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
     } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
     /* second, read from the queue with the offset I got from leading_head */
     ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
+    __sync_synchronize();
     /* third, wait for the lagging_head to catch up */
     while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
@@ -369,6 +370,7 @@ loopstart:
     } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
     /* second, read from the queue with the offset I got from leading_head */
     ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
+    __sync_synchronize();
     /* third, wait for the lagging_head to catch up */
     while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
@@ -459,6 +461,7 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
             } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
             /* second, read from the queue with the offset I got from leading_head */
             ASSIGN_EVENT(event, eq->ring[readidx.s.offset], ni);
+            __sync_synchronize();
             /* third, wait for the lagging_head to catch up */
             while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
             /* and finally, push the lagging_head along */
