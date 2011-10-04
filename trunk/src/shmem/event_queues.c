@@ -317,14 +317,9 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
     ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
     __sync_synchronize();
     /* third, wait for the lagging_head to catch up */
-    while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+    while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
-    curidx = eq->lagging_head;
-    do {
-        readidx = curidx;
-        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
-        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
+    eq->lagging_head = newidx;
     PtlInternalPAPIDoneC(PTL_EQ_GET, 0);
     return PTL_OK;
 } /*}}}*/
@@ -372,14 +367,9 @@ loopstart:
     ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
     __sync_synchronize();
     /* third, wait for the lagging_head to catch up */
-    while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+    while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
-    curidx = eq->lagging_head;
-    do {
-        readidx = curidx;
-        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
-        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
+    eq->lagging_head = newidx;
     PtlInternalAtomicInc(rc, -1);
     return PTL_OK;
 } /*}}}*/
@@ -463,14 +453,9 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
             ASSIGN_EVENT(event, eq->ring[readidx.s.offset], ni);
             __sync_synchronize();
             /* third, wait for the lagging_head to catch up */
-            while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+            while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
             /* and finally, push the lagging_head along */
-            curidx = eq->lagging_head;
-            do {
-                readidx = curidx;
-                newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
-                newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
-            } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
+            eq->lagging_head = newidx;
 
             for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
             *which = (unsigned int)newidx.s.offset;
@@ -494,12 +479,14 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
+        while (((curidx.s.offset+1) & mask) == eq->lagging_head.s.offset) {
+            SPINLOCK_BODY();
+            curidx = eq->leading_tail;
+        }
         writeidx          = curidx;
         newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
         newidx.s.offset   = (uint16_t)((writeidx.s.offset + 1) & mask);
-    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u,
-                                                writeidx.u,
-                                                newidx.u)) != writeidx.u);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u, newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish
@@ -522,12 +509,14 @@ void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
+        while (((curidx.s.offset+1) & mask) == eq->lagging_head.s.offset) {
+            SPINLOCK_BODY();
+            curidx = eq->leading_tail;
+        }
         writeidx          = curidx;
         newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
         newidx.s.offset   = (uint16_t)((writeidx.s.offset + 1) & mask);
-    } while ((curidx.u =
-                  PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
-                                         newidx.u)) != writeidx.u);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u, newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset].type          = PTL_EVENT_SEND;
     eq->ring[writeidx.s.offset].mlength       = length;
