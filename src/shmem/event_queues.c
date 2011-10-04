@@ -273,8 +273,8 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
                 e->mlength       = ie.mlength;                                              \
                 e->remote_offset = ie.remote_offset;                                        \
             case PTL_EVENT_SEND:                                                            \
-                e->user_ptr      = ie.user_ptr;                                             \
-                e->ni_fail_type  = ie.ni_fail_type;                                         \
+                e->user_ptr     = ie.user_ptr;                                              \
+                e->ni_fail_type = ie.ni_fail_type;                                          \
                 break;                                                                      \
         }                                                                                   \
 } while (0) /*}}}*/
@@ -470,9 +470,9 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
         writeidx          = curidx;
         newidx.s.sequence = (uint16_t)(writeidx.s.sequence + 23);
         newidx.s.offset   = (uint16_t)((writeidx.s.offset + 1) & mask);
-    } while ((curidx.u =
-                  PtlInternalAtomicCas32(&eq->leading_tail.u, writeidx.u,
-                                         newidx.u)) != writeidx.u);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_tail.u,
+                                                writeidx.u,
+                                                newidx.u)) != writeidx.u);
     // at this point, we have a writeidx offset to fill
     eq->ring[writeidx.s.offset] = *event;
     // now, wait for our neighbor to finish
