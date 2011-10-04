@@ -12,7 +12,7 @@
 static ptl_pt_index_t logical_pt_index;
 static uint64_t       value;
 static ptl_process_t  myself;
-static char            verb = 0;
+static char           verb = 0;
 
 enum {
     evnt_atomic_type,

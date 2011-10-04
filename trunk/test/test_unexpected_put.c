@@ -178,8 +178,8 @@ int main(int   argc,
     unexpected_buf = malloc(sizeof(unsigned char) * BUFSIZE);
 
     assert(unexpected_buf);
-    // printf("unexpected_buf = %p\n", unexpected_buf);
-    // printf("recvval = %p\n", &recvval);
+    printf("unexpected_buf = %p\n", unexpected_buf);
+    printf("recvval = %p\n", &recvval);
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
@@ -214,6 +214,7 @@ int main(int   argc,
 
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
+    printf("runtime_barrier()\n");
     runtime_barrier();
 
     /* now I can communicate between ranks with ni_logical */
