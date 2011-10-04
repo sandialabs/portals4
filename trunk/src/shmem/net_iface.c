@@ -71,8 +71,8 @@ static int64_t PtlInternalGetShmPid(int pid)
         if (shmid != -1) {
             uint64_t the_owner;
             comm_shmids[pid] = shmid;
-            comm_pads[pid] = shmat(shmid, NULL, 0);
-            the_owner      = comm_pads[pid]->owner;
+            comm_pads[pid]   = shmat(shmid, NULL, 0);
+            the_owner        = comm_pads[pid]->owner;
             if ((the_owner == getpid()) || (kill(the_owner, 0) == -1)) {
                 if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, getpid()) == the_owner) {
                     /* it's mine! */
@@ -81,14 +81,14 @@ static int64_t PtlInternalGetShmPid(int pid)
                 }
             }
             shmdt(comm_pads[pid]);
-            comm_pads[pid] = NULL;
+            comm_pads[pid]   = NULL;
             comm_shmids[pid] = -1;
             return -1;
         }
     } else {
         // attach
         comm_shmids[pid] = shmid;
-        comm_pads[pid] = shmat(shmid, NULL, 0);
+        comm_pads[pid]   = shmat(shmid, NULL, 0);
         assert(comm_pads[pid] != NULL);
         {
             uint64_t the_owner = comm_pads[pid]->owner;
@@ -101,7 +101,7 @@ static int64_t PtlInternalGetShmPid(int pid)
             }
             /* it must have been "recovered" out from under me :P */
             shmdt(comm_pads[pid]);
-            comm_pads[pid] = NULL;
+            comm_pads[pid]   = NULL;
             comm_shmids[pid] = -1;
             return -1;
         }
@@ -118,7 +118,7 @@ void INTERNAL PtlInternalMapInPid(int pid)
         VERBOSE_ERROR("failure to shmget pid %i\n", pid);
         return;
     }
-    comm_pads[pid] = shmat(shmid, NULL, 0);
+    comm_pads[pid]   = shmat(shmid, NULL, 0);
     comm_shmids[pid] = shmid;
 }
 
@@ -275,7 +275,7 @@ int API_FUNC PtlNIInit(ptl_interface_t  iface,
             nit_limits[ni.s.ni].max_volatile_size = desired->max_volatile_size;
         }
         nit_limits[ni.s.ni].features = PTL_TARGET_BIND_INACCESSIBLE | PTL_TOTAL_DATA_ORDERING;
-        nit_limits_init[ni.s.ni] = 2;           // mark it as done being initialized
+        nit_limits_init[ni.s.ni]     = 2;       // mark it as done being initialized
     }
     PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 2);   /* if not yet initialized, it is now */
     while (nit_limits_init[ni.s.ni] == 1) SPINLOCK_BODY();     /* if being initialized by another thread, wait for it to be initialized */
@@ -289,7 +289,7 @@ shmid_gen:
         if (my_shmid < 0) { goto shmid_gen; }
     } else {
         memset(comm_pads, 0, sizeof(struct rank_comm_pad *) * PTL_PID_MAX);
-        for (int i=0; i< PTL_PID_MAX; ++i) comm_shmids[i] = -1;
+        for (int i = 0; i < PTL_PID_MAX; ++i) comm_shmids[i] = -1;
         if ((pid == PTL_PID_ANY) && (proc_number != PTL_PID_ANY)) {
             pid = proc_number;
         }
