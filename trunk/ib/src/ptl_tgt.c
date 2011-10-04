@@ -46,9 +46,8 @@ static int make_comm_event(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
-	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
+	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE))
 		make_target_event(xt, xt->pt->eq, type, xt->le->user_ptr, xt->le->start+xt->moffset);
-	}
 
 	xt->event_mask &= ~XT_COMM_EVENT;
 
@@ -330,6 +329,7 @@ static int check_match(const xt_t *xt, const me_t *me)
 /*
  * check_perm
  *	check permission on incoming request packet against ME/LE
+ * Returns 0 for permission granted, else an error code
  */
 static int check_perm(const xt_t *xt, const le_t *le)
 {
@@ -1529,6 +1529,8 @@ static int tgt_cleanup(xt_t *xt)
 		xt->pt->enabled = 0;
 		xt->pt->disable &= ~PT_AUTO_DISABLE;
 		pthread_spin_unlock(&xt->pt->lock);
+
+		// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
 		make_target_event(xt, xt->pt->eq, PTL_EVENT_PT_DISABLED,
 						  xt->matching.le ? xt->matching.le->user_ptr : NULL, NULL);
 	} else
@@ -1559,9 +1561,16 @@ static int tgt_overflow_event(xt_t *xt)
 			break;
 
 		case OP_ATOMIC:
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			break;
+
 		case OP_FETCH:
 		case OP_SWAP:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_FETCH_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			break;
+
+		case OP_GET:
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_GET_OVERFLOW, xt->matching.le->user_ptr, xt->start);
 			break;
 
 		default:
@@ -1571,7 +1580,9 @@ static int tgt_overflow_event(xt_t *xt)
 			break;
 		}
 
-		if (le->options & PTL_LE_EVENT_CT_OVERFLOW && le->ct)
+		/* Update the counter if we can. If LE comes from PtlLESearch,
+		 * then ct is NULL. */
+		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
 			make_ct_event(le->ct, xt->ni_fail, xt->mlength, 1);
 	}
 
@@ -1713,19 +1724,23 @@ int process_tgt(xt_t *xt)
 /* Matches an ME/LE against entries in the unexpected list. 
  * PT lock must be taken.
  */
-static void match_le_unexpected(const le_t *le, struct list_head *xt_list)
+static void match_le_unexpected(const le_t *le, int dont_check_perm, 
+								struct list_head *xt_list)
 {
 	xt_t *xt;
 	xt_t *n;
 	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
 	int no_matching = le->obj.obj_ni->options & PTL_NI_NO_MATCHING;
 
+	assert(pthread_spin_trylock(&pt->lock) != 0);
+
 	INIT_LIST_HEAD(xt_list);
 
 	/* Check this new LE against the overflowlist. */
 	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
 
-		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+		if ((no_matching || check_match(xt, (me_t *)le)) &&
+			(dont_check_perm || !check_perm(xt, le))) {
 			list_del(&xt->unexpected_list);
 			list_add_tail(&xt->unexpected_list, xt_list);
 
@@ -1752,7 +1767,7 @@ int check_overflow(le_t *le)
 
 	assert(pthread_spin_trylock(&pt->lock) != 0);
 
-	match_le_unexpected(le, &xt_list);
+	match_le_unexpected(le, 1, &xt_list);
 
 	ret = !list_empty(&xt_list);
 
@@ -1809,22 +1824,23 @@ int check_overflow_search_only(le_t *le)
 
 	list_for_each_entry_safe(xt, n, &pt->unexpected_list, unexpected_list) {
 
-		if ((no_matching || check_match(xt, (me_t *)le)) && !check_perm(xt, le)) {
+		if ((no_matching || check_match(xt, (me_t *)le))) {
 			found = 1;
 
 			/* Work on a copy of XT because it might be disposed
 			 * before we can post the event and because we have to
 			 * set the ni_fail field. */
-			xt_dup = *xt;
+			if (le->eq)
+				xt_dup = *xt;
 			break;
 		}
 	}
 
 	pthread_spin_unlock(&pt->lock);
 
-	if (le->eq) {
+	if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
 		if (found) {
-			xt_dup.ni_fail = PTL_NI_OK; /* is that really necessary ? */
+			xt_dup.ni_fail = PTL_NI_OK;
 			make_target_event(&xt_dup, le->eq, PTL_EVENT_SEARCH, le->user_ptr, NULL);
 		}
 		else
@@ -1835,7 +1851,6 @@ int check_overflow_search_only(le_t *le)
 }
 
 /* Search for matching entries in the unexpected and delete them.
- * PT lock must be taken.
  */
 int check_overflow_search_delete(le_t *le)
 {
@@ -1844,7 +1859,9 @@ int check_overflow_search_delete(le_t *le)
 	pt_t *pt = &le->obj.obj_ni->pt[le->pt_index];
 	struct list_head xt_list;
 
-	match_le_unexpected(le, &xt_list);
+	pthread_spin_lock(&pt->lock);
+
+	match_le_unexpected(le, 0, &xt_list);
 
 	pthread_spin_unlock(&pt->lock);
 

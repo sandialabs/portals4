@@ -59,6 +59,8 @@ static int me_get_me(ni_t *ni, me_t **me_p)
 	return PTL_OK;
 }
 
+#ifndef NO_ARG_VALIDATION
+// TODO: integrate it in me_append_or_search.
 /*
  * me_append_check
  *	check call parameters for PtlMEAppend
@@ -71,6 +73,7 @@ static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
 	return le_append_check(TYPE_ME, ni, pt_index, (ptl_le_t *)me_init,
 						   ptl_list, search_op, (ptl_handle_le_t *)me_handle);
 }
+#endif
 
 static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 							   ptl_me_t *me_init, ptl_list_t ptl_list,
@@ -94,11 +97,13 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 		goto err1;
 	}
 
+#ifndef NO_ARG_VALIDATION
 	err = me_append_check(ni, pt_index, me_init, ptl_list, search_op, me_handle);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
 	}
+#endif
 
 	err = me_get_me(ni, &me);
 	if (err) {
