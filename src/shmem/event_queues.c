@@ -45,7 +45,7 @@ typedef union {
 typedef struct {
     ptl_internal_event_t *ring;
     uint32_t              size;
-    volatile eq_off_t     head, leading_tail, lagging_tail;
+    volatile eq_off_t     leading_head, lagging_head, leading_tail, lagging_tail;
 } ptl_internal_eq_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
@@ -187,15 +187,16 @@ int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                         rc[offset] = 0;
                         return PTL_NO_SPACE;
                     }
-                    eqh.s.code                               = offset;
-                    ni_eqs[offset].head.s.offset             =
-                        ni_eqs[offset].leading_tail.s.offset = 0;
-                    ni_eqs[offset].head.s.sequence          += 7;
-                    ni_eqs[offset].leading_tail.s.sequence  += 11;
-                    ni_eqs[offset].lagging_tail              = ni_eqs[offset].leading_tail;
-                    ni_eqs[offset].size                      = count;
-                    ni_eqs[offset].ring                      = tmp;
-                    *eq_handle                               = eqh.a;
+                    eqh.s.code                              = offset;
+                    ni_eqs[offset].leading_head.s.offset    = 0;
+                    ni_eqs[offset].leading_head.s.sequence += 7;
+                    ni_eqs[offset].lagging_head             = ni_eqs[offset].leading_head;
+                    ni_eqs[offset].leading_tail.s.offset    = 0;
+                    ni_eqs[offset].leading_tail.s.sequence += 11;
+                    ni_eqs[offset].lagging_tail             = ni_eqs[offset].leading_tail;
+                    ni_eqs[offset].size                     = count;
+                    ni_eqs[offset].ring                     = tmp;
+                    *eq_handle                              = eqh.a;
                     return PTL_OK;
                 }
             }
@@ -302,18 +303,27 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
     eq_off_t                              readidx, curidx, newidx;
 
     PtlInternalPAPIStartC();
-    curidx = eq->head;
+    /* first, increment the leading_head */
+    curidx = eq->leading_head;
     do {
         readidx = curidx;
         if (readidx.s.offset == eq->lagging_tail.s.offset) {
             return PTL_EQ_EMPTY;
         }
-        ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
         newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
         newidx.s.offset   = (uint16_t)((readidx.s.offset + 1) & mask);
-    } while ((curidx.u =
-                  PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                         newidx.u)) != readidx.u);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
+    /* second, read from the queue with the offset I got from leading_head */
+    ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
+    /* third, wait for the lagging_head to catch up */
+    while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+    /* and finally, push the lagging_head along */
+    curidx = eq->lagging_head;
+    do {
+        readidx = curidx;
+        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
+        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
     PtlInternalPAPIDoneC(PTL_EQ_GET, 0);
     return PTL_OK;
 } /*}}}*/
@@ -342,7 +352,8 @@ int API_FUNC PtlEQWait(ptl_handle_eq_t eq_handle,
     eq_off_t                              readidx, curidx, newidx;
 
     PtlInternalAtomicInc(rc, 1);
-    curidx = eq->head;
+    /* first, increment the leading_head */
+    curidx = eq->leading_head;
     do {
 loopstart:
         readidx = curidx;
@@ -350,15 +361,23 @@ loopstart:
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
         } else if (readidx.s.offset == eq->lagging_tail.s.offset) {
-            curidx = eq->head;
+            curidx = eq->leading_head;
             goto loopstart;
         }
-        ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
         newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
         newidx.s.offset   = (uint16_t)((readidx.s.offset + 1) & mask);
-    } while ((curidx.u =
-                  PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                         newidx.u)) != readidx.u);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
+    /* second, read from the queue with the offset I got from leading_head */
+    ASSIGN_EVENT(event, eq->ring[readidx.s.offset], eqh.s.ni);
+    /* third, wait for the lagging_head to catch up */
+    while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+    /* and finally, push the lagging_head along */
+    curidx = eq->lagging_head;
+    do {
+        readidx = curidx;
+        newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
+        newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+    } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
     PtlInternalAtomicInc(rc, -1);
     return PTL_OK;
 } /*}}}*/
@@ -424,30 +443,35 @@ int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
             ptl_internal_eq_t *const eq   = eqs[ridx];
             const uint32_t           mask = masks[ridx];
             eq_off_t                 readidx, curidx, newidx;
-            int                      found = 1;
 
-            curidx = eq->head;
+            /* first, read from the leading_head */
+            curidx = eq->leading_head;
             do {
                 readidx = curidx;
                 if (readidx.s.offset >= eq->size) {
-                    for (size_t idx = 0; idx < size;
-                         ++idx) PtlInternalAtomicInc(rcs[idx], -1);
+                    for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                     return PTL_INTERRUPTED;
                 } else if (readidx.s.offset == eq->lagging_tail.s.offset) {
-                    found = 0;
-                    break;
+                    continue;
                 }
-                ASSIGN_EVENT(event, eq->ring[readidx.s.offset], ni);
                 newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);        // a prime number
                 newidx.s.offset   = (uint16_t)((readidx.s.offset + 1) & mask);
-            } while ((curidx.u =
-                          PtlInternalAtomicCas32(&eq->head.u, readidx.u,
-                                                 newidx.u)) != readidx.u);
-            if (found) {
-                for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
-                *which = (unsigned int)newidx.s.offset;
-                return PTL_OK;
-            }
+            } while ((curidx.u = PtlInternalAtomicCas32(&eq->leading_head.u, readidx.u, newidx.u)) != readidx.u);
+            /* second, read from the queue with the offset I got from leading_head */
+            ASSIGN_EVENT(event, eq->ring[readidx.s.offset], ni);
+            /* third, wait for the lagging_head to catch up */
+            while (eq->lagging_head.s.offset != readidx.s.offset) SPINLOCK_BODY();
+            /* and finally, push the lagging_head along */
+            curidx = eq->lagging_head;
+            do {
+                readidx = curidx;
+                newidx.s.sequence = (uint16_t)(readidx.s.sequence + 23);
+                newidx.s.offset = (uint16_t)((readidx.s.offset + 1) & mask);
+            } while ((curidx.u = PtlInternalAtomicCas32(&eq->lagging_head.u, readidx.u, newidx.u)) != readidx.u);
+
+            for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
+            *which = (unsigned int)newidx.s.offset;
+            return PTL_OK;
         }
         MARK_TIMER(tp);
     } while (timeout == PTL_TIME_FOREVER ||
