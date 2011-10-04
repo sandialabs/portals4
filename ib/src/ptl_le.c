@@ -292,10 +292,12 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	if (unlikely(err))
 		goto err1;
 
+#ifndef NO_ARG_VALIDATION
 	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
 						  ptl_list, 0, le_handle);
 	if (unlikely(err))
 		goto err2;
+#endif
 
 	err = le_get_le(ni, &le);
 	if (err)
@@ -321,6 +323,8 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 		err = to_ct(le_init->ct_handle, &le->ct);
 		if (unlikely(err))
 			goto err3;
+	} else {
+		le->ct = NULL;
 	}
 
 	if (unlikely(le->ct && (obj_to_ni(le->ct) != ni))) {

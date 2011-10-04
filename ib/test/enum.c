@@ -97,10 +97,13 @@ int get_ack_req(char *val)
 int get_event_type(char *val)
 {
 	     if (!strcmp("GET", val))		return PTL_EVENT_GET;
+	else if (!strcmp("GET_OVERFLOW", val)) return PTL_EVENT_GET_OVERFLOW;
 	else if (!strcmp("PUT", val))		return PTL_EVENT_PUT;
 	else if (!strcmp("PUT_OVERFLOW", val))	return PTL_EVENT_PUT_OVERFLOW;
 	else if (!strcmp("ATOMIC", val))	return PTL_EVENT_ATOMIC;
 	else if (!strcmp("ATOMIC_OVERFLOW", val)) return PTL_EVENT_ATOMIC_OVERFLOW;
+	else if (!strcmp("FETCH_ATOMIC", val)) return PTL_EVENT_FETCH_ATOMIC;
+	else if (!strcmp("FETCH_ATOMIC_OVERFLOW", val)) return PTL_EVENT_FETCH_ATOMIC_OVERFLOW;
 	else if (!strcmp("REPLY", val))		return PTL_EVENT_REPLY;
 	else if (!strcmp("SEND", val))		return PTL_EVENT_SEND;
 	else if (!strcmp("ACK", val))		return PTL_EVENT_ACK;
