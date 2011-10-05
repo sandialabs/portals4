@@ -62,32 +62,12 @@
       </ptl>
     </subtest>
     <subtest>
-      <desc>Test PtlMESearch with ct_handle = INVALID</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_me_search ct_handle="INVALID" ret="ARG_INVALID"/>
-        </ptl_ni>
-      </ptl>
-    </subtest>
-    <subtest>
       <desc>Test PtlMEAppend with ct from wrong ni</desc>
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ptl_ct>
             <ptl_ni>
               <ptl_me_append ret="ARG_INVALID"/>
-            </ptl_ni>
-          </ptl_ct>
-        </ptl_ni>
-      </ptl>
-    </subtest>
-    <subtest>
-      <desc>Test PtlMESearch with ct from wrong ni</desc>
-      <ptl>
-        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
-          <ptl_ct>
-            <ptl_ni>
-              <ptl_me_search ret="ARG_INVALID"/>
             </ptl_ni>
           </ptl_ct>
         </ptl_ni>
