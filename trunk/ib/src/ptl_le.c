@@ -70,7 +70,9 @@ void le_unlink(le_t *le, int send_event)
 			list_del_init(&le->list);
 
 			if (send_event && le->eq)
-				make_le_event(le, le->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
+				make_le_event(le, le->eq,
+					      PTL_EVENT_AUTO_UNLINK,
+					      PTL_NI_OK);
 
 			le->pt = NULL;
 		}
@@ -121,8 +123,8 @@ static int le_get_le(ni_t *ni, le_t **le_p)
  *	common between LE and ME
  */
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
-					ptl_le_t *le_init, ptl_list_t ptl_list, ptl_search_op_t search_op,
-					ptl_handle_le_t *le_handle)
+		    ptl_le_t *le_init, ptl_list_t ptl_list,
+		    ptl_search_op_t search_op, ptl_handle_le_t *le_handle)
 {
 	pt_t *pt;
 
@@ -175,12 +177,14 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (le_handle) {
-		if (unlikely(ptl_list < PTL_PRIORITY_LIST || ptl_list > PTL_OVERFLOW_LIST)) {
+		if (unlikely(ptl_list < PTL_PRIORITY_LIST ||
+			     ptl_list > PTL_OVERFLOW_LIST)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
 	} else {
-		if (unlikely(search_op < PTL_SEARCH_ONLY || search_op > PTL_SEARCH_DELETE)) {
+		if (unlikely(search_op < PTL_SEARCH_ONLY ||
+			     search_op > PTL_SEARCH_DELETE)) {
 			WARN();
 			return PTL_ARG_INVALID;
 		}
@@ -211,7 +215,8 @@ int le_get_mr(ni_t *ni, ptl_le_t *le_init, le_t *le)
 				return PTL_NO_SPACE;
 
 			err = mr_lookup(ni, le->sge_list,
-					le->num_iov * sizeof(*sge), &le->sge_list_mr);
+					le->num_iov * sizeof(*sge),
+					&le->sge_list_mr);
 			if (err)
 				return err;
 		}
@@ -274,10 +279,11 @@ int le_append_pt(ni_t *ni, le_t *le)
 
 /* Do the LE append or LE search. It's an append if le_handle is not
  * NULL. */
-static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-							   ptl_le_t *le_init, ptl_list_t ptl_list,
-							   ptl_search_op_t search_op, void *user_ptr,
-							   ptl_handle_le_t *le_handle)
+static int le_append_or_search(ptl_handle_ni_t ni_handle,
+			       ptl_pt_index_t pt_index,
+			       ptl_le_t *le_init, ptl_list_t ptl_list,
+			       ptl_search_op_t search_op, void *user_ptr,
+			       ptl_handle_le_t *le_handle)
 {
 	int err;
 	ni_t *ni;
@@ -294,7 +300,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
 #ifndef NO_ARG_VALIDATION
 	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
-						  ptl_list, 0, le_handle);
+			      ptl_list, 0, le_handle);
 	if (unlikely(err))
 		goto err2;
 #endif
@@ -345,8 +351,11 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 
 					pthread_spin_unlock(&pt->lock);					
 
-					if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
-						make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
+					if (eq && !(le->options &
+					    PTL_ME_EVENT_UNLINK_DISABLE)) {
+						make_le_event(le, eq,
+							PTL_EVENT_AUTO_UNLINK,
+							PTL_NI_OK);
 					}
 					*le_handle = le_to_handle(le);
 					le_put(le);
@@ -391,24 +400,21 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 }
 
 int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
-                ptl_handle_le_t *le_handle)
+		ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
+		ptl_handle_le_t *le_handle)
 {
 	return le_append_or_search(ni_handle, pt_index,
-							   le_init, ptl_list, 0, user_ptr,
-							   le_handle);
+				   le_init, ptl_list, 0, user_ptr,
+				   le_handle);
 }
 
-int PtlLESearch(					/* 3.11.4 */
-	ptl_handle_ni_t		ni_handle,
-	ptl_pt_index_t		pt_index,
-	ptl_le_t		*le_init,
-	ptl_search_op_t		search_op,
-	void			*user_ptr)
+int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+		ptl_le_t *le_init, ptl_search_op_t search_op,
+		void *user_ptr)
 {
 	return le_append_or_search(ni_handle, pt_index,
-							   le_init, 0, search_op, user_ptr,
-							   NULL);
+				   le_init, 0, search_op, user_ptr,
+				   NULL);
 }
 
 int PtlLEUnlink(ptl_handle_le_t le_handle)
