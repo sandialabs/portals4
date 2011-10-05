@@ -66,19 +66,21 @@ static int me_get_me(ni_t *ni, me_t **me_p)
  *	check call parameters for PtlMEAppend
  */
 static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
-						   ptl_me_t *me_init, ptl_list_t ptl_list,
-						   ptl_search_op_t search_op,
-						   ptl_handle_le_t *me_handle)
+			   ptl_me_t *me_init, ptl_list_t ptl_list,
+			   ptl_search_op_t search_op,
+			   ptl_handle_le_t *me_handle)
 {
 	return le_append_check(TYPE_ME, ni, pt_index, (ptl_le_t *)me_init,
-						   ptl_list, search_op, (ptl_handle_le_t *)me_handle);
+			       ptl_list, search_op,
+			       (ptl_handle_le_t *)me_handle);
 }
 #endif
 
-static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-							   ptl_me_t *me_init, ptl_list_t ptl_list,
-							   ptl_search_op_t search_op, void *user_ptr,
-							   ptl_handle_me_t *me_handle)
+static int me_append_or_search(ptl_handle_ni_t ni_handle,
+			       ptl_pt_index_t pt_index,
+			       ptl_me_t *me_init, ptl_list_t ptl_list,
+			       ptl_search_op_t search_op, void *user_ptr,
+			       ptl_handle_me_t *me_handle)
 {
 	int err;
 	ni_t *ni;
@@ -98,7 +100,8 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 	}
 
 #ifndef NO_ARG_VALIDATION
-	err = me_append_check(ni, pt_index, me_init, ptl_list, search_op, me_handle);
+	err = me_append_check(ni, pt_index, me_init, ptl_list,
+			      search_op, me_handle);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
@@ -158,10 +161,13 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_inde
 					eq_t *eq = ni->pt[me->pt_index].eq;
 
 					pthread_spin_unlock(&pt->lock);					
-
-					if (eq && !(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
-						make_le_event((le_t *)me, eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
+					if (eq && !(me->options &
+					    PTL_ME_EVENT_UNLINK_DISABLE)) {
+						make_le_event((le_t *)me, eq,
+							PTL_EVENT_AUTO_UNLINK,
+							PTL_NI_OK);
 					}
+
 					*me_handle = me_to_handle(me);
 					me_put(me);
 
@@ -212,20 +218,17 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
                 ptl_handle_me_t *me_handle)
 {
 	return me_append_or_search(ni_handle, pt_index,
-							   me_init, ptl_list, 0, user_ptr,
-							   me_handle);
+				   me_init, ptl_list, 0, user_ptr,
+				   me_handle);
 }
 
-int PtlMESearch(
-	ptl_handle_ni_t		ni_handle,
-	ptl_pt_index_t		pt_index,
-	ptl_me_t		*me_init,
-	ptl_search_op_t		search_op,
-	void			*user_ptr)
+int PtlMESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+		ptl_me_t *me_init, ptl_search_op_t search_op,
+		void *user_ptr)
 {
 	return me_append_or_search(ni_handle, pt_index,
-							   me_init, 0, search_op, user_ptr,
-							   NULL);
+				   me_init, 0, search_op, user_ptr,
+				   NULL);
 }
 
 int PtlMEUnlink(ptl_handle_me_t me_handle)
