@@ -401,7 +401,8 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	if (debug) event_dump(ev);
 }
 
-void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr, void *start)
+void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
+		       void *user_ptr, void *start)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -424,7 +425,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 	ev->mlength		= xt->mlength;
 	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
-	ev->user_ptr = user_ptr;
+	ev->user_ptr		= user_ptr;
 	ev->hdr_data		= xt->hdr_data;
 	ev->ni_fail_type	= xt->ni_fail;
 	ev->atomic_operation	= xt->atom_op;
@@ -448,7 +449,8 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr
 }
 
 /* Makes an LE/ME event */
-void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail_type)
+void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
+		   ptl_ni_fail_t fail_type)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
