@@ -1,3 +1,9 @@
+/**
+ * @file ptl_atomic.c
+ *
+ * Implementation of atomic ops.
+ */
+
 #include "ptl_loc.h"
 
 #ifdef min
@@ -42,6 +48,15 @@
 #define lxor(a,b)	(((a) && !(b)) || (!(a) && (b)))
 #define bxor(a,b)	((a) ^ (b))
 
+/**
+ * Compute min of two signed char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_sc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -54,6 +69,15 @@ static int min_sc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_uc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -66,6 +90,15 @@ static int min_uc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two signed short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_ss(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -78,6 +111,15 @@ static int min_ss(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_us(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -90,6 +132,15 @@ static int min_us(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two signed int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_si(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -102,6 +153,15 @@ static int min_si(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_ui(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -114,6 +174,15 @@ static int min_ui(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two signed long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_sl(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -126,6 +195,15 @@ static int min_sl(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_ul(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -138,6 +216,15 @@ static int min_ul(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two float arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_f(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -150,6 +237,15 @@ static int min_f(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute min of two double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int min_d(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -162,6 +258,15 @@ static int min_d(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two signed char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_sc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -174,6 +279,15 @@ static int max_sc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_uc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -186,6 +300,15 @@ static int max_uc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two signed short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_ss(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -198,6 +321,15 @@ static int max_ss(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_us(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -210,6 +342,15 @@ static int max_us(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two signed int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_si(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -222,6 +363,15 @@ static int max_si(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_ui(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -234,6 +384,15 @@ static int max_ui(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two signed long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_sl(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -246,6 +405,15 @@ static int max_sl(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_ul(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -258,6 +426,15 @@ static int max_ul(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two float arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_f(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -270,6 +447,15 @@ static int max_f(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute max of two double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int max_d(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -282,6 +468,15 @@ static int max_d(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two signed char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_sc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -294,6 +489,15 @@ static int sum_sc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_uc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -306,6 +510,15 @@ static int sum_uc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two signed short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_ss(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -318,6 +531,15 @@ static int sum_ss(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_us(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -330,6 +552,15 @@ static int sum_us(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two signed int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_si(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -342,6 +573,15 @@ static int sum_si(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_ui(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -354,6 +594,15 @@ static int sum_ui(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two signed long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_sl(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -366,6 +615,15 @@ static int sum_sl(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_ul(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -378,6 +636,15 @@ static int sum_ul(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two float arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_f(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -390,6 +657,15 @@ static int sum_f(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute sum of two double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int sum_d(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -402,6 +678,15 @@ static int sum_d(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two signed char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_sc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -414,6 +699,15 @@ static int prod_sc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_uc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -426,6 +720,15 @@ static int prod_uc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two signed short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_ss(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -438,6 +741,15 @@ static int prod_ss(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_us(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -450,6 +762,15 @@ static int prod_us(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two signed int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_si(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -462,6 +783,15 @@ static int prod_si(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_ui(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -474,6 +804,15 @@ static int prod_ui(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two signed long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_sl(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -486,6 +825,15 @@ static int prod_sl(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_ul(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -498,6 +846,15 @@ static int prod_ul(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two float arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_f(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -510,6 +867,15 @@ static int prod_f(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two complex float arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_fc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -527,6 +893,15 @@ static int prod_fc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_d(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -539,6 +914,15 @@ static int prod_d(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute prod of two complex double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int prod_dc(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -556,6 +940,15 @@ static int prod_dc(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical or of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lor_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -568,6 +961,15 @@ static int lor_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical or of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lor_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -580,6 +982,15 @@ static int lor_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical or of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lor_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -592,6 +1003,15 @@ static int lor_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical or of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lor_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -604,6 +1024,15 @@ static int lor_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical and of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int land_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -616,6 +1045,15 @@ static int land_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical and of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int land_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -628,6 +1066,15 @@ static int land_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical and of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int land_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -640,6 +1087,15 @@ static int land_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical and of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int land_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -652,6 +1108,15 @@ static int land_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise or of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bor_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -664,6 +1129,15 @@ static int bor_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise or of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bor_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -676,6 +1150,15 @@ static int bor_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise or of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bor_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -688,6 +1171,15 @@ static int bor_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise or of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bor_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -700,6 +1192,15 @@ static int bor_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise and of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int band_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -712,6 +1213,15 @@ static int band_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise and of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int band_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -724,6 +1234,15 @@ static int band_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise and of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int band_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -736,6 +1255,15 @@ static int band_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise and of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int band_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -748,6 +1276,15 @@ static int band_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical xor of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lxor_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -760,6 +1297,15 @@ static int lxor_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical xor of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lxor_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -772,6 +1318,15 @@ static int lxor_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical xor of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lxor_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -784,6 +1339,15 @@ static int lxor_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute logical xor of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int lxor_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -796,6 +1360,15 @@ static int lxor_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise xor of two signed or unsigned char arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bxor_c(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -808,6 +1381,15 @@ static int bxor_c(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise xor of two signed or unsigned short arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bxor_s(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -820,6 +1402,15 @@ static int bxor_s(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise xor of two signed or unsigned int arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bxor_i(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -832,6 +1423,15 @@ static int bxor_i(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * Compute bitwise xor of two signed or unsigned long arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
 static int bxor_l(void *dst, void *src, ptl_size_t length)
 {
 	int i;
@@ -844,6 +1444,10 @@ static int bxor_l(void *dst, void *src, ptl_size_t length)
 	return PTL_OK;
 }
 
+/**
+ * An array of function pointers to compute indicated atomic
+ * op on two arrays of indicated data type.
+ */
 atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 	[PTL_MIN]	= {
 		[PTL_INT8_T]	= min_sc,
