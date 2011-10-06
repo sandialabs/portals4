@@ -1057,10 +1057,17 @@ permission_violation:
             PtlInternalValidateMEPT(t);
             entry->next     = NULL;
             entry->unlinked = 1;
-            /* now that the ME has been unlinked, we can unlock the portal table, thus allowing appends on the PT while we do this delivery
-             */
-            need_to_unlock = 0;
-            PTL_LOCK_UNLOCK(t->lock);
+            if ((me.options & PTL_ME_UNEXPECTED_HDR_DISABLE) != 0) {
+                /* now that the ME has been unlinked, if we don't have to
+                 * calculate data for and enqueue and unexpected header, we can
+                 * unlock the portal table, thus allowing appends on the PT
+                 * while we do this delivery. HOWEVER, if we need to calculate
+                 * stuff for the unexpected header, and then (obviously)
+                 * enqueue the unexpected header BEFORE delivery, then we
+                 * cannot unlock the PT. */
+                need_to_unlock = 0;
+                PTL_LOCK_UNLOCK(t->lock);
+            }
             if ((tEQ != PTL_EQ_NONE)) {
                 if ((me.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
                     ptl_internal_event_t e;
@@ -1237,6 +1244,8 @@ check_lengths:
                                                        fragment_mlength, hdr);
             }
             if ((me.options & PTL_ME_UNEXPECTED_HDR_DISABLE) == 0) {
+                /* cannot be enqueued until after the overflow data has been
+                 * delivered */
                 PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
                                                     (uintptr_t)report_this_start);
             }
