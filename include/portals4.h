@@ -395,6 +395,9 @@ typedef enum {
     PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
                              indicated a permissions violation for this
                              message. */
+    PTL_NI_OP_VIOLATION, /*!< Indicates that the remote Portals addressing
+                           indicated an operations violation for this message.
+                           */
     PTL_NI_NO_MATCH /*!< Indicates that the search did not find an entry in the
                       unexpected list. */
 } ptl_ni_fail_t;
@@ -991,14 +994,18 @@ typedef enum {
 
 /*! Specifies that the list entry will respond to \p put operations. By
  * default, list entries reject \p put operations. If a \p put operation
- * targets a list entry where \c PTL_LE_OP_PUT is not set, it is treated as a
- * permissions failure. */
+ * targets a list entry where \c PTL_LE_OP_PUT is not set, it is treated as an
+ * operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented. If a
+ * full event is delivered to the initiator, the \a ni_fail_type in the \c
+ * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION. */
 #define PTL_LE_OP_PUT                   PTL_ME_OP_PUT
 
 /*! Specifies that the list entry will respond to \p get operations. By
- * default, list entries reject \p get operations. If a \p get operations
- * targets a list entry where \c PTL_LE_OP_GET is not set, it is treated as a
- * permissions failure.
+ * default, list entries reject \p get operations. If a \p get operation
+ * targets a list entry where \c PTL_LE_OP_GET is not set, it is treated as an
+ * operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented. If a
+ * full event is delivered to the initiator, the \a ni_fail_type in the \c
+ * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION.
  * @note It is not considered an error to have a list entry that responds to
  *      both \p put or \p get operations. In fact, it is often desirable for a
  *      list entry used in an \p atomic operation to be configured to respond
@@ -1258,18 +1265,22 @@ enum me_options {
  */
 /*! Specifies that the match list entry will respond to \p put operations. By
  * default, match list entries reject \p put operations. If a \p put operation
- * targets a list entry where \c PTL_ME_OP_PUT is not set, it is treated as a
- * permissions failure. */
+ * targets a match list entry where \c PTL_LE_OP_PUT is not set, it is treated
+ * as an operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented.
+ * If a full event is delivered to the initiator, the \a ni_fail_type in the \c
+ * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION. */
 #define PTL_ME_OP_PUT                   (1<<MELE_OP_PUT)
 
-/*! Specifies that the match list entry will respond to \p get operations. by
+/*! Specifies that the match list entry will respond to \p get operations. By
  * default, match list entries reject \p get operations. If a \p get operation
- * targets a list entry where \c PTL_ME_OP_GET is not set, it is treated as a
- * permissions failure.
+ * targets a match list entry where \c PTL_LE_OP_GET is not set, it is treated
+ * as an operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented.
+ * If a full event is delivered to the initiator, the \a ni_fail_type in the \c
+ * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION.
  * @note It is not considered an error to have a match list entry that responds
- *      to both \p put and \p get operations. In fact, it is often desirable
- *      for a match list entry used in an \p atomic operation to be configured
- *      to respond to both \p put and \p get operations. */
+ *      to both \p put or \p get operations. In fact, it is often desirable for
+ *      a match list entry used in an \p atomic operation to be configured to
+ *      respond to both \p put and \p get operations. */
 #define PTL_ME_OP_GET                   (1<<MELE_OP_GET)
 
 /*! Specifies that the match list entry will only be used once and then
