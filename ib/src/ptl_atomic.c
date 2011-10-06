@@ -6,6 +6,45 @@
 
 #include "ptl_loc.h"
 
+struct atom_op_info op_info[] = {
+	[PTL_MIN]	= {	1,	0,	1,	0,	0, },
+	[PTL_MAX]	= {	1,	0,	1,	0,	0, },
+	[PTL_SUM]	= {	1,	1,	1,	0,	0, },
+	[PTL_PROD]	= {	1,	1,	1,	0,	0, },
+	[PTL_LOR]	= {	0,	0,	1,	0,	0, },
+	[PTL_LAND]	= {	0,	0,	1,	0,	0, },
+	[PTL_BOR]	= {	0,	0,	1,	0,	0, },
+	[PTL_BAND]	= {	0,	0,	1,	0,	0, },
+	[PTL_LXOR]	= {	0,	0,	1,	0,	0, },
+	[PTL_BXOR]	= {	0,	0,	1,	0,	0, },
+	[PTL_SWAP]	= {	1,	1,	0,	1,	0, },
+	[PTL_CSWAP]	= {	1,	1,	0,	1,	1, },
+	[PTL_CSWAP_NE]	= {	1,	1,	0,	1,	1, },
+	[PTL_CSWAP_LE]	= {	1,	0,	0,	1,	1, },
+	[PTL_CSWAP_LT]	= {	1,	0,	0,	1,	1, },
+	[PTL_CSWAP_GE]	= {	1,	0,	0,	1,	1, },
+	[PTL_CSWAP_GT]	= {	1,	0,	0,	1,	1, },
+	[PTL_MSWAP]	= {	0,	0,	0,	1,	1, },
+};
+
+int atom_type_size[] = 
+{
+	[PTL_INT8_T]			= 1,
+	[PTL_UINT8_T]			= 1,
+	[PTL_INT16_T]			= 2,
+	[PTL_UINT16_T]			= 2,
+	[PTL_INT32_T]			= 4,
+	[PTL_UINT32_T]			= 4,
+	[PTL_INT64_T]			= 8,
+	[PTL_UINT64_T]			= 8,
+	[PTL_FLOAT]			= 4,
+	[PTL_FLOAT_COMPLEX]		= 8,
+	[PTL_DOUBLE]			= 8,
+	[PTL_DOUBLE_COMPLEX]		= 16,
+	[PTL_LONG_DOUBLE]		= sizeof(long double),
+	[PTL_LONG_DOUBLE_COMPLEX]	= 2*sizeof(long double),
+};
+
 #ifdef min
 #undef min
 #endif
