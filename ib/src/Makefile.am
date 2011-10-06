@@ -5,6 +5,7 @@ libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
 libportals_la_SOURCES = \
 	ptl.c \
 	ptl_atomic.c \
+	ptl_atomic.h \
 	ptl_buf.c \
 	ptl_buf.h \
 	ptl_conn.c \
