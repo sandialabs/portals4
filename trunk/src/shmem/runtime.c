@@ -53,7 +53,7 @@ static void noFailures(ptl_handle_ct_t ct,
 void runtime_init(void)
 {   /*{{{*/
     ptl_process_t   myself;
-    ptl_process_t  *dmapping, *amapping;
+    ptl_process_t  *dmapping;
     ptl_le_t        le;
     ptl_handle_le_t le_handle;
     ptl_md_t        md;
@@ -89,8 +89,6 @@ void runtime_init(void)
 
     dmapping = calloc(num_procs, sizeof(ptl_process_t));
     assert(dmapping != NULL);
-    amapping = calloc(num_procs, sizeof(ptl_process_t));
-    assert(amapping != NULL);
 
     /* for the runtime_barrier() */
     {
@@ -174,6 +172,7 @@ void runtime_init(void)
         ranks[i].nid = 0;
         ranks[i].pid = i;
     }
+    free(dmapping); // why haven't we done anything with this?
 } /*}}}*/
 
 void runtime_finalize(void)
