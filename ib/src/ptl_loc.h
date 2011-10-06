@@ -54,6 +54,7 @@ extern unsigned int linesize;
 
 #include "ptl_log.h"
 #include "ptl_types.h"
+#include "ptl_atomic.h"
 #include "ptl_param.h"
 #include "ptl_ref.h"
 #include "ptl_evloop.h"
@@ -81,7 +82,6 @@ extern unsigned int linesize;
 #include "ptl_nemesis.h"
 
 extern int debug;
-extern int atom_type_size[];
 
 #define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
 
@@ -118,25 +118,6 @@ static inline uint64_t be64_to_cpu(uint64_t x)
 	return cpu_to_be64(x);
 }
 #endif
-
-typedef union datatype {
-	int8_t		s8;
-	uint8_t		u8;
-	int16_t		s16;
-	uint16_t	u16;
-	int32_t		s32;
-	uint32_t	u32;
-	int64_t		s64;
-	uint64_t	u64;
-	float		f;
-	float		fc[2];
-	double		d;
-	double		dc[2];
-} datatype_t;
-
-typedef int (*atom_op_t)(void *src, void *dst, ptl_size_t length);
-
-extern atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST];
 
 enum {
 	STATE_RECV_EVENT_WAIT,
@@ -230,8 +211,14 @@ int send_message_rdma(buf_t *buf, int signaled);
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);
 
-int iov_atomic_in(atom_op_t op, void *src, ptl_iovec_t *iov,
+int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+		ptl_size_t offset, ptl_size_t length, void **dst_start);
+
+int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length);
+
+int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
+		 void *dest, void *source, void *operand);
 
 int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
