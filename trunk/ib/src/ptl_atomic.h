@@ -22,6 +22,8 @@ union datatype {
 	float		fc[2];
 	double		d;
 	double		dc[2];
+	long double	ld;
+	long double	ldc[2];
 };
 
 typedef union datatype datatype_t;
