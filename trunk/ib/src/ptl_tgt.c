@@ -98,56 +98,6 @@ static void init_events(xt_t *xt)
 }
 
 /*
- * iov_copy_in
- *	copy length bytes to io vector starting at offset offset
- *	from src to an array of io vectors of length num_iov
- */
-static int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
-					   ptl_size_t offset, ptl_size_t length, void **dst_start)
-{
-	ptl_size_t i;
-	ptl_size_t iov_offset = 0;
-	ptl_size_t src_offset = 0;
-	ptl_size_t dst_offset = 0;
-	ptl_size_t bytes;
-
-	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
-		iov_offset = offset - dst_offset;
-		if (iov_offset > iov->iov_len)
-			iov_offset = iov->iov_len;
-		dst_offset += iov_offset;
-	}
-
-	if (dst_offset < offset) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	/* Remember where the destination started. */
-	*dst_start = iov->iov_base + iov_offset;
-
-	for( ; i < num_iov && src_offset < length; i++, iov++) {
-		bytes = iov->iov_len - iov_offset;
-		if (bytes == 0)
-			continue;
-		if (src_offset + bytes > length)
-			bytes = length - src_offset;
-
-		memcpy(iov->iov_base + iov_offset, src + src_offset, bytes);
-
-		iov_offset = 0;
-		src_offset += bytes;
-	}
-
-	if (src_offset < length) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	return PTL_OK;
-}
-
-/*
  * copy_in
  *	copy data from data segment into le/me
  */
@@ -166,6 +116,7 @@ static int copy_in(xt_t *xt, me_t *me, void *data)
 			return STATE_TGT_ERROR;
 		}
 
+		/* this is silly and meaningless but it is what the spec demands */
 		xt->start = dst_start;
 	} else {
 		xt->start = me->start + offset;
@@ -177,7 +128,6 @@ static int copy_in(xt_t *xt, me_t *me, void *data)
 
 /*
  * atomic_in
- *	TODO have to do better on IOVEC boundaries
  */
 static int atomic_in(xt_t *xt, me_t *me, void *data)
 {
@@ -187,14 +137,15 @@ static int atomic_in(xt_t *xt, me_t *me, void *data)
 	atom_op_t op;
 
 	op = atom_op[xt->atom_op][xt->atom_type];
-	if (!op) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+	assert(op);
 
+	/* this implementation assumes that the architecture can support
+	 * misaligned arithmetic operations. This is OK for x86
+	 * and x86 variants and generally most modern architectures */
 	if (me->num_iov) {
-		err = iov_atomic_in(op, data, (ptl_iovec_t *)me->start,
-				  me->num_iov, offset, length);
+		err = iov_atomic_in(op, atom_type_size[xt->atom_type],
+				    data, (ptl_iovec_t *)me->start,
+				    me->num_iov, offset, length);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
@@ -1034,317 +985,49 @@ static int tgt_atomic_data_in(xt_t *xt)
 	return STATE_TGT_COMM_EVENT;
 }
 
-/*
- * tgt_swap_data_in
- *	handle swap operation
+/**
+ * Handle swap operation for all cases where
+ * the length is limited to a single data item.
+ * (PTL_SWAP allows length up to max atomic size
+ * but is handled as a get and a put combined.)
+ *
+ * This is a bit complicated because the LE/ME may have
+ * its data stored in an iovec with arbitrary
+ * byte boundaries. Since the length is small it is
+ * simpler to just copy the data out of the iovec,
+ * perform the swap operation and then copy the result
+ * back into the me for that case.
  */
 static int tgt_swap_data_in(xt_t *xt)
 {
 	int err;
+	me_t *me = xt->me; /* can be LE or ME */
 	data_t *data = xt->data_in;
-	me_t *me = xt->me;
-	datatype_t opr, src, dst, *d;
+	uint8_t copy[16]; /* big enough to hold double complex */
+	void *dst;
 
-	opr.u64 = xt->operand;
-	dst.u64 = 0;
-	d = (union datatype *)data->immediate.data;
+	assert(data->data_fmt == DATA_FMT_IMMEDIATE);
 
-	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
-	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
-		abort();
-		WARN();
-		return STATE_TGT_ERROR;
+	if (unlikely(me->num_iov)) {
+		err = copy_out(xt, me, copy);
+		if (err)
+			return STATE_TGT_ERROR;
+
+		dst = copy;
+	} else {
+		dst = me->start + xt->moffset;
 	}
 
-	if (xt->atom_op < PTL_CSWAP || xt->atom_op >= PTL_OP_LAST || xt->atom_type >= PTL_DATATYPE_LAST) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
-
-	err = copy_out(xt, me, &src);
+	err = swap_data_in(xt->atom_op, xt->atom_type, dst,
+			   data->immediate.data, &xt->operand);
 	if (err)
 		return STATE_TGT_ERROR;
 
-	switch (xt->atom_op) {
-	case PTL_CSWAP:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 == src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 == src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 == src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 == src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 == src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 == src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 == src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 == src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f == src.f) ? d->f : src.f;
-			break;
-		case PTL_FLOAT_COMPLEX:
-			dst.fc[0] = ((opr.fc[0] == src.fc[0]) &&
-				     (opr.fc[1] == src.fc[1])) ? d->fc[0]
-							       : src.fc[0];
-			dst.fc[1] = ((opr.fc[0] == src.fc[0]) &&
-				     (opr.fc[1] == src.fc[1])) ? d->fc[1]
-							       : src.fc[1];
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d == src.d) ? d->d : src.d;
-			break;
-		case PTL_DOUBLE_COMPLEX:
-			dst.dc[0] = ((opr.dc[0] == src.dc[0]) &&
-				     (opr.dc[1] == src.dc[1])) ? d->dc[0]
-							       : src.dc[0];
-			dst.dc[1] = ((opr.dc[0] == src.dc[0]) &&
-				     (opr.dc[1] == src.dc[1])) ? d->dc[1]
-							       : src.dc[1];
-			break;
-		default:
+	if (unlikely(me->num_iov)) {
+		err = copy_in(xt, xt->me, copy);
+		if (err)
 			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_CSWAP_NE:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 != src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 != src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 != src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 != src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 != src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 != src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 != src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 != src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f != src.f) ? d->f : src.f;
-			break;
-		case PTL_FLOAT_COMPLEX:
-			dst.fc[0] = ((opr.fc[0] != src.fc[0]) ||
-				     (opr.fc[0] != src.fc[0])) ? d->fc[0]
-							       : src.fc[0];
-			dst.fc[1] = ((opr.fc[0] != src.fc[0]) ||
-				     (opr.fc[0] != src.fc[0])) ? d->fc[1]
-							       : src.fc[1];
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d != src.d) ? d->d : src.d;
-			break;
-		case PTL_DOUBLE_COMPLEX:
-			dst.dc[0] = ((opr.dc[0] != src.dc[0]) ||
-				     (opr.dc[0] != src.dc[0])) ? d->dc[0]
-							       : src.dc[0];
-			dst.dc[1] = ((opr.dc[0] != src.dc[0]) ||
-				     (opr.dc[0] != src.dc[0])) ? d->dc[1]
-							       : src.dc[1];
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_CSWAP_LE:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 <= src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 <= src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 <= src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 <= src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 <= src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 <= src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 <= src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 <= src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f <= src.f) ? d->f : src.f;
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d <= src.d) ? d->d : src.d;
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_CSWAP_LT:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 < src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 < src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 < src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 < src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 < src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 < src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 < src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 < src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f < src.f) ? d->f : src.f;
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d < src.d) ? d->d : src.d;
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_CSWAP_GE:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 >= src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 >= src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 >= src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 >= src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 >= src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 >= src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 >= src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 >= src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f >= src.f) ? d->f : src.f;
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d >= src.d) ? d->d : src.d;
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_CSWAP_GT:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-			dst.s8 = (opr.s8 > src.s8) ? d->s8 : src.s8;
-			break;
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 > src.u8) ? d->u8 : src.u8;
-			break;
-		case PTL_INT16_T:
-			dst.s16 = (opr.s16 > src.s16) ? d->s16 : src.s16;
-			break;
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 > src.u16) ? d->u16 : src.u16;
-			break;
-		case PTL_INT32_T:
-			dst.s32 = (opr.s32 > src.s32) ? d->s32 : src.s32;
-			break;
-		case PTL_UINT32_T:
-			dst.u32 = (opr.u32 > src.u32) ? d->u32 : src.u32;
-			break;
-		case PTL_INT64_T:
-			dst.s64 = (opr.s64 > src.s64) ? d->s64 : src.s64;
-			break;
-		case PTL_UINT64_T:
-			dst.u64 = (opr.u64 > src.u64) ? d->u64 : src.u64;
-			break;
-		case PTL_FLOAT:
-			dst.f = (opr.f > src.f) ? d->f : src.f;
-			break;
-		case PTL_DOUBLE:
-			dst.d = (opr.d > src.d) ? d->d : src.d;
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	case PTL_MSWAP:
-		switch (xt->atom_type) {
-		case PTL_INT8_T:
-		case PTL_UINT8_T:
-			dst.u8 = (opr.u8 & d->u8) | (~opr.u8 & src.u8);
-			break;
-		case PTL_INT16_T:
-		case PTL_UINT16_T:
-			dst.u16 = (opr.u16 & d->u16) | (~opr.u16 & src.u16);
-			break;
-		case PTL_INT32_T:
-		case PTL_UINT32_T:
-		case PTL_FLOAT:
-			dst.u32 = (opr.u32 & d->u32) | (~opr.u32 & src.u32);
-			break;
-		case PTL_INT64_T:
-		case PTL_UINT64_T:
-		case PTL_DOUBLE:
-			dst.u64 = (opr.u64 & d->u64) | (~opr.u64 & src.u64);
-			break;
-		default:
-			return STATE_TGT_ERROR;
-		}
-		break;
-	default:
-		return STATE_TGT_ERROR;
 	}
-
-	err = copy_in(xt, me, &dst);
-	if (err)
-		return STATE_TGT_ERROR;
 
 	return STATE_TGT_COMM_EVENT;
 }
