@@ -1023,6 +1023,7 @@ operation_violation:
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
             return DM_OP_VIOLATION;
+
 permission_violation:
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
