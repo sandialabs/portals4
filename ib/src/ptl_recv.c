@@ -9,7 +9,6 @@
  */
 static char *recv_state_name[] = {
 	[STATE_RECV_EVENT_WAIT]		= "event_wait",
-	[STATE_RECV_COMP_REARM]		= "comp_rearm",
 	[STATE_RECV_COMP_POLL]		= "comp_poll",
 	[STATE_RECV_SEND_COMP]		= "send_comp",
 	[STATE_RECV_RDMA_COMP]		= "rdma_comp",
@@ -44,20 +43,6 @@ static int event_wait(ni_t *ni)
 		return STATE_RECV_ERROR;
 	}
 
-	return STATE_RECV_COMP_REARM;
-}
-
-/*
- * comp_rearm
- *	rearm completion queue
- */
-static int comp_rearm(ni_t *ni)
-{
-	if (ibv_req_notify_cq(ni->rdma.cq, 0)) {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
-
 	return STATE_RECV_COMP_POLL;
 }
 
@@ -80,8 +65,17 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 	/* if queue is empty and we are rearmed
 	 * then we are done for this cycle */
 	n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
-	if (n == 0)
-		return STATE_RECV_DONE;
+	if (n == 0) {
+
+		if (ibv_req_notify_cq(ni->rdma.cq, 0)) {
+			WARN();
+			return STATE_RECV_ERROR;
+		}
+
+		n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
+		if (n == 0)
+			return STATE_RECV_DONE;
+	}
 
 	if (wc.wr_id == 0) {
 		/* No buffer with intermediate error completion */
@@ -144,7 +138,7 @@ static int send_comp(buf_t *buf)
 
 	assert(buf->comp);
 	if (!buf->comp)
-		return STATE_RECV_COMP_REARM;
+		return STATE_RECV_COMP_POLL;
 
 	assert(buf == xi->send_buf);
 
@@ -159,7 +153,7 @@ static int send_comp(buf_t *buf)
 
 	buf_put(buf);
 
-	return STATE_RECV_COMP_REARM;
+	return STATE_RECV_COMP_POLL;
 }
 
 /*
@@ -173,7 +167,7 @@ static int rdma_comp(buf_t *buf)
 	xt_t *xt = buf->xt;
 
 	if (!buf->comp)
-		return STATE_RECV_COMP_REARM;
+		return STATE_RECV_COMP_POLL;
 
 	/* Take a ref on the XT since freeing all its buffers will also
 	 * free it. */
@@ -201,7 +195,7 @@ static int rdma_comp(buf_t *buf)
 	}
 
 	xt_put(xt);
-	return STATE_RECV_COMP_REARM;
+	return STATE_RECV_COMP_POLL;
 }
 
 /*
@@ -300,7 +294,7 @@ static int recv_req(buf_t *buf)
 	if (err)
 		WARN();
 
-	return STATE_RECV_COMP_REARM;
+	return STATE_RECV_COMP_POLL;
 }
 
 /*
@@ -318,6 +312,7 @@ static int recv_init(buf_t *buf)
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
+
 	xi->recv_buf = buf;
 
 	/* note process_init must drop recv_buf */
@@ -325,7 +320,7 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	return STATE_RECV_COMP_REARM;
+	return STATE_RECV_COMP_POLL;
 }
 
 /*
@@ -339,7 +334,7 @@ static int recv_drop_buf(buf_t *buf)
 	buf_put(buf);
 	ni->num_recv_drops++;
 
-	return STATE_RECV_COMP_REARM;
+	return STATE_RECV_COMP_POLL;
 }
 
 /*
@@ -357,10 +352,6 @@ void process_recv(EV_P_ ev_io *w, int revents)
 		switch (state) {
 		case STATE_RECV_EVENT_WAIT:
 			state = event_wait(ni);
-			break;
-		case STATE_RECV_COMP_REARM:
-			buf = NULL;
-			state = comp_rearm(ni);
 			break;
 		case STATE_RECV_COMP_POLL:
 			state = comp_poll(ni, &buf);
@@ -432,7 +423,7 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 			}
 			goto fail;
 
-		case STATE_RECV_COMP_REARM:		/* COMP_REARM is an ending state for SHMEM. */
+		case STATE_RECV_COMP_POLL:		/* COMP_POLL is an ending state for SHMEM. */
 		case STATE_RECV_DONE:
 			goto done;
 		default:
