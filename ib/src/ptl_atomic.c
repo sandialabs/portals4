@@ -37,16 +37,16 @@
 #undef bxor
 #endif
 
-#define min(a,b)	(((a) < (b)) ? (a) : (b))
-#define max(a,b)	(((a) > (b)) ? (a) : (b))
-#define sum(a,b)	((a) + (b))
-#define prod(a,b)	((a) * (b))
-#define lor(a,b)	((a) || (b))
-#define land(a,b)	((a) && (b))
-#define bor(a,b)	((a) | (b))
-#define band(a,b)	((a) & (b))
-#define lxor(a,b)	(((a) && !(b)) || (!(a) && (b)))
-#define bxor(a,b)	((a) ^ (b))
+#define min(a, b)	(((a) < (b)) ? (a) : (b))
+#define max(a, b)	(((a) > (b)) ? (a) : (b))
+#define sum(a, b)	((a) + (b))
+#define prod(a, b)	((a) * (b))
+#define lor(a, b)	((a) || (b))
+#define land(a, b)	((a) && (b))
+#define bor(a, b)	((a) | (b))
+#define band(a, b)	((a) & (b))
+#define lxor(a, b)	(((a) && !(b)) || (!(a) && (b)))
+#define bxor(a, b)	((a) ^ (b))
 
 /**
  * Compute min of two signed char arrays.
@@ -1562,3 +1562,317 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 		[PTL_UINT64_T]	= bxor_l,
 	},
 };
+
+#define cswap(op, s, d, type)							\
+	do {	if (op->type == d->type) d->type = s->type; } while (0)
+
+#define cswap_c(op, s, d, type)							\
+	do {	if (op->type[0] == d->type[0] && op->type[1] == d->type[1]) {	\
+		d->type[0] = s->type[0];					\
+		d->type[1] = s->type[1];					\
+	} } while (0);
+
+#define cswap_ne(op, s, d, type)						\
+	do {	if (op->type != d->type) d->type = s->type; } while (0)
+
+#define cswap_ne_c(op, s, d, type)						\
+	do {	if (op->type[0] != d->type[0] || op->type[1] != d->type[1]) {	\
+		d->type[0] = s->type[0];					\
+		d->type[1] = s->type[1];					\
+	} } while (0);
+
+#define cswap_le(op, s, d, type)						\
+	do {	if (op->type <= d->type) d->type = s->type; } while (0)
+
+#define cswap_lt(op, s, d, type)						\
+	do {	if (op->type < d->type) d->type = s->type; } while (0)
+
+#define cswap_ge(op, s, d, type)						\
+	do {	if (op->type <= d->type) d->type = s->type; } while (0)
+
+#define cswap_gt(op, s, d, type)						\
+	do {	if (op->type < d->type) d->type = s->type; } while (0)
+
+#define mswap(op, s, d, type)							\
+	do {	d->type = (op->type & s->type) |				\
+		(~op->type & d->type); } while (0)
+
+/**
+ * perform swap operations for all cases except PTL_SWAP.
+ *
+ * @todo There is an open issue with the operand for double complex
+ * swap operations. Since operand is declared as u64 and that
+ * is not big enough to hold a double complex.
+ *
+ * @param atom_op The swap operation to perform
+ * @param atom_type The data type to use
+ * @param dest address of target data
+ * @param source address of source data
+ * @param operand address of operand
+ *
+ * @return status
+ */
+int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
+		 void *dest, void *source, void *operand)
+{
+	datatype_t *opr = operand;
+	datatype_t *src = source;
+	datatype_t *dst = dest;
+
+	switch (atom_op) {
+	case PTL_CSWAP:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap(opr, src, dst, f);
+			break;
+		case PTL_FLOAT_COMPLEX:
+			cswap_c(opr, src, dst, fc);
+			break;
+		case PTL_DOUBLE:
+			cswap(opr, src, dst, d);
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			cswap_c(opr, src, dst, dc);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_CSWAP_NE:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap_ne(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap_ne(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap_ne(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap_ne(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap_ne(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap_ne(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap_ne(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap_ne(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap_ne(opr, src, dst, f);
+			break;
+		case PTL_FLOAT_COMPLEX:
+			cswap_ne_c(opr, src, dst, fc);
+			break;
+		case PTL_DOUBLE:
+			cswap_ne(opr, src, dst, d);
+			break;
+		case PTL_DOUBLE_COMPLEX:
+			cswap_ne_c(opr, src, dst, dc);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_CSWAP_LE:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap_le(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap_le(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap_le(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap_le(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap_le(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap_le(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap_le(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap_le(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap_le(opr, src, dst, f);
+			break;
+		case PTL_DOUBLE:
+			cswap_le(opr, src, dst, d);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_CSWAP_LT:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap_lt(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap_lt(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap_lt(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap_lt(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap_lt(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap_lt(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap_lt(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap_lt(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap_lt(opr, src, dst, f);
+			break;
+		case PTL_DOUBLE:
+			cswap_lt(opr, src, dst, d);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_CSWAP_GE:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap_ge(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap_ge(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap_ge(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap_ge(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap_ge(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap_ge(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap_ge(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap_ge(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap_ge(opr, src, dst, f);
+			break;
+		case PTL_DOUBLE:
+			cswap_ge(opr, src, dst, d);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_CSWAP_GT:
+		switch (atom_type) {
+		case PTL_INT8_T:
+			cswap_gt(opr, src, dst, s8);
+			break;
+		case PTL_UINT8_T:
+			cswap_gt(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+			cswap_gt(opr, src, dst, s16);
+			break;
+		case PTL_UINT16_T:
+			cswap_gt(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+			cswap_gt(opr, src, dst, s32);
+			break;
+		case PTL_UINT32_T:
+			cswap_gt(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+			cswap_gt(opr, src, dst, s64);
+			break;
+		case PTL_UINT64_T:
+			cswap_gt(opr, src, dst, u64);
+			break;
+		case PTL_FLOAT:
+			cswap_gt(opr, src, dst, f);
+			break;
+		case PTL_DOUBLE:
+			cswap_gt(opr, src, dst, d);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	case PTL_MSWAP:
+		switch (atom_type) {
+		case PTL_INT8_T:
+		case PTL_UINT8_T:
+			mswap(opr, src, dst, u8);
+			break;
+		case PTL_INT16_T:
+		case PTL_UINT16_T:
+			mswap(opr, src, dst, u16);
+			break;
+		case PTL_INT32_T:
+		case PTL_UINT32_T:
+			mswap(opr, src, dst, u32);
+			break;
+		case PTL_INT64_T:
+		case PTL_UINT64_T:
+			mswap(opr, src, dst, u64);
+			break;
+		default:
+			return PTL_ARG_INVALID;
+		}
+		break;
+	default:
+		return PTL_ARG_INVALID;
+	}
+
+	return PTL_OK;
+}
