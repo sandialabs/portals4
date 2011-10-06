@@ -216,6 +216,7 @@ int main(int   argc,
      * logical interface set up */
     printf("runtime_barrier()\n");
     runtime_barrier();
+    printf("after runtime_barrier()\n");
 
     /* now I can communicate between ranks with ni_logical */
 
@@ -228,6 +229,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
+    printf("PtlPut\n");
     /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
@@ -242,12 +244,15 @@ int main(int   argc,
     if (verb) {
         printf("-=-=-=-=-=-=-=-=-=-=-\nSending the unexpected put...\n    Initiator-side EQ:\n");
     }
+    printf("waiting for events...\n");
     emptyEQ(write_md.eq_handle, myself, 1);
     assert(emptyEQ(write_md.eq_handle, myself, 0) == 0);
     if (verb) {
         printf("    Target-side EQ:\n");
     }
+    printf("waiting for events...\n");
     emptyEQ(recv_eq, myself, 1);
+    printf("waiting for events..?\n");
     assert(emptyEQ(recv_eq, myself, 0) == 0);
     if (verb) {
         printf("-=-=-=-=-=-=-=-=-=-=-\nNow... posting the receive:\n");
@@ -273,13 +278,16 @@ int main(int   argc,
         if (verb) {
             printf("    Initiator-side EQ:\n");
         }
+        printf("waiting for events...\n");
         count_events = emptyEQ(write_md.eq_handle, myself, 0);
         assert(count_events == 0);
         if (verb) {
             printf("    Target-side EQ:\n");
         }
+        printf("waiting for events...\n");
         count_events = emptyEQ(recv_eq, myself, 3);
         assert(count_events == 3);
+        printf("waiting for events..?\n");
         assert(emptyEQ(recv_eq, myself, 0) == 0);
     }
 
@@ -293,6 +301,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlEQFree(recv_eq));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
+    free(unexpected_buf);
 
     return 0;
 }
