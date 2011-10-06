@@ -87,7 +87,10 @@ typedef struct ni {
 		struct ibv_cq		*cq;
 		struct ibv_comp_channel	*ch;
 		ev_io			async_watcher;
-		ev_io			cq_watcher;
+		pthread_t catcher;
+		int has_catcher;
+		int catcher_stop;
+		
 		struct ibv_srq		*srq;	/* either regular or XRC */
 
 		/* Pending send and receive operations. */
@@ -105,8 +108,8 @@ typedef struct ni {
 		ptl_rank_t local_rank;		/* local rank on this node [0..num_siblings[ */
 		int knem_fd;
 		struct NEMESIS_blocking_queue *receiveQ;
-		pthread_t shmem_catcher;
-		int has_shmem_catcher;
+		pthread_t catcher;
+		int has_catcher;
 		char *comm_pad_shm_name;
 	} shmem;
 

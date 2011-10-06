@@ -120,7 +120,6 @@ static inline uint64_t be64_to_cpu(uint64_t x)
 #endif
 
 enum {
-	STATE_RECV_EVENT_WAIT,
 	STATE_RECV_COMP_POLL,
 	STATE_RECV_GET_BUF,
 	STATE_RECV_WAIT,
@@ -225,7 +224,7 @@ int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 
 int post_tgt_rdma(xt_t *xt);
 
-void process_recv(EV_P_ ev_io *w, int revents);
+void *process_recv_rdma_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
 
 int process_init(xi_t *xi);
