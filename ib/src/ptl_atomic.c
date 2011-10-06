@@ -1722,10 +1722,10 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 	do {	if (op->type < d->type) d->type = s->type; } while (0)
 
 #define cswap_ge(op, s, d, type)						\
-	do {	if (op->type <= d->type) d->type = s->type; } while (0)
+	do {	if (op->type >= d->type) d->type = s->type; } while (0)
 
 #define cswap_gt(op, s, d, type)						\
-	do {	if (op->type < d->type) d->type = s->type; } while (0)
+	do {	if (op->type > d->type) d->type = s->type; } while (0)
 
 #define mswap(op, s, d, type)							\
 	do {	d->type = (op->type & s->type) |				\
