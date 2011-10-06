@@ -13,6 +13,7 @@ libportals_la_SOURCES = \
 	ptl_ct.h \
 	ptl_data.c \
 	ptl_data.h \
+	ptl_iov.c \
 	ptl_eq.c \
 	ptl_eq.h \
 	ptl_evloop.c \
