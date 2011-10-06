@@ -6,7 +6,12 @@
 
 #include "ptl_loc.h"
 
+/**
+ * Misc useful information about atomic ops
+ */
 struct atom_op_info op_info[] = {
+			/*    float  complex  atomic   swap    uses
+			 *	ok	ok	ok	ok   operand	*/
 	[PTL_MIN]	= {	1,	0,	1,	0,	0, },
 	[PTL_MAX]	= {	1,	0,	1,	0,	0, },
 	[PTL_SUM]	= {	1,	1,	1,	0,	0, },
@@ -19,14 +24,17 @@ struct atom_op_info op_info[] = {
 	[PTL_BXOR]	= {	0,	0,	1,	0,	0, },
 	[PTL_SWAP]	= {	1,	1,	0,	1,	0, },
 	[PTL_CSWAP]	= {	1,	1,	0,	1,	1, },
+	[PTL_MSWAP]	= {	0,	0,	0,	1,	1, },
 	[PTL_CSWAP_NE]	= {	1,	1,	0,	1,	1, },
 	[PTL_CSWAP_LE]	= {	1,	0,	0,	1,	1, },
 	[PTL_CSWAP_LT]	= {	1,	0,	0,	1,	1, },
 	[PTL_CSWAP_GE]	= {	1,	0,	0,	1,	1, },
 	[PTL_CSWAP_GT]	= {	1,	0,	0,	1,	1, },
-	[PTL_MSWAP]	= {	0,	0,	0,	1,	1, },
 };
 
+/**
+ * Array of sizes for portals types.
+ */
 int atom_type_size[] = 
 {
 	[PTL_INT8_T]			= 1,
@@ -41,40 +49,11 @@ int atom_type_size[] =
 	[PTL_FLOAT_COMPLEX]		= 8,
 	[PTL_DOUBLE]			= 8,
 	[PTL_DOUBLE_COMPLEX]		= 16,
+
+	/* these are system dependant */
 	[PTL_LONG_DOUBLE]		= sizeof(long double),
 	[PTL_LONG_DOUBLE_COMPLEX]	= 2*sizeof(long double),
 };
-
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-#ifdef sum
-#undef sum
-#endif
-#ifdef prod
-#undef prod
-#endif
-#ifdef lor
-#undef lor
-#endif
-#ifdef land
-#undef land
-#endif
-#ifdef bor
-#undef bor
-#endif
-#ifdef band
-#undef band
-#endif
-#ifdef lxor
-#undef lxor
-#endif
-#ifdef bxor
-#undef bxor
-#endif
 
 #define min(a, b)	(((a) < (b)) ? (a) : (b))
 #define max(a, b)	(((a) > (b)) ? (a) : (b))
@@ -298,6 +277,27 @@ static int min_d(void *dst, void *src, ptl_size_t length)
 }
 
 /**
+ * Compute min of two long double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int min_ld(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	long double *s = src;
+	long double *d = dst;
+
+	for (i = 0; i < length/sizeof(long double); i++, s++, d++)
+		*d = min(*s, *d);
+
+	return PTL_OK;
+}
+
+/**
  * Compute max of two signed char arrays.
  *
  * @param dst destination array
@@ -508,6 +508,27 @@ static int max_d(void *dst, void *src, ptl_size_t length)
 }
 
 /**
+ * Compute max of two long double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int max_ld(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	long double *s = src;
+	long double *d = dst;
+
+	for (i = 0; i < length/sizeof(long double); i++, s++, d++)
+		*d = max(*s, *d);
+
+	return PTL_OK;
+}
+
+/**
  * Compute sum of two signed char arrays.
  *
  * @param dst destination array
@@ -712,6 +733,27 @@ static int sum_d(void *dst, void *src, ptl_size_t length)
 	double *d = dst;
 
 	for (i = 0; i < length/8; i++, s++, d++)
+		*d = sum(*s, *d);
+
+	return PTL_OK;
+}
+
+/**
+ * Compute sum of two long double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int sum_ld(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	long double *s = src;
+	long double *d = dst;
+
+	for (i = 0; i < length/sizeof(long double); i++, s++, d++)
 		*d = sum(*s, *d);
 
 	return PTL_OK;
@@ -970,6 +1012,53 @@ static int prod_dc(void *dst, void *src, ptl_size_t length)
 	double a, b;
 
 	for (i = 0; i < length/16; i++, s += 2, d += 2) {
+		a = prod(s[0], d[0]) - prod(s[1], d[1]);
+		b = prod(s[0], d[1]) + prod(s[1], d[0]);
+		d[0] = a;
+		d[1] = b;
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * Compute prod of two long double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int prod_ld(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	long double *s = src;
+	long double *d = dst;
+
+	for (i = 0; i < length/sizeof(long double); i++, s++, d++)
+		*d = prod(*s, *d);
+
+	return PTL_OK;
+}
+
+/**
+ * Compute prod of two long double complex arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int prod_ldc(void *dst, void *src, ptl_size_t length)
+{
+	int i;
+	long double *s = src;
+	long double *d = dst;
+	long double a, b;
+
+	for (i = 0; i < length/(2*sizeof(long double)); i++, s += 2, d += 2) {
 		a = prod(s[0], d[0]) - prod(s[1], d[1]);
 		b = prod(s[0], d[1]) + prod(s[1], d[0]);
 		d[0] = a;
@@ -1489,116 +1578,122 @@ static int bxor_l(void *dst, void *src, ptl_size_t length)
  */
 atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 	[PTL_MIN]	= {
-		[PTL_INT8_T]	= min_sc,
-		[PTL_UINT8_T]	= min_uc,
-		[PTL_INT16_T]	= min_ss,
-		[PTL_UINT16_T]	= min_us,
-		[PTL_INT32_T]	= min_si,
-		[PTL_UINT32_T]	= min_ui,
-		[PTL_INT64_T]	= min_sl,
-		[PTL_UINT64_T]	= min_ul,
-		[PTL_FLOAT]	= min_f,
-		[PTL_DOUBLE]	= min_d,
+		[PTL_INT8_T]		= min_sc,
+		[PTL_UINT8_T]		= min_uc,
+		[PTL_INT16_T]		= min_ss,
+		[PTL_UINT16_T]		= min_us,
+		[PTL_INT32_T]		= min_si,
+		[PTL_UINT32_T]		= min_ui,
+		[PTL_INT64_T]		= min_sl,
+		[PTL_UINT64_T]		= min_ul,
+		[PTL_FLOAT]		= min_f,
+		[PTL_DOUBLE]		= min_d,
+		[PTL_LONG_DOUBLE]	= min_ld,
 	},
 	[PTL_MAX]	= {
-		[PTL_INT8_T]	= max_sc,
-		[PTL_UINT8_T]	= max_uc,
-		[PTL_INT16_T]	= max_ss,
-		[PTL_UINT16_T]	= max_us,
-		[PTL_INT32_T]	= max_si,
-		[PTL_UINT32_T]	= max_ui,
-		[PTL_INT64_T]	= max_sl,
-		[PTL_UINT64_T]	= max_ul,
-		[PTL_FLOAT]	= max_f,
-		[PTL_DOUBLE]	= max_d,
+		[PTL_INT8_T]		= max_sc,
+		[PTL_UINT8_T]		= max_uc,
+		[PTL_INT16_T]		= max_ss,
+		[PTL_UINT16_T]		= max_us,
+		[PTL_INT32_T]		= max_si,
+		[PTL_UINT32_T]		= max_ui,
+		[PTL_INT64_T]		= max_sl,
+		[PTL_UINT64_T]		= max_ul,
+		[PTL_FLOAT]		= max_f,
+		[PTL_DOUBLE]		= max_d,
+		[PTL_LONG_DOUBLE]	= max_ld,
 	},
 	[PTL_SUM]	= {
-		[PTL_INT8_T]	= sum_sc,
-		[PTL_UINT8_T]	= sum_uc,
-		[PTL_INT16_T]	= sum_ss,
-		[PTL_UINT16_T]	= sum_us,
-		[PTL_INT32_T]	= sum_si,
-		[PTL_UINT32_T]	= sum_ui,
-		[PTL_INT64_T]	= sum_sl,
-		[PTL_UINT64_T]	= sum_ul,
-		[PTL_FLOAT]	= sum_f,
+		[PTL_INT8_T]		= sum_sc,
+		[PTL_UINT8_T]		= sum_uc,
+		[PTL_INT16_T]		= sum_ss,
+		[PTL_UINT16_T]		= sum_us,
+		[PTL_INT32_T]		= sum_si,
+		[PTL_UINT32_T]		= sum_ui,
+		[PTL_INT64_T]		= sum_sl,
+		[PTL_UINT64_T]		= sum_ul,
+		[PTL_FLOAT]		= sum_f,
 		[PTL_FLOAT_COMPLEX]	= sum_f,
-		[PTL_DOUBLE]	= sum_d,
+		[PTL_DOUBLE]		= sum_d,
 		[PTL_DOUBLE_COMPLEX]	= sum_d,
+		[PTL_LONG_DOUBLE]	= sum_ld,
+		[PTL_LONG_DOUBLE_COMPLEX] = sum_ld,
 	},
 	[PTL_PROD]	= {
-		[PTL_INT8_T]	= prod_sc,
-		[PTL_UINT8_T]	= prod_uc,
-		[PTL_INT16_T]	= prod_ss,
-		[PTL_UINT16_T]	= prod_us,
-		[PTL_INT32_T]	= prod_si,
-		[PTL_UINT32_T]	= prod_ui,
-		[PTL_INT64_T]	= prod_sl,
-		[PTL_UINT64_T]	= prod_ul,
-		[PTL_FLOAT]	= prod_f,
+		[PTL_INT8_T]		= prod_sc,
+		[PTL_UINT8_T]		= prod_uc,
+		[PTL_INT16_T]		= prod_ss,
+		[PTL_UINT16_T]		= prod_us,
+		[PTL_INT32_T]		= prod_si,
+		[PTL_UINT32_T]		= prod_ui,
+		[PTL_INT64_T]		= prod_sl,
+		[PTL_UINT64_T]		= prod_ul,
+		[PTL_FLOAT]		= prod_f,
 		[PTL_FLOAT_COMPLEX]	= prod_fc,
-		[PTL_DOUBLE]	= prod_d,
+		[PTL_DOUBLE]		= prod_d,
 		[PTL_DOUBLE_COMPLEX]	= prod_dc,
+		[PTL_LONG_DOUBLE]	= prod_ld,
+		[PTL_LONG_DOUBLE_COMPLEX] = prod_ldc,
 	},
 	[PTL_LOR]	= {
-		[PTL_INT8_T]	= lor_c,
-		[PTL_UINT8_T]	= lor_c,
-		[PTL_INT16_T]	= lor_s,
-		[PTL_UINT16_T]	= lor_s,
-		[PTL_INT32_T]	= lor_i,
-		[PTL_UINT32_T]	= lor_i,
-		[PTL_INT64_T]	= lor_l,
-		[PTL_UINT64_T]	= lor_l,
+		[PTL_INT8_T]		= lor_c,
+		[PTL_UINT8_T]		= lor_c,
+		[PTL_INT16_T]		= lor_s,
+		[PTL_UINT16_T]		= lor_s,
+		[PTL_INT32_T]		= lor_i,
+		[PTL_UINT32_T]		= lor_i,
+		[PTL_INT64_T]		= lor_l,
+		[PTL_UINT64_T]		= lor_l,
 	},
 	[PTL_LAND]	= {
-		[PTL_INT8_T]	= land_c,
-		[PTL_UINT8_T]	= land_c,
-		[PTL_INT16_T]	= land_s,
-		[PTL_UINT16_T]	= land_s,
-		[PTL_INT32_T]	= land_i,
-		[PTL_UINT32_T]	= land_i,
-		[PTL_INT64_T]	= land_l,
-		[PTL_UINT64_T]	= land_l,
+		[PTL_INT8_T]		= land_c,
+		[PTL_UINT8_T]		= land_c,
+		[PTL_INT16_T]		= land_s,
+		[PTL_UINT16_T]		= land_s,
+		[PTL_INT32_T]		= land_i,
+		[PTL_UINT32_T]		= land_i,
+		[PTL_INT64_T]		= land_l,
+		[PTL_UINT64_T]		= land_l,
 	},
 	[PTL_BOR]	= {
-		[PTL_INT8_T]	= bor_c,
-		[PTL_UINT8_T]	= bor_c,
-		[PTL_INT16_T]	= bor_s,
-		[PTL_UINT16_T]	= bor_s,
-		[PTL_INT32_T]	= bor_i,
-		[PTL_UINT32_T]	= bor_i,
-		[PTL_INT64_T]	= bor_l,
-		[PTL_UINT64_T]	= bor_l,
+		[PTL_INT8_T]		= bor_c,
+		[PTL_UINT8_T]		= bor_c,
+		[PTL_INT16_T]		= bor_s,
+		[PTL_UINT16_T]		= bor_s,
+		[PTL_INT32_T]		= bor_i,
+		[PTL_UINT32_T]		= bor_i,
+		[PTL_INT64_T]		= bor_l,
+		[PTL_UINT64_T]		= bor_l,
 	},
 	[PTL_BAND]	= {
-		[PTL_INT8_T]	= band_c,
-		[PTL_UINT8_T]	= band_c,
-		[PTL_INT16_T]	= band_s,
-		[PTL_UINT16_T]	= band_s,
-		[PTL_INT32_T]	= band_i,
-		[PTL_UINT32_T]	= band_i,
-		[PTL_INT64_T]	= band_l,
-		[PTL_UINT64_T]	= band_l,
+		[PTL_INT8_T]		= band_c,
+		[PTL_UINT8_T]		= band_c,
+		[PTL_INT16_T]		= band_s,
+		[PTL_UINT16_T]		= band_s,
+		[PTL_INT32_T]		= band_i,
+		[PTL_UINT32_T]		= band_i,
+		[PTL_INT64_T]		= band_l,
+		[PTL_UINT64_T]		= band_l,
 	},
 	[PTL_LXOR]	= {
-		[PTL_INT8_T]	= lxor_c,
-		[PTL_UINT8_T]	= lxor_c,
-		[PTL_INT16_T]	= lxor_s,
-		[PTL_UINT16_T]	= lxor_s,
-		[PTL_INT32_T]	= lxor_i,
-		[PTL_UINT32_T]	= lxor_i,
-		[PTL_INT64_T]	= lxor_l,
-		[PTL_UINT64_T]	= lxor_l,
+		[PTL_INT8_T]		= lxor_c,
+		[PTL_UINT8_T]		= lxor_c,
+		[PTL_INT16_T]		= lxor_s,
+		[PTL_UINT16_T]		= lxor_s,
+		[PTL_INT32_T]		= lxor_i,
+		[PTL_UINT32_T]		= lxor_i,
+		[PTL_INT64_T]		= lxor_l,
+		[PTL_UINT64_T]		= lxor_l,
 	},
 	[PTL_BXOR]	= {
-		[PTL_INT8_T]	= bxor_c,
-		[PTL_UINT8_T]	= bxor_c,
-		[PTL_INT16_T]	= bxor_s,
-		[PTL_UINT16_T]	= bxor_s,
-		[PTL_INT32_T]	= bxor_i,
-		[PTL_UINT32_T]	= bxor_i,
-		[PTL_INT64_T]	= bxor_l,
-		[PTL_UINT64_T]	= bxor_l,
+		[PTL_INT8_T]		= bxor_c,
+		[PTL_UINT8_T]		= bxor_c,
+		[PTL_INT16_T]		= bxor_s,
+		[PTL_UINT16_T]		= bxor_s,
+		[PTL_INT32_T]		= bxor_i,
+		[PTL_UINT32_T]		= bxor_i,
+		[PTL_INT64_T]		= bxor_l,
+		[PTL_UINT64_T]		= bxor_l,
 	},
 };
 
@@ -1697,6 +1792,12 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		case PTL_DOUBLE_COMPLEX:
 			cswap_c(opr, src, dst, dc);
 			break;
+		case PTL_LONG_DOUBLE:
+			cswap(opr, src, dst, ld);
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			cswap_c(opr, src, dst, ldc);
+			break;
 		default:
 			return PTL_ARG_INVALID;
 		}
@@ -1739,6 +1840,12 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		case PTL_DOUBLE_COMPLEX:
 			cswap_ne_c(opr, src, dst, dc);
 			break;
+		case PTL_LONG_DOUBLE:
+			cswap_ne(opr, src, dst, ld);
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			cswap_ne_c(opr, src, dst, ldc);
+			break;
 		default:
 			return PTL_ARG_INVALID;
 		}
@@ -1774,6 +1881,9 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 			break;
 		case PTL_DOUBLE:
 			cswap_le(opr, src, dst, d);
+			break;
+		case PTL_LONG_DOUBLE:
+			cswap_le(opr, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1811,6 +1921,9 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		case PTL_DOUBLE:
 			cswap_lt(opr, src, dst, d);
 			break;
+		case PTL_LONG_DOUBLE:
+			cswap_lt(opr, src, dst, ld);
+			break;
 		default:
 			return PTL_ARG_INVALID;
 		}
@@ -1847,6 +1960,9 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		case PTL_DOUBLE:
 			cswap_ge(opr, src, dst, d);
 			break;
+		case PTL_LONG_DOUBLE:
+			cswap_ge(opr, src, dst, ld);
+			break;
 		default:
 			return PTL_ARG_INVALID;
 		}
@@ -1882,6 +1998,9 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 			break;
 		case PTL_DOUBLE:
 			cswap_gt(opr, src, dst, d);
+			break;
+		case PTL_LONG_DOUBLE:
+			cswap_gt(opr, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
