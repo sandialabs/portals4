@@ -230,7 +230,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
                 if ((mdptr != NULL) &&
-                    ((hdr->src == 1) || (hdr->src == 0))) {
+                    ((hdr->src == DM_SILENT_ACK) || (hdr->src == DM_ACK))) {
                     memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
                            hdr->data,
                            hdr->length);
@@ -321,7 +321,8 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
-                if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                if ((mdptr != NULL) &&
+                    ((hdr->src == DM_ACK) || (hdr->src == DM_SILENT_ACK))) {
                     memcpy((uint8_t *)(mdptr->start) + hdr->local_offset2,
                            hdr->data,
                            hdr->length);
@@ -336,7 +337,8 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
             ack_printf("replied with %i data\n", (int)hdr->length);
-            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+            if ((mdptr != NULL) &&
+                ((hdr->src == DM_ACK) || (hdr->src == DM_SILENT_ACK))) {
                 memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
                        hdr->data,
                        hdr->length);
@@ -388,7 +390,8 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             } else {
                 /* pull the data out of the reply */
                 ack_printf("replied with %i data\n", (int)hdr->length);
-                if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+                if ((mdptr != NULL) &&
+                    ((hdr->src == DM_ACK) || (hdr->src == DM_SILENT_ACK))) {
                     memcpy((uint8_t *)(mdptr->start) + hdr->local_offset2,
                            hdr->data + 32,
                            hdr->length);
@@ -403,7 +406,8 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             mdptr = PtlInternalMDFetch(md_handle);
             /* pull the data out of the reply */
             ack_printf("replied with %i data\n", (int)hdr->length);
-            if ((mdptr != NULL) && ((hdr->src == 1) || (hdr->src == 0))) {
+            if ((mdptr != NULL) &&
+                ((hdr->src == DM_ACK) || (hdr->src == DM_SILENT_ACK))) {
                 memcpy((uint8_t *)(mdptr->start) + hdr->local_offset1,
                        hdr->data + 32,
                        hdr->length);
@@ -439,7 +443,7 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     acktype = 2;
                     break;
                 case PTL_NO_ACK_REQ:
-                    hdr->src = 0;
+                    hdr->src = DM_SILENT_ACK;
                     break;
                 case PTL_CT_ACK_REQ:
                 case PTL_OC_ACK_REQ:
@@ -447,13 +451,12 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             }
     }
     /* Report the ack */
-    switch (hdr->src) {
-        case 0:                       // Pretend we didn't recieve an ack
+    switch ((enum DM_return_codes)hdr->src) {
+        case DM_SILENT_ACK:           // Pretend we didn't recieve an ack
             ack_printf("it's a secret ACK\n");
             break;
-        case 1:                       // success
-        case 2:                       // overflow
-            ack_printf("it's a successful/overflow ACK (%p)\n", mdptr);
+        case DM_ACK:                  // success
+            ack_printf("it's a successful ACK (%p)\n", mdptr);
             if (mdptr != NULL) {
                 int ct_enabled = 0;
                 switch(basictype) {
@@ -495,12 +498,12 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
             }
             ack_printf("finished notification of successful ACK\n");
             break;
-        case 3:                       // Permission Violation
+        case DM_PERM_VIOLATION:       // Permission Violation
             ack_printf("ACK says permission violation\n");
-        // goto reporterror;
-        case 4:                       // nothing matched, report error
-            // reporterror:
-            ack_printf("ACK says nothing matched!\n");
+            goto reporterror;
+        case DM_OP_VIOLATION:         // Op Violation
+            ack_printf("ACK says op violation\n");
+            reporterror:
             if (mdptr != NULL) {
                 int ct_enabled = 0;
                 switch (basictype) {
@@ -526,12 +529,12 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     e.mlength       = hdr->length;
                     e.remote_offset = hdr->dest_offset;
                     e.user_ptr      = hdr->user_ptr;
-                    switch (hdr->src) {
-                        case 3:
+                    switch ((enum DM_return_codes)hdr->src) {
+                        case DM_PERM_VIOLATION:
                             e.ni_fail_type = PTL_NI_PERM_VIOLATION;
                             break;
                         default:
-                            e.ni_fail_type = PTL_NI_OK;
+                            e.ni_fail_type = PTL_NI_OP_VIOLATION;
                     }
                     PtlInternalEQPush(md_eq, &e);
                 }
@@ -607,25 +610,25 @@ static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETUR
                         hdr->src = PtlInternalLEDeliver(table_entry, hdr);
                         break;
                 }
-                switch (hdr->src) {
-                    case 0:           // target said silent ACK (might be no ME posted)
+                switch ((enum DM_return_codes)hdr->src) {
+                    case DM_SILENT_ACK:
                         dm_printf("not sending an ack\n");
                         break;
-                    case 1:           // success
+                    case DM_ACK:
                         dm_printf("delivery success!\n");
                         break;
-                    case 2:           // overflow
-                        dm_printf("delivery overflow!\n");
-                        break;
-                    case 3:           // Permission Violation
+                    case DM_PERM_VIOLATION:
                         dm_printf("permission violation!\n");
+                        hdr->length = 0;
+                        break;
+                    case DM_OP_VIOLATION:
+                        dm_printf("operation violation!\n");
                         hdr->length = 0;
                         break;
                 }
             } else {
                 /* Invalid PT: increment the dropped counter */
-                (void)
-                PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
+                (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
 #ifdef LOUD_DROPS
                 fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u sent to an invalid PT (%u) on NI %u\n",
                         (unsigned)proc_number, (unsigned)hdr->src,
@@ -633,7 +636,7 @@ static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETUR
                 fflush(stderr);
 #endif
                 /* silently ACK */
-                hdr->src = 0;
+                hdr->src = DM_SILENT_ACK;
                 dm_printf("table_entry->status == 0 ... unlocking\n");
                 PTL_LOCK_UNLOCK(table_entry->lock);
             }
@@ -644,7 +647,7 @@ static void *PtlInternalDMCatcher(void *__attribute__ ((unused)) junk) Q_NORETUR
                     (unsigned)hdr->ni);
             fflush(stderr);
 #endif
-            hdr->src = 0;              // silent ACK
+            hdr->src = DM_SILENT_ACK;              // silent ACK
         }
         PtlInternalAtomicInc(&nit.internal_refcount[hdr->ni], -1);
         dm_printf("returning fragment\n");
