@@ -1006,7 +1006,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_SWAP:
                 if ((me.options & PTL_ME_OP_PUT) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
-                    goto permission_violation;
+                    goto operation_violation;
                 }
         }
         switch (hdr->type & HDR_TYPE_BASICMASK) {
@@ -1015,14 +1015,18 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(ptl_table_entry_t *restrict     t,
             case HDR_TYPE_SWAP:
                 if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
-                    goto permission_violation;
+                    goto operation_violation;
                 }
         }
         if (0) {
+operation_violation:
+            PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
+            PTL_LOCK_UNLOCK(t->lock);
+            return DM_OP_VIOLATION;
 permission_violation:
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
-            return (ptl_pid_t)3;
+            return DM_PERM_VIOLATION;
         }
         /*******************************************************************
         * We have permissions on this ME, now check if it's a use-once ME *
@@ -1246,15 +1250,18 @@ check_lengths:
                 if (need_to_unlock) {
                     PTL_LOCK_UNLOCK(t->lock);
                 }
-                return (ptl_pid_t)((me.options & (PTL_ME_ACK_DISABLE)) ? 0 :
-                                   1);
+                if (me.options & PTL_ME_ACK_DISABLE) {
+                    return DM_SILENT_ACK;
+                } else {
+                    return DM_ACK;
+                }
 
             default:
                 PtlInternalPAPIDoneC(PTL_ME_PROCESS, 3);
                 if (need_to_unlock) {
                     PTL_LOCK_UNLOCK(t->lock);
                 }
-                return (ptl_pid_t)1;
+                return DM_ACK;
         }
     }
 #ifdef LOUD_DROPS
@@ -1278,7 +1285,7 @@ check_lengths:
     if (need_to_unlock) {
         PTL_LOCK_UNLOCK(t->lock);
     }
-    return 0;                          // silent ACK
+    return DM_SILENT_ACK;
 }                                      /*}}} */
 
 #ifdef USE_TRANSFER_ENGINE

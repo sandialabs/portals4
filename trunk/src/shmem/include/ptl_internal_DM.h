@@ -3,6 +3,13 @@
 
 #include "ptl_visibility.h"
 
+enum DM_return_codes {
+    DM_SILENT_ACK,
+    DM_ACK,
+    DM_PERM_VIOLATION,
+    DM_OP_VIOLATION
+};
+
 void INTERNAL PtlInternalDMSetup(void);
 void INTERNAL PtlInternalDMTeardown(void);
 int INTERNAL  PtlInternalAmITheCatcher(void);
