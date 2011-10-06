@@ -282,6 +282,13 @@ static int bind_iface(iface_t *iface, unsigned int port)
 
 static int cleanup_ib(ni_t *ni)
 {
+	/* Stop the CQ thread listener. */
+	if (ni->rdma.has_catcher) {
+		ni->rdma.catcher_stop = 1;
+		pthread_join(ni->rdma.catcher, NULL);
+		ni->rdma.has_catcher = 0;
+	}
+
 	ni_rcqp_cleanup(ni);
 
 	if (ni->rdma.srq) {
@@ -318,7 +325,6 @@ static int cleanup_ib(ni_t *ni)
 static int init_ib(iface_t *iface, ni_t *ni)
 {
 	int err;
-	int flags;
 	int cqe;
 
 	/* If it is a physical address, then we bind it. */
@@ -361,13 +367,6 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	ni->rdma.ch = ibv_create_comp_channel(iface->ibv_context);
 	if (!ni->rdma.ch) {
 		ptl_warn("unable to create comp channel\n");
-		WARN();
-		goto err1;
-	}
-
-	flags = fcntl(ni->rdma.ch->fd, F_GETFL);
-	if (fcntl(ni->rdma.ch->fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-		ptl_warn("Cannot set completion event channel to non blocking\n");
 		WARN();
 		goto err1;
 	}
@@ -718,10 +717,9 @@ static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
 	if (unlikely(err))
 		goto error;
 
-	/* Add a watcher for CQ events. */
-	ev_io_init(&ni->rdma.cq_watcher, process_recv, ni->rdma.ch->fd, EV_READ);
-	ni->rdma.cq_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.cq_watcher));
+	/* Add a thread to wait for CQ events. */
+	ptl_assert(pthread_create(&ni->rdma.catcher, NULL, process_recv_rdma_thread, ni), 0);
+	ni->rdma.has_catcher = 1;
 
 	/* Add a watcher for asynchronous events. */
 	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
@@ -1104,7 +1102,6 @@ static void ni_cleanup(ni_t *ni)
 	ni_rcqp_stop(ni);
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
-	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.cq_watcher));
 
 	cleanup_shmem(ni);
 	cleanup_ib(ni);

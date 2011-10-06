@@ -8,7 +8,6 @@
  *	for debugging output
  */
 static char *recv_state_name[] = {
-	[STATE_RECV_EVENT_WAIT]		= "event_wait",
 	[STATE_RECV_COMP_POLL]		= "comp_poll",
 	[STATE_RECV_SEND_COMP]		= "send_comp",
 	[STATE_RECV_RDMA_COMP]		= "rdma_comp",
@@ -19,32 +18,6 @@ static char *recv_state_name[] = {
 	[STATE_RECV_ERROR]		= "recv_error",
 	[STATE_RECV_DONE]		= "recv_done",
 };
-
-/*
- * comp_wait
- *	wait for a send or recv completion event
- */
-static int event_wait(ni_t *ni)
-{
-	int err;
-	struct ibv_cq *cq;
-	void *unused;
-
-	err = ibv_get_cq_event(ni->rdma.ch, &cq, &unused);
-	if (err) {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
-
-	ibv_ack_cq_events(ni->rdma.cq, 1);
-
-	if (cq != ni->rdma.cq) {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
-
-	return STATE_RECV_COMP_POLL;
-}
 
 /*
  * comp_poll
@@ -66,14 +39,6 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 	 * then we are done for this cycle */
 	n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
 	if (n == 0) {
-
-		if (ibv_req_notify_cq(ni->rdma.cq, 0)) {
-			WARN();
-			return STATE_RECV_ERROR;
-		}
-
-		n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
-		if (n == 0)
 			return STATE_RECV_DONE;
 	}
 
@@ -341,18 +306,14 @@ static int recv_drop_buf(buf_t *buf)
  * process_recv
  *	handle ni completion queue
  */
-void process_recv(EV_P_ ev_io *w, int revents)
+static void process_recv_rdma(ni_t *ni)
 {
-	ni_t *ni = w->data;
-	int state = STATE_RECV_EVENT_WAIT;
+	int state = STATE_RECV_COMP_POLL;
 	buf_t *buf = NULL;
 
 	while(1) {
 		if (debug) printf("%p: recv state = %s\n", buf, recv_state_name[state]);
 		switch (state) {
-		case STATE_RECV_EVENT_WAIT:
-			state = event_wait(ni);
-			break;
 		case STATE_RECV_COMP_POLL:
 			state = comp_poll(ni, &buf);
 			break;
@@ -389,8 +350,18 @@ done:
 	return;
 
 fail:
-	// TODO handle failed read
 	return;
+}
+
+void *process_recv_rdma_thread(void *arg)
+{
+	ni_t *ni = arg;
+
+	while(!ni->rdma.catcher_stop) {
+		process_recv_rdma(ni);
+	}
+
+	return NULL;
 }
 
 /*
