@@ -131,7 +131,7 @@ test_same_direction(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npee
 	int nbytes, int niters, int verbose)
 {
 
-int i, j, k, nreqs;
+int i, j, k;
 double tmp, total;
 
     total= 0;
@@ -150,7 +150,6 @@ double tmp, total;
 
         tmp= timer();
         for (j= 0; j < npeers; j++)   {
-            nreqs= 0;
             for (k= 0; k < nmsgs; k++)   {
 #if 0
                 MPI_Irecv(recv_buf + (nbytes * (k + j * nmsgs)),
@@ -196,7 +195,7 @@ test_allstart(int cache_size, int *cache_buf, ptl_handle_ni_t ni, int npeers, in
 	int nbytes, int niters, int verbose)
 {
 
-int i, j, k, nreqs;
+int i, j, k;
 double tmp, total;
 
     total= 0;
@@ -214,7 +213,6 @@ double tmp, total;
         __PtlBarrier();
 
         tmp= timer();
-        nreqs= 0;
         for (j= 0; j < npeers; j++)   {
             for (k= 0; k < nmsgs; k++)   {
 #if 0
