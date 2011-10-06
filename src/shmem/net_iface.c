@@ -59,6 +59,19 @@ static volatile int64_t my_shmid = -2;
 
 #define PTL_SHM_HIGH_BIT (PTL_PID_MAX << 10)
 
+static inline int pid_exists(pid_t pid)
+{
+    if (kill(pid, 0) == 0) {
+        return 0;
+    }
+    switch (errno) {
+        case EINVAL: abort(); // this is just crazy
+        case EPERM: return 0; // HA! It exists!
+        case ESRCH: return -1; // It does NOT exist
+        default: return -1; // Something weird happened
+    }
+}
+
 static int64_t PtlInternalGetShmPid(int pid)
 {
     // Note: This is not thread-safe
@@ -73,7 +86,7 @@ static int64_t PtlInternalGetShmPid(int pid)
             comm_shmids[pid] = shmid;
             comm_pads[pid]   = shmat(shmid, NULL, 0);
             the_owner        = comm_pads[pid]->owner;
-            if ((the_owner == getpid()) || (kill(the_owner, 0) == -1)) {
+            if ((the_owner == getpid()) || (pid_exists(the_owner) == -1)) {
                 if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, getpid()) == the_owner) {
                     /* it's mine! */
                     PtlInternalFragmentInitPid(pid);
@@ -93,7 +106,7 @@ static int64_t PtlInternalGetShmPid(int pid)
         {
             uint64_t the_owner = comm_pads[pid]->owner;
             uint64_t mypid     = getpid();
-            if ((the_owner == mypid) || (the_owner == 0) || (kill(the_owner, 0) == -1)) {
+            if ((the_owner == mypid) || (the_owner == 0) || (pid_exists(the_owner) == -1)) {
                 if (PtlInternalAtomicCas64(&(comm_pads[pid]->owner), the_owner, mypid) == the_owner) {
                     PtlInternalFragmentInitPid(pid);
                     return shmid;
