@@ -145,7 +145,8 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	return PTL_OK;
 
 err3:
-	eq_put(eq);
+	if (eq)
+		eq_put(eq);
 err2:
 	ni_put(ni);
 err1:

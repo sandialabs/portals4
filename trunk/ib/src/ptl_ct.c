@@ -254,7 +254,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 
 	if (unlikely(!ct)) {
 		err = PTL_ARG_INVALID;
-		goto err2;
+		goto err1;
 	}
 
 	err = PTL_OK;
