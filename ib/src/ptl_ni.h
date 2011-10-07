@@ -228,7 +228,7 @@ static inline ptl_handle_ni_t ni_to_handle(const ni_t *ni)
 
 static inline ni_t *obj_to_ni(const void *obj)
 {
-	return obj ? ((obj_t *)obj)->obj_ni : NULL;
+	return ((obj_t *)obj)->obj_ni;
 }
 
 static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)

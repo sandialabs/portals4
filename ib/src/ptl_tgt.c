@@ -32,22 +32,24 @@ static char *tgt_state_name[] = {
  */
 static int make_comm_event(xt_t *xt)
 {
-	ptl_event_kind_t type;
+	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
 
-	if (xt->operation == OP_PUT)
-		type = PTL_EVENT_PUT;
-	else if (xt->operation == OP_GET)
-		type = PTL_EVENT_GET;
-	else if (xt->operation == OP_ATOMIC || xt->operation == OP_FETCH ||
-		 xt->operation == OP_SWAP)
-		type = PTL_EVENT_ATOMIC;
-	else {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+		ptl_event_kind_t type;
 
-	if (xt->ni_fail || !(xt->le->options & PTL_LE_EVENT_SUCCESS_DISABLE))
+		if (xt->operation == OP_PUT)
+			type = PTL_EVENT_PUT;
+		else if (xt->operation == OP_GET)
+			type = PTL_EVENT_GET;
+		else if (xt->operation == OP_ATOMIC || xt->operation == OP_FETCH ||
+				 xt->operation == OP_SWAP)
+			type = PTL_EVENT_ATOMIC;
+		else {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+
 		make_target_event(xt, xt->pt->eq, type, xt->le->user_ptr, xt->le->start+xt->moffset);
+	}
 
 	xt->event_mask &= ~XT_COMM_EVENT;
 
@@ -330,24 +332,25 @@ static int tgt_get_match(xt_t *xt)
 	ni_t *ni = obj_to_ni(xt);
 	struct list_head *l;
 	int perm_ret;
+	pt_t *pt = xt->pt;
 
 	/* have to protect against a race with le/me append/search
 	 * which change the pt lists */
-	pthread_spin_lock(&xt->pt->lock);
+	pthread_spin_lock(&pt->lock);
 
-	if (xt->pt->options & PTL_PT_FLOWCTRL) {
-		if (list_empty(&xt->pt->priority_list) &&
-		    list_empty(&xt->pt->overflow_list)) {
+	if (pt->options & PTL_PT_FLOWCTRL) {
+		if (list_empty(&pt->priority_list) &&
+		    list_empty(&pt->overflow_list)) {
 			WARN();
-			xt->pt->disable |= PT_AUTO_DISABLE;
-			pthread_spin_unlock(&xt->pt->lock);
+			pt->disable |= PT_AUTO_DISABLE;
+			pthread_spin_unlock(&pt->lock);
 			xt->ni_fail = PTL_NI_FLOW_CTRL;
 			xt->le = NULL;
 			return STATE_TGT_DROP;
 		}
 	}
 
-	list_for_each(l, &xt->pt->priority_list) {
+	list_for_each(l, &pt->priority_list) {
 		xt->le = list_entry(l, le_t, list);
 		if (ni->options & PTL_NI_NO_MATCHING) {
 			le_get(xt->le);
@@ -360,7 +363,7 @@ static int tgt_get_match(xt_t *xt)
 		}
 	}
 
-	list_for_each(l, &xt->pt->overflow_list) {
+	list_for_each(l, &pt->overflow_list) {
 		xt->le = list_entry(l, le_t, list);
 		if (ni->options & PTL_NI_NO_MATCHING) {
 			le_get(xt->le);
@@ -373,7 +376,7 @@ static int tgt_get_match(xt_t *xt)
 		}
 	}
 
-	pthread_spin_unlock(&xt->pt->lock);
+	pthread_spin_unlock(&pt->lock);
 	WARN();
 	xt->le = NULL;
 	xt->ni_fail = PTL_NI_DROPPED;
@@ -381,7 +384,7 @@ static int tgt_get_match(xt_t *xt)
 
 done:
 	if ((perm_ret = check_perm(xt, xt->le))) {
-		pthread_spin_unlock(&xt->pt->lock);
+		pthread_spin_unlock(&pt->lock);
 		le_put(xt->le);
 		xt->le = NULL;
 
@@ -394,7 +397,7 @@ done:
 		list_add_tail(&xt->unexpected_list, &xt->le->pt->unexpected_list);
 	}
 
-	pthread_spin_unlock(&xt->pt->lock);
+	pthread_spin_unlock(&pt->lock);
 	return STATE_TGT_GET_LENGTH;
 }
 
@@ -1164,6 +1167,7 @@ static int tgt_send_reply(xt_t *xt)
 static int tgt_cleanup(xt_t *xt)
 {
 	int state;
+	pt_t *pt;
 
 	if (xt->matching.le) {
 		/* On the overflow list, and was already matched by an
@@ -1190,6 +1194,7 @@ static int tgt_cleanup(xt_t *xt)
 		xt->indir_sge = NULL;
 	}
 
+#ifndef NO_ARG_VALIDATION
 	pthread_spin_lock(&xt->rdma_list_lock);
 	while(!list_empty(&xt->rdma_list)) {
 		buf_t *buf = list_first_entry(&xt->rdma_list, buf_t, list);
@@ -1200,24 +1205,27 @@ static int tgt_cleanup(xt_t *xt)
 		abort();				/* this should not happen */
 	}
 	pthread_spin_unlock(&xt->rdma_list_lock);
+#endif
 
 	if (xt->recv_buf) {
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
 	}
 
-	pthread_spin_lock(&xt->pt->lock);
-	xt->pt->num_xt_active--;
-	if ((xt->pt->disable & PT_AUTO_DISABLE) && !xt->pt->num_xt_active) {
-		xt->pt->enabled = 0;
-		xt->pt->disable &= ~PT_AUTO_DISABLE;
-		pthread_spin_unlock(&xt->pt->lock);
+	pt = xt->pt;
+
+	pthread_spin_lock(&pt->lock);
+	pt->num_xt_active--;
+	if ((pt->disable & PT_AUTO_DISABLE) && !pt->num_xt_active) {
+		pt->enabled = 0;
+		pt->disable &= ~PT_AUTO_DISABLE;
+		pthread_spin_unlock(&pt->lock);
 
 		// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
-		make_target_event(xt, xt->pt->eq, PTL_EVENT_PT_DISABLED,
+		make_target_event(xt, pt->eq, PTL_EVENT_PT_DISABLED,
 						  xt->matching.le ? xt->matching.le->user_ptr : NULL, NULL);
 	} else
-		pthread_spin_unlock(&xt->pt->lock);
+		pthread_spin_unlock(&pt->lock);
 
 	return state;
 }

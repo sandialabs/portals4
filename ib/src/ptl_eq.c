@@ -197,6 +197,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	int ret;
 	eq_t *eq;
 	ni_t *ni;
+	int nloops;
 
 	ret = get_gbl();
 	if (unlikely(ret))
@@ -217,26 +218,38 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 		goto done;
 	}
 
-	/* First try with just spining */
-	ret = get_event(eq, event);
-	if (ret != PTL_EQ_EMPTY)
-		goto done;
-
-	/* Serialize for blocking on empty */
-	pthread_mutex_lock(&ni->eq_wait_mutex);
-	while((ret = get_event(eq, event)) == PTL_EQ_EMPTY) {
-		atomic_inc(&ni->eq_waiting);
-		pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
-		atomic_dec(&ni->eq_waiting);
+	/* First try with just spinning */
+	nloops = 100000;
+	do {
 		if (eq->interrupt) {
-			pthread_mutex_unlock(&ni->eq_wait_mutex);
 			ret = PTL_INTERRUPTED;
 			goto done;
 		}
-	}
-	pthread_mutex_unlock(&ni->eq_wait_mutex);
 
-done:
+		if (nloops) {
+			/* Spin again. */
+			nloops --;
+			ret = get_event(eq, event);
+		} else {
+			/* Done spinning. Conditionally block until interrupted or
+			 * event present */
+
+			/* Serialize for blocking on empty */
+			pthread_mutex_lock(&ni->eq_wait_mutex);
+
+			ret = get_event(eq, event);
+			if (ret == PTL_EQ_EMPTY) {
+				atomic_inc(&ni->eq_waiting);
+				printf("FZ- going to block - %d\n", nloops);
+				pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
+				atomic_dec(&ni->eq_waiting);
+			}
+
+			pthread_mutex_unlock(&ni->eq_wait_mutex);
+		}
+	} while (ret == PTL_EQ_EMPTY);
+
+ done:
 	eq_put(eq);
 	gbl_put();
 	return ret;
