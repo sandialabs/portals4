@@ -77,6 +77,7 @@ typedef struct ni {
 	/* Can be held outside of CT object lock */
 	pthread_mutex_t		ct_wait_mutex;
 	pthread_cond_t		ct_wait_cond;
+	int			ct_waiters;
 
 	/* NI identifications */
 	ptl_process_t		id;
