@@ -103,7 +103,10 @@ int main(int   argc,
                             (potato_launcher_handle, 0, potato_launcher.length,
                             PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
                             NULL, 1));
-        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, NULL));
+        {
+            ptl_ct_event_t junk;
+            CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, &junk));
+        }
         {
             ptl_ct_event_t ctc = { 0, 0 };
             CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
@@ -131,13 +134,11 @@ int main(int   argc,
             }
         }
         // make sure that last send completed before exiting
-        CHECK_RETURNVAL(PtlCTWait
-                            (potato_launcher.ct_handle, (LOOPS - 1) * 2, &ctc));
+        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, (LOOPS - 1) * 2, &ctc));
         assert(ctc.failure == 0);
         if (myself.rank == 0) {
             // wait for the last potato
-            CHECK_RETURNVAL(PtlCTWait
-                                (potato_catcher.ct_handle, waitfor - 1, &ctc));
+            CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor - 1, &ctc));
             assert(ctc.failure == 0);
             printf("Final value of potato = %i\n", potato);
         }

@@ -485,6 +485,9 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
+    if (event == NULL) {
+        return PTL_ARG_INVALID;
+    }
 #endif
     cte = &(ct_events[ct.s.ni][ct.s.code]);
     rc  = &(ct_event_refcounts[ct.s.ni][ct.s.code]);
@@ -539,6 +542,12 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
     if (size > UINT32_MAX) {
         return PTL_ARG_INVALID;
     }
+    if (event == NULL) {
+        return PTL_ARG_INVALID;
+    }
+    if (which == NULL) {
+        return PTL_ARG_INVALID;
+    }
 #endif /* ifndef NO_ARG_VALIDATION */
     for (ctidx = 0; ctidx < size; ++ctidx) {
         const ptl_internal_handle_converter_t ct = { ct_handles[ctidx] };
@@ -574,12 +583,8 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
             } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
-                if (event != NULL) {
-                    *event = tmpread;
-                }
-                if (which != NULL) {
-                    *which = (unsigned int)ctidx;
-                }
+                *event = tmpread;
+                *which = (unsigned int)ctidx;
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
             }
@@ -591,12 +596,8 @@ int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
             } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
-                if (event != NULL) {
-                    *event = tmpread;
-                }
-                if (which != NULL) {
-                    *which = (unsigned int)ctidx;
-                }
+                *event = tmpread;
+                *which = (unsigned int)ctidx;
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_OK;
             }
