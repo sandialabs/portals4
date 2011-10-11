@@ -36,6 +36,9 @@ enum {
 
 	PTL_RDMA_TIMEOUT,
 
+	PTL_CT_WAIT_LOOP_COUNT,
+	PTL_CT_POLL_LOOP_COUNT,
+
 	PTL_PARAM_LAST,			/* keep me last */
 };
 
