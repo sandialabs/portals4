@@ -23,7 +23,7 @@ static int compare_rank(const void *a, const void *b)
 	return(entry1->rank - entry2->rank);
 }
 
-static void set_limits(ni_t *ni, ptl_ni_limits_t *desired)
+static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 {
 	if (desired) {
 		ni->limits.max_entries =
@@ -762,7 +762,7 @@ static int get_local_rank(ni_t *ni)
 int PtlNIInit(ptl_interface_t   iface_id,
               unsigned int      options,
               ptl_pid_t         pid,
-              ptl_ni_limits_t   *desired,
+              const ptl_ni_limits_t *desired,
               ptl_ni_limits_t   *actual,
               ptl_handle_ni_t   *ni_handle)
 {
@@ -945,7 +945,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 
 int PtlSetMap(ptl_handle_ni_t ni_handle,
 			  ptl_size_t      map_size,
-			  ptl_process_t  *mapping)
+			  const ptl_process_t  *mapping)
 {
 	int err;
 	ni_t *ni;

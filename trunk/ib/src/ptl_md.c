@@ -42,7 +42,7 @@ void md_cleanup(void *arg)
 		md->internal_data = NULL;
 	}
 
-	__sync_sub_and_fetch(&ni->current.max_mds, 1);
+	(void)__sync_sub_and_fetch(&ni->current.max_mds, 1);
 }
 
 /**
@@ -151,7 +151,7 @@ err1:
  *
  * @return status
  */
-int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
+int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
               ptl_handle_md_t *md_handle_p)
 {
 	int err;
@@ -219,7 +219,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, ptl_md_t *md_init,
 	/* account for the number of MDs allocated */
 	if (unlikely(__sync_add_and_fetch(&ni->current.max_mds, 1) >
 	    ni->limits.max_mds)) {
-		__sync_sub_and_fetch(&ni->current.max_mds, 1);
+		(void)__sync_sub_and_fetch(&ni->current.max_mds, 1);
 		err = PTL_NO_SPACE;
 		goto err3;
 	}
