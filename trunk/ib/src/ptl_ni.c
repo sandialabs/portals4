@@ -469,6 +469,9 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
+	ni->ct_pool.init = ct_init;
+	ni->ct_pool.fini = ct_fini;
+	ni->ct_pool.setup = ct_new;
 	ni->ct_pool.cleanup = ct_cleanup;
 
 	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
