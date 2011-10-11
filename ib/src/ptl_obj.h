@@ -193,6 +193,8 @@ struct obj {
 
 typedef struct obj obj_t;
 
+void **index_map;
+
 int index_init();
 
 void index_fini();
@@ -251,6 +253,20 @@ static inline int obj_put(obj_t *obj)
 static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 {
 	return handle & HANDLE_INDEX_MASK;
+}
+
+/**
+ * Faster version of to_obj without checking.
+ *
+ * @param handle the object handle
+ *
+ * @return the object
+ */
+static inline void *fast_to_obj(ptl_handle_any_t handle)
+{
+	obj_t *obj = (obj_t *)index_map[handle & HANDLE_INDEX_MASK];
+	__sync_fetch_and_add(&obj->obj_ref.ref_cnt, 1);
+	return obj;
 }
 
 #endif /* PTL_OBJ_H */
