@@ -40,6 +40,12 @@
 
 #include "portals4.h"
 
+#ifdef NO_ARG_VALIDATION
+static const int check_param = 0;
+#else
+static const int check_param = 1;
+#endif
+
 /* branch prediction hints for compiler */
 #define unlikely(x)	__builtin_expect((x),0)
 #define likely(x)	__builtin_expect((x),1)
