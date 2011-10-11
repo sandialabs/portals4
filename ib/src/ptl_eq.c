@@ -240,7 +240,6 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 			ret = get_event(eq, event);
 			if (ret == PTL_EQ_EMPTY) {
 				atomic_inc(&ni->eq_waiting);
-				printf("FZ- going to block - %d\n", nloops);
 				pthread_cond_wait(&ni->eq_wait_cond, &ni->eq_wait_mutex);
 				atomic_dec(&ni->eq_waiting);
 			}
@@ -259,7 +258,7 @@ err1:
 	return ret;
 }
 
-int PtlEQPoll(ptl_handle_eq_t *eq_handles,
+int PtlEQPoll(const ptl_handle_eq_t *eq_handles,
 	      unsigned int size,
 	      ptl_time_t timeout,
 	      ptl_event_t *event,
@@ -391,7 +390,7 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	ev->mlength		= xi->mlength;
 	ev->remote_offset	= xi->moffset;
 	ev->start		= start;
-	ev->user_ptr		= xi->user_ptr;
+	ev->user_ptr		= (void *)xi->user_ptr;
 	ev->hdr_data		= xi->hdr_data;
 	ev->ni_fail_type	= xi->ni_fail;
 	ev->atomic_operation	= xi->atom_op;
@@ -415,7 +414,7 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 }
 
 void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
-		       void *user_ptr, void *start)
+		       const void *user_ptr, void *start)
 {
 	ptl_event_t *ev;
 	ni_t *ni;
@@ -438,7 +437,7 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
 	ev->mlength		= xt->mlength;
 	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
-	ev->user_ptr		= user_ptr;
+	ev->user_ptr		= (void *)user_ptr;
 	ev->hdr_data		= xt->hdr_data;
 	ev->ni_fail_type	= xt->ni_fail;
 	ev->atomic_operation	= xt->atom_op;
@@ -479,7 +478,7 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
 
 	ev->type = type;
 	ev->pt_index = le->pt_index;
-	ev->user_ptr = le->user_ptr;
+	ev->user_ptr = (void *)le->user_ptr;
 	ev->ni_fail_type = fail_type;
 
 	eq->producer++;

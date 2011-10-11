@@ -115,7 +115,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	/* check limit resources to see if we can allocate another ct */
 	if (unlikely(__sync_add_and_fetch(&ni->current.max_cts, 1) >
 	    ni->limits.max_cts)) {
-		__sync_fetch_and_sub(&ni->current.max_cts, 1);
+		(void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
 		err = PTL_NO_SPACE;
 		goto err2;
 	}
@@ -123,7 +123,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	/* allocate new ct from free list */
 	err = ct_alloc(ni, &ct);
 	if (unlikely(err)) {
-		__sync_fetch_and_sub(&ni->current.max_cts, 1);
+		(void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
 		goto err2;
 	}
 
@@ -205,7 +205,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	ct_put(ct);
 
 	/* give back the limit resource */
-	__sync_sub_and_fetch(&ni->current.max_cts, 1);
+	(void)__sync_sub_and_fetch(&ni->current.max_cts, 1);
 
 	err = PTL_OK;
 err1:
@@ -302,7 +302,9 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	while (1) {
 		/* check if wait condition satisfied */
 		if (ct->event.success >= threshold || ct->event.failure ) {
-			*event_p = ct->event;
+			// TODO: remove when spec is fixed.
+			if (event_p)
+				*event_p = ct->event;
 			err = PTL_OK;
 			break;
 		}
@@ -360,7 +362,7 @@ err0:
  * @return PTL_INTERRUPTED if someone is tearing down a ct
  * @return PTL_CT_NONE_REACHED if did not find an event
  */
-static int ct_poll_loop(int size, ct_t **cts, ptl_size_t *thresholds,
+static int ct_poll_loop(int size, const ct_t **cts, const ptl_size_t *thresholds,
 			ptl_ct_event_t *event_p, unsigned int *which_p)
 {
 	int i;
@@ -394,7 +396,7 @@ static int ct_poll_loop(int size, ct_t **cts, ptl_size_t *thresholds,
  *
  * @return status
  */
-int PtlCTPoll(ptl_handle_ct_t *ct_handles, ptl_size_t *thresholds,
+int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	      unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
 	      unsigned int *which_p)
 {
@@ -471,7 +473,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles, ptl_size_t *thresholds,
 		/* spin PTL_CT_POLL_LOOP_COUNT times */
 		if (nloops) {
 			/* scan list to see if we can complete one */
-			err = ct_poll_loop(size, cts, thresholds, event_p, which_p);
+			err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
 			if (err != PTL_CT_NONE_REACHED)
 				break;
 
@@ -495,7 +497,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles, ptl_size_t *thresholds,
 			pthread_mutex_lock(&ni->ct_wait_mutex);
 
 			/* check condition while holding lock */
-			err = ct_poll_loop(size, cts, thresholds, event_p, which_p);
+			err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
 			if (err != PTL_CT_NONE_REACHED) {
 				pthread_mutex_unlock(&ni->ct_wait_mutex);
 				break;
@@ -519,7 +521,7 @@ int PtlCTPoll(ptl_handle_ct_t *ct_handles, ptl_size_t *thresholds,
 
 err2:
 	for (i = i2; i >= 0; i--)
-		ct_put(cts[i]);
+		ct_put((void *)cts[i]);
 	free(cts);
 err1:
 	if (check_param)

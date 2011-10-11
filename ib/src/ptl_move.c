@@ -4,7 +4,7 @@
 
 #include "ptl_loc.h"
 
-static int get_operand(ptl_datatype_t type, void *operand, uint64_t *opval)
+static int get_operand(ptl_datatype_t type, const void *operand, uint64_t *opval)
 {
 	uint64_t val;
 	int len = atom_type_size[type];
@@ -86,7 +86,7 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-	   ptl_size_t remote_offset, void *user_ptr, ptl_hdr_data_t hdr_data)
+	   ptl_size_t remote_offset, const void *user_ptr, ptl_hdr_data_t hdr_data)
 {
 	int err;
 	md_t *md;
@@ -155,7 +155,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_ack_req_t ack_req,
 		    ptl_process_t target_id, ptl_pt_index_t pt_index,
 		    ptl_match_bits_t match_bits, ptl_size_t remote_offset,
-		    void *user_ptr, ptl_hdr_data_t hdr_data,
+		    const void *user_ptr, ptl_hdr_data_t hdr_data,
 		    ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
@@ -265,7 +265,7 @@ static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
 								 ptl_size_t local_offset,
 								 ptl_size_t length, ptl_process_t target_id,
 								 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-								 ptl_size_t remote_offset, void *user_ptr)
+								 ptl_size_t remote_offset, const void *user_ptr)
 {
 	xi->operation = OP_GET;
 	xi->target = target_id;
@@ -289,7 +289,7 @@ static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
 int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-	   ptl_size_t remote_offset, void *user_ptr)
+	   ptl_size_t remote_offset, const void *user_ptr)
 {
 	int err;
 	md_t *md;
@@ -338,7 +338,7 @@ err1:
 int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_process_t target_id,
 		    ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-		    ptl_size_t remote_offset, void *user_ptr,
+		    ptl_size_t remote_offset, const void *user_ptr,
 		    ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
@@ -495,7 +495,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_size_t length, ptl_ack_req_t ack_req,
 	      ptl_process_t target_id, ptl_pt_index_t pt_index,
 	      ptl_match_bits_t match_bits, ptl_size_t remote_offset,
-	      void *user_ptr, ptl_hdr_data_t hdr_data,
+	      const void *user_ptr, ptl_hdr_data_t hdr_data,
 	      ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
 	int err;
@@ -563,7 +563,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		       ptl_size_t length, ptl_ack_req_t ack_req,
 		       ptl_process_t target_id, ptl_pt_index_t pt_index,
 		       ptl_match_bits_t match_bits, ptl_size_t remote_offset,
-		       void *user_ptr, ptl_hdr_data_t hdr_data,
+		       const void *user_ptr, ptl_hdr_data_t hdr_data,
 		       ptl_op_t atom_op, ptl_datatype_t atom_type,
 		       ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
@@ -647,7 +647,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		   ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		   ptl_size_t length, ptl_process_t target_id,
 		   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-		   ptl_size_t remote_offset, void *user_ptr,
+		   ptl_size_t remote_offset, const void *user_ptr,
 		   ptl_hdr_data_t hdr_data, ptl_op_t atom_op,
 		   ptl_datatype_t atom_type)
 {
@@ -752,7 +752,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 			    ptl_size_t local_put_offset, ptl_size_t length,
 			    ptl_process_t target_id, ptl_pt_index_t pt_index,
 			    ptl_match_bits_t match_bits,
-			    ptl_size_t remote_offset, void *user_ptr,
+			    ptl_size_t remote_offset, const void *user_ptr,
 			    ptl_hdr_data_t hdr_data, ptl_op_t atom_op,
 			    ptl_datatype_t atom_type,
 			    ptl_handle_ct_t trig_ct_handle,
@@ -966,8 +966,8 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	    ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 	    ptl_size_t length, ptl_process_t target_id,
 	    ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-	    ptl_size_t remote_offset, void *user_ptr,
-	    ptl_hdr_data_t hdr_data, void *operand,
+	    ptl_size_t remote_offset, const void *user_ptr,
+	    ptl_hdr_data_t hdr_data, const void *operand,
 	    ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
 	int err;
@@ -1079,8 +1079,8 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		     ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		     ptl_size_t length, ptl_process_t target_id,
 		     ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-		     ptl_size_t remote_offset, void *user_ptr,
-		     ptl_hdr_data_t hdr_data, void *operand,
+		     ptl_size_t remote_offset, const void *user_ptr,
+		     ptl_hdr_data_t hdr_data, const void *operand,
 		     ptl_op_t atom_op, ptl_datatype_t atom_type,
 		     ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
