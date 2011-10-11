@@ -8,7 +8,7 @@
 #define MAX_INDEX	(256*1024)
 
 static atomic_t next_index;
-static void **index_map;
+void **index_map;
 
 /**
  * initialize indexing service
