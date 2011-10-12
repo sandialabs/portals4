@@ -224,7 +224,7 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
 #endif
     if (mds[md.s.ni][md.s.code].refcount != 0) {
         VERBOSE_ERROR("%u MD handle in use!\n", (unsigned)proc_number);
-        return PTL_IN_USE;
+        return PTL_ARG_INVALID;
     }
 #ifdef REGISTER_ON_BIND
     if (mds[md.s.ni][md.s.code].xfe_handle) {
