@@ -19,10 +19,8 @@ static int send_message_shmem(buf_t *buf, int signaled)
 
 	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
 
-	assert(xi->send_buf == NULL && xi->ack_buf == NULL);
-	if (signaled) {
-		xi->send_buf = buf;
-	} else {
+	assert(xi->ack_buf == NULL);
+	if (!signaled) {
 		xi->ack_buf = buf;
 	}
 
@@ -223,7 +221,6 @@ static void send_comp_shmem(buf_t *buf)
 		xt_t *xt = buf->xt;
 
 		assert(xt);
-		assert(xt->send_buf == buf);
 		buf_put(buf);
 	}
 }

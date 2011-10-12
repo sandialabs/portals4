@@ -105,8 +105,6 @@ static int send_comp(buf_t *buf)
 	if (!buf->comp)
 		return STATE_RECV_COMP_POLL;
 
-	assert(buf == xi->send_buf);
-
 	if (xi->obj.obj_pool->type == POOL_XI) {
 		/* Fox XI only, restart the initiator state machine. */
 		int err;
