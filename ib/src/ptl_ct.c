@@ -302,9 +302,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	while (1) {
 		/* check if wait condition satisfied */
 		if (ct->event.success >= threshold || ct->event.failure ) {
-			// TODO: remove when spec is fixed.
-			if (event_p)
-				*event_p = ct->event;
+			*event_p = ct->event;
 			err = PTL_OK;
 			break;
 		}

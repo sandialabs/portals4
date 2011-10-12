@@ -267,18 +267,6 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 		goto err1;
 	}
 
-	/* simultaneous calls to PtlMDRelease, PtlGet/Put/etc, and/or
-	 * the completion of move operations can lead to races
-	 * it is the responsibility of the caller to make sure this
-	 * doesn't happen here. The dangerous case is when the caller
-	 * makes a call to a move operation and release at the same
-	 * time and the release wins and deletes the MD.  A thread safe
-	 * version would disable the MD under a lock. */
-	if (md->obj.obj_ref.ref_cnt > 2) {
-		err = PTL_IN_USE;
-		goto err2;
-	}
-
 	md_put(md);	/* from to_md above */
 	md_put(md);	/* from alloc_md */
 	gbl_put();
