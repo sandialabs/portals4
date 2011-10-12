@@ -11,81 +11,73 @@
 #include <stdint.h> /* assume C99, for uint64_t */
 
 /*****************
- * Return Values *
- *****************/
+* Return Values *
+*****************/
 /*! The set of all possible return codes. */
 enum ptl_retvals {
-    PTL_OK=0,           /*!< Indicates success */
-    PTL_ARG_INVALID,    /*!< One of the arguments is invalid. */
-    PTL_CT_NONE_REACHED, /*!< Timeout reached before any counting event reached
-                           the test. */
-    PTL_EQ_DROPPED,     /*!< At least one event has been dropped. */
-    PTL_EQ_EMPTY,       /*!< No events available in an event queue. */
-    PTL_FAIL,           /*!< Indicates a non-specific error */
-    PTL_IGNORED,        /*!< Logical map set failed. */
-    PTL_IN_USE,         /*!< The specified resource is currently in use. */
-    PTL_INTERRUPTED,    /*!< Wait/get operation was interrupted. */
-    PTL_LIST_TOO_LONG,  /*!< The resulting list is too long (interface-dependent). */
-    PTL_NO_INIT,        /*!< Init has not yet completed successfully. */
-    PTL_NO_SPACE,       /*!< Sufficient memory for action was not available. */
-    PTL_PID_IN_USE,     /*!< PID is in use. */
-    PTL_PT_FULL,        /*!< Portal table has no empty entries. */
-    PTL_PT_EQ_NEEDED,   /*!< Flow control is enabled and there is no EQ provided. */
-    PTL_PT_IN_USE       /*!< Portal table index is busy. */
+    PTL_OK = 0,          /*!< Indicates success */
+    PTL_ARG_INVALID,     /*!< One of the arguments is invalid. */
+    PTL_CT_NONE_REACHED, /*!< Timeout reached before any counting event reached the test. */
+    PTL_EQ_DROPPED,      /*!< At least one event has been dropped. */
+    PTL_EQ_EMPTY,        /*!< No events available in an event queue. */
+    PTL_FAIL,            /*!< Indicates a non-specific error */
+    PTL_IGNORED,         /*!< Logical map set failed. */
+    PTL_IN_USE,          /*!< The specified resource is currently in use. */
+    PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. */
+    PTL_LIST_TOO_LONG,   /*!< The resulting list is too long (interface-dependent). */
+    PTL_NO_INIT,         /*!< Init has not yet completed successfully. */
+    PTL_NO_SPACE,        /*!< Sufficient memory for action was not available. */
+    PTL_PID_IN_USE,      /*!< PID is in use. */
+    PTL_PT_FULL,         /*!< Portal table has no empty entries. */
+    PTL_PT_EQ_NEEDED,    /*!< Flow control is enabled and there is no EQ provided. */
+    PTL_PT_IN_USE        /*!< Portal table index is busy. */
 };
-#define PTL_STATUS_LAST (PTL_PT_IN_USE+1)
+#define PTL_STATUS_LAST (PTL_PT_IN_USE + 1)
 
 /**************
- * Base Types *
- **************/
-typedef uint64_t        ptl_size_t; /*!< Unsigned 64-bit integral type used for
-                                      representing sizes. */
-typedef uint32_t        ptl_pt_index_t; /*!< Integral type used for
-                                          representing portal table indices. */
-typedef uint64_t        ptl_match_bits_t; /*!< Capable of holding unsigned
-                                            64-bit integer values. */
-typedef uint64_t        ptl_hdr_data_t; /*!< 64 bits of out-of-band user data. */
-typedef unsigned int    ptl_time_t; /*!< Time in milliseconds (used for timeout
-                                      specification). */
-typedef unsigned int    ptl_interface_t; /*!< Integral type used for
-                                           identifying different network
-                                           interfaces. */
-typedef uint32_t        ptl_nid_t; /*!< Integral type used for representing
-                                     node identifiers. */
-typedef uint32_t        ptl_pid_t; /*!< Integral type used for representing
-                                     process identifiers when physical
-                                     addressing is used in the network
-                                     interface (PTL_NI_PHYSICAL is set). */
-typedef uint32_t        ptl_rank_t; /*!< Integral type used for representing
-                                      process identifiers when logical
-                                      addressing is used in the network
-                                      interface (PTL_NI_LOGICAL is set). */
-typedef uint32_t        ptl_uid_t; /*!< Integral type for representing user
-                                     identifiers. */
+* Base Types *
+**************/
+typedef uint64_t ptl_size_t;          /*!< Unsigned 64-bit integral type used for representing sizes. */
+typedef uint32_t ptl_pt_index_t;      /*!< Integral type used for representing portal table indices. */
+typedef uint64_t ptl_match_bits_t;    /*!< Capable of holding unsigned 64-bit integer values. */
+typedef uint64_t ptl_hdr_data_t;      /*!< 64 bits of out-of-band user data. */
+typedef unsigned int ptl_time_t;      /*!< Time in milliseconds (used for timeout specification). */
+typedef unsigned int ptl_interface_t; /*!< Integral type used for identifying different network interfaces. */
+typedef uint32_t ptl_nid_t;           /*!< Integral type used for representing node identifiers. */
+typedef uint32_t ptl_pid_t;           /*!< Integral type used for representing
+                                      * process identifiers when physical
+                                      * addressing is used in the network
+                                      * interface (PTL_NI_PHYSICAL is set). */
+typedef uint32_t ptl_rank_t;          /*!< Integral type used for representing
+                                       * process identifiers when logical
+                                       * addressing is used in the network
+                                       * interface (PTL_NI_LOGICAL is set). */
+typedef uint32_t ptl_uid_t;           /*!< Integral type for representing user
+                                       * identifiers. */
 /* Defines the types of indexes that can be used to access the status
  * registers. */
 typedef enum {
-    PTL_SR_DROP_COUNT, /*!< Specifies the status register that counts the
-                         dropped requests for the interface. */
+    PTL_SR_DROP_COUNT,             /*!< Specifies the status register that counts the
+                                    * dropped requests for the interface. */
     PTL_SR_PERMISSIONS_VIOLATIONS, /*!< Specifies the status register that
-                                     counts the number of attempted permission
-                                     violations. */
-    PTL_SR_OPERATIONS_VIOLATIONS /*!< Specifies the status register that counts
-                                   the number of attempted operation
-                                   violations. */
+                                    * counts the number of attempted permission
+                                    * violations. */
+    PTL_SR_OPERATIONS_VIOLATIONS   /*!< Specifies the status register that counts
+                                    * the number of attempted operation
+                                    * violations. */
 } ptl_sr_index_t;
-#define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS+1)
-typedef int             ptl_sr_value_t; /*!< Signed integral type that defines
-                                          the types of values held in status
-                                          registers. */
+#define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS + 1)
+typedef int ptl_sr_value_t;             /*!< Signed integral type that defines
+                                         * the types of values held in status
+                                         * registers. */
 /* Handles */
-typedef uint32_t        ptl_handle_any_t; /*!< generic handle */
-typedef ptl_handle_any_t        ptl_handle_ni_t; /*!< A network interface handle */
-typedef ptl_handle_any_t        ptl_handle_eq_t; /*!< An event queue handle */
-typedef ptl_handle_any_t        ptl_handle_ct_t; /*!< A counting type event handle */
-typedef ptl_handle_any_t        ptl_handle_md_t; /*!< A memory descriptor handle */
-typedef ptl_handle_any_t        ptl_handle_le_t; /*!< A list entry handle */
-typedef ptl_handle_any_t        ptl_handle_me_t; /*!< A match list entry handle */
+typedef uint32_t ptl_handle_any_t;        /*!< generic handle */
+typedef ptl_handle_any_t ptl_handle_ni_t; /*!< A network interface handle */
+typedef ptl_handle_any_t ptl_handle_eq_t; /*!< An event queue handle */
+typedef ptl_handle_any_t ptl_handle_ct_t; /*!< A counting type event handle */
+typedef ptl_handle_any_t ptl_handle_md_t; /*!< A memory descriptor handle */
+typedef ptl_handle_any_t ptl_handle_le_t; /*!< A list entry handle */
+typedef ptl_handle_any_t ptl_handle_me_t; /*!< A match list entry handle */
 
 /*!
  * @union ptl_process_t
@@ -121,37 +113,37 @@ typedef union {
  * @ingroup MD
  */
 typedef struct {
-    void *          start; /*!< Specify the starting address for the memory
-                             region associated with the memory descriptor.
-                             There are no alignment restrictions on the
-                             starting address; although unaligned messages may
-                             be slower (i.e. lower bandwidth and/or longer
-                             latency) on some implementations. */
-    ptl_size_t      length; /*!< Specifies the length of the memory region
-                              associated with the memory descriptor. */
-    unsigned int    options; /*!<
-    Specifies the behavior of the memory descriptor. Options include the use of
-    scatter/gather vectors and disabling of end events associated with this
-    memory descriptor. Values for this argument can be constructed using a
-    bitwise OR of the following values:
-    - \c PTL_MD_EVENT_SUCCESS_DISABLE
-    - \c PTL_MD_EVENT_CT_SEND
-    - \c PTL_MD_EVENT_CT_REPLY
-    - \c PTL_MD_EVENT_CT_ACK
-    - \c PTL_MD_EVENT_CT_BYTES
-    - \c PTL_MD_UNORDERED
-    - \c PTL_IOVEC
-                               */
+    void *start;               /*!< Specify the starting address for the memory
+                                * region associated with the memory descriptor.
+                                * There are no alignment restrictions on the
+                                * starting address; although unaligned messages may
+                                * be slower (i.e. lower bandwidth and/or longer
+                                * latency) on some implementations. */
+    ptl_size_t   length;       /*!< Specifies the length of the memory region
+                                * associated with the memory descriptor. */
+    unsigned int options;      /*!<
+                                * Specifies the behavior of the memory descriptor. Options include the use of
+                                * scatter/gather vectors and disabling of end events associated with this
+                                * memory descriptor. Values for this argument can be constructed using a
+                                * bitwise OR of the following values:
+                                * - \c PTL_MD_EVENT_SUCCESS_DISABLE
+                                * - \c PTL_MD_EVENT_CT_SEND
+                                * - \c PTL_MD_EVENT_CT_REPLY
+                                * - \c PTL_MD_EVENT_CT_ACK
+                                * - \c PTL_MD_EVENT_CT_BYTES
+                                * - \c PTL_MD_UNORDERED
+                                * - \c PTL_IOVEC
+                                */
     ptl_handle_eq_t eq_handle; /*!< The event queue handle used to log the
-                                 operations performed on the memory region. If
-                                 this member is \c PTL_EQ_NONE, operations
-                                 performed on this memory descriptor are not
-                                 logged. */
+                                * operations performed on the memory region. If
+                                * this member is \c PTL_EQ_NONE, operations
+                                * performed on this memory descriptor are not
+                                * logged. */
     ptl_handle_ct_t ct_handle; /*!< A handle for counting type events
-                                 associated with the memory region. If this
-                                 argument is \c PTL_CT_NONE, operations
-                                 performed on this memory descriptor are not
-                                 counted. */
+                                * associated with the memory region. If this
+                                * argument is \c PTL_CT_NONE, operations
+                                * performed on this memory descriptor are not
+                                * counted. */
 }                       ptl_md_t;
 /*!
  * @struct ptl_iovec_t
@@ -181,8 +173,8 @@ typedef struct {
  *      modify the ptl_iovec_t.
  */
 typedef struct {
-    void* iov_base; /*!< The byte aligned start address of the vector element. */
-    ptl_size_t iov_len; /*!< The length (in bytes) of the vector element. */
+    void      *iov_base; /*!< The byte aligned start address of the vector element. */
+    ptl_size_t iov_len;  /*!< The length (in bytes) of the vector element. */
 } ptl_iovec_t;
 /*!
  * @struct ptl_le_t
@@ -212,11 +204,11 @@ typedef struct {
      *  natively aligned (e.g. to a four byte or eight byte boundary) may be
      *  slower (i.e. lower bandwidth and/or longer latency) on some
      *  implementations. */
-    void*           start;
+    void *start;
 
     /*! Specify the length of the memory region associated with the match list
      *  entry. */
-    ptl_size_t      length;
+    ptl_size_t length;
 
     /*! A handle for counting type events associated with the memory region. If
      *  this argument is \c PTL_CT_NONE, operations performed on this list
@@ -231,7 +223,7 @@ typedef struct {
      * This failure is also indicated to the initiator. If a full event is
      * delivered to the initiator, the \a ni_fail_type in the \c PTL_EVENT_ACK
      * must be set to \c PTL_NI_PERM_VIOLATION. */
-    ptl_uid_t     uid;
+    ptl_uid_t uid;
 
     /*! Specifies the behavior of the list entry. The following options can be
      *  selected: enable put operations (yes or no), enable get operations (yes
@@ -239,27 +231,27 @@ typedef struct {
      *  no), acknowledgment (yes or no), use scatter/gather vectors and disable
      *  events. Values for this argument can be constructed using a bitwise OR
      *  of the following values:
- - \c PTL_LE_OP_PUT
- - \c PTL_LE_OP_GET
- - \c PTL_LE_USE_ONCE
- - \c PTL_LE_ACK_DISABLE
- - \c PTL_LE_UNEXPECTED_HDR_DISABLE
- - \c PTL_IOVEC
- - \c PTL_LE_EVENT_COMM_DISABLE
- - \c PTL_LE_EVENT_FLOWCTRL_DISABLE
- - \c PTL_LE_EVENT_SUCCESS_DISABLE
- - \c PTL_LE_EVENT_OVER_DISABLE
- - \c PTL_LE_EVENT_UNLINK_DISABLE
- - \c PTL_LE_EVENT_CT_COMM
- - \c PTL_LE_EVENT_CT_OVERFLOW
- - \c PTL_LE_EVENT_CT_BYTES
- */
-    unsigned int    options;
+     * - \c PTL_LE_OP_PUT
+     * - \c PTL_LE_OP_GET
+     * - \c PTL_LE_USE_ONCE
+     * - \c PTL_LE_ACK_DISABLE
+     * - \c PTL_LE_UNEXPECTED_HDR_DISABLE
+     * - \c PTL_IOVEC
+     * - \c PTL_LE_EVENT_COMM_DISABLE
+     * - \c PTL_LE_EVENT_FLOWCTRL_DISABLE
+     * - \c PTL_LE_EVENT_SUCCESS_DISABLE
+     * - \c PTL_LE_EVENT_OVER_DISABLE
+     * - \c PTL_LE_EVENT_UNLINK_DISABLE
+     * - \c PTL_LE_EVENT_CT_COMM
+     * - \c PTL_LE_EVENT_CT_OVERFLOW
+     * - \c PTL_LE_EVENT_CT_BYTES
+     */
+    unsigned int options;
 } ptl_le_t;
 
 /****************************
- * Generic Option Constants *
- ****************************/
+* Generic Option Constants *
+****************************/
 /*! Specifies that the \a start member of the relevant structure is a pointer
  * to an array of type ptl_iovec_t and the \a length member is the length of
  * the array of ptl_iovec_t elements. This allows for a scatter/gather
@@ -269,44 +261,44 @@ typedef struct {
 #define PTL_IOVEC (1)
 
 /*************
- * Constants *
- *************/
+* Constants *
+*************/
 /*! Indicate the absence of an event queue. */
-#define PTL_EQ_NONE ((ptl_handle_eq_t) 0x3fffffff)
+#define PTL_EQ_NONE ((ptl_handle_eq_t)0x3fffffff)
 
 /*! Indicate the absence of a counting type event. */
-#define PTL_CT_NONE ((ptl_handle_ct_t) 0x5fffffff)
+#define PTL_CT_NONE ((ptl_handle_ct_t)0x5fffffff)
 
 /*! Represent an invalid handle. */
-#define PTL_INVALID_HANDLE ((ptl_handle_any_t) 0xffffffff)
+#define PTL_INVALID_HANDLE ((ptl_handle_any_t)0xffffffff)
 
 /*! Identify the default interface. */
-#define PTL_IFACE_DEFAULT ((ptl_interface_t) 0xffffffff)
+#define PTL_IFACE_DEFAULT ((ptl_interface_t)0xffffffff)
 
 /*! Match any process identifier. */
-#define PTL_PID_ANY ((ptl_pid_t) 0xffff)
+#define PTL_PID_ANY ((ptl_pid_t)0xffff)
 
 /* The biggest process identifier. */
-#define PTL_PID_MAX ((ptl_pid_t) 1024)
+#define PTL_PID_MAX ((ptl_pid_t)1024)
 
 /*! Match any node identifier. */
-#define PTL_NID_ANY ((ptl_nid_t) 0xffff)
+#define PTL_NID_ANY ((ptl_nid_t)0xffff)
 
 /*! Match any user identifier. */
-#define PTL_UID_ANY ((ptl_uid_t) 0xffffffff)
+#define PTL_UID_ANY ((ptl_uid_t)0xffffffff)
 
 /*! Wildcard for portal table entry identifier fields. */
-#define PTL_PT_ANY ((ptl_pt_index_t) 0xffffffff)
+#define PTL_PT_ANY ((ptl_pt_index_t)0xffffffff)
 
 /*! Match any rank. */
-#define PTL_RANK_ANY ((ptl_rank_t) 0xffffffff)
+#define PTL_RANK_ANY ((ptl_rank_t)0xffffffff)
 
 /*! Enables an infinite timeout. */
-#define PTL_TIME_FOREVER ((ptl_time_t) 0xffffffff)
+#define PTL_TIME_FOREVER ((ptl_time_t)0xffffffff)
 
 /******************************
- * Initialization and Cleanup *
- ******************************/
+* Initialization and Cleanup *
+******************************/
 /*!
  * @addtogroup INC Initialization and Cleanup
  * @{
@@ -338,8 +330,8 @@ void PtlFini(void);
 /*! @} */
 
 /**********************
- * Network Interfaces *
- **********************/
+* Network Interfaces *
+**********************/
 /*!
  * @addtogroup NI (NI) Network Interfaces
  * @{
@@ -362,44 +354,44 @@ enum ni_types {
 
 /*! Request that the interface specified in \a iface be opened with matching
  * enabled. */
-#define PTL_NI_MATCHING     (1<<NI_T_MATCHING)
+#define PTL_NI_MATCHING (1 << NI_T_MATCHING)
 
 /*! Request that the interface specified in \a iface be opened with matching
  * disabled. \c PTL_NI_MATCHING and \c PTL_NI_NO_MATCHING are mutually
  * exclusive. */
-#define PTL_NI_NO_MATCHING  (1<<NI_T_NMATCHING)
+#define PTL_NI_NO_MATCHING (1 << NI_T_NMATCHING)
 
 /*! Request that the interface specified in \a iface be opened with logical
  * end-point addressing (e.g.\ MPI communicator and rank or SHMEM PE). */
-#define PTL_NI_LOGICAL      (1<<NI_T_LOGICAL)
+#define PTL_NI_LOGICAL (1 << NI_T_LOGICAL)
 
 /*! Request that the interface specified in \a iface be opened with physical
  * end-point addressing (e.g.\ NID/PID). \c PTL_NI_LOGICAL and \c
  * PTL_NI_PHYSICAL are mutually exclusive */
-#define PTL_NI_PHYSICAL     (1<<NI_T_PHYSICAL)
+#define PTL_NI_PHYSICAL (1 << NI_T_PHYSICAL)
 
-#define PTL_NI_INIT_OPTIONS_MASK ((1<<NI_T_OPTIONS_MASK) - 1)
+#define PTL_NI_INIT_OPTIONS_MASK ((1 << NI_T_OPTIONS_MASK) - 1)
 
 /*! @typedef ptl_ni_fail_t
  * A network interface can use this integral type to define specific
  * information regarding the failure of an operation. */
 typedef enum {
-    PTL_NI_OK, /*!< Used in successful end events to indicate that there has
-                 been no failure. */
-    PTL_NI_UNDELIVERABLE, /*!< Indicates a system failure that prevents message
-                            delivery. */
-    PTL_NI_DROPPED, /*!< Indicates that a message was dropped for some reason. */
-    PTL_NI_FLOW_CTRL, /*!< Indicates that the remote node has exhausted its
-                        resources, enabled flow control, and dropped this
-                        message. */
+    PTL_NI_OK,             /*!< Used in successful end events to indicate that there has
+                            * been no failure. */
+    PTL_NI_UNDELIVERABLE,  /*!< Indicates a system failure that prevents message
+                            * delivery. */
+    PTL_NI_DROPPED,        /*!< Indicates that a message was dropped for some reason. */
+    PTL_NI_FLOW_CTRL,      /*!< Indicates that the remote node has exhausted its
+                            * resources, enabled flow control, and dropped this
+                            * message. */
     PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
-                             indicated a permissions violation for this
-                             message. */
-    PTL_NI_OP_VIOLATION, /*!< Indicates that the remote Portals addressing
-                           indicated an operations violation for this message.
-                           */
-    PTL_NI_NO_MATCH /*!< Indicates that the search did not find an entry in the
-                      unexpected list. */
+                            * indicated a permissions violation for this
+                            * message. */
+    PTL_NI_OP_VIOLATION,   /*!< Indicates that the remote Portals addressing
+                            * indicated an operations violation for this message.
+                            */
+    PTL_NI_NO_MATCH        /*!< Indicates that the search did not find an entry in the
+                            * unexpected list. */
 } ptl_ni_fail_t;
 
 enum ni_features {
@@ -409,66 +401,66 @@ enum ni_features {
 };
 
 /*! Indicates that the Portals implementation allows MEs/LEs to bind inaccessible memory. */
-#define PTL_TARGET_BIND_INACCESSIBLE (1<<NI_BIND_INACCESSIBLE)
+#define PTL_TARGET_BIND_INACCESSIBLE (1 << NI_BIND_INACCESSIBLE)
 
 /*! Indicates that the Portals implementation supports total data ordering. */
-#define PTL_TOTAL_DATA_ORDERING      (1<<NI_DATA_ORDERING)
+#define PTL_TOTAL_DATA_ORDERING (1 << NI_DATA_ORDERING)
 
 /*!
  * @struct ptl_ni_limits_t
  * @brief The network interface (NI) limits type */
 typedef struct {
-    int max_entries;            /*!< Maximum number of match list entries that
-                                  can be allocated at any one time. */
-    int max_unexpected_headers; /*!< Maximum number of unexpected headers
-                                  that can be queued at any one time. */
-    int max_mds;                /*!< Maximum number of memory descriptors that
-                                  can be allocated at any one time. */
-    int max_cts;                /*!< Maximum number of counting events that can
-                                  be allocated at any one time. */
-    int max_eqs;                /*!< Maximum number of event queues that can be
-                                  allocated at any one time. */
-    int max_pt_index;           /*!< Largest portal table index for this
-                                  interface, valid indexes range from 0 to
-                                  max_pt_index, inclusive. An interface must
-                                  have a max_pt_index of at least 63. */
-    int max_iovecs;             /*!< Maximum number of I/O vectors for a single
-                                  memory descriptor for this interface. */
-    int max_list_size;          /*!< Maximum number of match list entries that
-                                  can be attached to any portal table index. */
-    int max_triggered_ops;      /*!< Maximum number of triggered operations
-                                  that can be outstanding. */
-    ptl_size_t max_msg_size;    /*!< Maximum size (in bytes) of a message (put,
-                                  get, or reply). */
-    ptl_size_t max_atomic_size; /*!< Maximum size (in bytes) that can be passed
-                                  to an atomic operation. */
+    int max_entries;                  /*!< Maximum number of match list entries that
+                                       * can be allocated at any one time. */
+    int max_unexpected_headers;       /*!< Maximum number of unexpected headers
+                                       * that can be queued at any one time. */
+    int max_mds;                      /*!< Maximum number of memory descriptors that
+                                       * can be allocated at any one time. */
+    int max_cts;                      /*!< Maximum number of counting events that can
+                                       * be allocated at any one time. */
+    int max_eqs;                      /*!< Maximum number of event queues that can be
+                                       * allocated at any one time. */
+    int max_pt_index;                 /*!< Largest portal table index for this
+                                      * interface, valid indexes range from 0 to
+                                      * max_pt_index, inclusive. An interface must
+                                      * have a max_pt_index of at least 63. */
+    int        max_iovecs;            /*!< Maximum number of I/O vectors for a single
+                                       * memory descriptor for this interface. */
+    int        max_list_size;         /*!< Maximum number of match list entries that
+                                       * can be attached to any portal table index. */
+    int        max_triggered_ops;     /*!< Maximum number of triggered operations
+                                       * that can be outstanding. */
+    ptl_size_t max_msg_size;          /*!< Maximum size (in bytes) of a message (put,
+                                       * get, or reply). */
+    ptl_size_t max_atomic_size;       /*!< Maximum size (in bytes) that can be passed
+                                       * to an atomic operation. */
     ptl_size_t max_fetch_atomic_size; /*!< Maximum size (in bytes) that can be passed
-                                  to an atomic operation that returns the prior
-                                  value to the initiator. */
-    ptl_size_t max_waw_ordered_size; /*!< Maximum size (in bytes) of a message
-                                       that will guarantee “per-address” data
-                                       ordering for a write followed by a write
-                                       (consecutive put or atomic or a mixture
-                                       of the two) and a write followed by a
-                                       read (put followed by a get) An
-                                       interface must provide a
-                                       \a max_waw_ordered_size of at least 64
-                                       bytes. */
-    ptl_size_t max_war_ordered_size; /*!< Maximum size (in bytes) of a message
-                                       that will guarantee “per-address” data
-                                       ordering for a read followed by a write
-                                       (get followed by a put or atomic). An
-                                       interface must provide a
-                                       \a max_war_ordered_size of at least 8
-                                       bytes. */
-    ptl_size_t max_volatile_size; /*!< Maximum size (in bytes) that can be
-                                    passed as the length of a put or atomic for
-                                    a memory descriptor with the
-                                    PTL_MD_VOLATILE option set. */
-    unsigned int features; /*!< A bit mask of features supported by the the
-                             portals implementation. Currently, the features
-                             that are defined are PTL_TARGET_BIND_INACCESSIBLE and
-                             PTL_TOTAL_DATA_ORDERING. */
+                                       * to an atomic operation that returns the prior
+                                       * value to the initiator. */
+    ptl_size_t max_waw_ordered_size;  /*!< Maximum size (in bytes) of a message
+                                       * that will guarantee “per-address” data
+                                       * ordering for a write followed by a write
+                                       * (consecutive put or atomic or a mixture
+                                       * of the two) and a write followed by a
+                                       * read (put followed by a get) An
+                                       * interface must provide a
+                                       * \a max_waw_ordered_size of at least 64
+                                       * bytes. */
+    ptl_size_t max_war_ordered_size;  /*!< Maximum size (in bytes) of a message
+                                       * that will guarantee “per-address” data
+                                       * ordering for a read followed by a write
+                                       * (get followed by a put or atomic). An
+                                       * interface must provide a
+                                       * \a max_war_ordered_size of at least 8
+                                       * bytes. */
+    ptl_size_t max_volatile_size;     /*!< Maximum size (in bytes) that can be
+                                       * passed as the length of a put or atomic for
+                                       * a memory descriptor with the
+                                       * PTL_MD_VOLATILE option set. */
+    unsigned int features;            /*!< A bit mask of features supported by the the
+                                       * portals implementation. Currently, the features
+                                       * that are defined are PTL_TARGET_BIND_INACCESSIBLE and
+                                       * PTL_TOTAL_DATA_ORDERING. */
 } ptl_ni_limits_t;
 
 /*!
@@ -571,7 +563,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle);
  */
 int PtlNIStatus(ptl_handle_ni_t ni_handle,
                 ptl_sr_index_t  status_register,
-                ptl_sr_value_t  *status);
+                ptl_sr_value_t *status);
 /*!
  * @fn PtlNIHandle(ptl_handle_any_t handle,
  *                 ptl_handle_ni_t *ni_handle)
@@ -590,8 +582,8 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle,
  * @implnote Every handle should encode the network interface and the object
  * identifier relative to this handle.
  */
-int PtlNIHandle(ptl_handle_any_t    handle,
-                ptl_handle_ni_t*    ni_handle);
+int PtlNIHandle(ptl_handle_any_t handle,
+                ptl_handle_ni_t *ni_handle);
 /*!
  * @fn PtlSetMap(ptl_handle_ni_t       ni_handle,
  *               ptl_size_t            map_size,
@@ -622,9 +614,9 @@ int PtlNIHandle(ptl_handle_any_t    handle,
  *                              identifier map, likely due to integration with
  *                              a static run-time system.
  */
-int PtlSetMap(ptl_handle_ni_t       ni_handle,
-              ptl_size_t            map_size,
-              const ptl_process_t  *mapping);
+int PtlSetMap(ptl_handle_ni_t      ni_handle,
+              ptl_size_t           map_size,
+              const ptl_process_t *mapping);
 /*!
  * @fn PtlGetMap(ptl_handle_ni_t ni_handle,
  *               ptl_size_t      map_size,
@@ -655,8 +647,8 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 /*! @} */
 
 /************************
- * Portal Table Entries *
- ************************/
+* Portal Table Entries *
+************************/
 /*!
  * @addtogroup PT (PT) Portal Table Entries
  * @{ */
@@ -669,17 +661,17 @@ enum pt_options {
 /*! Hint to the underlying implementation that all entries attached to this
  * portal table entry will have the \c PTL_ME_USE_ONCE or \c PTL_LE_USE_ONCE
  * option set. */
-#define PTL_PT_ONLY_USE_ONCE      (1<<ONLY_USE_ONCE)
+#define PTL_PT_ONLY_USE_ONCE (1 << ONLY_USE_ONCE)
 
 /*! Enable flow control on this portal table entry. */
-#define PTL_PT_FLOWCTRL           (1<<FLOWCTRL)
+#define PTL_PT_FLOWCTRL (1 << FLOWCTRL)
 
 /*! Hint to the underlying implementation that all entries attached to the
  * priority list on this portal table entry will not have the \c
  * PTL_ME_NO_TRUNCATE option set. */
-#define PTL_PT_ONLY_TRUNCATE      (1<<ONLY_TRUNCATE)
+#define PTL_PT_ONLY_TRUNCATE (1 << ONLY_TRUNCATE)
 
-#define PTL_PT_ALLOC_OPTIONS_MASK ((1<<PT_OPTIONS_MASK) - 1)
+#define PTL_PT_ALLOC_OPTIONS_MASK ((1 << PT_OPTIONS_MASK) - 1)
 
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
@@ -720,11 +712,11 @@ enum pt_options {
  *                          no EQ attached.
  * @see PtlPTFree()
  */
-int PtlPTAlloc(ptl_handle_ni_t  ni_handle,
-               unsigned int     options,
-               ptl_handle_eq_t  eq_handle,
-               ptl_pt_index_t   pt_index_req,
-               ptl_pt_index_t*  pt_index);
+int PtlPTAlloc(ptl_handle_ni_t ni_handle,
+               unsigned int    options,
+               ptl_handle_eq_t eq_handle,
+               ptl_pt_index_t  pt_index_req,
+               ptl_pt_index_t *pt_index);
 /*!
  * @fn PtlPTFree(ptl_handle_ni_t    ni_handle,
  *               ptl_pt_index_t     pt_index)
@@ -743,8 +735,8 @@ int PtlPTAlloc(ptl_handle_ni_t  ni_handle,
  *                              (e.g. a match list entry is still attached).
  * @see PtlPTAlloc()
  */
-int PtlPTFree(ptl_handle_ni_t   ni_handle,
-              ptl_pt_index_t    pt_index);
+int PtlPTFree(ptl_handle_ni_t ni_handle,
+              ptl_pt_index_t  pt_index);
 /*!
  * @fn PtlPTDisable(ptl_handle_ni_t ni_handle,
  *                  ptl_pt_index_t  pt_index)
@@ -768,8 +760,8 @@ int PtlPTFree(ptl_handle_ni_t   ni_handle,
  *      table entry will be delivered. Replies arriving at this initiator will
  *      continue to succeed.
  */
-int PtlPTDisable(ptl_handle_ni_t    ni_handle,
-                 ptl_pt_index_t     pt_index);
+int PtlPTDisable(ptl_handle_ni_t ni_handle,
+                 ptl_pt_index_t  pt_index);
 /*!
  * @fn PtlPTEnable(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index)
@@ -791,8 +783,8 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index);
 /*! @} */
 /***********************
- * User Identification *
- ***********************/
+* User Identification *
+***********************/
 /*!
  * @addtogroup UI User Identification
  * @{
@@ -812,12 +804,12 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle,
  * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
  *                          interface handle.
  */
-int PtlGetUid(ptl_handle_ni_t   ni_handle,
-              ptl_uid_t*        uid);
+int PtlGetUid(ptl_handle_ni_t ni_handle,
+              ptl_uid_t      *uid);
 /*! @} */
 /**************************
- * Process Identification *
- **************************/
+* Process Identification *
+**************************/
 /*!
  * @addtogroup PI Process Identification
  * @{
@@ -837,12 +829,12 @@ int PtlGetUid(ptl_handle_ni_t   ni_handle,
  * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
  *                          interface handle
  */
-int PtlGetId(ptl_handle_ni_t    ni_handle,
-             ptl_process_t*     id);
+int PtlGetId(ptl_handle_ni_t ni_handle,
+             ptl_process_t  *id);
 /*! @} */
 /**********************
- * Memory Descriptors *
- **********************/
+* Memory Descriptors *
+**********************/
 /*!
  * @addtogroup MD (MD) Memory Descriptors
  * @{ */
@@ -860,26 +852,26 @@ enum md_options {
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_MD_EVENT_SUCCESS_DISABLE (1<<MD_EVNT_SUCCESS_DISABLE)
+#define PTL_MD_EVENT_SUCCESS_DISABLE (1 << MD_EVNT_SUCCESS_DISABLE)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
-#define PTL_MD_EVENT_CT_SEND         (1<<MD_EVNT_CT_SEND)
+#define PTL_MD_EVENT_CT_SEND (1 << MD_EVNT_CT_SEND)
 
 /*! Enable the counting of \c PTL_EVENT_REPLY events. */
-#define PTL_MD_EVENT_CT_REPLY        (1<<MD_EVNT_CT_REPLY)
+#define PTL_MD_EVENT_CT_REPLY (1 << MD_EVNT_CT_REPLY)
 
 /*! Enable the counting of \c PTL_EVENT_ACK events. */
-#define PTL_MD_EVENT_CT_ACK          (1<<MD_EVNT_CT_ACK)
+#define PTL_MD_EVENT_CT_ACK (1 << MD_EVNT_CT_ACK)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. The increment is by the number of
  * bytes counted (\e length for \c PTL_EVENT_SEND events and \e mlength for
  * other events). Failure events always increment the count by one. */
-#define PTL_MD_EVENT_CT_BYTES        (1<<MELE_EVNT_CT_BYTES)
+#define PTL_MD_EVENT_CT_BYTES (1 << MELE_EVNT_CT_BYTES)
 
 /*! Indicate to the portals implementation that messages sent from this memory
  * descriptor do not have to arrive at the target in order. */
-#define PTL_MD_UNORDERED             (1<<MD_UNORDERED)
+#define PTL_MD_UNORDERED (1 << MD_UNORDERED)
 
 /*! Indicate to the Portals implementation that the application may modify the
  * buffer associated with this memory buffer immediately following the return
@@ -887,9 +879,9 @@ enum md_options {
  * the application to reuse the buffer. The Portals implementation is not
  * required to honor this option unless the size of the operation is less than
  * or equal to \a max_volatile_size. */
-#define PTL_MD_VOLATILE              (1<<MD_VOLATILE)
+#define PTL_MD_VOLATILE (1 << MD_VOLATILE)
 
-#define PTL_MD_OPTIONS_MASK          (((1<<MD_OPTIONS_MASK)-1) | PTL_MD_EVENT_CT_BYTES)
+#define PTL_MD_OPTIONS_MASK (((1 << MD_OPTIONS_MASK) - 1) | PTL_MD_EVENT_CT_BYTES)
 
 /*!
  * @fn PtlMDBind(ptl_handle_ni_t    ni_handle,
@@ -932,9 +924,9 @@ enum md_options {
  *      usage model and may desire to optimize for it.
  * @see PtlMDRelease()
  */
-int PtlMDBind(ptl_handle_ni_t   ni_handle,
-              const ptl_md_t*         md,
-              ptl_handle_md_t*  md_handle);
+int PtlMDBind(ptl_handle_ni_t  ni_handle,
+              const ptl_md_t  *md,
+              ptl_handle_md_t *md_handle);
 /*!
  * @fn PtlMDRelease(ptl_handle_md_t md_handle)
  * @brief Release resources associated with a memory descriptor.
@@ -961,8 +953,8 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
 /*! @} */
 
 /**************************
- * List Entries and Lists *
- **************************/
+* List Entries and Lists *
+**************************/
 /*!
  * @addtogroup LEL (LE) List Entries and Lists
  * @{
@@ -986,10 +978,10 @@ typedef enum {
  * @ingroup MLEML
  */
 typedef enum {
-    PTL_SEARCH_ONLY, /*!< Use the LE/ME to search the unexpected list, without
-                       consuming an item in the list. */
+    PTL_SEARCH_ONLY,  /*!< Use the LE/ME to search the unexpected list, without
+                       * consuming an item in the list. */
     PTL_SEARCH_DELETE /*!< Use the LE/ME to search the unexpected list and
-                         delete the item from the list. */
+                       * delete the item from the list. */
 } ptl_search_op_t;
 
 /*! Specifies that the list entry will respond to \p put operations. By
@@ -998,7 +990,7 @@ typedef enum {
  * operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented. If a
  * full event is delivered to the initiator, the \a ni_fail_type in the \c
  * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION. */
-#define PTL_LE_OP_PUT                   PTL_ME_OP_PUT
+#define PTL_LE_OP_PUT PTL_ME_OP_PUT
 
 /*! Specifies that the list entry will respond to \p get operations. By
  * default, list entries reject \p get operations. If a \p get operation
@@ -1010,12 +1002,12 @@ typedef enum {
  *      both \p put or \p get operations. In fact, it is often desirable for a
  *      list entry used in an \p atomic operation to be configured to respond
  *      to both \p put and \p get operations. */
-#define PTL_LE_OP_GET                   PTL_ME_OP_GET
+#define PTL_LE_OP_GET PTL_ME_OP_GET
 
 /*! Specifies that the list entry will only be used once and then unlinked. If
  * this option is not set, the list entry persists until it is explicitly
  * unlinked. */
-#define PTL_LE_USE_ONCE                 PTL_ME_USE_ONCE
+#define PTL_LE_USE_ONCE PTL_ME_USE_ONCE
 
 /*! Specifies that an acknowledgment should not be sent for incoming \p put
  * operations, even if requested. By default, acknowledgments are sent for \p
@@ -1023,7 +1015,7 @@ typedef enum {
  * and counting type events. Acknowledgments are never sent for \p get
  * operations. The data sent in the \p reply serves as an implicit
  * acknowledgment. */
-#define PTL_LE_ACK_DISABLE              PTL_ME_ACK_DISABLE
+#define PTL_LE_ACK_DISABLE PTL_ME_ACK_DISABLE
 
 /*! Specifies that the header for a message delivered to this list entry should
  * not be added to the unexpected list. This option only has meaning if the
@@ -1031,52 +1023,52 @@ typedef enum {
  * which truncates messages to zero bytes, disables comm events, and sets this
  * option, a user may create a list entry which consumes no target side
  * resources. */
-#define PTL_LE_UNEXPECTED_HDR_DISABLE   PTL_ME_UNEXPECTED_HDR_DISABLE
+#define PTL_LE_UNEXPECTED_HDR_DISABLE PTL_ME_UNEXPECTED_HDR_DISABLE
 
 /*! Indicate that this list entry only contains memory addresses that are
  * accessible by the application.
  */
-#define PTL_LE_IS_ACCESSIBLE            PTL_ME_IS_ACCESSIBLE
+#define PTL_LE_IS_ACCESSIBLE PTL_ME_IS_ACCESSIBLE
 
 /*! Specifies that this list entry should not generate a \c PTL_EVENT_LINK full
  * event indicating the list entry successfully linked. */
-#define PTL_LE_EVENT_LINK_DISABLE       PTL_ME_EVENT_LINK_DISABLE
+#define PTL_LE_EVENT_LINK_DISABLE PTL_ME_EVENT_LINK_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate a
  * communication operation. */
-#define PTL_LE_EVENT_COMM_DISABLE       PTL_ME_EVENT_COMM_DISABLE
+#define PTL_LE_EVENT_COMM_DISABLE PTL_ME_EVENT_COMM_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate a
  * flow control failure. */
-#define PTL_LE_EVENT_FLOWCTRL_DISABLE   PTL_ME_EVENT_FLOWCTRL_DISABLE
+#define PTL_LE_EVENT_FLOWCTRL_DISABLE PTL_ME_EVENT_FLOWCTRL_DISABLE
 
 /*! Specifies that this list entry should not generate events that indicate
  * success. This is useful in scenarios where the application does not need
  * normal events, but does require failure information to enhance reliability.
  */
-#define PTL_LE_EVENT_SUCCESS_DISABLE    PTL_ME_EVENT_SUCCESS_DISABLE
+#define PTL_LE_EVENT_SUCCESS_DISABLE PTL_ME_EVENT_SUCCESS_DISABLE
 
 /*! Specifies that this list entry should not generate overflow list events.
  */
-#define PTL_LE_EVENT_OVER_DISABLE       PTL_ME_EVENT_OVER_DISABLE
+#define PTL_LE_EVENT_OVER_DISABLE PTL_ME_EVENT_OVER_DISABLE
 
 /*! Specifies that this list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_LE_EVENT_UNLINK_DISABLE     PTL_ME_EVENT_UNLINK_DISABLE
+#define PTL_LE_EVENT_UNLINK_DISABLE PTL_ME_EVENT_UNLINK_DISABLE
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_LE_EVENT_CT_COMM            PTL_ME_EVENT_CT_COMM
+#define PTL_LE_EVENT_CT_COMM PTL_ME_EVENT_CT_COMM
 
 /*! Enable the counting of overflow events. */
-#define PTL_LE_EVENT_CT_OVERFLOW        PTL_ME_EVENT_CT_OVERFLOW
+#define PTL_LE_EVENT_CT_OVERFLOW PTL_ME_EVENT_CT_OVERFLOW
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failure events always increment the
  * count by one. */
-#define PTL_LE_EVENT_CT_BYTES           PTL_ME_EVENT_CT_BYTES
+#define PTL_LE_EVENT_CT_BYTES PTL_ME_EVENT_CT_BYTES
 
-#define PTL_LE_APPEND_OPTIONS_MASK      ((1<<LE_OPTIONS_MASK)-1)
+#define PTL_LE_APPEND_OPTIONS_MASK ((1 << LE_OPTIONS_MASK) - 1)
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
@@ -1134,12 +1126,12 @@ typedef enum {
  *                              interface.
  * @see PtlLEUnlink()
  */
-int PtlLEAppend(ptl_handle_ni_t     ni_handle,
-                ptl_pt_index_t      pt_index,
-                const ptl_le_t *    le,
-                ptl_list_t          ptl_list,
-                const void*         user_ptr,
-                ptl_handle_le_t*    le_handle);
+int PtlLEAppend(ptl_handle_ni_t  ni_handle,
+                ptl_pt_index_t   pt_index,
+                const ptl_le_t  *le,
+                ptl_list_t       ptl_list,
+                const void      *user_ptr,
+                ptl_handle_le_t *le_handle);
 /*!
  * @fn PtlLEUnlink(ptl_handle_le_t le_handle)
  * @brief Used to unlink a list entry from a list. This operation also releases
@@ -1257,8 +1249,8 @@ enum me_options {
 };
 
 /********************************************
- * Matching List Entries and Matching Lists *
- ********************************************/
+* Matching List Entries and Matching Lists *
+********************************************/
 /*!
  * @addtogroup MLEML (ME) Matching List Entries and Matching Lists
  * @{
@@ -1269,7 +1261,7 @@ enum me_options {
  * as an operations failure and \c PTL_SR_OPERATIONS_VIOLATIONS is incremented.
  * If a full event is delivered to the initiator, the \a ni_fail_type in the \c
  * PTL_EVENT_ACK event must be set to \c PTL_NI_OP_VIOLATION. */
-#define PTL_ME_OP_PUT                   (1<<MELE_OP_PUT)
+#define PTL_ME_OP_PUT (1 << MELE_OP_PUT)
 
 /*! Specifies that the match list entry will respond to \p get operations. By
  * default, match list entries reject \p get operations. If a \p get operation
@@ -1281,12 +1273,12 @@ enum me_options {
  *      to both \p put or \p get operations. In fact, it is often desirable for
  *      a match list entry used in an \p atomic operation to be configured to
  *      respond to both \p put and \p get operations. */
-#define PTL_ME_OP_GET                   (1<<MELE_OP_GET)
+#define PTL_ME_OP_GET (1 << MELE_OP_GET)
 
 /*! Specifies that the match list entry will only be used once and then
  * unlinked. If this option is not set, the match list entry persists until
  * another unlink condition is triggered. */
-#define PTL_ME_USE_ONCE                 (1<<MELE_USE_ONCE)
+#define PTL_ME_USE_ONCE (1 << MELE_USE_ONCE)
 
 /*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
  * put operations, even if requested. By default, acknowledgments are sent for
@@ -1294,7 +1286,7 @@ enum me_options {
  * and counting type events. Acknowledgments are never sent for \p get
  * operations. The data sent in the \p reply serves as an implicit
  * acknowledgment. */
-#define PTL_ME_ACK_DISABLE              (1<<MELE_ACK_DISABLE)
+#define PTL_ME_ACK_DISABLE (1 << MELE_ACK_DISABLE)
 
 /*! Specifies that the header for a message delivered to this list entry should
  * not be added to the unexpected list. This option only has meaning if the
@@ -1302,50 +1294,50 @@ enum me_options {
  * which truncates messages to zero bytes, disables comm events, and sets this
  * option, a user may create a list entry which consumes no target side
  * resources. */
-#define PTL_ME_UNEXPECTED_HDR_DISABLE   (1<<MELE_UNEXPECTED_HDR_DISABLE)
+#define PTL_ME_UNEXPECTED_HDR_DISABLE (1 << MELE_UNEXPECTED_HDR_DISABLE)
 
 /*! Indicate that this list entry only contains memory addresses that are
  * accessible by the application.
  */
-#define PTL_ME_IS_ACCESSIBLE            (1<<MELE_IS_ACCESSIBLE)
+#define PTL_ME_IS_ACCESSIBLE (1 << MELE_IS_ACCESSIBLE)
 
 /*! Specifies that this match list entry should not generate a \c
  * PTL_EVENT_LINK full event indicating the list entry successfully linked. */
-#define PTL_ME_EVENT_LINK_DISABLE       (1<<MELE_EVNT_LINK_DISABLE)
+#define PTL_ME_EVENT_LINK_DISABLE (1 << MELE_EVNT_LINK_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a communication operation. */
-#define PTL_ME_EVENT_COMM_DISABLE       (1<<MELE_EVNT_COMM_DISABLE)
+#define PTL_ME_EVENT_COMM_DISABLE (1 << MELE_EVNT_COMM_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate a flow control failure. */
-#define PTL_ME_EVENT_FLOWCTRL_DISABLE   (1<<MELE_EVNT_FLOWCTRL_DISABLE)
+#define PTL_ME_EVENT_FLOWCTRL_DISABLE (1 << MELE_EVNT_FLOWCTRL_DISABLE)
 
 /*! Specifies that this match list entry should not generate events that
  * indicate success. This is useful in scenarios where the application does not
  * need normal events, but does require failure information to enhance
  * reliability. */
-#define PTL_ME_EVENT_SUCCESS_DISABLE    (1<<MELE_EVNT_SUCCESS_DISABLE)
+#define PTL_ME_EVENT_SUCCESS_DISABLE (1 << MELE_EVNT_SUCCESS_DISABLE)
 
 /*! Specifies that this match list entry should not generate overflow list
  * events. */
-#define PTL_ME_EVENT_OVER_DISABLE       (1<<MELE_EVNT_OVER_DISABLE)
+#define PTL_ME_EVENT_OVER_DISABLE (1 << MELE_EVNT_OVER_DISABLE)
 
 /*! Specifies that this match list entry should not generate unlink (\c
  * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
-#define PTL_ME_EVENT_UNLINK_DISABLE     (1<<MELE_EVNT_UNLINK_DISABLE)
+#define PTL_ME_EVENT_UNLINK_DISABLE (1 << MELE_EVNT_UNLINK_DISABLE)
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
  * PTL_EVENT_GET, \c PTL_EVENT_ATOMIC). */
-#define PTL_ME_EVENT_CT_COMM            (1<<MELE_EVNT_CT_COMM)
+#define PTL_ME_EVENT_CT_COMM (1 << MELE_EVNT_CT_COMM)
 
 /*! Enable the counting of overflow events. */
-#define PTL_ME_EVENT_CT_OVERFLOW        (1<<MELE_EVNT_CT_OVERFLOW)
+#define PTL_ME_EVENT_CT_OVERFLOW (1 << MELE_EVNT_CT_OVERFLOW)
 
 /*! By default, counting events count events. When set, this option causes
  * successful bytes to be counted instead. Failures are still counted as
  * events. */
-#define PTL_ME_EVENT_CT_BYTES           (1<<MELE_EVNT_CT_BYTES)
+#define PTL_ME_EVENT_CT_BYTES (1 << MELE_EVNT_CT_BYTES)
 
 /*! Specifies that the offset used in accessing the memory region is managed
  * locally. By default, the offset is in the incoming message. When the offset
@@ -1355,7 +1347,7 @@ enum me_options {
  * @note Only one offset variable exists per match list entry. If both \p put and
  *      \p get operations are performed on a match list entry, the value of that
  *      single variable is updated each time. */
-#define PTL_ME_MANAGE_LOCAL             (1<<ME_MANAGE_LOCAL)
+#define PTL_ME_MANAGE_LOCAL (1 << ME_MANAGE_LOCAL)
 
 /*! Specifies that the length provided in the incoming request cannot be
  * reduced to match the memory available in the region. This can cause the
@@ -1363,7 +1355,7 @@ enum me_options {
  * subtracting the offset from the length of the memory region.) By default, if
  * the length in the incoming operation is greater than the amount of memory
  * available, the operation is truncated. */
-#define PTL_ME_NO_TRUNCATE              (1<<ME_NO_TRUNCATE)
+#define PTL_ME_NO_TRUNCATE (1 << ME_NO_TRUNCATE)
 
 /*! Indicates that messages deposited into this match list entry may be
  * aligned by the implementation to a performance optimizing boundary.
@@ -1371,9 +1363,9 @@ enum me_options {
  * that the application does not care about the specific placement of the data.
  * This option is only relevant when the \c PTL_ME_MANAGE_LOCAL option is set.
  * */
-#define PTL_ME_MAY_ALIGN                (1<<ME_MAY_ALIGN)
+#define PTL_ME_MAY_ALIGN (1 << ME_MAY_ALIGN)
 
-#define PTL_ME_APPEND_OPTIONS_MASK      ((1<<ME_OPTIONS_MASK)-1)
+#define PTL_ME_APPEND_OPTIONS_MASK ((1 << ME_OPTIONS_MASK) - 1)
 
 /*!
  * @struct ptl_me_t
@@ -1403,16 +1395,16 @@ typedef struct {
      * alignment, the starting address or the length of the region; although
      * unaligned messages may be slower (i.e., lower bandwidth and/or longer
      * latency) on some implementations. */
-    void *              start;
+    void *start;
 
     /*! Specify the length of the memory region associated with the match list
      * entry. */
-    ptl_size_t          length;
+    ptl_size_t length;
 
     /*! A handle for counting type events associated with the memory region.
      * If this argument is \c PTL_CT_NONE, operations performed on this match
      * list entry are not counted. */
-    ptl_handle_ct_t     ct_handle;
+    ptl_handle_ct_t ct_handle;
 
     /*! Specifies either the user ID that may access this match list entry. The
      * user ID may be set to a wildcard (\c PTL_UID_ANY). If the access control
@@ -1422,7 +1414,7 @@ typedef struct {
      * This failure is also indicated to the initiator. If a full event is
      * delivered to the initiator, the \a ni_fail_type in the \c PTL_EVENT_ACK
      * full event must be set to \c PTL_NI_PERM_VIOLATION. */
-    ptl_uid_t            uid;
+    ptl_uid_t uid;
 
     /*! Specifies the behavior of the match list entry. The following options
      * can be selected: enable put operations (yes or no), enable get
@@ -1430,49 +1422,49 @@ typedef struct {
      * truncation (yes or no), acknowledgment (yes or no), use scatter/gather
      * vectors and disable events. Values for this argument can be constructed
      * using a bitwise OR of the following values:
-     - \c PTL_ME_OP_PUT
-     - \c PTL_ME_OP_GET
-     - \c PTL_ME_MANAGE_LOCAL
-     - \c PTL_ME_NO_TRUNCATE
-     - \c PTL_ME_USE_ONCE
-     - \c PTL_ME_MAY_ALIGN
-     - \c PTL_ME_ACK_DISABLE
-     - \c PTL_IOVEC
-     - \c PTL_ME_EVENT_COMM_DISABLE
-     - \c PTL_ME_EVENT_FLOWCTRL_DISABLE
-     - \c PTL_ME_EVENT_SUCCESS_DISABLE
-     - \c PTL_ME_EVENT_OVER_DISABLE
-     - \c PTL_ME_EVENT_UNLINK_DISABLE
-     - \c PTL_ME_EVENT_CT_COMM
-     - \c PTL_ME_EVENT_CT_OVERFLOW
-     - \c PTL_ME_EVENT_CT_BYTES
+     * - \c PTL_ME_OP_PUT
+     * - \c PTL_ME_OP_GET
+     * - \c PTL_ME_MANAGE_LOCAL
+     * - \c PTL_ME_NO_TRUNCATE
+     * - \c PTL_ME_USE_ONCE
+     * - \c PTL_ME_MAY_ALIGN
+     * - \c PTL_ME_ACK_DISABLE
+     * - \c PTL_IOVEC
+     * - \c PTL_ME_EVENT_COMM_DISABLE
+     * - \c PTL_ME_EVENT_FLOWCTRL_DISABLE
+     * - \c PTL_ME_EVENT_SUCCESS_DISABLE
+     * - \c PTL_ME_EVENT_OVER_DISABLE
+     * - \c PTL_ME_EVENT_UNLINK_DISABLE
+     * - \c PTL_ME_EVENT_CT_COMM
+     * - \c PTL_ME_EVENT_CT_OVERFLOW
+     * - \c PTL_ME_EVENT_CT_BYTES
      */
-    unsigned int        options;
+    unsigned int options;
 
     /*! Specifies the match criteria for the process identifier of the
      * requester. The constants \c PTL_PID_ANY and \c PTL_NID_ANY can be used
      * to wildcard either of the physical identifiers in the ptl_process_t
      * structure, or \c PTL_RANK_ANY can be used to wildcard the rank for
      * logical addressing. */
-    ptl_process_t       match_id;
+    ptl_process_t match_id;
 
     /*! Specify the match criteria to apply to the match bits in the incoming
      * request. The \a ignore_bits are used to mask out insignificant bits in
      * the incoming match bits. The resulting bits are then compared to the
      * match list entry's match bits to determine if the incoming request meets
      * the match criteria. */
-    ptl_match_bits_t    match_bits;
+    ptl_match_bits_t match_bits;
 
     /*! The \a ignore_bits are used to mask out insignificant bits in the
      * incoming match bits. */
-    ptl_match_bits_t    ignore_bits;
+    ptl_match_bits_t ignore_bits;
 
     /*! When the unused portion of a match list entry (length - local offset)
      * falls below this value, the match list entry automatically unlinks. A \a
      * min_free value of 0 disables the \a min_free capability (thre free space
      * cannot fall below 0). This value is only used if \c PTL_ME_MANAGE_LOCAL
      * is set. */
-    ptl_size_t          min_free;
+    ptl_size_t min_free;
 } ptl_me_t;
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t      ni_handle,
@@ -1543,12 +1535,12 @@ typedef struct {
  *      seem appropriate.
  * @see PtlMEUnlink()
  */
-int PtlMEAppend(ptl_handle_ni_t     ni_handle,
-                ptl_pt_index_t      pt_index,
-                ptl_me_t *          me,
-                ptl_list_t          ptl_list,
-                void *              user_ptr,
-                ptl_handle_me_t *   me_handle);
+int PtlMEAppend(ptl_handle_ni_t  ni_handle,
+                ptl_pt_index_t   pt_index,
+                ptl_me_t        *me,
+                ptl_list_t       ptl_list,
+                void            *user_ptr,
+                ptl_handle_me_t *me_handle);
 /*!
  * @fn PtlMEUnlink(ptl_handle_me_t me_handle)
  * @brief Remove a match list entry from a list and release its resources.
@@ -1635,8 +1627,8 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
 /*! @} */
 
 /*********************************
- * Lightweight "Counting" Events *
- *********************************/
+* Lightweight "Counting" Events *
+*********************************/
 /*!
  * @addtogroup LCE (CT) Lightweight "Counting" Events
  * @{
@@ -1644,10 +1636,10 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
  * @brief A \a ct_handle refers to a ptl_ct_event_t structure.
  */
 typedef struct {
-    ptl_size_t  success; /*!< A count associated with successful events that
-                           counts events or bytes. */
-    ptl_size_t  failure; /*!< A count associated with failed events that counts
-                           events or bytes. */
+    ptl_size_t success;  /*!< A count associated with successful events that
+                          * counts events or bytes. */
+    ptl_size_t failure;  /*!< A count associated with failed events that counts
+                          * events or bytes. */
 } ptl_ct_event_t;
 /*!
  * @enum ptl_ct_type_t
@@ -1687,8 +1679,8 @@ typedef enum {
  *      unless otherwise required by the hardware.
  * @see PtlCTFree()
  */
-int PtlCTAlloc(ptl_handle_ni_t      ni_handle,
-               ptl_handle_ct_t *    ct_handle);
+int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
+               ptl_handle_ct_t *ct_handle);
 /*!
  * @fn PtlCTFree(ptl_handle_ct_t ct_handle)
  * @brief Free a counting event.
@@ -1750,8 +1742,8 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle);
  *      is called during the execution of the function.
  * @see PtlCTWait(), PtlCTPoll()
  */
-int PtlCTGet(ptl_handle_ct_t    ct_handle,
-             ptl_ct_event_t *   event);
+int PtlCTGet(ptl_handle_ct_t ct_handle,
+             ptl_ct_event_t *event);
 /*!
  * @fn PtlCTWait(ptl_handle_ct_t    ct_handle,
  *               ptl_size_t         test,
@@ -1784,9 +1776,9 @@ int PtlCTGet(ptl_handle_ct_t    ct_handle,
  *      dealing with the conflict of reading and freeing events was chosen.
  * @see PtlCTGet(), PtlCTPoll()
  */
-int PtlCTWait(ptl_handle_ct_t   ct_handle,
-              ptl_size_t        test,
-              ptl_ct_event_t *  event);
+int PtlCTWait(ptl_handle_ct_t ct_handle,
+              ptl_size_t      test,
+              ptl_ct_event_t *event);
 /*!
  * @fn PtlCTPoll(const ptl_handle_ct_t *  ct_handles,
  *               const ptl_size_t * tests,
@@ -1850,12 +1842,12 @@ int PtlCTWait(ptl_handle_ct_t   ct_handle,
  *      dealing with the conflict of reading and freeing events was chosen.
  * @see PtlCTWait(), PtlCTGet()
  */
-int PtlCTPoll(const ptl_handle_ct_t * ct_handles,
-              const ptl_size_t *tests,
-              unsigned int      size,
-              ptl_time_t        timeout,
-              ptl_ct_event_t *  event,
-              unsigned int *    which);
+int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
+              const ptl_size_t      *tests,
+              unsigned int           size,
+              ptl_time_t             timeout,
+              ptl_ct_event_t        *event,
+              unsigned int          *which);
 /*!
  * @fn PtlCTSet(ptl_handle_ct_t ct_handle,
  *              ptl_ct_event_t  new_ct)
@@ -1879,8 +1871,8 @@ int PtlCTPoll(const ptl_handle_ct_t * ct_handles,
  *                              counting event handle.
  * @see PtlCTInc()
  */
-int PtlCTSet(ptl_handle_ct_t    ct_handle,
-             ptl_ct_event_t     test);
+int PtlCTSet(ptl_handle_ct_t ct_handle,
+             ptl_ct_event_t  test);
 /*!
  * @fn PtlCTInc(ptl_handle_ct_t ct_handle,
  *              ptl_ct_event_t  increment)
@@ -1908,13 +1900,13 @@ int PtlCTSet(ptl_handle_ct_t    ct_handle,
  *      buffer.
  * @see PtlCTSet()
  */
-int PtlCTInc(ptl_handle_ct_t    ct_handle,
-             ptl_ct_event_t     increment);
+int PtlCTInc(ptl_handle_ct_t ct_handle,
+             ptl_ct_event_t  increment);
 /*! @} */
 
 /****************************
- * Data Movement Operations *
- ****************************/
+* Data Movement Operations *
+****************************/
 /*!
  * @addtogroup DMO Data Movement Operations
  * @{
@@ -1948,9 +1940,9 @@ int PtlCTInc(ptl_handle_ct_t    ct_handle,
  */
 typedef enum {
     PTL_NO_ACK_REQ, /*!< Requests that no acknowledgment should be generated. */
-    PTL_ACK_REQ, /*!< Requests an acknowledgment. */
+    PTL_ACK_REQ,    /*!< Requests an acknowledgment. */
     PTL_CT_ACK_REQ, /*!< Requests a simple counting acknowledgment. */
-    PTL_OC_ACK_REQ /*!< Requests an operation completed acknowledgment. */
+    PTL_OC_ACK_REQ  /*!< Requests an operation completed acknowledgment. */
 } ptl_ack_req_t;
 /*!
  * @fn PtlPut(ptl_handle_md_t   md_handle,
@@ -2033,7 +2025,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
            ptl_size_t       remote_offset,
-           const void *     user_ptr,
+           const void      *user_ptr,
            ptl_hdr_data_t   hdr_data);
 /*!
  * @fn PtlGet(ptl_handle_md_t   md_handle,
@@ -2090,11 +2082,11 @@ int PtlGet(ptl_handle_md_t  md_handle,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
            ptl_size_t       remote_offset,
-           const void *     user_ptr);
+           const void      *user_ptr);
 
 /************************
- * Atomic Operations *
- ************************/
+* Atomic Operations *
+************************/
 /*!
  * @addtogroup atomic Atomic Operations
  * @{
@@ -2225,28 +2217,28 @@ typedef enum {
                                  * operation is limited to single data items.
                                  */
 } ptl_op_t;
-#define PTL_OP_LAST (PTL_MSWAP+1)
+#define PTL_OP_LAST (PTL_MSWAP + 1)
 /*!
  * @enum ptl_datatype_t
  * @brief The type of data an atomic operation is operating on
  */
 typedef enum {
-    PTL_INT8_T,   /*!< 8-bit signed integer */
-    PTL_UINT8_T,  /*!< 8-bit unsigned integer */
-    PTL_INT16_T,  /*!< 16-bit signed integer */
-    PTL_UINT16_T, /*!< 16-bit unsigned integer */
-    PTL_INT32_T,  /*!< 32-bit signed integer */
-    PTL_UINT32_T, /*!< 32-bit unsigned integer */
-    PTL_FLOAT,    /*!< 32-bit floating-point number */
-    PTL_INT64_T,  /*!< 64-bit signed integer */
-    PTL_UINT64_T, /*!< 64-bit unsigned integer */
-    PTL_DOUBLE,   /*!< 64-bit floating-point number */
+    PTL_INT8_T,         /*!< 8-bit signed integer */
+    PTL_UINT8_T,        /*!< 8-bit unsigned integer */
+    PTL_INT16_T,        /*!< 16-bit signed integer */
+    PTL_UINT16_T,       /*!< 16-bit unsigned integer */
+    PTL_INT32_T,        /*!< 32-bit signed integer */
+    PTL_UINT32_T,       /*!< 32-bit unsigned integer */
+    PTL_FLOAT,          /*!< 32-bit floating-point number */
+    PTL_INT64_T,        /*!< 64-bit signed integer */
+    PTL_UINT64_T,       /*!< 64-bit unsigned integer */
+    PTL_DOUBLE,         /*!< 64-bit floating-point number */
     PTL_FLOAT_COMPLEX,  /*!< 32-bit floating-point complex number */
     PTL_DOUBLE_COMPLEX, /*!< 64-bit floating-point complex number */
     PTL_LONG_DOUBLE,
     PTL_LONG_DOUBLE_COMPLEX
 } ptl_datatype_t;
-#define PTL_DATATYPE_LAST (PTL_LONG_DOUBLE_COMPLEX+1)
+#define PTL_DATATYPE_LAST (PTL_LONG_DOUBLE_COMPLEX + 1)
 /*!
  * @fn PtlAtomic(ptl_handle_md_t    md_handle,
  *               ptl_size_t         local_offset,
@@ -2306,18 +2298,18 @@ typedef enum {
  *                              memory descriptor or \a target_id is not a
  *                              valid process identifier.
  */
-int PtlAtomic(ptl_handle_md_t   md_handle,
-              ptl_size_t        local_offset,
-              ptl_size_t        length,
-              ptl_ack_req_t     ack_req,
-              ptl_process_t     target_id,
-              ptl_pt_index_t    pt_index,
-              ptl_match_bits_t  match_bits,
-              ptl_size_t        remote_offset,
-              const void *      user_ptr,
-              ptl_hdr_data_t    hdr_data,
-              ptl_op_t          operation,
-              ptl_datatype_t    datatype);
+int PtlAtomic(ptl_handle_md_t  md_handle,
+              ptl_size_t       local_offset,
+              ptl_size_t       length,
+              ptl_ack_req_t    ack_req,
+              ptl_process_t    target_id,
+              ptl_pt_index_t   pt_index,
+              ptl_match_bits_t match_bits,
+              ptl_size_t       remote_offset,
+              const void      *user_ptr,
+              ptl_hdr_data_t   hdr_data,
+              ptl_op_t         operation,
+              ptl_datatype_t   datatype);
 /*!
  * @fn PtlFetchAtomic(ptl_handle_md_t   get_md_handle,
  *                    ptl_size_t        local_get_offset,
@@ -2406,7 +2398,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
                    ptl_pt_index_t   pt_index,
                    ptl_match_bits_t match_bits,
                    ptl_size_t       remote_offset,
-                   const void *     user_ptr,
+                   const void      *user_ptr,
                    ptl_hdr_data_t   hdr_data,
                    ptl_op_t         operation,
                    ptl_datatype_t   datatype);
@@ -2496,20 +2488,20 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *                              not a valid memory descriptor, or \a target_id
  *                              is not a valid process identifier.
  */
-int PtlSwap(ptl_handle_md_t     get_md_handle,
-            ptl_size_t          local_get_offset,
-            ptl_handle_md_t     put_md_handle,
-            ptl_size_t          local_put_offset,
-            ptl_size_t          length,
-            ptl_process_t       target_id,
-            ptl_pt_index_t      pt_index,
-            ptl_match_bits_t    match_bits,
-            ptl_size_t          remote_offset,
-            const void *        user_ptr,
-            ptl_hdr_data_t      hdr_data,
-            const void *        operand,
-            ptl_op_t            operation,
-            ptl_datatype_t      datatype);
+int PtlSwap(ptl_handle_md_t  get_md_handle,
+            ptl_size_t       local_get_offset,
+            ptl_handle_md_t  put_md_handle,
+            ptl_size_t       local_put_offset,
+            ptl_size_t       length,
+            ptl_process_t    target_id,
+            ptl_pt_index_t   pt_index,
+            ptl_match_bits_t match_bits,
+            ptl_size_t       remote_offset,
+            const void      *user_ptr,
+            ptl_hdr_data_t   hdr_data,
+            const void      *operand,
+            ptl_op_t         operation,
+            ptl_datatype_t   datatype);
 /*!
  * @fn PtlAtomicSync(void)
  * @brief Synchronize atomic accesses through the API.
@@ -2537,8 +2529,8 @@ int PtlAtomicSync(void);
 /*! @} */
 
 /***************************
- * Events and Event Queues *
- ***************************/
+* Events and Event Queues *
+***************************/
 /*!
  * @addtogroup EQ (EQ) Events and Event Queues
  * @{
@@ -2655,27 +2647,27 @@ typedef struct {
      * list where the matching message resides. This may require the
      * application to copy the message to the desired buffer.
      */
-    void *              start;
+    void *start;
 
     /*! A user-specified value that is associated with each command that can
      * generate an event. */
-    void *              user_ptr;
+    const void *user_ptr;
 
     /*! 64 bits of out-of-band user data. */
-    ptl_hdr_data_t      hdr_data;
+    ptl_hdr_data_t hdr_data;
 
     /*! The match bits specified by the \e initiator. */
-    ptl_match_bits_t    match_bits;
+    ptl_match_bits_t match_bits;
 
     /*! The length (in bytes) specified in the request. */
-    ptl_size_t          rlength;
+    ptl_size_t rlength;
 
     /*! The length (in bytes) of the data that was manipulated by the
      * operation. For truncated operations, the manipulated length will be the
      * number of bytes specified by the memory descriptor operation (possibly
      * with an offset). For all other operations, the manipulated length will
      * be the length of the requested operation. */
-    ptl_size_t          mlength;
+    ptl_size_t mlength;
 
     /*! The offset requested/used by the other end of the link. At the
      * initiator, this is the displacement (in bytes) into the memory region
@@ -2683,31 +2675,31 @@ typedef struct {
      * the operation for a remote managed offset in a match list entry or by
      * the match list entry at the target for a locally managed offset. At the
      * target, this is the offset requested by th initiator. */
-    ptl_size_t          remote_offset;
+    ptl_size_t remote_offset;
 
     /*! The user identifier of the \e initiator. */
-    ptl_uid_t           uid;
+    ptl_uid_t uid;
 
     /*! The identifier of the \e initiator. */
-    ptl_process_t       initiator;
+    ptl_process_t initiator;
 
     /*! Indicates the type of the event. */
-    ptl_event_kind_t    type;
+    ptl_event_kind_t type;
 
     /*! The portal table index where the message arrived. */
-    ptl_pt_index_t      pt_index;
+    ptl_pt_index_t pt_index;
 
     /*! Is used to convey the failure of an operation. Success is indicated by
      * \c PTL_NI_OK. */
-    ptl_ni_fail_t       ni_fail_type;
+    ptl_ni_fail_t ni_fail_type;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * atomic operation that was performed. */
-    ptl_op_t            atomic_operation;
+    ptl_op_t atomic_operation;
 
     /*! If this event corresponds to an atomic operation, this indicates the
      * data type of the atomic operation that was performed. */
-    ptl_datatype_t      atomic_type;
+    ptl_datatype_t atomic_type;
 } ptl_event_t;
 /*!
  * @fn PtlEQAlloc(ptl_handle_ni_t   ni_handle,
@@ -2751,9 +2743,9 @@ typedef struct {
  *      event associated with that EQ.
  * @see PtlEQFree()
  */
-int PtlEQAlloc(ptl_handle_ni_t      ni_handle,
-               ptl_size_t           count,
-               ptl_handle_eq_t *    eq_handle);
+int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
+               ptl_size_t       count,
+               ptl_handle_eq_t *eq_handle);
 /*!
  * @fn PtlEQFree(ptl_handle_eq_t eq_handle)
  * @brief Release the resources for an event queue.
@@ -2799,8 +2791,8 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  *      freeing events was chosen.
  * @see PtlEQWait(), PtlEQPoll()
  */
-int PtlEQGet(ptl_handle_eq_t    eq_handle,
-             ptl_event_t *      event);
+int PtlEQGet(ptl_handle_eq_t eq_handle,
+             ptl_event_t    *event);
 /*!
  * @fn PtlEQWait(ptl_handle_eq_t    eq_handle,
  *               ptl_event_t *      event)
@@ -2833,8 +2825,8 @@ int PtlEQGet(ptl_handle_eq_t    eq_handle,
  *                              waiting in PtlEQWait().
  * @see PtlEQGet(), PtlEQPoll()
  */
-int PtlEQWait(ptl_handle_eq_t   eq_handle,
-              ptl_event_t *     event);
+int PtlEQWait(ptl_handle_eq_t eq_handle,
+              ptl_event_t    *event);
 /*!
  * @fn PtlEQPoll(const ptl_handle_eq_t *eq_handles,
  *               unsigned int           size,
@@ -2903,8 +2895,8 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles,
 /*! @} */
 
 /************************
- * Triggered Operations *
- ************************/
+* Triggered Operations *
+************************/
 /*!
  * @addtogroup TO Triggered Operations
  * @{
@@ -2985,18 +2977,18 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles,
  *                              valid process identifier, or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredPut(ptl_handle_md_t     md_handle,
-                    ptl_size_t          local_offset,
-                    ptl_size_t          length,
-                    ptl_ack_req_t       ack_req,
-                    ptl_process_t       target_id,
-                    ptl_pt_index_t      pt_index,
-                    ptl_match_bits_t    match_bits,
-                    ptl_size_t          remote_offset,
-                    const void *        user_ptr,
-                    ptl_hdr_data_t      hdr_data,
-                    ptl_handle_ct_t     trig_ct_handle,
-                    ptl_size_t          threshold);
+int PtlTriggeredPut(ptl_handle_md_t  md_handle,
+                    ptl_size_t       local_offset,
+                    ptl_size_t       length,
+                    ptl_ack_req_t    ack_req,
+                    ptl_process_t    target_id,
+                    ptl_pt_index_t   pt_index,
+                    ptl_match_bits_t match_bits,
+                    ptl_size_t       remote_offset,
+                    const void      *user_ptr,
+                    ptl_hdr_data_t   hdr_data,
+                    ptl_handle_ct_t  trig_ct_handle,
+                    ptl_size_t       threshold);
 /*!
  * @fn PtlTriggeredGet(ptl_handle_md_t  md_handle,
  *                     ptl_size_t       local_offset,
@@ -3028,16 +3020,16 @@ int PtlTriggeredPut(ptl_handle_md_t     md_handle,
  *                              valid process identifier, or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredGet(ptl_handle_md_t     md_handle,
-                    ptl_size_t          local_offset,
-                    ptl_size_t          length,
-                    ptl_process_t       target_id,
-                    ptl_pt_index_t      pt_index,
-                    ptl_match_bits_t    match_bits,
-                    ptl_size_t          remote_offset,
-                    const void *        user_ptr,
-                    ptl_handle_ct_t     trig_ct_handle,
-                    ptl_size_t          threshold);
+int PtlTriggeredGet(ptl_handle_md_t  md_handle,
+                    ptl_size_t       local_offset,
+                    ptl_size_t       length,
+                    ptl_process_t    target_id,
+                    ptl_pt_index_t   pt_index,
+                    ptl_match_bits_t match_bits,
+                    ptl_size_t       remote_offset,
+                    const void      *user_ptr,
+                    ptl_handle_ct_t  trig_ct_handle,
+                    ptl_size_t       threshold);
 /*!
  * @fn PtlTriggeredAtomic(ptl_handle_md_t   md_handle,
  *                        ptl_size_t        local_offset,
@@ -3085,7 +3077,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
                        ptl_pt_index_t   pt_index,
                        ptl_match_bits_t match_bits,
                        ptl_size_t       remote_offset,
-                       const void *     user_ptr,
+                       const void      *user_ptr,
                        ptl_hdr_data_t   hdr_data,
                        ptl_op_t         operation,
                        ptl_datatype_t   datatype,
@@ -3132,21 +3124,21 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
  *                              valid process identifier, or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredFetchAtomic(ptl_handle_md_t     get_md_handle,
-                            ptl_size_t          local_get_offset,
-                            ptl_handle_md_t     put_md_handle,
-                            ptl_size_t          local_put_offset,
-                            ptl_size_t          length,
-                            ptl_process_t       target_id,
-                            ptl_pt_index_t      pt_index,
-                            ptl_match_bits_t    match_bits,
-                            ptl_size_t          remote_offset,
-                            const void *        user_ptr,
-                            ptl_hdr_data_t      hdr_data,
-                            ptl_op_t            operation,
-                            ptl_datatype_t      datatype,
-                            ptl_handle_ct_t     trig_ct_handle,
-                            ptl_size_t          threshold);
+int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
+                            ptl_size_t       local_get_offset,
+                            ptl_handle_md_t  put_md_handle,
+                            ptl_size_t       local_put_offset,
+                            ptl_size_t       length,
+                            ptl_process_t    target_id,
+                            ptl_pt_index_t   pt_index,
+                            ptl_match_bits_t match_bits,
+                            ptl_size_t       remote_offset,
+                            const void      *user_ptr,
+                            ptl_hdr_data_t   hdr_data,
+                            ptl_op_t         operation,
+                            ptl_datatype_t   datatype,
+                            ptl_handle_ct_t  trig_ct_handle,
+                            ptl_size_t       threshold);
 /*!
  * @fn PtlTriggeredSwap(ptl_handle_md_t     get_md_handle,
  *                      ptl_size_t          local_get_offset,
@@ -3190,22 +3182,22 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t     get_md_handle,
  *                              valid process identifier, or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredSwap(ptl_handle_md_t    get_md_handle,
-                     ptl_size_t         local_get_offset,
-                     ptl_handle_md_t    put_md_handle,
-                     ptl_size_t         local_put_offset,
-                     ptl_size_t         length,
-                     ptl_process_t      target_id,
-                     ptl_pt_index_t     pt_index,
-                     ptl_match_bits_t   match_bits,
-                     ptl_size_t         remote_offset,
-                     const void *       user_ptr,
-                     ptl_hdr_data_t     hdr_data,
-                     const void *       operand,
-                     ptl_op_t           operation,
-                     ptl_datatype_t     datatype,
-                     ptl_handle_ct_t    trig_ct_handle,
-                     ptl_size_t         threshold);
+int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
+                     ptl_size_t       local_get_offset,
+                     ptl_handle_md_t  put_md_handle,
+                     ptl_size_t       local_put_offset,
+                     ptl_size_t       length,
+                     ptl_process_t    target_id,
+                     ptl_pt_index_t   pt_index,
+                     ptl_match_bits_t match_bits,
+                     ptl_size_t       remote_offset,
+                     const void      *user_ptr,
+                     ptl_hdr_data_t   hdr_data,
+                     const void      *operand,
+                     ptl_op_t         operation,
+                     ptl_datatype_t   datatype,
+                     ptl_handle_ct_t  trig_ct_handle,
+                     ptl_size_t       threshold);
 /*!
  * @fn PtlTriggeredCTInc(ptl_handle_ct_t    ct_handle,
  *                       ptl_ct_event_t     increment,
@@ -3232,10 +3224,10 @@ int PtlTriggeredSwap(ptl_handle_md_t    get_md_handle,
  *                              valid counting event handle or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredCTInc(ptl_handle_ct_t   ct_handle,
-                      ptl_ct_event_t    increment,
-                      ptl_handle_ct_t   trig_ct_handle,
-                      ptl_size_t        threshold);
+int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
+                      ptl_ct_event_t  increment,
+                      ptl_handle_ct_t trig_ct_handle,
+                      ptl_size_t      threshold);
 /*!
  * @fn PtlTriggeredCTSet(ptl_handle_ct_t    ct_handle,
  *                       ptl_ct_event_t     new_ct,
@@ -3256,15 +3248,15 @@ int PtlTriggeredCTInc(ptl_handle_ct_t   ct_handle,
  *                              valid counting event handle or \a trig_ct_handle
  *                              is not a valid counting event handle.
  */
-int PtlTriggeredCTSet(ptl_handle_ct_t   ct_handle,
-                      ptl_ct_event_t    new_ct,
-                      ptl_handle_ct_t   trig_ct_handle,
-                      ptl_size_t        threshold);
+int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
+                      ptl_ct_event_t  new_ct,
+                      ptl_handle_ct_t trig_ct_handle,
+                      ptl_size_t      threshold);
 /*! @} */
 
 /*************************************
- * Deferred Communication Operations *
- *************************************/
+* Deferred Communication Operations *
+*************************************/
 /*!
  * @addtogroup DCO Deferred Communication Operations
  * @{
@@ -3341,8 +3333,8 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle);
 /*! @} */
 
 /*************************
- * Operations on Handles *
- *************************/
+* Operations on Handles *
+*************************/
 /*!
  * @addtogroup OH Operations on Handles
  * @{
@@ -3358,5 +3350,5 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle);
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
                      ptl_handle_any_t handle2);
 /*! @} */
-#endif
+#endif // ifndef PORTALS4_H
 /* vim:set expandtab: */

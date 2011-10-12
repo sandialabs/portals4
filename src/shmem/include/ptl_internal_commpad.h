@@ -14,23 +14,23 @@
 #include "ptl_internal_handles.h"
 #include "ptl_internal_transfer_engine.h"
 
-extern size_t            num_siblings;
-extern ptl_pid_t         proc_number;
-extern size_t            per_proc_comm_buf_size;
-extern size_t            firstpagesize;
+extern size_t    num_siblings;
+extern ptl_pid_t proc_number;
+extern size_t    per_proc_comm_buf_size;
+extern size_t    firstpagesize;
 
 enum hdr_types {
-    HDR_TYPE_PUT       = 0,        /* _____ */
-    HDR_TYPE_GET       = 1,        /* ____1 */
-    HDR_TYPE_ATOMIC    = 2,        /* ___1_ */
-    HDR_TYPE_FETCHATOMIC=3,        /* ___11 */
-    HDR_TYPE_SWAP      = 4,        /* __1__ */
-    HDR_TYPE_CMD       = 5,        /* __1_1 */
-    HDR_TYPE_ACKFLAG   = 8,        /* _1___ */
-    HDR_TYPE_ACKMASK   = 23,       /* 1_111 */
-    HDR_TYPE_TRUNCFLAG = 16,       /* 1____ */
-    HDR_TYPE_BASICMASK = 7,        /* __111 */
-    HDR_TYPE_TERM      = 31        /* 11111 */
+    HDR_TYPE_PUT         = 0,      /* _____ */
+    HDR_TYPE_GET         = 1,      /* ____1 */
+    HDR_TYPE_ATOMIC      = 2,      /* ___1_ */
+    HDR_TYPE_FETCHATOMIC = 3,      /* ___11 */
+    HDR_TYPE_SWAP        = 4,      /* __1__ */
+    HDR_TYPE_CMD         = 5,      /* __1_1 */
+    HDR_TYPE_ACKFLAG     = 8,      /* _1___ */
+    HDR_TYPE_ACKMASK     = 23,     /* 1_111 */
+    HDR_TYPE_TRUNCFLAG   = 16,     /* 1____ */
+    HDR_TYPE_BASICMASK   = 7,      /* __111 */
+    HDR_TYPE_TERM        = 31      /* 11111 */
 };
 
 enum cmd_types {
@@ -44,7 +44,7 @@ enum cmd_types {
 typedef struct {
     void *volatile   next;
     ptl_match_bits_t match_bits;
-    void            *user_ptr;
+    const void      *user_ptr;
     ptl_hdr_data_t   hdr_data;                // not used by GETs
 #ifdef STRICT_UID_JID
     ptl_jid_t        jid;
@@ -84,8 +84,8 @@ typedef struct {
 
 struct rank_comm_pad {
     NEMESIS_blocking_queue receiveQ;
-    uint64_t owner;
-    uint8_t  data[];
+    uint64_t               owner;
+    uint8_t                data[];
 };
 
 extern struct rank_comm_pad *comm_pads[PTL_PID_MAX];
