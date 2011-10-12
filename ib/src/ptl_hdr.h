@@ -45,16 +45,17 @@ typedef enum {
 #define PTL_XPORT_HDR					\
 	unsigned		version:4;		\
 	unsigned		operation:4;		\
-	unsigned		atom_op:5;		\
 	unsigned		atom_type:4;		\
 	unsigned		ack_req:4;		\
 	unsigned		ni_type:4;		\
 	unsigned		pkt_fmt:4;		\
+	unsigned		hdr_size:8;		\
+	unsigned		atom_op:5;		\
 	unsigned		data_in:1;		\
 	unsigned		data_out:1;		\
-	unsigned		pkt_reserved:1;		\
+	unsigned		reserved_1:1;		\
 	unsigned		ni_fail:4;		\
-	unsigned		reserved_1:28;		\
+	unsigned		reserved_20:20;		\
 	union {						\
 	__be32			dst_nid;		\
 	__be32			dst_rank;		\
