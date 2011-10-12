@@ -24,6 +24,7 @@ void xport_hdr_from_xi(hdr_t *hdr, xi_t *xi)
 	hdr->pkt_fmt = PKT_FMT_REQ;
 	hdr->dst_nid = cpu_to_be32(xi->target.phys.nid);
 	hdr->dst_pid = cpu_to_be32(xi->target.phys.pid);
+	hdr->hdr_size = sizeof(req_hdr_t);
 }
 
 void xport_hdr_from_xt(hdr_t *hdr, xt_t *xt)
@@ -34,6 +35,7 @@ void xport_hdr_from_xt(hdr_t *hdr, xt_t *xt)
 	hdr->pkt_fmt = PKT_FMT_REPLY;
 	hdr->dst_nid = cpu_to_be32(xt->initiator.phys.nid);
 	hdr->dst_pid = cpu_to_be32(xt->initiator.phys.pid);
+	hdr->hdr_size = sizeof(hdr_t);
 }
 
 void xport_hdr_to_xi(hdr_t *hdr, xi_t *xi)
