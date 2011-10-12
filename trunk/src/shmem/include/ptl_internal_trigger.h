@@ -28,7 +28,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_pt_index_t   pt_index;
             ptl_match_bits_t match_bits;
             ptl_size_t       remote_offset;
-            const void      *user_ptr;
+            void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
         } put;
         struct {
@@ -39,7 +39,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_pt_index_t   pt_index;
             ptl_match_bits_t match_bits;
             ptl_size_t       remote_offset;
-            const void      *user_ptr;
+            void            *user_ptr;
         } get;
         struct {
             ptl_handle_md_t  md_handle;
@@ -50,7 +50,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_pt_index_t   pt_index;
             ptl_match_bits_t match_bits;
             ptl_size_t       remote_offset;
-            const void      *user_ptr;
+            void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
             ptl_op_t         operation;
             ptl_datatype_t   datatype;
@@ -65,7 +65,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_pt_index_t   pt_index;
             ptl_match_bits_t match_bits;
             ptl_size_t       remote_offset;
-            const void      *user_ptr;
+            void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
             ptl_op_t         operation;
             ptl_datatype_t   datatype;
@@ -80,7 +80,7 @@ typedef struct ptl_internal_trigger_s {
             ptl_pt_index_t   pt_index;
             ptl_match_bits_t match_bits;
             ptl_size_t       remote_offset;
-            const void      *user_ptr;
+            void            *user_ptr;
             ptl_hdr_data_t   hdr_data;
             unsigned char    operand[32];
             ptl_op_t         operation;

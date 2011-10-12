@@ -945,8 +945,6 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
  *                          successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a md_handle is not a valid memory
  *                          descriptor handle.
- * @retval PTL_IN_USE       Indicates that \a md_handle has pending operations
- *                          and cannot be released.
  * @see PtlMDBind()
  */
 int PtlMDRelease(ptl_handle_md_t md_handle);
@@ -1072,10 +1070,10 @@ typedef enum {
 /*!
  * @fn PtlLEAppend(ptl_handle_ni_t  ni_handle,
  *                 ptl_pt_index_t   pt_index,
- *                 pconst tl_le_t * le,
+ *                 const ptl_le_t  *le,
  *                 ptl_list_t       ptl_list,
- *                 const void*      user_ptr,
- *                 ptl_handle_le_t* le_handle)
+ *                 void            *user_ptr,
+ *                 ptl_handle_le_t *le_handle)
  * @brief Creates a single list entry and appends this entry to the end of the
  *      list specified by \a ptl_list associated with the portal table entry
  *      specified by \a pt_index for the portal table for \a ni_handle. If the
@@ -1130,7 +1128,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_pt_index_t   pt_index,
                 const ptl_le_t  *le,
                 ptl_list_t       ptl_list,
-                const void      *user_ptr,
+                void            *user_ptr,
                 ptl_handle_le_t *le_handle);
 /*!
  * @fn PtlLEUnlink(ptl_handle_le_t le_handle)
@@ -1160,7 +1158,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  *                 ptl_pt_index_t   pt_index,
  *                 const ptl_le_t  *le,
  *                 ptl_search_op_t  ptl_search_op,
- *                 const void      *user_ptr)
+ *                 void            *user_ptr)
  * @brief Used to search for a message in the unexpected list associated with a
  *      specific portal table entry specified by \a pt_index for the portal
  *      table for \a ni_handle. PtlLESearch() uses the exact same search of the
@@ -1218,7 +1216,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
                 const ptl_le_t *le,
                 ptl_search_op_t ptl_search_op,
-                const void     *user_ptr);
+                void           *user_ptr);
 /*! @} */
 
 enum mele_options {
@@ -1469,10 +1467,10 @@ typedef struct {
 /*!
  * @fn PtlMEAppend(ptl_handle_ni_t      ni_handle,
  *                 ptl_pt_index_t       pt_index,
- *                 const ptl_me_t *     me,
+ *                 const ptl_me_t      *me,
  *                 ptl_list_t           ptl_list,
- *                 const void *         user_ptr,
- *                 ptl_handle_me_t *    me_handle)
+ *                 void                *user_ptr,
+ *                 ptl_handle_me_t     *me_handle)
  * @brief Create a match list entry and append it to a portal table.
  * @details Creates a single match list entry. If \c PTL_PRIORITY_LIST or \c
  *      PTL_OVERFLOW_LIST is specified by \a ptl_list, this entry is appended
@@ -1570,7 +1568,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
  *                 ptl_pt_index_t  pt_index,
  *                 const ptl_me_t *me,
  *                 ptl_search_op_t ptl_search_op,
- *                 const void     *user_ptr)
+ *                 void           *user_ptr)
  * @brief The PtlMESearch() function is used to search for a message in the
  *      unexpected list associated with a specific portal table entry specified
  *      by pt_index for the portal table for ni_handle. PtlMESearch() uses the
@@ -1623,7 +1621,7 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
                 const ptl_me_t *me,
                 ptl_search_op_t ptl_search_op,
-                const void     *user_ptr);
+                void           *user_ptr);
 /*! @} */
 
 /*********************************
@@ -1953,7 +1951,7 @@ typedef enum {
  *            ptl_pt_index_t    pt_index,
  *            ptl_match_bits_t  match_bits,
  *            ptl_size_t        remote_offset,
- *            const void *      user_ptr,
+ *            void             *user_ptr,
  *            ptl_hdr_data_t    hdr_data)
  * @brief Perform a \e put operation.
  * @details Initiates an asynchronous \p put operation. There are several events
@@ -2025,7 +2023,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
            ptl_size_t       remote_offset,
-           const void      *user_ptr,
+           void            *user_ptr,
            ptl_hdr_data_t   hdr_data);
 /*!
  * @fn PtlGet(ptl_handle_md_t   md_handle,
@@ -2035,7 +2033,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
  *            ptl_pt_index_t    pt_index,
  *            ptl_match_bits_t  match_bits,
  *            ptl_size_t        remote_offset,
- *            const void *      user_ptr)
+ *            void             *user_ptr)
  * @brief Perform a \e get operation.
  * @details Initiates a remote read operation. There are two events associated
  *      with a get operation. When the data is sent from the \e target node if
@@ -2082,7 +2080,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
            ptl_pt_index_t   pt_index,
            ptl_match_bits_t match_bits,
            ptl_size_t       remote_offset,
-           const void      *user_ptr);
+           void            *user_ptr);
 
 /************************
 * Atomic Operations *
@@ -2248,7 +2246,7 @@ typedef enum {
  *               ptl_pt_index_t     pt_index,
  *               ptl_match_bits_t   match_bits,
  *               ptl_size_t         remote_offset,
- *               const void *       user_ptr,
+ *               void              *user_ptr,
  *               ptl_hdr_data_t     hdr_data,
  *               ptl_op_t           operation,
  *               ptl_datatype_t     datatype)
@@ -2306,7 +2304,7 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
               ptl_pt_index_t   pt_index,
               ptl_match_bits_t match_bits,
               ptl_size_t       remote_offset,
-              const void      *user_ptr,
+              void            *user_ptr,
               ptl_hdr_data_t   hdr_data,
               ptl_op_t         operation,
               ptl_datatype_t   datatype);
@@ -2320,7 +2318,7 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
  *                    ptl_pt_index_t    pt_index,
  *                    ptl_match_bits_t  match_bits,
  *                    ptl_size_t        remote_offset,
- *                    const void *      user_ptr,
+ *                    void             *user_ptr,
  *                    ptl_hdr_data_t    hdr_data,
  *                    ptl_op_t          operation,
  *                    ptl_datatype_t    datatype)
@@ -2398,7 +2396,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
                    ptl_pt_index_t   pt_index,
                    ptl_match_bits_t match_bits,
                    ptl_size_t       remote_offset,
-                   const void      *user_ptr,
+                   void            *user_ptr,
                    ptl_hdr_data_t   hdr_data,
                    ptl_op_t         operation,
                    ptl_datatype_t   datatype);
@@ -2412,7 +2410,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
  *             ptl_pt_index_t   pt_index,
  *             ptl_match_bits_t match_bits,
  *             ptl_size_t       remote_offset,
- *             const void *     user_ptr,
+ *             void            *user_ptr,
  *             ptl_hdr_data_t   hdr_data,
  *             const void *     operand,
  *             ptl_op_t         operation,
@@ -2497,7 +2495,7 @@ int PtlSwap(ptl_handle_md_t  get_md_handle,
             ptl_pt_index_t   pt_index,
             ptl_match_bits_t match_bits,
             ptl_size_t       remote_offset,
-            const void      *user_ptr,
+            void            *user_ptr,
             ptl_hdr_data_t   hdr_data,
             const void      *operand,
             ptl_op_t         operation,
@@ -2651,7 +2649,7 @@ typedef struct {
 
     /*! A user-specified value that is associated with each command that can
      * generate an event. */
-    const void *user_ptr;
+    void *user_ptr;
 
     /*! 64 bits of out-of-band user data. */
     ptl_hdr_data_t hdr_data;
@@ -2951,7 +2949,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles,
  *                     ptl_pt_index_t   pt_index,
  *                     ptl_match_bits_t match_bits,
  *                     ptl_size_t       remote_offset,
- *                     const void *     user_ptr,
+ *                     void            *user_ptr,
  *                     ptl_hdr_data_t   hdr_data,
  *                     ptl_handle_ct_t  trig_ct_handle,
  *                     ptl_size_t       threshold)
@@ -2985,7 +2983,7 @@ int PtlTriggeredPut(ptl_handle_md_t  md_handle,
                     ptl_pt_index_t   pt_index,
                     ptl_match_bits_t match_bits,
                     ptl_size_t       remote_offset,
-                    const void      *user_ptr,
+                    void            *user_ptr,
                     ptl_hdr_data_t   hdr_data,
                     ptl_handle_ct_t  trig_ct_handle,
                     ptl_size_t       threshold);
@@ -2997,7 +2995,7 @@ int PtlTriggeredPut(ptl_handle_md_t  md_handle,
  *                     ptl_pt_index_t   pt_index,
  *                     ptl_match_bits_t match_bits,
  *                     ptl_size_t       remote_offset,
- *                     const void *     user_ptr,
+ *                     void            *user_ptr,
  *                     ptl_handle_ct_t  trig_ct_handle,
  *                     ptl_size_t       threshold)
  * @brief Perform a triggered \e get operation.
@@ -3027,7 +3025,7 @@ int PtlTriggeredGet(ptl_handle_md_t  md_handle,
                     ptl_pt_index_t   pt_index,
                     ptl_match_bits_t match_bits,
                     ptl_size_t       remote_offset,
-                    const void      *user_ptr,
+                    void            *user_ptr,
                     ptl_handle_ct_t  trig_ct_handle,
                     ptl_size_t       threshold);
 /*!
@@ -3039,7 +3037,7 @@ int PtlTriggeredGet(ptl_handle_md_t  md_handle,
  *                        ptl_pt_index_t    pt_index,
  *                        ptl_match_bits_t  match_bits,
  *                        ptl_size_t        remote_offset,
- *                        const void *      user_ptr,
+ *                        void             *user_ptr,
  *                        ptl_hdr_data_t    hdr_data,
  *                        ptl_op_t          operation,
  *                        ptl_datatype_t    datatype,
@@ -3077,7 +3075,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
                        ptl_pt_index_t   pt_index,
                        ptl_match_bits_t match_bits,
                        ptl_size_t       remote_offset,
-                       const void      *user_ptr,
+                       void            *user_ptr,
                        ptl_hdr_data_t   hdr_data,
                        ptl_op_t         operation,
                        ptl_datatype_t   datatype,
@@ -3093,7 +3091,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
  *                             ptl_pt_index_t   pt_index,
  *                             ptl_match_bits_t match_bits,
  *                             ptl_size_t       remote_offset,
- *                             const void *     user_ptr,
+ *                             void            *user_ptr,
  *                             ptl_hdr_data_t   hdr_data,
  *                             ptl_op_t         operation,
  *                             ptl_datatype_t   datatype,
@@ -3133,7 +3131,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
                             ptl_pt_index_t   pt_index,
                             ptl_match_bits_t match_bits,
                             ptl_size_t       remote_offset,
-                            const void      *user_ptr,
+                            void            *user_ptr,
                             ptl_hdr_data_t   hdr_data,
                             ptl_op_t         operation,
                             ptl_datatype_t   datatype,
@@ -3149,7 +3147,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
  *                      ptl_pt_index_t      pt_index,
  *                      ptl_match_bits_t    match_bits,
  *                      ptl_size_t          remote_offset,
- *                      const void *        user_ptr,
+ *                      void               *user_ptr,
  *                      ptl_hdr_data_t      hdr_data,
  *                      const void *        operand,
  *                      ptl_op_t            operation,
@@ -3191,7 +3189,7 @@ int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
                      ptl_pt_index_t   pt_index,
                      ptl_match_bits_t match_bits,
                      ptl_size_t       remote_offset,
-                     const void      *user_ptr,
+                     void            *user_ptr,
                      ptl_hdr_data_t   hdr_data,
                      const void      *operand,
                      ptl_op_t         operation,

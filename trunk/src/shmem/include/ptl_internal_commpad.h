@@ -44,7 +44,7 @@ enum cmd_types {
 typedef struct {
     void *volatile   next;
     ptl_match_bits_t match_bits;
-    const void      *user_ptr;
+    void            *user_ptr;
     ptl_hdr_data_t   hdr_data;                // not used by GETs
 #ifdef STRICT_UID_JID
     ptl_jid_t        jid;

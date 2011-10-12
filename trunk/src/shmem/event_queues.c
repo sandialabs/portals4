@@ -499,7 +499,7 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
 void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
                                      const uint32_t        length,
                                      const uint64_t        roffset,
-                                     const void *const     user_ptr)
+                                     void *const     user_ptr)
 {   /*{{{*/
     const ptl_internal_handle_converter_t eqh  = { eq_handle };
     ptl_internal_eq_t *const              eq   = &(eqs[eqh.s.ni][eqh.s.code]);

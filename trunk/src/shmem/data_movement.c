@@ -701,7 +701,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
                     ptl_pt_index_t   pt_index,
                     ptl_match_bits_t match_bits,
                     ptl_size_t       remote_offset,
-                    const void      *user_ptr,
+                    void            *user_ptr,
                     ptl_hdr_data_t   hdr_data)
 {                                      /*{{{ */
     ptl_internal_header_t *restrict       hdr;
@@ -871,7 +871,7 @@ int API_FUNC PtlGet(ptl_handle_md_t  md_handle,
                     ptl_pt_index_t   pt_index,
                     ptl_match_bits_t match_bits,
                     ptl_size_t       remote_offset,
-                    const void      *user_ptr)
+                    void            *user_ptr)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { md_handle };
     ptl_internal_header_t *restrict       hdr;
@@ -989,7 +989,7 @@ int API_FUNC PtlAtomic(ptl_handle_md_t  md_handle,
                        ptl_pt_index_t   pt_index,
                        ptl_match_bits_t match_bits,
                        ptl_size_t       remote_offset,
-                       const void      *user_ptr,
+                       void            *user_ptr,
                        ptl_hdr_data_t   hdr_data,
                        ptl_op_t         operation,
                        ptl_datatype_t   datatype)
@@ -1228,7 +1228,7 @@ int API_FUNC PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
                             ptl_pt_index_t   pt_index,
                             ptl_match_bits_t match_bits,
                             ptl_size_t       remote_offset,
-                            const void      *user_ptr,
+                            void            *user_ptr,
                             ptl_hdr_data_t   hdr_data,
                             ptl_op_t         operation,
                             ptl_datatype_t   datatype)
@@ -1502,7 +1502,7 @@ int API_FUNC PtlSwap(ptl_handle_md_t  get_md_handle,
                      ptl_pt_index_t   pt_index,
                      ptl_match_bits_t match_bits,
                      ptl_size_t       remote_offset,
-                     const void      *user_ptr,
+                     void            *user_ptr,
                      ptl_hdr_data_t   hdr_data,
                      const void      *operand,
                      ptl_op_t         operation,
