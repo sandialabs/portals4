@@ -66,7 +66,7 @@ static int me_get_me(ni_t *ni, me_t **me_p)
  *	check call parameters for PtlMEAppend
  */
 static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
-			   ptl_me_t *me_init, ptl_list_t ptl_list,
+			   const ptl_me_t *me_init, ptl_list_t ptl_list,
 			   ptl_search_op_t search_op,
 			   ptl_handle_le_t *me_handle)
 {
@@ -78,7 +78,7 @@ static int me_append_check(ni_t *ni, ptl_pt_index_t pt_index,
 
 static int me_append_or_search(ptl_handle_ni_t ni_handle,
 			       ptl_pt_index_t pt_index,
-			       ptl_me_t *me_init, ptl_list_t ptl_list,
+			       const ptl_me_t *me_init, ptl_list_t ptl_list,
 			       ptl_search_op_t search_op, void *user_ptr,
 			       ptl_handle_me_t *me_handle)
 {
@@ -223,7 +223,7 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 }
 
 int PtlMESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-		ptl_me_t *me_init, ptl_search_op_t search_op,
+		const ptl_me_t *me_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
 	return me_append_or_search(ni_handle, pt_index,

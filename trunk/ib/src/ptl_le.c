@@ -282,7 +282,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 static int le_append_or_search(ptl_handle_ni_t ni_handle,
 			       ptl_pt_index_t pt_index,
 			       const ptl_le_t *le_init, ptl_list_t ptl_list,
-			       ptl_search_op_t search_op, const void *user_ptr,
+			       ptl_search_op_t search_op, void *user_ptr,
 			       ptl_handle_le_t *le_handle)
 {
 	int err;
@@ -400,7 +400,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 }
 
 int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-		const ptl_le_t *le_init, ptl_list_t ptl_list, const void *user_ptr,
+		const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
 		ptl_handle_le_t *le_handle)
 {
 	return le_append_or_search(ni_handle, pt_index,
@@ -410,7 +410,7 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 
 int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_search_op_t search_op,
-		const void *user_ptr)
+		void *user_ptr)
 {
 	return le_append_or_search(ni_handle, pt_index,
 				   le_init, 0, search_op, user_ptr,
