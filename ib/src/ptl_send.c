@@ -29,21 +29,15 @@ int send_message_rdma(buf_t *buf, int signaled)
 
 	buf->comp = signaled;
 
-	assert(xi->send_buf == NULL && xi->ack_buf == NULL);
+	assert(xi->ack_buf == NULL);
 
-	if (signaled) {
-		xi->send_buf = buf;
-	} else {
+	if (!signaled)
 		xi->ack_buf = buf;
-	}
 
 	err = ibv_post_send(buf->dest->rdma.qp, &buf->rdma.send_wr, &bad_wr);
 	if (err) {
-		if (signaled) {
-			xi->send_buf = NULL;
-		} else {
+		if (!signaled)
 			xi->ack_buf = NULL;
-		}
 
 		WARN();
 
