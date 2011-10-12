@@ -15,7 +15,7 @@ struct ct;
 	pt_t			*pt;		\
 	ptl_list_t		ptl_list;	\
 	struct eq       *eq;		\
-	const void			*user_ptr;	\
+	void			*user_ptr;	\
 	void			*start;		\
 	unsigned int		num_iov;	\
 	ptl_size_t		length;		\

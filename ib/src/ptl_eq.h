@@ -67,7 +67,7 @@ static inline ptl_handle_eq_t eq_to_handle(eq_t *eq)
 
 void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start);
 
-void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, const void *user_ptr, void *start);
+void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type, void *user_ptr, void *start);
 
 void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type, ptl_ni_fail_t fail_type);
 

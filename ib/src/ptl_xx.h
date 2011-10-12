@@ -107,7 +107,7 @@ typedef struct xi {
 	struct eq		*get_eq;
 	struct ct       *put_ct;
 	struct ct       *get_ct;
-	const void		*user_ptr;
+	void		*user_ptr;
 	ptl_process_t	target;
 	int				completed;
 } xi_t;
