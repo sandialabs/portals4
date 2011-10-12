@@ -12,6 +12,7 @@ static char *init_state_name[] = {
 	[STATE_INIT_EARLY_SEND_EVENT]	= "init_early_send_event",
 	[STATE_INIT_GET_RECV]		= "init_get_recv",
 	[STATE_INIT_HANDLE_RECV]	= "init_handle_recv",
+	[STATE_INIT_DATA_IN]		= "init_data_in",
 	[STATE_INIT_LATE_SEND_EVENT]	= "init_late_send_event",
 	[STATE_INIT_ACK_EVENT]		= "init_ack_event",
 	[STATE_INIT_REPLY_EVENT]	= "init_reply_event",
@@ -366,7 +367,76 @@ static int handle_recv(xi_t *xi)
 
 	if (debug) buf_dump(buf);
 
+	/* hack to get immediate reply */
+	if (xi->data_in) {
+		if (xi->get_md)
+			return STATE_INIT_DATA_IN;
+		else {
+			printf("unexpected init data in\n");
+			return xi->next_state;
+		}
+	}
+
 	return xi->next_state;
+}
+
+/*
+ * init_copy_in
+ *	copy data from data segment to md
+ */
+static int init_copy_in(xi_t *xi, md_t *md, void *data)
+{
+	int err;
+
+	/* the offset into the get_md is the original one */
+	ptl_size_t offset = xi->get_offset;
+
+	/* the length may have been truncated by target */
+	ptl_size_t length = xi->mlength;
+
+	assert(length <= xi->get_resid);
+printf("init_copy_in offset = %ld, length = %ld\n", offset, length);
+
+	if (md->num_iov) {
+		void *start;
+		err = iov_copy_in(data, (ptl_iovec_t *)md->start,
+				  md->num_iov, offset, length, &start);
+		if (err)
+			return PTL_FAIL;
+	} else {
+		memcpy(md->start + offset, data, length);
+	}
+
+	return PTL_OK;
+}
+
+/* we are here because the response packet contains data */
+static int data_in(xi_t *xi)
+{
+	int err;
+	md_t *md = xi->get_md;
+	data_t *data = xi->data_in;
+
+	switch (data->data_fmt) {
+	case DATA_FMT_IMMEDIATE:
+		err = init_copy_in(xi, md, data->immediate.data);
+		if (err)
+			return STATE_TGT_ERROR;
+		break;
+	default:
+		printf("unexpected data in format\n");
+		break;
+	}
+
+	/* TODO borrowed from another case recheck */
+	if (xi->ni_fail == PTL_NI_UNDELIVERABLE)
+		return STATE_INIT_CLEANUP;
+	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
+		return STATE_INIT_ACK_EVENT;
+	else if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
+		return STATE_INIT_REPLY_EVENT;
+	else
+		return STATE_INIT_CLEANUP;
 }
 
 static int late_send_event(xi_t *xi)
@@ -514,6 +584,9 @@ int process_init(xi_t *xi)
 				break;
 			case STATE_INIT_HANDLE_RECV:
 				state = handle_recv(xi);
+				break;
+			case STATE_INIT_DATA_IN:
+				state = data_in(xi);
 				break;
 			case STATE_INIT_LATE_SEND_EVENT:
 				state = late_send_event(xi);
