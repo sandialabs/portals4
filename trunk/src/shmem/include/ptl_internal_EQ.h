@@ -8,7 +8,7 @@ typedef uint16_t ptl_internal_uid_t;
 typedef struct {
     ptl_match_bits_t match_bits; // 8 bytes
     void            *start;      // 8 bytes (16)
-    void            *user_ptr;   // 8 bytes (24)
+    const void      *user_ptr;   // 8 bytes (24)
     ptl_hdr_data_t   hdr_data;   // 8 bytes (32)
     uint32_t         rlength;    // 4 bytes (36)
     uint32_t         mlength;    // 4 bytes (40)
@@ -37,7 +37,7 @@ void PtlInternalEQPush(ptl_handle_eq_t       handle,
 void PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
                             const uint32_t        length,
                             const uint64_t        roffset,
-                            void *const           user_ptr);
+                            const void *const     user_ptr);
 void PtlInternalEQNISetup(unsigned int ni);
 void PtlInternalEQNITeardown(unsigned int ni);
 

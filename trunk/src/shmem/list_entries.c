@@ -38,7 +38,7 @@
 
 typedef struct {
     void                           *next;
-    void                           *user_ptr;
+    const void                     *user_ptr;
     ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
 
@@ -73,12 +73,12 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
                                           const uint_fast64_t                   mlength,
                                           const uintptr_t                       start,
                                           const uint_fast8_t                    overflow,
-                                          void *const                           user_ptr,
+                                          const void *const                     user_ptr,
                                           ptl_internal_header_t *const restrict hdr);
 static void PtlInternalAnnounceLELink(const ptl_handle_eq_t eq_handle,
                                       const unsigned int    options,
                                       const ptl_pt_index_t  pt_index,
-                                      void *const           user_ptr);
+                                      const void *const     user_ptr);
 #ifdef USE_TRANSFER_ENGINE
 static inline void PtlInternalPerformDelivery2(const uint_fast8_t                    type,
                                                void *const restrict                  local_data,
@@ -164,9 +164,9 @@ void INTERNAL PtlInternalLENITeardown(const uint_fast8_t ni)
 
 int API_FUNC PtlLEAppend(ptl_handle_ni_t  ni_handle,
                          ptl_pt_index_t   pt_index,
-                         ptl_le_t        *le,
+                         const ptl_le_t  *le,
                          ptl_list_t       ptl_list,
-                         void            *user_ptr,
+                         const void      *user_ptr,
                          ptl_handle_le_t *le_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ni     = { ni_handle };
@@ -747,6 +747,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver(ptl_table_entry_t *restrict     t,
 operation_violation:
             PTL_LOCK_UNLOCK(t->lock);
             return DM_OP_VIOLATION;
+
 permission_violation:
             // PtlInternalPAPIDoneC(PTL_LE_PROCESS, 0);
             PTL_LOCK_UNLOCK(t->lock);
@@ -1160,7 +1161,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
                                           const uint_fast64_t                   mlength,
                                           const uintptr_t                       start,
                                           const uint_fast8_t                    overflow,
-                                          void *const                           user_ptr,
+                                          const void *const                     user_ptr,
                                           ptl_internal_header_t *const restrict hdr)
 {                                      /*{{{ */
     int ct_announce = ct_handle != PTL_CT_NONE;
@@ -1219,7 +1220,7 @@ static void PtlInternalAnnounceLEDelivery(const ptl_handle_eq_t                 
 static void PtlInternalAnnounceLELink(const ptl_handle_eq_t eq_handle,
                                       const unsigned int    options,
                                       const ptl_pt_index_t  pt_index,
-                                      void *const           user_ptr)
+                                      const void *const     user_ptr)
 {   /*{{{*/
     if ((eq_handle != PTL_EQ_NONE) && ((options & PTL_LE_EVENT_LINK_DISABLE) == 0)) {
         ptl_internal_event_t e;

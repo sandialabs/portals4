@@ -341,7 +341,7 @@ int API_FUNC PtlCTFree(ptl_handle_ct_t ct_handle)
         return PTL_ARG_INVALID;
     }
 #endif
-    if (nit_limits[ct.s.ni].max_triggered_ops > 0 && nit.refcount[ct.s.ni] > 0) {
+    if ((nit_limits[ct.s.ni].max_triggered_ops > 0) && (nit.refcount[ct.s.ni] > 0)) {
         /* step 1: get a local memory fragment */
         hdr = PtlInternalFragmentFetch(sizeof(ptl_internal_header_t) + sizeof(PTL_CMD_LOCK_TYPE));
         /* step 2: fill the op structure */
@@ -514,12 +514,12 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     } while (1);
 }                                      /*}}} */
 
-int API_FUNC PtlCTPoll(ptl_handle_ct_t *ct_handles,
-                       ptl_size_t      *tests,
-                       unsigned int     size,
-                       ptl_time_t       timeout,
-                       ptl_ct_event_t  *event,
-                       unsigned int    *which)
+int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
+                       const ptl_size_t      *tests,
+                       unsigned int           size,
+                       ptl_time_t             timeout,
+                       ptl_ct_event_t        *event,
+                       unsigned int          *which)
 {                                      /*{{{ */
     ptl_size_t              ctidx, offset;
     ptl_ct_event_t         *ctes[size];

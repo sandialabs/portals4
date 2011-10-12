@@ -65,7 +65,7 @@ void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
                 offsetof(ptl_internal_md_t, pad2), CACHELINE_WIDTH - (16 + sizeof(ptl_md_t)));
         abort();
     }
-#endif
+#endif /* ifndef NDEBUG */
     while ((tmp = PtlInternalAtomicCasPtr(&(mds[ni]), NULL,
                                           (void *)1)) == (void *)1) SPINLOCK_BODY();
     if (tmp == NULL) {
@@ -136,7 +136,7 @@ int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
 int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
-                       ptl_md_t        *md,
+                       const ptl_md_t  *md,
                        ptl_handle_md_t *md_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ni = { ni_handle };
@@ -188,7 +188,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
                  *               otherwise it's unnecessary overhead for small
                  *               messages...
                  */
-                if (md->start != NULL && md->length > 0) {
+                if ((md->start != NULL) && (md->length > 0)) {
                     mds[ni.s.ni][offset].xfe_handle =
                         xfe_register(md->start, md->length,
                                      PROT_READ | PROT_WRITE);
@@ -268,6 +268,7 @@ ptl_size_t INTERNAL PtlInternalMDXFEHandle(ptl_handle_md_t handle)
 
     return mds[md.s.ni][md.s.code].xfe_handle;
 }                                      /*}}} */
+
 #endif
 
 void INTERNAL PtlInternalMDPosted(ptl_handle_md_t handle)
