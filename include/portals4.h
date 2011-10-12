@@ -1156,10 +1156,10 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
  */
 int PtlLEUnlink(ptl_handle_le_t le_handle);
 /*!
- * @fn PtlLESearch(ptl_handle_ni_t ni_handle,
- *                 ptl_pt_index_t  pt_index,
+ * @fn PtlLESearch(ptl_handle_ni_t  ni_handle,
+ *                 ptl_pt_index_t   pt_index,
  *                 const ptl_le_t  *le,
- *                 ptl_search_op_t ptl_search_op,
+ *                 ptl_search_op_t  ptl_search_op,
  *                 const void      *user_ptr)
  * @brief Used to search for a message in the unexpected list associated with a
  *      specific portal table entry specified by \a pt_index for the portal
@@ -1216,9 +1216,9 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  */
 int PtlLESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
-                ptl_le_t       *le,
+                const ptl_le_t *le,
                 ptl_search_op_t ptl_search_op,
-                void           *user_ptr);
+                const void     *user_ptr);
 /*! @} */
 
 enum mele_options {
@@ -1621,9 +1621,9 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
  */
 int PtlMESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
-                ptl_me_t       *me,
+                const ptl_me_t *me,
                 ptl_search_op_t ptl_search_op,
-                void           *user_ptr);
+                const void     *user_ptr);
 /*! @} */
 
 /*********************************

@@ -412,9 +412,9 @@ done_appending:
 
 int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
                          ptl_pt_index_t  pt_index,
-                         ptl_le_t       *le,
+                         const ptl_le_t *le,
                          ptl_search_op_t ptl_search_op,
-                         void           *user_ptr)
+                         const void     *user_ptr)
 {
     const ptl_internal_handle_converter_t ni  = { ni_handle };
     ptl_internal_handle_converter_t       leh = { .s.selector = HANDLE_LE_CODE };

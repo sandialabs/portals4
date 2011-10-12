@@ -560,9 +560,9 @@ done_appending_unlocked:
 
 int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                          ptl_pt_index_t  pt_index,
-                         ptl_me_t       *me,
+                         const ptl_me_t *me,
                          ptl_search_op_t ptl_search_op,
-                         void           *user_ptr)
+                         const void     *user_ptr)
 {   /*{{{*/
     const ptl_internal_handle_converter_t ni  = { ni_handle };
     ptl_internal_handle_converter_t       meh = { .s.selector = HANDLE_ME_CODE };
