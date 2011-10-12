@@ -374,11 +374,11 @@ loopstart:
     return PTL_OK;
 } /*}}}*/
 
-int API_FUNC PtlEQPoll(ptl_handle_eq_t *eq_handles,
-                       unsigned int     size,
-                       ptl_time_t       timeout,
-                       ptl_event_t     *event,
-                       unsigned int    *which)
+int API_FUNC PtlEQPoll(const ptl_handle_eq_t *eq_handles,
+                       unsigned int           size,
+                       ptl_time_t             timeout,
+                       ptl_event_t           *event,
+                       unsigned int          *which)
 {   /*{{{*/
     ptl_size_t eqidx, offset;
     size_t     nstart;
@@ -479,7 +479,7 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
-        while (((curidx.s.offset+1) & mask) == eq->lagging_head.s.offset) {
+        while (((curidx.s.offset + 1) & mask) == eq->lagging_head.s.offset) {
             SPINLOCK_BODY();
             curidx = eq->leading_tail;
         }
@@ -509,7 +509,7 @@ void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
     // first, get a location from the leading_tail
     curidx = eq->leading_tail;
     do {
-        while (((curidx.s.offset+1) & mask) == eq->lagging_head.s.offset) {
+        while (((curidx.s.offset + 1) & mask) == eq->lagging_head.s.offset) {
             SPINLOCK_BODY();
             curidx = eq->leading_tail;
         }

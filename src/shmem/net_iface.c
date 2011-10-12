@@ -67,7 +67,9 @@ static inline int pid_exists(pid_t pid)
     switch (errno) {
         case EINVAL: abort(); // this is just crazy
         case EPERM: return 0; // HA! It exists!
+
         case ESRCH: return -1; // It does NOT exist
+
         default: return -1; // Something weird happened
     }
 }
@@ -151,12 +153,12 @@ void INTERNAL PtlInternalDetachCommPads(void)
     }
 }
 
-int API_FUNC PtlNIInit(ptl_interface_t  iface,
-                       unsigned int     options,
-                       ptl_pid_t        pid,
-                       ptl_ni_limits_t *desired,
-                       ptl_ni_limits_t *actual,
-                       ptl_handle_ni_t *ni_handle)
+int API_FUNC PtlNIInit(ptl_interface_t        iface,
+                       unsigned int           options,
+                       ptl_pid_t              pid,
+                       const ptl_ni_limits_t *desired,
+                       ptl_ni_limits_t       *actual,
+                       ptl_handle_ni_t       *ni_handle)
 {   /*{{{*/
     ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
     ptl_table_entry_t              *tmp;
@@ -478,9 +480,9 @@ int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
     return PTL_OK;
 } /*}}}*/
 
-int API_FUNC PtlSetMap(ptl_handle_ni_t ni_handle,
-                       ptl_size_t      map_size,
-                       ptl_process_t  *mapping)
+int API_FUNC PtlSetMap(ptl_handle_ni_t      ni_handle,
+                       ptl_size_t           map_size,
+                       const ptl_process_t *mapping)
 {   /*{{{*/
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
