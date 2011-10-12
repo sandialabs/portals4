@@ -82,21 +82,6 @@ static void init_events(xt_t *xt)
 	if (xt->le->ct && (xt->le->options & PTL_LE_EVENT_CT_COMM)) {
 		xt->event_mask |= XT_CT_COMM_EVENT;
 	}
-
-	switch (xt->operation) {
-	case OP_PUT:
-	case OP_ATOMIC:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
-			xt->event_mask |= XT_ACK_EVENT;
-		break;
-	case OP_GET:
-	case OP_FETCH:
-	case OP_SWAP:
-		if (xt->ack_req != PTL_NO_ACK_REQ) {
-			xt->event_mask |= XT_REPLY_EVENT;
-		}
-		break;
-	}
 }
 
 /*
@@ -183,6 +168,26 @@ static int copy_out(xt_t *xt, me_t *me, void *data)
 	return PTL_OK;
 }
 
+/* Allocate a send buffer to store the ack or the reply. */
+static int prepare_send_buf(xt_t *xt)
+{
+	buf_t *buf;
+	int err;
+
+	err = buf_alloc(obj_to_ni(xt), &buf);
+	if (err) {
+		WARN();
+		return PTL_FAIL;
+	}
+	buf->type = BUF_SEND;
+	buf->xt = xt;
+	xt_get(xt);
+	buf->dest = &xt->dest;
+	xt->send_buf = buf;
+
+	return PTL_OK;
+}
+
 /*
  * tgt_start
  *	get portals table entry from request
@@ -190,6 +195,26 @@ static int copy_out(xt_t *xt, me_t *me, void *data)
 static int tgt_start(xt_t *xt)
 {
 	ni_t *ni = obj_to_ni(xt);
+
+	switch (xt->operation) {
+	case OP_PUT:
+	case OP_ATOMIC:
+		if (xt->ack_req != PTL_NO_ACK_REQ)
+			xt->event_mask |= XT_ACK_EVENT;
+		break;
+	case OP_GET:
+	case OP_FETCH:
+	case OP_SWAP:
+		if (xt->ack_req != PTL_NO_ACK_REQ) {
+			xt->event_mask |= XT_REPLY_EVENT;
+		}
+		break;
+	}
+
+	/* Allocate the ack/reply buffer */
+	if ((xt->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) &&
+		(prepare_send_buf(xt) != PTL_OK))
+		return STATE_TGT_ERROR;
 
 	if (xt->pt_index >= ni->limits.max_pt_index) {
 		WARN();
@@ -224,22 +249,6 @@ static int tgt_start(xt_t *xt)
 static int request_drop(xt_t *xt)
 {
 	/* logging ? */
-
-	/* we are not transfering data but we will send
-	 * an ack/rep message so go to wait conn */
-	switch (xt->operation) {
-	case OP_PUT:
-	case OP_ATOMIC:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
-			xt->event_mask |= XT_ACK_EVENT;
-		break;
-	case OP_GET:
-	case OP_FETCH:
-	case OP_SWAP:
-		if (xt->ack_req != PTL_NO_ACK_REQ)
-			xt->event_mask |= XT_REPLY_EVENT;
-		break;
-	}
 
 	return STATE_TGT_WAIT_CONN;
 }
@@ -1067,19 +1076,7 @@ static int tgt_send_ack(xt_t *xt)
 
 	xt->event_mask &= ~XT_ACK_EVENT;
 
-	if (xt->conn->transport.type == CONN_TYPE_RDMA)
-		err = buf_alloc(ni, &buf);
-	else
-		err = sbuf_alloc(ni, &buf);
-	if (err) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
-
-	buf->xt = xt;
-	xt_get(xt);
-	buf->dest = &xt->dest;
-
+	buf = xt->send_buf;
 	hdr = (hdr_t *)buf->data;
 
 	memset(hdr, 0, sizeof(*hdr));
@@ -1119,6 +1116,8 @@ static int tgt_send_ack(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
+	xt->send_buf = NULL;
+
 	return STATE_TGT_CLEANUP;
 }
 
@@ -1131,19 +1130,7 @@ static int tgt_send_reply(xt_t *xt)
 
 	xt->event_mask &= ~XT_REPLY_EVENT;
 
-	if (xt->conn->transport.type == CONN_TYPE_RDMA)
-		err = buf_alloc(ni, &buf);
-	else
-		err = sbuf_alloc(ni, &buf);
-	if (err) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
-
-	buf->xt = xt;
-	xt_get(xt);
-	buf->dest = &xt->dest;
-
+	buf = xt->send_buf;
 	hdr = (hdr_t *)buf->data;
 
 	memset(hdr, 0, sizeof(*hdr));
@@ -1160,6 +1147,8 @@ static int tgt_send_reply(xt_t *xt)
 		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
+
+	xt->send_buf = NULL;
 
 	return STATE_TGT_CLEANUP;
 }
@@ -1210,6 +1199,11 @@ static int tgt_cleanup(xt_t *xt)
 	if (xt->recv_buf) {
 		buf_put(xt->recv_buf);
 		xt->recv_buf = NULL;
+	}
+
+	if (xt->send_buf) {
+		buf_put(xt->send_buf);
+		xt->send_buf = NULL;
 	}
 
 	pt = xt->pt;

@@ -189,6 +189,10 @@ typedef struct xt {
 	mr_t			*indir_mr;
 
 	void *start;
+
+	/* ack or reply buffer */
+	struct buf *send_buf;
+
 } xt_t;
 
 int xt_setup(void *arg);
