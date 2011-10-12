@@ -278,6 +278,13 @@ static int recv_init(buf_t *buf)
 		return STATE_RECV_DROP_BUF;
 	}
 
+	if (hdr->data_in)
+		xi->data_out = (data_t *)(buf->data + hdr->hdr_size);
+
+	if (hdr->data_out)
+		xi->data_in = (data_t *)(buf->data + hdr->hdr_size +
+					  data_size(xi->data_out));
+
 	xi->recv_buf = buf;
 
 	/* note process_init must drop recv_buf */
@@ -312,7 +319,7 @@ static void process_recv_rdma(ni_t *ni)
 	buf_t *buf = NULL;
 
 	while(1) {
-		if (debug) printf("%p: recv state = %s\n", buf, recv_state_name[state]);
+		if (debug > 1) printf("%p: recv state = %s\n", buf, recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_COMP_POLL:
 			state = comp_poll(ni, &buf);
