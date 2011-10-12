@@ -225,7 +225,6 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
-    printf("PtlPut\n");
     /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
