@@ -3,6 +3,7 @@
  *
  * This file contains declarations from ptl_atomic.c
  */
+
 #ifndef PTL_ATOMIC_H
 #define PTL_ATOMIC_H
 
