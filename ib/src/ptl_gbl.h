@@ -5,33 +5,7 @@
 #ifndef PTL_GBL_H
 #define PTL_GBL_H
 
-#define MAX_IFACE		(32)
-
-/* total number of combinations of matching/no matching and
- * logical/physical. See ni_options_to_type(). */
-#define MAX_NI_TYPES		(4)	
-
 struct ni;
-
-/*
- * interface table entry
- */
-typedef struct iface {
-	ptl_interface_t		iface_id;
-	struct ni		*ni[MAX_NI_TYPES];
-	char			ifname[IF_NAMESIZE];
-	ptl_process_t		id;		/* physical id for this interface */
-
-	/* Listen to incoming IB connections. */
-	struct rdma_event_channel *cm_channel;
-	struct rdma_cm_id	*listen_id;	/* for physical NI. */
-	int			listen;		/* boolean' true if listening */
-	struct sockaddr_in	sin;		/* local address this interface is bound to. */
-	struct ibv_context	*ibv_context;
-	struct ibv_pd		*pd;
-	ev_io			cm_watcher;
-
-} iface_t;
 
 typedef struct gbl {
 	int			num_iface;	/* size of interface table */
