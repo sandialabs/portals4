@@ -43,9 +43,7 @@ struct md {
 	struct ibv_sge		*sge_list;
 
 	/** mrs to register memory regions for verbs API
-	 * can hold one mr per iovec, these are not allocated
-	 * until the md or part of an mr is used to send/recv
-	 * a message, contained in internal_data  */
+	 * can hold one mr per iovec contained in internal_data  */
 	mr_t			**mr_list;
 
 	/** list of knem info for each iovec for use in long
