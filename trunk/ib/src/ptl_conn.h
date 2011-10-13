@@ -1,14 +1,19 @@
-/*
- * ptl_conn.h - connection management
+/**
+ * @file ptl_conn.h
+ *
+ * This file contains declarations for ptl_conn.c
+ * (See ptl_conn.c for detailed comments.)
  */
 
 #ifndef PTL_CONN_H
 #define PTL_CONN_H
 
+/* forward declarations */
 struct ni;
+struct xt;
+struct buf;
 
-/* connection state */
-enum {
+enum conn_state {
 	CONN_STATE_DISCONNECTED,
 	CONN_STATE_RESOLVING_ADDR,
 	CONN_STATE_RESOLVING_ROUTE,
@@ -19,30 +24,29 @@ enum {
 #endif
 };
 
-/* Transport type. */
 enum transport_type {
 	CONN_TYPE_NONE,
 	CONN_TYPE_RDMA,
 	CONN_TYPE_SHMEM,
 };
 
-struct xt;
-struct buf;
+/**
+ * Per transport methods.
+ */
 struct transport {
-	enum transport_type type;
+	enum transport_type	type;
 
-	int (*post_tgt_dma)(struct xt *xt);
-	int (*send_message)(struct buf *buf, int signaled);
+	int			(*post_tgt_dma)(struct xt *xt);
+	int			(*send_message)(struct buf *buf, int signaled);
 };
 
 extern struct transport transport_rdma;
 extern struct transport transport_shmem;
 
-/*
- * conn_t
- *	 per connection info
+/**
+ * Per connection information.
  */
-typedef struct conn {
+struct conn {
 	ptl_process_t		id;		/* dest nid/pid keep first */
 	pthread_mutex_t		mutex;
 	struct ni		*ni;
@@ -52,7 +56,7 @@ typedef struct conn {
 	struct list_head	xt_list;
 	pthread_spinlock_t	wait_list_lock;
 
-	struct transport transport;
+	struct transport	transport;
 
 	union {
 		struct {
@@ -63,7 +67,7 @@ typedef struct conn {
 		} rdma;
 
 		struct {
-			ptl_rank_t      local_rank;	/* local rank on that node. */
+			ptl_rank_t	local_rank;	/* local rank on that node. */
 		} shmem;
 	};
 
@@ -72,7 +76,9 @@ typedef struct conn {
 #ifdef USE_XRC
 	struct conn		*main_connect;
 #endif
-} conn_t;
+};
+
+typedef struct conn conn_t;
 
 /* RDMA CM private data */
 struct cm_priv_request {
@@ -103,39 +109,14 @@ struct cm_priv_accept {
 #endif
 };
 
-/*
- * get_conn
- *	lookup or create new conn_t
- *	from ni to id
- */
 conn_t *get_conn(struct ni *ni, const ptl_process_t *id);
 
-/*
- * conn_init
- *	initialize conn_t
- */
-void conn_init(struct ni *ni, conn_t *conn);
+void conn_init(conn_t *conn, struct ni *ni);
 
-/*
- * init_connect
- *	request a connection from rdmacm
- */
+void conn_fini(conn_t *conn);
+
 int init_connect(struct ni *ni, conn_t *conn);
 
-void cleanup_iface(iface_t *iface);
-
-int init_iface(iface_t *iface);
-
-int iface_init(gbl_t *gbl);
-
-void iface_fini(gbl_t *gbl);
-
-iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id);
-
-struct ni *iface_get_ni(iface_t *iface, int ni_type);
-
-int iface_add_ni(iface_t *iface, struct ni *ni);
-
-int iface_remove_ni(struct ni *ni);
+void process_cm_event(EV_P_ ev_io *w, int revents);
 
 #endif /* PTL_CONN_H */
