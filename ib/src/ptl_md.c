@@ -272,7 +272,6 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	gbl_put();
 	return PTL_OK;
 
-err2:
 	md_put(md);	/* from to_md */
 err1:
 	gbl_put();
