@@ -256,3 +256,40 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 	return err;
 }
+
+/*
+ * append_init_data - Build and append the data portion of a portals message.
+ */
+int append_tgt_data(me_t *me, ptl_size_t offset,
+					ptl_size_t length, buf_t *buf, enum transport_type transport_type)
+{
+	int err = PTL_OK;
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	data_t *data = (data_t *)(buf->data + buf->length);
+	int iov_start;
+	ptl_size_t iov_offset;
+
+	assert(length <= get_param(PTL_MAX_INLINE_DATA));
+
+	hdr->data_out = 1;
+
+	data->data_fmt = DATA_FMT_IMMEDIATE;
+	data->immediate.data_length = cpu_to_be32(length);
+
+	if (me->options & PTL_IOVEC) {
+		err = iov_copy_out(data->immediate.data, me->start, me->num_iov,
+						   offset, length);
+		if (err) {
+			WARN();
+			return err;
+		}
+	} else {
+		memcpy(data->immediate.data, me->start + offset, length);
+	}
+
+	buf->length += sizeof(*data) + length;
+	assert(buf->length <= BUF_DATA_SIZE);
+
+	return err;
+}
+

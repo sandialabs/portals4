@@ -974,7 +974,7 @@ static void do_trig_ct_op(xl_t *xl)
 	if (ct->interrupt)
 		goto done;
 
-	pthread_mutex_lock(&xl->ct->mutex);
+	pthread_mutex_lock(&ct->mutex);
 
 	switch(xl->op) {
 	case TRIG_CT_SET:
@@ -985,10 +985,10 @@ static void do_trig_ct_op(xl_t *xl)
 		break;
 	}
 
-	pthread_mutex_unlock(&xl->ct->mutex);
+	pthread_mutex_unlock(&ct->mutex);
 
 done:
-	ct_put(xl->ct);
+	ct_put(ct);
 	free(xl);
 }
 

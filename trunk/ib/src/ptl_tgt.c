@@ -173,6 +173,7 @@ static int prepare_send_buf(xt_t *xt)
 {
 	buf_t *buf;
 	int err;
+	hdr_t *hdr;
 
 	err = buf_alloc(obj_to_ni(xt), &buf);
 	if (err) {
@@ -184,6 +185,10 @@ static int prepare_send_buf(xt_t *xt)
 	xt_get(xt);
 	buf->dest = &xt->dest;
 	xt->send_buf = buf;
+
+	hdr = (hdr_t *)buf->data;
+	memset(hdr, 0, sizeof(*hdr));
+	buf->length = sizeof(*hdr);
 
 	return PTL_OK;
 }
@@ -652,10 +657,38 @@ static int tgt_data_out(xt_t *xt)
 {
 	data_t *data = xt->data_out;
 	int next;
+	int err;
 
 	if (!data) {
 		WARN();
 		return STATE_TGT_ERROR;
+	}
+
+	/* If reply data fits in the reply message, then use immediate
+	 * data instead of rdma.
+	 * TODO: ensure it's faster than KNEM too. */
+	if (xt->mlength < get_param(PTL_MAX_INLINE_DATA)) {
+		err = append_tgt_data(xt->me, xt->moffset,
+							  xt->mlength, xt->send_buf,
+							  xt->conn->transport.type);
+		if (err)
+			return STATE_TGT_ERROR;
+
+		/* check to see if we still need data in phase */
+		if (xt->put_resid) {
+			if (xt->operation == OP_FETCH)
+				return STATE_TGT_ATOMIC_DATA_IN;
+
+			if (xt->operation == OP_SWAP)
+				return (xt->atom_op == PTL_SWAP) ? STATE_TGT_DATA_IN
+					: STATE_TGT_SWAP_DATA_IN;
+
+			return  STATE_TGT_DATA_IN;
+		}
+
+		return STATE_TGT_COMM_EVENT;
+
+
 	}
 
 	xt->rdma_dir = DATA_DIR_OUT;
@@ -1070,7 +1103,6 @@ static int tgt_comm_event(xt_t *xt)
 static int tgt_send_ack(xt_t *xt)
 {
 	int err;
-	ni_t *ni = obj_to_ni(xt);
 	buf_t *buf;
 	hdr_t *hdr;
 
@@ -1079,15 +1111,12 @@ static int tgt_send_ack(xt_t *xt)
 	buf = xt->send_buf;
 	hdr = (hdr_t *)buf->data;
 
-	memset(hdr, 0, sizeof(*hdr));
-
 	xport_hdr_from_xt(hdr, xt);
 	base_hdr_from_xt(hdr, xt);
 
 	switch (xt->ack_req) {
 	case PTL_NO_ACK_REQ:
 		WARN();
-		buf_put(buf);
 		return STATE_TGT_ERROR;
 	case PTL_ACK_REQ:
 		hdr->operation = OP_ACK;
@@ -1100,19 +1129,15 @@ static int tgt_send_ack(xt_t *xt)
 		break;
 	default:
 		WARN();
-		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
 	if (xt->le && xt->le->options & PTL_LE_ACK_DISABLE)
 		hdr->operation = OP_NO_ACK;
 
-	buf->length = sizeof(*hdr);
-
 	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
 		WARN();
-		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
@@ -1124,7 +1149,6 @@ static int tgt_send_ack(xt_t *xt)
 static int tgt_send_reply(xt_t *xt)
 {
 	int err;
-	ni_t *ni = obj_to_ni(xt);
 	buf_t *buf;
 	hdr_t *hdr;
 
@@ -1133,18 +1157,14 @@ static int tgt_send_reply(xt_t *xt)
 	buf = xt->send_buf;
 	hdr = (hdr_t *)buf->data;
 
-	memset(hdr, 0, sizeof(*hdr));
-
 	xport_hdr_from_xt(hdr, xt);
 	base_hdr_from_xt(hdr, xt);
 
 	hdr->operation = OP_REPLY;
-	buf->length = sizeof(*hdr);
 
 	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
 		WARN();
-		buf_put(buf);
 		return STATE_TGT_ERROR;
 	}
 
@@ -1230,7 +1250,6 @@ static int tgt_cleanup_2(xt_t *xt)
 
 	return STATE_TGT_DONE;
 }
-
 
 static int tgt_overflow_event(xt_t *xt)
 {
