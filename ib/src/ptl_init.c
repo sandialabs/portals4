@@ -526,7 +526,7 @@ int process_init(xi_t *xi)
 	int state;
 
 	do {
-		pthread_spin_lock(&xi->obj.obj_lock);
+		pthread_mutex_lock(&xi->mutex);
 
 		state = xi->state;
 
@@ -590,7 +590,7 @@ int process_init(xi_t *xi)
 			case STATE_INIT_CLEANUP:
 				init_cleanup(xi);
 				xi->state = STATE_INIT_DONE;
-				pthread_spin_unlock(&xi->obj.obj_lock);
+				pthread_mutex_unlock(&xi->mutex);
 				xi_put(xi);
 				return err;
 				break;
@@ -607,7 +607,7 @@ int process_init(xi_t *xi)
 exit:
 		xi->state = state;
 
-		pthread_spin_unlock(&xi->obj.obj_lock);
+		pthread_mutex_unlock(&xi->mutex);
 	} while(0);
 
 	return err;
