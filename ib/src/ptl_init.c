@@ -258,8 +258,12 @@ static int init_send_req(xi_t *xi)
 		break;
 	}
 
-	/* ask for a response - they are all the same */
-	if (xi->event_mask || buf->num_mr) {
+	/* Always ask for a response if the remote will do an RDMA
+	 * operation for the Put. Until then the response is received, we
+	 * cannot free the MR nor post the send events. */
+	if (put_data && put_data->data_fmt != DATA_FMT_IMMEDIATE &&
+		(xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)) ||
+		buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
 		xi->event_mask |= XI_RECEIVE_EXPECTED;
 	}
