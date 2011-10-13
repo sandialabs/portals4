@@ -566,6 +566,13 @@ out2:
 		set_xt_dest(xt, conn);
 
 out1:
+	if (xt->operation == OP_ATOMIC ||
+		xt->operation == OP_SWAP ||
+		xt->operation == OP_FETCH) {
+		pthread_mutex_lock(&ni->atomic_mutex);
+		xt->in_atomic = 1;
+	}
+
 	if (xt->get_resid)
 		return STATE_TGT_DATA_OUT;
 
@@ -686,10 +693,12 @@ static int tgt_data_out(xt_t *xt)
 			return  STATE_TGT_DATA_IN;
 		}
 
+		assert(xt->in_atomic == 0);
+
 		return STATE_TGT_COMM_EVENT;
-
-
 	}
+
+	assert(xt->in_atomic == 0);
 
 	xt->rdma_dir = DATA_DIR_OUT;
 
@@ -998,6 +1007,13 @@ static int tgt_data_in(xt_t *xt)
 		next = STATE_TGT_ERROR;
 	}
 
+	if (xt->in_atomic) {
+		ni_t *ni = obj_to_ni(xt);
+		
+		pthread_mutex_unlock(&ni->atomic_mutex);
+		xt->in_atomic = 0;
+	}
+
 	return next;
 }
 
@@ -1010,6 +1026,7 @@ static int tgt_atomic_data_in(xt_t *xt)
 	int err;
 	data_t *data = xt->data_in;
 	me_t *me = xt->me;
+	ni_t *ni;
 
 	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
 	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
@@ -1026,6 +1043,12 @@ static int tgt_atomic_data_in(xt_t *xt)
 	err = atomic_in(xt, me, data->immediate.data);
 	if (err)
 		return STATE_TGT_ERROR;
+
+	assert(xt->in_atomic);
+
+	ni = obj_to_ni(xt);
+	pthread_mutex_unlock(&ni->atomic_mutex);
+	xt->in_atomic = 0;
 
 	return STATE_TGT_COMM_EVENT;
 }
@@ -1050,6 +1073,7 @@ static int tgt_swap_data_in(xt_t *xt)
 	data_t *data = xt->data_in;
 	uint8_t copy[16]; /* big enough to hold double complex */
 	void *dst;
+	ni_t *ni;
 
 	assert(data->data_fmt == DATA_FMT_IMMEDIATE);
 
@@ -1073,6 +1097,12 @@ static int tgt_swap_data_in(xt_t *xt)
 		if (err)
 			return STATE_TGT_ERROR;
 	}
+
+	assert(xt->in_atomic);
+
+	ni = obj_to_ni(xt);
+	pthread_mutex_unlock(&ni->atomic_mutex);
+	xt->in_atomic = 0;
 
 	return STATE_TGT_COMM_EVENT;
 }
@@ -1397,6 +1427,11 @@ int process_tgt(xt_t *xt)
 			break;
 
 		case STATE_TGT_ERROR:
+			if (xt->in_atomic) {
+				ni_t *ni = obj_to_ni(xt);
+				pthread_mutex_unlock(&ni->atomic_mutex);
+				xt->in_atomic = 0;
+			}
 			err = PTL_FAIL;
 			state = STATE_TGT_CLEANUP;
 			break;
