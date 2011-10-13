@@ -173,6 +173,18 @@ static param_t param[] = {
 						.max	= LONG_MAX,
 						.val	= 2000,
 					  },
+	[PTL_EQ_WAIT_LOOP_COUNT]		= {
+						.name	= "PTL_EQ_WAIT_LOOP_COUNT",
+						.min	= 0,
+						.max	= LONG_MAX,
+						.val	= 1000000,
+					  },
+	[PTL_EQ_POLL_LOOP_COUNT]		= {
+						.name	= "PTL_EQ_POLL_LOOP_COUNT",
+						.min	= 0,
+						.max	= LONG_MAX,
+						.val	= 1000000,
+					  },
 	[PTL_CT_WAIT_LOOP_COUNT]		= {
 						.name	= "PTL_CT_WAIT_LOOP_COUNT",
 						.min	= 0,
