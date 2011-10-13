@@ -532,7 +532,7 @@ err0:
  * Check to see if current value of ct event will
  * trigger a further action.
  *
- * @pre caller must hold ct->mutex
+ * @pre caller should hold ct->mutex
  *
  * @param[in] ct
  */
@@ -742,7 +742,7 @@ err0:
 /**
  * Increment counting event by value.
  *
- * @pre caller must hold ct->mutex
+ * @pre caller should hold ct->mutex
  *
  * @param[in] ct
  * @param[in] increment
