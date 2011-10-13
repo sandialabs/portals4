@@ -85,10 +85,10 @@ static void init_events(xt_t *xt)
 }
 
 /*
- * copy_in
+ * tgt_copy_in
  *	copy data from data segment into le/me
  */
-static int copy_in(xt_t *xt, me_t *me, void *data)
+static int tgt_copy_in(xt_t *xt, me_t *me, void *data)
 {
 	int err;
 	ptl_size_t offset = xt->moffset;
@@ -914,7 +914,7 @@ static int tgt_data_in(xt_t *xt)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
-		err = copy_in(xt, me, data->immediate.data);
+		err = tgt_copy_in(xt, me, data->immediate.data);
 		if (err)
 			return STATE_TGT_ERROR;
 
@@ -1036,7 +1036,7 @@ static int tgt_swap_data_in(xt_t *xt)
 		return STATE_TGT_ERROR;
 
 	if (unlikely(me->num_iov)) {
-		err = copy_in(xt, xt->me, copy);
+		err = tgt_copy_in(xt, xt->me, copy);
 		if (err)
 			return STATE_TGT_ERROR;
 	}
