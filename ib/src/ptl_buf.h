@@ -3,6 +3,7 @@
  *
  * Message buffer object declarations.
  */
+
 #ifndef PTL_BUF_H
 #define PTL_BUF_H
 
