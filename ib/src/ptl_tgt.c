@@ -1244,13 +1244,6 @@ static int tgt_cleanup(xt_t *xt)
 	return state;
 }
 
-static int tgt_cleanup_2(xt_t *xt)
-{
-	xt_put(xt);
-
-	return STATE_TGT_DONE;
-}
-
 static int tgt_overflow_event(xt_t *xt)
 {
 	le_t *le = xt->matching.le;
@@ -1261,26 +1254,29 @@ static int tgt_overflow_event(xt_t *xt)
 	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
 		switch (xt->operation) {
 		case OP_PUT:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW,
+							  xt->matching.le->user_ptr, xt->start);
 			break;
 
 		case OP_ATOMIC:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW,
+							  xt->matching.le->user_ptr, xt->start);
 			break;
 
 		case OP_FETCH:
 		case OP_SWAP:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_FETCH_ATOMIC_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+							  xt->matching.le->user_ptr, xt->start);
 			break;
 
 		case OP_GET:
-			make_target_event(xt, xt->pt->eq, PTL_EVENT_GET_OVERFLOW, xt->matching.le->user_ptr, xt->start);
+			make_target_event(xt, xt->pt->eq, PTL_EVENT_GET_OVERFLOW,
+							  xt->matching.le->user_ptr, xt->start);
 			break;
 
 		default:
 			/* Not possible. */
 			abort();
-			return STATE_TGT_ERROR;
 			break;
 		}
 
@@ -1399,17 +1395,23 @@ int process_tgt(xt_t *xt)
 			if (state == STATE_TGT_WAIT_APPEND)
 				goto exit;
 			break;
+
+		case STATE_TGT_ERROR:
+			err = PTL_FAIL;
+			state = STATE_TGT_CLEANUP;
+			break;
+
 		case STATE_TGT_CLEANUP:
 			state = tgt_cleanup(xt);
 			break;
+
 		case STATE_TGT_CLEANUP_2:
-			state = tgt_cleanup_2(xt);
+			xt->state = STATE_TGT_DONE;
+			pthread_mutex_unlock(&xt->mutex);
+			xt_put(xt);
+			return err;
 			break;
-		case STATE_TGT_ERROR:
-			WARN();
-			tgt_cleanup(xt);
-			err = PTL_FAIL;
-			goto exit;
+
 		case STATE_TGT_DONE:
 			/* xt isn't valid anymore. */
 			goto done;
