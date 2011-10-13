@@ -214,72 +214,6 @@ static int init_ib_srq(ni_t *ni)
 	return PTL_OK;
 }
 
-/* Must be locked by gbl_mutex. port is in network order. */
-static int bind_iface(iface_t *iface, unsigned int port)
-{
-	int flags;
-
-	if (iface->listen_id) {
-		/* Already bound. If we want to bind to the same port, or a
-		 * random port then it's ok. */
-		if (port == 0 || port == iface->sin.sin_port)
-			return PTL_OK;
-
-		ptl_warn("Interface already bound\n");
-		return PTL_FAIL;
-	}
-
-	iface->sin.sin_port = port;
-
-	/* Create a RDMA CM ID and bind it to retrieve the context and
-	 * PD. These will be valid for as long as librdmacm is not
-	 * unloaded, ie. when the program exits. */
-	if (rdma_create_id(iface->cm_channel, &iface->listen_id, NULL, RDMA_PS_TCP)) {
-		ptl_warn("unable to create CM ID\n");
-		goto err1;
-	}
-
-	if (rdma_bind_addr(iface->listen_id, (struct sockaddr *)&iface->sin)) {
-		ptl_warn("unable to bind to local address %x\n", iface->sin.sin_addr.s_addr);
-		goto err1;
-	}
-
-	iface->sin.sin_port = rdma_get_src_port(iface->listen_id);
-
-#ifdef USE_XRC
-	rdma_query_id(iface->listen_id, &iface->ibv_context, &iface->pd);
-#else
-	iface->ibv_context = iface->listen_id->verbs;
-
-	iface->pd = ibv_alloc_pd(iface->ibv_context);
-#endif
-
-	if (iface->ibv_context == NULL || iface->pd == NULL) {
-		ptl_warn("unable to get the CM ID context or PD\n");
-		goto err1;
-	}
-
-	/* change the blocking mode of the async event queue */
-	flags = fcntl(iface->ibv_context->async_fd, F_GETFL);
-	if (fcntl(iface->ibv_context->async_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-		ptl_warn("Cannot set asynchronous fd to non blocking\n");
-		WARN();
-		goto err1;
-	}
-
-	return PTL_OK;
-
- err1:
-	iface->ibv_context = NULL;
-	iface->pd = NULL;
-	if (iface->listen_id) {
-		rdma_destroy_id(iface->listen_id);
-		iface->listen_id = NULL;
-	}
-
-	return PTL_FAIL;
-}
-
 static int cleanup_ib(ni_t *ni)
 {
 	/* Stop the CQ thread listener. */
@@ -342,7 +276,7 @@ static int init_ib(iface_t *iface, ni_t *ni)
 		if (debug)
 			printf("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
 
-		err = bind_iface(iface, pid_to_port(ni->id.phys.pid));
+		err = __iface_bind(iface, pid_to_port(ni->id.phys.pid));
 		if (err) {
 			ptl_warn("Binding failed\n");
 			WARN();
@@ -573,7 +507,7 @@ static int create_tables(ni_t *ni)
 		entry->nid = mapping[i].phys.nid;
 		entry->pid = mapping[i].phys.pid;
 
-		conn_init(ni, conn);
+		conn_init(conn, ni);
 
 		/* convert nid/pid to ipv4 address */
 		conn->sin.sin_family = AF_INET;
@@ -759,12 +693,12 @@ static int get_local_rank(ni_t *ni)
 	}
 }
 
-int PtlNIInit(ptl_interface_t   iface_id,
-              unsigned int      options,
-              ptl_pid_t         pid,
-              const ptl_ni_limits_t *desired,
-              ptl_ni_limits_t   *actual,
-              ptl_handle_ni_t   *ni_handle)
+int PtlNIInit(ptl_interface_t	iface_id,
+	      unsigned int	options,
+	      ptl_pid_t		pid,
+	      const ptl_ni_limits_t *desired,
+	      ptl_ni_limits_t	*actual,
+	      ptl_handle_ni_t	*ni_handle)
 {
 	int err;
 	ni_t *ni;
@@ -810,7 +744,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 	pthread_mutex_lock(&gbl->gbl_mutex);
 
 	/* check to see if ni of type ni_type already exists */
-	ni = iface_get_ni(iface, ni_type);
+	ni = __iface_get_ni(iface, ni_type);
 	if (ni)
 		goto done;
 
@@ -917,11 +851,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 		goto err3;
 	}
 
-	err = iface_add_ni(iface, ni);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
-	}
+	__iface_add_ni(iface, ni);
 
  done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
@@ -944,7 +874,7 @@ int PtlNIInit(ptl_interface_t   iface_id,
 }
 
 int PtlSetMap(ptl_handle_ni_t ni_handle,
-			  ptl_size_t      map_size,
+			  ptl_size_t	  map_size,
 			  const ptl_process_t  *mapping)
 {
 	int err;
@@ -1036,9 +966,9 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 }
 
 int PtlGetMap(ptl_handle_ni_t ni_handle,
-			  ptl_size_t      map_size,
-			  ptl_process_t  *mapping,
-			  ptl_size_t     *actual_map_size)
+			  ptl_size_t	  map_size,
+			  ptl_process_t	 *mapping,
+			  ptl_size_t	 *actual_map_size)
 {
 	int err;
 	ni_t *ni;
@@ -1155,12 +1085,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	if (__sync_sub_and_fetch(&ni->ref_cnt, 1) <= 0) {
-		err = iface_remove_ni(ni);
-		if (err) {
-			pthread_mutex_unlock(&gbl->gbl_mutex);
-			goto err2;
-		}
-
+		__iface_remove_ni(ni);
 		ni_cleanup(ni);
 		ni_put(ni);
 	}
@@ -1170,8 +1095,6 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 	gbl_put();
 	return PTL_OK;
 
-err2:
-	ni_put(ni);
 err1:
 	gbl_put();
 	return err;
