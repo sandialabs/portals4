@@ -65,6 +65,7 @@ extern unsigned int linesize;
 #include "ptl_ref.h"
 #include "ptl_evloop.h"
 #include "ptl_obj.h"
+#include "ptl_iface.h"
 #include "ptl_gbl.h"
 #include "ptl_pt.h"
 #include "ptl_conn.h"
