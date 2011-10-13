@@ -89,7 +89,8 @@ struct xremote {
 	conn_t			*conn;			\
 	struct buf *ack_buf;		/* remote ACK is requested */ \
 	struct list_head	rdma_list; \
-	pthread_spinlock_t	rdma_list_lock;
+	pthread_spinlock_t	rdma_list_lock; \
+	pthread_mutex_t	mutex;
 
 
 /* initiator side transaction descriptor */
