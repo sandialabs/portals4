@@ -217,18 +217,24 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
                 ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
                 ptl_handle_me_t *me_handle)
 {
-	return me_append_or_search(ni_handle, pt_index,
+	int err;
+
+	err = me_append_or_search(ni_handle, pt_index,
 				   me_init, ptl_list, 0, user_ptr,
 				   me_handle);
+	return err;
 }
 
 int PtlMESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_me_t *me_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
-	return me_append_or_search(ni_handle, pt_index,
+	int err;
+
+	err =  me_append_or_search(ni_handle, pt_index,
 				   me_init, 0, search_op, user_ptr,
 				   NULL);
+	return err;
 }
 
 int PtlMEUnlink(ptl_handle_me_t me_handle)
