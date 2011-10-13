@@ -394,6 +394,9 @@ static int init_pools(ni_t *ni)
 		}
 	}
 
+	ni->eq_pool.init = eq_init;
+	ni->eq_pool.fini = eq_fini;
+	ni->eq_pool.setup = eq_new;
 	ni->eq_pool.cleanup = eq_cleanup;
 
 	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
@@ -811,7 +814,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
-	atomic_set(&ni->eq_waiting, 0);
+	ni->eq_waiters = 0;
 	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
 	pthread_cond_init(&ni->ct_wait_cond, NULL);
 	if (options & PTL_NI_PHYSICAL) {
