@@ -10,8 +10,7 @@ static char *init_state_name[] = {
 	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
 	[STATE_INIT_SEND_ERROR]		= "init_send_error",
 	[STATE_INIT_EARLY_SEND_EVENT]	= "init_early_send_event",
-	[STATE_INIT_GET_RECV]		= "init_get_recv",
-	[STATE_INIT_HANDLE_RECV]	= "init_handle_recv",
+	[STATE_INIT_WAIT_RECV]		= "init_wait_recv",
 	[STATE_INIT_DATA_IN]		= "init_data_in",
 	[STATE_INIT_LATE_SEND_EVENT]	= "init_late_send_event",
 	[STATE_INIT_ACK_EVENT]		= "init_ack_event",
@@ -284,7 +283,7 @@ static int init_send_req(xi_t *xi)
 			return STATE_INIT_EARLY_SEND_EVENT;
 	}
 	else if (xi->event_mask & XI_RECEIVE_EXPECTED)
-		return STATE_INIT_GET_RECV;
+		return STATE_INIT_WAIT_RECV;
 	else
 		return STATE_INIT_CLEANUP;
 
@@ -307,10 +306,12 @@ static int init_send_error(xi_t *xi)
 		return STATE_INIT_CLEANUP;
 }
 
-/* Wait for an IB completion event. */
+/* Wait for an IB completion event. We can get here either with send
+ * completion (most of the time) or with a receive completion related
+ * to the ack/reply (rarely). */
 static int init_wait_comp(xi_t *xi)
 {
-	if (xi->completed) {
+	if (xi->completed || xi->recv_buf) {
 		return STATE_INIT_EARLY_SEND_EVENT;
 	} else {
 		return STATE_INIT_WAIT_COMP;
@@ -330,31 +331,22 @@ static int early_send_event(xi_t *xi)
 		make_ct_send_event(xi);
 	
 	if ((xi->event_mask & XI_RECEIVE_EXPECTED) && !xi->ni_fail)
-		return STATE_INIT_GET_RECV;
+		return STATE_INIT_WAIT_RECV;
 	else
 		return STATE_INIT_CLEANUP;
 }
 
-static int get_recv(xi_t *xi)
-{
-	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
-		xi->next_state = STATE_INIT_LATE_SEND_EVENT;
-	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
-		xi->next_state = STATE_INIT_ACK_EVENT;
-	else if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
-		xi->next_state = STATE_INIT_REPLY_EVENT;
-	else
-		xi->next_state = STATE_INIT_CLEANUP;
-
-	return STATE_INIT_HANDLE_RECV;
-}
-
-static int handle_recv(xi_t *xi)
+static int wait_recv(xi_t *xi)
 {
 	buf_t *buf;
 	hdr_t *hdr;
 
-	/* we took another reference, drop it now */
+	/* We can come here on the application or the progress thread, but
+	 * we need the receive buffer to make progress. */
+	if (!xi->recv_buf)
+		return STATE_INIT_WAIT_RECV;
+
+	/* We took another reference in recv_init(). Drop it now */
 	xi_put(xi);
 
 	buf = xi->recv_buf;
@@ -367,17 +359,20 @@ static int handle_recv(xi_t *xi)
 
 	if (debug) buf_dump(buf);
 
-	/* hack to get immediate reply */
-	if (xi->data_in) {
-		if (xi->get_md)
-			return STATE_INIT_DATA_IN;
-		else {
-			printf("unexpected init data in\n");
-			return xi->next_state;
-		}
-	}
+	/* Check for short immediate reply data. */
+	if (xi->data_in && xi->get_md)
+		return STATE_INIT_DATA_IN;
 
-	return xi->next_state;
+	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
+		return STATE_INIT_LATE_SEND_EVENT;
+
+	if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
+		return STATE_INIT_ACK_EVENT;
+
+	if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
+		return STATE_INIT_REPLY_EVENT;
+	
+	return STATE_INIT_CLEANUP;
 }
 
 /*
@@ -395,7 +390,6 @@ static int init_copy_in(xi_t *xi, md_t *md, void *data)
 	ptl_size_t length = xi->mlength;
 
 	assert(length <= xi->get_resid);
-printf("init_copy_in offset = %ld, length = %ld\n", offset, length);
 
 	if (md->num_iov) {
 		void *start;
@@ -428,15 +422,13 @@ static int data_in(xi_t *xi)
 		break;
 	}
 
-	/* TODO borrowed from another case recheck */
-	if (xi->ni_fail == PTL_NI_UNDELIVERABLE)
-		return STATE_INIT_CLEANUP;
-	else if (xi->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
-		return STATE_INIT_ACK_EVENT;
-	else if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
+	if (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
+		return STATE_INIT_LATE_SEND_EVENT;
+
+	if (xi->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
 		return STATE_INIT_REPLY_EVENT;
-	else
-		return STATE_INIT_CLEANUP;
+	
+	return STATE_INIT_CLEANUP;
 }
 
 static int late_send_event(xi_t *xi)
@@ -499,7 +491,7 @@ static int reply_event(xi_t *xi)
 	return STATE_INIT_CLEANUP;
 }
 
-static int init_cleanup(xi_t *xi)
+static void init_cleanup(xi_t *xi)
 {
 	if (xi->get_md) {
 		md_put(xi->get_md);
@@ -519,9 +511,6 @@ static int init_cleanup(xi_t *xi)
 	if (xi->ack_buf) {
 		buf_put(xi->ack_buf);
 	}
-
-	xi_put(xi);
-	return STATE_INIT_DONE;
 }
 
 /*
@@ -574,16 +563,11 @@ int process_init(xi_t *xi)
 			case STATE_INIT_EARLY_SEND_EVENT:
 				state = early_send_event(xi);
 				break;
-			case STATE_INIT_GET_RECV:
-				state = get_recv(xi);
-				if (state == STATE_INIT_HANDLE_RECV) {
-					/* Never finish that on application thread, 
-					 * else a race with the receive thread will occur. */
+			case STATE_INIT_WAIT_RECV:
+				state = wait_recv(xi);
+				if (state == STATE_INIT_WAIT_RECV)
+					/* Nothing received yet. */
 					goto exit;
-				}
-				break;
-			case STATE_INIT_HANDLE_RECV:
-				state = handle_recv(xi);
 				break;
 			case STATE_INIT_DATA_IN:
 				state = data_in(xi);
@@ -597,16 +581,25 @@ int process_init(xi_t *xi)
 			case STATE_INIT_REPLY_EVENT:
 				state = reply_event(xi);
 				break;
-			case STATE_INIT_CLEANUP:
-				state = init_cleanup(xi);
-				break;
+
 			case STATE_INIT_ERROR:
-				state = init_cleanup(xi);
 				err = PTL_FAIL;
+				state = STATE_INIT_CLEANUP;
 				break;
+
+			case STATE_INIT_CLEANUP:
+				init_cleanup(xi);
+				xi->state = STATE_INIT_DONE;
+				pthread_spin_unlock(&xi->obj.obj_lock);
+				xi_put(xi);
+				return err;
+				break;
+
 			case STATE_INIT_DONE:
-				/* xi is not valid anymore. */
-				goto done;
+				/* We reach that state only if the send completion is
+				 * received after the recv completion. */
+				assert(xi->obj.obj_ref.ref_cnt == 1);
+				goto exit;
 			default:
 				abort();
 			}
@@ -614,7 +607,6 @@ int process_init(xi_t *xi)
 exit:
 		xi->state = state;
 
-done:
 		pthread_spin_unlock(&xi->obj.obj_lock);
 	} while(0);
 

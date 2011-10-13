@@ -55,5 +55,7 @@ int data_size(data_t *data);
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 					 ptl_size_t length, buf_t *buf,
 					 enum transport_type transport_type);
+int append_tgt_data(me_t *me, ptl_size_t offset,
+					ptl_size_t length, buf_t *buf, enum transport_type transport_type);
 
 #endif /* PTL_DATA_H */
