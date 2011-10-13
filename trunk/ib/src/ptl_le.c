@@ -403,18 +403,24 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
 		ptl_handle_le_t *le_handle)
 {
-	return le_append_or_search(ni_handle, pt_index,
+	int err;
+
+	err = le_append_or_search(ni_handle, pt_index,
 				   le_init, ptl_list, 0, user_ptr,
 				   le_handle);
+	return err;
 }
 
 int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
-	return le_append_or_search(ni_handle, pt_index,
+	int err;
+
+	err = le_append_or_search(ni_handle, pt_index,
 				   le_init, 0, search_op, user_ptr,
 				   NULL);
+	return err;
 }
 
 int PtlLEUnlink(ptl_handle_le_t le_handle)
