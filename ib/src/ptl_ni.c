@@ -811,6 +811,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->rdma.recv_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_mutex_init(&ni->atomic_mutex, NULL);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
 	pthread_cond_init(&ni->eq_wait_cond, NULL);
@@ -1064,6 +1065,7 @@ static void ni_cleanup(ni_t *ni)
 	pthread_cond_destroy(&ni->ct_wait_cond);
 	pthread_mutex_destroy(&ni->eq_wait_mutex);
 	pthread_cond_destroy(&ni->eq_wait_cond);
+	pthread_mutex_destroy(&ni->atomic_mutex);
 	pthread_mutex_destroy(&ni->pt_mutex);
 	pthread_spin_destroy(&ni->md_list_lock);
 	pthread_spin_destroy(&ni->ct_list_lock);

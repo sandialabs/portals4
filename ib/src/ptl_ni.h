@@ -56,6 +56,9 @@ typedef struct ni {
 	ptl_size_t		num_recv_errs;
 	ptl_size_t		num_recv_drops;
 
+	/* Serialize atomic operations on this NI. */
+	pthread_mutex_t		atomic_mutex;
+
 	pt_t			*pt;
 	pthread_mutex_t		pt_mutex;
 	ptl_pt_index_t		last_pt;

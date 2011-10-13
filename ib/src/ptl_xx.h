@@ -194,6 +194,9 @@ typedef struct xt {
 	/* ack or reply buffer */
 	struct buf *send_buf;
 
+	/* Indicate whether the XT owns the NI atomic mutex. */
+	int in_atomic;
+
 } xt_t;
 
 int xt_setup(void *arg);
