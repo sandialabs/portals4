@@ -10,6 +10,8 @@ libportals_la_SOURCES = \
 	ptl_buf.h \
 	ptl_conn.c \
 	ptl_conn.h \
+	ptl_iface.c \
+	ptl_iface.h \
 	ptl_ct.c \
 	ptl_ct.h \
 	ptl_data.c \
