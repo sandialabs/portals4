@@ -1,12 +1,35 @@
-/*
- * ptl_conn.c - connection management
+/**
+ * @file ptl_conn.c
+ *
+ * This file contains routines for handling connection setup.
+ *
+ * Each NI has a conn_t struct for each peer NI that it
+ * communicates with, whether on the local or a remote node.
+ * There must be a connected set of rdma QPs one on the local NI
+ * and one on each remote NI in order to use rdma transport.
+ * For local peer NIs on the same node a shared memory transport
+ * is used that does not require a connection but the library
+ * still has a conn_t for each local peer NI.
+ *
+ * The code supports two options for connection setup: RC and XRC.
+ * XRC has better scaling behavior in very large systems and uses
+ * a single receive QP per node (NID) and a shared receive queue (SRQ)
+ * per process (PID). There is a separate send QP per process for
+ * each remote node. For RC there is a send and receive QP for each
+ * remote process (NID/PID).
  */
 
 #include "ptl_loc.h"
 
 #define max(a,b)	(((a) > (b)) ? (a) : (b))
 
-void conn_init(ni_t *ni, conn_t *conn)
+/**
+ * Initialize a new conn_t struct.
+ *
+ * @param[in] conn the conn_t to init
+ * @param[in] ni the ni that owns it
+ */
+void conn_init(conn_t *conn, ni_t *ni)
 {
 	memset(conn, 0, sizeof(*conn));
 
@@ -22,21 +45,58 @@ void conn_init(ni_t *ni, conn_t *conn)
 	INIT_LIST_HEAD(&conn->list);
 }
 
+/**
+ * Cleanup a conn_t struct.
+ *
+ * @param[in] conn
+ */
 void conn_fini(conn_t *conn)
 {
 	pthread_mutex_destroy(&conn->mutex);
 	pthread_spin_destroy(&conn->wait_list_lock);
 }
 
+/**
+ * Numerically compare two physical IDs.
+ *
+ * Compare NIDs and then compare PIDs if NIDs are the same.
+ * Used to sort IDs in a binary tree. Can be used for a
+ * portals physical ID or for a conn_t which contains an ID
+ * as its first member.
+ *
+ * @param[in] a first ID
+ * @param[in] b second ID
+ *
+ * @return > 0 if a > b
+ * @return 0 if a = b
+ * @return < 0 if a < b
+ */
 static int compare_id(const void *a, const void *b)
 {
 	const conn_t *c1 = a;
 	const conn_t *c2 = b;
 
-	return (c1->id.phys.nid != c2->id.phys.nid) ? (c1->id.phys.nid - c2->id.phys.nid)
-						    : (c1->id.phys.pid - c2->id.phys.pid);
+	return (c1->id.phys.nid != c2->id.phys.nid) ?
+			(c1->id.phys.nid - c2->id.phys.nid) :
+			(c1->id.phys.pid - c2->id.phys.pid);
 }
 
+/**
+ * Get connection info for a given process id.
+ *
+ * For logical NIs the connection is contained in the rank table.
+ * For physical NIs the connection is held in a binary tree using
+ * the ID as a sorting value.
+ *
+ * For physical NIs if this is the first time we are sending a message
+ * to this process create a new conn_t. For logical NIs the conn_t
+ * structs are all allocated when the rank table is loaded.
+ *
+ * @param[in] ni the NI from which to get the connection
+ * @param[in] id the process ID to lookup
+ *
+ * @return the conn_t
+ */
 conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 {
 	conn_t *conn;
@@ -66,7 +126,7 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 				return NULL;
 			}
 
-			conn_init(ni, conn);
+			conn_init(conn, ni);
 			conn->id = *id;
 
 			/* Get the IP address from the NID. */
@@ -89,6 +149,12 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 	return conn;
 }
 
+/**
+ * @param[in] ni
+ * @param[in] conn
+ *
+ * @return status
+ */
 int init_connect(ni_t *ni, conn_t *conn)
 {
 	if (debug)
@@ -124,6 +190,13 @@ int init_connect(ni_t *ni, conn_t *conn)
 	return PTL_OK;
 }
 
+/**
+ * @param[in] ni
+ * @param[in] conn
+ * @param[in] event
+ *
+ * @return status
+ */
 static int accept_connection_request(ni_t *ni, conn_t *conn,
 				     struct rdma_cm_event *event)
 {
@@ -183,7 +256,14 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	return PTL_OK;
 }
 
-/* Accept a connection request from/to a logical NI. */
+/**
+ * Accept a connection request from/to a logical NI.
+ *
+ * @param[in] ni
+ * @param[in] event
+ *
+ * @return status
+ */
 static int accept_connection_request_logical(ni_t *ni,
 					     struct rdma_cm_event *event)
 {
@@ -201,7 +281,7 @@ static int accept_connection_request_logical(ni_t *ni,
 		return PTL_NO_SPACE;
 	}
 
-	conn_init(ni, conn);
+	conn_init(conn, ni);
 
 	pthread_mutex_lock(&ni->logical.lock);
 	list_add_tail(&conn->list, &ni->logical.connect_list);
@@ -224,10 +304,17 @@ static int accept_connection_request_logical(ni_t *ni,
 	return ret;
 }
 
-/*
- * accept an RC connection request to self
- *	called while holding connect->mutex
- *	only used for physical NIs
+/**
+ * Accept an RC connection request to self.
+ *
+ * called while holding connect->mutex
+ * only used for physical NIs
+ *
+ * @param[in] ni
+ * @param[in] conn
+ * @param[in] event
+ *
+ * @return status
  */
 static int accept_connection_self(ni_t *ni, conn_t *conn,
 				  struct rdma_cm_event *event)
@@ -268,6 +355,9 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	return PTL_OK;
 }
 
+/**
+ * @param[in] conn
+ */
 static void flush_pending_xi_xt(conn_t *conn)
 {
 	xi_t *xi;
@@ -294,8 +384,13 @@ static void flush_pending_xi_xt(conn_t *conn)
 	pthread_spin_unlock(&conn->wait_list_lock);
 }
 
-/*
- * process RC connection request event
+/**
+ * Process RC connection request event.
+ *
+ * @param[in] iface
+ * @param[in] event
+ *
+ * @return status
  */
 static int process_connect_request(struct iface *iface, struct rdma_cm_event *event)
 {
@@ -400,15 +495,19 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 
  reject:
 	rdma_reject(event->id, &rej, sizeof(rej));
-	return 1;
+	return PTL_FAIL;
 }
 
-/*
- * process_cm_event
- *	rdmacm event handler
- *	there is a listening rdmacm id per iface
+/**
+ * Process CM event.
+ *
+ * there is a listening rdmacm id per iface
+ * this is called as a handler from libev
+ *
+ * @param[in] w
+ * @param[in] revents
  */
-static void process_cm_event(EV_P_ ev_io *w, int revents)
+void process_cm_event(EV_P_ ev_io *w, int revents)
 {
 	struct iface *iface = w->data;
 	ni_t *ni;
@@ -651,206 +750,4 @@ static void process_cm_event(EV_P_ ev_io *w, int revents)
 	rdma_ack_cm_event(event);
 
 	return;
-}
-
-void cleanup_iface(iface_t *iface)
-{
-	if (iface->listen_id) {
-		rdma_destroy_id(iface->listen_id);
-		iface->listen_id = NULL;
-		iface->listen = 0;
-	}
-
-	if (iface->cm_channel)
-		rdma_destroy_event_channel(iface->cm_channel);
-
-	iface->sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	iface->ifname[0] = 0;
-
-	EVL_WATCH(ev_io_stop(evl.loop, &iface->cm_watcher));
-}
-
-/* Get the first IPv4 address for a device. returns INADDR_ANY on
- * error or if none exist. */
-static in_addr_t get_ip_address(const char *ifname)
-{
-	int fd;
-	struct ifreq devinfo;
-	struct sockaddr_in *sin = (struct sockaddr_in*)&devinfo.ifr_addr;
-	in_addr_t addr;
-
-	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-	strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
-
-	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0 &&
-		sin->sin_family == AF_INET) {
-		addr = sin->sin_addr.s_addr;
-	} else {
-		addr = htonl(INADDR_ANY);
-	}
-
-	close(fd);
-
-	return addr;
-}
-
-int init_iface(iface_t *iface)
-{
-	int err;
-
-	if (iface->ifname[0]) {
-		/* Already initialized. */
-		return PTL_OK;
-	}
-
-	/* Currently the interface name is ib followed by the interface
-	 * number. In the future we may have a system to override that,
-	 * for instance, by having a table or environment variable
-	 * (PORTALS4_INTERFACE_0=10.2.0.0/16) */
-	sprintf(iface->ifname, "ib%d", iface->iface_id);
-	if (if_nametoindex(iface->ifname) == 0) {
-		ptl_warn("The interface %s doesn't exist\n", iface->ifname);
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	iface->sin.sin_family = AF_INET;
-	iface->sin.sin_addr.s_addr = get_ip_address(iface->ifname);
-	if (iface->sin.sin_addr.s_addr == htonl(INADDR_ANY)) {
-		ptl_warn("The interface %s doesn't have an IPv4 address\n", iface->ifname);
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	iface->cm_channel = rdma_create_event_channel();
-	if (!iface->cm_channel) {
-		ptl_warn("unable to create interface CM event channel\n");
-		err = PTL_FAIL;
-		goto err1;
-	}
-
-	/* Add a watcher for CM connections. */
-	ev_io_init(&iface->cm_watcher, process_cm_event,
-		   iface->cm_channel->fd, EV_READ);
-	iface->cm_watcher.data = iface;
-
-	EVL_WATCH(ev_io_start(evl.loop, &iface->cm_watcher));
-
-	return PTL_OK;
-
- err1:
-	cleanup_iface(iface);
-	return err;
-}
-
-/*
- * iface_init
- *	init iface table
- *	called once per PtlInit() call
- */
-int iface_init(gbl_t *gbl)
-{
-	int i;
-	int num_iface = get_param(PTL_MAX_IFACE);
-
-	if (!gbl->iface) {
-		gbl->num_iface = num_iface;
-		gbl->iface = calloc(num_iface, sizeof(*gbl->iface));
-		if (!gbl->iface) {
-			WARN();
-			return PTL_NO_SPACE;
-		}
-	}
-
-	for (i = 0; i < num_iface; i++) {
-		gbl->iface[i].iface_id = i;
-		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
-		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
-	}
-
-	return PTL_OK;
-}
-
-/*
- * iface_fini
- *	fini iface table
- *	called once per PtlFini() call
- */
-void iface_fini(gbl_t *gbl)
-{
-}
-
-/*
- * get_iface
- *	return iface given iface_id
- */
-iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id)
-{
-	if (!gbl->num_iface || !gbl->iface) {
-		WARN();
-		return NULL;
-	} else if (iface_id == PTL_IFACE_DEFAULT) {
-		if (if_nametoindex("ib0") > 0) {
-			return &gbl->iface[0];
-		} else {
-			WARN();
-			return NULL;
-		}
-	} else if (iface_id < 0 || iface_id >= gbl->num_iface) {
-		WARN();
-		return NULL;
-	} else {
-		return &gbl->iface[iface_id];
-	}
-}
-
-/*
- * iface_get_ni
- *	lookup ni in iface table
- */
-ni_t *iface_get_ni(iface_t *iface, int ni_type)
-{
-	ni_t *ni;
-
-	if (ni_type >= MAX_NI_TYPES) {
-		WARN();
-		return NULL;
-	}
-
-	ni = iface->ni[ni_type];
-	if (ni)
-		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
-
-	return ni;
-}
-
-/*
- * iface_add_ni
- *	add ni to iface table
- *	caller should hold global mutex
- */
-int iface_add_ni(iface_t *iface, ni_t *ni)
-{
-	iface->ni[ni->ni_type] = ni;
-	ni->iface = iface;
-
-	return PTL_OK;
-}
-
-/*
- * iface_remove_ni
- *	remove ni from iface table
- *	caller should hold global mutex
- */
-int iface_remove_ni(ni_t *ni)
-{
-	if (unlikely(ni != ni->iface->ni[ni->ni_type])) {
-		WARN();
-		return PTL_FAIL;
-	}
-
-	ni->iface->ni[ni->ni_type] = NULL;
-	ni->iface = NULL;
-
-	return PTL_OK;
 }
