@@ -220,7 +220,7 @@ static int gbl_init(gbl_t *gbl)
 	signal(SIGUSR1, dump_everything);
 #endif
 
-	err = iface_init(gbl);
+	err = init_iface_table(gbl);
 	if (err)
 		return err;
 
