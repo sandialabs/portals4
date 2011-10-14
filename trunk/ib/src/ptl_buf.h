@@ -78,7 +78,6 @@ struct buf {
 
 			/* SG list to register the data field. */
 			struct ibv_sge sg_list[1];
-
 		} rdma;
 
 		struct {
@@ -91,6 +90,9 @@ struct buf {
 
 	/** type of buf */
 	buf_type_t		type;
+
+	/** Send completion must be signaled. **/
+	int signaled;
 
 	/** number of mr's used in message */
 	int			num_mr;

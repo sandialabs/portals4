@@ -5,6 +5,7 @@
 
 static char *init_state_name[] = {
 	[STATE_INIT_START]		= "init_start",
+	[STATE_INIT_PREP_REQ]		= "init_prep_req",
 	[STATE_INIT_WAIT_CONN]		= "init_wait_conn",
 	[STATE_INIT_SEND_REQ]		= "init_send_req",
 	[STATE_INIT_WAIT_COMP]		= "init_wait_comp",
@@ -137,12 +138,18 @@ static int init_start(xi_t *xi)
 {
 	init_events(xi);
 
-	return STATE_INIT_WAIT_CONN;
+	return STATE_INIT_PREP_REQ;
 }
 
-static int wait_conn(xi_t *xi)
+/* Prepare a request. */
+static int init_prep_req(xi_t *xi)
 {
+	int err;
 	ni_t *ni = obj_to_ni(xi);
+	buf_t *buf;
+	req_hdr_t *hdr;
+	data_t *put_data = NULL;
+	ptl_size_t length = xi->rlength;
 	conn_t *conn = xi->conn;
 
 	/* get per conn info */
@@ -154,55 +161,7 @@ static int wait_conn(xi_t *xi)
 		}
 	}
 
-	/* note once connected we don't go back */
-	if (conn->state >= CONN_STATE_CONNECTED)
-		goto out;
-
-	/* if not connected. Add the xt on the pending list. It will be
-	 * retried once connected/disconnected. */
-	pthread_mutex_lock(&conn->mutex);
-	if (conn->state < CONN_STATE_CONNECTED) {
-		pthread_spin_lock(&conn->wait_list_lock);
-		list_add_tail(&xi->list, &conn->xi_list);
-		pthread_spin_unlock(&conn->wait_list_lock);
-
-		if (conn->state == CONN_STATE_DISCONNECTED) {
-			if (init_connect(ni, conn)) {
-				pthread_mutex_unlock(&conn->mutex);
-				pthread_spin_lock(&conn->wait_list_lock);
-				list_del(&xi->list);
-				pthread_spin_unlock(&conn->wait_list_lock);
-				return STATE_INIT_ERROR;
-			}
-		}
-
-		pthread_mutex_unlock(&conn->mutex);
-		return STATE_INIT_WAIT_CONN;
-	}
-	pthread_mutex_unlock(&conn->mutex);
-
-out:
-#ifdef USE_XRC
-	if (conn->state == CONN_STATE_XRC_CONNECTED)
-		set_xi_dest(xi, conn->main_connect);
-	else
-#endif
-		set_xi_dest(xi, conn);
-
-	return STATE_INIT_SEND_REQ;
-}
-
-static int init_send_req(xi_t *xi)
-{
-	int err;
-	ni_t *ni = obj_to_ni(xi);
-	buf_t *buf;
-	req_hdr_t *hdr;
-	data_t *put_data = NULL;
-	ptl_size_t length = xi->rlength;
-	int signaled;
-
-	if (xi->conn->transport.type == CONN_TYPE_RDMA)
+	if (conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, &buf);
 	else
 		err = sbuf_alloc(ni, &buf);
@@ -272,14 +231,73 @@ static int init_send_req(xi_t *xi)
 	/* If we want an event, then do not request a completion for
 	 * that message. It will be freed when we receive the ACK or
 	 * reply. */
-	signaled = put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
+	buf->signaled = put_data && (put_data->data_fmt == DATA_FMT_IMMEDIATE) &&
 	    (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT));
-		
-	err = xi->conn->transport.send_message(buf, signaled);
+
+	xi->send_buf = buf;
+
+	return STATE_INIT_WAIT_CONN;
+
+ error:
+	buf_put(buf);
+	return STATE_INIT_ERROR;
+}
+
+static int wait_conn(xi_t *xi)
+{
+	ni_t *ni = obj_to_ni(xi);
+	conn_t *conn = xi->conn;
+
+	/* note once connected we don't go back */
+	if (conn->state >= CONN_STATE_CONNECTED)
+		goto out;
+
+	/* if not connected. Add the xt on the pending list. It will be
+	 * retried once connected/disconnected. */
+	pthread_mutex_lock(&conn->mutex);
+	if (conn->state < CONN_STATE_CONNECTED) {
+		pthread_spin_lock(&conn->wait_list_lock);
+		list_add_tail(&xi->list, &conn->xi_list);
+		pthread_spin_unlock(&conn->wait_list_lock);
+
+		if (conn->state == CONN_STATE_DISCONNECTED) {
+			if (init_connect(ni, conn)) {
+				pthread_mutex_unlock(&conn->mutex);
+				pthread_spin_lock(&conn->wait_list_lock);
+				list_del(&xi->list);
+				pthread_spin_unlock(&conn->wait_list_lock);
+				return STATE_INIT_ERROR;
+			}
+		}
+
+		pthread_mutex_unlock(&conn->mutex);
+		return STATE_INIT_WAIT_CONN;
+	}
+	pthread_mutex_unlock(&conn->mutex);
+
+out:
+#ifdef USE_XRC
+	if (conn->state == CONN_STATE_XRC_CONNECTED)
+		set_xi_dest(xi, conn->main_connect);
+	else
+#endif
+		set_xi_dest(xi, conn);
+
+	return STATE_INIT_SEND_REQ;
+}
+
+static int init_send_req(xi_t *xi)
+{
+	int err;
+	int signaled = xi->send_buf->signaled;
+
+	err = xi->conn->transport.send_message(xi->send_buf, signaled);
 	if (err) {
-		buf_put(buf);
+		buf_put(xi->send_buf);
+		xi->send_buf = NULL;
 		return STATE_INIT_SEND_ERROR;
 	}
+	xi->send_buf = NULL;
 
 	if (signaled) {
 		if (xi->conn->transport.type == CONN_TYPE_RDMA)
@@ -291,10 +309,6 @@ static int init_send_req(xi_t *xi)
 		return STATE_INIT_WAIT_RECV;
 	else
 		return STATE_INIT_CLEANUP;
-
- error:
-	buf_put(buf);
-	return STATE_INIT_ERROR;
 }
 
 static int init_send_error(xi_t *xi)
@@ -542,6 +556,9 @@ int process_init(xi_t *xi)
 			switch (state) {
 			case STATE_INIT_START:
 				state = init_start(xi);
+				break;
+			case STATE_INIT_PREP_REQ:
+				state = init_prep_req(xi);	
 				break;
 			case STATE_INIT_WAIT_CONN:
 				state = wait_conn(xi);
