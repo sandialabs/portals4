@@ -122,18 +122,20 @@ void buf_dump(buf_t *buf)
  */
 int ptl_post_recv(ni_t *ni, int count)
 {
-	int err = PTL_OK;
-	buf_t *buf, *t;
+	int err;
+	buf_t *buf;
 	struct ibv_recv_wr *bad_wr;
-	int i;
 	int actual;
-	struct ibv_recv_wr *wr = NULL;
+	struct ibv_recv_wr *wr;
+	struct list_head list;
 
 	if (count == 0)
 		return PTL_OK;
 
-	actual = 0;
-	for (i = 0; i < count; i++) {
+	INIT_LIST_HEAD(&list);
+	wr = NULL;
+
+	for (actual = 0; actual < count; actual++) {
 		err = buf_alloc(ni, &buf);
 		if (err)
 			break;
@@ -142,7 +144,8 @@ int ptl_post_recv(ni_t *ni, int count)
 		buf->type = BUF_RECV;
 		buf->rdma.recv_wr.next = wr;
 		wr = &buf->rdma.recv_wr;
-		actual++;
+
+		list_add_tail(&buf->list, &list);
 	}
 
 	/* couldn't alloc any buffers */
@@ -153,29 +156,28 @@ int ptl_post_recv(ni_t *ni, int count)
 
 	/* add buffers to ni recv_list for recovery during shutdown */
 	pthread_spin_lock(&ni->rdma.recv_list_lock);
-	for (wr = &buf->rdma.recv_wr; wr; wr = wr->next) {
-		t = container_of(wr, buf_t, rdma.recv_wr);
-		list_add_tail(&t->list, &ni->rdma.recv_list);
-	}
+	list_splice_tail(&list, &ni->rdma.recv_list);
 	pthread_spin_unlock(&ni->rdma.recv_list_lock);
-
-	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
-	if (err) {
-		WARN();
-		/* re-stock any unposted buffers */
-		pthread_spin_lock(&ni->rdma.recv_list_lock);
-		for (wr = bad_wr; wr; wr = wr->next) {
-			t = container_of(wr, buf_t, rdma.recv_wr);
-			list_del(&t->list);
-			buf_put(t);
-			actual--;
-		}
-		pthread_spin_unlock(&ni->rdma.recv_list_lock);
-		err = PTL_FAIL;
-	}
 
 	/* account for posted buffers */
 	(void)__sync_fetch_and_add(&ni->rdma.num_posted_recv, actual);
 
-	return err;
+	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
+	if (err) {
+		WARN();
+
+		/* re-stock any unposted buffers */
+		pthread_spin_lock(&ni->rdma.recv_list_lock);
+		for (wr = bad_wr; wr; wr = wr->next) {
+			buf = container_of(wr, buf_t, rdma.recv_wr);
+			list_del(&buf->list);
+			buf_put(buf);
+
+			/* account for failed buffers */
+			(void)__sync_fetch_and_sub(&ni->rdma.num_posted_recv, 1);
+		}
+		pthread_spin_unlock(&ni->rdma.recv_list_lock);
+	}
+
+	return PTL_OK;
 }

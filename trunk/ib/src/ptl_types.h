@@ -136,6 +136,12 @@ static inline void list_splice(const struct list_head *list,
         __list_splice(list, head, head->next);
 }
 
+static inline void list_splice_tail(struct list_head *list,
+                struct list_head *head)
+{
+    if (!list_empty(list))
+        __list_splice(list, head->prev, head);
+}
 
 #define list_entry(ptr, type, member) \
         container_of(ptr, type, member)
