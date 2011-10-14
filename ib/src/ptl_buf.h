@@ -109,7 +109,7 @@ int buf_init(void *arg, void *parm);
 
 void buf_cleanup(void *arg);
 
-int ptl_post_recv(ni_t *ni);
+int ptl_post_recv(ni_t *ni, int count);
 
 void buf_dump(buf_t *buf);
 

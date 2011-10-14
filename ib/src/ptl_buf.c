@@ -23,6 +23,7 @@ int buf_setup(void *arg)
 	buf->xt = NULL;
 	buf->comp = 0;
 	buf->data = buf->internal_data;
+	buf->rdma.recv_wr.next = NULL;
 
 	return PTL_OK;
 }
@@ -115,40 +116,66 @@ void buf_dump(buf_t *buf)
  * recv_list in the order that it was posted.
  *
  * @param ni for which to post receive buffer
+ * @param count the desired number of buffers to post
  *
  * @return status
  */
-int ptl_post_recv(ni_t *ni)
+int ptl_post_recv(ni_t *ni, int count)
 {
-	int err;
-	buf_t *buf;
+	int err = PTL_OK;
+	buf_t *buf, *t;
 	struct ibv_recv_wr *bad_wr;
+	int i;
+	int actual;
+	struct ibv_recv_wr *wr = NULL;
 
-	err = buf_alloc(ni, &buf);
-	if (err) {
+	if (count == 0)
+		return PTL_OK;
+
+	actual = 0;
+	for (i = 0; i < count; i++) {
+		err = buf_alloc(ni, &buf);
+		if (err)
+			break;
+
+		buf->rdma.sg_list[0].length = BUF_DATA_SIZE;
+		buf->type = BUF_RECV;
+		buf->rdma.recv_wr.next = wr;
+		wr = &buf->rdma.recv_wr;
+		actual++;
+	}
+
+	/* couldn't alloc any buffers */
+	if (!actual) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-	buf->rdma.sg_list[0].length = BUF_DATA_SIZE;
-	buf->type = BUF_RECV;
-
+	/* add buffers to ni recv_list for recovery during shutdown */
 	pthread_spin_lock(&ni->rdma.recv_list_lock);
-
-	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
-
-	if (err) {
-		pthread_spin_unlock(&ni->rdma.recv_list_lock);
-
-		WARN();
-		buf_put(buf);
-		
-		return PTL_FAIL;
+	for (wr = &buf->rdma.recv_wr; wr; wr = wr->next) {
+		t = container_of(wr, buf_t, rdma.recv_wr);
+		list_add_tail(&t->list, &ni->rdma.recv_list);
 	}
-
-	list_add_tail(&buf->list, &ni->rdma.recv_list);
-	
 	pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
-	return PTL_OK;
+	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
+	if (err) {
+		WARN();
+		/* re-stock any unposted buffers */
+		pthread_spin_lock(&ni->rdma.recv_list_lock);
+		for (wr = bad_wr; wr; wr = wr->next) {
+			t = container_of(wr, buf_t, rdma.recv_wr);
+			list_del(&t->list);
+			buf_put(t);
+			actual--;
+		}
+		pthread_spin_unlock(&ni->rdma.recv_list_lock);
+		err = PTL_FAIL;
+	}
+
+	/* account for posted buffers */
+	(void)__sync_fetch_and_add(&ni->rdma.num_posted_recv, actual);
+
+	return err;
 }

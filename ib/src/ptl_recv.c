@@ -15,6 +15,7 @@ static char *recv_state_name[] = {
 	[STATE_RECV_DROP_BUF]		= "recv_drop_buf",
 	[STATE_RECV_REQ]		= "recv_req",
 	[STATE_RECV_INIT]		= "recv_init",
+	[STATE_RECV_REPOST]		= "recv_repost",
 	[STATE_RECV_ERROR]		= "recv_error",
 	[STATE_RECV_DONE]		= "recv_done",
 };
@@ -84,8 +85,6 @@ static int comp_poll(ni_t *ni, buf_t **buf_p)
 		if (debug) printf("received a send RDMA wc\n");
 		return STATE_RECV_RDMA_COMP;
 	} else if (buf->type == BUF_RECV) {
-		if (debug) printf("received a recv wc\n");
-		ptl_post_recv(ni);
 		return STATE_RECV_PACKET;
 	} else {
 		WARN();
@@ -169,6 +168,8 @@ static int recv_packet(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
+
+	(void)__sync_sub_and_fetch(&ni->rdma.num_posted_recv, 1);
 
 	/* Dequeue buf is on the recv list. Todo: create another
 	 * intermediate state for IB stuff or dequeue it before. */
@@ -257,7 +258,7 @@ static int recv_req(buf_t *buf)
 	if (err)
 		WARN();
 
-	return STATE_RECV_COMP_POLL;
+	return STATE_RECV_REPOST;
 }
 
 /*
@@ -290,7 +291,22 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	xi_put(xi);					/* from to_xi() */
+	return STATE_RECV_REPOST;
+}
+
+/*
+ * recv_repost
+ *	repost receive buffers to srq
+ */
+static int recv_repost(buf_t *buf)
+{
+	int err;
+	ni_t *ni = obj_to_ni(buf);
+	int num_bufs;
+
+	if ((get_param(PTL_MAX_SRQ_RECV_WR) - ni->rdma.num_posted_recv)
+				> get_param(PTL_SRQ_REPOST_SIZE))
+		ptl_post_recv(ni, get_param(PTL_SRQ_REPOST_SIZE));
 
 	return STATE_RECV_COMP_POLL;
 }
@@ -338,6 +354,9 @@ static void process_recv_rdma(ni_t *ni)
 			break;
 		case STATE_RECV_INIT:
 			state = recv_init(buf);
+			break;
+		case STATE_RECV_REPOST:
+			state = recv_repost(buf);
 			break;
 		case STATE_RECV_DROP_BUF:
 			state = recv_drop_buf(buf);
