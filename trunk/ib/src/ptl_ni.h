@@ -98,6 +98,8 @@ typedef struct ni {
 		/* Pending send and receive operations. */
 		struct list_head	recv_list;
 		pthread_spinlock_t	recv_list_lock;
+
+		int			num_posted_recv;
 	} rdma;
 
 	/* SHMEM transport specific */

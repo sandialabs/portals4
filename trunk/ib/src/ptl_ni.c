@@ -180,6 +180,7 @@ static int init_ib_srq(ni_t *ni)
 	iface_t *iface = ni->iface;
 	int err;
 	int i;
+	int num_post;
 
 	srq_init_attr.srq_context = ni;
 	srq_init_attr.attr.max_wr = get_param(PTL_MAX_SRQ_RECV_WR);
@@ -203,8 +204,13 @@ static int init_ib_srq(ni_t *ni)
 		return PTL_FAIL;
 	}
 
-	for (i = 0; i < srq_init_attr.attr.max_wr; i++) {
-		err = ptl_post_recv(ni);
+#define min(a,b) ((a) < (b)) ? (a) : (b)
+
+	/* post receive buffers to the shared receive queue */
+	while ((num_post = min(get_param(PTL_MAX_SRQ_RECV_WR)
+				- ni->rdma.num_posted_recv,
+				get_param(PTL_SRQ_REPOST_SIZE))) > 0) {
+		err = ptl_post_recv(ni, num_post);
 		if (err) {
 			WARN();
 			return PTL_FAIL;
