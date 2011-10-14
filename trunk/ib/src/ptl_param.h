@@ -27,6 +27,7 @@ enum {
 	PTL_MAX_QP_SEND_SGE,
 	PTL_MAX_QP_RECV_SGE,
 	PTL_MAX_SRQ_RECV_WR,
+	PTL_SRQ_REPOST_SIZE,
 
 	PTL_MAX_RDMA_WR_OUT,
 
@@ -51,12 +52,17 @@ typedef struct param {
 	long		val;
 } param_t;
 
-void init_param(int argc, char *argv[]);
+extern param_t param[];
 
-long get_param(int param);
+void init_param(int argc, char *argv[]);
 
 long chk_param(int param, long val);
 
 long set_param(int param, long val);
+
+static inline long get_param(int parm)
+{
+	return param[parm].val;
+}
 
 #endif /* PTL_PARAM_H */

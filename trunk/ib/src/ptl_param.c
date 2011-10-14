@@ -8,7 +8,7 @@
 #define MiB		(1024*1024)
 #define GiB		(1024*1024*1024)
 
-static param_t param[] = {
+param_t param[] = {
 	[PTL_LIM_MAX_ENTRIES]		= {
 						.name	= "PTL_LIM_MAX_ENTRIES",
 						.min	= 0,
@@ -143,6 +143,12 @@ static param_t param[] = {
 						.max	= LONG_MAX,
 						.val	= 1000,
 					  },
+	[PTL_SRQ_REPOST_SIZE]			= {
+						.name	= "PTL_SRQ_REPOST_SIZE",
+						.min	= 0,
+						.max	= LONG_MAX,
+						.val	= 10,
+					  },
 	[PTL_MAX_RDMA_WR_OUT]			= {
 						.name	= "PTL_MAX_RDMA_WR_OUT",
 						.min	= 0,
@@ -227,13 +233,6 @@ void PtlInitParam(int argc, char *argv[])
 				p->val = val;
 		}
 	}
-}
-
-long get_param(int parm)
-{
-	assert(parm < PTL_PARAM_LAST);
-
-	return param[parm].val;
 }
 
 long chk_param(int parm, long val)
