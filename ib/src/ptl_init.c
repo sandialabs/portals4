@@ -365,9 +365,6 @@ static int wait_recv(xi_t *xi)
 	if (!xi->recv_buf)
 		return STATE_INIT_WAIT_RECV;
 
-	/* We took another reference in recv_init(). Drop it now */
-	xi_put(xi);
-
 	buf = xi->recv_buf;
 	hdr = (hdr_t *)buf->data;
 
