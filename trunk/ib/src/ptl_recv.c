@@ -290,6 +290,8 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
+	xi_put(xi);					/* from to_xi() */
+
 	return STATE_RECV_COMP_POLL;
 }
 
