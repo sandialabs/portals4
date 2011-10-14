@@ -217,8 +217,9 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	eq_put(eq);
 	eq_put(eq);
 
-        /* give back the limit resource */
-        __sync_sub_and_fetch(&ni->current.max_eqs, 1);
+	/* give back the limit resource */
+	(void)__sync_sub_and_fetch(&ni->current.max_eqs, 1);
+
 err1:
 	if (check_param)
 		gbl_put();
