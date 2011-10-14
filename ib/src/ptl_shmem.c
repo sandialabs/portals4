@@ -218,9 +218,7 @@ struct transport transport_shmem = {
 static void send_comp_shmem(buf_t *buf)
 {
 	if (buf->comp) {
-		xt_t *xt = buf->xt;
-
-		assert(xt);
+		assert(buf->xt);
 		buf_put(buf);
 	}
 }
@@ -295,9 +293,9 @@ static void PtlInternalDMTeardown(ni_t *ni)
 	buf->type = BUF_SHMEM_STOP;
 	PtlInternalFragmentToss(ni, buf, ni->shmem.local_rank);
 
-	if (ni->shmem.has_shmem_catcher) {
-		ptl_assert(pthread_join(ni->shmem.shmem_catcher, NULL), 0);
-		ni->shmem.has_shmem_catcher = 0;
+	if (ni->shmem.has_catcher) {
+		ptl_assert(pthread_join(ni->shmem.catcher, NULL), 0);
+		ni->shmem.has_catcher = 0;
 	}
 }
 
@@ -320,8 +318,6 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
-	struct shmem_pid_table *ptable;
-	int i;
 	char *env;
 
 	/* Open KNEM device */
@@ -459,8 +455,8 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 	}
 
 	/* Create the thread that will wait on the receive queue. */
-	ptl_assert(pthread_create(&ni->shmem.shmem_catcher, NULL, PtlInternalDMCatcher, ni), 0);
-	ni->shmem.has_shmem_catcher = 1;
+	ptl_assert(pthread_create(&ni->shmem.catcher, NULL, PtlInternalDMCatcher, ni), 0);
+	ni->shmem.has_catcher = 1;
 
 	ret = PTL_OK;
 
