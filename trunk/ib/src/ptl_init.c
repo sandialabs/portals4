@@ -102,12 +102,13 @@ static void init_events(xi_t *xi)
 			xi->event_mask |= XI_CT_ACK_EVENT | XI_RECEIVE_EXPECTED;
 		break;
 	case OP_GET:
+		xi->event_mask |= XI_RECEIVE_EXPECTED;
 		if (xi->get_md->eq)
-			xi->event_mask |= XI_REPLY_EVENT | XI_RECEIVE_EXPECTED;
+			xi->event_mask |= XI_REPLY_EVENT;
 
 		if (xi->get_md->ct &&
 		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY))
-			xi->event_mask |= XI_CT_REPLY_EVENT | XI_RECEIVE_EXPECTED;
+			xi->event_mask |= XI_CT_REPLY_EVENT;
 		break;
 	case OP_FETCH:
 	case OP_SWAP:
@@ -123,7 +124,7 @@ static void init_events(xi_t *xi)
 
 		if (xi->get_md->ct &&
 		    (xi->get_md->options & PTL_MD_EVENT_CT_REPLY)) {
-			xi->event_mask |= XI_CT_REPLY_EVENT | XI_RECEIVE_EXPECTED;
+			xi->event_mask |= XI_CT_REPLY_EVENT;
 		}
 		break;
 	default:
@@ -261,8 +262,8 @@ static int init_send_req(xi_t *xi)
 	/* Always ask for a response if the remote will do an RDMA
 	 * operation for the Put. Until then the response is received, we
 	 * cannot free the MR nor post the send events. */
-	if (put_data && put_data->data_fmt != DATA_FMT_IMMEDIATE &&
-		(xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT)) ||
+	if ((put_data && put_data->data_fmt != DATA_FMT_IMMEDIATE &&
+		 (xi->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
 		buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
 		xi->event_mask |= XI_RECEIVE_EXPECTED;
