@@ -210,9 +210,7 @@ static int tgt_start(xt_t *xt)
 	case OP_GET:
 	case OP_FETCH:
 	case OP_SWAP:
-		if (xt->ack_req != PTL_NO_ACK_REQ) {
-			xt->event_mask |= XT_REPLY_EVENT;
-		}
+		xt->event_mask |= XT_REPLY_EVENT;
 		break;
 	}
 
