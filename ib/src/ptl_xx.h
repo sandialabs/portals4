@@ -47,6 +47,7 @@ struct xremote {
 #define PTL_BASE_XX					\
 	struct list_head	list;			\
 	struct buf		*recv_buf;		\
+	struct buf *send_buf;			\
 	ptl_size_t		rlength;		\
 	ptl_size_t		mlength;		\
 	ptl_size_t		roffset;		\
@@ -190,9 +191,6 @@ typedef struct xt {
 	mr_t			*indir_mr;
 
 	void *start;
-
-	/* ack or reply buffer */
-	struct buf *send_buf;
 
 	/* Indicate whether the XT owns the NI atomic mutex. */
 	int in_atomic;
