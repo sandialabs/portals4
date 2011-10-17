@@ -8,7 +8,6 @@
  *	for debugging output
  */
 static char *recv_state_name[] = {
-	[STATE_RECV_COMP_POLL]		= "comp_poll",
 	[STATE_RECV_SEND_COMP]		= "send_comp",
 	[STATE_RECV_RDMA_COMP]		= "rdma_comp",
 	[STATE_RECV_PACKET]		= "recv_packet",
@@ -28,68 +27,50 @@ static char *recv_state_name[] = {
  *	polling for multiple events and then
  *	queuing the resulting buffers
  */
-static int comp_poll(ni_t *ni, buf_t **buf_p)
+static int comp_poll(ni_t *ni, int num_wc,
+		     struct ibv_wc wc_list[], buf_t *buf_list[])
 {
-	struct ibv_wc wc;
-	int n;
+	int ret;
+	int i, j;
+	struct ibv_wc *wc;
 	buf_t *buf;
 
-	*buf_p = NULL;
+	ret = ibv_poll_cq(ni->rdma.cq, num_wc, wc_list);
+	if (ret <= 0)
+		return ret;
 
-	/* if queue is empty and we are rearmed
-	 * then we are done for this cycle */
-	n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
-	if (n == 0) {
-			return STATE_RECV_DONE;
-	}
+	for (i = 0, j = 0; i < ret; i++) {
+		wc = &wc_list[i];
 
-	if (wc.wr_id == 0) {
-		/* No buffer with intermediate error completion */
-		WARN();
-		return STATE_RECV_ERROR;
-	}
+		buf = (buf_t *)(uintptr_t)wc->wr_id;
+		buf->length = wc_list->byte_len;
 
-	buf = (buf_t *)(uintptr_t)wc.wr_id;
-	*buf_p = buf;
-
-	if (debug) {
-		if (ni->options & PTL_NI_LOGICAL)
-			printf("rank %d: ", ni->id.rank);
-		else
-			printf("nid %d: pid %d: ", ni->id.phys.nid, ni->id.phys.pid);
-
-		printf("comp_wait - wc.status(%d), wc.length(%d)\n",
-			   (int) wc.status, (int) wc.byte_len);
-	}
-
-	if (wc.status) {
-		WARN();
-
-		if (buf->type == BUF_SEND) {
-			buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
-		} 
-		else if (buf->type == BUF_RDMA) {
-			return STATE_RECV_ERROR;
+		if (wc->status) {
+			if (buf->type == BUF_SEND) {
+				buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
+				buf->state = STATE_RECV_SEND_COMP;
+			} 
+			else if (buf->type == BUF_RDMA) {
+				buf->state = STATE_RECV_ERROR;
+			} else {
+				buf->state = STATE_RECV_DROP_BUF;
+			}
+		} else {
+			if (buf->type == BUF_SEND) {
+				buf->state = STATE_RECV_SEND_COMP;
+			} else if (buf->type == BUF_RDMA) {
+				buf->state = STATE_RECV_RDMA_COMP;
+			} else if (buf->type == BUF_RECV) {
+				buf->state = STATE_RECV_PACKET;
+			} else {
+				buf->state = STATE_RECV_ERROR;
+			}
 		}
-		else {
-			return STATE_RECV_DROP_BUF;
-		}
+
+		buf_list[j++] = buf;
 	}
 
-	buf->length = wc.byte_len;
-
-	if (buf->type == BUF_SEND) {
-		if (debug) printf("received a send wc\n");
-		return STATE_RECV_SEND_COMP;
-	} else if (buf->type == BUF_RDMA) {
-		if (debug) printf("received a send RDMA wc\n");
-		return STATE_RECV_RDMA_COMP;
-	} else if (buf->type == BUF_RECV) {
-		return STATE_RECV_PACKET;
-	} else {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
+	return j;
 }
 
 /*
@@ -102,7 +83,7 @@ static int send_comp(buf_t *buf)
 
 	assert(buf->comp);
 	if (!buf->comp)
-		return STATE_RECV_COMP_POLL;
+		return STATE_RECV_DONE;
 
 	if (xi->obj.obj_pool->type == POOL_XI) {
 		/* Fox XI only, restart the initiator state machine. */
@@ -115,7 +96,7 @@ static int send_comp(buf_t *buf)
 
 	buf_put(buf);
 
-	return STATE_RECV_COMP_POLL;
+	return STATE_RECV_DONE;
 }
 
 /*
@@ -129,7 +110,7 @@ static int rdma_comp(buf_t *buf)
 	xt_t *xt = buf->xt;
 
 	if (!buf->comp)
-		return STATE_RECV_COMP_POLL;
+		return STATE_RECV_DONE;
 
 	/* Take a ref on the XT since freeing all its buffers will also
 	 * free it. */
@@ -157,7 +138,7 @@ static int rdma_comp(buf_t *buf)
 	}
 
 	xt_put(xt);
-	return STATE_RECV_COMP_POLL;
+	return STATE_RECV_DONE;
 }
 
 /*
@@ -308,7 +289,7 @@ static int recv_repost(buf_t *buf)
 				> get_param(PTL_SRQ_REPOST_SIZE))
 		ptl_post_recv(ni, get_param(PTL_SRQ_REPOST_SIZE));
 
-	return STATE_RECV_COMP_POLL;
+	return STATE_RECV_DONE;
 }
 
 /*
@@ -322,7 +303,7 @@ static int recv_drop_buf(buf_t *buf)
 	buf_put(buf);
 	ni->num_recv_drops++;
 
-	return STATE_RECV_COMP_POLL;
+	return STATE_RECV_DONE;
 }
 
 /*
@@ -332,58 +313,61 @@ static int recv_drop_buf(buf_t *buf)
 void *process_recv_rdma_thread(void *arg)
 {
 	ni_t *ni = arg;
+	int num_wc = get_param(PTL_WC_COUNT);
+	int num_buf;
+	int i;
+	struct ibv_wc wc_list[num_wc];
 	int state;
+	buf_t *buf_list[num_wc];
 	buf_t *buf;
 
 	while(!ni->rdma.catcher_stop) {
-		state = STATE_RECV_COMP_POLL;
-		buf = NULL;
+		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
 
-		while(1) {
-			if (debug > 1)
-				printf("tid:%x buf:%p: recv state = %s\n",
-					pthread_self(), buf,
-					recv_state_name[state]);
-			switch (state) {
-			case STATE_RECV_COMP_POLL:
-				state = comp_poll(ni, &buf);
-				break;
-			case STATE_RECV_SEND_COMP:
-				state = send_comp(buf);
-				break;
-			case STATE_RECV_RDMA_COMP:
-				state = rdma_comp(buf);
-				break;
-			case STATE_RECV_PACKET:
-				state = recv_packet(buf);
-				break;
-			case STATE_RECV_REQ:
-				state = recv_req(buf);
-				break;
-			case STATE_RECV_INIT:
-				state = recv_init(buf);
-				break;
-			case STATE_RECV_REPOST:
-				state = recv_repost(buf);
-				break;
-			case STATE_RECV_DROP_BUF:
-				state = recv_drop_buf(buf);
-				break;
-			case STATE_RECV_ERROR:
-				if (buf) {
-					buf_put(buf);
-					ni->num_recv_errs++;
+		for (i = 0; i < num_buf; i++) {
+			buf = buf_list[i];
+			state = buf->state;
+
+			while(1) {
+				if (debug > 1)
+					printf("tid:%x buf:%p: state = %s\n",
+						pthread_self(), buf,
+						recv_state_name[state]);
+				switch (state) {
+				case STATE_RECV_SEND_COMP:
+					state = send_comp(buf);
+					break;
+				case STATE_RECV_RDMA_COMP:
+					state = rdma_comp(buf);
+					break;
+				case STATE_RECV_PACKET:
+					state = recv_packet(buf);
+					break;
+				case STATE_RECV_REQ:
+					state = recv_req(buf);
+					break;
+				case STATE_RECV_INIT:
+					state = recv_init(buf);
+					break;
+				case STATE_RECV_REPOST:
+					state = recv_repost(buf);
+					break;
+				case STATE_RECV_DROP_BUF:
+					state = recv_drop_buf(buf);
+					break;
+				case STATE_RECV_ERROR:
+					if (buf) {
+						buf_put(buf);
+						ni->num_recv_errs++;
+					}
+					goto next_buf;
+				case STATE_RECV_DONE:
+					goto next_buf;
 				}
-				goto fail;
-			case STATE_RECV_DONE:
-				goto done;
 			}
+next_buf:
+			continue;
 		}
-done:
-		continue;
-
-fail:
-		continue;
 	}
 
 	return NULL;
