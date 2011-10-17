@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.65)
 AC_INIT([portals],[4.0])
-AM_INIT_AUTOMAKE([1.7])
+AM_INIT_AUTOMAKE([1.7 foreign])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 AC_CONFIG_HEADERS([config.h])

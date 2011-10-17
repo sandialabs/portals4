@@ -30,7 +30,7 @@ Test suite for Portals 4 libraries.
 
 
 %build
-%configure
+%configure --enable-fast
 make %{?_smp_mflags}
 
 

@@ -36,5 +36,13 @@ Test:
       -  ./make_test_relay.pl  > test_relay.xml
       -  mpirun  -H localhost -n 9 ./ptl_test -f test_relay.xml 
 
+Building an RPM:
+  * make dist       --> this will create portals-4.0.tar.gz
+  * rpmbuild -ta portals-4.0.tar.gz
+
+If mpi is in a non standard path, add CFLAGS and LDFLAGS to rpmbuild, such as:
+   CFLAGS="-I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS=-L/usr/lib64/openmpi/1.4-gcc/lib 
+
+
 Limitations:
 - A program may not open more than one NID in its lifetime.
