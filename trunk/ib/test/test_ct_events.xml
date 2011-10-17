@@ -211,6 +211,7 @@
                       <ptl_ct_get ct_handle="ct[0]">
                         <check ct_event_success="1" ct_event_failure="0"/>
                       </ptl_ct_get>
+                      <msleep count="10"/>
                       <ptl_ct_get ct_handle="ct[1]">
                         <check ct_event_success="0" ct_event_failure="0"/>
                       </ptl_ct_get>
@@ -520,7 +521,7 @@
                           <ptl_ct_get ct_handle="ct[1]">
                             <check ct_event_success="1" ct_event_failure="0"/>
                           </ptl_ct_get>
-                          <ptl_ct_wait ct_handle="ct[2]" ct_test="0"/>
+                          <msleep count="10"/>
                           <ptl_ct_get ct_handle="ct[2]">
                             <check ct_event_success="0" ct_event_failure="0"/>
                           </ptl_ct_get>
@@ -700,7 +701,7 @@
                           <ptl_ct_get ct_handle="ct[1]">
                             <check ct_event_success="1" ct_event_failure="0"/>
                           </ptl_ct_get>
-                          <ptl_ct_wait ct_handle="ct[2]" ct_test="0"/>
+                          <msleep count="10"/>
                           <ptl_ct_get ct_handle="ct[2]">
                             <check ct_event_success="0" ct_event_failure="0"/>
                           </ptl_ct_get>
@@ -962,7 +963,7 @@
                       <ptl_ct_get ct_handle="ct[0]">
                         <check ct_event_success="1" ct_event_failure="0"/>
                       </ptl_ct_get>
-                      <ptl_ct_wait ct_handle="ct[1]" ct_test="0"/>
+                      <msleep count="10"/>
                       <ptl_ct_get ct_handle="ct[1]">
                         <check ct_event_success="0" ct_event_failure="0"/>
                       </ptl_ct_get>
@@ -1272,7 +1273,7 @@
                           <ptl_ct_get ct_handle="ct[1]">
                             <check ct_event_success="1" ct_event_failure="0"/>
                           </ptl_ct_get>
-                          <ptl_ct_wait ct_handle="ct[2]" ct_test="0"/>
+                          <msleep count="10"/>
                           <ptl_ct_get ct_handle="ct[2]">
                             <check ct_event_success="0" ct_event_failure="0"/>
                           </ptl_ct_get>
@@ -1452,7 +1453,7 @@
                           <ptl_ct_get ct_handle="ct[1]">
                             <check ct_event_success="1" ct_event_failure="0"/>
                           </ptl_ct_get>
-                          <ptl_ct_wait ct_handle="ct[2]" ct_test="0"/>
+                          <msleep count="10"/>
                           <ptl_ct_get ct_handle="ct[2]">
                             <check ct_event_success="0" ct_event_failure="0"/>
                           </ptl_ct_get>
