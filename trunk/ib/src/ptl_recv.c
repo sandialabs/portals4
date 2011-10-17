@@ -1,11 +1,12 @@
-/*
- * ptl_recv.c - initial receive processing
+/**
+ * @file ptl_recv.c
+ *
+ * Completion queue processing.
  */
 #include "ptl_loc.h"
 
-/*
- * recv_state_name
- *	for debugging output
+/**
+ * Receive state name for debug output.
  */
 static char *recv_state_name[] = {
 	[STATE_RECV_SEND_COMP]		= "send_comp",
@@ -19,27 +20,29 @@ static char *recv_state_name[] = {
 	[STATE_RECV_DONE]		= "recv_done",
 };
 
-/*
- * comp_poll
- *	poll for completion event
- *	returns buffer that completed
- *	note we can optimize this by
- *	polling for multiple events and then
- *	queuing the resulting buffers
+/**
+ * Poll the rdma completion queue.
+ *
+ * @param ni the ni that owns the cq.
+ * @param num_wc the number of entries in wc_list and buf_list.
+ * @param wc_list an array of work completion structs.
+ * @param buf_list an array of buf pointers.
+ *
+ * @return the number of work completions found if no error.
+ * @return a negative number if an error occured.
  */
 static int comp_poll(ni_t *ni, int num_wc,
 		     struct ibv_wc wc_list[], buf_t *buf_list[])
 {
 	int ret;
-	int i, j;
+	int i;
 	struct ibv_wc *wc;
 	buf_t *buf;
 
 	ret = ibv_poll_cq(ni->rdma.cq, num_wc, wc_list);
-	if (ret <= 0)
-		return ret;
 
-	for (i = 0, j = 0; i < ret; i++) {
+	/* convert from wc to buf and set initial state */
+	for (i = 0; i < ret; i++) {
 		wc = &wc_list[i];
 
 		buf = (buf_t *)(uintptr_t)wc->wr_id;
@@ -49,59 +52,59 @@ static int comp_poll(ni_t *ni, int num_wc,
 			if (buf->type == BUF_SEND) {
 				buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
 				buf->state = STATE_RECV_SEND_COMP;
-			} 
-			else if (buf->type == BUF_RDMA) {
+			} else if (buf->type == BUF_RDMA)
 				buf->state = STATE_RECV_ERROR;
-			} else {
+			else
 				buf->state = STATE_RECV_DROP_BUF;
-			}
 		} else {
-			if (buf->type == BUF_SEND) {
+			if (buf->type == BUF_SEND)
 				buf->state = STATE_RECV_SEND_COMP;
-			} else if (buf->type == BUF_RDMA) {
+			else if (buf->type == BUF_RDMA)
 				buf->state = STATE_RECV_RDMA_COMP;
-			} else if (buf->type == BUF_RECV) {
+			else if (buf->type == BUF_RECV)
 				buf->state = STATE_RECV_PACKET;
-			} else {
+			else
 				buf->state = STATE_RECV_ERROR;
-			}
 		}
 
-		buf_list[j++] = buf;
+		buf_list[i] = buf;
 	}
 
-	return j;
+	return ret;
 }
 
-/*
- * send_comp
- *	process a send completion event
+/**
+ * Process a send completion.
+ *
+ * @param buf the buffer that finished.
+ *
+ * @return next state
  */
 static int send_comp(buf_t *buf)
 {
-	xi_t *xi = buf->xi;			/* can be an XT or an XI */
+	xi_t *xi = buf->xi; /* can be an XT or an XI */
 
+	/* this should only happen if we requested a completion */
 	assert(buf->comp);
-	if (!buf->comp)
-		return STATE_RECV_DONE;
 
+	/* Fox XI only, restart the initiator state machine. */
 	if (xi->obj.obj_pool->type == POOL_XI) {
-		/* Fox XI only, restart the initiator state machine. */
-		int err;
 		xi->completed = 1;
-		err = process_init(xi);
-		if (err)
-			WARN();
+		(void)process_init(xi);
 	}
 
+	/* free the buffer */
 	buf_put(buf);
 
 	return STATE_RECV_DONE;
 }
 
-/*
- * rdma_comp
- *	process a send rdma completion event
+/**
+ * Process a read/write completion.
+ *
+ * @param buf the buffer that finished.
+ *
+ * @return the next state.
  */
 static int rdma_comp(buf_t *buf)
 {
@@ -141,25 +144,29 @@ static int rdma_comp(buf_t *buf)
 	return STATE_RECV_DONE;
 }
 
-/*
- * recv_packet
- *	process a receive completion event
+/**
+ * Process a received buffer.
+ *
+ * @param buf the receive buffer that finished.
+ *
+ * @return the next state.
  */
 static int recv_packet(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
 
+	/* keep track of the number of buffers posted to the srq */
 	(void)__sync_sub_and_fetch(&ni->rdma.num_posted_recv, 1);
 
-	/* Dequeue buf is on the recv list. Todo: create another
-	 * intermediate state for IB stuff or dequeue it before. */
+	/* remove buf from pending receive list */
 	if (!list_empty(&buf->list)) {
 		pthread_spin_lock(&ni->rdma.recv_list_lock);
 		list_del(&buf->list);
 		pthread_spin_unlock(&ni->rdma.recv_list_lock);
 	}
 
+	/* sanity check received buffer */
 	if (buf->length < sizeof(hdr_t)) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
@@ -175,6 +182,7 @@ static int recv_packet(buf_t *buf)
 		return STATE_RECV_DROP_BUF;
 	}
 
+	/* compute next state */
 	switch (hdr->operation) {
 	case OP_PUT:
 	case OP_GET:
@@ -201,9 +209,12 @@ static int recv_packet(buf_t *buf)
 	}
 }
 
-/*
- * recv_req
- *	process an initial packet to target
+/**
+ * Process a new request to target.
+ *
+ * @param buf the received buffer.
+ *
+ * @return the next state.
  */
 static int recv_req(buf_t *buf)
 {
@@ -212,18 +223,22 @@ static int recv_req(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 	xt_t *xt;
 
+	/* allocate a new xt to track the message */
 	err = xt_alloc(ni, &xt);
 	if (err) {
 		WARN();
 		return STATE_RECV_ERROR;
 	}
 
+	/* unpack message header */
 	xport_hdr_to_xt((hdr_t *)hdr, xt);
 	base_hdr_to_xt((hdr_t *)hdr, xt);
 	req_hdr_to_xt(hdr, xt);
 	xt->operation = hdr->operation;
 
-	/* req packet data direction is wrt init, xt direction is wrt tgt */
+	/* compute the data segments in the message
+	 * note req packet data direction is wrt init,
+	 * xt direction is wrt tgt */
 	if (hdr->data_in)
 		xt->data_out = (data_t *)(buf->data + sizeof(*hdr));
 
@@ -234,17 +249,24 @@ static int recv_req(buf_t *buf)
 	xt->recv_buf = buf;
 	xt->state = STATE_TGT_START;
 
-	/* note process_tgt must drop recv_buf */
+	/* send message to target state machine
+	 * note process_tgt must drop the buffer */
 	err = process_tgt(xt);
 	if (err)
 		WARN();
 
-	return STATE_RECV_REPOST;
+	if (buf->type == BUF_RECV)
+		return STATE_RECV_REPOST;
+	else
+		return STATE_RECV_DONE;
 }
 
-/*
- * recv_init
- *	process an incoming packet to init
+/**
+ * Process a response message to initiator.
+ *
+ * @param buf the message received.
+ *
+ * @return the next state.
  */
 static int recv_init(buf_t *buf)
 {
@@ -252,12 +274,14 @@ static int recv_init(buf_t *buf)
 	xi_t *xi;
 	hdr_t *hdr = (hdr_t *)buf->data;
 
+	/* lookup the xi handle to get original xi */
 	err = to_xi(be64_to_cpu(hdr->handle), &xi);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
 
+	/* compute data segments in response message */
 	if (hdr->data_in)
 		xi->data_out = (data_t *)(buf->data + hdr->hdr_size);
 
@@ -272,12 +296,18 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	return STATE_RECV_REPOST;
+	if (buf->type == BUF_RECV)
+		return STATE_RECV_REPOST;
+	else
+		return STATE_RECV_DONE;
 }
 
-/*
- * recv_repost
- *	repost receive buffers to srq
+/**
+ * Repost receive buffers to srq.
+ *
+ * @param buf the received buffer.
+ *
+ * @return the next state.
  */
 static int recv_repost(buf_t *buf)
 {
@@ -285,16 +315,24 @@ static int recv_repost(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 	int num_bufs;
 
-	if ((get_param(PTL_MAX_SRQ_RECV_WR) - ni->rdma.num_posted_recv)
-				> get_param(PTL_SRQ_REPOST_SIZE))
+	/* compute the available room in the srq */
+	num_bufs = (get_param(PTL_MAX_SRQ_RECV_WR) - ni->rdma.num_posted_recv);
+
+	/* if rooms exceeds threshold repost that many buffers
+	 * this should reduce the number of receive queue doorbells
+	 * which should improve performance */
+	if (num_bufs > get_param(PTL_SRQ_REPOST_SIZE))
 		ptl_post_recv(ni, get_param(PTL_SRQ_REPOST_SIZE));
 
 	return STATE_RECV_DONE;
 }
 
-/*
- * recv_drop_buf
- *	drop buffer
+/**
+ * Drop the received buffer.
+ *
+ * @param buf the completed buffer.
+ *
+ * @return the next state.
  */
 static int recv_drop_buf(buf_t *buf)
 {
@@ -303,12 +341,16 @@ static int recv_drop_buf(buf_t *buf)
 	buf_put(buf);
 	ni->num_recv_drops++;
 
-	return STATE_RECV_DONE;
+	if (buf->type == BUF_RECV)
+		return STATE_RECV_REPOST;
+	else
+		return STATE_RECV_DONE;
 }
 
-/*
- * process_recv
- *	handle ni completion queue
+/**
+ * Completion queue polling thread.
+ *
+ * @param arg opaque pointer to ni.
  */
 void *process_recv_rdma_thread(void *arg)
 {
@@ -373,16 +415,20 @@ next_buf:
 	return NULL;
 }
 
-/*
- * process_recv
- *	handle ni completion queue for a buffer coming from shared memory.
+/**
+ * Process a received message in shared memory.
+ *
+ * @param ni the ni to poll.
+ * @param buf the received buffer.
  */
 void process_recv_shmem(ni_t *ni, buf_t *buf)
 {
 	int state = STATE_RECV_PACKET;
 
 	while(1) {
-		if (debug) printf("%p: recv state local = %s\n", buf, recv_state_name[state]);
+		if (debug)
+			printf("tid:%x buf:%p: recv state local = %s\n",
+				buf, recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_PACKET:
 			state = recv_packet(buf);
@@ -401,19 +447,13 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 				buf_put(buf);
 				ni->num_recv_errs++;
 			}
-			goto fail;
-
-		case STATE_RECV_COMP_POLL:		/* COMP_POLL is an ending state for SHMEM. */
+			goto exit;
 		case STATE_RECV_DONE:
-			goto done;
+			goto exit;
 		default:
 			abort();
 		}
 	}
-
-done:
-	return;
-
-fail:
+exit:
 	return;
 }

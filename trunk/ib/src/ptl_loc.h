@@ -127,7 +127,6 @@ static inline uint64_t be64_to_cpu(uint64_t x)
 #endif
 
 enum {
-	STATE_RECV_COMP_POLL,
 	STATE_RECV_GET_BUF,
 	STATE_RECV_WAIT,
 	STATE_RECV_SEND_COMP,
