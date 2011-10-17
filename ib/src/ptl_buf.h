@@ -91,8 +91,11 @@ struct buf {
 	/** type of buf */
 	buf_type_t		type;
 
+	/** recv state */
+	int			state;
+
 	/** Send completion must be signaled. **/
-	int signaled;
+	int			signaled;
 
 	/** number of mr's used in message */
 	int			num_mr;

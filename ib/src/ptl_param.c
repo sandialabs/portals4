@@ -179,6 +179,12 @@ param_t param[] = {
 						.max	= LONG_MAX,
 						.val	= 2000,
 					  },
+	[PTL_WC_COUNT]				= {
+						.name	= "PTL_WC_COUNT",
+						.min	= 0,
+						.max	= LONG_MAX,
+						.val	= 10,
+					  },
 	[PTL_EQ_WAIT_LOOP_COUNT]		= {
 						.name	= "PTL_EQ_WAIT_LOOP_COUNT",
 						.min	= 0,
