@@ -329,62 +329,61 @@ static int recv_drop_buf(buf_t *buf)
  * process_recv
  *	handle ni completion queue
  */
-static void process_recv_rdma(ni_t *ni)
-{
-	int state = STATE_RECV_COMP_POLL;
-	buf_t *buf = NULL;
-
-	while(1) {
-		if (debug > 1) printf("%p: recv state = %s\n", buf, recv_state_name[state]);
-		switch (state) {
-		case STATE_RECV_COMP_POLL:
-			state = comp_poll(ni, &buf);
-			break;
-		case STATE_RECV_SEND_COMP:
-			state = send_comp(buf);
-			break;
-		case STATE_RECV_RDMA_COMP:
-			state = rdma_comp(buf);
-			break;
-		case STATE_RECV_PACKET:
-			state = recv_packet(buf);
-			break;
-		case STATE_RECV_REQ:
-			state = recv_req(buf);
-			break;
-		case STATE_RECV_INIT:
-			state = recv_init(buf);
-			break;
-		case STATE_RECV_REPOST:
-			state = recv_repost(buf);
-			break;
-		case STATE_RECV_DROP_BUF:
-			state = recv_drop_buf(buf);
-			break;
-		case STATE_RECV_ERROR:
-			if (buf) {
-				buf_put(buf);
-				ni->num_recv_errs++;
-			}
-			goto fail;
-		case STATE_RECV_DONE:
-			goto done;
-		}
-	}
-
-done:
-	return;
-
-fail:
-	return;
-}
-
 void *process_recv_rdma_thread(void *arg)
 {
 	ni_t *ni = arg;
+	int state;
+	buf_t *buf;
 
 	while(!ni->rdma.catcher_stop) {
-		process_recv_rdma(ni);
+		state = STATE_RECV_COMP_POLL;
+		buf = NULL;
+
+		while(1) {
+			if (debug > 1)
+				printf("tid:%x buf:%p: recv state = %s\n",
+					pthread_self(), buf,
+					recv_state_name[state]);
+			switch (state) {
+			case STATE_RECV_COMP_POLL:
+				state = comp_poll(ni, &buf);
+				break;
+			case STATE_RECV_SEND_COMP:
+				state = send_comp(buf);
+				break;
+			case STATE_RECV_RDMA_COMP:
+				state = rdma_comp(buf);
+				break;
+			case STATE_RECV_PACKET:
+				state = recv_packet(buf);
+				break;
+			case STATE_RECV_REQ:
+				state = recv_req(buf);
+				break;
+			case STATE_RECV_INIT:
+				state = recv_init(buf);
+				break;
+			case STATE_RECV_REPOST:
+				state = recv_repost(buf);
+				break;
+			case STATE_RECV_DROP_BUF:
+				state = recv_drop_buf(buf);
+				break;
+			case STATE_RECV_ERROR:
+				if (buf) {
+					buf_put(buf);
+					ni->num_recv_errs++;
+				}
+				goto fail;
+			case STATE_RECV_DONE:
+				goto done;
+			}
+		}
+done:
+		continue;
+
+fail:
+		continue;
 	}
 
 	return NULL;
