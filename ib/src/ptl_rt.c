@@ -39,7 +39,7 @@ ptl_process_t *get_desired_mapping(ptl_handle_ni_t ni)
 
 static int is_mpi_initialized = 0;
 
-void init_mpi(int *argc, char ***argv)
+void runtime_init(int *argc, char ***argv)
 {
 	if (!is_mpi_initialized) {
 		int v;
@@ -55,7 +55,7 @@ void init_mpi(int *argc, char ***argv)
 	}
 }
 
-void fini_mpi(void)
+void runtime_finalize(void)
 {
 	if (is_mpi_initialized) {
 		is_mpi_initialized = 0;

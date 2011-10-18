@@ -179,7 +179,6 @@ static int init_ib_srq(ni_t *ni)
 	struct ibv_srq_init_attr srq_init_attr;
 	iface_t *iface = ni->iface;
 	int err;
-	int i;
 	int num_post;
 
 	srq_init_attr.srq_context = ni;

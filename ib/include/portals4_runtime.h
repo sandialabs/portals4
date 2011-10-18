@@ -13,10 +13,6 @@ extern int                      ptl_test_rank;
 /* Control for logging output */
 extern int                      ptl_log_level;
 
-/* Start and stop MPI. */
-extern void init_mpi(int *argc, char ***argv);
-extern void fini_mpi(void);
-
 /* Retrieve the physical->logical mapping.
  * Note: something close should be in the public runtime eventually. */
 extern ptl_process_t *get_desired_mapping(ptl_handle_ni_t ni);
@@ -37,12 +33,13 @@ static inline void runtime_barrier(void)
 
 static inline int runtime_get_rank(void)
 {
-	init_mpi(NULL, NULL);
 	return shmemtest_rank;
 }
 
 static inline int runtime_get_size(void)
 {
-	init_mpi(NULL, NULL);
 	return shmemtest_map_size;
 }
+
+void runtime_init(int *argc, char ***argv);
+void runtime_finalize(void);
