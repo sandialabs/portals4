@@ -36,19 +36,20 @@ static int comp_poll(ni_t *ni, int num_wc,
 {
 	int ret;
 	int i;
-	struct ibv_wc *wc;
 	buf_t *buf;
 
 	ret = ibv_poll_cq(ni->rdma.cq, num_wc, wc_list);
+	if (ret <= 0)
+		return 0;
 
 	/* convert from wc to buf and set initial state */
 	for (i = 0; i < ret; i++) {
-		wc = &wc_list[i];
+		const struct ibv_wc *wc = &wc_list[i];
 
 		buf = (buf_t *)(uintptr_t)wc->wr_id;
-		buf->length = wc_list->byte_len;
+		buf->length = wc->byte_len;
 
-		if (wc->status) {
+		if (unlikely(wc->status)) {
 			if (buf->type == BUF_SEND) {
 				buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
 				buf->state = STATE_RECV_SEND_COMP;
@@ -249,16 +250,13 @@ static int recv_req(buf_t *buf)
 	xt->recv_buf = buf;
 	xt->state = STATE_TGT_START;
 
-	/* send message to target state machine
-	 * note process_tgt must drop the buffer */
+	/* Send message to target state machine. process_tgt must drop the
+	 * buffer, so buf will not be valid after the call. */
 	err = process_tgt(xt);
 	if (err)
 		WARN();
 
-	if (buf->type == BUF_RECV)
-		return STATE_RECV_REPOST;
-	else
-		return STATE_RECV_DONE;
+	return STATE_RECV_REPOST;
 }
 
 /**
@@ -291,15 +289,13 @@ static int recv_init(buf_t *buf)
 
 	xi->recv_buf = buf;
 
-	/* note process_init must drop recv_buf */
+	/* Note: process_init must drop recv_buf, so buf will not be valid
+	 * after the call. */
 	err = process_init(xi);
 	if (err)
 		WARN();
 
-	if (buf->type == BUF_RECV)
-		return STATE_RECV_REPOST;
-	else
-		return STATE_RECV_DONE;
+	return STATE_RECV_REPOST;
 }
 
 /**
@@ -340,10 +336,7 @@ static int recv_drop_buf(buf_t *buf)
 	buf_put(buf);
 	ni->num_recv_drops++;
 
-	if (buf->type == BUF_RECV)
-		return STATE_RECV_REPOST;
-	else
-		return STATE_RECV_DONE;
+	return STATE_RECV_REPOST;
 }
 
 /**
@@ -355,19 +348,15 @@ void *process_recv_rdma_thread(void *arg)
 {
 	ni_t *ni = arg;
 	const int num_wc = get_param(PTL_WC_COUNT);
-	int num_buf;
-	int i;
 	struct ibv_wc wc_list[num_wc];
-	int state;
 	buf_t *buf_list[num_wc];
-	buf_t *buf;
 
 	while(!ni->rdma.catcher_stop) {
-		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
-
+		const int num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
+		int i;
 		for (i = 0; i < num_buf; i++) {
-			buf = buf_list[i];
-			state = buf->state;
+			buf_t *buf = buf_list[i];	
+			enum recv_state state = buf->state;
 
 			while(1) {
 				if (debug > 1)

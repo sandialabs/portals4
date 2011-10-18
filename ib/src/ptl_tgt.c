@@ -1340,7 +1340,7 @@ static int tgt_wait_append(xt_t *xt)
 int process_tgt(xt_t *xt)
 {
 	int err = PTL_OK;
-	int state;
+	enum tgt_state state;
 
 	if(debug)
 		printf("process_tgt: called xt = %p\n", xt);
