@@ -273,7 +273,6 @@ static inline void cleanup_shmem(ni_t *ni) { }
 #endif
 
 /* For the runtime. */
-extern int ptl_test_return;
 extern int ptl_test_rank;
 extern int ptl_log_level;
 

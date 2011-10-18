@@ -1344,14 +1344,14 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_PTL:
 				errs = test_ptl_init(info);
 				errs += walk_tree(info, node->children);
-				errs += test_ptl_fini(info);
+				test_ptl_fini(info);
 				break;
 			case NODE_PTL_INIT:
 				errs = test_ptl_init(info);
 				errs += walk_tree(info, node->children);
 				break;
 			case NODE_PTL_FINI:
-				errs = test_ptl_fini(info);
+				test_ptl_fini(info);
 				errs += walk_tree(info, node->children);
 				break;
 			case NODE_PTL_NI:
