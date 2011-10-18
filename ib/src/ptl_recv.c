@@ -410,7 +410,7 @@ next_buf:
  */
 void process_recv_shmem(ni_t *ni, buf_t *buf)
 {
-	int state = STATE_RECV_PACKET;
+	enum recv_state state = STATE_RECV_PACKET;
 
 	while(1) {
 		if (debug)
@@ -436,9 +436,13 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 				ni->num_recv_errs++;
 			}
 			goto exit;
+		case STATE_RECV_REPOST:
 		case STATE_RECV_DONE:
 			goto exit;
-		default:
+
+		case STATE_RECV_SEND_COMP:
+		case STATE_RECV_RDMA_COMP:
+			/* Not reachable. */
 			abort();
 		}
 	}
