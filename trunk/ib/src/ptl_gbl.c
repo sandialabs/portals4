@@ -305,12 +305,9 @@ void PtlFini(void)
 	int ret;
 	gbl_t *gbl = &per_proc_gbl;
 
-	ptl_test_return = PTL_OK;
-
 	ret = pthread_mutex_lock(&per_proc_gbl_mutex);
 	if (ret) {
 		ptl_warn("unable to acquire proc_gbl mutex\n");
-		ptl_test_return = PTL_FAIL;
 		abort();
 		goto err0;
 	}
@@ -318,7 +315,6 @@ void PtlFini(void)
 	/* this would be a bug */
 	if (gbl->ref_cnt == 0) {
 		ptl_warn("ref_cnt already 0 ?!!\n");
-		ptl_test_return = PTL_FAIL;
 		goto err1;
 	}
 

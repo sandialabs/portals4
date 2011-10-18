@@ -7,18 +7,18 @@
     </subtest>
     <subtest>
       <desc>Test PtlFini</desc>
-      <ptl_fini ret="OK"/>
+      <ptl_fini/>
     </subtest>
     <subtest>
       <desc>Test PtlInit 2x</desc>
       <ptl_init ret="OK"/>
       <ptl_init ret="OK"/>
-      <ptl_fini ret="OK"/>
-      <ptl_fini ret="OK"/>
+      <ptl_fini/>
+      <ptl_fini/>
     </subtest>
     <subtest>
       <desc>Test PtlFini without init</desc>
-      <ptl_fini ret="FAIL"/>
+      <ptl_fini/>
     </subtest>
   </repeat>
 </test>

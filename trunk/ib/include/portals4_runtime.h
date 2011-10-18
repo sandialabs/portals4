@@ -7,10 +7,6 @@
  *  public runtime.
  */
 
-/* Return value from APIs that do not normally return errors for
- * testing purposes */
-extern int                      ptl_test_return;
-
 /* Values for rank under test, enables rank output prior to get_id */
 extern int                      ptl_test_rank;
 

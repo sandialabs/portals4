@@ -9,7 +9,7 @@ struct node_info;
 
 int test_ptl_init(struct node_info *info);
 
-int test_ptl_fini(struct node_info *info);
+void test_ptl_fini(struct node_info *info);
 
 int test_ptl_ni_init(struct node_info *info);
 
