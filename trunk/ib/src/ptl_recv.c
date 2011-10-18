@@ -311,7 +311,6 @@ static int recv_init(buf_t *buf)
  */
 static int recv_repost(buf_t *buf)
 {
-	int err;
 	ni_t *ni = obj_to_ni(buf);
 	int num_bufs;
 
@@ -355,7 +354,7 @@ static int recv_drop_buf(buf_t *buf)
 void *process_recv_rdma_thread(void *arg)
 {
 	ni_t *ni = arg;
-	int num_wc = get_param(PTL_WC_COUNT);
+	const int num_wc = get_param(PTL_WC_COUNT);
 	int num_buf;
 	int i;
 	struct ibv_wc wc_list[num_wc];
@@ -372,9 +371,8 @@ void *process_recv_rdma_thread(void *arg)
 
 			while(1) {
 				if (debug > 1)
-					printf("tid:%x buf:%p: state = %s\n",
-						pthread_self(), buf,
-						recv_state_name[state]);
+					printf("tid:%lx buf:%p: state = %s\n",
+						   pthread_self(), buf, recv_state_name[state]);
 				switch (state) {
 				case STATE_RECV_SEND_COMP:
 					state = send_comp(buf);
@@ -427,8 +425,9 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 
 	while(1) {
 		if (debug)
-			printf("tid:%x buf:%p: recv state local = %s\n",
-				buf, recv_state_name[state]);
+			printf("tid:%lx buf:%p: recv state local = %s\n",
+				   pthread_self(), buf,
+				   recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_PACKET:
 			state = recv_packet(buf);
