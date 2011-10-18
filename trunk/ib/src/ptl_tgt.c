@@ -174,13 +174,27 @@ static int prepare_send_buf(xt_t *xt)
 	buf_t *buf;
 	int err;
 	hdr_t *hdr;
+	conn_t *conn = xt->conn;
+	ni_t *ni = obj_to_ni(xt);
 
-	err = buf_alloc(obj_to_ni(xt), &buf);
+	/* get per conn info */
+	if (!conn) {
+		conn = xt->conn = get_conn(ni, &xt->initiator);
+		if (unlikely(!conn)) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
+	}
+
+	if (conn->transport.type == CONN_TYPE_RDMA)
+		err = buf_alloc(ni, &buf);
+	else
+		err = sbuf_alloc(ni, &buf);
 	if (err) {
 		WARN();
 		return PTL_FAIL;
 	}
-	buf->type = BUF_SEND;
+
 	buf->xt = xt;
 	xt_get(xt);
 	buf->dest = &xt->dest;
@@ -518,15 +532,6 @@ static int tgt_wait_conn(xt_t *xt)
 	    !(xt->data_out || (xt->data_in && (xt->data_in->data_fmt
 						!= DATA_FMT_IMMEDIATE))))
 		goto out1;
-
-	/* get per conn info */
-	if (!conn) {
-		conn = xt->conn = get_conn(ni, &xt->initiator);
-		if (unlikely(!conn)) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-	}
 
 	if (conn->state >= CONN_STATE_CONNECTED)
 		goto out2;
