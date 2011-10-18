@@ -539,7 +539,7 @@ static void init_cleanup(xi_t *xi)
 int process_init(xi_t *xi)
 {
 	int err = PTL_OK;
-	int state;
+	enum init_state state;
 
 	do {
 		pthread_mutex_lock(&xi->mutex);
