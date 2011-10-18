@@ -4,8 +4,8 @@ int ompi_rt_init(struct node_info *info)
 {
 	int errs = 0;
 
-	info->rank = shmemtest_rank;
-	info->map_size = shmemtest_map_size;
+	info->rank = runtime_get_rank();
+	info->map_size = runtime_get_size();
 
 	if (info->ni_handle != PTL_INVALID_HANDLE) {
 		if (!info->desired_map_ptr) {

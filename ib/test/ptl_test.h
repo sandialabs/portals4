@@ -24,8 +24,6 @@
 #include "dict.h"
 #include "api.h"
 
-#include <mpi.h>
-
 extern int verbose;
 extern int debug;
 

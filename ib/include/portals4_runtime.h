@@ -1,5 +1,7 @@
 #include <mpi.h>
 
+#define PORTALS4_RUNTIME_IS_MPI
+
 /*
  *  Private runtime, for portals4 over IB only. Used to support the
  *  public runtime.

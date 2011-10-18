@@ -120,7 +120,9 @@ int main(int argc, char *argv[])
 	int ret;
 	xmlDocPtr doc;
 
+#ifdef PORTALS4_RUNTIME_IS_MPI
 	init_mpi(&argc, &argv);
+#endif
 
 	ret = process_args(argc, argv);
 	if (ret) {
@@ -151,7 +153,9 @@ int main(int argc, char *argv[])
 
 	fini();
 
+#ifdef PORTALS4_RUNTIME_IS_MPI
 	fini_mpi();
+#endif
 
 	return ret;
 }

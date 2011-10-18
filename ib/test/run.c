@@ -1264,7 +1264,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 
 			case NODE_BARRIER:
-				MPI_Barrier(MPI_COMM_WORLD);
+				runtime_barrier();
 				goto done;
 			}
 
@@ -1283,7 +1283,6 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 					printf("Errors = %d\n", errs);
 				else
 					printf("\033[1;32mPassed\033[0m\n");
-					//printf("Passed\n");
 				break;
 			case NODE_REPEAT:
 				for (i = 0; i < info->count; i++)
