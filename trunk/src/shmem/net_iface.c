@@ -447,7 +447,7 @@ int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     *status = nit.regs[ni.s.ni][status_register];
-    return PTL_FAIL;
+    return PTL_OK;
 } /*}}}*/
 
 int API_FUNC PtlNIHandle(ptl_handle_any_t handle,
