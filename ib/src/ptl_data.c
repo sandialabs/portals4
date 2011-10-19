@@ -266,8 +266,6 @@ int append_tgt_data(me_t *me, ptl_size_t offset,
 	int err = PTL_OK;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *data = (data_t *)(buf->data + buf->length);
-	int iov_start;
-	ptl_size_t iov_offset;
 
 	assert(length <= get_param(PTL_MAX_INLINE_DATA));
 
@@ -292,4 +290,3 @@ int append_tgt_data(me_t *me, ptl_size_t offset,
 
 	return err;
 }
-

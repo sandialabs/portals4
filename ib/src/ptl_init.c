@@ -617,7 +617,6 @@ int process_init(xi_t *xi)
 			case STATE_INIT_DONE:
 				/* We reach that state only if the send completion is
 				 * received after the recv completion. */
-				assert(xi->obj.obj_ref.ref_cnt == 1);
 				goto exit;
 			default:
 				abort();
