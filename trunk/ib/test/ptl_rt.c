@@ -39,27 +39,29 @@ ptl_process_t *get_desired_mapping(ptl_handle_ni_t ni)
 
 static int is_mpi_initialized = 0;
 
-void runtime_init(int *argc, char ***argv)
+static void runtime_finalize(void)
+{
+	if (is_mpi_initialized) {
+		is_mpi_initialized = 0;
+		MPI_Finalize();
+	}
+}
+
+void runtime_init(void)
 {
 	if (!is_mpi_initialized) {
 		int v;
 
 		is_mpi_initialized = 1;
-		MPI_Init(argc, argv);
+		MPI_Init(NULL, NULL);
 
 		MPI_Comm_rank(MPI_COMM_WORLD, &v);
 		shmemtest_rank = v;
 
 		MPI_Comm_size(MPI_COMM_WORLD, &v);
 		shmemtest_map_size = v;
-	}
-}
 
-void runtime_finalize(void)
-{
-	if (is_mpi_initialized) {
-		is_mpi_initialized = 0;
-		MPI_Finalize();
+		atexit(runtime_finalize);
 	}
 }
 
