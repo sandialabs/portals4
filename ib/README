@@ -36,6 +36,15 @@ Test:
       -  ./make_test_relay.pl  > test_relay.xml
       -  mpirun  -H localhost -n 9 ./ptl_test -f test_relay.xml 
 
+Testsuite note:
+The testsuite is testing both error paths and good paths. However when
+the library is configured with --enable-fast (such as built from the
+RPM), most parameter checks are disabled. As a result a lot of the
+negative tests cannot pass (or make the program crash).  There is 2
+solutions there:
+  - either do not configure with --enable-fast
+  - configure with --enable-fast but undefine NO_ARG_VALIDATION in config.h
+
 Building an RPM:
   * make dist       --> this will create portals-4.0.tar.gz
   * rpmbuild -ta portals-4.0.tar.gz
@@ -45,4 +54,4 @@ If mpi is in a non standard path, add CFLAGS and LDFLAGS to rpmbuild, such as:
 
 
 Limitations:
-- A program may not open more than one NID in its lifetime.
+  * A program may not open more than one NID in its lifetime.
