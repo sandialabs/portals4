@@ -521,3 +521,21 @@ int test_ptl_end_bundle(struct node_info *info)
 {
 	return info->ret != PtlEndBundle(info->ni_handle);
 }
+
+int test_ptl_set_map(struct node_info *info)
+{
+	return info->ret != PtlSetMap(info->ni_handle, info->map_size, info->mapping);
+}
+
+int test_ptl_get_map(struct node_info *info)
+{
+	if (info->mapping)
+		free(info->mapping);
+
+	if (info->get_map_size)
+		info->mapping = malloc(info->get_map_size * sizeof(ptl_process_t));
+	else
+		info->mapping = malloc(1);
+
+	return info->ret != PtlGetMap(info->ni_handle, info->get_map_size, info->mapping, &info->actual_map_size);
+}

@@ -742,6 +742,9 @@ static int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_TARGET_ID:
 			info->target_id = get_target_id(info, val);
 			break;
+		case ATTR_GET_MAP_SIZE:
+			info->get_map_size = get_number(info, val);
+			break;
 		}
 	}
 
@@ -1629,6 +1632,14 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				break;
 			case NODE_PTL_HANDLE_IS_EQUAL:
 				errs = test_ptl_handle_is_eq(info);
+				errs += walk_tree(info, node->children);
+				break;
+			case NODE_PTL_SET_MAP:
+				errs = test_ptl_set_map(info);
+				errs += walk_tree(info, node->children);
+				break;
+			case NODE_PTL_GET_MAP:
+				errs = test_ptl_get_map(info);
 				errs += walk_tree(info, node->children);
 				break;
 			}

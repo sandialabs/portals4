@@ -83,6 +83,7 @@ static struct dict_init {
 	{"ptl_start_bundle",		TYPE_NODE,		NODE_PTL_START_BUNDLE},
 	{"ptl_end_bundle",		TYPE_NODE,		NODE_PTL_END_BUNDLE},
 	{"ptl_handle_is_equal",		TYPE_NODE,		NODE_PTL_HANDLE_IS_EQUAL},
+	{"ptl_get_map",			TYPE_NODE,		NODE_PTL_GET_MAP},
 
 	{"ret",				TYPE_ATTR,		ATTR_RET},
 	{"ptr",				TYPE_ATTR,		ATTR_PTR},
@@ -191,6 +192,8 @@ static struct dict_init {
 
 	{"rank",			TYPE_ATTR,		ATTR_RANK},
 	{"target_id",			TYPE_ATTR,		ATTR_TARGET_ID},
+
+	{"get_map_size",	TYPE_ATTR,		ATTR_GET_MAP_SIZE},
 
 #ifdef PTL_CHECK_POINTER
 	{"check_pointer",		TYPE_OPT,		OPT_CHECK_POINTER},
