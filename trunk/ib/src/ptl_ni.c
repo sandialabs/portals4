@@ -140,6 +140,9 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	buf_t *buf;
 	xi_t *xi;					/* used for xt too */
 
+	if (!ni->rdma.cq)
+		return PTL_OK;
+
 	while(1) {
 		n = ibv_poll_cq(ni->rdma.cq, 1, &wc);
 		if (n < 0)

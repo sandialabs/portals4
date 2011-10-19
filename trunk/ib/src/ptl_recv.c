@@ -86,7 +86,7 @@ static int send_comp(buf_t *buf)
 	xi_t *xi = buf->xi; /* can be an XT or an XI */
 
 	/* this should only happen if we requested a completion */
-	assert(buf->comp);
+	assert(buf->comp || buf->xi->ni_fail == PTL_NI_UNDELIVERABLE);
 
 	/* Fox XI only, restart the initiator state machine. */
 	if (xi->obj.obj_pool->type == POOL_XI) {
