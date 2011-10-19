@@ -84,6 +84,8 @@ enum {
 	NODE_PTL_START_BUNDLE,
 	NODE_PTL_END_BUNDLE,
 	NODE_PTL_HANDLE_IS_EQUAL,
+	NODE_PTL_SET_MAP,
+	NODE_PTL_GET_MAP,
 
 	/* general */
 	ATTR_RET,
@@ -213,6 +215,9 @@ enum {
 
 	/* put */
 	ATTR_TARGET_ID,
+
+	/* maps */
+	ATTR_GET_MAP_SIZE,
 
 	/* options */
 	OPT_CHECK_POINTER,

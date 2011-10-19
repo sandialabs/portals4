@@ -105,4 +105,8 @@ int test_ptl_start_bundle(struct node_info *info);
 
 int test_ptl_end_bundle(struct node_info *info);
 
+int test_ptl_set_map(struct node_info *info);
+
+int test_ptl_get_map(struct node_info *info);
+
 #endif /* API_H */

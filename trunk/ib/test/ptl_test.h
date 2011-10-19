@@ -88,9 +88,6 @@ struct node_info {
 	ptl_ni_limits_t		*desired_ptr;
 	ptl_ni_limits_t		actual;
 	ptl_ni_limits_t		*actual_ptr;
-	ptl_size_t		map_size;
-	ptl_process_t		*desired_map_ptr;
-	ptl_process_t		*actual_map_ptr;
 	ptl_handle_ni_t		ni_handle;
 	ptl_sr_index_t		reg;
 	ptl_sr_value_t		status;
@@ -191,6 +188,16 @@ struct node_info {
 	 */
 	ptl_handle_any_t	handle1;
 	ptl_handle_any_t	handle2;
+
+	/*
+	 * get/set map
+	 */
+	ptl_size_t		map_size;
+	ptl_process_t  *desired_map_ptr;
+
+	ptl_size_t		get_map_size;
+	ptl_size_t      actual_map_size;
+	ptl_process_t  *mapping;
 
 	/*
 	 * object stacks
