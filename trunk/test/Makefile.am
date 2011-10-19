@@ -47,10 +47,9 @@ endif
 
 BENCHMARKS =
 
-INCLUDES = -I$(top_srcdir)/include
-OUTPUTDIR = $(top_builddir)/src
-PORTALSLIB = $(OUTPUTDIR)/libportals.la
-P4SUPPORTLIB = $(OUTPUTDIR)/libP4support.la
+AM_CPPFLAGS = -I$(top_srcdir)/include
+PORTALSLIB = $(top_builddir)/src/shmem/libportals.la
+P4SUPPORTLIB = $(top_builddir)/src/support/libP4support.la
 LDADD = $(PORTALSLIB)
 
 include benchmarks/rtt_latency/Makefile.inc
@@ -65,7 +64,7 @@ check_PROGRAMS = $(TESTS)
 
 THREADS ?= 1
 
-TESTS_ENVIRONMENT = $(top_builddir)/src/yod -c $(THREADS)
+TESTS_ENVIRONMENT = $(top_builddir)/src/shmem/yod -c $(THREADS)
 
 test_init_SOURCES = test_init.c
 test_init_DEPENDENCIES = $(PORTALSLIB)

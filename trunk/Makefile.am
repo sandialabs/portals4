@@ -3,7 +3,9 @@
 # Copyright (c)      2008  Sandia Corporation
 #
 
-EXTRA_DIST = autogen.sh README
+EXTRA_DIST = autogen.sh README NEWS \
+	patches/rdma-bw-xrc-v1.diff \
+	patches/rdmacm-xrc-v3.diff
 
 SUBDIRS = doc include src test
 

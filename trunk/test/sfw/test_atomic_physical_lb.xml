@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<test>
+  <subtest>
+    <desc>Test atomic min/char (1)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="7">
+            <ptl_md md_data="9">
+              <ptl_atomic target_id="SELF" atom_op="MIN" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="7"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic min/char (2)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="7">
+            <ptl_md md_data="-9">
+              <ptl_atomic target_id="SELF" atom_op="MIN" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="-9"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic max/char (1)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="7">
+            <ptl_md md_data="9">
+              <ptl_atomic target_id="SELF" atom_op="MAX" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="9"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic max/char (2)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="7">
+            <ptl_md md_data="-9">
+              <ptl_atomic target_id="SELF" atom_op="MAX" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="7"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic sum/char</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x07">
+            <ptl_md md_data="0x09">
+              <ptl_atomic target_id="SELF" atom_op="SUM" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="0x10"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic prod/char</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x07">
+            <ptl_md md_data="0x09">
+              <ptl_atomic target_id="SELF" atom_op="PROD" atom_type="CHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="CHAR" me_data="0x3f"/>
+            <check length="1" type="CHAR" offset="4" me_data="7"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic min/uchar (1)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x55">
+            <ptl_md md_data="0x33">
+              <ptl_atomic target_id="SELF" atom_op="MIN" atom_type="UCHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="UCHAR" me_data="0x33"/>
+            <check length="1" type="CHAR" offset="4" me_data="0x55"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic min/uchar (2)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x55">
+            <ptl_md md_data="0xaa">
+              <ptl_atomic target_id="SELF" atom_op="MIN" atom_type="UCHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="UCHAR" me_data="0x55"/>
+            <check length="1" type="CHAR" offset="4" me_data="0x55"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic max/uchar (1)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x55">
+            <ptl_md md_data="0x77">
+              <ptl_atomic target_id="SELF" atom_op="MAX" atom_type="UCHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="UCHAR" me_data="0x77"/>
+            <check length="1" type="CHAR" offset="4" me_data="0x55"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+  <subtest>
+    <desc>Test atomic max/uchar (2)</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x55">
+            <ptl_md md_data="0xee">
+              <ptl_atomic target_id="SELF" atom_op="MAX" atom_type="UCHAR" length="4" match="0x5555"/>
+              <msleep count="10"/>
+            </ptl_md>
+            <check length="4" type="UCHAR" me_data="0xee"/>
+            <check length="1" type="CHAR" offset="4" me_data="0x55"/>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+  <barrier/>
+</test>
