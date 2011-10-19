@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<test>
+  <subtest>
+    <desc>Test PtlPut</desc>
+    <ptl>
+      <ptl_ni>
+        <ptl_eq>
+          <ptl_pt>
+            <ptl_me uid="ANY">
+              <ptl_md>
+                <ptl_put/>
+                <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                </ptl_eq_wait>
+                <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                </ptl_eq_wait>
+              </ptl_md>
+            </ptl_me>
+          </ptl_pt>
+        </ptl_eq>
+      </ptl_ni>
+    </ptl>
+  </subtest>
+</test>

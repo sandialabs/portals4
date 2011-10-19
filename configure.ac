@@ -12,17 +12,12 @@ AC_PREREQ(2.60)
 ## ---------------------------------- ##
 ## Autoconf / Automake Initialization ##
 ## ---------------------------------- ##
-AC_INIT([portals], [4], [kbwheel@sandia.gov])
+AC_INIT([portals4], [1.0a1], [portals4-devel@googlegroups.com])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_SRCDIR([src/shmem/init.c])
 
-dnl Require at least AM 1.7.  Prior versions require AM_CONFIG_HEADER
-dnl and have no equivalent to AC_CONFIG_HEADERS (the plural version),
-dnl which is a pain.  AM 1.7 also added support for putting target
-dnl information in AM_CONDITIONAL blocks and using the += modifier.
-dnl ... removed "check-news" because of automatic version generation
-AM_INIT_AUTOMAKE([foreign dist-bzip2 no-define 1.7])
+AM_INIT_AUTOMAKE([foreign check-news color-tests dist-bzip2 no-define tar-ustar 1.7 -Wall -Werror])
 # If Automake supports silent rules, enable them
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -38,79 +33,109 @@ AC_CANONICAL_HOST
 ## ----------------- ##
 ## Configure Options ##
 ## ----------------- ##
+
+
 AC_ARG_ENABLE([picky],
-			  [AS_HELP_STRING([--enable-picky],
-							  [turns on extra compiler warnings (for developers of portals)])])
+  [AS_HELP_STRING([--enable-picky],
+  [Enable extra compiler warnings (for developers of portals)])])
 AS_IF([test "x$enable_picky" == x],
-	  [AS_IF([test -d "${srcdir}/.svn"],
-			 [echo "--> developer override: enable picky compiler by default"
-			  enable_picky=yes])])
+  [AS_IF([test -d "${srcdir}/.svn"],
+     [echo "--> developer override: enable picky compiler by default"
+      enable_picky=yes])])
+
 AC_ARG_ENABLE([fast],
-			  [AS_HELP_STRING([--enable-fast],
-							  [Sets the available configuration options to run as quickly as possible. This makes assumptions and CAN result in bad things happening.])])
-AC_ARG_ENABLE([debug-symbols],
-			  [AS_HELP_STRING([--enable-debug-symbols],
-							  [For use with --enable-fast, adds the flag for debug symbols to CFLAGS])])
+  [AS_HELP_STRING([--enable-fast],
+     [Sets the available configuration options to run as quickly as possible. This makes assumptions and CAN result in bad things happening.])])
 AS_IF([test "x$enable_fast" == xyes],
-	  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
-	   CFLAGS="-O3 $CFLAGS"
-	   enable_arg_checking=no
-	   enable_strict_uid=no
-	   enable_hard_polling=yes
-	   enable_register_on_bind=yes
-	   AS_IF([test "x$enable_debug_symbols" == xyes],
-			 [CFLAGS="-g $CFLAGS"])])
+  [CPPFLAGS="$CPPFLAGS -DNDEBUG"
+   CFLAGS="-O3 $CFLAGS"
+   enable_arg_checking=no
+   enable_strict_uid=no
+   enable_hard_polling=yes
+   enable_register_on_bind=yes])
+
 AC_ARG_ENABLE([arg-checking],
-			  [AS_HELP_STRING([--disable-arg-checking],
-							  [turns off argument checking; does not strictly conform to Portals4 standard, but avoids unnecessary work in the common case])])
-AC_ARG_ENABLE([hard-polling],
-			  [AS_HELP_STRING([--enable-hard-polling],
-							  [Forces hard polls on inter-process communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
-AC_ARG_ENABLE([papi],
-			  [AS_HELP_STRING([--enable-papi],
-							  [Enables PAPI performance counters support])])
-AC_ARG_ENABLE([transfer-engine],
-			  [AS_HELP_STRING([--enable-transfer-engine],
-							  [Enables KNEM and other direct SHMEM support])])
-AC_ARG_ENABLE([rdtsc],
-                          [AS_HELP_STRING([--enable-rdtsc],
-                                                          [Enables rdtsc performance counters support])])
-AC_ARG_ENABLE([loud-drops],
-			  [AS_HELP_STRING([--enable-loud-drops],
-							  [Makes dropped messages print an error to the console])])
-AC_ARG_ENABLE([strict-uid],
-			  [AS_HELP_STRING([--enable-strict-uid],
-							  [Makes the uid checking conform strictly according to the spec. By default, the uid is assumed to be correct])])
-AC_ARG_WITH([cacheline-width],
-			[AS_HELP_STRING([--with-cacheline-width=bytes],
-							[Specify the cacheline width for the target machine. Defaults to 64.])],
-			[],
-			[with_cacheline_width=64])
-AC_MSG_CHECKING([cacheline width])
-AC_MSG_RESULT([$with_cacheline_width])
-AC_DEFINE_UNQUOTED([CACHELINE_WIDTH],[$with_cacheline_width],[The cacheline width])
-AC_ARG_ENABLE([paranoia],
-			  [AS_HELP_STRING([--enable-paranoia],
-							  [Adds additional checks that are slow, occasionally painful, and should be entirely unnecessary, just to validate that nothing has gone wrong.])])
-AC_ARG_ENABLE([internal-overflow],
-	      [AS_HELP_STRING([--enable-internal-overflow],
-			      [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
-AS_IF([test "x$enable_hard_polling" == xyes],
-	  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
+  [AS_HELP_STRING([--disable-arg-checking],
+    [Disable argument checking in Portals library.])])
 AS_IF([test "x$enable_arg_checking" == xno],
-	  [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
-AS_IF([test "x$enable_internal_overflow" != xyes],
-	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
+  [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
+
+AC_ARG_ENABLE([hard-polling],
+  [AS_HELP_STRING([--enable-hard-polling],
+    [Enable hard polling communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
+AS_IF([test "x$enable_hard_polling" == xyes],
+  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
+
+AC_ARG_ENABLE([papi],
+  [AS_HELP_STRING([--enable-papi],
+    [Enables PAPI performance counters support])])
+AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
+
+AC_ARG_ENABLE([transfer-engine],
+  [AS_HELP_STRING([--enable-transfer-engine],
+    [Enables KNEM and other direct SHMEM support])])
+AM_CONDITIONAL([USE_TRANSFER_ENGINE], [test "x$enable_transfer_engine" == xyes])
+
+AC_ARG_ENABLE([rdtsc],
+  [AS_HELP_STRING([--enable-rdtsc],
+    [Enables rdtsc performance counters support])])
+AS_IF([test "x$enable_rdtsc" == xyes],
+  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
+AM_CONDITIONAL([USE_RDTSC], [test "x$enable_rdtsc" == xyes])
+
+AC_ARG_ENABLE([loud-drops],
+  [AS_HELP_STRING([--enable-loud-drops],
+    [Makes dropped messages print an error to the console])])
 AS_IF([test "x$enable_loud_drops" == xyes],
 	  [AC_DEFINE([LOUD_DROPS], [1], [Define to make dropped messages print an error to the console])])
-AS_IF([test "x$enable_paranoia" == xyes],
-	  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
-AS_IF([test "x$enable_rdtsc" == xyes],
-	  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
+
+AC_ARG_ENABLE([strict-uid],
+  [AS_HELP_STRING([--enable-strict-uid],
+    [Makes the uid checking conform strictly according to the spec. By default, the uid is assumed to be correct])])
 AS_IF([test "x$enable_strict_uid" == xyes],
-	  [AC_DEFINE([STRICT_UID], [1], [Define to enable extra UID checking per message])])
+  [AC_DEFINE([STRICT_UID], [1], [Define to enable extra UID checking per message])])
+
+AC_ARG_WITH([cacheline-width],
+  [AS_HELP_STRING([--with-cacheline-width=bytes],
+    [Specify the cacheline width for the target machine. Defaults to 64.])],
+  [],
+  [with_cacheline_width=64])
+AC_MSG_CHECKING([cacheline width])
+AC_MSG_RESULT([$with_cacheline_width])
+AC_DEFINE_UNQUOTED([CACHELINE_WIDTH], [$with_cacheline_width], [The cacheline width])
+
+AC_ARG_ENABLE([paranoia],
+  [AS_HELP_STRING([--enable-paranoia],
+    [Adds additional checks that are slow, occasionally painful, and should be entirely unnecessary, just to validate that nothing has gone wrong.])])
+AS_IF([test "x$enable_paranoia" == xyes],
+  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
+
+AC_ARG_ENABLE([internal-overflow],
+  [AS_HELP_STRING([--enable-internal-overflow],
+    [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
+AS_IF([test "x$enable_internal_overflow" != xyes],
+	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
+
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
+
+AC_ARG_WITH([implementation],
+  [AS_HELP_STRING([--with-implementation=IMPL],
+    [Specify implemenation backend.  Options for IMPL are shmem or ib.])])
+
+AC_ARG_ENABLE([ib-shmem],
+  [AS_HELP_STRING([--enable-ib-shmem],
+    [Use Shared memory / KNEM for local communication with IB implementation.])])
+AS_IF([test "$with_implementation" = "ib" -a "$enable_shmem" == "yes"],
+  [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_shmem" == xyes)
+
+# Whether to use XRC or not. If RC is selected then they are used like
+# an XRC qp (ie. half-duplex connection). This is a temporary mesure.
+AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])
+AS_IF([test "x$enable_xrc" == xyes],
+      [AC_DEFINE([USE_XRC], [1], [Define to use XRC instead of RC])])
+
 
 
 ## ------------------- ##
@@ -128,7 +153,7 @@ AC_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
 LT_PREREQ([2.2])
-LT_INIT([dlopen])
+LT_INIT([])
 
 AC_CACHE_SAVE
 
@@ -143,7 +168,9 @@ AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
 # include <sys/time.h>
 #endif
 ])
-AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h sys/file.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stddef.h \
+        stdint.h stdlib.h string.h sys/file.h sys/socket.h \
+        unistd.h])
 
 ## --------------- ##
 ## Check for types ##
@@ -229,6 +256,7 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
 AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
 AC_CHECK_FUNCS([getpagesize]) # not mandatory
+AC_CHECK_FUNCS([ftruncate getpagesize inet_ntoa memset select socket strerror strtol strtoul])
 AC_SEARCH_LIBS([pthread_spin_init],[pthread],
 			   [AC_DEFINE([HAVE_PTHREAD_SPIN_INIT], [1], [Define if pthread supports spinlocks])]) # not mandatory either, just faster
 AC_CHECK_FUNCS([ftruncate memset setenv strtol strtoul select inet_ntoa socket strerror], [],
@@ -251,6 +279,9 @@ AS_IF([test "x$enable_transfer_engine" != xno],
 AS_IF([test "x$enable_transfer_engine" == xyes],
 	  [AC_DEFINE([USE_TRANSFER_ENGINE], [1], [Define to enable the use of a transfer engine (e.g. KNEM)])])
 
+AS_IF([test "$with_implementation" = "ib"],
+  [AC_CHECK_LIB([ev], [ev_loop_new], [], [AC_MSG_ERROR([libev not found.])])])
+
 ## -------------------------- ##
 ## Check for library behavior ##
 ## -------------------------- ##
@@ -261,24 +292,35 @@ SANDIA_CHECK_16ALIGNED_CALLOC
 SANDIA_CHECK_WORKING_VALLOC
 AS_IF([test "x$enable_hard_polling" != xyes],
 	  [SANDIA_CHECK_PTHREAD_PROCESS_SHARED([AC_DEFINE([HAVE_PTHREAD_SHMEM_LOCKS],
-										   			  [1],
-													  [Define if PTHREAD_PROCESS_SHARED attribute on mutexes and cond variables works])])])
+ 	   	  [1],
+		  [Define if PTHREAD_PROCESS_SHARED attribute on mutexes and cond variables works])])])
 
 AC_CACHE_SAVE
+
+# Only export the library symbols 
+AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
+    [if test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"; then
+        LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/portals4.map'
+    else
+        LD_VERSION_SCRIPT=
+    fi])
+AC_SUBST(LD_VERSION_SCRIPT)
+
 
 ## --------------- ##
 ## Output and done ##
 ## --------------- ##
 
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
-AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
-AM_CONDITIONAL([USE_RDTSC], [test "x$enable_rdtsc" == xyes])
-AM_CONDITIONAL([USE_TRANSFER_ENGINE], [test "x$enable_transfer_engine" == xyes])
+AM_CONDITIONAL([BACKEND_IMPL_IB], [false])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
-				 src/Makefile
-				 doc/Makefile
-				 include/Makefile
-				 test/Makefile])
+                 src/Makefile
+                 src/shmem/Makefile
+                 src/ib/Makefile
+                 src/support/Makefile
+                 doc/Makefile
+                 include/Makefile
+                 test/Makefile])
 AC_OUTPUT

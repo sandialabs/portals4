@@ -1,0 +1,241 @@
+/**
+ * @file ptl_iov.c
+ *
+ * iovec methods
+ */
+
+#include "ptl_loc.h"
+
+/**
+ * Copy data from an iovec to linear buffer.
+ *
+ * copy length bytes from io vector starting at offset offset to dst.
+ *
+ * @param[in] dst address of destination buffer
+ * @param[in] iov address of iovec array
+ * @param[in] num_iov number of entries in iovec array
+ * @param[in] offset offset into iovec
+ * @param[in] length number of bytes to copy
+ *
+ * @return status
+ */
+int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
+		 ptl_size_t offset, ptl_size_t length)
+{
+	ptl_size_t i;
+	ptl_size_t iov_offset = 0;
+	ptl_size_t src_offset = 0;
+	ptl_size_t dst_offset = 0;
+	ptl_size_t bytes;
+
+	/* find starting point in iovec from offset,
+	 * when loop stops and there is enough room in iovec,
+	 * dst_offset == offset, iov points to iovec entry
+	 * containing starting point, i is its index in the
+	 * array and iov_offset contains the offset into iov */
+	for (i = 0; i < num_iov && src_offset < offset; i++, iov++) {
+		iov_offset = offset - src_offset;
+		if (iov_offset > iov->iov_len)
+			iov_offset = iov->iov_len;
+		src_offset += iov_offset;
+	}
+
+	/* check if we ran off the end of the iovec before we started */
+	if (src_offset < offset) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	/* copy each segment. The first one can have a non zero offset */
+	for( ; i < num_iov && dst_offset < length; i++, iov++) {
+		bytes = iov->iov_len - iov_offset;
+		if (bytes == 0)
+			continue;
+		if (dst_offset + bytes > length)
+			bytes = length - dst_offset;
+
+		memcpy(dst + dst_offset, iov->iov_base + iov_offset, bytes);
+
+		iov_offset = 0;
+		dst_offset += bytes;
+	}
+
+	/* check if we ran off the end of the iovec after we started */
+	if (dst_offset < length) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * Copy data from linear buffer to an iovec.
+ *
+ * copy length bytes from src to an io vector starting at offset
+ *
+ * @param[in] src address of source buffer
+ * @param[in] iov address of iovec array
+ * @param[in] num_iov number of entries in iovec array
+ * @param[in] offset offset into iovec
+ * @param[in] length number of bytes to copy
+ * @param[out] dst_start the starting address of the transfer in
+ * the iovec
+ *
+ * @return status
+ */
+int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+		ptl_size_t offset, ptl_size_t length, void **dst_start)
+{
+	ptl_size_t i;
+	ptl_size_t iov_offset = 0;
+	ptl_size_t src_offset = 0;
+	ptl_size_t dst_offset = 0;
+	ptl_size_t bytes;
+
+	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
+		iov_offset = offset - dst_offset;
+		if (iov_offset > iov->iov_len)
+			iov_offset = iov->iov_len;
+		dst_offset += iov_offset;
+	}
+
+	if (dst_offset < offset) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	/* Remember where the destination started. */
+	*dst_start = iov->iov_base + iov_offset;
+
+	for( ; i < num_iov && src_offset < length; i++, iov++) {
+		bytes = iov->iov_len - iov_offset;
+		if (bytes == 0)
+			continue;
+		if (src_offset + bytes > length)
+			bytes = length - src_offset;
+
+		memcpy(iov->iov_base + iov_offset, src + src_offset, bytes);
+
+		iov_offset = 0;
+		src_offset += bytes;
+	}
+
+	if (src_offset < length) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * Perform an array of atomic operations between src buffer and iovec.
+ *
+ * Like iov_copy_in except combine with atomic operation.
+ *
+ * @param[in] op function performing atomic operation on two arrays
+ * @param[in] atom_size the size of each atomic operand
+ * @param[in] src address of source buffer
+ * @param[in] iov address of iovec array
+ * @param[in] num_iov number of entries in iovec array
+ * @param[in] offset offset into iovec
+ * @param[in] length number of bytes to copy
+ *
+ * @return status
+ */
+int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
+		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length)
+{
+	ptl_size_t i;
+	ptl_size_t iov_offset;
+	ptl_size_t src_offset = 0;
+	ptl_size_t dst_offset = 0;
+	ptl_size_t bytes;
+	int have_odd_size_chunk = 0;
+
+	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
+		iov_offset = offset - dst_offset;
+		if (iov_offset > iov->iov_len)
+			iov_offset = iov->iov_len;
+		dst_offset += iov_offset;
+	}
+
+	if (dst_offset < offset) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	/* handle case where atomic data type spans segment boundary */
+	if (atom_size > 1) {
+		ptl_size_t save_i = i;
+		ptl_size_t save_iov_offset = iov_offset;
+		ptl_size_t save_src_offset = src_offset;
+		ptl_iovec_t *save_iov = iov;
+
+		/* make one pass through the target array to make sure that
+		 * each segment contains an even multiple of atom_size
+		 * save copies of the initial conditions so we
+		 * can start over */
+		for( ; i < num_iov && src_offset < length; i++, iov++) {
+			bytes = iov->iov_len - iov_offset;
+			if (bytes == 0)
+				continue;
+			if (src_offset + bytes > length)
+				bytes = length - src_offset;
+
+			if (bytes & (atom_size - 1)) {
+				have_odd_size_chunk++;
+				break;
+			}
+
+			iov_offset = 0;
+			src_offset += bytes;
+		}
+
+		/* if we have an odd size chunk it will cross an atom_data
+		 * boundary and op will not work. So make a copy of the
+		 * target data and do the operation there */
+		if (have_odd_size_chunk) {
+			void *copy;
+			void *not_used;
+
+			copy = malloc(length);
+			if (!copy) {
+				WARN();
+				return PTL_NO_SPACE;
+			}
+
+			iov_copy_out(copy, iov, num_iov, offset, length);
+			op(copy, src, length);
+			iov_copy_in(copy, iov, num_iov, offset, length, &not_used);
+			free(copy);
+			return PTL_OK;
+		}
+
+		i = save_i;
+		iov_offset = save_iov_offset;
+		src_offset = save_src_offset;
+		iov = save_iov;
+	}
+
+	for( ; i < num_iov && src_offset < length; i++, iov++) {
+		bytes = iov->iov_len - iov_offset;
+		if (bytes == 0)
+			continue;
+		if (src_offset + bytes > length)
+			bytes = length - src_offset;
+
+		op(iov->iov_base + iov_offset, src + src_offset, bytes);
+
+		iov_offset = 0;
+		src_offset += bytes;
+	}
+
+	if (src_offset < length) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	return PTL_OK;
+}
