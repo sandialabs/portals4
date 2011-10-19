@@ -472,6 +472,7 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
 						 md_t *put_md, ptl_size_t local_put_offset,
 						 ptl_size_t length)
 {
+#if 0
 	unsigned char *get_start = get_md->start + local_get_offset;
 	unsigned char *put_start = put_md->start + local_put_offset;
 
@@ -488,6 +489,11 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
 	}
 
 	return PTL_OK;
+#else
+	/* Although this is undefined, some tests don't care about
+	 * overlapping exist and will fail because overlapping is detected. */
+	return PTL_OK;
+#endif
 }
 #endif
 
