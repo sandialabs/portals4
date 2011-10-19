@@ -120,8 +120,6 @@ int main(int argc, char *argv[])
 	int ret;
 	xmlDocPtr doc;
 
-	runtime_init(&argc, &argv);
-
 	ret = process_args(argc, argv);
 	if (ret) {
 		if (ret == PTL_TEST_RETURN_HELP) {
@@ -150,8 +148,6 @@ int main(int argc, char *argv[])
 	cio_cleanup();
 
 	fini();
-
-	runtime_finalize();
 
 	return ret;
 }

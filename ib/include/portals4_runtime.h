@@ -26,6 +26,8 @@ extern int shmemtest_map_size;
  * Public runtime, compatible with the shmem implementation.
  */
 
+void runtime_init(void);
+
 static inline void runtime_barrier(void)
 {
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -33,13 +35,12 @@ static inline void runtime_barrier(void)
 
 static inline int runtime_get_rank(void)
 {
+	runtime_init();
 	return shmemtest_rank;
 }
 
 static inline int runtime_get_size(void)
 {
+	runtime_init();
 	return shmemtest_map_size;
 }
-
-void runtime_init(int *argc, char ***argv);
-void runtime_finalize(void);

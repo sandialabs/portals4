@@ -1,4 +1,5 @@
-lib_LTLIBRARIES = libportals.la libportals_rt.la
+lib_LTLIBRARIES = libportals.la
+
 libportals_la_CPPFLAGS = -I$(top_srcdir)/include
 libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
 libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
@@ -68,11 +69,5 @@ libportals_la_SOURCES += \
 	ptl_nemesis.h \
 	ptl_shmem.c
 endif
-
-libportals_rt_la_CPPFLAGS = -I$(top_srcdir)/include
-libportals_rt_la_LIBADD = -lmpi
-libportals_rt_la_SOURCES = \
-	ptl_rt.c
-
 
 EXTRA_DIST = portals4.map
