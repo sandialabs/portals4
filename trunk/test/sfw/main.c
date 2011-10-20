@@ -11,6 +11,7 @@
 
 int verbose = 1;
 int debug;
+extern int ptl_log_level;
 
 static char *filename;
 

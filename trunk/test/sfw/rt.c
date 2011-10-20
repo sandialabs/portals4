@@ -1,4 +1,5 @@
 #include "ptl_test.h"
+#include "support/support.h"
 
 int ompi_rt_init(struct node_info *info)
 {
@@ -9,7 +10,7 @@ int ompi_rt_init(struct node_info *info)
 
 	if (info->ni_handle != PTL_INVALID_HANDLE) {
 		if (!info->desired_map_ptr) {
-			info->desired_map_ptr = get_desired_mapping(info->ni_handle);
+			info->desired_map_ptr = libtest_get_mapping();
 			if (!info->desired_map_ptr) {
 				errs ++;
 			}

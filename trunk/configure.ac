@@ -366,6 +366,15 @@ else
 fi
 AC_SUBST(TEST_CC)
 
+DISTCHECK_CONFIGURE_FLAGS=
+if test -n "$with_implementation" ; then
+  DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"
+fi
+if test -n "$with_test_runtime" ; then
+  DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-test-runtime=${with_test_runtime}"
+fi
+AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
+
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
                  src/Makefile
