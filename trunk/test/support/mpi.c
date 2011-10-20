@@ -22,15 +22,28 @@
 
 #include "support/support.h"
 
-static int rank = 0;
-static int size = 0;
+static int rank;
+static int size;
 static ptl_process_t my_id;
 static ptl_handle_ni_t phys_ni_h;
+static int initialized;
+
+static void my_libtest_fini(void)
+{
+	libtest_fini();
+}
 
 int
 libtest_init(void)
 {
     int ret;
+
+	if (initialized)
+		return PTL_OK;
+
+	initialized = 1;
+
+	atexit(my_libtest_fini);
 
     MPI_Initialized(&ret);
     if (!ret) {
@@ -49,6 +62,9 @@ libtest_init(void)
     if (PTL_OK != ret) return ret;
 
     ret = PtlGetId(phys_ni_h, &my_id);
+
+    PtlNIFini(phys_ni_h);
+
     if (PTL_OK != ret) return ret;
 
     return PTL_OK;
@@ -60,7 +76,10 @@ libtest_fini(void)
 {
     int ret;
 
-    PtlNIFini(phys_ni_h);
+	if (!initialized)
+		return 0;
+
+	initialized = 0;
 
     MPI_Finalized(&ret);
     if (!ret) {
@@ -76,6 +95,9 @@ libtest_get_mapping(void)
 {
     ptl_process_t *ret;
 
+	if (!initialized)
+		libtest_init();
+
     ret = malloc(sizeof(ptl_process_t) * size);
     if (NULL == ret) return 0;
 
@@ -90,6 +112,9 @@ libtest_get_mapping(void)
 int
 libtest_get_rank(void)
 {
+	if (!initialized)
+		libtest_init();
+
     return rank;
 }
 
@@ -97,6 +122,9 @@ libtest_get_rank(void)
 int
 libtest_get_size(void)
 {
+	if (!initialized)
+		libtest_init();
+
     return size;
 }
 
@@ -104,5 +132,8 @@ libtest_get_size(void)
 void
 libtest_barrier(void)
 {
+	if (!initialized)
+		libtest_init();
+
     MPI_Barrier(MPI_COMM_WORLD);
 }
