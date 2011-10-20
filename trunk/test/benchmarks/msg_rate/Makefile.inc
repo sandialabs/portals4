@@ -1,12 +1,13 @@
 # vim:ft=automake
-BENCHMARKS += \
-	P4msgrate
+BENCHMARKS += P4msgrate
 
-MSG_RATE_DIR = benchmarks/msg_rate
-
-P4msgrate_SOURCES = $(MSG_RATE_DIR)/P4msgrate.c \
-		$(MSG_RATE_DIR)/test_one_wayME.c \
-		$(MSG_RATE_DIR)/test_one_wayLE.c \
-		$(MSG_RATE_DIR)/test_prepostME.c \
-		$(MSG_RATE_DIR)/test_prepostLE.c
-P4msgrate_CPPFLAGS = -I$(MSG_RATE_DIR)
+P4msgrate_SOURCES = \
+    benchmarks/msg_rate/test_one_way.h               \
+    benchmarks/msg_rate/test_prepost.h               \
+    benchmarks/msg_rate/P4msgrate.c                  \
+    benchmarks/msg_rate/test_one_wayME.c             \
+    benchmarks/msg_rate/test_one_wayLE.c             \
+    benchmarks/msg_rate/test_prepostME.c             \
+    benchmarks/msg_rate/test_prepostLE.c
+                
+P4msgrate_CPPFLAGS = $(AM_CPPFLAGS) -Ibenchmarks/msg_rate

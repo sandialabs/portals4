@@ -92,126 +92,126 @@ test_bootstrap_SOURCES = test_bootstrap.c
 test_bootstrap_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_get_SOURCES = test_get.c
-test_LE_get_CPPFLAGS = -DINTERFACE=0
+test_LE_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_get_SOURCES = test_get.c
-test_ME_get_CPPFLAGS = -DINTERFACE=1
+test_ME_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_atomic_SOURCES = test_atomic.c
-test_LE_atomic_CPPFLAGS = -DINTERFACE=0
+test_LE_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_atomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_atomic_SOURCES = test_atomic.c
-test_ME_atomic_CPPFLAGS = -DINTERFACE=1
+test_ME_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_atomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_fetchatomic_SOURCES = test_fetchatomic.c
-test_LE_fetchatomic_CPPFLAGS = -DINTERFACE=0
+test_LE_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_fetchatomic_SOURCES = test_fetchatomic.c
-test_ME_fetchatomic_CPPFLAGS = -DINTERFACE=1
+test_ME_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_swap_SOURCES = test_swap.c
-test_LE_swap_CPPFLAGS = -DINTERFACE=0
+test_LE_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_swap_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_swap_SOURCES = test_swap.c
-test_ME_swap_CPPFLAGS = -DINTERFACE=1
+test_ME_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_swap_DEPENDENCIES = $(PORTALSLIB)
 
 test_event_SOURCES = test_event.c
 test_event_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_oversize_get_SOURCES = test_oversize_get.c
-test_LE_oversize_get_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_oversize_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_oversize_get_SOURCES = test_oversize_get.c
-test_ME_oversize_get_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_oversize_put_SOURCES = test_oversize_put.c
-test_LE_oversize_put_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_oversize_put_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_oversize_put_SOURCES = test_oversize_put.c
-test_ME_oversize_put_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_put_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_put_truncate_SOURCES = test_put_truncate.c
-test_LE_put_truncate_CPPFLAGS = -DINTERFACE=0
+test_LE_put_truncate_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_put_truncate_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_put_truncate_SOURCES = test_put_truncate.c
-test_ME_put_truncate_CPPFLAGS = -DINTERFACE=1
+test_ME_put_truncate_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_put_truncate_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_get_truncate_SOURCES = test_get_truncate.c
-test_LE_get_truncate_CPPFLAGS = -DINTERFACE=0
+test_LE_get_truncate_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_get_truncate_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_get_truncate_SOURCES = test_get_truncate.c
-test_ME_get_truncate_CPPFLAGS = -DINTERFACE=1
+test_ME_get_truncate_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_get_truncate_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_LE_put_SOURCES = test_triggered_put.c
-test_triggered_LE_put_CPPFLAGS = -DINTERFACE=0
+test_triggered_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_triggered_LE_put_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ME_put_SOURCES = test_triggered_put.c
-test_triggered_ME_put_CPPFLAGS = -DINTERFACE=1
+test_triggered_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_triggered_ME_put_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_LE_get_SOURCES = test_triggered_get.c
-test_triggered_LE_get_CPPFLAGS = -DINTERFACE=0
+test_triggered_LE_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_triggered_LE_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ME_get_SOURCES = test_triggered_get.c
-test_triggered_ME_get_CPPFLAGS = -DINTERFACE=1
+test_triggered_ME_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_triggered_ME_get_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ctinc_SOURCES = test_triggered_ctinc.c
-test_triggered_ctinc_CPPFLAGS = -DORDERED
+test_triggered_ctinc_CPPFLAGS = $(AM_CPPFLAGS) -DORDERED
 test_triggered_ctinc_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ctinc_unordered_SOURCES = test_triggered_ctinc.c
 test_triggered_ctinc_unordered_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ctset_SOURCES = test_triggered_ctset.c
-test_triggered_ctset_CPPFLAGS = -DORDERED
+test_triggered_ctset_CPPFLAGS = $(AM_CPPFLAGS) -DORDERED
 test_triggered_ctset_DEPENDENCIES = $(PORTALSLIB)
 
 test_triggered_ctset_unordered_SOURCES = test_triggered_ctset.c
 test_triggered_ctset_unordered_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_unexpected_put_SOURCES = test_unexpected_put.c
-test_ME_unexpected_put_CPPFLAGS = -DINTERFACE=1
+test_ME_unexpected_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_unexpected_put_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_oversize_atomic_SOURCES = test_oversize_atomic.c
-test_LE_oversize_atomic_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_oversize_atomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_oversize_atomic_SOURCES = test_oversize_atomic.c
-test_ME_oversize_atomic_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_atomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_oversize_fetchatomic_SOURCES = test_oversize_fetchatomic.c
-test_LE_oversize_fetchatomic_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_oversize_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_oversize_fetchatomic_SOURCES = test_oversize_fetchatomic.c
-test_ME_oversize_fetchatomic_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_fetchatomic_DEPENDENCIES = $(PORTALSLIB)
 
 test_LE_oversize_swap_SOURCES = test_oversize_swap.c
-test_LE_oversize_swap_CPPFLAGS = -DINTERFACE=0
+test_LE_oversize_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_LE_oversize_swap_DEPENDENCIES = $(PORTALSLIB)
 
 test_ME_oversize_swap_SOURCES = test_oversize_swap.c
-test_ME_oversize_swap_CPPFLAGS = -DINTERFACE=1
+test_ME_oversize_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_swap_DEPENDENCIES = $(PORTALSLIB)
