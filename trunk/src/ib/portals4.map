@@ -56,10 +56,8 @@
 		PtlTriggeredSwap;
 
 	# SFW runtime. Not part of portals.
-		PtlSetJid;
 		ptl_log_level;
 		ptl_test_rank;
-		ptl_test_return;
 
 	local:
 		*;

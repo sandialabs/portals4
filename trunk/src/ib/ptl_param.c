@@ -211,6 +211,7 @@ param_t param[] = {
 					  },
 };
 
+#ifdef unused
 void PtlInitParam(int argc, char *argv[])
 {
 	int i;
@@ -240,6 +241,7 @@ void PtlInitParam(int argc, char *argv[])
 		}
 	}
 }
+#endif
 
 long chk_param(int parm, long val)
 {
