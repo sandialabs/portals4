@@ -52,8 +52,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 if BACKEND_IMPL_SHMEM
 AM_CPPFLAGS += -I$(top_srcdir)/src/shmem
 PORTALSLIB = $(top_builddir)/src/shmem/libportals.la
-P4SUPPORTLIB = $(top_builddir)/test/support/libP4support.la
-LDADD = $(PORTALSLIB)
+P4SUPPORTLIB = $(top_builddir)/test/support/libtestsupport.la
+LDADD = $(PORTALSLIB) $(P4SUPPORTLIB)
 endif
 
 SUBDIRS = support .

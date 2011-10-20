@@ -12,13 +12,13 @@ void test_one_wayLE(int             cache_size,
 
     Debug("\n");
 
-    __PtlBarrier();
+    libtest_Barrier();
     if (rank < (world_size / 2)) {
         int             i;
         ptl_handle_md_t md_handle;
         ptl_handle_ct_t ct_handle = PTL_INVALID_HANDLE;
 
-        __PtlCreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
+        libtest_CreateMDCT(ni, send_buf, SEND_BUF_SIZE, &md_handle, &ct_handle);
 
         for (i = 0; i < niters; ++i) {
             int            k;
@@ -26,13 +26,13 @@ void test_one_wayLE(int             cache_size,
 
             cache_invalidate(cache_size, cache_buf);
 
-            __PtlBarrier();
+            libtest_Barrier();
             tmp = timer();
             for (k = 0; k < nmsgs; k++) {
                 ptl_size_t    offset = nbytes * k;
                 ptl_process_t dest;
                 dest.rank = rank + (world_size / 2);
-                ptl_assert(__PtlPut_offset(md_handle, offset, nbytes, dest,
+                ptl_assert(libtest_Put_offset(md_handle, offset, nbytes, dest,
                                            TestOneWayIndex, magic_tag, offset), PTL_OK);
             }
 
@@ -69,7 +69,7 @@ void test_one_wayLE(int             cache_size,
 
             cache_invalidate(cache_size, cache_buf);
 
-            __PtlBarrier();
+            libtest_Barrier();
             tmp = timer();
 
             ptl_assert(PtlCTWait(le.ct_handle, (i + 1) * nmsgs,
@@ -84,7 +84,7 @@ void test_one_wayLE(int             cache_size,
         ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
     }
 
-    tmp = __PtlAllreduceDouble(total, PTL_SUM);
+    tmp = libtest_AllreduceDouble(total, PTL_SUM);
 
 #if 0
     printf("%s %.1f ns\n", rank == 0 ? "send" : "recv",
@@ -98,7 +98,7 @@ void test_one_wayLE(int             cache_size,
     display_result("single direction",
                    (niters * nmsgs) / (tmp / world_size));
 
-    __PtlBarrier();
+    libtest_Barrier();
 }
 
 /* vim:set expandtab: */

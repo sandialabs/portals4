@@ -19,7 +19,7 @@
 #include <sys/time.h>
 
 #include <portals4.h>
-#include <portals4_runtime.h>
+#include <support/support.h>
 
 #include "dict.h"
 #include "api.h"

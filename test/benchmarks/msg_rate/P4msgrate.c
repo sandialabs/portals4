@@ -35,8 +35,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <portals4.h>
-#include <portals4_runtime.h>
-#include <libP4support.h>
+#include <support/support.h>
 
 #ifdef __APPLE__
 # include <sys/time.h>
@@ -135,7 +134,7 @@ int i, j, k;
 double tmp, total;
 
     total= 0;
-    __PtlBarrier();
+    libtest_Barrier();
     if (rank == 0)   {
 	if (! machine_output) {
 	    printf("%20s: not implemented yet\n", "pair-based");
@@ -146,7 +145,7 @@ double tmp, total;
     for (i= 0; i < niters; i++)   {
         cache_invalidate(cache_size, cache_buf);
 
-	__PtlBarrier();
+	libtest_Barrier();
 
         tmp= timer();
         for (j= 0; j < npeers; j++)   {
@@ -171,7 +170,7 @@ double tmp, total;
         total += (timer() - tmp);
     }
 
-    tmp= __PtlAllreduceDouble(total, PTL_SUM);
+    tmp= libtest_AllreduceDouble(total, PTL_SUM);
     display_result("pair-based", (niters * npeers * nmsgs * 2) / (tmp / world_size));
 
 }  /* end of test_same_direction() */
@@ -199,7 +198,7 @@ int i, j, k;
 double tmp, total;
 
     total= 0;
-    __PtlBarrier();
+    libtest_Barrier();
     if (rank == 0)   {
 	if (! machine_output) {
 	    printf("%20s: not implemented yet\n", "all-start");
@@ -210,7 +209,7 @@ double tmp, total;
     for (i= 0; i < niters; i++)   {
         cache_invalidate(cache_size, cache_buf);
 
-        __PtlBarrier();
+        libtest_Barrier();
 
         tmp= timer();
         for (j= 0; j < npeers; j++)   {
@@ -235,7 +234,7 @@ double tmp, total;
         total += (timer() - tmp);
     }
 
-    tmp= __PtlAllreduceDouble(total, PTL_SUM);
+    tmp= libtest_AllreduceDouble(total, PTL_SUM);
     display_result("all-start", (niters * npeers * nmsgs * 2) / (tmp / world_size));
 
 }  /* end of test_allstart() */
@@ -296,9 +295,9 @@ int test_type;
 
     /* Initialize Portals and get some runtime info */
     rc= PtlInit();
-    PTL_CHECK(rc, "PtlInit");
-    rank= runtime_get_rank();
-    world_size= runtime_get_size();
+    LIBTEST_CHECK(rc, "PtlInit");
+    rank= libtest_get_rank();
+    world_size= libtest_get_size();
 
 
     /* Handle command line arguments */
@@ -407,7 +406,7 @@ int test_type;
     } else   {
 	rc= PTL_NO_INIT;
     }
-    PTL_CHECK(rc, "PtlNIInit");
+    LIBTEST_CHECK(rc, "PtlNIInit");
 
 
     if (0 == rank)   {
@@ -521,9 +520,9 @@ int test_type;
     ** The sync everybody before testing and calls to the PTL barrier and allreduce
     ** begin.
     */
-    __PtlBarrierInit(ni_collectives, rank, world_size);
-    __PtlAllreduceDouble_init(ni_collectives);
-    runtime_barrier();
+    libtest_BarrierInit(ni_collectives, rank, world_size);
+    libtest_AllreduceDouble_init(ni_collectives);
+    libtest_barrier();
 
     /* run tests */
     if (verbose > 0)   {

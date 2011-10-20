@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #include "portals4.h"
-#include "portals4_runtime.h"
+#include "support/support.h"
 
 int shmemtest_rank;
 int shmemtest_map_size;

@@ -24,8 +24,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <portals4.h>
-#include <portals4_runtime.h>
-#include "libP4support.h"
+
+#include "support.h"
 
 /* Return Portals error return codes as strings */
 char *libtest_StrPtlError(int error_code)

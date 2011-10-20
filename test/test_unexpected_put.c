@@ -1,5 +1,5 @@
 #include <portals4.h>
-#include <portals4_runtime.h>
+#include <support/support.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -172,8 +172,8 @@ int main(int   argc,
     }
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank   = runtime_get_rank();
-    num_procs = runtime_get_size();
+    my_rank   = libtest_get_rank();
+    num_procs = libtest_get_size();
 
     unexpected_buf = malloc(sizeof(unsigned char) * BUFSIZE);
 
@@ -212,7 +212,7 @@ int main(int   argc,
 
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
-    runtime_barrier();
+    libtest_barrier();
 
     /* now I can communicate between ranks with ni_logical */
 

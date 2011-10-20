@@ -1,5 +1,5 @@
 #include <portals4.h>
-#include <portals4_runtime.h>
+#include <support/support.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -19,8 +19,8 @@ int main(int   argc,
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank   = runtime_get_rank();
-    num_procs = runtime_get_size();
+    my_rank   = libtest_get_rank();
+    num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
@@ -30,7 +30,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &target));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
-    runtime_barrier();
+    libtest_barrier();
 
     ptl_ct_event_t inc  = { 1, 0 };
     ptl_ct_event_t inc2 = { 2, 0 };
