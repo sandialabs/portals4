@@ -47,6 +47,8 @@ int main(
                                 .max_fetch_atomic_size = BUFSIZE * sizeof(*value),
                               };
 
+    CHECK_RETURNVAL(libtest_init());
+
     CHECK_RETURNVAL(PtlInit());
 
     my_rank = libtest_get_rank();
@@ -176,6 +178,7 @@ int main(
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
+    CHECK_RETURNVAL(libtest_fini());
 
     return 0;
 }

@@ -29,16 +29,19 @@ libtest_init(void)
 {
     int ret;
 
+    ret = PtlInit();
+    if (PTL_OK != ret) { return ret; }
+
     ret = PtlNIInit(PTL_IFACE_DEFAULT,
                     PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
                     PTL_PID_ANY,
                     NULL,
                     NULL,
                     &phys_ni_h);
-    if (PTL_OK != ret) return 1;
+    if (PTL_OK != ret) { return ret;}
 
     ret = PtlGetId(phys_ni_h, &my_id);
-    if (PTL_OK != ret) return 1;
+    if (PTL_OK != ret) { return ret;}
 
     return 0;
 }
@@ -48,6 +51,7 @@ int
 libtest_fini(void)
 {
     PtlNIFini(phys_ni_h);
+    PtlFini();
 
     return 0;
 }

@@ -46,14 +46,12 @@ libtest_init(void)
                     NULL,
                     NULL,
                     &phys_ni_h);
-    if (PTL_OK != ret) return 1;
+    if (PTL_OK != ret) return ret;
 
     ret = PtlGetId(phys_ni_h, &my_id);
-    if (PTL_OK != ret) return 1;
+    if (PTL_OK != ret) return ret;
 
-    PtlNIFini(phys_ni_h);
-
-    return 0;
+    return PTL_OK;
 }
 
 
@@ -61,6 +59,9 @@ int
 libtest_fini(void)
 {
     int ret;
+
+    PtlNIFini(phys_ni_h);
+
     MPI_Finalized(&ret);
     if (!ret) {
         MPI_Finalize();
