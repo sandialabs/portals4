@@ -5,9 +5,6 @@
 # include <config.h>
 #endif
 
-#define SANDIA_BUILTIN_INCR
-#define SANDIA_BUILTIN_CAS
-
 #ifdef SANDIA_NEEDS_INTEL_INTRIN
 # ifdef HAVE_IA64INTRIN_H
 #  include <ia64intrin.h>
