@@ -48,9 +48,15 @@ endif
 BENCHMARKS =
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
+
+if BACKEND_IMPL_SHMEM
+AM_CPPFLAGS += -I$(top_srcdir)/src/shmem
 PORTALSLIB = $(top_builddir)/src/shmem/libportals.la
-P4SUPPORTLIB = $(top_builddir)/src/support/libP4support.la
+P4SUPPORTLIB = $(top_builddir)/test/support/libP4support.la
 LDADD = $(PORTALSLIB)
+endif
+
+SUBDIRS = support .
 
 include benchmarks/rtt_latency/Makefile.inc
 include benchmarks/msg_rate/Makefile.inc
