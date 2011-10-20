@@ -44,7 +44,7 @@ EXTRA_DIST = \
 noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 
 # Each binary needs the portals library and the runtime
-PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/support/libtestsupport.la
+PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test -I/usr/include/libxml2
 
 ptl_test_LDFLAGS = -L$(top_builddir)/src
