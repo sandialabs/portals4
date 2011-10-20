@@ -1,5 +1,5 @@
 #include <portals4.h>
-#include <portals4_runtime.h>
+#include <support/support.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -16,21 +16,20 @@ int main(int   argc,
     ptl_pt_index_t         logical_pt_index;
     ptl_process_t         *dmapping, *amapping;
     int                    my_rank, num_procs, i;
-    struct runtime_proc_t *rtprocs;
+    ptl_process_t *rtprocs;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank   = runtime_get_rank();
-    num_procs = runtime_get_size();
-    runtime_get_nidpid_map(&rtprocs);
+    my_rank   = libtest_get_rank();
+    num_procs = libtest_get_size();
+    rtprocs = libtest_get_mapping();
 
     dmapping = malloc(sizeof(ptl_process_t) * num_procs);
     amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     /* ask for inverse of what the runtime gave us (not that we'll get it) */
     for (i = 0; i < num_procs; ++i) {
-        dmapping[i].phys.nid = rtprocs[num_procs - i - 1].nid;
-        dmapping[i].phys.pid = rtprocs[num_procs - i - 1].pid;
+        dmapping[i] = rtprocs[num_procs - i - 1];
     }
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
@@ -49,8 +48,8 @@ int main(int   argc,
                         (ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
     assert(logical_pt_index == 0);
 
-    runtime_barrier();
-    runtime_barrier();
+    libtest_barrier();
+    libtest_barrier();
 
     /* now I can communicate between ranks with ni_logical */
     /* ... do stuff ... */

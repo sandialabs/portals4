@@ -54,7 +54,7 @@
 */
 #include <netpipe.h>
 #include <portals4.h>
-#include <portals4_runtime.h>
+#include <support/support.h>
 #include <libP4support.h>
 
 
@@ -116,8 +116,8 @@ int rc;
     /* Initialize Portals and get some runtime info */
     rc= PtlInit();
     PTL_CHECK(rc, "PtlInit");
-    _my_rank= runtime_get_rank();
-    _nprocs= runtime_get_size();
+    _my_rank= libtest_get_rank();
+    _nprocs= libtest_get_size();
 
     if (_nprocs < 2)   {
 	if (_my_rank == 0)   {
@@ -182,7 +182,7 @@ int rc;
     le_size= -1;
     le_buf= NULL;
 
-    runtime_barrier();
+    libtest_barrier();
 
 }  /* end of Init() */
 

@@ -1267,7 +1267,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 
 			case NODE_BARRIER:
-				runtime_barrier();
+				libtest_barrier();
 				goto done;
 			}
 

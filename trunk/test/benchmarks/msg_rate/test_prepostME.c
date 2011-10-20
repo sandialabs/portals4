@@ -60,14 +60,14 @@ void test_prepostME(int             cache_size,
     for (i = 0; i < niters - 1; ++i) {
         cache_invalidate(cache_size, cache_buf);
 
-        __PtlBarrier();
+        libtest_Barrier();
 
         tmp = timer();
         for (j = 0; j < npeers; ++j) {
             for (k = 0; k < nmsgs; ++k) {
                 offset    = (nbytes * (k + j * nmsgs));
                 dest.rank = send_peers[npeers - j - 1],
-                ptl_assert(__PtlPut_offset(send_md_handle, offset, nbytes,
+                ptl_assert(libtest_Put_offset(send_md_handle, offset, nbytes,
                                            dest, index, magic_tag, offset), PTL_OK);
             }
         }
@@ -94,14 +94,14 @@ void test_prepostME(int             cache_size,
         total += (timer() - tmp);
     }
 
-    __PtlBarrier();
+    libtest_Barrier();
 
     tmp = timer();
     for (j = 0; j < npeers; ++j) {
         for (k = 0; k < nmsgs; ++k) {
             offset    = (nbytes * (k + j * nmsgs));
             dest.rank = send_peers[npeers - j - 1],
-            ptl_assert(__PtlPut_offset(send_md_handle, offset, nbytes, dest,
+            ptl_assert(libtest_Put_offset(send_md_handle, offset, nbytes, dest,
                                        index, magic_tag, offset), PTL_OK);
         }
     }
@@ -126,7 +126,7 @@ void test_prepostME(int             cache_size,
 
     ptl_assert(PtlPTFree(ni, index), PTL_OK);
 
-    tmp = __PtlAllreduceDouble(total, PTL_SUM);
+    tmp = libtest_AllreduceDouble(total, PTL_SUM);
     display_result("pre-post", (niters * npeers * nmsgs * 2) / (tmp / world_size));
 }
 
@@ -155,7 +155,7 @@ static void postME(ptl_handle_ni_t  ni,
     me.ignore_bits = 0;
 
     rc = PtlMEAppend(ni, index, &me, PTL_PRIORITY_LIST, NULL, mh);
-    PTL_CHECK(rc, "Error in __PtlCreateME(): PtlMEAppend");
+    LIBTEST_CHECK(rc, "Error in libtest_CreateME(): PtlMEAppend");
 }
 
 /* vim:set expandtab: */

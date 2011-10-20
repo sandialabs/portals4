@@ -19,7 +19,7 @@
 #include <portals4.h>
 #include <portals4_runtime.h>
 
-#include "libP4support.h"
+#include "support.h"
 
 
 int
@@ -41,7 +41,7 @@ libtest_get_mapping(void)
     ptl_process_t *ret;
     struct runtime_proc_t *procs;
 
-    size = runtime_get_size();
+    size = libtest_get_size();
     ret = malloc(sizeof(ptl_process_t) * size);
     if (NULL == ret) return NULL;
 

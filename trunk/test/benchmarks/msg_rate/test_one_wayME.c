@@ -7,7 +7,7 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 
     Debug("\n");
 
-    __PtlBarrier();
+    libtest_Barrier();
     if (rank < (world_size / 2))   {
 	int i;	
 	ptl_handle_md_t md_handle;
@@ -27,13 +27,13 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 
             cache_invalidate(cache_size, cache_buf);
 
-            __PtlBarrier();
+            libtest_Barrier();
 	    tmp = timer();
 	    for (k= 0; k < nmsgs; k++)   {
                 ptl_size_t offset = nbytes * k;
                 ptl_process_t dest;
 		dest.rank= rank + (world_size / 2);
-                ptl_assert( __PtlPut_offset(md_handle, offset, nbytes, dest,
+                ptl_assert( libtest_Put_offset(md_handle, offset, nbytes, dest,
 			TestOneWayIndex, k, offset), PTL_OK );
             }
 
@@ -66,10 +66,10 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
 
             cache_invalidate(cache_size, cache_buf);
 
-	    ptl_assert( __PtlCreateMEUseOnce(ni, index, recv_buf, nbytes,
+	    ptl_assert( libtest_CreateMEUseOnce(ni, index, recv_buf, nbytes,
                                                 nmsgs, me_handles), PTL_OK );
 
-            __PtlBarrier();
+            libtest_Barrier();
 	    tmp = timer();
 
 	    for (k= 0; k < nmsgs; k++)   {
@@ -85,7 +85,7 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
         ptl_assert( PtlPTFree( ni, index ), PTL_OK );
     }
 
-    tmp= __PtlAllreduceDouble(total, PTL_SUM);
+    tmp= libtest_AllreduceDouble(total, PTL_SUM);
 
 #if 0 
     printf("%s %.1f ns\n",rank==0?"send":"recv",
@@ -98,5 +98,5 @@ void test_one_wayME(int cache_size, int *cache_buf, ptl_handle_ni_t ni,
     display_result("single direction",
 				(niters * nmsgs) / (tmp / world_size));
 
-    __PtlBarrier();
+    libtest_Barrier();
 }
