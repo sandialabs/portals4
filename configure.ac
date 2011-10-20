@@ -122,6 +122,14 @@ AS_IF([test "x$enable_register_on_bind" == xyes],
 AC_ARG_WITH([implementation],
   [AS_HELP_STRING([--with-implementation=IMPL],
     [Specify implemenation backend.  Options for IMPL are shmem or ib.])])
+case $with_implementation in
+  ib)
+  ;;
+  shmem)
+  ;;
+  *)
+  with_implementation=ib
+esac
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -311,8 +319,8 @@ AC_SUBST(LD_VERSION_SCRIPT)
 ## Output and done ##
 ## --------------- ##
 
-AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [true])
-AM_CONDITIONAL([BACKEND_IMPL_IB], [false])
+AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [test "$with_implementation" = "shmem"])
+AM_CONDITIONAL([BACKEND_IMPL_IB], [test "$with_implementation" = "ib"])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile

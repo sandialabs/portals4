@@ -195,9 +195,9 @@ typedef struct obj obj_t;
 
 void **index_map;
 
-int index_init();
+int index_init(void);
 
-void index_fini();
+void index_fini(void);
 
 int pool_init(pool_t *pool, char *name, int size,
 	      enum obj_type type, obj_t *parent);
