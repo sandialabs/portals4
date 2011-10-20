@@ -13,6 +13,15 @@ yod_SOURCES = yod.c
 yod_LDADD = libportals_shmem.la
 
 libportals_shmem_la_SOURCES = \
+	include/ptl_internal_commpad.h \
+	include/ptl_internal_ints.h \
+	include/ptl_internal_alignment.h \
+	include/ptl_internal_shm.h \
+	include/ptl_internal_transfer_engine.h \
+	include/ptl_internal_trigger.h \
+	include/ptl_internal_knem.h \
+	include/ptl_internal_papi.h \
+	include/ptl_internal_orderednemesis.h \
 	include/ptl_internal_CT.h \
 	include/ptl_internal_DM.h \
 	include/ptl_internal_EQ.h \
