@@ -40,10 +40,11 @@ int main(int   argc,
     ptl_md_t        read_md;
     ptl_handle_md_t read_md_handle;
     int             my_rank, num_procs;
-
-    CHECK_RETURNVAL(libtest_init());
+    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
+
+    CHECK_RETURNVAL(libtest_init());
 
     my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
@@ -53,6 +54,17 @@ int main(int   argc,
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
+
+    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
+    if (my_ret == PTL_NO_SPACE) {
+        ptl_process_t *amapping;
+        amapping = libtest_get_mapping();
+        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
+        free(amapping);
+    } else {
+        CHECK_RETURNVAL(my_ret);
+    }
+
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
@@ -123,8 +135,8 @@ int main(int   argc,
     /* cleanup */
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
-    PtlFini();
     CHECK_RETURNVAL(libtest_fini());
+    PtlFini();
 
     return 0;
 }
