@@ -25,12 +25,12 @@
 static int rank = 0;
 static int size = 0;
 static ptl_process_t my_id;
+static ptl_handle_ni_t phys_ni_h;
 
 int
 libtest_init(void)
 {
     int ret;
-    ptl_handle_ni_t phys_ni_h;
 
     MPI_Initialized(&ret);
     if (!ret) {
