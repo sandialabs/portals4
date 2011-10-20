@@ -46,10 +46,11 @@ int main(
                                 //.max_atomic_size = UINT32_MAX,
                                 .max_atomic_size = BUFSIZE * sizeof(double),
                               };
-
-    CHECK_RETURNVAL(libtest_init());
+    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
+
+    CHECK_RETURNVAL(libtest_init());
 
     my_rank = libtest_get_rank();
     num_procs = libtest_get_size();
@@ -67,6 +68,16 @@ int main(
                               &ni_logical));
 
     assert(actual.max_atomic_size >= BUFSIZE * sizeof(double));
+
+    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
+    if (my_ret == PTL_NO_SPACE) {
+        ptl_process_t *amapping;
+        amapping = libtest_get_mapping();
+        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
+        free(amapping);
+    } else {
+        CHECK_RETURNVAL(my_ret);
+    }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
@@ -172,8 +183,8 @@ int main(
     /* cleanup */
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
-    PtlFini();
     CHECK_RETURNVAL(libtest_fini());
+    PtlFini();
 
     return 0;
 }
