@@ -3,7 +3,18 @@
 # Copyright (c) 2010 Sandia Corporation
 #
 
+CC=$(TEST_CC)
+AM_CPPFLAGS=
 AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
+
+DIST_SUBDIRS=sfw
+SUBDIRS=
+
+if TEST_RUNTIME_MPI
+SUBDIRS+=sfw
+endif
+
+include support/Makefile.am
 
 TESTS = test_init \
 	test_NIInit \
@@ -35,28 +46,28 @@ TESTS = test_init \
 	test_ME_oversize_put \
 	test_ME_unexpected_put
 
-if USE_TRANSFER_ENGINE
-TESTS += \
+large_atomic_tests = \
 	test_LE_oversize_atomic \
 	test_ME_oversize_atomic \
 	test_LE_oversize_fetchatomic \
 	test_ME_oversize_fetchatomic \
 	test_LE_oversize_swap \
 	test_ME_oversize_swap
+
+if BACKEND_IMPL_SHMEM
+if USE_TRANSFER_ENGINE
+TESTS += $(large_atomic_tests)
+endif
+endif
+
+if BACKEND_IMPL_IB
+TESTS += $(large_atomic_tests)
 endif
 
 BENCHMARKS =
 
-AM_CPPFLAGS = -I$(top_srcdir)/include
-
-if BACKEND_IMPL_SHMEM
-AM_CPPFLAGS += -I$(top_srcdir)/src/shmem
-PORTALSLIB = $(top_builddir)/src/shmem/libportals.la
-P4SUPPORTLIB = $(top_builddir)/test/support/libtestsupport.la
-LDADD = $(PORTALSLIB) $(P4SUPPORTLIB)
-endif
-
-SUBDIRS = support .
+AM_CPPFLAGS += -I$(top_srcdir)/include
+LDADD = libtestsupport.la $(top_builddir)/src/libportals.la
 
 include benchmarks/rtt_latency/Makefile.inc
 include benchmarks/msg_rate/Makefile.inc
@@ -69,8 +80,7 @@ all: $(TESTS) $(BENCHMARKS)
 check_PROGRAMS = $(TESTS)
 
 THREADS ?= 1
-
-TESTS_ENVIRONMENT = $(top_builddir)/src/shmem/yod -c $(THREADS)
+TESTS_ENVIRONMENT = $(TEST_INVOKE_CMD)
 
 test_init_SOURCES = test_init.c
 test_init_DEPENDENCIES = $(PORTALSLIB)

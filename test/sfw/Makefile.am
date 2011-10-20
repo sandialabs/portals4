@@ -1,9 +1,11 @@
-bin_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
-lib_LTLIBRARIES = libportals_rt.la
+CC=$(TEST_CC)
+
+noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
+noinst_LTLIBRARIES = libportals_rt.la
 
 # Each binary needs the portals library and the runtime
 PORTALSLIB = $(top_builddir)/src/libportals.la libportals_rt.la
-INCLUDES= -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 # Runtime library used by the tests
 libportals_rt_la_CPPFLAGS = -I$(top_srcdir)/include
