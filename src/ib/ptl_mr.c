@@ -52,7 +52,7 @@ static int mr_compare(struct mr *m1, struct mr *m2)
 /**
  * Generate RB tree internal functions.
  */
-RB_GENERATE(the_root, mr, entry, mr_compare);
+RB_GENERATE_STATIC(the_root, mr, entry, mr_compare);
 
 /**
  * Allocate and register a new memory region.

@@ -114,6 +114,7 @@ typedef struct xi {
 } xi_t;
 
 int xi_setup(void *arg);
+void xi_cleanup(void *arg);
 
 static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
 {
@@ -198,6 +199,7 @@ typedef struct xt {
 } xt_t;
 
 int xt_setup(void *arg);
+void xt_cleanup(void *arg);
 
 static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 {
