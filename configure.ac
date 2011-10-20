@@ -359,20 +359,16 @@ AM_CONDITIONAL([TEST_RUNTIME_SHMEMRT], [test "$with_test_runtime" = "shmemrt"])
 AM_CONDITIONAL([TEST_RUNTIME_MPI], [test "$with_test_runtime" = "mpi"])
 AM_CONDITIONAL([TEST_RUNTIME_SINGLE], [test "$with_test_runtime" = "single"])
 
-if test "$with_test_runtime" = "mpi" ; then
-   TEST_CC="mpicc"
-else
-   TEST_CC="$CC"
-fi
+AS_IF([test "$with_test_runtime" = "mpi"],
+  [TEST_CC="mpicc "`echo $CC | cut -f2- -d' '`],
+  [TEST_CC="$CC"])
 AC_SUBST(TEST_CC)
 
 DISTCHECK_CONFIGURE_FLAGS=
-if test -n "$with_implementation" ; then
-  DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"
-fi
-if test -n "$with_test_runtime" ; then
-  DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-test-runtime=${with_test_runtime}"
-fi
+AS_IF([test -n "$with_implementation"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"])
+AS_IF([test -n "$with_test_runtime"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-test-runtime=${with_test_runtime}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
 AC_CONFIG_HEADERS([include/config.h])
