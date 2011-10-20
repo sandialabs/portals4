@@ -5,6 +5,8 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
+include_HEADERS = portals4_runtime.h
+
 lib_LTLIBRARIES = libportals.la
 bin_PROGRAMS = yod
 

@@ -327,8 +327,8 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/shmem/Makefile
                  src/ib/Makefile
-                 src/support/Makefile
                  doc/Makefile
                  include/Makefile
-                 test/Makefile])
+                 test/Makefile
+                 test/support/Makefile])
 AC_OUTPUT
