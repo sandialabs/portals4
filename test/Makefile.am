@@ -61,7 +61,8 @@ endif
 endif
 
 if BACKEND_IMPL_IB
-TESTS += $(large_atomic_tests)
+# These tests require atomic limits that cannot be supported by IB
+#TESTS += $(large_atomic_tests)
 endif
 
 BENCHMARKS =
