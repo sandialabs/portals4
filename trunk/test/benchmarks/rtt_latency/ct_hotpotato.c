@@ -48,6 +48,7 @@ int main(int   argc,
     ptl_md_t        potato_launcher;
     ptl_handle_md_t potato_launcher_handle;
     int             my_rank, num_procs;
+    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -57,6 +58,17 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlNIInit
                         (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
                         NULL, NULL, &ni_logical));
+
+    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
+    if (my_ret == PTL_NO_SPACE) {
+        ptl_process_t *amapping;
+        amapping = libtest_get_mapping();
+        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
+        free(amapping);
+    } else {
+        CHECK_RETURNVAL(my_ret);
+    }
+
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlPTAlloc
