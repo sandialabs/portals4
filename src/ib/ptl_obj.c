@@ -48,6 +48,9 @@ static inline int index_get(obj_t *obj, unsigned int *index_p)
 
 	index = atomic_inc(&next_index);
 
+	if (index >= MAX_INDEX)
+		return PTL_FAIL;
+
 	index_map[index] = obj;
 
 	*index_p = index;
