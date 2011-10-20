@@ -20,14 +20,14 @@
 #include <mpi.h>
 #include <portals4.h>
 
-#include "runtime.h"
+#include "support/support.h"
 
 static int rank = 0;
 static int size = 0;
 static ptl_process_t my_id;
 
 int
-shmem_internal_runtime_init(void)
+libtest_init(void)
 {
     int ret;
     ptl_handle_ni_t phys_ni_h;
@@ -58,7 +58,7 @@ shmem_internal_runtime_init(void)
 
 
 int
-shmem_internal_runtime_fini(void)
+libtest_fini(void)
 {
     int ret;
     MPI_Finalized(&ret);
@@ -71,7 +71,7 @@ shmem_internal_runtime_fini(void)
 
 
 ptl_process_t*
-shmem_internal_runtime_get_mapping(void)
+libtest_get_mapping(void)
 {
     ptl_process_t *ret;
 
@@ -87,21 +87,21 @@ shmem_internal_runtime_get_mapping(void)
 
 
 int
-shmem_internal_runtime_get_rank(void)
+libtest_get_rank(void)
 {
     return rank;
 }
 
 
 int
-shmem_internal_runtime_get_size(void)
+libtest_get_size(void)
 {
     return size;
 }
 
 
 void
-shmem_internal_runtime_barrier(void)
+libtest_barrier(void)
 {
     MPI_Barrier(MPI_COMM_WORLD);
 }

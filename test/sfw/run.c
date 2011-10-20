@@ -1237,7 +1237,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				goto done;
 			}
 
-			if (debug) printf("rank %d: start node = %s\n", ptl_test_rank, e->name);
+			if (debug) printf("rank %d: start node = %s\n", libtest_get_rank(), e->name);
 
 			/* the following cases do not push the stack */
 			switch (e->token) {
@@ -1648,7 +1648,7 @@ pop:
 done:
 			tot_errs += errs;
 			if (debug && e)
-				printf("rank %d: end node = %s, errs = %d\n", ptl_test_rank, e->name, errs);
+                            printf("rank %d: end node = %s, errs = %d\n", libtest_get_rank(), e->name, errs);
 		}
 	}
 
