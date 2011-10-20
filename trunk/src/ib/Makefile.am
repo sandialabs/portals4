@@ -1,9 +1,9 @@
-lib_LTLIBRARIES = libportals.la
+noinst_LTLIBRARIES = libportals_ib.la
 
-libportals_la_CPPFLAGS = -I$(top_srcdir)/include
-libportals_la_LIBADD = -libverbs -lpthread -lrt -lev
-libportals_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
-libportals_la_SOURCES = \
+libportals_ib_la_CPPFLAGS = -I$(top_srcdir)/include
+libportals_ib_la_LIBADD = -libverbs -lpthread -lrt -lev
+libportals_ib_la_LDFLAGS = @LD_VERSION_SCRIPT@ -lrdmacm
+libportals_ib_la_SOURCES = \
 	ptl.c \
 	ptl_atomic.c \
 	ptl_atomic.h \
@@ -63,7 +63,7 @@ libportals_la_SOURCES = \
 	tree.h
 
 if WITH_TRANSPORT_SHMEM
-libportals_la_SOURCES += \
+libportals_ib_la_SOURCES += \
 	ptl_knem.c \
 	ptl_nemesis.c \
 	ptl_nemesis.h \

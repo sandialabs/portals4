@@ -61,8 +61,8 @@ int main(
     assert(readval);
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, &desired, &actual, num_procs,
-                              NULL, amapping, &ni_logical));
+                              PTL_PID_ANY, &desired, &actual,
+                              &ni_logical));
 
     assert(actual.max_atomic_size >= BUFSIZE * sizeof(double));
 
@@ -79,7 +79,7 @@ int main(
     if (myself.rank == 0) {
         value_e.start = value;
         value_e.length = BUFSIZE * sizeof(double);
-        value_e.ac_id.uid = PTL_UID_ANY;
+        value_e.uid = PTL_UID_ANY;
         value_e.options = OPTIONS;
 #if INTERFACE == 1
         value_e.match_id.rank = PTL_RANK_ANY;

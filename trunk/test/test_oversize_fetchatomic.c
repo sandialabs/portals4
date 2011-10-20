@@ -61,8 +61,8 @@ int main(
     assert(readval);
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, &desired, &actual, num_procs,
-                              NULL, amapping, &ni_logical));
+                              PTL_PID_ANY, &desired, &actual,
+                              &ni_logical));
 
     assert(actual.max_atomic_size >= BUFSIZE * sizeof(*value));
 
@@ -78,7 +78,7 @@ int main(
     if (myself.rank == 0) {
         value_e.start = value;
         value_e.length = BUFSIZE * sizeof(*value);
-        value_e.ac_id.uid = PTL_UID_ANY;
+        value_e.uid = PTL_UID_ANY;
         value_e.options = OPTIONS;
 #if INTERFACE == 1
         value_e.match_id.rank = PTL_RANK_ANY;
@@ -115,7 +115,7 @@ int main(
         CHECK_RETURNVAL(PtlFetchAtomic(read_md_handle, 0, read_md_handle, 0,
                                        BUFSIZE*sizeof(*readval), r0,
                                        logical_pt_index, 1, 0, NULL, 0,
-                                       PTL_SUM, PTL_ULONG));
+                                       PTL_SUM, PTL_UINT64_T));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
