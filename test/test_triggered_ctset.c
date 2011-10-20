@@ -17,6 +17,8 @@ int main(int   argc,
     int             my_rank, num_procs;
     ptl_handle_ct_t trigger, target;
 
+    CHECK_RETURNVAL(libtest_init());
+
     CHECK_RETURNVAL(PtlInit());
 
     my_rank   = libtest_get_rank();
@@ -73,6 +75,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTFree(target));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
+    CHECK_RETURNVAL(libtest_fini());
 
     return 0;
 }

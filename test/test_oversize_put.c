@@ -41,6 +41,8 @@ int main(int   argc,
     ptl_handle_md_t write_md_handle;
     int             my_rank, num_procs;
 
+    CHECK_RETURNVAL(libtest_init());
+
     CHECK_RETURNVAL(PtlInit());
 
     my_rank   = libtest_get_rank();
@@ -116,6 +118,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
+    CHECK_RETURNVAL(libtest_fini());
 
     return 0;
 }

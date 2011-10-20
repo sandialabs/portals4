@@ -170,6 +170,8 @@ int main(int   argc,
     if (getenv("VERBOSE")) {
         verb = 1;
     }
+    CHECK_RETURNVAL(libtest_init());
+
     CHECK_RETURNVAL(PtlInit());
 
     my_rank   = libtest_get_rank();
@@ -290,6 +292,7 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlEQFree(recv_eq));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     PtlFini();
+    CHECK_RETURNVAL(libtest_fini());
     free(unexpected_buf);
 
     return 0;
