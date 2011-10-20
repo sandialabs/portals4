@@ -22,9 +22,7 @@ libportals_ib_la_SOURCES = \
 	ptl_eq.h \
 	ptl_evloop.c \
 	ptl_evloop.h \
-	ptl_gbl.c \
 	ptl_gbl.h \
-	ptl_handle.c \
 	ptl_hdr.c \
 	ptl_hdr.h \
 	ptl_id.c \
