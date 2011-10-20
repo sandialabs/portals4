@@ -132,8 +132,6 @@ int main(int argc, char *argv[])
 			exit(ret);
 	}
 
-	libtest_init();
-
 	ret = init();
 	if (ret)
 		exit(ret);
@@ -151,8 +149,6 @@ int main(int argc, char *argv[])
 	cio_cleanup();
 
 	fini();
-
-	libtest_fini();
 
 	return ret;
 }

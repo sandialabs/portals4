@@ -991,24 +991,30 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	}
 
 	err = to_ni(ni_handle, &ni);
-	if (unlikely(err))
+	if (unlikely(err)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
-
+	}
 
 	if ((ni->options & PTL_NI_LOGICAL) == 0) {
 		/* Only valid on logical NIs. */
+		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
 	if (!ni->logical.mapping) {
+		err = PTL_NO_SPACE;
 		goto err2;
 	}
 
 	if (map_size < ni->logical.map_size)
 		map_size = ni->logical.map_size;
 
-	memcpy(mapping, ni->logical.mapping, map_size * sizeof(ptl_process_t));
-	*actual_map_size = map_size;
+	if (map_size)
+		memcpy(mapping, ni->logical.mapping, map_size * sizeof(ptl_process_t));
+
+	if (actual_map_size)
+		*actual_map_size = map_size;
 
 	ni_put(ni);
 	gbl_put();
@@ -1019,7 +1025,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
  err1:
 	gbl_put();
 
-	return PTL_ARG_INVALID;
+	return err;
 }
 
 static void interrupt_cts(ni_t *ni)
