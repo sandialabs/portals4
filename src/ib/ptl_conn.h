@@ -111,6 +111,8 @@ struct cm_priv_accept {
 
 conn_t *get_conn(struct ni *ni, const ptl_process_t *id);
 
+void destroy_conns(struct ni *ni);
+
 void conn_init(conn_t *conn, struct ni *ni);
 
 void conn_fini(conn_t *conn);

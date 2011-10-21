@@ -29,6 +29,12 @@ void cleanup_iface(iface_t *iface)
 		iface->cm_channel = NULL;
 	}
 
+	/* Release PD. */
+	if (iface->pd) {
+		ibv_dealloc_pd(iface->pd);
+		iface->pd = NULL;
+	}
+
 	/* mark as uninitialized */
 	iface->sin.sin_addr.s_addr = INADDR_ANY;
 	iface->ifname[0] = 0;
@@ -78,6 +84,7 @@ int init_iface(iface_t *iface)
 {
 	int err;
 	in_addr_t addr;
+	int flags;
 
 	/* check to see if interface is already initialized. */
 	if (iface->cm_watcher.data == iface)
@@ -108,6 +115,13 @@ int init_iface(iface_t *iface)
 		ptl_warn("unable to create CM event channel for interface %d\n",
 			 iface->iface_id);
 		err = PTL_FAIL;
+		goto err1;
+	}
+
+	flags = fcntl(iface->cm_channel->fd, F_GETFL);
+	err = fcntl(iface->cm_channel->fd, F_SETFL, flags | O_NONBLOCK);
+	if (err < 0) {
+		ptl_warn("cannot set asynchronous fd to non blocking\n");
 		goto err1;
 	}
 

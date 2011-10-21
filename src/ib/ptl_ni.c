@@ -233,6 +233,12 @@ static int cleanup_ib(ni_t *ni)
 
 	ni_rcqp_cleanup(ni);
 
+	destroy_conns(ni);
+	if (ni->rdma.self_cm_id) {
+		rdma_destroy_qp(ni->rdma.self_cm_id);
+		rdma_destroy_id(ni->rdma.self_cm_id);
+	}
+
 	if (ni->rdma.srq) {
 		ibv_destroy_srq(ni->rdma.srq);
 		ni->rdma.srq = NULL;
@@ -427,6 +433,7 @@ static int init_pools(ni_t *ni)
 	}
 
 	ni->xi_pool.setup = xi_setup;
+	ni->xi_pool.cleanup = xi_cleanup;
 
 	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
 					POOL_XI, (obj_t *)ni);
@@ -1058,6 +1065,17 @@ static void ni_cleanup(ni_t *ni)
 	cleanup_ib(ni);
 
 	release_buffers(ni);
+
+	if (ni->options & PTL_NI_LOGICAL) {
+		if (ni->logical.mapping) {
+			free(ni->logical.mapping);
+			ni->logical.mapping = NULL;
+		}
+		if (ni->logical.rank_table) {
+			free(ni->logical.rank_table);
+			ni->logical.rank_table = NULL;
+		}
+	}
 
 	pool_fini(&ni->buf_pool);
 	pool_fini(&ni->sbuf_pool);
