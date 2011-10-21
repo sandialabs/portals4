@@ -100,6 +100,8 @@ typedef struct ni {
 		pthread_spinlock_t	recv_list_lock;
 
 		int			num_posted_recv;
+
+		struct rdma_cm_id *self_cm_id;
 	} rdma;
 
 	/* SHMEM transport specific */

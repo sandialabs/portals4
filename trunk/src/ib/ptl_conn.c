@@ -149,6 +149,53 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 	return conn;
 }
 
+static void destroy_conn(conn_t *conn)
+{
+	if (conn->transport.type == CONN_TYPE_RDMA) {
+		if (conn->rdma.cm_id) {
+			rdma_disconnect(conn->rdma.cm_id);
+			rdma_destroy_qp(conn->rdma.cm_id);
+			rdma_destroy_id(conn->rdma.cm_id);
+		}
+	}
+}
+
+static void destroy_physical_conn(void *data)
+{
+	conn_t *conn = data;
+		
+	destroy_conn(conn);
+	free(conn);
+}
+
+/**
+ * Destroys all connections belonging to an NI
+ */
+void destroy_conns(ni_t *ni)
+{
+	if (ni->options & PTL_NI_LOGICAL) {
+		unsigned int i;
+
+		/* Destroy active connections. */
+		for (i=0; i<ni->logical.map_size; i++) {
+			conn_t *conn = &ni->logical.rank_table[i].connect;
+
+			destroy_conn(conn);
+		}
+
+		/* Destroy passive connections. */
+		while(!list_empty(&ni->logical.connect_list)) {
+			conn_t *conn = list_first_entry(&ni->logical.connect_list, conn_t, list);
+
+			list_del(&conn->list);
+			destroy_conn(conn);
+			free(conn);
+		}
+	} else {
+		tdestroy(ni->physical.tree, destroy_physical_conn);
+	}
+}
+
 /**
  * @param[in] ni
  * @param[in] conn
@@ -339,7 +386,8 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 		return PTL_FAIL;
 	}
 
-	conn->rdma.cm_id = event->id;
+	ni->rdma.self_cm_id = event->id;
+
 	event->id->context = conn;
 
 	memset(&conn_param, 0, sizeof conn_param);
@@ -483,8 +531,9 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 			pthread_mutex_unlock(&conn->mutex);
 			goto reject;
 		}
-		else
+		else {
 			ret = accept_connection_self(ni, conn, event);
+		}
 		break;
 	}
 
