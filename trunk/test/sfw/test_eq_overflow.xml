@@ -8,7 +8,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq eq_count="4">
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <repeat count="3">
@@ -44,6 +44,7 @@
                   </repeat>
                   
                 </if>
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -60,7 +61,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq eq_count="2">
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <repeat count="3">
@@ -90,6 +91,7 @@
                   <ptl_eq_wait ret="EQ_DROPPED"/>
                   <ptl_eq_wait ret="OK"/>
                 </if>
+               </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
