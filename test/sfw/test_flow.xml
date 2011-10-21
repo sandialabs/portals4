@@ -8,7 +8,7 @@
           <ptl_ni ni_opt="NO_MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt pt_opt="FLOW">
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md>
@@ -40,6 +40,7 @@
                   </ptl_eq_poll>
                   <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
                 </if>
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>

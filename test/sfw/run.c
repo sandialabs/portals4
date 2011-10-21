@@ -1411,7 +1411,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_PTL_GET_ID:
 				errs = test_ptl_get_id(info);
 				errs += walk_tree(info, node->children);
-				goto done;
+				break;
 			case NODE_PTL_GET_UID:
 				errs = test_ptl_get_uid(info);
 				errs += walk_tree(info, node->children);
@@ -1648,7 +1648,7 @@ pop:
 done:
 			tot_errs += errs;
 			if (debug && e)
-                            printf("rank %d: end node = %s, errs = %d\n", libtest_get_rank(), e->name, errs);
+				printf("rank %d: end node = %s, errs = %d\n", libtest_get_rank(), e->name, errs);
 		}
 	}
 

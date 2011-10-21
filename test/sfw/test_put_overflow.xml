@@ -9,7 +9,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -53,6 +53,7 @@
                   </ptl_me>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -69,7 +70,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -122,6 +123,7 @@
                   </ptl_me>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -138,7 +140,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -193,6 +195,7 @@
                   
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -209,7 +212,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -269,6 +272,7 @@
                   
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -285,7 +289,7 @@
           <ptl_ni ni_opt="NO_MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -329,6 +333,7 @@
                   </ptl_le>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -345,7 +350,7 @@
           <ptl_ni ni_opt="NO_MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -395,6 +400,7 @@
                   </ptl_le>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -411,7 +417,7 @@
           <ptl_ni ni_opt="NO_MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -466,6 +472,7 @@
                   
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -482,7 +489,7 @@
           <ptl_ni ni_opt="NO_MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -542,6 +549,7 @@
                   
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -558,7 +566,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -611,6 +619,7 @@
                   </ptl_me>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -627,7 +636,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa">
@@ -680,6 +689,7 @@
                   </ptl_me>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
@@ -696,7 +706,7 @@
           <ptl_ni ni_opt="MATCH LOGICAL">
             <ptl_eq>
               <ptl_pt>
-                <ptl_get_id/>
+                <ptl_get_id>
                 
                 <if rank="0">
                   <ptl_md md_data="0xaa" md_opt="SUCCESS_DISABLE">
@@ -751,6 +761,7 @@
                   </ptl_me>
                 </if>
                 
+                </ptl_get_id>
               </ptl_pt>
             </ptl_eq>
           </ptl_ni>
