@@ -855,8 +855,7 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
         } else {
             // printf("%u PtlPut NOT incrementing ct\n", (unsigned)proc_number);
         }
-        if ((eqh != PTL_EQ_NONE) && ((options & PTL_MD_EVENT_SUCCESS_DISABLE)
-                                     == 0)) {
+        if ((eqh != PTL_EQ_NONE) && ((options & PTL_MD_EVENT_SUCCESS_DISABLE) == 0)) {
             PtlInternalEQPushESEND(eqh, length, local_offset, user_ptr);
         }
     }
