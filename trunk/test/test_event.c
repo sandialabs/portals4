@@ -136,7 +136,6 @@ int main(int   argc,
     ptl_handle_md_t read_md_handle;
     ptl_handle_eq_t pt_eq_handle;
     int             my_rank, num_procs;
-    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
 

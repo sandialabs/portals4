@@ -153,8 +153,6 @@ int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    ptl_process_t   myself;
-    ptl_pt_index_t  logical_pt_index;
     unsigned char  *readval;
     ENTRY_T         value_e;
     HANDLE_T        value_e_handle;

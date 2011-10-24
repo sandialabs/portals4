@@ -182,7 +182,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
             if (PtlInternalAtomicCas32(&(mds[ni.s.ni][offset].in_use), MD_FREE, MD_IN_USE) == MD_FREE) {
                 mds[ni.s.ni][offset].visible = *md;
                 mdh.s.code                   = offset;
-#ifdef REGISTER_ON_BIND
+#if defined(USE_KNEM) && defined(REGISTER_ON_BIND)
                 /* TODO - FIXME: we should only do this registration if we know
                  *               it won't fit into a large fragment later,
                  *               otherwise it's unnecessary overhead for small
@@ -226,7 +226,7 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
         VERBOSE_ERROR("%u MD handle in use!\n", (unsigned)proc_number);
         return PTL_ARG_INVALID;
     }
-#ifdef REGISTER_ON_BIND
+#if defined(USE_KNEM) && defined(REGISTER_ON_BIND)
     if (mds[md.s.ni][md.s.code].xfe_handle) {
         xfe_unregister(mds[md.s.ni][md.s.code].xfe_handle);
     }
@@ -261,8 +261,8 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(ptl_handle_md_t handle)
     }
 }                                      /*}}} */
 
-#ifdef REGISTER_ON_BIND
-ptl_size_t INTERNAL PtlInternalMDXFEHandle(ptl_handle_md_t handle)
+#if defined(USE_KNEM) && defined(REGISTER_ON_BIND)
+static ptl_size_t PtlInternalMDXFEHandle(ptl_handle_md_t handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
 

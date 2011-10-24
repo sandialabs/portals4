@@ -6,6 +6,7 @@
 #endif
 
 /* System headers */
+#include <stdlib.h> /* for abort() */
 
 /* Internals */
 #include "ptl_internal_commpad.h"
