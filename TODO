@@ -3,8 +3,6 @@ Shared Memory Unimplemented Features:
 - Ptl{LE,ME}Append() does not work with persistent LEs and buffered headers
 - Ptl{LE,ME}Append() cannot deliver buffered messages without local data (no
   retransmit protocol yet implemented)
-- Triggered Operations
-- Oversized Messages (> large frag size) for atomics
 - Truncated Messages for gets and atomics (works for puts)
 - PtlPTEnable()
 - PtlPTDisable()
