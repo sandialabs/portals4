@@ -39,7 +39,6 @@ int main(int   argc,
     ptl_handle_md_t write_md_handle;
     int             my_rank, num_procs;
     ptl_handle_ct_t trigger;
-    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -51,14 +50,11 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
 
-    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
-    if (my_ret == PTL_NO_SPACE) {
+    {
         ptl_process_t *amapping;
         amapping = libtest_get_mapping();
         CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
         free(amapping);
-    } else {
-        CHECK_RETURNVAL(my_ret);
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
