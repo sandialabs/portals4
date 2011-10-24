@@ -11,13 +11,11 @@
 int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t        ni_logical;
-    ptl_process_t          myself;
-    ptl_pt_index_t         logical_pt_index;
-    ptl_process_t         *dmapping, *amapping;
-    int                    my_rank, num_procs, i;
-    ptl_process_t *rtprocs;
-    int             my_ret;
+    ptl_handle_ni_t ni_logical;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    ptl_process_t  *dmapping, *amapping;
+    int             my_rank, num_procs, i;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -25,29 +23,26 @@ int main(int   argc,
 
     my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
-    rtprocs = libtest_get_mapping();
+    amapping  = libtest_get_mapping();
 
     dmapping = malloc(sizeof(ptl_process_t) * num_procs);
-    amapping = malloc(sizeof(ptl_process_t) * num_procs);
 
     /* ask for inverse of what the runtime gave us (not that we'll get it) */
     for (i = 0; i < num_procs; ++i) {
-        dmapping[i] = rtprocs[num_procs - i - 1];
+        dmapping[i] = amapping[num_procs - i - 1];
     }
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
                               PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
-                              //num_procs, dmapping, amapping,
+                              // num_procs, dmapping, amapping,
                               &ni_logical));
 
-    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
-    if (my_ret == PTL_NO_SPACE) {
-        ptl_process_t *amapping;
-        amapping = libtest_get_mapping();
-        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
-        free(amapping);
-    } else {
-        CHECK_RETURNVAL(my_ret);
+    switch (PtlSetMap(ni_logical, num_procs, dmapping)) {
+        case PTL_IGNORED:
+        case PTL_OK:
+            break;
+        default:
+            CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, dmapping));
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
@@ -62,7 +57,6 @@ int main(int   argc,
                         (ni_logical, 0, PTL_EQ_NONE, 0, &logical_pt_index));
     assert(logical_pt_index == 0);
 
-    libtest_barrier();
     libtest_barrier();
 
     /* now I can communicate between ranks with ni_logical */
