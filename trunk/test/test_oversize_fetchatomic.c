@@ -46,7 +46,6 @@ int main(
                                 //.max_fetch_atomic_size = UINT32_MAX,
                                 .max_fetch_atomic_size = BUFSIZE * sizeof(*value),
                               };
-    int             my_ret;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -69,14 +68,11 @@ int main(
 
     assert(actual.max_atomic_size >= BUFSIZE * sizeof(*value));
 
-    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
-    if (my_ret == PTL_NO_SPACE) {
+    {
         ptl_process_t *amapping;
         amapping = libtest_get_mapping();
         CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
         free(amapping);
-    } else {
-        CHECK_RETURNVAL(my_ret);
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
