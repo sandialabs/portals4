@@ -172,8 +172,8 @@ static void PtlInternalHandleAck(ptl_internal_header_t *restrict hdr)
                     const ptl_handle_eq_t eqh     = mdptr->eq_handle;
                     const ptl_handle_ct_t cth     = mdptr->ct_handle;
                     const unsigned int    options = mdptr->options;
-                    ack_printf
-                        ("announce that we're done with the send-buffer\n");
+
+                    ack_printf("announce that we're done with the send-buffer\n");
                     PtlInternalMDCleared(md_handle);
                     if (options & PTL_MD_EVENT_CT_SEND) {
                         if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
@@ -845,7 +845,6 @@ int API_FUNC PtlPut(ptl_handle_md_t  md_handle,
         PtlInternalMDCleared(md_handle);
         /* step 5: report the send event */
         if (options & PTL_MD_EVENT_CT_SEND) {
-            // printf("%u PtlPut incrementing ct %u (SEND)\n", (unsigned)proc_number, cth);
             if ((options & PTL_MD_EVENT_CT_BYTES) == 0) {
                 PtlInternalCTSuccessInc(cth, 1);
             } else {
