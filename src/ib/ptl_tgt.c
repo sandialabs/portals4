@@ -1221,12 +1221,6 @@ static int tgt_cleanup(xt_t *xt)
 	else
 		state = STATE_TGT_CLEANUP_2;
 
-	/* tgt must release reference to any LE/ME */
-	if (xt->le) {
-		le_put(xt->le);
-		xt->le = NULL;
-	}
-
 	if (xt->indir_sge) {
 		if (xt->indir_mr) {
 			mr_put(xt->indir_mr);
@@ -1277,34 +1271,42 @@ static int tgt_cleanup(xt_t *xt)
 	return state;
 }
 
+static void tgt_cleanup_2(xt_t *xt)
+{
+	/* tgt must release reference to any LE/ME */
+	if (xt->le) {
+		le_put(xt->le);
+		xt->le = NULL;
+	}
+}
+
 static int tgt_overflow_event(xt_t *xt)
 {
 	le_t *le = xt->matching.le;
 
-	assert(xt->le == NULL);
-	assert(xt->matching.le);
+	assert(le);
 
 	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
 		switch (xt->operation) {
 		case OP_PUT:
 			make_target_event(xt, xt->pt->eq, PTL_EVENT_PUT_OVERFLOW,
-							  xt->matching.le->user_ptr, xt->start);
+							  le->user_ptr, xt->start);
 			break;
 
 		case OP_ATOMIC:
 			make_target_event(xt, xt->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW,
-							  xt->matching.le->user_ptr, xt->start);
+							  le->user_ptr, xt->start);
 			break;
 
 		case OP_FETCH:
 		case OP_SWAP:
 			make_target_event(xt, xt->pt->eq, PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
-							  xt->matching.le->user_ptr, xt->start);
+							  le->user_ptr, xt->start);
 			break;
 
 		case OP_GET:
 			make_target_event(xt, xt->pt->eq, PTL_EVENT_GET_OVERFLOW,
-							  xt->matching.le->user_ptr, xt->start);
+							  le->user_ptr, xt->start);
 			break;
 
 		default:
@@ -1444,6 +1446,7 @@ int process_tgt(xt_t *xt)
 			break;
 
 		case STATE_TGT_CLEANUP_2:
+			tgt_cleanup_2(xt);
 			xt->state = STATE_TGT_DONE;
 			pthread_mutex_unlock(&xt->mutex);
 			xt_put(xt);

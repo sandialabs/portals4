@@ -128,6 +128,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	me->user_ptr = user_ptr;
 	me->start = me_init->start;
 	me->options = me_init->options;
+	me->do_auto_free = 0;
 	me->ptl_list = ptl_list;
 	me->offset = 0;
 	me->min_free = me_init->min_free;
@@ -166,6 +167,9 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 						make_le_event((le_t *)me, eq,
 							PTL_EVENT_AUTO_UNLINK,
 							PTL_NI_OK);
+
+						if (me->ptl_list == PTL_OVERFLOW_LIST)
+							me->do_auto_free = 1;
 					}
 
 					*me_handle = me_to_handle(me);
