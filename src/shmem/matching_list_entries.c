@@ -1243,6 +1243,16 @@ check_lengths:
                                                        me.length, me.options,
                                                        fragment_mlength, hdr);
             }
+            __sync_synchronize();
+            PtlInternalAnnounceMEDelivery(tEQ,
+                    me.ct_handle,
+                    me.options,
+                    msg_mlength,
+                    (uintptr_t)report_this_start,
+                    PRIORITY,
+                    entry,
+                    hdr,
+                    entry->me_handle.a);
             if ((me.options & PTL_ME_UNEXPECTED_HDR_DISABLE) == 0) {
                 /* cannot be enqueued until after the overflow data has been
                  * delivered */
