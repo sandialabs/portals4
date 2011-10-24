@@ -22,6 +22,7 @@ struct ct;
 	struct ct		*ct;		\
 	uint32_t		uid;		\
 	unsigned int		options;	\
+	unsigned int	do_auto_free;	\
 	mr_t			*sge_list_mr;	\
 	struct ibv_sge		*sge_list;
 

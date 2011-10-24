@@ -44,6 +44,10 @@ void le_cleanup(void *arg)
 		le->sge_list_mr = NULL;
 	}
 
+	if (le->do_auto_free) {
+		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
+	}
+
 	pthread_spin_lock(&ni->obj.obj_lock);
 	ni->current.max_entries--;
 	pthread_spin_unlock(&ni->obj.obj_lock);
@@ -54,7 +58,7 @@ void le_cleanup(void *arg)
  *	called to unlink the entry from the PT list and remove
  *	the reference held by the PT list.
  */
-void le_unlink(le_t *le, int send_event)
+void le_unlink(le_t *le, int auto_event)
 {
 	pt_t *pt = le->pt;
 
@@ -69,10 +73,13 @@ void le_unlink(le_t *le, int send_event)
 				pt->overflow_size--;
 			list_del_init(&le->list);
 
-			if (send_event && le->eq)
+			if (auto_event && le->eq) {
 				make_le_event(le, le->eq,
 					      PTL_EVENT_AUTO_UNLINK,
 					      PTL_NI_OK);
+				if (le->ptl_list == PTL_OVERFLOW_LIST)
+					le->do_auto_free = 1;
+			}
 
 			le->pt = NULL;
 		}
@@ -321,6 +328,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	le->user_ptr = user_ptr;
 	le->start = le_init->start;
 	le->options = le_init->options;
+	le->do_auto_free = 0;
 	le->ptl_list = ptl_list;
 	INIT_LIST_HEAD(&le->list);
 
@@ -356,6 +364,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 						make_le_event(le, eq,
 							PTL_EVENT_AUTO_UNLINK,
 							PTL_NI_OK);
+						le->do_auto_free = 1;
 					}
 					*le_handle = le_to_handle(le);
 					le_put(le);

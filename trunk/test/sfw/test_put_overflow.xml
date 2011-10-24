@@ -259,6 +259,10 @@
                         </ptl_eq_wait>
                         
                         <ptl_eq_wait>
+                          <check event_type="AUTO_FREE"/>
+                        </ptl_eq_wait>
+
+                        <ptl_eq_wait>
                           <check event_type="AUTO_UNLINK"/>
                         </ptl_eq_wait>
                         
@@ -534,12 +538,15 @@
                         <ptl_eq_wait>
                           <check event_type="PUT_OVERFLOW"/>
                         </ptl_eq_wait>
-                        
+
+                        <ptl_eq_wait>
+                          <check event_type="AUTO_FREE"/>
+                        </ptl_eq_wait>                    
+
                         <ptl_eq_wait>
                           <check event_type="AUTO_UNLINK"/>
                         </ptl_eq_wait>
-                        
-                        
+
                         <ptl_le_unlink ret="ARG_INVALID"/>
                       </ptl_le_append>
                       
