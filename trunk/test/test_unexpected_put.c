@@ -206,7 +206,7 @@ int main(int   argc,
     unexpected_e.match_id.rank = PTL_RANK_ANY;
     unexpected_e.match_bits    = 0;
     memset(&unexpected_e.ignore_bits, 0xff, sizeof(ptl_match_bits_t));
-    unexpected_e.min_free = BUFSIZE - sizeof(sendval);
+    unexpected_e.min_free = BUFSIZE - sizeof(sendval) + 1;
     unexpected_e.options  = OPTIONS | PTL_ME_MANAGE_LOCAL;
 #else
     unexpected_e.options = OPTIONS;
