@@ -1034,8 +1034,7 @@ permission_violation:
         *******************************************************************/
         if ((me.options & PTL_ME_USE_ONCE) ||
             ((me.options & PTL_ME_MANAGE_LOCAL) && (me.min_free != 0) &&
-             ((me.length - entry->local_offset) - me.min_free <=
-              hdr->length))) {
+             ((me.length - entry->local_offset) - me.min_free < hdr->length))) {
             /* that last bit of math only works because we already know that the hdr body can, at least partially, fit into this entry. In essence, the comparison is:
              *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */
