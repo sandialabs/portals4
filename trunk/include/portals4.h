@@ -1051,7 +1051,7 @@ typedef enum {
 #define PTL_LE_EVENT_OVER_DISABLE PTL_ME_EVENT_OVER_DISABLE
 
 /*! Specifies that this list entry should not generate unlink (\c
- * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
+ * PTL_EVENT_AUTO_UNLINK) or free (\c PTL_EVENT_AUTO_FREE) events. */
 #define PTL_LE_EVENT_UNLINK_DISABLE PTL_ME_EVENT_UNLINK_DISABLE
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
@@ -1322,7 +1322,7 @@ enum me_options {
 #define PTL_ME_EVENT_OVER_DISABLE (1 << MELE_EVNT_OVER_DISABLE)
 
 /*! Specifies that this match list entry should not generate unlink (\c
- * PTL_EVENT_UNLINK) or free (\c PTL_EVENT_FREE) events. */
+ * PTL_EVENT_AUTO_UNLINK) or free (\c PTL_EVENT_AUTO_FREE) events. */
 #define PTL_ME_EVENT_UNLINK_DISABLE (1 << MELE_EVNT_UNLINK_DISABLE)
 
 /*! Enable the counting of communication events (\c PTL_EVENT_PUT, \c
