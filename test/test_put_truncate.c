@@ -56,9 +56,9 @@ static void validate_event(ptl_event_t *e,
                            uint16_t     fields,
                            enum side_e  side)
 {
-    for (int i = 14; i >= 0; i--) {
-        if (fields & (1 << i)) {
-            if (verb) {
+    if (verb) {
+        for (int i = 14; i >= 0; i--) {
+            if (fields & (1 << i)) {
                 switch(i) {
                     case 0:  printf("atomic_type(%u)",
                                     (unsigned)e->atomic_type); break;
@@ -102,6 +102,7 @@ static void validate_event(ptl_event_t *e,
                 }
             }
         }
+        printf("\n"); fflush(stdout);
     }
     if (side == TARGET) {
 #if INTERFACE == 1
@@ -118,11 +119,14 @@ static void validate_event(ptl_event_t *e,
         if (fields & (1 << evnt_ni_fail_type)) {
             assert(e->ni_fail_type == PTL_NI_OK);
         }
-        if ((fields & (1 << evnt_mlength)) && (fields & (1 << evnt_rlength))) {
-            assert(e->mlength == e->rlength);
+        if (fields & (1 << evnt_mlength)) {
+            assert(e->mlength == BUFSIZE / 2);
+        }
+        if (fields & (1 << evnt_rlength)) {
+            assert(e->rlength == BUFSIZE);
         }
         if ((fields & (1 << evnt_rlength)) && (fields & (1 << evnt_remote_offset))) {
-            assert(e->rlength == BUFSIZE / 2);
+            assert(e->rlength == BUFSIZE);
         }
         if ((fields & (1 << evnt_remote_offset)) && (fields & (1 << evnt_initiator))) {
             assert(e->remote_offset == e->initiator.rank % sizeof(uint64_t));
@@ -160,7 +164,6 @@ int main(int   argc,
     ptl_handle_md_t write_md_handle;
     int             my_rank, num_procs;
     ptl_handle_eq_t eq_handle;
-    int             verb = 0;
 
     if (getenv("VERBOSE")) {
         verb = 1;
@@ -237,14 +240,13 @@ int main(int   argc,
                             logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
-        assert(ctc.success == BUFSIZE / 2);
+        assert(ctc.success == BUFSIZE);
     }
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
         for (unsigned idx = 0; idx < BUFSIZE / 2; ++idx) {
             if (value[idx] != 61) {
-                fprintf(
-                        stderr,
+                fprintf(stderr,
                         "bad value at idx %u (readval[%u] = %i, should be 61)\n",
                         idx,
                         idx, value[idx]);
@@ -253,8 +255,7 @@ int main(int   argc,
         }
         for (unsigned idx = BUFSIZE / 2; idx < BUFSIZE; ++idx) {
             if (value[idx] != 42) {
-                fprintf(
-                        stderr,
+                fprintf(stderr,
                         "bad value at idx %u (readval[%u] = %i, should be 42)\n",
                         idx,
                         idx, value[idx]);
@@ -351,9 +352,6 @@ int main(int   argc,
                             validate_event(&event, 0x20d4, INITIATOR); break;
                         case PTL_EVENT_SEND:
                             validate_event(&event, 0x2014, INITIATOR); break;
-                    }
-                    if (verb) {
-                        printf("\n");
                     }
                     break;
                 case PTL_EQ_EMPTY:
