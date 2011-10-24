@@ -261,7 +261,7 @@ int main(int   argc,
     if (verb) {
         printf("    Target-side EQ:\n");
     }
-    emptyEQ(recv_eq, myself, 1);
+    emptyEQ(recv_eq, myself, 2);
     assert(emptyEQ(recv_eq, myself, 0) == 0);
     if (verb) {
         printf("-=-=-=-=-=-=-=-=-=-=-\nNow... posting the receive:\n");

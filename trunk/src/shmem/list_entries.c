@@ -911,6 +911,16 @@ check_lengths:
                 PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
                                                     (uintptr_t)report_this_start);
             }
+            __sync_synchronize();
+            PtlInternalAnnounceLEDelivery(tEQ,
+                    le.ct_handle,
+                    hdr->type,
+                    le.options,
+                    msg_mlength,
+                    (uintptr_t)report_this_start,
+                    0,
+                    entry->user_ptr,
+                    hdr);
         }
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
