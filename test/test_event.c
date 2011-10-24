@@ -149,14 +149,11 @@ int main(int   argc,
                               PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
                               &ni_logical));
 
-    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
-    if (my_ret == PTL_NO_SPACE) {
+     {
         ptl_process_t *amapping;
         amapping = libtest_get_mapping();
         CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
         free(amapping);
-    } else {
-        CHECK_RETURNVAL(my_ret);
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
