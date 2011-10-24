@@ -87,6 +87,11 @@ int main(int   argc,
     CHECK_RETURNVAL(APPEND
                         (ni_logical, logical_pt_index, &potato_catcher,
                         PTL_PRIORITY_LIST, NULL, &potato_catcher_handle));
+    {
+        ptl_event_t event;
+        CHECK_RETURNVAL(PtlEQWait(pt_eq_handle, &event));       // wait for link event
+        assert(event.type == PTL_EVENT_LINK);
+    }
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     libtest_barrier();
