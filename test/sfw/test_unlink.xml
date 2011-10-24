@@ -6,15 +6,28 @@
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_le_append le_opt="OP_PUT USE_ONCE" uid="ANY">
                 <ptl_md>
                   <ptl_put target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_le_unlink ret="ARG_INVALID"/>
               </ptl_le_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -24,15 +37,28 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_PUT USE_ONCE" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_put match="0x5555" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -42,15 +68,26 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_put match="0x5555" length="6" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+
+                  <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -60,15 +97,29 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_put match="0x5555" length="7" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+
+                  <ptl_eq_wait>
+                  <check event_type="PUT"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -78,15 +129,28 @@
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_le_append le_opt="OP_GET USE_ONCE" uid="ANY">
                 <ptl_md>
                   <ptl_get target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="GET"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_le_unlink ret="ARG_INVALID"/>
               </ptl_le_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -96,15 +160,28 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET USE_ONCE" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_get match="0x5555" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="GET"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -114,15 +191,25 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_get match="0x5555" length="6" target_id="SELF"/>
-                  <msleep count="10"/>
+                            <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="GET"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -132,15 +219,28 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555">
                 <ptl_md>
                   <ptl_get match="0x5555" length="7" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="GET"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -150,15 +250,28 @@
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
                 <ptl_md>
                   <ptl_atomic/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_le_unlink ret="ARG_INVALID"/>
               </ptl_le_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -168,15 +281,28 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_atomic match="0x5555"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -186,15 +312,25 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_atomic match="0x5555" length="6"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -204,15 +340,28 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_atomic match="0x5555" length="7"/>
-                  <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -222,17 +371,33 @@
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_fetch/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_le_unlink ret="ARG_INVALID"/>
               </ptl_le_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -242,17 +407,33 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_fetch match="0x5555"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -262,17 +443,30 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_fetch match="0x5555" length="6"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -282,17 +476,33 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_fetch match="0x5555" length="7"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -302,17 +512,33 @@
       <ptl>
         <ptl_ni ni_opt="NO_MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_swap atom_op="SWAP"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_le_unlink ret="ARG_INVALID"/>
               </ptl_le_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -322,17 +548,33 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT USE_ONCE" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_swap match="0x5555" atom_op="SWAP"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -342,17 +584,30 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_swap match="0x5555" length="6" atom_op="SWAP"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
@@ -362,17 +617,33 @@
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
-            <ptl_pt>
+        <ptl_eq>
+        <ptl_pt>
               <ptl_me_append me_opt="OP_GET OP_PUT MANAGE_LOCAL" me_length="10" me_min_free="4" uid="ANY" me_match="0x5555" target_id="SELF">
                 <ptl_md>
                   <ptl_md>
                     <ptl_swap match="0x5555" length="7" atom_op="SWAP"/>
-                    <msleep count="10"/>
+                  <ptl_eq_wait>
+                  <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait>
+                  <check event_type="REPLY"/>
+                  </ptl_eq_wait>
                   </ptl_md>
                 </ptl_md>
                 <ptl_me_unlink ret="ARG_INVALID"/>
               </ptl_me_append>
             </ptl_pt>
+            </ptl_eq>
           </ompi_rt>
         </ptl_ni>
       </ptl>
