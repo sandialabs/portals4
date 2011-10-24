@@ -127,13 +127,20 @@ static size_t emptyEQ(ptl_handle_eq_t eq_handle,
                         }
                         break;
                     case PTL_EVENT_REPLY:
-                    case PTL_EVENT_SEND:
                     case PTL_EVENT_ACK:
                         /* initiator */
                         if (verb) {
                             printf("mlength(%u), remote_offset(%u), user_ptr(%p), ni_fail_type(%u)",
                                    (unsigned)event.mlength,
                                    (unsigned)event.remote_offset,
+                                   event.user_ptr,
+                                   (unsigned)event.ni_fail_type);
+                        }
+                        break;
+                    case PTL_EVENT_SEND:
+                        /* initiator */
+                        if (verb) {
+                            printf("user_ptr(%p), ni_fail_type(%u)",
                                    event.user_ptr,
                                    (unsigned)event.ni_fail_type);
                         }
