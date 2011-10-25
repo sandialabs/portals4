@@ -110,6 +110,7 @@ typedef struct ni {
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
+		uint32_t hash;
 		int world_size;		/* number of ranks on the node */
 		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
