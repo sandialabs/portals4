@@ -110,8 +110,8 @@ typedef struct ni {
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
-		size_t num_siblings;		/* number of ranks on the node */
-		ptl_rank_t local_rank;		/* local rank on this node [0..num_siblings[ */
+		int world_size;		/* number of ranks on the node */
+		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
 		struct NEMESIS_blocking_queue *receiveQ;
 		pthread_t catcher;

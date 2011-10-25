@@ -463,36 +463,6 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
-#ifdef WITH_TRANSPORT_SHMEM
-	/* 
-	 * Buffers in shared memory. The buffers will be allocated later,
-	 * but not by the pool management. We compute the size now.
-	 */
-	//PARSE_ENV_NUM("OMPI_COMM_WORLD_LOCAL_SIZE", ni->shmem.num_siblings, 1);
-	{
-		char *str = getenv("OMPI_COMM_WORLD_LOCAL_SIZE");
-		ni->shmem.num_siblings = atoi(str);
-	}
-
-	/* Allocate a pool of buffers in the mmapped region. 
-	 * TODO: make 512 a parameter. */
-	ni->shmem.per_proc_comm_buf_numbers = 512;
-
-	ni->sbuf_pool.setup = buf_setup;
-	ni->sbuf_pool.init = buf_init;
-	ni->sbuf_pool.cleanup = buf_cleanup;
-	ni->sbuf_pool.use_pre_alloc_buffer = 1;
-	ni->sbuf_pool.round_size = real_buf_t_size();
-	ni->sbuf_pool.slab_size = ni->shmem.per_proc_comm_buf_numbers * ni->sbuf_pool.round_size;
-
-	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
-					POOL_SBUF, (obj_t *)ni);
-	if (err) {
-		WARN();
-		return err;
-	}
-#endif
-
 	return PTL_OK;
 }
 
@@ -696,21 +666,6 @@ static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
 	return err;
 }
 
-/* For SHMEM we need the local rank of that rank on the node. */
-static int get_local_rank(ni_t *ni)
-{
-	char *env;
-
-	env = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
-	if (env) {
-		ni->shmem.local_rank = atoi(env);
-		return PTL_OK;
-	} else {
-		ptl_warn("Environment variable OMPI_COMM_WORLD_LOCAL_RANK is missing\n"); 
-		return PTL_FAIL;
-	}
-}
-
 int PtlNIInit(ptl_interface_t	iface_id,
 	      unsigned int	options,
 	      ptl_pid_t		pid,
@@ -854,17 +809,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	if (unlikely(err))
 		goto err3;
 
-	err = get_local_rank(ni);
-	if (unlikely(err))
-		goto err3;
-
 	err = PtlNIInit_IB(iface, ni);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
-	}
-
-	err = PtlNIInit_shmem(iface, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
@@ -946,14 +891,21 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 
 	/* lookup our nid/pid to determine rank */
 	ni->id.rank = PTL_RANK_ANY;
+	ni->shmem.world_size = 0;
+	ni->shmem.index = -1;
 
 	iface = ni->iface;
 
 	for (i = 0; i < map_size; i++) {
-		if ((mapping[i].phys.nid == iface->id.phys.nid) &&
-			(mapping[i].phys.pid == iface->id.phys.pid)) {
-			ni->id.rank = i;
-			ptl_test_rank = i;
+		if (mapping[i].phys.nid == iface->id.phys.nid) {
+			
+			if (mapping[i].phys.pid == iface->id.phys.pid) {
+				ni->id.rank = i;
+				ni->shmem.index = ni->shmem.world_size;
+				ptl_test_rank = i;
+			}
+
+			ni->shmem.world_size ++;
 		}
 	}
 
@@ -970,6 +922,12 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
+
+	err = PtlNIInit_shmem(iface, ni);
+	if (unlikely(err)) {
+		WARN();
+		goto err2;
+	}
 	PtlNIInit_shmem_part2(ni);
 
 	ni_put(ni);
@@ -1061,7 +1019,8 @@ static void ni_cleanup(ni_t *ni)
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 
-	cleanup_shmem(ni);
+	if (ni->options & PTL_NI_LOGICAL)
+		cleanup_shmem(ni);
 	cleanup_ib(ni);
 
 	release_buffers(ni);
@@ -1078,7 +1037,6 @@ static void ni_cleanup(ni_t *ni)
 	}
 
 	pool_fini(&ni->buf_pool);
-	pool_fini(&ni->sbuf_pool);
 	pool_fini(&ni->xt_pool);
 	pool_fini(&ni->xi_pool);
 	pool_fini(&ni->ct_pool);

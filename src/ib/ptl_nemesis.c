@@ -137,16 +137,13 @@ static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking
 }
 
 #define C_VALIDPTR(x) assert(((uintptr_t)(x)) >= (uintptr_t)ni->shmem.comm_pad && \
-                             ((uintptr_t)(x)) < ((uintptr_t)ni->shmem.comm_pad + ni->shmem.per_proc_comm_buf_size * (ni->shmem.num_siblings + 1)))
+                             ((uintptr_t)(x)) < ((uintptr_t)ni->shmem.comm_pad + ni->shmem.per_proc_comm_buf_size * (ni->shmem.world_size + 1)))
 
 void PtlInternalFragmentSetup(ni_t *ni)
 {
     /* first, initialize the receive queue */
-    ni->shmem.receiveQ = (NEMESIS_blocking_queue *)(ni->shmem.comm_pad + pagesize + (ni->shmem.per_proc_comm_buf_size * ni->shmem.local_rank));
+    ni->shmem.receiveQ = (NEMESIS_blocking_queue *)(ni->shmem.comm_pad + pagesize + (ni->shmem.per_proc_comm_buf_size * ni->shmem.index));
     PtlInternalNEMESISBlockingInit(ni);
-
-	/* The buffer is right after the queue. */
-	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.receiveQ + 1);
 }
 
 /* this enqueues a fragment in the specified receive queue */
