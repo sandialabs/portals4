@@ -167,9 +167,9 @@ AC_SUBST(TEST_INVOKE_CMD)
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
     [Use Shared memory / KNEM for local communication with IB implementation.])])
-AS_IF([test "$with_implementation" = "ib" -a "$enable_shmem" == "yes"],
+AS_IF([test "$with_implementation" = "ib" -a "$enable_ib_shmem" == "yes"],
   [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
-AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_shmem" == xyes)
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
 
 # Whether to use XRC or not. If RC is selected then they are used like
 # an XRC qp (ie. half-duplex connection). This is a temporary mesure.
