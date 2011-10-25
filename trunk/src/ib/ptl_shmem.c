@@ -15,7 +15,7 @@ static int send_message_shmem(buf_t *buf, int signaled)
 	buf->type = BUF_SHMEM;
 	buf->comp = signaled;
 
-	buf->shmem.source = buf->obj.obj_ni->shmem.local_rank;
+	buf->shmem.source = buf->obj.obj_ni->shmem.index;
 
 	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
 
@@ -258,7 +258,7 @@ static void *PtlInternalDMCatcher(void *param)
 
 		case BUF_SHMEM_RETURN:
 			/* Buffer returned to us by remote node. */
-			assert(shmem_buf->shmem.source == ni->shmem.local_rank);
+			assert(shmem_buf->shmem.source == ni->shmem.index);
 
 			send_comp_shmem(shmem_buf);
 
@@ -291,7 +291,7 @@ static void PtlInternalDMTeardown(ni_t *ni)
 		return;
 
 	buf->type = BUF_SHMEM_STOP;
-	PtlInternalFragmentToss(ni, buf, ni->shmem.local_rank);
+	PtlInternalFragmentToss(ni, buf, ni->shmem.index);
 
 	if (ni->shmem.has_catcher) {
 		ptl_assert(pthread_join(ni->shmem.catcher, NULL), 0);
@@ -299,26 +299,27 @@ static void PtlInternalDMTeardown(ni_t *ni)
 	}
 }
 
-#define PARSE_ENV_NUM(env_str, var, reqd) do {							\
-		char       *strerr;												\
-		const char *str = getenv(env_str);								\
-		if (str == NULL) {												\
-			if (reqd == 1) { goto exit_fail; }							\
-		} else {														\
-			size_t tmp = strtol(str, &strerr, 10);						\
-			if ((strerr == NULL) || (strerr == str) || (*strerr != 0)) { \
-				goto exit_fail;											\
-			}															\
-			var = tmp;													\
-		}																\
-	} while (0)
-
-
 int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
 	char *env;
+	int err;
+
+	/* 
+	 * Buffers in shared memory. The buffers will be allocated later,
+	 * but not by the pool management. We compute the sizes now.
+	 */
+	/* Allocate a pool of buffers in the mmapped region.
+	 * TODO: make 512 a parameter. */
+	ni->shmem.per_proc_comm_buf_numbers = 512;
+
+	ni->sbuf_pool.setup = buf_setup;
+	ni->sbuf_pool.init = buf_init;
+	ni->sbuf_pool.cleanup = buf_cleanup;
+	ni->sbuf_pool.use_pre_alloc_buffer = 1;
+	ni->sbuf_pool.round_size = real_buf_t_size();
+	ni->sbuf_pool.slab_size = ni->shmem.per_proc_comm_buf_numbers * ni->sbuf_pool.round_size;
 
 	/* Open KNEM device */
 	if (knem_init(ni))
@@ -339,12 +340,12 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
-		(ni->shmem.per_proc_comm_buf_size * (ni->shmem.num_siblings + 1));                  // the one extra is for the collator
+		(ni->shmem.per_proc_comm_buf_size * (ni->shmem.world_size + 1));                  // the one extra is for the collator
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == NULL);
 
-	if (ni->shmem.local_rank == 0) {
+	if (ni->shmem.index == 0) {
 		/* Just in case, remove that file if it already exist. */
 		shm_unlink(comm_pad_shm_name);
 
@@ -397,7 +398,18 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 	close(shm_fd);
 	shm_fd = -1;
 
+	/* Now we can create the buffer pool */
 	PtlInternalFragmentSetup(ni);
+
+	/* The buffer is right after the nemesis queue. */
+	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.receiveQ + 1);
+
+	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
+					POOL_SBUF, (obj_t *)ni);
+	if (err) {
+		WARN();
+		goto exit_fail;
+	}
 
 	return PTL_OK;
 
@@ -427,12 +439,12 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 	 * (ie. that is enough for 341 local ranks).. */
 	ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
 
-	ptable[ni->shmem.local_rank].id = ni->id;
+	ptable[ni->shmem.index].id = ni->id;
 	__sync_synchronize(); /* ensure "valid" is not written before pid. */
-	ptable[ni->shmem.local_rank].valid = 1;
+	ptable[ni->shmem.index].valid = 1;
 
 	/* Now, wait for my siblings to get here. */
-	for (i = 0; i < ni->shmem.num_siblings; ++i) {
+	for (i = 0; i < ni->shmem.world_size; ++i) {
 		conn_t *conn;
 
 		/* oddly enough, this should reduce cache traffic for large numbers
@@ -473,6 +485,8 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 void cleanup_shmem(ni_t *ni)
 {
 	PtlInternalDMTeardown(ni);
+
+	pool_fini(&ni->sbuf_pool);
 
 	if (ni->shmem.comm_pad) {
 		munmap(ni->shmem.comm_pad, ni->shmem.comm_pad_size);
