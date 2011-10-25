@@ -303,7 +303,6 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
-	char *env;
 	int err;
 
 	/* 
@@ -325,13 +324,9 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 	if (knem_init(ni))
 		goto exit_fail;
 
-	/* Get the environemnt Job ID to create a unique name for the shared memory file. */
-	env = getenv("OMPI_MCA_orte_ess_jobid");
-	if (!env) {
-		ptl_warn("Environment variable OMPI_MCA_orte_ess_jobid missing\n"); 
-		goto exit_fail;
-	}
-	snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name), "/portals4-shmem-%s-%d", env, ni->options);
+	/* Create a unique name for the shared memory file. Use the hash
+	 * created from the mapping. */
+	snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name), "/portals4-shmem-%x-%d", ni->shmem.hash, ni->options);
 	ni->shmem.comm_pad_shm_name = strdup(comm_pad_shm_name);
 
 	/* Allocate a pool of buffers in the mmapped region. */
