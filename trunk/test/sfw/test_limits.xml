@@ -296,7 +296,7 @@
             <ptl_me>
               <ptl_md>
                 <ptl_put length="4" target_id="SELF"/>
-                <msleep count="10"/>
+                <msleep count="50"/>
               </ptl_md>
             </ptl_me>
           </ptl_pt>
@@ -327,7 +327,7 @@
             <ptl_me>
               <ptl_md>
                 <ptl_get length="4" target_id="SELF"/>
-                <msleep count="10"/>
+                <msleep count="50"/>
               </ptl_md>
             </ptl_me>
           </ptl_pt>
@@ -359,7 +359,7 @@
               <ptl_md>
                 <ptl_ct>
                   <ptl_trig_put length="4" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <msleep count="50"/>
                 </ptl_ct>
               </ptl_md>
             </ptl_me>
@@ -394,7 +394,7 @@
               <ptl_md>
                 <ptl_ct>
                   <ptl_trig_get length="4" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <msleep count="50"/>
                 </ptl_ct>
               </ptl_md>
             </ptl_me>
@@ -428,7 +428,7 @@
             <ptl_me>
               <ptl_md>
                 <ptl_atomic length="4" target_id="SELF"/>
-                <msleep count="10"/>
+                <msleep count="50"/>
               </ptl_md>
             </ptl_me>
           </ptl_pt>
@@ -460,7 +460,7 @@
               <ptl_md>
                 <ptl_md>
                   <ptl_fetch length="4" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <msleep count="50"/>
                 </ptl_md>
               </ptl_md>
             </ptl_me>
@@ -495,7 +495,7 @@
               <ptl_md>
                 <ptl_md>
                   <ptl_swap length="4" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <msleep count="50"/>
                 </ptl_md>
               </ptl_md>
             </ptl_me>
@@ -530,7 +530,7 @@
               <ptl_md>
                 <ptl_ct>
                   <ptl_trig_atomic length="4" target_id="SELF"/>
-                  <msleep count="10"/>
+                  <msleep count="50"/>
                 </ptl_ct>
               </ptl_md>
             </ptl_me>
@@ -566,7 +566,7 @@
                 <ptl_md>
                   <ptl_ct>
                     <ptl_trig_fetch length="4" target_id="SELF"/>
-                    <msleep count="10"/>
+                    <msleep count="50"/>
                   </ptl_ct>
                 </ptl_md>
               </ptl_md>
@@ -605,7 +605,7 @@
                 <ptl_md>
                   <ptl_ct>
                     <ptl_trig_swap length="4" target_id="SELF"/>
-                    <msleep count="10"/>
+                    <msleep count="50"/>
                   </ptl_ct>
                 </ptl_md>
               </ptl_md>

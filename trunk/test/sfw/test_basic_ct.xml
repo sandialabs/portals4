@@ -236,7 +236,7 @@
                 <ptl_ct_wait ct_test="10"/>
               </if>
               <if thread_id="1">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <repeat count="10">
                   <ptl_ct_inc ct_event_success="1"/>
                 </repeat>
@@ -256,7 +256,7 @@
                 <ptl_ct_wait ct_test="10"/>
               </if>
               <if thread_id="1">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <ptl_ct_set ct_event_success="5" ct_event_failure="5"/>
               </if>
             </threads>
@@ -274,7 +274,7 @@
                 <ptl_ct_wait ct_test="10" ret="INTERRUPTED"/>
               </if>
               <if thread_id="1">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <ptl_ct_free/>
               </if>
             </threads>
@@ -336,7 +336,7 @@
                 <ptl_ct_poll time="130" ct_test="10"/>
               </if>
               <if thread_id="1">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <repeat count="10">
                   <ptl_ct_inc ct_event_success="1"/>
                 </repeat>
@@ -359,7 +359,7 @@
                 <ptl_ct_poll time="130" ct_test="10"/>
               </if>
               <if thread_id="2">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <repeat count="10">
                   <ptl_ct_inc ct_event_success="1"/>
                 </repeat>
@@ -382,7 +382,7 @@
                 <ptl_ct_poll time="130" ct_test="10"/>
               </if>
               <if thread_id="2">
-                <msleep count="10"/>
+                <msleep count="50"/>
                 <repeat count="10">
                   <ptl_ct_inc ct_event_success="1"/>
                 </repeat>

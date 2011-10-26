@@ -9,7 +9,7 @@
             <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77">
               <ptl_md md_data="0xaa">
                 <ptl_put length="4" match="0x5555" target_id="SELF"/>
-                <msleep count="10"/>
+                <msleep count="50"/>
               </ptl_md>
               <check length="4" me_data="0xaa"/>
             </ptl_me>
@@ -25,7 +25,7 @@
             <ptl_me me_opt="OP_PUT" me_match="0x5555" me_data="0x77">
               <ptl_md md_data="0xaa">
                 <ptl_put length="4" match="0x5555" rem_offset="3" target_id="SELF"/>
-                <msleep count="10"/>
+                <msleep count="50"/>
               </ptl_md>
               <check length="3" me_data="0x77"/>
               <check length="4" offset="3" me_data="0xaa"/>

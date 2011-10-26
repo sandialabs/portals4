@@ -20,7 +20,7 @@
                       </ptl_md>
                     </repeat>
                     
-                    <msleep count="10"/>
+                    <msleep count="50"/>
                     
                     <ptl_eq_wait ret="EQ_DROPPED"/>
                     <ptl_eq_wait ret="OK"/>
