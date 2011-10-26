@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <search.h>
 #include <sys/ioctl.h>
+#include <endian.h>
 
 #include "tree.h"
 
@@ -54,6 +55,9 @@ static const int check_param = 1;
 typedef uint16_t	__be16;
 typedef uint32_t	__be32;
 typedef uint64_t	__be64;
+typedef uint16_t	__le16;
+typedef uint32_t	__le32;
+typedef uint64_t	__le64;
 
 extern unsigned int pagesize;
 extern unsigned int linesize;
@@ -92,38 +96,25 @@ extern int debug;
 
 #define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
 
-#ifndef cpu_to_be16
-#define cpu_to_be16(x)	htons(x)
-#endif
-
-#ifndef be16_to_cpu
-#define be16_to_cpu(x)	htons(x)
-#endif
-
-#ifndef cpu_to_be32
-#define cpu_to_be32(x)	htonl(x)
-#endif
-
-#ifndef be32_to_cpu
-#define be32_to_cpu(x)	htonl(x)
-#endif
-
-#ifndef cpu_to_be64
-/* TODO make this be the builtin fcn */
-static inline uint64_t cpu_to_be64(uint64_t x)
-{
+static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }
+static inline uint16_t be16_to_cpu(__be16 x) { return htons(x); }
+static inline __be32 cpu_to_be32(uint32_t x) { return htonl(x); }
+static inline uint32_t be32_to_cpu(__be32 x) { return htonl(x); }
+static inline __be64 cpu_to_be64(uint64_t x) {
 	uint64_t y = htonl((uint32_t)x);
-
 	return (y << 32) | htonl((uint32_t)(x >> 32));
 }
-#endif
+static inline uint64_t be64_to_cpu(__be64 x) { return cpu_to_be64(x); }
 
-#ifndef be64_to_cpu
-/* TODO make this be the builtin fcn */
-static inline uint64_t be64_to_cpu(uint64_t x)
-{
-	return cpu_to_be64(x);
-}
+#if __BYTE_ORDER==__LITTLE_ENDIAN
+static inline __le16 cpu_to_le16(uint16_t x) { return x; }
+static inline uint16_t le16_to_cpu(__le16 x) { return x; }
+static inline __le32 cpu_to_le32(uint32_t x) { return x; }
+static inline uint32_t le32_to_cpu(__le32 x) { return x; }
+static inline __le64 cpu_to_le64(uint64_t x) { return x; }
+static inline uint64_t le64_to_cpu(__le64 x) { return x; }
+#else
+#error Not defined yet.
 #endif
 
 enum recv_state {

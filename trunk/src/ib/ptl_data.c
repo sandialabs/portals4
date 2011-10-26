@@ -81,10 +81,10 @@ int data_size(data_t *data)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
-		size += be32_to_cpu(data->immediate.data_length);
+		size += le32_to_cpu(data->immediate.data_length);
 		break;
 	case DATA_FMT_RDMA_DMA:
-		size += be32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
+		size += le32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
 		break;
 	case DATA_FMT_RDMA_INDIRECT:
 		size += sizeof(struct ibv_sge);
@@ -123,7 +123,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 	if (dir == DATA_DIR_OUT && length <= get_param(PTL_MAX_INLINE_DATA)) {
 		data->data_fmt = DATA_FMT_IMMEDIATE;
-		data->immediate.data_length = cpu_to_be32(length);
+		data->immediate.data_length = cpu_to_le32(length);
 
 		if (md->options & PTL_IOVEC) {
 			err = iov_copy_out(data->immediate.data, md->start, md->num_iov,
@@ -156,15 +156,15 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 			if (transport_type == CONN_TYPE_RDMA) {
 				data->data_fmt = DATA_FMT_RDMA_INDIRECT;
-				data->rdma.num_sge = cpu_to_be32(1);
+				data->rdma.num_sge = cpu_to_le32(1);
 
 				data->rdma.sge_list->addr
-					= cpu_to_be64((uintptr_t)&md->sge_list[iov_start]);
+					= cpu_to_le64((uintptr_t)&md->sge_list[iov_start]);
 				data->rdma.sge_list->length
-					= cpu_to_be32(num_sge *
+					= cpu_to_le32(num_sge *
 								  sizeof(struct ibv_sge));
 				data->rdma.sge_list->lkey
-					= cpu_to_be32(md->sge_list_mr->ibmr->rkey);
+					= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
 
 				buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 			} else {
@@ -181,7 +181,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		} else {
 			if (transport_type == CONN_TYPE_RDMA) {
 				data->data_fmt = DATA_FMT_RDMA_DMA;
-				data->rdma.num_sge = cpu_to_be32(num_sge);
+				data->rdma.num_sge = cpu_to_le32(num_sge);
 				buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
 
@@ -201,7 +201,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		}
 
 		/* Adjust the header offset for iov start. */
-		hdr->offset = cpu_to_be64(be64_to_cpu(hdr->offset) - iov_offset);
+		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
 
 		assert(buf->length <= BUF_DATA_SIZE);
 	} else {
@@ -218,12 +218,12 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		mr = buf->mr_list[buf->num_mr];
 
 		if (transport_type == CONN_TYPE_RDMA) {
-			data->rdma.num_sge = cpu_to_be32(1);
+			data->rdma.num_sge = cpu_to_le32(1);
 			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 
-			data->rdma.sge_list[0].addr = cpu_to_be64((uintptr_t)addr);
-			data->rdma.sge_list[0].length = cpu_to_be32(length);
-			data->rdma.sge_list[0].lkey = cpu_to_be32(mr->ibmr->rkey);
+			data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
+			data->rdma.sge_list[0].length = cpu_to_le32(length);
+			data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
 
 			data->data_fmt = DATA_FMT_RDMA_DMA;
 		} else {
@@ -247,9 +247,9 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				   (uintptr_t)md->start, (int) offset);
 			printf("sge_list[0].addr(0x%lx), length(%d),"
 				   " lkey(%d)\n",
-				   be64_to_cpu(data->rdma.sge_list[0].addr),
-				   be32_to_cpu(data->rdma.sge_list[0].length),
-				   be32_to_cpu(data->rdma.sge_list[0].lkey));
+				   le64_to_cpu(data->rdma.sge_list[0].addr),
+				   le32_to_cpu(data->rdma.sge_list[0].length),
+				   le32_to_cpu(data->rdma.sge_list[0].lkey));
 		}
 #endif
 	}
@@ -272,7 +272,7 @@ int append_tgt_data(me_t *me, ptl_size_t offset,
 	hdr->data_out = 1;
 
 	data->data_fmt = DATA_FMT_IMMEDIATE;
-	data->immediate.data_length = cpu_to_be32(length);
+	data->immediate.data_length = cpu_to_le32(length);
 
 	if (me->options & PTL_IOVEC) {
 		err = iov_copy_out(data->immediate.data, me->start, me->num_iov,

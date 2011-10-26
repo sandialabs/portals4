@@ -709,7 +709,7 @@ static int tgt_data_out(xt_t *xt)
 	case DATA_FMT_RDMA_DMA:
 		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
 		xt->rdma.cur_rem_off = 0;
-		xt->rdma.num_rem_sge = be32_to_cpu(data->rdma.num_sge);
+		xt->rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
 
 		if (tgt_rdma_init_loc_off(xt))
 			return STATE_TGT_ERROR;
@@ -803,9 +803,9 @@ static int tgt_rdma_desc(xt_t *xt)
 	 * Allocate and map indirect buffer and setup to read
 	 * descriptor list from initiator memory.
 	 */
-	raddr = be64_to_cpu(data->rdma.sge_list[0].addr);
-	rkey = be32_to_cpu(data->rdma.sge_list[0].lkey);
-	rlen = be32_to_cpu(data->rdma.sge_list[0].length);
+	raddr = le64_to_cpu(data->rdma.sge_list[0].addr);
+	rkey = le32_to_cpu(data->rdma.sge_list[0].lkey);
+	rlen = le32_to_cpu(data->rdma.sge_list[0].length);
 
 	if (debug)
 		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
@@ -867,7 +867,7 @@ static int tgt_rdma_wait_desc(xt_t *xt)
 
 	xt->rdma.cur_rem_sge = xt->indir_sge;
 	xt->rdma.cur_rem_off = 0;
-	xt->rdma.num_rem_sge = (be32_to_cpu(data->rdma.sge_list[0].length)) /
+	xt->rdma.num_rem_sge = (le32_to_cpu(data->rdma.sge_list[0].length)) /
 			  sizeof(struct ibv_sge);
 
 	if (tgt_rdma_init_loc_off(xt))
@@ -969,7 +969,7 @@ static int tgt_data_in(xt_t *xt)
 		/* Read from SG list provided directly in request */
 		xt->rdma.cur_rem_sge = &data->rdma.sge_list[0];
 		xt->rdma.cur_rem_off = 0;
-		xt->rdma.num_rem_sge = be32_to_cpu(data->rdma.num_sge);
+		xt->rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
 
 		if (debug)
 			printf("cur_rem_sge(%p), num_rem_sge(%d)\n",
