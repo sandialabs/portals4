@@ -48,7 +48,7 @@ struct ni;
  * Used as part of the object handle.
  */
 enum obj_type {
-	POOL_NONE,
+	POOL_ANY,
 	POOL_NI,
 	POOL_MR,
 	POOL_LE,
@@ -56,7 +56,6 @@ enum obj_type {
 	POOL_MD,
 	POOL_EQ,
 	POOL_CT,
-	POOL_XI,
 	POOL_XT,
 	POOL_BUF,
 	POOL_SBUF,

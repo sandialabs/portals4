@@ -179,7 +179,7 @@ static int prepare_send_buf(xt_t *xt)
 
 	/* get per conn info */
 	if (!conn) {
-		conn = xt->conn = get_conn(ni, &xt->initiator);
+		conn = xt->conn = get_conn(ni, xt->initiator);
 		if (unlikely(!conn)) {
 			WARN();
 			return STATE_TGT_ERROR;

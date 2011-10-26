@@ -23,7 +23,7 @@ int ct_init(void *arg, void *unused)
 
 	pthread_mutex_init(&ct->mutex, NULL);
 	pthread_cond_init(&ct->cond, NULL);
-	INIT_LIST_HEAD(&ct->xi_list);
+	INIT_LIST_HEAD(&ct->buf_list);
 	INIT_LIST_HEAD(&ct->xl_list);
 
 	return PTL_OK;
@@ -53,7 +53,7 @@ int ct_new(void *arg)
 {
 	ct_t *ct = arg;
 
-	assert(list_empty(&ct->xi_list));
+	assert(list_empty(&ct->buf_list));
 	assert(list_empty(&ct->xl_list));
 
 	ct->waiters = 0;
@@ -556,15 +556,15 @@ static void __ct_check(ct_t *ct)
 	 * can now be performed or discarded
 	 * TODO this should enqueue the xi to a list and then unwind
 	 * all the ct locks before calling process_init */
-	list_for_each_prev_safe(l, t, &ct->xi_list) {
-		xi_t *xi = list_entry(l, xi_t, list);
+	list_for_each_prev_safe(l, t, &ct->buf_list) {
+		buf_t *buf = list_entry(l, buf_t, list);
 		if (ct->interrupt) {
 			list_del(l);
-			xi->state = STATE_INIT_CLEANUP;
-			process_init(xi);
-		} else if ((ct->event.success + ct->event.failure) >= xi->threshold) {
+			buf->xi.state = STATE_INIT_CLEANUP;
+			process_init(buf);
+		} else if ((ct->event.success + ct->event.failure) >= buf->xi.threshold) {
 			list_del(l);
-			process_init(xi);
+			process_init(buf);
 		}
 	}
 
@@ -936,11 +936,11 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	pthread_mutex_lock(&ct->mutex);
 
-	list_for_each_prev_safe(l, t, &ct->xi_list) {
-		xi_t *xi = list_entry(l, xi_t, list);
+	list_for_each_prev_safe(l, t, &ct->buf_list) {
+		buf_t *buf = list_entry(l, buf_t, list);
 		list_del(l);
-		xi->state = STATE_INIT_CLEANUP;
-		process_init(xi);
+		buf->xi.state = STATE_INIT_CLEANUP;
+		process_init(buf);
 	}
 
 	list_for_each_prev_safe(l, t, &ct->xl_list) {
@@ -999,15 +999,15 @@ done:
  * @param[in] xi
  * @param[in] ct
  */
-void post_ct(xi_t *xi, ct_t *ct)
+void post_ct(buf_t *buf, ct_t *ct)
 {
 	pthread_mutex_lock(&ct->mutex);
-	if ((ct->event.success + ct->event.failure) >= xi->threshold) {
+	if ((ct->event.success + ct->event.failure) >= buf->xi.threshold) {
 		pthread_mutex_unlock(&ct->mutex);
-		process_init(xi);
+		process_init(buf);
 		return;
 	}
-	list_add(&xi->list, &ct->xi_list);
+	list_add(&buf->list, &ct->buf_list);
 	pthread_mutex_unlock(&ct->mutex);
 }
 

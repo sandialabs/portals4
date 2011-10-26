@@ -45,9 +45,7 @@ struct xremote {
 };
 
 #define PTL_BASE_XX					\
-	struct list_head	list;			\
 	struct buf		*recv_buf;		\
-	struct buf *send_buf;			\
 	ptl_size_t		rlength;		\
 	ptl_size_t		mlength;		\
 	ptl_size_t		roffset;		\
@@ -88,83 +86,25 @@ struct xremote {
 	struct data		*data_in;		\
 	struct data		*data_out;		\
 	conn_t			*conn;			\
-	struct buf *ack_buf;		/* remote ACK is requested */ \
-	struct list_head	rdma_list; \
-	pthread_spinlock_t	rdma_list_lock; \
 	pthread_mutex_t	mutex;
-
-
-/* initiator side transaction descriptor */
-typedef struct xi {
-	obj_t			obj;
-	PTL_BASE_XX
-
-	ptl_handle_xt_t		xt_handle;
-	ptl_size_t		put_offset;
-	ptl_size_t		get_offset;
-	md_t			*put_md;
-	struct eq		*put_eq;
-	md_t			*get_md;
-	struct eq		*get_eq;
-	struct ct       *put_ct;
-	struct ct       *get_ct;
-	void		*user_ptr;
-	ptl_process_t	target;
-	int				completed;
-} xi_t;
 
 int xi_setup(void *arg);
 void xi_cleanup(void *arg);
-
-static inline int xi_alloc(ni_t *ni, xi_t **xi_p)
-{
-	int err;
-	obj_t *obj;
-
-	err = obj_alloc(&ni->xi_pool, &obj);
-	if (err) {
-		*xi_p = NULL;
-		return err;
-	}
-
-	*xi_p = container_of(obj, xi_t, obj);
-	return PTL_OK;
-}
-
-static inline int to_xi(ptl_handle_xi_t xi_handle, xi_t **xi_p)
-{
-	int err;
-	obj_t *obj;
-
-	err = to_obj(POOL_XI, (ptl_handle_any_t)xi_handle, &obj);
-	if (err) {
-		*xi_p = NULL;
-		return err;
-	}
-
-	*xi_p = container_of(obj, xi_t, obj);
-	return PTL_OK;
-}
-
-static inline void xi_get(xi_t *xi)
-{
-	obj_get(&xi->obj);
-}
-
-static inline int xi_put(xi_t *xi)
-{
-	return obj_put(&xi->obj);
-}
-
-static inline ptl_handle_xi_t xi_to_handle(xi_t *xi)
-{
-	return (ptl_handle_xi_t)xi->obj.obj_handle;
-}
 
 /* target side transaction descriptor */
 typedef struct xt {
 	obj_t			obj;
 	PTL_BASE_XX
+
+	// todo: remove all
+	struct list_head	list;
+	struct buf *ack_buf;		/* remote ACK is requested */ \
+	struct buf *send_buf;			\
+
+
+
+	struct list_head	rdma_list; \
+	pthread_spinlock_t	rdma_list_lock; \
 
 	ptl_handle_xi_t		xi_handle;
 	ptl_process_t		initiator;
@@ -244,44 +184,6 @@ static inline int xt_put(xt_t *xt)
 static inline ptl_handle_xt_t xt_to_handle(xt_t *xt)
 {
         return (ptl_handle_xt_t)xt->obj.obj_handle;
-}
-
-static inline void set_xi_dest(xi_t *xi, const conn_t *connect)
-{
-#ifdef USE_XRC
-	ni_t *ni = to_ni(xi);
-#endif
-
-	if (connect->transport.type == CONN_TYPE_RDMA) {
-		xi->dest.rdma.qp = connect->rdma.cm_id->qp;
-#ifdef USE_XRC
-		if (ni->options & PTL_NI_LOGICAL)
-			xi->dest.xrc_remote_srq_num = ni->logical.rank_table[xi->target.rank].remote_xrc_srq_num;
-#endif
-	} else {
-		assert(connect->transport.type == CONN_TYPE_SHMEM);
-		assert(connect->shmem.local_rank != -1);
-		xi->dest.shmem.local_rank = connect->shmem.local_rank;
-	}
-}
-
-static inline void set_xt_dest(xt_t *xt, const conn_t *connect)
-{
-#ifdef USE_XRC
-	ni_t *ni = to_ni(xt);
-#endif
-
-	if (connect->transport.type == CONN_TYPE_RDMA) {
-		xt->dest.rdma.qp = connect->rdma.cm_id->qp;
-#ifdef USE_XRC
-		if (ni->options & PTL_NI_LOGICAL)
-			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
-#endif
-	} else {
-		assert(connect->transport.type == CONN_TYPE_SHMEM);
-		assert(connect->shmem.local_rank != -1);
-		xt->dest.shmem.local_rank = connect->shmem.local_rank;
-	}
 }
 
 #endif /* PTL_XX_H */

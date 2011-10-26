@@ -11,7 +11,7 @@
 struct ct {
 	obj_t			obj;		/**< object base class */
 	ptl_ct_event_t		event;		/**< counting event data */
-	struct list_head	xi_list;	/**< list head of pending
+	struct list_head	buf_list;	/**< list head of pending
 						     triggered operations */
 	struct list_head	xl_list;	/**< list head of pending
 						     triggered ct operations */
@@ -59,7 +59,7 @@ int ct_new(void *arg);
 
 void ct_cleanup(void *arg);
 
-void post_ct(xi_t *xi, ct_t *ct);
+void post_ct(buf_t *buf, ct_t *ct);
 
 void post_ct_local(xl_t *xl, ct_t *ct);
 
