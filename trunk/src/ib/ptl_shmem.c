@@ -248,11 +248,11 @@ static void *PtlInternalDMCatcher(void *param)
 				buf->length = shmem_buf->length;
 				INIT_LIST_HEAD(&buf->list);
 				process_recv_shmem(ni, buf);
-
-				/* Send the buffer back. */
-				shmem_buf->type = BUF_SHMEM_RETURN;
-				PtlInternalFragmentToss(ni, shmem_buf, shmem_buf->shmem.source);
 			}
+
+			/* Send the buffer back. */
+			shmem_buf->type = BUF_SHMEM_RETURN;
+			PtlInternalFragmentToss(ni, shmem_buf, shmem_buf->shmem.source);
 		}
 			break;
 
@@ -348,7 +348,7 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		assert(shm_fd >= 0);
 
 		if (shm_fd < 0) {
-			ptl_warn("shm_open failed (errno=%d)", errno);
+			ptl_warn("shm_open of %s failed (errno=%d)", comm_pad_shm_name, errno);
 			goto exit_fail;
 		}
 
