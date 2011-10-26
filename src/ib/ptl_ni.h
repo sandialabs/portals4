@@ -127,7 +127,6 @@ typedef struct ni {
 	pool_t			le_pool;
 	pool_t			eq_pool;
 	pool_t			ct_pool;
-	pool_t			xi_pool;
 	pool_t			xt_pool;
 	pool_t			buf_pool;
 	pool_t			sbuf_pool;

@@ -576,7 +576,7 @@ err0:
  * @param[in] type
  * @param[in] start
  */
-void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
+void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type, void *start)
 {
 	ptl_event_t *ev;
 
@@ -590,19 +590,19 @@ void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start)
 	}
 
 	ev->type		= type;
-	ev->initiator		= xi->target;
-	ev->pt_index		= xi->pt_index;
-	ev->uid			= xi->uid;
-	ev->match_bits		= xi->match_bits;
-	ev->rlength		= xi->rlength;
-	ev->mlength		= xi->mlength;
-	ev->remote_offset	= xi->moffset;
+	ev->initiator		= buf->xi.target;
+	ev->pt_index		= buf->xi.pt_index;
+	ev->uid			= buf->xi.uid;
+	ev->match_bits		= buf->xi.match_bits;
+	ev->rlength		= buf->xi.rlength;
+	ev->mlength		= buf->xi.mlength;
+	ev->remote_offset	= buf->xi.moffset;
 	ev->start		= start;
-	ev->user_ptr		= xi->user_ptr;
-	ev->hdr_data		= xi->hdr_data;
-	ev->ni_fail_type	= xi->ni_fail;
-	ev->atomic_operation	= xi->atom_op;
-	ev->atomic_type		= xi->atom_type;
+	ev->user_ptr		= buf->xi.user_ptr;
+	ev->hdr_data		= buf->xi.hdr_data;
+	ev->ni_fail_type	= buf->xi.ni_fail;
+	ev->atomic_operation	= buf->xi.atom_op;
+	ev->atomic_type		= buf->xi.atom_type;
 
 	__eq_check(eq);
 

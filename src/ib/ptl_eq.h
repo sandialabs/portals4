@@ -54,7 +54,7 @@ int eq_new(void *arg);
 
 void eq_cleanup(void *arg);
 
-void make_init_event(xi_t *xi, eq_t *eq, ptl_event_kind_t type, void *start);
+void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type, void *start);
 
 void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
 		       void *user_ptr, void *start);

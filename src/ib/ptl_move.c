@@ -4,6 +4,33 @@
 
 #include "ptl_loc.h"
 
+static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **buf)
+{
+	conn_t *conn;
+	int err;
+
+	conn = get_conn(ni, target_id);
+	if (unlikely(!conn)) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	if (conn->transport.type == CONN_TYPE_RDMA)
+		err = buf_alloc(ni, buf);
+	else
+		err = sbuf_alloc(ni, buf);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+	if ((*buf)->type != BUF_FREE) abort();
+
+	(*buf)->xi.conn = conn;
+
+	return PTL_OK;
+}
+
 static int get_operand(ptl_datatype_t type, const void *operand, uint64_t *opval)
 {
 	uint64_t val;
@@ -91,7 +118,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	int err;
 	md_t *md;
 	ni_t *ni;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -113,33 +140,33 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
 	}
 
-	xi->operation = OP_PUT;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->ack_req = ack_req;
-	xi->put_md = md;
-	xi->put_eq = md->eq;
-	xi->put_ct = md->ct;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
+	buf->xi.operation = OP_PUT;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.ack_req = ack_req;
+	buf->xi.put_md = md;
+	buf->xi.put_eq = md->eq;
+	buf->xi.put_ct = md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
 
-	xi->rlength = length;
-	xi->put_offset = local_offset;
-	xi->put_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_offset;
+	buf->xi.put_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	process_init(xi);
+	process_init(buf);
 
 	gbl_put();
 	return PTL_OK;
@@ -162,7 +189,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -196,34 +223,34 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	xi->operation = OP_PUT;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->ack_req = ack_req;
-	xi->put_md = md;
-	xi->put_eq = md->eq;
-	xi->put_ct = md->ct;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
-	xi->threshold = threshold;
+	buf->xi.operation = OP_PUT;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.ack_req = ack_req;
+	buf->xi.put_md = md;
+	buf->xi.put_eq = md->eq;
+	buf->xi.put_ct = md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.threshold = threshold;
 
-	xi->rlength = length;
-	xi->put_offset = local_offset;
-	xi->put_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_offset;
+	buf->xi.put_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	post_ct(xi, ct);
+	post_ct(buf, ct);
 
 	ct_put(ct);
 	gbl_put();
@@ -261,29 +288,29 @@ static int check_get(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 }
 #endif
 
-static inline void preparePtlGet(xi_t *xi, ni_t *ni, md_t *md,
+static inline void preparePtlGet(buf_t *buf, ni_t *ni, md_t *md,
 								 ptl_size_t local_offset,
 								 ptl_size_t length, ptl_process_t target_id,
 								 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
 								 ptl_size_t remote_offset, void *user_ptr)
 {
-	xi->operation = OP_GET;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->get_md = md;
-	xi->get_eq = md->eq;
-	xi->get_ct = md->ct;
-	xi->user_ptr = user_ptr;
+	buf->xi.operation = OP_GET;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.get_md = md;
+	buf->xi.get_eq = md->eq;
+	buf->xi.get_ct = md->ct;
+	buf->xi.user_ptr = user_ptr;
 
-	xi->rlength = length;
-	xi->get_offset = local_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.get_offset = local_offset;
+	buf->xi.get_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 }
 
 int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
@@ -294,7 +321,7 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	int err;
 	md_t *md;
 	ni_t *ni;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -312,18 +339,18 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
 	}
 
-	preparePtlGet(xi, ni, md, local_offset,
+	preparePtlGet(buf, ni, md, local_offset,
 				  length, target_id,
 				  pt_index, match_bits,
 				  remote_offset, user_ptr);
 
-	process_init(xi);
+	process_init(buf);
 
 	gbl_put();
 	return PTL_OK;
@@ -345,7 +372,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -373,20 +400,20 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	preparePtlGet(xi, ni, md, local_offset,
+	preparePtlGet(buf, ni, md, local_offset,
 				  length, target_id,
 				  pt_index, match_bits,
 				  remote_offset, user_ptr);
 
-	xi->threshold = threshold;
+	buf->xi.threshold = threshold;
 
-	post_ct(xi, ct);
+	post_ct(buf, ct);
 
 	ct_put(ct);
 	gbl_put();
@@ -507,7 +534,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	int err;
 	md_t *md;
 	ni_t *ni;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -525,35 +552,35 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;
 	}
 
-	xi->operation = OP_ATOMIC;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->ack_req = ack_req;
-	xi->put_md = md;
-	xi->put_eq = md->eq;
-	xi->put_ct = md->ct;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
+	buf->xi.operation = OP_ATOMIC;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.ack_req = ack_req;
+	buf->xi.put_md = md;
+	buf->xi.put_eq = md->eq;
+	buf->xi.put_ct = md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
 
-	xi->rlength = length;
-	xi->put_offset = local_offset;
-	xi->put_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_offset;
+	buf->xi.put_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	process_init(xi);
+	process_init(buf);
 
 	gbl_put();
 	return PTL_OK;
@@ -577,7 +604,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	ct_t *ct = NULL;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -605,36 +632,36 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	xi->operation = OP_ATOMIC;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->ack_req = ack_req;
-	xi->put_md = md;
-	xi->put_eq = md->eq;
-	xi->put_ct = md->ct;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
-	xi->threshold = threshold;
+	buf->xi.operation = OP_ATOMIC;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.ack_req = ack_req;
+	buf->xi.put_md = md;
+	buf->xi.put_eq = md->eq;
+	buf->xi.put_ct = md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
+	buf->xi.threshold = threshold;
 
-	xi->rlength = length;
-	xi->put_offset = local_offset;
-	xi->put_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_offset;
+	buf->xi.put_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	post_ct(xi, ct);
+	post_ct(buf, ct);
 
 	ct_put(ct);
 	gbl_put();
@@ -661,7 +688,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -705,40 +732,40 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	}
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	xi->operation = OP_FETCH;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->put_md = put_md;
-	xi->put_eq = put_md->eq;
-	xi->put_ct = put_md->ct;
-	xi->get_md = get_md;
-	xi->get_eq = get_md->eq;
-	xi->get_ct = get_md->ct;
-	xi->rlength = length;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
+	buf->xi.operation = OP_FETCH;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.put_md = put_md;
+	buf->xi.put_eq = put_md->eq;
+	buf->xi.put_ct = put_md->ct;
+	buf->xi.get_md = get_md;
+	buf->xi.get_eq = get_md->eq;
+	buf->xi.get_ct = get_md->ct;
+	buf->xi.rlength = length;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
 
-	xi->rlength = length;
-	xi->put_offset = local_put_offset;
-	xi->put_resid = length;
-	xi->get_offset = local_get_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_put_offset;
+	buf->xi.put_resid = length;
+	buf->xi.get_offset = local_get_offset;
+	buf->xi.get_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	process_init(xi);
+	process_init(buf);
 
 	gbl_put();
 	return PTL_OK;
@@ -769,7 +796,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	md_t *put_md = NULL;
 	ni_t *ni;
 	ct_t *ct = NULL;
-	xi_t *xi;
+	buf_t *buf;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -825,41 +852,41 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	}
 #endif
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err4;
 	}
 
-	xi->operation = OP_FETCH;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->put_md = put_md;
-	xi->put_eq = put_md->eq;
-	xi->put_ct = put_md->ct;
-	xi->get_md = get_md;
-	xi->get_eq = get_md->eq;
-	xi->get_ct = get_md->ct;
-	xi->rlength = length;
-	xi->hdr_data = hdr_data;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
-	xi->threshold = threshold;
+	buf->xi.operation = OP_FETCH;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.put_md = put_md;
+	buf->xi.put_eq = put_md->eq;
+	buf->xi.put_ct = put_md->ct;
+	buf->xi.get_md = get_md;
+	buf->xi.get_eq = get_md->eq;
+	buf->xi.get_ct = get_md->ct;
+	buf->xi.rlength = length;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
+	buf->xi.threshold = threshold;
 
-	xi->rlength = length;
-	xi->put_offset = local_put_offset;
-	xi->put_resid = length;
-	xi->get_offset = local_get_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_put_offset;
+	buf->xi.put_resid = length;
+	buf->xi.get_offset = local_get_offset;
+	buf->xi.get_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	post_ct(xi, ct);
+	post_ct(buf, ct);
 
 	ct_put(ct);
 	gbl_put();
@@ -980,7 +1007,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	md_t *get_md;
 	md_t *put_md = NULL;
 	ni_t *ni;
-	xi_t *xi;
+	buf_t *buf;
 	uint64_t opval = 0;
 
 	err = get_gbl();
@@ -1034,40 +1061,40 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		}
 	}
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-	xi->operation = OP_SWAP;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->put_md = put_md;
-	xi->put_eq = put_md->eq;
-	xi->put_ct = put_md->ct;
-	xi->get_md = get_md;
-	xi->get_eq = get_md->eq;
-	xi->get_ct = get_md->ct;
-	xi->hdr_data = hdr_data;
-	xi->operand = opval;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
+	buf->xi.operation = OP_SWAP;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.put_md = put_md;
+	buf->xi.put_eq = put_md->eq;
+	buf->xi.put_ct = put_md->ct;
+	buf->xi.get_md = get_md;
+	buf->xi.get_eq = get_md->eq;
+	buf->xi.get_ct = get_md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.operand = opval;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
 
-	xi->rlength = length;
-	xi->put_offset = local_put_offset;
-	xi->put_resid = length;
-	xi->get_offset = local_get_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_put_offset;
+	buf->xi.put_resid = length;
+	buf->xi.get_offset = local_get_offset;
+	buf->xi.get_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	process_init(xi);
+	process_init(buf);
 
 	gbl_put();
 	return PTL_OK;
@@ -1095,7 +1122,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	md_t *put_md = NULL;
 	ni_t *ni;
 	ct_t *ct = NULL;
-	xi_t *xi;
+	buf_t *buf;
 	uint64_t opval = 0;
 
 	err = get_gbl();
@@ -1161,41 +1188,41 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		}
 	}
 
-	err = xi_alloc(ni, &xi);
+	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err)) {
 		WARN();
 		goto err4;
 	}
 
-	xi->operation = OP_SWAP;
-	xi->target = target_id;
-	xi->uid = ni->uid;
-	xi->pt_index = pt_index;
-	xi->match_bits = match_bits,
-	xi->put_md = put_md;
-	xi->put_eq = put_md->eq;
-	xi->put_ct = put_md->ct;
-	xi->get_md = get_md;
-	xi->get_eq = get_md->eq;
-	xi->get_ct = get_md->ct;
-	xi->hdr_data = hdr_data;
-	xi->operand = opval;
-	xi->user_ptr = user_ptr;
-	xi->atom_op = atom_op;
-	xi->atom_type = atom_type;
-	xi->threshold = threshold;
+	buf->xi.operation = OP_SWAP;
+	buf->xi.target = target_id;
+	buf->xi.uid = ni->uid;
+	buf->xi.pt_index = pt_index;
+	buf->xi.match_bits = match_bits,
+	buf->xi.put_md = put_md;
+	buf->xi.put_eq = put_md->eq;
+	buf->xi.put_ct = put_md->ct;
+	buf->xi.get_md = get_md;
+	buf->xi.get_eq = get_md->eq;
+	buf->xi.get_ct = get_md->ct;
+	buf->xi.hdr_data = hdr_data;
+	buf->xi.operand = opval;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.atom_op = atom_op;
+	buf->xi.atom_type = atom_type;
+	buf->xi.threshold = threshold;
 
-	xi->rlength = length;
-	xi->put_offset = local_put_offset;
-	xi->put_resid = length;
-	xi->get_offset = local_get_offset;
-	xi->get_resid = length;
-	xi->roffset = remote_offset;
+	buf->xi.rlength = length;
+	buf->xi.put_offset = local_put_offset;
+	buf->xi.put_resid = length;
+	buf->xi.get_offset = local_get_offset;
+	buf->xi.get_resid = length;
+	buf->xi.roffset = remote_offset;
 
-	xi->pkt_len = sizeof(req_hdr_t);
-	xi->state = STATE_INIT_START;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
-	post_ct(xi, ct);
+	post_ct(buf, ct);
 
 	ct_put(ct);
 	gbl_put();

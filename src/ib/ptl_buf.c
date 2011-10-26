@@ -25,6 +25,9 @@ int buf_setup(void *arg)
 	buf->data = buf->internal_data;
 	buf->rdma.recv_wr.next = NULL;
 
+	memset(&buf->xi, 0, sizeof(buf->xi));
+	//	INIT_LIST_HEAD(&buf->xt.rdma_list);
+
 	return PTL_OK;
 }
 
@@ -43,9 +46,10 @@ void buf_cleanup(void *arg)
 	for (i = 0; i < buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
 
-	/* can be xi or xt */
-	if (buf->xi)
-		xi_put(buf->xi);
+	if (buf->xt)
+		xt_put(buf->xt);
+
+	buf->type = BUF_FREE;
 }
 
 /**
@@ -67,6 +71,7 @@ int buf_init(void *arg, void *parm)
 	INIT_LIST_HEAD(&buf->list);
 
 	buf->length = 0;
+	buf->type = BUF_FREE;
 
 	if (parm) {
 		/* This buffer carries an MR, so it's an IB buffer, not a
@@ -82,8 +87,20 @@ int buf_init(void *arg, void *parm)
 		buf->rdma.sg_list[0].lkey = mr->lkey;
 	}
 
+	//	pthread_spin_init(&buf->xi.rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
+
 	return 0;
 }
+
+#ifdef todo
+int buf_fini(void *arg, void *parm)
+{
+	xi_t *xi = arg;
+
+	pthread_spin_destroy(&xi->rdma_list_lock);
+}
+#endif
+
 
 /**
  * Debug print buf parameters.

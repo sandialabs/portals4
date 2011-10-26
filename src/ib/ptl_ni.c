@@ -138,7 +138,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	struct ibv_wc wc;
 	int n;
 	buf_t *buf;
-	xi_t *xi;					/* used for xt too */
 
 	if (!ni->rdma.cq)
 		return PTL_OK;
@@ -152,26 +151,22 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			break;
 
 		buf = (buf_t *)(uintptr_t)wc.wr_id;
-		xi = buf->xi;
 
 		switch (buf->type) {
 		case BUF_SEND:
+			buf_put(buf);		/* from send_message_rdma */
 			break;
 		case BUF_RDMA:
-			pthread_spin_lock(&xi->rdma_list_lock);
 			list_del(&buf->list);
-			pthread_spin_unlock(&xi->rdma_list_lock);
 			break;
 		case BUF_RECV:
-			pthread_spin_lock(&ni->rdma.recv_list_lock);
 			list_del(&buf->list);
-			pthread_spin_unlock(&ni->rdma.recv_list_lock);
 			break;
 		default:
 			abort();
 		}
 
-		buf_put(buf);
+		buf_put(buf);			/* from buf_alloc */
 	}
 
 	return PTL_OK;
@@ -427,16 +422,6 @@ static int init_pools(ni_t *ni)
 
 	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
 					POOL_CT, (obj_t *)ni);
-	if (err) {
-		WARN();
-		return err;
-	}
-
-	ni->xi_pool.setup = xi_setup;
-	ni->xi_pool.cleanup = xi_cleanup;
-
-	err = pool_init(&ni->xi_pool, "xi", sizeof(xi_t),
-					POOL_XI, (obj_t *)ni);
 	if (err) {
 		WARN();
 		return err;
@@ -923,9 +908,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 			ni->shmem.world_size ++;
 		}
 
-#ifdef WITH_TRANSPORT_SHMEM
 		ni->shmem.hash = crc32((unsigned char *)&mapping[i].phys, ni->shmem.hash, sizeof(mapping[i].phys));
-#endif
 	}
 
 	if (ni->id.rank == PTL_RANK_ANY) {
@@ -1057,7 +1040,6 @@ static void ni_cleanup(ni_t *ni)
 
 	pool_fini(&ni->buf_pool);
 	pool_fini(&ni->xt_pool);
-	pool_fini(&ni->xi_pool);
 	pool_fini(&ni->ct_pool);
 	pool_fini(&ni->eq_pool);
 	pool_fini(&ni->le_pool);

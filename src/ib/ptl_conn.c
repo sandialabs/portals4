@@ -40,7 +40,7 @@ void conn_init(conn_t *conn, ni_t *ni)
 	conn->state = CONN_STATE_DISCONNECTED;
 	conn->transport = transport_rdma;
 
-	INIT_LIST_HEAD(&conn->xi_list);
+	INIT_LIST_HEAD(&conn->buf_list);
 	INIT_LIST_HEAD(&conn->xt_list);
 	INIT_LIST_HEAD(&conn->list);
 }
@@ -97,24 +97,24 @@ static int compare_id(const void *a, const void *b)
  *
  * @return the conn_t
  */
-conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
+conn_t *get_conn(ni_t *ni, ptl_process_t id)
 {
 	conn_t *conn;
 	void **ret;
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		if (unlikely(id->rank >= ni->logical.map_size)) {
+		if (unlikely(id.rank >= ni->logical.map_size)) {
 			ptl_warn("Invalid rank (%d >= %d)\n",
-				 id->rank, ni->logical.map_size);
+				 id.rank, ni->logical.map_size);
 			return NULL;
 		}
 
-		conn = &ni->logical.rank_table[id->rank].connect;
+		conn = &ni->logical.rank_table[id.rank].connect;
 	} else {
 		pthread_spin_lock(&ni->physical.lock);
 
 		/* lookup in binary tree */
-		ret = tfind(id, &ni->physical.tree, compare_id);
+		ret = tfind(&id, &ni->physical.tree, compare_id);
 		if (ret) {
 			conn = *ret;
 		} else {
@@ -127,12 +127,12 @@ conn_t *get_conn(ni_t *ni, const ptl_process_t *id)
 			}
 
 			conn_init(conn, ni);
-			conn->id = *id;
+			conn->id = id;
 
 			/* Get the IP address from the NID. */
 			conn->sin.sin_family = AF_INET;
-			conn->sin.sin_addr.s_addr = nid_to_addr(id->phys.nid);
-			conn->sin.sin_port = pid_to_port(id->phys.pid);
+			conn->sin.sin_addr.s_addr = nid_to_addr(id.phys.nid);
+			conn->sin.sin_port = pid_to_port(id.phys.pid);
 
 			/* insert new conn into binary tree */
 			ret = tsearch(conn, &ni->physical.tree, compare_id);
@@ -408,15 +408,15 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
  */
 static void flush_pending_xi_xt(conn_t *conn)
 {
-	xi_t *xi;
 	xt_t *xt;
+	buf_t *buf;
 
 	pthread_spin_lock(&conn->wait_list_lock);
-	while(!list_empty(&conn->xi_list)) {
-		xi = list_first_entry(&conn->xi_list, xi_t, list);
-		list_del_init(&xi->list);
+	while(!list_empty(&conn->buf_list)) {
+		buf = list_first_entry(&conn->buf_list, buf_t, list);
+		list_del_init(&buf->list);
 		pthread_spin_unlock(&conn->wait_list_lock);
-		process_init(xi);
+		process_init(buf);
 			
 		pthread_spin_lock(&conn->wait_list_lock);
 	}
@@ -498,7 +498,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 	/* From now on, it's only for connections to a physical NI. */
 	assert(ni->options & PTL_NI_PHYSICAL);
 
-	conn = get_conn(ni, &priv->src_id);
+	conn = get_conn(ni, priv->src_id);
 
 	pthread_mutex_lock(&conn->mutex);
 
@@ -775,7 +775,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 				/* move xi/xt so they will be processed when the node is
 				 * connected. */
 				pthread_spin_lock(&conn->wait_list_lock);
-				list_splice_init(&conn->xi_list, &main_connect->xi_list);
+				list_splice_init(&conn->buf_list, &main_connect->buf_list);
 				list_splice_init(&conn->xt_list, &main_connect->xt_list);
 				pthread_spin_unlock(&conn->wait_list_lock);
 				pthread_spin_unlock(&main_connect->wait_list_lock);

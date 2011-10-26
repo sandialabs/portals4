@@ -221,7 +221,7 @@ int post_tgt_rdma(xt_t *xt);
 void *process_recv_rdma_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
 
-int process_init(xi_t *xi);
+int process_init(buf_t *buf);
 
 int process_tgt(xt_t *xt);
 

@@ -546,7 +546,7 @@ int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
 	}
 
 #ifndef NO_ARG_VALIDATION
-	if (type && handle_type && type != handle_type) {
+	if (type!=POOL_ANY && handle_type && type != handle_type) {
 		WARN();
 		goto err1;
 	}
@@ -570,7 +570,7 @@ int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
-	if (type && (type != obj->obj_pool->type)) {
+	if (type!=POOL_ANY && (type != obj->obj_pool->type)) {
 		WARN();
 		goto err1;
 	}

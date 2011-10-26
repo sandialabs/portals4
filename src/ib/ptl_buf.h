@@ -14,6 +14,7 @@ struct xt;
  * Type of buf object.
  */
 enum buf_type {
+	BUF_FREE,
 	BUF_SEND,
 	BUF_RECV,
 	BUF_RDMA,
@@ -52,8 +53,24 @@ struct buf {
 	struct list_head	list;
 
 	/** the transaction to which this buffer is related */
-	union {
-		struct xi	*xi;
+	struct {
+		/* initiator side transaction descriptor */
+		struct {
+			PTL_BASE_XX
+
+			ptl_handle_xt_t		xt_handle;
+			ptl_size_t		put_offset;
+			ptl_size_t		get_offset;
+			md_t			*put_md;
+			struct eq		*put_eq;
+			md_t			*get_md;
+			struct eq		*get_eq;
+			struct ct       *put_ct;
+			struct ct       *get_ct;
+			void		*user_ptr;
+			ptl_process_t	target;
+			int				completed;
+		} xi;
 		struct xt	*xt;
 	};
 
@@ -199,6 +216,67 @@ static inline void buf_get(buf_t *buf)
 static inline int buf_put(buf_t *buf)
 {
 	return obj_put(&buf->obj);
+}
+
+typedef ptl_handle_any_t ptl_handle_buf_t;
+
+static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
+{
+	return (ptl_handle_buf_t)buf->obj.obj_handle;
+}
+
+static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
+{
+#ifdef USE_XRC
+	ni_t *ni = to_ni(xi);
+#endif
+
+	if (connect->transport.type == CONN_TYPE_RDMA) {
+		buf->xi.dest.rdma.qp = connect->rdma.cm_id->qp;
+#ifdef USE_XRC
+		if (ni->options & PTL_NI_LOGICAL)
+			buf->xi.dest.xrc_remote_srq_num = ni->logical.rank_table[buf->xi.target.rank].remote_xrc_srq_num;
+#endif
+	} else {
+		assert(connect->transport.type == CONN_TYPE_SHMEM);
+		assert(connect->shmem.local_rank != -1);
+		buf->xi.dest.shmem.local_rank = connect->shmem.local_rank;
+	}
+}
+
+static inline void set_xt_dest(xt_t *xt, const conn_t *connect)
+{
+#ifdef USE_XRC
+	ni_t *ni = to_ni(xt);
+#endif
+
+	if (connect->transport.type == CONN_TYPE_RDMA) {
+		xt->dest.rdma.qp = connect->rdma.cm_id->qp;
+#ifdef USE_XRC
+		if (ni->options & PTL_NI_LOGICAL)
+			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
+#endif
+	} else {
+		assert(connect->transport.type == CONN_TYPE_SHMEM);
+		assert(connect->shmem.local_rank != -1);
+		xt->dest.shmem.local_rank = connect->shmem.local_rank;
+	}
+}
+
+static inline int to_buf(ptl_handle_buf_t handle, buf_t **buf_p)
+{
+	int err;
+	obj_t *obj;
+
+	/* The buffer can either be in POOL_BUF or POOL_SBUF. */
+	err = to_obj(POOL_ANY, (ptl_handle_any_t)handle, &obj);
+	if (err) {
+		*buf_p = NULL;
+		return err;
+	}
+
+	*buf_p = container_of(obj, buf_t, obj);
+	return PTL_OK;
 }
 
 #endif /* PTL_BUF_H */

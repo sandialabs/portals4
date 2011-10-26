@@ -51,7 +51,7 @@ static int comp_poll(ni_t *ni, int num_wc,
 
 		if (unlikely(wc->status)) {
 			if (buf->type == BUF_SEND) {
-				buf->xi->ni_fail = PTL_NI_UNDELIVERABLE;
+				buf->xi.ni_fail = PTL_NI_UNDELIVERABLE;
 				buf->state = STATE_RECV_SEND_COMP;
 			} else if (buf->type == BUF_RDMA)
 				buf->state = STATE_RECV_ERROR;
@@ -83,19 +83,20 @@ static int comp_poll(ni_t *ni, int num_wc,
  */
 static int send_comp(buf_t *buf)
 {
-	xi_t *xi = buf->xi; /* can be an XT or an XI */
-
 	/* this should only happen if we requested a completion */
-	assert(buf->comp || buf->xi->ni_fail == PTL_NI_UNDELIVERABLE);
+	assert(buf->comp || buf->xi.ni_fail == PTL_NI_UNDELIVERABLE);
 
 	/* Fox XI only, restart the initiator state machine. */
-	if (xi->obj.obj_pool->type == POOL_XI) {
-		xi->completed = 1;
-		(void)process_init(xi);
+	if (!buf->xt) {
+		buf->xi.completed = 1;
+		process_init(buf);
+	} else {
+		/* free the buffer */
+		buf_put(buf);
 	}
 
-	/* free the buffer */
-	buf_put(buf);
+	if (buf->comp)
+		buf_put(buf);
 
 	return STATE_RECV_DONE;
 }
@@ -161,11 +162,11 @@ static int recv_packet(buf_t *buf)
 	(void)__sync_sub_and_fetch(&ni->rdma.num_posted_recv, 1);
 
 	/* remove buf from pending receive list */
-	if (!list_empty(&buf->list)) {
-		pthread_spin_lock(&ni->rdma.recv_list_lock);
-		list_del(&buf->list);
-		pthread_spin_unlock(&ni->rdma.recv_list_lock);
-	}
+	assert(!list_empty(&buf->list));
+
+	pthread_spin_lock(&ni->rdma.recv_list_lock);
+	list_del(&buf->list);
+	pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
 	/* sanity check received buffer */
 	if (buf->length < sizeof(hdr_t)) {
@@ -269,11 +270,11 @@ static int recv_req(buf_t *buf)
 static int recv_init(buf_t *buf)
 {
 	int err;
-	xi_t *xi;
+	buf_t *init_buf;
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* lookup the xi handle to get original xi */
-	err = to_xi(le64_to_cpu(hdr->handle), &xi);
+	err = to_buf(le64_to_cpu(hdr->handle), &init_buf);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
@@ -281,21 +282,21 @@ static int recv_init(buf_t *buf)
 
 	/* compute data segments in response message */
 	if (hdr->data_in)
-		xi->data_out = (data_t *)(buf->data + hdr->hdr_size);
+		init_buf->xi.data_out = (data_t *)(buf->data + hdr->hdr_size);
 
 	if (hdr->data_out)
-		xi->data_in = (data_t *)(buf->data + hdr->hdr_size +
-					  data_size(xi->data_out));
+		init_buf->xi.data_in = (data_t *)(buf->data + hdr->hdr_size +
+					  data_size(init_buf->xi.data_out));
 
-	xi->recv_buf = buf;
+	init_buf->xi.recv_buf = buf;
 
 	/* Note: process_init must drop recv_buf, so buf will not be valid
 	 * after the call. */
-	err = process_init(xi);
+	err = process_init(init_buf);
 	if (err)
 		WARN();
 
-	xi_put(xi);					/* from to_xi() */
+	buf_put(init_buf);					/* from to_xi() */
 
 	return STATE_RECV_REPOST;
 }

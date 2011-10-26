@@ -52,8 +52,8 @@ struct conn {
 	struct ni		*ni;
 	int			state;
 	struct sockaddr_in	sin;
-	struct list_head	xi_list;
-	struct list_head	xt_list;
+	struct list_head	buf_list;
+	struct list_head	xt_list;// will go away -> use buf_list
 	pthread_spinlock_t	wait_list_lock;
 
 	struct transport	transport;
@@ -109,7 +109,7 @@ struct cm_priv_accept {
 #endif
 };
 
-conn_t *get_conn(struct ni *ni, const ptl_process_t *id);
+conn_t *get_conn(struct ni *ni, ptl_process_t id);
 
 void destroy_conns(struct ni *ni);
 
