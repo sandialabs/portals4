@@ -370,8 +370,8 @@ static int wait_recv(xi_t *xi)
 
 	/* get returned fields */
 	xi->ni_fail = hdr->ni_fail;
-	xi->mlength = be64_to_cpu(hdr->length);
-	xi->moffset = be64_to_cpu(hdr->offset);
+	xi->mlength = le64_to_cpu(hdr->length);
+	xi->moffset = le64_to_cpu(hdr->offset);
 
 	if (debug) buf_dump(buf);
 

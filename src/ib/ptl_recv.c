@@ -273,7 +273,7 @@ static int recv_init(buf_t *buf)
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* lookup the xi handle to get original xi */
-	err = to_xi(be64_to_cpu(hdr->handle), &xi);
+	err = to_xi(le64_to_cpu(hdr->handle), &xi);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;

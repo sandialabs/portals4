@@ -249,11 +249,11 @@ int post_tgt_rdma(xt_t *xt)
 	int comp = 0;
 	buf_t *rdma_buf = NULL;
 
-	rseg_length = be32_to_cpu(xt->rdma.cur_rem_sge->length);
-	rkey  = be32_to_cpu(xt->rdma.cur_rem_sge->lkey);
+	rseg_length = le32_to_cpu(xt->rdma.cur_rem_sge->length);
+	rkey  = le32_to_cpu(xt->rdma.cur_rem_sge->lkey);
 
 	while (*resid > 0 && !atomic_read(&xt->rdma.rdma_comp)) {
-		raddr = be64_to_cpu(xt->rdma.cur_rem_sge->addr) + xt->rdma.cur_rem_off;
+		raddr = le64_to_cpu(xt->rdma.cur_rem_sge->addr) + xt->rdma.cur_rem_off;
 		rlength = rseg_length - xt->rdma.cur_rem_off;
 
 		if (debug)
@@ -314,8 +314,8 @@ int post_tgt_rdma(xt_t *xt)
 			if (xt->rdma.num_rem_sge) {
 				xt->rdma.cur_rem_sge++;
 				rseg_length =
-					be32_to_cpu(xt->rdma.cur_rem_sge->length);
-				rkey  = be32_to_cpu(xt->rdma.cur_rem_sge->lkey);
+					le32_to_cpu(xt->rdma.cur_rem_sge->length);
+				rkey  = le32_to_cpu(xt->rdma.cur_rem_sge->lkey);
 				xt->rdma.cur_rem_off = 0;
 			} else {
 				WARN();

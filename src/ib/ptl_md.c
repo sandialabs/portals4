@@ -114,9 +114,9 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 		mr = md->mr_list[i];
 
-		sge->addr = cpu_to_be64((uintptr_t)iov->iov_base);
-		sge->length = cpu_to_be32(iov->iov_len);
-		sge->lkey = cpu_to_be32(mr->ibmr->rkey);
+		sge->addr = cpu_to_le64((uintptr_t)iov->iov_base);
+		sge->length = cpu_to_le32(iov->iov_len);
+		sge->lkey = cpu_to_le32(mr->ibmr->rkey);
 
 		knem_iovec->cookie = mr->knem_cookie;
 		knem_iovec->offset = iov->iov_base - mr->ibmr->addr;
