@@ -136,7 +136,7 @@ struct pool {
 	enum obj_type		type;
 
 	/** number of objects currently allocated */
-	int			count;
+	atomic_t	count;
 
 	/** object size */
 	int			size;

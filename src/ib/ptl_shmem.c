@@ -215,7 +215,7 @@ static void *PtlInternalDMCatcher(void *param)
 
 	/* Even if we must stop, keep looping until all buffers are
 	 * returned. */
-    while (!must_stop || ni->sbuf_pool.count) {
+    while (!must_stop || atomic_read(&ni->sbuf_pool.count)) {
         buf_t *shmem_buf;
 		int err;
 
