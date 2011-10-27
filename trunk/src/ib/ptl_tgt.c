@@ -1174,8 +1174,6 @@ static int tgt_send_ack(xt_t *xt)
 		return STATE_TGT_ERROR;
 	}
 
-	xt->send_buf = NULL;
-
 	return STATE_TGT_CLEANUP;
 }
 
@@ -1200,8 +1198,6 @@ static int tgt_send_reply(xt_t *xt)
 		WARN();
 		return STATE_TGT_ERROR;
 	}
-
-	xt->send_buf = NULL;
 
 	return STATE_TGT_CLEANUP;
 }

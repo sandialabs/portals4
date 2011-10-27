@@ -11,6 +11,7 @@
 static char *recv_state_name[] = {
 	[STATE_RECV_SEND_COMP]		= "send_comp",
 	[STATE_RECV_RDMA_COMP]		= "rdma_comp",
+	[STATE_RECV_PACKET_RDMA]	= "recv_packet_rdma",
 	[STATE_RECV_PACKET]		= "recv_packet",
 	[STATE_RECV_DROP_BUF]		= "recv_drop_buf",
 	[STATE_RECV_REQ]		= "recv_req",
@@ -63,7 +64,7 @@ static int comp_poll(ni_t *ni, int num_wc,
 			else if (buf->type == BUF_RDMA)
 				buf->state = STATE_RECV_RDMA_COMP;
 			else if (buf->type == BUF_RECV)
-				buf->state = STATE_RECV_PACKET;
+				buf->state = STATE_RECV_PACKET_RDMA;
 			else
 				buf->state = STATE_RECV_ERROR;
 		}
@@ -90,9 +91,6 @@ static int send_comp(buf_t *buf)
 	if (!buf->xt) {
 		buf->xi.completed = 1;
 		process_init(buf);
-	} else {
-		/* free the buffer */
-		buf_put(buf);
 	}
 
 	if (buf->comp)
@@ -147,16 +145,15 @@ static int rdma_comp(buf_t *buf)
 }
 
 /**
- * Process a received buffer.
+ * Process a received buffer. RDMA only.
  *
  * @param buf the receive buffer that finished.
  *
  * @return the next state.
  */
-static int recv_packet(buf_t *buf)
+static int recv_packet_rdma(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
-	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* keep track of the number of buffers posted to the srq */
 	(void)__sync_sub_and_fetch(&ni->rdma.num_posted_recv, 1);
@@ -167,6 +164,21 @@ static int recv_packet(buf_t *buf)
 	pthread_spin_lock(&ni->rdma.recv_list_lock);
 	list_del(&buf->list);
 	pthread_spin_unlock(&ni->rdma.recv_list_lock);
+
+	return STATE_RECV_PACKET;
+}
+
+/**
+ * Process a received buffer. Common for RDMA and SHMEM.
+ *
+ * @param buf the receive buffer that finished.
+ *
+ * @return the next state.
+ */
+static int recv_packet(buf_t *buf)
+{
+	ni_t *ni = obj_to_ni(buf);
+	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* sanity check received buffer */
 	if (buf->length < sizeof(hdr_t)) {
@@ -296,7 +308,7 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	buf_put(init_buf);					/* from to_xi() */
+	buf_put(init_buf);					/* from to_buf() */
 
 	return STATE_RECV_REPOST;
 }
@@ -372,6 +384,9 @@ void *process_recv_rdma_thread(void *arg)
 				case STATE_RECV_RDMA_COMP:
 					state = rdma_comp(buf);
 					break;
+				case STATE_RECV_PACKET_RDMA:
+					state = recv_packet_rdma(buf);
+					break;
 				case STATE_RECV_PACKET:
 					state = recv_packet(buf);
 					break;
@@ -443,6 +458,7 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 		case STATE_RECV_DONE:
 			goto exit;
 
+		case STATE_RECV_PACKET_RDMA:
 		case STATE_RECV_SEND_COMP:
 		case STATE_RECV_RDMA_COMP:
 			/* Not reachable. */
