@@ -685,8 +685,7 @@ static int tgt_data_out(xt_t *xt)
 	if (xt->mlength < get_param(PTL_MAX_INLINE_DATA)) {
 		hdr->data_out = 1;
 		err = append_tgt_data(xt->me, xt->moffset,
-							  xt->mlength, xt->send_buf,
-							  xt->conn->transport.type);
+				      xt->mlength, xt->send_buf);
 		if (err)
 			return STATE_TGT_ERROR;
 
