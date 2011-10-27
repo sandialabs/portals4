@@ -119,6 +119,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -146,22 +147,24 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 	}
 
-	buf->xi.operation = OP_PUT;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_PUT;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
-	buf->xi.ack_req = ack_req;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->ack_req = ack_req;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -190,6 +193,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -229,23 +233,25 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 	}
 
-	buf->xi.operation = OP_PUT;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_PUT;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
-	buf->xi.ack_req = ack_req;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->ack_req = ack_req;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
 	buf->xi.threshold = threshold;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -294,20 +300,24 @@ static inline void preparePtlGet(buf_t *buf, ni_t *ni, md_t *md,
 								 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
 								 ptl_size_t remote_offset, void *user_ptr)
 {
-	buf->xi.operation = OP_GET;
+	req_hdr_t *hdr;
+
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_GET;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
 	buf->xi.get_md = md;
 	buf->xi.get_eq = md->eq;
 	buf->xi.get_ct = md->ct;
 	buf->xi.user_ptr = user_ptr;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.get_offset = local_offset;
 	buf->xi.get_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -535,6 +545,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -558,24 +569,26 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 	}
 
-	buf->xi.operation = OP_ATOMIC;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_ATOMIC;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
-	buf->xi.ack_req = ack_req;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->ack_req = ack_req;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -605,6 +618,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err))
@@ -638,25 +652,27 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err3;
 	}
 
-	buf->xi.operation = OP_ATOMIC;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_ATOMIC;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
-	buf->xi.ack_req = ack_req;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->ack_req = ack_req;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -689,6 +705,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	md_t *put_md = NULL;
 	ni_t *ni;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -738,29 +755,30 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		goto err3;
 	}
 
-	buf->xi.operation = OP_FETCH;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_FETCH;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	buf->xi.rlength = length;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -797,6 +815,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -858,30 +877,31 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 		goto err4;
 	}
 
-	buf->xi.operation = OP_FETCH;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_FETCH;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	buf->xi.rlength = length;
-	buf->xi.hdr_data = hdr_data;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -1009,6 +1029,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	ni_t *ni;
 	buf_t *buf;
 	uint64_t opval = 0;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -1067,29 +1088,32 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		goto err3;
 	}
 
-	buf->xi.operation = OP_SWAP;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_SWAP;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	buf->xi.hdr_data = hdr_data;
-	buf->xi.operand = opval;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->operand = cpu_to_le64(opval);
 
-	buf->xi.rlength = length;
+	buf->xi.user_ptr = user_ptr;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
@@ -1124,6 +1148,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	ct_t *ct = NULL;
 	buf_t *buf;
 	uint64_t opval = 0;
+	req_hdr_t *hdr;
 
 	err = get_gbl();
 	if (unlikely(err)) {
@@ -1194,30 +1219,32 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		goto err4;
 	}
 
-	buf->xi.operation = OP_SWAP;
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_SWAP;
 	buf->xi.target = target_id;
-	buf->xi.uid = ni->uid;
-	buf->xi.pt_index = pt_index;
-	buf->xi.match_bits = match_bits,
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	buf->xi.hdr_data = hdr_data;
-	buf->xi.operand = opval;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->operand = cpu_to_le64(opval);
 	buf->xi.user_ptr = user_ptr;
-	buf->xi.atom_op = atom_op;
-	buf->xi.atom_type = atom_type;
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
 
-	buf->xi.rlength = length;
+	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	buf->xi.roffset = remote_offset;
+	hdr->offset		= cpu_to_le64(remote_offset);
 
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;

@@ -34,11 +34,11 @@ typedef struct data {
 	uint8_t			data_reserved[3];
 	union {
 		struct {
-			__be32			data_length;
+			__le32			data_length;
 			uint8_t			data[0];
 		} immediate;
 		struct {
-			__be32			num_sge;
+			__le32			num_sge;
 			struct ibv_sge	sge_list[0];
 		} rdma;
 		struct {

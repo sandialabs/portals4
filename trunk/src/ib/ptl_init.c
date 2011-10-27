@@ -52,7 +52,9 @@ static void make_reply_event(buf_t *buf)
 
 static inline void make_ct_send_event(buf_t *buf)
 {
-	make_ct_event(buf->xi.put_ct, buf->xi.ni_fail, buf->xi.rlength, buf->xi.event_mask & XI_PUT_CT_BYTES);
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+
+	make_ct_event(buf->xi.put_ct, buf->xi.ni_fail, le64_to_cpu(hdr->length), buf->xi.event_mask & XI_PUT_CT_BYTES);
 	buf->xi.event_mask &= ~XI_CT_SEND_EVENT;
 }
 
@@ -70,6 +72,8 @@ static inline void make_ct_reply_event(buf_t *buf)
 
 static void init_events(buf_t *buf)
 {
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+
 	if (buf->xi.put_md) {
 		if (buf->xi.put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
 			buf->xi.event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
@@ -84,13 +88,13 @@ static void init_events(buf_t *buf)
 			buf->xi.event_mask |= XI_GET_CT_BYTES;
 	}
 
-	switch (buf->xi.operation) {
+	switch (hdr->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
 		if (buf->xi.put_md->eq)
 			buf->xi.event_mask |= XI_SEND_EVENT;
 
-		if (buf->xi.put_md->eq && (buf->xi.ack_req == PTL_ACK_REQ))
+		if (buf->xi.put_md->eq && (hdr->ack_req == PTL_ACK_REQ))
 			buf->xi.event_mask |= XI_ACK_EVENT | XI_RECEIVE_EXPECTED;
 
 		if (buf->xi.put_md->ct &&
@@ -98,7 +102,7 @@ static void init_events(buf_t *buf)
 			buf->xi.event_mask |= XI_CT_SEND_EVENT;
 
 		if (buf->xi.put_md->ct && 
-			(buf->xi.ack_req == PTL_CT_ACK_REQ || buf->xi.ack_req == PTL_OC_ACK_REQ) &&
+			(hdr->ack_req == PTL_CT_ACK_REQ || hdr->ack_req == PTL_OC_ACK_REQ) &&
 		    (buf->xi.put_md->options & PTL_MD_EVENT_CT_ACK))
 			buf->xi.event_mask |= XI_CT_ACK_EVENT | XI_RECEIVE_EXPECTED;
 		break;
@@ -145,22 +149,27 @@ static int init_start(buf_t *buf)
 static int init_prep_req(buf_t *buf)
 {
 	int err;
-	req_hdr_t *hdr;
+	ni_t *ni = obj_to_ni(buf);
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *put_data = NULL;
-	ptl_size_t length = buf->xi.rlength;
+	ptl_size_t length = le64_to_cpu(hdr->length);
 
 	assert(buf->xi.conn);
 
-	hdr = (req_hdr_t *)buf->data;
+	hdr->version = PTL_HDR_VER_1;
+	hdr->ni_type = ni->ni_type;
+	hdr->pkt_fmt = PKT_FMT_REQ;
+	hdr->dst_nid = cpu_to_le32(buf->xi.target.phys.nid);
+	hdr->dst_pid = cpu_to_le32(buf->xi.target.phys.pid);
+	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->hdr_size = sizeof(req_hdr_t);
+	hdr->handle		= cpu_to_le64(buf_to_handle(buf));
 
-	xport_hdr_from_xi((hdr_t *)hdr, buf);
-	base_hdr_from_xi((hdr_t *)hdr, buf);
-	req_hdr_from_xi(hdr, buf);
-	hdr->operation = buf->xi.operation;
 	buf->length = sizeof(req_hdr_t);
 	buf->dest = &buf->xi.dest;
 
-	switch (buf->xi.operation) {
+	switch (hdr->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
 		hdr->data_in = 0;

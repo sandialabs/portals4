@@ -7,7 +7,6 @@
 #ifndef PTL_BUF_H
 #define PTL_BUF_H
 
-struct xi;
 struct xt;
 
 /**
