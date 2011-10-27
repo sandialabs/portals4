@@ -116,11 +116,6 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 	int iov_start;
 	ptl_size_t iov_offset;
 
-	if (dir == DATA_DIR_IN)
-		hdr->data_in = 1;
-	else
-		hdr->data_out = 1;
-
 	if (dir == DATA_DIR_OUT && length <= get_param(PTL_MAX_INLINE_DATA)) {
 		data->data_fmt = DATA_FMT_IMMEDIATE;
 		data->immediate.data_length = cpu_to_le32(length);
@@ -264,12 +259,9 @@ int append_tgt_data(me_t *me, ptl_size_t offset,
 					ptl_size_t length, buf_t *buf, enum transport_type transport_type)
 {
 	int err = PTL_OK;
-	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *data = (data_t *)(buf->data + buf->length);
 
 	assert(length <= get_param(PTL_MAX_INLINE_DATA));
-
-	hdr->data_out = 1;
 
 	data->data_fmt = DATA_FMT_IMMEDIATE;
 	data->immediate.data_length = cpu_to_le32(length);

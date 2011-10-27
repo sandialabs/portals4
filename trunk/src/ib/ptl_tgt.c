@@ -201,8 +201,12 @@ static int prepare_send_buf(xt_t *xt)
 	xt->send_buf = buf;
 
 	hdr = (hdr_t *)buf->data;
+
 	memset(hdr, 0, sizeof(*hdr));
 	buf->length = sizeof(*hdr);
+
+	hdr->data_in = 0;
+	hdr->data_out = 0;	/* can get reset to one for short replies */
 
 	return PTL_OK;
 }
@@ -666,6 +670,7 @@ static int tgt_rdma_init_loc_off(xt_t *xt)
 static int tgt_data_out(xt_t *xt)
 {
 	data_t *data = xt->data_out;
+	hdr_t *hdr = (hdr_t *)xt->send_buf->data;
 	int next;
 	int err;
 
@@ -678,6 +683,7 @@ static int tgt_data_out(xt_t *xt)
 	 * data instead of rdma.
 	 * TODO: ensure it's faster than KNEM too. */
 	if (xt->mlength < get_param(PTL_MAX_INLINE_DATA)) {
+		hdr->data_out = 1;
 		err = append_tgt_data(xt->me, xt->moffset,
 							  xt->mlength, xt->send_buf,
 							  xt->conn->transport.type);
