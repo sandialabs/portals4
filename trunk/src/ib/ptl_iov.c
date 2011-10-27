@@ -148,7 +148,7 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i;
-	ptl_size_t iov_offset;
+	ptl_size_t iov_offset = 0;
 	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
