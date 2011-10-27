@@ -312,14 +312,14 @@ int pool_fini(pool_t *pool)
 
 	pthread_mutex_destroy(&pool->mutex);
 
-	if (pool->count) {
+	if (atomic_read(&pool->count)) {
 		/*
 		 * we shouldn't get here since we
 		 * are supposed to clean up all the
 		 * objects during processing PtlFini
 		 * so this would be a library bug
 		 */
-		ptl_warn("leaked %d %s objects\n", pool->count, pool->name);
+		ptl_warn("leaked %d %s objects\n", atomic_read(&pool->count), pool->name);
 		err = PTL_FAIL;
 	}
 
@@ -399,7 +399,7 @@ int pool_init(pool_t *pool, char *name, int size,
 		return PTL_FAIL;
 	}
 
-	pool->count = 0;
+	atomic_set(&pool->count, 0);
 	pool->free_list = NULL;
 	INIT_LIST_HEAD(&pool->chunk_list);
 	pthread_mutex_init(&pool->mutex, NULL);
@@ -429,7 +429,7 @@ void obj_release(ref_t *ref)
 	obj->obj_free = 1;
 
 	enqueue_free_obj(pool, obj);
-	pool->count--;
+	atomic_dec(&pool->count);
 }
 
 /**
@@ -449,7 +449,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	obj_t *obj;
 
 	/* reserve an object */
-	pool->count++;
+	atomic_inc(&pool->count);
 
 #if 0
 	{
@@ -486,7 +486,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 				SPINLOCK_BODY();
 			}
 			else {
-				pool->count--;
+				atomic_dec(&pool->count);
 				WARN();
 				return err;
 			}
