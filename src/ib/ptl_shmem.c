@@ -433,7 +433,7 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 
 		/* Reconfigure this connection to go through SHMEM instead of
 		 * the default. */
-		conn = get_conn(ni, &ptable[i].id);
+		conn = get_conn(ni, ptable[i].id);
 		if (!conn) {
 			/* It's hard to recover from here. */
 			ret = PTL_FAIL;
