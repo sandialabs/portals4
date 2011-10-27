@@ -153,8 +153,6 @@ static int init_prep_req(buf_t *buf)
 
 	hdr = (req_hdr_t *)buf->data;
 
-	memset(hdr, 0, sizeof(req_hdr_t));
-
 	xport_hdr_from_xi((hdr_t *)hdr, buf);
 	base_hdr_from_xi((hdr_t *)hdr, buf);
 	req_hdr_from_xi(hdr, buf);
@@ -165,6 +163,9 @@ static int init_prep_req(buf_t *buf)
 	switch (buf->xi.operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
+		hdr->data_in = 0;
+		hdr->data_out = 1;
+
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->xi.put_md, DATA_DIR_OUT, buf->xi.put_offset,
 							   length, buf, buf->xi.conn->transport.type);
@@ -173,6 +174,9 @@ static int init_prep_req(buf_t *buf)
 		break;
 
 	case OP_GET:
+		hdr->data_in = 1;
+		hdr->data_out = 0;
+
 		err = append_init_data(buf->xi.get_md, DATA_DIR_IN, buf->xi.get_offset,
 							   length, buf, buf->xi.conn->transport.type);
 		if (err)
@@ -181,6 +185,9 @@ static int init_prep_req(buf_t *buf)
 
 	case OP_FETCH:
 	case OP_SWAP:
+		hdr->data_in = 1;
+		hdr->data_out = 1;
+
 		err = append_init_data(buf->xi.get_md, DATA_DIR_IN, buf->xi.get_offset,
 							   length, buf, buf->xi.conn->transport.type);
 		if (err)
@@ -194,7 +201,8 @@ static int init_prep_req(buf_t *buf)
 		break;
 
 	default:
-		WARN();
+		/* is never supposed to happen */
+		abort();
 		break;
 	}
 
