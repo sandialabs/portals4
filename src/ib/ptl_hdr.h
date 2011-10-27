@@ -99,19 +99,14 @@ typedef struct req_hdr {
 	PTL_REQ_HDR
 } req_hdr_t;
 
-void xport_hdr_from_xi(hdr_t *hdr, buf_t *buf);
 void xport_hdr_from_xt(hdr_t *hdr, xt_t *xt);
 
-void xport_hdr_to_xi(hdr_t *hdr, buf_t *buf);
 void xport_hdr_to_xt(hdr_t *hdr, xt_t *xt);
 
-void base_hdr_from_xi(hdr_t *hdr, buf_t *buf);
 void base_hdr_from_xt(hdr_t *hdr, xt_t *xt);
 
-void base_hdr_to_xi(hdr_t *hdr, buf_t *buf);
 void base_hdr_to_xt(hdr_t *hdr, xt_t *xt);
 
-void req_hdr_from_xi(req_hdr_t *hdr, buf_t *buf);
 void req_hdr_to_xt(req_hdr_t *hdr, xt_t *xt);
 
 #endif /* PTL_HDR_H */

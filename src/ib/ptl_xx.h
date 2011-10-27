@@ -46,9 +46,7 @@ struct xremote {
 
 #define PTL_BASE_XX					\
 	struct buf		*recv_buf;		\
-	ptl_size_t		rlength;		\
 	ptl_size_t		mlength;		\
-	ptl_size_t		roffset;		\
 	ptl_size_t		moffset;		\
 	ptl_size_t		put_resid;		\
 	ptl_size_t		get_resid;		\
@@ -73,23 +71,12 @@ struct xremote {
 	struct xremote		dest;		\
 	unsigned		operation;		\
 	int			pkt_len;		\
-	ptl_pt_index_t		pt_index;		\
-	ptl_match_bits_t	match_bits;		\
-	ptl_ack_req_t		ack_req;		\
-	uint64_t		hdr_data;		\
-	uint64_t		operand;		\
-	ptl_op_t		atom_op;		\
-	ptl_datatype_t		atom_type;		\
-	ptl_uid_t		uid;			\
 	ptl_ni_fail_t		ni_fail;		\
 	ptl_size_t		threshold;		\
 	struct data		*data_in;		\
 	struct data		*data_out;		\
 	conn_t			*conn;			\
 	pthread_mutex_t	mutex;
-
-int xi_setup(void *arg);
-void xi_cleanup(void *arg);
 
 /* target side transaction descriptor */
 typedef struct xt {
@@ -98,13 +85,23 @@ typedef struct xt {
 
 	// todo: remove all
 	struct list_head	list;
-	struct buf *ack_buf;		/* remote ACK is requested */ \
-	struct buf *send_buf;			\
+	struct buf *ack_buf;		/* remote ACK is requested */ 
+	struct buf *send_buf;		
+	ptl_match_bits_t	match_bits;	
+	uint64_t		hdr_data;		\
+	uint64_t		operand;		\
+	ptl_pt_index_t		pt_index;		\
+	ptl_uid_t		uid;			\
+	ptl_size_t		rlength;		\
+	ptl_size_t		roffset;		\
+	ptl_op_t		atom_op;		\
+	ptl_datatype_t		atom_type;		\
+	ptl_ack_req_t		ack_req;		\
 
 
-
-	struct list_head	rdma_list; \
-	pthread_spinlock_t	rdma_list_lock; \
+	/* RDMA buffer list .*/
+	struct list_head	rdma_list;
+	pthread_spinlock_t	rdma_list_lock;
 
 	ptl_handle_xi_t		xi_handle;
 	ptl_process_t		initiator;
