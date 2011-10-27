@@ -120,6 +120,7 @@ static inline uint64_t le64_to_cpu(__le64 x) { return x; }
 enum recv_state {
 	STATE_RECV_SEND_COMP,
 	STATE_RECV_RDMA_COMP,
+	STATE_RECV_PACKET_RDMA,
 	STATE_RECV_PACKET,
 	STATE_RECV_DROP_BUF,
 	STATE_RECV_REQ,

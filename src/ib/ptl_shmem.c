@@ -6,7 +6,7 @@
 
 static int send_message_shmem(buf_t *buf, int signaled)
 {
-	xi_t *xi = buf->xi;
+	assert(!buf->xt || buf->xt->ack_buf == NULL);
 
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
@@ -17,14 +17,11 @@ static int send_message_shmem(buf_t *buf, int signaled)
 
 	buf->shmem.source = buf->obj.obj_ni->shmem.index;
 
-	assert(buf->xt->conn->shmem.local_rank == xi->dest.shmem.local_rank);
-
-	assert(xi->ack_buf == NULL);
-	if (!signaled) {
-		xi->ack_buf = buf;
+	if (buf->xt) {
+		PtlInternalFragmentToss(buf->obj.obj_ni, buf, buf->xt->dest.shmem.local_rank);
+	} else {
+		PtlInternalFragmentToss(buf->obj.obj_ni, buf, buf->xi.dest.shmem.local_rank);
 	}
-
-	PtlInternalFragmentToss(buf->obj.obj_ni, buf, xi->dest.shmem.local_rank);
 
 	return PTL_OK;
 }
@@ -211,18 +208,6 @@ struct transport transport_shmem = {
 	.send_message = send_message_shmem,
 };
 
-/*
- * send_comp
- *	process a send completion event
- */
-static void send_comp_shmem(buf_t *buf)
-{
-	if (buf->comp) {
-		assert(buf->xt);
-		buf_put(buf);
-	}
-}
-
 static void *PtlInternalDMCatcher(void *param)
 {
 	ni_t *ni = param;
@@ -260,8 +245,6 @@ static void *PtlInternalDMCatcher(void *param)
 			/* Buffer returned to us by remote node. */
 			assert(shmem_buf->shmem.source == ni->shmem.index);
 
-			send_comp_shmem(shmem_buf);
-
 			/* From send_message_shmem(). */
 			buf_put(shmem_buf);
 			break;
@@ -286,14 +269,15 @@ static void PtlInternalDMTeardown(ni_t *ni)
 	buf_t *buf;
 	int err;
 
-	err = sbuf_alloc(ni, &buf);
-	if (err)
-		return;
-
-	buf->type = BUF_SHMEM_STOP;
-	PtlInternalFragmentToss(ni, buf, ni->shmem.index);
-
 	if (ni->shmem.has_catcher) {
+		/* Send a stop message to self. */
+		err = sbuf_alloc(ni, &buf);
+		if (err)
+			return;
+
+		buf->type = BUF_SHMEM_STOP;
+		PtlInternalFragmentToss(ni, buf, ni->shmem.index);
+
 		ptl_assert(pthread_join(ni->shmem.catcher, NULL), 0);
 		ni->shmem.has_catcher = 0;
 	}
