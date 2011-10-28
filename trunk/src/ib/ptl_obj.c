@@ -518,35 +518,33 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	return PTL_OK;
 }
 
+#ifndef NO_ARG_VALIDATION
 /**
  * Return an object from handle and type.
  *
- * @param type optional pool type
- * @param handle object handle
- * @param obj_p pointer to returned object
+ * This version is only used when arg validation is turned on
  *
- * @return status
+ * @param[in] type optional pool type
+ * @param[in] handle object handle
+ *
+ * @return the object
  */
-obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle)
+void *to_obj(enum obj_type type, ptl_handle_any_t handle)
 {
 	int err;
 	obj_t *obj = NULL;
 	unsigned int index;
-#ifndef NO_ARG_VALIDATION
 	enum obj_type handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
-#endif
 
 	if (handle == PTL_INVALID_HANDLE) {
 		WARN();
 		goto err1;
 	}
 
-#ifndef NO_ARG_VALIDATION
 	if (type!=POOL_ANY && handle_type && type != handle_type) {
 		WARN();
 		goto err1;
 	}
-#endif
 
 	index = obj_handle_to_index(handle);
 
@@ -555,7 +553,6 @@ obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle)
 		goto err1;
 	}
 
-#ifndef NO_ARG_VALIDATION
 	if (obj->obj_free) {
 		WARN();
 		goto err1;
@@ -570,7 +567,6 @@ obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle)
 		WARN();
 		goto err1;
 	}
-#endif
 
 	obj_get(obj);
 	return obj;
@@ -578,3 +574,4 @@ obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle)
 err1:
 	return NULL;
 }
+#endif
