@@ -84,25 +84,15 @@ static inline int md_alloc(ni_t *ni, md_t **md_p)
 }
 
 /**
- * Convert an md handle to an md object.
+ * @brief Convert an md handle to an md object.
  *
  * @param handle the md handle
- * @param md_p the location in which to return the md
  *
- * @return status
+ * @return the md object
  */
-static inline int to_md(ptl_handle_md_t handle, md_t **md_p)
+static inline md_t *to_md(ptl_handle_md_t handle)
 {
-	obj_t *obj;
-
-	obj = to_obj(POOL_MD, (ptl_handle_any_t)handle);
-	if (!obj) {
-		*md_p = NULL;
-		return PTL_ARG_INVALID;
-	}
-
-	*md_p = container_of(obj, md_t, obj);
-	return PTL_OK;
+	return to_obj(POOL_MD, (ptl_handle_any_t)handle);
 }
 
 /**

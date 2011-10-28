@@ -258,10 +258,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	if (unlikely(err))
 		goto err0;
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err))
-		goto err1;
-
+	md = to_md(md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
