@@ -543,8 +543,7 @@ permission_violation:
             if (t->overflow.tail == NULL) {
                 t->overflow.head = Qentry;
             } else {
-                ((ptl_internal_appendME_t *)(t->overflow.tail))->next =
-                    Qentry;
+                ((ptl_internal_appendME_t *)(t->overflow.tail))->next = Qentry;
             }
             t->overflow.tail = Qentry;
             PtlInternalAnnounceMELink(tEQ, options, pt_index, user_ptr);
@@ -1161,7 +1160,6 @@ check_lengths:
                     fprintf(stderr, "multi-fragment (oversize) messages do not work safely with locally managed offsets\n");
                     abort();
                 }
-                assert(hdr->length + entry->local_offset <= fragment_mlength);
                 if (fragment_mlength > 0) {
                     ++(entry->messages);        // safe because the PT is locked
                     report_this_start    = ((uint8_t *)me.start) + entry->local_offset;
