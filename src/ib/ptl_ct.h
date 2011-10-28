@@ -101,13 +101,17 @@ static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
  */
 static inline int to_ct(ptl_handle_ct_t ct_handle, ct_t **ct_p)
 {
-	int err;
 	obj_t *obj;
 
-	err = to_obj(POOL_CT, (ptl_handle_any_t)ct_handle, &obj);
-	if (unlikely(err)) {
+	if (ct_handle == PTL_CT_NONE) {
 		*ct_p = NULL;
-		return err;
+		return PTL_OK;
+	}
+
+	obj = to_obj(POOL_CT, (ptl_handle_any_t)ct_handle);
+	if (unlikely(!obj)) {
+		*ct_p = NULL;
+		return PTL_ARG_INVALID;
 	}
 
 	*ct_p = container_of(obj, ct_t, obj);

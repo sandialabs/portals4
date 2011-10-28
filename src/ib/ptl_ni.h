@@ -200,12 +200,11 @@ static inline int ni_put(ni_t *ni)
 
 static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
 {
-	int err;
 	obj_t *obj;
 	ni_t *ni;
 
-	err = to_obj(POOL_NI, (ptl_handle_any_t)handle, &obj);
-	if (err)
+	obj = to_obj(POOL_NI, (ptl_handle_any_t)handle);
+	if (!obj)
 		goto err;
 
 	ni = container_of(obj, ni_t, obj);
@@ -215,7 +214,6 @@ static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
 	   is holding a reference */
 	if (ni && ni->ref_cnt <= 0) {
 		ni_put(ni);
-		err = PTL_ARG_INVALID;
 		goto err;
 	}
 
@@ -224,7 +222,7 @@ static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
 
 err:
 	*ni_p = NULL;
-	return err;
+	return PTL_ARG_INVALID;
 }
 
 static inline ptl_handle_ni_t ni_to_handle(const ni_t *ni)

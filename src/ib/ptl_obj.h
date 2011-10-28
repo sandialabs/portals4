@@ -207,7 +207,7 @@ void obj_release(ref_t *ref);
 
 int obj_alloc(pool_t *pool, obj_t **p_obj);
 
-int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p);
+obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle);
 
 /**
  * Reset an object to all zeros.

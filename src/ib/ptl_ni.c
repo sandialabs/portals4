@@ -1140,9 +1140,11 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	if (unlikely(err))
 		return err;
 
-	err = to_obj(0, handle, &obj);
-	if (unlikely(err))
+	obj = to_obj(POOL_ANY, handle);
+	if (unlikely(!obj)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
+	}
 
 	if (!obj) {
 		err = PTL_ARG_INVALID;
