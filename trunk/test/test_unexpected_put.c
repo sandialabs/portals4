@@ -171,7 +171,7 @@ int main(int   argc,
     HANDLE_T        unexpected_e_handle, recv_e_handle;
     ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int             my_rank, num_procs;
+    int             num_procs;
     ptl_handle_eq_t recv_eq;
 
     if (getenv("VERBOSE")) {
@@ -181,7 +181,6 @@ int main(int   argc,
 
     CHECK_RETURNVAL(libtest_init());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
 
     unexpected_buf = malloc(sizeof(unsigned char) * BUFSIZE);
@@ -199,7 +198,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &recv_eq));
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, recv_eq, PTL_PT_ANY,
                                &logical_pt_index));
@@ -288,12 +286,18 @@ int main(int   argc,
             printf("    Initiator-side EQ:\n");
         }
         count_events = emptyEQ(write_md.eq_handle, myself, 0);
-        assert(count_events == 0);
+        if (count_events != 0) {
+            printf("%zu events!\n", count_events);
+            abort();
+        }
         if (verb) {
             printf("    Target-side EQ:\n");
         }
         count_events = emptyEQ(recv_eq, myself, 3);
-        assert(count_events == 3);
+        if (count_events != 3) {
+            printf("%zu events!\n", count_events);
+            abort();
+        }
         assert(emptyEQ(recv_eq, myself, 0) == 0);
     }
 

@@ -14,14 +14,13 @@ int main(int   argc,
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t   myself;
-    int             my_rank, num_procs;
+    int             num_procs;
     ptl_handle_ct_t trigger, target;
 
     CHECK_RETURNVAL(PtlInit());
 
     CHECK_RETURNVAL(libtest_init());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL,
@@ -35,7 +34,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &trigger));
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &target));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their

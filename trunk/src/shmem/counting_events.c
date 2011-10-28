@@ -121,7 +121,7 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
 
 static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme,
                                      const uint_fast8_t      ni)
-{
+{   /*{{{*/
     volatile ptl_internal_trigger_t *tmpv, *oldv, *newv;
 
     tmpv = ct_triggers[ni];
@@ -131,7 +131,7 @@ static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme,
         newv         = freeme;
         tmpv         = PtlInternalAtomicCasPtr(&ct_triggers[ni], oldv, newv);
     } while (tmpv != oldv);
-}
+} /*}}}*/
 
 void INTERNAL PtlInternalAddTrigger(ptl_handle_ct_t         ct_handle,
                                     ptl_internal_trigger_t *t)

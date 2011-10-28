@@ -47,12 +47,11 @@ int main(int   argc,
     HANDLE_T        potato_catcher_handle;
     ptl_md_t        potato_launcher;
     ptl_handle_md_t potato_launcher_handle;
-    int             my_rank, num_procs;
+    int             num_procs;
     ptl_handle_eq_t pt_eq_handle;
 
     CHECK_RETURNVAL(PtlInit());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit
@@ -67,7 +66,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &pt_eq_handle));
     CHECK_RETURNVAL(PtlPTAlloc
                         (ni_logical, 0, pt_eq_handle, PTL_PT_ANY,

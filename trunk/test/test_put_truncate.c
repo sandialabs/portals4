@@ -162,7 +162,7 @@ int main(int   argc,
     HANDLE_T        value_e_handle;
     ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int             my_rank, num_procs;
+    int             num_procs;
     ptl_handle_eq_t eq_handle;
 
     if (getenv("VERBOSE")) {
@@ -172,7 +172,6 @@ int main(int   argc,
 
     CHECK_RETURNVAL(libtest_init());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
 
     value   = malloc(sizeof(unsigned char) * BUFSIZE);
@@ -194,7 +193,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &eq_handle));
     CHECK_RETURNVAL(PtlPTAlloc
                         (ni_logical, 0, eq_handle, PTL_PT_ANY,
