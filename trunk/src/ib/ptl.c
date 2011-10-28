@@ -12,7 +12,6 @@
 
 /* Internal debug tuning variables. */
 int debug;
-int ptl_test_rank;
 int ptl_log_level;
 
 /*
@@ -224,6 +223,10 @@ static int gbl_init(gbl_t *gbl)
 #ifdef DEBUG_DUMP
 	signal(SIGUSR1, dump_everything);
 #endif
+
+	PtlInitParam();
+	debug = get_param(PTL_DEBUG);
+	ptl_log_level = get_param(PTL_LOG_LEVEL);
 
 	err = init_iface_table(gbl);
 	if (err)

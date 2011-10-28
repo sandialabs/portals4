@@ -55,10 +55,6 @@
 		PtlTriggeredPut;
 		PtlTriggeredSwap;
 
-	# SFW runtime. Not part of portals.
-		ptl_log_level;
-		ptl_test_rank;
-
 	local:
 		*;
 };

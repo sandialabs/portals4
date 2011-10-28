@@ -44,6 +44,9 @@ enum {
 	PTL_EQ_WAIT_LOOP_COUNT,
 	PTL_EQ_POLL_LOOP_COUNT,
 
+	PTL_LOG_LEVEL,
+	PTL_DEBUG,
+
 	PTL_PARAM_LAST,			/* keep me last */
 };
 

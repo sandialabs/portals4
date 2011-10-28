@@ -901,7 +901,6 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 			if (mapping[i].phys.pid == iface->id.phys.pid) {
 				ni->id.rank = i;
 				ni->shmem.index = ni->shmem.world_size;
-				ptl_test_rank = i;
 			}
 
 			ni->shmem.world_size ++;
