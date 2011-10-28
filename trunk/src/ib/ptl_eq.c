@@ -92,7 +92,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -181,7 +181,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -288,7 +288,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	eq_t *eq;
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -333,7 +333,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	int nloops = get_param(PTL_EQ_WAIT_LOOP_COUNT);
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -429,7 +429,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	int nloops = get_param(PTL_EQ_POLL_LOOP_COUNT);
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 	}

@@ -297,7 +297,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	le_t *le = le;
 	pt_t *pt;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -437,7 +437,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	int err;
 	le_t *le;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 

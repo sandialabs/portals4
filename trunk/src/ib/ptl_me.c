@@ -87,7 +87,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	me_t *me = me;
 	pt_t *pt;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -246,7 +246,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	int err;
 	me_t *me;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 

@@ -15,7 +15,7 @@ int PtlGetUid(ptl_handle_ni_t ni_handle, ptl_uid_t *uid)
 	int err;
 	ni_t *ni;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (err)
 		return err;
 
@@ -50,7 +50,7 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id)
 	int err;
 	ni_t *ni;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (err) {
 		WARN();
 		return err;

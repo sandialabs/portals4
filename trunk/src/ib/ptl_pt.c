@@ -89,7 +89,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	ptl_pt_index_t index = 0;
 	eq_t *eq;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -175,7 +175,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	ni_t *ni;
 	pt_t *pt;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -246,7 +246,7 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	ni_t *ni;
 	pt_t *pt;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -309,7 +309,7 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	ni_t *ni;
 	pt_t *pt;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 

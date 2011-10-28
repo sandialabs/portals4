@@ -595,7 +595,7 @@ static void process_async(EV_P_ ev_io *w, int revents)
 
 	return;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		return;
 	}
@@ -664,7 +664,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	iface_t *iface;
 	gbl_t *gbl = &per_proc_gbl;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -846,7 +846,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	int length;
 	int i;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -952,7 +952,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	int err;
 	ni_t *ni;
   
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -1070,7 +1070,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 	ni_t *ni;
 	gbl_t *gbl = &per_proc_gbl;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		return err;
 	}
@@ -1102,7 +1102,7 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 	int err;
 	ni_t *ni;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -1136,7 +1136,7 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	obj_t *obj;
 	int err;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 

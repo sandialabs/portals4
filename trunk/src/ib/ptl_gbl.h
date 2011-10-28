@@ -25,7 +25,7 @@ extern gbl_t per_proc_gbl;
 extern void gbl_release(ref_t *ref);
 
 /*
- * get_gbl()
+ * gbl_get()
  *	get a reference to per process global state
  *	must be matched with a call to gbl_put()
  *
@@ -36,7 +36,7 @@ extern void gbl_release(ref_t *ref);
  *	PTL_OK			success, gbl contains address of per_proc_gbl
  *	PTL_NO_INIT		failure, per_proc_gbl is not in init state
  */
-static inline int get_gbl(void)
+static inline int gbl_get(void)
 {
 #ifndef NO_ARG_VALIDATION
 	if (unlikely(per_proc_gbl.ref_cnt == 0))
@@ -50,7 +50,7 @@ static inline int get_gbl(void)
 /*
  * gbl_put()
  *	release a reference to per process global state
- *	obtained from a call to get_gbl()
+ *	obtained from a call to gbl_get()
  *
  * Inputs
  *	gbl
