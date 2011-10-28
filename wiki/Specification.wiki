@@ -2,7 +2,7 @@
 
 
 = Latest Draft =
-  * Portals Document (pdf)
+  * [http://code.google.com/p/portals4/downloads/detail?name=portals40.pdf Portals Document (pdf)]
   * Portals Document with changes (pdf)
 
 = Draft Change History =
