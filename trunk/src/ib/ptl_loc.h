@@ -211,6 +211,10 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length);
 
+ptl_size_t iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
+			  ptl_size_t offset, ptl_size_t length,
+			  ptl_size_t *index_p, ptl_size_t *base_p);
+
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		 void *dest, void *source, void *operand);
 

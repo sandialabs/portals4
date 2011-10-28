@@ -238,4 +238,69 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 	}
 
 	return PTL_OK;
+} 
+
+/**
+ * Get the number of iovec elements, starting element and offset.
+ *
+ * Given a data segment described by an iovec array and
+ * the starting offset and length of a region in that
+ * data segment, compute the index of the iovec array
+ * element and starting offset of the iovec element that contains
+ * the start of the region. Count and return the number of iovec elements
+ * needed to reach the end of the region. Return -1 if the region
+ * will not fit into the data segment.
+ *
+ * @param[in] iov the iovec list
+ * @param[in] num_iov the number of entries in the iovec list
+ * @param[in] offset the offset of the data region into the data segment
+ * @param[in] length the length of the data region
+ * @param[out] index_p the address of the returned index
+ * @param[out] base_p the addresss of the returned base offset
+ *
+ * @return number of iovec elements on success
+ * @return -1 on failure
+ */
+ptl_size_t iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
+			  ptl_size_t offset, ptl_size_t length,
+			  ptl_size_t *index_p, ptl_size_t *base_p)
+{
+	ptl_size_t index_start;
+	ptl_size_t index_stop;
+	ptl_size_t base;
+	ptl_size_t iov_len;
+
+	/* find the index of the iovec element and its starting
+	 * offset that contains the start of the data region */
+	base = 0;
+	for (index_start = 0; index_start < num_iov; index_start++) {
+		iov_len = (iov++)->iov_len;
+		if (offset < base + iov_len)
+			break;
+		base += iov_len;
+	}
+
+	if (index_start == num_iov)
+		return -1;
+
+	/* adjust for offset into first element */
+	if (offset > base)
+		length += offset - base;
+
+	/* find the index of the iovec element that contains the
+	 * end of the data region */
+	for (index_stop = index_start; index_stop < num_iov; index_stop++) {
+		iov_len = (iov++)->iov_len;
+		if (length <= iov_len)
+			break;
+		length -= iov_len;
+	}
+
+	if (index_stop == num_iov)
+		return -1;
+
+	*index_p = index_start;
+	*base_p = base;
+
+	return index_stop - index_start + 1;
 }
