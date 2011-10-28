@@ -22,8 +22,8 @@
 
 #include "support/support.h"
 
-static int rank;
-static int size;
+static int rank = -1;
+static int size = -1;
 static ptl_process_t my_id;
 static ptl_handle_ni_t phys_ni_h;
 static int initialized;
@@ -112,9 +112,6 @@ libtest_get_mapping(void)
 int
 libtest_get_rank(void)
 {
-	if (!initialized)
-		libtest_init();
-
     return rank;
 }
 
@@ -122,9 +119,6 @@ libtest_get_rank(void)
 int
 libtest_get_size(void)
 {
-	if (!initialized)
-		libtest_init();
-
     return size;
 }
 
