@@ -15,13 +15,12 @@ int main(int   argc,
     ptl_process_t   myself;
     ptl_pt_index_t  logical_pt_index;
     ptl_process_t  *dmapping, *amapping;
-    int             my_rank, num_procs, i;
+    int             num_procs, i;
 
     CHECK_RETURNVAL(PtlInit());
 
     CHECK_RETURNVAL(libtest_init());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
     amapping  = libtest_get_mapping();
 
@@ -46,7 +45,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(myself.rank == my_rank);
     /*for (i = 0; i < num_procs; ++i) {
      *  printf("%3u's requested[%03i] = {%3u,%3u} actual[%03i] = {%3u,%3u}\n",
      *         (unsigned int)myself.rank, i, dmapping[i].phys.nid,

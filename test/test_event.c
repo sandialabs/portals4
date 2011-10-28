@@ -135,13 +135,12 @@ int main(int   argc,
     ptl_md_t        read_md;
     ptl_handle_md_t read_md_handle;
     ptl_handle_eq_t pt_eq_handle;
-    int             my_rank, num_procs;
+    int             num_procs;
 
     CHECK_RETURNVAL(PtlInit());
 
     CHECK_RETURNVAL(libtest_init());
 
-    my_rank   = libtest_get_rank();
     num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
@@ -156,7 +155,6 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    assert(my_rank == myself.rank);
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &pt_eq_handle));
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, pt_eq_handle, PTL_PT_ANY,
                                &logical_pt_index));
