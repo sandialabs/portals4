@@ -97,11 +97,13 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		goto err1;
 	}
 
-	knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
-	if (!knem_cookie) {
-		WARN();
-		err = PTL_FAIL;
-		goto err1;
+	if (ni->options & PTL_NI_LOGICAL) {
+		knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
+		if (!knem_cookie) {
+			WARN();
+			err = PTL_FAIL;
+			goto err1;
+		}
 	}
 
 	err = mr_alloc(ni, &mr);
