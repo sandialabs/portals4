@@ -51,6 +51,8 @@ int main(int   argc,
 
     CHECK_RETURNVAL(PtlInit());
 
+    CHECK_RETURNVAL(libtest_init());
+
     num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit
