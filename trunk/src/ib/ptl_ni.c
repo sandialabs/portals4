@@ -738,15 +738,6 @@ int PtlNIInit(ptl_interface_t	iface_id,
 			err = PTL_ARG_INVALID;
 			goto err3;
 		}
-	} else {
-		/* currently we must always create a physical NI first
-		 * to establish the PID */
-		if (iface->id.phys.pid == PTL_PID_ANY) {
-			ptl_warn("no PID established before creating logical NI\n");
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err3;
-		}
 	}
 
 	ni->iface = iface;
@@ -854,6 +845,14 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	err = to_ni(ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
+
+	/* currently we must always create a physical NI first
+	 * to establish the PID */
+	if (ni->iface->id.phys.pid == PTL_PID_ANY) {
+		ptl_warn("no PID established before creating logical NI\n");
+		WARN();
+		goto err2;
+	}
 
 	if ((ni->options & PTL_NI_LOGICAL) == 0) {
 		/* Only valid on logical NIs. */
