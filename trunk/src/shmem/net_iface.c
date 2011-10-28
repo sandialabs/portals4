@@ -495,6 +495,10 @@ int API_FUNC PtlSetMap(ptl_handle_ni_t      ni_handle,
         VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
+    if (ni.s.ni > 1) {
+        VERBOSE_ERROR("NI handle is for physical interface\n");
+        return PTL_ARG_INVALID;
+    }
     if (map_size == 0) {
         VERBOSE_ERROR("Input map_size is zero\n");
         return PTL_ARG_INVALID;
