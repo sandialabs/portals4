@@ -121,7 +121,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -195,7 +195,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -333,7 +333,7 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni_t *ni;
 	buf_t *buf;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -384,7 +384,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ct_t *ct = NULL;
 	buf_t *buf;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -547,7 +547,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -620,7 +620,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		return err;
 
@@ -707,7 +707,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -817,7 +817,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	buf_t *buf;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -927,7 +927,7 @@ int PtlAtomicSync(void)
 {
 	int err;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1031,7 +1031,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	uint64_t opval = 0;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1150,7 +1150,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	uint64_t opval = 0;
 	req_hdr_t *hdr;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1278,7 +1278,7 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	int err;
 	ni_t *ni;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;
@@ -1320,7 +1320,7 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	int err;
 	ni_t *ni;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err)) {
 		WARN();
 		return err;

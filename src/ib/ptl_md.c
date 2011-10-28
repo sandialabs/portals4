@@ -158,7 +158,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	ni_t *ni;
 	md_t *md;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		goto err0;
 
@@ -254,7 +254,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	int err;
 	md_t *md;
 
-	err = get_gbl();
+	err = gbl_get();
 	if (unlikely(err))
 		goto err0;
 

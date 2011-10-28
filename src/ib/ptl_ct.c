@@ -96,7 +96,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -170,7 +170,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 
 	/* convert handle to pointer */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -235,7 +235,7 @@ int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -282,7 +282,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -409,7 +409,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	int nloops = get_param(PTL_CT_POLL_LOOP_COUNT);
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 	}
@@ -621,7 +621,7 @@ int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 
 	/* convert handle to object */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -685,7 +685,7 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 
 	/* convert handles to objects */
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -773,7 +773,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 	ni_t *ni;
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
@@ -842,7 +842,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	xl_t *xl;
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (unlikely(err))
 			goto err0;
 
@@ -916,7 +916,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	struct list_head *t;
 
 	if (check_param) {
-		err = get_gbl();
+		err = gbl_get();
 		if (err)
 			goto err0;
 
