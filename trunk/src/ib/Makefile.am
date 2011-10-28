@@ -30,7 +30,6 @@ libportals_ib_la_SOURCES = \
 	ptl_internal_alignment.h \
 	ptl_internal_assert.h \
 	ptl_internal_atomic.h \
-	ptl_internal_locks.h \
 	ptl_le.c \
 	ptl_le.h \
 	ptl_loc.h \

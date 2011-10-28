@@ -200,6 +200,11 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 	return ntohs(port);
 }
 
+static inline void SPINLOCK_BODY(void)
+{
+	__asm__ __volatile__ ("pause" ::: "memory");
+}
+
 int send_message_rdma(buf_t *buf, int signaled);
 
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
