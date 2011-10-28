@@ -1,0 +1,21 @@
+#summary Draft copy of the Portals 4 specification, with changelog
+
+
+= Latest Draft =
+  * Portals Document (pdf)
+  * Portals Document with changes (pdf)
+
+= Draft Change History =
+
+== October 20, 2011 Changelog ==
+  * Clarify that MD_VOLATILE is only applicable to send buffers
+  * Clarify VOLATILE applies to all sending operations in the constants table
+
+== October 12, 2011 Changelog ==
+  * Remove IN_USE check from MDRelease.  It's not clear there's a semantic need and it is burdensome for some implementations
+  * Remove const from user_ptr type declaration
+  * Add text saying that unexpected messages associated with an ME in the overflow list are deleted when the ME is explicitly unlinked
+  * Clarify that event in Ptl{EQ,CT}{Get,Wait,Poll} must point to a valid structure (ie, not be NULL)
+  * Fix description of ptllist argument to LEAppend and MEAppend to reflect search is no longer done through the append calls
+  * Clean up language for LESearch and MESearch.  Event generation text now matches language of LEAppend/MEAppend, in that events can be turned off through le/me flags, and counting events could be turned on.
+  * Fix wording of PtlCTWait and PtlCTPoll in presence of failures in the specified counting event(s).
