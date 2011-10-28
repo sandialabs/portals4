@@ -474,7 +474,6 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
                        ptl_ct_event_t *event)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    uint64_t                              old_fail_val;
     volatile ptl_ct_event_t              *cte;
     volatile uint_fast64_t               *rc;
 
@@ -494,14 +493,13 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     // printf("waiting for CT(%llu) sum to reach %llu\n", (unsigned long
     // long)ct.i, (unsigned long long)test);
     PtlInternalAtomicInc(rc, 1);
-    old_fail_val = cte->failure;
     do {
         ptl_ct_event_t tmpread = *cte;
         if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
             __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
-        } else if ((tmpread.failure != old_fail_val) ||
+        } else if ((tmpread.failure != 0) ||
                    ((tmpread.success + tmpread.failure) >= test)) {
             if (event != NULL) {
                 *event = tmpread;
