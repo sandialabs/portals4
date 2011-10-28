@@ -1173,6 +1173,12 @@ static int tgt_send_ack(xt_t *xt)
 	if (xt->le && xt->le->options & PTL_LE_ACK_DISABLE)
 		hdr->operation = OP_NO_ACK;
 
+	if (xt->le && xt->le->ptl_list == PTL_PRIORITY_LIST) {
+		/* The LE must be released before we sent the ack. */
+		le_put(xt->le);
+		xt->le = NULL;
+	}
+
 	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
 		WARN();
@@ -1197,6 +1203,12 @@ static int tgt_send_reply(xt_t *xt)
 	base_hdr_from_xt(hdr, xt);
 
 	hdr->operation = OP_REPLY;
+
+	if (xt->le && xt->le->ptl_list == PTL_PRIORITY_LIST) {
+		/* The LE must be released before we sent the ack. */
+		le_put(xt->le);
+		xt->le = NULL;
+	}
 
 	err = xt->conn->transport.send_message(buf, 1);
 	if (err) {
