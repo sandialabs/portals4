@@ -1,9 +1,0 @@
-#summary Nightly tarball
-
-= Introduction =
-
-Nightly tarballs will eventually be posted on this page.
-
-
-= Details =
-
