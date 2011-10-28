@@ -36,13 +36,12 @@ static inline int me_alloc(ni_t *ni, me_t **me_p)
 
 static inline int to_me(ptl_handle_me_t handle, me_t **me_p)
 {
-	int err;
 	obj_t *obj;
 
-	err = to_obj(POOL_ME, (ptl_handle_any_t)handle, &obj);
-	if (err) {
+	obj = to_obj(POOL_ME, (ptl_handle_any_t)handle);
+	if (!obj) {
 		*me_p = NULL;
-		return err;
+		return PTL_ARG_INVALID;
 	}
 
 	*me_p = container_of(obj, me_t, obj);

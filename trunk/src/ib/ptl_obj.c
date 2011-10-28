@@ -527,7 +527,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
  *
  * @return status
  */
-int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
+obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle)
 {
 	int err;
 	obj_t *obj = NULL;
@@ -535,10 +535,6 @@ int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
 #ifndef NO_ARG_VALIDATION
 	enum obj_type handle_type = (unsigned int)(handle >> HANDLE_SHIFT);
 #endif
-
-	if ((type == POOL_CT && handle == PTL_CT_NONE) ||
-		(type == POOL_EQ && handle == PTL_EQ_NONE))
-		goto done;
 
 	if (handle == PTL_INVALID_HANDLE) {
 		WARN();
@@ -570,18 +566,15 @@ int to_obj(enum obj_type type, ptl_handle_any_t handle, obj_t **obj_p)
 		goto err1;
 	}
 
-	if (type!=POOL_ANY && (type != obj->obj_pool->type)) {
+	if ((type != POOL_ANY) && (type != obj->obj_pool->type)) {
 		WARN();
 		goto err1;
 	}
 #endif
 
 	obj_get(obj);
-
-done:
-	*obj_p = obj;
-	return PTL_OK;
+	return obj;
 
 err1:
-	return PTL_ARG_INVALID;
+	return NULL;
 }

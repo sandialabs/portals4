@@ -264,14 +264,13 @@ static inline void set_xt_dest(xt_t *xt, const conn_t *connect)
 
 static inline int to_buf(ptl_handle_buf_t handle, buf_t **buf_p)
 {
-	int err;
 	obj_t *obj;
 
 	/* The buffer can either be in POOL_BUF or POOL_SBUF. */
-	err = to_obj(POOL_ANY, (ptl_handle_any_t)handle, &obj);
-	if (err) {
+	obj = to_obj(POOL_ANY, (ptl_handle_any_t)handle);
+	if (!obj) {
 		*buf_p = NULL;
-		return err;
+		return PTL_ARG_INVALID;
 	}
 
 	*buf_p = container_of(obj, buf_t, obj);

@@ -99,13 +99,17 @@ static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
  */
 static inline int to_eq(ptl_handle_eq_t eq_handle, eq_t **eq_p)
 {
-	int err;
 	obj_t *obj;
 
-	err = to_obj(POOL_EQ, (ptl_handle_any_t)eq_handle, &obj);
-	if (err) {
+	if (eq_handle == PTL_EQ_NONE) {
 		*eq_p = NULL;
-		return err;
+		return PTL_OK;
+	}
+
+	obj = to_obj(POOL_EQ, (ptl_handle_any_t)eq_handle);
+	if (!obj) {
+		*eq_p = NULL;
+		return PTL_ARG_INVALID;
 	}
 
 	*eq_p = container_of(obj, eq_t, obj);

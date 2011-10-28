@@ -155,13 +155,12 @@ static inline int xt_alloc(ni_t *ni, xt_t **xt_p)
 
 static inline int to_xt(ptl_handle_xt_t xt_handle, xt_t **xt_p)
 {
-	int err;
 	obj_t *obj;
 
-	err = to_obj(POOL_XT, (ptl_handle_any_t)xt_handle, &obj);
-	if (err) {
+	obj = to_obj(POOL_XT, (ptl_handle_any_t)xt_handle);
+	if (!obj) {
 		*xt_p = NULL;
-		return err;
+		return PTL_ARG_INVALID;
 	}
 
 	*xt_p = container_of(obj, xt_t, obj);

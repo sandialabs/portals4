@@ -51,13 +51,12 @@ static inline int le_alloc(ni_t *ni, le_t **le_p)
 
 static inline int to_le(ptl_handle_le_t handle, le_t **le_p)
 {
-	int err;
 	obj_t *obj;
 
-	err = to_obj(POOL_LE, (ptl_handle_any_t)handle, &obj);
-	if (err) {
+	obj = to_obj(POOL_LE, (ptl_handle_any_t)handle);
+	if (!obj) {
 		*le_p = NULL;
-		return err;
+		return PTL_ARG_INVALID;
 	}
 
 	*le_p = container_of(obj, le_t, obj);
