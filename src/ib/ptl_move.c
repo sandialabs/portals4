@@ -1,37 +1,49 @@
-/*
- * ptl_move.c - get/put/atomic/fetch_atomic/swap APIs
+/**
+ * @file ptl_move.c
+ *
+ * @brief Portals move APIs
  */
 
 #include "ptl_loc.h"
 
+/**
+ * @brief Allocate a buf or sbuf depending on transport type.
+ *
+ * @return status
+ */
 static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **buf)
 {
 	conn_t *conn;
 	int err;
 
+	/* lookup or allocate a conn_t struct to hold per target info */
 	conn = get_conn(ni, target_id);
-	if (unlikely(!conn)) {
-		WARN();
+	if (unlikely(!conn))
 		return PTL_FAIL;
-	}
 
+	/* allocate the correct type of buf */
 	if (conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, buf);
 	else
 		err = sbuf_alloc(ni, buf);
-	if (err) {
-		WARN();
-		return err;
-	}
 
-	if ((*buf)->type != BUF_FREE) abort();
+	if (unlikely(err))
+		return err;
+
+	assert((*buf)->type == BUF_FREE);
 
 	(*buf)->xi.conn = conn;
 
 	return PTL_OK;
 }
 
-static int get_operand(ptl_datatype_t type, const void *operand, uint64_t *opval)
+/**
+ * @brief Get operand from address and type.
+ *
+ * @return status
+ */
+static int get_operand(ptl_datatype_t type, const void *operand,
+		       uint64_t *opval)
 {
 	uint64_t val;
 	int len = atom_type_size[type];
@@ -50,14 +62,12 @@ static int get_operand(ptl_datatype_t type, const void *operand, uint64_t *opval
 		val = *(uint64_t *)operand;
 		break;
 	case 16:
-		/* TODO need to handle double complex case */
-		WARN();
+		/** @todo need to handle double complex case */
 		val = -1ULL;
 		break;
 	default:
-		ptl_error("invalid datatype = %d\n", type);
-		val = -1ULL;
-		break;
+		/* should never happen */
+		abort();
 	}
 
 	*opval = val;
@@ -65,51 +75,44 @@ static int get_operand(ptl_datatype_t type, const void *operand, uint64_t *opval
 }
 
 #ifndef NO_ARG_VALIDATION
+/**
+ * @brief check parameters for a put type operation
+ *
+ * @return status
+ */
 static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	      ptl_ack_req_t ack_req, ni_t *ni)
 {
-	if (unlikely(!md)) {
-		WARN();
+	if (local_offset + length > md->length)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(local_offset + length > md->length)) {
-		WARN();
+	if (ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
-		WARN();
+	if (ack_req == PTL_ACK_REQ && !md->eq)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req == PTL_ACK_REQ && !md->eq)) {
-		WARN();
+	if (ack_req == PTL_CT_ACK_REQ && !md->ct)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req == PTL_CT_ACK_REQ && !md->ct)) {
-		WARN();
+	if (length > ni->limits.max_msg_size)
 		return PTL_ARG_INVALID;
-	}
-
-	if (unlikely(length > ni->limits.max_msg_size)) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
 
 	if ((md->options & PTL_MD_VOLATILE) &&
-		length > get_param(PTL_MAX_INLINE_DATA)) {
+		length > get_param(PTL_MAX_INLINE_DATA))
 		/* We can only guarantee volatile for the data that will be
 		 * copied in the request buffer. */
-		WARN();
 		return PTL_ARG_INVALID;
-	}
 
 	return PTL_OK;
 }
 #endif
 
+/**
+ * @brief Perform a put operation.
+ *
+ * @return status
+ */
 int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -122,10 +125,8 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -142,30 +143,27 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err2;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_PUT;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->ack_req = ack_req;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -178,9 +176,15 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a triggered put operation.
+ *
+ * @return status
+ */
 int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_ack_req_t ack_req,
 		    ptl_process_t target_id, ptl_pt_index_t pt_index,
@@ -196,10 +200,8 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -210,14 +212,11 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni = obj_to_ni(md);
 
 	err = to_ct(trig_ct_handle, &ct);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err2;
-	}
 
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(!ct)) {
-		WARN();
+	if (!ct) {
 		err = PTL_ARG_INVALID;
 		goto err2;
 	}
@@ -228,31 +227,28 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_PUT;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->ack_req = ack_req;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
 	buf->xi.threshold = threshold;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -268,61 +264,34 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
 #ifndef NO_ARG_VALIDATION
-static int check_get(md_t *md, ptl_size_t local_offset, ptl_size_t length,
-	      ni_t *ni)
+/**
+ * @brief check parameters for a get type operation
+ *
+ * @return status
+ */
+static int check_get(md_t *md, ptl_size_t local_offset,
+		     ptl_size_t length, ni_t *ni)
 {
-	if (unlikely(!md)) {
-		WARN();
+	if (local_offset + length > md->length)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(local_offset + length > md->length)) {
-		WARN();
+	if (length > ni->limits.max_msg_size)
 		return PTL_ARG_INVALID;
-	}
-
-	if (unlikely(length > ni->limits.max_msg_size)) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
 
 	return PTL_OK;
 }
 #endif
 
-static inline void preparePtlGet(buf_t *buf, ni_t *ni, md_t *md,
-								 ptl_size_t local_offset,
-								 ptl_size_t length, ptl_process_t target_id,
-								 ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
-								 ptl_size_t remote_offset, void *user_ptr)
-{
-	req_hdr_t *hdr;
-
-	hdr = (req_hdr_t *)buf->data;
-
-	hdr->operation = OP_GET;
-	buf->xi.target = target_id;
-	hdr->uid = cpu_to_le32(ni->uid);
-	hdr->pt_index = cpu_to_le32(pt_index);
-	hdr->match_bits = cpu_to_le64(match_bits);
-	buf->xi.get_md = md;
-	buf->xi.get_eq = md->eq;
-	buf->xi.get_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-
-	hdr->length		= cpu_to_le64(length);
-	buf->xi.get_offset = local_offset;
-	buf->xi.get_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
-}
-
+/**
+ * @brief Perform a get operation.
+ *
+ * @return status
+ */
 int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -332,10 +301,11 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	md_t *md;
 	ni_t *ni;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = gbl_get();
 	if (unlikely(err))
-		return err;
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -352,15 +322,27 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err2;
-	}
 
-	preparePtlGet(buf, ni, md, local_offset,
-				  length, target_id,
-				  pt_index, match_bits,
-				  remote_offset, user_ptr);
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_GET;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
+	buf->xi.get_md = md;
+	buf->xi.get_eq = md->eq;
+	buf->xi.get_ct = md->ct;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.get_offset = local_offset;
+	buf->xi.get_resid = length;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -371,9 +353,15 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a triggered get operation.
+ *
+ * @return status
+ */
 int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_process_t target_id,
 		    ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -385,10 +373,11 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
+	req_hdr_t *hdr;
 
 	err = gbl_get();
 	if (unlikely(err))
-		return err;
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -403,8 +392,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(!ct)) {
-		WARN();
+	if (!ct) {
 		err = PTL_ARG_INVALID;
 		goto err2;
 	}
@@ -415,16 +403,27 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
-	preparePtlGet(buf, ni, md, local_offset,
-				  length, target_id,
-				  pt_index, match_bits,
-				  remote_offset, user_ptr);
+	hdr = (req_hdr_t *)buf->data;
 
+	hdr->operation = OP_GET;
+	hdr->uid = cpu_to_le32(ni->uid);
+	hdr->pt_index = cpu_to_le32(pt_index);
+	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
+	buf->xi.get_md = md;
+	buf->xi.get_eq = md->eq;
+	buf->xi.get_ct = md->ct;
+	buf->xi.user_ptr = user_ptr;
+	buf->xi.get_offset = local_offset;
+	buf->xi.get_resid = length;
+	buf->xi.pkt_len = sizeof(req_hdr_t);
+	buf->xi.state = STATE_INIT_START;
 	buf->xi.threshold = threshold;
 
 	post_ct(buf, ct);
@@ -439,79 +438,64 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
 #ifndef NO_ARG_VALIDATION
+/**
+ * @brief check parameters for a atomic type operation
+ *
+ * @return status
+ */
 static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 			ni_t *ni, ptl_ack_req_t ack_req,
 			ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
-	if (unlikely(!md)) {
-		WARN();
+	if (local_offset + length > md->length)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(local_offset + length > md->length)) {
-		WARN();
+	if (length > ni->limits.max_atomic_size)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(length > ni->limits.max_atomic_size)) {
-		WARN();
+	if (ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req < PTL_NO_ACK_REQ || ack_req > PTL_OC_ACK_REQ)) {
-		WARN();
+	if (ack_req == PTL_ACK_REQ && !md->eq)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req == PTL_ACK_REQ && !md->eq)) {
-		WARN();
+	if (ack_req == PTL_CT_ACK_REQ && !md->ct)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(ack_req == PTL_CT_ACK_REQ && !md->ct)) {
-		WARN();
+	if (atom_op < PTL_MIN || atom_op >= PTL_OP_LAST)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(atom_op < PTL_MIN || atom_op >= PTL_OP_LAST)) {
-		WARN();
+	if (!op_info[atom_op].atomic_ok)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(!op_info[atom_op].atomic_ok)) {
-		WARN();
+	if (atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)) {
-		WARN();
+	if ((atom_type == PTL_FLOAT || atom_type == PTL_DOUBLE) &&
+		      !op_info[atom_op].float_ok)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely((atom_type == PTL_FLOAT ||
-		      atom_type == PTL_DOUBLE) &&
-		      !op_info[atom_op].float_ok)) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	if (unlikely((atom_type == PTL_FLOAT_COMPLEX ||
+	if ((atom_type == PTL_FLOAT_COMPLEX ||
 		      atom_type == PTL_DOUBLE_COMPLEX) &&
-		      !op_info[atom_op].complex_ok)) {
-		WARN();
+		      !op_info[atom_op].complex_ok)
 		return PTL_ARG_INVALID;
-	}
 
 	return PTL_OK;
 }
 
+/**
+ * @brief check for overlap between get and put MDs.
+ *
+ * @return status
+ */
 static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
-						 md_t *put_md, ptl_size_t local_put_offset,
-						 ptl_size_t length)
+			 md_t *put_md, ptl_size_t local_put_offset,
+			 ptl_size_t length)
 {
 #if 0
 	unsigned char *get_start = get_md->start + local_get_offset;
@@ -519,13 +503,11 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
 
 	if (get_start >= put_start &&
 		get_start < put_start + length) {
-		WARN();
 		return PTL_ARG_INVALID;
 	}
 
 	if (get_start + length >= put_start &&
 		get_start + length < put_start + length) {
-		WARN();
 		return PTL_ARG_INVALID;
 	}
 
@@ -536,8 +518,13 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
 	return PTL_OK;
 #endif
 }
-#endif
+#endif /* NO_ARG_VALIDATION */
 
+/**
+ * @brief Perform a atomic operation.
+ *
+ * @return status
+ */
 int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_size_t length, ptl_ack_req_t ack_req,
 	      ptl_process_t target_id, ptl_pt_index_t pt_index,
@@ -553,7 +540,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	err = gbl_get();
 	if (unlikely(err))
-		return err;
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -564,38 +551,36 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	ni = obj_to_ni(md);
 
 #ifndef NO_ARG_VALIDATION
-	err = check_atomic(md, local_offset, length, ni, ack_req, atom_op, atom_type);
+	err = check_atomic(md, local_offset, length, ni,
+			   ack_req, atom_op, atom_type);
 	if (err)
 		goto err2;
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err2;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_ATOMIC;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->ack_req = ack_req;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -608,9 +593,15 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a triggered atomic operation.
+ *
+ * @return status
+ */
 int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		       ptl_size_t length, ptl_ack_req_t ack_req,
 		       ptl_process_t target_id, ptl_pt_index_t pt_index,
@@ -628,7 +619,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	err = gbl_get();
 	if (unlikely(err))
-		return err;
+		goto err0;
 
 	md = to_md(md_handle);
 	if (unlikely(!md)) {
@@ -643,45 +634,42 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		goto err2;
 
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(!ct)) {
-		WARN();
+	if (!ct) {
 		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
-	err = check_atomic(md, local_offset, length, ni, ack_req, atom_op, atom_type);
+	err = check_atomic(md, local_offset, length, ni,
+			   ack_req, atom_op, atom_type);
 	if (err)
 		goto err3;
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_ATOMIC;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->ack_req = ack_req;
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = md;
 	buf->xi.put_eq = md->eq;
 	buf->xi.put_ct = md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_offset;
 	buf->xi.put_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -697,9 +685,15 @@ err2:
 	md_put(md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a fetch atomic operation.
+ *
+ * @return status
+ */
 int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		   ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		   ptl_size_t length, ptl_process_t target_id,
@@ -710,16 +704,14 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 {
 	int err;
 	md_t *get_md;
-	md_t *put_md = NULL;
+	md_t *put_md;
 	ni_t *ni;
 	buf_t *buf;
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	get_md = to_md(get_md_handle);
 	if (unlikely(!get_md)) {
@@ -745,49 +737,45 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (err)
 		goto err3;
 
-	err = check_overlap(get_md, local_get_offset,
-						put_md, local_put_offset, length);
+	err = check_overlap(get_md, local_get_offset, put_md,
+			    local_put_offset, length);
 	if (err)
 		goto err3;
 
-	if (unlikely(obj_to_ni(put_md) != ni)) {
-		WARN();
+	if (obj_to_ni(put_md) != ni) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_FETCH;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -802,9 +790,15 @@ err2:
 	md_put(get_md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a triggered fetch atomic operation.
+ *
+ * @return status
+ */
 int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 			    ptl_size_t local_get_offset,
 			    ptl_handle_md_t put_md_handle,
@@ -819,17 +813,15 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 {
 	int err;
 	md_t *get_md;
-	md_t *put_md = NULL;
+	md_t *put_md;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	get_md = to_md(get_md_handle);
 	if (unlikely(!get_md)) {
@@ -846,14 +838,11 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	ni = obj_to_ni(get_md);
 
 	err = to_ct(trig_ct_handle, &ct);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(!ct)) {
-		WARN();
+	if (!ct) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
@@ -867,50 +856,46 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	if (err)
 		goto err4;
 
-	err = check_overlap(get_md, local_get_offset,
-						put_md, local_put_offset, length);
+	err = check_overlap(get_md, local_get_offset, put_md,
+			    local_put_offset, length);
 	if (err)
 		goto err4;
 
-	if (unlikely(obj_to_ni(put_md) != ni)) {
-		WARN();
+	if (obj_to_ni(put_md) != ni) {
 		err = PTL_ARG_INVALID;
 		goto err4;
 	}
 #endif
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err4;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_FETCH;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -928,101 +913,83 @@ err2:
 	md_put(get_md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform an atomic sync.
+ *
+ * @return status
+ */
 int PtlAtomicSync(void)
 {
 	int err;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	/* TODO */
 	err = PTL_OK;
 
 	gbl_put();
+err0:
 	return err;
 }
 
 #ifndef NO_ARG_VALIDATION
-static int check_swap(md_t *get_md, ptl_size_t local_get_offset,
-					  md_t *put_md, ptl_size_t local_put_offset,
-					  ptl_size_t length, ni_t *ni,
-					  ptl_op_t atom_op, ptl_datatype_t atom_type)
+/**
+ * @brief check parameters for a swap type operation
+ *
+ * @return status
+ */
+static int check_swap(md_t *get_md, ptl_size_t local_get_offset, md_t *put_md,
+		      ptl_size_t local_put_offset, ptl_size_t length, ni_t *ni,
+		      ptl_op_t atom_op, ptl_datatype_t atom_type)
 {
-	if (unlikely(!get_md)) {
-		WARN();
+	if (get_md->obj.obj_ni != put_md->obj.obj_ni)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(!put_md)) {
-		WARN();
+	if (local_get_offset + length > get_md->length)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(get_md->obj.obj_ni != put_md->obj.obj_ni)) {
-		WARN();
+	if (local_put_offset + length > put_md->length)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(local_get_offset + length > get_md->length)) {
-		WARN();
+	if (length > ni->limits.max_atomic_size)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(local_put_offset + length > put_md->length)) {
-		WARN();
+	if (atom_op < PTL_MIN || atom_op >= PTL_OP_LAST)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(length > ni->limits.max_atomic_size)) {
-		WARN();
+	if (!op_info[atom_op].swap_ok)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(atom_op < PTL_MIN || atom_op >= PTL_OP_LAST)) {
-		WARN();
+	if (atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(!op_info[atom_op].swap_ok)) {
-		WARN();
+	if ((atom_type == PTL_FLOAT || atom_type == PTL_DOUBLE) &&
+		      !op_info[atom_op].float_ok)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(atom_type < PTL_INT8_T || atom_type >= PTL_DATATYPE_LAST)) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	if (unlikely((atom_type == PTL_FLOAT ||
-		      atom_type == PTL_DOUBLE) &&
-		      !op_info[atom_op].float_ok)) {
-		WARN();
-		return PTL_ARG_INVALID;
-	}
-
-	if (unlikely((atom_type == PTL_FLOAT_COMPLEX ||
+	if ((atom_type == PTL_FLOAT_COMPLEX ||
 		      atom_type == PTL_DOUBLE_COMPLEX) &&
-		      !op_info[atom_op].complex_ok)) {
-		WARN();
+		      !op_info[atom_op].complex_ok)
 		return PTL_ARG_INVALID;
-	}
 
-	if (unlikely(op_info[atom_op].use_operand && 
-	    length > atom_type_size[atom_type])) {
-		WARN();
+	if (op_info[atom_op].use_operand && length > atom_type_size[atom_type])
 		return PTL_ARG_INVALID;
-	}
 
 	return PTL_OK;
 }
 #endif
 
+/**
+ * @brief Perform a swap operation.
+ *
+ * @return status
+ */
 int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	    ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 	    ptl_size_t length, ptl_process_t target_id,
@@ -1040,10 +1007,8 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	get_md = to_md(get_md_handle);
 	if (unlikely(!get_md)) {
@@ -1064,19 +1029,17 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (err)
 		goto err3;
 
-	err = check_swap(get_md, local_get_offset,
-					 put_md, local_put_offset, 
-					 length, ni, atom_op, atom_type);
+	err = check_swap(get_md, local_get_offset, put_md,
+			 local_put_offset, length, ni, atom_op, atom_type);
 	if (err)
 		goto err3;
 
 	err = check_overlap(get_md, local_get_offset,
-						put_md, local_put_offset, length);
+			    put_md, local_put_offset, length);
 	if (err)
 		goto err3;
 
-	if (unlikely(obj_to_ni(put_md) != ni)) {
-		WARN();
+	if (obj_to_ni(put_md) != ni) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
@@ -1084,45 +1047,39 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	if (op_info[atom_op].use_operand) {
 		err = get_operand(atom_type, operand, &opval);
-		if (unlikely(err)) {
-			WARN();
+		if (unlikely(err))
 			goto err3;
-		}
 	}
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_SWAP;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->operand = cpu_to_le64(opval);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->operand = cpu_to_le64(opval);
-
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -1137,9 +1094,15 @@ err2:
 	md_put(get_md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
+/**
+ * @brief Perform a triggered swap operation.
+ *
+ * @return status
+ */
 int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		     ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		     ptl_size_t length, ptl_process_t target_id,
@@ -1151,7 +1114,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 {
 	int err;
 	md_t *get_md;
-	md_t *put_md = NULL;
+	md_t *put_md;
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
@@ -1159,10 +1122,8 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	req_hdr_t *hdr;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	get_md = to_md(get_md_handle);
 	if (unlikely(!get_md)) {
@@ -1179,14 +1140,11 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	ni = obj_to_ni(get_md);
 
 	err = to_ct(trig_ct_handle, &ct);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err3;
-	}
 
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(!ct)) {
-		WARN();
+	if (!ct) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
@@ -1195,19 +1153,17 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (err)
 		goto err4;
 
-	err = check_swap(get_md, local_get_offset,
-					 put_md, local_put_offset, length, ni,
-		  	 atom_op, atom_type);
+	err = check_swap(get_md, local_get_offset, put_md, local_put_offset,
+			 length, ni, atom_op, atom_type);
 	if (err)
 		goto err4;
 
-	err = check_overlap(get_md, local_get_offset,
-						put_md, local_put_offset, length);
+	err = check_overlap(get_md, local_get_offset, put_md,
+			    local_put_offset, length);
 	if (err)
 		goto err4;
 
-	if (unlikely(obj_to_ni(put_md) != ni)) {
-		WARN();
+	if (obj_to_ni(put_md) != ni) {
 		err = PTL_ARG_INVALID;
 		goto err4;
 	}
@@ -1215,45 +1171,40 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	if (op_info[atom_op].use_operand) {
 		err = get_operand(atom_type, operand, &opval);
-		if (unlikely(err)) {
-			WARN();
+		if (unlikely(err))
 			goto err1;
-		}
 	}
 
 	err = get_transport_buf(ni, target_id, &buf);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err4;
-	}
 
 	hdr = (req_hdr_t *)buf->data;
 
 	hdr->operation = OP_SWAP;
-	buf->xi.target = target_id;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
+	hdr->hdr_data = cpu_to_le64(hdr_data);
+	hdr->operand = cpu_to_le64(opval);
+	hdr->atom_op = atom_op;
+	hdr->atom_type = atom_type;
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
+
+	buf->xi.target = target_id;
 	buf->xi.put_md = put_md;
 	buf->xi.put_eq = put_md->eq;
 	buf->xi.put_ct = put_md->ct;
 	buf->xi.get_md = get_md;
 	buf->xi.get_eq = get_md->eq;
 	buf->xi.get_ct = get_md->ct;
-	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->operand = cpu_to_le64(opval);
 	buf->xi.user_ptr = user_ptr;
-	hdr->atom_op = atom_op;
-	hdr->atom_type = atom_type;
 	buf->xi.threshold = threshold;
-
-	hdr->length		= cpu_to_le64(length);
 	buf->xi.put_offset = local_put_offset;
 	buf->xi.put_resid = length;
 	buf->xi.get_offset = local_get_offset;
 	buf->xi.get_resid = length;
-	hdr->offset		= cpu_to_le64(remote_offset);
-
 	buf->xi.pkt_len = sizeof(req_hdr_t);
 	buf->xi.state = STATE_INIT_START;
 
@@ -1271,15 +1222,14 @@ err2:
 	md_put(get_md);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
-/*
- * PtlStartBundle
- * returns:
- *	PTL_OK
- *	PTL_NO_INIT
- *	PTL_ARG_INVALID
+/**
+ * @brief Start a bundle.
+ *
+ * @return status
  */
 int PtlStartBundle(ptl_handle_ni_t ni_handle)
 {
@@ -1287,19 +1237,14 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	ni_t *ni;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	err = to_ni(ni_handle, &ni);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err1;
-	}
 
 	if (unlikely(!ni)) {
-		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
@@ -1313,15 +1258,14 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	ni_put(ni);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
 
-/*
- * PtlEndBundle
- * returns:
- *	PTL_OK
- *	PTL_NO_INIT
- *	PTL_ARG_INVALID
+/**
+ * @brief End a bundle.
+ *
+ * @return status
  */
 int PtlEndBundle(ptl_handle_ni_t ni_handle)
 {
@@ -1329,19 +1273,14 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	ni_t *ni;
 
 	err = gbl_get();
-	if (unlikely(err)) {
-		WARN();
-		return err;
-	}
+	if (unlikely(err))
+		goto err0;
 
 	err = to_ni(ni_handle, &ni);
-	if (unlikely(err)) {
-		WARN();
+	if (unlikely(err))
 		goto err1;
-	}
 
 	if (unlikely(!ni)) {
-		WARN();
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
@@ -1355,5 +1294,6 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	ni_put(ni);
 err1:
 	gbl_put();
+err0:
 	return err;
 }
