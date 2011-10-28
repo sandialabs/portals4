@@ -89,7 +89,6 @@ extern unsigned int linesize;
 #include "ptl_internal_assert.h"
 #include "ptl_internal_atomic.h"
 #include "ptl_internal_alignment.h"
-#include "ptl_internal_locks.h"
 #include "ptl_nemesis.h"
 
 extern int debug;
