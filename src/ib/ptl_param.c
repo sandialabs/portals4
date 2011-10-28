@@ -209,23 +209,36 @@ param_t param[] = {
 						.max	= LONG_MAX,
 						.val	= 1000000,
 					  },
+	[PTL_LOG_LEVEL]		= {
+						.name	= "PTL_LOG_LEVEL",
+						.min	= 0,
+						.max	= 3,
+						.val	= 0,
+					  },
+	[PTL_DEBUG]		= {
+						.name	= "PTL_DEBUG",
+						.min	= 0,
+						.max	= 1,
+						.val	= 0,
+					  },
+	
 };
 
-#ifdef unused
-void PtlInitParam(int argc, char *argv[])
+void PtlInitParam(void)
 {
 	int i;
 	char *s;
-	char *bad;
 	long val;
 	param_t *p;
 
 	for (i = 0; i < PTL_PARAM_LAST; i++) {
 		s = getenv(param[i].name);
-		if (s) {
-			val = strtol(s, &bad, 0);
 
-			if (bad) {
+		if (s) {
+			val = strtol(s, NULL, 0);
+
+			if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+				|| (errno != 0 && val == 0)) {
 				WARN();
 				continue;
 			}
@@ -241,7 +254,6 @@ void PtlInitParam(int argc, char *argv[])
 		}
 	}
 }
-#endif
 
 long chk_param(int parm, long val)
 {
