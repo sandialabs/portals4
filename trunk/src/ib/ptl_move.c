@@ -16,6 +16,8 @@ static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **buf)
 	conn_t *conn;
 	int err;
 
+	*buf = NULL;
+
 	/* lookup or allocate a conn_t struct to hold per target info */
 	conn = get_conn(ni, target_id);
 	if (unlikely(!conn))
