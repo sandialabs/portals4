@@ -1,5 +1,7 @@
-/*
- * ptl_hdr.h - the wire protocol
+/**
+ * @file ptl_hdr.h
+ *
+ * @brief This file contains the interface for message headers.
  */
 
 #ifndef PTL_HDR_H
@@ -13,10 +15,11 @@
  *	packet to remote site and validate it
  *	packed some unrelated info into the first word
  */
+
 #define PTL_HDR_VER_1		(1)
 
 /* note: please keep all init->target before all tgt->init */
-typedef enum {
+enum hdr_op {
 	/* from init to target */
 	OP_PUT,
 	OP_GET,
@@ -30,19 +33,22 @@ typedef enum {
 	OP_ACK,
 	OP_CT_ACK,
 	OP_OC_ACK,
-	OP_NO_ACK,					/* when remote ME has ACK_DISABLE */
+	OP_NO_ACK,	 /* when remote ME has ACK_DISABLE */
 
 	OP_LAST,
-} op_t;
+};
 
-typedef enum {
+enum hdr_fmt {
 	PKT_FMT_REQ,
 	PKT_FMT_REPLY,
 	PKT_FMT_ACK,
 	PKT_FMT_LAST,
-} pkt_fmt_t;
+};
 
-#define PTL_XPORT_HDR					\
+/**
+ * @brief Common header for portals request/response messages.
+ */
+#define PTL_COMMON_HDR					\
 	unsigned		version:4;		\
 	unsigned		operation:4;		\
 	unsigned		atom_type:4;		\
@@ -65,21 +71,13 @@ typedef enum {
 	__be32			src_nid;		\
 	__be32			src_rank;		\
 	};						\
-	__be32			src_pid;
-
-/*
- * PTL_BASE_HDR
- *	contains common information shared by request
- *	ack and reply messages
- */
-#define PTL_BASE_HDR					\
+	__be32			src_pid;		\
 	__be64			length;			\
 	__be64			offset;			\
 	__be64			handle;			\
 
-/*
- * PTL_REQ_HDR
- *	contains information specific to a request
+/**
+ * @brief Header for Portals request messages.
  */
 #define PTL_REQ_HDR					\
 	__be64			match_bits;		\
@@ -89,13 +87,11 @@ typedef enum {
 	__be32			uid;
 
 typedef struct ptl_hdr {
-	PTL_XPORT_HDR
-	PTL_BASE_HDR
+	PTL_COMMON_HDR
 } hdr_t;
 
 typedef struct req_hdr {
-	PTL_XPORT_HDR
-	PTL_BASE_HDR
+	PTL_COMMON_HDR
 	PTL_REQ_HDR
 } req_hdr_t;
 
