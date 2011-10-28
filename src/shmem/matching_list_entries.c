@@ -564,7 +564,6 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                          void           *user_ptr)
 {   /*{{{*/
     const ptl_internal_handle_converter_t ni  = { ni_handle };
-    ptl_internal_handle_converter_t       meh = { .s.selector = HANDLE_ME_CODE };
     ptl_table_entry_t                    *t;
     int                                   found = 0;
 
@@ -599,7 +598,6 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
     assert(mes[ni.s.ni] != NULL);
-    meh.s.ni = ni.s.ni;
     /* append to associated list */
     assert(nit.tables[ni.s.ni] != NULL);
     t = &(nit.tables[ni.s.ni][pt_index]);
@@ -742,6 +740,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
             e.user_ptr      = user_ptr;
             e.hdr_data      = 0;
             e.ni_fail_type  = PTL_NI_NO_MATCH;
+            PtlInternalEQPush(t->EQ, &e);
         }
     }
 done_searching:
