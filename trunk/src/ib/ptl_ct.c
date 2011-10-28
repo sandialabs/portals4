@@ -301,20 +301,20 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	/* wait loop */
 	while (1) {
 		/* check if wait condition satisfied */
-		if (ct->event.success >= threshold || ct->event.failure ) {
+		if (unlikely(ct->event.success >= threshold || ct->event.failure)) {
 			*event_p = ct->event;
 			err = PTL_OK;
 			break;
 		}
 		
 		/* someone called PtlCTFree or PtlNIFini, leave */
-		if (ct->interrupt) {
+		if (unlikely(ct->interrupt)) {
 			err = PTL_INTERRUPTED;
 			break;
 		}
 
 		/* spin PTL_CT_WAIT_LOOP_COUNT times */
-		if (nloops) {
+		if (likely(nloops)) {
 			nloops--;
 			/* memory barrier */
 			SPINLOCK_BODY();
