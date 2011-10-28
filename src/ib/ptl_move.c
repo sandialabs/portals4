@@ -127,9 +127,9 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		return err;
 	}
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err)) {
-		WARN();
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
@@ -201,9 +201,9 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		return err;
 	}
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err)) {
-		WARN();
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
@@ -337,9 +337,11 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		return err;
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err))
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
+	}
 
 	ni = obj_to_ni(md);
 
@@ -388,9 +390,11 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		return err;
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err))
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
+	}
 
 	ni = obj_to_ni(md);
 
@@ -551,9 +555,11 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		return err;
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err))
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
+	}
 
 	ni = obj_to_ni(md);
 
@@ -624,9 +630,11 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		return err;
 
-	err = to_md(md_handle, &md);
-	if (unlikely(err))
+	md = to_md(md_handle);
+	if (unlikely(!md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
+	}
 
 	ni = obj_to_ni(md);
 
@@ -713,15 +721,15 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
-	err = to_md(get_md_handle, &get_md);
-	if (unlikely(err)) {
-		WARN();
+	get_md = to_md(get_md_handle);
+	if (unlikely(!get_md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	err = to_md(put_md_handle, &put_md);
-	if (unlikely(err)) {
-		WARN();
+	put_md = to_md(put_md_handle);
+	if (unlikely(!put_md)) {
+		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
@@ -823,15 +831,15 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 		return err;
 	}
 
-	err = to_md(get_md_handle, &get_md);
-	if (unlikely(err)) {
-		WARN();
+	get_md = to_md(get_md_handle);
+	if (unlikely(!get_md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	err = to_md(put_md_handle, &put_md);
-	if (unlikely(err)) {
-		WARN();
+	put_md = to_md(put_md_handle);
+	if (unlikely(!put_md)) {
+		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
@@ -1037,15 +1045,15 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
-	err = to_md(get_md_handle, &get_md);
-	if (unlikely(err)) {
-		WARN();
+	get_md = to_md(get_md_handle);
+	if (unlikely(!get_md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	err = to_md(put_md_handle, &put_md);
-	if (unlikely(err)) {
-		WARN();
+	put_md = to_md(put_md_handle);
+	if (unlikely(!put_md)) {
+		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
@@ -1156,15 +1164,15 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		return err;
 	}
 
-	err = to_md(get_md_handle, &get_md);
-	if (unlikely(err)) {
-		WARN();
+	get_md = to_md(get_md_handle);
+	if (unlikely(!get_md)) {
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	err = to_md(put_md_handle, &put_md);
-	if (unlikely(err)) {
-		WARN();
+	put_md = to_md(put_md_handle);
+	if (unlikely(!put_md)) {
+		err = PTL_ARG_INVALID;
 		goto err2;
 	}
 
