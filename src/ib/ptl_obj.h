@@ -207,8 +207,6 @@ void obj_release(ref_t *ref);
 
 int obj_alloc(pool_t *pool, obj_t **p_obj);
 
-obj_t *to_obj(enum obj_type type, ptl_handle_any_t handle);
-
 /**
  * Reset an object to all zeros.
  */
@@ -257,6 +255,8 @@ static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 /**
  * Faster version of to_obj without checking.
  *
+ * Handle must not be PTL_XX_NONE
+ *
  * @param handle the object handle
  *
  * @return the object
@@ -267,5 +267,11 @@ static inline void *fast_to_obj(ptl_handle_any_t handle)
 	(void)__sync_fetch_and_add(&obj->obj_ref.ref_cnt, 1);
 	return obj;
 }
+
+#ifdef NO_ARG_VALIDATION
+#define to_obj(type, handle) fast_to_obj(handle)
+#else
+void *to_obj(enum obj_type type, ptl_handle_any_t handle);
+#endif
 
 #endif /* PTL_OBJ_H */
