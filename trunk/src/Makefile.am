@@ -6,14 +6,6 @@
 DIST_SUBDIRS = shmem ib
 SUBDIRS =
 
-if BACKEND_IMPL_SHMEM
-SUBDIRS += shmem
-endif
-
-if BACKEND_IMPL_IB
-SUBDIRS += ib
-endif
-
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=
 # version-info fields are:
@@ -34,9 +26,16 @@ libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
 libportals_la_LIBADD =
 
 if BACKEND_IMPL_SHMEM
+SUBDIRS += shmem
 libportals_la_LIBADD += shmem/libportals_shmem.la
 endif
 
 if BACKEND_IMPL_IB
+SUBDIRS += ib
 libportals_la_LIBADD += ib/libportals_ib.la
+endif
+
+if BACKEND_IMPL_MC
+SUBDIRS += mc
+libportals_la_LIBADD += mc/libportals_mc.la
 endif
