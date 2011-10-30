@@ -126,6 +126,8 @@ AC_ARG_WITH([test-runtime],
   [AS_HELP_STRING([--with-test-runtime=IMPL],
     [Specify runtime to use for test harness.  Options for IMPL are shmemrt, mpi, or single.])])
 case "$with_implementation" in
+  mc)
+    ;;
   ib)
     ;;
   shmem)
@@ -323,6 +325,9 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 AS_IF([test "$with_implementation" = "ib"],
   [AC_CHECK_LIB([ev], [ev_loop_new], [], [AC_MSG_ERROR([libev not found.])])])
 
+AS_IF([test "$with_implementation" = "mc"],
+  [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
+
 ## -------------------------- ##
 ## Check for library behavior ##
 ## -------------------------- ##
@@ -354,6 +359,7 @@ AC_SUBST(LD_VERSION_SCRIPT)
 
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [test "$with_implementation" = "shmem"])
 AM_CONDITIONAL([BACKEND_IMPL_IB], [test "$with_implementation" = "ib"])
+AM_CONDITIONAL([BACKEND_IMPL_MC], [test "$with_implementation" = "mc"])
 
 AM_CONDITIONAL([TEST_RUNTIME_SHMEMRT], [test "$with_test_runtime" = "shmemrt"])
 AM_CONDITIONAL([TEST_RUNTIME_MPI], [test "$with_test_runtime" = "mpi"])
@@ -373,11 +379,12 @@ AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
-                 src/Makefile
-                 src/shmem/Makefile
-                 src/ib/Makefile
                  doc/Makefile
                  include/Makefile
+                 src/Makefile
+                 src/ib/Makefile
+                 src/mc/Makefile
+                 src/shmem/Makefile
                  test/Makefile
-		 test/sfw/Makefile])
+                 test/sfw/Makefile])
 AC_OUTPUT
