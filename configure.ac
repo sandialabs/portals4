@@ -323,7 +323,8 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 	  [AC_DEFINE([USE_TRANSFER_ENGINE], [1], [Define to enable the use of a transfer engine (e.g. KNEM)])])
 
 AS_IF([test "$with_implementation" = "ib"],
-  [AC_CHECK_LIB([ev], [ev_loop_new], [], [AC_MSG_ERROR([libev not found.])])])
+  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
+   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
 
 AS_IF([test "$with_implementation" = "mc"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
@@ -344,6 +345,7 @@ AS_IF([test "x$enable_hard_polling" != xyes],
 AC_CACHE_SAVE
 
 # Only export the library symbols 
+AS_IF([test "$with_implementation" = "ib"], [
 AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
     [if test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"; then
         LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/portals4.map'
@@ -351,7 +353,7 @@ AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
         LD_VERSION_SCRIPT=
     fi])
 AC_SUBST(LD_VERSION_SCRIPT)
-
+])
 
 ## --------------- ##
 ## Output and done ##
@@ -375,6 +377,12 @@ AS_IF([test -n "$with_implementation"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"])
 AS_IF([test -n "$with_test_runtime"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-test-runtime=${with_test_runtime}"])
+AS_IF([test -n "$with_xpmem"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-xpmem=${wiht_xpmem}"])
+AS_IF([test -n "$with_ev"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ev=${with_ev}"])
+AS_IF([test -n "$with_ofed"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ofed=${with_ofed}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
 AC_CONFIG_HEADERS([include/config.h])
