@@ -10,33 +10,37 @@ AC_DEFUN([SANDIA_CHECK_EV], [
     [AS_HELP_STRING([--with-ev=[path]],
        [Location of EV library])])
 
-  AS_IF([test "$with_ev" = "no"], [happy=no], [happy=yes])
-
-  EV_CPPFLAGS=
-  EV_LDFLAGS=
-  EV_LIBS="-lev"
-
   saved_CPPFLAGS="$CPPFLAGS"
   saved_LDFLAGS="$LDFLAGS"
   saved_LIBS="$LIBS"
-  AS_IF([test ! -z "$with_ev" -a "$with_ev" != "yes"],
-    [CPPFLAGS="$CPPFLAGS -I$with_ev/include"
-     LDFLAGS="$LDFLAGS -L$with_ev/lib"
-     EV_CPPFLAGS="-I$with_ev/include"
-     EV_LDFLAGS="-L$with_ev/lib"])
 
-  AS_IF([test "$happy" = "yes"], 
-    [AC_CHECK_HEADERS([ev.h], [], [happy=no])])
-  AS_IF([test "$happy" = "yes"],
-    [AC_CHECK_LIB([ev], [ev_loop_new], [], [happy=no])])
+  AS_IF([test "$with_ev" != "no"],
+    [AS_IF([test ! -z "$with_ev" -a "$with_ev" != "yes"],
+       [check_ev_dir="$with_ev"])
+     AS_IF([test ! -z "$with_ev_libdir" -a "$with_ev_libdir" != "yes"],
+       [check_ev_libdir="$with_ev_libdir"])
+     OMPI_CHECK_PACKAGE([ev],
+                        [ev.h],
+                        [ev],
+                        [ev_loop_new],
+                        [],
+                        [$check_ev_dir],
+                        [$check_ev_libdir],
+                        [check_ev_happy="yes"],
+                        [check_ev_happy="no"])],
+    [check_ev_happy="no"])
 
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"
   LIBS="$saved_LIBS"
 
-  AC_SUBST(EV_CPPFLAGS)
-  AC_SUBST(EV_LDFLAGS)
-  AC_SUBST(EV_LIBS) 
+  AC_SUBST(ev_CPPFLAGS)
+  AC_SUBST(ev_LDFLAGS)
+  AC_SUBST(ev_LIBS)
 
-  AS_IF([test "$happy" = "yes"], [$1], [$2])
+  AS_IF([test "$check_ev_happy" = "yes"],
+    [$1],
+    [AS_IF([test ! -z "$with_ev" -a "$with_ev" != "no"],
+      [AC_MSG_ERROR([EV support requested but not found.  Aborting])])
+     $2])
 ])

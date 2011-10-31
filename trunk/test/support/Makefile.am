@@ -14,6 +14,13 @@ if TEST_RUNTIME_MPI
 libtestsupport_la_SOURCES += support/mpi.c
 endif
 
+if TEST_RUNTIME_PMI
+AM_CPPFLAGS += $(pmi_CPPFLAGS)
+libtestsupport_la_SOURCES += support/pmi.c
+libtestsupport_la_LDFLAGS = $(pmi_LDFLAGS)
+libtestsupport_la_LIBADD += $(pmi_LIBS)
+endif
+
 if TEST_RUNTIME_SINGLE
 libtestsupport_la_SOURCES += support/single.c
 endif

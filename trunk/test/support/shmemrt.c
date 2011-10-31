@@ -21,52 +21,60 @@
 
 #include "support.h"
 
+static int rank = -1;
+static int size = 0;
+static ptl_process_t *mapping = NULL;
+
 
 int
 libtest_init(void)
 {
+    int size, i;
+    struct runtime_proc_t *procs;
+
+    rank = runtime_get_rank();
+    size = runtime_get_size();
+
+    size = libtest_get_size();
+    mapping = malloc(sizeof(ptl_process_t) * size);
+    if (NULL == mapping) return 1;
+
+    runtime_get_nidpid_map(&procs);
+
+    for (i = 0 ; i < size ; ++i) {
+        mapping[i].phys.nid = procs[i].nid;
+        mapping[i].phys.pid = procs[i].pid;
+    }
+
     return 0;
 }
 
 int
 libtest_fini(void)
 {
+    if (mapping != NULL) free(mapping);
+
     return 0;
 }
 
 ptl_process_t*
 libtest_get_mapping(void)
 {
-    int size, i;
-    ptl_process_t *ret;
-    struct runtime_proc_t *procs;
-
-    size = libtest_get_size();
-    ret = malloc(sizeof(ptl_process_t) * size);
-    if (NULL == ret) return NULL;
-
-    runtime_get_nidpid_map(&procs);
-
-    for (i = 0 ; i < size ; ++i) {
-        ret[i].phys.nid = procs[i].nid;
-        ret[i].phys.pid = procs[i].pid;
-    }
-
-    return ret;    
+    return mapping;
 }
 
 
 int
 libtest_get_rank(void)
 {
-    return runtime_get_rank();
+    return rank;
 }
 
 
 int
 libtest_get_size(void)
 {
-    return runtime_get_size();
+    return size;
 }
 
 

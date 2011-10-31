@@ -23,12 +23,79 @@
 #ifndef _LIBP4SUPPORT_H
 #define _LIBP4SUPPORT_H
 
+/*
+ * libtest_init(void)
+ * 
+ * Returns:
+ *  0  - success
+ *  1  - failure
+ *
+ * Notes:
+ *  Must be called before any other libtest function.
+ */
 int libtest_init(void);
+
+
+/*
+ * libtest_fini(void)
+ * 
+ * Returns:
+ *  0  - success
+ *  1  - failure
+ *
+ * Notes:
+ *  No libtest function may be called after calling fini.
+ */
 int libtest_fini(void);
+
+
+/*
+ * libtest_get_mapping(void)
+ * 
+ * Returns:
+ *  non-NULL - physical address for every rank in job
+ *  NULL     - Error
+ *
+ * Notes:
+ *  Mapping will be a static buffer; should not be freed by
+ *  the caller.
+ */
 ptl_process_t* libtest_get_mapping(void);
+
+
+/*
+ * libtest_get_rank(void)
+ * 
+ * Returns:
+ *  -1           - Error
+ *  Non-negative - Rank in job
+ *
+ * Notes:
+ */
 int libtest_get_rank(void);
+
+
+/*
+ * libtest_get_size(void)
+ * 
+ * Returns:
+ *  -1           - Error
+ *  Non-negative - Job size
+ *
+ * Notes:
+ */
 int libtest_get_size(void);
+
+
+/*
+ * libtest_barrier(void)
+ * 
+ * Returns:
+ *
+ * Notes:
+ */
 void libtest_barrier(void);
+
 
 /*
 ** Some convenience functions

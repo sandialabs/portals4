@@ -185,12 +185,8 @@ int main(int   argc,
                         PTL_PID_ANY,
                         NULL, NULL, &ni_logical));
 
-    {
-        ptl_process_t *amapping;
-        amapping = libtest_get_mapping();
-        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
-        free(amapping);
-    }
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, 
+                              libtest_get_mapping()));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &eq_handle));
