@@ -120,8 +120,16 @@ AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
 AC_ARG_WITH([implementation],
-  [AS_HELP_STRING([--with-implementation=IMPL],
-    [Specify implemenation backend.  Options for IMPL are shmem or ib.])])
+			[AS_HELP_STRING([--with-implementation=IMPL],
+							[Specify implemenation backend.  Options for IMPL are shmem or ib.])],
+		    [case "x$with_implementation" in
+			  xib|xshmem)
+               ;;
+			  *)
+			   AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem or ib.])
+			   ;;
+	         esac],
+			[with_implementation=ib])
 AC_ARG_WITH([test-runtime],
   [AS_HELP_STRING([--with-test-runtime=IMPL],
     [Specify runtime to use for test harness.  Options for IMPL are shmemrt, mpi, or single.])])
@@ -129,7 +137,7 @@ AC_ARG_WITH([test-runtime],
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
     [Use Shared memory / KNEM for local communication with IB implementation.])])
-AS_IF([test "$with_implementation" = "ib" -a "$enable_ib_shmem" == "yes"],
+AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_shmem" == "yes"],
   [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
 
@@ -284,7 +292,8 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 
 AS_IF([test "$with_implementation" = "ib"],
   [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
-   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
+   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])
+   SANDIA_CHECK_RDMA([], [AC_MSG_ERROR([RDMA not found.])])])
 
 AS_IF([test "$with_implementation" = "mc"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])

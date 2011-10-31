@@ -27,7 +27,17 @@ AC_DEFUN([SANDIA_CHECK_OFED], [
                         [$check_ofed_dir],
                         [$check_ofed_libdir],
                         [check_ofed_happy="yes"],
-                        [check_ofed_happy="no"])],
+                        [check_ofed_happy="no"])
+	 AS_IF([test "x$check_ofed_happy" = xno],
+     	   [OMPI_CHECK_PACKAGE([ofed],
+                               [infiniband/verbs.h],
+							   [ibverbs],
+							   [ibv_open_device],
+							   [],
+							   [$check_ofed_dir],
+							   [$check_ofed_libdir],
+							   [check_ofed_happy="yes"],
+							   [check_ofed_happy="no"])])],
     [check_ofed_happy="no"])
 
   CPPFLAGS="$saved_CPPFLAGS"

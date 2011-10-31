@@ -27,7 +27,18 @@ AC_DEFUN([SANDIA_CHECK_EV], [
                         [$check_ev_dir],
                         [$check_ev_libdir],
                         [check_ev_happy="yes"],
-                        [check_ev_happy="no"])],
+                        [check_ev_happy="no"])
+     AS_IF([test "x$check_ev_happy" = xno],
+	       [OMPI_CHECK_PACKAGE([ev],
+			                   [libev/ev.h],
+							   [ev],
+							   [ev_loop_new],
+							   [],
+							   [$check_ev_dir],
+							   [$check_ev_libdir],
+							   [check_ev_happy="yes"
+							   AC_DEFINE([LIBEV_INC_PREFIXED],[1],[libev headers in a weird spot])],
+							   [check_ev_happy="no"])])],
     [check_ev_happy="no"])
 
   CPPFLAGS="$saved_CPPFLAGS"
