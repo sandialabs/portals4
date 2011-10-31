@@ -4,7 +4,7 @@
 
 
 DIST_SUBDIRS = ib mc shmem
-SUBDIRS = yod
+SUBDIRS = 
 
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=
@@ -39,3 +39,5 @@ if BACKEND_IMPL_MC
 SUBDIRS += mc
 libportals_la_LIBADD += mc/libportals_mc.la
 endif
+
+SUBDIRS += . yod
