@@ -11,7 +11,6 @@
 
 int verbose = 1;
 int debug;
-extern int ptl_log_level;
 
 static char *filename;
 
@@ -72,6 +71,7 @@ static int process_args(int argc, char *argv[])
 
 		case 'd':
 			debug++;
+			setenv("PTL_DEBUG", "1", -1);
 			break;
 
 		case 'f':
@@ -79,7 +79,7 @@ static int process_args(int argc, char *argv[])
 			break;
 
 		case 'l':
-			ptl_log_level = strtol(optarg, NULL, 0);
+			setenv("PTL_LOG_LEVEL", optarg, -1);
 			break;
 
 		case '?':
