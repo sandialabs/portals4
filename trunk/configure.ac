@@ -17,8 +17,15 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_SRCDIR([src/shmem/init.c])
 
-AM_INIT_AUTOMAKE([foreign check-news color-tests dist-bzip2 no-define tar-ustar 1.7 -Wall -Werror])
-# If Automake supports silent rules, enable them
+dnl Automake's silent rules were implemented in the same version that
+dnl color-tests was implemented, so we can use one to detect the other.
+dnl This nasty, dirty, unreliable trick is strongly discouraged by its author:
+dnl http://blog.flameeyes.eu/trackbacks?article_id=5155
+m4_ifdef([AM_SILENT_RULES],
+           [m4_define([ptl_color_tests], [color-tests])],
+           [m4_define([ptl_color_tests], [])])
+AM_INIT_AUTOMAKE([foreign check-news subdir-objects dist-bzip2 no-define tar-ustar 1.7 -Wall -Werror ]ptl_color_tests)
+dnl If Automake supports silent rules, enable them
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # clean some extra things...
@@ -123,7 +130,7 @@ AC_ARG_WITH([implementation],
 			[AS_HELP_STRING([--with-implementation=IMPL],
 							[Specify implemenation backend.  Options for IMPL are shmem or ib.])],
 		    [case "x$with_implementation" in
-			  xib|xshmem)
+			  xib|xshmem|xmc)
                ;;
 			  *)
 			   AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem or ib.])
