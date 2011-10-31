@@ -1,16 +1,19 @@
 #include "config.h"
 
 #include "portals4.h"
-
+#include "alloc.h"
 
 int
 PtlInit(void)
 {
-  return PTL_OK;
+    alloc_init();
+
+    return PTL_OK;
 }
 
 
 void
 PtlFini(void)
 {
+    alloc_fini();
 }

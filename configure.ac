@@ -181,7 +181,7 @@ AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
 ])
 AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stddef.h \
         stdint.h stdlib.h string.h sys/file.h sys/socket.h \
-        unistd.h])
+        unistd.h syscall.h])
 
 ## --------------- ##
 ## Check for types ##
@@ -264,10 +264,14 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRERROR_R
 AC_FUNC_MMAP
+AC_CHECK_FUNCS([syscall __munmap __mmap])
 AC_CHECK_FUNCS([munmap]) # how absurd is this?
 AC_CHECK_FUNCS([memalign posix_memalign], [break]) # first win
 AC_CHECK_FUNCS([getpagesize]) # not mandatory
 AC_CHECK_FUNCS([ftruncate getpagesize inet_ntoa memset select socket strerror strtol strtoul])
+AC_CHECK_LIB([dl], [dlsym])
+AC_CHECK_FUNCS([dlsym])
+
 AC_SEARCH_LIBS([pthread_spin_init],[pthread],
 			   [AC_DEFINE([HAVE_PTHREAD_SPIN_INIT], [1], [Define if pthread supports spinlocks])]) # not mandatory either, just faster
 AC_CHECK_FUNCS([ftruncate memset setenv strtol strtoul select inet_ntoa socket strerror], [],
