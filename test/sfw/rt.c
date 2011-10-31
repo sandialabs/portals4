@@ -28,5 +28,8 @@ int ompi_rt_fini(struct node_info *info)
 		info->desired_map_ptr = NULL;
 	}
 
+	libtest_fini();
+
+
 	return 0;
 }
