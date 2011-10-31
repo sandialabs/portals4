@@ -218,13 +218,3 @@ test_LE_oversize_swap_DEPENDENCIES = $(DEPENDENCIES_TEST)
 test_ME_oversize_swap_SOURCES = test_oversize_swap.c
 test_ME_oversize_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_oversize_swap_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-runtests:
-if TEST_RUNTIME_MPI
-	for TEST in $(TESTS); do echo testing $$TEST ; mpirun  -H localhost -n 1 ./$$TEST; done
-endif
-if TEST_RUNTIME_SHMEMRT
-	for TEST in $(TESTS); do echo testing $$TEST ; $(top_builddir)/src/shmem/yod -c 1 ./$$TEST; done
-endif
-
-
