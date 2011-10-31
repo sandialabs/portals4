@@ -8,10 +8,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/shmem/include
 include_HEADERS = portals4_runtime.h
 noinst_LTLIBRARIES = libportals_shmem.la
 
-bin_PROGRAMS = yod
-yod_SOURCES = yod.c
-yod_LDADD = libportals_shmem.la
-
 libportals_shmem_la_SOURCES = \
 	include/ptl_internal_commpad.h \
 	include/ptl_internal_ints.h \
