@@ -4,7 +4,7 @@
 
 
 DIST_SUBDIRS = ib mc shmem
-SUBDIRS =
+SUBDIRS = yod
 
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=

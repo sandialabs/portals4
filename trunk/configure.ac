@@ -342,7 +342,7 @@ case "$with_test_runtime" in
     if test "$with_implementation" != "shmem" ; then
       AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])
     fi
-    TEST_INVOKE_CMD='$(top_builddir)/src/shmem/yod -c $(THREADS)'
+    TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'
     ;;
   mpi)
     TEST_INVOKE_CMD='mpirun -np $(THREADS)'
@@ -399,6 +399,7 @@ AC_CONFIG_FILES([Makefile
                  src/ib/Makefile
                  src/mc/Makefile
                  src/shmem/Makefile
+                 src/yod/Makefile
                  test/Makefile
                  test/sfw/Makefile])
 AC_OUTPUT
