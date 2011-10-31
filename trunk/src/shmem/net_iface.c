@@ -100,6 +100,8 @@ static int64_t PtlInternalGetShmPid(int pid)
             comm_pads[pid]   = NULL;
             comm_shmids[pid] = -1;
             return -1;
+        } else {
+            return -1;
         }
     } else {
         // attach
@@ -122,6 +124,7 @@ static int64_t PtlInternalGetShmPid(int pid)
             return -1;
         }
     }
+    assert(comm_pads[pid]);
     PtlInternalFragmentInitPid(pid);
     return shmid;
 }
