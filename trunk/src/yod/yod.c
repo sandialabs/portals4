@@ -1,4 +1,4 @@
-/* System V Interface Definition; for random() and waitpid() */
+/* System V Interface Definition; for waitpid() */
 #define _SVID_SOURCE
 /* For BSD definitions (ftruncate, setenv) */
 #define _BSD_SOURCE
@@ -42,17 +42,12 @@
 #  include <sys/time.h>
 # endif
 # include <sys/types.h>
-# include <sys/posix_shm.h>            /* for PSHMNAMLEN */
 #endif
 
 #include "ptl_internal_nemesis.h"
 #include "ptl_internal_assert.h"
 #include "ptl_internal_DM.h"
 #include "ptl_internal_locks.h"
-
-#ifndef PSHMNAMLEN
-# define PSHMNAMLEN 100
-#endif
 
 /* global to allow signal to clean up */
 static pid_t *pids = NULL;
@@ -62,8 +57,6 @@ static long            count = 0;
 static ptl_handle_ct_t collator_ct_handle;
 static ptl_handle_ni_t ni_physical;
 static volatile int    collatorLEposted = 0;
-
-static char shmname[PSHMNAMLEN + 1];
 
 static void  cleanup(int s);
 static void  print_usage(int ex);
@@ -81,7 +74,6 @@ int main(int   argc,
     const size_t pagesize = getpagesize();
     size_t       commsize;
     size_t       buffsize = pagesize;
-    int          shm_fd;
     int          err = 0;
     pthread_t    collator_thread;
     int          ct_spawned         = 1;
@@ -92,7 +84,6 @@ int main(int   argc,
     size_t       large_frag_payload = 0;
     size_t       large_frag_count   = 128;
     const size_t max_count          = buffsize - 1;
-    void        *commpad            = NULL;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -183,24 +174,6 @@ int main(int   argc,
         print_usage(1);
     }
 
-    srandom(time(NULL));
-    {
-        struct passwd *pw = getpwuid(geteuid());
-        if (NULL == pw) {
-            /* fix me */
-            perror("yod-> getpwuid()");
-            exit(EXIT_FAILURE);
-        }
-
-        long int r1 = random();
-        long int r2 = random();
-        long int r3 = random();
-        r1 = r2 = r3 = 0;              // for testing
-        memset(shmname, 0, PSHMNAMLEN + 1);
-        snprintf(shmname, PSHMNAMLEN, "ptl4_%lx_%s_%lx%lx%lx",
-                 (long)getpid(), pw->pw_name, r1, r2, r3);
-    }
-    ptl_assert(setenv("PORTALS4_SHM_NAME", shmname, 0), 0);
     large_frag_size = large_frag_payload + (2 * sizeof(void *));
     small_frag_size = small_frag_payload + (2 * sizeof(void *));
 #ifdef PARANOID
@@ -211,51 +184,6 @@ int main(int   argc,
                (large_frag_count * large_frag_size) +
                sizeof(NEMESIS_blocking_queue);
     buffsize += commsize * (count + 1); // the one extra is for the collator
-
-    /* Establish the communication pad */
-    shm_fd = shm_open(shmname, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-    if (shm_fd < 0) {
-        if (EEXIST == errno) {
-            if (shm_unlink(shmname) == -1) {
-                perror("yod-> shm_unlink of existing file failed");
-                exit(EXIT_FAILURE);
-            }
-            shm_fd =
-                shm_open(shmname, O_RDWR | O_CREAT | O_EXCL,
-                         S_IRUSR | S_IWUSR);
-        }
-    }
-    if (shm_fd >= 0) {
-        /* pre-allocate the shared memory ... necessary on BSD */
-        if (ftruncate(shm_fd, buffsize) != 0) {
-            perror("yod-> ftruncate failed");
-            if (shm_unlink(shmname) == -1) {
-                perror("yod-> shm_unlink failed");
-            }
-            exit(EXIT_FAILURE);
-        }
-        if ((commpad = mmap(NULL, buffsize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == MAP_FAILED) {
-            perror("yod-> mmap failed");
-            if (shm_unlink(shmname) == -1) {
-                perror("yod-> shm_unlink failed");
-            }
-            exit(EXIT_FAILURE);
-        }
-        memset(commpad, 0, buffsize);
-#if !defined(HAVE_PTHREAD_SHMEM_LOCKS) && !defined(USE_HARD_POLLING)
-        for (size_t i = 0; i <= count; ++i) {
-            char                   *remote_pad = ((char *)commpad) + pagesize + (commsize * i);
-            NEMESIS_blocking_queue *q1         = (NEMESIS_blocking_queue *)remote_pad;
-            ptl_assert(pipe(q1->pipe), 0);
-        }
-#endif  /* PTHREAD_SHMEM_LOCKS */
-    } else {
-        perror("yod-> shm_open failed");
-        if (shm_unlink(shmname) == -1) {
-            perror("yod-> attempting to clean up; shm_unlink failed");
-        }
-        exit(EXIT_FAILURE);
-    }
 
     pids = malloc(sizeof(pid_t) * (count + 1));
     assert(pids != NULL);
@@ -403,61 +331,6 @@ int main(int   argc,
     ptl_assert(PtlPTFree(ni_physical, 0), PTL_OK);
     ptl_assert(PtlNIFini(ni_physical), PTL_OK);
     PtlFini();
-#ifndef USE_HARD_POLLING
-    for (size_t i = 0; i <= count; ++i) {
-        uint8_t                *remote_pad = ((uint8_t *)commpad) + pagesize + (commsize * i);
-        NEMESIS_blocking_queue *q1         = (NEMESIS_blocking_queue *)remote_pad;
-# ifdef HAVE_PTHREAD_SHMEM_LOCKS
-        int perr;
-        if ((perr = pthread_cond_destroy(&q1->trigger)) != 0) {
-#  ifdef _GNU_SOURCE
-            char  optional_buf[200];
-            char *buf = strerror_r(perr, optional_buf, 200);
-#  else
-            char buf[200];
-            strerror_r(perr, buf, 200);
-#  endif
-            if (perr != EBUSY) {
-                fprintf(stderr,
-                        "yod-> destroying rank %lu's queue trigger(%i): %s\n",
-                        (unsigned long)i, perr, buf);
-                abort();
-            }
-        }
-        if ((perr = pthread_mutex_destroy(&q1->trigger_lock)) != 0) {
-#  ifdef _GNU_SOURCE
-            char  optional_buf[200];
-            char *buf = strerror_r(perr, optional_buf, 200);
-#  else
-            char buf[200];
-            strerror_r(perr, buf, 200);
-#  endif
-            if (perr != EBUSY) {
-                fprintf(stderr,
-                        "yod-> destroying rank %lu's queue trigger lock(%i): %s\n",
-                        (unsigned long)i, perr, buf);
-                abort();
-            }
-        }
-# else  /* ifdef HAVE_PTHREAD_SHMEM_LOCKS */
-        if (close(q1->pipe[0]) != 0) {
-            perror("yod-> closing queue1 pipe[0]");
-            abort();
-        }
-        if (close(q1->pipe[1]) != 0) {
-            perror("yod-> closing queue1 pipe[1]");
-            abort();
-        }
-# endif /* ifdef HAVE_PTHREAD_SHMEM_LOCKS */
-    }
-#endif /* ifndef USE_HARD_POLLING */
-    if (munmap(commpad, buffsize) != 0) {
-        perror("yod-> munmap failed"); /* technically non-fatal */
-    }
-    if (shm_unlink(shmname) != 0) {
-        perror("yod-> shm_unlink failed");
-        exit(EXIT_FAILURE);
-    }
     free(pids);
     return err;
 } /*}}}*/

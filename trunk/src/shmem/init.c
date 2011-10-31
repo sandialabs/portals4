@@ -31,15 +31,12 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_locks.h"
 
-volatile uint8_t *init_comm_pad          = NULL;
 size_t            num_siblings           = 0;
 ptl_pid_t         proc_number            = PTL_PID_ANY;
 size_t            per_proc_comm_buf_size = 0;
 size_t            firstpagesize          = 0;
 
 static unsigned int init_ref_count    = 0;
-static size_t       comm_pad_size     = 0;
-static const char  *comm_pad_shm_name = NULL;
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do {                           \
         char       *strerr;                                              \
@@ -57,7 +54,7 @@ static const char  *comm_pad_shm_name = NULL;
 
 int INTERNAL PtlInternalLibraryInitialized(void)
 {   /*{{{*/
-    if (init_comm_pad == NULL) {
+    if (init_ref_count == 0) {
         return PTL_FAIL;
     }
     return PTL_OK;
@@ -79,7 +76,6 @@ int API_FUNC PtlInit(void)
     extern ptl_uid_t    the_ptl_uid;
 
     if (race == 0) {
-        int shm_fd;
 
 #ifdef _SC_PAGESIZE
         firstpagesize = sysconf(_SC_PAGESIZE);
@@ -94,14 +90,6 @@ int API_FUNC PtlInit(void)
         the_ptl_uid = geteuid();
 
         /* Parse the official yod-provided environment variables */
-        comm_pad_shm_name = getenv("PORTALS4_SHM_NAME");
-        if (comm_pad_shm_name == NULL) {
-#ifdef LOUD_DROPS
-            fprintf(stderr, "PORTALS4-> Environment variable PORTALS4_SHM_NAME missing!\n");
-            fflush(stderr);
-#endif
-            goto exit_fail;
-        }
         PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 1);
         PARSE_ENV_NUM("PORTALS4_RANK", proc_number, 1);
         PARSE_ENV_NUM("PORTALS4_COMM_SIZE", per_proc_comm_buf_size, 1);
@@ -112,35 +100,6 @@ int API_FUNC PtlInit(void)
         assert(((SMALL_FRAG_COUNT * SMALL_FRAG_SIZE) +
                 (LARGE_FRAG_COUNT * LARGE_FRAG_SIZE) +
                 sizeof(NEMESIS_blocking_queue)) == per_proc_comm_buf_size);
-
-        comm_pad_size = firstpagesize;
-        // (per_proc_comm_buf_size * (num_siblings + 1));                  // the one extra is for the collator
-
-        /* Open the communication pad */
-        assert(init_comm_pad == NULL);
-        shm_fd = shm_open(comm_pad_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
-        assert(shm_fd >= 0);
-        if (shm_fd < 0) {
-#ifdef LOUD_DROPS
-            fprintf(stderr, "PORTALS4-> PtlInit: shm_open failed:");
-            perror("");
-#endif
-            goto exit_fail;
-        }
-        init_comm_pad =
-            (uint8_t *)mmap(NULL, comm_pad_size, PROT_READ | PROT_WRITE,
-                            MAP_SHARED, shm_fd, 0);
-        if (init_comm_pad == MAP_FAILED) {
-#ifdef LOUD_DROPS
-            fprintf(stderr, "PORTALS4-> PtlInit: mmap failed:");
-            perror("");
-#endif
-            goto exit_fail;
-        }
-        ptl_assert(close(shm_fd), 0);
-        /* Locate and initialize my fragments memory (beginning with a pointer to headers) */
-        /*PtlInternalFragmentSetup((comm_pad + firstpagesize +
-         *                        (per_proc_comm_buf_size * proc_number)));*/
 
         memset(&nit, 0, sizeof(ptl_internal_nit_t));
         for (int ni = 0; ni < 4; ++ni) {
@@ -166,21 +125,6 @@ int API_FUNC PtlInit(void)
             nit_limits[ni].max_volatile_size    = LARGE_FRAG_PAYLOAD - sizeof(ptl_internal_header_t);   // single payload
         }
         PtlInternalPAPIInit();
-
-        /**************************************************************************
-        * Can Now Announce My Presence
-        **************************************************************************/
-        init_comm_pad[proc_number] = 1;
-
-        if (proc_number != num_siblings) {
-            /* Now, wait for my siblings to get here, unless I'm the COLLATOR. */
-            size_t i;
-            for (i = 0; i < num_siblings; ++i) {
-                /* oddly enough, this should reduce cache traffic for large numbers
-                 * of siblings */
-                while (init_comm_pad[i] == 0) SPINLOCK_BODY();
-            }
-        }
 
         /* Release any concurrent initialization calls */
         __sync_synchronize();
@@ -224,9 +168,6 @@ void API_FUNC PtlFini(void)
         /* Clean up */
         PtlInternalPAPITeardown();
         PtlInternalDetachCommPads();
-        // printf("%u MUNMAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (unsigned int)proc_number);
-        ptl_assert(munmap((void *)init_comm_pad, comm_pad_size), 0);
-        init_comm_pad = NULL;
     }
 } /*}}}*/
 
