@@ -128,12 +128,15 @@ AS_IF([test "x$enable_register_on_bind" == xyes],
 
 AC_ARG_WITH([implementation],
 			[AS_HELP_STRING([--with-implementation=IMPL],
-							[Specify implemenation backend.  Options for IMPL are shmem or ib.])],
+							[Specify implemenation backend.  Options for IMPL
+							 are shmem, mc, or ib. Shmem is single-node shared
+							 memory, mc is multicore (read: shared progress
+			                 threads in shared memory), and ib is Infiniband.])],
 		    [case "x$with_implementation" in
 			  xib|xshmem|xmc)
                ;;
 			  *)
-			   AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem or ib.])
+			   AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem, mc, or ib.])
 			   ;;
 	         esac],
 			[with_implementation=ib])
