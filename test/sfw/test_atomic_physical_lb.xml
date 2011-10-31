@@ -17,7 +17,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic min/char (2)</desc>
     <ptl>
@@ -35,7 +34,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic max/char (1)</desc>
     <ptl>
@@ -53,7 +51,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic max/char (2)</desc>
     <ptl>
@@ -71,7 +68,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic sum/char</desc>
     <ptl>
@@ -89,7 +85,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic prod/char</desc>
     <ptl>
@@ -107,7 +102,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic min/uchar (1)</desc>
     <ptl>
@@ -125,7 +119,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic min/uchar (2)</desc>
     <ptl>
@@ -143,7 +136,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic max/uchar (1)</desc>
     <ptl>
@@ -161,7 +153,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test atomic max/uchar (2)</desc>
     <ptl>
@@ -179,5 +170,4 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
 </test>
