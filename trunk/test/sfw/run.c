@@ -1296,7 +1296,10 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 
 				default:
 					waitpid(pid, &status, 0);
-					errs += status;
+					if (WIFEXITED(status))
+						errs += WEXITSTATUS(status);
+					else
+						errs ++;
 					if (errs)
 						printf("Errors = %d\n", errs);
 					else
