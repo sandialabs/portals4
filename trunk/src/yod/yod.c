@@ -47,10 +47,9 @@
 static pid_t *pids = NULL;
 
 /* globals for communicating with the collator thread */
-static long            count = 0;
-static ptl_handle_ct_t collator_ct_handle;
-static ptl_handle_ni_t ni_physical;
-static volatile int    collatorLEposted = 0;
+static ptl_size_t count                = 0;
+static int        collator_should_exit = 0;
+static int        collatorLEposted     = 0;
 
 static void  cleanup(int s);
 static void  print_usage(int ex);
@@ -65,16 +64,16 @@ static void *collator(void *junk);
 int main(int   argc,
          char *argv[])
 {   /*{{{*/
-    size_t       commsize;
-    int          err = 0;
-    pthread_t    collator_thread;
-    int          ct_spawned         = 1;
-    size_t       small_frag_size    = 256;
-    size_t       small_frag_payload = 0;
-    size_t       small_frag_count   = 512;
-    size_t       large_frag_size    = 4096;
-    size_t       large_frag_payload = 0;
-    size_t       large_frag_count   = 128;
+    size_t    commsize;
+    int       err = 0;
+    pthread_t collator_thread;
+    int       ct_spawned         = 1;
+    size_t    small_frag_size    = 256;
+    size_t    small_frag_payload = 0;
+    size_t    small_frag_count   = 512;
+    size_t    large_frag_size    = 4096;
+    size_t    large_frag_payload = 0;
+    size_t    large_frag_count   = 128;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -187,21 +186,9 @@ int main(int   argc,
     * Provide COLLATOR services *
     *****************************/
     EXPORT_ENV_NUM("PORTALS4_RANK", count);
-    ptl_assert(PtlInit(), PTL_OK);
-    ptl_assert(PtlNIInit(PTL_IFACE_DEFAULT,
-                         PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                         PTL_PID_ANY, NULL, NULL, &ni_physical),
-               PTL_OK);
-    {
-        ptl_pt_index_t pt_index;
-        ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index),
-                   PTL_OK);
-        assert(pt_index == 0);
-    }
-    collator_ct_handle = PTL_CT_NONE;
-    collatorLEposted   = 0;
+    collatorLEposted = 0;
     __sync_synchronize();
-    if (pthread_create(&collator_thread, NULL, collator, &ni_physical) != 0) {
+    if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
         perror("pthread_create");
         fprintf(stderr, "yod-> failed to create collator thread\n");
         ct_spawned = 0;                /* technically not fatal, though maybe should be */
@@ -293,7 +280,8 @@ int main(int   argc,
     if (ct_spawned == 1) {
         ptl_ct_event_t ctc;
         memset(&ctc, 0xff, sizeof(ptl_ct_event_t));
-        PtlCTSet(collator_ct_handle, ctc);
+        collator_should_exit = 1;
+        __sync_synchronize();
         switch (pthread_join(collator_thread, NULL)) {
             case 0:
                 break;
@@ -314,9 +302,6 @@ int main(int   argc,
     }
 
     /* Cleanup */
-    ptl_assert(PtlPTFree(ni_physical, 0), PTL_OK);
-    ptl_assert(PtlNIFini(ni_physical), PTL_OK);
-    PtlFini();
     free(pids);
     return err;
 } /*}}}*/
@@ -336,21 +321,33 @@ static void cleanup(Q_UNUSED int s)
 
 void *collator(void *Q_UNUSED junk) Q_NORETURN
 {   /*{{{*/
-    ptl_process_t *mapping;
-
-    /* set up the landing pad to collect and distribute mapping information */
-    mapping = calloc(count, sizeof(ptl_process_t));
-    assert(mapping != NULL);
+    ptl_process_t  *mapping;
     ptl_le_t        le;
     ptl_md_t        md;
     ptl_handle_le_t le_handle;
     ptl_handle_md_t md_handle;
+    ptl_handle_ni_t ni_physical;
+
+    /* set up the landing pad to collect and distribute mapping information */
+    mapping = calloc(count, sizeof(ptl_process_t));
+    assert(mapping != NULL);
+
+    ptl_assert(PtlInit(), PTL_OK);
+    ptl_assert(PtlNIInit(PTL_IFACE_DEFAULT,
+                         PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+                         PTL_PID_ANY, NULL, NULL, &ni_physical),
+               PTL_OK);
+    {
+        ptl_pt_index_t pt_index;
+        ptl_assert(PtlPTAlloc(ni_physical, 0, PTL_EQ_NONE, 0, &pt_index),
+                   PTL_OK);
+        assert(pt_index == 0);
+    }
     md.start   = le.start = mapping;
     md.length  = le.length = count * sizeof(ptl_process_t);
     le.uid     = PTL_UID_ANY;
     le.options = PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM;
     ptl_assert(PtlCTAlloc(ni_physical, &le.ct_handle), PTL_OK);
-    collator_ct_handle = le.ct_handle;
     ptl_assert(PtlLEAppend
                    (ni_physical, 0, &le, PTL_PRIORITY_LIST, NULL, &le_handle),
                PTL_OK);
@@ -360,10 +357,19 @@ void *collator(void *Q_UNUSED junk) Q_NORETURN
     /* wait for everyone to post to the mapping */
     {
         ptl_ct_event_t ct_data;
-        if (PtlCTWait(le.ct_handle, count, &ct_data) == PTL_INTERRUPTED) {
-            goto cleanup_phase;
+        unsigned int   junk2;
+await_mapping:
+        switch (PtlCTPoll(&le.ct_handle, &count, 1, 100, &ct_data, &junk2)) {
+            case PTL_INTERRUPTED:
+                goto cleanup_phase;
+            case PTL_CT_NONE_REACHED:
+                if (collator_should_exit) {
+                    goto cleanup_phase;
+                }
+                goto await_mapping;
+                break;
         }
-        assert(ct_data.failure == 0);  // XXX: should do something useful
+        assert(ct_data.failure == 0);                // XXX: should do something useful
         ct_data.success = ct_data.failure = 0;
         ptl_assert(PtlCTSet(le.ct_handle, ct_data), PTL_OK);
     }
@@ -404,8 +410,16 @@ void *collator(void *Q_UNUSED junk) Q_NORETURN
     do {
         /* wait for everyone to post to the barrier */
         ptl_ct_event_t ct_data;
-        if (PtlCTWait(le.ct_handle, count, &ct_data) == PTL_INTERRUPTED) {
-            goto cleanup_phase;
+        unsigned int   junk2;
+await_barrier:
+        switch (PtlCTPoll(&le.ct_handle, &count, 1, 100, &ct_data, &junk2)) {
+            case PTL_INTERRUPTED:
+                goto cleanup_phase;
+            case PTL_CT_NONE_REACHED:
+                if (collator_should_exit) {
+                    goto cleanup_phase;
+                }
+                goto await_barrier;
         }
         assert(ct_data.failure == 0);
         /* reset the LE's CT */
@@ -428,12 +442,15 @@ void *collator(void *Q_UNUSED junk) Q_NORETURN
 cleanup_phase:
     free(mapping);
     ptl_assert(PtlLEUnlink(le_handle), PTL_OK);
-    PtlInternalDMStop();
+    ptl_assert(PtlCTFree(le.ct_handle), PTL_OK);
+    ptl_assert(PtlPTFree(ni_physical, 0), PTL_OK);
+    ptl_assert(PtlNIFini(ni_physical), PTL_OK);
+    PtlFini();
     return NULL;
-} /*}}}*/
+}                        /*}}}*/
 
 void print_usage(int ex)
-{   /*{{{*/
+{                        /*{{{*/
     printf("yod {options} executable\n");
     printf("Options are:\n");
     printf("\t-c [num_procs]            Spawn num_procs processes.\n");
@@ -448,6 +465,6 @@ void print_usage(int ex)
     } else {
         exit(EXIT_SUCCESS);
     }
-} /*}}}*/
+}                        /*}}}*/
 
 /* vim:set expandtab: */
