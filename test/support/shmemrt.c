@@ -29,13 +29,12 @@ static ptl_process_t *mapping = NULL;
 int
 libtest_init(void)
 {
-    int size, i;
+    int i;
     struct runtime_proc_t *procs;
 
     rank = runtime_get_rank();
     size = runtime_get_size();
 
-    size = libtest_get_size();
     mapping = malloc(sizeof(ptl_process_t) * size);
     if (NULL == mapping) return 1;
 
