@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include <portals4.h>
 #include <support/support.h>

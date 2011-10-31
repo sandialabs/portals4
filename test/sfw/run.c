@@ -1280,12 +1280,30 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			case NODE_TEST:
 				errs = walk_tree(info, node->children);
 				break;
-			case NODE_SUBTEST:
-				errs = walk_tree(info, node->children);
-				if (errs)
-					printf("Errors = %d\n", errs);
-				else
-					printf("\033[1;32mPassed\033[0m\n");
+			case NODE_SUBTEST: {
+				pid_t pid = fork();
+				int status;
+				switch(pid) {
+				case -1:
+					printf("Fork failed = %d\n", errs);
+					errs ++;
+					break;
+
+				case 0:
+					errs = walk_tree(info, node->children);
+					exit(errs);
+					break;
+
+				default:
+					waitpid(pid, &status, 0);
+					errs += status;
+					if (errs)
+						printf("Errors = %d\n", errs);
+					else
+						printf("\033[1;32mPassed\033[0m\n");
+					break;
+				}
+			}
 				break;
 			case NODE_REPEAT:
 				for (i = 0; i < info->count; i++)
