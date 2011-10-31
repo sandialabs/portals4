@@ -52,7 +52,6 @@
       </ptl_ni>
     </ptl>
   </subtest>
-  <barrier/>
   <subtest>
     <desc>Test detection of EQ overflow at target</desc>
     <ptl>
