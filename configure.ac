@@ -125,46 +125,6 @@ AC_ARG_WITH([implementation],
 AC_ARG_WITH([test-runtime],
   [AS_HELP_STRING([--with-test-runtime=IMPL],
     [Specify runtime to use for test harness.  Options for IMPL are shmemrt, mpi, or single.])])
-case "$with_implementation" in
-  mc)
-    ;;
-  ib)
-    ;;
-  shmem)
-    if test "$with_test_runtime" != "shmemrt" ; then
-       AC_MSG_WARN([Reseting test harness runtime to shmemrt])
-       with_test_runtime=shmemrt
-    fi
-    ;;
-  *)
-    if test "$with_implementation" != "" ; then
-	   AC_MSG_WARN([Setting implementation to ib])
-    fi
-    with_implementation=ib
-    ;;
-esac
-case "$with_test_runtime" in
-  shmemrt)
-    if test "$with_implementation" != "shmem" ; then
-      AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])
-    fi
-    TEST_INVOKE_CMD='$(top_builddir)/src/shmem/yod -c $(THREADS)'
-    ;;
-  mpi)
-    TEST_INVOKE_CMD='mpirun -np $(THREADS)'
-    ;;
-  single)
-    TEST_INVOKE_CMD=
-    ;;
-  *)
-    if test "$with_test_runtime" != "" ; then
-      AC_MSG_WARN([Setting test runtime to single])
-    fi
-    with_test_runtime=single
-    TEST_INVOKE_CMD=
-    ;;
-esac
-AC_SUBST(TEST_INVOKE_CMD)
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -359,12 +319,58 @@ AC_SUBST(LD_VERSION_SCRIPT)
 ## Output and done ##
 ## --------------- ##
 
+case "$with_implementation" in
+  mc)
+    ;;
+  ib)
+    ;;
+  shmem)
+    if test "$with_test_runtime" != "shmemrt" ; then
+       AC_MSG_WARN([Reseting test harness runtime to shmemrt])
+       with_test_runtime=shmemrt
+    fi
+    ;;
+  *)
+    if test "$with_implementation" != "" ; then
+	   AC_MSG_WARN([Setting implementation to ib])
+    fi
+    with_implementation=ib
+    ;;
+esac
+case "$with_test_runtime" in
+  shmemrt)
+    if test "$with_implementation" != "shmem" ; then
+      AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])
+    fi
+    TEST_INVOKE_CMD='$(top_builddir)/src/shmem/yod -c $(THREADS)'
+    ;;
+  mpi)
+    TEST_INVOKE_CMD='mpirun -np $(THREADS)'
+    ;;
+  pmi)
+    OMPI_CHECK_PMI([], [AC_MSG_ERROR([PMI runtime requested, not found.])])
+    TEST_INVOKE_CMD='srun -n $(THREADS)'
+    ;;
+  single)
+    TEST_INVOKE_CMD=
+    ;;
+  *)
+    if test "$with_test_runtime" != "" ; then
+      AC_MSG_WARN([Setting test runtime to single])
+    fi
+    with_test_runtime=single
+    TEST_INVOKE_CMD=
+    ;;
+esac
+AC_SUBST(TEST_INVOKE_CMD)
+
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [test "$with_implementation" = "shmem"])
 AM_CONDITIONAL([BACKEND_IMPL_IB], [test "$with_implementation" = "ib"])
 AM_CONDITIONAL([BACKEND_IMPL_MC], [test "$with_implementation" = "mc"])
 
 AM_CONDITIONAL([TEST_RUNTIME_SHMEMRT], [test "$with_test_runtime" = "shmemrt"])
 AM_CONDITIONAL([TEST_RUNTIME_MPI], [test "$with_test_runtime" = "mpi"])
+AM_CONDITIONAL([TEST_RUNTIME_PMI], [test "$with_test_runtime" = "pmi"])
 AM_CONDITIONAL([TEST_RUNTIME_SINGLE], [test "$with_test_runtime" = "single"])
 
 AS_IF([test "$with_test_runtime" = "mpi"],

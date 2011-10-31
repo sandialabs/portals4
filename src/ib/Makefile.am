@@ -1,9 +1,9 @@
 
-AM_CPPFLAGS = -I$(top_srcdir)/include $(EV_CPPFLAGS) $(OFED_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS)
 noinst_LTLIBRARIES = libportals_ib.la
 
-libportals_ib_la_LIBADD = $(EV_LIBS) $(OFED_LIBS) -lrdmacm -lpthread -lrt 
-libportals_ib_la_LDFLAGS = $(LD_VERSION_SCRIPT) $(EV_LDFLAGS) $(OFED_LDFLAGS)
+libportals_ib_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) -lrdmacm -lpthread -lrt 
+libportals_ib_la_LDFLAGS = $(LD_VERSION_SCRIPT) $(ev_LDFLAGS) $(ofed_LDFLAGS)
 libportals_ib_la_SOURCES = \
 	ptl.c \
 	ptl_atomic.c \

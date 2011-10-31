@@ -48,12 +48,8 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
 
-    {
-        ptl_process_t *amapping;
-        amapping = libtest_get_mapping();
-        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
-        free(amapping);
-    }
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, 
+                              libtest_get_mapping()));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,

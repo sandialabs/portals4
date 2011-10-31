@@ -54,12 +54,10 @@ int main(
 
     my_rank = libtest_get_rank();
     num_procs = libtest_get_size();
-
-    amapping = malloc(sizeof(ptl_process_t) * num_procs);
+    
     value = malloc(sizeof(*value) * BUFSIZE);
     readval = malloc(sizeof(*readval) * BUFSIZE);
 
-    assert(amapping);
     assert(value);
     assert(readval);
 
@@ -69,15 +67,8 @@ int main(
 
     assert(actual.max_fetch_atomic_size >= BUFSIZE * sizeof(*value));
 
-    my_ret = PtlGetMap(ni_logical, 0, NULL, NULL);
-    if (my_ret == PTL_NO_SPACE) {
-        ptl_process_t *amapping;
-        amapping = libtest_get_mapping();
-        CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, amapping));
-        free(amapping);
-    } else {
-        CHECK_RETURNVAL(my_ret);
-    }
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
+                              libtest_get_mapping()));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);

@@ -25,7 +25,6 @@ int ompi_rt_init(struct node_info *info)
 int ompi_rt_fini(struct node_info *info)
 {
 	if (info->desired_map_ptr) {
-		free(info->desired_map_ptr);
 		info->desired_map_ptr = NULL;
 	}
 

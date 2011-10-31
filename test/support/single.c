@@ -21,13 +21,14 @@
 
 #include "support.h"
 
-static ptl_process_t my_id;
+static ptl_process_t *mapping;
 static ptl_handle_ni_t phys_ni_h;
 
 int
 libtest_init(void)
 {
     int ret;
+    ptl_process_t my_id;
 
     ret = PtlInit();
     if (PTL_OK != ret) { return ret; }
@@ -43,6 +44,11 @@ libtest_init(void)
     ret = PtlGetId(phys_ni_h, &my_id);
     if (PTL_OK != ret) { return ret;}
 
+    mapping = malloc(sizeof(ptl_process_t) * 1);
+    if (NULL == mapping) return 1;
+
+    mapping[0] = my_id;
+
     return 0;
 }
 
@@ -50,6 +56,8 @@ libtest_init(void)
 int
 libtest_fini(void)
 {
+    if (NULL != mapping) free(mapping);
+
     PtlNIFini(phys_ni_h);
     PtlFini();
 
@@ -60,13 +68,7 @@ libtest_fini(void)
 ptl_process_t*
 libtest_get_mapping(void)
 {
-    ptl_process_t *ret;
-
-    ret = malloc(sizeof(ptl_process_t) * 1);
-    if (NULL == ret) return NULL;
-
-    ret[0] = my_id;
-    return ret;
+    return mapping;
 }
 
 

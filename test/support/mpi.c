@@ -23,35 +23,29 @@
 #include "support/support.h"
 
 static int rank = -1;
-static int size = -1;
-static ptl_process_t my_id;
+static int size = 0;
+static ptl_process_t *mapping = NULL;
 static ptl_handle_ni_t phys_ni_h;
-static int initialized;
-
-static void my_libtest_fini(void)
-{
-	libtest_fini();
-}
 
 int
 libtest_init(void)
 {
     int ret;
-
-	if (initialized)
-		return PTL_OK;
-
-	initialized = 1;
-
-	atexit(my_libtest_fini);
+    ptl_process_t my_id;
 
     MPI_Initialized(&ret);
     if (!ret) {
-        MPI_Init(NULL, NULL);
+        if (MPI_SUCCESS != MPI_Init(NULL, NULL)) {
+            return 1;
+        }
     }
 
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (MPI_SUCCESS != MPI_Comm_size(MPI_COMM_WORLD, &size)) {
+        return 1;
+    }
+    if (MPI_SUCCESS != MPI_Comm_rank(MPI_COMM_WORLD, &rank)) {
+        return 1;
+    }
 
     ret = PtlNIInit(PTL_IFACE_DEFAULT,
                     PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
@@ -59,15 +53,21 @@ libtest_init(void)
                     NULL,
                     NULL,
                     &phys_ni_h);
-    if (PTL_OK != ret) return ret;
+    if (PTL_OK != ret) return 1;
 
     ret = PtlGetId(phys_ni_h, &my_id);
+    if (PTL_OK != ret) return 1;
 
-    PtlNIFini(phys_ni_h);
+    mapping = malloc(sizeof(ptl_process_t) * size);
+    if (NULL == mapping) return 1;
 
-    if (PTL_OK != ret) return ret;
+    if (MPI_SUCCESS != MPI_Allgather(&my_id, sizeof(my_id), MPI_BYTE,
+                                     mapping, sizeof(my_id), MPI_BYTE,
+                                     MPI_COMM_WORLD)) {
+        return 1;
+    }
 
-    return PTL_OK;
+    return 0;
 }
 
 
@@ -76,15 +76,14 @@ libtest_fini(void)
 {
     int ret;
 
-	if (!initialized)
-		return 0;
-
-	initialized = 0;
+    if (NULL != mapping) free(mapping);
 
     MPI_Finalized(&ret);
     if (!ret) {
         MPI_Finalize();
     }
+
+    PtlNIFini(phys_ni_h);
 
     return 0;
 }
@@ -93,19 +92,7 @@ libtest_fini(void)
 ptl_process_t*
 libtest_get_mapping(void)
 {
-    ptl_process_t *ret;
-
-	if (!initialized)
-		libtest_init();
-
-    ret = malloc(sizeof(ptl_process_t) * size);
-    if (NULL == ret) return 0;
-
-    MPI_Allgather(&my_id, sizeof(my_id), MPI_BYTE,
-                  ret, sizeof(my_id), MPI_BYTE,
-                  MPI_COMM_WORLD);
-
-    return ret;
+    return mapping;
 }
 
 
@@ -126,8 +113,5 @@ libtest_get_size(void)
 void
 libtest_barrier(void)
 {
-	if (!initialized)
-		libtest_init();
-
     MPI_Barrier(MPI_COMM_WORLD);
 }

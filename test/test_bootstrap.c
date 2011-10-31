@@ -66,7 +66,6 @@ int main(int   argc,
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();
 
-    free(amapping);
     free(dmapping);
 
     return 0;
