@@ -1,4 +1,12 @@
-#include <ev.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef LIBEV_INC_PREFIXED
+# include <libev/ev.h>
+#else
+# include <ev.h>
+#endif
 
 struct evl {
 	struct ev_loop *loop;
