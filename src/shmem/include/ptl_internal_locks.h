@@ -1,7 +1,7 @@
 #ifndef PTL_INTERNAL_LOCKS_H
 #define PTL_INTERNAL_LOCKS_H
 
-#define SPINLOCK_BODY() do { __asm__ __volatile__ ("pause" ::: "memory"); } while (0)
+#define SPINLOCK_BODY() do { __sync_synchronize(); __asm__ __volatile__ ("pause" ::: "memory"); } while (0)
 
 #ifdef __tile__
 # include <tmc/sync.h>
