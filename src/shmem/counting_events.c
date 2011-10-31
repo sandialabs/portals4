@@ -603,6 +603,7 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         MARK_TIMER(tp);
     } while (timeout == PTL_TIME_FOREVER ||
              (TIMER_INTS(tp) - nstart) < timeout);
+    for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
     return PTL_CT_NONE_REACHED;
 }                                      /*}}} */
 
