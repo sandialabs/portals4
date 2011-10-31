@@ -151,7 +151,15 @@ void INTERNAL PtlInternalDetachCommPads(void)
             ptl_assert(shmdt(comm_pads[i]), 0);
             shmctl(comm_shmids[i], IPC_STAT, &buf);
             if (buf.shm_nattch == 0) {
-                ptl_assert(shmctl(comm_shmids[i], IPC_RMID, NULL), 0);
+                if (shmctl(comm_shmids[i], IPC_RMID, NULL) != 0) {
+                    switch(errno) {
+                        case EINVAL: break;
+                        default:
+                            perror("shmctl in DetachCommPads");
+                            abort();
+                    }
+                }
+                // ptl_assert(shmctl(comm_shmids[i], IPC_RMID, NULL), 0);
             }
         }
     }
