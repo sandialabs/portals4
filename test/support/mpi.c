@@ -58,6 +58,8 @@ libtest_init(void)
     ret = PtlGetId(phys_ni_h, &my_id);
     if (PTL_OK != ret) return 1;
 
+    PtlNIFini(phys_ni_h);
+
     mapping = malloc(sizeof(ptl_process_t) * size);
     if (NULL == mapping) return 1;
 
@@ -82,8 +84,6 @@ libtest_fini(void)
     if (!ret) {
         MPI_Finalize();
     }
-
-    PtlNIFini(phys_ni_h);
 
     return 0;
 }
