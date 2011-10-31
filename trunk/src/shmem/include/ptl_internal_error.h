@@ -12,8 +12,10 @@
 #else
 static int verbose_error_flag = 0;
 
-static void VERBOSE_ERROR(const char *restrict format,
-                          ...)
+# define VERBOSE_ERROR(fmt, ...) VERBOSE_ERROR_(fmt, __func__, ## __VA_ARGS__)
+static void VERBOSE_ERROR_(const char *restrict format,
+                           const char *restrict func,
+                           ...)
 {
     switch (verbose_error_flag) {
         case 0:
@@ -28,8 +30,8 @@ static void VERBOSE_ERROR(const char *restrict format,
 print_error:
             {
                 va_list ap;
-                printf("PORTALS4-> (%lu) ERROR: ", (unsigned long)proc_number);
-                va_start(ap, format);
+                printf("PORTALS4-> {%lu} ERROR in %s(): ", (unsigned long)proc_number, func);
+                va_start(ap, func);
                 vprintf(format, ap);
                 fflush(stdout);
                 va_end(ap);
