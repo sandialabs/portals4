@@ -262,7 +262,7 @@ ptl_md_t INTERNAL *PtlInternalMDFetch(ptl_handle_md_t handle)
 }                                      /*}}} */
 
 #if defined(USE_KNEM) && defined(REGISTER_ON_BIND)
-static ptl_size_t PtlInternalMDXFEHandle(ptl_handle_md_t handle)
+ptl_size_t INTERNAL PtlInternalMDXFEHandle(ptl_handle_md_t handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t md = { handle };
 
