@@ -22,9 +22,6 @@
 #include <getopt.h>                    /* for getopt() */
 #include <unistd.h>                    /* for fork() and ftruncate() */
 
-#include <sys/mman.h>                  /* for shm_open() */
-#include <sys/stat.h>                  /* for S_IRUSR and friends */
-#include <fcntl.h>                     /* for O_RDWR */
 #include <sys/wait.h>                  /* for waitpid() */
 #include <string.h>                    /* for memset() */
 #include <pthread.h>                   /* for all pthread functions */
