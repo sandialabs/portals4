@@ -33,7 +33,7 @@
 
 size_t            num_siblings           = 0;
 ptl_pid_t         proc_number            = PTL_PID_ANY;
-size_t            per_proc_comm_buf_size = 0;
+size_t            per_proc_comm_buf_size = 655488;
 size_t            firstpagesize          = 0;
 
 static unsigned int init_ref_count    = 0;
@@ -90,9 +90,9 @@ int API_FUNC PtlInit(void)
         the_ptl_uid = geteuid();
 
         /* Parse the official yod-provided environment variables */
-        PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 1);
-        PARSE_ENV_NUM("PORTALS4_RANK", proc_number, 1);
-        PARSE_ENV_NUM("PORTALS4_COMM_SIZE", per_proc_comm_buf_size, 1);
+        PARSE_ENV_NUM("PORTALS4_NUM_PROCS", num_siblings, 0);
+        PARSE_ENV_NUM("PORTALS4_RANK", proc_number, 0);
+        PARSE_ENV_NUM("PORTALS4_COMM_SIZE", per_proc_comm_buf_size, 0);
         PARSE_ENV_NUM("PORTALS4_SMALL_FRAG_SIZE", SMALL_FRAG_SIZE, 0);
         PARSE_ENV_NUM("PORTALS4_LARGE_FRAG_SIZE", LARGE_FRAG_SIZE, 0);
         PARSE_ENV_NUM("PORTALS4_SMALL_FRAG_COUNT", SMALL_FRAG_COUNT, 0);
