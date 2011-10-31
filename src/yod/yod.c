@@ -4,9 +4,6 @@
 #define _BSD_SOURCE
 /* For POSIX definitions (kill) on Linux */
 #define _POSIX_SOURCE
-/* for Darwin definitions (getpagesize) on Darwin;
- * only necessary because _POSIX_SOURCE conflicts */
-#define _DARWIN_C_SOURCE
 /* for GNU definitions (strsignal) */
 #define _GNU_SOURCE
 
@@ -20,7 +17,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>                    /* for getopt() */
-#include <unistd.h>                    /* for fork() and ftruncate() */
+#include <unistd.h>                    /* for fork() */
 
 #include <sys/wait.h>                  /* for waitpid() */
 #include <string.h>                    /* for memset() */
@@ -68,9 +65,7 @@ static void *collator(void *junk);
 int main(int   argc,
          char *argv[])
 {   /*{{{*/
-    const size_t pagesize = getpagesize();
     size_t       commsize;
-    size_t       buffsize = pagesize;
     int          err = 0;
     pthread_t    collator_thread;
     int          ct_spawned         = 1;
@@ -80,7 +75,6 @@ int main(int   argc,
     size_t       large_frag_size    = 4096;
     size_t       large_frag_payload = 0;
     size_t       large_frag_count   = 128;
-    const size_t max_count          = buffsize - 1;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -104,10 +98,6 @@ int main(int   argc,
                     if ((opterr == NULL) || (opterr == optarg)) {
                         fprintf(stderr, "Error: Unparseable number of processes! (%s)\n", optarg);
                         print_usage(1);
-                    }
-                    if (count > max_count) {    /* technically, this is an arbitrary limit; more would require multiple pages for the initial init barier. */
-                        fprintf(stderr, "Error: Exceeded max of %lu processes. (complain to developer)\n", (unsigned long)max_count);
-                        exit(EXIT_FAILURE);
                     }
                     break;
                 }
@@ -180,7 +170,6 @@ int main(int   argc,
     commsize = (small_frag_count * small_frag_size) +
                (large_frag_count * large_frag_size) +
                sizeof(NEMESIS_blocking_queue);
-    buffsize += commsize * (count + 1); // the one extra is for the collator
 
     pids = malloc(sizeof(pid_t) * (count + 1));
     assert(pids != NULL);
