@@ -278,11 +278,34 @@ static void PtlInternalDMTeardown(ni_t *ni)
 	}
 }
 
+static void release_shmem_ressources(ni_t *ni)
+{
+	pool_fini(&ni->sbuf_pool);
+
+	if (ni->shmem.comm_pad != MAP_FAILED) {
+		munmap(ni->shmem.comm_pad, ni->shmem.comm_pad_size);
+		ni->shmem.comm_pad = MAP_FAILED;
+	}
+
+	if (ni->shmem.comm_pad_shm_name) {
+		/* Destroy the mmaped file so it doesn't pollute. All ranks try it
+		 * in case rank 0 died. */
+		shm_unlink(ni->shmem.comm_pad_shm_name);
+
+		free(ni->shmem.comm_pad_shm_name);
+		ni->shmem.comm_pad_shm_name = NULL;
+	}
+		
+	knem_fini(ni);
+}
+
 int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
 	int err;
+	int i;
+	struct shmem_pid_table *ptable;
 
 	/* 
 	 * Buffers in shared memory. The buffers will be allocated later,
@@ -318,7 +341,7 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		(ni->shmem.per_proc_comm_buf_size * (ni->shmem.world_size + 1));                  // the one extra is for the collator
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
-	assert(ni->shmem.comm_pad == NULL);
+	assert(ni->shmem.comm_pad == MAP_FAILED);
 
 	if (ni->shmem.index == 0) {
 		/* Just in case, remove that file if it already exist. */
@@ -386,26 +409,6 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 		goto exit_fail;
 	}
 
-	return PTL_OK;
-
- exit_fail:
-	if (shm_fd != -1)
-		close(shm_fd);
-
-	if (comm_pad_shm_name[0] != 0)
-		shm_unlink(comm_pad_shm_name);
-
-    return PTL_FAIL;
-}
-
-/* Finish the initialization. This can only be done once we know the
- * mapping. */
-int PtlNIInit_shmem_part2(ni_t *ni)
-{
-	int i;
-	struct shmem_pid_table *ptable;
-	int ret;
-
 	/* Can Now Announce My Presence. */
 
 	/* The PID table is a the beginning of the comm pad. 
@@ -432,7 +435,6 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 		conn = get_conn(ni, ptable[i].id);
 		if (!conn) {
 			/* It's hard to recover from here. */
-			ret = PTL_FAIL;
 			goto exit_fail;
 		}
 
@@ -445,29 +447,20 @@ int PtlNIInit_shmem_part2(ni_t *ni)
 	ptl_assert(pthread_create(&ni->shmem.catcher, NULL, PtlInternalDMCatcher, ni), 0);
 	ni->shmem.has_catcher = 1;
 
-	ret = PTL_OK;
+	return PTL_OK;
 
  exit_fail:
-	/* Destroy the mmaped file so it doesn't pollute. All ranks try it
-	 * in case rank 0 died. */
-	shm_unlink(ni->shmem.comm_pad_shm_name);
-	free(ni->shmem.comm_pad_shm_name);
-	ni->shmem.comm_pad_shm_name = NULL;
+	if (shm_fd != -1)
+		close(shm_fd);
 
-	return ret;
+	release_shmem_ressources(ni);
+
+	return PTL_FAIL;
 }
 
 void cleanup_shmem(ni_t *ni)
 {
 	PtlInternalDMTeardown(ni);
 
-	pool_fini(&ni->sbuf_pool);
-
-	if (ni->shmem.comm_pad) {
-		munmap(ni->shmem.comm_pad, ni->shmem.comm_pad_size);
-		ni->shmem.comm_pad = NULL;
-		ni->shmem.comm_pad_size = 0;
-	}
-
-	knem_fini(ni);
+	release_shmem_ressources(ni);
 }

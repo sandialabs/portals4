@@ -741,6 +741,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	set_limits(ni, desired);
 	ni->uid = geteuid();
 	ni->shmem.knem_fd = -1;
+	ni->shmem.comm_pad = MAP_FAILED;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
 	RB_INIT(&ni->mr_tree);
@@ -920,7 +921,6 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		WARN();
 		goto err2;
 	}
-	PtlNIInit_shmem_part2(ni);
 
 	ni_put(ni);
 	gbl_put();
