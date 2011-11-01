@@ -451,29 +451,6 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	/* reserve an object */
 	atomic_inc(&pool->count);
 
-#if 0
-	{
-		static int pools[POOL_LAST];
-		static int nloops;
-
-		if (!pools[pool->type]) {
-			printf("FZ- obj_alloc from pool %d\n", pool->type);
-		}
-			
-		pools[pool->type]++;
-
-		if ((nloops % 1000) == 0) {
-			int i;
-			printf("FZ- pools: ");
-			for (i=0; i<POOL_LAST; i++) {
-				printf("%d ", pools[i]);
-			}
-			printf("\n");
-		}
-		nloops ++;
-	}
-#endif
-
 	while ((obj = dequeue_free_obj(pool)) == NULL) {
 
 		pthread_mutex_lock(&pool->mutex);

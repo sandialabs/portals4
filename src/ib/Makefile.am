@@ -56,8 +56,6 @@ libportals_ib_la_SOURCES = \
 	ptl_send.c \
 	ptl_tgt.c \
 	ptl_types.h \
-	ptl_xx.c \
-	ptl_xx.h \
 	tree.h
 
 if WITH_TRANSPORT_SHMEM

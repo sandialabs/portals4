@@ -74,7 +74,7 @@ enum hdr_fmt {
 	__be32			src_pid;		\
 	__be64			length;			\
 	__be64			offset;			\
-	__be64			handle;			\
+	__be32			handle;			\
 
 /**
  * @brief Header for Portals request messages.
@@ -95,14 +95,8 @@ typedef struct req_hdr {
 	PTL_REQ_HDR
 } req_hdr_t;
 
-void xport_hdr_from_xt(hdr_t *hdr, xt_t *xt);
+void xport_hdr_from_buf(hdr_t *hdr, buf_t *buf);
 
-void xport_hdr_to_xt(hdr_t *hdr, xt_t *xt);
-
-void base_hdr_from_xt(hdr_t *hdr, xt_t *xt);
-
-void base_hdr_to_xt(hdr_t *hdr, xt_t *xt);
-
-void req_hdr_to_xt(req_hdr_t *hdr, xt_t *xt);
+void base_hdr_from_buf(hdr_t *hdr, buf_t *buf);
 
 #endif /* PTL_HDR_H */

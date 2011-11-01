@@ -12,11 +12,6 @@ int send_message_rdma(buf_t *buf, int signaled)
 	int err;
 	struct ibv_send_wr *bad_wr;
 
-	assert(!buf->xt || buf->xt->ack_buf == NULL);
-
-	if (debug)
-		printf("send_message\n");
-
 	buf->rdma.send_wr.opcode = IBV_WR_SEND;
 	if (signaled) {
 		buf->rdma.send_wr.send_flags = IBV_SEND_SIGNALED;
@@ -30,12 +25,12 @@ int send_message_rdma(buf_t *buf, int signaled)
 	buf->rdma.sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;
 #ifdef USE_XRC
-	buf->send_wr.xrc_remote_srq_num = buf->dest->xrc_remote_srq_num;
+	buf->send_wr.xrc_remote_srq_num = buf->dest.xrc_remote_srq_num;
 #endif
 
 	buf->comp = signaled;
 
-	err = ibv_post_send(buf->dest->rdma.qp, &buf->rdma.send_wr, &bad_wr);
+	err = ibv_post_send(buf->dest.rdma.qp, &buf->rdma.send_wr, &bad_wr);
 	if (err) {
 		WARN();
 

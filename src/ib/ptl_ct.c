@@ -560,9 +560,9 @@ static void __ct_check(ct_t *ct)
 		buf_t *buf = list_entry(l, buf_t, list);
 		if (ct->interrupt) {
 			list_del(l);
-			buf->xi.state = STATE_INIT_CLEANUP;
+			buf->init_state = STATE_INIT_CLEANUP;
 			process_init(buf);
-		} else if ((ct->event.success + ct->event.failure) >= buf->xi.threshold) {
+		} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
 			list_del(l);
 			process_init(buf);
 		}
@@ -939,7 +939,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	list_for_each_prev_safe(l, t, &ct->buf_list) {
 		buf_t *buf = list_entry(l, buf_t, list);
 		list_del(l);
-		buf->xi.state = STATE_INIT_CLEANUP;
+		buf->init_state = STATE_INIT_CLEANUP;
 		process_init(buf);
 	}
 
@@ -1002,7 +1002,7 @@ done:
 void post_ct(buf_t *buf, ct_t *ct)
 {
 	pthread_mutex_lock(&ct->mutex);
-	if ((ct->event.success + ct->event.failure) >= buf->xi.threshold) {
+	if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
 		pthread_mutex_unlock(&ct->mutex);
 		process_init(buf);
 		return;

@@ -102,7 +102,10 @@ static void PtlInternalNEMESISBlockingOffsetEnqueue(ni_t *ni,
     assert(f->obj.next == NULL);
     PtlInternalNEMESISOffsetEnqueue(ni, &q->q, f);
 
+#ifdef USE_HARD_POLLING
+#else
     /* awake waiter */
+	__sync_synchronize();
     if (q->frustration) {
         ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
         if (q->frustration) {
@@ -111,6 +114,7 @@ static void PtlInternalNEMESISBlockingOffsetEnqueue(ni_t *ni,
         }
         ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
     }
+#endif
 }
 
 static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking_queue *q)
@@ -119,6 +123,9 @@ static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking
 
     if (retval == NULL) {
         while (q->q.shadow_head == 0 && q->q.head == 0) {
+#ifdef USE_HARD_POLLING
+            SPINLOCK_BODY();
+#else
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
                 ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
                 if (q->frustration > 1000) {
@@ -127,6 +134,7 @@ static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking
                 }
                 ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
             }
+#endif
         }
         retval = PtlInternalNEMESISOffsetDequeue(ni, &q->q);
         assert(retval != NULL);

@@ -10,7 +10,6 @@
 
 /* forward declarations */
 struct ni;
-struct xt;
 struct buf;
 
 enum conn_state {
@@ -36,7 +35,7 @@ enum transport_type {
 struct transport {
 	enum transport_type	type;
 
-	int			(*post_tgt_dma)(struct xt *xt);
+	int			(*post_tgt_dma)(struct buf *buf);
 	int			(*send_message)(struct buf *buf, int signaled);
 };
 
@@ -53,7 +52,6 @@ struct conn {
 	int			state;
 	struct sockaddr_in	sin;
 	struct list_head	buf_list;
-	struct list_head	xt_list;// will go away -> use buf_list
 	pthread_spinlock_t	wait_list_lock;
 
 	struct transport	transport;

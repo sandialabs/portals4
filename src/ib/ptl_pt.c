@@ -129,7 +129,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 
 	pt->disable = 0;
 	pt->enabled = 1;
-	pt->num_xt_active = 0;
+	pt->num_tgt_active = 0;
 	pt->options = options;
 	pt->eq = eq;
 
@@ -270,7 +270,7 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	/* Serialize with progress to let active target processing complete */
 	pthread_spin_lock(&pt->lock);
 	pt->disable |= PT_API_DISABLE;
-	while(pt->num_xt_active) {
+	while(pt->num_tgt_active) {
 		pthread_spin_unlock(&pt->lock);
 		sched_yield();
 		pthread_spin_lock(&pt->lock);

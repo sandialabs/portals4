@@ -179,24 +179,6 @@ static void dump_everything(int unused)
 				printf("    overflow = %d\n", eq->overflow);
 			}
 
-			printf("  XIs:\n");
-			list_for_each_entry(obj, &ni->xi_pool.busy_list, obj_list) {
-				xi_t *xi = container_of(obj, xi_t, obj);
-
-				dump_xi(xi);
-			}
-
-			printf("  XTs:\n");
-			list_for_each_entry(obj, &ni->xt_pool.busy_list, obj_list) {
-				xt_t *xt = container_of(obj, xt_t, obj);
-
-				printf("  XT %x\n", xt_to_handle(xt));
-				printf("    state = %d\n", xt->state);
-				printf("    rdma_comp = %d\n", xt->rdma.rdma_comp);
-				printf("    rdma_dir = %d\n", xt->rdma_dir);
-				printf("    put_resid = %ld\n", xt->put_resid);
-				printf("    get_resid = %ld\n", xt->get_resid);
-			}
 #endif
 
 #if 0
