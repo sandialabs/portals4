@@ -632,6 +632,7 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
     ptl_ct_event_t                       *cte;
+    ptl_ct_event_t                        read_cte;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -641,13 +642,30 @@ int API_FUNC PtlCTInc(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
-    cte = &(ct_events[ct.s.ni][ct.s.code]);
+    cte      = &(ct_events[ct.s.ni][ct.s.code]);
+    read_cte = *cte;
+    if ((read_cte.success == CT_ERR_VAL) || (read_cte.failure == CT_ERR_VAL)) {
+        /* No more incrementing after we get this high on either value */
+        return PTL_ARG_INVALID;
+    }
     if (increment.failure == 0) {
-        /* cheaper than a 128-bit atomic increment */
-        PtlInternalAtomicInc(&(cte->success), increment.success);
+        uint64_t test;
+        while (((test = PtlInternalAtomicCas64(&(cte->success),
+                                               read_cte.success,
+                                               (read_cte.success + increment.success))) != read_cte.success) &&
+               (test != CT_ERR_VAL)) {
+            SPINLOCK_BODY();
+            read_cte = *cte;
+        }
     } else if (increment.success == 0) {
-        /* cheaper than a 128-bit atomic increment */
-        PtlInternalAtomicInc(&(cte->failure), increment.failure);
+        uint64_t test;
+        while (((test = PtlInternalAtomicCas64(&(cte->failure),
+                                               read_cte.failure,
+                                               (read_cte.failure + increment.failure))) != read_cte.failure) &&
+               (test != CT_ERR_VAL)) {
+            SPINLOCK_BODY();
+            read_cte = *cte;
+        }
     } else {
         return PTL_ARG_INVALID;
     }
@@ -721,25 +739,47 @@ void INTERNAL PtlInternalCTSuccessInc(ptl_handle_ct_t ct_handle,
                                       ptl_size_t      increment)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t                       *cte;
+    ptl_size_t                           *cte_s;
+    ptl_size_t                            read_s;
+    ptl_size_t                            test;
 
 #ifndef NO_ARG_VALIDATION
     assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
 #endif
-    cte = &(ct_events[ct.s.ni][ct.s.code]);
-    PtlInternalAtomicInc(&(cte->success), increment);
+    cte_s  = &(ct_events[ct.s.ni][ct.s.code].success);
+    read_s = *cte_s;
+    if ((ct_events[ct.s.ni][ct.s.code].failure == CT_ERR_VAL) ||
+        (ct_events[ct.s.ni][ct.s.code].success == CT_ERR_VAL)) {
+        return;
+    }
+    while (((test = PtlInternalAtomicCas64(cte_s, read_s, (read_s + increment))) != read_s) &&
+           (test != CT_ERR_VAL)) {
+        SPINLOCK_BODY();
+        read_s = *cte_s;
+    }
 }                                      /*}}} */
 
 void INTERNAL PtlInternalCTFailureInc(ptl_handle_ct_t ct_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    ptl_ct_event_t                       *cte;
+    ptl_size_t                           *cte_f;
+    ptl_size_t                            read_f;
+    ptl_size_t                            test;
 
 #ifndef NO_ARG_VALIDATION
     assert(PtlInternalCTHandleValidator(ct_handle, 0) == 0);
 #endif
-    cte = &(ct_events[ct.s.ni][ct.s.code]);
-    PtlInternalAtomicInc(&(cte->failure), 1);
+    cte_f  = &(ct_events[ct.s.ni][ct.s.code].failure);
+    read_f = *cte_f;
+    if ((ct_events[ct.s.ni][ct.s.code].failure == CT_ERR_VAL) ||
+        (ct_events[ct.s.ni][ct.s.code].success == CT_ERR_VAL)) {
+        return;
+    }
+    while (((test = PtlInternalAtomicCas64(cte_f, read_f, (read_f + 1))) != read_f) &&
+           (test != CT_ERR_VAL)) {
+        SPINLOCK_BODY();
+        read_f = *cte_f;
+    }
 }                                      /*}}} */
 
 /* vim:set expandtab: */
