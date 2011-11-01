@@ -41,8 +41,8 @@
 #define CT_READY   2
 #define CT_ERR_VAL 0xffffffffffffffffULL
 
-static ptl_ct_event_t *restrict         ct_events[4] = { NULL, NULL, NULL, NULL };
-static volatile uint_fast64_t *restrict ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
+static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
+static uint_fast64_t *restrict  ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
 
 /* ct_event_triggers is the triggers for a given CT. The ct_triggers_alloc is
  * the allocation (per NI) of trigger structures, but ct_triggers is the
@@ -58,9 +58,9 @@ static const ptl_ct_event_t            CTERR = { CT_ERR_VAL, CT_ERR_VAL };
 
 #if 0
 /* 128-bit Atomics */
-static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
-                                         const ptl_ct_event_t     oldval,
-                                         const ptl_ct_event_t     newval)
+static inline int PtlInternalAtomicCasCT(ptl_ct_event_t      *addr,
+                                         const ptl_ct_event_t oldval,
+                                         const ptl_ct_event_t newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
     register unsigned char ret;
@@ -82,8 +82,8 @@ static inline int PtlInternalAtomicCasCT(volatile ptl_ct_event_t *addr,
 # endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
-                                            const ptl_ct_event_t     newval)
+static inline void PtlInternalAtomicWriteCT(ptl_ct_event_t      *addr,
+                                            const ptl_ct_event_t newval)
 {                                      /*{{{ */
 # ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__ ("1:\n\t"
@@ -105,8 +105,8 @@ static inline void PtlInternalAtomicWriteCT(volatile ptl_ct_event_t *addr,
 
 ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
 {   /*{{{*/
-    ptl_internal_trigger_t          *tmp;
-    volatile ptl_internal_trigger_t *old, *new;
+    ptl_internal_trigger_t *tmp;
+    ptl_internal_trigger_t *old, *new;
 
     tmp = ct_triggers[ni];
     do {
@@ -122,7 +122,7 @@ ptl_internal_trigger_t INTERNAL *PtlInternalFetchTrigger(const uint_fast8_t ni)
 static void PtlInternalCTFreeTrigger(ptl_internal_trigger_t *freeme,
                                      const uint_fast8_t      ni)
 {   /*{{{*/
-    volatile ptl_internal_trigger_t *tmpv, *oldv, *newv;
+    ptl_internal_trigger_t *tmpv, *oldv, *newv;
 
     tmpv = ct_triggers[ni];
     do {
@@ -181,7 +181,7 @@ void INTERNAL PtlInternalCTNISetup(const uint_fast8_t ni,
 {                                      /*{{{ */
     ptl_ct_event_t *tmp;
 
-    while ((tmp = PtlInternalAtomicCasPtr((void *volatile *)&(ct_events[ni]),
+    while ((tmp = PtlInternalAtomicCasPtr((void **)&(ct_events[ni]),
                                           NULL,
                                           (void *)1)) == (void *)1) {
         SPINLOCK_BODY();
@@ -217,24 +217,25 @@ void INTERNAL PtlInternalCTNISetup(const uint_fast8_t ni,
 void INTERNAL PtlInternalCTNITeardown(const uint_fast8_t ni)
 {                                      /*{{{ */
     ptl_ct_event_t *restrict         tmp;
-    volatile uint_fast64_t *restrict rc;
+    uint_fast64_t *restrict          rc;
     ptl_internal_trigger_t *restrict ctt;
 
     while (ct_events[ni] == (void *)1) SPINLOCK_BODY();        // in case its in the middle of being allocated (this should never happen in sane code)
-    tmp = PtlInternalAtomicSwapPtr((void *volatile *)&ct_events[ni], NULL);
-    rc  = PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_refcounts[ni], NULL);
+    tmp = PtlInternalAtomicSwapPtr((void **)&ct_events[ni], NULL);
+    rc  = PtlInternalAtomicSwapPtr((void **)&ct_event_refcounts[ni], NULL);
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
-    free(PtlInternalAtomicSwapPtr((void *volatile *)&ct_event_triggers[ni], NULL));
+    free(PtlInternalAtomicSwapPtr((void **)&ct_event_triggers[ni], NULL));
     if (nit_limits[ni].max_triggered_ops > 0) {
-        PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers[ni], NULL);
-        ctt = PtlInternalAtomicSwapPtr((void *volatile *)&ct_triggers_alloc[ni], NULL);
+        PtlInternalAtomicSwapPtr((void **)&ct_triggers[ni], NULL);
+        ctt = PtlInternalAtomicSwapPtr((void **)&ct_triggers_alloc[ni], NULL);
         assert(ctt != NULL);
         free(ctt);
     }
 
     for (size_t i = 0; i < nit_limits[ni].max_cts; ++i) {
+        __sync_synchronize();
         if (rc[i] != 0) {
             tmp[i] = CTERR;
             __sync_synchronize();
@@ -288,7 +289,7 @@ int API_FUNC PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 {                                      /*{{{ */
     ptl_ct_event_t                       *cts;
     ptl_size_t                            offset;
-    volatile uint_fast64_t               *rc;
+    uint_fast64_t                        *rc;
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t       ct = { .s.selector = HANDLE_CT_CODE };
 
@@ -474,8 +475,8 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
                        ptl_ct_event_t *event)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t ct = { ct_handle };
-    volatile ptl_ct_event_t              *cte;
-    volatile uint_fast64_t               *rc;
+    ptl_ct_event_t                       *cte;
+    uint_fast64_t                        *rc;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -494,7 +495,9 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     // long)ct.i, (unsigned long long)test);
     PtlInternalAtomicInc(rc, 1);
     do {
-        ptl_ct_event_t tmpread = *cte;
+        ptl_ct_event_t tmpread;
+        __sync_synchronize();
+        tmpread = *cte;
         if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) &&
             __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
             PtlInternalAtomicInc(rc, -1);
@@ -519,11 +522,11 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
                        ptl_ct_event_t        *event,
                        unsigned int          *which)
 {                                      /*{{{ */
-    ptl_size_t              ctidx, offset;
-    ptl_ct_event_t         *ctes[size];
-    volatile uint_fast64_t *rcs[size];
-    size_t                  nstart;
-    TIMER_TYPE              tp;
+    ptl_size_t      ctidx, offset;
+    ptl_ct_event_t *ctes[size];
+    uint_fast64_t  *rcs[size];
+    size_t          nstart;
+    TIMER_TYPE      tp;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
