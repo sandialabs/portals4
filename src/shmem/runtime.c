@@ -17,7 +17,7 @@
 #include "ptl_visibility.h"
 
 static ptl_process_t          COLLECTOR;
-static volatile int           runtime_inited = 0;
+static int                    runtime_inited = 0;
 static int                    num_procs;
 static int                    my_rank = -1;
 static struct runtime_proc_t *ranks;
@@ -177,18 +177,17 @@ void runtime_init(void)
 
 void runtime_finalize(void)
 {   /*{{{*/
+    __sync_synchronize();
     if ((runtime_inited == 0) || (COLLECTOR.phys.pid == my_rank)) {
         return;
     }
     runtime_inited = 0;
+    __sync_synchronize();
 
     if (barrier_count > 0) {
-        ptl_assert(PtlCTFree(barrier_ct_h),
-                   PTL_OK);
-        ptl_assert(PtlCTFree(barrier_ct_h2),
-                   PTL_OK);
-        ptl_assert(PtlLEUnlink(barrier_le_h),
-                   PTL_OK);
+        ptl_assert(PtlCTFree(barrier_ct_h), PTL_OK);
+        ptl_assert(PtlCTFree(barrier_ct_h2), PTL_OK);
+        ptl_assert(PtlLEUnlink(barrier_le_h), PTL_OK);
     }
 
     PtlPTFree(ni_physical, phys_pt_index);
@@ -197,6 +196,7 @@ void runtime_finalize(void)
 
 int API_FUNC runtime_get_rank(void)
 {   /*{{{*/
+    __sync_synchronize();
     if (runtime_inited == 0) {
         runtime_init();
     }
@@ -205,6 +205,7 @@ int API_FUNC runtime_get_rank(void)
 
 int API_FUNC runtime_get_size(void)
 {   /*{{{*/
+    __sync_synchronize();
     if (runtime_inited == 0) {
         runtime_init();
     }
@@ -213,6 +214,7 @@ int API_FUNC runtime_get_size(void)
 
 int API_FUNC runtime_get_nidpid_map(struct runtime_proc_t **map)
 {   /*{{{*/
+    __sync_synchronize();
     if (runtime_inited == 0) {
         runtime_init();
     }
@@ -224,6 +226,7 @@ void API_FUNC runtime_barrier(void)
 {   /*{{{*/
     const ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, NI_PHYS_NOMATCH, 0 } };
 
+    __sync_synchronize();
     if (runtime_inited == 0) {
         runtime_init();
     }
