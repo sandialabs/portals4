@@ -54,7 +54,7 @@ PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsuppo
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test -I/usr/include/libxml2
 
 ptl_test_LDFLAGS = -L$(top_builddir)/src
-ptl_test_LDADD = -lpthread -lrdmacm -libverbs -lxml2 $(PORTALSLIB) -lmpi
+ptl_test_LDADD = -lpthread -lrdmacm -libverbs -lxml2 $(PORTALSLIB)
 ptl_test_SOURCES = \
 	api.c \
 	api.h \
@@ -71,7 +71,7 @@ ptl_test_SOURCES = \
 	run.c
 
 test_LDFLAGS = -L$(top_builddir)/src
-test_LDADD = -lpthread -lrdmacm -libverbs $(PORTALSLIB) -lmpi
+test_LDADD = -lpthread -lrdmacm -libverbs $(PORTALSLIB)
 test_SOURCES = \
 	test.c
 
