@@ -495,7 +495,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
     PtlInternalAtomicInc(rc, 1);
     do {
         ptl_ct_event_t tmpread = *cte;
-        if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+        if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) &&
             __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
@@ -576,7 +576,7 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
          * doing two loops to avoid a modulo operation in every iteration */
         for (ctidx = offset; ctidx < size; ++ctidx) {
             ptl_ct_event_t tmpread = *ctes[ctidx];
-            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) &&
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
@@ -590,7 +590,7 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         }
         for (ctidx = 0; ctidx < offset; ++ctidx) {
             ptl_ct_event_t tmpread = *ctes[ctidx];
-            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) ||
+            if (__builtin_expect((tmpread.success == CT_ERR_VAL), 0) &&
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
