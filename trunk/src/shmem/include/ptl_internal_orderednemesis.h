@@ -20,13 +20,13 @@
 typedef struct ordered_NEMESIS_entry_s ordered_NEMESIS_entry;
 
 typedef struct {
-    volatile ordered_NEMESIS_entry *volatile ptr;
-    volatile ptl_size_t                      val;
+    ordered_NEMESIS_entry *ptr;
+    ptl_size_t             val;
 } ordered_NEMESIS_ptr;
 
 struct ordered_NEMESIS_entry_s {
-    ordered_NEMESIS_ptr volatile next;
-    char                         data[];
+    ordered_NEMESIS_ptr next;
+    char                data[];
 };
 
 typedef struct {
@@ -40,9 +40,9 @@ typedef struct {
 } ordered_NEMESIS_queue ALIGNED (CACHELINE_WIDTH);
 
 /***********************************************/
-static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(volatile ordered_NEMESIS_ptr *addr,
-                                                          const ordered_NEMESIS_ptr     oldval,
-                                                          const ordered_NEMESIS_ptr     newval)
+static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(ordered_NEMESIS_ptr      *addr,
+                                                          const ordered_NEMESIS_ptr oldval,
+                                                          const ordered_NEMESIS_ptr newval)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     ordered_NEMESIS_ptr ret;
@@ -64,8 +64,8 @@ static inline ordered_NEMESIS_ptr PtlInternalAtomicCas128(volatile ordered_NEMES
 #endif  /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr          *dest,
-                                            volatile ordered_NEMESIS_ptr *src)
+static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr *dest,
+                                            ordered_NEMESIS_ptr *src)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__ ("xor %%rax, %%rax\n\t"     // zero rax out to avoid affecting *addr
@@ -88,8 +88,8 @@ static inline void PtlInternalAtomicRead128(ordered_NEMESIS_ptr          *dest,
 #endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline void PtlInternalAtomicWrite128(volatile ordered_NEMESIS_ptr *addr,
-                                             const ordered_NEMESIS_ptr     newval)
+static inline void PtlInternalAtomicWrite128(ordered_NEMESIS_ptr      *addr,
+                                             const ordered_NEMESIS_ptr newval)
 {                                      /*{{{ */
 #ifdef HAVE_CMPXCHG16B
     __asm__ __volatile__ ("1:\n\t"
@@ -107,8 +107,8 @@ static inline void PtlInternalAtomicWrite128(volatile ordered_NEMESIS_ptr *addr,
 #endif /* ifdef HAVE_CMPXCHG16B */
 }                                      /*}}} */
 
-static inline ordered_NEMESIS_ptr PtlInternalAtomicSwap128(volatile ordered_NEMESIS_ptr *addr,
-                                                           const ordered_NEMESIS_ptr     newval)
+static inline ordered_NEMESIS_ptr PtlInternalAtomicSwap128(ordered_NEMESIS_ptr      *addr,
+                                                           const ordered_NEMESIS_ptr newval)
 {   /*{{{*/
     ordered_NEMESIS_ptr oldval = *addr;
     ordered_NEMESIS_ptr tmp;
@@ -182,7 +182,7 @@ static inline void *PtlInternalOrderedNEMESISDequeue(ordered_NEMESIS_queue *q,
                 retval.ptr->next.ptr = NULL;
             }
         }
-        return (void*)(retval.ptr);
+        return (void *)(retval.ptr);
     } else {
         return NULL;
     }

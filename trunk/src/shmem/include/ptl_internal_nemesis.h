@@ -19,8 +19,8 @@
 #include "ptl_internal_shm.h"
 
 typedef struct {
-    void *volatile next;
-    char           data[];
+    void *next;
+    char  data[];
 } NEMESIS_entry;
 
 typedef union {
@@ -34,12 +34,12 @@ typedef union {
 
 typedef struct {
     /* The First Cacheline */
-    void *volatile head;
-    void *volatile tail;
-    uint8_t        pad1[CACHELINE_WIDTH - (2 * sizeof(void *))];
+    void   *head;
+    void   *tail;
+    uint8_t pad1[CACHELINE_WIDTH - (2 * sizeof(void *))];
     /* The Second Cacheline */
-    void *volatile shadow_head;
-    uint8_t        pad2[CACHELINE_WIDTH - sizeof(void *)];
+    void   *shadow_head;
+    uint8_t pad2[CACHELINE_WIDTH - sizeof(void *)];
 } NEMESIS_queue ALIGNED (CACHELINE_WIDTH);
 
 typedef struct {
@@ -59,15 +59,15 @@ typedef struct {
 
 static inline void PtlInternalNEMESISInit(NEMESIS_queue *q)
 {
-    q->head        = q->tail = NULL;
+    q->head        = NULL;
+    q->tail        = NULL;
     q->shadow_head = NULL;
 }
 
 static inline void PtlInternalNEMESISEnqueue(NEMESIS_queue *restrict q,
                                              NEMESIS_entry *restrict f)
 {
-    NEMESIS_entry *prev =
-        PtlInternalAtomicSwapPtr((void *volatile *)&(q->tail), f);
+    NEMESIS_entry *prev = PtlInternalAtomicSwapPtr((void **)&(q->tail), f);
 
     if (prev == NULL) {
         q->head = f;
@@ -149,9 +149,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(NEMESIS_queue *q)
             q->shadow_head = NULL;
             old            = (uintptr_t)PtlInternalAtomicCasPtr(&(q->tail), ret_off.p, NULL);
             if (old != ret_off.u) {
-                while (retval->next == NULL) {
-                    __asm__ __volatile__ ("pause" ::: "memory");
-                }
+                while (retval->next == NULL) SPINLOCK_BODY();
                 q->shadow_head = retval->next;
                 retval->next   = NULL;
             }
