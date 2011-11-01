@@ -500,7 +500,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
         } else if ((tmpread.failure != 0) ||
-                   ((tmpread.success + tmpread.failure) >= test)) {
+                   (tmpread.success >= test)) {
             if (event != NULL) {
                 *event = tmpread;
             }
@@ -508,7 +508,7 @@ int API_FUNC PtlCTWait(ptl_handle_ct_t ct_handle,
             return PTL_OK;
         }
         while (tmpread.success == cte->success &&
-               tmpread.failure == cte->failure) SPINLOCK_BODY();
+               tmpread.failure == 0) SPINLOCK_BODY();
     } while (1);
 }                                      /*}}} */
 
@@ -580,7 +580,8 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
-            } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
+            } else if ((tmpread.failure != 0) ||
+                       (tmpread.success >= tests[ctidx])) {
                 *event = tmpread;
                 *which = (unsigned int)ctidx;
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
@@ -593,7 +594,8 @@ int API_FUNC PtlCTPoll(const ptl_handle_ct_t *ct_handles,
                 __builtin_expect((tmpread.failure == CT_ERR_VAL), 0)) {
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
                 return PTL_INTERRUPTED;
-            } else if ((tmpread.success + tmpread.failure) >= tests[ctidx]) {
+            } else if ((tmpread.failure != 0) ||
+                       (tmpread.success >= tests[ctidx])) {
                 *event = tmpread;
                 *which = (unsigned int)ctidx;
                 for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
