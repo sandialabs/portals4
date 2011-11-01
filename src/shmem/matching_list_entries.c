@@ -52,7 +52,7 @@ typedef struct {
 typedef struct {
     ptl_internal_appendME_t Qentry;
     ptl_me_t                visible;
-    volatile uint32_t       status;     // 0=free, 1=allocated, 2=in-use
+    uint32_t                status; // 0=free, 1=allocated, 2=in-use
     ptl_pt_index_t          pt_index;
     ptl_list_t              ptl_list;
 } ptl_internal_me_t;
@@ -563,7 +563,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
 {   /*{{{*/
-    const ptl_internal_handle_converter_t ni  = { ni_handle };
+    const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_table_entry_t                    *t;
     int                                   found = 0;
 
@@ -770,6 +770,7 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
         VERBOSE_ERROR("ME array uninitialized\n");
         return PTL_ARG_INVALID;
     }
+    __sync_synchronize();
     if (mes[me.s.ni][me.s.code].status == ME_FREE) {
         VERBOSE_ERROR("ME appears to be free already\n");
         return PTL_ARG_INVALID;
@@ -839,8 +840,7 @@ int API_FUNC PtlMEUnlink(ptl_handle_me_t me_handle)
     PtlInternalValidateMEPT(t);
     PTL_LOCK_UNLOCK(t->lock);
     assert(mes[me.s.ni][me.s.code].Qentry.next == NULL);
-    switch (PtlInternalAtomicCas32
-                (&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
+    switch (PtlInternalAtomicCas32(&(mes[me.s.ni][me.s.code].status), ME_ALLOCATED, ME_FREE)) {
         case ME_IN_USE:
             PtlInternalValidateMEPTs(me.s.ni);
             return PTL_IN_USE;
@@ -1241,14 +1241,14 @@ check_lengths:
             }
             __sync_synchronize();
             PtlInternalAnnounceMEDelivery(tEQ,
-                    me.ct_handle,
-                    me.options,
-                    msg_mlength,
-                    (uintptr_t)report_this_start,
-                    PRIORITY,
-                    entry,
-                    hdr,
-                    entry->me_handle.a);
+                                          me.ct_handle,
+                                          me.options,
+                                          msg_mlength,
+                                          (uintptr_t)report_this_start,
+                                          PRIORITY,
+                                          entry,
+                                          hdr,
+                                          entry->me_handle.a);
             if ((me.options & PTL_ME_UNEXPECTED_HDR_DISABLE) == 0) {
                 /* cannot be enqueued until after the overflow data has been
                  * delivered */
