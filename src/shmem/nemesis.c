@@ -63,6 +63,7 @@ void INTERNAL PtlInternalNEMESISBlockingOffsetEnqueue(struct rank_comm_pad *rest
     assert(f);
     assert(f->next == NULL);
     PtlInternalNEMESISOffsetEnqueue(&q->q, f_off);
+    __sync_synchronize(); // yes, this needs to be here (out-of-order hardware is freaky)
     /* awake waiter */
 #ifndef USE_HARD_POLLING
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
