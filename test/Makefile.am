@@ -10,9 +10,7 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 DIST_SUBDIRS=sfw
 SUBDIRS=. 
 
-if TEST_RUNTIME_MPI
 SUBDIRS+=sfw
-endif
 
 include support/Makefile.am
 
