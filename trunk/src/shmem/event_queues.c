@@ -45,11 +45,11 @@ typedef union {
 typedef struct {
     ptl_internal_event_t *ring;
     uint32_t              size;
-    volatile eq_off_t     leading_head, lagging_head, leading_tail, lagging_tail;
+    eq_off_t              leading_head, lagging_head, leading_tail, lagging_tail;
 } ptl_internal_eq_t ALIGNED (CACHELINE_WIDTH);
 
 static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
-static volatile uint64_t *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
+static uint64_t          *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
 
 void INTERNAL PtlInternalEQNISetup(unsigned int ni)
 {   /*{{{*/
@@ -61,6 +61,7 @@ void INTERNAL PtlInternalEQNISetup(unsigned int ni)
         ALIGNED_CALLOC(tmp, CACHELINE_WIDTH, nit_limits[ni].max_eqs,
                        sizeof(ptl_internal_eq_t));
         assert(tmp != NULL);
+        __sync_synchronize();
         assert(eq_refcounts[ni] == NULL);
         ALIGNED_CALLOC(eq_refcounts[ni], CACHELINE_WIDTH,
                        nit_limits[ni].max_eqs,
@@ -74,15 +75,16 @@ void INTERNAL PtlInternalEQNISetup(unsigned int ni)
 void INTERNAL PtlInternalEQNITeardown(unsigned int ni)
 {   /*{{{*/
     ptl_internal_eq_t *restrict tmp;
-    volatile uint64_t *restrict rc;
+    uint64_t *restrict          rc;
 
     while (eqs[ni] == (void *)1) SPINLOCK_BODY();     // just in case (should never happen in sane code)
-    tmp = PtlInternalAtomicSwapPtr((void *volatile *)&eqs[ni], NULL);
-    rc  = PtlInternalAtomicSwapPtr((void *volatile *)&eq_refcounts[ni], NULL);
+    tmp = PtlInternalAtomicSwapPtr((void **)&eqs[ni], NULL);
+    rc  = PtlInternalAtomicSwapPtr((void **)&eq_refcounts[ni], NULL);
     assert(tmp != NULL);
     assert(tmp != (void *)1);
     assert(rc != NULL);
     for (size_t i = 0; i < nit_limits[ni].max_eqs; ++i) {
+        __sync_synchronize();
         if (rc[i] != 0) {
             PtlInternalAtomicInc(&(rc[i]), -1);
             while (rc[i] != 0) SPINLOCK_BODY();
@@ -118,6 +120,7 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
         VERBOSE_ERROR("EQ table for NI uninitialized\n");
         return PTL_ARG_INVALID;
     }
+    __sync_synchronize();
     if (eq_refcounts[eq.s.ni][eq.s.code] == 0) {
         VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni,
                       (int)eq.s.code);
@@ -174,10 +177,11 @@ int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     /* find an EQ handle */
     {
         ptl_internal_eq_t *ni_eqs = eqs[ni.s.ni];
-        volatile uint64_t *rc     = eq_refcounts[ni.s.ni];
+        uint64_t          *rc     = eq_refcounts[ni.s.ni];
         for (uint32_t offset = 0;
              offset < nit_limits[ni.s.ni].max_eqs;
              ++offset) {
+            __sync_synchronize();
             if (rc[offset] == 0) {
                 if (PtlInternalAtomicCas64(&(rc[offset]), 0, 1) == 0) {
                     ptl_internal_event_t *tmp;
@@ -185,6 +189,7 @@ int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                                    sizeof(ptl_internal_event_t));
                     if (tmp == NULL) {
                         rc[offset] = 0;
+                        __sync_synchronize();
                         return PTL_NO_SPACE;
                     }
                     eqh.s.code                              = offset;
@@ -197,6 +202,7 @@ int API_FUNC PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                     ni_eqs[offset].size                     = count;
                     ni_eqs[offset].ring                     = tmp;
                     *eq_handle                              = eqh.a;
+                    __sync_synchronize();
                     return PTL_OK;
                 }
             }
@@ -223,6 +229,7 @@ int API_FUNC PtlEQFree(ptl_handle_eq_t eq_handle)
     }
 #endif
     eq = &(eqs[eqh.s.ni][eqh.s.code]);
+    __sync_synchronize();
     assert(eq->leading_tail.s.offset == eq->lagging_tail.s.offset);
     if (eq->leading_tail.s.offset != eq->lagging_tail.s.offset) {       // this EQ is busy
         return PTL_ARG_INVALID;
@@ -320,6 +327,7 @@ int API_FUNC PtlEQGet(ptl_handle_eq_t eq_handle,
     while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
     eq->lagging_head = newidx;
+    __sync_synchronize();
     PtlInternalPAPIDoneC(PTL_EQ_GET, 0);
     return PTL_OK;
 } /*}}}*/
@@ -344,7 +352,7 @@ int API_FUNC PtlEQWait(ptl_handle_eq_t eq_handle,
     const ptl_internal_handle_converter_t eqh  = { eq_handle };
     ptl_internal_eq_t *const              eq   = &(eqs[eqh.s.ni][eqh.s.code]);
     const uint32_t                        mask = eq->size - 1;
-    volatile uint64_t                    *rc   = &(eq_refcounts[eqh.s.ni][eqh.s.code]);
+    uint64_t                             *rc   = &(eq_refcounts[eqh.s.ni][eqh.s.code]);
     eq_off_t                              readidx, curidx, newidx;
 
     PtlInternalAtomicInc(rc, 1);
@@ -357,6 +365,7 @@ loopstart:
             PtlInternalAtomicInc(rc, -1);
             return PTL_INTERRUPTED;
         } else if (readidx.s.offset == eq->lagging_tail.s.offset) {
+            __sync_synchronize();
             curidx = eq->leading_head;
             goto loopstart;
         }
@@ -370,6 +379,7 @@ loopstart:
     while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
     /* and finally, push the lagging_head along */
     eq->lagging_head = newidx;
+    __sync_synchronize();
     PtlInternalAtomicInc(rc, -1);
     return PTL_OK;
 } /*}}}*/
@@ -402,7 +412,7 @@ int API_FUNC PtlEQPoll(const ptl_handle_eq_t *eq_handles,
 #endif /* ifndef NO_ARG_VALIDATION */
     ptl_internal_eq_t *eqs[size];
     uint32_t           masks[size];
-    volatile uint64_t *rcs[size];
+    uint64_t          *rcs[size];
     int                ni = 0;
     for (eqidx = 0; eqidx < size; ++eqidx) {
         const ptl_internal_handle_converter_t eqh = { eq_handles[eqidx] };
@@ -456,6 +466,7 @@ int API_FUNC PtlEQPoll(const ptl_handle_eq_t *eq_handles,
             while (eq->lagging_head.u != readidx.u) SPINLOCK_BODY();
             /* and finally, push the lagging_head along */
             eq->lagging_head = newidx;
+            __sync_synchronize();
 
             for (size_t idx = 0; idx < size; ++idx) PtlInternalAtomicInc(rcs[idx], -1);
             *which = (unsigned int)newidx.s.offset;
@@ -494,12 +505,13 @@ void INTERNAL PtlInternalEQPush(ptl_handle_eq_t       eq_handle,
 
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
+    __sync_synchronize();
 } /*}}}*/
 
 void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
                                      const uint32_t        length,
                                      const uint64_t        roffset,
-                                     void *const     user_ptr)
+                                     void *const           user_ptr)
 {   /*{{{*/
     const ptl_internal_handle_converter_t eqh  = { eq_handle };
     ptl_internal_eq_t *const              eq   = &(eqs[eqh.s.ni][eqh.s.code]);
@@ -527,6 +539,7 @@ void INTERNAL PtlInternalEQPushESEND(const ptl_handle_eq_t eq_handle,
     while (eq->lagging_tail.u != writeidx.u) SPINLOCK_BODY();
     // now, update the lagging_tail
     eq->lagging_tail = newidx;
+    __sync_synchronize();
 } /*}}}*/
 
 /* vim:set expandtab: */
