@@ -42,7 +42,7 @@ enum cmd_types {
 };
 
 typedef struct {
-    void *volatile   next;
+    void            *next;
     ptl_match_bits_t match_bits;
     void            *user_ptr;
     ptl_hdr_data_t   hdr_data;                // not used by GETs

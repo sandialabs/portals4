@@ -10,7 +10,6 @@ extern size_t LARGE_FRAG_SIZE;
 extern size_t LARGE_FRAG_PAYLOAD;
 extern size_t LARGE_FRAG_COUNT;
 
-//void INTERNAL  PtlInternalFragmentSetup(volatile uint8_t *buf);
 void INTERNAL  PtlInternalFragmentInitPid(int pid);
 void INTERNAL *PtlInternalFragmentFetch(size_t payload_size);
 void INTERNAL  PtlInternalFragmentFree(void *data);

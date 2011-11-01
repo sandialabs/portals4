@@ -230,8 +230,7 @@ void INTERNAL PtlInternalPTBufferUnexpectedHeader(ptl_table_entry_t *restrict co
     if (t->buffered_headers.head == NULL) {
         t->buffered_headers.head = bhdr;
     } else {
-        ((ptl_internal_buffered_header_t *)(t->buffered_headers.tail))->hdr.
-        next = bhdr;
+        ((ptl_internal_buffered_header_t *)(t->buffered_headers.tail))->hdr.next = bhdr;
     }
     t->buffered_headers.tail = bhdr;
 }                                      /*}}} */

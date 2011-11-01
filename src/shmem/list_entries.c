@@ -415,8 +415,8 @@ int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
                          const ptl_le_t *le,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
-{
-    const ptl_internal_handle_converter_t ni  = { ni_handle };
+{   /*{{{*/
+    const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_table_entry_t                    *t;
     uint_fast8_t                          found = 0;
 
@@ -572,7 +572,7 @@ int API_FUNC PtlLESearch(ptl_handle_ni_t ni_handle,
 done_searching:
     PTL_LOCK_UNLOCK(t->lock);
     return PTL_OK;
-}
+} /*}}}*/
 
 int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
 {                                      /*{{{ */
@@ -911,14 +911,14 @@ check_lengths:
             }
             __sync_synchronize();
             PtlInternalAnnounceLEDelivery(tEQ,
-                    le.ct_handle,
-                    hdr->type,
-                    le.options,
-                    msg_mlength,
-                    (uintptr_t)report_this_start,
-                    0,
-                    entry->user_ptr,
-                    hdr);
+                                          le.ct_handle,
+                                          hdr->type,
+                                          le.options,
+                                          msg_mlength,
+                                          (uintptr_t)report_this_start,
+                                          0,
+                                          entry->user_ptr,
+                                          hdr);
         }
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
