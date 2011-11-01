@@ -330,7 +330,7 @@ AC_CACHE_SAVE
 AS_IF([test "$with_implementation" = "ib"], [
 AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
     [if test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"; then
-        LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/portals4.map'
+        LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/ib/portals4.map'
     else
         LD_VERSION_SCRIPT=
     fi])

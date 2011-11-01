@@ -33,6 +33,7 @@ endif
 if BACKEND_IMPL_IB
 SUBDIRS += ib
 libportals_la_LIBADD += ib/libportals_ib.la
+libportals_la_LDFLAGS += $(LD_VERSION_SCRIPT)
 endif
 
 if BACKEND_IMPL_MC
