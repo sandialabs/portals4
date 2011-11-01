@@ -29,105 +29,105 @@
 
 #ifdef ACTUALLY_ATOMIC
 # define ADD_OPERATION __sync_fetch_and_add
-# define NONBUILTIN_CAS(Type, EqIntType, Op) do {                                               \
-        union { Type t; EqIntType i; } first, second;                                           \
-        do {                                                                                    \
-            first.i = *(volatile EqIntType *)dest;                                              \
-            Op(Type, second.t, first.t, *(Type *)src);                                          \
-        } while (!__sync_bool_compare_and_swap((volatile EqIntType *)dest, first.i, second.i)); \
-        *(Type *)src = first.t;                                                                 \
-} while (0)
-# define NONBUILTIN_INT_CAS(Type, Op)        do {                                      \
-        Type first, second;                                                            \
+# define NONBUILTIN_CAS(Type, EqIntType, Op) do {                                      \
+        union { Type t; EqIntType i; } first, second;                                  \
         do {                                                                           \
-            first = *(volatile Type *)dest;                                            \
-            Op(Type, second, first, *(Type *)src);                                     \
-        } while (!__sync_bool_compare_and_swap((volatile Type *)dest, first, second)); \
-        *(Type *)src = first;                                                          \
+            first.i = *(EqIntType *)dest;                                              \
+            Op(Type, second.t, first.t, *(Type *)src);                                 \
+        } while (!__sync_bool_compare_and_swap((EqIntType *)dest, first.i, second.i)); \
+        *(Type *)src = first.t;                                                        \
 } while (0)
-# define BUILTINSWAP(int_type)               do {                                                                    \
-        int_type before = *(volatile int_type *)dest, tmp;                                                           \
-        while ((tmp = __sync_val_compare_and_swap((volatile int_type *)dest, before, *(int_type *)src)) != before) { \
-                    before = tmp;                                                                                    \
-                }                                                                                                    \
-                *(int_type *)src = before;                                                                           \
-               } while (0)
-# define CAS(type)                           do {                                                \
-        type first, second;                                                                      \
-        second       = *(type *)&operand;                                                        \
-        first        = __sync_val_compare_and_swap((volatile type *)dest, second, *(type *)src); \
-        *(type *)src = first;                                                                    \
+# define NONBUILTIN_INT_CAS(Type, Op)        do {                             \
+        Type first, second;                                                   \
+        do {                                                                  \
+            first = *(Type *)dest;                                            \
+            Op(Type, second, first, *(Type *)src);                            \
+        } while (!__sync_bool_compare_and_swap((Type *)dest, first, second)); \
+        *(Type *)src = first;                                                 \
 } while (0)
-# define MAS(type)                           do {                                   \
-        type       curv, newv;                                                      \
-        const type mask = *(type *)&operand;                                        \
-        const type srcv = *(type *)src;                                             \
-        do {                                                                        \
-            curv = *(volatile type *)dest;                                          \
-            newv = (type)((curv & ~mask) | (srcv & mask));                          \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, newv)); \
-        *(type *)src = curv;                                                        \
+# define BUILTINSWAP(int_type)               do {                                                           \
+        int_type before = *(int_type *)dest, tmp;                                                           \
+        while ((tmp = __sync_val_compare_and_swap((int_type *)dest, before, *(int_type *)src)) != before) { \
+            before = tmp;                                                                                   \
+        }                                                                                                   \
+        *(int_type *)src = before;                                                                          \
 } while (0)
-# define CAS_NE(type)                        do {                                           \
-        type       curv;                                                                    \
-        const type newv = *(type *)operand;                                                 \
-        do {                                                                                \
-            curv = *(volatile type *)dest;                                                  \
-            if (curv == newv) { break; }                                                    \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, *(type *)src)); \
-        *(type *)src = curv;                                                                \
+# define CAS(type)                           do {                                       \
+        type first, second;                                                             \
+        second       = *(type *)&operand;                                               \
+        first        = __sync_val_compare_and_swap((type *)dest, second, *(type *)src); \
+        *(type *)src = first;                                                           \
 } while (0)
-# define CAS_LE(type)                        do {                                           \
-        type       curv;                                                                    \
-        const type newv = *(type *)operand;                                                 \
-        do {                                                                                \
-            curv = *(volatile type *)dest;                                                  \
-            if (curv > newv) { break; }                                                     \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, *(type *)src)); \
-        *(type *)src = curv;                                                                \
+# define MAS(type)                           do {                          \
+        type       curv, newv;                                             \
+        const type mask = *(type *)&operand;                               \
+        const type srcv = *(type *)src;                                    \
+        do {                                                               \
+            curv = *(type *)dest;                                          \
+            newv = (type)((curv & ~mask) | (srcv & mask));                 \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, newv)); \
+        *(type *)src = curv;                                               \
 } while (0)
-# define CAS_LT(type)                        do {                                           \
-        type       curv;                                                                    \
-        const type newv = *(type *)operand;                                                 \
-        do {                                                                                \
-            curv = *(volatile type *)dest;                                                  \
-            if (curv >= newv) { break; }                                                    \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, *(type *)src)); \
-        *(type *)src = curv;                                                                \
+# define CAS_NE(type)                        do {                                  \
+        type       curv;                                                           \
+        const type newv = *(type *)operand;                                        \
+        do {                                                                       \
+            curv = *(type *)dest;                                                  \
+            if (curv == newv) { break; }                                           \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, *(type *)src)); \
+        *(type *)src = curv;                                                       \
 } while (0)
-# define CAS_GE(type)                        do {                                           \
-        type       curv;                                                                    \
-        const type newv = *(type *)operand;                                                 \
-        do {                                                                                \
-            curv = *(volatile type *)dest;                                                  \
-            if (curv < newv) { break; }                                                     \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, *(type *)src)); \
-        *(type *)src = curv;                                                                \
+# define CAS_LE(type)                        do {                                  \
+        type       curv;                                                           \
+        const type newv = *(type *)operand;                                        \
+        do {                                                                       \
+            curv = *(type *)dest;                                                  \
+            if (curv > newv) { break; }                                            \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, *(type *)src)); \
+        *(type *)src = curv;                                                       \
 } while (0)
-# define CAS_GT(type)                        do {                                           \
-        type       curv;                                                                    \
-        const type newv = *(type *)operand;                                                 \
-        do {                                                                                \
-            curv = *(volatile type *)dest;                                                  \
-            if (curv <= newv) { break; }                                                    \
-        } while (!__sync_bool_compare_and_swap((volatile type *)dest, curv, *(type *)src)); \
-        *(type *)src = curv;                                                                \
+# define CAS_LT(type)                        do {                                  \
+        type       curv;                                                           \
+        const type newv = *(type *)operand;                                        \
+        do {                                                                       \
+            curv = *(type *)dest;                                                  \
+            if (curv >= newv) { break; }                                           \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, *(type *)src)); \
+        *(type *)src = curv;                                                       \
+} while (0)
+# define CAS_GE(type)                        do {                                  \
+        type       curv;                                                           \
+        const type newv = *(type *)operand;                                        \
+        do {                                                                       \
+            curv = *(type *)dest;                                                  \
+            if (curv < newv) { break; }                                            \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, *(type *)src)); \
+        *(type *)src = curv;                                                       \
+} while (0)
+# define CAS_GT(type)                        do {                                  \
+        type       curv;                                                           \
+        const type newv = *(type *)operand;                                        \
+        do {                                                                       \
+            curv = *(type *)dest;                                                  \
+            if (curv <= newv) { break; }                                           \
+        } while (!__sync_bool_compare_and_swap((type *)dest, curv, *(type *)src)); \
+        *(type *)src = curv;                                                       \
 } while (0)
 #else /* not actually atomic */
 # define ADD_OPERATION ADD_MACRO
 # define NONBUILTIN_CAS(Type, EqIntType, Op) do {     \
         union { Type t; EqIntType i; } first, second; \
-        first.i = *(volatile EqIntType *)dest;        \
+        first.i = *(EqIntType *)dest;                 \
         Op(Type, second.t, first.t, *(Type *)src);    \
-        *(volatile EqIntType *)(dest) = second.i;     \
-        *(Type *)src                  = first.t;      \
+        *(EqIntType *)(dest) = second.i;              \
+        *(Type *)src         = first.t;               \
 } while (0)
 # define NONBUILTIN_INT_CAS(Type, Op)        do { \
         Type first, second;                       \
-        first = *(volatile Type *)dest;           \
+        first = *(Type *)dest;                    \
         Op(Type, second, first, *(Type *)src);    \
-        *(volatile Type *)(dest) = second;        \
-        *(Type *)src             = first;         \
+        *(Type *)(dest) = second;                 \
+        *(Type *)src    = first;                  \
 } while (0)
 # define BUILTINSWAP(int_type)               do {                  \
         uint8_t before[sizeof(int_type)];                          \
@@ -146,14 +146,14 @@
         type       curv;                                                                       \
         const type mask = *(type *)operand;                                                    \
         const type srcv = *(type *)src;                                                        \
-        curv = *(volatile type *)dest;                                                         \
+        curv = *(type *)dest;                                                                  \
         if (*(type *)dest == curv) { *(type *)dest = (type)((curv & ~mask) | (srcv & mask)); } \
         *(type *)src = curv;                                                                   \
 } while (0)
 # define CAS_NE(type)                        do {                        \
         type       curv;                                                 \
         const type newv = *(type *)operand;                              \
-        curv = *(volatile type *)dest;                                   \
+        curv = *(type *)dest;                                            \
         if (curv != newv) {                                              \
             if (*(type *)dest == curv) { *(type *)dest = *(type *)src; } \
         }                                                                \
@@ -162,7 +162,7 @@
 # define CAS_LE(type)                        do {                        \
         type       curv;                                                 \
         const type newv = *(type *)operand;                              \
-        curv = *(volatile type *)dest;                                   \
+        curv = *(type *)dest;                                            \
         if (curv <= newv) {                                              \
             if (*(type *)dest == curv) { *(type *)dest = *(type *)src; } \
         }                                                                \
@@ -171,7 +171,7 @@
 # define CAS_LT(type)                        do {                        \
         type       curv;                                                 \
         const type newv = *(type *)operand;                              \
-        curv = *(volatile type *)dest;                                   \
+        curv = *(type *)dest;                                            \
         if (curv < newv) {                                               \
             if (*(type *)dest == curv) { *(type *)dest = *(type *)src; } \
         }                                                                \
@@ -180,7 +180,7 @@
 # define CAS_GE(type)                        do {                        \
         type       curv;                                                 \
         const type newv = *(type *)operand;                              \
-        curv = *(volatile type *)dest;                                   \
+        curv = *(type *)dest;                                            \
         if (curv >= newv) {                                              \
             if (*(type *)dest == curv) { *(type *)dest = *(type *)src; } \
         }                                                                \
@@ -189,7 +189,7 @@
 # define CAS_GT(type)                        do {                        \
         type       curv;                                                 \
         const type newv = *(type *)operand;                              \
-        curv = *(volatile type *)dest;                                   \
+        curv = *(type *)dest;                                            \
         if (curv > newv) {                                               \
             if (*(type *)dest == curv) { *(type *)dest = *(type *)src; } \
         }                                                                \
@@ -197,28 +197,28 @@
 } while (0)
 #endif /* ifdef ACTUALLY_ATOMIC */
 
-#define PERFORM_UNIVERSAL_DATATYPE_FUNC_COMPARISON(fname, op)                              \
-    static void inline PtlInternalPerformAtomic ## fname(volatile uint8_t * restrict dest, \
-                                                         uint8_t * restrict src,           \
-                                                         ptl_datatype_t dt)                \
-    {                                                                                      \
-        switch (dt) {                                                                      \
-            case PTL_INT8_T:      NONBUILTIN_INT_CAS(int8_t, op); break;                   \
-            case PTL_UINT8_T:     NONBUILTIN_INT_CAS(uint8_t, op); break;                  \
-            case PTL_INT16_T:     NONBUILTIN_INT_CAS(int16_t, op); break;                  \
-            case PTL_UINT16_T:    NONBUILTIN_INT_CAS(uint16_t, op); break;                 \
-            case PTL_INT32_T:     NONBUILTIN_INT_CAS(int32_t, op); break;                  \
-            case PTL_UINT32_T:    NONBUILTIN_INT_CAS(uint32_t, op); break;                 \
-            case PTL_INT64_T:     NONBUILTIN_INT_CAS(int64_t, op); break;                  \
-            case PTL_UINT64_T:    NONBUILTIN_INT_CAS(uint64_t, op); break;                 \
-            case PTL_FLOAT:       NONBUILTIN_CAS(float, uint32_t, op); break;              \
-            case PTL_DOUBLE:      NONBUILTIN_CAS(double, uint64_t, op); break;             \
-            case PTL_LONG_DOUBLE: NONBUILTIN_INT_CAS(long double, op); break;              \
-            default: abort();                                                              \
-        }                                                                                  \
+#define PERFORM_UNIVERSAL_DATATYPE_FUNC_COMPARISON(fname, op)                     \
+    static void inline PtlInternalPerformAtomic ## fname(uint8_t * restrict dest, \
+                                                         uint8_t * restrict src,  \
+                                                         ptl_datatype_t dt)       \
+    {                                                                             \
+        switch (dt) {                                                             \
+            case PTL_INT8_T:      NONBUILTIN_INT_CAS(int8_t, op); break;          \
+            case PTL_UINT8_T:     NONBUILTIN_INT_CAS(uint8_t, op); break;         \
+            case PTL_INT16_T:     NONBUILTIN_INT_CAS(int16_t, op); break;         \
+            case PTL_UINT16_T:    NONBUILTIN_INT_CAS(uint16_t, op); break;        \
+            case PTL_INT32_T:     NONBUILTIN_INT_CAS(int32_t, op); break;         \
+            case PTL_UINT32_T:    NONBUILTIN_INT_CAS(uint32_t, op); break;        \
+            case PTL_INT64_T:     NONBUILTIN_INT_CAS(int64_t, op); break;         \
+            case PTL_UINT64_T:    NONBUILTIN_INT_CAS(uint64_t, op); break;        \
+            case PTL_FLOAT:       NONBUILTIN_CAS(float, uint32_t, op); break;     \
+            case PTL_DOUBLE:      NONBUILTIN_CAS(double, uint64_t, op); break;    \
+            case PTL_LONG_DOUBLE: NONBUILTIN_INT_CAS(long double, op); break;     \
+            default: abort();                                                     \
+        }                                                                         \
     }
 #define PERFORM_UNIVERSAL_DATATYPE_FUNC(fname, op)                                            \
-    static void inline PtlInternalPerformAtomic ## fname(volatile uint8_t * restrict dest,    \
+    static void inline PtlInternalPerformAtomic ## fname(uint8_t * restrict dest,             \
                                                          uint8_t * restrict src,              \
                                                          ptl_datatype_t dt)                   \
     {                                                                                         \
@@ -239,22 +239,22 @@
             case PTL_FLOAT_COMPLEX:       NONBUILTIN_INT_CAS(float complex, op); break;       \
         }                                                                                     \
     }
-#define PERFORM_INTEGER_DATATYPE_FUNC(fname, op)                                           \
-    static void inline PtlInternalPerformAtomic ## fname(volatile uint8_t * restrict dest, \
-                                                         uint8_t * restrict src,           \
-                                                         ptl_datatype_t dt)                \
-    {                                                                                      \
-        switch (dt) {                                                                      \
-            case PTL_INT8_T:   NONBUILTIN_INT_CAS(int8_t, op); break;                      \
-            case PTL_UINT8_T:  NONBUILTIN_INT_CAS(uint8_t, op); break;                     \
-            case PTL_INT16_T:  NONBUILTIN_INT_CAS(int16_t, op); break;                     \
-            case PTL_UINT16_T: NONBUILTIN_INT_CAS(uint16_t, op); break;                    \
-            case PTL_INT32_T:  NONBUILTIN_INT_CAS(int32_t, op); break;                     \
-            case PTL_UINT32_T: NONBUILTIN_INT_CAS(uint32_t, op); break;                    \
-            case PTL_INT64_T:  NONBUILTIN_INT_CAS(int64_t, op); break;                     \
-            case PTL_UINT64_T: NONBUILTIN_INT_CAS(uint64_t, op); break;                    \
-            default: abort();                                                              \
-        }                                                                                  \
+#define PERFORM_INTEGER_DATATYPE_FUNC(fname, op)                                  \
+    static void inline PtlInternalPerformAtomic ## fname(uint8_t * restrict dest, \
+                                                         uint8_t * restrict src,  \
+                                                         ptl_datatype_t dt)       \
+    {                                                                             \
+        switch (dt) {                                                             \
+            case PTL_INT8_T:   NONBUILTIN_INT_CAS(int8_t, op); break;             \
+            case PTL_UINT8_T:  NONBUILTIN_INT_CAS(uint8_t, op); break;            \
+            case PTL_INT16_T:  NONBUILTIN_INT_CAS(int16_t, op); break;            \
+            case PTL_UINT16_T: NONBUILTIN_INT_CAS(uint16_t, op); break;           \
+            case PTL_INT32_T:  NONBUILTIN_INT_CAS(int32_t, op); break;            \
+            case PTL_UINT32_T: NONBUILTIN_INT_CAS(uint32_t, op); break;           \
+            case PTL_INT64_T:  NONBUILTIN_INT_CAS(int64_t, op); break;            \
+            case PTL_UINT64_T: NONBUILTIN_INT_CAS(uint64_t, op); break;           \
+            default: abort();                                                     \
+        }                                                                         \
     }
 
 PERFORM_UNIVERSAL_DATATYPE_FUNC_COMPARISON(Min, MIN_OP)
@@ -270,9 +270,9 @@ PERFORM_INTEGER_DATATYPE_FUNC(Bxor, BXOR_OP)
         int_type before = builtin((int_type *)dest, *(int_type *)src); \
         *(int_type *)src = before;                                     \
 } while (0)
-static void inline PtlInternalPerformAtomicSum(volatile uint8_t *restrict dest,
-                                               uint8_t *restrict          src,
-                                               ptl_datatype_t             dt)
+static void inline PtlInternalPerformAtomicSum(uint8_t *restrict dest,
+                                               uint8_t *restrict src,
+                                               ptl_datatype_t    dt)
 {
     switch (dt) {
         case PTL_INT8_T:              INT_BUILTIN(int8_t, ADD_OPERATION); break;
@@ -292,9 +292,9 @@ static void inline PtlInternalPerformAtomicSum(volatile uint8_t *restrict dest,
     }
 }
 
-static void inline PtlInternalPerformAtomicSwap(volatile uint8_t *restrict dest,
-                                                uint8_t *restrict          src,
-                                                ptl_datatype_t             dt)
+static void inline PtlInternalPerformAtomicSwap(uint8_t *restrict dest,
+                                                uint8_t *restrict src,
+                                                ptl_datatype_t    dt)
 {
     switch (dt) {
         case PTL_INT8_T:              BUILTINSWAP(int8_t); break;
