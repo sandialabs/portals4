@@ -585,8 +585,9 @@ ptl_internal_buffered_header_t INTERNAL *PtlInternalAllocUnexpectedHeader(const 
 
 void INTERNAL PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr)
 {   /*{{{*/
-    ptl_internal_buffered_header_t **const ni_unex = &nit.unexpecteds[hdr->hdr.ni];
-    ptl_internal_buffered_header_t        *expectednext, *foundnext;
+    ptl_internal_buffered_header_t **const   ni_unex = &nit.unexpecteds[hdr->hdr.ni];
+    ptl_internal_buffered_header_t *restrict expectednext;
+    ptl_internal_buffered_header_t *restrict foundnext;
 
     expectednext = hdr->hdr.next = *ni_unex;
     while ((foundnext = PtlInternalAtomicCasPtr(ni_unex, expectednext, hdr)) != expectednext) {
