@@ -172,6 +172,7 @@ int main(int   argc,
     /* major cleanup */
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
+    CHECK_RETURNVAL(libtest_fini());
     PtlFini();
 
     return 0;
