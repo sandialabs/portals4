@@ -44,7 +44,6 @@ XMLEXTRA = \
 	test_swap_physical_lb.xml \
 	test_threads.xml
 
-
 EXTRA_DIST = $(XMLTESTS1) $(XMLTESTS2) $(XMLEXTRA)
 
 noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
@@ -81,10 +80,22 @@ make_test_atomic_SOURCES = data.c make_test_atomic.c
 
 runtests:
 if TEST_RUNTIME_MPI
-	for TEST in $(XMLTESTS1); do echo testing $$TEST ; mpirun  -H localhost -n 1 ./ptl_test -f ./$$TEST || exit 1; done
-	for TEST in $(XMLTESTS2); do echo testing $$TEST ; mpirun  -H localhost -n 2 ./ptl_test -f ./$$TEST || exit 1; done
+	@for TEST in $(XMLTESTS1); do \
+		echo testing $$TEST ; \
+		mpirun  -H localhost -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$$TEST || exit 1; \
+	 done
+	@for TEST in $(XMLTESTS2); do \
+		echo testing $$TEST ; \
+		mpirun  -H localhost -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$$TEST || exit 1; \
+	 done
 endif
 if TEST_RUNTIME_SHMEMRT
-	for TEST in $(XMLTESTS1); do echo testing $$TEST ; $(top_builddir)/src/yod/yod -c 1 -- ./ptl_test -f ./$$TEST ; done
-	for TEST in $(XMLTESTS2); do echo testing $$TEST ; $(top_builddir)/src/yod/yod -c 2 -- ./ptl_test -f ./$$TEST ; done
+	@for TEST in $(XMLTESTS1); do \
+		echo testing $$TEST ; \
+		$(top_builddir)/src/yod/yod -c 1 -- ./ptl_test -f $(top_srcdir)/test/sfw/$$TEST ; \
+	 done
+	@for TEST in $(XMLTESTS2); do \
+		echo testing $$TEST ; \
+		$(top_builddir)/src/yod/yod -c 2 -- ./ptl_test -f $(top_srcdir)/test/sfw/$$TEST ; \
+	 done
 endif
