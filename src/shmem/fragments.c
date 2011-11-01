@@ -142,47 +142,6 @@ void INTERNAL PtlInternalFragmentInitPid(int pid)
     PtlInternalValidateFragmentLists();
 }
 
-#if 0
-void INTERNAL PtlInternalFragmentSetup(volatile uint8_t *buf)
-{                                      /*{{{ */
-    size_t          i;
-    fragment_hdr_t *fptr;
-    char           *bptr;
-
-    /* init metadata */
-    SMALL_FRAG_PAYLOAD = SMALL_FRAG_SIZE - sizeof(fragment_hdr_t);
-    LARGE_FRAG_PAYLOAD = LARGE_FRAG_SIZE - sizeof(fragment_hdr_t);
-    /* first, initialize the receive queue */
-    receiveQ = (NEMESIS_blocking_queue *)buf;
-    PtlInternalNEMESISBlockingInit(receiveQ);
-    // printf("%i(%u)==========> receiveQ (%p) initialized\n", (int)getpid(), (unsigned)proc_number, receiveQ);
-    /* now, initialize the small fragment free-list */
-    fptr = (fragment_hdr_t *)(buf + sizeof(NEMESIS_blocking_queue));
-    bptr = (char *)fptr;
-    PARANOID_STEP(small_bufstart = (uintptr_t)fptr);
-    for (i = 0; i < SMALL_FRAG_COUNT; ++i) {
-        fptr->next = small_free_list;
-        fptr->size = SMALL_FRAG_PAYLOAD;
-        fptr->owner_rank = proc_number;
-        small_free_list = fptr;
-        fptr            = (fragment_hdr_t *)(bptr + (SMALL_FRAG_SIZE * (i + 1)));
-        // fptr = (fragment_hdr_t *) (fptr->data + SMALL_FRAG_PAYLOAD);
-    }
-    /* and finally, initialize the large fragment free-list */
-    PARANOID_STEP(large_bufstart = small_bufend = (uintptr_t)fptr);
-    for (i = 0; i < LARGE_FRAG_COUNT; ++i) {
-        assert((uintptr_t)fptr < (uintptr_t)(buf + per_proc_comm_buf_size));
-        fptr->next = large_free_list;
-        fptr->size = LARGE_FRAG_PAYLOAD;
-        fptr->owner_rank = proc_number;
-        large_free_list = fptr;
-        fptr            = (fragment_hdr_t *)(fptr->data + LARGE_FRAG_PAYLOAD);
-    }
-    PARANOID_STEP(large_bufend = (uintptr_t)fptr);
-    PtlInternalValidateFragmentLists();
-}                                      /*}}} */
-#endif
-
 /* this pulls a fragment off the free-list(s) big enough to hold the data. */
 void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
 {                                      /*{{{ */
