@@ -52,11 +52,11 @@ ptl_internal_nit_t nit = { { 0, 0, 0, 0 },
                              { 0, 0 } } };
 ptl_ni_limits_t    nit_limits[4];
 
-static volatile uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
+static uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
-struct rank_comm_pad   *comm_pads[PTL_PID_MAX];
-int                     comm_shmids[PTL_PID_MAX];
-static volatile int64_t my_shmid = -2;
+struct rank_comm_pad *comm_pads[PTL_PID_MAX];
+int                   comm_shmids[PTL_PID_MAX];
+static int64_t        my_shmid = -2;
 
 #define PTL_SHM_HIGH_BIT (PTL_PID_MAX << 10)
 
@@ -303,7 +303,6 @@ int API_FUNC PtlNIInit(ptl_interface_t        iface,
         nit_limits[ni.s.ni].features = PTL_TARGET_BIND_INACCESSIBLE | PTL_TOTAL_DATA_ORDERING;
         nit_limits_init[ni.s.ni]     = 2;       // mark it as done being initialized
     }
-    PtlInternalAtomicCas32(&nit_limits_init[ni.s.ni], 0, 2);   /* if not yet initialized, it is now */
     while (nit_limits_init[ni.s.ni] == 1) SPINLOCK_BODY();     /* if being initialized by another thread, wait for it to be initialized */
     if (actual != NULL) {
         *actual = nit_limits[ni.s.ni];
