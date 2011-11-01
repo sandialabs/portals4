@@ -159,7 +159,6 @@ void INTERNAL PtlInternalDetachCommPads(void)
                             abort();
                     }
                 }
-                // ptl_assert(shmctl(comm_shmids[i], IPC_RMID, NULL), 0);
             }
         }
     }
