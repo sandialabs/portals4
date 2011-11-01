@@ -6,15 +6,13 @@
 static void evl_release(EV_P)
 {
 	struct evl *evl = ev_userdata (EV_A);
-	//pthread_mutex_unlock (&evl->lock);
-	pthread_spin_unlock (&evl->lock);
+	pthread_mutex_unlock(&evl->lock);
 }
 
 static void evl_acquire(EV_P)
 {
 	struct evl *evl = ev_userdata (EV_A);
-	//pthread_mutex_lock (&evl->lock);
-	pthread_spin_lock (&evl->lock);
+	pthread_mutex_lock(&evl->lock);
 }
 
 /* This keep the loop active when there is no other event, and is used
@@ -31,8 +29,7 @@ void evl_init(struct evl *evl)
 	ev_async_init(&evl->async_w, async_cb);
 	ev_async_start(evl->loop, &evl->async_w);
 
-	//pthread_mutex_init(&evl->lock, NULL);
-	pthread_spin_init(&evl->lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_mutex_init(&evl->lock, NULL);
 
 	/* now associate this with the loop */
 	ev_set_userdata(evl->loop, evl);

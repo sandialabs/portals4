@@ -41,7 +41,7 @@ struct pt {
 	int			disable;
 
 	/** number of currently active target transactions on pt */
-	int			num_xt_active;
+	int			num_tgt_active;
 
 	/** event queue */
 	struct eq		*eq;

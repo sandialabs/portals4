@@ -592,10 +592,10 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type, void *start)
 
 	ev->type		= type;
 	ev->rlength		= le64_to_cpu(hdr->length);
-	ev->mlength		= buf->xi.mlength;
-	ev->remote_offset	= buf->xi.moffset;
-	ev->user_ptr		= buf->xi.user_ptr;
-	ev->ni_fail_type	= buf->xi.ni_fail;
+	ev->mlength		= buf->mlength;
+	ev->remote_offset	= buf->moffset;
+	ev->user_ptr		= buf->user_ptr;
+	ev->ni_fail_type	= buf->ni_fail;
 
 	__eq_check(eq);
 
@@ -603,18 +603,70 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type, void *start)
 }
 
 /**
- * Make and add an event to the event queue from an xt.
+ * Fill in event struct
  *
- * @param[in] xt
+ * @param[in] buf
  * @param[in] eq
  * @param[in] type
  * @param[in] usr_ptr
  * @param[in] start
  */
-void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
+void fill_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
+		       void *user_ptr, void *start, ptl_event_t *ev)
+{
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+
+	ev->type		= type;
+	ev->start		= start;
+	ev->user_ptr		= user_ptr;
+
+	ev->ni_fail_type	= buf->ni_fail;
+	ev->mlength		= buf->mlength;
+	ev->match_bits		= le64_to_cpu(hdr->match_bits);
+	ev->hdr_data		= le64_to_cpu(hdr->hdr_data);
+	ev->pt_index		= le32_to_cpu(hdr->pt_index);
+	ev->uid			= le32_to_cpu(hdr->uid);
+	ev->rlength		= le64_to_cpu(hdr->length);
+	ev->remote_offset	= le64_to_cpu(hdr->offset);
+	ev->atomic_operation	= hdr->atom_op;
+	ev->atomic_type		= hdr->atom_type;
+	ev->initiator.phys.nid	= le32_to_cpu(hdr->src_nid);
+	ev->initiator.phys.pid	= le32_to_cpu(hdr->src_pid);
+}
+
+/**
+ * generate an event from an event struct.
+ */
+void send_target_event(eq_t *eq, ptl_event_t *ev)
+{
+	pthread_mutex_lock(&eq->mutex);
+
+	eq->eqe_list[eq->producer].generation = eq->prod_gen;
+	memcpy(&eq->eqe_list[eq->producer++].event, ev, sizeof(*ev));
+	if (eq->producer >= eq->count) {
+		eq->producer = 0;
+		eq->prod_gen++;
+	}
+
+	__eq_check(eq);
+
+	pthread_mutex_unlock(&eq->mutex);
+}
+		       
+/**
+ * Make and add an event to the event queue from a buf.
+ *
+ * @param[in] buf
+ * @param[in] eq
+ * @param[in] type
+ * @param[in] usr_ptr
+ * @param[in] start
+ */
+void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
 		       void *user_ptr, void *start)
 {
 	ptl_event_t *ev;
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
 	pthread_mutex_lock(&eq->mutex);
 
@@ -626,19 +678,21 @@ void make_target_event(xt_t *xt, eq_t *eq, ptl_event_kind_t type,
 	}
 
 	ev->type		= type;
-	ev->initiator		= xt->initiator;
-	ev->pt_index		= xt->pt_index;
-	ev->uid			= xt->uid;
-	ev->match_bits		= xt->match_bits;
-	ev->rlength		= xt->rlength;
-	ev->mlength		= xt->mlength;
-	ev->remote_offset	= xt->roffset;
 	ev->start		= start;
 	ev->user_ptr		= user_ptr;
-	ev->hdr_data		= xt->hdr_data;
-	ev->ni_fail_type	= xt->ni_fail;
-	ev->atomic_operation	= xt->atom_op;
-	ev->atomic_type		= xt->atom_type;
+
+	ev->ni_fail_type	= buf->ni_fail;
+	ev->mlength		= buf->mlength;
+	ev->match_bits		= le64_to_cpu(hdr->match_bits);
+	ev->hdr_data		= le64_to_cpu(hdr->hdr_data);
+	ev->pt_index		= le32_to_cpu(hdr->pt_index);
+	ev->uid			= le32_to_cpu(hdr->uid);
+	ev->rlength		= le64_to_cpu(hdr->length);
+	ev->remote_offset	= le64_to_cpu(hdr->offset);
+	ev->atomic_operation	= hdr->atom_op;
+	ev->atomic_type		= hdr->atom_type;
+	ev->initiator.phys.nid	= le32_to_cpu(hdr->src_nid);
+	ev->initiator.phys.pid	= le32_to_cpu(hdr->src_pid);
 
 	__eq_check(eq);
 

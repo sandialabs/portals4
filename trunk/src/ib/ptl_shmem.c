@@ -6,8 +6,6 @@
 
 static int send_message_shmem(buf_t *buf, int signaled)
 {
-	assert(!buf->xt || buf->xt->ack_buf == NULL);
-
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
 	buf_get(buf);
@@ -17,11 +15,8 @@ static int send_message_shmem(buf_t *buf, int signaled)
 
 	buf->shmem.source = buf->obj.obj_ni->shmem.index;
 
-	if (buf->xt) {
-		PtlInternalFragmentToss(buf->obj.obj_ni, buf, buf->xt->dest.shmem.local_rank);
-	} else {
-		PtlInternalFragmentToss(buf->obj.obj_ni, buf, buf->xi.dest.shmem.local_rank);
-	}
+	PtlInternalFragmentToss(buf->obj.obj_ni, buf,
+							buf->dest.shmem.local_rank);
 
 	return PTL_OK;
 }
@@ -32,13 +27,13 @@ static int send_message_shmem(buf_t *buf, int signaled)
  *
  * Returns the number of bytes to be transferred by the SG list.
  */
-static ptl_size_t do_knem_copy(xt_t *xt,
+static ptl_size_t do_knem_copy(buf_t *buf,
 							   ptl_size_t rem_len, uint64_t rcookie, uint64_t roffset,
 							   ptl_size_t *loc_index, ptl_size_t *loc_off,
 							   int max_loc_index,
 							   data_dir_t dir)
 {
-	me_t *me = xt->me;
+	me_t *me = buf->me;
 	ni_t *ni = me->obj.obj_ni;
 	ptl_iovec_t *iov;
 	ptl_size_t tot_len = 0;
@@ -61,7 +56,7 @@ static ptl_size_t do_knem_copy(xt_t *xt,
 			if (len > iov->iov_len - *loc_off)
 				len = iov->iov_len - *loc_off;
 
-			err = mr_lookup(xt->obj.obj_ni, addr, len, &mr);
+			err = mr_lookup(buf->obj.obj_ni, addr, len, &mr);
 			if (err) {
 				WARN();
 				break;
@@ -141,26 +136,26 @@ static ptl_size_t do_knem_copy(xt_t *xt,
  * xt - target transfer context
  * dir - direction of transfer from target perspective
  */
-static int do_knem_transfer(xt_t *xt)
+static int do_knem_transfer(buf_t *buf)
 {
 	uint64_t rcookie;
 	uint64_t roffset;
 	ptl_size_t bytes;
-	ptl_size_t iov_index = xt->cur_loc_iov_index;
-	ptl_size_t iov_off = xt->cur_loc_iov_off;
+	ptl_size_t iov_index = buf->cur_loc_iov_index;
+	ptl_size_t iov_off = buf->cur_loc_iov_off;
 	uint32_t rlength;
 	uint32_t rseg_length;
-	data_dir_t dir = xt->rdma_dir;
-	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &xt->put_resid : &xt->get_resid;
+	data_dir_t dir = buf->rdma_dir;
+	ptl_size_t *resid = (dir == DATA_DIR_IN) ? &buf->put_resid : &buf->get_resid;
 
-	rseg_length = xt->shmem.cur_rem_iovec->length;
-	rcookie = xt->shmem.cur_rem_iovec->cookie;
-	roffset = xt->shmem.cur_rem_iovec->offset;
+	rseg_length = buf->shmem.cur_rem_iovec->length;
+	rcookie = buf->shmem.cur_rem_iovec->cookie;
+	roffset = buf->shmem.cur_rem_iovec->offset;
 
 	while (*resid > 0) {
 
-		roffset += xt->shmem.cur_rem_off;
-		rlength = rseg_length - xt->shmem.cur_rem_off;
+		roffset += buf->shmem.cur_rem_off;
+		rlength = rseg_length - buf->shmem.cur_rem_off;
 
 		if (debug)
 			printf("rcookie(0x%" PRIx64 "), rlen(%d)\n", rcookie, rlength);
@@ -168,8 +163,8 @@ static int do_knem_transfer(xt_t *xt)
 		if (rlength > *resid)
 			rlength = *resid;
 
-		bytes = do_knem_copy(xt, rlength, rcookie, roffset,
-							 &iov_index, &iov_off, xt->le->num_iov,
+		bytes = do_knem_copy(buf, rlength, rcookie, roffset,
+							 &iov_index, &iov_off, buf->le->num_iov,
 							 dir);
 		if (!bytes) {
 			WARN();
@@ -177,17 +172,17 @@ static int do_knem_transfer(xt_t *xt)
 		}
 
 		*resid -= bytes;
-		xt->cur_loc_iov_index = iov_index;
-		xt->cur_loc_iov_off = iov_off;
-		xt->shmem.cur_rem_off += bytes;
+		buf->cur_loc_iov_index = iov_index;
+		buf->cur_loc_iov_off = iov_off;
+		buf->shmem.cur_rem_off += bytes;
 
-		if (*resid && xt->shmem.cur_rem_off >= rseg_length) {
-			if (xt->shmem.num_rem_iovecs) {
-				xt->shmem.cur_rem_iovec++;
-				rseg_length = xt->shmem.cur_rem_iovec->length;
-				rcookie = xt->shmem.cur_rem_iovec->cookie;
-				roffset = xt->shmem.cur_rem_iovec->offset;
-				xt->shmem.cur_rem_off = 0;
+		if (*resid && buf->shmem.cur_rem_off >= rseg_length) {
+			if (buf->shmem.num_rem_iovecs) {
+				buf->shmem.cur_rem_iovec++;
+				rseg_length = buf->shmem.cur_rem_iovec->length;
+				rcookie = buf->shmem.cur_rem_iovec->cookie;
+				roffset = buf->shmem.cur_rem_iovec->offset;
+				buf->shmem.cur_rem_off = 0;
 			} else {
 				WARN();
 				return PTL_FAIL;
@@ -299,6 +294,7 @@ int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
 
 	ni->sbuf_pool.setup = buf_setup;
 	ni->sbuf_pool.init = buf_init;
+	ni->sbuf_pool.fini = buf_fini;
 	ni->sbuf_pool.cleanup = buf_cleanup;
 	ni->sbuf_pool.use_pre_alloc_buffer = 1;
 	ni->sbuf_pool.round_size = real_buf_t_size();

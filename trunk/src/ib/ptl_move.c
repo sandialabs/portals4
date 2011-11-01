@@ -11,12 +11,13 @@
  *
  * @return status
  */
-static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **buf)
+static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **retbuf)
 {
 	conn_t *conn;
 	int err;
+	buf_t *buf;
 
-	*buf = NULL;
+	*retbuf = NULL;
 
 	/* lookup or allocate a conn_t struct to hold per target info */
 	conn = get_conn(ni, target_id);
@@ -25,16 +26,19 @@ static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **buf)
 
 	/* allocate the correct type of buf */
 	if (conn->transport.type == CONN_TYPE_RDMA)
-		err = buf_alloc(ni, buf);
+		err = buf_alloc(ni, &buf);
 	else
-		err = sbuf_alloc(ni, buf);
+		err = sbuf_alloc(ni, &buf);
 
 	if (unlikely(err))
 		return err;
 
-	assert((*buf)->type == BUF_FREE);
+	assert(buf->type == BUF_FREE);
+	buf->type = BUF_INIT;
 
-	(*buf)->xi.conn = conn;
+	buf->conn = conn;
+
+	*retbuf = buf;
 
 	return PTL_OK;
 }
@@ -159,15 +163,13 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = md;
-	buf->xi.put_eq = md->eq;
-	buf->xi.put_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.put_offset = local_offset;
-	buf->xi.put_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = md;
+	buf->put_eq = md->eq;
+	buf->put_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->put_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -243,16 +245,14 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = md;
-	buf->xi.put_eq = md->eq;
-	buf->xi.put_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.threshold = threshold;
-	buf->xi.put_offset = local_offset;
-	buf->xi.put_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = md;
+	buf->put_eq = md->eq;
+	buf->put_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->ct_threshold = threshold;
+	buf->put_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
 
 	post_ct(buf, ct);
 
@@ -336,15 +336,13 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.get_md = md;
-	buf->xi.get_eq = md->eq;
-	buf->xi.get_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.get_offset = local_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->get_md = md;
+	buf->get_eq = md->eq;
+	buf->get_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->get_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -417,16 +415,14 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.get_md = md;
-	buf->xi.get_eq = md->eq;
-	buf->xi.get_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.get_offset = local_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
-	buf->xi.threshold = threshold;
+	buf->target = target_id;
+	buf->get_md = md;
+	buf->get_eq = md->eq;
+	buf->get_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->get_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
+	buf->ct_threshold = threshold;
 
 	post_ct(buf, ct);
 
@@ -576,15 +572,13 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = md;
-	buf->xi.put_eq = md->eq;
-	buf->xi.put_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.put_offset = local_offset;
-	buf->xi.put_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = md;
+	buf->put_eq = md->eq;
+	buf->put_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->put_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -664,16 +658,14 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = md;
-	buf->xi.put_eq = md->eq;
-	buf->xi.put_ct = md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.threshold = threshold;
-	buf->xi.put_offset = local_offset;
-	buf->xi.put_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = md;
+	buf->put_eq = md->eq;
+	buf->put_ct = md->ct;
+	buf->user_ptr = user_ptr;
+	buf->ct_threshold = threshold;
+	buf->put_offset = local_offset;
+	buf->init_state = STATE_INIT_START;
 
 	post_ct(buf, ct);
 
@@ -766,20 +758,17 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = put_md;
-	buf->xi.put_eq = put_md->eq;
-	buf->xi.put_ct = put_md->ct;
-	buf->xi.get_md = get_md;
-	buf->xi.get_eq = get_md->eq;
-	buf->xi.get_ct = get_md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.put_offset = local_put_offset;
-	buf->xi.put_resid = length;
-	buf->xi.get_offset = local_get_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = put_md;
+	buf->put_eq = put_md->eq;
+	buf->put_ct = put_md->ct;
+	buf->get_md = get_md;
+	buf->get_eq = get_md->eq;
+	buf->get_ct = get_md->ct;
+	buf->user_ptr = user_ptr;
+	buf->put_offset = local_put_offset;
+	buf->get_offset = local_get_offset;
+	buf->init_state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -885,21 +874,18 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = put_md;
-	buf->xi.put_eq = put_md->eq;
-	buf->xi.put_ct = put_md->ct;
-	buf->xi.get_md = get_md;
-	buf->xi.get_eq = get_md->eq;
-	buf->xi.get_ct = get_md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.threshold = threshold;
-	buf->xi.put_offset = local_put_offset;
-	buf->xi.put_resid = length;
-	buf->xi.get_offset = local_get_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = put_md;
+	buf->put_eq = put_md->eq;
+	buf->put_ct = put_md->ct;
+	buf->get_md = get_md;
+	buf->get_eq = get_md->eq;
+	buf->get_ct = get_md->ct;
+	buf->user_ptr = user_ptr;
+	buf->ct_threshold = threshold;
+	buf->put_offset = local_put_offset;
+	buf->get_offset = local_get_offset;
+	buf->init_state = STATE_INIT_START;
 
 	post_ct(buf, ct);
 
@@ -1070,20 +1056,17 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = put_md;
-	buf->xi.put_eq = put_md->eq;
-	buf->xi.put_ct = put_md->ct;
-	buf->xi.get_md = get_md;
-	buf->xi.get_eq = get_md->eq;
-	buf->xi.get_ct = get_md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.put_offset = local_put_offset;
-	buf->xi.put_resid = length;
-	buf->xi.get_offset = local_get_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = put_md;
+	buf->put_eq = put_md->eq;
+	buf->put_ct = put_md->ct;
+	buf->get_md = get_md;
+	buf->get_eq = get_md->eq;
+	buf->get_ct = get_md->ct;
+	buf->user_ptr = user_ptr;
+	buf->put_offset = local_put_offset;
+	buf->get_offset = local_get_offset;
+	buf->init_state = STATE_INIT_START;
 
 	process_init(buf);
 
@@ -1194,21 +1177,18 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->length = cpu_to_le64(length);
 	hdr->offset = cpu_to_le64(remote_offset);
 
-	buf->xi.target = target_id;
-	buf->xi.put_md = put_md;
-	buf->xi.put_eq = put_md->eq;
-	buf->xi.put_ct = put_md->ct;
-	buf->xi.get_md = get_md;
-	buf->xi.get_eq = get_md->eq;
-	buf->xi.get_ct = get_md->ct;
-	buf->xi.user_ptr = user_ptr;
-	buf->xi.threshold = threshold;
-	buf->xi.put_offset = local_put_offset;
-	buf->xi.put_resid = length;
-	buf->xi.get_offset = local_get_offset;
-	buf->xi.get_resid = length;
-	buf->xi.pkt_len = sizeof(req_hdr_t);
-	buf->xi.state = STATE_INIT_START;
+	buf->target = target_id;
+	buf->put_md = put_md;
+	buf->put_eq = put_md->eq;
+	buf->put_ct = put_md->ct;
+	buf->get_md = get_md;
+	buf->get_eq = get_md->eq;
+	buf->get_ct = get_md->ct;
+	buf->user_ptr = user_ptr;
+	buf->ct_threshold = threshold;
+	buf->put_offset = local_put_offset;
+	buf->get_offset = local_get_offset;
+	buf->init_state = STATE_INIT_START;
 
 	post_ct(buf, ct);
 

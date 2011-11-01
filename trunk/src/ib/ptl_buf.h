@@ -7,11 +7,10 @@
 #ifndef PTL_BUF_H
 #define PTL_BUF_H
 
-struct xt;
-
 /**
- * Type of buf object.
- */
+ * Type of buf object. It will change over the lifetime of the
+ * buffer. For instance a buffer reserved by the initiator will have
+ * the BUF_INIT, and will change to BUF_SEND when it is posted. */
 enum buf_type {
 	BUF_FREE,
 	BUF_SEND,
@@ -21,9 +20,47 @@ enum buf_type {
 	BUF_SHMEM,
 	BUF_SHMEM_STOP,
 	BUF_SHMEM_RETURN,
+
+	BUF_INIT,
+	BUF_TGT
+};
+
+/* Event mask */
+enum {
+	XI_PUT_SUCCESS_DISABLE_EVENT= (1 << 0),
+	XI_GET_SUCCESS_DISABLE_EVENT= (1 << 1),
+	XI_SEND_EVENT				= (1 << 2),
+	XI_ACK_EVENT				= (1 << 3),
+	XI_REPLY_EVENT				= (1 << 4),
+	XI_CT_SEND_EVENT			= (1 << 5),
+	XI_PUT_CT_BYTES				= (1 << 6),
+	XI_GET_CT_BYTES				= (1 << 7),
+	XI_CT_ACK_EVENT				= (1 << 8),
+	XI_CT_REPLY_EVENT			= (1 << 9),
+	XI_RECEIVE_EXPECTED			= (1 << 10),
+
+	XT_COMM_EVENT		= (1 << 0),
+	XT_CT_COMM_EVENT	= (1 << 1),
+	XT_ACK_EVENT		= (1 << 2),
+	XT_REPLY_EVENT		= (1 << 3),
 };
 
 typedef enum buf_type buf_type_t;
+
+struct xremote {
+	union {
+		struct {
+			struct ibv_qp *qp;					   /* from RDMA CM */
+#ifdef USE_XRC
+			uint32_t xrc_remote_srq_num;
+#endif
+		} rdma;
+
+		struct {
+			ptl_rank_t local_rank;
+		} shmem;
+	};
+};
 
 #define BUF_DATA_SIZE 1024
 
@@ -48,42 +85,103 @@ struct buf {
 	/** base object */
 	obj_t			obj;
 
+	pthread_mutex_t		mutex;
+
 	/** enables holding buf on lists */
 	struct list_head	list;
 
-	/** the transaction to which this buffer is related */
-	struct {
-		/* initiator side transaction descriptor */
-		struct {
-			PTL_BASE_XX
+	/* remains of xi/xt */
+	/* TODO names with xx in front had collisions
+	 * with other names already in buf, need to
+	 * see if we can merge them */
 
-			ptl_handle_xt_t		xt_handle;
+
+	struct buf		*xxbuf;
+	unsigned int	event_mask;
+
+	ptl_size_t		mlength;	/* todo: may remove */
+	ptl_size_t		moffset;	/* todo: may remove */
+	ptl_ni_fail_t	ni_fail;	/* todo: may remove */
+
+	conn_t			*conn;
+
+	struct data		*data_in;
+	struct data		*data_out;
+
+	union {
+		/* Initiator side only. */
+		struct {
+			int init_state;
+			int			completed;
+			ptl_process_t		target;
+			ptl_size_t	ct_threshold;
+			struct buf		*recv_buf;
+			void			*user_ptr;
+
+			struct md		*put_md;
+			struct eq		*put_eq;
+			struct md		*get_md;
+			struct eq		*get_eq;
+			struct ct		*put_ct;
+			struct ct		*get_ct;
 			ptl_size_t		put_offset;
 			ptl_size_t		get_offset;
-			md_t			*put_md;
-			struct eq		*put_eq;
-			md_t			*get_md;
-			struct eq		*get_eq;
-			struct ct       *put_ct;
-			struct ct       *get_ct;
-			void		*user_ptr;
-			ptl_process_t	target;
-			int				completed;
-		} xi;
-		struct xt	*xt;
+		};
+
+		/* Target side only. */
+		struct {
+			int tgt_state;
+			int			in_atomic;
+
+			pt_t			*pt;
+			void			*start;
+			void			*indir_sge;
+			mr_t			*indir_mr;
+			union {
+				le_t			*le;
+				me_t			*me;
+			};
+			union {
+				le_t			*le;
+				me_t			*me;
+			} matching;
+			struct buf		*send_buf;
+			ptl_size_t		cur_loc_iov_index;
+			ptl_size_t		cur_loc_iov_off;
+			uint32_t		rdma_dir;
+			ptl_size_t		put_resid;
+			ptl_size_t		get_resid;
+		};
 	};
 
+	/** recv state */
+	int	recv_state;
+
 	/** remote destination for message */
-	struct xremote		*dest;
+	struct xremote		dest;
 
 	/** message length */
 	unsigned int		length;
 
+	/** message (usually internal_data) */
+	void			*data;
+
 	/** data to hold message */
 	uint8_t			internal_data[BUF_DATA_SIZE];
 
-	/** message (usually internal_data) */
-	void			*data;
+	/** verbs completion requested */
+	int			comp;
+
+	/** type of buf */
+	buf_type_t		type;
+
+	/** Send completion must be signaled. **/
+	int			signaled;
+
+	/* Target only. Must be out of the union. */
+	struct list_head	unexpected_list;
+	struct list_head	rdma_list;
+	pthread_spinlock_t	rdma_list_lock;
 
 	union {
 		struct {
@@ -92,26 +190,26 @@ struct buf {
 				struct ibv_recv_wr recv_wr;
 			};
 
-			/* SG list to register the data field. */
+			/* SG list to register the internal_data field. */
 			struct ibv_sge sg_list[1];
+
+			/* For RDMA operations. */
+			struct ibv_sge		*cur_rem_sge;
+			ptl_size_t		num_rem_sge;
+			ptl_size_t		cur_rem_off;
+			atomic_t 		rdma_comp;
+			int			interim_rdma;
 		} rdma;
 
 		struct {
 			ptl_rank_t source;	/* local rank owning that buffer */
+
+			/* For large (ie. KNEM) operations. */
+			struct shmem_iovec	*cur_rem_iovec;
+			ptl_size_t		num_rem_iovecs;
+			ptl_size_t		cur_rem_off;
 		} shmem;
 	};
-
-	/** verbs completion requested */
-	int			comp;
-
-	/** type of buf */
-	buf_type_t		type;
-
-	/** recv state */
-	int			state;
-
-	/** Send completion must be signaled. **/
-	int			signaled;
 
 	/** number of mr's used in message */
 	int			num_mr;
@@ -125,6 +223,8 @@ typedef struct buf buf_t;
 int buf_setup(void *arg);
 
 int buf_init(void *arg, void *parm);
+
+void buf_fini(void *arg);
 
 void buf_cleanup(void *arg);
 
@@ -166,6 +266,7 @@ static inline int buf_alloc(ni_t *ni, buf_t **buf_p)
 	}
 
 	*buf_p = container_of(obj, buf_t, obj);
+
 	return PTL_OK;
 }
 
@@ -231,34 +332,37 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 #endif
 
 	if (connect->transport.type == CONN_TYPE_RDMA) {
-		buf->xi.dest.rdma.qp = connect->rdma.cm_id->qp;
+		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
-			buf->xi.dest.xrc_remote_srq_num = ni->logical.rank_table[buf->xi.target.rank].remote_xrc_srq_num;
+			buf->dest.xrc_remote_srq_num = ni->logical.rank_table[buf->xi.target.rank].remote_xrc_srq_num;
 #endif
 	} else {
 		assert(connect->transport.type == CONN_TYPE_SHMEM);
 		assert(connect->shmem.local_rank != -1);
-		buf->xi.dest.shmem.local_rank = connect->shmem.local_rank;
+		buf->dest.shmem.local_rank = connect->shmem.local_rank;
 	}
 }
 
-static inline void set_xt_dest(xt_t *xt, const conn_t *connect)
+// TODO merge with set_buf_dest
+static inline void set_tgt_dest(buf_t *buf, const conn_t *connect)
 {
 #ifdef USE_XRC
-	ni_t *ni = to_ni(xt);
+	ni_t *ni = to_ni(buf);
 #endif
 
 	if (connect->transport.type == CONN_TYPE_RDMA) {
-		xt->dest.rdma.qp = connect->rdma.cm_id->qp;
+		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
-			xt->dest.xrc_remote_srq_num = ni->logical.rank_table[xt->initiator.rank].remote_xrc_srq_num;
+			buf->dest.xrc_remote_srq_num =
+				ni->logical.rank_table[xt->
+					initiator.rank].remote_xrc_srq_num;
 #endif
 	} else {
 		assert(connect->transport.type == CONN_TYPE_SHMEM);
 		assert(connect->shmem.local_rank != -1);
-		xt->dest.shmem.local_rank = connect->shmem.local_rank;
+		buf->dest.shmem.local_rank = connect->shmem.local_rank;
 	}
 }
 

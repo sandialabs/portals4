@@ -20,13 +20,9 @@ int buf_setup(void *arg)
 	buf_t *buf = arg;
 
 	buf->num_mr = 0;
-	buf->xt = NULL;
 	buf->comp = 0;
 	buf->data = buf->internal_data;
 	buf->rdma.recv_wr.next = NULL;
-
-	memset(&buf->xi, 0, sizeof(buf->xi));
-	//	INIT_LIST_HEAD(&buf->xt.rdma_list);
 
 	return PTL_OK;
 }
@@ -43,11 +39,17 @@ void buf_cleanup(void *arg)
 	buf_t *buf = arg;
 	int i;
 
+	pthread_spin_destroy(&buf->rdma_list_lock);
+
 	for (i = 0; i < buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
 
-	if (buf->xt)
-		xt_put(buf->xt);
+	/* send/rdma bufs drop their references to
+	 * the master buf here */
+	if (buf->xxbuf) {
+		buf_put(buf->xxbuf);
+		buf->xxbuf = NULL;
+	}
 
 	buf->type = BUF_FREE;
 }
@@ -87,20 +89,18 @@ int buf_init(void *arg, void *parm)
 		buf->rdma.sg_list[0].lkey = mr->lkey;
 	}
 
-	//	pthread_spin_init(&buf->xi.rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&buf->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_mutex_init(&buf->mutex, NULL);
 
 	return 0;
 }
 
-#ifdef todo
-int buf_fini(void *arg, void *parm)
+void buf_fini(void *arg)
 {
-	xi_t *xi = arg;
+	buf_t *buf = arg;
 
-	pthread_spin_destroy(&xi->rdma_list_lock);
+	pthread_spin_destroy(&buf->rdma_list_lock);
 }
-#endif
-
 
 /**
  * Debug print buf parameters.

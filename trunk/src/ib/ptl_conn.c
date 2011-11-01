@@ -41,7 +41,6 @@ void conn_init(conn_t *conn, ni_t *ni)
 	conn->transport = transport_rdma;
 
 	INIT_LIST_HEAD(&conn->buf_list);
-	INIT_LIST_HEAD(&conn->xt_list);
 	INIT_LIST_HEAD(&conn->list);
 }
 
@@ -408,7 +407,6 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
  */
 static void flush_pending_xi_xt(conn_t *conn)
 {
-	xt_t *xt;
 	buf_t *buf;
 
 	pthread_spin_lock(&conn->wait_list_lock);
@@ -416,19 +414,18 @@ static void flush_pending_xi_xt(conn_t *conn)
 		buf = list_first_entry(&conn->buf_list, buf_t, list);
 		list_del_init(&buf->list);
 		pthread_spin_unlock(&conn->wait_list_lock);
-		process_init(buf);
+
+		if (buf->type == BUF_TGT)
+			process_tgt(buf);
+		else {
+			assert(buf->type == BUF_INIT);
+			process_init(buf);
+		}
 			
 		pthread_spin_lock(&conn->wait_list_lock);
 	}
 
-	while(!list_empty(&conn->xt_list)) {
-		xt = list_first_entry(&conn->xt_list, xt_t, list);
-		list_del_init(&xt->list);
-		pthread_spin_unlock(&conn->wait_list_lock);
-		process_tgt(xt);
 
-		pthread_spin_lock(&conn->wait_list_lock);
-	}
 	pthread_spin_unlock(&conn->wait_list_lock);
 }
 

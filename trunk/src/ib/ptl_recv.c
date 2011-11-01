@@ -1,5 +1,5 @@
 /**
- * @file ptl_recv.c
+ * file ptl_recv.c
  *
  * Completion queue processing.
  */
@@ -52,21 +52,21 @@ static int comp_poll(ni_t *ni, int num_wc,
 
 		if (unlikely(wc->status)) {
 			if (buf->type == BUF_SEND) {
-				buf->xi.ni_fail = PTL_NI_UNDELIVERABLE;
-				buf->state = STATE_RECV_SEND_COMP;
+				buf->ni_fail = PTL_NI_UNDELIVERABLE;
+				buf->recv_state = STATE_RECV_SEND_COMP;
 			} else if (buf->type == BUF_RDMA)
-				buf->state = STATE_RECV_ERROR;
+				buf->recv_state = STATE_RECV_ERROR;
 			else
-				buf->state = STATE_RECV_DROP_BUF;
+				buf->recv_state = STATE_RECV_DROP_BUF;
 		} else {
 			if (buf->type == BUF_SEND)
-				buf->state = STATE_RECV_SEND_COMP;
+				buf->recv_state = STATE_RECV_SEND_COMP;
 			else if (buf->type == BUF_RDMA)
-				buf->state = STATE_RECV_RDMA_COMP;
+				buf->recv_state = STATE_RECV_RDMA_COMP;
 			else if (buf->type == BUF_RECV)
-				buf->state = STATE_RECV_PACKET_RDMA;
+				buf->recv_state = STATE_RECV_PACKET_RDMA;
 			else
-				buf->state = STATE_RECV_ERROR;
+				buf->recv_state = STATE_RECV_ERROR;
 		}
 
 		buf_list[i] = buf;
@@ -85,11 +85,11 @@ static int comp_poll(ni_t *ni, int num_wc,
 static int send_comp(buf_t *buf)
 {
 	/* this should only happen if we requested a completion */
-	assert(buf->comp || buf->xi.ni_fail == PTL_NI_UNDELIVERABLE);
+	assert(buf->comp || buf->ni_fail == PTL_NI_UNDELIVERABLE);
 
 	/* Fox XI only, restart the initiator state machine. */
-	if (!buf->xt) {
-		buf->xi.completed = 1;
+	if (!buf->xxbuf) {
+		buf->completed = 1;
 		process_init(buf);
 	}
 
@@ -102,45 +102,44 @@ static int send_comp(buf_t *buf)
 /**
  * Process a read/write completion.
  *
- * @param buf the buffer that finished.
+ * @param rdma_buf the buffer that finished.
  *
  * @return the next state.
  */
-static int rdma_comp(buf_t *buf)
+static int rdma_comp(buf_t *rdma_buf)
 {
 	struct list_head temp_list;
 	int err;
-	xt_t *xt = buf->xt;
+	buf_t *buf = rdma_buf->xxbuf;
 
-	if (!buf->comp)
+	if (!rdma_buf->comp)
 		return STATE_RECV_DONE;
 
-	/* Take a ref on the XT since freeing all its buffers will also
+	/* Take a ref on the XT since freeing all its rdma_buffers will also
 	 * free it. */
-	assert(xt);
-	assert(atomic_read(&xt->rdma.rdma_comp) < 5000);
-	xt_get(xt);
+	assert(atomic_read(&buf->rdma.rdma_comp) < 5000);
+	buf_get(buf);
 
-	pthread_spin_lock(&xt->rdma_list_lock);
-	list_cut_position(&temp_list, &xt->rdma_list, &buf->list);
-	pthread_spin_unlock(&xt->rdma_list_lock);
+	pthread_spin_lock(&buf->rdma_list_lock);
+	list_cut_position(&temp_list, &buf->rdma_list, &rdma_buf->list);
+	pthread_spin_unlock(&buf->rdma_list_lock);
 
-	atomic_dec(&xt->rdma.rdma_comp);
+	atomic_dec(&buf->rdma.rdma_comp);
 
 	while(!list_empty(&temp_list)) {
-		buf = list_first_entry(&temp_list, buf_t, list);
-		list_del(&buf->list);
-		buf_put(buf);
+		rdma_buf = list_first_entry(&temp_list, buf_t, list);
+		list_del(&rdma_buf->list);
+		buf_put(rdma_buf);
 	}
 
-	err = process_tgt(xt);
+	err = process_tgt(buf);
+	buf_put(buf);
+
 	if (err) {
 		WARN();
-		xt_put(xt);
 		return STATE_RECV_ERROR;
 	}
 
-	xt_put(xt);
 	return STATE_RECV_DONE;
 }
 
@@ -197,29 +196,13 @@ static int recv_packet(buf_t *buf)
 	}
 
 	/* compute next state */
-	switch (hdr->operation) {
-	case OP_PUT:
-	case OP_GET:
-	case OP_ATOMIC:
-	case OP_FETCH:
-	case OP_SWAP:
-		if (buf->length < sizeof(req_hdr_t)) {
-			WARN();
+	if (hdr->operation <= OP_SWAP) {
+		if (buf->length < sizeof(req_hdr_t))
 			return STATE_RECV_DROP_BUF;
-		}
-		return STATE_RECV_REQ;
-
-	case OP_DATA:
-	case OP_REPLY:
-	case OP_ACK:
-	case OP_CT_ACK:
-	case OP_OC_ACK:
-	case OP_NO_ACK:
+		else
+			return STATE_RECV_REQ;
+	} else {
 		return STATE_RECV_INIT;
-
-	default:
-		WARN();
-		return STATE_RECV_DROP_BUF;
 	}
 }
 
@@ -234,38 +217,26 @@ static int recv_req(buf_t *buf)
 {
 	int err;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ni_t *ni = obj_to_ni(buf);
-	xt_t *xt;
-
-	/* allocate a new xt to track the message */
-	err = xt_alloc(ni, &xt);
-	if (err) {
-		WARN();
-		return STATE_RECV_ERROR;
-	}
-
-	/* unpack message header */
-	xport_hdr_to_xt((hdr_t *)hdr, xt);
-	base_hdr_to_xt((hdr_t *)hdr, xt);
-	req_hdr_to_xt(hdr, xt);
-	xt->operation = hdr->operation;
 
 	/* compute the data segments in the message
-	 * note req packet data direction is wrt init,
-	 * xt direction is wrt tgt */
+	 * note req packet data direction is wrt init */
 	if (hdr->data_in)
-		xt->data_out = (data_t *)(buf->data + sizeof(*hdr));
+		buf->data_out = (data_t *)(buf->data + sizeof(*hdr));
+	else
+		buf->data_out = NULL;
 
 	if (hdr->data_out)
-		xt->data_in = (data_t *)(buf->data + sizeof(*hdr) +
-					  data_size(xt->data_out));
+		buf->data_in = (data_t *)(buf->data + sizeof(*hdr) +
+					  data_size(buf->data_out));
+	else
+		buf->data_in = NULL;
 
-	xt->recv_buf = buf;
-	xt->state = STATE_TGT_START;
+	buf->tgt_state = STATE_TGT_START;
+	buf->type = BUF_TGT;
 
 	/* Send message to target state machine. process_tgt must drop the
 	 * buffer, so buf will not be valid after the call. */
-	err = process_tgt(xt);
+	err = process_tgt(buf);
 	if (err)
 		WARN();
 
@@ -285,8 +256,8 @@ static int recv_init(buf_t *buf)
 	buf_t *init_buf;
 	hdr_t *hdr = (hdr_t *)buf->data;
 
-	/* lookup the xi handle to get original xi */
-	err = to_buf(le64_to_cpu(hdr->handle), &init_buf);
+	/* lookup the buf handle to get original buf */
+	err = to_buf(le32_to_cpu(hdr->handle), &init_buf);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
@@ -294,13 +265,17 @@ static int recv_init(buf_t *buf)
 
 	/* compute data segments in response message */
 	if (hdr->data_in)
-		init_buf->xi.data_out = (data_t *)(buf->data + hdr->hdr_size);
+		init_buf->data_out = (data_t *)(buf->data + hdr->hdr_size);
+	else
+		init_buf->data_out = NULL;
 
 	if (hdr->data_out)
-		init_buf->xi.data_in = (data_t *)(buf->data + hdr->hdr_size +
-					  data_size(init_buf->xi.data_out));
+		init_buf->data_in = (data_t *)(buf->data + hdr->hdr_size +
+					  data_size(init_buf->data_out));
+	else
+		init_buf->data_in = NULL;
 
-	init_buf->xi.recv_buf = buf;
+	init_buf->recv_buf = buf;
 
 	/* Note: process_init must drop recv_buf, so buf will not be valid
 	 * after the call. */
@@ -308,7 +283,7 @@ static int recv_init(buf_t *buf)
 	if (err)
 		WARN();
 
-	buf_put(init_buf);					/* from to_buf() */
+	buf_put(init_buf);	/* from to_buf() */
 
 	return STATE_RECV_REPOST;
 }
@@ -371,7 +346,7 @@ void *process_recv_rdma_thread(void *arg)
 		int i;
 		for (i = 0; i < num_buf; i++) {
 			buf_t *buf = buf_list[i];	
-			enum recv_state state = buf->state;
+			enum recv_state state = buf->recv_state;
 
 			while(1) {
 				if (debug > 1)
@@ -410,6 +385,8 @@ void *process_recv_rdma_thread(void *arg)
 					goto next_buf;
 				case STATE_RECV_DONE:
 					goto next_buf;
+				default:
+					abort();
 				}
 			}
 next_buf:

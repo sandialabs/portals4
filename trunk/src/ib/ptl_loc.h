@@ -78,7 +78,6 @@ extern unsigned int linesize;
 #include "ptl_md.h"
 #include "ptl_le.h"
 #include "ptl_me.h"
-#include "ptl_xx.h"
 #include "ptl_buf.h"
 #include "ptl_eq.h"
 #include "ptl_ct.h"
@@ -222,23 +221,23 @@ ptl_size_t iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		 void *dest, void *source, void *operand);
 
-int rdma_read(buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
+int rdma_read(buf_t *buf, buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
 	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
 
-int post_tgt_rdma(xt_t *xt);
+int post_tgt_rdma(buf_t *buf);
 
 void *process_recv_rdma_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
 
 int process_init(buf_t *buf);
 
-int process_tgt(xt_t *xt);
+int process_tgt(buf_t *buf);
 
 int check_overflow(le_t *le);
 int check_overflow_search_only(le_t *le);
 int check_overflow_search_delete(le_t *le);
 
-buf_t *tgt_alloc_rdma_buf(xt_t *xt);
+buf_t *tgt_alloc_rdma_buf(buf_t *buf);
 
 #ifdef WITH_TRANSPORT_SHMEM
 int knem_init(ni_t *ni);

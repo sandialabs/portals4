@@ -56,7 +56,6 @@ enum obj_type {
 	POOL_MD,
 	POOL_EQ,
 	POOL_CT,
-	POOL_XT,
 	POOL_BUF,
 	POOL_SBUF,
 	POOL_LAST,		/* keep me last */
