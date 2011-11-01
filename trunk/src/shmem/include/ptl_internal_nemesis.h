@@ -46,11 +46,11 @@ typedef struct {
     NEMESIS_queue q;
 #ifndef USE_HARD_POLLING
 # ifdef HAVE_PTHREAD_SHMEM_LOCKS
-    volatile uint32_t frustration;
-    pthread_cond_t    trigger;
-    pthread_mutex_t   trigger_lock;
+    uint32_t        frustration;
+    pthread_cond_t  trigger;
+    pthread_mutex_t trigger_lock;
 # else
-    int               pipe[2];
+    int             pipe[2];
 # endif
 #endif
 } NEMESIS_blocking_queue;
@@ -102,8 +102,8 @@ extern struct rank_comm_pad *comm_pads[PTL_PID_MAX];
 
 static inline NEMESIS_entry *PtlInternalNEMESISGetPtr(ptl_offset_t off)
 {
-    if (off.u == 0) return NULL;
-    if (comm_pads[off.s.pid] == NULL) PtlInternalMapInPid(off.s.pid);
+    if (off.u == 0) { return NULL; }
+    if (comm_pads[off.s.pid] == NULL) { PtlInternalMapInPid(off.s.pid); }
     return (NEMESIS_entry *)((uintptr_t)comm_pads[off.s.pid] + off.s.off);
 }
 
@@ -138,7 +138,7 @@ static inline NEMESIS_entry *PtlInternalNEMESISOffsetDequeue(NEMESIS_queue *q)
         q->head        = NULL;
     }
     ptl_offset_t   ret_off = (ptl_offset_t)q->shadow_head;
-    NEMESIS_entry *retval = PtlInternalNEMESISGetPtr(ret_off);
+    NEMESIS_entry *retval  = PtlInternalNEMESISGetPtr(ret_off);
 
     if (retval != NULL) {
         if (retval->next != NULL) {
