@@ -31,12 +31,12 @@
 #include "ptl_internal_papi.h"
 #include "ptl_internal_locks.h"
 
-size_t            num_siblings           = 0;
-ptl_pid_t         proc_number            = PTL_PID_ANY;
-size_t            per_proc_comm_buf_size = 655488;
-size_t            firstpagesize          = 0;
+size_t    num_siblings           = 0;
+ptl_pid_t proc_number            = PTL_PID_ANY;
+size_t    per_proc_comm_buf_size = 655488;
+size_t    firstpagesize          = 0;
 
-static unsigned int init_ref_count    = 0;
+static unsigned int init_ref_count = 0;
 
 #define PARSE_ENV_NUM(env_str, var, reqd) do {                           \
         char       *strerr;                                              \
@@ -70,13 +70,12 @@ int INTERNAL PtlInternalLibraryInitialized(void)
  */
 int API_FUNC PtlInit(void)
 {   /*{{{*/
-    unsigned int        race              = PtlInternalAtomicInc(&init_ref_count, 1);
-    static volatile int done_initializing = 0;
-    static volatile int failure           = 0;
-    extern ptl_uid_t    the_ptl_uid;
+    unsigned int     race              = PtlInternalAtomicInc(&init_ref_count, 1);
+    static int       done_initializing = 0;
+    static int       failure           = 0;
+    extern ptl_uid_t the_ptl_uid;
 
     if (race == 0) {
-
 #ifdef _SC_PAGESIZE
         firstpagesize = sysconf(_SC_PAGESIZE);
 #elif defined(_SC_PAGE_SIZE)
@@ -129,11 +128,13 @@ int API_FUNC PtlInit(void)
         /* Release any concurrent initialization calls */
         __sync_synchronize();
         done_initializing = 1;
+        __sync_synchronize();
         runtime_init();
         return PTL_OK;
     } else {
         /* Should block until other inits finish. */
         while (!done_initializing) SPINLOCK_BODY();
+        __sync_synchronize();
         if (!failure) {
             return PTL_OK;
         } else {
@@ -146,6 +147,7 @@ exit_fail:
     done_initializing = 1;
 exit_fail_fast:
     PtlInternalAtomicInc(&init_ref_count, -1);
+    __sync_synchronize();
     return PTL_FAIL;
 } /*}}}*/
 
