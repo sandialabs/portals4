@@ -97,8 +97,7 @@ NEMESIS_entry INTERNAL *PtlInternalNEMESISBlockingOffsetDequeue(NEMESIS_blocking
             if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
                 ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
                 if (q->frustration > 1000) {
-                    ptl_assert(pthread_cond_wait
-                                   (&q->trigger, &q->trigger_lock), 0);
+                    ptl_assert(pthread_cond_wait(&q->trigger, &q->trigger_lock), 0);
                 }
                 ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
             }
