@@ -31,7 +31,7 @@
 
 typedef struct {
     uint_fast32_t     refcount;
-    volatile uint32_t in_use;   // 0=free, 1=in_use
+    uint32_t in_use;   // 0=free, 1=in_use
     uint8_t           pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
     ptl_md_t          visible;
 #ifdef REGISTER_ON_BIND
@@ -59,7 +59,7 @@ void INTERNAL PtlInternalMDNISetup(const uint_fast8_t ni,
                         "pad2 offset:     %zu (%zu)\n",
                 sizeof(ptl_internal_md_t), CACHELINE_WIDTH,
                 offsetof(ptl_internal_md_t, refcount), sizeof(uint_fast32_t),
-                offsetof(ptl_internal_md_t, in_use), sizeof(volatile uint32_t),
+                offsetof(ptl_internal_md_t, in_use), sizeof(uint32_t),
                 offsetof(ptl_internal_md_t, pad1), 16 - sizeof(uint32_t) - sizeof(uint_fast32_t),
                 offsetof(ptl_internal_md_t, visible), sizeof(ptl_md_t),
                 offsetof(ptl_internal_md_t, pad2), CACHELINE_WIDTH - (16 + sizeof(ptl_md_t)));
@@ -110,6 +110,7 @@ int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
         VERBOSE_ERROR("MD aray for NI uninitialized\n");
         return PTL_ARG_INVALID;
     }
+    __sync_synchronize();
     if (mds[md.s.ni][md.s.code].in_use != MD_IN_USE) {
         VERBOSE_ERROR("MD appears to be free already\n");
         return PTL_ARG_INVALID;
@@ -232,6 +233,7 @@ int API_FUNC PtlMDRelease(ptl_handle_md_t md_handle)
     }
 #endif
     mds[md.s.ni][md.s.code].in_use = MD_FREE;
+    __sync_synchronize();
     return PTL_OK;
 }                                      /*}}} */
 
