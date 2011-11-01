@@ -45,7 +45,7 @@ typedef struct {
 typedef struct {
     ptl_internal_appendLE_t Qentry;
     ptl_le_t                visible;
-    volatile uint32_t       status;     // 0=free, 1=allocated, 2=in-use
+    uint32_t                status; // 0=free, 1=allocated, 2=in-use
     ptl_pt_index_t          pt_index;
     ptl_list_t              ptl_list;
 } ptl_internal_le_t;
@@ -597,6 +597,7 @@ int API_FUNC PtlLEUnlink(ptl_handle_le_t le_handle)
         VERBOSE_ERROR("LE array uninitialized\n");
         return PTL_ARG_INVALID;
     }
+    __sync_synchronize();
     if (les[le.s.ni][le.s.code].status == LE_FREE) {
         VERBOSE_ERROR("LE appears to be free already\n");
         return PTL_ARG_INVALID;
