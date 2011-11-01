@@ -30,15 +30,15 @@
 #define MD_IN_USE 1
 
 typedef struct {
-    uint_fast32_t     refcount;
-    uint32_t in_use;   // 0=free, 1=in_use
-    uint8_t           pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
-    ptl_md_t          visible;
+    uint_fast32_t refcount;
+    uint32_t      in_use; // 0=free, 1=in_use
+    uint8_t       pad1[16 - sizeof(uint32_t) - sizeof(uint_fast32_t)];
+    ptl_md_t      visible;
 #ifdef REGISTER_ON_BIND
-    uint64_t          xfe_handle;
-    uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t) + sizeof(uint64_t))];
+    uint64_t      xfe_handle;
+    uint8_t       pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t) + sizeof(uint64_t))];
 #else
-    uint8_t           pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t))];
+    uint8_t       pad2[CACHELINE_WIDTH - (16 + sizeof(ptl_md_t))];
 #endif
 } ptl_internal_md_t ALIGNED (CACHELINE_WIDTH);
 
