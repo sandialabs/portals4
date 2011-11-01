@@ -306,8 +306,7 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 
 AS_IF([test "$with_implementation" = "ib"],
   [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
-   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])
-   SANDIA_CHECK_RDMA([], [AC_MSG_ERROR([RDMA not found.])])])
+   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
 
 AS_IF([test "$with_implementation" = "mc"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])

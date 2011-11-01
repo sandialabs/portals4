@@ -20,29 +20,35 @@ AC_DEFUN([SANDIA_CHECK_OFED], [
      AS_IF([test ! -z "$with_ofed_libdir" -a "$with_ofed_libdir" != "yes"],
        [check_ofed_libdir="$with_ofed_libdir"])
      OMPI_CHECK_PACKAGE([ofed],
-                        [infiniband/ib.h],
+                        [infiniband/verbs.h],
                         [ibverbs],
                         [ibv_open_device],
                         [],
                         [$check_ofed_dir],
                         [$check_ofed_libdir],
                         [check_ofed_happy="yes"],
-                        [check_ofed_happy="no"])
-	 AS_IF([test "x$check_ofed_happy" = xno],
-     	   [OMPI_CHECK_PACKAGE([ofed],
-                               [infiniband/verbs.h],
-							   [ibverbs],
-							   [ibv_open_device],
-							   [],
-							   [$check_ofed_dir],
-							   [$check_ofed_libdir],
-							   [check_ofed_happy="yes"],
-							   [check_ofed_happy="no"])])],
+                        [check_ofed_happy="no"])],
     [check_ofed_happy="no"])
+
+  # check for RDMA CM
+  AS_IF([test "$check_ofed_happy" = "yes"],
+    [OMPI_CHECK_PACKAGE([rdma],
+                        [rdma/rdma_cma.h],
+                        [rdmacm],
+                        [rdma_create_event_channel],
+                        [],
+                        [$check_ofed_dir],
+                        [$check_ofed_libdir],
+                        [check_ofed_happy="yes"],
+                        [check_ofed_happy="no"])])
 
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"
   LIBS="$saved_LIBS"
+
+  ofed_CPPFLAGS="$ofed_CPPFLAGS $rdma_CPPFLAGS"
+  ofed_LDFLAGS="$ofed_LDFLAGS $rdma_LDFLAGS"
+  ofed_LIBS="$ofed_LIBS $rdma_LIBS"
 
   AC_SUBST(ofed_CPPFLAGS)
   AC_SUBST(ofed_LDFLAGS)
