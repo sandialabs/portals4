@@ -13,7 +13,7 @@
 typedef struct {
     ptl_table_entry_t              *tables[4];
     uint32_t                        refcount[4];
-    volatile uint32_t               internal_refcount[4];
+    uint32_t                        internal_refcount[4];
     ptl_sr_value_t                  regs[4][PTL_SR_LAST];
     ptl_internal_buffered_header_t *unexpecteds[4];
     ptl_internal_buffered_header_t *unexpecteds_buf[4];
@@ -22,7 +22,7 @@ typedef struct {
 extern ptl_internal_nit_t nit;
 extern ptl_ni_limits_t    nit_limits[4];
 
-int  INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni);
+int INTERNAL  PtlInternalNIValidator(const ptl_internal_handle_converter_t ni);
 void INTERNAL PtlInternalDeallocUnexpectedHeader(ptl_internal_buffered_header_t *const hdr);
 void INTERNAL PtlInternalDetachCommPads(void);
 
