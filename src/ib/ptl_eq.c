@@ -91,22 +91,22 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq_t *eq;
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ni(ni_handle, &ni);
-		if (err)
-			goto err1;
+	err = to_ni(ni_handle, &ni);
+	if (err)
+		goto err1;
 
-		if (!ni) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ni = fast_to_obj(ni_handle);
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ni = fast_to_obj(ni_handle);
+#endif
 
         /* check limit resources to see if we can allocate another eq */
         if (unlikely(__sync_add_and_fetch(&ni->current.max_eqs, 1) >
@@ -139,10 +139,11 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	err = PTL_OK;
 err2:
 	ni_put(ni);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -180,30 +181,30 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	ni_t *ni;
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_eq(eq_handle, &eq);
-		if (err)
-			goto err1;
+	err = to_eq(eq_handle, &eq);
+	if (err)
+		goto err1;
 
-		if (!eq) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
-		ni = obj_to_ni(eq);
-		if (!ni) {
-			err = PTL_ARG_INVALID;
-			eq_put(eq);
-			goto err1;
-		}
-	} else {
-		eq = fast_to_obj(eq_handle);
-		ni = obj_to_ni(eq);
+	if (!eq) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+
+	ni = obj_to_ni(eq);
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		eq_put(eq);
+		goto err1;
+	}
+#else
+	eq = fast_to_obj(eq_handle);
+	ni = obj_to_ni(eq);
+#endif
 
 	/* cleanup resources waiting for an event */
 	pthread_mutex_lock(&eq->mutex);
@@ -220,10 +221,11 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	/* give back the limit resource */
 	(void)__sync_sub_and_fetch(&ni->current.max_eqs, 1);
 
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -287,32 +289,33 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	int err;
 	eq_t *eq;
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_eq(eq_handle, &eq);
-		if (err)
-			goto err1;
+	err = to_eq(eq_handle, &eq);
+	if (err)
+		goto err1;
 
-		if (!eq) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		eq = fast_to_obj(eq_handle);
+	if (!eq) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	eq = fast_to_obj(eq_handle);
+#endif
 
 	pthread_mutex_lock(&eq->mutex);
 	err = __get_event(eq, event_p);
 	pthread_mutex_unlock(&eq->mutex);
 
 	eq_put(eq);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -332,22 +335,22 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	ni_t *ni;
 	int nloops = get_param(PTL_EQ_WAIT_LOOP_COUNT);
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_eq(eq_handle, &eq);
-		if (err)
-			goto err1;
+	err = to_eq(eq_handle, &eq);
+	if (err)
+		goto err1;
 
-		if (!eq) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		eq = fast_to_obj(eq_handle);
+	if (!eq) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	eq = fast_to_obj(eq_handle);
+#endif
 
 	ni = obj_to_ni(eq);
 
@@ -396,10 +399,11 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	}
 
 	eq_put(eq);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -428,11 +432,11 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	int found_one;
 	int nloops = get_param(PTL_EQ_POLL_LOOP_COUNT);
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
-	}
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
+#endif
 
 	if (size == 0) {
 		err = PTL_ARG_INVALID;
@@ -445,31 +449,31 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		goto err1;
 	}
 
-	if (check_param) {
-		i2 = -1;
-		for (i = 0; i < size; i++) {
-			err = to_eq(eq_handles[i], &eqs[i]);
-			if (unlikely(err || !eqs[i])) {
-				err = PTL_ARG_INVALID;
-				goto err2;
-			}
-
-			i2 = i;
-
-			if (i == 0)
-				ni = obj_to_ni(eqs[0]);
-
-			if (ni != obj_to_ni(eqs[i])) {
-				err = PTL_ARG_INVALID;
-				goto err2;
-			}
+#ifndef NO_ARG_VALIDATION
+	i2 = -1;
+	for (i = 0; i < size; i++) {
+		err = to_eq(eq_handles[i], &eqs[i]);
+		if (unlikely(err || !eqs[i])) {
+			err = PTL_ARG_INVALID;
+			goto err2;
 		}
-	} else {
-		for (i = 0; i < size; i++)
-			eqs[i] = fast_to_obj(eq_handles[i]);
-		ni = obj_to_ni(eqs[0]);
-		i2 = size;
+
+		i2 = i;
+
+		if (i == 0)
+			ni = obj_to_ni(eqs[0]);
+
+		if (ni != obj_to_ni(eqs[i])) {
+			err = PTL_ARG_INVALID;
+			goto err2;
+		}
 	}
+#else
+	for (i = 0; i < size; i++)
+		eqs[i] = fast_to_obj(eq_handles[i]);
+	ni = obj_to_ni(eqs[0]);
+	i2 = size;
+#endif
 
 	clock_gettime(CLOCK_REALTIME, &expire);
 	expire.tv_nsec += 1000000UL * timeout;
@@ -557,14 +561,17 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		}
 	}
 
+#ifndef NO_ARG_VALIDATION
 err2:
+#endif
 	for (i = 0; i < i2; i++)
 		eq_put(eqs[i]);
 	free(eqs);
 err1:
-	if (check_param)
+#ifndef NO_ARG_VALIDATION
 		gbl_put();
 err0:
+#endif
 	return err;
 }
 
