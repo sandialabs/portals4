@@ -67,31 +67,30 @@ Options to configure include:
       + libev-4.0.4 (or similar), available at
         http://software.schmorp.de/pkg/libev.html
       + The KNEM driver from http://runtime.bordeaux.inria.fr/knem/.  (optional)
-        Ensure that /dev/knem is readable/writable by the user running the portals software. 
+        Ensure that /dev/knem is readable/writable by the user running the portals
+        software. 
 
     Build:
-      * ./autogen.sh
-      * i686: 
-	  ./configure CFLAGS="-march=i686 -I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
-      * x86_64:
-          ./configure CFLAGS="-I/usr/lib/openmpi/include/" LDFLAGS="-L/usr/lib/openmpi/lib/"
-         or:
-          ./configure CFLAGS="-I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib"
-      * add --enable-xrc if XRC support is desired.
-      * make
+	  Note that the paths tp mpi may no be necessary or may need to be changed depending on your linux distribution. 
+
+      * x86_64 (minimal, no shared memory):
+		  ./configure CFLAGS="-ggdb -Wall -I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib" --with-implementation=ib --with-test-runtime=mpi
+
+      * x86_64 (optimized, with shared memory):
+./configure CFLAGS="-ggdb -Wall -I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib" --with-implementation=ib --with-test-runtime=mpi --with-knem=/opt/knem --enable-ib-shmem --enable-fast
+
+      * add --enable-xrc if XRC support is desired (currently broken).
 
     Test :
-      * cd test
-      * standalone tests:
-        mpirun  -H localhost ./test_all.sh
-      * with 2 ranks:
-        mpirun  -H localhost -n 2 ./test_all_2_ranks.sh
-      * make_test_relay.pl can build a special script for a given amount
-        of ranks. Use mpirun to start the test:
+      * There is 2 suites of tests. The generic one is run by typing
+ 		"make check" in the main directory. For the (currently) IB
+		specific test suite, type "make -C test/sfw runtests"
+      * test/sfw/make_test_relay.pl can build a special script for a given amount
+        of ranks. In test/sfw, use mpirun to start the test:
          -  ./make_test_relay.pl  > test_relay.xml
          -  mpirun  -H localhost -n 9 ./ptl_test -f test_relay.xml 
 
-    Testsuite note:
+    IB Testsuite note:
       The testsuite is testing both error paths and good
       paths. However when the library is configured with --enable-fast
       (such as built from the RPM), most parameter checks are
