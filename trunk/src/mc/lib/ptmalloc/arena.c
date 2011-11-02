@@ -341,9 +341,6 @@ ptmalloc_init_minimal __MALLOC_P((void))
 }
 
 
-#if !(USE_STARTER & 2)
-static
-#endif
 void
 ptmalloc_init __MALLOC_P((void))
 {

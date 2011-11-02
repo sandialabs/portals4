@@ -12,7 +12,7 @@ ptl_morecore(int inc)
   new = (char*) sbrk(inc);
   if (new - tmp > 0) {
     alloc_add_mem(tmp, (char*) new - (char*) tmp);
-  } else {
+  } else if (tmp - new > 0) {
     alloc_remove_mem(new, (char*) tmp - (char*) new);
   }
   return (void*) new;
