@@ -1,5 +1,7 @@
-/*
- * ptl_init.c - initiator side processing
+/**
+ * @file ptl_init.c
+ *
+ * @brief Initiator side processing.
  */
 #include "ptl_loc.h"
 
@@ -21,54 +23,86 @@ static char *init_state_name[] = {
 	[STATE_INIT_DONE]		= "done",
 };
 
-static void make_send_event(buf_t *buf)
+/**
+ * @brief post a send event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
+static inline void make_send_event(buf_t *buf)
 {
-	/* note: mlength and rem offset may or may not contain valid
-	 * values depending on whether we have seen an ack/reply or not */
 	if (buf->ni_fail || !(buf->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT))
-		make_init_event(buf, buf->put_eq, PTL_EVENT_SEND, NULL);
+		make_init_event(buf, buf->put_eq, PTL_EVENT_SEND);
 
 	buf->event_mask &= ~XI_SEND_EVENT;
 }
 
-static void make_ack_event(buf_t *buf)
+/**
+ * @brief post an ack event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
+static inline void make_ack_event(buf_t *buf)
 {
 	if (buf->ni_fail || !(buf->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT))
-		make_init_event(buf, buf->put_eq, PTL_EVENT_ACK, NULL);
+		make_init_event(buf, buf->put_eq, PTL_EVENT_ACK);
 
 	buf->event_mask &= ~XI_ACK_EVENT;
 }
 
-static void make_reply_event(buf_t *buf)
+/**
+ * @brief post a reply event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
+static inline void make_reply_event(buf_t *buf)
 {
 	if (buf->ni_fail || !(buf->event_mask & XI_GET_SUCCESS_DISABLE_EVENT))
-		make_init_event(buf, buf->get_eq, PTL_EVENT_REPLY, NULL);
+		make_init_event(buf, buf->get_eq, PTL_EVENT_REPLY);
 
 	buf->event_mask &= ~XI_REPLY_EVENT;
 }
 
+/**
+ * @brief post a ct send event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
 static inline void make_ct_send_event(buf_t *buf)
 {
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	int bytes = (buf->event_mask & XI_PUT_CT_BYTES) ?
+			CT_RBYTES : CT_EVENTS;
 
-	make_ct_event(buf->put_ct, buf->ni_fail, le64_to_cpu(hdr->length),
-		      buf->event_mask & XI_PUT_CT_BYTES);
+	make_ct_event(buf->put_ct, buf, bytes);
 
 	buf->event_mask &= ~XI_CT_SEND_EVENT;
 }
 
+/**
+ * @brief post a ct ack event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
 static inline void make_ct_ack_event(buf_t *buf)
 {
-	make_ct_event(buf->put_ct, buf->ni_fail, buf->mlength,
-		      buf->event_mask & XI_PUT_CT_BYTES);
+	int bytes = (buf->event_mask & XI_PUT_CT_BYTES) ?
+			CT_MBYTES : CT_EVENTS;
+
+	make_ct_event(buf->put_ct, buf, bytes);
 
 	buf->event_mask &= ~XI_CT_ACK_EVENT;
 }
 
+/**
+ * @brief post a ct reply event to caller.
+ *
+ * @param[in] buf the request buf.
+ */
 static inline void make_ct_reply_event(buf_t *buf)
 {
-	make_ct_event(buf->get_ct, buf->ni_fail, buf->mlength,
-		      buf->event_mask & XI_GET_CT_BYTES);
+	int bytes = (buf->event_mask & XI_GET_CT_BYTES) ?
+			CT_MBYTES : CT_EVENTS;
+
+	make_ct_event(buf->get_ct, buf, bytes);
 
 	buf->event_mask &= ~XI_CT_REPLY_EVENT;
 }
@@ -76,8 +110,8 @@ static inline void make_ct_reply_event(buf_t *buf)
 /**
  * @brief initiator start state.
  *
- * This state analyzes the request and the options
- * for the md and determines the buf event mask.
+ * This state analyzes the request
+ * and determines the buf event mask.
  *
  * @param[in] buf the request buf.
  * @return next state.
@@ -123,7 +157,8 @@ static int start(buf_t *buf)
 		if ((hdr->ack_req == PTL_CT_ACK_REQ ||
 		     hdr->ack_req == PTL_OC_ACK_REQ))
 			buf->event_mask |= XI_RECEIVE_EXPECTED; {
-			if (buf->put_md->ct && (buf->put_md->options & PTL_MD_EVENT_CT_ACK))
+			if (buf->put_md->ct && (buf->put_md->options &
+						PTL_MD_EVENT_CT_ACK))
 				buf->event_mask |= XI_CT_ACK_EVENT;
 		}
 		break;
@@ -180,8 +215,6 @@ static int prepare_req(buf_t *buf)
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *put_data = NULL;
 	ptl_size_t length = le64_to_cpu(hdr->length);
-
-	assert(buf->conn);
 
 	hdr->version = PTL_HDR_VER_1;
 	hdr->ni_type = ni->ni_type;
@@ -249,9 +282,9 @@ static int prepare_req(buf_t *buf)
 	 * operation for the Put. Until the response is received, we
 	 * cannot free the MR nor post the send events. Note we
 	 * have already set event_mask. */
-	if ((put_data && put_data->data_fmt != DATA_FMT_IMMEDIATE &&
-		 (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
-		buf->num_mr) {
+	if ((put_data && (put_data->data_fmt != DATA_FMT_IMMEDIATE) &&
+	    (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
+	    buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
 		buf->event_mask |= XI_RECEIVE_EXPECTED;
 	}
@@ -437,13 +470,17 @@ static int early_send_event(buf_t *buf)
 	if (buf->event_mask & XI_SEND_EVENT)
 		make_send_event(buf);
 
-	if (buf->event_mask & XI_CT_SEND_EVENT)
+	if (buf->event_mask & XI_CT_SEND_EVENT) {
+		/* For early send events we use the requested length
+		 * instead of the modified length since we haven't
+		 * had a chance to see it yet. This only matters
+		 * if we are counting bytes. */
+		buf->mlength = le64_to_cpu(((req_hdr_t *)buf->data)->length);
 		make_ct_send_event(buf);
+	}
 	
-	/* an ni failure has to be 'undeliverable' so
-	 * we are not going to get a response. In
-	 * this case we do not generate ACK or CT ACK events. */
-	if ((buf->event_mask & XI_RECEIVE_EXPECTED) && !buf->ni_fail)
+	if ((buf->event_mask & XI_RECEIVE_EXPECTED) &&
+			(buf->ni_fail != PTL_NI_UNDELIVERABLE))
 		return STATE_INIT_WAIT_RECV;
 	else
 		return STATE_INIT_CLEANUP;
@@ -489,33 +526,6 @@ static int wait_recv(buf_t *buf)
 	return STATE_INIT_CLEANUP;
 }
 
-/*
- * init_copy_in
- *	copy data from data segment to md
- */
-static int init_copy_in(buf_t *buf, md_t *md, void *data)
-{
-	int err;
-
-	/* the offset into the get_md is the original one */
-	ptl_size_t offset = buf->get_offset;
-
-	/* the length may have been truncated by target */
-	ptl_size_t length = buf->mlength;
-
-	if (md->num_iov) {
-		void *start;
-		err = iov_copy_in(data, (ptl_iovec_t *)md->start,
-				  md->num_iov, offset, length, &start);
-		if (err)
-			return PTL_FAIL;
-	} else {
-		memcpy(md->start + offset, data, length);
-	}
-
-	return PTL_OK;
-}
-
 /**
  * @brief initiator immediate data in state.
  *
@@ -528,19 +538,23 @@ static int init_copy_in(buf_t *buf, md_t *md, void *data)
  */
 static int data_in(buf_t *buf)
 {
-	int err;
 	md_t *md = buf->get_md;
-	data_t *data = buf->data_in;
+	void *data = buf->data_in->immediate.data;
+	ptl_size_t offset = buf->get_offset;
+	ptl_size_t length = buf->mlength;
 
-	if (unlikely(data->data_fmt != DATA_FMT_IMMEDIATE)) {
-		abort();
-		return STATE_INIT_ERROR;
+	assert(buf->data_in->data_fmt == DATA_FMT_IMMEDIATE);
+
+	if (md->num_iov) {
+		void *notused;
+
+		int err = iov_copy_in(data, (ptl_iovec_t *)md->start,
+				      md->num_iov, offset, length, &notused);
+		if (err)
+			return STATE_INIT_ERROR;
+	} else {
+		memcpy(md->start + offset, data, length);
 	}
-
-	err = init_copy_in(buf, md, data->immediate.data);
-	assert(!err);
-	if (err)
-		return STATE_INIT_ERROR;
 
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
 		return STATE_INIT_LATE_SEND_EVENT;
@@ -611,6 +625,15 @@ static int ack_event(buf_t *buf)
 	return STATE_INIT_CLEANUP;
 }
 
+/**
+ * @brief initiator reply event state.
+ *
+ * This state is reached if we can deliver
+ * a reply or ct_reply event.
+ *
+ * @param[in] buf the request buf.
+ * @return next state.
+ */
 static int reply_event(buf_t *buf)
 {
 	/* Release the get MD before posting the REPLY event. */
@@ -626,6 +649,28 @@ static int reply_event(buf_t *buf)
 	return STATE_INIT_CLEANUP;
 }
 
+/**
+ * @brief initiator error state.
+ *
+ * This state is reached when an error has
+ * occured during the processing of the
+ * request.
+ *
+ * @param[in] buf the request buf.
+ */
+static void error(buf_t *buf)
+{
+	/* TODO log the error */
+}
+
+/**
+ * @brief initiator cleanup state.
+ *
+ * This state is reached when we are finished
+ * processing a portals message.
+ *
+ * @param[in] buf the request buf.
+ */
 static void cleanup(buf_t *buf)
 {
 	if (buf->get_md) {
@@ -639,17 +684,32 @@ static void cleanup(buf_t *buf)
 	}
 
 	if (buf->recv_buf) {
-		buf_put(buf->recv_buf);	/* from buf_alloc in ptl_post_recv */
+		buf_put(buf->recv_buf);
 		buf->recv_buf = NULL;
 	}
 }
 
 /*
- * process_init
- *	this can run on the API or progress threads
- *	calling process_init will guarantee that the
- *	loop will run at least once either on the calling
- *	thread or the currently active thread
+ * @brief initiator state machine.
+ *
+ * This state machine can be reentered one or more times
+ * for each portals message. It is initially called from
+ * one of the move APIs (e.g. Put/Get/...) with a buf
+ * in the start state. It may exit the state machine for
+ * one of the wait states (wait_conn, wait_comp, wait_recv)
+ * and be reentered when the event occurs. The state
+ * machine is protected by buf->mutex so only one thread at
+ * a time can work on a given message. It can be executed
+ * on an application thread, the IB connection thread or
+ * a progress thread. The state machine drops the reference
+ * to the buf corresponding to the original allocation
+ * before leaving for the final time. If the caller into the
+ * state machine needs to access the buf after the return
+ * it should take an additional reference before calling
+ * process_init and drop it after finishing accessing the buf.
+ *
+ * @param[in] buf the request buf.
+ * @return status
  */
 int process_init(buf_t *buf)
 {
@@ -661,8 +721,9 @@ int process_init(buf_t *buf)
 	state = buf->init_state;
 
 	while (1) {
-		if (debug) printf("%p: init state = %s\n",
-				  buf, init_state_name[state]);
+		if (debug)
+			printf("[%d]%p: init state = %s\n",
+			       getpid(), buf, init_state_name[state]);
 
 		switch (state) {
 		case STATE_INIT_START:
@@ -708,6 +769,7 @@ int process_init(buf_t *buf)
 			state = reply_event(buf);
 			break;
 		case STATE_INIT_ERROR:
+			error(buf);
 			err = PTL_FAIL;
 			state = STATE_INIT_CLEANUP;
 			break;
@@ -715,9 +777,17 @@ int process_init(buf_t *buf)
 			cleanup(buf);
 			buf->init_state = STATE_INIT_DONE;
 			pthread_mutex_unlock(&buf->mutex);
-			buf_put(buf);		/* from (s)buf_alloc in get_transport_buf */
+			buf_put(buf);
 			return err;
 		case STATE_INIT_DONE:
+			/* This state handles the unusual case
+			 * where the IB send completion occurs
+			 * after the response from the target
+			 * since we have already completed processing
+			 * the request we do nothing here.
+			 * The send completion handler will drop
+			 * the final reference to the buf
+			 * after we return. */
 			goto exit;
 		default:
 			abort();
@@ -725,8 +795,10 @@ int process_init(buf_t *buf)
 	}
 
 exit:
+	/* we reach this point if we are leaving the state machine
+	 * to wait for an external event such as an IB send completion. */
 	buf->init_state = state;
 	pthread_mutex_unlock(&buf->mutex);
 
-	return err;
+	return PTL_OK;
 }

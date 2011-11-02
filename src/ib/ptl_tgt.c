@@ -68,10 +68,11 @@ static int make_comm_event(buf_t *buf)
  */
 static void make_ct_comm_event(buf_t *buf)
 {
-	le_t *le = buf->le;
-	int bytes = le->options & PTL_LE_EVENT_CT_BYTES;
+	int bytes = (buf->le->options & PTL_LE_EVENT_CT_BYTES) ?
+			CT_MBYTES : CT_EVENTS;
 
-	make_ct_event(le->ct, buf->ni_fail, buf->mlength, bytes);
+	make_ct_event(buf->le->ct, buf, bytes);
+
 	buf->event_mask &= ~XT_CT_COMM_EVENT;
 }
 
@@ -1364,7 +1365,7 @@ static int tgt_overflow_event(buf_t *buf)
 		/* Update the counter if we can. If LE comes from PtlLESearch,
 		 * then ct is NULL. */
 		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
-			make_ct_event(le->ct, buf->ni_fail, buf->mlength, 1);
+			make_ct_event(le->ct, buf, CT_MBYTES);
 	}
 
 	le_put(le);
