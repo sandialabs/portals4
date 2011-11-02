@@ -1,13 +1,13 @@
 /**
  * @file ptl_eq.h
  *
- * Event queue implementation.
+ * @brief Event queue implementation.
  */
 
 #include "ptl_loc.h"
 
 /**
- * Initialize a eq object once when created.
+ * @brief Initialize a eq object once when created.
  *
  * @param[in] arg opaque eq address
  * @param[in] unused unused
@@ -23,7 +23,7 @@ int eq_init(void *arg, void *unused)
 }
 
 /**
- * Cleanup a eq object once when destroyed.
+ * @brief Cleanup a eq object once when destroyed.
  *
  * @param[in] arg opaque eq address
  */
@@ -36,7 +36,7 @@ void eq_fini(void *arg)
 }
 
 /**
- * Initialize eq each time when allocated from free list.
+ * @brief Initialize eq each time when allocated from free list.
  *
  * @param[in] arg opaque eq address
  *
@@ -58,7 +58,7 @@ int eq_new(void *arg)
 }
 
 /**
- * Cleanup eq each time when freed.
+ * @brief Cleanup eq each time when freed.
  *
  * Called when last reference to eq is dropped.
  *
@@ -74,13 +74,18 @@ void eq_cleanup(void *arg)
 }
 
 /**
- * Allocate an event queue object.
+ * @brief Allocate an event queue object.
  *
- * @param[in] ni_handle
- * @param[in] count
- * @param[out] eq_handle_p
+ * @param[in] ni_handle The handle of the network interface.
+ * @param[in] count The number of elements in the event queue.
+ * @param[out] eq_handle_p The address of the returned event queue handle.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
+ * @return PTL_NO_SPACE Indicates that there is insufficient memory to
+ * allocate the event queue.
  */
 int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	       ptl_size_t count,
@@ -148,7 +153,7 @@ err0:
 }
 
 /**
- * check to see if event queue has waiters.
+ * @brief check to see if event queue has waiters.
  *
  * @pre caller should hold eq->mutex
  *
@@ -168,11 +173,15 @@ static void __eq_check(eq_t *eq)
 }
 
 /**
- * Free an event queue object.
+ * @brief Free an event queue object.
  *
- * @param[in] eq_handle
+ * @param[in] eq_handle The handle of the event queue to free.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid
+ * event queue handle.
  */
 int PtlEQFree(ptl_handle_eq_t eq_handle)
 {
@@ -230,7 +239,7 @@ err0:
 }
 
 /**
- * find next event in event queue.
+ * @brief Find next event in event queue.
  *
  * @pre caller should hold eq->mutex
  *
@@ -273,15 +282,25 @@ static int __get_event(volatile eq_t *eq, ptl_event_t *event_p)
 }
 
 /**
- * Get the next event in an event queue.
+ * @brief Get the next event in an event queue.
  *
  * The PtlEQGet() function is a nonblocking function that can be used to get
  * the next event in an event queue. The event * is removed from the queue.
  *
- * @param[in] eq_handle
- * @param[out] event_p
+ * @param[in] eq_handle The handle of the event queue from which to get an event.
+ * @param[out] event_p The address of the returned event.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_EQ_DROPPED Indicates success (i.e., an event is returned) and
+ * that at least one full event between this full event and the last full
+ * event obtained—using PtlEQGet(), PtlEQWait(), or PtlEQPoll()—from this
+ * event queue has been dropped due to limited space in the event queue.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_EQ_EMPTY Indicates that eq_handle is empty or another thread
+ * is waiting in PtlEQWait().
+ * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid event
+ * queue handle.
  */
 int PtlEQGet(ptl_handle_eq_t eq_handle,
 	     ptl_event_t *event_p)
@@ -320,12 +339,23 @@ err0:
 }
 
 /**
- * Wait for next event in event queue.
+ * @brief Wait for next event in event queue.
  *
- * @param[in] eq_handle
- * @param[out] event_p
+ * @param[in] eq_handle The handle of the event queue on which to wait
+ * for an event.
+ * @param[out] event_p The address of the returned event.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_EQ_DROPPED Indicates success (i.e., an event is returned)
+ * and that at least one full event between this full event and the last
+ * full event obtained—using PtlEQGet(), PtlEQWait(), or PtlEQPoll()—from
+ * this event queue has been dropped due to limited space in the event queue.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid event
+ * queue handle.
+ * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
+ * called by another thread while this thread was waiting in PtlEQWait().
  */
 int PtlEQWait(ptl_handle_eq_t eq_handle,
 	      ptl_event_t *event_p)
@@ -408,7 +438,7 @@ err0:
 }
 
 /**
- * Poll for an event in an array of event queues.
+ * @brief Poll for an event in an array of event queues.
  *
  * @param[in] eq_handles array of event queue handles
  * @param[in] size the size of the array
@@ -416,7 +446,19 @@ err0:
  * @param[out] event_p address of returned event
  * @param[out] which_p address of returned array index
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_EQ_DROPPED Indicates success (i.e., an event is returned)
+ * and that at least one full event between this full event and the
+ * last full event obtained from the event queue indicated by which has
+ * been dropped due to limited space in the event queue.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
+ * The definition of which arguments are checked is implementation dependent.
+ * @return PTL_EQ_EMPTY Indicates that the timeout has been reached and all
+ * of the event queues are empty.
+ * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
+ * called by another thread while this thread was waiting in PtlEQPoll().
  */
 int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	      ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
@@ -578,9 +620,9 @@ err0:
 /**
  * @brief Make and add a new event to the event queue from a buf.
  *
- * @param[in] buf
- * @param[in] eq
- * @param[in] type
+ * @param[in] buf The req buf for which to make the event.
+ * @param[in] eq The event queue.
+ * @param[in] type The event type.
  */
 void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
 {
@@ -609,15 +651,15 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
 }
 
 /**
- * Fill in event struct
+ * @brief Fill in event struct in memory.
  *
- * @param[in] buf
- * @param[in] eq
- * @param[in] type
- * @param[in] usr_ptr
- * @param[in] start
+ * @param[in] buf The req buf from which to make the event.
+ * @param[in] type The event type.
+ * @param[in] usr_ptr The user pointer.
+ * @param[in] start The start address.
+ * @param[out] The address of the returned event.
  */
-void fill_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
+void fill_target_event(buf_t *buf, ptl_event_kind_t type,
 		       void *user_ptr, void *start, ptl_event_t *ev)
 {
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -641,7 +683,10 @@ void fill_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
 }
 
 /**
- * generate an event from an event struct.
+ * @brief generate an event from an event struct.
+ *
+ * @param[in] eq the event queue to post the event to.
+ * @param[in] ev the event to post.
  */
 void send_target_event(eq_t *eq, ptl_event_t *ev)
 {
@@ -660,13 +705,13 @@ void send_target_event(eq_t *eq, ptl_event_t *ev)
 }
 		       
 /**
- * Make and add an event to the event queue from a buf.
+ * @brief Make and add an event to the event queue from a buf.
  *
- * @param[in] buf
- * @param[in] eq
- * @param[in] type
- * @param[in] usr_ptr
- * @param[in] start
+ * @param[in] buf The req buf from which to make the event.
+ * @param[in] eq The event queue to add the event to.
+ * @param[in] type The event type.
+ * @param[in] usr_ptr The user pointer.
+ * @param[in] start The start address.
  */
 void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
 		       void *user_ptr, void *start)
@@ -706,12 +751,12 @@ void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
 }
 
 /**
- * Make and event and add to event queue from an LE/ME.
+ * @brief Make and event and add to event queue from an LE/ME.
  *
- * @param[in] le
- * @param[in] eq
- * @param[in] type
- * @param[in] fail_type
+ * @param[in] le The list element to make the event from.
+ * @param[in] eq The event queue to add the event to.
+ * @param[in] type The event type.
+ * @param[in] fail_type The NI fail type.
  */
 void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
 		   ptl_ni_fail_t fail_type)

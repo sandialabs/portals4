@@ -56,7 +56,7 @@ void eq_cleanup(void *arg);
 
 void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type);
 
-void fill_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
+void fill_target_event(buf_t *buf, ptl_event_kind_t type,
 		       void *user_ptr, void *start, ptl_event_t *ev);
 
 void send_target_event(eq_t *eq, ptl_event_t *ev);

@@ -1631,8 +1631,7 @@ int check_overflow_search_only(le_t *le)
 			 * set the ni_fail field. */
 			if (le->eq && !(le->options &
 					PTL_LE_EVENT_COMM_DISABLE)) {
-				fill_target_event(buf, le->eq,
-						  PTL_EVENT_SEARCH,
+				fill_target_event(buf, PTL_EVENT_SEARCH,
 						  le->user_ptr, NULL,
 						  &event);
 			}
