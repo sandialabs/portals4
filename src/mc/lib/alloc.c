@@ -38,6 +38,8 @@ static int initialized = 0;
 static void 
 alloc_init_hook(void)
 {
+    ptmalloc_init();
+
     __free_hook = dlfree;
     __malloc_hook = dlmalloc;
     __realloc_hook = dlrealloc;

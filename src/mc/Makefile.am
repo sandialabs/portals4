@@ -25,7 +25,7 @@ noinst_LTLIBRARIES = libportals_mc.la libportals_mc_alloc.la libportals_mc_share
 
 portals_engine_SOURCES = ppe/ppe.c
 portals_engine_LDFLAGS = $(XPMEM_LDFLAGS)
-portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS)
+portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
 
 libportals_mc_la_SOURCES = \
 	lib/alloc.h \
