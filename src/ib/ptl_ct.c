@@ -1,7 +1,7 @@
 /**
  * @file ptl_ct.c
  *
- * This file implements the counting event class.
+ * @brief This file implements the counting event class.
  */
 
 #include "ptl_loc.h"
@@ -12,7 +12,7 @@ static void __post_trig_ct(xl_t *xl, ct_t *trig_ct);
 static void do_trig_ct_op(xl_t *xl);
 
 /**
- * Initialize a ct object once when created.
+ * @brief Initialize a ct object once when created.
  *
  * @param[in] arg opaque ct address
  * @param[in] unused unused
@@ -30,7 +30,7 @@ int ct_init(void *arg, void *unused)
 }
 
 /**
- * Cleanup a ct object once when destroyed.
+ * @brief Cleanup a ct object once when destroyed.
  *
  * @param[in] arg opaque ct address
  */
@@ -43,11 +43,11 @@ void ct_fini(void *arg)
 }
 
 /**
- * Initialize ct each time when allocated from free list.
+ * @brief Initialize ct each time when allocated from free list.
  *
  * @param[in] arg opaque ct address
  *
- * @return status
+ * @return PTL_OK Indicates success.
  */
 int ct_new(void *arg)
 {
@@ -65,7 +65,7 @@ int ct_new(void *arg)
 }
 
 /**
- * Cleanup ct each time when freed.
+ * @brief Cleanup ct each time when freed.
  *
  * Called when last reference to ct is dropped.
  *
@@ -79,14 +79,20 @@ void ct_cleanup(void *arg)
 }
 
 /**
- * Allocate a new counting event.
+ * @brief Allocate a new counting event.
  *
  * @post on success leaves holding one reference on the ct
  *
  * @param[in] ni_handle the handle of the ni for which to allocate ct
  * @param[out] ct_handle_p a pointer to the returned ct_handle
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument
+ * was passed.
+ * @return PTL_NO_SPACE Indicates that there is insufficient
+ * memory to allocate the counting event.
  */
 int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 {
@@ -149,7 +155,7 @@ err0:
 }
 
 /**
- * Free a counting event.
+ * @brief Free a counting event.
  *
  * The PtlCTFree() function releases the resources associated with a
  * counting event. It is up to the user to ensure that no memory
@@ -159,9 +165,13 @@ err0:
  * of PtlCTFree(), any triggered operations waiting on the freed
  * counting event whose thresholds have not been met will be deleted.
  *
- * @param[in] ct_handle
+ * @param[in] ct_handle The handle of the counting event to free.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
  */
 int PtlCTFree(ptl_handle_ct_t ct_handle)
 {
@@ -218,7 +228,73 @@ err0:
 }
 
 /**
- * Return the current state of a counting event.
+ * @brief Cancel any pending triggered move or ct operations.
+ *
+ * @param[in] ct_handle the handle of the ct to cancel
+ *
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
+ */
+int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+{
+	int err;
+	ct_t *ct;
+	ni_t *ni;
+	struct list_head *l;
+	struct list_head *t;
+
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
+
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
+
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
+
+	ni = obj_to_ni(ct);
+
+	pthread_mutex_lock(&ct->mutex);
+
+	list_for_each_prev_safe(l, t, &ct->buf_list) {
+		buf_t *buf = list_entry(l, buf_t, list);
+		list_del(l);
+		buf->init_state = STATE_INIT_CLEANUP;
+		process_init(buf);
+	}
+
+	list_for_each_prev_safe(l, t, &ct->xl_list) {
+		xl_t *xl = list_entry(l, xl_t, list);
+		list_del(l);
+		ct_put(xl->ct);
+		free(xl);
+	}
+
+	pthread_mutex_unlock(&ct->mutex);
+
+	err = PTL_OK;
+	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
+err1:
+	gbl_put();
+err0:
+#endif
+	return err;
+}
+
+/**
+ * @brief Return the current state of a counting event.
  *
  * PtlCTGet()must be as close to the speed of a simple variable access as
  * possible; hence, PtlCTGet() is not atomic relative to PtlCTSet() or
@@ -228,7 +304,11 @@ err0:
  * @param[in] ct_handle the handle of the ct object
  * @param[out] event_p a pointer to the returned ct
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
  */
 int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 {
@@ -266,15 +346,22 @@ err0:
 }
 
 /**
- * Wait until counting event exceeds threshold or has a failure.
+ * @brief Wait until counting event exceeds threshold or has a failure.
  *
  * Will spin and then block waiting for a pthreads condition.
  *
- * @param[in] ct_handle
- * @param[in] threshold
- * @param[out] event_p
+ * @param[in] ct_handle The handle of the counting event to wait on.
+ * @param[in] threshold The threshold the event must reach.
+ * @param[out] event_p The address of the returned event.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
+ * @return PTL_INTERRUPTED Indicates that PtlCTFree() or PtlNIFini()
+ * was called by another thread while this thread * was waiting in
+ * PtlCTWait().
  */
 int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	      ptl_ct_event_t *event_p)
@@ -350,7 +437,7 @@ err0:
 }
 
 /**
- * perform one trip around the polling loop
+ * @brief Perform one trip around the polling loop
  *
  * @see PtlCTPoll
  *
@@ -387,7 +474,7 @@ static int ct_poll_loop(int size, const ct_t **cts, const ptl_size_t *thresholds
 }
 
 /**
- * Wait until one of an array of ct events reaches threshold or has a failure.
+ * @brief Wait until one of an array of ct events reaches threshold or has a failure.
  *
  * @param[in] ct_handles array of ct handles to poll
  * @param[in] thresholds array of thresholds to check
@@ -396,7 +483,16 @@ static int ct_poll_loop(int size, const ct_t **cts, const ptl_size_t *thresholds
  * @param[out] event_p address of returned event
  * @param[out] which_p address of returned index in array
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates an invalid argument (e.g. a
+ * bad ct_handle).
+ * @return PTL_CT_NONE_REACHED Indicates that none of the counting
+ * events reached their test before the timeout was * reached.
+ * @return PTL_INTERRUPTED Indicates that PtlCTFree() or PtlNIFini()
+ * was called by another thread while this thread * was waiting
+ * in PtlCTPoll().
  */
 int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	      unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
@@ -536,12 +632,12 @@ err0:
 }
 
 /**
- * Check to see if current value of ct event will
+ * @brief Check to see if current value of ct event will
  * trigger a further action.
  *
  * @pre caller should hold ct->mutex
  *
- * @param[in] ct
+ * @param[in] ct The counting event to check.
  */
 static void __ct_check(ct_t *ct)
 {
@@ -595,7 +691,7 @@ static void __ct_check(ct_t *ct)
 }
 
 /**
- * Set counting event to new value.
+ * @brief Set counting event to new value.
  *
  * @pre caller should hold ct->mutex
  *
@@ -613,12 +709,16 @@ static void __ct_set(ct_t *ct, ptl_ct_event_t new_ct)
 }
 
 /**
- * Set counting event to new value.
+ * @brief Set counting event to new value.
  *
- * @param[in] ct_handle
- * @param[in] new_ct
+ * @param[in] ct_handle The handle of the counting event to set.
+ * @param[in] new_ct The new value to set the event to.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
  */
 int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 {
@@ -663,98 +763,12 @@ err0:
 }
 
 /**
- * Setup a triggered ct set operation.
- *
- * When the ct with handle trig_ct_handle reaches
- * threshold set the ct with handle ct_handle
- * to the value new_ct
- *
- * xl holds a reference to ct until it gets processed
- *
- * @param ct_handle the handle of the ct on which to
- * perform the triggered ct operation
- * @param new_ct the value to set
- * the counting event to
- * @param trig_ct_handle the handle of the
- * counting event that triggers the ct operation
- * @param threshold the threshold, when reached
- * by trig_ct, that causes the ct operation
- *
- * @return status
- */
-int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
-		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
-{
-	int err;
-	ct_t *ct;
-	ct_t *trig_ct;
-	ni_t *ni;
-	xl_t *xl;
-
-	/* convert handles to objects */
-#ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
-
-	err = to_ct(trig_ct_handle, &trig_ct);
-	if (err)
-		goto err1;
-
-	ni = obj_to_ni(trig_ct);
-
-	err = to_ct(ct_handle, &ct);
-	if (err)
-		goto err2;
-
-	if (ni != obj_to_ni(ct)) {
-		err = PTL_ARG_INVALID;
-		ct_put(ct);
-		goto err2;
-	}
-#else
-	trig_ct = fast_to_obj(trig_ct_handle);
-	ct = fast_to_obj(ct_handle);
-	ni = obj_to_ni(trig_ct);
-#endif
-
-	/* get container for triggered ct op */
-	xl = xl_alloc();
-	if (!xl) {
-		err = PTL_NO_SPACE;
-		ct_put(ct);
-		goto err2;
-	}
-
-	xl->op = TRIG_CT_SET;
-	xl->ct = ct;
-	xl->value = new_ct;
-	xl->threshold = threshold;
-
-	pthread_mutex_lock(&trig_ct->mutex);
-
-	__post_trig_ct(xl, trig_ct);
-
-	pthread_mutex_unlock(&trig_ct->mutex);
-
-	err = PTL_OK;
-err2:
-	ct_put(trig_ct);
-#ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
-#endif
-	return err;
-}
-
-/**
- * Increment counting event by value.
+ * @brief Increment counting event by value.
  *
  * @pre caller should hold ct->mutex
  *
- * @param[in] ct
- * @param[in] increment
+ * @param[in] ct The counting event to increment.
+ * @param[in] increment The increment value.
  */
 static void __ct_inc(ct_t *ct, ptl_ct_event_t increment)
 {
@@ -768,12 +782,16 @@ static void __ct_inc(ct_t *ct, ptl_ct_event_t increment)
 }
 
 /**
- * Increment counting event.
+ * @brief Increment counting event.
  *
- * @param[in] ct_handle
- * @param[in] increment
+ * @param[in] ct_handle The handle of the countin event to increment.
+ * @param[in] increment The increment value.
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
+ * counting event handle.
  */
 int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 {
@@ -825,7 +843,7 @@ err0:
 }
 
 /**
- * Setup a triggered ct increment operation.
+ * @brief Setup a triggered ct increment operation.
  *
  * When the ct with handle trig_ct_handle reaches
  * threshold increment the ct with handle ct_handle
@@ -842,7 +860,11 @@ err0:
  * @param threshold the threshold, when reached
  * by trig_ct, that causes the ct operation
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was
+ * passed.
  */
 int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
@@ -914,59 +936,85 @@ err0:
 }
 
 /**
- * Cancel any pending triggered move or ct operations.
+ * @brief Setup a triggered ct set operation.
  *
- * @param[in] ct_handle the handle of the ct to cancel
+ * When the ct with handle trig_ct_handle reaches
+ * threshold set the ct with handle ct_handle
+ * to the value new_ct
  *
- * @return status
+ * xl holds a reference to ct until it gets processed
+ *
+ * @param ct_handle the handle of the ct on which to
+ * perform the triggered ct operation
+ * @param new_ct the value to set
+ * the counting event to
+ * @param trig_ct_handle the handle of the
+ * counting event that triggers the ct operation
+ * @param threshold the threshold, when reached
+ * by trig_ct, that causes the ct operation
+ *
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  */
-int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
+		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
 	ct_t *ct;
+	ct_t *trig_ct;
 	ni_t *ni;
-	struct list_head *l;
-	struct list_head *t;
+	xl_t *xl;
 
+	/* convert handles to objects */
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(trig_ct_handle, &trig_ct);
 	if (err)
 		goto err1;
 
-	if (!ct) {
+	ni = obj_to_ni(trig_ct);
+
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err2;
+
+	if (ni != obj_to_ni(ct)) {
 		err = PTL_ARG_INVALID;
-		goto err1;
+		ct_put(ct);
+		goto err2;
 	}
 #else
+	trig_ct = fast_to_obj(trig_ct_handle);
 	ct = fast_to_obj(ct_handle);
+	ni = obj_to_ni(trig_ct);
 #endif
 
-	ni = obj_to_ni(ct);
-
-	pthread_mutex_lock(&ct->mutex);
-
-	list_for_each_prev_safe(l, t, &ct->buf_list) {
-		buf_t *buf = list_entry(l, buf_t, list);
-		list_del(l);
-		buf->init_state = STATE_INIT_CLEANUP;
-		process_init(buf);
+	/* get container for triggered ct op */
+	xl = xl_alloc();
+	if (!xl) {
+		err = PTL_NO_SPACE;
+		ct_put(ct);
+		goto err2;
 	}
 
-	list_for_each_prev_safe(l, t, &ct->xl_list) {
-		xl_t *xl = list_entry(l, xl_t, list);
-		list_del(l);
-		ct_put(xl->ct);
-		free(xl);
-	}
+	xl->op = TRIG_CT_SET;
+	xl->ct = ct;
+	xl->value = new_ct;
+	xl->threshold = threshold;
 
-	pthread_mutex_unlock(&ct->mutex);
+	pthread_mutex_lock(&trig_ct->mutex);
+
+	__post_trig_ct(xl, trig_ct);
+
+	pthread_mutex_unlock(&trig_ct->mutex);
 
 	err = PTL_OK;
-	ct_put(ct);
+err2:
+	ct_put(trig_ct);
 #ifndef NO_ARG_VALIDATION
 err1:
 	gbl_put();
@@ -976,7 +1024,7 @@ err0:
 }
 
 /**
- * Perform triggered ct operation.
+ * @brief Perform triggered ct operation.
  *
  * @param[in] xl
  */
@@ -1007,11 +1055,11 @@ done:
 }
 
 /**
- * Add a operation to list of pending triggered operations or
+ * @brief Add a operation to list of pending triggered operations or
  * go ahead and do it if threshold has been met.
  *
- * @param[in] xi
- * @param[in] ct
+ * @param[in] buf The req buf to post to the counting event's list.
+ * @param[in] ct The counting event to add the buf to.
  */
 void post_ct(buf_t *buf, ct_t *ct)
 {
@@ -1026,7 +1074,7 @@ void post_ct(buf_t *buf, ct_t *ct)
 }
 
 /**
- * Add a triggered ct operation to a list or
+ * @brief Add a triggered ct operation to a list or
  * do it if threshold has already been reached.
  *
  * @pre caller should hold trig_ct->mutex
@@ -1048,11 +1096,11 @@ static void __post_trig_ct(xl_t *xl, ct_t *trig_ct)
 }
 
 /**
- * Update a counting event.
+ * @brief Update a counting event.
  *
- * @param[in] ct
- * @param[in] buf
- * @maram[in] bytes
+ * @param[in] ct The counting event to update.
+ * @param[in] buf The req buf from which to update it.
+ * @maram[in] bytes Whether to update evebts or bytes.
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
