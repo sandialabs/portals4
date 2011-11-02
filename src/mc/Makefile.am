@@ -30,6 +30,10 @@ portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
 libportals_mc_la_SOURCES = \
 	lib/alloc.h \
 	lib/alloc.c \
+	lib/func_call.h \
+	lib/ppe_if.h \
+	lib/ppe_if_ni.h \
+	lib/ni.c \
 	lib/init.c
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la libportals_mc_alloc.la $(XPMEM_LIBS)
