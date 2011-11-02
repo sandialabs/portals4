@@ -208,9 +208,9 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length);
 
-ptl_size_t iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
-			  ptl_size_t offset, ptl_size_t length,
-			  ptl_size_t *index_p, ptl_size_t *base_p);
+int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
+				   ptl_size_t offset, ptl_size_t length,
+				   ptl_size_t *index_p, ptl_size_t *base_p);
 
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		 void *dest, void *source, void *operand);
@@ -246,7 +246,7 @@ size_t knem_copy(ni_t * ni,
 				 uint64_t scookie, uint64_t soffset, 
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
-extern int PtlNIInit_shmem(iface_t *iface, ni_t *ni);
+extern int PtlNIInit_shmem(ni_t *ni);
 void cleanup_shmem(ni_t *ni);
 #else
 static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
@@ -254,7 +254,7 @@ static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int p
 	return 1;
 }
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
-static inline int PtlNIInit_shmem(iface_t *iface, ni_t *ni) { return PTL_OK; }
+static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
 static inline void cleanup_shmem(ni_t *ni) { }
 
 #endif

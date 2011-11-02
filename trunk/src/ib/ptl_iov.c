@@ -261,9 +261,9 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
  * @return number of iovec elements on success
  * @return -1 on failure
  */
-ptl_size_t iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
-			  ptl_size_t offset, ptl_size_t length,
-			  ptl_size_t *index_p, ptl_size_t *base_p)
+int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
+				   ptl_size_t offset, ptl_size_t length,
+				   ptl_size_t *index_p, ptl_size_t *base_p)
 {
 	ptl_size_t index_start;
 	ptl_size_t index_stop;

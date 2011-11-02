@@ -916,7 +916,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	}
 
 
-	err = PtlNIInit_shmem(iface, ni);
+	err = PtlNIInit_shmem(ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err2;

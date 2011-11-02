@@ -80,7 +80,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 	int err = PTL_OK;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	data_t *data = (data_t *)(buf->data + buf->length);
-	ptl_size_t num_sge;
+	int num_sge;
 	ptl_size_t iov_start = 0;
 	ptl_size_t iov_offset = 0;
 

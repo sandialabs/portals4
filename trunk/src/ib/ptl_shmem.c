@@ -299,7 +299,7 @@ static void release_shmem_ressources(ni_t *ni)
 	knem_fini(ni);
 }
 
-int PtlNIInit_shmem(iface_t *iface, ni_t *ni)
+int PtlNIInit_shmem(ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
