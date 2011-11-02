@@ -1037,19 +1037,24 @@ static void __post_trig_ct(xl_t *xl, ct_t *trig_ct)
  * Update a counting event.
  *
  * @param[in] ct
- * @param[in] ni_fail
- * @maram[in] length
+ * @param[in] buf
  * @maram[in] bytes
  */
-void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail, ptl_size_t length,
-		   int bytes)
+void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
 	pthread_mutex_lock(&ct->mutex);
 
-	if (ni_fail)
+	if (unlikely(buf->ni_fail))
 		ct->event.failure++;
-	else
-		ct->event.success += bytes ? length : 1;
+	else if (likely(bytes == CT_EVENTS))
+		ct->event.success++;
+	else if (likely(bytes == CT_MBYTES))
+		ct->event.success += buf->mlength;
+	else {
+		assert(bytes == CT_RBYTES);
+		ct->event.success +=
+			le64_to_cpu(((req_hdr_t *)buf->data)->length);
+	}
 
 	__ct_check(ct);
 

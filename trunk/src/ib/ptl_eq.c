@@ -569,14 +569,13 @@ err0:
 }
 
 /**
- * Make and add a new event to the event queue from an xi.
+ * @brief Make and add a new event to the event queue from a buf.
  *
- * @param[in] xi
+ * @param[in] buf
  * @param[in] eq
  * @param[in] type
- * @param[in] start
  */
-void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type, void *start)
+void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
 {
 	ptl_event_t *ev;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;

@@ -33,6 +33,12 @@ enum trig_ct_op {
 	TRIG_CT_INC,
 };
 
+enum ct_bytes {
+	CT_EVENTS,	/**< count events */
+	CT_RBYTES,	/**< count requested bytes */
+	CT_MBYTES,	/**< count modified/actual bytes */
+};
+
 /**
  * pending triggered ct operation info.
  */
@@ -63,8 +69,7 @@ void post_ct(buf_t *buf, ct_t *ct);
 
 void post_ct_local(xl_t *xl, ct_t *ct);
 
-void make_ct_event(ct_t *ct, ptl_ni_fail_t ni_fail,
-		   ptl_size_t length, int bytes);
+void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes);
 
 /**
  * Allocate a new ct object.
