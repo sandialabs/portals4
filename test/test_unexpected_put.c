@@ -298,7 +298,9 @@ int main(int   argc,
     }
 
     CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
+    CHECK_RETURNVAL(PtlCTFree(recv_e.ct_handle));
     CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
+    CHECK_RETURNVAL(PtlEQFree(write_md.eq_handle));
     // CHECK_RETURNVAL(UNLINK(unexpected_e_handle));
     CHECK_RETURNVAL(PtlCTFree(unexpected_e.ct_handle));
 
