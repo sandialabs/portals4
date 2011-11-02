@@ -77,7 +77,7 @@ int atom_type_size[] =
  */
 static int min_sc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int8_t *s = src;
 	int8_t *d = dst;
 
@@ -98,7 +98,7 @@ static int min_sc(void *dst, void *src, ptl_size_t length)
  */
 static int min_uc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -119,7 +119,7 @@ static int min_uc(void *dst, void *src, ptl_size_t length)
  */
 static int min_ss(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int16_t *s = src;
 	int16_t *d = dst;
 
@@ -140,7 +140,7 @@ static int min_ss(void *dst, void *src, ptl_size_t length)
  */
 static int min_us(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -161,7 +161,7 @@ static int min_us(void *dst, void *src, ptl_size_t length)
  */
 static int min_si(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int32_t *s = src;
 	int32_t *d = dst;
 
@@ -182,7 +182,7 @@ static int min_si(void *dst, void *src, ptl_size_t length)
  */
 static int min_ui(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -203,7 +203,7 @@ static int min_ui(void *dst, void *src, ptl_size_t length)
  */
 static int min_sl(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int64_t *s = src;
 	int64_t *d = dst;
 
@@ -224,7 +224,7 @@ static int min_sl(void *dst, void *src, ptl_size_t length)
  */
 static int min_ul(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -245,7 +245,7 @@ static int min_ul(void *dst, void *src, ptl_size_t length)
  */
 static int min_f(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	float *s = src;
 	float *d = dst;
 
@@ -266,7 +266,7 @@ static int min_f(void *dst, void *src, ptl_size_t length)
  */
 static int min_d(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	double *s = src;
 	double *d = dst;
 
@@ -287,7 +287,7 @@ static int min_d(void *dst, void *src, ptl_size_t length)
  */
 static int min_ld(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	long double *s = src;
 	long double *d = dst;
 
@@ -308,7 +308,7 @@ static int min_ld(void *dst, void *src, ptl_size_t length)
  */
 static int max_sc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int8_t *s = src;
 	int8_t *d = dst;
 
@@ -329,7 +329,7 @@ static int max_sc(void *dst, void *src, ptl_size_t length)
  */
 static int max_uc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -350,7 +350,7 @@ static int max_uc(void *dst, void *src, ptl_size_t length)
  */
 static int max_ss(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int16_t *s = src;
 	int16_t *d = dst;
 
@@ -371,7 +371,7 @@ static int max_ss(void *dst, void *src, ptl_size_t length)
  */
 static int max_us(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -392,7 +392,7 @@ static int max_us(void *dst, void *src, ptl_size_t length)
  */
 static int max_si(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int32_t *s = src;
 	int32_t *d = dst;
 
@@ -413,7 +413,7 @@ static int max_si(void *dst, void *src, ptl_size_t length)
  */
 static int max_ui(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -434,7 +434,7 @@ static int max_ui(void *dst, void *src, ptl_size_t length)
  */
 static int max_sl(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int64_t *s = src;
 	int64_t *d = dst;
 
@@ -455,7 +455,7 @@ static int max_sl(void *dst, void *src, ptl_size_t length)
  */
 static int max_ul(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -476,7 +476,7 @@ static int max_ul(void *dst, void *src, ptl_size_t length)
  */
 static int max_f(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	float *s = src;
 	float *d = dst;
 
@@ -497,7 +497,7 @@ static int max_f(void *dst, void *src, ptl_size_t length)
  */
 static int max_d(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	double *s = src;
 	double *d = dst;
 
@@ -518,7 +518,7 @@ static int max_d(void *dst, void *src, ptl_size_t length)
  */
 static int max_ld(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	long double *s = src;
 	long double *d = dst;
 
@@ -539,7 +539,7 @@ static int max_ld(void *dst, void *src, ptl_size_t length)
  */
 static int sum_sc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int8_t *s = src;
 	int8_t *d = dst;
 
@@ -560,7 +560,7 @@ static int sum_sc(void *dst, void *src, ptl_size_t length)
  */
 static int sum_uc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -581,7 +581,7 @@ static int sum_uc(void *dst, void *src, ptl_size_t length)
  */
 static int sum_ss(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int16_t *s = src;
 	int16_t *d = dst;
 
@@ -602,7 +602,7 @@ static int sum_ss(void *dst, void *src, ptl_size_t length)
  */
 static int sum_us(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -623,7 +623,7 @@ static int sum_us(void *dst, void *src, ptl_size_t length)
  */
 static int sum_si(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int32_t *s = src;
 	int32_t *d = dst;
 
@@ -644,7 +644,7 @@ static int sum_si(void *dst, void *src, ptl_size_t length)
  */
 static int sum_ui(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -665,7 +665,7 @@ static int sum_ui(void *dst, void *src, ptl_size_t length)
  */
 static int sum_sl(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int64_t *s = src;
 	int64_t *d = dst;
 
@@ -686,7 +686,7 @@ static int sum_sl(void *dst, void *src, ptl_size_t length)
  */
 static int sum_ul(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -707,7 +707,7 @@ static int sum_ul(void *dst, void *src, ptl_size_t length)
  */
 static int sum_f(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	float *s = src;
 	float *d = dst;
 
@@ -728,7 +728,7 @@ static int sum_f(void *dst, void *src, ptl_size_t length)
  */
 static int sum_d(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	double *s = src;
 	double *d = dst;
 
@@ -749,7 +749,7 @@ static int sum_d(void *dst, void *src, ptl_size_t length)
  */
 static int sum_ld(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	long double *s = src;
 	long double *d = dst;
 
@@ -770,7 +770,7 @@ static int sum_ld(void *dst, void *src, ptl_size_t length)
  */
 static int prod_sc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int8_t *s = src;
 	int8_t *d = dst;
 
@@ -791,7 +791,7 @@ static int prod_sc(void *dst, void *src, ptl_size_t length)
  */
 static int prod_uc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -812,7 +812,7 @@ static int prod_uc(void *dst, void *src, ptl_size_t length)
  */
 static int prod_ss(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int16_t *s = src;
 	int16_t *d = dst;
 
@@ -833,7 +833,7 @@ static int prod_ss(void *dst, void *src, ptl_size_t length)
  */
 static int prod_us(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -854,7 +854,7 @@ static int prod_us(void *dst, void *src, ptl_size_t length)
  */
 static int prod_si(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int32_t *s = src;
 	int32_t *d = dst;
 
@@ -875,7 +875,7 @@ static int prod_si(void *dst, void *src, ptl_size_t length)
  */
 static int prod_ui(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -896,7 +896,7 @@ static int prod_ui(void *dst, void *src, ptl_size_t length)
  */
 static int prod_sl(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	int64_t *s = src;
 	int64_t *d = dst;
 
@@ -917,7 +917,7 @@ static int prod_sl(void *dst, void *src, ptl_size_t length)
  */
 static int prod_ul(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -938,7 +938,7 @@ static int prod_ul(void *dst, void *src, ptl_size_t length)
  */
 static int prod_f(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	float *s = src;
 	float *d = dst;
 
@@ -959,7 +959,7 @@ static int prod_f(void *dst, void *src, ptl_size_t length)
  */
 static int prod_fc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	float *s = src;
 	float *d = dst;
 	float a, b;
@@ -985,7 +985,7 @@ static int prod_fc(void *dst, void *src, ptl_size_t length)
  */
 static int prod_d(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	double *s = src;
 	double *d = dst;
 
@@ -1006,7 +1006,7 @@ static int prod_d(void *dst, void *src, ptl_size_t length)
  */
 static int prod_dc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	double *s = src;
 	double *d = dst;
 	double a, b;
@@ -1032,7 +1032,7 @@ static int prod_dc(void *dst, void *src, ptl_size_t length)
  */
 static int prod_ld(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	long double *s = src;
 	long double *d = dst;
 
@@ -1053,7 +1053,7 @@ static int prod_ld(void *dst, void *src, ptl_size_t length)
  */
 static int prod_ldc(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	long double *s = src;
 	long double *d = dst;
 	long double a, b;
@@ -1079,7 +1079,7 @@ static int prod_ldc(void *dst, void *src, ptl_size_t length)
  */
 static int lor_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1100,7 +1100,7 @@ static int lor_c(void *dst, void *src, ptl_size_t length)
  */
 static int lor_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1121,7 +1121,7 @@ static int lor_s(void *dst, void *src, ptl_size_t length)
  */
 static int lor_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1142,7 +1142,7 @@ static int lor_i(void *dst, void *src, ptl_size_t length)
  */
 static int lor_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -1163,7 +1163,7 @@ static int lor_l(void *dst, void *src, ptl_size_t length)
  */
 static int land_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1184,7 +1184,7 @@ static int land_c(void *dst, void *src, ptl_size_t length)
  */
 static int land_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1205,7 +1205,7 @@ static int land_s(void *dst, void *src, ptl_size_t length)
  */
 static int land_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1226,7 +1226,7 @@ static int land_i(void *dst, void *src, ptl_size_t length)
  */
 static int land_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -1247,7 +1247,7 @@ static int land_l(void *dst, void *src, ptl_size_t length)
  */
 static int bor_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1268,7 +1268,7 @@ static int bor_c(void *dst, void *src, ptl_size_t length)
  */
 static int bor_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1289,7 +1289,7 @@ static int bor_s(void *dst, void *src, ptl_size_t length)
  */
 static int bor_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1310,7 +1310,7 @@ static int bor_i(void *dst, void *src, ptl_size_t length)
  */
 static int bor_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -1331,7 +1331,7 @@ static int bor_l(void *dst, void *src, ptl_size_t length)
  */
 static int band_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1352,7 +1352,7 @@ static int band_c(void *dst, void *src, ptl_size_t length)
  */
 static int band_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1373,7 +1373,7 @@ static int band_s(void *dst, void *src, ptl_size_t length)
  */
 static int band_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1394,7 +1394,7 @@ static int band_i(void *dst, void *src, ptl_size_t length)
  */
 static int band_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -1415,7 +1415,7 @@ static int band_l(void *dst, void *src, ptl_size_t length)
  */
 static int lxor_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1436,7 +1436,7 @@ static int lxor_c(void *dst, void *src, ptl_size_t length)
  */
 static int lxor_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1457,7 +1457,7 @@ static int lxor_s(void *dst, void *src, ptl_size_t length)
  */
 static int lxor_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1478,7 +1478,7 @@ static int lxor_i(void *dst, void *src, ptl_size_t length)
  */
 static int lxor_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
@@ -1499,7 +1499,7 @@ static int lxor_l(void *dst, void *src, ptl_size_t length)
  */
 static int bxor_c(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint8_t *s = src;
 	uint8_t *d = dst;
 
@@ -1520,7 +1520,7 @@ static int bxor_c(void *dst, void *src, ptl_size_t length)
  */
 static int bxor_s(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint16_t *s = src;
 	uint16_t *d = dst;
 
@@ -1541,7 +1541,7 @@ static int bxor_s(void *dst, void *src, ptl_size_t length)
  */
 static int bxor_i(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint32_t *s = src;
 	uint32_t *d = dst;
 
@@ -1562,7 +1562,7 @@ static int bxor_i(void *dst, void *src, ptl_size_t length)
  */
 static int bxor_l(void *dst, void *src, ptl_size_t length)
 {
-	int i;
+	ptl_size_t i;
 	uint64_t *s = src;
 	uint64_t *d = dst;
 
