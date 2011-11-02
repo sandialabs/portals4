@@ -95,22 +95,22 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	ct_t *ct;
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ni(ni_handle, &ni);
-		if (err)
-			goto err1;
+	err = to_ni(ni_handle, &ni);
+	if (err)
+		goto err1;
 
-		if (!ni) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ni = fast_to_obj(ni_handle);
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ni = fast_to_obj(ni_handle);
+#endif
 
 	/* check limit resources to see if we can allocate another ct */
 	if (unlikely(__sync_add_and_fetch(&ni->current.max_cts, 1) >
@@ -140,10 +140,11 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	err = PTL_OK;
 err2:
 	ni_put(ni);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -169,22 +170,22 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	ni_t *ni;
 
 	/* convert handle to pointer */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	ni = obj_to_ni(ct);
 
@@ -208,10 +209,11 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	(void)__sync_sub_and_fetch(&ni->current.max_cts, 1);
 
 	err = PTL_OK;
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -234,31 +236,32 @@ int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 	ct_t *ct;
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	*event_p = ct->event;
 
 	err = PTL_OK;
 	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -281,22 +284,22 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	int nloops = get_param(PTL_CT_WAIT_LOOP_COUNT);
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	/* wait loop */
 	while (1) {
@@ -338,10 +341,11 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	}
 
 	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -408,11 +412,11 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	int i2;
 	int nloops = get_param(PTL_CT_POLL_LOOP_COUNT);
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
-	}
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
+#endif
 
 	if (size == 0) {
 		err = PTL_ARG_INVALID;
@@ -428,31 +432,31 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	}
 
 	/* convert handles to pointers */
-	if (check_param) {
-		i2 = -1;
-		for (i = 0; i < size; i++) {
-			err = to_ct(ct_handles[i], &cts[i]);
-			if (unlikely(err || !cts[i])) {
-				err = PTL_ARG_INVALID;
-				goto err2;
-			}
-
-			i2 = i;
-
-			if (i == 0)
-				ni = obj_to_ni(cts[0]);
-
-			if (obj_to_ni(cts[i]) != ni) {
-				err = PTL_ARG_INVALID;
-				goto err2;
-			}
+#ifndef NO_ARG_VALIDATION
+	i2 = -1;
+	for (i = 0; i < size; i++) {
+		err = to_ct(ct_handles[i], &cts[i]);
+		if (unlikely(err || !cts[i])) {
+			err = PTL_ARG_INVALID;
+			goto err2;
 		}
-	} else {
-		for (i = 0; i < size; i++)
-			cts[i] = fast_to_obj(ct_handles[i]);
-		i2 = size;
-		ni = obj_to_ni(cts[0]);
+
+		i2 = i;
+
+		if (i == 0)
+			ni = obj_to_ni(cts[0]);
+
+		if (obj_to_ni(cts[i]) != ni) {
+			err = PTL_ARG_INVALID;
+			goto err2;
+		}
 	}
+#else
+	for (i = 0; i < size; i++)
+		cts[i] = fast_to_obj(ct_handles[i]);
+	i2 = size;
+	ni = obj_to_ni(cts[0]);
+#endif
 
 	/* compute expiration of poll time
 	 * if forever just set to some time way in the future */
@@ -517,14 +521,17 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 		}
 	}
 
+#ifndef NO_ARG_VALIDATION
 err2:
+#endif
 	for (i = i2; i >= 0; i--)
 		ct_put((void *)cts[i]);
 	free(cts);
 err1:
-	if (check_param)
-		gbl_put();
+#ifndef NO_ARG_VALIDATION
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -620,22 +627,22 @@ int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 	ni_t *ni;
 
 	/* convert handle to object */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	ni = obj_to_ni(ct);
 
@@ -647,10 +654,11 @@ int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 
 	err = PTL_OK;
 	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -684,31 +692,31 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	xl_t *xl;
 
 	/* convert handles to objects */
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(trig_ct_handle, &trig_ct);
-		if (err)
-			goto err1;
+	err = to_ct(trig_ct_handle, &trig_ct);
+	if (err)
+		goto err1;
 
-		ni = obj_to_ni(trig_ct);
+	ni = obj_to_ni(trig_ct);
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err2;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err2;
 
-		if (ni != obj_to_ni(ct)) {
-			err = PTL_ARG_INVALID;
-			ct_put(ct);
-			goto err2;
-		}
-	} else {
-		trig_ct = fast_to_obj(trig_ct_handle);
-		ct = fast_to_obj(ct_handle);
-		ni = obj_to_ni(trig_ct);
+	if (ni != obj_to_ni(ct)) {
+		err = PTL_ARG_INVALID;
+		ct_put(ct);
+		goto err2;
 	}
+#else
+	trig_ct = fast_to_obj(trig_ct_handle);
+	ct = fast_to_obj(ct_handle);
+	ni = obj_to_ni(trig_ct);
+#endif
 
 	/* get container for triggered ct op */
 	xl = xl_alloc();
@@ -732,10 +740,11 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	err = PTL_OK;
 err2:
 	ct_put(trig_ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -772,27 +781,27 @@ int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 	ct_t *ct;
 	ni_t *ni;
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-
-		if (increment.failure && increment.success) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+
+	if (increment.failure && increment.success) {
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	ni = obj_to_ni(ct);
 
@@ -803,12 +812,15 @@ int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 	pthread_mutex_unlock(&ct->mutex);
 
 	err = PTL_OK;
+#ifndef NO_ARG_VALIDATION
 err2:
+#endif
 	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -841,36 +853,36 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	ni_t *ni;
 	xl_t *xl;
 
-	if (check_param) {
-		err = gbl_get();
-		if (unlikely(err))
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (unlikely(err))
+		goto err0;
 
-		err = to_ct(trig_ct_handle, &trig_ct);
-		if (unlikely(err))
-			goto err1;
+	err = to_ct(trig_ct_handle, &trig_ct);
+	if (unlikely(err))
+		goto err1;
 
-		ni = obj_to_ni(trig_ct);
+	ni = obj_to_ni(trig_ct);
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err2;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err2;
 
-		if (ni != obj_to_ni(ct)) {
-			err = PTL_ARG_INVALID;
-			ct_put(ct);
-			goto err2;
-		}
-
-		if (increment.failure && increment.success) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
-		trig_ct = fast_to_obj(trig_ct_handle);
-		ni = obj_to_ni(trig_ct);
+	if (ni != obj_to_ni(ct)) {
+		err = PTL_ARG_INVALID;
+		ct_put(ct);
+		goto err2;
 	}
+
+	if (increment.failure && increment.success) {
+		err = PTL_ARG_INVALID;
+		goto err2;
+	}
+#else
+	ct = fast_to_obj(ct_handle);
+	trig_ct = fast_to_obj(trig_ct_handle);
+	ni = obj_to_ni(trig_ct);
+#endif
 
 	xl = xl_alloc();
 	if (!xl) {
@@ -893,10 +905,11 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	err = PTL_OK;
 err2:
 	ct_put(trig_ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
@@ -915,22 +928,22 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	struct list_head *l;
 	struct list_head *t;
 
-	if (check_param) {
-		err = gbl_get();
-		if (err)
-			goto err0;
+#ifndef NO_ARG_VALIDATION
+	err = gbl_get();
+	if (err)
+		goto err0;
 
-		err = to_ct(ct_handle, &ct);
-		if (err)
-			goto err1;
+	err = to_ct(ct_handle, &ct);
+	if (err)
+		goto err1;
 
-		if (!ct) {
-			err = PTL_ARG_INVALID;
-			goto err1;
-		}
-	} else {
-		ct = fast_to_obj(ct_handle);
+	if (!ct) {
+		err = PTL_ARG_INVALID;
+		goto err1;
 	}
+#else
+	ct = fast_to_obj(ct_handle);
+#endif
 
 	ni = obj_to_ni(ct);
 
@@ -954,10 +967,11 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	err = PTL_OK;
 	ct_put(ct);
+#ifndef NO_ARG_VALIDATION
 err1:
-	if (check_param)
-		gbl_put();
+	gbl_put();
 err0:
+#endif
 	return err;
 }
 
