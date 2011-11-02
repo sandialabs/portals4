@@ -1,11 +1,13 @@
 /**
  * @file ptl_md.h
+ *
+ * @brief Portals MD APIs
  */
 
 #include "ptl_loc.h"
 
 /**
- * cleanup an md when last reference is dropped.
+ * @brief Cleanup an md when last reference is dropped.
  *
  * @param[in] arg opaque address of md
  */
@@ -53,7 +55,9 @@ void md_cleanup(void *arg)
  * @param[in] iov_list the iovec array
  * @param[in] num_iov the size of the iovec array
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_SPACE Indicates that there is insufficient memory to
+ * allocate the sge lists for the iovec.
  */
 static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 {
@@ -143,13 +147,22 @@ err1:
 }
 
 /**
- * Create a new MD and bind to NI.
+ * @brief Create a new MD and bind to NI.
  *
  * @param ni_handle
  * @param md_init
  * @param md_handle_p
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was
+ * passed. Argument checking is implementation dependent, but this
+ * may indicate that an invalid ni_handle was used, an invalid event
+ * queue was associated with the md, or other contents in the md
+ * were illegal.
+ * @return PTL_NO_SPACE Indicates that there is insufficient memory
+ * to allocate the memory descriptor.
  */
 int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
               ptl_handle_md_t *md_handle_p)
@@ -241,13 +254,20 @@ err0:
 }
 
 /**
- * Release MD from NI.
+ * @brief Release MD from NI.
  *
  * If this is the last reference to the MD destroy the object.
  *
  * @param md_handle the handle of the MD to release
  *
- * @return status
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was
+ * passed. The definition of which arguments are * checked is
+ * implementation dependent.
+ * @return PTL_IN_USE Indicates that md_handle has pending operations
+ * and cannot be released.
  */
 int PtlMDRelease(ptl_handle_md_t md_handle)
 {
