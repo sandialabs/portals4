@@ -259,8 +259,6 @@ static inline void cleanup_shmem(ni_t *ni) { }
 
 #endif
 
-void PtlInitParam(void);
-
 /* For the runtime. */
 extern int ptl_log_level;
 

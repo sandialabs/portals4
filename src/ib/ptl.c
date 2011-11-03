@@ -206,7 +206,7 @@ static int gbl_init(gbl_t *gbl)
 	signal(SIGUSR1, dump_everything);
 #endif
 
-	PtlInitParam();
+	init_param();
 	debug = get_param(PTL_DEBUG);
 	ptl_log_level = get_param(PTL_LOG_LEVEL);
 
