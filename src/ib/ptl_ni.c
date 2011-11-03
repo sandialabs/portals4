@@ -767,7 +767,8 @@ int PtlNIInit(ptl_interface_t	iface_id,
 #endif
 	}
 
-	ni->pt = calloc(ni->limits.max_pt_index, sizeof(*ni->pt));
+	/* Note: pt range is [0..max_pt_index]. */
+	ni->pt = calloc(ni->limits.max_pt_index + 1, sizeof(*ni->pt));
 	if (unlikely(!ni->pt)) {
 		WARN();
 		err = PTL_NO_SPACE;
