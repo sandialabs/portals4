@@ -233,8 +233,10 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 		goto err3;
 	}
 #else
-	md->eq = fast_to_obj(md_init->eq_handle);
-	md->ct = fast_to_obj(md_init->ct_handle);
+	md->eq = (md_init->eq_handle != PTL_EQ_NONE) ?
+		fast_to_obj(md_init->eq_handle) : NULL;
+	md->ct = (md_init->ct_handle != PTL_CT_NONE) ?
+		fast_to_obj(md_init->ct_handle) : NULL;
 #endif
 
 	md->start = md_init->start;
