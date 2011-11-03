@@ -129,7 +129,7 @@ param_t param[] = {
 				.name	= "PTL_LIM_FEATURES",
 				.min	= 0,
 				.max	= (1 << NI_OPTIONS_MASK) - 1,
-				.val	= PTL_TARGET_BIND_INACCESSIBLE,
+				.val	= 0,
 			},
 	[PTL_OBJ_ALLOC_TIMEOUT]			= {
 				.name	= "PTL_OBJ_ALLOC_TIMEOUT",

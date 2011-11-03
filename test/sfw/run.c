@@ -561,6 +561,9 @@ static int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_DESIRED_MAX_ATOMIC_SIZE:
 			info->desired.max_atomic_size = get_number(info, val);
 			break;
+		case ATTR_DESIRED_FEATURES:
+			info->desired.features = get_ni_features(val);
+			break;
 		case ATTR_NI_HANDLE:
 			info->ni_handle = get_handle(info, val);
 			break;
@@ -1016,6 +1019,11 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			break;
 		case ATTR_ACTUAL_MAX_PT_INDEX:
 			if(info->actual.max_pt_index != get_number(info, val)) {
+				return 1;
+			}
+			break;
+		case ATTR_ACTUAL_FEATURES:
+			if(info->actual.features != get_ni_features(val)) {
 				return 1;
 			}
 			break;

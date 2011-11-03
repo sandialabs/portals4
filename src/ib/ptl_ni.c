@@ -71,6 +71,8 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 		ni->limits.features =
 			chk_param(PTL_LIM_FEATURES,
 				  desired->features);
+		if (desired->features & PTL_TARGET_BIND_INACCESSIBLE)
+			ni->limits.features |= PTL_TARGET_BIND_INACCESSIBLE;
 	} else {
 		ni->limits.max_entries =
 			get_param(PTL_LIM_MAX_ENTRIES);
@@ -102,8 +104,7 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 			get_param(PTL_LIM_MAX_WAR_ORDERED_SIZE);
 		ni->limits.max_volatile_size =
 			get_param(PTL_LIM_MAX_VOLATILE_SIZE);
-		ni->limits.features =
-			get_param(PTL_LIM_FEATURES);
+		ni->limits.features = 0;
 	}
 }
 
