@@ -227,9 +227,9 @@ int process_init(buf_t *buf);
 
 int process_tgt(buf_t *buf);
 
-int check_overflow(le_t *le);
-int check_overflow_search_only(le_t *le);
-int check_overflow_search_delete(le_t *le);
+int check_match(buf_t *buf, const me_t *me);
+
+int check_perm(buf_t *buf, const le_t *le);
 
 buf_t *tgt_alloc_rdma_buf(buf_t *buf);
 

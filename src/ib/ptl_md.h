@@ -43,7 +43,7 @@ struct md {
 	struct ibv_sge		*sge_list;
 
 	/** mrs to register memory regions for verbs API
-	 * can hold one mr per iovec contained in internal_data  */
+	 * can hold one mr per iovec contained in internal_data	 */
 	mr_t			**mr_list;
 
 	/** list of knem info for each iovec for use in long
@@ -126,7 +126,7 @@ static inline int md_put(md_t *md)
  */
 static inline ptl_handle_md_t md_to_handle(md_t *md)
 {
-        return (ptl_handle_md_t)md->obj.obj_handle;
+	return (ptl_handle_md_t)md->obj.obj_handle;
 }
 
 #endif /* PTL_MD_H */

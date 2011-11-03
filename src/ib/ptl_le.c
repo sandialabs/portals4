@@ -1,26 +1,32 @@
-/*
- * ptl_le.c
+/**
+ * @file ptl_le.c
+ *
+ * @brief Portals LE APIs.
  */
 
 #include "ptl_loc.h"
 
-/*
- * le_init
- *	initialize new le
+/**
+ * @brief Initialize a new LE once when created.
+ *
+ * @param[in] arg An opaque reference to LE.
+ *
+ * @return PTL_OK Always.
  */
 int le_init(void *arg, void *unused)
 {
 	le_t *le = arg;
 
 	le->type = TYPE_LE;
-	return 0;
+
+	return PTL_OK;
 }
 
-/*
- * le_release
- *	called from le_put when the last reference is dropped
- * note:
- *	common between LE and ME
+/**
+ * @brief Cleanup an LE when the last reference is dropped.
+ * @note This is common code for both LE's and ME's.
+ *
+ * @param[in] arg opaque reference to LE/ME.
  */
 void le_cleanup(void *arg)
 {
@@ -44,19 +50,19 @@ void le_cleanup(void *arg)
 		le->sge_list_mr = NULL;
 	}
 
-	if (le->do_auto_free) {
+	if (le->do_auto_free)
 		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
-	}
 
-	pthread_spin_lock(&ni->obj.obj_lock);
-	ni->current.max_entries--;
-	pthread_spin_unlock(&ni->obj.obj_lock);
+	(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
 }
 
-/*
- * le_unlink
- *	called to unlink the entry from the PT list and remove
- *	the reference held by the PT list.
+/**
+ * @brief Unlink an entry from a PT list and remove
+ * the reference held by the PT list.
+ *
+ * @param[in] le The LE object to unlink.
+ * @param[in] auto_event A flag indicating if an auto unlink event
+ * should be generated.
  */
 void le_unlink(le_t *le, int auto_event)
 {
@@ -93,118 +99,71 @@ void le_unlink(le_t *le, int auto_event)
 	}
 }
 
-/*
- * le_get_le
- *	allocate an le after checking to see if there
- *	is room in the limit
- */
-static int le_get_le(ni_t *ni, le_t **le_p)
-{
-	int err;
-	le_t *le;
-
-	pthread_spin_lock(&ni->obj.obj_lock);
-	if (unlikely(ni->current.max_entries >= ni->limits.max_entries)) {
-		pthread_spin_unlock(&ni->obj.obj_lock);
-		return PTL_NO_SPACE;
-	}
-	ni->current.max_entries++;
-	pthread_spin_unlock(&ni->obj.obj_lock);
-
-	err = le_alloc(ni, &le);
-	if (unlikely(err)) {
-		pthread_spin_lock(&ni->obj.obj_lock);
-		ni->current.max_entries--;
-		pthread_spin_unlock(&ni->obj.obj_lock);
-		return err;
-	}
-
-	*le_p = le;
-	return PTL_OK;
-}
-
-/*
- * le_append_check
- *	check call parameters for PtlLEAppend
- * note:
- *	common between LE and ME
+/**
+ * @brief Check call parameters for append or search API.
+ * @note common code for LE and ME.
  */
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		    const ptl_le_t *le_init, ptl_list_t ptl_list,
 		    ptl_search_op_t search_op, ptl_handle_le_t *le_handle)
 {
-	pt_t *pt;
+#ifndef NO_ARG_VALIDATION
+	pt_t *pt = &ni->pt[pt_index];
 
-	if (unlikely(!ni)) {
-		WARN();
+	if (pt_index >= ni->limits.max_pt_index)
 		return PTL_ARG_INVALID;
-	}
 
-	pt = &ni->pt[pt_index];
-
-	if (!pt->in_use) {
-		WARN();
+	if (!pt->in_use)
 		return PTL_ARG_INVALID;
-	}
 
 	if (type == TYPE_ME) {
-		if (unlikely((ni->options & PTL_NI_MATCHING) == 0)) {
-			WARN();
+		if ((ni->options & PTL_NI_MATCHING) == 0)
 			return PTL_ARG_INVALID;
-		}
 	} else {
-		if (unlikely((ni->options & PTL_NI_NO_MATCHING) == 0)) {
-			WARN();
+		if ((ni->options & PTL_NI_NO_MATCHING) == 0)
 			return PTL_ARG_INVALID;
-		}
-	}
-
-	if (unlikely(pt_index >= ni->limits.max_pt_index)) {
-		WARN();
-		return PTL_ARG_INVALID;
 	}
 
 	if (le_init->options & PTL_IOVEC) {
-		if (le_init->length > ni->limits.max_iovecs) {
-			WARN();
+		if (le_init->length > ni->limits.max_iovecs)
 			return PTL_ARG_INVALID;
-		}
 	}
 
 	if (type == TYPE_ME) {
-		if (unlikely(le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)) {
-			WARN();
+		if (le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)
 			return PTL_ARG_INVALID;
-		}
 	} else {
-		if (unlikely(le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)) {
-			WARN();
+		if (le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)
 			return PTL_ARG_INVALID;
-		}
 	}
 
 	if (le_handle) {
-		if (unlikely(ptl_list < PTL_PRIORITY_LIST ||
-			     ptl_list > PTL_OVERFLOW_LIST)) {
-			WARN();
+		if (ptl_list < PTL_PRIORITY_LIST ||
+		    ptl_list > PTL_OVERFLOW_LIST)
 			return PTL_ARG_INVALID;
-		}
 	} else {
-		if (unlikely(search_op < PTL_SEARCH_ONLY ||
-			     search_op > PTL_SEARCH_DELETE)) {
-			WARN();
+		if (search_op < PTL_SEARCH_ONLY ||
+		    search_op > PTL_SEARCH_DELETE)
 			return PTL_ARG_INVALID;
-		}
 	}
 
+#endif /* NO_ARG_VALIDATION */
 	return PTL_OK;
 }
 
-/*
- * le_get_mr
- *	allocate InfiniBand MRs for le
- * note:
- *	common between LE and ME
+/**
+ * @brief Allocate An array to hold InfiniBand MRs for LE/ME.
+ * @note Common between LE and ME.
+ *
+ * Prepares an array to hold an array of InfiniBand SGEs if the
+ * number of IOVs is larger than the limit that will fit in a
+ * buf.
+ *
+ * @param[in] ni
+ * @param[in] le_init
+ * @param[in] le
+ *
+ * @return status
  */
 int le_get_mr(ni_t *ni, const ptl_le_t *le_init, le_t *le)
 {
@@ -242,17 +201,22 @@ int le_get_mr(ni_t *ni, const ptl_le_t *le_init, le_t *le)
 	return PTL_OK;
 }
 
-/*
- * le_append_pt
- *	add le to pt entry
- *	TODO check limits on this the spec is confusing
- * note:
- *	common between LE and ME
+/**
+ * @brief Add LE/ME to pt entry.
+ * @note Common between LE and ME
+ * @todo Check limits on this the spec is confusing
+ * @pre caller should hold the pt spinlock.
+ *
+ * @param[in] ni
+ * @param[in] le
+ *
+ * @return status
  */
 int le_append_pt(ni_t *ni, le_t *le)
 {
 	pt_t *pt = &ni->pt[le->pt_index];
 
+	// TODO should this be the pt mutex instead??
 	assert(pthread_spin_trylock(&pt->lock) != 0);
 
 	le->pt = pt;
@@ -275,46 +239,304 @@ int le_append_pt(ni_t *ni, le_t *le)
 		list_add(&le->list, &pt->overflow_list);
 	}
 
-#if 1
-	if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE)) {
+	if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE))
 		make_le_event(le, le->eq, PTL_EVENT_LINK, PTL_NI_OK);
-	}
-#endif
 
 	return PTL_OK;
 }
 
-/* Do the LE append or LE search. It's an append if le_handle is not
- * NULL. */
+enum {
+	DONT_CHECK_PERM,
+	CHECK_PERM,
+};
+
+/**
+ * @brief Compares an ME/LE with the unexpected list
+ * and returns a list of messages that match. 
+ * @note Common code for LE/ME list elements.
+ * @pre PT lock must be held by caller.
+ *
+ * @param[in] le The LE/ME match against the unexpected list.
+ * @param[in] perm Flag to control permission checking.
+ * @param[out] buf_list The returned message list.
+ */
+static void __match_le_unexpected(const le_t *le, int perm, 
+				  struct list_head *buf_list)
+{
+	ni_t *ni = obj_to_ni(le);
+	pt_t *pt = &ni->pt[le->pt_index];
+	buf_t *buf;
+	buf_t *n;
+
+	assert(pthread_spin_trylock(&pt->lock) != 0);
+
+	INIT_LIST_HEAD(buf_list);
+
+	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
+				 unexpected_list) {
+
+		if ((le->type == TYPE_LE || check_match(buf, (me_t *)le)) &&
+		    (perm == DONT_CHECK_PERM || !check_perm(buf, le))) {
+			list_del(&buf->unexpected_list);
+			list_add_tail(&buf->unexpected_list, buf_list);
+
+			if (le->options & PTL_LE_USE_ONCE)
+				break;
+		}
+	}
+}
+
+/**
+ * @brief Check whether the LE/ME matches one or more messages on the
+ * unexpected list.
+ *
+ * Return true if at least one message was processed.
+ *
+ * @note Common code for LE/ME list elements.
+ * @pre PT lock must be taken.
+ *
+ * @param[in] le the LE/ME object to check against the overflow list.
+ *
+ * @return status
+ */
+int __check_overflow(le_t *le)
+{
+	ni_t *ni = obj_to_ni(le);
+	pt_t *pt = &ni->pt[le->pt_index];
+	buf_t *buf;
+	buf_t *n;
+	struct list_head buf_list;
+	int ret;
+
+	assert(pthread_spin_trylock(&pt->lock) != 0);
+
+	__match_le_unexpected(le, DONT_CHECK_PERM, &buf_list);
+
+	ret = !list_empty(&buf_list);
+	if (ret) {
+		/* Process the elements of the list. */
+		pthread_spin_unlock(&pt->lock);
+
+		list_for_each_entry_safe(buf, n, &buf_list,
+					 unexpected_list) {
+			int err;
+			int state;
+
+			pthread_mutex_lock(&buf->mutex);
+
+			assert(buf->matching.le == NULL);
+			buf->matching.le = le;
+			le_get(le);
+
+			list_del(&buf->unexpected_list);
+
+			state = buf->tgt_state;
+
+			pthread_mutex_unlock(&buf->mutex);
+
+			if (state == STATE_TGT_WAIT_APPEND) {
+				err = process_tgt(buf);
+				if (err)
+					WARN();
+			}
+
+			/* From get_match(). */
+			buf_put(buf);
+		}
+
+		pthread_spin_lock(&pt->lock);
+	}
+
+	return ret;
+}
+
+/**
+ * @brief Check whether the LE/ME matches one or more messages on
+ * the unexpected list.
+ * @note Common code for LE/ME objects.
+ *
+ * @param[in] le the list element to check.
+ *
+ * @return status
+ */
+int check_overflow_search_only(le_t *le)
+{
+	ni_t *ni = obj_to_ni(le);
+	pt_t *pt = &ni->pt[le->pt_index];
+	buf_t *buf;
+	buf_t *n;
+	int found = 0;
+	ptl_event_t event;
+
+	pthread_spin_lock(&pt->lock);
+
+	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
+				 unexpected_list) {
+
+		if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
+			found = 1;
+
+			if (le->eq && !(le->options &
+			    PTL_LE_EVENT_COMM_DISABLE)) {
+				fill_target_event(buf, PTL_EVENT_SEARCH,
+						  le->user_ptr, NULL,
+						  &event);
+			}
+
+			break;
+		}
+	}
+
+	pthread_spin_unlock(&pt->lock);
+
+	/* note there is a race where the buf can get removed before
+	 * the event is delivered to the target so we save the contents
+	 * of the event in a local struct inside the lock and cause
+	 * the event to be delivered outside the lock */
+
+	if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
+		if (found) {
+			/* note search events always set ni ok */
+			event.ni_fail_type = PTL_NI_OK;
+			send_target_event(le->eq, &event);
+		} else {
+			make_le_event(le, le->eq, PTL_EVENT_SEARCH,
+				      PTL_NI_NO_MATCH);
+		}
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * @brief Search for matching entries in the unexpected and delete them.
+ * @note Common code for LE/ME list elements.
+ *
+ * @param[in] le The list element to search the overflow list with.
+ *
+ * @return status
+ */
+int check_overflow_search_delete(le_t *le)
+{
+	ni_t *ni = obj_to_ni(le);
+	pt_t *pt = &ni->pt[le->pt_index];
+	struct list_head buf_list;
+	buf_t *buf;
+	buf_t *n;
+
+	/* scan the unexpected list removing each
+	 * matching message and adding to the buf_list */
+	pthread_spin_lock(&pt->lock);
+
+	__match_le_unexpected(le, CHECK_PERM, &buf_list);
+
+	pthread_spin_unlock(&pt->lock);
+
+	if (list_empty(&buf_list)) {
+		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
+	} else {
+
+		// TODO looks like common code with check_overflow, combine??
+		list_for_each_entry_safe(buf, n, &buf_list,
+					 unexpected_list) {
+			int err;
+			int state;
+
+			/* make sure the message is not currently
+			 * being processed by the target */
+			pthread_mutex_lock(&buf->mutex);
+
+			assert(buf->matching.le == NULL);
+			buf->matching.le = le;
+			le_get(le);
+
+			if (buf->le) {
+				le_put(buf->le);
+				buf->le = NULL;
+			}
+
+			list_del(&buf->unexpected_list);
+
+			state = buf->tgt_state;
+
+			pthread_mutex_unlock(&buf->mutex);
+
+			if (state == STATE_TGT_WAIT_APPEND) {
+				err = process_tgt(buf);
+				if (err)
+					WARN();
+			}
+
+			/* From get_match. */
+			buf_put(buf);
+		}
+	}
+
+	return PTL_NI_OK;
+}
+
+/**
+ * @brief Common code for implemtation of PtlLEAppend and PtlLESearch.
+ *
+ * Performs an append if le_handle_p != NULL, else a search.
+ *
+ * @param[in] ni_handle
+ * @param[in] pt_index
+ * @param[in] le_init
+ * @param[in] ptl_list
+ * @param[in] search_op
+ * @param[in] user_ptr
+ * @param[out] le_handle_p
+ *
+ * @return status
+ */
 static int le_append_or_search(ptl_handle_ni_t ni_handle,
 			       ptl_pt_index_t pt_index,
 			       const ptl_le_t *le_init, ptl_list_t ptl_list,
 			       ptl_search_op_t search_op, void *user_ptr,
-			       ptl_handle_le_t *le_handle)
+			       ptl_handle_le_t *le_handle_p)
 {
 	int err;
 	ni_t *ni;
 	le_t *le = le;
 	pt_t *pt;
 
+	/* sanity checks and convert ni handle to object */
+#ifndef NO_ARG_VALIDATION
 	err = gbl_get();
-	if (unlikely(err))
-		return err;
+	if (err)
+		goto err0;
 
 	err = to_ni(ni_handle, &ni);
-	if (unlikely(err))
+	if (err)
 		goto err1;
 
-#ifndef NO_ARG_VALIDATION
-	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
-			      ptl_list, 0, le_handle);
-	if (unlikely(err))
-		goto err2;
-#endif
+	if (!ni) {
+		err = PTL_ARG_INVALID;
+		goto err1;
+	}
 
-	err = le_get_le(ni, &le);
+	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
+			      ptl_list, 0, le_handle_p);
 	if (err)
 		goto err2;
+#else
+	ni = fast_to_obj(ni_handle,);
+#endif
+
+	// TODO convert these to atomic_inc/dec macros
+        if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
+            ni->limits.max_entries)) {
+                (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+                err = PTL_NO_SPACE;
+                goto err2;
+        }
+
+	err = le_alloc(ni, &le);
+	if (unlikely(err)) {
+                (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+		goto err2;
+	}
 
 	err = le_get_mr(ni, le_init, le);
 	if (unlikely(err))
@@ -322,37 +544,41 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 
 	pt = &ni->pt[pt_index];
 
-	le->pt_index = pt_index;
+	INIT_LIST_HEAD(&le->list);
 	le->eq = pt->eq;
+	le->pt_index = pt_index;
 	le->uid = le_init->uid;
 	le->user_ptr = user_ptr;
 	le->start = le_init->start;
 	le->options = le_init->options;
 	le->do_auto_free = 0;
 	le->ptl_list = ptl_list;
-	INIT_LIST_HEAD(&le->list);
 
-	if (le_handle) {
+#ifndef NO_ARG_VALIDATION
+	if (le_handle_p) {
 		/* Only append can modify counters. */
 		err = to_ct(le_init->ct_handle, &le->ct);
-		if (unlikely(err))
+		if (err)
 			goto err3;
 	} else {
 		le->ct = NULL;
 	}
 
-	if (unlikely(le->ct && (obj_to_ni(le->ct) != ni))) {
+	if (le->ct && (obj_to_ni(le->ct) != ni)) {
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
+#else
+	le->ct = le_handle_p ? fast_to_obj(le_init->ct_handle) : NULL;
+#endif
 
-	if (le_handle) {
+	if (le_handle_p) {
 		pthread_spin_lock(&pt->lock);
 
 		if (ptl_list == PTL_PRIORITY_LIST) {
 			/* To avoid races we must cycle through the list until
 			 * nothing matches anymore. */
-			while(check_overflow(le)) {
+			while(__check_overflow(le)) {
 				/* Some XT were processed. */
 				if (le->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[le->pt_index].eq;
@@ -366,7 +592,8 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 							PTL_NI_OK);
 						le->do_auto_free = 1;
 					}
-					*le_handle = le_to_handle(le);
+
+					*le_handle_p = le_to_handle(le);
 					le_put(le);
 
 					goto done;
@@ -381,7 +608,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 		if (unlikely(err))
 			goto err3;
 
-		*le_handle = le_to_handle(le);
+		*le_handle_p = le_to_handle(le);
 	} else {
 		if (search_op == PTL_SEARCH_ONLY)
 			err = check_overflow_search_only(le);
@@ -394,64 +621,162 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 		le_put(le);
 	}
 
- done:
+done:
 	ni_put(ni);
 	gbl_put();
 	return PTL_OK;
 
- err3:
+err3:
 	le_put(le);
- err2:
+err2:
 	ni_put(ni);
- err1:
+#ifndef NO_ARG_VALIDATION
+err1:
 	gbl_put();
+err0:
+#endif
 	return err;
 }
 
+/**
+ * @brief Append a list entry to a portals table list.
+ *
+ * The PtlLEAppend() function creates a single list entry and appends
+ * this entry to the end of the list specified by * ptl_list associated
+ * with the portal table entry specified by pt_index for the portal
+ * table for ni_handle. If the list is currently uninitialized, the
+ * PtlLEAppend() function creates the first entry in the list.
+ *
+ * @param[in] ni_handle The interface handle to use.
+ * @param[in] pt_index The portal table index where the list entry
+ * should be appended.
+ * @param[in] le_init Provides initial values for the user-visible
+ * parts of a list entry. Other than its use for initialization, there
+ * is no linkage between this structure and the list entry maintained
+ * by the API.
+ * @param[in] ptl_list Determines whether the list entry is appended
+ * to the priority list, appended to the overflow list, or simply
+ * queries the overflow list.
+ * @param[in] user_ptr A user-specified value that is associated with
+ * each command that can generate an event. The value does not need
+ * to be a pointer, but must fit in the space used by a pointer. This
+ * value (along with other values) is recorded in full events
+ * associated with operations on this list entry.
+ * @param[out] le_handle_p On successful return, this location will
+ * hold the newly created list entry handle.
+ *
+ * @return PTL_OK Indicates success.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
+ * The definition of which arguments are checked is implementation dependent.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_NO_SPACE Indicates that there is insufficient memory to
+ * allocate the match list entry.
+ * @return PTL_LIST_TOO_LONG Indicates that the resulting list is too long.
+ * The maximum length for a list is defined by the interface.
+ */
 int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
-		ptl_handle_le_t *le_handle)
+		ptl_handle_le_t *le_handle_p)
 {
 	int err;
 
-	err = le_append_or_search(ni_handle, pt_index,
-				   le_init, ptl_list, 0, user_ptr,
-				   le_handle);
+	err = le_append_or_search(ni_handle, pt_index, le_init,
+				  ptl_list, 0, user_ptr, le_handle_p);
 	return err;
 }
 
+/**
+ * @brief Search for a message in an unexpected list.
+ *
+ * The PtlLESearch() function is used to search for a message in the
+ * unexpected list associated with a specific portal table entry
+ * specified by pt_index for the portal table for ni_handle. PtlLESearch()
+ * uses the exact same search of the unexpected list as PtlLEAppend();
+ * however, the list entry specified in the PtlLESearch() call is never
+ * linked into a priority list.
+ *
+ * @param[in] ni_handle The interface handle to use.
+ * @param[in] pt_index The portal table index that should be searched.
+ * @param[in] le_init Provides values for the user-visible parts of a list
+ * entry to use for searching.
+ * @param[in] search_op Determines whether the function only
+ * searches the list or searches the list and deletes the matching
+ * entries from the list.
+ * @param[in] user_ptr A user-specified value that is associated with
+ * each command that can generate an event. The value does not need to
+ * be a pointer, but must fit in the space used by a pointer. This
+ * value (along with other values) is recorded in full events associated
+ * with operations on this list entry.
+ *
+ * @return PTL_OK Indicates success.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ */
 int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
 	int err;
 
-	err = le_append_or_search(ni_handle, pt_index,
-				   le_init, 0, search_op, user_ptr,
-				   NULL);
+	err = le_append_or_search(ni_handle, pt_index, le_init,
+				  0, search_op, user_ptr, NULL);
 	return err;
 }
 
+/**
+ * @brief Unlink a list element from a portals table list.
+ *
+ * The PtlLEUnlink() function can be used to unlink a list entry from a
+ * list. This operation also releases any resources associated with
+ * the list entry. It is an error to use the list entry handle after
+ * calling PtlLEUnlink().
+ *
+ * @param[in] le_handle The list entry handle to be unlinked.
+ *
+ * @return PTL_OK Indicates success.
+ * @return PTL_NO_INIT Indicates that the portals API has not been
+ * successfully initialized.
+ * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
+ * @return PTL_IN_USE Indicates that the list entry has pending
+ * operations and cannot be unlinked.
+ */
 int PtlLEUnlink(ptl_handle_le_t le_handle)
 {
 	int err;
 	le_t *le;
 
+#ifndef NO_ARG_VALIDATION
 	err = gbl_get();
-	if (unlikely(err))
-		return err;
+	if (err)
+		goto err0;
 
 	err = to_le(le_handle, &le);
-	if (unlikely(err))
+	if (err)
 		goto err1;
+#else
+	le = fast_to_obj(le_handle);
+#endif
+
+
+	/* There should only be 2 references on the object before we can
+	 * release it. */
+	if (le->obj.obj_ref.ref_cnt > 2) {
+		le_put(le);
+		err = PTL_IN_USE;
+		goto err1;
+	}
 
 	le_unlink(le, 0);
 
-	le_put(le);
-	gbl_put();
-	return PTL_OK;
+	err = PTL_OK;
 
+	le_put(le);
 err1:
+#ifndef NO_ARG_VALIDATION
 	gbl_put();
+err0:
+#endif
 	return err;
 }
