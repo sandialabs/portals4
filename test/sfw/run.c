@@ -1691,7 +1691,7 @@ static void set_default_info(struct node_info *info)
 	info->desired.max_mds			= 10;
 	info->desired.max_cts			= 10;
 	info->desired.max_eqs			= 10;
-	info->desired.max_pt_index		= 10;
+	info->desired.max_pt_index		= 64;
 	info->desired.max_iovecs		= IOV_SIZE;
 	info->desired.max_list_size		= 10;
 	info->desired.max_msg_size		= IOV_SIZE*1024;
