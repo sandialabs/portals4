@@ -16,7 +16,7 @@ typedef struct {
 
 typedef struct NEMESIS_blocking_queue {
     NEMESIS_queue q;
-    volatile uint32_t frustration;
+    atomic_t frustration;
     pthread_cond_t    trigger;
     pthread_mutex_t   trigger_lock;
 } NEMESIS_blocking_queue;

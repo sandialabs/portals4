@@ -26,7 +26,7 @@ static void PtlInternalNEMESISBlockingInit(ni_t *ni)
 
     PtlInternalNEMESISInit(&ni->shmem.receiveQ->q);
 
-    ni->shmem.receiveQ->frustration = 0;
+    atomic_set(&ni->shmem.receiveQ->frustration, 0);
 
 	ptl_assert(pthread_mutexattr_init(&ma), 0);
 	ptl_assert(pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED), 0);
@@ -48,8 +48,8 @@ static void PtlInternalNEMESISOffsetEnqueue(ni_t *ni,
     assert(f != NULL && f->obj.next == NULL);
 
     unsigned long offset_prev =
-        (uintptr_t)PtlInternalAtomicSwapPtr((void **)(uintptr_t)&(q->tail),
-                                            (void *)(uintptr_t)offset_f);
+        (uintptr_t)atomic_swap_ptr((void **)(uintptr_t)&(q->tail),
+								   (void *)(uintptr_t)offset_f);
     if (offset_prev == 0) {
 		/* Queue was empty. */
         q->head = offset_f;
@@ -81,7 +81,7 @@ static buf_t *PtlInternalNEMESISOffsetDequeue(ni_t *ni, NEMESIS_queue *q)
             unsigned long old;
 
             q->shadow_head = 0;
-            old = (uintptr_t)PtlInternalAtomicCasPtr(&(q->tail), PTR2OFF(ni,retval), 0);
+            old = (uintptr_t)__sync_val_compare_and_swap(&(q->tail), PTR2OFF(ni,retval), 0);
             if (old != PTR2OFF(ni,retval)) {
                 while (retval->obj.next == NULL) {
                     __asm__ __volatile__ ("pause" ::: "memory");
@@ -106,10 +106,10 @@ static void PtlInternalNEMESISBlockingOffsetEnqueue(ni_t *ni,
 #else
     /* awake waiter */
 	__sync_synchronize();
-    if (q->frustration) {
+    if (atomic_read(&q->frustration)) {
         ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
-        if (q->frustration) {
-            q->frustration = 0;
+        if (atomic_read(&q->frustration)) {
+            atomic_set(&q->frustration, 0);
             ptl_assert(pthread_cond_signal(&q->trigger), 0);
         }
         ptl_assert(pthread_mutex_unlock(&q->trigger_lock), 0);
@@ -126,9 +126,9 @@ static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking
 #ifdef USE_HARD_POLLING
             SPINLOCK_BODY();
 #else
-            if (PtlInternalAtomicInc(&q->frustration, 1) > 1000) {
+            if (atomic_inc(&q->frustration) > 1000) {
                 ptl_assert(pthread_mutex_lock(&q->trigger_lock), 0);
-                if (q->frustration > 1000) {
+                if (atomic_read(&q->frustration) > 1000) {
                     ptl_assert(pthread_cond_wait
 							   (&q->trigger, &q->trigger_lock), 0);
                 }

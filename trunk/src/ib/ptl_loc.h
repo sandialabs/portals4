@@ -62,6 +62,7 @@ extern unsigned int linesize;
 #include "ptl_param.h"
 #include "ptl_ref.h"
 #include "ptl_evloop.h"
+#include "ptl_internal_atomic.h"
 #include "ptl_obj.h"
 #include "ptl_iface.h"
 #include "ptl_gbl.h"
@@ -80,7 +81,6 @@ extern unsigned int linesize;
 
 /* SHMEM. */
 #include "ptl_internal_assert.h"
-#include "ptl_internal_atomic.h"
 #include "ptl_internal_alignment.h"
 #include "ptl_nemesis.h"
 
