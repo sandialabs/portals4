@@ -205,7 +205,7 @@ static int init_ib_srq(ni_t *ni)
 
 	/* post receive buffers to the shared receive queue */
 	while ((num_post = min(get_param(PTL_MAX_SRQ_RECV_WR)
-				- ni->rdma.num_posted_recv,
+						   - atomic_read(&ni->rdma.num_posted_recv),
 				get_param(PTL_SRQ_REPOST_SIZE))) > 0) {
 		err = ptl_post_recv(ni, num_post);
 		if (err) {
@@ -734,7 +734,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 
 	ni->iface = iface;
 	ni->ni_type = ni_type;
-	ni->ref_cnt = 1;
+	atomic_set(&ni->ref_cnt, 1);
 	ni->options = options;
 	ni->last_pt = -1;
 	ni->gbl = gbl;
@@ -1070,7 +1070,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 		goto err1;
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
-	if (__sync_sub_and_fetch(&ni->ref_cnt, 1) <= 0) {
+	if (atomic_dec(&ni->ref_cnt) <= 0) {
 		__iface_remove_ni(ni);
 		ni_cleanup(ni);
 		ni_put(ni);

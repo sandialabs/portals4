@@ -251,7 +251,7 @@ ni_t *__iface_get_ni(iface_t *iface, int ni_type)
 
 	ni = iface->ni[ni_type];
 	if (ni)
-		(void)__sync_add_and_fetch(&ni->ref_cnt, 1);
+		atomic_inc(&ni->ref_cnt);
 
 	return ni;
 }
