@@ -1,8 +1,6 @@
 #ifndef MC_COMMAND_QUEUE_H
 #define MC_COMMAND_QUEUE_H
 
-#include <stddef.h>
-
 /* 
  * A command queue entry
  */
@@ -25,6 +23,7 @@ typedef struct ptl_cq_info_t ptl_cq_info_t;
 struct ptl_cq_t;
 typedef struct ptl_cq_t ptl_cq_t;
 
+typedef struct ptl_cq_t* ptl_cq_handle_t;
 
 #include "command_queue_xpmem.h"
 
@@ -43,7 +42,7 @@ typedef struct ptl_cq_t ptl_cq_t;
  *
  * Notes:
  */
-int ptl_cq_create(size_t entry_size, int num_entries, struct ptl_cq_t *cq);
+int ptl_cq_create(size_t entry_size, int num_entries, ptl_cq_handle_t *cq);
 
 
 /*
@@ -57,7 +56,7 @@ int ptl_cq_create(size_t entry_size, int num_entries, struct ptl_cq_t *cq);
  *
  * Notes:
  */
-int ptl_cq_info_get(ptl_cq_info_t *info);
+int ptl_cq_info_get(ptl_cq_handle_t cq, ptl_cq_info_t *info);
 
 
 /*
@@ -72,9 +71,10 @@ int ptl_cq_info_get(ptl_cq_info_t *info);
  * Notes:
  *  This is a remote, blocking operation.  Both sides must call attach
  *  (with endpoint information from the other side) for attach to
- *  succeed.
+ *  succeed.  It is possible to attach multiple remote cqs into a
+ *  single local cq.
  */
-int ptl_cq_attach(struct ptl_cq_info_t *, ptl_cq_t *cq);
+int ptl_cq_attach(ptl_cq_handle_t cq, ptl_cq_info_t *info);
 
 
 /*
@@ -90,7 +90,7 @@ int ptl_cq_attach(struct ptl_cq_info_t *, ptl_cq_t *cq);
  *  This is a local operation, but the status of a remote send / recv
  *  operation is undefined once the local process has called destroy.
  */
-int ptl_cq_destroy(struct ptl_cq_info_t *endpoint);
+int ptl_cq_destroy(ptl_cq_handle_t cq);
 
 
 /*
@@ -104,7 +104,7 @@ int ptl_cq_destroy(struct ptl_cq_info_t *endpoint);
  *
  * Notes:
  */
-int ptl_cq_entry_alloc(ptl_cq_t *cq, ptl_cqe_t** entry);
+int ptl_cq_entry_alloc(ptl_cq_handle_t cq, ptl_cqe_t** entry);
 
 
 /*
@@ -118,7 +118,7 @@ int ptl_cq_entry_alloc(ptl_cq_t *cq, ptl_cqe_t** entry);
  *
  * Notes:
  */
-int ptl_cq_entry_free(ptl_cq_t *cq, ptl_cqe_t* entry);
+int ptl_cq_entry_free(ptl_cq_handle_t cq, ptl_cqe_t* entry);
 
 
 /*
@@ -135,7 +135,7 @@ int ptl_cq_entry_free(ptl_cq_t *cq, ptl_cqe_t* entry);
  *  caller to the implementation.  The caller does *NOT* need to call
  *  ptl_cq_entry_free on the buffer.
  */
-int ptl_cq_entry_send(ptl_cq_t *cq, ptl_cqe_t *entry);
+int ptl_cq_entry_send(ptl_cq_handle_t cq, ptl_cqe_t *entry);
 
 
 /*
@@ -153,6 +153,6 @@ int ptl_cq_entry_send(ptl_cq_t *cq, ptl_cqe_t *entry);
  *  ptl_cq_entry_send or ptl_cq_entry_free to transfer ownership back
  *  to the implementation or original allocator.
  */
-int ptl_cq_entry_recv(ptl_cq_t *cq, ptl_cqe_t *entry);
+int ptl_cq_entry_recv(ptl_cq_handle_t cq, ptl_cqe_t *entry);
 
 #endif

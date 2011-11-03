@@ -1,22 +1,21 @@
 #ifndef MC_COMMAND_QUEUE_XPMEM_H
 #define MC_COMMAND_QUEUE_XPMEM_H
 
+#include <stdlib.h>
+#include <xpmem.h>
+
 struct ptl_cqe_t
 {
-    int offset;
+    ptl_cqe_t *next;
     unsigned char buffer[];
 };
 
 
 struct ptl_cq_info_t
 {
-    int foobar;
+    xpmem_segid_t segid;
+    size_t len;
 };
 
-
-struct ptl_cq_t
-{
-    int foobar;
-};
 
 #endif
