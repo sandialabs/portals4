@@ -149,5 +149,25 @@
         </ptl_ni>
       </ptl>
     </subtest>
+    <subtest>
+      <desc>Test PtlLEAppend/Unlink with TARGET_BIND_INACCESSIBLE</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_features="TARGET_BIND_INACCESSIBLE">
+          <ptl_pt>
+            <ptl_le/>
+          </ptl_pt>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlLEAppend/Unlink with TARGET_BIND_INACCESSIBLE + PTL_LE_IS_ACCESSIBLE</desc>
+      <ptl>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL" desired_features="TARGET_BIND_INACCESSIBLE">
+          <ptl_pt>
+            <ptl_le le_opt="IS_ACCESSIBLE"/>
+          </ptl_pt>
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

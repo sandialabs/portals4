@@ -165,12 +165,16 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
  *
  * @return status
  */
-int le_get_mr(ni_t *ni, const ptl_le_t *le_init, le_t *le)
+int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 {
 	int err;
 	int i;
 	ptl_iovec_t *iov;
 	struct ibv_sge *sge;
+
+	/* If the memory is supposedly all accessible, register it. */
+	const int lookup = !(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
+		(le_init->options & PTL_LE_IS_ACCESSIBLE);
 
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
@@ -191,10 +195,27 @@ int le_get_mr(ni_t *ni, const ptl_le_t *le_init, le_t *le)
 		iov = (ptl_iovec_t *)le_init->start;
 
 		for (i = 0; i < le->num_iov; i++) {
+
+			if (lookup) {
+				mr_t *mr;
+				if (mr_lookup(ni, iov->iov_base, iov->iov_len, &mr) == PTL_OK)
+					mr_put(mr);
+				else
+					return PTL_ARG_INVALID;
+			}
+
 			le->length += iov->iov_len;
 			iov++;
 		}
 	} else {
+		if (lookup) {
+			mr_t *mr;
+			if (mr_lookup(ni, le_init->start, le_init->length, &mr) == PTL_OK)
+				mr_put(mr);
+			else
+				return PTL_ARG_INVALID;
+		}
+
 		le->length = le_init->length;
 	}
 
@@ -525,12 +546,12 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 #endif
 
 	// TODO convert these to atomic_inc/dec macros
-        if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
-            ni->limits.max_entries)) {
-                (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
-                err = PTL_NO_SPACE;
-                goto err2;
-        }
+	if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
+				 ni->limits.max_entries)) {
+		(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+		err = PTL_NO_SPACE;
+		goto err2;
+	}
 
 	err = le_alloc(ni, &le);
 	if (unlikely(err)) {

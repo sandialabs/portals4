@@ -231,6 +231,7 @@ int get_ni_fail(char *val);
 
 /* mask.c */
 unsigned int get_ni_opt(char *val);
+unsigned int get_ni_features(char *val);
 unsigned int get_pt_opt(char *val);
 unsigned int get_md_opt(char *val);
 unsigned int get_me_opt(char *val);

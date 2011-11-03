@@ -112,5 +112,20 @@
         </ptl_ni>
       </ptl>
     </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with no feature</desc>
+      <ptl>
+        <ptl_ni desired_features="">
+        <check actual_features=""/>
+        </ptl_ni>
+      </ptl>
+    </subtest>
+    <subtest>
+      <desc>Test PtlNIInit with feature TARGET_BIND_INACCESSIBLE</desc>
+      <ptl>
+        <ptl_ni desired_features="TARGET_BIND_INACCESSIBLE">
+        </ptl_ni>
+      </ptl>
+    </subtest>
   </repeat>
 </test>

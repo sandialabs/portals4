@@ -37,6 +37,31 @@ unsigned int get_ni_opt(char *orig_val)
 	return ni_opt;
 }
 
+unsigned int get_ni_features(char *orig_val)
+{
+	char *val;
+	char *tok;
+	char *save;
+	unsigned int features = 0;
+
+	orig_val = strdup(orig_val);
+	val = orig_val;
+
+	while((tok = strtok_r(val, " \t", &save))) {
+		if (!strcmp("TARGET_BIND_INACCESSIBLE", tok)) {
+			features |= PTL_TARGET_BIND_INACCESSIBLE;
+		} else {
+			features = strtol(tok, NULL, 0);
+			break;
+		}
+		val = NULL;
+	}
+
+	free(orig_val);
+
+	return features;
+}
+
 unsigned int get_pt_opt(char *orig_val)
 {
 	char *val;
