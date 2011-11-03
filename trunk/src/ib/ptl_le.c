@@ -110,7 +110,7 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 #ifndef NO_ARG_VALIDATION
 	pt_t *pt = &ni->pt[pt_index];
 
-	if (pt_index >= ni->limits.max_pt_index)
+	if (pt_index > ni->limits.max_pt_index)
 		return PTL_ARG_INVALID;
 
 	if (!pt->in_use)

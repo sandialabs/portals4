@@ -24,11 +24,11 @@
 static int get_pt_index(ni_t *ni, ptl_pt_index_t req,
 			ptl_pt_index_t *index_p)
 {
-	ptl_pt_index_t max = ni->limits.max_pt_index;
+	const ptl_pt_index_t max = ni->limits.max_pt_index;
 	ptl_pt_index_t index;
 
 	if (req != PTL_PT_ANY) {
-		if (req < max) {
+		if (req <= max) {
 			if (!ni->pt[req].in_use) {
 				index = req;
 				goto done;
@@ -42,7 +42,7 @@ static int get_pt_index(ni_t *ni, ptl_pt_index_t req,
 
 	/* search for next free slot starting
 	   from the last one allocated */
-	for (index = ni->last_pt + 1; index < max; index++) {
+	for (index = ni->last_pt + 1; index <= max; index++) {
 		if (!ni->pt[index].in_use)
 			goto done;
 	}
@@ -190,7 +190,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 
 	pthread_mutex_lock(&ni->pt_mutex);
 
-	if (unlikely(pt_index >= ni->limits.max_pt_index ||
+	if (unlikely(pt_index > ni->limits.max_pt_index ||
 	    !ni->pt[pt_index].in_use)) {
 		pthread_mutex_unlock(&ni->pt_mutex);
 		err = PTL_ARG_INVALID;
@@ -254,7 +254,7 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		goto err1;
 
-	if (unlikely(pt_index >= ni->limits.max_pt_index ||
+	if (unlikely(pt_index > ni->limits.max_pt_index ||
 	    !ni->pt[pt_index].in_use)) {
 		err = PTL_ARG_INVALID;
 		goto err2;
@@ -317,7 +317,7 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		goto err1;
 
-	if (unlikely(pt_index >= ni->limits.max_pt_index ||
+	if (unlikely(pt_index > ni->limits.max_pt_index ||
 	    !ni->pt[pt_index].in_use)) {
 		err = PTL_ARG_INVALID;
 		goto err2;

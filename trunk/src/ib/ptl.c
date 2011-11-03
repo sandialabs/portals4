@@ -150,7 +150,7 @@ static void dump_everything(int unused)
 			}
 
 			printf("  PTs:\n");
-			for (k=0; k<ni->limits.max_pt_index; k++) {
+			for (k=0; k<=ni->limits.max_pt_index; k++) {
 				pt_t *pt = &ni->pt[k];
 				if (!pt->in_use)
 					continue;

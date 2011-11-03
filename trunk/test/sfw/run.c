@@ -182,9 +182,9 @@ static int get_index(struct node_info *info, char *val)
 	if (!strcmp("MIN", val))
 		index = 0;
 	else if (!strcmp("MAX", val))
-		index = info->actual.max_pt_index - 1;
-	else if (!strcmp("BIG", val))
 		index = info->actual.max_pt_index;
+	else if (!strcmp("BIG", val))
+		index = info->actual.max_pt_index + 1;
 	else if (!strcmp("ANY", val))
 		index = PTL_PT_ANY;
 	else if (!strcmp("INVALID", val))
