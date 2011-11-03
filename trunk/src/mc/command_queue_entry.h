@@ -2,7 +2,7 @@
 #define MC_COMMAND_QUEUE_ENTRY_H
 
 struct ptl_cqe_base_t {
-
+    char *type;
 };
 typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
