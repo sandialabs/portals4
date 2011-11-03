@@ -1,260 +1,283 @@
-/*
- * ptl_param.c
+/**
+ * @file ptl_param.c
+ *
+ * @brief Support for tunable parameters.
  */
 
 #include "ptl_loc.h"
 
-#define KiB		(1024)
-#define MiB		(1024*1024)
-#define GiB		(1024*1024*1024)
+#define KiB		(1024UL)
+#define MiB		(1024UL*1024UL)
+#define GiB		(1024UL*1024UL*1024UL)
 
+/**
+ * @brief Limits and default value of tunable parameters.
+ **/
 param_t param[] = {
-	[PTL_LIM_MAX_ENTRIES]		= {
-						.name	= "PTL_LIM_MAX_ENTRIES",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+	[PTL_MAX_INLINE_DATA]			= {
+				.name	= "PTL_MAX_INLINE_DATA",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 512,
+			},
+	[PTL_MAX_INLINE_SGE]			= {
+				.name	= "PTL_MAX_INLINE_SGE",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 16,
+			},
+	[PTL_MAX_INDIRECT_SGE]			= {
+				.name	= "PTL_MAX_INDIRECT_SGE",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 4096,
+			},
+	[PTL_LIM_MAX_ENTRIES]			= {
+				.name	= "PTL_LIM_MAX_ENTRIES",
+				.min	= 0,
+				.max	= 128*MiB,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_UNEXPECTED_HEADERS]	= {
-						.name	= "PTL_LIM_MAX_UNEXPECTED_HEADERS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_UNEXPECTED_HEADERS",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_MDS]			= {
-						.name	= "PTL_LIM_MAX_MDS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_MDS",
+				.min	= 0,
+				.max	= 128*MiB,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_CTS]			= {
-						.name	= "PTL_LIM_MAX_CTS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_CTS",
+				.min	= 0,
+				.max	= 128*MiB,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_EQS]			= {
-						.name	= "PTL_LIM_MAX_EQS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_EQS",
+				.min	= 0,
+				.max	= 128*MiB,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_PT_INDEX]		= {
-						.name	= "PTL_LIM_MAX_PT_INDEX",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 64,
-					  },
+				.name	= "PTL_LIM_MAX_PT_INDEX",
+				.min	= 0,
+				.max	= 63,
+				.val	= 16,
+			},
 	[PTL_LIM_MAX_IOVECS]		= {
-						.name	= "PTL_LIM_MAX_IOVECS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_IOVECS",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_LIST_SIZE]		= {
-						.name	= "PTL_LIM_MAX_LIST_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_LIST_SIZE",
+				.min	= 0,
+				.max	= 4*GiB,
+				.val	= KiB,
+			},
 	[PTL_LIM_MAX_TRIGGERED_OPS]		= {
-						.name	= "PTL_LIM_MAX_TRIGGERED_OPS",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= KiB,
-					  },
+				.name	= "PTL_LIM_MAX_TRIGGERED_OPS",
+				.min	= 0,
+				.max	= 4*GiB,
+				.val	= KiB,
+			},
 
 	[PTL_LIM_MAX_MSG_SIZE]		= {
-						.name	= "PTL_LIM_MAX_MSG_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 16*MiB,
-					  },
+				.name	= "PTL_LIM_MAX_MSG_SIZE",
+				.min	= 0,
+				.max	= 4*GiB,
+				.val	= 16*MiB,
+			},
+	/* must be less than MAX_INLINE_DATA */
 	[PTL_LIM_MAX_ATOMIC_SIZE]		= {
-						.name	= "PTL_LIM_MAX_ATOMIC_SIZE",
-						.min	= 0,
-						.max	= 512, /* not more than MAX_INLINE_DATA */
-						.val	= 512,
-					  },
-	[PTL_LIM_MAX_FETCH_ATOMIC_SIZE]	= {
-						.name	= "PTL_LIM_MAX_FETCH_ATOMIC_SIZE",
-						.min	= 0,
-						.max	= 512, /* not more than MAX_INLINE_DATA */
-						.val	= 512,
-					  },
+				.name	= "PTL_LIM_MAX_ATOMIC_SIZE",
+				.min	= 0,
+				.max	= 512,
+				.val	= 512,
+			},
+	/* must be less than MAX_INLINE_DATA */
+	[PTL_LIM_MAX_FETCH_ATOMIC_SIZE] = {
+				.name	= "PTL_LIM_MAX_FETCH_ATOMIC_SIZE",
+				.min	= 8,
+				.max	= 512,
+				.val	= 512,
+			},
 	[PTL_LIM_MAX_WAW_ORDERED_SIZE]	= {
-						.name	= "PTL_LIM_MAX_WAW_ORDERED_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 8,
-					  },
+				.name	= "PTL_LIM_MAX_WAW_ORDERED_SIZE",
+				.min	= 8,
+				.max	= LONG_MAX,
+				.val	= 8,
+			},
 	[PTL_LIM_MAX_WAR_ORDERED_SIZE]	= {
-						.name	= "PTL_LIM_MAX_WAR_ORDERED_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 8,
-					  },
+				.name	= "PTL_LIM_MAX_WAR_ORDERED_SIZE",
+				.min	= 8,
+				.max	= LONG_MAX,
+				.val	= 8,
+			},
 	[PTL_LIM_MAX_VOLATILE_SIZE]		= {
-						.name	= "PTL_LIM_MAX_VOLATILE_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 8,
-					  },
-
+				.name	= "PTL_LIM_MAX_VOLATILE_SIZE",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 8,
+			},
 	[PTL_LIM_FEATURES]			= {
-						.name	= "PTL_LIM_FEATURES",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= PTL_TARGET_BIND_INACCESSIBLE,
-					  },
+				.name	= "PTL_LIM_FEATURES",
+				.min	= 0,
+				.max	= (1 << NI_OPTIONS_MASK) - 1,
+				.val	= PTL_TARGET_BIND_INACCESSIBLE,
+			},
 	[PTL_OBJ_ALLOC_TIMEOUT]			= {
-						.name	= "PTL_OBJ_ALLOC_TIMEOUT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 5,
-					  },
+				.name	= "PTL_OBJ_ALLOC_TIMEOUT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 5,
+			},
 	[PTL_MAX_IFACE]				= {
-						.name	= "PTL_MAX_IFACE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 32,
-					  },
+				.name	= "PTL_MAX_IFACE",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 32,
+			},
 	[PTL_MAX_QP_SEND_WR]			= {
-						.name	= "PTL_MAX_QP_SEND_WR",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000,
-					  },
+				.name	= "PTL_MAX_QP_SEND_WR",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000,
+			},
 	[PTL_MAX_QP_SEND_SGE]			= {
-						.name	= "PTL_MAX_QP_SEND_SGE",
-						.min	= 1,
-						.max	= LONG_MAX,
-						.val	= 30,
-					  },
+				.name	= "PTL_MAX_QP_SEND_SGE",
+				.min	= 1,
+				.max	= LONG_MAX,
+				.val	= 30,
+			},
 	[PTL_MAX_QP_RECV_SGE]			= {
-						.name	= "PTL_MAX_QP_RECV_SGE",
-						.min	= 1,
-						.max	= 1,
-						.val	= 1,
-					  },
+				.name	= "PTL_MAX_QP_RECV_SGE",
+				.min	= 1,
+				.max	= 1,
+				.val	= 1,
+			},
 	[PTL_MAX_SRQ_RECV_WR]			= {
-						.name	= "PTL_MAX_SRQ_RECV_WR",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000,
-					  },
+				.name	= "PTL_MAX_SRQ_RECV_WR",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000,
+			},
 	[PTL_SRQ_REPOST_SIZE]			= {
-						.name	= "PTL_SRQ_REPOST_SIZE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 10,
-					  },
+				.name	= "PTL_SRQ_REPOST_SIZE",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 10,
+			},
 	[PTL_MAX_RDMA_WR_OUT]			= {
-						.name	= "PTL_MAX_RDMA_WR_OUT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 100,
-					  },
-	[PTL_MAX_INLINE_DATA]			= {
-						.name	= "PTL_MAX_INLINE_DATA",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 512,
-					  },
-	[PTL_MAX_INLINE_SGE]			= {
-						.name	= "PTL_MAX_INLINE_SGE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 16,
-					  },
-	[PTL_MAX_INDIRECT_SGE]			= {
-						.name	= "PTL_MAX_INDIRECT_SGE",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 4096,
-					  },
+				.name	= "PTL_MAX_RDMA_WR_OUT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 100,
+			},
 	[PTL_RDMA_TIMEOUT]			= {
-						.name	= "PTL_RDMA_TIMEOUT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 2000,
-					  },
+				.name	= "PTL_RDMA_TIMEOUT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 2000,
+			},
 	[PTL_WC_COUNT]				= {
-						.name	= "PTL_WC_COUNT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 10,
-					  },
+				.name	= "PTL_WC_COUNT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 10,
+			},
 	[PTL_EQ_WAIT_LOOP_COUNT]		= {
-						.name	= "PTL_EQ_WAIT_LOOP_COUNT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000000,
-					  },
+				.name	= "PTL_EQ_WAIT_LOOP_COUNT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000000,
+			},
 	[PTL_EQ_POLL_LOOP_COUNT]		= {
-						.name	= "PTL_EQ_POLL_LOOP_COUNT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000000,
-					  },
+				.name	= "PTL_EQ_POLL_LOOP_COUNT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000000,
+			},
 	[PTL_CT_WAIT_LOOP_COUNT]		= {
-						.name	= "PTL_CT_WAIT_LOOP_COUNT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000000,
-					  },
+				.name	= "PTL_CT_WAIT_LOOP_COUNT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000000,
+			},
 	[PTL_CT_POLL_LOOP_COUNT]		= {
-						.name	= "PTL_CT_POLL_LOOP_COUNT",
-						.min	= 0,
-						.max	= LONG_MAX,
-						.val	= 1000000,
-					  },
+				.name	= "PTL_CT_POLL_LOOP_COUNT",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 1000000,
+			},
 	[PTL_LOG_LEVEL]		= {
-						.name	= "PTL_LOG_LEVEL",
-						.min	= 0,
-						.max	= 3,
-						.val	= 0,
-					  },
+				.name	= "PTL_LOG_LEVEL",
+				.min	= 0,
+				.max	= 3,
+				.val	= 0,
+			},
 	[PTL_DEBUG]		= {
-						.name	= "PTL_DEBUG",
-						.min	= 0,
-						.max	= 1,
-						.val	= 0,
-					  },
+				.name	= "PTL_DEBUG",
+				.min	= 0,
+				.max	= 1,
+				.val	= 0,
+			},
 	
 };
 
-void PtlInitParam(void)
+/**
+ * @brief Initialize parameter list.
+ *
+ * For each parameter if an environment variable with a matching name
+ * is found and can be parsed as a long use that value else use
+ * the original value in the array. Check this value against the upper
+ * and lower limits and (re)set the value in the array.
+ */
+void init_param(void)
 {
 	int i;
 	char *s;
 	long val;
-	param_t *p;
+	param_t *p = param;
 
-	for (i = 0; i < PTL_PARAM_LAST; i++) {
-		s = getenv(param[i].name);
+	for (i = 0; i < PTL_PARAM_LAST; i++, p++) {
+		s = getenv(p->name);
 
 		if (s) {
 			val = strtol(s, NULL, 0);
-
-			if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
-				|| (errno != 0 && val == 0)) {
-				WARN();
-				continue;
-			}
-
-			p = &param[i];
-
-			if (val < p->min)
-				p->val = p->min;
-			else if (val > p->max)
-				p->val = p->max;
-			else
-				p->val = val;
+			if ((errno == ERANGE && (val == LONG_MAX ||
+			    val == LONG_MIN)) || (errno != 0 && val == 0))
+				val = p->val;
+		} else {
+			val = p->val;
 		}
+
+		if (val < p->min)
+			p->val = p->min;
+		else if (val > p->max)
+			p->val = p->max;
+		else
+			p->val = val;
 	}
 }
 
+/**
+ * @brief Return acceptable value given a requested value.
+ *
+ * Return value if it lies between the limits, else return the upper or
+ * lower bound if value is below the lower bound or above the upper
+ * bound respectively.
+ *
+ * @param[in] The parameter ID.
+ * @param[in] The requested value.
+ *
+ * @return The acceptable value.
+ */
 long chk_param(int parm, long val)
 {
 	param_t *p;
@@ -271,6 +294,18 @@ long chk_param(int parm, long val)
 		return val;
 }
 
+/**
+ * @brief Set the current value given a requested value.
+ *
+ * Use the value if it lies between the limits, else return the upper or
+ * lower bound if value is below the lower bound or above the upper
+ * bound respectively.
+ *
+ * @param[in] The parameter ID.
+ * @param[in] The requested value.
+ *
+ * @return The current value.
+ */
 long set_param(int parm, long val)
 {
 	param_t *p;
