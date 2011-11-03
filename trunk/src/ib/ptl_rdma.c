@@ -121,7 +121,7 @@ static int build_sge(buf_t *buf,
 	ni_t *ni = obj_to_ni(buf);
 	me_t *me = buf->me;
 	mr_t *mr;
-	ptl_iovec_t *iov;
+	ptl_iovec_t *iov = iov;
 	ptl_size_t bytes;
 	ptl_size_t cur_index = *cur_index_p;
 	ptl_size_t cur_off = *cur_off_p;
