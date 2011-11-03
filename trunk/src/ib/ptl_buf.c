@@ -177,7 +177,7 @@ int ptl_post_recv(ni_t *ni, int count)
 	pthread_spin_unlock(&ni->rdma.recv_list_lock);
 
 	/* account for posted buffers */
-	(void)__sync_fetch_and_add(&ni->rdma.num_posted_recv, actual);
+	atomic_add(&ni->rdma.num_posted_recv, actual);
 
 	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
 	if (err) {
@@ -191,7 +191,7 @@ int ptl_post_recv(ni_t *ni, int count)
 			buf_put(buf);
 
 			/* account for failed buffers */
-			(void)__sync_fetch_and_sub(&ni->rdma.num_posted_recv, 1);
+			atomic_dec(&ni->rdma.num_posted_recv);
 		}
 		pthread_spin_unlock(&ni->rdma.recv_list_lock);
 	}

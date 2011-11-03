@@ -42,7 +42,7 @@ typedef struct ni {
 	ptl_ni_limits_t		limits;		/* max number of xxx */
 	ptl_ni_limits_t		current;	/* current num of xxx */
 
-	int			ref_cnt;
+	atomic_t			ref_cnt;
 
 	struct iface		*iface;
 	unsigned int		iface_id;
@@ -99,7 +99,7 @@ typedef struct ni {
 		struct list_head	recv_list;
 		pthread_spinlock_t	recv_list_lock;
 
-		int			num_posted_recv;
+		atomic_t			num_posted_recv;
 
 		struct rdma_cm_id *self_cm_id;
 	} rdma;
@@ -209,13 +209,15 @@ static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
 
 	ni = container_of(obj, ni_t, obj);
 
+#ifndef NO_ARG_VALIDATION
 	/* this is because we can call PtlNIFini
 	   and still get the object if someone
 	   is holding a reference */
-	if (ni && ni->ref_cnt <= 0) {
+	if (atomic_read(&ni->ref_cnt) <= 0) {
 		ni_put(ni);
 		goto err;
 	}
+#endif
 
 	*ni_p = ni;
 	return PTL_OK;

@@ -155,7 +155,7 @@ static int recv_packet_rdma(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 
 	/* keep track of the number of buffers posted to the srq */
-	(void)__sync_sub_and_fetch(&ni->rdma.num_posted_recv, 1);
+	atomic_dec(&ni->rdma.num_posted_recv);
 
 	/* remove buf from pending receive list */
 	assert(!list_empty(&buf->list));
@@ -301,7 +301,7 @@ static int recv_repost(buf_t *buf)
 	int num_bufs;
 
 	/* compute the available room in the srq */
-	num_bufs = (get_param(PTL_MAX_SRQ_RECV_WR) - ni->rdma.num_posted_recv);
+	num_bufs = get_param(PTL_MAX_SRQ_RECV_WR) - atomic_read(&ni->rdma.num_posted_recv);
 
 	/* if rooms exceeds threshold repost that many buffers
 	 * this should reduce the number of receive queue doorbells
