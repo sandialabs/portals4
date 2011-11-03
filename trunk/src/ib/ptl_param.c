@@ -64,9 +64,9 @@ param_t param[] = {
 			},
 	[PTL_LIM_MAX_PT_INDEX]		= {
 				.name	= "PTL_LIM_MAX_PT_INDEX",
-				.min	= 63,
+				.min	= 0,
 				.max	= 511,
-				.val	= 63,
+				.val	= 64,
 			},
 	[PTL_LIM_MAX_IOVECS]		= {
 				.name	= "PTL_LIM_MAX_IOVECS",
