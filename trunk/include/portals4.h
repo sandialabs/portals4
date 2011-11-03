@@ -390,8 +390,10 @@ typedef enum {
     PTL_NI_OP_VIOLATION,   /*!< Indicates that the remote Portals addressing
                             * indicated an operations violation for this message.
                             */
-    PTL_NI_NO_MATCH        /*!< Indicates that the search did not find an entry in the
+    PTL_NI_NO_MATCH,       /*!< Indicates that the search did not find an entry in the
                             * unexpected list. */
+    PTL_NI_SEGV            /*!< Indicates that a message attempted to access
+                            * inaccessible memory */
 } ptl_ni_fail_t;
 
 enum ni_features {
