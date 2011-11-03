@@ -1,7 +1,7 @@
 /**
  * @file ptl_iface.h
  *
- * Declarations for ptl_iface.c.
+ * @brief Declarations for ptl_iface.c.
  */
 
 #ifndef PTL_IFACE_H
@@ -10,38 +10,35 @@
 /* forward declaration */
 struct gbl;
 
-/** Size of ni table per iface */
+/** @brief Size of ni table per iface */
 #define MAX_NI_TYPES		(4)	
 
 /**
- * Per network interface information.
+ * @brief Per network interface information.
  */
 struct iface {
-	ptl_interface_t		iface_id;	/**< The portals iface_id
-						     assigned to this
-						     interface */
-	struct ni		*ni[MAX_NI_TYPES]; /**< Table of NI's indexed
-						     by ni type */
-	char			ifname[IF_NAMESIZE]; /**< Network interface
-						     name for debugging
-						     output */
-	ptl_process_t		id;		/**< The NID/PID for this
-						     interface */
-	struct rdma_event_channel *cm_channel;	/**< The CM event channel
-						     for this interface */
-	struct rdma_cm_id	*listen_id;	/**< The CM ID for this
-						     interface */
-	int			listen;		/**< Boolean is true if
-						     interface is listening
-						     for connections */
-	struct sockaddr_in	sin;		/**< IPV4 address if this
-						     interface */
-	struct ibv_context	*ibv_context;	/**< RDMA device info for
-						     this interface */
-	struct ibv_pd		*pd;		/**< RDMA protection domain
-						     for this interface */
-	ev_io			cm_watcher;	/**< Libev handler for
-						     CM events */
+	/** The portals iface_id assigned to this interface */
+	ptl_interface_t		iface_id;
+	/** Table of NI's indexed by ni type */
+	struct ni		*ni[MAX_NI_TYPES];
+	/** Network interface name for debugging output */
+	char			ifname[IF_NAMESIZE];
+	/** The NID/PID for this interface */
+	ptl_process_t		id;
+	/** The CM event channel for this interface */
+	struct rdma_event_channel *cm_channel;
+	/** The CM ID for this interface */
+	struct rdma_cm_id	*listen_id;
+	/** Boolean is true if interface is listening for connections */
+	int			listen;
+	/** IPV4 address if this interface */
+	struct sockaddr_in	sin;
+	/** RDMA device info for this interface */
+	struct ibv_context	*ibv_context;
+	/** RDMA protection domain for this interface */
+	struct ibv_pd		*pd;
+	/** Libev handler for CM events */
+	ev_io			cm_watcher;
 };
 
 typedef struct iface iface_t;
