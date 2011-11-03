@@ -880,7 +880,7 @@ static int tgt_rdma_desc(buf_t *buf)
 		goto done;
 	}
 
-	err = rdma_read(buf, rdma_buf, raddr, rkey, &sge, 1, 1);
+	err = post_rdma(buf, rdma_buf, DATA_DIR_IN, raddr, rkey, &sge, 1, 1);
 	if (err) {
 		WARN();
 		buf_put(rdma_buf);
