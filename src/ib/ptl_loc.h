@@ -215,10 +215,8 @@ int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		 void *dest, void *source, void *operand);
 
-int rdma_read(buf_t *buf, buf_t *rdma_buf, uint64_t raddr, uint32_t rkey,
+int post_rdma(buf_t *buf, buf_t *rdma_buf, data_dir_t dir, uint64_t raddr, uint32_t rkey,
 	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
-
-int post_tgt_rdma(buf_t *buf);
 
 void *process_recv_rdma_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
