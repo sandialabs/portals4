@@ -521,7 +521,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err2;
 #else
-	ni = fast_to_obj(ni_handle,);
+	ni = fast_to_obj(ni_handle);
 #endif
 
 	// TODO convert these to atomic_inc/dec macros
