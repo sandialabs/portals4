@@ -1,13 +1,13 @@
 /**
  * @file ptl_iface.c
  *
- * Interface table management.
+ * @brief Interface table management.
  */
 
 #include "ptl_loc.h"
 
 /**
- * Cleanup iface resources.
+ * @brief Cleanup iface resources.
  *
  * @param[in] iface The interface to cleanup
  */
@@ -41,7 +41,7 @@ void cleanup_iface(iface_t *iface)
 }
 
 /**
- * Get an IPv4 address from network device name (e.g. ib0).
+ * @brief Get an IPv4 address from network device name (e.g. ib0).
  *
  * Returns INADDR_ANY on error or if address is not assigned.
  *
@@ -74,7 +74,7 @@ static in_addr_t get_ip_address(const char *ifname)
 }
 
 /**
- * Initialize interface.
+ * @brief Initialize interface.
  *
  * @param[in] iface The iface to init
  *
@@ -140,7 +140,7 @@ int init_iface(iface_t *iface)
 }
 
 /**
- * Cleanup interface table.
+ * @brief Cleanup interface table.
  *
  * Called from gbl_release from last PtlFini call.
  *
@@ -161,7 +161,7 @@ void iface_fini(gbl_t *gbl)
 }
 
 /**
- * Initialize interface table.
+ * @brief Initialize interface table.
  *
  * Called from first PtlInit call.
  *
@@ -195,7 +195,7 @@ int init_iface_table(gbl_t *gbl)
 }
 
 /**
- * Return interface from iface_id.
+ * @brief Return interface from iface_id.
  *
  * Default iface is the first table entry.
  *
@@ -229,7 +229,7 @@ iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id)
 }
 
 /**
- * Lookup ni in iface table from ni type.
+ * @brief Lookup ni in iface table from ni type.
  *
  * Takes a reference on the ni which should
  * be dropped by caller when the ni is no
@@ -257,7 +257,7 @@ ni_t *__iface_get_ni(iface_t *iface, int ni_type)
 }
 
 /**
- * Add ni to iface table.
+ * @brief Add ni to iface table.
  *
  * @pre caller should hold global mutex
  *
@@ -276,7 +276,7 @@ void __iface_add_ni(iface_t *iface, ni_t *ni)
 }
 
 /**
- * Remove ni from iface table.
+ * @brief Remove ni from iface table.
  *
  * @pre caller should hold global mutex
  *
@@ -295,7 +295,7 @@ void __iface_remove_ni(ni_t *ni)
 }
 
 /**
- * Prepare interface for accepting connections.
+ * @brief Prepare interface for accepting connections.
  *
  * This routine creates CM ID and binds it to the local IPV4 address
  * and port number. rdma_cm assigns the rdma device and allocates
