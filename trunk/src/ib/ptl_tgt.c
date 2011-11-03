@@ -1458,13 +1458,9 @@ int process_tgt(buf_t *buf)
 			break;
 		case STATE_TGT_SEND_ACK:
 			state = tgt_send_ack(buf);
-			if (state == STATE_TGT_SEND_ACK)
-				goto exit;
 			break;
 		case STATE_TGT_SEND_REPLY:
 			state = tgt_send_reply(buf);
-			if (state == STATE_TGT_SEND_REPLY)
-				goto exit;
 			break;
 		case STATE_TGT_DROP:
 			state = request_drop(buf);
