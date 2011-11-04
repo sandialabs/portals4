@@ -133,8 +133,7 @@ enum tgt_state {
 	STATE_TGT_ATOMIC_DATA_IN,
 	STATE_TGT_SWAP_DATA_IN,
 	STATE_TGT_DATA_OUT,
-	STATE_TGT_RDMA_DESC,
-	STATE_TGT_RDMA_WAIT_DESC,
+	STATE_TGT_WAIT_RDMA_DESC,
 	STATE_TGT_SHMEM_DESC,
 	STATE_TGT_SEND_ACK,
 	STATE_TGT_SEND_REPLY,
@@ -215,8 +214,7 @@ int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		 void *dest, void *source, void *operand);
 
-int post_rdma(buf_t *buf, buf_t *rdma_buf, data_dir_t dir, uint64_t raddr, uint32_t rkey,
-	      struct ibv_sge *loc_sge, int num_loc_sge, uint8_t comp);
+int process_rdma_desc(buf_t *buf);
 
 void *process_recv_rdma_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
@@ -228,8 +226,6 @@ int process_tgt(buf_t *buf);
 int check_match(buf_t *buf, const me_t *me);
 
 int check_perm(buf_t *buf, const le_t *le);
-
-buf_t *tgt_alloc_rdma_buf(buf_t *buf);
 
 #ifdef WITH_TRANSPORT_SHMEM
 int knem_init(ni_t *ni);

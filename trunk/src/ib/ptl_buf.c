@@ -23,6 +23,7 @@ int buf_setup(void *arg)
 	buf->comp = 0;
 	buf->data = buf->internal_data;
 	buf->rdma.recv_wr.next = NULL;
+	buf->rdma_desc_ok = 0;
 
 	return PTL_OK;
 }
@@ -43,6 +44,8 @@ void buf_cleanup(void *arg)
 
 	for (i = 0; i < buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
+
+	buf->num_mr = 0;
 
 	/* send/rdma bufs drop their references to
 	 * the master buf here */
