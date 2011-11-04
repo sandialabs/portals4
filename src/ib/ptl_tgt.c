@@ -15,7 +15,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
 	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
 	[STATE_TGT_DATA_OUT]		= "tgt_data_out",
-	[STATE_TGT_RDMA_DESC]		= "tgt_rdma_desc",
+	[STATE_TGT_WAIT_RDMA_DESC]	= "tgt_wait_rdma_desc",
 	[STATE_TGT_SEND_ACK]		= "tgt_send_ack",
 	[STATE_TGT_SEND_REPLY]		= "tgt_send_reply",
 	[STATE_TGT_COMM_EVENT]		= "tgt_comm_event",
@@ -622,25 +622,6 @@ out1:
 	return STATE_TGT_COMM_EVENT;
 }
 
-buf_t *tgt_alloc_rdma_buf(buf_t *buf)
-{
-	buf_t *rdma_buf;
-	int err;
-
-	err = buf_alloc(obj_to_ni(buf), &rdma_buf);
-	if (err) {
-		WARN();
-		return NULL;
-	}
-
-	rdma_buf->type = BUF_RDMA;
-	rdma_buf->xxbuf = buf;
-	buf_get(buf);
-	rdma_buf->dest = buf->dest;
-
-	return rdma_buf;
-}
-
 /*
  * tgt_rdma_init_loc_off
  *	initialize local offsets into ME/LE for RDMA
@@ -767,7 +748,7 @@ static int tgt_data_out(buf_t *buf)
 		break;
 
 	case DATA_FMT_RDMA_INDIRECT:
-		next = STATE_TGT_RDMA_DESC;
+		next = STATE_TGT_WAIT_RDMA_DESC;
 		break;
 
 	case DATA_FMT_SHMEM_INDIRECT:
@@ -821,105 +802,65 @@ static int tgt_rdma(buf_t *buf)
 	return STATE_TGT_COMM_EVENT;
 }
 
-/*
- * tgt_rdma_desc
- *	initiate read of indirect descriptors for initiator IOV
+/**
+ * @brief Send rdma read for indirect scatter/gather list
+ * and wait for response.
+ *
+ * We arrive in this state during RDMA data in or data out processing
+ * if the number of remote data segments is larger than will fit
+ * in the buf's data descriptor so that we need to copy an indirect
+ * list from the initiator.
+ *
+ * @param[in] buf The message buf.
+ *
+ * @return next state.
  */
-static int tgt_rdma_desc(buf_t *buf)
+static int tgt_wait_rdma_desc(buf_t *buf)
 {
-	data_t *data;
-	uint64_t raddr;
-	uint32_t rkey;
-	uint32_t rlen;
-	struct ibv_sge sge;
 	int err;
-	int next;
-	buf_t *rdma_buf;
 
-	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
-
-	/*
-	 * Allocate and map indirect buffer and setup to read
-	 * descriptor list from initiator memory.
-	 */
-	raddr = le64_to_cpu(data->rdma.sge_list[0].addr);
-	rkey = le32_to_cpu(data->rdma.sge_list[0].lkey);
-	rlen = le32_to_cpu(data->rdma.sge_list[0].length);
-
-	if (debug)
-		printf("RDMA indirect descriptors:radd(0x%" PRIx64 "), "
-		       " rkey(0x%x), len(%d)\n", raddr, rkey, rlen);
-
-	buf->indir_sge = calloc(1, rlen);
-	if (!buf->indir_sge) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
+	/* if this is the first time we get here
+	 * rdma_desc_ok will be zero and we call
+	 * process_rdma_desc() to post the rdma
+	 * read for it. When the operation completes
+	 * we will reenter here from recv with
+	 * rdma_desc_ok = 1*/
+	if (!buf->rdma_desc_ok) {
+		err = process_rdma_desc(buf);
+		if (err)
+			return STATE_TGT_ERROR;
+		else
+			return STATE_TGT_WAIT_RDMA_DESC;
 	}
 
-	if (mr_lookup(obj_to_ni(buf), buf->indir_sge, rlen,
-		      &buf->indir_mr)) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
+	/* setup the remote end of the dma state
+	 * to point to the indirect scatter/gather list */
+	if (buf->rdma_dir == DATA_DIR_IN) {
+		buf->rdma.cur_rem_sge = buf->put_indir_sge;
+		buf->rdma.num_rem_sge =
+			(le32_to_cpu(buf->data_in->rdma.sge_list[0].length))
+				/sizeof(struct ibv_sge);
+		buf->rdma.cur_rem_off = 0;
+	} else {
+		buf->rdma.cur_rem_sge = buf->get_indir_sge;
+		buf->rdma.num_rem_sge =
+			(le32_to_cpu(buf->data_out->rdma.sge_list[0].length))
+				/sizeof(struct ibv_sge);
+		buf->rdma.cur_rem_off = 0;
 	}
 
-	/*
-	 * Post RDMA read
-	 */
-	sge.addr = (uintptr_t)buf->indir_sge;
-	sge.lkey = buf->indir_mr->ibmr->lkey;
-	sge.length = rlen;
-
-	atomic_set(&buf->rdma.rdma_comp, 1);
-
-	rdma_buf = tgt_alloc_rdma_buf(buf);
-	if (!rdma_buf) {
-		WARN();
-		next = STATE_TGT_ERROR;
-		goto done;
-	}
-
-	err = post_rdma(buf, rdma_buf, DATA_DIR_IN, raddr, rkey, &sge, 1, 1);
-	if (err) {
-		WARN();
-		buf_put(rdma_buf);
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
-
-	next = STATE_TGT_RDMA_WAIT_DESC;
-
-done:
-	return next;
-}
-
-/*
- * tgt_rdma_wait_desc
- *	indirect descriptor RDMA has completed, initialize for common RDMA code
- */
-static int tgt_rdma_wait_desc(buf_t *buf)
-{
-	data_t *data;
-
-	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
-
-	buf->rdma.cur_rem_sge = buf->indir_sge;
-	buf->rdma.cur_rem_off = 0;
-	buf->rdma.num_rem_sge = (le32_to_cpu(data->rdma.sge_list[0].length)) /
-			  sizeof(struct ibv_sge);
-
-	if (tgt_rdma_init_loc_off(buf))
+	err = tgt_rdma_init_loc_off(buf);
+	if (err)
 		return STATE_TGT_ERROR;
-
-	return STATE_TGT_RDMA;
+	else
+		return STATE_TGT_RDMA;
 }
 
 #ifdef WITH_TRANSPORT_SHMEM
 /*
  * tgt_shmem_desc
  *	initiate read of indirect descriptors for initiator IOV.
- * Equivalent of tgt_rdma_desc() and tgt_rdma_wait_desc() combined.
+ * Equivalent of tgt_get_rdma_desc()
  */
 static int tgt_shmem_desc(buf_t *buf)
 {
@@ -1035,7 +976,7 @@ static int tgt_data_in(buf_t *buf)
 
 	case DATA_FMT_RDMA_INDIRECT:
 		buf->rdma_dir = DATA_DIR_IN;
-		next = STATE_TGT_RDMA_DESC;
+		next = STATE_TGT_WAIT_RDMA_DESC;
 		break;
 
 	case DATA_FMT_SHMEM_INDIRECT:
@@ -1270,26 +1211,17 @@ static int tgt_cleanup(buf_t *buf)
 	else
 		state = STATE_TGT_CLEANUP_2;
 
-	if (buf->indir_sge) {
-		if (buf->indir_mr) {
-			mr_put(buf->indir_mr);
-			buf->indir_mr = NULL;
-		}
-		free(buf->indir_sge);
-		buf->indir_sge = NULL;
+	if (buf->put_indir_sge) {
+		free(buf->put_indir_sge);
+		buf->put_indir_sge = NULL;
 	}
 
-#ifndef NO_ARG_VALIDATION
-	pthread_spin_lock(&buf->rdma_list_lock);
-	while(!list_empty(&buf->rdma_list)) {
-		buf_t *rdma_buf = list_first_entry(&buf->rdma_list,
-						   buf_t, list);
-		list_del(&rdma_buf->list);
-		buf_put(rdma_buf);
-		abort();	/* this should not happen */
+	if (buf->get_indir_sge) {
+		free(buf->get_indir_sge);
+		buf->get_indir_sge = NULL;
 	}
-	pthread_spin_unlock(&buf->rdma_list_lock);
-#endif
+
+	assert(list_empty(&buf->rdma_list));
 
 	if (buf->send_buf) {
 		buf_put(buf->send_buf);
@@ -1426,15 +1358,10 @@ int process_tgt(buf_t *buf)
 		case STATE_TGT_DATA_IN:
 			state = tgt_data_in(buf);
 			break;
-		case STATE_TGT_RDMA_DESC:
-			state = tgt_rdma_desc(buf);
-			if (state == STATE_TGT_RDMA_DESC)
+		case STATE_TGT_WAIT_RDMA_DESC:
+			state = tgt_wait_rdma_desc(buf);
+			if (state == STATE_TGT_WAIT_RDMA_DESC)
 				goto exit;
-			if (state == STATE_TGT_RDMA_WAIT_DESC)
-				goto exit;
-			break;
-		case STATE_TGT_RDMA_WAIT_DESC:
-			state = tgt_rdma_wait_desc(buf);
 			break;
 		case STATE_TGT_SHMEM_DESC:
 			state = tgt_shmem_desc(buf);

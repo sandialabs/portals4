@@ -135,8 +135,9 @@ struct buf {
 
 			pt_t			*pt;
 			void			*start;
-			void			*indir_sge;
-			mr_t			*indir_mr;
+			void			*get_indir_sge;
+			void			*put_indir_sge;
+			int			rdma_desc_ok;
 			union {
 				le_t			*le;
 				me_t			*me;
@@ -148,9 +149,9 @@ struct buf {
 			struct buf		*send_buf;
 			ptl_size_t		cur_loc_iov_index;
 			ptl_size_t		cur_loc_iov_off;
-			uint32_t		rdma_dir;
 			ptl_size_t		put_resid;
 			ptl_size_t		get_resid;
+			uint32_t		rdma_dir;
 		};
 	};
 

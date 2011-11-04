@@ -100,7 +100,7 @@ static int send_comp(buf_t *buf)
 }
 
 /**
- * Process a read/write completion.
+ * Process an rdma completion.
  *
  * @param rdma_buf the buffer that finished.
  *
@@ -117,19 +117,24 @@ static int rdma_comp(buf_t *rdma_buf)
 
 	/* Take a ref on the XT since freeing all its rdma_buffers will also
 	 * free it. */
-	assert(atomic_read(&buf->rdma.rdma_comp) < 5000);
 	buf_get(buf);
 
-	pthread_spin_lock(&buf->rdma_list_lock);
-	list_cut_position(&temp_list, &buf->rdma_list, &rdma_buf->list);
-	pthread_spin_unlock(&buf->rdma_list_lock);
+	/* do not do this for indirect rdma sge lists */
+	if (rdma_buf != buf) {
+		atomic_dec(&buf->rdma.rdma_comp);
 
-	atomic_dec(&buf->rdma.rdma_comp);
+		pthread_spin_lock(&buf->rdma_list_lock);
+		list_cut_position(&temp_list, &buf->rdma_list, &rdma_buf->list);
+		pthread_spin_unlock(&buf->rdma_list_lock);
 
-	while(!list_empty(&temp_list)) {
-		rdma_buf = list_first_entry(&temp_list, buf_t, list);
-		list_del(&rdma_buf->list);
-		buf_put(rdma_buf);
+		/* free the chain of rdma bufs */
+		while(!list_empty(&temp_list)) {
+			rdma_buf = list_first_entry(&temp_list, buf_t, list);
+			list_del(&rdma_buf->list);
+			buf_put(rdma_buf);
+		}
+	} else {
+		buf->rdma_desc_ok = 1;
 	}
 
 	err = process_tgt(buf);
