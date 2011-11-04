@@ -271,9 +271,9 @@ int test_ptl_md_release(struct node_info *info)
 	int ret;
 	int i;
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 100; i++) {
 		ret = PtlMDRelease(info->md_handle);
-		if (ret == PTL_IN_USE)
+		if (ret == PTL_ARG_INVALID)
 			usleep(10000);
 		else
 			break;
