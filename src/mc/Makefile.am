@@ -45,7 +45,9 @@ libportals_mc_la_SOURCES = \
 	lib/me.c \
 	lib/ni.c \
 	lib/ppe_if.h \
+	lib/ppe_if.c \
 	lib/ppe_if_ni.h \
+	lib/ppe_if_md.h \
 	lib/pt.c \
 	lib/triggered.c \
 	include/ptl_internal_alignment.h \
@@ -58,9 +60,7 @@ libportals_mc_la_SOURCES = \
 	include/ptl_internal_CT.h \
 	include/ptl_internal_error.h \
 	include/ptl_internal_nit.h \
-	include/ptl_internal_locks.h \
 	include/ptl_visibility.h \
-	include/ptl_internal_atomic.h \
 	include/ptl_internal_pid.h
 
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)

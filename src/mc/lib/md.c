@@ -70,8 +70,7 @@ ures!\n", md->start, (unsigned int)md->length);
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-
-    return PTL_OK;
+    return FUNC_CALL( PtlMDBind, ni_handle, md, md_handle );
 }
 
 int PtlMDRelease(ptl_handle_md_t md_handle)
@@ -85,8 +84,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
         return PTL_ARG_INVALID;
     }
 #endif
-
-    return PTL_OK;
+    return FUNC_CALL( PtlMDRelease, md_handle );
 }
 
 #ifndef NO_ARG_VALIDATION
