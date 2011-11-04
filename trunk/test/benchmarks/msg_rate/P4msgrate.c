@@ -296,6 +296,9 @@ int test_type;
     /* Initialize Portals and get some runtime info */
     rc= PtlInit();
     LIBTEST_CHECK(rc, "PtlInit");
+
+    rc= libtest_init();
+    LIBTEST_CHECK(rc, "libtest_init");
     rank= libtest_get_rank();
     world_size= libtest_get_size();
 
@@ -408,6 +411,11 @@ int test_type;
     }
     LIBTEST_CHECK(rc, "PtlNIInit");
 
+    rc= PtlSetMap(ni_collectives, world_size, libtest_get_mapping());
+    LIBTEST_CHECK(rc, "PtlSetMap");
+
+    rc= PtlSetMap(ni_logical, world_size, libtest_get_mapping());
+    LIBTEST_CHECK(rc, "PtlSetMap");
 
     if (0 == rank)   {
         if (!machine_output)   {
@@ -567,6 +575,7 @@ int test_type;
     /* done */
     PtlNIFini(ni_logical);
     PtlNIFini(ni_collectives);
+    libtest_fini();
     PtlFini();
     return 0;
 

@@ -60,7 +60,7 @@ void test_one_wayLE(int             cache_size,
         le.length  = RECV_BUF_SIZE;
         le.uid     = PTL_UID_ANY;
         le.options = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE |
-                     PTL_LE_EVENT_CT_COMM;
+                     PTL_LE_EVENT_CT_COMM | PTL_LE_EVENT_LINK_DISABLE;
         ptl_assert(PtlLEAppend(ni, index, &le, PTL_PRIORITY_LIST,
                                NULL, &le_handle), PTL_OK);
 
