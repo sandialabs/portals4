@@ -1,9 +1,9 @@
 #ifndef PTL_INTERNAL_HANDLES_H
 #define PTL_INTERNAL_HANDLES_H
 
-#define HANDLE_SELECTOR_BITS 3
+#define HANDLE_SELECTOR_BITS 4 
 #define HANDLE_NI_BITS       2
-#define HANDLE_CODE_BITS     27
+#define HANDLE_CODE_BITS     26
 
 typedef union {
     uint32_t i;
