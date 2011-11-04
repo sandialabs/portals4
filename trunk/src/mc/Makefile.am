@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2011 Sandia Corporation
 
-AM_CPPFLAGS = -I$(top_srcdir)/include $(XPMEM_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(XPMEM_CPPFLAGS) -I$(top_srcdir)/src/mc/include
 
 EXTRA_DIST = \
 	lib/ptmalloc/arena.c \
@@ -30,11 +30,39 @@ portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
 libportals_mc_la_SOURCES = \
 	lib/alloc.h \
 	lib/alloc.c \
+	lib/atomic.c \
+	lib/bundle.c \
+	lib/ct.c \
+	lib/data_movment.c \
+	lib/eq.c \
 	lib/func_call.h \
+	lib/handle.c \
+	lib/id.c \
+	lib/init.c \
+	lib/le.c \
+	lib/map.c \
+	lib/md.c \
+	lib/me.c \
+	lib/ni.c \
 	lib/ppe_if.h \
 	lib/ppe_if_ni.h \
-	lib/ni.c \
-	lib/init.c
+	lib/pt.c \
+	lib/triggered.c \
+	include/ptl_internal_alignment.h \
+	include/ptl_internal_handles.h \
+	include/ptl_internal_commpad.h \
+	include/ptl_internal_LE.h \
+	include/ptl_internal_MD.h \
+	include/ptl_internal_PT.h \
+	include/ptl_internal_EQ.h \
+	include/ptl_internal_CT.h \
+	include/ptl_internal_error.h \
+	include/ptl_internal_nit.h \
+	include/ptl_internal_locks.h \
+	include/ptl_visibility.h \
+	include/ptl_internal_atomic.h \
+	include/ptl_internal_pid.h
+
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la libportals_mc_alloc.la $(XPMEM_LIBS)
 
