@@ -876,6 +876,7 @@ static int tgt_shmem_desc(buf_t *buf)
 	size_t len;
 	ni_t *ni = obj_to_ni(buf);
 	void *indir_sge;
+	mr_t *mr;
 
 	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
 	len = data->shmem.knem_iovec[0].length;
@@ -892,7 +893,7 @@ static int tgt_shmem_desc(buf_t *buf)
 		goto done;
 	}
 
-	if (mr_lookup(obj_to_ni(buf), indir_sge, len, &buf->indir_mr)) {
+	if (mr_lookup(obj_to_ni(buf), indir_sge, len, &mr)) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
@@ -900,8 +901,8 @@ static int tgt_shmem_desc(buf_t *buf)
 
 	err = knem_copy(ni, data->shmem.knem_iovec[0].cookie,
 			data->shmem.knem_iovec[0].offset,
-			buf->indir_mr->knem_cookie,
-			indir_sge - buf->indir_mr->ibmr->addr, len);
+			mr->knem_cookie,
+			indir_sge - mr->ibmr->addr, len);
 	if (err != len) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
@@ -909,6 +910,7 @@ static int tgt_shmem_desc(buf_t *buf)
 	}
 
 	buf->indir_sge = indir_sge;
+	buf->mr_list[buf->num_mr++] = mr;
 	buf->shmem.cur_rem_iovec = indir_sge;
 	buf->shmem.cur_rem_off = 0;
 	buf->shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
