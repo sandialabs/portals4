@@ -787,6 +787,12 @@ static int tgt_rdma(buf_t *buf)
 	if (*resid || atomic_read(&buf->rdma.rdma_comp))
 		return STATE_TGT_RDMA;
 
+	/* free indirect scatter/gather list */
+	if (buf->indir_sge) {
+		free(buf->indir_sge);
+		buf->indir_sge = NULL;
+	}
+
 	/* check to see if we still need data in phase */
 	if (buf->put_resid) {
 		if (hdr->operation == OP_FETCH)
@@ -836,13 +842,13 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 	/* setup the remote end of the dma state
 	 * to point to the indirect scatter/gather list */
 	if (buf->rdma_dir == DATA_DIR_IN) {
-		buf->rdma.cur_rem_sge = buf->put_indir_sge;
+		buf->rdma.cur_rem_sge = buf->indir_sge;
 		buf->rdma.num_rem_sge =
 			(le32_to_cpu(buf->data_in->rdma.sge_list[0].length))
 				/sizeof(struct ibv_sge);
 		buf->rdma.cur_rem_off = 0;
 	} else {
-		buf->rdma.cur_rem_sge = buf->get_indir_sge;
+		buf->rdma.cur_rem_sge = buf->indir_sge;
 		buf->rdma.num_rem_sge =
 			(le32_to_cpu(buf->data_out->rdma.sge_list[0].length))
 				/sizeof(struct ibv_sge);
@@ -869,6 +875,7 @@ static int tgt_shmem_desc(buf_t *buf)
 	int next;
 	size_t len;
 	ni_t *ni = obj_to_ni(buf);
+	void *indir_sge;
 
 	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
 	len = data->shmem.knem_iovec[0].length;
@@ -878,14 +885,14 @@ static int tgt_shmem_desc(buf_t *buf)
 	 * descriptor list from initiator memory.
 	 */
 	/* TODO: alloc + double memory registration is overkill. May be we don't need that for SHMEM. Same with IB. */
-	buf->indir_sge = calloc(1, len);
-	if (!buf->indir_sge) {
+	indir_sge = malloc(len);
+	if (!indir_sge) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
 	}
 
-	if (mr_lookup(obj_to_ni(buf), buf->indir_sge, len, &buf->indir_mr)) {
+	if (mr_lookup(obj_to_ni(buf), indir_sge, len, &buf->indir_mr)) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
@@ -894,17 +901,17 @@ static int tgt_shmem_desc(buf_t *buf)
 	err = knem_copy(ni, data->shmem.knem_iovec[0].cookie,
 			data->shmem.knem_iovec[0].offset,
 			buf->indir_mr->knem_cookie,
-			buf->indir_sge -
-			buf->indir_mr->ibmr->addr, len);
+			indir_sge - buf->indir_mr->ibmr->addr, len);
 	if (err != len) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
 	}
 
-	buf->shmem.cur_rem_iovec = buf->indir_sge;
+	buf->indir_sge = indir_sge;
+	buf->shmem.cur_rem_iovec = indir_sge;
 	buf->shmem.cur_rem_off = 0;
-	buf->shmem.num_rem_iovecs = len / sizeof(struct shmem_iovec);
+	buf->shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
 
 	if (tgt_rdma_init_loc_off(buf)) {
 		WARN();
@@ -1211,16 +1218,7 @@ static int tgt_cleanup(buf_t *buf)
 	else
 		state = STATE_TGT_CLEANUP_2;
 
-	if (buf->put_indir_sge) {
-		free(buf->put_indir_sge);
-		buf->put_indir_sge = NULL;
-	}
-
-	if (buf->get_indir_sge) {
-		free(buf->get_indir_sge);
-		buf->get_indir_sge = NULL;
-	}
-
+	assert(!buf->indir_sge);
 	assert(list_empty(&buf->rdma_list));
 
 	if (buf->send_buf) {

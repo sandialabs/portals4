@@ -135,8 +135,7 @@ struct buf {
 
 			pt_t			*pt;
 			void			*start;
-			void			*get_indir_sge;
-			void			*put_indir_sge;
+			void			*indir_sge;
 			int			rdma_desc_ok;
 			union {
 				le_t			*le;

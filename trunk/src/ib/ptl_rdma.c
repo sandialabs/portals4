@@ -380,17 +380,13 @@ int process_rdma_desc(buf_t *buf)
 		goto err1;
 	}
 
-	if (buf->rdma_dir == DATA_DIR_IN)
-		buf->put_indir_sge = indir_sge;
-	else
-		buf->get_indir_sge = indir_sge;
-
 	if (mr_lookup(ni, indir_sge, rlen, &mr)) {
 		WARN();
 		err = PTL_FAIL;
 		goto err1;
 	}
 
+	buf->indir_sge = indir_sge;
 	buf->mr_list[buf->num_mr++] = mr;
 
 	sge.addr = (uintptr_t)indir_sge;
