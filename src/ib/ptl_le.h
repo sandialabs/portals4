@@ -28,8 +28,6 @@ enum list_element_type {
 	struct pt		*pt;		\
 	struct eq		*eq;		\
 	struct ct		*ct;		\
-	struct mr		*sge_list_mr;	\
-	struct ibv_sge		*sge_list;	\
 	void			*user_ptr;	\
 	void			*start;		\
 	ptl_size_t		length;		\
@@ -55,7 +53,7 @@ int le_init(void *arg, void *unused);
 
 void le_cleanup(void *arg);
 
-int le_get_mr(ni_t *ni, const ptl_le_t *le_init, le_t *le);
+int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le);
 
 int le_append_pt(ni_t *ni, le_t *le);
 

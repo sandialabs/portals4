@@ -40,16 +40,6 @@ void le_cleanup(void *arg)
 	if (pt)
 		WARN();
 
-	if (le->sge_list) {
-		free(le->sge_list);
-		le->sge_list = NULL;
-	}
-
-	if (le->sge_list_mr) {
-		mr_put(le->sge_list_mr);
-		le->sge_list_mr = NULL;
-	}
-
 	if (le->do_auto_free)
 		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
 
@@ -152,12 +142,9 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 }
 
 /**
- * @brief Allocate An array to hold InfiniBand MRs for LE/ME.
+ * @brief Computes the length of an LE/ME and register the memory it
+ * refers to if desired.
  * @note Common between LE and ME.
- *
- * Prepares an array to hold an array of InfiniBand SGEs if the
- * number of IOVs is larger than the limit that will fit in a
- * buf.
  *
  * @param[in] ni
  * @param[in] le_init
@@ -167,10 +154,8 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
  */
 int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 {
-	int err;
 	int i;
 	ptl_iovec_t *iov;
-	struct ibv_sge *sge;
 
 	/* If the memory is supposedly all accessible, register it. */
 	const int lookup = !(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
@@ -178,18 +163,6 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
-
-		if (le->num_iov > get_param(PTL_MAX_INLINE_SGE)) {
-			le->sge_list = calloc(le->num_iov, sizeof(*sge));
-			if (!le->sge_list)
-				return PTL_NO_SPACE;
-
-			err = mr_lookup(ni, le->sge_list,
-					le->num_iov * sizeof(*sge),
-					&le->sge_list_mr);
-			if (err)
-				return err;
-		}
 
 		le->length = 0;
 		iov = (ptl_iovec_t *)le_init->start;
