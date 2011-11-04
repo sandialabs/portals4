@@ -242,6 +242,8 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	md->start = md_init->start;
 	md->options = md_init->options;
 
+	//	printf("FZ[%d] - md bind start=%p, len=%zd\n", getpid(), md->start, md->length);
+
 	/* account for the number of MDs allocated */
 	if (unlikely(__sync_add_and_fetch(&ni->current.max_mds, 1) >
 	    ni->limits.max_mds)) {
@@ -305,17 +307,21 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	md = fast_to_obj(md_handle);
 #endif
 
-	// TODO we always declare success since we are
-	// protected by reference counting. Should we
-	// check to see if the md is really busy??
+	/* Ensure there is no in-flight transfer. */
+	if (md->obj.obj_ref.ref_cnt > 2) {
+		err = PTL_ARG_INVALID;
+	} else {
+		err = PTL_OK;
+		md_put(md);
+	}
+
 	md_put(md);
 
-	err = PTL_OK;
-	md_put(md);
 #ifndef NO_ARG_VALIDATION
 err1:
 	gbl_put();
 err0:
 #endif
+
 	return err;
 }
