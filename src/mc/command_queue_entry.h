@@ -3,7 +3,6 @@
 
 #include "portals4.h"
 #include "ptl_internal_handles.h"
-//#include "ptlEvent.h"
 
 typedef enum {
     PTLNINIT = 1,   
