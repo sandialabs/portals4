@@ -2,7 +2,7 @@
 #define MC_COMMAND_QUEUE_H
 
 /* 
- * A command queue entry
+ * A command queue entry, defined in command_queue_entry.h
  */
 struct ptl_cqe_t;
 typedef struct ptl_cqe_t ptl_cqe_t;
@@ -10,8 +10,8 @@ typedef struct ptl_cqe_t ptl_cqe_t;
 
 /* 
  * Endpoint information suitable for attaching the other process to
- * the first half of the command queue entry.  The contents are
- * implementation defined.
+ * the first half of the command queue entry.  The contents and size
+ * are implementation defined.
  */
 struct ptl_cq_info_t;
 typedef struct ptl_cq_info_t ptl_cq_info_t;
@@ -21,11 +21,8 @@ typedef struct ptl_cq_info_t ptl_cq_info_t;
  * Command queue structure
  */
 struct ptl_cq_t;
-typedef struct ptl_cq_t ptl_cq_t;
-
 typedef struct ptl_cq_t* ptl_cq_handle_t;
 
-#include "command_queue_xpmem.h"
 
 /*
  * ptl_cq_create
@@ -34,6 +31,7 @@ typedef struct ptl_cq_t* ptl_cq_handle_t;
  *
  * Arguments:
  *  entry_size (IN)  - size of command queue entry
+ *  num_entries (IN) - number of entries in receive queue
  *  cq (OUT)         - completion queue handle
  *
  * Return values:
@@ -42,21 +40,29 @@ typedef struct ptl_cq_t* ptl_cq_handle_t;
  *
  * Notes:
  */
-int ptl_cq_create(size_t entry_size, int num_entries, ptl_cq_handle_t *cq);
+int ptl_cq_create(size_t entry_size, int num_entries, 
+                  int my_index, ptl_cq_handle_t *cq);
 
 
 /*
  * ptl_cq_info_get
  *
- * Get information for attaching to an existing command queue
+ * Get local information to allow remote process to attach to queue
+ *
+ * Arguments:
+ *  cq (IN)        - completion queue handle
+ *  info (OUT)     - pointer to an (opaque) info structure 
+ *  info_len (OUT) - pointer to size_t variable which will
+ *                   specify length of info
  *
  * Return values:
  *  0 - success
  *  non-zero - failure
  *
  * Notes:
+ *  If ptl_cq_info_get returns 0, *info must be freed by the caller.
  */
-int ptl_cq_info_get(ptl_cq_handle_t cq, ptl_cq_info_t *info);
+int ptl_cq_info_get(ptl_cq_handle_t cq, ptl_cq_info_t **info, size_t *info_len);
 
 
 /*
@@ -64,15 +70,20 @@ int ptl_cq_info_get(ptl_cq_handle_t cq, ptl_cq_info_t *info);
  *
  * Attach local cq to remote cq.
  *
+ * Arguments:
+ *  cq (IN)        - completion queue handle
+ *  info (IN)      - pointer to opaque info structure from remote process
+ *  index (OUT)    - pointer to the index used for cqe handling
+ *
  * Return values:
  *  0 - success
  *  non-zero - failure
  *
  * Notes:
- *  This is a remote, blocking operation.  Both sides must call attach
- *  (with endpoint information from the other side) for attach to
- *  succeed.  It is possible to attach multiple remote cqs into a
- *  single local cq.
+ *  This is a remote, possibly blocking operation.  Both sides must
+ *  call attach (with endpoint information from the other side) for
+ *  attach to succeed.  It is possible to attach multiple remote cqs
+ *  into a single local cq.
  */
 int ptl_cq_attach(ptl_cq_handle_t cq, ptl_cq_info_t *info);
 
@@ -81,6 +92,9 @@ int ptl_cq_attach(ptl_cq_handle_t cq, ptl_cq_info_t *info);
  * ptl_cq_destroy
  *
  * Destroy a command queue
+ *
+ * Arguments:
+ *  cq (IN)        - completion queue handle
  *
  * Return values:
  *  0 - success
@@ -97,6 +111,11 @@ int ptl_cq_destroy(ptl_cq_handle_t cq);
  * ptl_cq_entry_alloc
  *
  * Allocate a new command queue entry buffer
+ *
+ * Arguments:
+ *  cq (IN)         - completion queue handle
+ *  index (IN)      - remote peer index
+ *  entry (OUT)     - completion queue entry pointer
  *
  * Return values:
  *  0 - success
@@ -126,6 +145,10 @@ int ptl_cq_entry_free(ptl_cq_handle_t cq, ptl_cqe_t* entry);
  *
  * send a command queue entry to the remote peer
  *
+ * Arguments:
+ *  cq (IN)       - completion queue handle
+ *  entry (IN)    - completion queue entry
+ *
  * Return values:
  *  0 - success
  *  non-zero - failure
@@ -135,23 +158,21 @@ int ptl_cq_entry_free(ptl_cq_handle_t cq, ptl_cqe_t* entry);
  *  caller to the implementation.  The caller does *NOT* need to call
  *  ptl_cq_entry_free on the buffer.
  */
-int ptl_cq_entry_send(ptl_cq_handle_t cq, ptl_cqe_t *entry);
+int ptl_cq_entry_send(ptl_cq_handle_t cq, int index, ptl_cqe_t *entry);
 
 
 /*
- * ptl_cq_entry_send
+ * ptl_cq_entry_recv
  *
  * send a command queue entry to the remote peer
  *
  * Return values:
  *  0 - success
- *  non-zero - failure
+ *  -1 - no messages available 
+ *  else - failure
  *
  * Notes:
- *  ptl_cq_entry_recv transfers ownership of the cqe buffer from the
- *  implementation to the caller.  The caller must later call
- *  ptl_cq_entry_send or ptl_cq_entry_free to transfer ownership back
- *  to the implementation or original allocator.
+ *  The user must provide a buffer of the appropriate size.
  */
 int ptl_cq_entry_recv(ptl_cq_handle_t cq, ptl_cqe_t *entry);
 

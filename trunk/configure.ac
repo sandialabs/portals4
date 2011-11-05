@@ -420,6 +420,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/ib/Makefile
                  src/mc/Makefile
+		 src/mc/tests/Makefile
                  src/shmem/Makefile
                  src/yod/Makefile
                  test/Makefile
