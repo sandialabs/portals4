@@ -201,11 +201,11 @@ main(int argc, char *argv[])
     if (pid < 0) {
         perror("pipe");
     } else if (pid == 0) {
-        close(fds[0]);
-        ret = server(fds[1]);
-    } else {
         close(fds[1]);
         ret = client(fds[0]);
+    } else {
+        close(fds[0]);
+        ret = server(fds[1]);
     }
 
     return ret;
