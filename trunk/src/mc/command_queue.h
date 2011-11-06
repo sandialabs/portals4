@@ -40,7 +40,8 @@ typedef struct ptl_cq_t* ptl_cq_handle_t;
  *
  * Notes:
  */
-int ptl_cq_create(size_t entry_size, int num_entries, 
+int ptl_cq_create(size_t entry_size, 
+                  int send_queue_size, int recv_queue_size,
                   int my_index, ptl_cq_handle_t *cq);
 
 
@@ -158,7 +159,8 @@ int ptl_cq_entry_free(ptl_cq_handle_t cq, ptl_cqe_t* entry);
  *  caller to the implementation.  The caller does *NOT* need to call
  *  ptl_cq_entry_free on the buffer.
  */
-int ptl_cq_entry_send(ptl_cq_handle_t cq, int index, ptl_cqe_t *entry);
+int ptl_cq_entry_send(ptl_cq_handle_t cq, int index, 
+                      ptl_cqe_t *entry, size_t len);
 
 
 /*

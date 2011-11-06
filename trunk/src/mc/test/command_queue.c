@@ -21,8 +21,9 @@ server(int fd)
     ptl_cq_info_t *info, *remote_info;
     size_t info_len;
     ptl_cqe_t *send_entry, recv_entry;
+    int start = 123456;
 
-    ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 0, &cq_h);
+    ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 2, 0, &cq_h);
     if (ret != 0) {
         fprintf(stderr, "server: ptl_cq_create: %d\n", ret);
         return ret;
@@ -62,9 +63,10 @@ server(int fd)
         return ret;
     }
 
-    send_entry->count = 0;
+    send_entry->count = start;
+    fprintf(stderr, "server: send_entry->count=%d\n", send_entry->count);
 
-    ret = ptl_cq_entry_send(cq_h, 1, send_entry);
+    ret = ptl_cq_entry_send(cq_h, 1, send_entry, sizeof(ptl_cqe_t));
     if (ret != 0) {
         fprintf(stderr, "server: ptl_cq_entry_send: %d\n", ret);
         return ret;
@@ -74,11 +76,11 @@ server(int fd)
         ret = ptl_cq_entry_recv(cq_h, &recv_entry);
     } while (ret == -1);
     if (ret != 0) {
-        fprintf(stderr, "server: ptl_cq_entry_send: %d\n", ret);
+        fprintf(stderr, "server: ptl_cq_entry_recv: %d\n", ret);
         return ret;
     }
 
-    fprintf(stderr, "server: entry->count=%d\n", recv_entry.count);
+    fprintf(stderr, "server: recv_entry->count=%d\n", recv_entry.count);
 
     ret = 0;
     ret = write(fd, &ret, sizeof(ret));
@@ -89,7 +91,7 @@ server(int fd)
 
     ptl_cq_destroy(cq_h);
 
-    return 0;    
+    return (start + 1 == recv_entry.count);
 }
 
 
@@ -103,7 +105,7 @@ client(int fd)
     ptl_cqe_t *send_entry, recv_entry;
     int count;
 
-    ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 0, &cq_h);
+    ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 2, 1, &cq_h);
     if (ret != 0) {
         fprintf(stderr, "client: ptl_cq_create: %d\n", ret);
         return ret;
@@ -141,12 +143,12 @@ client(int fd)
         ret = ptl_cq_entry_recv(cq_h, &recv_entry);
     } while (ret == -1);
     if (ret != 0) {
-        fprintf(stderr, "client: ptl_cq_entry_send: %d\n", ret);
+        fprintf(stderr, "client: ptl_cq_entry_recv: %d\n", ret);
         return ret;
     }
 
     count = recv_entry.count;
-    fprintf(stderr, "client: entry->count=%d\n", count);
+    fprintf(stderr, "client: recv_entry->count=%d\n", count);
 
     ret = ptl_cq_entry_alloc(cq_h, &send_entry);
     if (ret != 0) {
@@ -154,15 +156,16 @@ client(int fd)
         return ret;
     }
 
-    send_entry->count = count++;
+    send_entry->count = count + 1;
+    printf("client: send_entry->count=%d\n", send_entry->count);
 
-    ret = ptl_cq_entry_send(cq_h, 1, send_entry);
+    ret = ptl_cq_entry_send(cq_h, 0, send_entry, sizeof(ptl_cqe_t));
     if (ret != 0) {
         fprintf(stderr, "client: ptl_cq_entry_send: %d\n", ret);
         return ret;
     }
 
-    ret = read(fd, &remote_info, info_len);
+    ret = read(fd, &ret, sizeof(ret));
     if (ret < 0) {
         perror("read completion");
         return ret;

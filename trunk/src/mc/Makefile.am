@@ -5,7 +5,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include $(XPMEM_CPPFLAGS) -I$(top_srcdir)/src/mc/include
 
 EXTRA_DIST =
-SUBDIRS = . tests
+SUBDIRS = . test
 
 bin_PROGRAMS = portals_engine
 noinst_LTLIBRARIES = libportals_mc.la libportals_mc_shared.la
