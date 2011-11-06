@@ -61,7 +61,9 @@ server(int fd)
     recv_entry.count = start;
 
     for (i = 0 ; i < loops ; ++i) {
-        ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+        do {
+            ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+        } while (ret == 1);
         if (ret != 0) {
             fprintf(stderr, "server(%d): ptl_cq_entry_alloc: %d\n", i, ret);
             return ret;
@@ -77,7 +79,7 @@ server(int fd)
 
         do {
             ret = ptl_cq_entry_recv(cq_h, &recv_entry);
-        } while (ret == -1);
+        } while (ret == 1);
         if (ret != 0) {
             fprintf(stderr, "server(%d): ptl_cq_entry_recv: %d\n", i, ret);
             return ret;
@@ -145,7 +147,7 @@ client(int fd)
     for (i = 0 ; i < loops ; ++i) {
         do {
             ret = ptl_cq_entry_recv(cq_h, &recv_entry);
-        } while (ret == -1);
+        } while (ret == 1);
         if (ret != 0) {
             fprintf(stderr, "client(%d): ptl_cq_entry_recv: %d\n", i, ret);
             return ret;
@@ -153,7 +155,9 @@ client(int fd)
         count = recv_entry.count;
         fprintf(stderr, "client(%d): recv_entry->count=%d\n", i, count);
 
-        ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+        do {
+            ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+        } while (ret == 1);
         if (ret != 0) {
             fprintf(stderr, "client(%d): ptl_cq_entry_alloc: %d\n", i, ret);
             return ret;

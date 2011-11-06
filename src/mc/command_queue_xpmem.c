@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -85,7 +86,7 @@ ptl_cq_create(size_t entry_size,
         send_queue_size * (sizeof(ptl_cqe_xpmem_t) + entry_size);
 
     cq = malloc(len);
-    if (NULL == cq) return 1;
+    if (NULL == cq) return -1;
     *cq_h = cq;
 
     cq_base_page = (uintptr_t) cq;
@@ -98,7 +99,7 @@ ptl_cq_create(size_t entry_size,
     cq->segid = xpmem_make((void*) cq_base_page, cq->xpmem_len,
                            XPMEM_PERMIT_MODE, (void*)0666);
     if (-1 == cq->segid) {
-        return 1;
+        return -1;
         free(cq);
     }
 
@@ -160,15 +161,17 @@ ptl_cq_attach(ptl_cq_handle_t cq_h, ptl_cq_info_t *info)
     conn->apid = xpmem_get(info->segid, XPMEM_RDWR, 
                            XPMEM_PERMIT_MODE, (void*)0666);
     if (conn->apid < 0) {
+        int err = errno;
         free(conn);
-        return 1;
+        errno = err;
+        return -1;
     }
 
     addr.apid = conn->apid;
     addr.offset = 0;
 
     conn->cq_ptr = xpmem_attach(addr, info->xpmem_len, NULL);
-    if ((size_t) conn->cq_ptr == XPMEM_MAXADDR_SIZE) return 1;
+    if ((size_t) conn->cq_ptr == XPMEM_MAXADDR_SIZE) return -1;
     conn->cq_ptr = (ptl_cq_t*)((char*) conn->cq_ptr + info->xpmem_offset);
 
     return 0;
@@ -244,7 +247,7 @@ ptl_cq_entry_send(ptl_cq_handle_t cq_h, int index, ptl_cqe_t *entry, size_t len)
         ((char*)entry - offsetof(ptl_cqe_xpmem_t, data));
     ptl_cq_t *rem_cq;
 
-    real->next = real; /* hide my real pointer for return */
+    real->next = real; /* stash my real pointer for return */
     real->msg_len = len;
     data = MKREM(cq_h->my_index, 
                  PTR2OFF(cq_h, real));
@@ -253,7 +256,7 @@ ptl_cq_entry_send(ptl_cq_handle_t cq_h, int index, ptl_cqe_t *entry, size_t len)
     __sync_synchronize();
     do {
         tmp = rem_cq->cb.head;
-        if (tmp >= rem_cq->cb.tail + rem_cq->cb.num_entries) return -1;
+        if (tmp >= rem_cq->cb.tail + rem_cq->cb.num_entries) return 1;
     } while (!__sync_bool_compare_and_swap(&rem_cq->cb.head,
                                            tmp,
                                            tmp + 1));
@@ -276,7 +279,7 @@ ptl_cq_entry_recv(ptl_cq_handle_t cq_h, ptl_cqe_t *entry)
     __sync_synchronize();
     do {
         tmp = cq_h->cb.tail;
-        if (tmp == cq_h->cb.head) return -1;
+        if (tmp == cq_h->cb.head) return 1;
     } while (!__sync_bool_compare_and_swap(&cq_h->cb.tail,
                                            tmp,
                                            tmp + 1));
