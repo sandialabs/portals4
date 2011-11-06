@@ -34,10 +34,10 @@ server_disconnect_cb(int remote_id)
 static int
 server(int fd)
 {
-    int ret, tmp, my_id;
+    int ret, tmp;
     ptl_cm_server_handle_t cm_h;
 
-    ret = ptl_cm_server_create(&cm_h, &my_id);
+    ret = ptl_cm_server_create(&cm_h);
     if (0 != ret) {
         perror("ptl_cm_server_create");
         return -1;
@@ -106,7 +106,7 @@ client(int fd)
         return -1;
     }
 
-    fprintf(stdout, "Client connected with id %d\n", my_id);
+    fprintf(stdout, "client: connected with id %d\n", my_id);
 
     ret = ptl_cm_client_register_disconnect_cb(cm_h,
                                                client_disconnect_cb);
@@ -126,6 +126,8 @@ client(int fd)
         perror("ptl_cm_client_disconnect");
         return -1;
     }
+
+    fprintf(stdout, "client: leaving\n");
     
     return 0;
 }
@@ -150,11 +152,11 @@ main(int argc, char *argv[])
     if (pid < 0) {
         perror("pipe");
     } else if (pid == 0) {
-        close(fds[0]);
-        ret = server(fds[1]);
-    } else {
         close(fds[1]);
         ret = client(fds[0]);
+    } else {
+        close(fds[0]);
+        ret = server(fds[1]);
     }
 
     return ret;
