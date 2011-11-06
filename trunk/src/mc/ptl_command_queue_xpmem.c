@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "ptl_internal_alignment.h"
-#include "command_queue.h"
+#include "ptl_command_queue.h"
 
 #define CQ_MAX_CONNECTIONS 32
 

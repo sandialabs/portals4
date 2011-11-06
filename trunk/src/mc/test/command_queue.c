@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "command_queue.h"
+#include "ptl_command_queue.h"
 
 struct ptl_cqe_t {
     int count;

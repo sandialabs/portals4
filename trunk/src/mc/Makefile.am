@@ -20,6 +20,7 @@ libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la $(XPMEM_LIBS)
 
 libportals_mc_shared_la_SOURCES = \
-	command_queue.h \
-	command_queue_xpmem.c
+	ptl_command_queue.h \
+	ptl_command_queue_entry.h \
+	ptl_command_queue_xpmem.c
 
