@@ -11,7 +11,7 @@ if_PtlMDBind( ptl_handle_ni_t    ni_handle,
     ptl_internal_handle_converter_t md_hc = { .s.selector = HANDLE_MD_CODE };
 
     int md_index = find_md_index( ni.s.ni );
-    ptl_cqe_base_t *entry;
+    ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( get_cq_handle(), &entry );
 
@@ -22,7 +22,7 @@ if_PtlMDBind( ptl_handle_ni_t    ni_handle,
 
     entry->u.mdBind.md = *md;
 
-    ptl_cq_entry_send( get_cq_handle(), entry );
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, sizeof(ptl_cqe_t) );
 
     md_hc.s.code = md_index; 
     md_hc.s.ni  = ni.s.ni; 
@@ -40,14 +40,14 @@ if_PtlMDRelease( ptl_handle_md_t md_handle )
 
     md_hc.s.selector = get_ppe_index();
 
-    ptl_cqe_base_t *entry;
+    ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( get_cq_handle(), &entry );
 
     entry->type = PTLMDRELEASE;
     entry->u.mdRelease.md_handle = md_hc;
     
-    ptl_cq_entry_send( get_cq_handle(), entry );
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }

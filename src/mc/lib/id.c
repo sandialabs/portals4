@@ -3,7 +3,7 @@
 #include "portals4.h"
 #include "ppe_if.h" 
         
-#include "ptl_internal_handles.h"
+#include "shared/ptl_internal_handles.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h" 
 #include "ptl_internal_pid.h"
@@ -49,12 +49,13 @@ int PtlGetId(ptl_handle_ni_t ni_handle,
 
 int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
-    return (p.rank >= num_siblings);
+    /* BWB: FIX ME */
+    return -1;
 }
 
 int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
 {
-    /* pid == num_siblings is the COLLECTOR */
-    return (p.phys.pid > num_siblings || p.phys.nid != 0);
+    /* BWB: FIX ME */
+    return -1;
 }
 

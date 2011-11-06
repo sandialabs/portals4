@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>                    /* for getenv() */
 
-#include "ptl_internal_commpad.h"
-
 #ifdef NO_ARG_VALIDATION
 # define VERBOSE_ERROR(...)
 #else
@@ -30,7 +28,7 @@ static void VERBOSE_ERROR_(const char *restrict format,
 print_error:
             {
                 va_list ap;
-                printf("PORTALS4-> {%lu} ERROR in %s(): ", (unsigned long)proc_number, func);
+                printf("PORTALS4-> {%lu} ERROR in %s(): ", (unsigned long)-1, func);
                 va_start(ap, func);
                 vprintf(format, ap);
                 fflush(stdout);

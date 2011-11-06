@@ -159,11 +159,9 @@ typedef union {
     cmdPtlMEUnlink_t    meUnlink;
 } ptl_cmd_union_t;
 
-struct ptl_cqe_base_t {
+struct ptl_cqe_t {
     char type; 
     ptl_cmd_union_t u;
 };
-
-typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
 #endif

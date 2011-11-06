@@ -1,5 +1,7 @@
 #include "ppe_if.h"
 
+#include <stdlib.h>
+
 struct ppe_if ppe_if_data; 
 
 void ppe_if_init()

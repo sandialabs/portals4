@@ -16,9 +16,14 @@ fprintf(stderr,"%d:%s():%i: " fmt, -1, __FUNCTION__, __LINE__, ## args);
 
 #endif
 
-#include "command_queue.h"
-#include "command_queue_entry.h"
+#include "shared/ptl_command_queue.h"
+#include "shared/ptl_command_queue_entry.h"
 
+static inline int
+PtlInternalLibraryInitialized(void)
+{
+    return PTL_OK;
+}
 
 struct ppe_if {
     ptl_cq_handle_t cq_handle; 
@@ -35,6 +40,8 @@ static inline ptl_cq_handle_t get_cq_handle( void )
 {
     return ppe_if_data.cq_handle;
 }
+
+static inline int get_cq_peer(void) { return 0; }
 
 static inline int find_md_index( int ni )
 {
@@ -53,6 +60,7 @@ static inline int find_md_index( int ni )
     assert( index != -1 );
     return index;
 }
+
 
 static inline int get_ppe_index( void )
 {

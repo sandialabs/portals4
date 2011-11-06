@@ -4,7 +4,7 @@
 #include <stdint.h>                    /* for uint32_t */
 
 #include "ptl_visibility.h"
-#include "ptl_internal_handles.h"
+#include "shared/ptl_internal_handles.h"
 #include "ptl_internal_PT.h"
 
 typedef struct {

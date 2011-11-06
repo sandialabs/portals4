@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <stdint.h>                    /* for uint32_t */
 
-#include "ptl_internal_alignment.h"
+#include "shared/ptl_internal_alignment.h"
 //#include "ptl_internal_locks.h"
 
 typedef struct {
