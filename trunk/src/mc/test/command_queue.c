@@ -96,7 +96,7 @@ server(int fd)
 
     ptl_cq_destroy(cq_h);
 
-    return (recv_entry.count == (start + loops * 2));
+    return (!(recv_entry.count == (start + loops * 2)));
 }
 
 
