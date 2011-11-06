@@ -1,6 +1,8 @@
 #ifndef MC_COMMAND_QUEUE_H
 #define MC_COMMAND_QUEUE_H
 
+#include <stddef.h>
+
 /* 
  * A user-defined command queue entry.  User must specify size of
  * command queue entry in ptl_cq_create.

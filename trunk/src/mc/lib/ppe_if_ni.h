@@ -40,16 +40,16 @@ if_PtlNIInit( ptl_interface_t   iface,
 
     ppe_if_init( );
 
-    ptl_cqe_base_t *entry; 
+    ptl_cqe_t *entry; 
     ptl_cq_entry_alloc( get_cq_handle(), &entry );
 
-    entry->type + PTLNINIT;
+    entry->type = PTLNINIT;
     entry->u.niInit.options = options;
     entry->u.niInit.pid = pid;
     entry->u.niInit.ni_handle.s.ni = ni.s.ni;
     entry->u.niInit.ni_handle.s.selector = get_ppe_index();
 
-    ptl_cq_entry_send( get_cq_handle(), entry );
+    ptl_cq_entry_send(get_cq_handle(), get_cq_peer(), entry, sizeof(ptl_cqe_t));
 
     *ni_handle = ni.a;
     
@@ -63,11 +63,11 @@ if_PtlNIFini( ptl_handle_ni_t ni_handle)
 
     ni_hc.s.selector = get_ppe_index(); 
 
-    ptl_cqe_base_t *entry;
+    ptl_cqe_t *entry;
     ptl_cq_entry_alloc( get_cq_handle(), &entry );
     entry->type = PTLNIFINI;
     entry->u.niFini.ni_handle = ni_hc;
-    ptl_cq_entry_send( get_cq_handle(), entry );
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, sizeof(ptl_cqe_t));
     return PTL_OK;
 }
 

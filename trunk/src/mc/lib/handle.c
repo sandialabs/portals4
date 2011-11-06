@@ -2,7 +2,7 @@
 
 #include "portals4.h"
 
-#include "ptl_internal_handles.h"
+#include "shared/ptl_internal_handles.h"
 
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
                      ptl_handle_any_t handle2)
