@@ -258,6 +258,7 @@ ptl_cq_entry_send(ptl_cq_handle_t cq_h, int index, ptl_cqe_t *entry, size_t len)
                                            tmp,
                                            tmp + 1));
 
+    tmp = tmp & rem_cq->cb.mask;
     rem_cq->cb.data[tmp] = data;
 
     return 0;
