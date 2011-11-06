@@ -8,6 +8,8 @@
 
 #include "ptl_command_queue.h"
 
+FILE *debug = NULL;
+
 struct ptl_cqe_t {
     int count;
 };
@@ -26,13 +28,13 @@ server(int fd)
 
     ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 2, 0, &cq_h);
     if (ret != 0) {
-        fprintf(stderr, "server: ptl_cq_create: %d\n", ret);
+        perror("server: ptl_cq_create");
         return ret;
     }
 
     ret = ptl_cq_info_get(cq_h, &info, &info_len);
     if (ret != 0) {
-        fprintf(stderr, "server: ptl_cq_info_get: %d\n", ret);
+        perror("server: ptl_cq_info_get");
         return ret;
     }
 
@@ -54,7 +56,7 @@ server(int fd)
 
     ret = ptl_cq_attach(cq_h, remote_info);
     if (ret != 0) {
-        fprintf(stderr, "server: ptl_cq_info_get: %d\n", ret);
+        perror("server: ptl_cq_info_get");
         return ret;
     }
 
@@ -65,15 +67,16 @@ server(int fd)
             ret = ptl_cq_entry_alloc(cq_h, &send_entry);
         } while (ret == 1);
         if (ret != 0) {
-            fprintf(stderr, "server(%d): ptl_cq_entry_alloc: %d\n", i, ret);
+            perror("server: ptl_cq_entry_alloc");
             return ret;
         }
 
         send_entry->count = recv_entry.count + 1;
-        fprintf(stderr, "server(%d): send_entry->count=%d\n", i, send_entry->count);
+        fprintf(debug, "server(%d): send_entry->count=%d\n",
+                i, send_entry->count);
         ret = ptl_cq_entry_send(cq_h, 1, send_entry, sizeof(ptl_cqe_t));
         if (ret != 0) {
-            fprintf(stderr, "server(%d): ptl_cq_entry_send: %d\n", i, ret);
+            perror("server: ptl_cq_entry_send");
             return ret;
         }
 
@@ -81,10 +84,11 @@ server(int fd)
             ret = ptl_cq_entry_recv(cq_h, &recv_entry);
         } while (ret == 1);
         if (ret != 0) {
-            fprintf(stderr, "server(%d): ptl_cq_entry_recv: %d\n", i, ret);
+            perror("server: ptl_cq_entry_recv");
             return ret;
         }
-        fprintf(stderr, "server(%d): recv_entry->count=%d\n", i, recv_entry.count);
+        fprintf(debug, "server(%d): recv_entry->count=%d\n",
+                i, recv_entry.count);
     }
 
     ret = 0;
@@ -112,13 +116,13 @@ client(int fd)
 
     ret = ptl_cq_create(sizeof(ptl_cqe_t), 1, 2, 1, &cq_h);
     if (ret != 0) {
-        fprintf(stderr, "client: ptl_cq_create: %d\n", ret);
+        perror("client: ptl_cq_create");
         return ret;
     }
 
     ret = ptl_cq_info_get(cq_h, &info, &info_len);
     if (ret != 0) {
-        fprintf(stderr, "client: ptl_cq_info_get: %d\n", ret);
+        perror("client: ptl_cq_info_get");
         return ret;
     }
 
@@ -140,7 +144,7 @@ client(int fd)
 
     ret = ptl_cq_attach(cq_h, remote_info);
     if (ret != 0) {
-        fprintf(stderr, "client: ptl_cq_info_get: %d\n", ret);
+        perror("client: ptl_cq_info_get");
         return ret;
     }
 
@@ -149,25 +153,26 @@ client(int fd)
             ret = ptl_cq_entry_recv(cq_h, &recv_entry);
         } while (ret == 1);
         if (ret != 0) {
-            fprintf(stderr, "client(%d): ptl_cq_entry_recv: %d\n", i, ret);
+            perror("client: ptl_cq_entry_recv");
             return ret;
         }
         count = recv_entry.count;
-        fprintf(stderr, "client(%d): recv_entry->count=%d\n", i, count);
+        fprintf(debug, "client(%d): recv_entry->count=%d\n", i, count);
 
         do {
             ret = ptl_cq_entry_alloc(cq_h, &send_entry);
         } while (ret == 1);
         if (ret != 0) {
-            fprintf(stderr, "client(%d): ptl_cq_entry_alloc: %d\n", i, ret);
+            perror("client: ptl_cq_entry_alloc");
             return ret;
         }
 
         send_entry->count = count + 1;
-        printf("client(%d): send_entry->count=%d\n", i, send_entry->count);
+        fprintf(debug, "client(%d): send_entry->count=%d\n",
+                i, send_entry->count);
         ret = ptl_cq_entry_send(cq_h, 0, send_entry, sizeof(ptl_cqe_t));
         if (ret != 0) {
-            fprintf(stderr, "client(%d): ptl_cq_entry_send: %d\n", i, ret);
+            perror("client: ptl_cq_entry_send");
             return ret;
         }
     }
@@ -190,6 +195,12 @@ main(int argc, char *argv[])
     int ret;
     int fds[2];
     pid_t pid;
+
+    if (NULL == getenv("MAKELEVEL")) {
+        debug = stdout;
+    } else {
+        debug = fopen("/dev/null", "a+");
+    }
 
     ret = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
     if (0 != ret) {
