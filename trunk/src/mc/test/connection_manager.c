@@ -8,6 +8,7 @@
 
 #include "ptl_connection_manager.h"
 
+FILE *debug;
 
 static int server_done = 0;
 
@@ -15,7 +16,7 @@ static int server_done = 0;
 static int
 server_connect_cb(int remote_id)
 {
-    fprintf(stdout, "server: connection from remote with id %d\n",
+    fprintf(debug, "server: connection from remote with id %d\n",
             remote_id);
     return 0;
 }
@@ -24,7 +25,7 @@ server_connect_cb(int remote_id)
 static int
 server_disconnect_cb(int remote_id)
 {
-    fprintf(stdout, "server: disconnect from remote with id %d\n",
+    fprintf(debug, "server: disconnect from remote with id %d\n",
             remote_id);
     server_done = 1;
     return 0;
@@ -82,7 +83,7 @@ server(int fd)
 static int
 client_disconnect_cb(int remote_id)
 {
-    fprintf(stdout, "client: disconnect from remote with id %d\n",
+    fprintf(debug, "client: disconnect from remote with id %d\n",
             remote_id);
     return 1;
 }
@@ -106,7 +107,7 @@ client(int fd)
         return -1;
     }
 
-    fprintf(stdout, "client: connected with id %d\n", my_id);
+    fprintf(debug, "client: connected with id %d\n", my_id);
 
     ret = ptl_cm_client_register_disconnect_cb(cm_h,
                                                client_disconnect_cb);
@@ -127,7 +128,7 @@ client(int fd)
         return -1;
     }
 
-    fprintf(stdout, "client: leaving\n");
+    fprintf(debug, "client: leaving\n");
     
     return 0;
 }
@@ -139,6 +140,12 @@ main(int argc, char *argv[])
     int ret;
     int fds[2];
     pid_t pid;
+
+    if (NULL == getenv("MAKELEVEL")) {
+        debug = stdout;
+    } else {
+        debug = fopen("/dev/null", "a+");
+    }
 
     putenv("PTL_CM_SERVER_PORT=7654");
 
