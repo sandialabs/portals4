@@ -10,7 +10,9 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 DIST_SUBDIRS=sfw
 SUBDIRS=. 
 
+if HAVE_LIBXML
 SUBDIRS+=sfw
+endif
 
 include support/Makefile.am
 
