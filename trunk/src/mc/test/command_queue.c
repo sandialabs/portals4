@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "ptl_command_queue.h"
+#include "shared/ptl_command_queue.h"
 
 FILE *debug = NULL;
 

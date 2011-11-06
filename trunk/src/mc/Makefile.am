@@ -2,7 +2,10 @@
 #
 # Copyright (c) 2011 Sandia Corporation
 
-AM_CPPFLAGS = -I$(top_srcdir)/include $(XPMEM_CPPFLAGS) -I$(top_srcdir)/src/mc/include
+AM_CPPFLAGS = \
+	$(XPMEM_CPPFLAGS) \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src/mc/include
 
 EXTRA_DIST =
 SUBDIRS = . test
@@ -20,9 +23,9 @@ libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la $(XPMEM_LIBS)
 
 libportals_mc_shared_la_SOURCES = \
-	ptl_command_queue.h \
-	ptl_command_queue_entry.h \
-	ptl_command_queue_xpmem.c \
-	ptl_connection_manager.h \
-	ptl_connection_manager.c
+	shared/ptl_command_queue.h \
+	shared/ptl_command_queue_entry.h \
+	shared/ptl_command_queue_xpmem.c \
+	shared/ptl_connection_manager.h \
+	shared/ptl_connection_manager.c
 
