@@ -316,7 +316,7 @@ ptl_cm_server_send(ptl_cm_server_handle_t cm_h, int remote_id,
 {
     int peerfd;
 
-    peerfd = cm_h->connections[remote_id].fd;
+    peerfd = cm_h->connections[remote_id - 1].fd;
     if (peerfd < 0) {
         errno = EINVAL;
         return -1;
