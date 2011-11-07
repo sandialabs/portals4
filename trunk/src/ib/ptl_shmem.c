@@ -263,7 +263,7 @@ int PtlNIInit_shmem(ni_t *ni)
 		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
-		(ni->shmem.per_proc_comm_buf_size * (ni->shmem.world_size + 1));                  // the one extra is for the collator
+		(ni->shmem.per_proc_comm_buf_size * ni->shmem.world_size);
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == MAP_FAILED);
