@@ -101,6 +101,8 @@ cm_server_accept_connection(ptl_cm_server_handle_t cm_h)
     nwr = write(cm_h->connections[rank - 1].fd, &rank, sizeof(rank));
     if (nwr <= 0) return -1;
 
+    cm_h->connect_cb(rank);
+
     return 0;
 }
 
