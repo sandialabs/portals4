@@ -157,10 +157,6 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 	int i;
 	ptl_iovec_t *iov;
 
-	/* If the memory is supposedly all accessible, register it. */
-	const int lookup = !(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
-		(le_init->options & PTL_LE_IS_ACCESSIBLE);
-
 	if (le_init->options & PTL_IOVEC) {
 		le->num_iov = le_init->length;
 
@@ -168,21 +164,22 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 		iov = (ptl_iovec_t *)le_init->start;
 
 		for (i = 0; i < le->num_iov; i++) {
+			mr_t *mr;
 
-			if (lookup) {
-				mr_t *mr;
-				if (mr_lookup(ni, iov->iov_base, iov->iov_len, &mr) == PTL_OK)
-					mr_put(mr);
-				else
-					return PTL_ARG_INVALID;
-			}
+			if (mr_lookup(ni, iov->iov_base, iov->iov_len, &mr) == PTL_OK)
+				mr_put(mr);
+			else
+				return PTL_ARG_INVALID;
 
 			le->length += iov->iov_len;
 			iov++;
 		}
 	} else {
-		if (lookup) {
+		/* If the memory is supposedly all accessible, register it. */
+		if (!(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
+			(le_init->options & PTL_LE_IS_ACCESSIBLE)) {
 			mr_t *mr;
+
 			if (mr_lookup(ni, le_init->start, le_init->length, &mr) == PTL_OK)
 				mr_put(mr);
 			else
