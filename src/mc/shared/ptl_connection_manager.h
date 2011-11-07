@@ -1,6 +1,8 @@
 #ifndef MC_CONNECTION_MANAGER_H
 #define MC_CONNECTION_MANAGER_H
 
+#include <stddef.h>
+
 struct ptl_cm_server_t;
 typedef struct ptl_cm_server_t* ptl_cm_server_handle_t;
 
