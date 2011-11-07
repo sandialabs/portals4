@@ -117,6 +117,7 @@ static void PtlInternalNEMESISBlockingOffsetEnqueue(ni_t *ni,
 #endif
 }
 
+#if 0
 static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking_queue *q)
 {
     buf_t *retval = PtlInternalNEMESISOffsetDequeue(ni, &q->q);
@@ -143,6 +144,7 @@ static buf_t *PtlInternalNEMESISBlockingOffsetDequeue(ni_t *ni, NEMESIS_blocking
     assert(retval->obj.next == NULL);
     return retval;
 }
+#endif
 
 #define C_VALIDPTR(x) assert(((uintptr_t)(x)) >= (uintptr_t)ni->shmem.comm_pad && \
                              ((uintptr_t)(x)) < ((uintptr_t)ni->shmem.comm_pad + ni->shmem.per_proc_comm_buf_size * (ni->shmem.world_size + 1)))
@@ -171,11 +173,22 @@ void PtlInternalFragmentToss(ni_t *ni,
 /* this dequeues a fragment from my receive queue */
 buf_t *PtlInternalFragmentReceive(ni_t *ni)
 {                              
+#if 0
     buf_t *buf = PtlInternalNEMESISBlockingOffsetDequeue(ni, ni->shmem.receiveQ);
 
     assert(buf->obj.next == NULL);
     C_VALIDPTR(buf);
-    return buf;
+#else
+
+    buf_t *buf = PtlInternalNEMESISOffsetDequeue(ni, &ni->shmem.receiveQ->q);
+
+	if (buf) {
+		assert(buf->obj.next == NULL);
+		C_VALIDPTR(buf);
+	}	
+#endif
+
+	return buf;
 }
 
 /* vim:set expandtab: */

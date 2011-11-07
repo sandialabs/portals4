@@ -203,81 +203,6 @@ struct transport transport_shmem = {
 	.send_message = send_message_shmem,
 };
 
-static void *PtlInternalDMCatcher(void *param)
-{
-	ni_t *ni = param;
-	int must_stop = 0;
-
-	/* Even if we must stop, keep looping until all buffers are
-	 * returned. */
-    while (!must_stop || atomic_read(&ni->sbuf_pool.count)) {
-        buf_t *shmem_buf;
-		int err;
-
-		shmem_buf = PtlInternalFragmentReceive(ni);
-
-		switch(shmem_buf->type) {
-		case BUF_SHMEM: {
-			buf_t *buf;
-
-			err = buf_alloc(ni, &buf);
-			if (err) {
-				WARN();
-			} else {
-				buf->data = (hdr_t *)shmem_buf->internal_data;
-				buf->length = shmem_buf->length;
-				INIT_LIST_HEAD(&buf->list);
-				process_recv_shmem(ni, buf);
-			}
-
-			/* Send the buffer back. */
-			shmem_buf->type = BUF_SHMEM_RETURN;
-			PtlInternalFragmentToss(ni, shmem_buf, shmem_buf->shmem.source);
-		}
-			break;
-
-		case BUF_SHMEM_RETURN:
-			/* Buffer returned to us by remote node. */
-			assert(shmem_buf->shmem.source == ni->shmem.index);
-
-			/* From send_message_shmem(). */
-			buf_put(shmem_buf);
-			break;
-
-		case BUF_SHMEM_STOP:
-			buf_put(shmem_buf);
-			/* Exit the process */
-			must_stop = 1;
-			break;
-
-		default:
-			/* Should not happen. */
-			abort();
-		}
-	}
-
-	return NULL;
-}
-
-static void PtlInternalDMTeardown(ni_t *ni)
-{
-	buf_t *buf;
-	int err;
-
-	if (ni->shmem.has_catcher) {
-		/* Send a stop message to self. */
-		err = sbuf_alloc(ni, &buf);
-		if (err)
-			return;
-
-		buf->type = BUF_SHMEM_STOP;
-		PtlInternalFragmentToss(ni, buf, ni->shmem.index);
-
-		ptl_assert(pthread_join(ni->shmem.catcher, NULL), 0);
-		ni->shmem.has_catcher = 0;
-	}
-}
-
 static void release_shmem_ressources(ni_t *ni)
 {
 	pool_fini(&ni->sbuf_pool);
@@ -443,10 +368,6 @@ int PtlNIInit_shmem(ni_t *ni)
 		conn->shmem.local_rank = i;
 	}
 
-	/* Create the thread that will wait on the receive queue. */
-	ptl_assert(pthread_create(&ni->shmem.catcher, NULL, PtlInternalDMCatcher, ni), 0);
-	ni->shmem.has_catcher = 1;
-
 	return PTL_OK;
 
  exit_fail:
@@ -460,7 +381,5 @@ int PtlNIInit_shmem(ni_t *ni)
 
 void cleanup_shmem(ni_t *ni)
 {
-	PtlInternalDMTeardown(ni);
-
 	release_shmem_ressources(ni);
 }

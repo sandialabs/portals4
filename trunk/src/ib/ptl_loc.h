@@ -216,7 +216,7 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 
 int process_rdma_desc(buf_t *buf);
 
-void *process_recv_rdma_thread(void *arg);
+void *progress_thread(void *arg);
 void process_recv_shmem(ni_t *ni, buf_t *buf);
 
 int process_init(buf_t *buf);
