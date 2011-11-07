@@ -27,26 +27,23 @@ libportals_mc_la_SOURCES = \
 	lib/include/ptl_internal_CT.h \
 	lib/include/ptl_internal_error.h \
 	lib/include/ptl_internal_PT.h \
-	lib/bundle.c \
-	lib/md.c \
-	lib/map.c \
-	lib/pt.c \
-	lib/triggered.c \
-	lib/init.c \
-	lib/ni.c \
-	lib/data_movment.c \
-	lib/me.c \
 	lib/atomic.c \
-	lib/handle.c \
-	lib/ppe_if.c \
-	lib/eq.c \
-	lib/le.c \
-	lib/id.c \
+	lib/bundle.c \
 	lib/ct.c \
-	lib/ppe_if_md.h \
-	lib/func_call.h \
+	lib/data_movment.c \
+	lib/eq.c \
+	lib/handle.c \
+	lib/id.c \
+	lib/init.c \
+	lib/le.c \
+	lib/map.c \
+	lib/md.c \
+	lib/me.c \
+	lib/ni.c \
+	lib/ppe_if.c \
 	lib/ppe_if.h \
-	lib/ppe_if_ni.h
+	lib/pt.c \
+	lib/triggered.c
 libportals_mc_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/mc/lib/include
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la $(XPMEM_LIBS)
