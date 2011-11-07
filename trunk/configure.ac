@@ -331,11 +331,9 @@ AC_CACHE_SAVE
 # Only export the library symbols 
 AS_IF([test "$with_implementation" = "ib"], [
 AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
-    [if test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"; then
-        LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/ib/portals4.map'
-    else
-        LD_VERSION_SCRIPT=
-    fi])
+    [AS_IF([test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"],
+           [LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/ib/portals4.map'],
+		   [LD_VERSION_SCRIPT=''])])
 AC_SUBST(LD_VERSION_SCRIPT)
 ])
 
@@ -349,23 +347,21 @@ case "$with_implementation" in
   ib)
     ;;
   shmem)
-    if test "$with_test_runtime" != "shmemrt" ; then
-       AC_MSG_WARN([Reseting test harness runtime to shmemrt])
-       with_test_runtime=shmemrt
-    fi
+    AS_IF([test "x$with_test_runtime" != "xshmemrt"],
+		  [AS_IF([test "x$with_test_runtime" != "x"],
+				 [AC_MSG_WARN([Resetting test harness runtime to shmemrt])])
+           with_test_runtime=shmemrt])
     ;;
   *)
-    if test "$with_implementation" != "" ; then
-	   AC_MSG_WARN([Setting implementation to ib])
-    fi
+    AS_IF([test "x$with_implementation" != "x"],
+	      [AC_MSG_WARN([Setting implementation to ib])])
     with_implementation=ib
     ;;
 esac
 case "$with_test_runtime" in
   shmemrt)
-    if test "$with_implementation" != "shmem" ; then
-      AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])
-    fi
+    AS_IF([test "$with_implementation" != "shmem"],
+          [AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])])
     TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'
     ;;
   mpi)
@@ -379,9 +375,8 @@ case "$with_test_runtime" in
     TEST_INVOKE_CMD=
     ;;
   *)
-    if test "$with_test_runtime" != "" ; then
-      AC_MSG_WARN([Setting test runtime to single])
-    fi
+    AS_IF([test "$with_test_runtime" != ""],
+          [AC_MSG_WARN([Setting test runtime to single])])
     with_test_runtime=single
     TEST_INVOKE_CMD=
     ;;
