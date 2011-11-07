@@ -16,29 +16,33 @@ fprintf(stderr,"%d:%s():%i: " fmt, -1, __FUNCTION__, __LINE__, ## args);
 
 #endif
 
+#include "shared/ptl_connection_manager.h"
 #include "shared/ptl_command_queue.h"
 #include "shared/ptl_command_queue_entry.h"
 
 static inline int
 PtlInternalLibraryInitialized(void)
 {
+    /* BWB: FIX ME! */
     return PTL_OK;
 }
 
 struct ppe_if {
-    ptl_cq_handle_t cq_handle; 
     int             tileColumn; 
     void*           sharedBase;
     ptl_ni_limits_t limits;
     ptl_md_t*       mdBase;
     int             mdFreeHint;
+    ptl_cm_client_handle_t cm_h;
+    ptl_cq_handle_t cq_h;
+    int my_ppe_rank;
 };
 
 extern struct ppe_if ppe_if_data;
 
 static inline ptl_cq_handle_t get_cq_handle( void ) 
 {
-    return ppe_if_data.cq_handle;
+    return ppe_if_data.cq_h;
 }
 
 static inline int get_cq_peer(void) { return 0; }
