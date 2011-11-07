@@ -1,6 +1,8 @@
 #include "ppe_if.h"
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "shared/ptl_command_queue.h"
 #include "shared/ptl_command_queue_entry.h"

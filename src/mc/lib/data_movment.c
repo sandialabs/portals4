@@ -21,7 +21,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
            ptl_hdr_data_t   hdr_data)
 {
 
-    const ptl_internal_handle_converter_t md         = { md_handle };
+    const ptl_internal_handle_converter_t md_hc = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -36,7 +36,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
                       PtlInternalMDLength(md_handle), local_offset + length);
         return PTL_ARG_INVALID;
     }
-    switch (md.s.ni) {
+    switch (md_hc.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
             if (PtlInternalLogicalProcessValidator(target_id)) {
@@ -58,16 +58,18 @@ int PtlPut(ptl_handle_md_t  md_handle,
     {
         ptl_md_t *mdptr;
         mdptr = PtlInternalMDFetch(md_handle);
-        if ((mdptr->options & PTL_MD_VOLATILE) && (length > nit_limits[md.s.ni].max_volatile_size)) {
-            VERBOSE_ERROR("asking for too big a send (%u bytes) from an MD marked VOLATILE (max %u bytes)\n",
-                          length, nit_limits[md.s.ni].max_volatile_size);
+        if ((mdptr->options & PTL_MD_VOLATILE) && 
+                (length > nit_limits[md_hc.s.ni].max_volatile_size)) {
+            VERBOSE_ERROR("asking for too big a send (%u bytes) from an"
+                        " MD marked VOLATILE (max %u bytes)\n",
+                          length, nit_limits[md_hc.s.ni].max_volatile_size);
             return PTL_ARG_INVALID;
         }
     }
-    if (pt_index > nit_limits[md.s.ni].max_pt_index) {
+    if (pt_index > nit_limits[md_hc.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
+                      (unsigned long)nit_limits[md_hc.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
     if (local_offset >= (1ULL << 48)) {
@@ -79,6 +81,25 @@ int PtlPut(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
+
+    ptl_cqe_t *entry;
+        
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    
+    entry->type = PTLPUT;
+    entry->u.put.md_handle = md_hc; 
+    entry->u.put.md_handle.s.selector = get_my_id();
+    entry->u.put.local_offset  = local_offset;
+    entry->u.put.length        = length;
+    entry->u.put.ack_req       = ack_req;
+    entry->u.put.target_id     = target_id;
+    entry->u.put.match_bits    = match_bits;
+    entry->u.put.remote_offset = remote_offset;
+    entry->u.put.user_ptr      = user_ptr;
+    entry->u.put.hdr_data      = hdr_data; 
+    
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+                        sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -92,7 +113,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
            ptl_size_t       remote_offset,
            void            *user_ptr)
 {
-    const ptl_internal_handle_converter_t md = { md_handle };
+    const ptl_internal_handle_converter_t md_hc = { md_handle };
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -107,7 +128,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
                       PtlInternalMDLength(md_handle), local_offset + length);
         return PTL_ARG_INVALID;
     }
-    switch (md.s.ni) {
+    switch (md_hc.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
             if (PtlInternalLogicalProcessValidator(target_id)) {
@@ -126,10 +147,10 @@ int PtlGet(ptl_handle_md_t  md_handle,
             }
             break;
     }
-    if (pt_index > nit_limits[md.s.ni].max_pt_index) {
+    if (pt_index > nit_limits[md_hc.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
                       (unsigned long)pt_index,
-                      (unsigned long)nit_limits[md.s.ni].max_pt_index);
+                      (unsigned long)nit_limits[md_hc.s.ni].max_pt_index);
         return PTL_ARG_INVALID;
     }
     if (local_offset >= (1ULL << 48)) {
@@ -141,5 +162,21 @@ int PtlGet(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
+    ptl_cqe_t *entry;
+        
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    
+    entry->type = PTLGET;
+    entry->u.get.md_handle = md_hc;
+    entry->u.get.md_handle.s.selector = get_my_id();
+    entry->u.get.local_offset = local_offset; 
+    entry->u.get.target_id = target_id; 
+    entry->u.get.pt_index = pt_index; 
+    entry->u.get.match_bits = match_bits; 
+    entry->u.get.remote_offset = remote_offset; 
+    entry->u.get.user_ptr = user_ptr; 
+    
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+                        sizeof(ptl_cqe_t) );
     return PTL_OK;
 }
