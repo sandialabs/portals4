@@ -37,7 +37,7 @@ int PtlSetMap(ptl_handle_ni_t      ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlGetMap(ptl_handle_ni_t ni_handle,
@@ -65,5 +65,5 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }

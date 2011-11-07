@@ -75,7 +75,7 @@ int PtlTriggeredPut(ptl_handle_md_t  md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlTriggeredGet(ptl_handle_md_t  md_handle,
@@ -140,7 +140,7 @@ int PtlTriggeredGet(ptl_handle_md_t  md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
@@ -269,7 +269,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
@@ -415,7 +415,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
@@ -557,7 +557,7 @@ int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
@@ -585,7 +585,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 
@@ -612,6 +612,6 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 

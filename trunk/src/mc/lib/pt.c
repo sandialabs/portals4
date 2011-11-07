@@ -49,6 +49,17 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLPTALLOC;
+    entry->u.ptAlloc.ni_handle = ni;
+    entry->u.ptAlloc.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                    sizeof(ptl_cqe_t) );
+
     return PTL_OK;
 }
 
@@ -78,6 +89,17 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
+
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLPTFREE;
+    entry->u.ptFree.ni_handle = ni;
+    entry->u.ptFree.pt_index = pt_index;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                    sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }

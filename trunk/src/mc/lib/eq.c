@@ -34,19 +34,20 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                ptl_size_t       count,
                ptl_handle_eq_t *eq_handle)
 {
-    const ptl_internal_handle_converter_t ni  = { ni_handle };
+    const ptl_internal_handle_converter_t ni_hc  = { ni_handle };
+    ptl_internal_handle_converter_t eq_hc  = { .s.ni = ni_hc.s.ni };
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if (PtlInternalNIValidator(ni)) {
+    if (PtlInternalNIValidator(ni_hc)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
-    if (nit.tables[ni.s.ni] == NULL) { // this should never happen
-        assert(nit.tables[ni.s.ni] != NULL);
+    if (nit.tables[ni_hc.s.ni] == NULL) { // this should never happen
+        assert(nit.tables[ni_hc.s.ni] != NULL);
         return PTL_ARG_INVALID;
     }
     if (eq_handle == NULL) {
@@ -59,6 +60,22 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    eq_hc.s.selector = get_my_id();
+    eq_hc.s.code = find_eq_index( ni_hc.s.ni);
+
+    ptl_cqe_t *entry;
+        
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    
+    entry->type = PTLEQALLOC;
+    entry->u.eqAlloc.eq_handle = ni_hc;
+    entry->u.eqAlloc.count = count;
+    entry->u.eqAlloc.addr = NULL;
+    
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+                        sizeof(ptl_cqe_t) );
+
+    *eq_handle = eq_hc.a;
     return PTL_OK;
 }
 
@@ -74,6 +91,17 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
         return PTL_ARG_INVALID;
     }
 #endif     
+
+    ptl_cqe_t *entry;
+        
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    
+    entry->type = PTLEQFREE;
+    entry->u.eqFree.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
+    entry->u.eqFree.eq_handle.s.selector = get_my_id();
+    
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+                        sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }

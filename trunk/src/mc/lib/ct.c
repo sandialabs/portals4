@@ -18,6 +18,7 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
                ptl_handle_ct_t *ct_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_internal_handle_converter_t    ct_hc = { .s.ni = ni.s.ni };
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -38,6 +39,22 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    ct_hc.s.selector = get_my_id();
+    ct_hc.s.code = find_ct_index( ni.s.ni ); 
+
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLCTALLOC;
+    entry->u.ctAlloc.ct_handle  = ct_hc;
+    entry->u.ctAlloc.addr       = NULL;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                        sizeof(ptl_cqe_t) );
+
+    *ct_handle = ct_hc.a;
+
     return PTL_OK;
 }
 
@@ -53,6 +70,17 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
     }
 #endif  
 
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLCTFREE;
+    entry->u.ctFree.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
+    entry->u.ctFree.ct_handle.s.selector = get_my_id();
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                        sizeof(ptl_cqe_t) );
+
     return PTL_OK;
 }
 
@@ -67,7 +95,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     }
 #endif
 
-    return PTL_OK;
+    return PTL_FAIL;
 }
 
 int PtlCTGet(ptl_handle_ct_t ct_handle,
@@ -84,7 +112,6 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
-
     return PTL_OK;
 }
 
@@ -103,6 +130,14 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLCTALLOC;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                        sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -152,6 +187,18 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLCTSET;
+    entry->u.ctSet.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
+    entry->u.ctSet.ct_handle.s.selector = get_my_id();
+    entry->u.ctSet.test      = test;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                                    sizeof(ptl_cqe_t) );
+
     return PTL_OK;
 }
 
@@ -167,6 +214,19 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
+
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLCTSET;
+    entry->u.ctInc.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
+    entry->u.ctInc.ct_handle.s.selector = get_my_id();
+    entry->u.ctInc.increment = increment;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                                    sizeof(ptl_cqe_t) );
+
 
     return PTL_OK;
 }

@@ -2,7 +2,6 @@
 #define PPE_IF_H
 
 #include <assert.h>
-#include "func_call.h"
 
 #define DEBUG
 #ifndef DEBUG
@@ -28,7 +27,7 @@ PtlInternalLibraryInitialized(void)
 }
 
 struct ppe_if {
-    int             tileColumn; 
+    int             my_id; 
     void*           sharedBase;
     ptl_ni_limits_t limits;
     ptl_md_t*       mdBase;
@@ -64,16 +63,36 @@ static inline int find_md_index( int ni )
     assert( index != -1 );
     return index;
 }
-
-
-static inline int get_ppe_index( void )
+static inline int find_ct_index( int ni )
 {
-    return ppe_if_data.tileColumn;
+    return 0;
+}
+
+static inline int find_eq_index( int ni )
+{
+    return 0;
+}
+
+static inline int find_le_index( int ni )
+{
+    return 0;
+}
+
+static inline int find_me_index( int ni )
+{
+    return 0;
+}
+
+static inline int find_pt_index( int ni )
+{
+    return 0;
+}
+
+static inline int get_my_id( void )
+{
+    return ppe_if_data.my_id;
 }
 
 extern void ppe_if_init(void);
-
-#include "ppe_if_ni.h"
-#include "ppe_if_md.h"
 
 #endif

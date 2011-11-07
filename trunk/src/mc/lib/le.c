@@ -34,6 +34,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_handle_le_t *le_handle)
 {
     const ptl_internal_handle_converter_t ni     = { ni_handle };
+    ptl_internal_handle_converter_t le_hc     = { .s.ni = ni.s.ni };
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -66,31 +67,64 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    le_hc.s.selector =  get_my_id();
+    le_hc.s.code = find_le_index( ni.s.ni );
+
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLEAPPEND;
+    entry->u.leAppend.le_handle = le_hc;
+    entry->u.leAppend.pt_index  = pt_index;
+    entry->u.leAppend.le        = *le;
+    entry->u.leAppend.list      = ptl_list;
+    entry->u.leAppend.user_ptr  = user_ptr;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                    sizeof(ptl_cqe_t) );
+
+    *le_handle = le_hc.a; 
     return PTL_OK;
 }
 
 int PtlLEUnlink(ptl_handle_le_t le_handle)
 {
-   const ptl_internal_handle_converter_t le = { le_handle };
+   const ptl_internal_handle_converter_t le_hc = { le_handle };
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((le.s.ni > 3) || (le.s.code > nit_limits[le.s.ni].max_entries) ||
-        (nit.refcount[le.s.ni] == 0)) {        VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
-                      le.s.ni, le.s.code, nit_limits[le.s.ni].max_entries);
+    if ((le_hc.s.ni > 3) || 
+        (le_hc.s.code > nit_limits[le_hc.s.ni].max_entries) ||
+        (nit.refcount[le_hc.s.ni] == 0)) 
+    {
+        VERBOSE_ERROR("LE Handle has bad NI (%u > 3) or bad code (%u > %u)"
+            " or the NIT is uninitialized\n",
+                  le_hc.s.ni, le_hc.s.code, nit_limits[le_hc.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
-    if (les[le.s.ni] == NULL) {
+    if (les[le_hc.s.ni] == NULL) {
         VERBOSE_ERROR("LE array uninitialized\n");
         return PTL_ARG_INVALID;    }
     __sync_synchronize();
-    if (les[le.s.ni][le.s.code].status == LE_FREE) {
+    if (les[le_hc.s.ni][le_hc.s.code].status == LE_FREE) {
         VERBOSE_ERROR("LE appears to be free already\n");
         return PTL_ARG_INVALID;
     }           
 #endif /* ifndef NO_ARG_VALIDATION */
+
+    ptl_cqe_t *entry;
+
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLEUNLINK;
+    entry->u.leUnlink.le_handle = le_hc;
+    entry->u.leUnlink.le_handle.s.selector = get_my_id();
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                    sizeof(ptl_cqe_t) );
     return PTL_OK;
 }
 
@@ -134,6 +168,18 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_OK;
+    ptl_cqe_t *entry;
 
+    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+    entry->type = PTLESEARCH;
+    entry->u.leSearch.ni_handle = ni;
+    entry->u.leSearch.pt_index = pt_index;
+    entry->u.leSearch.le = *le;
+    entry->u.leSearch.ptl_search_op = ptl_search_op;
+    entry->u.leSearch.user_ptr = user_ptr;
+
+    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+                                    sizeof(ptl_cqe_t) );
+    return PTL_OK;
 }
