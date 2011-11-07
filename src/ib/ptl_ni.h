@@ -84,14 +84,16 @@ typedef struct ni {
 	ptl_process_t		id;
 	ptl_uid_t		uid;
 
+	/* Progress thread. */
+	pthread_t catcher;
+	int has_catcher;
+	int catcher_stop;
+
 	/* RDMA transport specific */
 	struct {
 		struct ibv_cq		*cq;
 		struct ibv_comp_channel	*ch;
 		ev_io			async_watcher;
-		pthread_t catcher;
-		int has_catcher;
-		int catcher_stop;
 		
 		struct ibv_srq		*srq;	/* either regular or XRC */
 
@@ -115,8 +117,6 @@ typedef struct ni {
 		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
 		struct NEMESIS_blocking_queue *receiveQ;
-		pthread_t catcher;
-		int has_catcher;
 		char *comm_pad_shm_name;
 	} shmem;
 

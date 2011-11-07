@@ -339,67 +339,55 @@ static int recv_drop_buf(buf_t *buf)
  *
  * @param arg opaque pointer to ni.
  */
-void *process_recv_rdma_thread(void *arg)
+static void process_recv_rdma(ni_t *ni, buf_t *buf)
 {
-	ni_t *ni = arg;
-	const int num_wc = get_param(PTL_WC_COUNT);
-	struct ibv_wc wc_list[num_wc];
-	buf_t *buf_list[num_wc];
+	enum recv_state state = buf->recv_state;
 
-	while(!ni->rdma.catcher_stop) {
-		const int num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
-		int i;
-		for (i = 0; i < num_buf; i++) {
-			buf_t *buf = buf_list[i];	
-			enum recv_state state = buf->recv_state;
-
-			while(1) {
-				if (debug > 1)
-					printf("tid:%lx buf:%p: state = %s\n",
-						   pthread_self(), buf, recv_state_name[state]);
-				switch (state) {
-				case STATE_RECV_SEND_COMP:
-					state = send_comp(buf);
-					break;
-				case STATE_RECV_RDMA_COMP:
-					state = rdma_comp(buf);
-					break;
-				case STATE_RECV_PACKET_RDMA:
-					state = recv_packet_rdma(buf);
-					break;
-				case STATE_RECV_PACKET:
-					state = recv_packet(buf);
-					break;
-				case STATE_RECV_REQ:
-					state = recv_req(buf);
-					break;
-				case STATE_RECV_INIT:
-					state = recv_init(buf);
-					break;
-				case STATE_RECV_REPOST:
-					state = recv_repost(buf);
-					break;
-				case STATE_RECV_DROP_BUF:
-					state = recv_drop_buf(buf);
-					break;
-				case STATE_RECV_ERROR:
-					if (buf) {
-						buf_put(buf);
-						ni->num_recv_errs++;
-					}
-					goto next_buf;
-				case STATE_RECV_DONE:
-					goto next_buf;
-				default:
-					abort();
-				}
+	while(1) {
+		if (debug)
+			printf("tid:%lx buf:%p: state = %s\n",
+				   pthread_self(), buf, recv_state_name[state]);
+		switch (state) {
+		case STATE_RECV_SEND_COMP:
+			state = send_comp(buf);
+			break;
+		case STATE_RECV_RDMA_COMP:
+			state = rdma_comp(buf);
+			break;
+		case STATE_RECV_PACKET_RDMA:
+			state = recv_packet_rdma(buf);
+			break;
+		case STATE_RECV_PACKET:
+			state = recv_packet(buf);
+			break;
+		case STATE_RECV_REQ:
+			state = recv_req(buf);
+			break;
+		case STATE_RECV_INIT:
+			state = recv_init(buf);
+			break;
+		case STATE_RECV_REPOST:
+			state = recv_repost(buf);
+			break;
+		case STATE_RECV_DROP_BUF:
+			state = recv_drop_buf(buf);
+			break;
+		case STATE_RECV_ERROR:
+			if (buf) {
+				buf_put(buf);
+				ni->num_recv_errs++;
 			}
-next_buf:
-			continue;
+			goto done;
+			break;
+		case STATE_RECV_DONE:
+			goto done;
+			break;
+		default:
+			abort();
 		}
 	}
-
-	return NULL;
+ done:
+	return;
 }
 
 /**
@@ -449,4 +437,82 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 	}
 exit:
 	return;
+}
+
+/**
+ * Progress thread. Waits for both ib and shared memory messages.
+ *
+ * @param arg opaque pointer to ni.
+ */
+
+void *progress_thread(void *arg)
+{
+	ni_t *ni = arg;
+	const int num_wc = get_param(PTL_WC_COUNT);
+	struct ibv_wc wc_list[num_wc];
+	buf_t *buf_list[num_wc];
+
+	while(!ni->catcher_stop
+#ifdef WITH_TRANSPORT_SHMEM
+		  || atomic_read(&ni->sbuf_pool.count)
+#endif
+		  ) {
+		int i;
+		int num_buf;
+		int err;
+
+		/* Infiniband. */
+		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
+
+		for (i = 0; i < num_buf; i++) {
+			process_recv_rdma(ni, buf_list[i]);
+		}
+
+#ifdef WITH_TRANSPORT_SHMEM
+		/* Shared memory. Physical NIs don't have a receive queue. */
+		if (ni->shmem.receiveQ) {
+			buf_t *shmem_buf;
+
+			shmem_buf = PtlInternalFragmentReceive(ni);
+
+			if (shmem_buf) {
+				switch(shmem_buf->type) {
+				case BUF_SHMEM: {
+					buf_t *buf;
+
+					err = buf_alloc(ni, &buf);
+					if (err) {
+						WARN();
+					} else {
+						buf->data = (hdr_t *)shmem_buf->internal_data;
+						buf->length = shmem_buf->length;
+						INIT_LIST_HEAD(&buf->list);
+						process_recv_shmem(ni, buf);
+					}
+
+					/* Send the buffer back. */
+					shmem_buf->type = BUF_SHMEM_RETURN;
+					PtlInternalFragmentToss(ni, shmem_buf, shmem_buf->shmem.source);
+				}
+					break;
+
+				case BUF_SHMEM_RETURN:
+					/* Buffer returned to us by remote node. */
+					assert(shmem_buf->shmem.source == ni->shmem.index);
+
+					/* From send_message_shmem(). */
+					buf_put(shmem_buf);
+					break;
+
+				default:
+					/* Should not happen. */
+					abort();
+				}
+			}
+		}
+#endif
+
+	}
+
+	return NULL;
 }

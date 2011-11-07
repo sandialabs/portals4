@@ -18,7 +18,6 @@ enum buf_type {
 	BUF_RDMA,
 
 	BUF_SHMEM,
-	BUF_SHMEM_STOP,
 	BUF_SHMEM_RETURN,
 
 	BUF_INIT,

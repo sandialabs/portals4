@@ -220,13 +220,6 @@ static int init_ib_srq(ni_t *ni)
 
 static int cleanup_ib(ni_t *ni)
 {
-	/* Stop the CQ thread listener. */
-	if (ni->rdma.has_catcher) {
-		ni->rdma.catcher_stop = 1;
-		pthread_join(ni->rdma.catcher, NULL);
-		ni->rdma.has_catcher = 0;
-	}
-
 	ni_rcqp_cleanup(ni);
 
 	destroy_conns(ni);
@@ -620,10 +613,6 @@ static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
 	if (unlikely(err))
 		goto error;
 
-	/* Add a thread to wait for CQ events. */
-	ptl_assert(pthread_create(&ni->rdma.catcher, NULL, process_recv_rdma_thread, ni), 0);
-	ni->rdma.has_catcher = 1;
-
 	/* Add a watcher for asynchronous events. */
 	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
 	ni->rdma.async_watcher.data = ni;
@@ -785,6 +774,10 @@ int PtlNIInit(ptl_interface_t	iface_id,
 		WARN();
 		goto err3;
 	}
+
+	/* Add a progress thread. */
+	ptl_assert(pthread_create(&ni->catcher, NULL, progress_thread, ni), 0);
+	ni->has_catcher = 1;
 
 	__iface_add_ni(iface, ni);
 
@@ -1010,6 +1003,13 @@ static void ni_cleanup(ni_t *ni)
 	cleanup_mr_tree(ni);
 
 	ni_rcqp_stop(ni);
+
+	/* Stop the progress thread. */
+	if (ni->has_catcher) {
+		ni->catcher_stop = 1;
+		pthread_join(ni->catcher, NULL);
+		ni->has_catcher = 0;
+	}
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 
