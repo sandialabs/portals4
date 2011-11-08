@@ -11,23 +11,6 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-#define LE_FREE      0
-#define LE_ALLOCATED 1
-#define LE_IN_USE    2
-
-typedef struct {
-    uint32_t                status; // 0=free, 1=allocated, 2=in-use
-#if 0
-    ptl_internal_appendLE_t Qentry;
-    ptl_le_t                visible;
-    ptl_pt_index_t          pt_index;
-    ptl_list_t              ptl_list;
-#endif
-} ptl_internal_le_t;
-
-
-static ptl_internal_le_t *les[4] = { NULL, NULL, NULL, NULL };
-
 int PtlLEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_pt_index_t   pt_index,
                 const ptl_le_t  *le,
@@ -95,11 +78,8 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
                   le_hc.s.ni, le_hc.s.code, nit_limits[le_hc.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
-    if (les[le_hc.s.ni] == NULL) {
-        VERBOSE_ERROR("LE array uninitialized\n");
-        return PTL_ARG_INVALID;    }
     __sync_synchronize();
-    if (les[le_hc.s.ni][le_hc.s.code].status == LE_FREE) {
+    if ( le_is_free( le_hc.s.ni, le_hc.s.code ) ) {
         VERBOSE_ERROR("LE appears to be free already\n");
         return PTL_ARG_INVALID;
     }           

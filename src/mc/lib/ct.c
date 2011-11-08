@@ -30,10 +30,12 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
+#if 0 
     if (ct_events[ni.s.ni] == NULL) {
         assert(ct_events[ni.s.ni] != NULL);
         return PTL_ARG_INVALID;
     }
+#endif
     if (ct_handle == NULL) {
         VERBOSE_ERROR("passed in a NULL for ct_handle\n");
         return PTL_ARG_INVALID;

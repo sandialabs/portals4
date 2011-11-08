@@ -1,7 +1,5 @@
 #include "config.h"
 
-#include <assert.h>
-
 #include "portals4.h"
 
 #include "ptl_internal_iface.h"
@@ -10,23 +8,6 @@
 #include "ptl_internal_nit.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
-
-#define ME_FREE      0
-#define ME_ALLOCATED 1
-#define ME_IN_USE    2
-
-typedef struct {
-    uint32_t                status; // 0=free, 1=allocated, 2=in-use
-#if 0
-    ptl_internal_appendME_t Qentry;
-    ptl_me_t                visible;
-    ptl_pt_index_t          pt_index;
-    ptl_list_t              ptl_list;
-#endif
-} ptl_internal_me_t;
-
-static ptl_internal_me_t *mes[4] = { NULL, NULL, NULL, NULL };
-
 
 int PtlMEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_pt_index_t   pt_index,
@@ -43,7 +24,8 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
+                            (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
@@ -70,8 +52,8 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
     entry->u.meAppend.list = ptl_list;
     entry->u.meAppend.user_ptr = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     *me_handle = me_hc.a;
 
@@ -96,12 +78,8 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
                 me_hc.s.ni, me_hc.s.code, nit_limits[me_hc.s.ni].max_entries);
         return PTL_ARG_INVALID;
     }
-    if (mes[me_hc.s.ni] == NULL) {
-        VERBOSE_ERROR("ME array uninitialized\n");
-        return PTL_ARG_INVALID;
-    }
     __sync_synchronize();
-    if (mes[me_hc.s.ni][me_hc.s.code].status == ME_FREE) {
+    if ( me_is_free(me_hc.s.ni,me_hc.s.code ) ) {
         VERBOSE_ERROR("ME appears to be free already\n");
         return PTL_ARG_INVALID;
     }
@@ -114,8 +92,8 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
     entry->type = PTLMEUNLINK;
     entry->u.meUnlink.me_handle = me_hc;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
 
     return PTL_OK;
@@ -135,7 +113,8 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
+                                (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
@@ -161,8 +140,8 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
     entry->u.meSearch.ptl_search_op = ptl_search_op;
     entry->u.meSearch.user_ptr = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
