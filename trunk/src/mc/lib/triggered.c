@@ -37,11 +37,6 @@ int PtlTriggeredPut(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("invalid md_handle\n");
         return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDLength(md_handle) < local_offset + length) {
-        VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(md_handle), local_offset + length);
-        return PTL_ARG_INVALID;
-    }
     switch (mdh.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
@@ -100,11 +95,6 @@ int PtlTriggeredGet(ptl_handle_md_t  md_handle,
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
         VERBOSE_ERROR("invalid md_handle\n");
-        return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(md_handle) < local_offset + length) {
-        VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n", 
-                      PtlInternalMDLength(md_handle), local_offset + length);
         return PTL_ARG_INVALID;
     }
     switch (md.s.ni) {                
@@ -206,11 +196,6 @@ int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
             return PTL_ARG_INVALID;
         }
     }
-    if (PtlInternalMDLength(md_handle) < local_offset + length) {
-        VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(md_handle), local_offset + length);
-        return PTL_ARG_INVALID;
-    }
     switch (md.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
@@ -308,16 +293,6 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
     if (length > nit_limits[get_md.s.ni].max_atomic_size) {
         VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n", (unsigned int)length,
                       (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
-        return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR("FetchAtomic saw get_md too short for local_offset (%u < %u)\n",                
-                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
-           return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR("FetchAtomic saw put_md too short for local_offset (%u < %u)\n",                
-                      PtlInternalMDLength(put_md_handle), local_put_offset + length);   
         return PTL_ARG_INVALID;
     }
     {   
@@ -456,16 +431,6 @@ int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Length (%u) is bigger than max_atomic_size (%u)\n",
                       (unsigned int)length,
                       (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
-        return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(get_md_handle) < local_get_offset + length) {
-        VERBOSE_ERROR("Swap saw get_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(get_md_handle), local_get_offset + length);
-        return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(put_md_handle) < local_put_offset + length) {
-        VERBOSE_ERROR("Swap saw put_md too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(put_md_handle), local_put_offset + length);
         return PTL_ARG_INVALID;
     }
     {

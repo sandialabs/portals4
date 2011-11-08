@@ -26,6 +26,12 @@ find_md_index(int ni)
     return 0;
 }
 
+static inline int 
+md_is_inuse(int ni, int md_index )
+{
+    return 0;
+} 
+
 static inline int
 find_ct_index(int ni)
 {
@@ -45,7 +51,19 @@ find_le_index(int ni)
 }
 
 static inline int
+le_is_free( int ni, int le_index )
+{
+    return 0;
+}
+
+static inline int
 find_me_index(int ni)
+{
+    return 0;
+}
+
+static inline int
+me_is_free( int ni, int me_index )
 {
     return 0;
 }

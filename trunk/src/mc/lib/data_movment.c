@@ -33,11 +33,6 @@ int PtlPut(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Invalid md_handle\n");
         return PTL_ARG_INVALID;
     }
-    if (PtlInternalMDLength(md_handle) < local_offset + length) {
-        VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(md_handle), local_offset + length);
-        return PTL_ARG_INVALID;
-    }
     switch (md_hc.s.ni) {
         case 0:                       // Logical
         case 1:                       // Logical
@@ -56,17 +51,6 @@ int PtlPut(ptl_handle_md_t  md_handle,
                 return PTL_ARG_INVALID;
             }
             break;
-    }
-    {
-        ptl_md_t *mdptr;
-        mdptr = PtlInternalMDFetch(md_handle);
-        if ((mdptr->options & PTL_MD_VOLATILE) && 
-                (length > nit_limits[md_hc.s.ni].max_volatile_size)) {
-            VERBOSE_ERROR("asking for too big a send (%u bytes) from an"
-                        " MD marked VOLATILE (max %u bytes)\n",
-                          length, nit_limits[md_hc.s.ni].max_volatile_size);
-            return PTL_ARG_INVALID;
-        }
     }
     if (pt_index > nit_limits[md_hc.s.ni].max_pt_index) {
         VERBOSE_ERROR("PT index is too big (%lu > %lu)\n",
@@ -122,11 +106,6 @@ int PtlGet(ptl_handle_md_t  md_handle,
     }
     if (PtlInternalMDHandleValidator(md_handle, 1)) {
         VERBOSE_ERROR("Invalid md_handle\n");
-        return PTL_ARG_INVALID;
-    }
-    if (PtlInternalMDLength(md_handle) < local_offset + length) {
-        VERBOSE_ERROR("MD too short for local_offset (%u < %u)\n",
-                      PtlInternalMDLength(md_handle), local_offset + length);
         return PTL_ARG_INVALID;
     }
     switch (md_hc.s.ni) {

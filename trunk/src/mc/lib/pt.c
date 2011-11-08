@@ -7,13 +7,8 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_EQ.h"
-#include "ptl_internal_PT.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
-
-#define PT_FREE     0
-#define PT_ENABLED  1
-#define PT_DISABLED 2
 
 int PtlPTAlloc(ptl_handle_ni_t ni_handle,
                unsigned int    options,
@@ -124,30 +119,3 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle,
     fprintf(stderr, "PtlPTEnable() unimplemented\n");
     return PTL_FAIL;
 }
-
-int INTERNAL PtlInternalPTValidate(ptl_table_entry_t *t)
-{
-#ifndef NO_ARG_VALIDATION
-    if (PtlInternalEQHandleValidator(t->EQ, 1)) {
-        VERBOSE_ERROR("PTValidate sees invalid EQ handle\n");
-        return 3;
-    }
-#endif
-    switch (t->status) {
-        case PT_FREE:
-            VERBOSE_ERROR("PT has not been allocated\n");
-            return 1;
-
-        case PT_DISABLED:
-            VERBOSE_ERROR("PT has been disabled\n");
-            return 2;
-
-        case PT_ENABLED:
-            return 0;
-
-        default:
-            // should never happen
-            *(int *)0 = 0;
-            return 3;
-    }
-} 
