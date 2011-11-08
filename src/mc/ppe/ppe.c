@@ -112,7 +112,17 @@ main(int argc, char *argv[])
             perror("ptl_cq_entry_recv");
             return -1;
         } else if (ret == 0) {
-            fprintf(stdout, "Found command queue entry\n");
+            ptl_cqe_t *send_entry;
+            fprintf(stdout, "Found command queue entry of type %d\n", entry.type);
+
+            if (entry.type == PTLNIINIT_LIMITS) {
+                ptl_cq_entry_alloc(cq_h, &send_entry);
+                send_entry->u.niInitLimits.ni_limits = entry.u.niInitLimits.ni_limits;
+                send_entry->u.niInitLimits.ni_handle = entry.u.niInitLimits.ni_handle;
+                ptl_cq_entry_send(cq_h, entry.u.niInitLimits.ni_handle.s.code,
+                                  send_entry, sizeof(ptl_cqe_t));
+
+            }
         }
     }
 

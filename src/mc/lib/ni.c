@@ -91,24 +91,40 @@ int PtlNIInit(ptl_interface_t       iface,
     }
 
     if (0 == __sync_fetch_and_add(&ptl_iface.ni[ni.s.ni].refcount, 1)) {
+        ptl_cqe_t recv_entry;
         ptl_cqe_t *entry;
-        ptl_ni_limits_t returned_limits;
 
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
         entry->type = PTLNINIT;
+        entry->u.niInit.ni_handle = ni;
+        entry->u.niInit.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
         entry->u.niInit.options = options;
         entry->u.niInit.pid = pid;
-        entry->u.niInit.ni_handle.s.ni = ni.s.ni;
 
         ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface),
                           entry, sizeof(ptl_cqe_t));
-        fprintf(stderr, "%s:%d BWB: FIX ME: Need to wait for ni info\n",
-                __FILE__, __LINE__);
 
-        bzero(&returned_limits, sizeof(ptl_ni_limits_t));
 
-        nit_limits[ni.s.ni] = returned_limits;
+        ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+
+        entry->type = PTLNIINIT_LIMITS;
+        entry->u.niInitLimits.ni_handle = ni;
+        entry->u.niInit.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
+        entry->u.niInitLimits.ni_limits = *desired;
+
+        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface),
+                          entry, sizeof(ptl_cqe_t));
+
+        ret = 1;
+        while (1 == ret) {
+            ret = ptl_cq_entry_recv(ptl_iface_get_cq(&ptl_iface), &recv_entry);
+            if (ret < 0)  return PTL_FAIL;
+        }
+        if (recv_entry.type != PTLNIINIT_LIMITS) {
+            return PTL_FAIL;
+        }
+        nit_limits[ni.s.ni] = recv_entry.u.niInitLimits.ni_limits;
         __sync_synchronize();
         ptl_iface.ni[ni.s.ni].limits_refcount = 1;
     } else {
