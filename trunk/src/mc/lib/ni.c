@@ -1,20 +1,20 @@
 #include "config.h"
 
+#include <strings.h>
+
 #include "portals4.h"
 
 #include "ptl_internal_global.h"
+#include "ptl_internal_iface.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_startup.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
-ptl_internal_nit_t nit = { { 0, 0, 0, 0 },
-                           { 0, 0, 0, 0 },
-                              };
 
-ptl_ni_limits_t    nit_limits[4];
+ptl_ni_limits_t nit_limits[4];
 
-uint32_t nit_limits_init[4] = { 0, 0, 0, 0 };
 
 int PtlNIInit(ptl_interface_t       iface,
               unsigned int          options,
@@ -60,7 +60,7 @@ int PtlNIInit(ptl_interface_t       iface,
     if (iface == PTL_IFACE_DEFAULT) {
         iface = 0;
     }
-    ni.s.code = iface;
+    ni.s.code = 0;
     switch (options) {
         case (PTL_NI_MATCHING | PTL_NI_LOGICAL):
             ni.s.ni = 0;
@@ -81,33 +81,46 @@ int PtlNIInit(ptl_interface_t       iface,
     }
 
     /* Initialize connection, if needed */
-    if (0 == __sync_fetch_and_add(&ptl_global.init_count, 1)) {
-        ret = ptl_ppe_global_init();
+    if (0 == __sync_fetch_and_add(&ptl_iface.connection_count, 1)) {
+        ret = ptl_ppe_global_init(&ptl_iface);
         if (ret < 0) return PTL_FAIL;
-        ret = ptl_ppe_connect();
+        ret = ptl_ppe_connect(&ptl_iface);
         if (ret < 0) return PTL_FAIL;
-        ret = ptl_ppe_global_setup();
+        ret = ptl_ppe_global_setup(&ptl_iface);
         if (ret < 0) return PTL_FAIL;
     }
 
-    if (0 == __sync_fetch_and_add(&nit.refcount[ni.s.ni], 1)) {
+    if (0 == __sync_fetch_and_add(&ptl_iface.ni[ni.s.ni].refcount, 1)) {
         ptl_cqe_t *entry;
-        ptl_cq_entry_alloc( get_cq_handle(), &entry );
+        ptl_ni_limits_t returned_limits;
+
+        ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
         entry->type = PTLNINIT;
         entry->u.niInit.options = options;
         entry->u.niInit.pid = pid;
         entry->u.niInit.ni_handle.s.ni = ni.s.ni;
-        entry->u.niInit.ni_handle.s.selector = get_my_ppe_rank();
 
-        ptl_cq_entry_send(get_cq_handle(), get_cq_peer(), 
+        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface),
                           entry, sizeof(ptl_cqe_t));
         fprintf(stderr, "%s:%d BWB: FIX ME: Need to wait for ni info\n",
                 __FILE__, __LINE__);
-    } 
 
-    /* BWB: FIX ME: Need to fill in NI information in either case */
+        bzero(&returned_limits, sizeof(ptl_ni_limits_t));
 
+        nit_limits[ni.s.ni] = returned_limits;
+        __sync_synchronize();
+        ptl_iface.ni[ni.s.ni].limits_refcount = 1;
+    } else {
+        if ((pid != PTL_PID_ANY) && pid != ptl_iface.ni[ni.s.ni].pid) {
+            return PTL_ARG_INVALID;
+        }
+    }
+
+    /* wait for ni limits to be ready... */
+    while (ptl_iface.ni[ni.s.ni].limits_refcount == 0) { __sync_synchronize(); }
+
+    *actual = nit_limits[ni.s.ni];
     *ni_handle = ni.a;
 
     return PTL_OK;
@@ -124,24 +137,24 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
-        (nit.refcount[ni.s.ni] == 0)) {
+        (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("Bad NI (%lu)\n", (unsigned long)ni_handle);
         return PTL_ARG_INVALID;
     }
 #endif 
 
-    if (0 == __sync_fetch_and_sub(&nit.refcount[ni.s.ni], 1)) {
-        ni.s.selector = get_my_ppe_rank();
-
+    if (0 == __sync_fetch_and_sub(&ptl_iface.ni[ni.s.ni].refcount, 1)) {
         ptl_cqe_t *entry;
-        ptl_cq_entry_alloc( get_cq_handle(), &entry );
+
+        ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+
         entry->type = PTLNIFINI;
         entry->u.niFini.ni_handle = ni;
-        ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, sizeof(ptl_cqe_t));
+        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), 
+                          entry, sizeof(ptl_cqe_t));
     }
 
     return PTL_OK;
-
 }
 
 
@@ -149,13 +162,20 @@ int
 PtlNIHandle(ptl_handle_any_t    handle,
             ptl_handle_ni_t*    ni_handle)
 {
+    ptl_internal_handle_converter_t ni = { handle };
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
 #endif
 
-    return PTL_FAIL;
+    ni.s.selector = HANDLE_NI_CODE;
+    /* NI stays the same */
+    ni.s.code = 0; /* code is unused with nis */
+    *ni_handle = ni.i;
+
+    return PTL_OK;
 }
 
 
@@ -170,7 +190,7 @@ PtlNIStatus(ptl_handle_ni_t    ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         return PTL_ARG_INVALID;
     }
     if (status == NULL) {
@@ -181,7 +201,9 @@ PtlNIStatus(ptl_handle_ni_t    ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_FAIL;
+    *status = ptl_iface.ni[ni.s.ni].status_registers[status_register];
+
+    return PTL_OK;
 }
 
 
@@ -192,11 +214,11 @@ PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
     if (ni.s.selector != HANDLE_NI_CODE) {
         return PTL_ARG_INVALID;
     }
-    if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni > 3) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         return PTL_ARG_INVALID;
     }
 #endif
-    return PTL_FAIL;
+    return PTL_OK;
 }
 
 

@@ -149,7 +149,7 @@ int API_FUNC PtlMDBind(ptl_handle_ni_t  ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni > 3) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR
             ("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n",
             ni.s.ni, ni.s.code);

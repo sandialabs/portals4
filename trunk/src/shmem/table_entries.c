@@ -39,7 +39,7 @@ int API_FUNC PtlPTAlloc(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("Invalid NI passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
@@ -113,7 +113,7 @@ int API_FUNC PtlPTFree(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("Not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR
             ("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n",
             ni.s.ni, ni.s.code);

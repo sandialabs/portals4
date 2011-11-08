@@ -4,12 +4,13 @@
 
 #include "portals4.h"
 
+#include "ptl_internal_iface.h"
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_CT.h"
 #include "shared/ptl_internal_handles.h"
-
+#include "shared/ptl_command_queue_entry.h"
 
 static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
 static uint_fast64_t *restrict  ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
@@ -39,18 +40,17 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    ct_hc.s.selector = get_my_ppe_rank();
     ct_hc.s.code = find_ct_index( ni.s.ni ); 
 
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTALLOC;
     entry->u.ctAlloc.ct_handle  = ct_hc;
     entry->u.ctAlloc.addr       = NULL;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                         sizeof(ptl_cqe_t) );
 
     *ct_handle = ct_hc.a;
@@ -72,13 +72,12 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTFREE;
     entry->u.ctFree.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctFree.ct_handle.s.selector = get_my_ppe_rank();
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                         sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -132,11 +131,11 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
 #endif
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTALLOC;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                         sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -189,14 +188,13 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
 #endif
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTSET;
     entry->u.ctSet.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctSet.ct_handle.s.selector = get_my_ppe_rank();
     entry->u.ctSet.test      = test;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -217,14 +215,13 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
 
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTSET;
     entry->u.ctInc.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctInc.ct_handle.s.selector = get_my_ppe_rank();
     entry->u.ctInc.increment = increment;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                                     sizeof(ptl_cqe_t) );
 
 
@@ -249,7 +246,7 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
         }
     }
     if ((ct.s.ni > 3) || (ct.s.code > nit_limits[ct.s.ni].max_cts) ||
-        (nit.refcount[ct.s.ni] == 0)) {
+        (ptl_iface.ni[ct.s.ni].refcount == 0)) {
         VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
                       ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
         return PTL_ARG_INVALID;

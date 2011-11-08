@@ -63,8 +63,9 @@ typedef ptl_internal_handle_converter_t cmdHandle_t;
 typedef unsigned long cmdAddr_t;
 
 typedef struct {
-    ptl_pid_t pid; 
     unsigned int options;
+    ptl_pid_t pid; 
+    ptl_ni_limits_t desired;
     cmdHandle_t ni_handle;
 } cmdPtlNIInit_t;
 

@@ -3,6 +3,7 @@
 
 #include "portals4.h"
 
+#include "ptl_internal_iface.h"
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
@@ -18,7 +19,7 @@ int PtlSetMap(ptl_handle_ni_t      ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
@@ -50,7 +51,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }

@@ -1,12 +1,15 @@
 #include "config.h"
 
 #include "portals4.h"
-        
+
+#include "ptl_internal_iface.h"        
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_EQ.h"
+#include "ptl_internal_PT.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
 #define PT_FREE     0
 #define PT_ENABLED  1
@@ -24,7 +27,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("Invalid NI passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
@@ -51,13 +54,13 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLPTALLOC;
     entry->u.ptAlloc.ni_handle = ni;
     entry->u.ptAlloc.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -73,7 +76,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("Not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR
             ("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n",
             ni.s.ni, ni.s.code);
@@ -92,13 +95,13 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
 
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLPTFREE;
     entry->u.ptFree.ni_handle = ni;
     entry->u.ptFree.pt_index = pt_index;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
