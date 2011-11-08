@@ -459,7 +459,6 @@ void *progress_thread(void *arg)
 		  ) {
 		int i;
 		int num_buf;
-		int err;
 
 		/* Infiniband. */
 		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
@@ -471,6 +470,7 @@ void *progress_thread(void *arg)
 #ifdef WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */
 		if (ni->shmem.receiveQ) {
+			int err;
 			buf_t *shmem_buf;
 
 			shmem_buf = PtlInternalFragmentReceive(ni);

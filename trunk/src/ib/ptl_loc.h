@@ -202,10 +202,11 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);
 
 int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
-		ptl_size_t offset, ptl_size_t length, void **dst_start);
+		ptl_size_t offset, ptl_size_t length);
 
-int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
-		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length);
+int iov_atomic_in(atom_op_t op, int atom_size, void *src,
+		  ptl_iovec_t *iov, ptl_size_t num_iov,
+		  ptl_size_t offset, ptl_size_t length);
 
 int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 				   ptl_size_t offset, ptl_size_t length,

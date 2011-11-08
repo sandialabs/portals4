@@ -538,6 +538,7 @@ static int wait_recv(buf_t *buf)
  */
 static int data_in(buf_t *buf)
 {
+	int err;
 	md_t *md = buf->get_md;
 	void *data = buf->data_in->immediate.data;
 	ptl_size_t offset = buf->get_offset;
@@ -546,10 +547,8 @@ static int data_in(buf_t *buf)
 	assert(buf->data_in->data_fmt == DATA_FMT_IMMEDIATE);
 
 	if (md->num_iov) {
-		void *notused;
-
-		int err = iov_copy_in(data, (ptl_iovec_t *)md->start,
-				      md->num_iov, offset, length, &notused);
+		err = iov_copy_in(data, (ptl_iovec_t *)md->start,
+				      md->num_iov, offset, length);
 		if (err)
 			return STATE_INIT_ERROR;
 	} else {
