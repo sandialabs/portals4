@@ -23,10 +23,11 @@ libportals_mc_la_SOURCES = \
 	lib/include/ptl_internal_LE.h \
 	lib/include/ptl_internal_nit.h \
 	lib/include/ptl_internal_MD.h \
-	lib/include/ptl_visibility.h \
 	lib/include/ptl_internal_CT.h \
 	lib/include/ptl_internal_error.h \
 	lib/include/ptl_internal_PT.h \
+	lib/include/ptl_internal_global.h \
+	lib/include/ptl_visibility.h \
 	lib/atomic.c \
 	lib/bundle.c \
 	lib/ct.c \
@@ -40,9 +41,8 @@ libportals_mc_la_SOURCES = \
 	lib/md.c \
 	lib/me.c \
 	lib/ni.c \
-	lib/ppe_if.c \
-	lib/ppe_if.h \
 	lib/pt.c \
+	lib/startup.c \
 	lib/triggered.c
 libportals_mc_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/mc/lib/include
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)

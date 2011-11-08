@@ -3,12 +3,12 @@
 #include <assert.h>
 
 #include "portals4.h"
-#include "ppe_if.h"
 
-#include "shared/ptl_internal_handles.h"
+#include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_CT.h"
+#include "shared/ptl_internal_handles.h"
 
 
 static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };

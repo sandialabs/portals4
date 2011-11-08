@@ -1,14 +1,14 @@
 #include "config.h"
 
 #include "portals4.h"
-#include "ppe_if.h"
 
-#include "shared/ptl_internal_handles.h"
+#include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_CT.h"
 #include "ptl_internal_pid.h"
 #include "ptl_internal_nit.h"
+#include "shared/ptl_internal_handles.h"
 
 
 int PtlTriggeredPut(ptl_handle_md_t  md_handle,

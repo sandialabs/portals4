@@ -1,17 +1,18 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shared/ptl_connection_manager.h"
 #include "shared/ptl_command_queue.h"
 #include "shared/ptl_command_queue_entry.h"
 
+static int done = 0;
+
 ptl_cm_server_handle_t cm_h;
 ptl_cq_handle_t cq_h;
 ptl_cq_info_t *info;
 size_t infolen;
-
-static int done = 0;
 
 static int
 cm_connect_cb(int remote_id)
@@ -33,7 +34,6 @@ static int
 cm_disconnect_cb(int remote_id)
 {
     fprintf(stderr, "Server got disconnect callback %d\n", remote_id);
-    done = 1;
     return 0;
 }
 
@@ -87,7 +87,8 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    ret = ptl_cq_create(sizeof(ptl_cqe_t), send_queue_size, recv_queue_size, 0, &cq_h);
+    ret = ptl_cq_create(sizeof(ptl_cqe_t), send_queue_size, 
+                        recv_queue_size, 0, &cq_h);
     if (ret < 0) {
         perror("ptl_cq_create");
         return -1;
@@ -99,7 +100,7 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    while (!done) {
+    while (0 == done) {
         ret = ptl_cm_server_progress(cm_h);
         if (ret < 0) {
             perror("ptl_cm_server_progress");

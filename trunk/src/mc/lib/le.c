@@ -3,11 +3,11 @@
 #include <assert.h>
 
 #include "portals4.h"
-#include "ppe_if.h" 
-        
-#include "shared/ptl_internal_handles.h"
+
+#include "ptl_internal_global.h"        
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
+#include "shared/ptl_internal_handles.h"
 
 #define LE_FREE      0
 #define LE_ALLOCATED 1
