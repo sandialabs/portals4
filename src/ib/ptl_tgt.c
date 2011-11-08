@@ -360,6 +360,8 @@ static int request_drop(buf_t *buf)
 
 	/* we didn't match anything so set start to NULL */
 	buf->start = NULL;
+	buf->put_resid = 0;
+	buf->get_resid = 0;
 
 	if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT))
 		return STATE_TGT_WAIT_CONN;
