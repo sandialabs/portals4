@@ -96,7 +96,8 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				return err;
 			}
 		} else {
-			memcpy(data->immediate.data, md->start + offset, length);
+			memcpy(data->immediate.data, md->start + offset,
+			       length);
 		}
 
 		buf->length += sizeof(*data) + length;

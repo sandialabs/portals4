@@ -79,13 +79,11 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
  * @param[in] num_iov number of entries in iovec array
  * @param[in] offset offset into iovec
  * @param[in] length number of bytes to copy
- * @param[out] dst_start the starting address of the transfer in
- * the iovec
  *
  * @return status
  */
 int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
-		ptl_size_t offset, ptl_size_t length, void **dst_start)
+		ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i;
 	ptl_size_t iov_offset = 0;
@@ -104,9 +102,6 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		WARN();
 		return PTL_FAIL;
 	}
-
-	/* Remember where the destination started. */
-	*dst_start = iov->iov_base + iov_offset;
 
 	for( ; i < num_iov && src_offset < length; i++, iov++) {
 		bytes = iov->iov_len - iov_offset;
@@ -144,8 +139,9 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
  *
  * @return status
  */
-int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
-		  ptl_size_t num_iov, ptl_size_t offset, ptl_size_t length)
+int iov_atomic_in(atom_op_t op, int atom_size, void *src,
+		  ptl_iovec_t *iov, ptl_size_t num_iov,
+		  ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i;
 	ptl_size_t iov_offset = 0;
@@ -198,7 +194,6 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 		 * target data and do the operation there */
 		if (have_odd_size_chunk) {
 			void *copy;
-			void *not_used;
 
 			copy = malloc(length);
 			if (!copy) {
@@ -208,7 +203,7 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src, ptl_iovec_t *iov,
 
 			iov_copy_out(copy, iov, num_iov, offset, length);
 			op(copy, src, length);
-			iov_copy_in(copy, iov, num_iov, offset, length, &not_used);
+			iov_copy_in(copy, iov, num_iov, offset, length);
 			free(copy);
 			return PTL_OK;
 		}
