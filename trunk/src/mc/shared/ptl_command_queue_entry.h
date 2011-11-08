@@ -6,6 +6,8 @@
 
 typedef enum {
     PTLNINIT = 1,   
+    PTLNIINIT_LIMITS,
+    PTLNIINIT_RESPONSE,
     PTLNIFINI,
     PTLPTALLOC,
     PTLPTFREE,
@@ -63,11 +65,15 @@ typedef ptl_internal_handle_converter_t cmdHandle_t;
 typedef unsigned long cmdAddr_t;
 
 typedef struct {
+    ptl_internal_handle_converter_t ni_handle;
     unsigned int options;
     ptl_pid_t pid; 
-    ptl_ni_limits_t desired;
-    cmdHandle_t ni_handle;
 } cmdPtlNIInit_t;
+
+typedef struct {
+    ptl_internal_handle_converter_t ni_handle;
+    ptl_ni_limits_t ni_limits;
+} cmdPtlNIInitLimits_t;
 
 typedef struct {
     cmdHandle_t ni_handle;
@@ -246,6 +252,7 @@ typedef struct {
 
 typedef union {
     cmdPtlNIInit_t      niInit;
+    cmdPtlNIInitLimits_t niInitLimits;
     cmdPtlNIFini_t      niFini;
     cmdPtlCTAlloc_t     ctAlloc;
     cmdPtlCTFree_t      ctFree;
