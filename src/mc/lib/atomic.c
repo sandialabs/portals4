@@ -2,12 +2,13 @@
 
 #include "portals4.h"
 
-#include "ptl_internal_global.h"
+#include "ptl_internal_iface.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_pid.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
 int PtlAtomic(ptl_handle_md_t  md_handle,
               ptl_size_t       local_offset,
@@ -151,11 +152,10 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLATOMIC;
     entry->u.atomic.md_handle       = md_hc;
-    entry->u.atomic.md_handle.s.selector = get_my_ppe_rank();
     entry->u.atomic.local_offset    = local_offset;
     entry->u.atomic.length          = length;
     entry->u.atomic.ack_req         = ack_req;
@@ -168,7 +168,7 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
     entry->u.atomic.operation       = operation;
     entry->u.atomic.datatype        = datatype;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -330,14 +330,12 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLFETCHATOMIC;
     entry->u.fetchAtomic.get_md_handle =  get_md;  
-    entry->u.fetchAtomic.get_md_handle.s.selector = get_my_ppe_rank();  
     entry->u.fetchAtomic.local_get_offset = local_get_offset;
     entry->u.fetchAtomic.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.fetchAtomic.put_md_handle.s.selector = get_my_ppe_rank();
     entry->u.fetchAtomic.length           = length;
     entry->u.fetchAtomic.target_id        = target_id;
     entry->u.fetchAtomic.pt_index         = pt_index;
@@ -348,7 +346,7 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     entry->u.fetchAtomic.operation        = operation;
     entry->u.fetchAtomic.datatype         = datatype;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -513,14 +511,12 @@ int PtlSwap(ptl_handle_md_t  get_md_handle,
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLSWAP;
     entry->u.swap.get_md_handle =  get_md_hc;  
-    entry->u.swap.get_md_handle.s.selector = get_my_ppe_rank();  
     entry->u.swap.local_get_offset = local_get_offset;
     entry->u.swap.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.swap.put_md_handle.s.selector = get_my_ppe_rank();
     entry->u.swap.length           = length;
     entry->u.swap.target_id        = target_id;
     entry->u.swap.pt_index         = pt_index;
@@ -532,7 +528,7 @@ int PtlSwap(ptl_handle_md_t  get_md_handle,
     entry->u.swap.operation        = operation;
     entry->u.swap.datatype         = datatype;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -547,12 +543,11 @@ int PtlAtomicSync(void)
 #endif
 
     ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLATOMICSYNC;
-    entry->u.atomicSync.my_id = get_my_ppe_rank();
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                     sizeof(ptl_cqe_t) );
     return PTL_OK;
 }

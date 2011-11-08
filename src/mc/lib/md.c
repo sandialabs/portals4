@@ -2,6 +2,7 @@
 
 #include "portals4.h"
 
+#include "ptl_internal_iface.h"
 #include "ptl_internal_global.h"        
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
@@ -10,6 +11,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_MD.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
 #define MD_FREE   0
 #define MD_IN_USE 1
@@ -46,7 +48,7 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni > 3) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni is bad (%u > 3) or code invalid (%u != 0) or nit not initialized\n",                   ni.s.ni, ni.s.code);
         return PTL_ARG_INVALID; }
     /*if (md->start == NULL || md->length == 0) {
@@ -75,16 +77,15 @@ ures!\n", md->start, (unsigned int)md->length);
     int md_index = find_md_index( ni.s.ni );
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLMDBIND;
     entry->u.mdBind.md_handle.s.ni       = ni.s.ni;
     entry->u.mdBind.md_handle.s.code     = md_index;
-    entry->u.mdBind.md_handle.s.selector = get_my_ppe_rank();
 
     entry->u.mdBind.md = *md;
 
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
                                                     sizeof(ptl_cqe_t) );
 
     md_hc.s.code = md_index;
@@ -108,16 +109,14 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
     }
 #endif
 
-    md_hc.s.selector = get_my_ppe_rank();
-
     ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLMDRELEASE;
     entry->u.mdRelease.md_handle = md_hc;
     
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
                         sizeof(ptl_cqe_t) );
     return PTL_OK;
 }
@@ -133,7 +132,8 @@ int INTERNAL PtlInternalMDHandleValidator(ptl_handle_md_t handle,
         VERBOSE_ERROR("selector not a MD selector (%i)\n", md.s.selector);
         return PTL_ARG_INVALID;
     }
-    if ((md.s.ni > 3) || (md.s.code > nit_limits[md.s.ni].max_mds) || (nit.refcount[md.s.ni] == 0)) {
+    if ((md.s.ni > 3) || (md.s.code > nit_limits[md.s.ni].max_mds) ||
+        (ptl_iface.ni[md.s.ni].refcount == 0)) {
         VERBOSE_ERROR("MD Handle has bad NI (%u > 3) or bad code (%u > %u) or the NIT is uninitialized\n",
                       md.s.ni, md.s.code, nit_limits[md.s.ni].max_mds);
         return PTL_ARG_INVALID;

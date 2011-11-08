@@ -244,7 +244,7 @@ int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
@@ -572,7 +572,7 @@ int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }

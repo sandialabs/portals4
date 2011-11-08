@@ -2,12 +2,14 @@
 
 #include "portals4.h"
 
+#include "ptl_internal_iface.h"
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_MD.h"
 #include "ptl_internal_pid.h"
 #include "ptl_internal_nit.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
 int PtlPut(ptl_handle_md_t  md_handle,
            ptl_size_t       local_offset,
@@ -84,11 +86,10 @@ int PtlPut(ptl_handle_md_t  md_handle,
 
     ptl_cqe_t *entry;
         
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     
     entry->type = PTLPUT;
     entry->u.put.md_handle = md_hc; 
-    entry->u.put.md_handle.s.selector = get_my_ppe_rank();
     entry->u.put.local_offset  = local_offset;
     entry->u.put.length        = length;
     entry->u.put.ack_req       = ack_req;
@@ -98,7 +99,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
     entry->u.put.user_ptr      = user_ptr;
     entry->u.put.hdr_data      = hdr_data; 
     
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
                         sizeof(ptl_cqe_t) );
 
     return PTL_OK;
@@ -164,11 +165,10 @@ int PtlGet(ptl_handle_md_t  md_handle,
 #endif  /* ifndef NO_ARG_VALIDATION */
     ptl_cqe_t *entry;
         
-    ptl_cq_entry_alloc( get_cq_handle(), &entry );
+    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     
     entry->type = PTLGET;
     entry->u.get.md_handle = md_hc;
-    entry->u.get.md_handle.s.selector = get_my_ppe_rank();
     entry->u.get.local_offset = local_offset; 
     entry->u.get.target_id = target_id; 
     entry->u.get.pt_index = pt_index; 
@@ -176,7 +176,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
     entry->u.get.remote_offset = remote_offset; 
     entry->u.get.user_ptr = user_ptr; 
     
-    ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
                         sizeof(ptl_cqe_t) );
     return PTL_OK;
 }

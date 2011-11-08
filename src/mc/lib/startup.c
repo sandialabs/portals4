@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include "portals4.h"
 #include "ptl_internal_global.h"
 #include "ptl_internal_startup.h"
 #include "shared/ptl_command_queue.h"
@@ -19,13 +20,13 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
     size_t infolen;
     int ret;
 
-    ret = ptl_cq_info_get(ptl_global.cq_h, &info, &infolen);
+    ret = ptl_cq_info_get(ptl_iface.cq_h, &info, &infolen);
     if (ret < 0) {
         perror("ptl_cq_info_get");
         abort();
     }
 
-    ret = ptl_cm_client_send(ptl_global.cm_h, info, infolen);
+    ret = ptl_cm_client_send(ptl_iface.cm_h, info, infolen);
     if (ret < 0) {
         perror("ptl_cm_client_send");
         abort();
@@ -34,7 +35,7 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
     free(info);
 
     info = buf;
-    ret = ptl_cq_attach(ptl_global.cq_h, info);
+    ret = ptl_cq_attach(ptl_iface.cq_h, info);
     if (ret < 0) {
         perror("ptl_cq_attach");
         abort();
@@ -55,61 +56,61 @@ ppe_disconnect_callback(int remote_id)
 
 
 int
-ptl_ppe_global_init(void)
+ptl_ppe_global_init(ptl_iface_t *iface)
 {
     return 0;
 }
 
 
 int
-ptl_ppe_global_setup(void)
+ptl_ppe_global_setup(ptl_iface_t *iface)
 {
     return 0;
 }
 
 
 int
-ptl_ppe_global_fini(void)
+ptl_ppe_global_fini(ptl_iface_t *iface)
 {
     return 0;
 }
 
 
 int
-ptl_ppe_connect(void)
+ptl_ppe_connect(ptl_iface_t *iface)
 {
     int ret;
     int send_queue_size = 32; /* BWB: FIX ME */
     int recv_queue_size = 32; /* BWB: FIX ME */
 
-    ret = ptl_cm_client_connect(&ptl_global.cm_h, &ptl_global.my_ppe_rank);
+    ret = ptl_cm_client_connect(&ptl_iface.cm_h, &ptl_iface.my_ppe_rank);
     if (ret < 0) {
         perror("ptl_cm_client_connect");
         return -1;
     }
 
-    ret = ptl_cm_client_register_disconnect_cb(ptl_global.cm_h,
+    ret = ptl_cm_client_register_disconnect_cb(ptl_iface.cm_h,
                                                ppe_disconnect_callback);
     if (ret < 0) {
         perror("ptl_cm_register_disconnect_cb");
         return -1;
     }
 
-    ret = ptl_cm_client_register_recv_cb(ptl_global.cm_h, ppe_recv_callback);
+    ret = ptl_cm_client_register_recv_cb(ptl_iface.cm_h, ppe_recv_callback);
     if (ret < 0) {
         perror("ptl_cm_register_recv_cb");
         return -1;
     }
 
     ret = ptl_cq_create(sizeof(ptl_cqe_t), send_queue_size, recv_queue_size,
-                        ptl_global.my_ppe_rank, &ptl_global.cq_h);
+                        ptl_iface.my_ppe_rank, &ptl_iface.cq_h);
     if (ret < 0) {
         perror("ptl_cq_create");
         return -1;
     }
 
     while (have_attached_cq == 0) {
-        ret = ptl_cm_client_progress(ptl_global.cm_h);
+        ret = ptl_cm_client_progress(ptl_iface.cm_h);
         if (ret < 0) {
             perror("ptl_cm_client_progress");
             return -1;
@@ -121,17 +122,17 @@ ptl_ppe_connect(void)
 
 
 int
-ptl_ppe_disconnect(void)
+ptl_ppe_disconnect(ptl_iface_t *iface)
 {
     int ret;
 
-    ret = ptl_cm_client_disconnect(ptl_global.cm_h);
+    ret = ptl_cm_client_disconnect(iface->cm_h);
     if (ret < 0) {
         perror("ptl_cm_client_disconnect");
         return -1;
     }
 
-    ret = ptl_cq_destroy(ptl_global.cq_h);
+    ret = ptl_cq_destroy(iface->cq_h);
     if (ret < 0) {
         perror("ptl_cq_destroy");
         return -1;

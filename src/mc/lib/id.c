@@ -2,6 +2,7 @@
 
 #include "portals4.h"
         
+#include "ptl_internal_iface.h"
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h" 
