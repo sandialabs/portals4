@@ -104,9 +104,8 @@ AC_DEFUN([AX_C_RESTRICT],
 # define _Restrict
 # define __restrict__
 #endif])
- case $ac_cv_c_restrict in
-   restrict) ;;
-   no) AC_DEFINE([restrict], []) ;;
-   *)  AC_DEFINE_UNQUOTED([restrict], [$ac_cv_c_restrict]) ;;
- esac
+ AS_CASE([$ac_cv_c_restrict],
+         [restrict], [],
+         [no], [AC_DEFINE([restrict], [])],
+         [AC_DEFINE_UNQUOTED([restrict], [$ac_cv_c_restrict])])
 ])# AC_C_RESTRICT
