@@ -1,15 +1,15 @@
 #include "config.h"
 
 #include "portals4.h"
-#include "ppe_if.h" 
-        
-#include "shared/ptl_internal_handles.h"
+
+#include "ptl_internal_global.h"        
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_PT.h"
 #include "ptl_internal_CT.h"
 #include "ptl_internal_MD.h"
+#include "shared/ptl_internal_handles.h"
 
 #define MD_FREE   0
 #define MD_IN_USE 1

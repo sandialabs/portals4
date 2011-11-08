@@ -3,12 +3,12 @@
 #include <assert.h>
 
 #include "portals4.h"
-#include "ppe_if.h"
 
-#include "shared/ptl_internal_handles.h"
+#include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_EQ.h"
+#include "shared/ptl_internal_handles.h"
 
 const ptl_internal_handle_converter_t eq_none = {
     .s = {
