@@ -66,7 +66,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    me_hc.s.selector =  get_my_id();
+    me_hc.s.selector =  get_my_ppe_rank();
     me_hc.s.code = find_me_index( ni.s.ni );
 
     ptl_cqe_t *entry;
@@ -122,7 +122,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
     
     entry->type = PTLMEUNLINK;
     entry->u.meUnlink.me_handle = me_hc;
-    entry->u.meUnlink.me_handle.s.selector = get_my_id();
+    entry->u.meUnlink.me_handle.s.selector = get_my_ppe_rank();
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
                                     sizeof(ptl_cqe_t) );

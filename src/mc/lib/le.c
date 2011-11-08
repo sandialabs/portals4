@@ -67,7 +67,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    le_hc.s.selector =  get_my_id();
+    le_hc.s.selector =  get_my_ppe_rank();
     le_hc.s.code = find_le_index( ni.s.ni );
 
     ptl_cqe_t *entry;
@@ -121,7 +121,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 
     entry->type = PTLEUNLINK;
     entry->u.leUnlink.le_handle = le_hc;
-    entry->u.leUnlink.le_handle.s.selector = get_my_id();
+    entry->u.leUnlink.le_handle.s.selector = get_my_ppe_rank();
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
                                     sizeof(ptl_cqe_t) );
