@@ -14,6 +14,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
 	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
 	[STATE_TGT_WAIT_CONN]		= "tgt_wait_conn",
+	[STATE_TGT_DATA]		= "tgt_data",
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
 	[STATE_TGT_RDMA]		= "tgt_rdma",
 	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
@@ -659,7 +660,18 @@ static int tgt_get_length(buf_t *buf)
 	if (err)
 		return STATE_TGT_ERROR;
 
-	return STATE_TGT_WAIT_CONN;
+	/* if we are already connected to the initiator skip wait_conn */
+	if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
+		return STATE_TGT_DATA;
+
+	/* we need a connection if we are sending an ack/reply
+	 * or doing an RDMA operation */
+	if ((buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) ||
+	    (buf->data_out || (buf->data_in && (buf->data_in->data_fmt
+						!= DATA_FMT_IMMEDIATE))))
+		return STATE_TGT_WAIT_CONN;
+
+	return STATE_TGT_DATA;
 }
 
 /**
@@ -677,18 +689,10 @@ static int tgt_wait_conn(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
 	conn_t *conn = buf->conn;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	unsigned operation = hdr->operation;
 
-	/* we need a connection if we are sending an ack/reply
-	 * or doing an RDMA operation */
-	if (!(buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) &&
-	    !(buf->data_out || (buf->data_in && (buf->data_in->data_fmt
-						!= DATA_FMT_IMMEDIATE))))
-		goto out1;
-
+	/* if we are connected to the initiator we're done here */
 	if (conn->state >= CONN_STATE_CONNECTED)
-		goto out2;
+		return STATE_TGT_DATA;
 
 	/* if not connected. Add the buf to the pending list. It will be
 	 * retried once connected/disconnected. */
@@ -716,20 +720,38 @@ static int tgt_wait_conn(buf_t *buf)
 	}
 	pthread_mutex_unlock(&conn->mutex);
 
-out2:
+	return STATE_TGT_DATA;
+}
+
+/**
+ * @brief target data state.
+ *
+ * This state is reached after the get length state or wait conn.
+ * It selects the first data phase.
+ *
+ * @param[in] buf The message buf received by the target.
+ *
+ * @return The next state.
+ */
+static int tgt_data(buf_t *buf)
+{
+	ni_t *ni = obj_to_ni(buf);
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	unsigned operation = hdr->operation;
+
 	/* save the addressing information to the initiator
 	 * in buf */
 #ifdef USE_XRC
-	if (conn->state == CONN_STATE_XRC_CONNECTED)
+	if (buf->conn->state == CONN_STATE_XRC_CONNECTED)
 		/* for XRC QPs we address the IB traffic
 		 * to one recv QP on each node with an
 		 * SRQ number in the work request. */
-		set_tgt_dest(buf, conn->main_connect);
+		set_tgt_dest(buf, buf->conn->main_connect);
 	else
 #endif
-		set_tgt_dest(buf, conn);
+	if (buf->conn->state >= CONN_STATE_CONNECTED)
+		set_tgt_dest(buf, buf->conn);
 
-out1:
 	/* This implementation guarantees atomicity between
 	 * the three atomic type operations by only alowing a
 	 * single operation at a time to be processed. */
@@ -958,14 +980,11 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 	return STATE_TGT_RDMA;
 }
 
-#ifdef WITH_TRANSPORT_SHMEM
-/*
- * tgt_shmem_desc
- *	initiate read of indirect descriptors for initiator IOV.
- * Equivalent of tgt_get_rdma_desc()
- */
 /**
- * @brief
+ * @brief target shared memory read long iovec descriptor state.
+ *
+ * This state is reached if the number of iovec entries is too large to
+ * fit into a buf and we are using shared memory.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -973,9 +992,10 @@ static int tgt_wait_rdma_desc(buf_t *buf)
  */
 static int tgt_shmem_desc(buf_t *buf)
 {
+	int next;
+#ifdef WITH_TRANSPORT_SHMEM
 	data_t *data;
 	int err;
-	int next;
 	size_t len;
 	ni_t *ni = obj_to_ni(buf);
 	void *indir_sge;
@@ -1019,19 +1039,17 @@ static int tgt_shmem_desc(buf_t *buf)
 
 	next = STATE_TGT_RDMA;
 done:
+#else
+	abort();
+	next = STATE_TGT_ERROR;
+#endif
 	return next;
 }
-#else
-static inline int tgt_shmem_desc(buf_t *buf)
-{
-	/* This state is not reachable when SHMEM is not enabled. */
-	abort();
-	return STATE_TGT_ERROR;
-}
-#endif
 
 /**
- * @brief
+ * @brief target data in state.
+ *
+ * This state handles the data in phase for a put or swap operation.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1043,6 +1061,8 @@ static int tgt_data_in(buf_t *buf)
 	me_t *me = buf->me;
 	data_t *data = buf->data_in;
 	int next;
+
+	buf->rdma_dir = DATA_DIR_IN;
 
 	switch (data->data_fmt) {
 	case DATA_FMT_IMMEDIATE:
@@ -1058,7 +1078,6 @@ static int tgt_data_in(buf_t *buf)
 		buf->rdma.cur_rem_off = 0;
 		buf->rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
 
-		buf->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA;
 		break;
 
@@ -1067,17 +1086,14 @@ static int tgt_data_in(buf_t *buf)
 		buf->shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
 		buf->shmem.cur_rem_off = 0;
 
-		buf->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_RDMA;
 		break;
 
 	case DATA_FMT_RDMA_INDIRECT:
-		buf->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_WAIT_RDMA_DESC;
 		break;
 
 	case DATA_FMT_SHMEM_INDIRECT:
-		buf->rdma_dir = DATA_DIR_IN;
 		next = STATE_TGT_SHMEM_DESC;
 		break;
 		
@@ -1087,6 +1103,7 @@ static int tgt_data_in(buf_t *buf)
 		next = STATE_TGT_ERROR;
 	}
 
+	/* this can happen for a simple swap operation */
 	if (buf->in_atomic) {
 		ni_t *ni = obj_to_ni(buf);
 		
@@ -1098,7 +1115,9 @@ static int tgt_data_in(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target atomic data in state.
+ *
+ * This phase handles the data in phase for an atomic or getch operation.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1138,9 +1157,8 @@ static int tgt_atomic_data_in(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target swap data in state.
  *
- * @param[in] buf The message buf received by the target.
  * Handle swap operation for all cases where
  * the length is limited to a single data item.
  * (PTL_SWAP allows length up to max atomic size
@@ -1152,6 +1170,8 @@ static int tgt_atomic_data_in(buf_t *buf)
  * simpler to just copy the data out of the iovec,
  * perform the swap operation and then copy the result
  * back into the me for that case.
+ *
+ * @param[in] buf The message buf received by the target.
  *
  * @return The next state.
  */
@@ -1199,7 +1219,10 @@ static int tgt_swap_data_in(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target comm event state.
+ *
+ * This state is reached when we are ready to deliver a conn event to
+ * the target side event queue or counting event.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1223,7 +1246,10 @@ static int tgt_comm_event(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target send ack state.
+ *
+ * This state is reached when we are ready to deliver an ack
+ * (or non-ack) to the initiator.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1277,7 +1303,10 @@ static int tgt_send_ack(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target send reply state.
+ *
+ * This state is reached when we are ready to send a reply to the
+ * initiator.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1314,7 +1343,9 @@ static int tgt_send_reply(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target cleanup state.
+ *
+ * This state is reached after delivering comm and ack/reply events.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1364,7 +1395,10 @@ static int tgt_cleanup(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target cleanup_2 state.
+ *
+ * This state is reached after handling list apppend processing
+ * (if necessary) and cleans up the matching list element.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1380,63 +1414,11 @@ static void tgt_cleanup_2(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target wait append state.
  *
- * @param[in] buf The message buf received by the target.
- *
- * @return The next state.
- */
-static int tgt_overflow_event(buf_t *buf)
-{
-	le_t *le = buf->matching.le;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	unsigned operation = hdr->operation;
-
-	assert(le);
-
-	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
-		switch (operation) {
-		case OP_PUT:
-			make_target_event(buf, buf->pt->eq, PTL_EVENT_PUT_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
-
-		case OP_ATOMIC:
-			make_target_event(buf, buf->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
-
-		case OP_FETCH:
-		case OP_SWAP:
-			make_target_event(buf, buf->pt->eq, PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
-
-		case OP_GET:
-			make_target_event(buf, buf->pt->eq, PTL_EVENT_GET_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
-
-		default:
-			/* Not possible. */
-			abort();
-			break;
-		}
-
-		/* Update the counter if we can. If LE comes from PtlLESearch,
-		 * then ct is NULL. */
-		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
-			make_ct_event(le->ct, buf, CT_MBYTES);
-	}
-
-	le_put(le);
-	buf->matching.le = NULL;
-
-	return STATE_TGT_CLEANUP_2;
-}
-
-/**
- * @brief
+ * This state is reached for a message that matches in the overflow
+ * list and is waiting for an append to the priority list or a search
+ * operation to occur.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1456,7 +1438,70 @@ static int tgt_wait_append(buf_t *buf)
 }
 
 /**
- * @brief
+ * @brief target overflow event state.
+ *
+ * This state is reached when a matching append or search occurs.
+ *
+ * @param[in] buf The message buf received by the target.
+ *
+ * @return The next state.
+ */
+static int tgt_overflow_event(buf_t *buf)
+{
+	le_t *le = buf->matching.le;
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	unsigned operation = hdr->operation;
+
+	assert(le);
+
+	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
+		switch (operation) {
+		case OP_PUT:
+			make_target_event(buf, buf->pt->eq,
+					  PTL_EVENT_PUT_OVERFLOW,
+					  le->user_ptr, buf->start);
+			break;
+
+		case OP_ATOMIC:
+			make_target_event(buf, buf->pt->eq,
+					  PTL_EVENT_ATOMIC_OVERFLOW,
+					  le->user_ptr, buf->start);
+			break;
+
+		case OP_FETCH:
+		case OP_SWAP:
+			make_target_event(buf, buf->pt->eq,
+					  PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+					  le->user_ptr, buf->start);
+			break;
+
+		case OP_GET:
+			make_target_event(buf, buf->pt->eq,
+					  PTL_EVENT_GET_OVERFLOW,
+					  le->user_ptr, buf->start);
+			break;
+		}
+
+		/* Update the counter if we can. If LE comes from PtlLESearch,
+		 * then ct is NULL. */
+		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
+			make_ct_event(le->ct, buf, CT_MBYTES);
+	}
+
+	/* drop the matching list element */
+	le_put(le);
+	buf->matching.le = NULL;
+
+	return STATE_TGT_CLEANUP_2;
+}
+
+/**
+ * @brief target state machine.
+ *
+ * This routine implements the target side state machine. It can
+ * be called from ptl_recv when a portals request message is received
+ * from an initiator or from the completion of an RDMA operations or
+ * from the connection event thread.
  *
  * @param[in] buf The message buf received by the target.
  *
@@ -1466,9 +1511,6 @@ int process_tgt(buf_t *buf)
 {
 	int err = PTL_OK;
 	enum tgt_state state;
-
-	if(debug)
-		printf("process_tgt: called buf = %p\n", buf);
 
 	pthread_mutex_lock(&buf->mutex);
 
@@ -1493,6 +1535,9 @@ int process_tgt(buf_t *buf)
 			state = tgt_wait_conn(buf);
 			if (state == STATE_TGT_WAIT_CONN)
 				goto exit;
+			break;
+		case STATE_TGT_DATA:
+			state = tgt_data(buf);
 			break;
 		case STATE_TGT_DATA_IN:
 			state = tgt_data_in(buf);
@@ -1531,15 +1576,14 @@ int process_tgt(buf_t *buf)
 		case STATE_TGT_DROP:
 			state = request_drop(buf);
 			break;
-		case STATE_TGT_OVERFLOW_EVENT:
-			state = tgt_overflow_event(buf);
-			break;
 		case STATE_TGT_WAIT_APPEND:
 			state = tgt_wait_append(buf);
 			if (state == STATE_TGT_WAIT_APPEND)
 				goto exit;
 			break;
-
+		case STATE_TGT_OVERFLOW_EVENT:
+			state = tgt_overflow_event(buf);
+			break;
 		case STATE_TGT_ERROR:
 			if (buf->in_atomic) {
 				ni_t *ni = obj_to_ni(buf);
@@ -1549,29 +1593,24 @@ int process_tgt(buf_t *buf)
 			err = PTL_FAIL;
 			state = STATE_TGT_CLEANUP;
 			break;
-
 		case STATE_TGT_CLEANUP:
 			state = tgt_cleanup(buf);
 			break;
-
 		case STATE_TGT_CLEANUP_2:
 			tgt_cleanup_2(buf);
 			buf->tgt_state = STATE_TGT_DONE;
 			pthread_mutex_unlock(&buf->mutex);
 			buf_put(buf);		/* match buf_alloc */
 			return err;
-
 		case STATE_TGT_DONE:
 			/* buf isn't valid anymore. */
 			goto done;
 		}
 	}
 
- exit:
+exit:
 	buf->tgt_state = state;
-
- done:
+done:
 	pthread_mutex_unlock(&buf->mutex);
-
 	return err;
 }
