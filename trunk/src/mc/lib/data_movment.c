@@ -88,7 +88,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
     
     entry->type = PTLPUT;
     entry->u.put.md_handle = md_hc; 
-    entry->u.put.md_handle.s.selector = get_my_id();
+    entry->u.put.md_handle.s.selector = get_my_ppe_rank();
     entry->u.put.local_offset  = local_offset;
     entry->u.put.length        = length;
     entry->u.put.ack_req       = ack_req;
@@ -168,7 +168,7 @@ int PtlGet(ptl_handle_md_t  md_handle,
     
     entry->type = PTLGET;
     entry->u.get.md_handle = md_hc;
-    entry->u.get.md_handle.s.selector = get_my_id();
+    entry->u.get.md_handle.s.selector = get_my_ppe_rank();
     entry->u.get.local_offset = local_offset; 
     entry->u.get.target_id = target_id; 
     entry->u.get.pt_index = pt_index; 

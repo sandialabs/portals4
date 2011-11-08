@@ -60,7 +60,7 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    eq_hc.s.selector = get_my_id();
+    eq_hc.s.selector = get_my_ppe_rank();
     eq_hc.s.code = find_eq_index( ni_hc.s.ni);
 
     ptl_cqe_t *entry;
@@ -98,7 +98,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
     
     entry->type = PTLEQFREE;
     entry->u.eqFree.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
-    entry->u.eqFree.eq_handle.s.selector = get_my_id();
+    entry->u.eqFree.eq_handle.s.selector = get_my_ppe_rank();
     
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry, 
                         sizeof(ptl_cqe_t) );

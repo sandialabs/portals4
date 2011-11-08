@@ -80,7 +80,7 @@ ures!\n", md->start, (unsigned int)md->length);
     entry->type = PTLMDBIND;
     entry->u.mdBind.md_handle.s.ni       = ni.s.ni;
     entry->u.mdBind.md_handle.s.code     = md_index;
-    entry->u.mdBind.md_handle.s.selector = get_my_id();
+    entry->u.mdBind.md_handle.s.selector = get_my_ppe_rank();
 
     entry->u.mdBind.md = *md;
 
@@ -108,7 +108,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
     }
 #endif
 
-    md_hc.s.selector = get_my_id();
+    md_hc.s.selector = get_my_ppe_rank();
 
     ptl_cqe_t *entry;
 

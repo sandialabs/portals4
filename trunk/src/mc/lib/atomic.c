@@ -155,7 +155,7 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
 
     entry->type = PTLATOMIC;
     entry->u.atomic.md_handle       = md_hc;
-    entry->u.atomic.md_handle.s.selector = get_my_id();
+    entry->u.atomic.md_handle.s.selector = get_my_ppe_rank();
     entry->u.atomic.local_offset    = local_offset;
     entry->u.atomic.length          = length;
     entry->u.atomic.ack_req         = ack_req;
@@ -334,10 +334,10 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 
     entry->type = PTLFETCHATOMIC;
     entry->u.fetchAtomic.get_md_handle =  get_md;  
-    entry->u.fetchAtomic.get_md_handle.s.selector = get_my_id();  
+    entry->u.fetchAtomic.get_md_handle.s.selector = get_my_ppe_rank();  
     entry->u.fetchAtomic.local_get_offset = local_get_offset;
     entry->u.fetchAtomic.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.fetchAtomic.put_md_handle.s.selector = get_my_id();
+    entry->u.fetchAtomic.put_md_handle.s.selector = get_my_ppe_rank();
     entry->u.fetchAtomic.length           = length;
     entry->u.fetchAtomic.target_id        = target_id;
     entry->u.fetchAtomic.pt_index         = pt_index;
@@ -517,10 +517,10 @@ int PtlSwap(ptl_handle_md_t  get_md_handle,
 
     entry->type = PTLSWAP;
     entry->u.swap.get_md_handle =  get_md_hc;  
-    entry->u.swap.get_md_handle.s.selector = get_my_id();  
+    entry->u.swap.get_md_handle.s.selector = get_my_ppe_rank();  
     entry->u.swap.local_get_offset = local_get_offset;
     entry->u.swap.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.swap.put_md_handle.s.selector = get_my_id();
+    entry->u.swap.put_md_handle.s.selector = get_my_ppe_rank();
     entry->u.swap.length           = length;
     entry->u.swap.target_id        = target_id;
     entry->u.swap.pt_index         = pt_index;
@@ -550,7 +550,7 @@ int PtlAtomicSync(void)
     ptl_cq_entry_alloc( get_cq_handle(), &entry );
 
     entry->type = PTLATOMICSYNC;
-    entry->u.atomicSync.my_id = get_my_id();
+    entry->u.atomicSync.my_id = get_my_ppe_rank();
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
                                     sizeof(ptl_cqe_t) );

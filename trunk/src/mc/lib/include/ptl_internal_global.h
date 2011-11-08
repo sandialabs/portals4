@@ -89,7 +89,7 @@ find_pt_index(int ni)
 }
 
 static inline int
-get_my_id(void)
+get_my_ppe_rank(void)
 {
     return ptl_global.my_ppe_rank;
 }

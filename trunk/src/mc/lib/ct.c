@@ -39,7 +39,7 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    ct_hc.s.selector = get_my_id();
+    ct_hc.s.selector = get_my_ppe_rank();
     ct_hc.s.code = find_ct_index( ni.s.ni ); 
 
     ptl_cqe_t *entry;
@@ -76,7 +76,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 
     entry->type = PTLCTFREE;
     entry->u.ctFree.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctFree.ct_handle.s.selector = get_my_id();
+    entry->u.ctFree.ct_handle.s.selector = get_my_ppe_rank();
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
                         sizeof(ptl_cqe_t) );
@@ -193,7 +193,7 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
 
     entry->type = PTLCTSET;
     entry->u.ctSet.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctSet.ct_handle.s.selector = get_my_id();
+    entry->u.ctSet.ct_handle.s.selector = get_my_ppe_rank();
     entry->u.ctSet.test      = test;
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,
@@ -221,7 +221,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
 
     entry->type = PTLCTSET;
     entry->u.ctInc.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctInc.ct_handle.s.selector = get_my_id();
+    entry->u.ctInc.ct_handle.s.selector = get_my_ppe_rank();
     entry->u.ctInc.increment = increment;
 
     ptl_cq_entry_send( get_cq_handle(), get_cq_peer(), entry,

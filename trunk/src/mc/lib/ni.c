@@ -98,7 +98,7 @@ int PtlNIInit(ptl_interface_t       iface,
         entry->u.niInit.options = options;
         entry->u.niInit.pid = pid;
         entry->u.niInit.ni_handle.s.ni = ni.s.ni;
-        entry->u.niInit.ni_handle.s.selector = get_my_id();
+        entry->u.niInit.ni_handle.s.selector = get_my_ppe_rank();
 
         ptl_cq_entry_send(get_cq_handle(), get_cq_peer(), 
                           entry, sizeof(ptl_cqe_t));
@@ -131,7 +131,7 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
 #endif 
 
     if (0 == __sync_fetch_and_sub(&nit.refcount[ni.s.ni], 1)) {
-        ni.s.selector = get_my_id();
+        ni.s.selector = get_my_ppe_rank();
 
         ptl_cqe_t *entry;
         ptl_cq_entry_alloc( get_cq_handle(), &entry );
