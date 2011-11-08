@@ -132,13 +132,9 @@ AC_ARG_WITH([implementation],
 							 are shmem, mc, or ib. Shmem is single-node shared
 							 memory, mc is multicore (read: shared progress
 			                 threads in shared memory), and ib is Infiniband.])],
-		    [case "x$with_implementation" in
-			  xib|xshmem|xmc)
-               ;;
-			  *)
-			   AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem, mc, or ib.])
-			   ;;
-	         esac],
+		    [AS_CASE([$with_implementation],
+					 [ib|shmem|mc], [],
+					 [AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem, mc, or ib.])])],
 			[with_implementation=ib])
 AC_ARG_WITH([test-runtime],
   [AS_HELP_STRING([--with-test-runtime=IMPL],
@@ -227,40 +223,19 @@ AS_IF([test "x$sandia_cv_cxx_compiler_type" = "xIntel"],
 
 AX_C_RESTRICT
 AS_IF([test "x$enable_picky" == xyes],
-  [case "$sandia_cv_c_compiler_type" in
-   GNU)
-   CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"
-   ;;
-   Intel)
-   CFLAGS="-Wall -wd981 $CFLAGS"
-   ;;
-   SunStudio)
-   # This compiler defaults to enabling all warnings
-   ;;
-   PortlandGroup)
-   CFLAGS="-Minform=inform $CFLAGS"
-   ;;
-   *)
-   CFLAGS="-Wall $CFLAGS"
-   ;;
-   esac
-   case "$sandia_cv_cxx_compiler_type" in
-   GNU)
-   CXXFLAGS="-Wall $CXXFLAGS"
-   ;;
-   Intel)
-   CXXFLAGS="-Wall -wd981 $CXXFLAGS"
-   ;;
-   SunStudio)
-   # This compiler defaults to enabling all warnings
-   ;;
-   PortlandGroup)
-   CXXFLAGS="-Minform=inform $CXXFLAGS"
-   ;;
-   *)
-   CXXFLAGS="-Wall $CXXFLAGS"
-   ;;
-   esac])
+  [AS_CASE([$sandia_cv_c_compiler_type],
+		   [GNU], [CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"],
+		   [Intel], [CFLAGS="-Wall -wd981 $CFLAGS"],
+		   [SunStudio], [], dnl This compiler defaults to enabling all warnings
+		   [PortlandGroup], [CFLAGS="-Minform=inform $CFLAGS"],
+		   [CFLAGS="-Wall $CFLAGS"])
+   AS_CASE([$sandia_cv_cxx_compiler_type],
+		   [GNU], [CXXFLAGS="-Wall $CXXFLAGS"],
+		   [Intel], [CXXFLAGS="-Wall -wd981 $CXXFLAGS"],
+		   [SunStudio], [], dnl This compiler defaults to enabling all warnings
+		   [PortlandGroup], [CXXFLAGS="-Minform=inform $CXXFLAGS"],
+		   [CXXFLAGS="-Wall $CXXFLAGS"])
+   ])
 
 SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([Atomics are not implemented portably])])
 SANDIA_CHECK_BITFIELDS
@@ -341,46 +316,27 @@ AC_SUBST(LD_VERSION_SCRIPT)
 ## Output and done ##
 ## --------------- ##
 
-case "$with_implementation" in
-  mc)
-    ;;
-  ib)
-    ;;
-  shmem)
-    AS_IF([test "x$with_test_runtime" != "xshmemrt"],
-		  [AS_IF([test "x$with_test_runtime" != "x"],
-				 [AC_MSG_WARN([Resetting test harness runtime to shmemrt])])
-           with_test_runtime=shmemrt])
-    ;;
-  *)
-    AS_IF([test "x$with_implementation" != "x"],
-	      [AC_MSG_WARN([Setting implementation to ib])])
-    with_implementation=ib
-    ;;
-esac
-case "$with_test_runtime" in
-  shmemrt)
-    AS_IF([test "$with_implementation" != "shmem"],
-          [AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])])
-    TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'
-    ;;
-  mpi)
-    TEST_INVOKE_CMD='mpirun -np $(THREADS)'
-    ;;
-  pmi)
-    OMPI_CHECK_PMI([], [AC_MSG_ERROR([PMI runtime requested, not found.])])
-    TEST_INVOKE_CMD='srun -n $(THREADS)'
-    ;;
-  single)
-    TEST_INVOKE_CMD=
-    ;;
-  *)
-    AS_IF([test "$with_test_runtime" != ""],
-          [AC_MSG_WARN([Setting test runtime to single])])
-    with_test_runtime=single
-    TEST_INVOKE_CMD=
-    ;;
-esac
+AS_CASE([$with_implementation],
+		[mc|ib], [],
+		[shmem], [AS_IF([test "x$with_test_runtime" != "xshmemrt"],
+						[AS_IF([test "x$with_test_runtime" != "x"],
+							   [AC_MSG_WARN([Resetting test harness runtime to shmemrt])])
+						with_test_runtime=shmemrt])],
+		[AS_IF([test "x$with_implementation" != "x"],
+			   [AC_MSG_WARN([Setting implementation to ib])])
+		 with_implementation=ib])
+AS_CASE([$with_test_runtime],
+		[shmemrt], [AS_IF([test "$with_implementation" != "shmem"],
+						  [AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])])
+		            TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'],
+		[mpi], [TEST_INVOKE_CMD='mpirun -np $(THREADS)'],
+		[pmi], [OMPI_CHECK_PMI([], [AC_MSG_ERROR([PMI runtime requested, not found.])])
+		        TEST_INVOKE_CMD='srun -n $(THREADS)'],
+		[single], [TEST_INVOKE_CMD=],
+    	[AS_IF([test "$with_test_runtime" != ""],
+			   [AC_MSG_WARN([Setting test runtime to single])])
+		 with_test_runtime=single
+		 TEST_INVOKE_CMD=])
 AC_SUBST(TEST_INVOKE_CMD)
 
 AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [test "$with_implementation" = "shmem"])
