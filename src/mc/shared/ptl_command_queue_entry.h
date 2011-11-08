@@ -29,6 +29,7 @@ typedef enum {
     PTLEUNLINK,
     PTLESEARCH,
     PTLATOMIC,
+    PTLFETCHATOMIC,
     PTLSWAP,
     PTLATOMICSYNC,
 } ptl_cmd_type_t;
@@ -217,6 +218,22 @@ typedef struct {
     ptl_size_t       remote_offset;
     void            *user_ptr;
     ptl_hdr_data_t   hdr_data;
+    ptl_op_t         operation;
+    ptl_datatype_t   datatype;
+} cmdPtlFetchAtomic_t;
+
+typedef struct {
+    cmdHandle_t      get_md_handle;
+    ptl_size_t       local_get_offset;
+    cmdHandle_t      put_md_handle;
+    ptl_size_t       local_put_offset;
+    ptl_size_t       length;
+    ptl_process_t    target_id;
+    ptl_pt_index_t   pt_index;
+    ptl_match_bits_t match_bits;
+    ptl_size_t       remote_offset;
+    void            *user_ptr;
+    ptl_hdr_data_t   hdr_data;
     const void      *operand;
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
@@ -249,6 +266,7 @@ typedef union {
     cmdPtlLEUnlink_t    leUnlink;
     cmdPtlLESearch_t    leSearch;
     cmdPtlAtomic_t      atomic;
+    cmdPtlFetchAtomic_t      fetchAtomic;
     cmdPtlSwap_t        swap;
     cmdPtlAtomicSync_t  atomicSync;
 } ptl_cmd_union_t;
