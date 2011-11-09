@@ -235,6 +235,7 @@ static struct node_info *push_info(struct node_info *head, int tok)
 	/* defaults */
 	info->count = 1;
 	info->ret = PTL_OK;
+	info->err = PTL_OK;
 	info->type = PTL_UINT8_T;
 
 	/* If token is MD/LE/ME then allocate current largest buffer */
@@ -972,6 +973,11 @@ static int check_attr(struct node_info *info, xmlNode *node)
 		}
 
 		switch (e->token) {
+		case ATTR_ERR:
+			if(info->err != get_ret(val)) {
+				return 1;
+			}
+			break;
 		case ATTR_THREAD_ID:
 			if(info->thread_id != get_number(info, val)) {
 				return 1;
@@ -1227,6 +1233,8 @@ static void *run_thread(void *arg)
 	return NULL;
 }
 
+int skipped;
+
 static int walk_tree(struct node_info *info, xmlNode *parent)
 {
 	xmlNode *node = NULL;
@@ -1263,6 +1271,14 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				if (!info->cond)
 					errs = walk_tree(info, node->children);
 				goto done;
+			case NODE_ARG_CHECK:
+#ifdef NO_ARG_VALIDATION
+				errs = 0;
+				skipped++;
+#else
+				errs = walk_tree(info, node->children);
+#endif
+				goto done;
 			case NODE_IFDEF:
 				if (check_opt(node))
 					errs = walk_tree(info, node->children);
@@ -1289,6 +1305,7 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 				errs = walk_tree(info, node->children);
 				break;
 			case NODE_SUBTEST: {
+				skipped = 0;
 				pid_t pid = fork();
 				int status;
 				switch(pid) {
@@ -1299,17 +1316,28 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 
 				case 0:
 					errs = walk_tree(info, node->children);
-					exit(errs);
+					if (skipped)
+						exit(-1);
+					else
+						exit(errs);
 					break;
 
 				default:
 					waitpid(pid, &status, 0);
-					if (WIFEXITED(status))
-						errs += WEXITSTATUS(status);
-					else
+					if (WIFEXITED(status)) {
+						int child_errs = WEXITSTATUS(status);
+						if (child_errs == 0xff)
+							skipped++;
+						else
+							errs += child_errs;
+					} else {
 						errs ++;
+					}
+
 					if (errs)
 						printf("Errors = %d\n", errs);
+					else if (skipped)
+						printf("\033[1;34mSkipped\033[0m\n");
 					else
 						printf("\033[1;32mPassed\033[0m\n");
 					break;
