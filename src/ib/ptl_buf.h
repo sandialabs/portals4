@@ -293,6 +293,18 @@ static inline int sbuf_alloc(ni_t *ni, buf_t **buf_p)
 }
 
 /**
+ * @brief Return the ref count on a buf.
+ *
+ * @param[in] buf the buf object.
+ *
+ * @return the ref count.
+ */
+static inline int buf_ref_cnt(buf_t *buf)
+{
+	return obj_ref_cnt(&buf->obj);
+}
+
+/**
  * Take a reference to a buf.
  *
  * @param buf on which to take a reference
