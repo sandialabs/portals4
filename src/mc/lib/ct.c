@@ -12,9 +12,6 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-static ptl_ct_event_t *restrict ct_events[4] = { NULL, NULL, NULL, NULL };
-static uint_fast64_t *restrict  ct_event_refcounts[4] = { NULL, NULL, NULL, NULL };
-
 int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
                ptl_handle_ct_t *ct_handle)
 {
@@ -30,12 +27,6 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
-#if 0 
-    if (ct_events[ni.s.ni] == NULL) {
-        assert(ct_events[ni.s.ni] != NULL);
-        return PTL_ARG_INVALID;
-    }
-#endif
     if (ct_handle == NULL) {
         VERBOSE_ERROR("passed in a NULL for ct_handle\n");
         return PTL_ARG_INVALID;
@@ -52,8 +43,8 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     entry->u.ctAlloc.ct_handle  = ct_hc;
     entry->u.ctAlloc.addr       = NULL;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                        sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     *ct_handle = ct_hc.a;
 
@@ -79,8 +70,8 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
     entry->type = PTLCTFREE;
     entry->u.ctFree.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                        sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -251,14 +242,6 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
         (ptl_iface.ni[ct.s.ni].refcount == 0)) {
         VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
                       ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
-        return PTL_ARG_INVALID;
-    }
-    if (ct_events[ct.s.ni] == NULL) {
-        VERBOSE_ERROR("CT table for NI uninitialized\n");
-        return PTL_ARG_INVALID;
-    }
-    if (ct_event_refcounts[ct.s.ni][ct.s.code] == 0) {
-        VERBOSE_ERROR("CT appears to be deallocated\n");
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */

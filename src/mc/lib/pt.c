@@ -22,7 +22,8 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
+                                    (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("Invalid NI passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
@@ -37,10 +38,18 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("Invalid EQ passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
-    if ((pt_index_req > nit_limits[ni.s.ni].max_pt_index) && (pt_index_req != PTL_PT_ANY)) {
+    if ((pt_index_req > nit_limits[ni.s.ni].max_pt_index) && 
+                                            (pt_index_req != PTL_PT_ANY)) {
         VERBOSE_ERROR("Invalid pt_index request passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
     }
+
+    if ( (pt_index_req != PTL_PT_ANY) && 
+                        pt_is_inuse( ni.s.ni, pt_index_req ) ) { 
+        VERBOSE_ERROR("currently used pt_index request passed to PtlPTAlloc\n");
+        return PTL_ARG_INVALID;
+    }
+    
     if (pt_index == NULL) {
         VERBOSE_ERROR("Invalid pt_index pointer (NULL) passed to PtlPTAlloc\n");
         return PTL_ARG_INVALID;
@@ -55,8 +64,8 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     entry->u.ptAlloc.ni_handle = ni;
     entry->u.ptAlloc.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -71,10 +80,10 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("Not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
-        VERBOSE_ERROR
-            ("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0) or nit not initialized\n",
-            ni.s.ni, ni.s.code);
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
+                                    (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+        VERBOSE_ERROR ("ni.s.ni too big (%u >= 4) or ni.s.code wrong (%u != 0)"
+                        " or nit not initialized\n", ni.s.ni, ni.s.code);
         return PTL_ARG_INVALID;
     }
     if (pt_index == PTL_PT_ANY) {
@@ -84,6 +93,11 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
     if (pt_index > nit_limits[ni.s.ni].max_pt_index) {
         VERBOSE_ERROR("pt_index is too big (%u > %u)\n", pt_index,
                       nit_limits[ni.s.ni].max_pt_index);
+        return PTL_ARG_INVALID;
+    }
+
+    if ( ! pt_is_inuse( ni.s.ni, pt_index ) ) { 
+        VERBOSE_ERROR("pt_index is not in use\n");
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
@@ -96,8 +110,8 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
     entry->u.ptFree.ni_handle = ni;
     entry->u.ptFree.pt_index = pt_index;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }

@@ -43,6 +43,6 @@ ptl_iface_get_rank(ptl_iface_t *iface)
     return iface->my_ppe_rank;
 }
 
-
-
 #endif
+/* vim:set expandtab: */
+

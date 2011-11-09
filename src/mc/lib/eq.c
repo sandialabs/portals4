@@ -12,26 +12,6 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-const ptl_internal_handle_converter_t eq_none = {
-    .s = {
-        .selector = HANDLE_EQ_CODE,
-        .ni       = ((1 << HANDLE_NI_BITS) - 1),
-        .code     = ((1 << HANDLE_CODE_BITS) - 1)
-    }
-};
-
-typedef struct {
-#if 0
-    ptl_internal_event_t *ring;
-    uint32_t              size;
-    eq_off_t              leading_head, lagging_head, leading_tail, lagging_tail;
-#endif
-} ptl_internal_eq_t ALIGNED (CACHELINE_WIDTH);
-
-
-static ptl_internal_eq_t *eqs[4] = { NULL, NULL, NULL, NULL };
-static uint64_t          *eq_refcounts[4] = { NULL, NULL, NULL, NULL };
-
 int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                ptl_size_t       count,
                ptl_handle_eq_t *eq_handle)
@@ -69,8 +49,8 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     entry->u.eqAlloc.count = count;
     entry->u.eqAlloc.addr = NULL;
     
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
-                        sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     *eq_handle = eq_hc.a;
     return PTL_OK;
@@ -96,8 +76,8 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
     entry->type = PTLEQFREE;
     entry->u.eqFree.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
     
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
-                        sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -178,8 +158,7 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
     const ptl_internal_handle_converter_t eq = { handle };
 
     if (eq.s.selector != HANDLE_EQ_CODE) {
-        VERBOSE_ERROR("Expected EQ handle, but it's not one (%u != %u, 0x%lx, 0x%lx)\n",
-                      eq.s.selector, HANDLE_EQ_CODE, handle, eq_none.i);
+        VERBOSE_ERROR("selector not a EQ selector (%i)\n", eq.s.selector);
         return PTL_ARG_INVALID;
     }
     if ((none_ok == 1) && (handle == PTL_EQ_NONE)) {
@@ -187,18 +166,9 @@ int INTERNAL PtlInternalEQHandleValidator(ptl_handle_eq_t handle,
     }
     if ((eq.s.ni > 3) || (eq.s.code > nit_limits[eq.s.ni].max_eqs) ||
         (ptl_iface.ni[eq.s.ni].refcount == 0)) {
-        VERBOSE_ERROR("EQ NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+        VERBOSE_ERROR("EQ NI too large (%u > 3) or code is wrong (%u > %u)"
+                " or nit table is uninitialized\n",
                       eq.s.ni, eq.s.code, nit_limits[eq.s.ni].max_cts);
-        return PTL_ARG_INVALID;
-    }
-    if (eqs[eq.s.ni] == NULL) {
-        VERBOSE_ERROR("EQ table for NI uninitialized\n");
-        return PTL_ARG_INVALID;
-    }
-    __sync_synchronize();
-    if (eq_refcounts[eq.s.ni][eq.s.code] == 0) {
-        VERBOSE_ERROR("EQ(%i,%i) appears to be deallocated\n", (int)eq.s.ni,
-                      (int)eq.s.code);
         return PTL_ARG_INVALID;
     }
     return PTL_OK;
