@@ -23,7 +23,7 @@ static int send_message_shmem(buf_t *buf, int signaled)
 
 	buf->shmem.source = buf->obj.obj_ni->shmem.index;
 
-	PtlInternalFragmentToss(buf->obj.obj_ni, buf,
+	shmem_enqueue(buf->obj.obj_ni, buf,
 				buf->dest.shmem.local_rank);
 
 	return PTL_OK;
@@ -270,7 +270,7 @@ int PtlNIInit_shmem(ni_t *ni)
 
 	/* Allocate a pool of buffers in the mmapped region. */
 	ni->shmem.per_proc_comm_buf_size =
-		sizeof(NEMESIS_blocking_queue) +
+		sizeof(queue_t) +
 		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
@@ -337,10 +337,10 @@ int PtlNIInit_shmem(ni_t *ni)
 	shm_fd = -1;
 
 	/* Now we can create the buffer pool */
-	PtlInternalFragmentSetup(ni);
+	queue_init(ni);
 
 	/* The buffer is right after the nemesis queue. */
-	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.receiveQ + 1);
+	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.queue + 1);
 
 	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
 					POOL_SBUF, (obj_t *)ni);

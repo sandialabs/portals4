@@ -46,4 +46,3 @@ static inline void *atomic_swap_ptr(void *volatile *addr,
 }
 
 #endif /* PTL_INTERNAL_ATOMIC_H */
-/* vim:set expandtab: */

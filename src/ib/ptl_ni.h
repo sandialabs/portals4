@@ -5,6 +5,8 @@
 #ifndef PTL_NI_H
 #define PTL_NI_H
 
+struct queue;
+
 /*
  * rank_entry_t
  *	per private rank table entry info
@@ -116,7 +118,7 @@ typedef struct ni {
 		int world_size;		/* number of ranks on the node */
 		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
-		struct NEMESIS_blocking_queue *receiveQ;
+		struct queue *queue;
 		char *comm_pad_shm_name;
 	} shmem;
 

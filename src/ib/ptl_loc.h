@@ -80,8 +80,6 @@ extern unsigned int linesize;
 #include "ptl_hdr.h"
 
 /* SHMEM. */
-#include "ptl_internal_assert.h"
-#include "ptl_internal_alignment.h"
 #include "ptl_nemesis.h"
 
 extern int debug;
