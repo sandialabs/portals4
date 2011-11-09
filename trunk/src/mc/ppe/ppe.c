@@ -40,7 +40,7 @@ cm_disconnect_cb(int remote_id)
 static int
 cm_recv_cb(int remote_id, void *buf, size_t len) 
 {
-    int ret;
+    int ret, ack = 0;
     ptl_cq_info_t *rem_info = (ptl_cq_info_t*) buf;
 
     fprintf(stderr, "Server got message from %d: %p,%ld\n", remote_id, buf, len);
@@ -48,6 +48,12 @@ cm_recv_cb(int remote_id, void *buf, size_t len)
     ret = ptl_cq_attach(cq_h, rem_info);
     if (ret < 0) {
         perror("ptl_cq_attach");
+        return -1;
+    }
+
+    ret = ptl_cm_server_send(cm_h, remote_id, &ack, sizeof(ack));
+    if (ret < 0) {
+        perror("ptl_cq_server_send");
         return -1;
     }
 
@@ -117,6 +123,7 @@ main(int argc, char *argv[])
 
             if (entry.type == PTLNIINIT_LIMITS) {
                 ptl_cq_entry_alloc(cq_h, &send_entry);
+                send_entry->type = PTLNIINIT_LIMITS;
                 send_entry->u.niInitLimits.ni_limits = entry.u.niInitLimits.ni_limits;
                 send_entry->u.niInitLimits.ni_handle = entry.u.niInitLimits.ni_handle;
                 ptl_cq_entry_send(cq_h, entry.u.niInitLimits.ni_handle.s.code,
