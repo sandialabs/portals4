@@ -900,24 +900,35 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	ni = obj_to_ni(trig_ct);
 #endif
 
-	err = buf_alloc(ni, &buf);
-	if (err) {
-		err = PTL_NO_SPACE;
+	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
+		/* Fast path. Condition is already met. */
+		pthread_mutex_lock(&ct->mutex);
+
+		__ct_inc(ct, increment);
+
+		pthread_mutex_unlock(&ct->mutex);
+
 		ct_put(ct);
-		goto err2;
+	} else {
+		err = buf_alloc(ni, &buf);
+		if (err) {
+			err = PTL_NO_SPACE;
+			ct_put(ct);
+			goto err2;
+		}
+
+		buf->type = BUF_TRIGGERED;
+		buf->op = TRIG_CT_INC;
+		buf->ct = ct;
+		buf->value = increment;
+		buf->threshold = threshold;
+
+		pthread_mutex_lock(&trig_ct->mutex);
+
+		__post_trig_ct(buf, trig_ct);
+
+		pthread_mutex_unlock(&trig_ct->mutex);
 	}
-
-	buf->type = BUF_TRIGGERED;
-	buf->op = TRIG_CT_INC;
-	buf->ct = ct;
-	buf->value = increment;
-	buf->threshold = threshold;
-
-	pthread_mutex_lock(&trig_ct->mutex);
-
-	__post_trig_ct(buf, trig_ct);
-
-	pthread_mutex_unlock(&trig_ct->mutex);
 
 	err = PTL_OK;
 err2:
@@ -988,25 +999,34 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	ni = obj_to_ni(trig_ct);
 #endif
 
-	/* get container for triggered ct op */
-	err = buf_alloc(ni, &buf);
-	if (err) {
-		err = PTL_NO_SPACE;
-		ct_put(ct);
-		goto err2;
+	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
+		/* Fast path. Condition already met. */
+		pthread_mutex_lock(&ct->mutex);
+
+		__ct_set(ct, new_ct);
+
+		pthread_mutex_unlock(&ct->mutex);
+	} else {
+		/* get container for triggered ct op */
+		err = buf_alloc(ni, &buf);
+		if (err) {
+			err = PTL_NO_SPACE;
+			ct_put(ct);
+			goto err2;
+		}
+
+		buf->type = BUF_TRIGGERED;
+		buf->op = TRIG_CT_SET;
+		buf->ct = ct;
+		buf->value = new_ct;
+		buf->threshold = threshold;
+
+		pthread_mutex_lock(&trig_ct->mutex);
+
+		__post_trig_ct(buf, trig_ct);
+
+		pthread_mutex_unlock(&trig_ct->mutex);
 	}
-
-	buf->type = BUF_TRIGGERED;
-	buf->op = TRIG_CT_SET;
-	buf->ct = ct;
-	buf->value = new_ct;
-	buf->threshold = threshold;
-
-	pthread_mutex_lock(&trig_ct->mutex);
-
-	__post_trig_ct(buf, trig_ct);
-
-	pthread_mutex_unlock(&trig_ct->mutex);
 
 	err = PTL_OK;
 err2:
