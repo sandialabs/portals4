@@ -3,37 +3,51 @@
   <repeat count="2">
     <subtest>
       <desc>Test PtlNIInit without init</desc>
-      <ptl_ni_init ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ni_init ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIFini without init</desc>
-      <ptl_ni_fini ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ni_fini ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIStatus without init</desc>
-      <ptl_ni_status ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ni_status ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIHandle without init</desc>
-      <ptl_ni_handle ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ni_handle ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIFini with bad ni_handle</desc>
-      <ptl>
-        <ptl_ni_fini ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni_fini ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIStatus with bad ni_handle</desc>
-      <ptl>
-        <ptl_ni_status ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni_status ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIHandle with bad handle</desc>
-      <ptl>
-        <ptl_ni_handle handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni_handle handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIInit with bad options (1)</desc>
@@ -49,15 +63,19 @@
     </subtest>
     <subtest>
       <desc>Test PtlNIInit with bad options (3)</desc>
-      <ptl>
-        <ptl_ni_init ni_opt="LOGICAL PHYSICAL" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni_init ni_opt="LOGICAL PHYSICAL" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIInit with bad options (4)</desc>
-      <ptl>
-        <ptl_ni_init ni_opt="MATCH NO_MATCH LOGICAL PHYSICAL" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni_init ni_opt="MATCH NO_MATCH LOGICAL PHYSICAL" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlNIInit unsupported options</desc>

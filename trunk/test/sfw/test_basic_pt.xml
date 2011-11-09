@@ -3,19 +3,27 @@
   <repeat count="2">
     <subtest>
       <desc>Test PtlPTAlloc without init</desc>
-      <ptl_pt_alloc ret="NO_INIT"/>
+      <arg_check>
+        <ptl_pt_alloc ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTFree without init</desc>
-      <ptl_pt_free ret="NO_INIT"/>
+      <arg_check>
+        <ptl_pt_free ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTDisable without init</desc>
-      <ptl_pt_disable ret="NO_INIT"/>
+      <arg_check>
+        <ptl_pt_disable ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTEnable without init</desc>
-      <ptl_pt_enable ret="NO_INIT"/>
+      <arg_check>
+        <ptl_pt_enable ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTAlloc with unsupported options</desc>
@@ -25,9 +33,11 @@
     </subtest>
     <subtest>
       <desc>Test PtlPTAlloc with bad ni_handle</desc>
-      <ptl>
-        <ptl_pt_alloc ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_pt_alloc ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTAlloc with missing EQ</desc>
@@ -96,9 +106,11 @@
     </subtest>
     <subtest>
       <desc>Test PtlPTFree with ni_handle = INVALID</desc>
-      <ptl>
-        <ptl_pt_free ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_pt_free ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTFree with no PtlPTAlloc</desc>
@@ -128,9 +140,11 @@
     </subtest>
     <subtest>
       <desc>Test PtlPTDisable with invalid ni_handle</desc>
-      <ptl>
-        <ptl_pt_disable ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_pt_disable ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTDisable with no PtlPTAlloc</desc>
@@ -159,9 +173,11 @@
     </subtest>
     <subtest>
       <desc>Test PtlPTEnable with invalid ni_handle</desc>
-      <ptl>
-        <ptl_pt_enable ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_pt_enable ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlPTEnable with no PtlPTAlloc</desc>

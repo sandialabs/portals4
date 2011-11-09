@@ -3,109 +3,149 @@
   <repeat count="2">
     <subtest>
       <desc>Test PtlCTAlloc without init</desc>
-      <ptl_ct_alloc ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_alloc ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTFree without init</desc>
-      <ptl_ct_free ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_free ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTGet without init</desc>
-      <ptl_ct_get ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_get ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTWait without init</desc>
-      <ptl_ct_wait ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_wait ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTPoll without init</desc>
-      <ptl_ct_poll ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_poll ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTSet without init</desc>
-      <ptl_ct_set ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_set ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTInc without init</desc>
-      <ptl_ct_inc ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_inc ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTAlloc with bad ni_handle</desc>
-      <ptl>
-        <ptl_ct_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_alloc ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTFree with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_free ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_free ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTFree with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_free ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_free ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTGet with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_get ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_get ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTGet with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_get ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_get ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTWait with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_wait ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_wait ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTWait with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_wait ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_wait ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTPoll with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_poll ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_poll ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTPoll with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_poll ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_poll ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTSet with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_set ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_set ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTSet with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_set ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_set ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTInc with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_inc ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_inc ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTInc with bad ct_handle</desc>
-      <ptl>
-        <ptl_ct_inc ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_inc ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTAlloc/Free with good parameters</desc>
@@ -142,13 +182,15 @@
     </subtest>
     <subtest>
       <desc>Test PtlCTInc with both success and failure</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_ct>
-            <ptl_ct_inc ct_event_success="7" ct_event_failure="3" ret="ARG_INVALID"/>
-          </ptl_ct>
-        </ptl_ni>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni>
+            <ptl_ct>
+              <ptl_ct_inc ct_event_success="7" ct_event_failure="3" ret="ARG_INVALID"/>
+            </ptl_ct>
+          </ptl_ni>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTInc with success</desc>
@@ -373,15 +415,19 @@
       <desc>Test PtlCTPoll two callers 1 match 1 timeout</desc>
       <ptl>
         <ptl_ni>
+        <ompi_rt>
           <ptl_ct>
             <threads count="3">
               <if thread_id="0">
+                <barrier/>
                 <ptl_ct_poll time="130" ct_test="15" ret="CT_NONE_REACHED"/>
               </if>
               <if thread_id="1">
+                <barrier/>
                 <ptl_ct_poll time="130" ct_test="10"/>
               </if>
               <if thread_id="2">
+                <barrier/>
                 <msleep count="50"/>
                 <repeat count="10">
                   <ptl_ct_inc ct_event_success="1"/>
@@ -389,41 +435,50 @@
               </if>
             </threads>
           </ptl_ct>
+        </ompi_rt>
         </ptl_ni>
       </ptl>
     </subtest>
     <subtest>
       <desc>Test PtlCTCancelTriggered without init</desc>
-      <ptl_ct_cancel_trig ret="NO_INIT"/>
+      <arg_check>
+        <ptl_ct_cancel_trig ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTCancelTriggered with ct_handle = CT_NONE</desc>
-      <ptl>
-        <ptl_ct_cancel_trig ct_handle="CT_NONE" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_cancel_trig ct_handle="CT_NONE" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTCancelTriggered with ct_handle = INVALID</desc>
-      <ptl>
-        <ptl_ct_cancel_trig ct_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ct_cancel_trig ct_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlCTCancelTriggered with valid operation</desc>
-      <ptl>
-        <ptl_ni>
-          <ptl_pt>
-            <ptl_me me_opt="OP_PUT">
-              <ptl_md>
-                <ptl_ct>
-                  <ptl_trig_put target_id="SELF" threshold="1"/>
-                  <ptl_ct_cancel_trig/>
-                </ptl_ct>
-              </ptl_md>
-            </ptl_me>
-          </ptl_pt>
-        </ptl_ni>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_ni>
+            <ptl_pt>
+              <ptl_me me_opt="OP_PUT">
+                <ptl_md>
+                  <ptl_ct>
+                    <ptl_trig_put target_id="SELF" threshold="1"/>
+                    <ptl_ct_cancel_trig/>
+                  </ptl_ct>
+                </ptl_md>
+              </ptl_me>
+            </ptl_pt>
+          </ptl_ni>
+        </ptl>
+      </arg_check>
     </subtest>
   </repeat>
 </test>
