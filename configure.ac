@@ -188,7 +188,8 @@ AC_CHECK_HEADERS([sys/posix_shm.h], [], [],
 AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h stddef.h \
         stdint.h stdlib.h string.h sys/file.h sys/socket.h \
         unistd.h syscall.h])
-AC_CHECK_HEADER([libxml/parser.h], [have_libxml=1], [have_libxml=0])
+
+AM_PATH_XML2([2.6.0], [have_libxml=1], [have_libxml=0])
 AM_CONDITIONAL([HAVE_LIBXML], [test "$have_libxml" = "1"])
 
 ## --------------- ##
