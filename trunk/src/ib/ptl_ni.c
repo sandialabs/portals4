@@ -776,7 +776,12 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	}
 
 	/* Add a progress thread. */
-	ptl_assert(pthread_create(&ni->catcher, NULL, progress_thread, ni), 0);
+	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
+	if (err) {
+		WARN();
+		err = PTL_FAIL;
+		goto err3;
+	}
 	ni->has_catcher = 1;
 
 	__iface_add_ni(iface, ni);

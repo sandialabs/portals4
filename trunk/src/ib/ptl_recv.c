@@ -469,11 +469,11 @@ void *progress_thread(void *arg)
 
 #ifdef WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */
-		if (ni->shmem.receiveQ) {
+		if (ni->shmem.queue) {
 			int err;
 			buf_t *shmem_buf;
 
-			shmem_buf = PtlInternalFragmentReceive(ni);
+			shmem_buf = shmem_dequeue(ni);
 
 			if (shmem_buf) {
 				switch(shmem_buf->type) {
@@ -492,7 +492,7 @@ void *progress_thread(void *arg)
 
 					/* Send the buffer back. */
 					shmem_buf->type = BUF_SHMEM_RETURN;
-					PtlInternalFragmentToss(ni, shmem_buf, shmem_buf->shmem.source);
+					shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.source);
 				}
 					break;
 
