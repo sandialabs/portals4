@@ -15,17 +15,17 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_md>
                     </if>
@@ -33,13 +33,13 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="PUT"/>
                           <check event_match="0x5aa5"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -67,19 +67,19 @@
                         <ptl_put ack_req="NO_ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
                         <barrier/>
                       </ptl_md>
-                      <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                      <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                     </if>
                     
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="PUT"/>
                           <check event_match="0x5aa5"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -105,12 +105,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
@@ -123,7 +123,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xa5a5" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -151,7 +151,7 @@
                         <barrier/>
                         <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
                         
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
@@ -164,7 +164,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="GET"/>
                           <check event_match="0x3f5c"/>
                           <check event_user_ptr="654"/>
@@ -198,13 +198,13 @@
                         <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
                         <barrier/>
                       </ptl_md>
-                      <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                      <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                     </if>
                     
                     <if rank="1">
                       <ptl_me me_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="GET"/>
                           <check event_match="0x3f5c"/>
                           <check event_user_ptr="654"/>
@@ -237,12 +237,12 @@
                         <barrier/>
                         <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
                         
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_md>
                     </if>
@@ -250,7 +250,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0x725c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -277,12 +277,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
@@ -295,7 +295,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0xebef"/>
                           <check event_user_ptr="654"/>
@@ -331,13 +331,13 @@
                         <ptl_atomic ack_req="NO_ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
                         <barrier/>
                       </ptl_md>
-                      <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                      <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                     </if>
                     
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0xebef"/>
                           <check event_user_ptr="654"/>
@@ -371,12 +371,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
@@ -389,7 +389,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xbeef" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -417,12 +417,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -436,7 +436,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -471,7 +471,7 @@
                           <ptl_md>
                             <barrier/>
                             <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
-                            <ptl_eq_poll time="100">
+                            <ptl_eq_poll time="200">
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
@@ -486,7 +486,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -523,7 +523,7 @@
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
                           <barrier/>
                         </ptl_md>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="523"/>
                           <check event_ni_fail="OK"/>
@@ -535,7 +535,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -570,17 +570,17 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                          <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                           <barrier/>
                         </ptl_md>
                       </ptl_md>
@@ -589,7 +589,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_me>
                     </if>
@@ -616,12 +616,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -635,7 +635,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -671,7 +671,7 @@
                           <ptl_md>
                             <barrier/>
                             <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                            <ptl_eq_poll time="100">
+                            <ptl_eq_poll time="200">
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
@@ -687,7 +687,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" target_id="1" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -724,7 +724,7 @@
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
                           <barrier/>
                         </ptl_md>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="523"/>
                           <check event_ni_fail="OK"/>
@@ -736,7 +736,7 @@
                     <if rank="1">
                       <ptl_me me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY" me_match="0xf32c" me_ignore="0xff00">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_match="0x442c"/>
                           <check event_user_ptr="654"/>
@@ -771,12 +771,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -817,12 +817,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
@@ -835,7 +835,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="PUT"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -875,7 +875,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="PUT"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -907,12 +907,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_put ack_req="ACK" user_ptr="432" match="0x5aa5" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
@@ -925,7 +925,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -952,7 +952,7 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
@@ -965,7 +965,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="GET"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1005,7 +1005,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="GET"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1037,7 +1037,7 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_get user_ptr="234" match="0x3f5c" target_id="1"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
@@ -1050,7 +1050,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1077,12 +1077,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
@@ -1095,7 +1095,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1136,7 +1136,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1169,12 +1169,12 @@
                       <ptl_md>
                         <barrier/>
                         <ptl_atomic ack_req="ACK" user_ptr="265" match="0xebef" target_id="1" atom_op="LOR"/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
@@ -1187,7 +1187,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1215,12 +1215,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -1234,7 +1234,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1269,7 +1269,7 @@
                           <ptl_md>
                             <barrier/>
                             <ptl_fetch user_ptr="523" target_id="1" atom_op="LXOR"/>
-                            <ptl_eq_poll time="100">
+                            <ptl_eq_poll time="200">
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
@@ -1284,7 +1284,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1320,7 +1320,7 @@
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
                           <barrier/>
                         </ptl_md>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="523"/>
                           <check event_ni_fail="OK"/>
@@ -1332,7 +1332,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
@@ -1366,12 +1366,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_fetch user_ptr="523" match="0x442c" target_id="1" atom_op="LXOR"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -1385,7 +1385,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1413,12 +1413,12 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
@@ -1432,13 +1432,13 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                           <check event_atom_op="SWAP"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1467,12 +1467,12 @@
                           <ptl_md>
                             <barrier/>
                             <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                            <ptl_eq_poll time="100">
+                            <ptl_eq_poll time="200">
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
                             </ptl_eq_poll>
-                            <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                            <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                             <barrier/>
                           </ptl_md>
                         </ptl_eq>
@@ -1482,13 +1482,13 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                           <check event_atom_op="SWAP"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1518,25 +1518,25 @@
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
                           <barrier/>
                         </ptl_md>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="523"/>
                           <check event_ni_fail="OK"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                       </ptl_md>
                     </if>
                     
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100">
+                        <ptl_eq_poll time="200">
                           <check event_type="ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                           <check event_atom_op="SWAP"/>
                         </ptl_eq_poll>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
@@ -1564,17 +1564,17 @@
                         <ptl_md>
                           <barrier/>
                           <ptl_swap user_ptr="523" match="0x442c" target_id="1" atom_op="SWAP"/>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="SEND"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100">
+                          <ptl_eq_poll time="200">
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
                           </ptl_eq_poll>
-                          <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                          <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                           <barrier/>
                         </ptl_md>
                       </ptl_md>
@@ -1583,7 +1583,7 @@
                     <if rank="1">
                       <ptl_le le_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" user_ptr="654" uid="ANY">
                         <barrier/>
-                        <ptl_eq_poll time="100" ret="EQ_EMPTY"/>
+                        <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
                       </ptl_le>
                     </if>
