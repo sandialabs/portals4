@@ -28,8 +28,6 @@ libportals_ib_la_SOURCES = \
 	ptl_hdr.h \
 	ptl_id.c \
 	ptl_init.c \
-	ptl_internal_alignment.h \
-	ptl_internal_assert.h \
 	ptl_internal_atomic.h \
 	ptl_le.c \
 	ptl_le.h \
@@ -61,8 +59,8 @@ libportals_ib_la_SOURCES = \
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \
 	ptl_knem.c \
-	ptl_nemesis.c \
-	ptl_nemesis.h \
+	ptl_queue.c \
+	ptl_queue.h \
 	ptl_shmem.c
 endif
 
