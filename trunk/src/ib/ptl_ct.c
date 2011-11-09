@@ -550,7 +550,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 #else
 	for (i = 0; i < size; i++)
 		cts[i] = fast_to_obj(ct_handles[i]);
-	i2 = size;
+	i2 = size - 1;
 	ni = obj_to_ni(cts[0]);
 #endif
 
