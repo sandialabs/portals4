@@ -22,6 +22,8 @@ int test_ptl_ni_init(struct node_info *info)
 				      info->desired_ptr, info->actual_ptr,
 				      info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->ni_handle) {
 		if (info->next_ni >= STACK_SIZE) {
 			printf("NI stack overflow\n");
@@ -41,6 +43,8 @@ int test_ptl_ni_fini(struct node_info *info)
 	int ret;
 
 	ret = PtlNIFini(info->ni_handle);
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_ni == 0) {
@@ -85,6 +89,8 @@ int test_ptl_pt_alloc(struct node_info *info)
 	ret = PtlPTAlloc(info->ni_handle, info->pt_opt,
 		         info->eq_handle, info->pt_index, info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->pt_index) {
 		if (info->next_pt >= STACK_SIZE) {
 			printf("PT stack overflow\n");
@@ -103,6 +109,8 @@ int test_ptl_pt_free(struct node_info *info)
 	while ((ret = PtlPTFree(info->ni_handle, info->pt_index)) ==
 		PTL_PT_IN_USE)
 		sched_yield();
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_pt == 0) {
@@ -131,6 +139,8 @@ int test_ptl_eq_alloc(struct node_info *info)
 
 	ret = PtlEQAlloc(info->ni_handle, info->eq_count, info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->eq_handle) {
 		if (info->next_eq >= STACK_SIZE) {
 			printf("EQ stack overflow\n");
@@ -147,6 +157,8 @@ int test_ptl_eq_free(struct node_info *info)
 	int ret;
 
 	ret = PtlEQFree(info->eq_handle);
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_eq == 0) {
@@ -181,6 +193,8 @@ int test_ptl_ct_alloc(struct node_info *info)
 
 	ret = PtlCTAlloc(info->ni_handle, info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->ct_handle) {
 		if (info->next_ct >= STACK_SIZE) {
 			printf("CT stack overflow\n");
@@ -197,6 +211,8 @@ int test_ptl_ct_free(struct node_info *info)
 	int ret;
 
 	ret = PtlCTFree(info->ct_handle);
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_ct == 0) {
@@ -255,6 +271,8 @@ int test_ptl_md_bind(struct node_info *info)
 	}
 	ret = PtlMDBind(info->ni_handle, &info->md, info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->md_handle) {
 		if (info->next_md >= STACK_SIZE) {
 			printf("MD stack overflow\n");
@@ -301,6 +319,8 @@ int test_ptl_le_append(struct node_info *info)
 					&info->le, info->list, info->user_ptr,
 					info->ptr);
 
+	info->err = ret;
+
 	if (ret == PTL_OK && info->ptr == &info->le_handle) {
 		if (info->next_le >= STACK_SIZE) {
 			printf("LE stack overflow\n");
@@ -318,6 +338,8 @@ int test_ptl_le_unlink(struct node_info *info)
 
 	while ((ret = PtlLEUnlink(info->le_handle)) == PTL_IN_USE);
 		sched_yield();
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_le == 0) {
@@ -339,6 +361,8 @@ int test_ptl_le_search(struct node_info *info)
 	ret = PtlLESearch(info->ni_handle, info->pt_index,
 			  &info->le, info->search_op, info->user_ptr);
 
+	info->err = ret;
+
 	return info->ret != ret;
 }
 
@@ -352,6 +376,8 @@ int test_ptl_me_append(struct node_info *info)
 	ret = PtlMEAppend(info->ni_handle, info->pt_index,
 					&info->me, info->list, info->user_ptr,
 					info->ptr);
+
+	info->err = ret;
 
 	if (ret == PTL_OK && info->ptr == &info->me_handle) {
 		if (info->next_me >= STACK_SIZE) {
@@ -370,6 +396,8 @@ int test_ptl_me_unlink(struct node_info *info)
 
 	while ((ret = PtlMEUnlink(info->me_handle)) == PTL_IN_USE);
 		sched_yield();
+
+	info->err = ret;
 
 	if (ret == PTL_OK) {
 		if (info->next_me == 0) {
@@ -390,6 +418,8 @@ int test_ptl_me_search(struct node_info *info)
 
 	ret = PtlMESearch(info->ni_handle, info->pt_index,
 			  &info->me, info->search_op, info->user_ptr);
+
+	info->err = ret;
 
 	return info->ret != ret;
 }

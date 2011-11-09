@@ -22,6 +22,10 @@
 #include <portals4.h>
 #include <support/support.h>
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "dict.h"
 #include "api.h"
 
@@ -72,6 +76,7 @@ struct node_info {
 	struct node_info	*next;
 	struct node_info	*prev;
 	int			ret;
+	int			err;
 	void			*ptr;
 	int			count;
 	int			cond;

@@ -16,6 +16,7 @@ static struct dict_init {
 	{"if",				TYPE_NODE,		NODE_IF},
 	{"ifdef",			TYPE_NODE,		NODE_IFDEF},
 	{"else",			TYPE_NODE,		NODE_ELSE},
+	{"arg_check",			TYPE_NODE,		NODE_ARG_CHECK},
 	{"test",			TYPE_NODE,		NODE_TEST},
 	{"threads",			TYPE_NODE,		NODE_THREADS},
 	{"subtest",			TYPE_NODE,		NODE_SUBTEST},
@@ -86,6 +87,7 @@ static struct dict_init {
 	{"ptl_get_map",			TYPE_NODE,		NODE_PTL_GET_MAP},
 
 	{"ret",				TYPE_ATTR,		ATTR_RET},
+	{"err",				TYPE_ATTR,		ATTR_ERR},
 	{"ptr",				TYPE_ATTR,		ATTR_PTR},
 	{"count",			TYPE_ATTR,		ATTR_COUNT},
 	{"thread_id",			TYPE_ATTR,		ATTR_THREAD_ID},
