@@ -6,7 +6,13 @@
 
 int test_ptl_init(struct node_info *info)
 {
-	return info->ret != PtlInit();
+	int ret;
+
+	ret = PtlInit();
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 void test_ptl_fini(struct node_info *info)
@@ -59,27 +65,57 @@ int test_ptl_ni_fini(struct node_info *info)
 
 int test_ptl_ni_status(struct node_info *info)
 {
-	return info->ret != PtlNIStatus(info->ni_handle, info->reg, info->ptr);
+	int ret;
+
+	ret = PtlNIStatus(info->ni_handle, info->reg, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ni_handle(struct node_info *info)
 {
-	return info->ret != PtlNIHandle(info->handle, info->ptr);
+	int ret;
+
+	ret = PtlNIHandle(info->handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_handle_is_eq(struct node_info *info)
 {
-	return info->ret != PtlHandleIsEqual(info->handle1, info->handle2);
+	int ret;
+
+	ret = PtlHandleIsEqual(info->handle1, info->handle2);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_get_uid(struct node_info *info)
 {
-	return info->ret != PtlGetUid(info->ni_handle, info->ptr);
+	int ret;
+
+	ret = PtlGetUid(info->ni_handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_get_id(struct node_info *info)
 {
-	return info->ret != PtlGetId(info->ni_handle, info->ptr);
+	int ret;
+
+	ret = PtlGetId(info->ni_handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_pt_alloc(struct node_info *info)
@@ -125,12 +161,24 @@ int test_ptl_pt_free(struct node_info *info)
 
 int test_ptl_pt_disable(struct node_info *info)
 {
-	return info->ret != PtlPTDisable(info->ni_handle, info->pt_index);
+	int ret;
+
+	ret = PtlPTDisable(info->ni_handle, info->pt_index);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_pt_enable(struct node_info *info)
 {
-	return info->ret != PtlPTEnable(info->ni_handle, info->pt_index);
+	int ret;
+
+	ret = PtlPTEnable(info->ni_handle, info->pt_index);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_eq_alloc(struct node_info *info)
@@ -173,18 +221,36 @@ int test_ptl_eq_free(struct node_info *info)
 
 int test_ptl_eq_get(struct node_info *info)
 {
-	return info->ret != PtlEQGet(info->eq_handle, info->ptr);
+	int ret;
+
+	ret = PtlEQGet(info->eq_handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_eq_wait(struct node_info *info)
 {
-	return info->ret != PtlEQWait(info->eq_handle, info->ptr);
+	int ret;
+
+	ret = PtlEQWait(info->eq_handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_eq_poll(struct node_info *info)
 {
-	return info->ret != PtlEQPoll(&info->eq_handle, info->eq_size,
-				      info->timeout, info->ptr, info->which_ptr);
+	int ret;
+
+	ret = PtlEQPoll(&info->eq_handle, info->eq_size,
+			info->timeout, info->ptr, info->which_ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_alloc(struct node_info *info)
@@ -227,35 +293,70 @@ int test_ptl_ct_free(struct node_info *info)
 
 int test_ptl_ct_get(struct node_info *info)
 {
-	return info->ret != PtlCTGet(info->ct_handle, info->ptr);
+	int ret;
+
+	ret = PtlCTGet(info->ct_handle, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_wait(struct node_info *info)
 {
-	return info->ret != PtlCTWait(info->ct_handle, info->ct_test,
-				      info->ptr);
+	int ret;
+
+	ret = PtlCTWait(info->ct_handle, info->ct_test, info->ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_poll(struct node_info *info)
 {
-	return info->ret != PtlCTPoll(&info->ct_handle, &info->ct_test,
-			              info->ct_size, info->timeout, info->ptr,
-				      info->which_ptr);
+	int ret;
+
+	ret = PtlCTPoll(&info->ct_handle, &info->ct_test,
+			info->ct_size, info->timeout, info->ptr,
+			info->which_ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_set(struct node_info *info)
 {
-	return info->ret != PtlCTSet(info->ct_handle, info->ct_event);
+	int ret;
+
+	ret = PtlCTSet(info->ct_handle, info->ct_event);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_inc(struct node_info *info)
 {
-	return info->ret != PtlCTInc(info->ct_handle, info->ct_event);
+	int ret;
+
+	ret = PtlCTInc(info->ct_handle, info->ct_event);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_ct_cancel_trig(struct node_info *info)
 {
-	return info->ret != PtlCTCancelTriggered(info->ct_handle);
+	int ret;
+
+	ret = PtlCTCancelTriggered(info->ct_handle);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_md_bind(struct node_info *info)
@@ -426,139 +527,238 @@ int test_ptl_me_search(struct node_info *info)
 
 int test_ptl_put(struct node_info *info)
 {
-	return info->ret != PtlPut(info->md_handle, info->loc_offset,
-				   info->length, info->ack_req, info->target_id,
-				   info->pt_index, info->match,
-				   info->rem_offset, info->user_ptr,
-				   info->hdr_data);
+	int ret;
+
+	ret = PtlPut(info->md_handle, info->loc_offset,
+		     info->length, info->ack_req, info->target_id,
+		     info->pt_index, info->match,
+		     info->rem_offset, info->user_ptr,
+		     info->hdr_data);
+
+	info->err = ret;
+
+	return info->ret != ret;
 
 }
 
 int test_ptl_get(struct node_info *info)
 {
-	return info->ret != PtlGet(info->md_handle, info->loc_offset,
-				   info->length, info->target_id, info->pt_index,
-				   info->match, info->rem_offset, info->user_ptr);
+	int ret;
+
+	ret = PtlGet(info->md_handle, info->loc_offset,
+		     info->length, info->target_id, info->pt_index,
+		     info->match, info->rem_offset, info->user_ptr);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_atomic(struct node_info *info)
 {
-	return info->ret != PtlAtomic(info->md_handle, info->loc_offset,
-				      info->length, info->ack_req, info->target_id,
-				      info->pt_index, info->match,
-				      info->rem_offset, info->user_ptr,
-				      info->hdr_data, info->atom_op, info->type);
+	int ret;
+
+	ret = PtlAtomic(info->md_handle, info->loc_offset,
+			info->length, info->ack_req, info->target_id,
+			info->pt_index, info->match,
+			info->rem_offset, info->user_ptr,
+			info->hdr_data, info->atom_op, info->type);
+
+	info->err = ret;
+
+	return info->ret != ret;
 
 }
 
 int test_ptl_atomic_sync(struct node_info *info)
 {
-	return info->ret != PtlAtomicSync();
+	int ret;
+
+	ret = PtlAtomicSync();
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_fetch_atomic(struct node_info *info)
 {
-	return info->ret != PtlFetchAtomic(info->get_md_handle,
-					   info->loc_get_offset,
-					   info->put_md_handle,
-					   info->loc_put_offset,
-					   info->length, info->target_id,
-					   info->pt_index, info->match,
-					   info->rem_offset, info->user_ptr,
-					   info->hdr_data, info->atom_op,
-					   info->type);
+	int ret;
+
+	ret = PtlFetchAtomic(info->get_md_handle,
+			     info->loc_get_offset,
+			     info->put_md_handle,
+			     info->loc_put_offset,
+			     info->length, info->target_id,
+			     info->pt_index, info->match,
+			     info->rem_offset, info->user_ptr,
+			     info->hdr_data, info->atom_op,
+			     info->type);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_swap(struct node_info *info)
 {
-	return info->ret != PtlSwap(info->get_md_handle, info->loc_get_offset,
-				    info->put_md_handle, info->loc_put_offset,
-				    info->length, info->target_id, info->pt_index,
-				    info->match, info->rem_offset,
-				    info->user_ptr, info->hdr_data, info->ptr,
-				    info->atom_op, info->type); 
+	int ret;
+
+	ret = PtlSwap(info->get_md_handle, info->loc_get_offset,
+		      info->put_md_handle, info->loc_put_offset,
+		      info->length, info->target_id, info->pt_index,
+		      info->match, info->rem_offset,
+		      info->user_ptr, info->hdr_data, info->ptr,
+		      info->atom_op, info->type); 
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_put(struct node_info *info)
 {
-	return info->ret != PtlTriggeredPut(info->md_handle, info->loc_offset,
-					    info->length, info->ack_req,
-					    info->target_id, info->pt_index,
-					    info->match, info->rem_offset,
-					    info->user_ptr, info->hdr_data,
-					    info->ct_handle, info->threshold);
+	int ret;
+
+	ret = PtlTriggeredPut(info->md_handle, info->loc_offset,
+			      info->length, info->ack_req,
+			      info->target_id, info->pt_index,
+			      info->match, info->rem_offset,
+			      info->user_ptr, info->hdr_data,
+			      info->ct_handle, info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_get(struct node_info *info)
 {
-	return info->ret != PtlTriggeredGet(info->md_handle, info->loc_offset,
-					    info->length, info->target_id,
-					    info->pt_index, info->match,
-					    info->rem_offset, info->user_ptr,
-					    info->ct_handle, info->threshold);
+	int ret;
+
+	ret = PtlTriggeredGet(info->md_handle, info->loc_offset,
+			      info->length, info->target_id,
+			      info->pt_index, info->match,
+			      info->rem_offset, info->user_ptr,
+			      info->ct_handle, info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_atomic(struct node_info *info)
 {
-	return info->ret != PtlTriggeredAtomic(info->md_handle, info->loc_offset,
-					       info->length, info->ack_req,
-					       info->target_id, info->pt_index, info->match,
-					       info->rem_offset, info->user_ptr,
-					       info->hdr_data, info->atom_op, info->type,
-					       info->ct_handle, info->threshold);
+	int ret;
+
+	ret = PtlTriggeredAtomic(info->md_handle, info->loc_offset,
+				 info->length, info->ack_req,
+				 info->target_id, info->pt_index, info->match,
+				 info->rem_offset, info->user_ptr,
+				 info->hdr_data, info->atom_op, info->type,
+				 info->ct_handle, info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_fetch_atomic(struct node_info *info)
 {
-	return info->ret != PtlTriggeredFetchAtomic(info->get_md_handle, info->loc_get_offset,
-					 	    info->put_md_handle, info->loc_put_offset,
-						    info->length, info->target_id, info->pt_index,
-						    info->match, info->rem_offset,
-						    info->user_ptr, info->hdr_data, info->atom_op,
-						    info->type, info->ct_handle,
-						    info->threshold);
+	int ret;
+
+	ret = PtlTriggeredFetchAtomic(info->get_md_handle, info->loc_get_offset,
+				      info->put_md_handle, info->loc_put_offset,
+				      info->length, info->target_id,
+				      info->pt_index, info->match,
+				      info->rem_offset, info->user_ptr,
+				      info->hdr_data, info->atom_op,
+				      info->type, info->ct_handle,
+				      info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_swap(struct node_info *info)
 {
-	return info->ret != PtlTriggeredSwap(info->get_md_handle, info->loc_get_offset,
-					     info->put_md_handle, info->loc_put_offset,
-					     info->length, info->target_id, info->pt_index,
-					     info->match, info->rem_offset,
-					     info->user_ptr, info->hdr_data, info->ptr,
-					     info->atom_op, info->type,
-					     info->ct_handle, info->threshold); 
+	int ret;
+
+	ret = PtlTriggeredSwap(info->get_md_handle, info->loc_get_offset,
+			       info->put_md_handle, info->loc_put_offset,
+			       info->length, info->target_id, info->pt_index,
+			       info->match, info->rem_offset,
+			       info->user_ptr, info->hdr_data, info->ptr,
+			       info->atom_op, info->type,
+			       info->ct_handle, info->threshold); 
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_ct_inc(struct node_info *info)
 {
-	return info->ret != PtlTriggeredCTInc(info->ct_handle, info->ct_event,
-					      info->trig_ct_handle, info->threshold);
+	int ret;
+
+	ret = PtlTriggeredCTInc(info->ct_handle, info->ct_event,
+				info->trig_ct_handle, info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_trig_ct_set(struct node_info *info)
 {
-	return info->ret != PtlTriggeredCTSet(info->ct_handle, info->ct_event,
-					      info->trig_ct_handle, info->threshold);
+	int ret;
+
+	ret = PtlTriggeredCTSet(info->ct_handle, info->ct_event,
+				info->trig_ct_handle, info->threshold);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_start_bundle(struct node_info *info)
 {
-	return info->ret != PtlStartBundle(info->ni_handle);
+	int ret;
+
+	ret = PtlStartBundle(info->ni_handle);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_end_bundle(struct node_info *info)
 {
-	return info->ret != PtlEndBundle(info->ni_handle);
+	int ret;
+
+	ret = PtlEndBundle(info->ni_handle);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_set_map(struct node_info *info)
 {
-	return info->ret != PtlSetMap(info->ni_handle, info->map_size, info->mapping);
+	int ret;
+
+	ret = PtlSetMap(info->ni_handle, info->map_size, info->mapping);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
 
 int test_ptl_get_map(struct node_info *info)
 {
+	int ret;
+
 	if (info->mapping)
 		free(info->mapping);
 
@@ -567,5 +767,10 @@ int test_ptl_get_map(struct node_info *info)
 	else
 		info->mapping = malloc(1);
 
-	return info->ret != PtlGetMap(info->ni_handle, info->get_map_size, info->mapping, &info->actual_map_size);
+	ret = PtlGetMap(info->ni_handle, info->get_map_size,
+			info->mapping, &info->actual_map_size);
+
+	info->err = ret;
+
+	return info->ret != ret;
 }
