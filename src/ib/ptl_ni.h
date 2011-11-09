@@ -153,12 +153,12 @@ typedef struct ni {
 			struct rank_entry	*rank_table;
 			ptl_process_t	*mapping;
 
+#ifdef USE_XRC
 			/* Connection list. This is a set of passive connections,
 			 * used for connections FROM remote ranks. */
 			pthread_mutex_t		lock;
 			struct list_head	connect_list;
 
-#ifdef USE_XRC
 			/* IB XRC support. */
 			int			xrc_domain_fd;
 			struct ibv_xrc_domain	*xrc_domain;

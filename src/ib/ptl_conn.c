@@ -182,6 +182,7 @@ void destroy_conns(ni_t *ni)
 			destroy_conn(conn);
 		}
 
+#ifdef USE_XRC
 		/* Destroy passive connections. */
 		while(!list_empty(&ni->logical.connect_list)) {
 			conn_t *conn = list_first_entry(&ni->logical.connect_list, conn_t, list);
@@ -190,6 +191,7 @@ void destroy_conns(ni_t *ni)
 			destroy_conn(conn);
 			free(conn);
 		}
+#endif
 	} else {
 		tdestroy(ni->physical.tree, destroy_physical_conn);
 	}
@@ -302,6 +304,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	return PTL_OK;
 }
 
+#ifdef USE_XRC
 /**
  * Accept a connection request from/to a logical NI.
  *
@@ -349,6 +352,7 @@ static int accept_connection_request_logical(ni_t *ni,
 
 	return ret;
 }
+#endif
 
 /**
  * Accept an RC connection request to self.
@@ -461,12 +465,13 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		goto reject;
 	}
 
-	if (ni->options & PTL_NI_LOGICAL) {
 #ifdef USE_XRC
+	if (ni->options & PTL_NI_LOGICAL) {
 		if (ni->logical.is_main) {
 			ret = accept_connection_request_logical(ni, event);
 			if (!ret) {
-				goto done;
+				/* Good. */
+				return ret;
 			}
 			
 			WARN();
@@ -479,23 +484,16 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 			rej.reason = REJECT_REASON_GOOD_SRQ;
 			rej.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
 		}
-#else
-		ret = accept_connection_request_logical(ni, event);
-		if (!ret) {
-			goto done;
-		}
-			
-		WARN();
-		rej.reason = REJECT_REASON_ERROR;
-#endif
 
 		goto reject;
 	}
-
-	/* From now on, it's only for connections to a physical NI. */
-	assert(ni->options & PTL_NI_PHYSICAL);
+#endif
 
 	conn = get_conn(ni, priv->src_id);
+	if (!conn) {
+		rej.reason = REJECT_REASON_ERROR;
+		goto reject;
+	}
 
 	pthread_mutex_lock(&conn->mutex);
 
@@ -536,7 +534,6 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 
 	pthread_mutex_unlock(&conn->mutex);
 
- done:
 	return ret;
 
  reject:

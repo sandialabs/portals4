@@ -751,9 +751,9 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	if (options & PTL_NI_PHYSICAL) {
 		pthread_spin_init(&ni->physical.lock, PTHREAD_PROCESS_PRIVATE);
 	} else {
+#ifdef USE_XRC
 		pthread_mutex_init(&ni->logical.lock, NULL);
 		INIT_LIST_HEAD(&ni->logical.connect_list);
-#ifdef USE_XRC
 		ni->logical.xrc_domain_fd = -1;
 #endif
 	}
