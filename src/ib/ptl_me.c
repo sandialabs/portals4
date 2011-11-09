@@ -126,7 +126,8 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 		goto err3;
 	}
 #else
-	me->ct = me_handle_p ? fast_to_obj(me_init->ct_handle) : NULL;
+	me->ct = (me_handle_p && me_init->ct_handle != PTL_CT_NONE) ?
+			fast_to_obj(me_init->ct_handle) : NULL;
 #endif
 
 	if (me_handle_p) {
@@ -316,6 +317,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 {
 	int err;
 	me_t *me;
+	int ref_cnt;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -329,11 +331,17 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	me = fast_to_obj(me_handle);
 #endif
 
+	ref_cnt = me_ref_cnt(me);
+
 	/* There should only be 2 references on the object before we can
 	 * release it. */
-	if (me->obj.obj_ref.ref_cnt > 2) {
+	if (ref_cnt > 2) {
 		me_put(me);
 		err = PTL_IN_USE;
+		goto err1;
+	} else if (ref_cnt < 2) {
+		me_put(me);
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
