@@ -149,27 +149,39 @@ int PtlNIInit(ptl_interface_t       iface,
         }
         nit_limits[ni.s.ni] = recv_entry.u.niInitLimits.ni_limits;
 
-#if 0
         ptl_iface.ni[ni.s.ni].shared_mem = malloc( 
-            sizeof( ptl_internal_le_t) * returned_limits.max_list_size + 
-            sizeof( ptl_internal_md_t) * returned_limits.max_mds +
-            sizeof( ptl_internal_me_t) * returned_limits.max_list_size +
-            sizeof( ptl_internal_ct_t) * returned_limits.max_cts +
-            sizeof( ptl_internal_eq_t) * returned_limits.max_eqs +
-            sizeof( ptl_internal_pt_t) * returned_limits.max_pt_index
+            sizeof( ptl_internal_le_t) * nit_limits[ni.s.ni].max_list_size + 
+            sizeof( ptl_internal_md_t) * nit_limits[ni.s.ni].max_mds +
+            sizeof( ptl_internal_me_t) * nit_limits[ni.s.ni].max_list_size +
+            sizeof( ptl_internal_ct_t) * nit_limits[ni.s.ni].max_cts +
+            sizeof( ptl_internal_eq_t) * nit_limits[ni.s.ni].max_eqs +
+            sizeof( ptl_internal_pt_t) * nit_limits[ni.s.ni].max_pt_index
         );
         ptl_iface.ni[ni.s.ni].i_le = ptl_iface.ni[ni.s.ni].shared_mem;
         ptl_iface.ni[ni.s.ni].i_md = (void*) (ptl_iface.ni[ni.s.ni].i_le + 
-                                            returned_limits.max_list_size);
+                                            nit_limits[ni.s.ni].max_list_size);
         ptl_iface.ni[ni.s.ni].i_me = (void*) (ptl_iface.ni[ni.s.ni].i_md + 
-                                            returned_limits.max_mds );
+                                            nit_limits[ni.s.ni].max_mds );
         ptl_iface.ni[ni.s.ni].i_ct = (void*) (ptl_iface.ni[ni.s.ni].i_me + 
-                                            returned_limits.max_list_size );
+                                            nit_limits[ni.s.ni].max_list_size );
         ptl_iface.ni[ni.s.ni].i_eq = (void*) (ptl_iface.ni[ni.s.ni].i_ct + 
-                                            returned_limits.max_cts );
+                                            nit_limits[ni.s.ni].max_cts );
         ptl_iface.ni[ni.s.ni].i_pt = (void*) (ptl_iface.ni[ni.s.ni].i_eq + 
-                                            returned_limits.max_eqs );
-#endif
+                                            nit_limits[ni.s.ni].max_eqs );
+
+        ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+
+        entry->type = PTLNIINIT_PTRS;
+        entry->u.niInitPtrs.lePtr = ptl_iface.ni[ni.s.ni].i_le;
+        entry->u.niInitPtrs.mdPtr = ptl_iface.ni[ni.s.ni].i_md;
+        entry->u.niInitPtrs.mePtr = ptl_iface.ni[ni.s.ni].i_me;
+        entry->u.niInitPtrs.ctPtr = ptl_iface.ni[ni.s.ni].i_ct;
+        entry->u.niInitPtrs.eqPtr = ptl_iface.ni[ni.s.ni].i_eq;
+        entry->u.niInitPtrs.ptPtr = ptl_iface.ni[ni.s.ni].i_pt;
+
+        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface),
+                          entry, sizeof(ptl_cqe_t));
+    
 
         __sync_synchronize();
         ptl_iface.ni[ni.s.ni].limits_refcount = 1;

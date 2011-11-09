@@ -1,8 +1,6 @@
 #ifndef PTL_INTERNAL_GLOBAL_H
 #define PTL_INTERNAL_GLOBAL_H
 
-#include <assert.h>
-
 #include "ptl_internal_nit.h"
 #include "ptl_internal_iface.h"
 
@@ -16,7 +14,7 @@ find_md_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
 }
 
 static inline int 
@@ -35,7 +33,7 @@ find_le_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
 }
 
 static inline int
@@ -54,7 +52,7 @@ find_me_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
 }
 
 static inline int
@@ -73,7 +71,13 @@ find_pt_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
+}
+
+static inline void 
+mark_pt_inuse( int ni, int pt_index )
+{
+    ptl_iface.ni[ni].i_pt[ pt_index ].in_use = 1;
 }
 
 static inline int
@@ -92,7 +96,7 @@ find_ct_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
 }
 
 static inline int
@@ -105,7 +109,7 @@ find_eq_index(int ni)
             return index;
         }
     }
-    assert(0);
+    return -1;
 }
 
 #endif

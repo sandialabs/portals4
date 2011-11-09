@@ -56,13 +56,25 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    if ( pt_index_req == PTL_PT_ANY ) {
+        *pt_index = find_pt_index(ni.s.ni); 
+        if ( *pt_index == -1 ) {
+            return PTL_PT_FULL;
+        }
+    } else {
+        *pt_index = pt_index_req;
+        mark_pt_inuse( ni.s.ni, pt_index_req ); 
+    }
+
     ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLPTALLOC;
     entry->u.ptAlloc.ni_handle = ni;
+    entry->u.ptAlloc.options = options;
     entry->u.ptAlloc.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
+    entry->u.ptAlloc.pt_index =  *pt_index;
 
     ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
                 ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );

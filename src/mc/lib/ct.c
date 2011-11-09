@@ -35,6 +35,10 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 
     ct_hc.s.code = find_ct_index( ni.s.ni ); 
 
+    if ( ct_hc.s.code == -1 ) {
+        return PTL_FAIL;
+    }
+
     ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
@@ -122,15 +126,6 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
-    ptl_cqe_t *entry;
-
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
-
-    entry->type = PTLCTALLOC;
-
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                        sizeof(ptl_cqe_t) );
-
     return PTL_OK;
 }
 

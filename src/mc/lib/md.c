@@ -50,6 +50,11 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     int md_index = find_md_index( ni.s.ni );
+
+    if ( md_index == - 1) {
+        return PTL_FAIL;
+    }
+
     ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );

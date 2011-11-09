@@ -39,6 +39,9 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     eq_hc.s.code = find_eq_index( ni_hc.s.ni);
+    if ( eq_hc.s.code == -1 ) {
+        return PTL_FAIL;
+    }
 
     ptl_cqe_t *entry;
         

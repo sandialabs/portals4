@@ -41,6 +41,9 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     me_hc.s.code = find_me_index( ni.s.ni );
+    if ( me_hc.s.code == - 1 ) {
+        return PTL_LIST_TOO_LONG;
+    }
 
     ptl_cqe_t *entry;
 

@@ -43,6 +43,10 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 
     le_hc.s.code = find_le_index( ni.s.ni );
 
+    if ( le_hc.s.code == -1 ) {
+        return PTL_LIST_TOO_LONG;
+    }
+
     ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
