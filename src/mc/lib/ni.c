@@ -148,8 +148,6 @@ int PtlNIInit(ptl_interface_t       iface,
             return PTL_FAIL;
         }
         nit_limits[ni.s.ni] = recv_entry.u.niInitLimits.ni_limits;
-        __sync_synchronize();
-        ptl_iface.ni[ni.s.ni].limits_refcount = 1;
 
 #if 0
         ptl_iface.ni[ni.s.ni].shared_mem = malloc( 
@@ -173,6 +171,8 @@ int PtlNIInit(ptl_interface_t       iface,
                                             returned_limits.max_eqs );
 #endif
 
+        __sync_synchronize();
+        ptl_iface.ni[ni.s.ni].limits_refcount = 1;
     } else {
         if ((pid != PTL_PID_ANY) && pid != ptl_iface.ni[ni.s.ni].pid) {
             return PTL_ARG_INVALID;
@@ -214,7 +214,9 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
 
         entry->type = PTLNIFINI;
         entry->u.niFini.ni_handle = ni;
-        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), 
+        entry->u.niInit.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
+        ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                          ptl_iface_get_peer(&ptl_iface), 
                           entry, sizeof(ptl_cqe_t));
     }
 
