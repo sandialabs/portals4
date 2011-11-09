@@ -32,13 +32,14 @@ void le_cleanup(void *arg)
 {
 	le_t *le = arg;
 	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = le->pt;
 
 	if (le->ct)
 		ct_put(le->ct);
 
-	if (pt)
+	if (le->pt) {
 		WARN();
+		le->pt = NULL;
+	}
 
 	if (le->do_auto_free)
 		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
@@ -508,7 +509,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	}
 
 	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
-			      ptl_list, 0, le_handle_p);
+			      ptl_list, search_op, le_handle_p);
 	if (err)
 		goto err2;
 #else
@@ -548,9 +549,13 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 #ifndef NO_ARG_VALIDATION
 	if (le_handle_p) {
 		/* Only append can modify counters. */
-		err = to_ct(le_init->ct_handle, &le->ct);
-		if (err)
-			goto err3;
+		if (le_init->ct_handle != PTL_CT_NONE) {
+			err = to_ct(le_init->ct_handle, &le->ct);
+			if (err)
+				goto err3;
+		} else {
+			le->ct = NULL;
+		}
 	} else {
 		le->ct = NULL;
 	}
@@ -560,7 +565,8 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 		goto err3;
 	}
 #else
-	le->ct = le_handle_p ? fast_to_obj(le_init->ct_handle) : NULL;
+	le->ct = (le_handle_p && le_init->ct_handle != PTL_CT_NONE) ?
+			fast_to_obj(le_init->ct_handle) : NULL;
 #endif
 
 	if (le_handle_p) {
@@ -737,6 +743,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 {
 	int err;
 	le_t *le;
+	int ref_cnt;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -750,12 +757,17 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	le = fast_to_obj(le_handle);
 #endif
 
+	ref_cnt = le_ref_cnt(le);
 
 	/* There should only be 2 references on the object before we can
 	 * release it. */
-	if (le->obj.obj_ref.ref_cnt > 2) {
+	if (ref_cnt > 2) {
 		le_put(le);
 		err = PTL_IN_USE;
+		goto err1;
+	} else if (ref_cnt < 2) {
+		le_put(le);
+		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
