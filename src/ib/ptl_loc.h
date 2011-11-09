@@ -80,7 +80,7 @@ extern unsigned int linesize;
 #include "ptl_hdr.h"
 
 /* SHMEM. */
-#include "ptl_nemesis.h"
+#include "ptl_queue.h"
 
 extern int debug;
 
