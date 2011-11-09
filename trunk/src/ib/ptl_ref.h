@@ -15,8 +15,21 @@
  * Include this into object that requires reference counting.
  */
 typedef struct ref {
-	int ref_cnt; /**< The reference count. */
+	/** The reference count. */
+	int ref_cnt;
 } ref_t;
+
+/**
+ * Return the reference count.
+ *
+ * @param ref the ref to set.
+ *
+ * @return the reference count.
+ */
+static inline int ref_cnt(struct ref *ref)
+{
+	return ref->ref_cnt;
+}
 
 /**
  * Set the reference count.

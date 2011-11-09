@@ -116,6 +116,18 @@ static inline int to_le(ptl_handle_le_t handle, le_t **le_p)
 }
 
 /**
+ * @brief Return the ref count on an LE.
+ *
+ * @param[in] le the LE object.
+ *
+ * @return the ref count.
+ */
+static inline int le_ref_cnt(le_t *le)
+{
+	return obj_ref_cnt(&le->obj);
+}
+
+/**
  * @brief Take a reference to a list element.
  *
  * @param[in] le the LE object to reference.

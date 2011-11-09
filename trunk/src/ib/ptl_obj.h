@@ -213,6 +213,16 @@ int obj_alloc(pool_t *pool, obj_t **p_obj);
 			    sizeof(*(obj))-sizeof(obj_t))
 
 /**
+ * Return the ref count of an object
+ *
+ * @param obj the object
+ */
+static inline int obj_ref_cnt(obj_t *obj)
+{
+	return ref_cnt(&obj->obj_ref);
+}
+
+/**
  * Take a reference to an object.
  *
  * @param obj the object
