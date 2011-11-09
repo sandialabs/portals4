@@ -12,6 +12,7 @@
 #include "shared/ptl_connection_manager.h"
 
 static int have_attached_cq = 0;
+static int state = 0;
 
 static int
 ppe_recv_callback(int remote_id, void *buf, size_t len)
@@ -20,28 +21,34 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
     size_t infolen;
     int ret;
 
-    ret = ptl_cq_info_get(ptl_iface.cq_h, &info, &infolen);
-    if (ret < 0) {
-        perror("ptl_cq_info_get");
-        abort();
+    if (state == 0) {
+        ret = ptl_cq_info_get(ptl_iface.cq_h, &info, &infolen);
+        if (ret < 0) {
+            perror("ptl_cq_info_get");
+            abort();
+        }
+
+        ret = ptl_cm_client_send(ptl_iface.cm_h, info, infolen);
+        if (ret < 0) {
+            perror("ptl_cm_client_send");
+            abort();
+        }
+
+        free(info);
+
+        info = buf;
+        ret = ptl_cq_attach(ptl_iface.cq_h, info);
+        if (ret < 0) {
+            perror("ptl_cq_attach");
+            abort();
+        }
+        state++;
+    } else if (state == 1) {
+        have_attached_cq = 1;
+        state++;
+    } else {
+        fprintf(stderr, "unexpected ppe recv callback\n");
     }
-
-    ret = ptl_cm_client_send(ptl_iface.cm_h, info, infolen);
-    if (ret < 0) {
-        perror("ptl_cm_client_send");
-        abort();
-    }
-
-    free(info);
-
-    info = buf;
-    ret = ptl_cq_attach(ptl_iface.cq_h, info);
-    if (ret < 0) {
-        perror("ptl_cq_attach");
-        abort();
-    }
-
-    have_attached_cq = 1;
 
     return 0;
 }

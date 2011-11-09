@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <strings.h>
+#include <limits.h>
 
 #include "portals4.h"
 
@@ -15,6 +16,24 @@
 
 ptl_ni_limits_t nit_limits[4];
 
+ptl_ni_limits_t default_limits = {
+    1024, /* max_entries */
+    1024, /* max_unexpected_headers */
+    1024, /* max_mds */
+    256,  /* max_cts */
+    256,  /* max_eqs */
+    63,   /* max_pt_index */
+    1,    /* max_iovecs */
+    512,  /* max_list_size */
+    64,   /* max_triggered_ops */
+    LONG_MAX, /* max_msg_size */
+    sizeof(long double), /* max_atomic_size */
+    sizeof(long double), /* max_fetch_atomic_size */
+    sizeof(long double), /* max_waw_ordered_size */
+    sizeof(long double), /* max_war_ordered_size */
+    8,   /* max_volatile_size */
+    0    /* features */
+};
 
 int PtlNIInit(ptl_interface_t       iface,
               unsigned int          options,
@@ -111,7 +130,11 @@ int PtlNIInit(ptl_interface_t       iface,
         entry->type = PTLNIINIT_LIMITS;
         entry->u.niInitLimits.ni_handle = ni;
         entry->u.niInit.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
-        entry->u.niInitLimits.ni_limits = *desired;
+        if (NULL == desired) {
+            entry->u.niInitLimits.ni_limits = default_limits;
+        } else {
+            entry->u.niInitLimits.ni_limits = *desired;
+        }
 
         ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface),
                           entry, sizeof(ptl_cqe_t));
@@ -159,7 +182,9 @@ int PtlNIInit(ptl_interface_t       iface,
     /* wait for ni limits to be ready... */
     while (ptl_iface.ni[ni.s.ni].limits_refcount == 0) { __sync_synchronize(); }
 
-    *actual = nit_limits[ni.s.ni];
+    if (NULL != actual) {
+        *actual = nit_limits[ni.s.ni];
+    }
     *ni_handle = ni.a;
 
     return PTL_OK;
