@@ -7,6 +7,7 @@
 typedef enum {
     PTLNINIT = 1,   
     PTLNIINIT_LIMITS,
+    PTLNIINIT_PTRS,
     PTLNIINIT_RESPONSE,
     PTLNIFINI,
     PTLPTALLOC,
@@ -76,8 +77,18 @@ typedef struct {
 } cmdPtlNIInitLimits_t;
 
 typedef struct {
+    void* lePtr;
+    void* mdPtr;
+    void* mePtr;
+    void* ctPtr;
+    void* eqPtr;
+    void* ptPtr;
+} cmdPtlNIInitPtrs_t;
+
+typedef struct {
     cmdHandle_t ni_handle;
 } cmdPtlNIFini_t;
+
 
 typedef struct {
     cmdHandle_t     ct_handle; 
@@ -253,6 +264,7 @@ typedef struct {
 typedef union {
     cmdPtlNIInit_t      niInit;
     cmdPtlNIInitLimits_t niInitLimits;
+    cmdPtlNIInitPtrs_t  niInitPtrs;
     cmdPtlNIFini_t      niFini;
     cmdPtlCTAlloc_t     ctAlloc;
     cmdPtlCTFree_t      ctFree;
