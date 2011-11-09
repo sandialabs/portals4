@@ -6,10 +6,10 @@
 
 #include "ptl_loc.h"
 
-/* TODO make these unnecessary by queuing defered xi/xl's */
+/* TODO make these unnecessary by queuing deferred operations */
 static void __ct_check(ct_t *ct);
-static void __post_trig_ct(xl_t *xl, ct_t *trig_ct);
-static void do_trig_ct_op(xl_t *xl);
+static void __post_trig_ct(struct buf *buf, ct_t *trig_ct);
+static void do_trig_ct_op(struct buf *buf);
 
 /**
  * @brief Initialize a ct object once when created.
@@ -23,8 +23,7 @@ int ct_init(void *arg, void *unused)
 
 	pthread_mutex_init(&ct->mutex, NULL);
 	pthread_cond_init(&ct->cond, NULL);
-	INIT_LIST_HEAD(&ct->buf_list);
-	INIT_LIST_HEAD(&ct->xl_list);
+	INIT_LIST_HEAD(&ct->trig_list);
 
 	return PTL_OK;
 }
@@ -53,8 +52,7 @@ int ct_new(void *arg)
 {
 	ct_t *ct = arg;
 
-	assert(list_empty(&ct->buf_list));
-	assert(list_empty(&ct->xl_list));
+	assert(list_empty(&ct->trig_list));
 
 	ct->waiters = 0;
 	ct->interrupt = 0;
@@ -267,18 +265,17 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	pthread_mutex_lock(&ct->mutex);
 
-	list_for_each_prev_safe(l, t, &ct->buf_list) {
+	list_for_each_prev_safe(l, t, &ct->trig_list) {
 		buf_t *buf = list_entry(l, buf_t, list);
 		list_del(l);
-		buf->init_state = STATE_INIT_CLEANUP;
-		process_init(buf);
-	}
-
-	list_for_each_prev_safe(l, t, &ct->xl_list) {
-		xl_t *xl = list_entry(l, xl_t, list);
-		list_del(l);
-		ct_put(xl->ct);
-		free(xl);
+		if (buf->type == BUF_INIT) {
+			buf->init_state = STATE_INIT_CLEANUP;
+			process_init(buf);
+		} else {
+			assert(buf->type == BUF_TRIGGERED);
+			ct_put(buf->ct);
+			buf_put(buf);
+		}
 	}
 
 	pthread_mutex_unlock(&ct->mutex);
@@ -649,7 +646,7 @@ static void __ct_check(ct_t *ct)
 	if (ct->waiters)
 		pthread_cond_broadcast(&ct->cond);
 
-	/* wake up callers to PollCTPoll if any */
+	/* wake up callers to PtlCTPoll if any */
 	pthread_mutex_lock(&ni->ct_wait_mutex);
 	if (ni->ct_waiters)
 		pthread_cond_broadcast(&ni->ct_wait_cond);
@@ -659,33 +656,30 @@ static void __ct_check(ct_t *ct)
 	 * can now be performed or discarded
 	 * TODO this should enqueue the xi to a list and then unwind
 	 * all the ct locks before calling process_init */
-	list_for_each_prev_safe(l, t, &ct->buf_list) {
+	list_for_each_prev_safe(l, t, &ct->trig_list) {
 		buf_t *buf = list_entry(l, buf_t, list);
-		if (ct->interrupt) {
-			list_del(l);
-			buf->init_state = STATE_INIT_CLEANUP;
-			process_init(buf);
-		} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
-			list_del(l);
-			process_init(buf);
-		}
-	}
 
-	/* check to see if any pending triggered ct operations
-	 * can now be performed or discarded
-	 * TODO this should enqueue the xl to a list and then unwind
-	 * all the ct locks before calling do_trig_ct_op */
-	list_for_each_prev_safe(l, t, &ct->xl_list) {
-		xl_t *xl = list_entry(l, xl_t, list);
-		if (ct->interrupt) {
-			list_del(l);
-			ct_put(xl->ct);
-			free(xl);
-		} else if ((ct->event.success + ct->event.failure) >= xl->threshold) {
-			list_del(l);
-			pthread_mutex_unlock(&ct->mutex);
-			do_trig_ct_op(xl);
-			pthread_mutex_lock(&ct->mutex);
+		if (buf->type == BUF_INIT) {
+			if (ct->interrupt) {
+				list_del(l);
+				buf->init_state = STATE_INIT_CLEANUP;
+				process_init(buf);
+			} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
+				list_del(l);
+				process_init(buf);
+			}
+		} else {
+			assert(buf->type == BUF_TRIGGERED);
+			if (ct->interrupt) {
+				list_del(l);
+				ct_put(buf->ct);
+				buf_put(buf);
+			} else if ((ct->event.success + ct->event.failure) >= buf->threshold) {
+				list_del(l);
+				pthread_mutex_unlock(&ct->mutex);
+				do_trig_ct_op(buf);
+				pthread_mutex_lock(&ct->mutex);
+			}
 		}
 	}
 }
@@ -849,7 +843,7 @@ err0:
  * threshold increment the ct with handle ct_handle
  * by the amount increment.
  *
- * xl holds a reference to ct until it gets processed
+ * buf holds a reference to ct until it gets processed
  *
  * @param ct_handle the handle of the ct on which to
  * perform the triggered ct operation
@@ -873,7 +867,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	ct_t *ct;
 	ct_t *trig_ct;
 	ni_t *ni;
-	xl_t *xl;
+	buf_t *buf;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -906,21 +900,22 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	ni = obj_to_ni(trig_ct);
 #endif
 
-	xl = xl_alloc();
-	if (!xl) {
+	err = buf_alloc(ni, &buf);
+	if (err) {
 		err = PTL_NO_SPACE;
 		ct_put(ct);
 		goto err2;
 	}
 
-	xl->op = TRIG_CT_INC;
-	xl->ct = ct;
-	xl->value = increment;
-	xl->threshold = threshold;
+	buf->type = BUF_TRIGGERED;
+	buf->op = TRIG_CT_INC;
+	buf->ct = ct;
+	buf->value = increment;
+	buf->threshold = threshold;
 
 	pthread_mutex_lock(&trig_ct->mutex);
 
-	__post_trig_ct(xl, trig_ct);
+	__post_trig_ct(buf, trig_ct);
 
 	pthread_mutex_unlock(&trig_ct->mutex);
 
@@ -942,7 +937,7 @@ err0:
  * threshold set the ct with handle ct_handle
  * to the value new_ct
  *
- * xl holds a reference to ct until it gets processed
+ * buf holds a reference to ct until it gets processed
  *
  * @param ct_handle the handle of the ct on which to
  * perform the triggered ct operation
@@ -964,7 +959,7 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	ct_t *ct;
 	ct_t *trig_ct;
 	ni_t *ni;
-	xl_t *xl;
+	buf_t *buf;
 
 	/* convert handles to objects */
 #ifndef NO_ARG_VALIDATION
@@ -994,21 +989,22 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 #endif
 
 	/* get container for triggered ct op */
-	xl = xl_alloc();
-	if (!xl) {
+	err = buf_alloc(ni, &buf);
+	if (err) {
 		err = PTL_NO_SPACE;
 		ct_put(ct);
 		goto err2;
 	}
 
-	xl->op = TRIG_CT_SET;
-	xl->ct = ct;
-	xl->value = new_ct;
-	xl->threshold = threshold;
+	buf->type = BUF_TRIGGERED;
+	buf->op = TRIG_CT_SET;
+	buf->ct = ct;
+	buf->value = new_ct;
+	buf->threshold = threshold;
 
 	pthread_mutex_lock(&trig_ct->mutex);
 
-	__post_trig_ct(xl, trig_ct);
+	__post_trig_ct(buf, trig_ct);
 
 	pthread_mutex_unlock(&trig_ct->mutex);
 
@@ -1026,11 +1022,11 @@ err0:
 /**
  * @brief Perform triggered ct operation.
  *
- * @param[in] xl
+ * @param[in] buf
  */
-static void do_trig_ct_op(xl_t *xl)
+static void do_trig_ct_op(buf_t *buf)
 {
-	ct_t *ct = xl->ct;
+	ct_t *ct = buf->ct;
 
 	/* we're a zombie */
 	if (ct->interrupt)
@@ -1038,20 +1034,22 @@ static void do_trig_ct_op(xl_t *xl)
 
 	pthread_mutex_lock(&ct->mutex);
 
-	switch(xl->op) {
+	switch(buf->op) {
 	case TRIG_CT_SET:
-		__ct_set(ct, xl->value);
+		__ct_set(ct, buf->value);
 		break;
 	case TRIG_CT_INC:
-		__ct_inc(ct, xl->value);
+		__ct_inc(ct, buf->value);
 		break;
+	default:
+		assert(0);
 	}
 
 	pthread_mutex_unlock(&ct->mutex);
 
 done:
 	ct_put(ct);
-	free(xl);
+	buf_put(buf);
 }
 
 /**
@@ -1069,7 +1067,7 @@ void post_ct(buf_t *buf, ct_t *ct)
 		process_init(buf);
 		return;
 	}
-	list_add(&buf->list, &ct->buf_list);
+	list_add(&buf->list, &ct->trig_list);
 	pthread_mutex_unlock(&ct->mutex);
 }
 
@@ -1079,19 +1077,19 @@ void post_ct(buf_t *buf, ct_t *ct)
  *
  * @pre caller should hold trig_ct->mutex
  *
- * @param[in] xl
+ * @param[in] buf
  * @param[in] trig_ct
  */
-static void __post_trig_ct(xl_t *xl, ct_t *trig_ct)
+static void __post_trig_ct(buf_t *buf, ct_t *trig_ct)
 {
 	if ((trig_ct->event.failure + trig_ct->event.success) >=
-	    xl->threshold) {
-		/* TODO enqueue xl somewhere */
+	    buf->threshold) {
+		/* TODO enqueue buf somewhere */
 		pthread_mutex_unlock(&trig_ct->mutex);
-		do_trig_ct_op(xl);
+		do_trig_ct_op(buf);
 		pthread_mutex_lock(&trig_ct->mutex);
 	} else {
-		list_add(&xl->list, &trig_ct->xl_list);
+		list_add(&buf->list, &trig_ct->trig_list);
 	}
 }
 

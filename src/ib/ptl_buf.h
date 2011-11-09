@@ -20,8 +20,9 @@ enum buf_type {
 	BUF_SHMEM,
 	BUF_SHMEM_RETURN,
 
-	BUF_INIT,
-	BUF_TGT
+	BUF_INIT,					/* initiator buffer */
+	BUF_TGT,					/* target buffer */
+	BUF_TRIGGERED				/* triggered operation buffer */
 };
 
 /* Event mask */
@@ -150,6 +151,20 @@ struct buf {
 			ptl_size_t		put_resid;
 			ptl_size_t		get_resid;
 			uint32_t		rdma_dir;
+		};
+
+		/*
+		 * pending triggered ct operation info.
+		 */
+		struct {
+			enum trig_ct_op		op;		/**< type of triggered ct
+										   operation */
+			ct_t			*ct;		/**< counting event to perform
+										   triggered operation on */
+			ptl_ct_event_t		value;		/**< counting event data for
+											   triggered ct operation */
+			ptl_size_t		threshold;	/**< trigger threshold for
+										   triggered ct operation */
 		};
 	};
 

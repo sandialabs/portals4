@@ -73,9 +73,9 @@ extern unsigned int linesize;
 #include "ptl_md.h"
 #include "ptl_le.h"
 #include "ptl_me.h"
+#include "ptl_ct.h"
 #include "ptl_buf.h"
 #include "ptl_eq.h"
-#include "ptl_ct.h"
 #include "ptl_data.h"
 #include "ptl_hdr.h"
 

@@ -5,16 +5,16 @@
 #ifndef PTL_CT_H
 #define PTL_CT_H
 
+struct buf;
+
 /**
  * Counting event object.
  */
 struct ct {
 	obj_t			obj;		/**< object base class */
 	ptl_ct_event_t		event;		/**< counting event data */
-	struct list_head	buf_list;	/**< list head of pending
+	struct list_head	trig_list;	/**< list head of pending
 						     triggered operations */
-	struct list_head	xl_list;	/**< list head of pending
-						     triggered ct operations */
 	struct list_head        list;		/**< list member of allocated
 						     counting events */
 	int			interrupt;	/**< flag indicating ct is
@@ -39,24 +39,6 @@ enum ct_bytes {
 	CT_MBYTES,	/**< count modified/actual bytes */
 };
 
-/**
- * pending triggered ct operation info.
- */
-struct xl {
-	struct list_head        list;		/**< member of list of pending
-						     ct operations */
-	enum trig_ct_op		op;		/**< type of triggered ct
-						     operation */
-	ct_t			*ct;		/**< counting event to perform
-						     triggered operation on */
-	ptl_ct_event_t		value;		/**< counting event data for
-						     triggered ct operation */
-	ptl_size_t		threshold;	/**< trigger threshold for
-						     triggered ct operation */
-};
-
-typedef struct xl xl_t;
-
 int ct_init(void *arg, void *unused);
 
 void ct_fini(void *arg);
@@ -65,11 +47,11 @@ int ct_new(void *arg);
 
 void ct_cleanup(void *arg);
 
-void post_ct(buf_t *buf, ct_t *ct);
+void post_ct(struct buf *buf, ct_t *ct);
 
-void post_ct_local(xl_t *xl, ct_t *ct);
+void post_ct_local(struct buf *buf, ct_t *ct);
 
-void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes);
+void make_ct_event(ct_t *ct, struct buf *buf, enum ct_bytes bytes);
 
 /**
  * Allocate a new ct object.
@@ -157,16 +139,6 @@ static inline int ct_put(ct_t *ct)
 static inline ptl_handle_ct_t ct_to_handle(ct_t *ct)
 {
         return (ptl_handle_ct_t)ct->obj.obj_handle;
-}
-
-/**
- * Allocate a new triggered ct operation.
- *
- * @return address of new xl
- */
-static inline xl_t *xl_alloc(void)
-{
-	return malloc(sizeof(xl_t));
 }
 
 #endif /* PTL_CT_H */
