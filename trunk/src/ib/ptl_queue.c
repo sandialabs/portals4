@@ -32,25 +32,14 @@ static void enqueue(ni_t *ni, queue_t *restrict queue, buf_t *buf)
 	if (off_prev == 0)
 		queue->head = off;
 	else
-		OFF2PTR(ni,off_prev)->obj.next = (void *)off;
-
-#ifdef USE_HARD_POLLING
-#else
-	/* awake waiter */
-	__sync_synchronize();
-	if (atomic_read(&queue->frustration)) {
-		// TODO why twice?
-		if (atomic_read(&queue->frustration))
-			atomic_set(&queue->frustration, 0);
-	}
-#endif
+		OFF2PTR(ni, off_prev)->obj.next = (void *)off;
 }
 
 /**
- * @brief dequeue a buf from a shared memory qhead.
+ * @brief dequeue a buf from a shared memory queue.
  *
  * @param[in] ni the network interface.
- * @param[in] q the qhead.
+ * @param[in] queue the queue.
  *
  * @return a buf.
  */
@@ -104,7 +93,6 @@ void queue_init(ni_t *ni)
 	queue->head = 0;
 	queue->tail = 0;
 	queue->shadow_head = 0;
-	atomic_set(&queue->frustration, 0);
 
 	ni->shmem.queue = queue;
 }

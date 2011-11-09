@@ -28,7 +28,7 @@ libportals_ib_la_SOURCES = \
 	ptl_hdr.h \
 	ptl_id.c \
 	ptl_init.c \
-	ptl_internal_atomic.h \
+	ptl_sync.h \
 	ptl_le.c \
 	ptl_le.h \
 	ptl_loc.h \
@@ -53,7 +53,7 @@ libportals_ib_la_SOURCES = \
 	ptl_ref.h \
 	ptl_send.c \
 	ptl_tgt.c \
-	ptl_types.h \
+	ptl_list.h \
 	tree.h
 
 if WITH_TRANSPORT_SHMEM

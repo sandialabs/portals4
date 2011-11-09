@@ -20,7 +20,6 @@ struct queue {
 	unsigned long		shadow_head;
 	uint8_t			pad2[CACHELINE_WIDTH -
 					sizeof(unsigned long)];
-	atomic_t		frustration;
 };
 
 typedef struct queue queue_t;
