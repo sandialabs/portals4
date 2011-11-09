@@ -513,8 +513,8 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 #else
 	for (i = 0; i < size; i++)
 		eqs[i] = fast_to_obj(eq_handles[i]);
+	i2 = size - 1;
 	ni = obj_to_ni(eqs[0]);
-	i2 = size;
 #endif
 
 	clock_gettime(CLOCK_REALTIME, &expire);
@@ -606,7 +606,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 #ifndef NO_ARG_VALIDATION
 err2:
 #endif
-	for (i = 0; i < i2; i++)
+	for (i = i2; i >= 0; i--)
 		eq_put(eqs[i]);
 	free(eqs);
 err1:
