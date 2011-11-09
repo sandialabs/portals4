@@ -2,23 +2,31 @@
 <test>
   <subtest>
     <desc>Test PtlGetUid without init</desc>
-    <ptl_get_uid ret="NO_INIT"/>
+    <arg_check>
+      <ptl_get_uid ret="NO_INIT"/>
+    </arg_check>
   </subtest>
   <subtest>
     <desc>Test PtlGetId without init</desc>
-    <ptl_get_id ret="NO_INIT"/>
+    <arg_check>
+      <ptl_get_id ret="NO_INIT"/>
+    </arg_check>
   </subtest>
   <subtest>
     <desc>Test PtlGetUid with ni_handle = INVALID</desc>
-    <ptl>
-      <ptl_get_uid ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
+    <arg_check>
+      <ptl>
+        <ptl_get_uid ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </arg_check>
   </subtest>
   <subtest>
     <desc>Test PtlGetId with ni_handle = INVALID</desc>
-    <ptl>
-      <ptl_get_id ni_handle="INVALID" ret="ARG_INVALID"/>
-    </ptl>
+    <arg_check>
+      <ptl>
+        <ptl_get_id ni_handle="INVALID" ret="ARG_INVALID"/>
+      </ptl>
+    </arg_check>
   </subtest>
   <subtest>
     <desc>Test PtlGetUid with good parameters</desc>

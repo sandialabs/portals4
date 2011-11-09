@@ -899,6 +899,7 @@
     
     <subtest>
       <desc>Test PUT with volatile MD</desc>
+      <arg_check>
       <ptl>
         <ptl_ni ni_opt="MATCH PHYSICAL">
           <ompi_rt>
@@ -969,6 +970,7 @@
           </ompi_rt>
         </ptl_ni>
       </ptl>
+      </arg_check>
     </subtest>
     
   </repeat>

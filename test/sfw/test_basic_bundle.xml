@@ -3,23 +3,31 @@
   <repeat count="2">
     <subtest>
       <desc>Test PtlStartBundle without init</desc>
-      <ptl_start_bundle ret="NO_INIT"/>
+      <arg_check>
+        <ptl_start_bundle ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlEndBundle without init</desc>
-      <ptl_end_bundle ret="NO_INIT"/>
+      <arg_check>
+        <ptl_end_bundle ret="NO_INIT"/>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlStartBundle with NI handle = INVALID</desc>
-      <ptl>
-        <ptl_start_bundle ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_start_bundle ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
     <subtest>
       <desc>Test PtlEndBundle with NI handle = INVALID</desc>
-      <ptl>
-        <ptl_end_bundle ni_handle="INVALID" ret="ARG_INVALID"/>
-      </ptl>
+      <arg_check>
+        <ptl>
+          <ptl_end_bundle ni_handle="INVALID" ret="ARG_INVALID"/>
+        </ptl>
+      </arg_check>
     </subtest>
   </repeat>
 </test>
