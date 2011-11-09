@@ -3,75 +3,110 @@
 
 #include <assert.h>
 
+#include "ptl_internal_nit.h"
+#include "ptl_internal_iface.h"
 
 static inline int
 find_md_index(int ni)
 {
-#if 0
-    int index = -1;
-    int cnt = ptl_global.limits.max_mds;
-    while ( cnt-- ) { 
-        // use options as avail flag 
-        if ( ! ptl_global.mdBase[ ptl_global.mdFreeHint  ].options ) {
-            index = ptl_global.mdFreeHint;
-            ++ptl_global.mdFreeHint;
-
-            ptl_global.mdFreeHint %= ptl_global.limits.max_mds; 
-            break;
+    int index;
+    for ( index = 0; index < nit_limits[ni].max_mds; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_md[ index ].in_use ) {
+            ptl_iface.ni[ni].i_md[ index ].in_use = 1; 
+            return index;
         }
-    } 
-    assert( index != -1 );
-    return index;
-#endif
-    return 0;
+    }
+    assert(0);
 }
 
 static inline int 
 md_is_inuse(int ni, int md_index )
 {
-    return 0;
+    return ( ptl_iface.ni[ni].i_md[ md_index ].in_use == 1 );
 } 
-
-static inline int
-find_ct_index(int ni)
-{
-    return 0;
-}
-
-static inline int
-find_eq_index(int ni)
-{
-    return 0;
-}
 
 static inline int
 find_le_index(int ni)
 {
-    return 0;
+    int index; 
+    for ( index = 0; index < nit_limits[ni].max_list_size; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_le[ index ].in_use ) {
+            ptl_iface.ni[ni].i_le[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    assert(0);
 }
 
 static inline int
 le_is_free( int ni, int le_index )
 {
-    return 0;
+    return ( ptl_iface.ni[ni].i_le[ le_index ].in_use != 1 );
 }
 
 static inline int
 find_me_index(int ni)
 {
-    return 0;
+    int index;
+    for ( index = 0; index < nit_limits[ni].max_list_size; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_me[ index ].in_use ) {
+            ptl_iface.ni[ni].i_me[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    assert(0);
 }
 
 static inline int
 me_is_free( int ni, int me_index )
 {
-    return 0;
+    return ( ptl_iface.ni[ni].i_me[ me_index ].in_use != 1 );
 }
 
 static inline int
 find_pt_index(int ni)
 {
-    return 0;
+    int index ;
+    for ( index = 0; index < nit_limits[ni].max_pt_index; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_pt[ index ].in_use ) {
+            ptl_iface.ni[ni].i_pt[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    assert(0);
+}
+
+static inline int
+pt_is_inuse( int ni, int pt_index )
+{
+    return ( ptl_iface.ni[ni].i_pt[ pt_index ].in_use == 1 );
+}
+
+static inline int
+find_ct_index(int ni)
+{
+    int index;
+    for ( index = 0; index < nit_limits[ni].max_cts; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_ct[ index ].in_use ) {
+            ptl_iface.ni[ni].i_ct[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    assert(0);
+}
+
+static inline int
+find_eq_index(int ni)
+{
+    int index;
+    for ( index = 0; index < nit_limits[ni].max_eqs; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_eq[ index ].in_use ) {
+            ptl_iface.ni[ni].i_eq[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    assert(0);
 }
 
 #endif
+/* vim:set expandtab: */
