@@ -79,6 +79,18 @@ static inline int to_me(ptl_handle_me_t handle, me_t **me_p)
 }
 
 /**
+ * @brief Return the ref count on an ME.
+ *
+ * @param[in] le the ME object.
+ *
+ * @return the ref count.
+ */
+static inline int me_ref_cnt(me_t *me)
+{
+	return obj_ref_cnt(&me->obj);
+}
+
+/**
  * @brief Take a reference to a matching list element.
  *
  * @param[in] le the ME object to reference.
