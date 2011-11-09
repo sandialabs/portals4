@@ -155,7 +155,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 
 		switch (buf->type) {
 		case BUF_SEND:
-			buf_put(buf);		/* from send_message_rdma */
 			break;
 		case BUF_RDMA:
 			list_del(&buf->list);
@@ -167,7 +166,9 @@ static int ni_rcqp_cleanup(ni_t *ni)
 			abort();
 		}
 
-		buf_put(buf);			/* from buf_alloc */
+		/* Free pending references. They can come from send_message_rdma or buf_alloc. */
+		while(buf_ref_cnt(buf))
+			buf_put(buf);
 	}
 
 	return PTL_OK;
