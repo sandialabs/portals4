@@ -506,6 +506,12 @@ static int wait_recv(buf_t *buf)
 
 	hdr = (hdr_t *)buf->recv_buf->data;
 
+	/* Release the put MD. */
+	if (buf->put_md) {
+		md_put(buf->put_md);
+		buf->put_md = NULL;
+	}
+
 	/* get returned fields */
 	buf->ni_fail = hdr->ni_fail;
 	buf->mlength = le64_to_cpu(hdr->length);
@@ -576,10 +582,6 @@ static int data_in(buf_t *buf)
  */
 static int late_send_event(buf_t *buf)
 {
-	/* Release the put MD before posting the SEND event. */
-	md_put(buf->put_md);
-	buf->put_md = NULL;
-
 	if (buf->event_mask & XI_SEND_EVENT)
 		make_send_event(buf);
 
