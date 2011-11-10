@@ -43,9 +43,11 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
             abort();
         }
         state++;
+
     } else if (state == 1) {
         have_attached_cq = 1;
         state++;
+
     } else {
         fprintf(stderr, "unexpected ppe recv callback\n");
     }
@@ -59,27 +61,6 @@ ppe_disconnect_callback(int remote_id)
 {
     fprintf(stderr, "Lost connection to processing engine.  Aborting.\n");
     abort();
-}
-
-
-int
-ptl_ppe_global_init(ptl_iface_t *iface)
-{
-    return 0;
-}
-
-
-int
-ptl_ppe_global_setup(ptl_iface_t *iface)
-{
-    return 0;
-}
-
-
-int
-ptl_ppe_global_fini(ptl_iface_t *iface)
-{
-    return 0;
 }
 
 
@@ -146,4 +127,39 @@ ptl_ppe_disconnect(ptl_iface_t *iface)
     }
 
     return 0;
+}
+
+
+int
+ptl_ppe_progress(ptl_iface_t *iface, int progress_cm)
+{
+    int ret;
+    ptl_cqe_t entry;
+
+    while (1) {
+        if (progress_cm) {
+            ret = ptl_cm_client_progress(iface->cm_h);
+            if (ret < 0) {
+                perror("ptl_cm_server_progress");
+                return -1;
+            }
+        }
+
+        ret = ptl_cq_entry_recv(iface->cq_h, &entry);
+        if (ret < 0) {
+            perror("ptl_cq_entry_recv");
+            return -1;
+        } else if (ret == 0) {
+            if (entry.type != PTLACK) {
+                fprintf(stdout, 
+                        "Found unexpected command queue entry of type %d\n", 
+                        entry.type);
+                return PTL_FAIL;
+            }
+            *(entry.u.ack.retval_ptr) = entry.u.ack.retval;
+            return PTL_OK;
+        }
+    }
+
+    return PTL_OK;
 }

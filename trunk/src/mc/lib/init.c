@@ -35,7 +35,6 @@ PtlFini(void)
     if (0 == __sync_fetch_and_sub(&ptl_iface.init_count, 1)) {
         if (0 != ptl_iface.connection_count) {
             ptl_ppe_disconnect(&ptl_iface);
-            ptl_ppe_global_fini(&ptl_iface);
         }
     }
 }
