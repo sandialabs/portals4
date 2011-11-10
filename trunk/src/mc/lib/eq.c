@@ -50,7 +50,6 @@ int PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     entry->type = PTLEQALLOC;
     entry->u.eqAlloc.eq_handle = ni_hc;
     entry->u.eqAlloc.count = count;
-    entry->u.eqAlloc.addr = NULL;
     
     ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
                     ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
