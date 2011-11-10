@@ -351,7 +351,7 @@ shmid_gen:
     }
 
     /* BWB: FIX ME: This isn't thread safe (parallel NIInit calls may return too quickly) */
-    if (PtlInternalAtomicInc(&(ptl_iface.ni[ni.s.ni].refcount), 1) == 0) {
+    if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), 1) == 0) {
         PtlInternalCTNISetup(ni.s.ni, nit_limits[ni.s.ni].max_cts);
         PtlInternalMDNISetup(ni.s.ni, nit_limits[ni.s.ni].max_mds);
         PtlInternalEQNISetup(ni.s.ni);
@@ -405,13 +405,13 @@ int API_FUNC PtlNIFini(ptl_handle_ni_t ni_handle)
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         VERBOSE_ERROR("Bad NI (%lu)\n", (unsigned long)ni_handle);
         return PTL_ARG_INVALID;
     }
     assert(my_shmid != -1);
 #endif
-    if (PtlInternalAtomicInc(&(ptl_iface.ni[ni.s.ni].refcount), -1) == 1) {
+    if (PtlInternalAtomicInc(&(nit.refcount[ni.s.ni]), -1) == 1) {
         while (nit.internal_refcount[ni.s.ni] != 0) SPINLOCK_BODY();
         PtlInternalDMTeardown();
         PtlInternalCTNITeardown(ni.s.ni);
@@ -446,7 +446,7 @@ int API_FUNC PtlNIStatus(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
     if (status == NULL) {
@@ -500,7 +500,7 @@ int API_FUNC PtlSetMap(ptl_handle_ni_t      ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
@@ -532,7 +532,7 @@ int API_FUNC PtlGetMap(ptl_handle_ni_t ni_handle,
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         VERBOSE_ERROR("NI handle is invalid.\n");
         return PTL_ARG_INVALID;
     }
@@ -561,7 +561,7 @@ int INTERNAL PtlInternalNIValidator(const ptl_internal_handle_converter_t ni)
     if (ni.s.selector != HANDLE_NI_CODE) {
         return PTL_ARG_INVALID;
     }
-    if ((ni.s.ni > 3) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni > 3) || (ni.s.code != 0) || (nit.refcount[ni.s.ni] == 0)) {
         return PTL_ARG_INVALID;
     }
 #endif
