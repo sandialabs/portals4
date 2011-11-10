@@ -61,13 +61,79 @@ cm_recv_cb(int remote_id, void *buf, size_t len)
 }
 
 
+static int
+progress_loop(void)
+{
+    int ret;
+    ptl_cqe_t entry, *send_entry;
+
+    while (0 == done) {
+        ret = ptl_cm_server_progress(cm_h);
+        if (ret < 0) {
+            perror("ptl_cm_server_progress");
+            return -1;
+        }
+
+        ret = ptl_cq_entry_recv(cq_h, &entry);
+        if (ret < 0) {
+            perror("ptl_cq_entry_recv");
+            return -1;
+        } else if (ret == 0) {
+            switch(entry.type) {
+            case PTLNIINIT:
+                ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+                if (ret < 0) {
+                    perror("ptl_cq_entry_alloc");
+                    return -1;
+                }
+
+                send_entry->type = PTLACK;
+                send_entry->u.ack.retval_ptr = entry.u.niInit.retval_ptr;
+                send_entry->u.ack.retval = PTL_OK;
+
+                ret = ptl_cq_entry_send(cq_h, entry.u.niInit.ni_handle.s.code,
+                                        send_entry, sizeof(ptl_cqe_t));
+                if (ret < 0) {
+                    perror("ptl_cq_entry_send");
+                    return -1;
+                }
+                break;
+
+            case PTLNIFINI:
+                ret = ptl_cq_entry_alloc(cq_h, &send_entry);
+                if (ret < 0) {
+                    perror("ptl_cq_entry_alloc");
+                    return -1;
+                }
+
+                send_entry->type = PTLACK;
+                send_entry->u.ack.retval_ptr = entry.u.niInit.retval_ptr;
+                send_entry->u.ack.retval = PTL_OK;
+
+                ret = ptl_cq_entry_send(cq_h, entry.u.niInit.ni_handle.s.code,
+                                        send_entry, sizeof(ptl_cqe_t));
+                if (ret < 0) {
+                    perror("ptl_cq_entry_send");
+                    return -1;
+                }
+                break;
+
+            default:
+                fprintf(stdout, "Found command queue entry of type %d\n", entry.type);
+            }
+        }
+    }
+
+    return PTL_OK;
+}
+
+
 int
 main(int argc, char *argv[])
 {
     int ret;
     int send_queue_size = 32; /* BWB: FIX ME */
     int recv_queue_size = 32; /* BWB: FIX ME */
-    ptl_cqe_t entry;
 
     ret = ptl_cm_server_create(&cm_h);
     if (ret < 0) {
@@ -106,31 +172,10 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    while (0 == done) {
-        ret = ptl_cm_server_progress(cm_h);
-        if (ret < 0) {
-            perror("ptl_cm_server_progress");
-            return -1;
-        }
-
-        ret = ptl_cq_entry_recv(cq_h, &entry);
-        if (ret < 0) {
-            perror("ptl_cq_entry_recv");
-            return -1;
-        } else if (ret == 0) {
-            ptl_cqe_t *send_entry;
-            fprintf(stdout, "Found command queue entry of type %d\n", entry.type);
-
-            if (entry.type == PTLNIINIT_LIMITS) {
-                ptl_cq_entry_alloc(cq_h, &send_entry);
-                send_entry->type = PTLNIINIT_LIMITS;
-                send_entry->u.niInitLimits.ni_limits = entry.u.niInitLimits.ni_limits;
-                send_entry->u.niInitLimits.ni_handle = entry.u.niInitLimits.ni_handle;
-                ptl_cq_entry_send(cq_h, entry.u.niInitLimits.ni_handle.s.code,
-                                  send_entry, sizeof(ptl_cqe_t));
-
-            }
-        }
+    ret = progress_loop();
+    if (ret < 0) {
+        perror("progress_loop");
+        return -1;
     }
 
     free(info);

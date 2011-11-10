@@ -5,10 +5,7 @@
 #include "ptl_internal_handles.h"
 
 typedef enum {
-    PTLNINIT = 1,   
-    PTLNIINIT_LIMITS,
-    PTLNIINIT_PTRS,
-    PTLNIINIT_RESPONSE,
+    PTLNIINIT = 1,   
     PTLNIFINI,
     PTLPTALLOC,
     PTLPTFREE,
@@ -35,6 +32,7 @@ typedef enum {
     PTLFETCHATOMIC,
     PTLSWAP,
     PTLATOMICSYNC,
+    PTLACK
 } ptl_cmd_type_t;
 
 #if 0
@@ -69,24 +67,19 @@ typedef struct {
     ptl_internal_handle_converter_t ni_handle;
     unsigned int options;
     ptl_pid_t pid; 
-} cmdPtlNIInit_t;
-
-typedef struct {
-    ptl_internal_handle_converter_t ni_handle;
-    ptl_ni_limits_t ni_limits;
-} cmdPtlNIInitLimits_t;
-
-typedef struct {
+    ptl_ni_limits_t *limits;
     void* lePtr;
     void* mdPtr;
     void* mePtr;
     void* ctPtr;
     void* eqPtr;
     void* ptPtr;
-} cmdPtlNIInitPtrs_t;
+    int *retval_ptr;
+} cmdPtlNIInit_t;
 
 typedef struct {
     cmdHandle_t ni_handle;
+    int *retval_ptr;
 } cmdPtlNIFini_t;
 
 
@@ -261,10 +254,13 @@ typedef struct {
     int my_id;
 } cmdPtlAtomicSync_t;
 
+typedef struct {
+    int *retval_ptr;
+    int retval;
+} cmdPtlAck_t;
+
 typedef union {
     cmdPtlNIInit_t      niInit;
-    cmdPtlNIInitLimits_t niInitLimits;
-    cmdPtlNIInitPtrs_t  niInitPtrs;
     cmdPtlNIFini_t      niFini;
     cmdPtlCTAlloc_t     ctAlloc;
     cmdPtlCTFree_t      ctFree;
@@ -289,6 +285,7 @@ typedef union {
     cmdPtlFetchAtomic_t      fetchAtomic;
     cmdPtlSwap_t        swap;
     cmdPtlAtomicSync_t  atomicSync;
+    cmdPtlAck_t  ack;
 } ptl_cmd_union_t;
 
 struct ptl_cqe_t {
