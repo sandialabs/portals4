@@ -167,8 +167,19 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    // MJL: add timeout 
-    assert( timeout == PTL_TIME_FOREVER );
+    struct timeval end_time;
+
+    if( timeout != PTL_TIME_FOREVER ) {
+        int retval = gettimeofday( &end_time, NULL ); 
+        assert( retval == 0 );
+        end_time.tv_sec += timeout / 1000;
+        end_time.tv_usec += (timeout % 1000 ) * 1000;
+
+        if ( end_time.tv_usec >= 1000000 ) {
+            end_time.tv_usec -= 1000000;  
+            ++end_time.tv_sec;
+        }
+    }
 
     while( 1 )
     { 
@@ -181,10 +192,17 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
                 return PTL_OK;
             } 
         }
+        if ( timeout != PTL_TIME_FOREVER ) {
+            struct timeval cur_time;
+            int retval = gettimeofday( &cur_time, NULL ); 
+            assert( retval == 0 );
+            if ( cur_time.tv_sec >= end_time.tv_sec && 
+                            cur_time.tv_usec >= end_time.tv_usec ) {
+                return PTL_CT_NONE_REACHED;
+            } 
+        }
         __sync_synchronize();
     }
-
-    return PTL_OK;
 }
 
 int PtlCTSet(ptl_handle_ct_t ct_handle,
