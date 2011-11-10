@@ -301,10 +301,11 @@ int PtlNIInit_shmem(ni_t *ni)
 			goto exit_fail;
 		}
 	} else {
+		int try_count;
+
 		/* Try for 10 seconds. That should leave enough time for rank
 		 * 0 to create the file. */
-		int try_count = 100;
-
+		try_count = 100;
 		do {
 			shm_fd = shm_open(comm_pad_shm_name, O_RDWR,
 					  S_IRUSR | S_IWUSR);
@@ -318,6 +319,29 @@ int PtlNIInit_shmem(ni_t *ni)
 
 		if (shm_fd == -1) {
 			ptl_warn("Couln't open the shared memory file\n");
+			goto exit_fail;
+		}
+
+		/* Wait for the file to have the right size before mmaping
+		 * it. */
+		try_count = 100;
+		do {
+			struct stat buf;
+
+			if (fstat(shm_fd, &buf) == -1) {
+				ptl_warn("Couln't fstat the shared memory file\n");
+				goto exit_fail;
+			}
+
+			if (buf.st_size >= ni->shmem.comm_pad_size)
+				break;
+
+			usleep(100000);		/* 100ms */
+			try_count --;
+		} while(try_count);
+
+		if (try_count >= 100000) {
+			ptl_warn("Shared memory file has wrong size\n");
 			goto exit_fail;
 		}
 	}
@@ -382,6 +406,11 @@ int PtlNIInit_shmem(ni_t *ni)
 		conn->state = CONN_STATE_CONNECTED;
 		conn->shmem.local_rank = i;
 	}
+
+	/* All ranks have mmaped the memory. Get rid of the file. */
+	shm_unlink(ni->shmem.comm_pad_shm_name);
+	free(ni->shmem.comm_pad_shm_name);
+	ni->shmem.comm_pad_shm_name = NULL;
 
 	return PTL_OK;
 
