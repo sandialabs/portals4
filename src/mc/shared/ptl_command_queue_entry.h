@@ -65,27 +65,26 @@ typedef unsigned long cmdAddr_t;
 
 typedef struct {
     ptl_internal_handle_converter_t ni_handle;
-    unsigned int options;
-    ptl_pid_t pid; 
+    unsigned int    options;
+    ptl_pid_t       pid; 
     ptl_ni_limits_t *limits;
-    void* lePtr;
-    void* mdPtr;
-    void* mePtr;
-    void* ctPtr;
-    void* eqPtr;
-    void* ptPtr;
-    int *retval_ptr;
+    void            *lePtr;
+    void            *mdPtr;
+    void            *mePtr;
+    void            *ctPtr;
+    void            *eqPtr;
+    void            *ptPtr;
+    int             *retval_ptr;
 } cmdPtlNIInit_t;
 
 typedef struct {
-    cmdHandle_t ni_handle;
-    int *retval_ptr;
+    cmdHandle_t     ni_handle;
+    int            *retval_ptr;
 } cmdPtlNIFini_t;
 
 
 typedef struct {
     cmdHandle_t     ct_handle; 
-    ptl_ct_event_t *addr;
 } cmdPtlCTAlloc_t;
 
 typedef struct {
@@ -94,7 +93,7 @@ typedef struct {
 
 typedef struct {
     cmdHandle_t     ct_handle; 
-    ptl_ct_event_t  test;
+    ptl_ct_event_t  new_ct;
 } cmdPtlCTSet_t;
 
 typedef struct {
@@ -104,7 +103,6 @@ typedef struct {
 
 typedef struct {
     cmdHandle_t     eq_handle; 
-    void*   addr;
     ptl_size_t      count;
 } cmdPtlEQAlloc_t;
 
@@ -113,24 +111,24 @@ typedef struct {
 } cmdPtlEQFree_t;
 
 typedef struct {
-    cmdHandle_t md_handle; 
-    ptl_md_t md;
+    cmdHandle_t     md_handle; 
+    ptl_md_t        md;
 } cmdPtlMDBind_t;
 
 typedef struct {
-    cmdHandle_t md_handle; 
+    cmdHandle_t     md_handle; 
 } cmdPtlMDRelease_t;
 
 typedef struct {
-    cmdHandle_t  ni_handle;
-    unsigned int options;
-    cmdHandle_t eq_handle;
-    ptl_pt_index_t pt_index;
+    cmdHandle_t     ni_handle;
+    unsigned int    options;
+    cmdHandle_t     eq_handle;
+    ptl_pt_index_t  pt_index;
 } cmdPtlPTAlloc_t;
 
 typedef struct {
-    cmdHandle_t  ni_handle;
-    ptl_pt_index_t pt_index;
+    cmdHandle_t     ni_handle;
+    ptl_pt_index_t  pt_index;
 } cmdPtlPTFree_t;
 
 
@@ -182,23 +180,23 @@ typedef struct {
 } cmdPtlMESearch_t;
 
 typedef struct {
-    cmdHandle_t le_handle;
-    ptl_pt_index_t pt_index;
-    ptl_le_t    le;
-    ptl_list_t  list;
-    void* user_ptr;
+    cmdHandle_t     le_handle;
+    ptl_pt_index_t  pt_index;
+    ptl_le_t        le;
+    ptl_list_t      list;
+    void           *user_ptr;
 } cmdPtlLEAppend_t ;
 
 typedef struct {
-    cmdHandle_t le_handle;
+    cmdHandle_t     le_handle;
 } cmdPtlLEUnlink_t;
 
 typedef struct {
-    cmdHandle_t ni_handle;
-    ptl_pt_index_t pt_index;
-    ptl_le_t    le;
+    cmdHandle_t     ni_handle;
+    ptl_pt_index_t  pt_index;
+    ptl_le_t        le;
     ptl_search_op_t ptl_search_op;
-    void *user_ptr;
+    void           *user_ptr;
 } cmdPtlLESearch_t;
 
 

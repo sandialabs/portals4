@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <sys/time.h>
 #include <assert.h>
 
 #include "portals4.h"
@@ -45,7 +46,6 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 
     entry->type = PTLCTALLOC;
     entry->u.ctAlloc.ct_handle  = ct_hc;
-    entry->u.ctAlloc.addr       = NULL;
 
     ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
                 ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
@@ -97,6 +97,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 int PtlCTGet(ptl_handle_ct_t ct_handle,
              ptl_ct_event_t *event)
 {
+    const ptl_internal_handle_converter_t ct_hc = { ct_handle };
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -108,6 +109,7 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
+    *event = get_ct( ct_hc.s.ni, ct_hc.s.code )->ct_event; 
     return PTL_OK;
 }
 
@@ -126,7 +128,12 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
         return PTL_ARG_INVALID;
     }
 #endif
-    return PTL_OK;
+
+    ptl_size_t  tests;
+    unsigned int which;
+    
+    return PtlCTPoll( &ct_handle, &tests, 1, 
+                        PTL_TIME_FOREVER, event, &which  );
 }
 
 int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
@@ -144,7 +151,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
     if ((ct_handles == NULL) || (tests == NULL) || (size == 0)) {
         return PTL_ARG_INVALID;
     }
-    for (ctidx = 0; ctidx < size; ++ctidx) {
+    for (ctidx = 0; ctidx < size; ctidx++) {
         if (PtlInternalCTHandleValidator(ct_handles[ctidx], 0)) {
             return PTL_ARG_INVALID;
         }
@@ -159,6 +166,23 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
+
+    // MJL: add timeout 
+    assert( timeout == PTL_TIME_FOREVER );
+
+    while( 1 )
+    { 
+        for ( ctidx = 0; ctidx < size; ctidx++ ) {
+            const ptl_internal_handle_converter_t ct_hc = { ct_handles[ctidx] };
+            // should we read the values in place or copy them and read them?
+            *event = get_ct( ct_hc.s.ni, ct_hc.s.code )->ct_event; 
+            if ( event->failure || event->success >= tests[ctidx]  ) {
+                *which = ctidx;
+                return PTL_OK;
+            } 
+        }
+        __sync_synchronize();
+    }
 
     return PTL_OK;
 }
@@ -179,11 +203,11 @@ int PtlCTSet(ptl_handle_ct_t ct_handle,
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->type = PTLCTSET;
-    entry->u.ctSet.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctSet.test      = test;
+    entry->u.ctSet.ct_handle    = ( ptl_internal_handle_converter_t ) ct_handle;
+    entry->u.ctSet.new_ct       = test;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
@@ -209,8 +233,8 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
     entry->u.ctInc.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
     entry->u.ctInc.increment = increment;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface),
+                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
 
     return PTL_OK;
@@ -235,7 +259,8 @@ int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
     }
     if ((ct.s.ni > 3) || (ct.s.code > nit_limits[ct.s.ni].max_cts) ||
         (ptl_iface.ni[ct.s.ni].refcount == 0)) {
-        VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) or nit table is uninitialized\n",
+        VERBOSE_ERROR("CT NI too large (%u > 3) or code is wrong (%u > %u) "
+                        "or nit table is uninitialized\n",
                       ct.s.ni, ct.s.code, nit_limits[ct.s.ni].max_cts);
         return PTL_ARG_INVALID;
     }

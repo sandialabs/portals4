@@ -4,8 +4,10 @@
 #include "ptl_visibility.h"
 
 struct ptl_internal_ct_t {
-    char in_use;
+    char            in_use;
+    ptl_ct_event_t  ct_event;
 };
+
 typedef struct ptl_internal_ct_t ptl_internal_ct_t;
 
 #ifndef NO_ARG_VALIDATION
