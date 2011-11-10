@@ -464,7 +464,7 @@ int check_overflow_search_delete(le_t *le)
 		}
 	}
 
-	return PTL_NI_OK;
+	return PTL_OK;
 }
 
 /**
