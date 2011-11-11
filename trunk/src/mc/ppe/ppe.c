@@ -4,13 +4,13 @@
 #include <stdlib.h>
 
 #include "shared/ptl_connection_manager.h"
-#include "shared/ptl_command_queue.h"
-#include "shared/ptl_command_queue_entry.h"
+
+#include "ppe.h"
 
 static int done = 0;
 
+ptl_ppe_t ppe_ctx;
 ptl_cm_server_handle_t cm_h;
-ptl_cq_handle_t cq_h;
 ptl_cq_info_t *info;
 size_t infolen;
 
@@ -45,7 +45,7 @@ cm_recv_cb(int remote_id, void *buf, size_t len)
 
     fprintf(stderr, "Server got message from %d: %p,%ld\n", remote_id, buf, len);
 
-    ret = ptl_cq_attach(cq_h, rem_info);
+    ret = ptl_cq_attach(ppe_ctx.cq_h, rem_info);
     if (ret < 0) {
         perror("ptl_cq_attach");
         return -1;
@@ -62,10 +62,10 @@ cm_recv_cb(int remote_id, void *buf, size_t len)
 
 
 static int
-progress_loop(void)
+progress_loop( ptl_ppe_t *ctx )
 {
     int ret;
-    ptl_cqe_t entry, *send_entry;
+    ptl_cqe_t entry;
 
     while (0 == done) {
         ret = ptl_cm_server_progress(cm_h);
@@ -74,48 +74,106 @@ progress_loop(void)
             return -1;
         }
 
-        ret = ptl_cq_entry_recv(cq_h, &entry);
+        ret = ptl_cq_entry_recv(ctx->cq_h, &entry);
         if (ret < 0) {
             perror("ptl_cq_entry_recv");
             return -1;
         } else if (ret == 0) {
             switch(entry.type) {
             case PTLNIINIT:
-                ret = ptl_cq_entry_alloc(cq_h, &send_entry);
-                if (ret < 0) {
-                    perror("ptl_cq_entry_alloc");
-                    return -1;
-                }
-
-                send_entry->type = PTLACK;
-                send_entry->u.ack.retval_ptr = entry.u.niInit.retval_ptr;
-                send_entry->u.ack.retval = PTL_OK;
-
-                ret = ptl_cq_entry_send(cq_h, entry.u.niInit.ni_handle.s.code,
-                                        send_entry, sizeof(ptl_cqe_t));
-                if (ret < 0) {
-                    perror("ptl_cq_entry_send");
-                    return -1;
-                }
+                ni_init_impl( ctx, &entry.u.niInit );
                 break;
 
             case PTLNIFINI:
-                ret = ptl_cq_entry_alloc(cq_h, &send_entry);
-                if (ret < 0) {
-                    perror("ptl_cq_entry_alloc");
-                    return -1;
-                }
+                ni_fini_impl( ctx, &entry.u.niFini );
+                break;
 
-                send_entry->type = PTLACK;
-                send_entry->u.ack.retval_ptr = entry.u.niInit.retval_ptr;
-                send_entry->u.ack.retval = PTL_OK;
+            case PTLCTALLOC:
+                ct_alloc_impl( ctx, &entry.u.ctAlloc );
+                break;
 
-                ret = ptl_cq_entry_send(cq_h, entry.u.niInit.ni_handle.s.code,
-                                        send_entry, sizeof(ptl_cqe_t));
-                if (ret < 0) {
-                    perror("ptl_cq_entry_send");
-                    return -1;
-                }
+            case PTLCTFREE:
+                ct_free_impl( ctx, &entry.u.ctFree );
+                break;
+
+            case PTLCTSET:
+                ct_set_impl( ctx, &entry.u.ctSet );
+                break;
+
+            case PTLCTINC:
+                ct_inc_impl( ctx, &entry.u.ctInc );
+                break;
+
+            case PTLEQALLOC:
+                eq_alloc_impl( ctx, &entry.u.eqAlloc );
+                break;
+
+            case PTLEQFREE:
+                eq_free_impl( ctx, &entry.u.eqFree );
+                break;
+
+            case PTLMDBIND:
+                md_bind_impl( ctx, &entry.u.mdBind );
+                break;
+
+            case PTLMDRELEASE:
+                md_release_impl( ctx, &entry.u.mdRelease );
+                break;
+
+            case PTLPUT:
+                put_impl( ctx, &entry.u.put );
+                break;
+
+            case PTLGET:
+                get_impl( ctx, &entry.u.get );
+                break;
+
+            case PTLPTALLOC:
+                pt_alloc_impl( ctx, &entry.u.ptAlloc );
+                break;
+
+            case PTLPTFREE:
+                pt_free_impl( ctx, &entry.u.ptFree );
+                break;
+
+            case PTLMEAPPEND:
+                me_append_impl( ctx, &entry.u.meAppend );
+                break;
+
+            case PTLMEUNLINK:
+                me_unlink_impl( ctx, &entry.u.meUnlink );
+                break;
+
+            case PTLMESEARCH:
+                me_search_impl( ctx, &entry.u.meSearch );
+                break;
+
+            case PTLLEAPPEND:
+                le_append_impl( ctx, &entry.u.leAppend );
+                break;
+
+            case PTLLEUNLINK:
+                le_unlink_impl( ctx, &entry.u.leUnlink );
+                break;
+
+            case PTLLESEARCH:
+                le_search_impl( ctx, &entry.u.leSearch );
+                break;
+
+            case PTLATOMIC:
+                atomic_impl( ctx, &entry.u.atomic );
+                break;
+
+            case PTLFETCHATOMIC:
+                fetch_atomic_impl( ctx, &entry.u.fetchAtomic );
+                break;
+
+            case PTLSWAP:
+                swap_impl( ctx, &entry.u.swap );
+                break;
+
+            case PTLATOMICSYNC:
+                atomic_sync_impl( ctx, &entry.u.atomicSync );
                 break;
 
             default:
@@ -160,19 +218,19 @@ main(int argc, char *argv[])
     }
 
     ret = ptl_cq_create(sizeof(ptl_cqe_t), send_queue_size, 
-                        recv_queue_size, 0, &cq_h);
+                        recv_queue_size, 0, &ppe_ctx.cq_h);
     if (ret < 0) {
         perror("ptl_cq_create");
         return -1;
     }
 
-    ret = ptl_cq_info_get(cq_h, &info, &infolen);
+    ret = ptl_cq_info_get(ppe_ctx.cq_h, &info, &infolen);
     if (ret < 0) {
         perror("ptl_cq_info_get");
         return -1;
     }
 
-    ret = progress_loop();
+    ret = progress_loop(&ppe_ctx);
     if (ret < 0) {
         perror("progress_loop");
         return -1;
@@ -180,7 +238,7 @@ main(int argc, char *argv[])
 
     free(info);
 
-    ret = ptl_cq_destroy(cq_h);
+    ret = ptl_cq_destroy(ppe_ctx.cq_h);
     if (ret < 0) {
         perror("ptl_cq_destroy");
         return -1;

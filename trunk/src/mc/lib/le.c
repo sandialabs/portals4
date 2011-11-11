@@ -51,7 +51,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLEAPPEND;
+    entry->type = PTLLEAPPEND;
     entry->u.leAppend.le_handle = le_hc;
     entry->u.leAppend.pt_index  = pt_index;
     entry->u.leAppend.le        = *le;
@@ -93,7 +93,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLEUNLINK;
+    entry->type = PTLLEUNLINK;
     entry->u.leUnlink.le_handle = le_hc;
 
     ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
@@ -134,7 +134,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLESEARCH;
+    entry->type = PTLLESEARCH;
     entry->u.leSearch.ni_handle = ni;
     entry->u.leSearch.pt_index = pt_index;
     entry->u.leSearch.le = *le;
