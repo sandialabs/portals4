@@ -12,7 +12,19 @@ SUBDIRS = . test
 bin_PROGRAMS = portals_engine
 noinst_LTLIBRARIES = libportals_mc.la libportals_mc_shared.la
 
-portals_engine_SOURCES = ppe/ppe.c
+portals_engine_SOURCES = \
+	ppe/atomic.c \
+	ppe/ct.c \
+	ppe/data_movement.c \
+	ppe/eq.c \
+	ppe/le.c \
+	ppe/md.c \
+	ppe/me.c \
+	ppe/ni.c \
+	ppe/ppe.c \
+	ppe/ppe.h \
+	ppe/pt.c
+
 portals_engine_LDFLAGS = $(XPMEM_LDFLAGS)
 portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
 

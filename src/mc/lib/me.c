@@ -136,7 +136,7 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLESEARCH;
+    entry->type = PTLMESEARCH;
     entry->u.meSearch.ni_handle = ni;
     entry->u.meSearch.pt_index = pt_index;
     entry->u.meSearch.me = *me;
