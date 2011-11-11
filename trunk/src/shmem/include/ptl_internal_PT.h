@@ -27,6 +27,7 @@ int  PtlInternalPTValidate(ptl_table_entry_t *t);
 void PtlInternalPTBufferUnexpectedHeader(ptl_table_entry_t *restrict const           t,
                                          const ptl_internal_header_t *restrict const hdr,
                                          const uintptr_t                             entry_ptr,
+                                         const size_t                                data_size,
                                          const uintptr_t                             data);
 
 #endif /* ifndef PTL_INTERNAL_PT_H */

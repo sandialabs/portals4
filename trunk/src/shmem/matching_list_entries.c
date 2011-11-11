@@ -471,7 +471,8 @@ permission_violation:
                             PtlInternalAnnounceMEDelivery(tEQ,
                                                           me->ct_handle,
                                                           me_options,
-                                                          mlength,
+                                                          //mlength,
+                                                          cur->buffered_size,
                                                           (uintptr_t)cur->buffered_data,
                                                           OVERFLOW,
                                                           Qentry,
@@ -1137,8 +1138,10 @@ check_lengths:
         * Perform the Operation *
         *************************/
         /*
-         * msg_mlength is the total bytecount of the message fragment_mlength is the total bytecount of this packet
-         * remaining is the total bytecount that has not been transmitted yet Thus, the offset from the beginning of the message that this fragment refers to is...
+         * msg_mlength is the total bytecount of the message
+         * fragment_mlength is the total bytecount of this packet
+         * remaining is the total bytecount that has not been transmitted yet
+         * Thus, the offset from the beginning of the message that this fragment refers to is...
          * me.start + dest_offset + (msg_mlength - fragment_mlength - remaining)
          * >_____+--------####====+____<
          * |     |        |   |   |    `--> me.start + me.length
@@ -1253,6 +1256,7 @@ check_lengths:
                 /* cannot be enqueued until after the overflow data has been
                  * delivered */
                 PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
+                                                    fragment_mlength,
                                                     (uintptr_t)report_this_start);
             }
         }
