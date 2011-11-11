@@ -78,6 +78,7 @@ typedef struct {
 
 typedef struct {
     ptl_internal_header_t hdr;
+    size_t                buffered_size;
     void                 *unexpected_entry;
     void                 *buffered_data;
 } ptl_internal_buffered_header_t;

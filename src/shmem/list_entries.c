@@ -908,6 +908,7 @@ check_lengths:
             }
             if ((le.options & PTL_LE_UNEXPECTED_HDR_DISABLE) == 0) {
                 PtlInternalPTBufferUnexpectedHeader(t, hdr, (uintptr_t)entry,
+                                                    fragment_mlength,
                                                     (uintptr_t)report_this_start);
             }
             __sync_synchronize();
