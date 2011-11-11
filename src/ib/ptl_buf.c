@@ -24,6 +24,7 @@ int buf_setup(void *arg)
 	buf->data = buf->internal_data;
 	buf->rdma.recv_wr.next = NULL;
 	buf->rdma_desc_ok = 0;
+	buf->ni_fail = PTL_NI_OK;
 
 	return PTL_OK;
 }
@@ -39,8 +40,6 @@ void buf_cleanup(void *arg)
 {
 	buf_t *buf = arg;
 	int i;
-
-	pthread_spin_destroy(&buf->rdma_list_lock);
 
 	for (i = 0; i < buf->num_mr; i++)
 		mr_put(buf->mr_list[i]);
