@@ -20,6 +20,30 @@
       </arg_check>
     </subtest>
     <subtest>
+      <desc>Test PtlMEAppend on a no matching NI</desc>
+      <arg_check>
+        <ptl>
+          <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+            <ptl_pt>
+              <ptl_me_append me_opt="OP_PUT" uid="ANY" ret="ARG_INVALID"/>
+            </ptl_pt>
+          </ptl_ni>
+        </ptl>
+      </arg_check>
+    </subtest>
+    <subtest>
+      <desc>Test PtlMESearch on a no matching NI</desc>
+      <arg_check>
+        <ptl>
+          <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+            <ptl_pt>
+              <ptl_me_search me_opt="OP_PUT" uid="ANY" ret="ARG_INVALID"/>
+            </ptl_pt>
+          </ptl_ni>
+        </ptl>
+      </arg_check>
+    </subtest>
+    <subtest>
       <desc>Test PtlMEAppend with unsupported options</desc>
       <arg_check>
         <ptl>
@@ -133,7 +157,7 @@
     </subtest>
     <subtest>
       <desc>Test PtlMESearch with bad search_op(2)</desc>
-        <arg_check>
+      <arg_check>
         <ptl>
           <ptl_ni>
             <ptl_me_search search_op="2" ret="ARG_INVALID"/>
