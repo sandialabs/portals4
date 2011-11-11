@@ -183,13 +183,10 @@ void INTERNAL *PtlInternalFragmentFetch(size_t payload_size)
 void INTERNAL PtlInternalFragmentToss(void     *frag,
                                       ptl_pid_t dest)
 {                                      /*{{{ */
-    NEMESIS_blocking_queue *destQ;
-
     if (comm_pads[dest] == NULL) {
         PtlInternalMapInPid(dest);
     }
     assert(comm_pads[dest] != NULL);
-    destQ = &(comm_pads[dest]->receiveQ);
 
     PtlInternalValidateFragmentLists();
     //frag = ((fragment_hdr_t *)frag) - 1;
