@@ -847,7 +847,7 @@ enum md_options {
     MD_UNORDERED,
     MD_EVNT_SUCCESS_DISABLE,
     MD_VOLATILE,
-    MD_OPTIONS_MASK,
+    MD_OPTIONS_MASK
 };
 
 /*! Specifies that this memory descriptor should not generate events that
