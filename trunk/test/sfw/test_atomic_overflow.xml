@@ -257,8 +257,9 @@
                         
                         <ptl_eq_wait>
                           <check event_type="AUTO_FREE"/>
-                        </ptl_eq_wait>                    
-
+                        </ptl_eq_wait>
+                         
+                        
                         <ptl_eq_wait>
                           <check event_type="AUTO_UNLINK"/>
                         </ptl_eq_wait>
@@ -328,7 +329,7 @@
                         <ptl_eq_wait>
                           <check event_type="ATOMIC_OVERFLOW"/>
                         </ptl_eq_wait>
-
+                        
                       </ptl_le>
                     </ptl_le>
                   </if>
@@ -537,8 +538,9 @@
                         
                         <ptl_eq_wait>
                           <check event_type="AUTO_FREE"/>
-                        </ptl_eq_wait>                    
-
+                        </ptl_eq_wait>
+                         
+                        
                         <ptl_eq_wait>
                           <check event_type="AUTO_UNLINK"/>
                         </ptl_eq_wait>
