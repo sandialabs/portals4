@@ -51,7 +51,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with put to me, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -91,7 +91,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with put to me, me disabled</desc>
       <ptl>
         <ptl_ni>
@@ -136,7 +136,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get to me</desc>
       <ptl>
         <ptl_ni>
@@ -182,7 +182,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get to me, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -222,7 +222,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get to me, me disabled</desc>
       <ptl>
         <ptl_ni>
@@ -263,7 +263,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic to me</desc>
       <ptl>
         <ptl_ni>
@@ -315,7 +315,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic to me, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -357,7 +357,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic to me, me disabled</desc>
       <ptl>
         <ptl_ni>
@@ -402,7 +402,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic to me</desc>
       <ptl>
         <ptl_ni>
@@ -455,7 +455,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic to me, put_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -506,7 +506,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic to me, get_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -555,7 +555,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic to me, me disabled</desc>
       <ptl>
         <ptl_ni>
@@ -601,7 +601,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap to me</desc>
       <ptl>
         <ptl_ni>
@@ -655,7 +655,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap to me, put_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -707,7 +707,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap to me, get_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -756,7 +756,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap to me, me disabled</desc>
       <ptl>
         <ptl_ni>
@@ -803,7 +803,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with put le</desc>
       <ptl>
         <ptl_ni>
@@ -853,7 +853,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with put le, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -893,7 +893,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with put le, le disabled</desc>
       <ptl>
         <ptl_ni>
@@ -938,7 +938,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get le</desc>
       <ptl>
         <ptl_ni>
@@ -983,7 +983,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get le, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1023,7 +1023,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with get le, le disabled</desc>
       <ptl>
         <ptl_ni>
@@ -1063,7 +1063,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic le</desc>
       <ptl>
         <ptl_ni>
@@ -1114,7 +1114,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic le, md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1155,7 +1155,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with atomic le, le disabled</desc>
       <ptl>
         <ptl_ni>
@@ -1200,7 +1200,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic le</desc>
       <ptl>
         <ptl_ni>
@@ -1253,7 +1253,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic le, put_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1303,7 +1303,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic le, get_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1351,7 +1351,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with fetch atomic le, le disabled</desc>
       <ptl>
         <ptl_ni>
@@ -1398,7 +1398,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap le</desc>
       <ptl>
         <ptl_ni>
@@ -1451,7 +1451,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap le, put_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1501,7 +1501,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap le, get_md with no eq</desc>
       <ptl>
         <ptl_ni>
@@ -1549,7 +1549,7 @@
         </ptl_ni>
       </ptl>
     </subtest>
-      <subtest>
+    <subtest>
       <desc>Test events with swap le, le disabled</desc>
       <ptl>
         <ptl_ni>
@@ -1596,5 +1596,5 @@
         </ptl_ni>
       </ptl>
     </subtest>
-    </repeat>
+  </repeat>
 </test>

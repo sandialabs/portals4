@@ -415,27 +415,27 @@
       <desc>Test PtlCTPoll two callers 1 match 1 timeout</desc>
       <ptl>
         <ptl_ni>
-        <ompi_rt>
-          <ptl_ct>
-            <threads count="3">
-              <if thread_id="0">
-                <barrier/>
-                <ptl_ct_poll time="130" ct_test="15" ret="CT_NONE_REACHED"/>
-              </if>
-              <if thread_id="1">
-                <barrier/>
-                <ptl_ct_poll time="130" ct_test="10"/>
-              </if>
-              <if thread_id="2">
-                <barrier/>
-                <msleep count="50"/>
-                <repeat count="10">
-                  <ptl_ct_inc ct_event_success="1"/>
-                </repeat>
-              </if>
-            </threads>
-          </ptl_ct>
-        </ompi_rt>
+          <ompi_rt>
+            <ptl_ct>
+              <threads count="3">
+                <if thread_id="0">
+                  <barrier/>
+                  <ptl_ct_poll time="130" ct_test="15" ret="CT_NONE_REACHED"/>
+                </if>
+                <if thread_id="1">
+                  <barrier/>
+                  <ptl_ct_poll time="130" ct_test="10"/>
+                </if>
+                <if thread_id="2">
+                  <barrier/>
+                  <msleep count="50"/>
+                  <repeat count="10">
+                    <ptl_ct_inc ct_event_success="1"/>
+                  </repeat>
+                </if>
+              </threads>
+            </ptl_ct>
+          </ompi_rt>
         </ptl_ni>
       </ptl>
     </subtest>
