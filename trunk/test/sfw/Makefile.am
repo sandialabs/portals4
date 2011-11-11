@@ -19,8 +19,9 @@ XMLTESTS1 = \
 	test_unlink.xml \
 	test_short.xml \
 	test_atomic_logical_lb.xml \
-	test_swap_logical_lb.xml
-
+	test_swap_logical_lb.xml \
+	test_advanced_le.xml \
+	test_advanced_me.xml
 
 XMLTESTS2 = \
 	test_rdma_move_logical.xml \

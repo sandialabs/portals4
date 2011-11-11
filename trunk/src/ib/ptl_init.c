@@ -611,17 +611,23 @@ static int late_send_event(buf_t *buf)
  */
 static int ack_event(buf_t *buf)
 {
+	hdr_t *hdr = (hdr_t *)buf->recv_buf->data;
+
 	/* Release the put MD before posting the ACK event. */
 	if (buf->put_md) {
 		md_put(buf->put_md);
 		buf->put_md = NULL;
 	}
 
-	if (buf->event_mask & XI_ACK_EVENT)
-		make_ack_event(buf);
+	if (hdr->operation != OP_NO_ACK) {
+		if (buf->event_mask & XI_ACK_EVENT)
+			make_ack_event(buf);
 
-	if (buf->event_mask & XI_CT_ACK_EVENT)
-		make_ct_ack_event(buf);
+		if (buf->event_mask & XI_CT_ACK_EVENT)
+			make_ct_ack_event(buf);
+	} else {
+		buf->event_mask &= ~(XI_ACK_EVENT | XI_CT_ACK_EVENT);
+	}
 	
 	return STATE_INIT_CLEANUP;
 }
