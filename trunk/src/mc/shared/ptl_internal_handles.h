@@ -1,9 +1,9 @@
 #ifndef PTL_INTERNAL_HANDLES_H
 #define PTL_INTERNAL_HANDLES_H
 
-#define HANDLE_SELECTOR_BITS 4 
+#define HANDLE_SELECTOR_BITS 6 
 #define HANDLE_NI_BITS       2
-#define HANDLE_CODE_BITS     26
+#define HANDLE_CODE_BITS     24
 
 typedef union {
     uint32_t i;
@@ -30,3 +30,5 @@ typedef union {
 
 #endif /* ifndef PTL_INTERNAL_HANDLES_H */
 /* vim:set expandtab: */
+
+
