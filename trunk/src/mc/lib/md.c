@@ -59,14 +59,15 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLMDBIND;
-    entry->u.mdBind.md_handle.s.ni       = ni.s.ni;
-    entry->u.mdBind.md_handle.s.code     = md_index;
+    entry->base.type = PTLMDBIND;
+    entry->mdBind.md_handle.s.ni       = ni.s.ni;
+    entry->mdBind.md_handle.s.code     = md_index;
 
-    entry->u.mdBind.md = *md;
+    entry->mdBind.md = *md;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+                      ptl_iface_get_peer(&ptl_iface),
+                      entry, sizeof(ptl_cqe_mdbind_t));
 
     md_hc.s.code = md_index;
     md_hc.s.ni  = ni.s.ni;
@@ -93,11 +94,13 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLMDRELEASE;
-    entry->u.mdRelease.md_handle = md_hc;
+    entry->base.type = PTLMDRELEASE;
+    entry->mdRelease.md_handle = md_hc;
     
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-            ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+                      ptl_iface_get_peer(&ptl_iface),
+                      entry, sizeof(ptl_cqe_mdrelease_t));
+
     return PTL_OK;
 }
 

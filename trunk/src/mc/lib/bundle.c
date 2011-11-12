@@ -8,7 +8,8 @@
 #include "shared/ptl_internal_handles.h"
 
 
-int PtlStartBundle(ptl_handle_ni_t ni_handle)
+int
+PtlStartBundle(ptl_handle_ni_t ni_handle)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
@@ -21,11 +22,13 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
         return PTL_ARG_INVALID;
     }
 #endif
-    return PTL_FAIL;
 
+    return PTL_OK;
 }
 
-int PtlEndBundle(ptl_handle_ni_t ni_handle)
+
+int
+PtlEndBundle(ptl_handle_ni_t ni_handle)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
@@ -38,8 +41,8 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
         return PTL_ARG_INVALID;
     }
 #endif
-    return PTL_FAIL;
 
+    return PTL_OK;
 }
 
 /* vim:set expandtab */

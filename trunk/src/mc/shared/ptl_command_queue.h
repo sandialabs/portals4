@@ -7,8 +7,8 @@
  * A user-defined command queue entry.  User must specify size of
  * command queue entry in ptl_cq_create.
  */
-struct ptl_cqe_t;
-typedef struct ptl_cqe_t ptl_cqe_t;
+union ptl_cqe_t;
+typedef union ptl_cqe_t ptl_cqe_t;
 
 
 /* 
@@ -182,6 +182,33 @@ int ptl_cq_entry_free(ptl_cq_handle_t cq_h, ptl_cqe_t* entry);
  */
 int ptl_cq_entry_send(ptl_cq_handle_t cq_h, int index, 
                       ptl_cqe_t *entry, size_t len);
+
+
+/*
+ * ptl_cq_entry_send_block
+ *
+ * send a command queue entry to the remote peer
+ *
+ * Arguments:
+ *  cq_h (IN)            - completion queue handle
+ *  index (IN)           - peer index message target
+ *  entry (IN)           - completion queue entry
+ *  len (IN)             - length of completion queue entry.  Must
+ *                         be no bigger than the max entry size
+ *                         passed to alloc.
+ *
+ * Return values:
+ *  0                    - success
+ *  1                    - no receive slots available at index
+ *  -1                   - other failure (errno will be set)
+ *
+ * Notes:
+ *  ptl_cq_entry_send transfers ownership of the cqe buffer from the
+ *  caller to the implementation.  The caller should not call
+ *  ptl_cq_entry_free on the buffer.
+ */
+int ptl_cq_entry_send_block(ptl_cq_handle_t cq_h, int index, 
+                            ptl_cqe_t *entry, size_t len);
 
 
 /*

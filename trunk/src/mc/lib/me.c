@@ -49,14 +49,15 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLMEAPPEND;
-    entry->u.meAppend.pt_index = pt_index;
-    entry->u.meAppend.me = *me;
-    entry->u.meAppend.list = ptl_list;
-    entry->u.meAppend.user_ptr = user_ptr;
+    entry->base.type = PTLMEAPPEND;
+    entry->meAppend.pt_index = pt_index;
+    entry->meAppend.me = *me;
+    entry->meAppend.list = ptl_list;
+    entry->meAppend.user_ptr = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_meappend_t));
 
     *me_handle = me_hc.a;
 
@@ -92,12 +93,12 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     
-    entry->type = PTLMEUNLINK;
-    entry->u.meUnlink.me_handle = me_hc;
+    entry->base.type = PTLMEUNLINK;
+    entry->meUnlink.me_handle = me_hc;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
-
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                      ptl_iface_get_peer(&ptl_iface),
+                      entry, sizeof(ptl_cqe_meunlink_t));
 
     return PTL_OK;
 }
@@ -136,15 +137,16 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLMESEARCH;
-    entry->u.meSearch.ni_handle = ni;
-    entry->u.meSearch.pt_index = pt_index;
-    entry->u.meSearch.me = *me;
-    entry->u.meSearch.ptl_search_op = ptl_search_op;
-    entry->u.meSearch.user_ptr = user_ptr;
+    entry->base.type = PTLMESEARCH;
+    entry->meSearch.ni_handle = ni;
+    entry->meSearch.pt_index = pt_index;
+    entry->meSearch.me = *me;
+    entry->meSearch.ptl_search_op = ptl_search_op;
+    entry->meSearch.user_ptr = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                      ptl_iface_get_peer(&ptl_iface),
+                      entry, sizeof(ptl_cqe_mesearch_t));
 
     return PTL_OK;
 }

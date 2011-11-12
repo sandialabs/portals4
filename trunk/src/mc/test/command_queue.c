@@ -10,7 +10,7 @@
 
 FILE *debug = NULL;
 
-struct ptl_cqe_t {
+union ptl_cqe_t {
     int count;
 };
 

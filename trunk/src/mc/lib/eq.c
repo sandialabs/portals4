@@ -45,23 +45,23 @@ PtlEQAlloc(ptl_handle_ni_t  ni_handle,
 
     /* Allocate an EQ index and a circular buffer behind the EQ */
     eq_hc.s.code = find_eq_index( ni_hc.s.ni);
-    if ( eq_hc.s.code == -1 ) {
-        return PTL_FAIL;
-    }
-    eq = &ptl_iface.ni[eq_hc.s.ni].i_eq[eq_hc.s.code];
+    if ( eq_hc.s.code == -1 ) return PTL_FAIL;
+
+    eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
     ret = ptl_circular_buffer_init(&eq->cb, count, sizeof(ptl_event_t));
     if (0 != ret) return PTL_FAIL;
 
     /* Send the information to the driver */
     ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
-    entry->type = PTLEQALLOC;
-    entry->u.eqAlloc.eq_handle = eq_hc;
-    entry->u.eqAlloc.eq_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
-    entry->u.eqAlloc.cb = eq->cb;
+    entry->base.type = PTLEQALLOC;
+    entry->eqAlloc.eq_handle = eq_hc;
+    entry->eqAlloc.eq_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->eqAlloc.cb = eq->cb;
     
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
-                      ptl_iface_get_peer(&ptl_iface), 
-                      entry, sizeof(ptl_cqe_t));
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_eqalloc_t));
+    if (0 != ret) return PTL_FAIL;
 
     *eq_handle = eq_hc.a;
     return PTL_OK;
@@ -73,7 +73,6 @@ PtlEQFree(ptl_handle_eq_t eq_handle)
 {
     ptl_cqe_t *entry;
     ptl_circular_buffer_t *cb;
-    ptl_internal_eq_t *eq;
     int ret, cmd_ret = PTL_STATUS_LAST;
     ptl_internal_handle_converter_t eq_hc  = { eq_handle };
 
@@ -88,17 +87,18 @@ PtlEQFree(ptl_handle_eq_t eq_handle)
     }
 #endif     
 
-    eq = &ptl_iface.ni[eq_hc.s.ni].i_eq[eq_hc.s.code];
-    cb = eq->cb;
+    cb = get_eq(eq_hc.s.ni, eq_hc.s.code)->cb;
         
-    ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
-    entry->type = PTLEQFREE;
-    entry->u.eqFree.eq_handle = eq_hc;
-    entry->u.eqFree.retval_ptr = &cmd_ret;
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
-                            ptl_iface_get_peer(&ptl_iface), 
-                            entry, sizeof(ptl_cqe_t));
+    entry->base.type = PTLEQFREE;
+    entry->eqFree.eq_handle = eq_hc;
+    entry->eqFree.retval_ptr = &cmd_ret;
+
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_eqfree_t));
     if (ret < 0) return PTL_FAIL;
 
     /* wait for implementation to tell us we can free buffer.  Note
@@ -141,7 +141,7 @@ PtlEQGet(ptl_handle_eq_t eq_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    eq = &ptl_iface.ni[eq_hc.s.ni].i_eq[eq_hc.s.code];
+    eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
 
     ret = ptl_circular_buffer_get(eq->cb, event, &overwrite);
     if (ret < 0) return PTL_FAIL;
@@ -174,7 +174,7 @@ PtlEQWait(ptl_handle_eq_t eq_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    eq = &ptl_iface.ni[eq_hc.s.ni].i_eq[eq_hc.s.code];
+    eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
 
     do {
         ret = ptl_circular_buffer_get(eq->cb, event, &overwrite);
@@ -210,6 +210,7 @@ PtlEQPoll(const ptl_handle_eq_t *eq_handles,
     }   
 #endif /* ifndef NO_ARG_VALIDATION */
 
+    /* BWB: FIX ME */
     return PTL_FAIL;
 }
 

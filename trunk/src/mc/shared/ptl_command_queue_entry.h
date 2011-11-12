@@ -22,9 +22,9 @@ typedef enum {
     PTLCTWAIT,
     PTLCTSET,
     PTLCTINC,
+    PTLCTCANCELTRIGGERED,
     PTLPUT,
     PTLGET,
-    PTLTRIGGET,
     PTLEQALLOC,
     PTLEQFREE,
     PTLLEAPPEND,
@@ -37,35 +37,13 @@ typedef enum {
     PTLACK
 } ptl_cmd_type_t;
 
-#if 0
-#define CMD_NAMES {\
-    "",\
-    "PtlNIInit",\
-    "PtlNIFini",\
-    "PtlPTAlloc",\
-    "PtlPTFree",\
-    "PtlMDBind",\
-    "PtlMDRelease",\
-    "PtlMEAppend",\
-    "PtlMEUnlink",\
-    "PtlGetId",\
-    "PtlCTAlloc",\
-    "PtlCTFree",\
-    "PtlCTWait",\
-    "PtlPut",\
-    "PtlGet",\
-    "PtlTrigGet",\
-    "PtlEQAlloc",\
-    "PtlEQFree",\
-    "ContextInit",\
-    "ContextFini"\
-}
-#endif
-
-typedef ptl_internal_handle_converter_t cmdHandle_t;
-typedef unsigned long cmdAddr_t;
+struct ptl_cqe_base_t {
+    char type; 
+};
+typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
 typedef struct {
+    ptl_cqe_base_t base;
     ptl_internal_handle_converter_t ni_handle;
     unsigned int    options;
     ptl_pid_t       pid; 
@@ -78,66 +56,81 @@ typedef struct {
     void            *eqPtr;
     void            *ptPtr;
     int             *retval_ptr;
-} cmdPtlNIInit_t;
+} ptl_cqe_niinit_t;
 
 typedef struct {
-    cmdHandle_t     ni_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ni_handle;
     int            *retval_ptr;
-} cmdPtlNIFini_t;
-
-
-typedef struct {
-    cmdHandle_t     ct_handle; 
-} cmdPtlCTAlloc_t;
+} ptl_cqe_nifini_t;
 
 typedef struct {
-    cmdHandle_t     ct_handle; 
-} cmdPtlCTFree_t;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ct_handle; 
+} ptl_cqe_ctalloc_t;
 
 typedef struct {
-    cmdHandle_t     ct_handle; 
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ct_handle; 
+} ptl_cqe_ctfree_t;
+
+typedef struct {
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ct_handle; 
     ptl_ct_event_t  new_ct;
-} cmdPtlCTSet_t;
+} ptl_cqe_ctset_t;
 
 typedef struct {
-    cmdHandle_t     ct_handle; 
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ct_handle; 
     ptl_ct_event_t  increment;
-} cmdPtlCTInc_t;
+} ptl_cqe_ctinc_t;
 
 typedef struct {
-    cmdHandle_t     eq_handle; 
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t ct_handle;
+} ptl_cqe_ctcanceltriggered_t;
+
+typedef struct {
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     eq_handle; 
     struct ptl_circular_buffer_t *cb;
-} cmdPtlEQAlloc_t;
+} ptl_cqe_eqalloc_t;
 
 typedef struct {
-    cmdHandle_t     eq_handle; 
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     eq_handle; 
     int            *retval_ptr;
-} cmdPtlEQFree_t;
+} ptl_cqe_eqfree_t;
 
 typedef struct {
-    cmdHandle_t     md_handle; 
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     md_handle; 
     ptl_md_t        md;
-} cmdPtlMDBind_t;
+} ptl_cqe_mdbind_t;
 
 typedef struct {
-    cmdHandle_t     md_handle; 
-} cmdPtlMDRelease_t;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     md_handle; 
+} ptl_cqe_mdrelease_t;
 
 typedef struct {
-    cmdHandle_t     ni_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ni_handle;
     unsigned int    options;
-    cmdHandle_t     eq_handle;
+    ptl_internal_handle_converter_t     eq_handle;
     ptl_pt_index_t  pt_index;
-} cmdPtlPTAlloc_t;
+} ptl_cqe_ptalloc_t;
 
 typedef struct {
-    cmdHandle_t     ni_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ni_handle;
     ptl_pt_index_t  pt_index;
-} cmdPtlPTFree_t;
-
+} ptl_cqe_ptfree_t;
 
 typedef struct {
-    cmdHandle_t      md_handle;    
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t      md_handle;    
     ptl_size_t       local_offset;
     ptl_size_t       length;
     ptl_ack_req_t    ack_req;
@@ -147,10 +140,11 @@ typedef struct {
     ptl_size_t       remote_offset;
     void            *user_ptr;
     ptl_hdr_data_t   hdr_data;
-} cmdPtlPut_t;
+} ptl_cqe_put_t;
 
 typedef struct {
-    cmdHandle_t      md_handle;    
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t      md_handle;    
     ptl_size_t       local_offset;
     ptl_size_t       length;
     ptl_process_t    target_id;
@@ -158,54 +152,57 @@ typedef struct {
     ptl_match_bits_t match_bits; 
     ptl_size_t       remote_offset;
     void            *user_ptr;
-} cmdPtlGet_t;
-
-typedef cmdPtlGet_t cmdPtlTrigGet_t;
-
+} ptl_cqe_get_t;
 
 typedef struct {
-    cmdHandle_t     md_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     md_handle;
     ptl_pt_index_t  pt_index;
     ptl_me_t        me;
     ptl_list_t      list;
     void           *user_ptr;
-} cmdPtlMEAppend_t ;
+} ptl_cqe_meappend_t ;
 
 typedef struct {
-    cmdHandle_t     me_handle;
-} cmdPtlMEUnlink_t;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     me_handle;
+} ptl_cqe_meunlink_t;
 
 typedef struct {
-    cmdHandle_t     ni_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ni_handle;
     ptl_pt_index_t  pt_index;
     ptl_me_t        me;
     ptl_search_op_t ptl_search_op;
     void           *user_ptr;
-} cmdPtlMESearch_t;
+} ptl_cqe_mesearch_t;
 
 typedef struct {
-    cmdHandle_t     le_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     le_handle;
     ptl_pt_index_t  pt_index;
     ptl_le_t        le;
     ptl_list_t      list;
     void           *user_ptr;
-} cmdPtlLEAppend_t ;
+} ptl_cqe_leappend_t ;
 
 typedef struct {
-    cmdHandle_t     le_handle;
-} cmdPtlLEUnlink_t;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     le_handle;
+} ptl_cqe_leunlink_t;
 
 typedef struct {
-    cmdHandle_t     ni_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ni_handle;
     ptl_pt_index_t  pt_index;
     ptl_le_t        le;
     ptl_search_op_t ptl_search_op;
     void           *user_ptr;
-} cmdPtlLESearch_t;
-
+} ptl_cqe_lesearch_t;
 
 typedef struct {
-    cmdHandle_t      md_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t      md_handle;
     ptl_size_t       local_offset;
     ptl_size_t       length;
     ptl_ack_req_t    ack_req;
@@ -217,12 +214,13 @@ typedef struct {
     ptl_hdr_data_t   hdr_data;
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
-} cmdPtlAtomic_t;
+} ptl_cqe_atomic_t;
 
 typedef struct {
-    cmdHandle_t      get_md_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t      get_md_handle;
     ptl_size_t       local_get_offset;
-    cmdHandle_t      put_md_handle;
+    ptl_internal_handle_converter_t      put_md_handle;
     ptl_size_t       local_put_offset;
     ptl_size_t       length;
     ptl_process_t    target_id;
@@ -233,12 +231,13 @@ typedef struct {
     ptl_hdr_data_t   hdr_data;
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
-} cmdPtlFetchAtomic_t;
+} ptl_cqe_fetchatomic_t;
 
 typedef struct {
-    cmdHandle_t      get_md_handle;
+    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t      get_md_handle;
     ptl_size_t       local_get_offset;
-    cmdHandle_t      put_md_handle;
+    ptl_internal_handle_converter_t      put_md_handle;
     ptl_size_t       local_put_offset;
     ptl_size_t       length;
     ptl_process_t    target_id;
@@ -250,49 +249,47 @@ typedef struct {
     const void      *operand;
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
-} cmdPtlSwap_t;
+} ptl_cqe_swap_t;
 
 typedef struct {
+    ptl_cqe_base_t base;
     int my_id;
-} cmdPtlAtomicSync_t;
+} ptl_cqe_atomicsync_t;
 
 typedef struct {
+    ptl_cqe_base_t base;
     int *retval_ptr;
     int retval;
-} cmdPtlAck_t;
+} ptl_cqe_ack_t;
 
-typedef union {
-    cmdPtlNIInit_t      niInit;
-    cmdPtlNIFini_t      niFini;
-    cmdPtlCTAlloc_t     ctAlloc;
-    cmdPtlCTFree_t      ctFree;
-    cmdPtlCTSet_t       ctSet;
-    cmdPtlCTInc_t       ctInc;
-    cmdPtlEQAlloc_t     eqAlloc;
-    cmdPtlEQFree_t      eqFree;
-    cmdPtlMDBind_t      mdBind;
-    cmdPtlMDRelease_t   mdRelease;
-    cmdPtlPut_t         put;
-    cmdPtlGet_t         get;
-    cmdPtlGet_t         trigGet;
-    cmdPtlPTAlloc_t     ptAlloc;
-    cmdPtlPTFree_t      ptFree;
-    cmdPtlMEAppend_t    meAppend;
-    cmdPtlMEUnlink_t    meUnlink;
-    cmdPtlMESearch_t    meSearch;
-    cmdPtlLEAppend_t    leAppend;
-    cmdPtlLEUnlink_t    leUnlink;
-    cmdPtlLESearch_t    leSearch;
-    cmdPtlAtomic_t      atomic;
-    cmdPtlFetchAtomic_t      fetchAtomic;
-    cmdPtlSwap_t        swap;
-    cmdPtlAtomicSync_t  atomicSync;
-    cmdPtlAck_t  ack;
-} ptl_cmd_union_t;
-
-struct ptl_cqe_t {
-    char type; 
-    ptl_cmd_union_t u;
+union ptl_cqe_t {
+    ptl_cqe_base_t        base;
+    ptl_cqe_niinit_t      niInit;
+    ptl_cqe_nifini_t      niFini;
+    ptl_cqe_ctalloc_t     ctAlloc;
+    ptl_cqe_ctfree_t      ctFree;
+    ptl_cqe_ctset_t       ctSet;
+    ptl_cqe_ctinc_t       ctInc;
+    ptl_cqe_ctcanceltriggered_t ctCancelTriggered;
+    ptl_cqe_eqalloc_t     eqAlloc;
+    ptl_cqe_eqfree_t      eqFree;
+    ptl_cqe_mdbind_t      mdBind;
+    ptl_cqe_mdrelease_t   mdRelease;
+    ptl_cqe_put_t         put;
+    ptl_cqe_get_t         get;
+    ptl_cqe_ptalloc_t     ptAlloc;
+    ptl_cqe_ptfree_t      ptFree;
+    ptl_cqe_meappend_t    meAppend;
+    ptl_cqe_meunlink_t    meUnlink;
+    ptl_cqe_mesearch_t    meSearch;
+    ptl_cqe_leappend_t    leAppend;
+    ptl_cqe_leunlink_t    leUnlink;
+    ptl_cqe_lesearch_t    leSearch;
+    ptl_cqe_atomic_t      atomic;
+    ptl_cqe_fetchatomic_t fetchAtomic;
+    ptl_cqe_swap_t        swap;
+    ptl_cqe_atomicsync_t  atomicSync;
+    ptl_cqe_ack_t         ack;
 };
 
 #endif

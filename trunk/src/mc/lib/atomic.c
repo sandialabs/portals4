@@ -10,20 +10,24 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-int PtlAtomic(ptl_handle_md_t  md_handle,
-              ptl_size_t       local_offset,
-              ptl_size_t       length,
-              ptl_ack_req_t    ack_req,
-              ptl_process_t    target_id,
-              ptl_pt_index_t   pt_index,
-              ptl_match_bits_t match_bits,
-              ptl_size_t       remote_offset,
-              void            *user_ptr,
-              ptl_hdr_data_t   hdr_data,
-              ptl_op_t         operation,
-              ptl_datatype_t   datatype)
+
+int
+PtlAtomic(ptl_handle_md_t  md_handle,
+          ptl_size_t       local_offset,
+          ptl_size_t       length,
+          ptl_ack_req_t    ack_req,
+          ptl_process_t    target_id,
+          ptl_pt_index_t   pt_index,
+          ptl_match_bits_t match_bits,
+          ptl_size_t       remote_offset,
+          void            *user_ptr,
+          ptl_hdr_data_t   hdr_data,
+          ptl_op_t         operation,
+          ptl_datatype_t   datatype)
 {
     const ptl_internal_handle_converter_t md_hc         = { md_handle };
+    int ret;
+    ptl_cqe_t   *entry;
     
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -135,46 +139,54 @@ int PtlAtomic(ptl_handle_md_t  md_handle,
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
 
-    ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    entry->type = PTLATOMIC;
-    entry->u.atomic.md_handle       = md_hc;
-    entry->u.atomic.local_offset    = local_offset;
-    entry->u.atomic.length          = length;
-    entry->u.atomic.ack_req         = ack_req;
-    entry->u.atomic.target_id       = target_id;
-    entry->u.atomic.pt_index        = pt_index;
-    entry->u.atomic.match_bits      = match_bits;
-    entry->u.atomic.remote_offset   = remote_offset;
-    entry->u.atomic.user_ptr        = user_ptr;
-    entry->u.atomic.hdr_data        = hdr_data;
-    entry->u.atomic.operation       = operation;
-    entry->u.atomic.datatype        = datatype;
+    entry->base.type = PTLATOMIC;
+    entry->atomic.md_handle       = md_hc;
+    entry->atomic.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->atomic.local_offset    = local_offset;
+    entry->atomic.length          = length;
+    entry->atomic.ack_req         = ack_req;
+    entry->atomic.target_id       = target_id;
+    entry->atomic.pt_index        = pt_index;
+    entry->atomic.match_bits      = match_bits;
+    entry->atomic.remote_offset   = remote_offset;
+    entry->atomic.user_ptr        = user_ptr;
+    entry->atomic.hdr_data        = hdr_data;
+    entry->atomic.operation       = operation;
+    entry->atomic.datatype        = datatype;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface),
+                                  entry, sizeof(ptl_cqe_atomic_t));
+    if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
-int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
-                   ptl_size_t       local_get_offset,
-                   ptl_handle_md_t  put_md_handle,
-                   ptl_size_t       local_put_offset,
-                   ptl_size_t       length,
-                   ptl_process_t    target_id,
-                   ptl_pt_index_t   pt_index,
-                   ptl_match_bits_t match_bits,
-                   ptl_size_t       remote_offset,
-                   void            *user_ptr,
-                   ptl_hdr_data_t   hdr_data,
-                   ptl_op_t         operation,
-                   ptl_datatype_t   datatype)
+
+int
+PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
+               ptl_size_t       local_get_offset,
+               ptl_handle_md_t  put_md_handle,
+               ptl_size_t       local_put_offset,
+               ptl_size_t       length,
+               ptl_process_t    target_id,
+               ptl_pt_index_t   pt_index,
+               ptl_match_bits_t match_bits,
+               ptl_size_t       remote_offset,
+               void            *user_ptr,
+               ptl_hdr_data_t   hdr_data,
+               ptl_op_t         operation,
+               ptl_datatype_t   datatype)
 {
     const ptl_internal_handle_converter_t get_md     = { get_md_handle };
+    const ptl_internal_handle_converter_t put_md     = { put_md_handle };
+    ptl_cqe_t   *entry;
+    int ret;
+
 #ifndef NO_ARG_VALIDATION
-    const ptl_internal_handle_converter_t put_md = { put_md_handle };
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
@@ -294,46 +306,56 @@ int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
 
-    ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    entry->type = PTLFETCHATOMIC;
-    entry->u.fetchAtomic.get_md_handle =  get_md;  
-    entry->u.fetchAtomic.local_get_offset = local_get_offset;
-    entry->u.fetchAtomic.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.fetchAtomic.length           = length;
-    entry->u.fetchAtomic.target_id        = target_id;
-    entry->u.fetchAtomic.pt_index         = pt_index;
-    entry->u.fetchAtomic.match_bits       = match_bits;
-    entry->u.fetchAtomic.remote_offset    = remote_offset;
-    entry->u.fetchAtomic.user_ptr         = user_ptr;
-    entry->u.fetchAtomic.hdr_data         = hdr_data;
-    entry->u.fetchAtomic.operation        = operation;
-    entry->u.fetchAtomic.datatype         = datatype;
+    entry->base.type = PTLFETCHATOMIC;
+    entry->fetchAtomic.get_md_handle =  get_md;  
+    entry->fetchAtomic.get_md_handle.s.selector = 
+        ptl_iface_get_rank(&ptl_iface);
+    entry->fetchAtomic.local_get_offset = local_get_offset;
+    entry->fetchAtomic.put_md_handle    = put_md;
+    entry->fetchAtomic.put_md_handle.s.selector = 
+        ptl_iface_get_rank(&ptl_iface);
+    entry->fetchAtomic.length           = length;
+    entry->fetchAtomic.target_id        = target_id;
+    entry->fetchAtomic.pt_index         = pt_index;
+    entry->fetchAtomic.match_bits       = match_bits;
+    entry->fetchAtomic.remote_offset    = remote_offset;
+    entry->fetchAtomic.user_ptr         = user_ptr;
+    entry->fetchAtomic.hdr_data         = hdr_data;
+    entry->fetchAtomic.operation        = operation;
+    entry->fetchAtomic.datatype         = datatype;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_fetchatomic_t));
+    if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
 
-int PtlSwap(ptl_handle_md_t  get_md_handle,
-            ptl_size_t       local_get_offset,
-            ptl_handle_md_t  put_md_handle,
-            ptl_size_t       local_put_offset,
-            ptl_size_t       length,
-            ptl_process_t    target_id,
-            ptl_pt_index_t   pt_index,
-            ptl_match_bits_t match_bits,
-            ptl_size_t       remote_offset,
-            void            *user_ptr,
-            ptl_hdr_data_t   hdr_data,
-            const void      *operand,
-            ptl_op_t         operation,
-            ptl_datatype_t   datatype)
+int
+PtlSwap(ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        const void      *operand,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype)
 {
     const ptl_internal_handle_converter_t get_md_hc = { get_md_handle };
+    const ptl_internal_handle_converter_t put_md_hc = { put_md_handle };
+    ptl_cqe_t   *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -453,47 +475,61 @@ int PtlSwap(ptl_handle_md_t  get_md_handle,
     }           
 #endif  /* ifndef NO_ARG_VALIDATION */
 
-    ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    entry->type = PTLSWAP;
-    entry->u.swap.get_md_handle =  get_md_hc;  
-    entry->u.swap.local_get_offset = local_get_offset;
-    entry->u.swap.put_md_handle    = (ptl_internal_handle_converter_t) put_md_handle; 
-    entry->u.swap.length           = length;
-    entry->u.swap.target_id        = target_id;
-    entry->u.swap.pt_index         = pt_index;
-    entry->u.swap.match_bits       = match_bits;
-    entry->u.swap.remote_offset    = remote_offset;
-    entry->u.swap.user_ptr         = user_ptr;
-    entry->u.swap.hdr_data         = hdr_data;
-    entry->u.swap.operand          = operand;
-    entry->u.swap.operation        = operation;
-    entry->u.swap.datatype         = datatype;
+    entry->base.type = PTLSWAP;
+    entry->swap.get_md_handle =  get_md_hc;  
+    entry->swap.get_md_handle.s.selector = 
+        ptl_iface_get_rank(&ptl_iface);
+    entry->swap.local_get_offset = local_get_offset;
+    entry->swap.put_md_handle    = put_md_hc;
+    entry->swap.put_md_handle.s.selector = 
+        ptl_iface_get_rank(&ptl_iface);
+    entry->swap.length           = length;
+    entry->swap.target_id        = target_id;
+    entry->swap.pt_index         = pt_index;
+    entry->swap.match_bits       = match_bits;
+    entry->swap.remote_offset    = remote_offset;
+    entry->swap.user_ptr         = user_ptr;
+    entry->swap.hdr_data         = hdr_data;
+    entry->swap.operand          = operand;
+    entry->swap.operation        = operation;
+    entry->swap.datatype         = datatype;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface),
+                                  entry, sizeof(ptl_cqe_swap_t));
+    if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
-int PtlAtomicSync(void)
+
+int
+PtlAtomicSync(void)
 {
+    ptl_cqe_t   *entry;
+    int ret;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
 #endif
 
-    ptl_cqe_t   *entry;
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    entry->type = PTLATOMICSYNC;
+    entry->base.type = PTLATOMICSYNC;
+    entry->atomicSync.my_id = ptl_iface_get_rank(&ptl_iface);
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_atomicsync_t));
+    if (0 != ret) return PTL_FAIL;
+
     return PTL_OK;
 }
 
 /* vim:set expandtab */
-

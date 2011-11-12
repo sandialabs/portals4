@@ -1,5 +1,8 @@
 #include "config.h"
 
+#include <unistd.h>
+#include <sys/types.h>
+
 #include "portals4.h"
         
 #include "ptl_internal_iface.h"
@@ -9,8 +12,10 @@
 #include "ptl_internal_pid.h"
 #include "shared/ptl_internal_handles.h"
 
-int PtlGetUid(ptl_handle_ni_t ni_handle,
-              ptl_uid_t      *uid)
+
+int
+PtlGetUid(ptl_handle_ni_t ni_handle,
+          ptl_uid_t      *uid)
 {
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
@@ -28,11 +33,15 @@ int PtlGetUid(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_FAIL;
+    *uid = (ptl_uid_t) getuid();
+
+    return PTL_OK;
 }
 
-int PtlGetId(ptl_handle_ni_t ni_handle,
-             ptl_process_t  *id)
+
+int
+PtlGetId(ptl_handle_ni_t ni_handle,
+         ptl_process_t  *id)
 {
     ptl_internal_handle_converter_t ni = { ni_handle };
 #ifndef NO_ARG_VALIDATION
@@ -45,18 +54,22 @@ int PtlGetId(ptl_handle_ni_t ni_handle,
     }
 #endif
 
+    /* BWB: FIX ME */
+
     return PTL_FAIL;
 }
 
+#ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
     /* BWB: FIX ME */
-    return -1;
+    return PTL_FAIL;
 }
+
 
 int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
 {
     /* BWB: FIX ME */
-    return -1;
+    return PTL_FAIL;
 }
-
+#endif /* ifndef NO_ARG_VALIDATION */

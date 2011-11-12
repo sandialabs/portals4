@@ -22,8 +22,9 @@ int PtlPut(ptl_handle_md_t  md_handle,
            void            *user_ptr,
            ptl_hdr_data_t   hdr_data)
 {
-
     const ptl_internal_handle_converter_t md_hc = { md_handle };
+    ptl_cqe_t *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -68,37 +69,43 @@ int PtlPut(ptl_handle_md_t  md_handle,
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
 
-    ptl_cqe_t *entry;
-        
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
     
-    entry->type = PTLPUT;
-    entry->u.put.md_handle = md_hc; 
-    entry->u.put.local_offset  = local_offset;
-    entry->u.put.length        = length;
-    entry->u.put.ack_req       = ack_req;
-    entry->u.put.target_id     = target_id;
-    entry->u.put.match_bits    = match_bits;
-    entry->u.put.remote_offset = remote_offset;
-    entry->u.put.user_ptr      = user_ptr;
-    entry->u.put.hdr_data      = hdr_data; 
+    entry->base.type = PTLPUT;
+    entry->put.md_handle = md_hc; 
+    entry->put.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->put.local_offset  = local_offset;
+    entry->put.length        = length;
+    entry->put.ack_req       = ack_req;
+    entry->put.target_id     = target_id;
+    entry->put.match_bits    = match_bits;
+    entry->put.remote_offset = remote_offset;
+    entry->put.user_ptr      = user_ptr;
+    entry->put.hdr_data      = hdr_data; 
     
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
-                        sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface),
+                                  entry, sizeof(ptl_cqe_put_t));
+    if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
-int PtlGet(ptl_handle_md_t  md_handle,
-           ptl_size_t       local_offset,
-           ptl_size_t       length,
-           ptl_process_t    target_id,
-           ptl_pt_index_t   pt_index,
-           ptl_match_bits_t match_bits,
-           ptl_size_t       remote_offset,
-           void            *user_ptr)
+
+int
+PtlGet(ptl_handle_md_t  md_handle,
+       ptl_size_t       local_offset,
+       ptl_size_t       length,
+       ptl_process_t    target_id,
+       ptl_pt_index_t   pt_index,
+       ptl_match_bits_t match_bits,
+       ptl_size_t       remote_offset,
+       void            *user_ptr)
 {
     const ptl_internal_handle_converter_t md_hc = { md_handle };
+    ptl_cqe_t *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -142,20 +149,24 @@ int PtlGet(ptl_handle_md_t  md_handle,
         return PTL_ARG_INVALID;
     }
 #endif  /* ifndef NO_ARG_VALIDATION */
-    ptl_cqe_t *entry;
         
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
     
-    entry->type = PTLGET;
-    entry->u.get.md_handle = md_hc;
-    entry->u.get.local_offset = local_offset; 
-    entry->u.get.target_id = target_id; 
-    entry->u.get.pt_index = pt_index; 
-    entry->u.get.match_bits = match_bits; 
-    entry->u.get.remote_offset = remote_offset; 
-    entry->u.get.user_ptr = user_ptr; 
+    entry->base.type = PTLGET;
+    entry->get.md_handle = md_hc;
+    entry->get.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->get.local_offset = local_offset; 
+    entry->get.target_id = target_id; 
+    entry->get.pt_index = pt_index; 
+    entry->get.match_bits = match_bits; 
+    entry->get.remote_offset = remote_offset; 
+    entry->get.user_ptr = user_ptr; 
     
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry, 
-                        sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_get_t));
+    if (0 != ret) return PTL_FAIL;
+
     return PTL_OK;
 }

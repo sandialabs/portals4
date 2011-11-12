@@ -13,11 +13,16 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
-               ptl_handle_ct_t *ct_handle)
+
+int
+PtlCTAlloc(ptl_handle_ni_t  ni_handle,
+           ptl_handle_ct_t *ct_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_internal_handle_converter_t    ct_hc = { .s.ni = ni.s.ni };
+    ptl_internal_ct_t *ct;
+    ptl_cqe_t *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -35,20 +40,22 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     ct_hc.s.code = find_ct_index( ni.s.ni ); 
+    if (ct_hc.s.code == -1 ) return PTL_FAIL;
 
-    if ( ct_hc.s.code == -1 ) {
-        return PTL_FAIL;
-    }
+    ct = get_ct(ct_hc.s.ni, ct_hc.s.code);
+    memset(&ct->ct_event, 0, sizeof(ptl_ct_event_t));
 
-    ptl_cqe_t *entry;
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    entry->base.type = PTLCTALLOC;
+    entry->ctAlloc.ct_handle  = ct_hc;
+    entry->ctAlloc.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
 
-    entry->type = PTLCTALLOC;
-    entry->u.ctAlloc.ct_handle  = ct_hc;
-
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
+                                  ptl_iface_get_peer(&ptl_iface),
+                                  entry, sizeof(ptl_cqe_ctalloc_t));
+    if (0 != ret) return PTL_FAIL;
 
     *ct_handle = ct_hc.a;
 
@@ -56,8 +63,13 @@ int PtlCTAlloc(ptl_handle_ni_t  ni_handle,
 }
 
 
-int PtlCTFree(ptl_handle_ct_t ct_handle)
+int
+PtlCTFree(ptl_handle_ct_t ct_handle)
 {
+    ptl_internal_handle_converter_t ct_hc = { ct_handle };
+    ptl_cqe_t *entry;
+    int ret;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -67,21 +79,28 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
     }
 #endif  
 
-    ptl_cqe_t *entry;
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    entry->base.type = PTLCTFREE;
+    entry->ctFree.ct_handle = ct_hc;
+    entry->ctFree.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
 
-    entry->type = PTLCTFREE;
-    entry->u.ctFree.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_ctfree_t));
 
     return PTL_OK;
 }
 
-int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+
+int
+PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 {
+    ptl_internal_handle_converter_t ct_hc = { ct_handle };
+    ptl_cqe_t *entry;
+    int ret;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -91,32 +110,27 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     }
 #endif
 
-    return PTL_FAIL;
-}
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-int PtlCTGet(ptl_handle_ct_t ct_handle,
-             ptl_ct_event_t *event)
-{
-    const ptl_internal_handle_converter_t ct_hc = { ct_handle };
-#ifndef NO_ARG_VALIDATION
-    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
-        return PTL_NO_INIT;
-    }
-    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
-        return PTL_ARG_INVALID;
-    }
-    if (event == NULL) {
-        return PTL_ARG_INVALID;
-    }
-#endif
-    *event = get_ct( ct_hc.s.ni, ct_hc.s.code )->ct_event; 
+    entry->base.type = PTLCTCANCELTRIGGERED;
+    entry->ctFree.ct_handle = ct_hc;
+    entry->ctFree.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_ctcanceltriggered_t));
+
     return PTL_OK;
 }
 
-int PtlCTWait(ptl_handle_ct_t ct_handle,
-              ptl_size_t      test,
-              ptl_ct_event_t *event)
+
+int
+PtlCTGet(ptl_handle_ct_t ct_handle,
+         ptl_ct_event_t *event)
 {
+    const ptl_internal_handle_converter_t ct_hc = { ct_handle };
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -129,21 +143,47 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
     }
 #endif
 
-    ptl_size_t  tests;
-    unsigned int which;
-    
-    return PtlCTPoll( &ct_handle, &tests, 1, 
-                        PTL_TIME_FOREVER, event, &which  );
+    *event = get_ct(ct_hc.s.ni, ct_hc.s.code)->ct_event; 
+    return PTL_OK;
 }
 
-int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
-              const ptl_size_t      *tests,
-              unsigned int           size,
-              ptl_time_t             timeout,
-              ptl_ct_event_t        *event,
-              unsigned int          *which)
+
+int
+PtlCTWait(ptl_handle_ct_t ct_handle,
+          ptl_size_t      test,
+          ptl_ct_event_t *event)
+{
+    ptl_size_t  tests;
+    unsigned int which;
+
+#ifndef NO_ARG_VALIDATION
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
+        return PTL_NO_INIT;
+    }
+    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
+        return PTL_ARG_INVALID;
+    }
+    if (event == NULL) {
+        return PTL_ARG_INVALID;
+    }
+#endif
+    
+    return PtlCTPoll(&ct_handle, &tests, 1, 
+                     PTL_TIME_FOREVER, event, &which);
+}
+
+
+int
+PtlCTPoll(const ptl_handle_ct_t *ct_handles,
+          const ptl_size_t      *tests,
+          unsigned int           size,
+          ptl_time_t             timeout,
+          ptl_ct_event_t        *event,
+          unsigned int          *which)
 {
     ptl_size_t ctidx;
+    struct timeval end_time;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -166,8 +206,6 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         return PTL_ARG_INVALID;
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-
-    struct timeval end_time;
 
     if( timeout != PTL_TIME_FOREVER ) {
         int retval = gettimeofday( &end_time, NULL ); 
@@ -203,37 +241,19 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         }
         __sync_synchronize();
     }
-}
-
-int PtlCTSet(ptl_handle_ct_t ct_handle,
-                      ptl_ct_event_t  test)
-{
-#ifndef NO_ARG_VALIDATION
-    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
-        return PTL_NO_INIT;
-    }
-    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
-        return PTL_ARG_INVALID;
-    }
-#endif
-    ptl_cqe_t *entry;
-
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
-
-    entry->type = PTLCTSET;
-    entry->u.ctSet.ct_handle    = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctSet.new_ct       = test;
-
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), 
-                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
 
     return PTL_OK;
 }
 
 
-int PtlCTInc(ptl_handle_ct_t ct_handle,
-             ptl_ct_event_t  increment)
+int
+PtlCTSet(ptl_handle_ct_t ct_handle,
+         ptl_ct_event_t  test)
 {
+    ptl_internal_handle_converter_t ct_hc = { ct_handle };
+    ptl_cqe_t *entry;
+    int ret;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -243,23 +263,60 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
     }
 #endif
 
-    ptl_cqe_t *entry;
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
 
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    entry->base.type = PTLCTSET;
+    entry->ctSet.ct_handle = ct_hc;
+    entry->ctSet.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->ctSet.new_ct       = test;
 
-    entry->type = PTLCTSET;
-    entry->u.ctInc.ct_handle = ( ptl_internal_handle_converter_t ) ct_handle;
-    entry->u.ctInc.increment = increment;
-
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface),
-                    ptl_iface_get_peer(&ptl_iface), entry, sizeof(ptl_cqe_t) );
-
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_ctset_t));
+    if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
-int INTERNAL PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
-                                          uint_fast8_t    none_ok)
+
+int
+PtlCTInc(ptl_handle_ct_t ct_handle,
+         ptl_ct_event_t  increment)
+{
+    ptl_internal_handle_converter_t ct_hc = { ct_handle };
+    ptl_cqe_t *entry;
+    int ret;
+
+#ifndef NO_ARG_VALIDATION
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
+        return PTL_NO_INIT;
+    }
+    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
+        return PTL_ARG_INVALID;
+    }
+#endif
+
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (0 != ret) return PTL_FAIL;
+
+    entry->base.type = PTLCTSET;
+    entry->ctInc.ct_handle = ct_hc;
+    entry->ctInc.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->ctInc.increment = increment;
+
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+                                  ptl_iface_get_peer(&ptl_iface), 
+                                  entry, sizeof(ptl_cqe_ctinc_t));
+    if (0 != ret) return PTL_FAIL;
+
+    return PTL_OK;
+}
+
+
+int INTERNAL
+PtlInternalCTHandleValidator(ptl_handle_ct_t handle,
+                             uint_fast8_t    none_ok)
 {                                      /*{{{ */
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ct = { handle };
