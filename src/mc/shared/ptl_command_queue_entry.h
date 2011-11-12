@@ -4,6 +4,8 @@
 #include "portals4.h"
 #include "ptl_internal_handles.h"
 
+struct ptl_circular_buffer_t;
+
 typedef enum {
     PTLNIINIT = 1,   
     PTLNIFINI,
@@ -68,6 +70,7 @@ typedef struct {
     unsigned int    options;
     ptl_pid_t       pid; 
     ptl_ni_limits_t *limits;
+    ptl_sr_value_t  *srPtr;
     void            *lePtr;
     void            *mdPtr;
     void            *mePtr;
@@ -103,11 +106,12 @@ typedef struct {
 
 typedef struct {
     cmdHandle_t     eq_handle; 
-    ptl_size_t      count;
+    struct ptl_circular_buffer_t *cb;
 } cmdPtlEQAlloc_t;
 
 typedef struct {
     cmdHandle_t     eq_handle; 
+    int            *retval_ptr;
 } cmdPtlEQFree_t;
 
 typedef struct {

@@ -151,10 +151,11 @@ int PtlNIInit(ptl_interface_t       iface,
 
         entry->type = PTLNIINIT;
         entry->u.niInit.ni_handle = ni;
-        entry->u.niInit.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
+        entry->u.niInit.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
         entry->u.niInit.options = options;
         entry->u.niInit.pid = pid;
         entry->u.niInit.limits = &nit_limits[ni.s.ni];
+        entry->u.niInit.srPtr = ptl_iface.ni[ni.s.ni].status_registers;
         entry->u.niInit.lePtr = ptl_iface.ni[ni.s.ni].i_le;
         entry->u.niInit.mdPtr = ptl_iface.ni[ni.s.ni].i_md;
         entry->u.niInit.mePtr = ptl_iface.ni[ni.s.ni].i_me;
@@ -222,7 +223,7 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
 
         entry->type = PTLNIFINI;
         entry->u.niFini.ni_handle = ni;
-        entry->u.niFini.ni_handle.s.code = ptl_iface_get_rank(&ptl_iface);
+        entry->u.niFini.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
         entry->u.niFini.retval_ptr = &cmd_ret;
         ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                           ptl_iface_get_peer(&ptl_iface), 
