@@ -3,7 +3,7 @@
 #include "ppe.h"
 
 int
-ni_init_impl( ptl_ppe_t *ctx, cmdPtlNIInit_t *cmd )
+ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
 {
     int ret;
     ptl_cqe_t *send_entry;
@@ -13,9 +13,9 @@ ni_init_impl( ptl_ppe_t *ctx, cmdPtlNIInit_t *cmd )
         return -1;
     }   
                 
-    send_entry->type = PTLACK;
-    send_entry->u.ack.retval_ptr = cmd->retval_ptr;
-    send_entry->u.ack.retval = PTL_OK;
+    send_entry->base.type = PTLACK;
+    send_entry->ack.retval_ptr = cmd->retval_ptr;
+    send_entry->ack.retval = PTL_OK;
                 
     ret = ptl_cq_entry_send(ctx->cq_h, cmd->ni_handle.s.code,
                                        send_entry, sizeof(ptl_cqe_t));
@@ -27,7 +27,7 @@ ni_init_impl( ptl_ppe_t *ctx, cmdPtlNIInit_t *cmd )
 }
 
 int 
-ni_fini_impl( ptl_ppe_t *ctx, cmdPtlNIFini_t *cmd )
+ni_fini_impl( ptl_ppe_t *ctx, ptl_cqe_nifini_t *cmd )
 {
     int ret;
     ptl_cqe_t *send_entry;
@@ -37,9 +37,9 @@ ni_fini_impl( ptl_ppe_t *ctx, cmdPtlNIFini_t *cmd )
         return -1;
     }
 
-    send_entry->type = PTLACK;
-    send_entry->u.ack.retval_ptr = cmd->retval_ptr;
-    send_entry->u.ack.retval = PTL_OK;
+    send_entry->base.type = PTLACK;
+    send_entry->ack.retval_ptr = cmd->retval_ptr;
+    send_entry->ack.retval = PTL_OK;
 
     ret = ptl_cq_entry_send( ctx->cq_h, cmd->ni_handle.s.code,
                                         send_entry, sizeof(ptl_cqe_t));

@@ -119,5 +119,12 @@ find_eq_index(int ni)
     return -1;
 }
 
+
+static inline ptl_internal_eq_t*
+get_eq( int ni, int eq_index ) 
+{
+    return ptl_iface.ni[ni].i_eq + eq_index;
+} 
+
 #endif
 /* vim:set expandtab: */

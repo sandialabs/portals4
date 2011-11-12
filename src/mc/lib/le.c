@@ -51,15 +51,16 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLLEAPPEND;
-    entry->u.leAppend.le_handle = le_hc;
-    entry->u.leAppend.pt_index  = pt_index;
-    entry->u.leAppend.le        = *le;
-    entry->u.leAppend.list      = ptl_list;
-    entry->u.leAppend.user_ptr  = user_ptr;
+    entry->base.type = PTLLEAPPEND;
+    entry->leAppend.le_handle = le_hc;
+    entry->leAppend.pt_index  = pt_index;
+    entry->leAppend.le        = *le;
+    entry->leAppend.list      = ptl_list;
+    entry->leAppend.user_ptr  = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_leappend_t));
 
     *le_handle = le_hc.a; 
     return PTL_OK;
@@ -93,11 +94,13 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLLEUNLINK;
-    entry->u.leUnlink.le_handle = le_hc;
+    entry->base.type = PTLLEUNLINK;
+    entry->leUnlink.le_handle = le_hc;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_leunlink_t));
+
     return PTL_OK;
 }
 
@@ -134,14 +137,16 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->type = PTLLESEARCH;
-    entry->u.leSearch.ni_handle = ni;
-    entry->u.leSearch.pt_index = pt_index;
-    entry->u.leSearch.le = *le;
-    entry->u.leSearch.ptl_search_op = ptl_search_op;
-    entry->u.leSearch.user_ptr = user_ptr;
+    entry->base.type = PTLLESEARCH;
+    entry->leSearch.ni_handle = ni;
+    entry->leSearch.pt_index = pt_index;
+    entry->leSearch.le = *le;
+    entry->leSearch.ptl_search_op = ptl_search_op;
+    entry->leSearch.user_ptr = user_ptr;
 
-    ptl_cq_entry_send( ptl_iface_get_cq(&ptl_iface), ptl_iface_get_peer(&ptl_iface), entry,
-                                    sizeof(ptl_cqe_t) );
+    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+                      ptl_iface_get_peer(&ptl_iface), 
+                      entry, sizeof(ptl_cqe_lesearch_t));
+
     return PTL_OK;
 }

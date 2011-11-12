@@ -150,13 +150,13 @@ ptl_ppe_progress(ptl_iface_t *iface, int progress_cm)
             perror("ptl_cq_entry_recv");
             return -1;
         } else if (ret == 0) {
-            if (entry.type != PTLACK) {
+            if (entry.base.type != PTLACK) {
                 fprintf(stdout, 
                         "Found unexpected command queue entry of type %d\n", 
-                        entry.type);
+                        entry.base.type);
                 return PTL_FAIL;
             }
-            *(entry.u.ack.retval_ptr) = entry.u.ack.retval;
+            *(entry.ack.retval_ptr) = entry.ack.retval;
             return PTL_OK;
         }
     }

@@ -3,14 +3,14 @@
 #include "ppe.h"
 
 int
-md_bind_impl( ptl_ppe_t *ctx, cmdPtlMDBind_t *cmd )
+md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
 {
     PPE_DBG("\n");
     return 0;
 }
 
 int
-md_release_impl( ptl_ppe_t *ctx, cmdPtlMDRelease_t *cmd )
+md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
 {
     PPE_DBG("\n");
     return 0;

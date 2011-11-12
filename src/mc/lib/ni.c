@@ -149,24 +149,24 @@ int PtlNIInit(ptl_interface_t       iface,
 
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
-        entry->type = PTLNIINIT;
-        entry->u.niInit.ni_handle = ni;
-        entry->u.niInit.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
-        entry->u.niInit.options = options;
-        entry->u.niInit.pid = pid;
-        entry->u.niInit.limits = &nit_limits[ni.s.ni];
-        entry->u.niInit.srPtr = ptl_iface.ni[ni.s.ni].status_registers;
-        entry->u.niInit.lePtr = ptl_iface.ni[ni.s.ni].i_le;
-        entry->u.niInit.mdPtr = ptl_iface.ni[ni.s.ni].i_md;
-        entry->u.niInit.mePtr = ptl_iface.ni[ni.s.ni].i_me;
-        entry->u.niInit.ctPtr = ptl_iface.ni[ni.s.ni].i_ct;
-        entry->u.niInit.eqPtr = ptl_iface.ni[ni.s.ni].i_eq;
-        entry->u.niInit.ptPtr = ptl_iface.ni[ni.s.ni].i_pt;
-        entry->u.niInit.retval_ptr = &cmd_ret;
+        entry->base.type = PTLNIINIT;
+        entry->niInit.ni_handle = ni;
+        entry->niInit.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+        entry->niInit.options = options;
+        entry->niInit.pid = pid;
+        entry->niInit.limits = &nit_limits[ni.s.ni];
+        entry->niInit.srPtr = ptl_iface.ni[ni.s.ni].status_registers;
+        entry->niInit.lePtr = ptl_iface.ni[ni.s.ni].i_le;
+        entry->niInit.mdPtr = ptl_iface.ni[ni.s.ni].i_md;
+        entry->niInit.mePtr = ptl_iface.ni[ni.s.ni].i_me;
+        entry->niInit.ctPtr = ptl_iface.ni[ni.s.ni].i_ct;
+        entry->niInit.eqPtr = ptl_iface.ni[ni.s.ni].i_eq;
+        entry->niInit.ptPtr = ptl_iface.ni[ni.s.ni].i_pt;
+        entry->niInit.retval_ptr = &cmd_ret;
 
         ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                                 ptl_iface_get_peer(&ptl_iface),
-                                entry, sizeof(ptl_cqe_t));
+                                entry, sizeof(ptl_cqe_niinit_t));
         if (0 != ret) return PTL_FAIL;
 
         /* wait for result */
@@ -221,13 +221,13 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
 
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
-        entry->type = PTLNIFINI;
-        entry->u.niFini.ni_handle = ni;
-        entry->u.niFini.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
-        entry->u.niFini.retval_ptr = &cmd_ret;
+        entry->base.type = PTLNIFINI;
+        entry->niFini.ni_handle = ni;
+        entry->niFini.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+        entry->niFini.retval_ptr = &cmd_ret;
         ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                           ptl_iface_get_peer(&ptl_iface), 
-                          entry, sizeof(ptl_cqe_t));
+                          entry, sizeof(ptl_cqe_nifini_t));
 
         /* wait for result */
         do {

@@ -269,6 +269,36 @@ ptl_cq_entry_send(ptl_cq_handle_t cq_h, int index, ptl_cqe_t *entry, size_t len)
 
 
 int
+ptl_cq_entry_send_block(ptl_cq_handle_t cq_h, int index, 
+                        ptl_cqe_t *entry, size_t len)
+{
+    uint64_t tmp, data;
+    ptl_cqe_xpmem_t *real = (ptl_cqe_xpmem_t*)
+        ((char*)entry - offsetof(ptl_cqe_xpmem_t, data));
+    ptl_cq_t *rem_cq;
+
+    real->next = real; /* stash my real pointer for return */
+    real->msg_len = len;
+    data = MKREM(cq_h->my_index, 
+                 PTR2OFF(cq_h, real));
+    rem_cq = cq_h->connections[index].cq_ptr;
+
+    __sync_synchronize();
+    do {
+        tmp = rem_cq->cb.head;
+        if (tmp >= rem_cq->cb.tail + rem_cq->cb.num_entries) continue;
+    } while (!__sync_bool_compare_and_swap(&rem_cq->cb.head,
+                                           tmp,
+                                           tmp + 1));
+
+    tmp = tmp & rem_cq->cb.mask;
+    rem_cq->cb.data[tmp] = data;
+
+    return 0;
+}
+
+
+int
 ptl_cq_entry_recv(ptl_cq_handle_t cq_h, ptl_cqe_t *entry)
 {
     uint64_t tmp, data;
