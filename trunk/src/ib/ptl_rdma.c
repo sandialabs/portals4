@@ -402,11 +402,9 @@ int process_rdma_desc(buf_t *buf)
 	num_sge = 1;
 	comp = 1;
 
-	/* use the buf as its own rdma buf
-	 * eventually want to eliminate rdma_bufs altogether */
+	/* use the buf as its own rdma buf. */
 	buf->comp = 1;
 	buf->xxbuf = buf;
-	buf_get(buf);
 	buf->type = BUF_RDMA;
 
 	err = post_rdma(buf, buf->dest.rdma.qp, DATA_DIR_IN,
