@@ -959,6 +959,9 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 			return STATE_TGT_ERROR;
 		else
 			return STATE_TGT_WAIT_RDMA_DESC;
+	} else {
+		/* Was set in process_rdma_desc(). */
+		buf->xxbuf = NULL;
 	}
 
 	/* setup the remote end of the dma state
