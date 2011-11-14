@@ -14,7 +14,7 @@ static int server_done = 0;
 
 
 static int
-server_connect_cb(int remote_id)
+server_connect_cb(int remote_id, void *data)
 {
     fprintf(debug, "server: connection from remote with id %d\n",
             remote_id);
@@ -23,7 +23,7 @@ server_connect_cb(int remote_id)
 
 
 static int
-server_disconnect_cb(int remote_id)
+server_disconnect_cb(int remote_id, void *data)
 {
     fprintf(debug, "server: disconnect from remote with id %d\n",
             remote_id);
@@ -44,13 +44,13 @@ server(int fd)
         return -1;
     }
 
-    ret = ptl_cm_server_register_connect_cb(cm_h, server_connect_cb);
+    ret = ptl_cm_server_register_connect_cb(cm_h, server_connect_cb, NULL);
     if (0 != ret) {
         perror("ptl_cm_server_register_connect_cb");
         return -1;
     }
 
-    ret = ptl_cm_server_register_disconnect_cb(cm_h, server_disconnect_cb);
+    ret = ptl_cm_server_register_disconnect_cb(cm_h, server_disconnect_cb, NULL);
     if (0 != ret) {
         perror("ptl_cm_server_register_disconnect_cb");
         return -1;
@@ -81,7 +81,7 @@ server(int fd)
 
 
 static int
-client_disconnect_cb(int remote_id)
+client_disconnect_cb(int remote_id, void *data)
 {
     fprintf(debug, "client: disconnect from remote with id %d\n",
             remote_id);
@@ -110,7 +110,8 @@ client(int fd)
     fprintf(debug, "client: connected with id %d\n", my_id);
 
     ret = ptl_cm_client_register_disconnect_cb(cm_h,
-                                               client_disconnect_cb);
+                                               client_disconnect_cb,
+                                               NULL);
     if (0 != ret) {
         perror("ptl_cm_client_register_disconnect_cb");
         return -1;

@@ -7,10 +7,13 @@
 #include "shared/ptl_connection_manager.h"
 #include "shared/ptl_command_queue.h"
 
+struct ptl_connection_data_t;
+
 struct ptl_iface_t {
     int32_t            init_count;
     int32_t            connection_count;
     int32_t            connection_established;
+    struct ptl_connection_data_t *connection_data;
     int                my_ppe_rank;
     ptl_cm_client_handle_t cm_h;
     ptl_cq_handle_t    cq_h;

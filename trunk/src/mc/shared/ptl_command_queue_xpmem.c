@@ -11,8 +11,6 @@
 #include "ptl_internal_alignment.h"
 #include "ptl_command_queue.h"
 
-#define CQ_MAX_CONNECTIONS 32
-
 typedef struct ptl_cq_t ptl_cq_t;
 
 struct ptl_cqe_xpmem_t {
@@ -54,7 +52,7 @@ struct ptl_cq_t {
     int my_index;
     size_t xpmem_len;
     size_t xpmem_offset;
-    ptl_cq_connection_t connections[CQ_MAX_CONNECTIONS];
+    ptl_cq_connection_t connections[MC_PEER_COUNT];
     size_t entry_len;
     ptl_cqe_xpmem_t *freeq;
     ptl_cq_cb_t cb;
@@ -104,7 +102,7 @@ ptl_cq_create(size_t entry_size,
     }
 
     cq->my_index = my_index;
-    for (i = 0 ; i < CQ_MAX_CONNECTIONS ; ++i) {
+    for (i = 0 ; i < MC_PEER_COUNT ; ++i) {
         cq->connections[i].segid = -1;
         cq->connections[i].apid = -1;
         cq->connections[i].cq_ptr = NULL;
@@ -183,7 +181,7 @@ ptl_cq_destroy(ptl_cq_handle_t cq_h)
 {
     int i;
 
-    for (i = 0 ; i < CQ_MAX_CONNECTIONS ; ++i) {
+    for (i = 0 ; i < MC_PEER_COUNT ; ++i) {
         if (cq_h->connections[i].cq_ptr != NULL) {
             xpmem_detach(cq_h->connections[i].cq_ptr);
         }

@@ -15,7 +15,9 @@ noinst_LTLIBRARIES = libportals_mc.la libportals_mc_shared.la
 portals_engine_SOURCES = \
 	ppe/atomic.c \
 	ppe/ct.c \
+	ppe/connection.c \
 	ppe/data_movement.c \
+	ppe/dispatch.h \
 	ppe/eq.c \
 	ppe/le.c \
 	ppe/md.c \
@@ -23,6 +25,8 @@ portals_engine_SOURCES = \
 	ppe/ni.c \
 	ppe/ppe.c \
 	ppe/ppe.h \
+	ppe/ppe_xpmem.h \
+	ppe/ppe_xpmem.c \
 	ppe/pt.c
 
 portals_engine_LDFLAGS = $(XPMEM_LDFLAGS)
@@ -68,5 +72,11 @@ libportals_mc_shared_la_SOURCES = \
 	shared/ptl_command_queue_xpmem.c \
 	shared/ptl_connection_manager.h \
 	shared/ptl_connection_manager.c \
-	shared/ptl_util.h
+	shared/ptl_util.h \
+	shared/ptl_double_list.c \
+	shared/ptl_double_list.h \
+	shared/ptl_free_list.c \
+	shared/ptl_free_list.h \
+	shared/ptl_stack.c \
+	shared/ptl_stack.h
 

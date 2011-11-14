@@ -12,12 +12,15 @@
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_PT.h"
 
+
 typedef struct {
     uint32_t                        refcount;
-    uint32_t                        pid;
     uint32_t                        limits_refcount;
-    ptl_sr_value_t                  status_registers[PTL_SR_LAST]; /* this will be updated by nic */
-    void                           *shared_mem;
+
+    void*                           shared_data;
+    ptl_process_t*                  physical_address;
+    ptl_rank_t*                     logical_address;
+    ptl_sr_value_t*                 status_registers;
     ptl_internal_le_t              *i_le;
     ptl_internal_md_t              *i_md;
     ptl_internal_me_t              *i_me;
