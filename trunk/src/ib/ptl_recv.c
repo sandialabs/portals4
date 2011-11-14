@@ -84,17 +84,21 @@ static int comp_poll(ni_t *ni, int num_wc,
  */
 static int send_comp(buf_t *buf)
 {
-	/* this should only happen if we requested a completion */
-	assert(buf->comp || buf->ni_fail == PTL_NI_UNDELIVERABLE);
-
-	/* Fox XI only, restart the initiator state machine. */
-	if (!buf->xxbuf) {
-		buf->completed = 1;
-		process_init(buf);
+	/* If it's a completion that was not requested, then it's either
+	 * coming from the send completion threshold mechanism (see
+	 * conn->rdma.completion_threshold), or it was completed in
+	 * error. We ignore the first type and let the second one pass
+	 * through the state machine. */
+	if (buf->comp || buf->ni_fail == PTL_NI_UNDELIVERABLE) {
+		/* Fox XI only, restart the initiator state machine. */
+		if (!buf->xxbuf) {
+			buf->completed = 1;
+			process_init(buf);
+		}
+		
+		if (buf->comp)
+			buf_put(buf);
 	}
-
-	if (buf->comp)
-		buf_put(buf);
 
 	return STATE_RECV_DONE;
 }
@@ -112,6 +116,9 @@ static int rdma_comp(buf_t *rdma_buf)
 	int err;
 	buf_t *buf = rdma_buf->xxbuf;
 
+	/* If it's a completion that was not requested, then it's coming
+	 * from the send completion threshold mechanism (see
+	 * conn->rdma.completion_threshold), and we ignore it. */
 	if (!rdma_buf->comp)
 		return STATE_RECV_DONE;
 

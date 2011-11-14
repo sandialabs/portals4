@@ -1293,6 +1293,7 @@ static int tgt_send_ack(buf_t *buf)
 	}
 
 	send_buf->dest = buf->dest;
+	send_buf->conn = buf->conn;
 	err = buf->conn->transport.send_message(send_buf, 1);
 	if (err) {
 		WARN();
@@ -1333,6 +1334,7 @@ static int tgt_send_reply(buf_t *buf)
 	}
 
 	send_buf->dest = buf->dest;
+	send_buf->conn = buf->conn;
 	err = buf->conn->transport.send_message(send_buf, 1);
 	if (err) {
 		WARN();

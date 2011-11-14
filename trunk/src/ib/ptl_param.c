@@ -149,6 +149,12 @@ param_t param[] = {
 				.max	= LONG_MAX,
 				.val	= 1000,
 			},
+	[PTL_MAX_SEND_COMP_THRESHOLD]			= {
+				.name	= "PTL_MAX_SEND_COMP_THRESHOLD",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 500,	/* half of PTL_MAX_QP_SEND_WR */
+			},
 	[PTL_MAX_QP_SEND_SGE]			= {
 				.name	= "PTL_MAX_QP_SEND_SGE",
 				.min	= 1,
@@ -226,8 +232,7 @@ param_t param[] = {
 				.min	= 0,
 				.max	= 1,
 				.val	= 0,
-			},
-	
+			},	
 };
 
 /**
