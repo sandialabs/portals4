@@ -33,7 +33,7 @@ PtlGetUid(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    *uid = (ptl_uid_t) getuid();
+    *uid = ptl_iface.uid;
 
     return PTL_OK;
 }
@@ -44,6 +44,8 @@ PtlGetId(ptl_handle_ni_t ni_handle,
          ptl_process_t  *id)
 {
     ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_internal_ni_t *nit;
+
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -54,22 +56,34 @@ PtlGetId(ptl_handle_ni_t ni_handle,
     }
 #endif
 
-    /* BWB: FIX ME */
+    nit = &ptl_iface.ni[ni.s.ni];
 
-    return PTL_FAIL;
+    switch (ni.s.ni) {
+        case 0:                       // Logical
+        case 1:                       // Logical
+            id->rank = *(nit->logical_address);
+            break;
+        case 2:                       // Physical
+        case 3:                       // Physical
+            id->phys = nit->physical_address->phys;
+            break;
+        default:
+            UNREACHABLE;
+            abort();
+    }
+
+    return PTL_OK;
 }
 
 #ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
-    /* BWB: FIX ME */
-    return PTL_FAIL;
+    return PTL_OK;
 }
 
 
 int INTERNAL PtlInternalPhysicalProcessValidator(ptl_process_t p)
 {
-    /* BWB: FIX ME */
-    return PTL_FAIL;
+    return PTL_OK;
 }
 #endif /* ifndef NO_ARG_VALIDATION */

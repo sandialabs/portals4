@@ -8,6 +8,8 @@ struct ptl_ppe_t;
 int proc_attach_impl(ptl_ppe_t *ptl_ppe, ptl_cqe_proc_attach_t *attach);
 int ni_init_impl(struct ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd );
 int ni_fini_impl(struct ptl_ppe_t *ctx, ptl_cqe_nifini_t *cmd );
+int setmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_setmap_t *cmd);
+int getmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_getmap_t *cmd);
 int ct_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_ctalloc_t *cmd );
 int ct_free_impl(struct ptl_ppe_t *ctx, ptl_cqe_ctfree_t *cmd );
 int ct_set_impl(struct ptl_ppe_t *ctx, ptl_cqe_ctset_t *cmd );

@@ -14,6 +14,7 @@ struct ptl_iface_t {
     int32_t            connection_count;
     int32_t            connection_established;
     struct ptl_connection_data_t *connection_data;
+    ptl_uid_t          uid;
     int                my_ppe_rank;
     ptl_cm_client_handle_t cm_h;
     ptl_cq_handle_t    cq_h;

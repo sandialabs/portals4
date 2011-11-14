@@ -83,13 +83,14 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     }
 
     phys_proc = OFFSETPTR(ni->client_ptr->data, cmd->phys_addr);
-    ni->status_registers = OFFSETPTR(ni->client_ptr->data, cmd->status_reg);
-    ni->les = OFFSETPTR(ni->client_ptr->data, cmd->les);
-    ni->mds = OFFSETPTR(ni->client_ptr->data, cmd->mds);
-    ni->mes = OFFSETPTR(ni->client_ptr->data, cmd->mes);
-    ni->cts = OFFSETPTR(ni->client_ptr->data, cmd->cts);
-    ni->eqs = OFFSETPTR(ni->client_ptr->data, cmd->eqs);
-    ni->pts = OFFSETPTR(ni->client_ptr->data, cmd->pts);
+    ni->client_status_registers = 
+        OFFSETPTR(ni->client_ptr->data, cmd->status_reg);
+    ni->client_le = OFFSETPTR(ni->client_ptr->data, cmd->les);
+    ni->client_md = OFFSETPTR(ni->client_ptr->data, cmd->mds);
+    ni->client_me = OFFSETPTR(ni->client_ptr->data, cmd->mes);
+    ni->client_ct = OFFSETPTR(ni->client_ptr->data, cmd->cts);
+    ni->client_eq = OFFSETPTR(ni->client_ptr->data, cmd->eqs);
+    ni->client_pt = OFFSETPTR(ni->client_ptr->data, cmd->pts);
 
     /* set client's physical process */
     phys_proc->phys.nid = ctx->nid;

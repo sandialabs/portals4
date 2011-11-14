@@ -14,6 +14,8 @@ typedef enum {
     PTLNIFINI,
     PTLPTALLOC,
     PTLPTFREE,
+    PTLSETMAP,
+    PTLGETMAP,
     PTLMDBIND,
     PTLMDRELEASE,
     PTLMEAPPEND,
@@ -74,6 +76,22 @@ typedef struct {
     ptl_internal_handle_converter_t     ni_handle;
     int            *retval_ptr;
 } ptl_cqe_nifini_t;
+
+typedef struct {
+    ptl_cqe_base_t  base;
+    ptl_internal_handle_converter_t     ni_handle;
+    const ptl_process_t  *mapping;
+    ptl_size_t      mapping_len;
+    int            *retval_ptr;
+} ptl_cqe_setmap_t;
+
+typedef struct {
+    ptl_cqe_base_t  base;
+    ptl_internal_handle_converter_t     ni_handle;
+    ptl_process_t  *mapping;
+    ptl_size_t     *mapping_len;
+    int            *retval_ptr;
+} ptl_cqe_getmap_t;
 
 typedef struct {
     ptl_cqe_base_t base;
@@ -278,6 +296,8 @@ union ptl_cqe_t {
     ptl_cqe_proc_attach_t procAttach;
     ptl_cqe_niinit_t      niInit;
     ptl_cqe_nifini_t      niFini;
+    ptl_cqe_setmap_t      setMap;
+    ptl_cqe_getmap_t      getMap;
     ptl_cqe_ctalloc_t     ctAlloc;
     ptl_cqe_ctfree_t      ctFree;
     ptl_cqe_ctset_t       ctSet;

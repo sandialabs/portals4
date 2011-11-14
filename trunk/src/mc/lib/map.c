@@ -8,14 +8,18 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 
-int PtlSetMap(ptl_handle_ni_t      ni_handle,
-              ptl_size_t           map_size,
-              const ptl_process_t *mapping)
+int
+PtlSetMap(ptl_handle_ni_t      ni_handle,
+          ptl_size_t           map_size,
+          const ptl_process_t *mapping)
 {
-#ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t ni = { ni_handle };
+    int ret, cmd_ret = PTL_STATUS_LAST;
+    ptl_cqe_t *entry;
 
+#ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
@@ -37,17 +41,41 @@ int PtlSetMap(ptl_handle_ni_t      ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_FAIL;
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (ret < 0) return PTL_FAIL;
+    entry->base.type = PTLSETMAP;
+    entry->setMap.ni_handle = ni;
+    entry->setMap.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->setMap.mapping = mapping;
+    entry->setMap.mapping_len = map_size;
+    entry->setMap.retval_ptr = &cmd_ret;
+    ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                            ptl_iface_get_peer(&ptl_iface), 
+                            entry, sizeof(ptl_cqe_setmap_t));
+    if (ret < 0) return PTL_FAIL;
+
+    /* wait for result */
+    do {
+        ret = ptl_ppe_progress(&ptl_iface, 1);
+        if (ret < 0) return PTL_FAIL;
+        __sync_synchronize();
+    } while (PTL_STATUS_LAST == cmd_ret);
+
+    return cmd_ret;
 }
 
-int PtlGetMap(ptl_handle_ni_t ni_handle,
-              ptl_size_t      map_size,
-              ptl_process_t  *mapping,
-              ptl_size_t     *actual_map_size)
-{
-#ifndef NO_ARG_VALIDATION
-    const ptl_internal_handle_converter_t ni = { ni_handle };
 
+int
+PtlGetMap(ptl_handle_ni_t ni_handle,
+          ptl_size_t      map_size,
+          ptl_process_t  *mapping,
+          ptl_size_t     *actual_map_size)
+{
+    const ptl_internal_handle_converter_t ni = { ni_handle };
+    int ret, cmd_ret = PTL_STATUS_LAST;
+    ptl_cqe_t *entry;
+
+#ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
@@ -65,5 +93,27 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    return PTL_FAIL;
+    *actual_map_size = map_size;
+
+    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+    if (ret < 0) return PTL_FAIL;
+    entry->base.type = PTLSETMAP;
+    entry->getMap.ni_handle = ni;
+    entry->getMap.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
+    entry->getMap.mapping = mapping;
+    entry->getMap.mapping_len = actual_map_size;
+    entry->getMap.retval_ptr = &cmd_ret;
+    ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                            ptl_iface_get_peer(&ptl_iface), 
+                            entry, sizeof(ptl_cqe_setmap_t));
+    if (ret < 0) return PTL_FAIL;
+
+    /* wait for result */
+    do {
+        ret = ptl_ppe_progress(&ptl_iface, 1);
+        if (ret < 0) return PTL_FAIL;
+        __sync_synchronize();
+    } while (PTL_STATUS_LAST == cmd_ret);
+
+    return cmd_ret;
 }

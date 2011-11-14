@@ -20,6 +20,7 @@ portals_engine_SOURCES = \
 	ppe/dispatch.h \
 	ppe/eq.c \
 	ppe/le.c \
+	ppe/map.c \
 	ppe/md.c \
 	ppe/me.c \
 	ppe/ni.c \

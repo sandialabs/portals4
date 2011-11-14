@@ -23,17 +23,17 @@ fprintf(stderr,"%s():%i: " fmt, __FUNCTION__, __LINE__, ## args);
 
 
 struct ptl_ppe_ni_t {
-    ptl_ni_limits_t *limits;
+    ptl_ni_limits_t     *limits;
     ptl_ppe_xpmem_ptr_t *limits_ptr;
-    void *client_address;
+    void                *client_address;
     ptl_ppe_xpmem_ptr_t *client_ptr;
-    ptl_sr_value_t *status_registers;
-    ptl_internal_le_t *les;
-    ptl_internal_md_t *mds;
-    ptl_internal_me_t *mes;
-    ptl_internal_ct_t *cts;
-    ptl_internal_eq_t *eqs;
-    ptl_internal_pt_t *pts;
+    ptl_sr_value_t      *client_status_registers;
+    ptl_internal_le_t   *client_le;
+    ptl_internal_md_t   *client_md;
+    ptl_internal_me_t   *client_me;
+    ptl_internal_ct_t   *client_ct;
+    ptl_internal_eq_t   *client_eq;
+    ptl_internal_pt_t   *client_pt;
 };
 typedef struct ptl_ppe_ni_t ptl_ppe_ni_t;
 

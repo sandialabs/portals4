@@ -48,6 +48,14 @@ progress_loop(ptl_ppe_t *ctx)
                 ni_fini_impl( ctx, &entry.niFini );
                 break;
 
+            case PTLSETMAP:
+                setmap_impl(ctx, &entry.setMap);
+                break;
+
+            case PTLGETMAP:
+                getmap_impl(ctx, &entry.getMap);
+                break;
+
             case PTLCTALLOC:
                 ct_alloc_impl( ctx, &entry.ctAlloc );
                 break;
