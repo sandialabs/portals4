@@ -109,7 +109,7 @@ int main(int   argc,
                             NULL, 1));
         {
             ptl_ct_event_t junk;
-            CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, &junk));
+            CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 2, &junk));
         }
         {
             ptl_ct_event_t ctc = { 0, 0 };
