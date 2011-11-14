@@ -1,0 +1,3 @@
+
+#define PTL_HNDL_IF_BITS     3
+#define PTL_MAX_INTERFACES   (1U<<PTL_HNDL_IF_BITS)
