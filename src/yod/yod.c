@@ -6,6 +6,8 @@
 #define _POSIX_SOURCE
 /* for GNU definitions (strsignal) */
 #define _GNU_SOURCE
+/* for Darwin definitions (strsignal) */
+#define _DARWIN_C_SOURCE
 
 #include <portals4.h>
 
@@ -20,10 +22,10 @@
 #include <unistd.h>                    /* for fork() */
 
 #include <sys/wait.h>                  /* for waitpid() */
-#include <string.h>                    /* for memset() */
 #include <pthread.h>                   /* for all pthread functions */
 #include <sys/types.h>                 /* for kill() */
-#include <signal.h>                    /* for kill() */
+#include <signal.h>                    /* for kill() and strsignal() */
+#include <string.h>                    /* for memset() and strsignal() */
 #include <errno.h>                     /* for errno */
 
 #include <sys/types.h>
@@ -64,16 +66,17 @@ static void *collator(void *junk);
 int main(int   argc,
          char *argv[])
 {   /*{{{*/
-    size_t    commsize;
-    int       err = 0;
-    pthread_t collator_thread;
-    int       ct_spawned         = 1;
-    size_t    small_frag_size    = 256;
-    size_t    small_frag_payload = 0;
-    size_t    small_frag_count   = 512;
-    size_t    large_frag_size    = 4096;
-    size_t    large_frag_payload = 0;
-    size_t    large_frag_count   = 128;
+    size_t       commsize;
+    int          err = 0;
+    pthread_t    collator_thread;
+    uint_fast8_t ct_spawned         = 1;
+    size_t       small_frag_size    = 256;
+    size_t       small_frag_payload = 0;
+    size_t       small_frag_count   = 512;
+    size_t       large_frag_size    = 4096;
+    size_t       large_frag_payload = 0;
+    size_t       large_frag_count   = 128;
+    uint_fast8_t yod_debug          = 0;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -85,8 +88,11 @@ int main(int   argc,
 
     {
         int opt;
-        while ((opt = getopt(argc, argv, "l:s:hc:L:S:")) != -1) {
+        while ((opt = getopt(argc, argv, "dl:s:hc:L:S:")) != -1) {
             switch (opt) {
+                case 'd':
+                    yod_debug = 1;
+                    break;
                 case 'h':
                     print_usage(0);
                     break;
@@ -189,8 +195,10 @@ int main(int   argc,
     collatorLEposted = 0;
     __sync_synchronize();
     if (pthread_create(&collator_thread, NULL, collator, NULL) != 0) {
-        perror("pthread_create");
-        fprintf(stderr, "yod-> failed to create collator thread\n");
+        if (yod_debug) {
+            perror("pthread_create");
+            fprintf(stderr, "yod-> failed to create collator thread\n");
+        }
         ct_spawned = 0;                /* technically not fatal, though maybe should be */
     }
     while (collatorLEposted == 0) SPINLOCK_BODY();
@@ -206,8 +214,7 @@ int main(int   argc,
         } else if (pids[c] == -1) {
             perror("yod-> could not launch process!");
             if (c > 0) {
-                fprintf(stderr,
-                        "... I should probably kill any that have been spawned so far. Kick the lazy developer.\n");
+                fprintf(stderr, "... I should probably kill any that have been spawned so far. Kick the lazy developer.\n");
             }
             exit(EXIT_FAILURE);
         }
@@ -231,22 +238,25 @@ int main(int   argc,
                     break;
                 }
             }
-            fprintf(stderr,
-                    "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
-                    (int)exited, (unsigned long)d,
-                    strsignal(WTERMSIG(status)));
+            if (yod_debug) {
+                fprintf(stderr, "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
+                        (int)exited,
+                        (unsigned long)d,
+                        strsignal(WTERMSIG(status)));
+            }
             for (d = 0; d < count; ++d) {
                 if (pids[d] != exited) {
                     int stat;
                     switch (waitpid(pids[d], &stat, WNOHANG)) {
                         case 0:
                             if (kill(pids[d], SIGKILL) == -1) {
-                                if (errno != ESRCH) {
-                                    perror("yod-> kill failed!");
-                                } else {
-                                    fprintf(stderr,
-                                            "yod-> child %i already dead\n",
-                                            (int)pids[d]);
+                                if (yod_debug) {
+                                    if (errno != ESRCH) {
+                                        perror("yod-> kill failed!");
+                                    } else {
+                                        fprintf(stderr, "yod-> child %i already dead\n",
+                                                (int)pids[d]);
+                                    }
                                 }
                             }
                             break;
@@ -256,16 +266,21 @@ int main(int   argc,
                             ++c;
                             if (WIFSIGNALED(stat) && !WIFSTOPPED(stat) && (((WTERMSIG(status) == SIGINT) && (WTERMSIG(stat) != SIGINT)) || (WTERMSIG(stat) != SIGINT))) {
                                 ++err;
-                                fprintf(stderr,
-                                        "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
-                                        (int)pids[d], (unsigned long)d,
-                                        WTERMSIG(stat), strsignal(WTERMSIG(status)));
+                                if (yod_debug) {
+                                    fprintf(stderr, "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
+                                            (int)pids[d],
+                                            (unsigned long)d,
+                                            WTERMSIG(stat),
+                                            strsignal(WTERMSIG(status)));
+                                }
                             } else if (WIFEXITED(stat) &&
                                        (WEXITSTATUS(stat) > 0)) {
                                 ++err;
-                                fprintf(stderr,
-                                        "yod-> child pid %i exited %i\n",
-                                        (int)pids[d], WEXITSTATUS(status));
+                                if (yod_debug) {
+                                    fprintf(stderr, "yod-> child pid %i exited %i\n",
+                                            (int)pids[d],
+                                            WEXITSTATUS(status));
+                                }
                             }
                     }
                 }
@@ -273,8 +288,11 @@ int main(int   argc,
             break;
         } else if (WIFEXITED(status) && (WEXITSTATUS(status) > 0)) {
             ++err;
-            fprintf(stderr, "yod-> child pid %i exited %i\n", (int)exited,
-                    WEXITSTATUS(status));
+            if (yod_debug) {
+                fprintf(stderr, "yod-> child pid %i exited %i\n",
+                        (int)exited,
+                        WEXITSTATUS(status));
+            }
         }
     }
     if (ct_spawned == 1) {
@@ -286,17 +304,24 @@ int main(int   argc,
             case 0:
                 break;
             case EDEADLK:
-                fprintf(stderr,
-                        "yod-> joining thread would create deadlock!\n");
+                if (yod_debug) {
+                    fprintf(stderr, "yod-> joining thread would create deadlock!\n");
+                }
                 break;
             case EINVAL:
-                fprintf(stderr, "yod-> collator thread not joinable\n");
+                if (yod_debug) {
+                    fprintf(stderr, "yod-> collator thread not joinable\n");
+                }
                 break;
             case ESRCH:
-                fprintf(stderr, "yod-> collator thread missing\n");
+                if (yod_debug) {
+                    fprintf(stderr, "yod-> collator thread missing\n");
+                }
                 break;
             default:
-                perror("yod-> pthread_join");
+                if (yod_debug) {
+                    perror("yod-> pthread_join");
+                }
                 break;
         }
     }
@@ -459,6 +484,7 @@ void print_usage(int ex)
     printf("\t-h                        Print this help.\n");
     printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
     printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
+    printf("\t-d                        Show useful error output (aka \"debug mode\")\n");
     fflush(stdout);
     if (ex) {
         exit(EXIT_FAILURE);
