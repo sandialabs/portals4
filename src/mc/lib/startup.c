@@ -11,24 +11,33 @@
 #include "shared/ptl_command_queue_entry.h"
 #include "shared/ptl_connection_manager.h"
 
-static int have_attached_cq = 0;
-static int state = 0;
+
+struct ptl_connection_data_t {
+    int have_attached_cq;
+    int state;
+};
+typedef struct ptl_connection_data_t ptl_connection_data_t;
+
 
 static int
-ppe_recv_callback(int remote_id, void *buf, size_t len)
+ppe_recv_callback(int remote_id, void *buf, size_t len, void *cb_data)
 {
     ptl_cq_info_t *info;
     size_t infolen;
     int ret;
+    ptl_iface_t *iface = (ptl_iface_t*) cb_data;
 
-    if (state == 0) {
-        ret = ptl_cq_info_get(ptl_iface.cq_h, &info, &infolen);
+    if (iface->connection_data->state == 0) {
+        /* state 0: PPE has noticed our connection and sent it's
+           command queue information.  Send our command queue
+           information and attach */
+        ret = ptl_cq_info_get(iface->cq_h, &info, &infolen);
         if (ret < 0) {
             perror("ptl_cq_info_get");
             abort();
         }
 
-        ret = ptl_cm_client_send(ptl_iface.cm_h, info, infolen);
+        ret = ptl_cm_client_send(iface->cm_h, info, infolen);
         if (ret < 0) {
             perror("ptl_cm_client_send");
             abort();
@@ -37,16 +46,19 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
         free(info);
 
         info = buf;
-        ret = ptl_cq_attach(ptl_iface.cq_h, info);
+        ret = ptl_cq_attach(iface->cq_h, info);
         if (ret < 0) {
             perror("ptl_cq_attach");
             abort();
         }
-        state++;
+        iface->connection_data->state++;
 
-    } else if (state == 1) {
-        have_attached_cq = 1;
-        state++;
+    } else if (iface->connection_data->state == 1) {
+        /* state 1: PPE has received our command queue information and
+           finished its attach.  We have a working bidirectional cq */
+        iface->connection_data->have_attached_cq = 1;
+        __sync_synchronize();
+        iface->connection_data->state++;
 
     } else {
         fprintf(stderr, "unexpected ppe recv callback\n");
@@ -57,7 +69,7 @@ ppe_recv_callback(int remote_id, void *buf, size_t len)
 
 
 static int
-ppe_disconnect_callback(int remote_id)
+ppe_disconnect_callback(int remote_id, void *cb_data)
 {
     fprintf(stderr, "Lost connection to processing engine.  Aborting.\n");
     abort();
@@ -71,34 +83,43 @@ ptl_ppe_connect(ptl_iface_t *iface)
     int send_queue_size = 32; /* BWB: FIX ME */
     int recv_queue_size = 32; /* BWB: FIX ME */
 
-    ret = ptl_cm_client_connect(&ptl_iface.cm_h, &ptl_iface.my_ppe_rank);
+    iface->connection_data = malloc(sizeof(ptl_connection_data_t));
+    if (NULL == iface->connection_data) {
+        return -1;
+    }
+
+    iface->connection_data->state = 0;
+    iface->connection_data->have_attached_cq = 0;
+
+    ret = ptl_cm_client_connect(&iface->cm_h, &iface->my_ppe_rank);
     if (ret < 0) {
         perror("ptl_cm_client_connect");
         return -1;
     }
 
-    ret = ptl_cm_client_register_disconnect_cb(ptl_iface.cm_h,
-                                               ppe_disconnect_callback);
+    ret = ptl_cm_client_register_disconnect_cb(iface->cm_h,
+                                               ppe_disconnect_callback,
+                                               iface);
     if (ret < 0) {
         perror("ptl_cm_register_disconnect_cb");
         return -1;
     }
 
-    ret = ptl_cm_client_register_recv_cb(ptl_iface.cm_h, ppe_recv_callback);
+    ret = ptl_cm_client_register_recv_cb(iface->cm_h, ppe_recv_callback, iface);
     if (ret < 0) {
         perror("ptl_cm_register_recv_cb");
         return -1;
     }
 
     ret = ptl_cq_create(sizeof(ptl_cqe_t), send_queue_size, recv_queue_size,
-                        ptl_iface.my_ppe_rank, &ptl_iface.cq_h);
+                        iface->my_ppe_rank, &iface->cq_h);
     if (ret < 0) {
         perror("ptl_cq_create");
         return -1;
     }
 
-    while (have_attached_cq == 0) {
-        ret = ptl_cm_client_progress(ptl_iface.cm_h);
+    while (iface->connection_data->have_attached_cq == 0) {
+        ret = ptl_cm_client_progress(iface->cm_h);
         if (ret < 0) {
             perror("ptl_cm_client_progress");
             return -1;
@@ -124,6 +145,11 @@ ptl_ppe_disconnect(ptl_iface_t *iface)
     if (ret < 0) {
         perror("ptl_cq_destroy");
         return -1;
+    }
+
+    if (NULL != iface->connection_data) {
+        free(iface->connection_data);
+        iface->connection_data = NULL;
     }
 
     return 0;

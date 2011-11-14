@@ -153,6 +153,12 @@ AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])
 AS_IF([test "x$enable_xrc" == xyes],
       [AC_DEFINE([USE_XRC], [1], [Define to use XRC instead of RC])])
 
+AC_ARG_WITH([mc-peer-count],
+  [AS_HELP_STRING([--with-mc-peer-count=COUNT],
+     [Multicore server will support COUNT peers.  Default is 16.])])
+AS_IF([test ! -z "$with_mc_peer_count" -a "$with_mc_peer_count" != "yes" -a "$with_mc_peer_count" != "no"].
+  [peer_count=$with_mc_peer_count], [peer_count=16])
+AC_DEFINE_UNQUOTED([MC_PEER_COUNT], [$peer_count], [Number of peers multicore server must simultaneously support])
 
 
 ## ------------------- ##

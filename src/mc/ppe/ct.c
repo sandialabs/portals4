@@ -1,6 +1,7 @@
 #include "config.h"
 
-#include "ppe.h"
+#include "ppe/ppe.h"
+#include "ppe/dispatch.h"
 
 int
 ct_alloc_impl( ptl_ppe_t *ctx, ptl_cqe_ctalloc_t *cmd )

@@ -1,13 +1,16 @@
 #ifndef MC_COMMAND_QUEUE_ENTRY_H
 #define MC_COMMAND_QUEUE_ENTRY_H
 
+#include <xpmem.h>
+
 #include "portals4.h"
 #include "ptl_internal_handles.h"
 
 struct ptl_circular_buffer_t;
 
 typedef enum {
-    PTLNIINIT = 1,   
+    PTLPROCATTACH = 1,
+    PTLNIINIT,
     PTLNIFINI,
     PTLPTALLOC,
     PTLPTFREE,
@@ -44,18 +47,26 @@ typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
 typedef struct {
     ptl_cqe_base_t base;
+    int proc_id;
+    xpmem_segid_t segid;
+} ptl_cqe_proc_attach_t;
+
+typedef struct {
+    ptl_cqe_base_t base;
     ptl_internal_handle_converter_t ni_handle;
-    unsigned int    options;
     ptl_pid_t       pid; 
     ptl_ni_limits_t *limits;
-    ptl_sr_value_t  *srPtr;
-    void            *lePtr;
-    void            *mdPtr;
-    void            *mePtr;
-    void            *ctPtr;
-    void            *eqPtr;
-    void            *ptPtr;
-    int             *retval_ptr;
+    void           *shared_data;
+    long            shared_data_length;
+    int             phys_addr;
+    int             status_reg;
+    int             les;
+    int             mds;
+    int             mes;
+    int             cts;
+    int             eqs;
+    int             pts;
+    int            *retval_ptr;
 } ptl_cqe_niinit_t;
 
 typedef struct {
@@ -264,6 +275,7 @@ typedef struct {
 
 union ptl_cqe_t {
     ptl_cqe_base_t        base;
+    ptl_cqe_proc_attach_t procAttach;
     ptl_cqe_niinit_t      niInit;
     ptl_cqe_nifini_t      niFini;
     ptl_cqe_ctalloc_t     ctAlloc;

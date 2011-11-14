@@ -1,6 +1,7 @@
 #include "config.h"
 
-#include "ppe.h"
+#include "ppe/ppe.h"
+#include "ppe/dispatch.h"
 
 int
 me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )

@@ -23,7 +23,7 @@ typedef struct ptl_cm_client_t* ptl_cm_client_handle_t;
  * connection manager which may be reused immediately after a
  * disconnect callback fires.
  */
-typedef int (*ptl_cm_connect_cb_t)(int remote_id);
+typedef int (*ptl_cm_connect_cb_t)(int remote_id, void *cb_data);
 
 /*
  * Disconnect callback typedef
@@ -34,7 +34,7 @@ typedef int (*ptl_cm_connect_cb_t)(int remote_id);
  * match the remote_id specified in the connection callback on the
  * server side.
  */
-typedef int (*ptl_cm_disconnect_cb_t)(int remote_id);
+typedef int (*ptl_cm_disconnect_cb_t)(int remote_id, void *cb_data);
 
 /*
  * Receive callback typedef
@@ -45,7 +45,8 @@ typedef int (*ptl_cm_disconnect_cb_t)(int remote_id);
  * client/server send call at most once.  The buffer will be freed by
  * the implementation when the callback returns.
  */
-typedef int (*ptl_cm_recv_cb_t)(int remote_id, void *buf, size_t len);
+typedef int (*ptl_cm_recv_cb_t)(int remote_id, void *buf, size_t len, 
+                                void *cb_data);
 
 
 /*
@@ -90,6 +91,7 @@ int ptl_cm_server_destroy(ptl_cm_server_handle_t cm_h);
  * Arguments:
  *  cm_h (IN)            - connection manager handle
  *  cb (IN)              - callback function pointer
+ *  cb_data (IN)         - handle passed to callback
  *
  * Return values:
  *  0                    - success
@@ -100,7 +102,8 @@ int ptl_cm_server_destroy(ptl_cm_server_handle_t cm_h);
  *  manager, the function specified in the last call will be invoked.
  */
 int ptl_cm_server_register_connect_cb(ptl_cm_server_handle_t cm_h, 
-                                      ptl_cm_connect_cb_t cb);
+                                      ptl_cm_connect_cb_t cb,
+                                      void *cb_data);
 
 
 /*
@@ -111,6 +114,7 @@ int ptl_cm_server_register_connect_cb(ptl_cm_server_handle_t cm_h,
  * Arguments:
  *  cm_h (IN)            - connection manager handle
  *  cb (IN)              - callback function pointer
+ *  cb_data (IN)         - handle passed to callback
  *
  * Return values:
  *  0                    - success
@@ -121,7 +125,8 @@ int ptl_cm_server_register_connect_cb(ptl_cm_server_handle_t cm_h,
  *  manager, the function specified in the last call will be invoked.
  */
 int ptl_cm_server_register_disconnect_cb(ptl_cm_server_handle_t cm_h, 
-                                         ptl_cm_disconnect_cb_t cb);
+                                         ptl_cm_disconnect_cb_t cb,
+                                         void *cb_data);
 
 
 /*
@@ -132,6 +137,7 @@ int ptl_cm_server_register_disconnect_cb(ptl_cm_server_handle_t cm_h,
  * Arguments:
  *  cm_h (IN)            - connection manager handle
  *  cb (IN)              - callback function pointer
+ *  cb_data (IN)         - handle passed to callback
  *
  * Return values:
  *  0                    - success
@@ -142,7 +148,8 @@ int ptl_cm_server_register_disconnect_cb(ptl_cm_server_handle_t cm_h,
  *  manager, the function specified in the last call will be invoked.
  */
 int ptl_cm_server_register_recv_cb(ptl_cm_server_handle_t cm_h, 
-                                   ptl_cm_recv_cb_t cb);
+                                   ptl_cm_recv_cb_t cb,
+                                   void *cb_data);
 
 
 /*
@@ -232,6 +239,7 @@ int ptl_cm_client_disconnect(ptl_cm_client_handle_t cm_h);
  * Arguments:
  *  cm_h (IN)            - connection manager handle
  *  cb (IN)              - callback function pointer
+ *  cb_data (IN)         - handle passed to callback
  *
  * Return values:
  *  0                    - success
@@ -242,7 +250,8 @@ int ptl_cm_client_disconnect(ptl_cm_client_handle_t cm_h);
  *  manager, the function specified in the last call will be invoked.
  */
 int ptl_cm_client_register_disconnect_cb(ptl_cm_client_handle_t cm_h,
-                                         ptl_cm_disconnect_cb_t cb);
+                                         ptl_cm_disconnect_cb_t cb,
+                                         void *cb_data);
 
 
 /*
@@ -253,6 +262,7 @@ int ptl_cm_client_register_disconnect_cb(ptl_cm_client_handle_t cm_h,
  * Arguments:
  *  cm_h (IN)            - connection manager handle
  *  cb (IN)              - callback function pointer
+ *  cb_data (IN)         - handle passed to callback
  *
  * Return values:
  *  0                    - success
@@ -263,7 +273,8 @@ int ptl_cm_client_register_disconnect_cb(ptl_cm_client_handle_t cm_h,
  *  manager, the function specified in the last call will be invoked.
  */
 int ptl_cm_client_register_recv_cb(ptl_cm_client_handle_t cm_h, 
-                                   ptl_cm_recv_cb_t cb);
+                                   ptl_cm_recv_cb_t cb,
+                                   void *cb_data);
 
 
 /*

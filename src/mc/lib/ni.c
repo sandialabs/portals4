@@ -13,6 +13,8 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
+#define PTROFFSET(a, b) ((char*) b - (char*) a)
+
 
 ptl_ni_limits_t nit_limits[4];
 
@@ -44,6 +46,9 @@ int PtlNIInit(ptl_interface_t       iface,
 {
     int ret, cmd_ret = PTL_STATUS_LAST;
     ptl_internal_handle_converter_t ni = { .s = { HANDLE_NI_CODE, 0, 0 } };
+    ptl_internal_ni_t *nit;
+    ptl_ni_limits_t *limits;
+    size_t length;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -99,69 +104,88 @@ int PtlNIInit(ptl_interface_t       iface,
 #endif
     }
 
+    nit = &ptl_iface.ni[ni.s.ni];
+    limits = &nit_limits[ni.s.ni];
+
     /* Initialize network interface, if needed.  Other NIInit calls on
        the same network interface will block until limits_refcount is
        non-zero */
-    if (0 == __sync_fetch_and_add(&ptl_iface.ni[ni.s.ni].refcount, 1)) {
+    if (0 == __sync_fetch_and_add(&nit->refcount, 1)) {
         ptl_cqe_t *entry;
 
         /* Initialize connection, if needed.  Other NIInit calls will
            block until ptl_iface.connection_established is non-zero. */
         if (0 == __sync_fetch_and_add(&ptl_iface.connection_count, 1)) {
-            ret = ptl_ppe_connect(&ptl_iface);
-            if (ret < 0) return PTL_FAIL;
-
             ptl_iface.segid = xpmem_make (0, 0xffffffffffffffffll, 
                                           XPMEM_PERMIT_MODE,
                                           (void *)0666);
             if (-1 == ptl_iface.segid) return PTL_FAIL;
 
+            ret = ptl_ppe_connect(&ptl_iface);
+            if (ret < 0) return PTL_FAIL;
+
             __sync_synchronize();
+
+            ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
+            if (ret < 0) return PTL_FAIL;
+
+            entry->base.type = PTLPROCATTACH;
+            entry->procAttach.proc_id = ptl_iface_get_rank(&ptl_iface);
+            entry->procAttach.segid = ptl_iface.segid;
+
+            ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+                                    ptl_iface_get_peer(&ptl_iface),
+                                    entry, sizeof(ptl_cqe_proc_attach_t));
+            if (0 != ret) return PTL_FAIL;
+
             ptl_iface.connection_established = 1;
         }
         while (0 == ptl_iface.connection_established) __sync_synchronize();
 
         if (NULL == desired) {
-            nit_limits[ni.s.ni] = default_limits;
+            *limits = default_limits;
         } else {
-            nit_limits[ni.s.ni] = *desired;
+            *limits = *desired;
         }
 
-        ptl_iface.ni[ni.s.ni].shared_mem = malloc( 
-            sizeof( ptl_internal_le_t) * nit_limits[ni.s.ni].max_list_size + 
-            sizeof( ptl_internal_md_t) * nit_limits[ni.s.ni].max_mds +
-            sizeof( ptl_internal_me_t) * nit_limits[ni.s.ni].max_list_size +
-            sizeof( ptl_internal_ct_t) * nit_limits[ni.s.ni].max_cts +
-            sizeof( ptl_internal_eq_t) * nit_limits[ni.s.ni].max_eqs +
-            sizeof( ptl_internal_pt_t) * nit_limits[ni.s.ni].max_pt_index
-        );
-        ptl_iface.ni[ni.s.ni].i_le = ptl_iface.ni[ni.s.ni].shared_mem;
-        ptl_iface.ni[ni.s.ni].i_md = (void*) (ptl_iface.ni[ni.s.ni].i_le + 
-                                            nit_limits[ni.s.ni].max_list_size);
-        ptl_iface.ni[ni.s.ni].i_me = (void*) (ptl_iface.ni[ni.s.ni].i_md + 
-                                            nit_limits[ni.s.ni].max_mds );
-        ptl_iface.ni[ni.s.ni].i_ct = (void*) (ptl_iface.ni[ni.s.ni].i_me + 
-                                            nit_limits[ni.s.ni].max_list_size );
-        ptl_iface.ni[ni.s.ni].i_eq = (void*) (ptl_iface.ni[ni.s.ni].i_ct + 
-                                            nit_limits[ni.s.ni].max_cts );
-        ptl_iface.ni[ni.s.ni].i_pt = (void*) (ptl_iface.ni[ni.s.ni].i_eq + 
-                                            nit_limits[ni.s.ni].max_eqs );
+        length = sizeof(ptl_sr_value_t) * PTL_SR_LAST + 
+            sizeof(ptl_process_t) + sizeof(ptl_rank_t) + 
+            sizeof(ptl_internal_le_t) * limits->max_list_size +
+            sizeof(ptl_internal_md_t) * limits->max_mds +
+            sizeof(ptl_internal_me_t) * limits->max_list_size +
+            sizeof(ptl_internal_ct_t) * limits->max_cts +
+            sizeof(ptl_internal_eq_t) * limits->max_eqs +
+            sizeof(ptl_internal_pt_t) * limits->max_pt_index;
+
+        nit->shared_data = malloc(length);
+
+        nit->physical_address = nit->shared_data;
+        nit->logical_address = (void*)(nit->physical_address + 1);
+        nit->status_registers = (void*)(nit->logical_address + 1);
+        nit->i_le = (void*)(nit->status_registers + PTL_SR_LAST);
+        nit->i_md = (void*) (nit->i_le + limits->max_list_size);
+        nit->i_me = (void*) (nit->i_md + limits->max_mds );
+        nit->i_ct = (void*) (nit->i_me + limits->max_list_size );
+        nit->i_eq = (void*) (nit->i_ct + limits->max_cts );
+        nit->i_pt = (void*) (nit->i_eq + limits->max_eqs );
 
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
         entry->base.type = PTLNIINIT;
         entry->niInit.ni_handle = ni;
         entry->niInit.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
-        entry->niInit.options = options;
         entry->niInit.pid = pid;
         entry->niInit.limits = &nit_limits[ni.s.ni];
-        entry->niInit.srPtr = ptl_iface.ni[ni.s.ni].status_registers;
-        entry->niInit.lePtr = ptl_iface.ni[ni.s.ni].i_le;
-        entry->niInit.mdPtr = ptl_iface.ni[ni.s.ni].i_md;
-        entry->niInit.mePtr = ptl_iface.ni[ni.s.ni].i_me;
-        entry->niInit.ctPtr = ptl_iface.ni[ni.s.ni].i_ct;
-        entry->niInit.eqPtr = ptl_iface.ni[ni.s.ni].i_eq;
-        entry->niInit.ptPtr = ptl_iface.ni[ni.s.ni].i_pt;
+        entry->niInit.shared_data = nit->shared_data;
+        entry->niInit.shared_data_length = length;
+        entry->niInit.phys_addr = PTROFFSET(nit->shared_data, 
+                                            nit->physical_address);
+        entry->niInit.les = PTROFFSET(nit->shared_data, nit->i_le);
+        entry->niInit.mds = PTROFFSET(nit->shared_data, nit->i_md);
+        entry->niInit.mes = PTROFFSET(nit->shared_data, nit->i_me);
+        entry->niInit.cts = PTROFFSET(nit->shared_data, nit->i_ct);
+        entry->niInit.eqs = PTROFFSET(nit->shared_data, nit->i_eq);
+        entry->niInit.pts = PTROFFSET(nit->shared_data, nit->i_pt);
         entry->niInit.retval_ptr = &cmd_ret;
 
         ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
@@ -178,20 +202,20 @@ int PtlNIInit(ptl_interface_t       iface,
         if (PTL_OK != cmd_ret) return cmd_ret;
 
         __sync_synchronize();
-        ptl_iface.ni[ni.s.ni].limits_refcount = 1;
+        nit->limits_refcount = 1;
     } else {
-        if ((pid != PTL_PID_ANY) && pid != ptl_iface.ni[ni.s.ni].pid) {
+        if ((pid != PTL_PID_ANY) && pid != nit->physical_address->phys.pid) {
             return PTL_ARG_INVALID;
         }
     }
 
     /* wait for ni limits to be ready... */
-    while (ptl_iface.ni[ni.s.ni].limits_refcount == 0) { 
+    while (nit->limits_refcount == 0) { 
         __sync_synchronize(); 
     }
 
     if (NULL != actual) {
-        *actual = nit_limits[ni.s.ni];
+        *actual = *limits;
     }
     *ni_handle = ni.a;
 
@@ -237,8 +261,13 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
         } while (PTL_STATUS_LAST == cmd_ret);
         if (PTL_OK != cmd_ret) return cmd_ret;
 
+        free(ptl_iface.ni[ni.s.ni].shared_data);
+
         if (0 == __sync_fetch_and_sub(&ptl_iface.connection_count, 1)) {
             ret = ptl_ppe_disconnect(&ptl_iface);
+            if (ret < 0) return PTL_FAIL;
+
+            ret = xpmem_remove(ptl_iface.segid);
             if (ret < 0) return PTL_FAIL;
         }
     }

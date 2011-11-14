@@ -2,7 +2,7 @@
 #define PTL_INTERNAL_MD_H
 
 #include "portals4.h"
-#include <ptl_visibility.h>
+#include "lib/include/ptl_visibility.h"
 
 struct ptl_internal_md_t {
     char in_use;
