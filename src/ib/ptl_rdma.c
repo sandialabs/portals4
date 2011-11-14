@@ -325,8 +325,12 @@ static int process_rdma(buf_t *buf)
 		/* post the rdma read or write operation to the QP */
 		err = post_rdma(rdma_buf, buf->dest.rdma.qp, dir,
 				addr, rem_key, sge_list, entries, comp);
-		if (err)
+		if (err) {
+			pthread_spin_lock(&buf->rdma_list_lock);
+			list_del(&rdma_buf->list);
+			pthread_spin_unlock(&buf->rdma_list_lock);
 			return err;
+		}
 
 		if (comp)
 			break;
