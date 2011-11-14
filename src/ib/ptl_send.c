@@ -15,12 +15,17 @@ int send_message_rdma(buf_t *buf, int signaled)
 	buf->rdma.send_wr.opcode = IBV_WR_SEND;
 	if (signaled) {
 		buf->rdma.send_wr.send_flags = IBV_SEND_SIGNALED;
-
+		atomic_set(&buf->conn->rdma.completion_threshold, 0);
 		/* Keep the buffer from being freed until we get the
 		 * completion. */
 		buf_get(buf);
 	} else {
-		buf->rdma.send_wr.send_flags = 0;
+		if (atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
+			buf->rdma.send_wr.send_flags = IBV_SEND_SIGNALED;
+			atomic_set(&buf->conn->rdma.completion_threshold, 0);
+		} else {
+			buf->rdma.send_wr.send_flags = 0;
+		}
 	}
 	buf->rdma.sg_list[0].length = buf->length;
 	buf->type = BUF_SEND;

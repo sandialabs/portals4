@@ -42,6 +42,8 @@ void conn_init(conn_t *conn, ni_t *ni)
 
 	INIT_LIST_HEAD(&conn->buf_list);
 	INIT_LIST_HEAD(&conn->list);
+
+	atomic_set(&conn->rdma.completion_threshold, 0);
 }
 
 /**

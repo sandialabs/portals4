@@ -62,6 +62,13 @@ struct conn {
 			int			retry_resolve_addr;
 			int			retry_resolve_route;
 			int			retry_connect;
+
+			/* If no completion has been requested in a while, we need
+			 * to ask for one. If none is ever requested, then it's
+			 * possible the send queue will become full because none
+			 * of the sends are flushed. The completion generated will
+			 * be ignored by the receiver. */
+			atomic_t    completion_threshold;
 		} rdma;
 
 		struct {
