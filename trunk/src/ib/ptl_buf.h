@@ -199,13 +199,18 @@ struct buf {
 
 	union {
 		struct {
-			union {
-				struct ibv_send_wr send_wr;
-				struct ibv_recv_wr recv_wr;
-			};
+			/* IB LKEY for that buffer. It's coming from the pool
+			 * slab. */
+			uint32_t lkey;
 
-			/* SG list to register the internal_data field. */
-			struct ibv_sge sg_list[1];
+			/* Most of the fields in a receive work request can be
+			 * initialized only once. */
+			struct {
+				struct ibv_recv_wr wr;
+
+				/* SG list to register the internal_data field. */
+				struct ibv_sge sg_list;
+			} recv;
 
 			/* For RDMA operations. */
 			struct ibv_sge		*cur_rem_sge;

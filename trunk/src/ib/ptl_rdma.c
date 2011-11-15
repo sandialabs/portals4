@@ -37,11 +37,11 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 		wr.wr_id = (uintptr_t)buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
 	} else {
+		wr.wr_id = 0;
 		if (atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
-			buf->rdma.send_wr.send_flags = IBV_SEND_SIGNALED;
+			wr.send_flags = IBV_SEND_SIGNALED;
 			atomic_set(&buf->conn->rdma.completion_threshold, 0);
 		} else {
-			wr.wr_id = 0;
 			wr.send_flags = 0;
 		}
 	}
