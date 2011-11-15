@@ -14,8 +14,8 @@
  * on list traversal even in user-space.
  */
 
-#include "./stddef.h"
-#include "./prefetch.h"
+#include <linux/stddef.h>
+#include <linux/prefetch.h>
 
 /*
  * These are non-NULL pointers that will result in page faults

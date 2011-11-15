@@ -45,28 +45,29 @@
  *
  */
 
-/* Include this file to make the TCP NAL available to an application.
+/* Include this file to make the UTCP NAL available to an application.
  * An application can access multiple NALs by including more than one
  * p3nal_<nal>.h file.  In that case, the first file included defines
  * the default NAL, and any other NAL must be explicitly referenced.
  */
 
-#ifndef _PTL3_P3NAL_TCP_H_
-#define _PTL3_P3NAL_TCP_H_
+#ifndef _PTL3_P3NAL_UTCP_H_
+#define _PTL3_P3NAL_UTCP_H_
 
-#define PTL_IFACE_TCP  PTL_NALTYPE_TCP
+#define PTL_IFACE_UTCP  PTL_NALTYPE_UTCP
 
-#define PTL_IFACE_TCP0 PTL_NALTYPE_TCP0
-#define PTL_IFACE_TCP1 PTL_NALTYPE_TCP1
-#define PTL_IFACE_TCP2 PTL_NALTYPE_TCP2
-#define PTL_IFACE_TCP3 PTL_NALTYPE_TCP3
+#define PTL_IFACE_UTCP0 PTL_NALTYPE_UTCP0
+#define PTL_IFACE_UTCP1 PTL_NALTYPE_UTCP1
+#define PTL_IFACE_UTCP2 PTL_NALTYPE_UTCP2
+#define PTL_IFACE_UTCP3 PTL_NALTYPE_UTCP3
 
 #if 0
 #ifdef PTL_IFACE_DEFAULT
-#warn  Default Portals3 interface already defined as PTL_IFACE_DEFAULT
+#warn  Default Portals3 interface already defined
 #else
-#define PTL_IFACE_DEFAULT PTL_IFACE_TCP
+#define PTL_IFACE_DEFAULT PTL_IFACE_UTCP
 #endif
 #endif
 
-#endif /* _PTL3_NAL_TCP_H_ */
+
+#endif /* _PTL3_P3NAL_UTCP_H_ */
