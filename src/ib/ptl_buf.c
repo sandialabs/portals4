@@ -22,7 +22,7 @@ int buf_setup(void *arg)
 	buf->num_mr = 0;
 	buf->comp = 0;
 	buf->data = buf->internal_data;
-	buf->rdma.recv_wr.next = NULL;
+	buf->rdma.recv.wr.next = NULL;
 	buf->rdma_desc_ok = 0;
 	buf->ni_fail = PTL_NI_OK;
 
@@ -82,13 +82,15 @@ int buf_init(void *arg, void *parm)
 		 * buffer in shared memory. */
 		struct ibv_mr *mr = parm;
 
-		buf->rdma.send_wr.next = NULL;
-		buf->rdma.send_wr.wr_id = (uintptr_t)buf;
-		buf->rdma.send_wr.sg_list = buf->rdma.sg_list;
-		buf->rdma.send_wr.num_sge = 1;
+		buf->rdma.recv.wr.next = NULL;
+		buf->rdma.recv.wr.wr_id = (uintptr_t)buf;
+		buf->rdma.recv.wr.sg_list = &buf->rdma.recv.sg_list;
+		buf->rdma.recv.wr.num_sge = 1;
 
-		buf->rdma.sg_list[0].addr = (uintptr_t)buf->internal_data;
-		buf->rdma.sg_list[0].lkey = mr->lkey;
+		buf->rdma.recv.sg_list.addr = (uintptr_t)buf->internal_data;
+		buf->rdma.recv.sg_list.lkey = mr->lkey;
+
+		buf->rdma.lkey = mr->lkey;
 	}
 
 	pthread_spin_init(&buf->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -159,10 +161,10 @@ int ptl_post_recv(ni_t *ni, int count)
 		if (err)
 			break;
 
-		buf->rdma.sg_list[0].length = BUF_DATA_SIZE;
+		buf->rdma.recv.sg_list.length = BUF_DATA_SIZE;
 		buf->type = BUF_RECV;
-		buf->rdma.recv_wr.next = wr;
-		wr = &buf->rdma.recv_wr;
+		buf->rdma.recv.wr.next = wr;
+		wr = &buf->rdma.recv.wr;
 
 		list_add_tail(&buf->list, &list);
 	}
@@ -181,14 +183,14 @@ int ptl_post_recv(ni_t *ni, int count)
 	/* account for posted buffers */
 	atomic_add(&ni->rdma.num_posted_recv, actual);
 
-	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv_wr, &bad_wr);
+	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv.wr, &bad_wr);
 	if (err) {
 		WARN();
 
 		/* re-stock any unposted buffers */
 		pthread_spin_lock(&ni->rdma.recv_list_lock);
 		for (wr = bad_wr; wr; wr = wr->next) {
-			buf = container_of(wr, buf_t, rdma.recv_wr);
+			buf = container_of(wr, buf_t, rdma.recv.wr);
 			list_del(&buf->list);
 			buf_put(buf);
 
