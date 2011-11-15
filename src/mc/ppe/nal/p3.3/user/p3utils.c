@@ -45,7 +45,7 @@
  *
  */
 
-//#include <p3-config.h>
+#include <p3-config.h>
 
 #include <stdio.h>
 

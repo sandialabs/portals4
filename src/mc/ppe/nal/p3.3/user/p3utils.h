@@ -96,7 +96,6 @@ do {							\
 #endif
 
 void p3utils_init(void);
-extern FILE *p3_out;
 
 #define P3MSG_EMERG   "EMERG: "
 #define P3MSG_ALERT   "ALERT: "

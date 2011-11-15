@@ -1,14 +1,14 @@
 
-
 #ifndef _PTL3_LIB_TYPES_H_
 #define _PTL3_LIB_TYPES_H_
 
 struct lib_nal;
 typedef struct lib_ni {
-     ptl_pid_t pid;
-     ptl_pid_t nid;
-     unsigned int debug;
-     struct lib_nal *nal;
+    ptl_pid_t pid;
+    ptl_pid_t nid;
+    ptl_ni_limits_t limits; 
+    unsigned int debug;
+    struct lib_nal *nal;
 } lib_ni_t;
 
 typedef struct {

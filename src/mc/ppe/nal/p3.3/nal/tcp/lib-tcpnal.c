@@ -116,11 +116,7 @@
  * close later, because we decide it's the duplicate.
  */
 
-#include "../../include/p3-config.h"
-
-#define lib_finalize(x,y,z)
-#define lib_parse(w,x,y,z) PTL_OK
-#include "../../include/p3nal_tcp.h"
+#include <p3-config.h>
 
 #include <limits.h>
 #include <errno.h>
@@ -158,31 +154,29 @@
  * the Portals3 versions of the Linux kernel include files, which
  * have been suitably modified for use in user-space code.
  */
-#include "../../linux/include/linux/list.h"
+#include <linux/list.h>
 
 /* These are all Portals3 include files.
  */
-#include "../../user/p3utils.h"
+#include <p3utils.h>
 
-#include "../../include/p3api/types.h"
-#include "../../include/p3api/debug.h"
-#include "../../include/p3api/misc.h"
+#include <p3api/types.h>
+#include <p3api/debug.h>
+#include <p3api/misc.h>
 
-#include "../../include/p3/lock.h"
-#include "../../include/p3/handle.h"
-#if 0
-#include <p3/process.h>
-#include <p3/forward.h>
-#endif
-#include "../../include/p3/nal_types.h"
-//#include <p3/errno.h>
-#include "../../include/p3/debug.h"
+#include <p3/lock.h>
+#include <p3/handle.h>
+//#include <p3/process.h>
+//#include <p3/forward.h>
+#include <p3/nal_types.h>
+#include <p3/errno.h>
+#include <p3/debug.h>
 
-#include "../../include/p3lib/types.h"
-//#include <p3lib/p3lib.h>
-#include "../../include/p3lib/nal.h"
-#include "../../include/p3lib/p3lib_support.h"
-#include "../../include/p3lib/p3validate.h"
+#include <p3lib/types.h>
+#include <p3lib/p3lib.h>
+#include <p3lib/nal.h>
+#include <p3lib/p3lib_support.h>
+#include <p3lib/p3validate.h>
 
 #include "lib-tcpnal.h"
 #include "hash_int.h"
@@ -2486,6 +2480,7 @@ static
 void p3tcp_sendto(p3tcp_data_t *d, int fd)
 {
 	static const char *fn = "p3tcp_sendto";
+printf("%s():%d\n",__func__,__LINE__);
 	p3tcp_msg_t *msg, *next_msg;
 	p3tcp_chan_t *chan;
 	ptl_ni_fail_t ni_stat = PTL_NI_OK;
@@ -2846,6 +2841,7 @@ static void *p3tcp_lib_start(void *arg)
 static inline
 void p3tcp_send_start(p3tcp_data_t *d, lib_ni_t *ni)
 {
+printf("%s():%d\n",__func__,__LINE__);
 	if (DEBUG_NI(d,PTL_DBG_NI_06))
 		p3_print("p3tcp_send_start: Waking progress thread.\n");
 
@@ -2888,6 +2884,7 @@ int p3tcp_send(lib_ni_t *ni, unsigned long *nal_msg_data, void *lib_data,
 	       ptl_size_t offset, ptl_size_t len, void *addrkey)
 {
 	static const char *fn = "p3tcp_send";
+printf("%s():%d\n",__func__,__LINE__);
 
 	p3tcp_msg_t *msg;
 	p3tcp_chan_t *chan;
@@ -3358,6 +3355,7 @@ void *p3tcp_get_ifname(ptl_interface_t type)
 {
 	char *str, *ev;
 
+printf("%s():%d\n",__func__,__LINE__);
 	if (type == PTL_NALTYPE_UTCP3) {
 		str = "PTL_IFACE3";
 	}
@@ -3391,6 +3389,7 @@ p3tcp_init_private(ptl_interface_t type, const lib_ni_t *ni)
 	p3tcp_data_t *nal_data;
 	char *if_name;
 	unsigned n;
+printf("%s():%d\n",__func__,__LINE__);
 
 #ifdef USER_PROGRESS_THREAD
 	int flags, pipe_fd[2];
@@ -3461,6 +3460,7 @@ struct lib_nal *p3tcp_create_nal(ptl_interface_t type, const lib_ni_t *ni,
 				 ptl_nid_t *nid, ptl_ni_limits_t *limits,
 				 void *data, size_t data_sz)
 {
+printf("%s():%d\n",__func__,__LINE__);
 	lib_nal_t *nal;
 
 #ifndef PTL_KERNEL_BLD

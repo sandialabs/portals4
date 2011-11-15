@@ -1,1 +1,3 @@
-#define SIZE_T_IS_ULONG
+#define SIZE_T_IS_ULONG 1
+#define PTL_UTCP_NAL_SUPPORT 1
+#define DEBUG_PTL_INTERNALS 1
