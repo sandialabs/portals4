@@ -28,7 +28,41 @@ portals_engine_SOURCES = \
 	ppe/ppe.h \
 	ppe/ppe_xpmem.h \
 	ppe/ppe_xpmem.c \
-	ppe/pt.c
+	ppe/pt.c \
+	ppe/nal_callback.c \
+	ppe/nal_init.c \
+	ppe/nal/p3.3/include/p3-config.h \
+	ppe/nal/p3.3/include/p3nal_utcp.h \
+	ppe/nal/p3.3/include/p3/debug.h \
+	ppe/nal/p3.3/include/p3/errno.h \
+	ppe/nal/p3.3/include/p3/handle.h \
+	ppe/nal/p3.3/include/p3/lock.h \
+	ppe/nal/p3.3/include/p3/nal_types.h \
+	ppe/nal/p3.3/include/p3api/debug.h \
+	ppe/nal/p3.3/include/p3api/misc.h \
+	ppe/nal/p3.3/include/p3api/types.h \
+	ppe/nal/p3.3/include/p3lib/debug.h \
+	ppe/nal/p3.3/include/p3lib/nal.h \
+	ppe/nal/p3.3/include/p3lib/p3lib.h \
+	ppe/nal/p3.3/include/p3lib/p3lib_support.h \
+	ppe/nal/p3.3/include/p3lib/p3validate.h \
+	ppe/nal/p3.3/include/p3lib/types.h \
+	ppe/nal/p3.3/linux/include/linux/list.h \
+	ppe/nal/p3.3/linux/include/linux/prefetch.h \
+	ppe/nal/p3.3/linux/include/linux/stddef.h \
+	ppe/nal/p3.3/nal/tcp/hash_init.h \
+	ppe/nal/p3.3/nal/tcp/lib-tcpnal.c \
+	ppe/nal/p3.3/nal/tcp/lib-tcpnal.h \
+	ppe/nal/p3.3/p3lib/init.c \
+	ppe/nal/p3.3/p3lib/nal.c \
+	ppe/nal/p3.3/user/p3lib_support.c \
+	ppe/nal/p3.3/user/p3utils.c \
+	ppe/nal/p3.3/user/p3utils.h 
+
+portals_engine_CPPFLAGS = $(AM_CPPFLAGS) \
+    -I$(top_srcdir)/src/mc/ppe/nal/p3.3/include \
+    -I$(top_srcdir)/src/mc/ppe/nal/p3.3/linux/include \
+    -I$(top_srcdir)/src/mc/ppe/nal/p3.3/user
 
 portals_engine_LDFLAGS = $(XPMEM_LDFLAGS)
 portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
