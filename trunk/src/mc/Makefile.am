@@ -62,6 +62,7 @@ portals_engine_SOURCES = \
 portals_engine_CPPFLAGS = $(AM_CPPFLAGS) \
     -I$(top_srcdir)/src/mc/ppe/nal/p3.3/include \
     -I$(top_srcdir)/src/mc/ppe/nal/p3.3/linux/include \
+    -I$(top_srcdir)/src/mc/ppe/nal/p3.3/nal/tcp \
     -I$(top_srcdir)/src/mc/ppe/nal/p3.3/user
 
 portals_engine_LDFLAGS = $(XPMEM_LDFLAGS)

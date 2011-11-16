@@ -82,6 +82,7 @@ int PtlPut(ptl_handle_md_t  md_handle,
     entry->put.match_bits    = match_bits;
     entry->put.remote_offset = remote_offset;
     entry->put.user_ptr      = user_ptr;
+    entry->put.pt_index      = pt_index;
     entry->put.hdr_data      = hdr_data; 
     
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
