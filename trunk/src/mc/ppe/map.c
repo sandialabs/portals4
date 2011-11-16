@@ -16,7 +16,7 @@ setmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_setmap_t *cmd)
 {
     int ret;
     ptl_cqe_t *send_entry;
-    int peer = cmd->ni_handle.s.selector;
+    int peer = cmd->base.remote_id;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t *ni;
 
@@ -50,7 +50,7 @@ getmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_getmap_t *cmd)
 {
     int ret;
     ptl_cqe_t *send_entry;
-    int peer = cmd->ni_handle.s.selector;
+    int peer = cmd->base.remote_id;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t *ni;
 

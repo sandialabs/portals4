@@ -49,8 +49,8 @@ PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLCTALLOC;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->ctAlloc.ct_handle  = ct_hc;
-    entry->ctAlloc.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface),
@@ -83,8 +83,8 @@ PtlCTFree(ptl_handle_ct_t ct_handle)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLCTFREE;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
-    entry->ctFree.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
@@ -114,8 +114,8 @@ PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLCTCANCELTRIGGERED;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
-    entry->ctFree.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
@@ -267,8 +267,8 @@ PtlCTSet(ptl_handle_ct_t ct_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLCTSET;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->ctSet.ct_handle = ct_hc;
-    entry->ctSet.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->ctSet.new_ct       = test;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
@@ -301,8 +301,8 @@ PtlCTInc(ptl_handle_ct_t ct_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLCTSET;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->ctInc.ct_handle = ct_hc;
-    entry->ctInc.ct_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->ctInc.increment = increment;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
