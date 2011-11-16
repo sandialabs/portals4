@@ -2,6 +2,12 @@
 #ifndef _PTL3_API_TYPES_H_
 #define _PTL3_API_TYPES_H_
 
+#include <stdint.h>
+
+typedef uint32_t ptl_jid_t;
+
+#define PTL_JID_ANY ((ptl_jid_t)UINT32_C(0xffffffff))
+
 #include <portals4.h>
 typedef struct {
     ptl_nid_t nid;

@@ -67,7 +67,7 @@
 
 #include <p3/lock.h>
 #include <p3/handle.h>
-//#include <p3/process.h>
+#include <p3/process.h>
 //#include <p3/forward.h>
 #include <p3/errno.h>
 #include <p3/debug.h>
