@@ -2,6 +2,8 @@
 #ifndef _PTL3_LIB_TYPES_H_
 #define _PTL3_LIB_TYPES_H_
 
+#include <ppe/ptl_hdr.h>
+
 struct lib_nal;
 typedef struct lib_ni {
     ptl_pid_t pid;
@@ -10,9 +12,6 @@ typedef struct lib_ni {
     unsigned int debug;
     struct lib_nal *nal;
 } lib_ni_t;
-
-typedef struct {
-} ptl_hdr_t;
 
 typedef char lib_mem_t;
 typedef char api_mem_t;
