@@ -17,9 +17,11 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
                ptl_pt_index_t *pt_index)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_cqe_t *entry;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
+        VERBOSE_ERROR("Library not initialized\n");
         return PTL_NO_INIT;
     }
     if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
@@ -65,8 +67,6 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
         *pt_index = pt_index_req;
         mark_pt_inuse( ni.s.ni, pt_index_req ); 
     }
-
-    ptl_cqe_t *entry;
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 

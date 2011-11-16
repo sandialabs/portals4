@@ -172,8 +172,8 @@ int PtlNIInit(ptl_interface_t       iface,
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
         entry->base.type = PTLNIINIT;
+        entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
         entry->niInit.ni_handle = ni;
-        entry->niInit.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
         entry->niInit.pid = pid;
         entry->niInit.limits = &nit_limits[ni.s.ni];
         entry->niInit.shared_data = nit->shared_data;
@@ -246,8 +246,8 @@ PtlNIFini(ptl_handle_ni_t ni_handle)
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
         entry->base.type = PTLNIFINI;
+        entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
         entry->niFini.ni_handle = ni;
-        entry->niFini.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
         entry->niFini.retval_ptr = &cmd_ret;
         ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                           ptl_iface_get_peer(&ptl_iface), 

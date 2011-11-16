@@ -44,8 +44,8 @@ PtlSetMap(ptl_handle_ni_t      ni_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (ret < 0) return PTL_FAIL;
     entry->base.type = PTLSETMAP;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->setMap.ni_handle = ni;
-    entry->setMap.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->setMap.mapping = mapping;
     entry->setMap.mapping_len = map_size;
     entry->setMap.retval_ptr = &cmd_ret;
@@ -98,8 +98,8 @@ PtlGetMap(ptl_handle_ni_t ni_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (ret < 0) return PTL_FAIL;
     entry->base.type = PTLSETMAP;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->getMap.ni_handle = ni;
-    entry->getMap.ni_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->getMap.mapping = mapping;
     entry->getMap.mapping_len = actual_map_size;
     entry->getMap.retval_ptr = &cmd_ret;

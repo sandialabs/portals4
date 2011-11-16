@@ -143,8 +143,8 @@ PtlAtomic(ptl_handle_md_t  md_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLATOMIC;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->atomic.md_handle       = md_hc;
-    entry->atomic.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->atomic.local_offset    = local_offset;
     entry->atomic.length          = length;
     entry->atomic.ack_req         = ack_req;
@@ -310,13 +310,10 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLFETCHATOMIC;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->fetchAtomic.get_md_handle =  get_md;  
-    entry->fetchAtomic.get_md_handle.s.selector = 
-        ptl_iface_get_rank(&ptl_iface);
     entry->fetchAtomic.local_get_offset = local_get_offset;
     entry->fetchAtomic.put_md_handle    = put_md;
-    entry->fetchAtomic.put_md_handle.s.selector = 
-        ptl_iface_get_rank(&ptl_iface);
     entry->fetchAtomic.length           = length;
     entry->fetchAtomic.target_id        = target_id;
     entry->fetchAtomic.pt_index         = pt_index;
@@ -479,13 +476,10 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLSWAP;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->swap.get_md_handle =  get_md_hc;  
-    entry->swap.get_md_handle.s.selector = 
-        ptl_iface_get_rank(&ptl_iface);
     entry->swap.local_get_offset = local_get_offset;
     entry->swap.put_md_handle    = put_md_hc;
-    entry->swap.put_md_handle.s.selector = 
-        ptl_iface_get_rank(&ptl_iface);
     entry->swap.length           = length;
     entry->swap.target_id        = target_id;
     entry->swap.pt_index         = pt_index;
@@ -522,7 +516,7 @@ PtlAtomicSync(void)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLATOMICSYNC;
-    entry->atomicSync.my_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface), 

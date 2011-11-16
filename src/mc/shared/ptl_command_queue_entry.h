@@ -43,7 +43,8 @@ typedef enum {
 } ptl_cmd_type_t;
 
 struct ptl_cqe_base_t {
-    char type; 
+    unsigned char type      : 8;
+    unsigned int  remote_id : 24;
 };
 typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
@@ -282,7 +283,6 @@ typedef struct {
 
 typedef struct {
     ptl_cqe_base_t base;
-    int my_id;
 } ptl_cqe_atomicsync_t;
 
 typedef struct {

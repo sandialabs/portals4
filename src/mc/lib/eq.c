@@ -46,6 +46,8 @@ PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     /* Allocate an EQ index and a circular buffer behind the EQ */
     eq_hc.s.code = find_eq_index( ni_hc.s.ni);
     if ( eq_hc.s.code == -1 ) return PTL_FAIL;
+    eq_hc.s.ni = ni_hc.s.ni;
+    eq_hc.s.selector = HANDLE_EQ_CODE;
 
     eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
     ret = ptl_circular_buffer_init(&eq->cb, count, sizeof(ptl_event_t));
@@ -54,14 +56,16 @@ PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     /* Send the information to the driver */
     ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     entry->base.type = PTLEQALLOC;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->eqAlloc.eq_handle = eq_hc;
-    entry->eqAlloc.eq_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->eqAlloc.cb = eq->cb;
     
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface), 
                                   entry, sizeof(ptl_cqe_eqalloc_t));
     if (0 != ret) return PTL_FAIL;
+
+    printf("eqalloc: %ld\n", (long) eq_hc.a);
 
     *eq_handle = eq_hc.a;
     return PTL_OK;

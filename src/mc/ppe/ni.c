@@ -17,7 +17,7 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
 {
     int ret, i;
     ptl_cqe_t *send_entry;
-    int peer = cmd->ni_handle.s.selector;
+    int peer = cmd->base.remote_id;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t *ni;
     ptl_process_t *phys_proc;
@@ -134,7 +134,7 @@ ni_fini_impl( ptl_ppe_t *ctx, ptl_cqe_nifini_t *cmd )
 {
     int ret;
     ptl_cqe_t *send_entry;
-    int peer = cmd->ni_handle.s.selector;
+    int peer = cmd->base.remote_id;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t *ni;
 

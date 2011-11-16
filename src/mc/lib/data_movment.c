@@ -73,8 +73,8 @@ int PtlPut(ptl_handle_md_t  md_handle,
     if (0 != ret) return PTL_FAIL;
     
     entry->base.type = PTLPUT;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->put.md_handle = md_hc; 
-    entry->put.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->put.local_offset  = local_offset;
     entry->put.length        = length;
     entry->put.ack_req       = ack_req;
@@ -154,8 +154,8 @@ PtlGet(ptl_handle_md_t  md_handle,
     if (0 != ret) return PTL_FAIL;
     
     entry->base.type = PTLGET;
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->get.md_handle = md_hc;
-    entry->get.md_handle.s.selector = ptl_iface_get_rank(&ptl_iface);
     entry->get.local_offset = local_offset; 
     entry->get.target_id = target_id; 
     entry->get.pt_index = pt_index; 
