@@ -16,7 +16,10 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
               ptl_handle_md_t *md_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t md_hc = { .s.selector = HANDLE_MD_CODE };
+    ptl_internal_handle_converter_t md_hc = { .s.ni = ni.s.ni,
+                                    .s.selector = HANDLE_MD_CODE };
+    ptl_cqe_t *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     int ct_optional = 1;
@@ -49,28 +52,20 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    int md_index = find_md_index( ni.s.ni );
+    md_hc.s.code = find_md_index( ni.s.ni );
+    if ( md_hc.s.code == - 1) return PTL_FAIL;
 
-    if ( md_index == - 1) {
-        return PTL_FAIL;
-    }
-
-    ptl_cqe_t *entry;
-
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    if (0 != ret ) return PTL_FAIL;
 
     entry->base.type = PTLMDBIND;
-    entry->mdBind.md_handle.s.ni       = ni.s.ni;
-    entry->mdBind.md_handle.s.code     = md_index;
-
+    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->mdBind.md_handle       = md_hc;
     entry->mdBind.md = *md;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_mdbind_t));
-
-    md_hc.s.code = md_index;
-    md_hc.s.ni  = ni.s.ni;
 
     *md_handle = md_hc.a;
 
