@@ -895,7 +895,6 @@ again4:
 				 ntohl(chan->raddr.sin_addr.s_addr));
 		goto out;
 	}
-printf("%s():%d %#lx %#lx %d %d\n",__func__,__LINE__,chan->rnid, rnid, chan->rpid, rpid);
 	if (initiator &&
 	    !(rnid == chan->rnid &&
 	      (rpid == chan->rpid || rpid == PTL_PID_ANY))) {
@@ -909,7 +908,6 @@ printf("%s():%d %#lx %#lx %d %d\n",__func__,__LINE__,chan->rnid, rnid, chan->rpi
 	 * data for a message to a non-existing PID should get dropped
 	 * later.
 	 */
-printf("%s():%d %#lx %#lx\n",__func__,__LINE__,lnid, d->nid);
 	if (!(lnid == d->nid
 #ifndef PTL_KERNEL_BLD
 	      && p3lib_get_ni_pid(d->type, lpid)
