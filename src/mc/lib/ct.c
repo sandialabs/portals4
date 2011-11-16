@@ -19,7 +19,8 @@ PtlCTAlloc(ptl_handle_ni_t  ni_handle,
            ptl_handle_ct_t *ct_handle)
 {
     const ptl_internal_handle_converter_t ni = { ni_handle };
-    ptl_internal_handle_converter_t    ct_hc = { .s.ni = ni.s.ni };
+    ptl_internal_handle_converter_t    ct_hc = { .s.ni = ni.s.ni,
+                                            .s.selector = HANDLE_CT_CODE  };
     ptl_internal_ct_t *ct;
     ptl_cqe_t *entry;
     int ret;
