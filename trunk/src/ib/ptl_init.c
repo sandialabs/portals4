@@ -155,10 +155,10 @@ static int start(buf_t *buf)
 			buf->event_mask |= XI_CT_SEND_EVENT;
 
 		if ((hdr->ack_req == PTL_CT_ACK_REQ ||
-		     hdr->ack_req == PTL_OC_ACK_REQ))
-			buf->event_mask |= XI_RECEIVE_EXPECTED; {
+		     hdr->ack_req == PTL_OC_ACK_REQ)) {
+			buf->event_mask |= XI_RECEIVE_EXPECTED;
 			if (buf->put_md->ct && (buf->put_md->options &
-						PTL_MD_EVENT_CT_ACK))
+									PTL_MD_EVENT_CT_ACK))
 				buf->event_mask |= XI_CT_ACK_EVENT;
 		}
 		break;
