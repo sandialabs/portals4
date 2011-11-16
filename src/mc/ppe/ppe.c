@@ -11,6 +11,7 @@
 
 #include "ppe/ppe.h"
 #include "ppe/dispatch.h"
+#include "ppe/nal.h"
 
 static ptl_ppe_t ptl_ppe;
 
@@ -28,6 +29,8 @@ progress_loop(ptl_ppe_t *ctx)
         }
 
         for (i = 0 ; i < 100 ; ++i) {
+            ctx->ni.nal->progress( &ctx->ni );
+
             ret = ptl_cq_entry_recv(ctx->cq_h, &entry);
             if (ret < 0) {
                 perror("ptl_cq_entry_recv");
@@ -167,12 +170,7 @@ main(int argc, char *argv[])
 
     ptl_ppe.page_size = sysconf(_SC_PAGESIZE);
 
-#if 0
-    void nal_init(void);
-    void nal_send(void);
-    nal_init();
-    nal_send();
-#endif
+    nal_init(&ptl_ppe);
 
     ret = ptl_ppe_init(&ptl_ppe, send_queue_size, recv_queue_size);
     if (ret < 0) {

@@ -21,6 +21,14 @@
 #define PPE_DBG( fmt, args...) \
 fprintf(stderr,"%s():%i: " fmt, __FUNCTION__, __LINE__, ## args);
 
+/* MJL, fix p3 headers so we don't have to include all of these for lib_ni_t */
+#include <limits.h>
+#include "nal/p3.3/include/p3/lock.h"
+#include "nal/p3.3/include/p3/handle.h"
+#include "nal/p3.3/include/p3api/types.h"
+#include "nal/p3.3/include/p3lib/types.h"
+#include "nal/p3.3/include/p3lib/nal.h"
+
 
 struct ptl_ppe_ni_t {
     ptl_ni_limits_t     *limits;
@@ -58,6 +66,7 @@ struct ptl_ppe_t {
     ptl_nid_t nid;
     signed char pids[PTL_PID_MAX];
     ptl_ppe_client_t clients[MC_PEER_COUNT];
+    lib_ni_t ni;
 };
 typedef struct ptl_ppe_t ptl_ppe_t;
 
