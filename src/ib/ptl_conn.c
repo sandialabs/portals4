@@ -287,6 +287,8 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
 	conn_param.initiator_depth = 1;
+	conn_param.retry_count		= 7;
+	conn_param.rnr_retry_count		= 7;
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		conn_param.private_data = &priv;
@@ -398,6 +400,7 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
 	conn_param.initiator_depth = 1;
+	conn_param.rnr_retry_count = 7;
 
 	if (rdma_accept(event->id, &conn_param)) {
 		rdma_destroy_qp(event->id);
@@ -599,7 +602,8 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		conn_param.responder_resources	= 1;
 		conn_param.initiator_depth	= 1;
-		conn_param.retry_count		= 5;
+		conn_param.retry_count		= 7;
+		conn_param.rnr_retry_count	= 7;
 		conn_param.private_data		= &priv;
 		conn_param.private_data_len	= sizeof(priv);
 
