@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 
 /* Define to be able to get a dump of some of the data structures. */
-#undef DEBUG_DUMP
+//#define DEBUG_DUMP
 
 /* Internal debug tuning variables. */
 int debug;
@@ -69,44 +69,45 @@ static void *event_loop_func(void *arg)
 }
 
 #ifdef DEBUG_DUMP
-static void dump_xi(xi_t *xi)
+static void dump_buf(buf_t *buf)
 {
-	printf("  XI %x\n", xi_to_handle(xi));
+	printf("  Buffer %x\n", buf_to_handle(buf));
+	printf("    type = %d\n", buf->type);
+	printf("    xxbuf = %p\n", buf->xxbuf);
 
-	printf("    state = %d\n", xi->state);
-	printf("    next_state = %d\n", xi->next_state);
-	printf("    event_mask = %x\n", xi->event_mask);
-	printf("    recv_buf = %p\n", xi->recv_buf);
-	printf("    ack_req = %d\n", xi->ack_req);
-	printf("    state_waiting = %d\n", xi->state_waiting);
-	printf("    ref = %d\n", xi->obj.obj_ref.ref_cnt);
+	printf("    init_state = %d\n", buf->init_state);
+	printf("    tgt_state = %d\n", buf->tgt_state);
+	printf("    recv_state = %d\n", buf->recv_state);
+
+	printf("    event_mask = %x\n", buf->event_mask);
+	printf("    recv_buf = %p\n", buf->recv_buf);
+	//	printf("    ack_req = %d\n", buf->ack_req);
+	//	printf("    state_waiting = %d\n", buf->state_waiting);
+	printf("    ref = %d\n", buf_ref_cnt(buf));
 }
 
 static void dump_everything(int unused)
 {
 	int i, j, k;
+	gbl_t *gbl = &per_proc_gbl;
 
 	printf("Dumping gbl\n");
 	
-	get_gbl();
+	gbl_get();
 
 	for (i=0; i<gbl->num_iface; i++) {
 
 		for(j=0; j<4; j++) {
 			ni_t *ni = gbl->iface[i].ni[j];
-			xi_t *xi;
-			obj_t *obj;
 
 			if (!ni)
 				continue;
 
 			printf("Dumping NI %d:\n", j);
 			printf("  options: %x\n", ni->options);
-			printf("  xi_wait_list: %d\n", list_empty(&ni->xi_wait_list));
-			printf("  xt_wait_list: %d\n", list_empty(&ni->xt_wait_list));
-			printf("  send_list: %d\n", list_empty(&ni->send_list));
-			printf("  rdma_list: %d\n", list_empty(&ni->rdma_list));
 			printf("  recv_list: %d\n", list_empty(&ni->rdma.recv_list));
+
+			printf("  buffers used: %d\n", atomic_read(&ni->buf_pool.count));
 
 			printf("  limits.max_entries = %d\n", ni->limits.max_entries);
 			printf("  limits.max_unexpected_headers = %d\n", ni->limits.max_unexpected_headers);
@@ -144,11 +145,6 @@ static void dump_everything(int unused)
 			printf("  current.features = %d\n", ni->current.features);
 
 
-			printf("  XI:\n");
-			list_for_each_entry(xi, &ni->xi_wait_list, list) {
-				dump_xi(xi);
-			}
-
 			printf("  PTs:\n");
 			for (k=0; k<=ni->limits.max_pt_index; k++) {
 				pt_t *pt = &ni->pt[k];
@@ -166,6 +162,7 @@ static void dump_everything(int unused)
 
 #if 0
 			printf("  EQs:\n");
+			obj_t *obj;
 			list_for_each_entry(obj, &ni->eq_pool.busy_list, obj_list) {
 				eq_t *eq = container_of(obj, eq_t, obj);
 
