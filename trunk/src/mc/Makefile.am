@@ -14,8 +14,8 @@ noinst_LTLIBRARIES = libportals_mc.la libportals_mc_shared.la
 
 portals_engine_SOURCES = \
 	ppe/atomic.c \
-	ppe/ct.c \
 	ppe/connection.c \
+	ppe/ct.c \
 	ppe/data_movement.c \
 	ppe/dispatch.h \
 	ppe/eq.c \
@@ -23,14 +23,16 @@ portals_engine_SOURCES = \
 	ppe/map.c \
 	ppe/md.c \
 	ppe/me.c \
+	ppe/nal_callback.c \
+	ppe/nal.h \
+	ppe/nal_init.c \
 	ppe/ni.c \
 	ppe/ppe.c \
 	ppe/ppe.h \
 	ppe/ppe_xpmem.h \
 	ppe/ppe_xpmem.c \
 	ppe/pt.c \
-	ppe/nal_callback.c \
-	ppe/nal_init.c \
+	ppe/ptl_hdr.h \
 	ppe/nal/p3.3/include/p3-config.h \
 	ppe/nal/p3.3/include/p3nal_utcp.h \
 	ppe/nal/p3.3/include/p3/debug.h \
@@ -38,6 +40,7 @@ portals_engine_SOURCES = \
 	ppe/nal/p3.3/include/p3/handle.h \
 	ppe/nal/p3.3/include/p3/lock.h \
 	ppe/nal/p3.3/include/p3/nal_types.h \
+	ppe/nal/p3.3/include/p3/process.h \
 	ppe/nal/p3.3/include/p3api/debug.h \
 	ppe/nal/p3.3/include/p3api/misc.h \
 	ppe/nal/p3.3/include/p3api/types.h \
