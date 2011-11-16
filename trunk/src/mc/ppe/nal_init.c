@@ -35,7 +35,9 @@ int nal_init( ptl_ppe_t *ppe_ctx )
     int status;
 
     ppe_ctx->ni.pid = 0;
-    ppe_ctx->ni.debug = // PTL_DBG_NI_00 |
+    ppe_ctx->ni.debug = 0;
+#if 0
+// PTL_DBG_NI_00 |
                         PTL_DBG_NI_01 |
                         PTL_DBG_NI_02 |
                         PTL_DBG_NI_03 |
@@ -43,6 +45,7 @@ int nal_init( ptl_ppe_t *ppe_ctx )
                         PTL_DBG_NI_05 |
                         PTL_DBG_NI_06 |
                         PTL_DBG_NI_07;
+#endif
 
     ppe_ctx->ni.nal = lib_new_nal( PTL_IFACE_UTCP, NULL, 0, 
                         &ppe_ctx->ni, &ppe_ctx->ni.nid,
