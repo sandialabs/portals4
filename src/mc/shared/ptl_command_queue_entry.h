@@ -186,7 +186,7 @@ typedef struct {
 
 typedef struct {
     ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     md_handle;
+    ptl_internal_handle_converter_t     me_handle;
     ptl_pt_index_t  pt_index;
     ptl_me_t        me;
     ptl_list_t      list;
