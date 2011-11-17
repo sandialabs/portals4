@@ -221,8 +221,6 @@ static int init_ib_srq(ni_t *ni)
 
 static int cleanup_ib(ni_t *ni)
 {
-	ni_rcqp_cleanup(ni);
-
 	destroy_conns(ni);
 	if (ni->rdma.self_cm_id) {
 		rdma_destroy_qp(ni->rdma.self_cm_id);
@@ -233,6 +231,8 @@ static int cleanup_ib(ni_t *ni)
 		ibv_destroy_srq(ni->rdma.srq);
 		ni->rdma.srq = NULL;
 	}
+
+	ni_rcqp_cleanup(ni);
 
 #ifdef USE_XRC
 	if (ni->logical.xrc_domain_fd != -1) {
@@ -588,15 +588,17 @@ static void process_async(EV_P_ ev_io *w, int revents)
 	}
 
 	/* Get the async event */
-	if (ni->iface && ibv_get_async_event(ni->iface->ibv_context, &event)) {
-		ptl_warn("Failed to get the asynchronous event\n");
-		return;
+	if (ni->iface) {
+		if (ibv_get_async_event(ni->iface->ibv_context, &event) == 0) {
+
+			ptl_warn("Got an unexpected asynchronous event: %d\n", event.event_type);
+
+			/* Ack the event */
+			ibv_ack_async_event(&event);
+		} else {
+			ptl_warn("Failed to get the asynchronous event\n");
+		}
 	}
-
-	ptl_warn("Got an unexpected asynchronous event: %d\n", event.event_type);
-
-	/* Ack the event */
-	ibv_ack_async_event(&event);
 
 	gbl_put();
 }
