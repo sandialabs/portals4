@@ -74,7 +74,6 @@ portals_engine_LDADD = libportals_mc_shared.la $(XPMEM_LIBS) -ldl -lpthread
 libportals_mc_la_SOURCES = \
 	lib/include/ptl_internal_pid.h \
 	lib/include/ptl_internal_EQ.h \
-	lib/include/ptl_internal_handles.h \
 	lib/include/ptl_internal_LE.h \
 	lib/include/ptl_internal_nit.h \
 	lib/include/ptl_internal_MD.h \
@@ -116,6 +115,7 @@ libportals_mc_shared_la_SOURCES = \
 	shared/ptl_double_list.h \
 	shared/ptl_free_list.c \
 	shared/ptl_free_list.h \
+	shared/ptl_internal_handles.h \
 	shared/ptl_stack.c \
 	shared/ptl_stack.h
 
