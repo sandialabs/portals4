@@ -96,6 +96,9 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     phys_proc->phys.nid = ctx->nid;
     phys_proc->phys.pid = client->pid;
 
+    ni->ppe_md = malloc( sizeof( *ni->ppe_md) * ni->limits->max_mds );
+    ni->ppe_me = malloc( sizeof( *ni->ppe_md) * ni->limits->max_list_size );
+    ni->ppe_pt = malloc( sizeof( *ni->ppe_pt) * ni->limits->max_pt_index );
     goto send_retval;
 
  cleanup:

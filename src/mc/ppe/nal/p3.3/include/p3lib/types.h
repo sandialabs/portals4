@@ -6,10 +6,11 @@
 
 struct lib_nal;
 typedef struct lib_ni {
-    ptl_pid_t pid;
-    ptl_pid_t nid;
+    ptl_pid_t       pid;
+    ptl_pid_t       nid;
     ptl_ni_limits_t limits; 
-    unsigned int debug;
+    unsigned int    debug;
+    void           *data;
     struct lib_nal *nal;
 } lib_ni_t;
 

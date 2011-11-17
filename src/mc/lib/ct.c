@@ -49,9 +49,9 @@ PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLCTALLOC;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->ctAlloc.ct_handle  = ct_hc;
+    entry->base.type         = PTLCTALLOC;
+    entry->base.remote_id    = ptl_iface_get_rank(&ptl_iface);
+    entry->ctAlloc.ct_handle = ct_hc;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface),
@@ -83,8 +83,8 @@ PtlCTFree(ptl_handle_ct_t ct_handle)
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLCTFREE;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type        = PTLCTFREE;
+    entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
@@ -114,8 +114,8 @@ PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLCTCANCELTRIGGERED;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type        = PTLCTCANCELTRIGGERED;
+    entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
@@ -154,7 +154,7 @@ PtlCTWait(ptl_handle_ct_t ct_handle,
           ptl_size_t      test,
           ptl_ct_event_t *event)
 {
-    ptl_size_t  tests;
+    //ptl_size_t  tests;
     unsigned int which;
 
 #ifndef NO_ARG_VALIDATION
@@ -169,7 +169,7 @@ PtlCTWait(ptl_handle_ct_t ct_handle,
     }
 #endif
     
-    return PtlCTPoll(&ct_handle, &tests, 1, 
+    return PtlCTPoll(&ct_handle, &test, 1, 
                      PTL_TIME_FOREVER, event, &which);
 }
 
@@ -267,10 +267,10 @@ PtlCTSet(ptl_handle_ct_t ct_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLCTSET;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type       = PTLCTSET;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->ctSet.ct_handle = ct_hc;
-    entry->ctSet.new_ct       = test;
+    entry->ctSet.new_ct    = test;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface), 
@@ -301,8 +301,8 @@ PtlCTInc(ptl_handle_ct_t ct_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLCTSET;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type       = PTLCTINC;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->ctInc.ct_handle = ct_hc;
     entry->ctInc.increment = increment;
 

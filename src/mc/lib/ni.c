@@ -148,6 +148,7 @@ int PtlNIInit(ptl_interface_t       iface,
             *limits = *desired;
         }
 
+        // MJL need to sort out max_entries versus max_list_size
         length = sizeof(ptl_sr_value_t) * PTL_SR_LAST + 
             sizeof(ptl_process_t) + sizeof(ptl_rank_t) + 
             sizeof(ptl_internal_le_t) * limits->max_list_size +
