@@ -245,9 +245,8 @@ int PtlNIInit_shmem(ni_t *ni)
 	 * Buffers in shared memory. The buffers will be allocated later,
 	 * but not by the pool management. We compute the sizes now.
 	 */
-	/* Allocate a pool of buffers in the mmapped region.
-	 * TODO: make 512 a parameter. */
-	ni->shmem.per_proc_comm_buf_numbers = 512;
+	/* Allocate a pool of buffers in the mmapped region. */
+	ni->shmem.per_proc_comm_buf_numbers = get_param(PTL_NUM_SBUF);
 
 	ni->sbuf_pool.setup = buf_setup;
 	ni->sbuf_pool.init = buf_init;

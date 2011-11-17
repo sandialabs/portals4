@@ -221,6 +221,12 @@ param_t param[] = {
 				.max	= LONG_MAX,
 				.val	= 1000000,
 			},
+	[PTL_NUM_SBUF]		= {
+				.name	= "PTL_NUM_SBUF",
+				.min	= 0,
+				.max	= LONG_MAX,
+				.val	= 500,
+			},
 	[PTL_LOG_LEVEL]		= {
 				.name	= "PTL_LOG_LEVEL",
 				.min	= 0,
@@ -232,7 +238,7 @@ param_t param[] = {
 				.min	= 0,
 				.max	= 1,
 				.val	= 0,
-			},	
+			},
 };
 
 /**
