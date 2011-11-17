@@ -21,7 +21,7 @@
 /* note: please keep all init->target before all tgt->init */
 enum hdr_op {
 	/* from init to target */
-	OP_PUT,
+	OP_PUT=1,
 	OP_GET,
 	OP_ATOMIC,
 	OP_FETCH,

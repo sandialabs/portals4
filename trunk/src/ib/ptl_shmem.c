@@ -18,10 +18,10 @@ static int send_message_shmem(buf_t *buf, int signaled)
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
 	buf_get(buf);
 
-	buf->type = BUF_SHMEM;
+	buf->type = BUF_SHMEM_SEND;
 	buf->comp = signaled;
 
-	buf->shmem.source = buf->obj.obj_ni->shmem.index;
+	buf->shmem.index_owner = buf->obj.obj_ni->shmem.index;
 
 	shmem_enqueue(buf->obj.obj_ni, buf,
 				buf->dest.shmem.local_rank);
