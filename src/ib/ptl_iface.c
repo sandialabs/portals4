@@ -148,16 +148,9 @@ int init_iface(iface_t *iface)
  */
 void iface_fini(gbl_t *gbl)
 {
-	/*
-	 * for now we allow multiple calls to PtlInit/PtlFini
-	 * in unit tests and just leave the table in place to
-	 * save time
-	 */
-	if (0) {
-		gbl->num_iface = 0;
-		free(gbl->iface);
-		gbl->iface = NULL;
-	}
+	gbl->num_iface = 0;
+	free(gbl->iface);
+	gbl->iface = NULL;
 }
 
 /**
