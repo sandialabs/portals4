@@ -238,12 +238,10 @@ int main(int   argc,
                     break;
                 }
             }
-            if (yod_debug) {
-                fprintf(stderr, "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
-                        (int)exited,
-                        (unsigned long)d,
-                        strsignal(WTERMSIG(status)));
-            }
+            fprintf(stderr, "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
+                    (int)exited,
+                    (unsigned long)d,
+                    strsignal(WTERMSIG(status)));
             for (d = 0; d < count; ++d) {
                 if (pids[d] != exited) {
                     int stat;
