@@ -16,8 +16,11 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
                 void            *user_ptr,
                 ptl_handle_me_t *me_handle)
 {
-    const ptl_internal_handle_converter_t ni     = { ni_handle };
-    ptl_internal_handle_converter_t me_hc     = { .s.ni = ni.s.ni };
+    const ptl_internal_handle_converter_t ni  = { ni_handle };
+    ptl_internal_handle_converter_t me_hc     = { .s.ni = ni.s.ni,
+                                            .s.selector = HANDLE_ME_CODE };
+    ptl_cqe_t *entry;
+    int ret; 
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -41,19 +44,18 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     me_hc.s.code = find_me_index( ni.s.ni );
-    if ( me_hc.s.code == - 1 ) {
-        return PTL_LIST_TOO_LONG;
-    }
+    if ( me_hc.s.code == - 1 ) return PTL_LIST_TOO_LONG;
 
-    ptl_cqe_t *entry;
+    ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    if ( 0 != ret ) return PTL_FAIL;
 
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
-
-    entry->base.type = PTLMEAPPEND;
-    entry->meAppend.pt_index = pt_index;
-    entry->meAppend.me = *me;
-    entry->meAppend.list = ptl_list;
-    entry->meAppend.user_ptr = user_ptr;
+    entry->base.type          = PTLMEAPPEND;
+    entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
+    entry->meAppend.pt_index  = pt_index;
+    entry->meAppend.me        = *me;
+    entry->meAppend.list      = ptl_list;
+    entry->meAppend.user_ptr  = user_ptr;
+    entry->meAppend.me_handle = (ptl_internal_handle_converter_t) me_hc.a;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
@@ -93,7 +95,8 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     
-    entry->base.type = PTLMEUNLINK;
+    entry->base.type          = PTLMEUNLINK;
+    entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
     entry->meUnlink.me_handle = me_hc;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 

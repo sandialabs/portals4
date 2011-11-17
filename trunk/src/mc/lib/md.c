@@ -59,9 +59,9 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
     if (0 != ret ) return PTL_FAIL;
 
     entry->base.type = PTLMDBIND;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->mdBind.md_handle       = md_hc;
-    entry->mdBind.md = *md;
+    entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
+    entry->mdBind.md_handle = md_hc;
+    entry->mdBind.md        = *md;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface),

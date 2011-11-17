@@ -34,7 +34,7 @@ int nal_init( ptl_ppe_t *ppe_ctx )
 
     int status;
 
-    ppe_ctx->ni.pid = 0;
+    //ppe_ctx->ni.pid = 0;
     ppe_ctx->ni.debug = 0;
 #if 0
 // PTL_DBG_NI_00 |
@@ -47,11 +47,14 @@ int nal_init( ptl_ppe_t *ppe_ctx )
                         PTL_DBG_NI_07;
 #endif
 
+    ppe_ctx->ni.data = ppe_ctx; 
+    PPE_DBG("%p\n",&ppe_ctx->ni);
     ppe_ctx->ni.nal = lib_new_nal( PTL_IFACE_UTCP, NULL, 0, 
                         &ppe_ctx->ni, &ppe_ctx->ni.nid,
                      &ppe_ctx->ni.limits, &status );
     assert( ppe_ctx->ni.nal );
     ppe_ctx->ni.nal->ni = &ppe_ctx->ni;
+    ppe_ctx->nid = ppe_ctx->ni.nid;
 
     pp->ni[0] = &ppe_ctx->ni;
     PPE_DBG("nid=%#lx pid=%d\n",(unsigned long) ppe_ctx->ni.nid, 

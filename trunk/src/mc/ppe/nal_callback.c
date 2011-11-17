@@ -2,6 +2,9 @@
 #include <assert.h>
 
 #include "ppe/nal.h"
+#include "ppe/ct.h"
+
+#include "shared/ptl_internal_handles.h"
 
 #include "nal/p3.3/include/p3/process.h"
 
@@ -10,18 +13,75 @@
 #include "nal/p3.3/include/p3lib/p3lib.h"
 #include "nal/p3.3/include/p3lib/p3lib_support.h"
 
+
+
 int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len)
 {
-    PPE_DBG("nal_msg_data %lu\n",nal_msg_data);
-
     ptl_process_id_t dst;
+    lib_ni_t         *ni;
+    ptl_ppe_t        *ppe_ctx;
+    ptl_ppe_client_t *client;
+    ptl_ppe_ni_t     *ppe_ni;
+    ptl_ppe_pt_t     *ppe_pt;
+
+    PPE_DBG("ni=%d target nid=%#x pid=%d match_bits=%#lx\n", hdr->ni,
+                        hdr->target_id.phys.nid, hdr->target_id.phys.pid,
+                        hdr->match_bits);
+    PPE_DBG("src nid=%#x pid=%d\n",
+                 hdr->src_id.phys.nid, hdr->src_id.phys.pid );
 
     dst.nid = hdr->target_id.phys.nid;
-    dst.pid = hdr->target_id.phys.pid;
+    //dst.pid = hdr->target_id.phys.pid;
+    dst.pid = 0;
 
-    lib_ni_t *ni = p3lib_get_ni_pid(type, dst.pid); 
+    ni = p3lib_get_ni_pid(type, dst.pid); 
     assert( ni );
+
+    ppe_ctx = ni->data;
+    client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
+    ppe_ni = &client->nis[ hdr->ni ];
+    ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
+
+    PPE_DBG("head=%p\n", ppe_pt->list[PTL_PRIORITY_LIST].head );
+    PPE_DBG("tail=%p\n", ppe_pt->list[PTL_PRIORITY_LIST].tail );
+
+    ptl_ppe_me_t *ppe_me = (ptl_ppe_me_t*) ppe_pt->list[PTL_PRIORITY_LIST].head;
+    
+    PPE_DBG("%p %p\n",ppe_me->base.prev, ppe_me->base.next);
+
+    for ( ; ppe_me ; ppe_me = (ptl_ppe_me_t*) ppe_me->base.next ) {
+        PPE_DBG( "nid=%#x pid=%d match_bits=%#lx\n", 
+                            ppe_me->match_id.phys.nid,
+                            ppe_me->match_id.phys.pid,
+                            ppe_me->match_bits );
+
+        if (((hdr->match_bits ^ ppe_me->match_bits) & 
+                            ~(ppe_me->ignore_bits)) != 0) 
+        {
+            continue;
+        }
+        if ( hdr->ni <= 1) {                 // Logical
+            if ((ppe_me->match_id.rank != PTL_RANK_ANY) &&
+                (ppe_me->match_id.rank != hdr->target_id.rank)) {
+                continue;
+            }
+        } else {                       // Physical 
+            if ((ppe_me->match_id.phys.nid != PTL_NID_ANY) &&
+                (ppe_me->match_id.phys.nid != hdr->src_id.phys.nid)) {
+                continue;
+            }
+            if ((ppe_me->match_id.phys.pid != PTL_PID_ANY) &&
+                (ppe_me->match_id.phys.pid != hdr->src_id.phys.pid)) {
+                continue;
+            }
+        }        
+        break;
+    }
+
+    PPE_DBG("ppe_me %p\n",ppe_me);
+
+    if ( ! ppe_me ) return 0;
 
     dm_ctx_t *dm_ctx = malloc( sizeof( *dm_ctx ) );
     assert( dm_ctx );
@@ -29,10 +89,12 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
 
     dm_ctx->hdr = *hdr;
     dm_ctx->user_ptr = 0; // get from me or le
+    dm_ctx->u.ppe_me = ppe_me; 
 
     // for testing lets send out of some PPE memory
-    dm_ctx->iovec.iov_base = malloc ( hdr->length );
+    dm_ctx->iovec.iov_base = ppe_me->xpmem_ptr->data;
     dm_ctx->iovec.iov_len = hdr->length;
+    dm_ctx->id = ME_CTX;
 
     PPE_DBG("dm_ctx=%p\n",dm_ctx);
 
@@ -50,12 +112,50 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     return PTL_OK;
 }
 
+static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
+{
+    PPE_DBG("\n");
+    ptl_ppe_md_t *ppe_md = dm_ctx->u.ppe_md;
+
+    --ppe_md->ref_cnt;
+
+    if ( ppe_md->ct_h != PTL_CT_NONE ) {
+        if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
+            ct_inc( dm_ctx->ni, 
+               ((ptl_internal_handle_converter_t)ppe_md->ct_h).s.code, 1 );
+        }
+    }
+    return 0;
+}
+
+static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
+{
+    PPE_DBG("\n");
+
+    ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
+    --ppe_me->ref_cnt;
+
+    if ( ppe_me->ct_h.a != PTL_CT_NONE ) {
+        //if ( ppe_me->options & PTL_MD_EVENT_CT_SEND ) {
+            ct_inc( dm_ctx->ni, 
+               ((ptl_internal_handle_converter_t)ppe_me->ct_h).s.code, 1 );
+        //}
+    }
+
+    free( dm_ctx->iovec.iov_base );
+    return 0;
+}
+
+
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
 {
-    PPE_DBG("%p\n",lib_msg_data);
-    // do event stuff 
     dm_ctx_t *dm_ctx = lib_msg_data;
-    free( dm_ctx->iovec.iov_base );
+
+    if ( dm_ctx->id == ME_CTX ) {
+        lib_me_finalize( dm_ctx );
+    } else {
+        lib_md_finalize( dm_ctx );
+    }
     free( lib_msg_data );
     return PTL_OK;
 }
