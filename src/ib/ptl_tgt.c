@@ -195,33 +195,26 @@ static int prepare_send_buf(buf_t *buf)
 
 	if (buf->conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, &send_buf);
-	else {
-		if (!(buf->event_mask & XT_ACK_EVENT)) {
-			err = sbuf_alloc(ni, &send_buf);
-		} else {
-			/* Itself. */
-			send_buf = NULL;
-			err = PTL_OK;
-		}
-	}
+	else
+		err = sbuf_alloc(ni, &send_buf);
 	if (err) {
 		WARN();
 		return PTL_FAIL;
 	}
 
- 	if (send_buf) {
-		/* link send buf to buf */
-		send_buf->xxbuf = buf;
-		buf_get(buf);
-		buf->send_buf = send_buf;
+	/* link send buf to buf */
+	send_buf->xxbuf = buf;
+	buf_get(buf);
+	buf->send_buf = send_buf;
 
-		/* initiate response header */
-		send_hdr = (hdr_t *)send_buf->data;
+	/* initiate response header */
+	send_hdr = (hdr_t *)send_buf->data;
 
-		memset(send_hdr, 0, sizeof(*send_hdr));
+	memset(send_hdr, 0, sizeof(*send_hdr));
 
-		send_buf->length = sizeof(*send_hdr);
-	}
+	send_buf->length = sizeof(*send_hdr);
+	//send_hdr->data_in = 0;
+	//send_hdr->data_out = 0;
 
 	return PTL_OK;
 }
@@ -287,9 +280,8 @@ static int tgt_start(buf_t *buf)
 
 	/* set ack/reply bits in event mask */
 	buf->event_mask = 0;
-	buf->operation = hdr->operation;
 
-	switch (buf->operation) {
+	switch (hdr->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
 		if (hdr->ack_req != PTL_NO_ACK_REQ)
@@ -365,6 +357,8 @@ static int tgt_start(buf_t *buf)
  */
 static int request_drop(buf_t *buf)
 {
+	// TODO log dropped message
+
 	/* we didn't match anything so set start to NULL */
 	buf->start = NULL;
 	buf->put_resid = 0;
@@ -442,7 +436,7 @@ int check_perm(buf_t *buf, const le_t *le)
 	if (!(le->uid == PTL_UID_ANY || (le->uid == uid))) {
 		ret = PTL_NI_PERM_VIOLATION;
 	} else {
-		switch (buf->operation) {
+		switch (hdr->operation) {
 		case OP_ATOMIC:
 		case OP_PUT:
 			if (!(le->options & PTL_ME_OP_PUT))
@@ -597,7 +591,7 @@ static int tgt_get_length(buf_t *buf)
 		length = (room >= rlength) ? rlength : room;
 	}
 
-	switch (buf->operation) {
+	switch (hdr->operation) {
 	case OP_PUT:
 		if (length > ni->limits.max_msg_size)
 			length = ni->limits.max_msg_size;
@@ -742,6 +736,8 @@ static int tgt_wait_conn(buf_t *buf)
 static int tgt_data(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	unsigned operation = hdr->operation;
 
 	/* save the addressing information to the initiator
 	 * in buf */
@@ -764,9 +760,9 @@ static int tgt_data(buf_t *buf)
 	// here covering operations that do no overlap. Also
 	// we could think some more about how to protect between
 	// atomic and regular get/put operations.
-	if (buf->operation == OP_ATOMIC ||
-	    buf->operation == OP_SWAP ||
-	    buf->operation == OP_FETCH) {
+	if (operation == OP_ATOMIC ||
+	    operation == OP_SWAP ||
+	    operation == OP_FETCH) {
 		pthread_mutex_lock(&ni->atomic_mutex);
 		buf->in_atomic = 1;
 	}
@@ -775,7 +771,7 @@ static int tgt_data(buf_t *buf)
 	if (buf->get_resid)
 		return STATE_TGT_DATA_OUT;
 	else if (buf->put_resid)
-		return (buf->operation == OP_ATOMIC) ?
+		return (operation == OP_ATOMIC) ?
 			STATE_TGT_ATOMIC_DATA_IN :
 			STATE_TGT_DATA_IN;
 	else
@@ -804,6 +800,7 @@ static int tgt_data_out(buf_t *buf)
 	hdr_t *send_hdr = (hdr_t *)buf->send_buf->data;
 	int next;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	unsigned operation = hdr->operation;
 
 	if (!data)
 		return STATE_TGT_ERROR;
@@ -822,9 +819,9 @@ static int tgt_data_out(buf_t *buf)
 
 		/* check to see if we still need data in phase */
 		if (buf->put_resid) {
-			if (buf->operation == OP_FETCH)
+			if (operation == OP_FETCH)
 				return STATE_TGT_ATOMIC_DATA_IN;
-			else if (buf->operation == OP_SWAP)
+			else if (operation == OP_SWAP)
 				return (hdr->atom_op == PTL_SWAP)
 					? STATE_TGT_DATA_IN
 					: STATE_TGT_SWAP_DATA_IN;
@@ -1266,32 +1263,15 @@ static int tgt_send_ack(buf_t *buf)
 	int err;
 	buf_t *send_buf;
 	hdr_t *send_hdr;
- 	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	if (!buf->send_buf) {
-		/* Reusing received buffer. */
-		send_buf = buf;
-		send_hdr = (hdr_t *)send_buf->data;
+	send_buf = buf->send_buf;
+	send_hdr = (hdr_t *)send_buf->data;
 
-		/* Reset some header values while keeping others. */
-		send_buf->length = sizeof(*send_hdr);
+	xport_hdr_from_buf(send_hdr, buf);
+	base_hdr_from_buf(send_hdr, buf);
 
-		send_hdr->data_in = 0;
-		send_hdr->data_out = 0;	/* can get reset to one for short replies */
-
-		//todo swap src/dst
-		send_hdr->ni_fail = buf->ni_fail;
-		send_hdr->pkt_fmt = PKT_FMT_REPLY;
-		send_hdr->hdr_size = sizeof(hdr_t);
-	} else {
-		send_buf = buf->send_buf;
-		send_hdr = (hdr_t *)send_buf->data;
-
-		xport_hdr_from_buf(send_hdr, buf);
-		base_hdr_from_buf(send_hdr, buf);
-	}
-
-	switch (ack_req) {
+	switch (hdr->ack_req) {
 	case PTL_ACK_REQ:
 		send_hdr->operation = OP_ACK;
 		break;
@@ -1315,18 +1295,13 @@ static int tgt_send_ack(buf_t *buf)
 		buf->le = NULL;
 	}
 
- 	if (buf->send_buf) {
-		send_buf->dest = buf->dest;
-		send_buf->conn = buf->conn;
-		err = buf->conn->transport.send_message(send_buf, 1);
-		if (err) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-	} else {
-		assert(buf->shmem.buf);
-		buf->shmem.buf->type = BUF_SHMEM_SEND;
-  	}
+	send_buf->dest = buf->dest;
+	send_buf->conn = buf->conn;
+	err = buf->conn->transport.send_message(send_buf, 1);
+	if (err) {
+		WARN();
+		return STATE_TGT_ERROR;
+	}
 
 	return STATE_TGT_CLEANUP;
 }
@@ -1479,11 +1454,13 @@ static int tgt_wait_append(buf_t *buf)
 static int tgt_overflow_event(buf_t *buf)
 {
 	le_t *le = buf->matching.le;
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	unsigned operation = hdr->operation;
 
 	assert(le);
 
 	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
-		switch (buf->operation) {
+		switch (operation) {
 		case OP_PUT:
 			make_target_event(buf, buf->pt->eq,
 					  PTL_EVENT_PUT_OVERFLOW,
