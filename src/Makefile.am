@@ -3,7 +3,7 @@
 # Copyright (c) 2010 Sandia Corporation
 
 
-DIST_SUBDIRS = ib mc shmem
+DIST_SUBDIRS = ib mc shmem yod
 SUBDIRS = 
 
 lib_LTLIBRARIES = libportals.la

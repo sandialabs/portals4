@@ -53,7 +53,7 @@ portals_engine_SOURCES = \
 	ppe/nal/p3.3/linux/include/linux/list.h \
 	ppe/nal/p3.3/linux/include/linux/prefetch.h \
 	ppe/nal/p3.3/linux/include/linux/stddef.h \
-	ppe/nal/p3.3/nal/tcp/hash_init.h \
+	ppe/nal/p3.3/nal/tcp/hash_int.h \
 	ppe/nal/p3.3/nal/tcp/lib-tcpnal.c \
 	ppe/nal/p3.3/nal/tcp/lib-tcpnal.h \
 	ppe/nal/p3.3/p3lib/init.c \
