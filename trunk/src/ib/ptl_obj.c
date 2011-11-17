@@ -428,6 +428,8 @@ void obj_release(ref_t *ref)
 	assert(obj->obj_free == 0);
 	obj->obj_free = 1;
 
+	__sync_synchronize();
+
 	enqueue_free_obj(pool, obj);
 	atomic_dec(&pool->count);
 }
