@@ -97,7 +97,8 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		goto err1;
 	}
 
-	if (ni->options & PTL_NI_LOGICAL) {
+	if ((ni->options & PTL_NI_LOGICAL) &&
+		get_param(PTL_ENABLE_SHMEM)) {
 		knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
 		if (!knem_cookie) {
 			WARN();

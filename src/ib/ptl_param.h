@@ -50,6 +50,7 @@ enum {
 
 	PTL_LOG_LEVEL,
 	PTL_DEBUG,
+	PTL_ENABLE_SHMEM,
 
 	PTL_PARAM_LAST,		/* keep me last */
 };

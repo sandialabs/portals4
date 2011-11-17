@@ -918,9 +918,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-
-	err = PtlNIInit_shmem(ni);
-	if (unlikely(err)) {
+	if (get_param(PTL_ENABLE_SHMEM) && PtlNIInit_shmem(ni)) {
 		WARN();
 		goto err2;
 	}
