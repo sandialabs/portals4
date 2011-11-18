@@ -18,8 +18,8 @@ md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
     ppe_md = ni->ppe_md + cmd->md_handle.s.code;
 
     ppe_md->options   = cmd->md.options;
-    ppe_md->eq_h      = cmd->md.eq_handle;
-    ppe_md->ct_h      = cmd->md.ct_handle;
+    ppe_md->eq_h      = (ptl_handle_generic_t) cmd->md.eq_handle;
+    ppe_md->ct_h      = (ptl_handle_generic_t) cmd->md.ct_handle;
     ppe_md->ref_cnt   = 0;
     ppe_md->xpmem_ptr = ppe_xpmem_attach( &client->xpmem_segments,
                                     cmd->md.start, cmd->md.length );
