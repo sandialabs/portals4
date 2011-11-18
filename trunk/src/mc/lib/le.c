@@ -19,14 +19,18 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_handle_le_t *le_handle)
 {
     const ptl_internal_handle_converter_t ni     = { ni_handle };
-    ptl_internal_handle_converter_t le_hc     = { .s.ni = ni.s.ni };
+    ptl_internal_handle_converter_t le_hc     = { .s.ni = ni.s.ni,
+                                            .s.selector = HANDLE_LE_CODE };
+    ptl_cqe_t *entry;
+    int ret;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
         return PTL_NO_INIT;
     }
-    if ((ni.s.ni >= 4) || (ni.s.code != 0) || (ptl_iface.ni[ni.s.ni].refcount == 0)) {
+    if ((ni.s.ni >= 4) || (ni.s.code != 0) || 
+                        (ptl_iface.ni[ni.s.ni].refcount == 0)) {
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
@@ -42,14 +46,10 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 #endif /* ifndef NO_ARG_VALIDATION */
 
     le_hc.s.code = find_le_index( ni.s.ni );
+    if ( le_hc.s.code == -1 ) return PTL_LIST_TOO_LONG;
 
-    if ( le_hc.s.code == -1 ) {
-        return PTL_LIST_TOO_LONG;
-    }
-
-    ptl_cqe_t *entry;
-
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    if ( 0 != ret ) return PTL_FAIL;
 
     entry->base.type = PTLLEAPPEND;
     entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);

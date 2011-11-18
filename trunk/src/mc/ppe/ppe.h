@@ -64,6 +64,23 @@ struct ptl_ppe_me_t {
 };
 typedef struct ptl_ppe_me_t ptl_ppe_me_t;
 
+struct ptl_ppe_le_t {
+    ptl_double_list_item_t  base;
+
+    int                     ref_cnt;
+
+    ptl_pt_index_t          pt_index;
+    ptl_list_t              list;
+    void*                  *user_ptr;
+
+    // from ptl_le_t
+    ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
+    ptl_handle_generic_t    ct_h; 
+    ptl_uid_t               uid;
+    unsigned int            options;
+};
+typedef struct ptl_ppe_le_t ptl_ppe_le_t;
+
 struct ptl_ppe_pt_t {
     unsigned int            options;
     ptl_handle_generic_t    eq_h;
@@ -86,6 +103,7 @@ struct ptl_ppe_ni_t {
     ptl_internal_pt_t   *client_pt;
     ptl_ppe_md_t        *ppe_md;
     ptl_ppe_me_t        *ppe_me;
+    ptl_ppe_le_t        *ppe_le;
     ptl_ppe_pt_t        *ppe_pt;
 };
 typedef struct ptl_ppe_ni_t ptl_ppe_ni_t;
