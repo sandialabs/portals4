@@ -88,6 +88,7 @@
 #include <lib-tcpnal.h>
 #endif
 
+#if 0
 static
 p3_process_t p3_lib_process = { .init = -1, .jid = PTL_JID_ANY, };
 
@@ -204,6 +205,7 @@ void __p3lib_process_add_pid(lib_ni_t *ni, ptl_pid_t pid)
 void __p3lib_process_rel_pid(lib_ni_t *ni)
 {
 }
+#endif
 
 void p3lib_nal_setup(void)
 {

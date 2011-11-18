@@ -273,7 +273,9 @@ typedef struct p3tcp_msg {
 #ifdef PTL_KERNEL_BLD
 #define CHAN_LOCAL_PID(pid) PTL_PID_ANY
 #else
-#define CHAN_LOCAL_PID(pid) (pid)
+// on Tilera we are running in user space but servicing multiple apps
+#define CHAN_LOCAL_PID(pid) PTL_PID_ANY
+//#define CHAN_LOCAL_PID(pid) (pid)
 #endif
 /* When we open a channel, we need to use non-blocking connects, and since
  * we might need to try several destination ports before we find the right
@@ -646,10 +648,10 @@ p3tcp_chan_t *p3tcp_get_chan(p3tcp_data_t *d, ptl_nid_t rnid, ptl_pid_t rpid)
 	while (item != head) {
 		lc = list_entry(item, p3tcp_chan_t, nid_hash);
 		if (lc->rnid == rnid) {
-			if (lc->rpid == rpid || lc->rpid == PTL_PID_ANY)
-				return lc;
-			if (lc->rpid > rpid)
-				break;
+                if (lc->rpid == rpid || lc->rpid == PTL_PID_ANY)
+                    return lc;
+                if (lc->rpid > rpid)
+                    break;
 		}
 		if (lc->rnid > rnid)
 			break;
@@ -910,7 +912,8 @@ again4:
 	 */
 	if (!(lnid == d->nid
 #ifndef PTL_KERNEL_BLD
-	      && p3lib_get_ni_pid(d->type, lpid)
+// on Tilera we are running in user space but servicing multiple apps
+	  //    && p3lib_get_ni_pid(d->type, lpid)
 #endif
 		    )) {
 		if (DEBUG_NI(d,PTL_DBG_NI_02))
@@ -1761,6 +1764,7 @@ int p3tcp_listen(p3tcp_data_t *d)
 #endif
 
 #ifndef PTL_KERNEL_BLD
+#if 0 // on Tilera we are running in user space but servicing multiple apps
 	/* When we're a kernel-space NAL, we handle all PIDs, so we always
 	 * listen on the default port.  For user-space, well-known PIDs have
 	 * assigned ports, so see if we have a port other than the default.
@@ -1770,6 +1774,7 @@ int p3tcp_listen(p3tcp_data_t *d)
 	 * Reset it here so we find any buggy uses of it.
 	 */
 	d->pid = PTL_PID_ANY;
+#endif
 #endif
 	if (p < 0 && d->defport) {
 		p = d->defport[++scan];

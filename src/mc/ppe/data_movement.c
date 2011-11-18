@@ -33,8 +33,7 @@ put_impl( ptl_ppe_t *ctx, ptl_cqe_put_t *cmd )
     dm_ctx->hdr.ni              = cmd->md_handle.s.ni;
 
     dst.nid = cmd->target_id.phys.nid;
-    //dst.pid = cmd->target_id.phys.pid;
-    dst.pid = 0;
+    dst.pid = cmd->target_id.phys.pid;
 
     dm_ctx->iovec.iov_base = ppe_md->xpmem_ptr->data + cmd->local_offset;
     dm_ctx->iovec.iov_len = cmd->length;

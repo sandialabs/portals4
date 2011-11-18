@@ -21,24 +21,26 @@
 
 #include "ppe/nal.h"
 
+// need to expose the ni to lib_parse
+lib_ni_t *_p3_ni;
+
 int nal_init( ptl_ppe_t *ppe_ctx )
 {
     PPE_DBG("\n");
     p3utils_init();
 
-    p3_process_t *pp = p3lib_new_process();
-    assert( pp );
-
-    pp->init = 0;
     p3lib_nal_setup();
 
     int status;
 
-    //ppe_ctx->ni.pid = 0;
-    ppe_ctx->ni.debug = 0;
+    _p3_ni = &ppe_ctx->ni;
+    // pid is not used when one nal services multiple apps 
+    ppe_ctx->ni.pid = PTL_PID_ANY;
 #if 0
+    ppe_ctx->ni.debug = 0;
+#else
 // PTL_DBG_NI_00 |
-                        PTL_DBG_NI_01 |
+    ppe_ctx->ni.debug = PTL_DBG_NI_01 |
                         PTL_DBG_NI_02 |
                         PTL_DBG_NI_03 |
                         PTL_DBG_NI_04 |
@@ -56,8 +58,6 @@ int nal_init( ptl_ppe_t *ppe_ctx )
     ppe_ctx->ni.nal->ni = &ppe_ctx->ni;
     ppe_ctx->nid = ppe_ctx->ni.nid;
 
-    pp->ni[0] = &ppe_ctx->ni;
-    PPE_DBG("nid=%#lx pid=%d\n",(unsigned long) ppe_ctx->ni.nid, 
-                                                        ppe_ctx->ni.pid);
+    PPE_DBG( "nid=%#lx\n", (unsigned long) ppe_ctx->ni.nid );
     return 0;
 }
