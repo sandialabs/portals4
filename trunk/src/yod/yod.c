@@ -49,13 +49,19 @@
 static pid_t *pids = NULL;
 
 /* globals for communicating with the collator thread */
-static ptl_size_t count                = 0;
-static int        collator_should_exit = 0;
-static int        collatorLEposted     = 0;
+static ptl_size_t   count                = 0;
+static uint_fast8_t collator_should_exit = 0;
+static uint_fast8_t collatorLEposted     = 0;
+static uint_fast8_t yod_debug            = 0;
+static int          err                  = 0;
 
-static void  cleanup(int s);
-static void  print_usage(int ex);
-static void *collator(void *junk);
+static void   cleanup(int s);
+static void   print_usage(int ex);
+static void * collator(void *junk);
+static size_t kill_all_children(pid_t *kids,
+                                size_t num_to_kill,
+                                pid_t  except,
+                                int    status);
 
 #define EXPORT_ENV_NUM(env_str, val) do {             \
         char str[21];                                 \
@@ -67,7 +73,6 @@ int main(int   argc,
          char *argv[])
 {   /*{{{*/
     size_t       commsize;
-    int          err = 0;
     pthread_t    collator_thread;
     uint_fast8_t ct_spawned         = 1;
     size_t       small_frag_size    = 256;
@@ -76,7 +81,7 @@ int main(int   argc,
     size_t       large_frag_size    = 4096;
     size_t       large_frag_payload = 0;
     size_t       large_frag_count   = 128;
-    uint_fast8_t yod_debug          = 0;
+    uint_fast8_t upc_mode           = 0;
 
 #ifdef PARANOID
     small_frag_payload = small_frag_size - (3 * sizeof(void *));
@@ -88,8 +93,11 @@ int main(int   argc,
 
     {
         int opt;
-        while ((opt = getopt(argc, argv, "dl:s:hc:L:S:")) != -1) {
+        while ((opt = getopt(argc, argv, "Udl:s:hc:L:S:")) != -1) {
             switch (opt) {
+                case 'U':
+                    upc_mode = 1;
+                    break;
                 case 'd':
                     yod_debug = 1;
                     break;
@@ -225,71 +233,43 @@ int main(int   argc,
 
     /* Wait for all children to exit */
     for (size_t c = 0; c < count; ++c) {
-        int   status;
-        pid_t exited;
+        int    status;
+        size_t d;
+        pid_t  exited;
         if ((exited = wait(&status)) == -1) {
             perror("yod-> wait failed");
         }
-        if (WIFSIGNALED(status) && !WIFSTOPPED(status)) {
-            size_t d;
-            ++err;
-            for (d = 0; d < count; ++d) {
-                if (pids[d] == exited) {
-                    break;
-                }
+        for (d = 0; d < count; ++d) {
+            if (pids[d] == exited) {
+                break;
             }
+        }
+        if (WIFSIGNALED(status) && !WIFSTOPPED(status)) {
+            ++err;
             fprintf(stderr, "yod-> child pid %i (rank %lu) died unexpectedly (%s), killing everyone\n",
                     (int)exited,
                     (unsigned long)d,
                     strsignal(WTERMSIG(status)));
-            for (d = 0; d < count; ++d) {
-                if (pids[d] != exited) {
-                    int stat;
-                    switch (waitpid(pids[d], &stat, WNOHANG)) {
-                        case 0:
-                            if (kill(pids[d], SIGKILL) == -1) {
-                                if (yod_debug) {
-                                    if (errno != ESRCH) {
-                                        perror("yod-> kill failed!");
-                                    } else {
-                                        fprintf(stderr, "yod-> child %i already dead\n",
-                                                (int)pids[d]);
-                                    }
-                                }
-                            }
-                            break;
-                        case -1:
-                            break;
-                        default:
-                            ++c;
-                            if (WIFSIGNALED(stat) && !WIFSTOPPED(stat) && (((WTERMSIG(status) == SIGINT) && (WTERMSIG(stat) != SIGINT)) || (WTERMSIG(stat) != SIGINT))) {
-                                ++err;
-                                if (yod_debug) {
-                                    fprintf(stderr, "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
-                                            (int)pids[d],
-                                            (unsigned long)d,
-                                            WTERMSIG(stat),
-                                            strsignal(WTERMSIG(status)));
-                                }
-                            } else if (WIFEXITED(stat) &&
-                                       (WEXITSTATUS(stat) > 0)) {
-                                ++err;
-                                if (yod_debug) {
-                                    fprintf(stderr, "yod-> child pid %i exited %i\n",
-                                            (int)pids[d],
-                                            WEXITSTATUS(status));
-                                }
-                            }
-                    }
-                }
-            }
+            c += kill_all_children(pids, count, exited, status);
             break;
         } else if (WIFEXITED(status) && (WEXITSTATUS(status) > 0)) {
-            ++err;
-            if (yod_debug) {
-                fprintf(stderr, "yod-> child pid %i exited %i\n",
-                        (int)exited,
-                        WEXITSTATUS(status));
+            if (upc_mode) {
+                int child_exit_val;
+                if (yod_debug) {
+                    fprintf(stderr, "yod-> child %i exited with code %x\n",
+                            (int)pids[d], WEXITSTATUS(status));
+                }
+                child_exit_val = WEXITSTATUS(status) & 0x7f;
+                if (WEXITSTATUS(status) & 0x80) {
+                    c += kill_all_children(pids, count, exited, status);
+                }
+            } else {
+                ++err;
+                if (yod_debug) {
+                    fprintf(stderr, "yod-> child pid %i exited %i\n",
+                            (int)exited,
+                            WEXITSTATUS(status));
+                }
             }
         }
     }
@@ -490,5 +470,57 @@ void print_usage(int ex)
         exit(EXIT_SUCCESS);
     }
 }                        /*}}}*/
+
+static size_t kill_all_children(pid_t *kids,
+                                size_t num_to_kill,
+                                pid_t  except,
+                                int    status)
+{
+    size_t retcount = 0;
+
+    for (size_t d = 0; d < num_to_kill; ++d) {
+        if (kids[d] != except) {
+            int stat;
+            switch (waitpid(kids[d], &stat, WNOHANG)) {
+                case 0:
+                    if (kill(kids[d], SIGKILL) == -1) {
+                        if (yod_debug) {
+                            if (errno != ESRCH) {
+                                perror("yod-> kill failed!");
+                            } else {
+                                fprintf(stderr, "yod-> child %i already dead\n",
+                                        (int)kids[d]);
+                            }
+                        }
+                    }
+                    break;
+                case -1:
+                    break;
+                default:
+                    ++retcount;
+                    if (WIFSIGNALED(stat) && !WIFSTOPPED(stat) &&
+                        (((WTERMSIG(status) == SIGINT) && (WTERMSIG(stat) != SIGINT)) ||
+                         (WTERMSIG(stat) != SIGINT))) {
+                        ++err;
+                        if (yod_debug) {
+                            fprintf(stderr, "yod-> child pid %i (rank %lu) died before I could kill it! (%i: %s)\n",
+                                    (int)kids[d],
+                                    (unsigned long)d,
+                                    WTERMSIG(stat),
+                                    strsignal(WTERMSIG(status)));
+                        }
+                    } else if (WIFEXITED(stat) && (WEXITSTATUS(stat) > 0)) {
+                        ++err;
+                        if (yod_debug) {
+                            fprintf(stderr, "yod-> child pid %i exited %i\n",
+                                    (int)kids[d],
+                                    WEXITSTATUS(status));
+                        }
+                    }
+            }
+        }
+    }
+    return retcount;
+}
 
 /* vim:set expandtab: */
