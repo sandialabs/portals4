@@ -59,7 +59,7 @@ int main(int   argc,
                         (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
                         NULL, NULL, &ni_logical));
 
-    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, 
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
                               libtest_get_mapping()));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
@@ -103,18 +103,10 @@ int main(int   argc,
         nextrank.rank  = myself.rank + 1;
         nextrank.rank *= (nextrank.rank <= num_procs - 1);
         gettimeofday(&start, NULL);
-        CHECK_RETURNVAL(PtlPut
-                            (potato_launcher_handle, 0, potato_launcher.length,
-                            PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
-                            NULL, 1));
-        {
-            ptl_ct_event_t junk;
-            CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 2, &junk));
-        }
-        {
-            ptl_ct_event_t ctc = { 0, 0 };
-            CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
-        }
+        CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0, potato_launcher.length,
+                               (LOOPS == 1) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                               nextrank, logical_pt_index, 1, 0,
+                               NULL, 1));
     }
 
     {                                  /* the potato-passing loop */
@@ -131,18 +123,25 @@ int main(int   argc,
             ++potato;
             if (potato < LOOPS * (num_procs)) { // otherwise, the recipient may have exited
                 /* Bomb's away! */
-                CHECK_RETURNVAL(PtlPut
-                                    (potato_launcher_handle, 0,
-                                    potato_launcher.length, PTL_OC_ACK_REQ,
-                                    nextrank, logical_pt_index, 3, 0, NULL, 2));
+                if (myself.rank == 0) {
+                    CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0,
+                                           potato_launcher.length,
+                                           (waitfor == (LOOPS - 1)) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                                           nextrank, logical_pt_index, 3, 0, NULL, 2));
+                } else {
+                    CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0,
+                                           potato_launcher.length,
+                                           (waitfor == LOOPS) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                                           nextrank, logical_pt_index, 3, 0, NULL, 2));
+                }
             }
         }
         // make sure that last send completed before exiting
-        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, (LOOPS - 1) * 2, &ctc));
+        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, LOOPS, &ctc));
         assert(ctc.failure == 0);
         if (myself.rank == 0) {
             // wait for the last potato
-            CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, waitfor - 1, &ctc));
+            CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, LOOPS, &ctc));
             assert(ctc.failure == 0);
             printf("Final value of potato = %i\n", potato);
         }
