@@ -141,6 +141,7 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->base.type = PTLMESEARCH;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->meSearch.ni_handle = ni;
     entry->meSearch.pt_index = pt_index;
     entry->meSearch.me = *me;

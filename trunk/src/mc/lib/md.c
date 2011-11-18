@@ -90,6 +90,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->base.type = PTLMDRELEASE;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->mdRelease.md_handle = md_hc;
     
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),

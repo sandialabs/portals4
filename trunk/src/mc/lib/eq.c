@@ -97,6 +97,7 @@ PtlEQFree(ptl_handle_eq_t eq_handle)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = PTLEQFREE;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->eqFree.eq_handle = eq_hc;
     entry->eqFree.retval_ptr = &cmd_ret;
 

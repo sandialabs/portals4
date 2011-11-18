@@ -52,6 +52,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->base.type = PTLLEAPPEND;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->leAppend.le_handle = le_hc;
     entry->leAppend.pt_index  = pt_index;
     entry->leAppend.le        = *le;
@@ -95,6 +96,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->base.type = PTLLEUNLINK;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->leUnlink.le_handle = le_hc;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
@@ -138,6 +140,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
     entry->base.type = PTLLESEARCH;
+    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->leSearch.ni_handle = ni;
     entry->leSearch.pt_index = pt_index;
     entry->leSearch.le = *le;
