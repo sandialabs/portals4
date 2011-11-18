@@ -19,7 +19,6 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len)
 {
     ptl_process_id_t dst;
-    lib_ni_t         *p3_ni;
     ptl_ppe_t        *ppe_ctx;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t     *ppe_ni;
@@ -32,24 +31,15 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
                  hdr->src_id.phys.nid, hdr->src_id.phys.pid );
 
     dst.nid = hdr->target_id.phys.nid;
-    //dst.pid = hdr->target_id.phys.pid;
-    dst.pid = 0;
+    dst.pid = hdr->target_id.phys.pid;
 
-    p3_ni = p3lib_get_ni_pid(type, dst.pid); 
-    assert( p3_ni );
-
-    ppe_ctx = p3_ni->data;
+    ppe_ctx = _p3_ni->data;
     client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
     ppe_ni = &client->nis[ hdr->ni ];
     ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
 
-    PPE_DBG("head=%p\n", ppe_pt->list[PTL_PRIORITY_LIST].head );
-    PPE_DBG("tail=%p\n", ppe_pt->list[PTL_PRIORITY_LIST].tail );
-
     ptl_ppe_me_t *ppe_me = (ptl_ppe_me_t*) ppe_pt->list[PTL_PRIORITY_LIST].head;
     
-    PPE_DBG("%p %p\n",ppe_me->base.prev, ppe_me->base.next);
-
     for ( ; ppe_me ; ppe_me = (ptl_ppe_me_t*) ppe_me->base.next ) {
         PPE_DBG( "nid=%#x pid=%d match_bits=%#lx\n", 
                             ppe_me->match_id.phys.nid,
@@ -79,8 +69,6 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
         break;
     }
 
-    PPE_DBG("ppe_me %p\n",ppe_me);
-
     if ( ! ppe_me ) return 0;
 
     dm_ctx_t *dm_ctx = malloc( sizeof( *dm_ctx ) );
@@ -97,9 +85,7 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     dm_ctx->id = ME_CTX;
     dm_ctx->ni = ppe_ni;
 
-    PPE_DBG("dm_ctx=%p\n",dm_ctx);
-
-    p3_ni->nal->recv( p3_ni, 
+    _p3_ni->nal->recv( _p3_ni, 
                         nal_msg_data,
                         dm_ctx,         // lib_data
                         &dm_ctx->iovec, // dst_iov
@@ -115,8 +101,8 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
 
 static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
 {
-    PPE_DBG("\n");
     ptl_ppe_md_t *ppe_md = dm_ctx->u.ppe_md;
+    PPE_DBG("\n");
 
     --ppe_md->ref_cnt;
 
@@ -130,18 +116,16 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
 
 static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
 {
+    ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
     PPE_DBG("\n");
 
-    ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
     --ppe_me->ref_cnt;
 
-    PPE_DBG("\n");
     if ( ppe_me->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_me->options & PTL_ME_EVENT_CT_COMM ) {
             ct_inc( dm_ctx->ni, ppe_me->ct_h.s.code, 1 );
         }
     }
-    PPE_DBG("\n");
 
     return 0;
 }

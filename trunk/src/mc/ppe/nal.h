@@ -21,6 +21,8 @@ struct dm_ctx_t {
 };                              
 typedef struct dm_ctx_t dm_ctx_t; 
 
+extern lib_ni_t *_p3_ni;
+
 int nal_init( ptl_ppe_t* );
 
 #endif
