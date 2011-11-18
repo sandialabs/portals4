@@ -463,6 +463,7 @@ void print_usage(int ex)
     printf("\t-L [large_fragment_count] The number of large message buffers to allocate.\n");
     printf("\t-S [small_fragment_count] The number of small message buffers to allocate.\n");
     printf("\t-d                        Show useful error output (aka \"debug mode\")\n");
+    printf("\t-U                        Treat exit code 0x80 as special, the way UPC wants it to be.\n");
     fflush(stdout);
     if (ex) {
         exit(EXIT_FAILURE);
