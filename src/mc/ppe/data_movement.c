@@ -39,7 +39,7 @@ put_impl( ptl_ppe_t *ctx, ptl_cqe_put_t *cmd )
     dm_ctx->iovec.iov_len = cmd->length;
     dm_ctx->id = MD_CTX;
     dm_ctx->u.ppe_md = ppe_md;
-    dm_ctx->ni = ni;
+    dm_ctx->ppe_ni = ni;
     
     ++ppe_md->ref_cnt;
 

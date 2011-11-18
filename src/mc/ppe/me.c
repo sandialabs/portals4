@@ -26,7 +26,6 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
 
     // file in ptl_me_t data 
     ppe_me->ct_h        = (ptl_handle_generic_t)cmd->me.ct_handle;
-    PPE_DBG("%#x\n",ppe_me->ct_h.a);
     ppe_me->uid         = cmd->me.uid; 
     ppe_me->options     = cmd->me.options; 
     ppe_me->match_id    = cmd->me.match_id; 

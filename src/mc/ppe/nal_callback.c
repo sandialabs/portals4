@@ -37,8 +37,15 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
     ppe_ni = &client->nis[ hdr->ni ];
     ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
+    ptl_ppe_me_t *ppe_me  = NULL;
+    ptl_ppe_le_t *ppe_le  = NULL;
 
-    ptl_ppe_me_t *ppe_me = (ptl_ppe_me_t*) ppe_pt->list[PTL_PRIORITY_LIST].head;
+    dm_ctx_t *dm_ctx = malloc( sizeof( *dm_ctx ) );
+    assert( dm_ctx );
+
+if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
+
+    ppe_me = (ptl_ppe_me_t*) ppe_pt->list[PTL_PRIORITY_LIST].head;
     
     for ( ; ppe_me ; ppe_me = (ptl_ppe_me_t*) ppe_me->base.next ) {
         PPE_DBG( "nid=%#x pid=%d match_bits=%#lx\n", 
@@ -69,21 +76,31 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
         break;
     }
 
-    if ( ! ppe_me ) return 0;
+    if ( ppe_me ) {
+        dm_ctx->user_ptr = ppe_me->user_ptr; 
+        dm_ctx->iovec.iov_base = ppe_me->xpmem_ptr->data;
+        dm_ctx->u.ppe_me = ppe_me; 
+        dm_ctx->id = ME_CTX;
+    }
+} else {
+    ppe_le = (ptl_ppe_le_t*) ppe_pt->list[PTL_PRIORITY_LIST].head;
+    if ( ppe_le ) {
+        dm_ctx->user_ptr = ppe_le->user_ptr; 
+        dm_ctx->iovec.iov_base = ppe_le->xpmem_ptr->data;
+        dm_ctx->u.ppe_le = ppe_le; 
+        dm_ctx->id = LE_CTX;
+    }
+}
 
-    dm_ctx_t *dm_ctx = malloc( sizeof( *dm_ctx ) );
-    assert( dm_ctx );
+    if ( ! ppe_me && ! ppe_le ) {
+        free ( dm_ctx );
+        return 0;
+    }
+
     dm_ctx->nal_msg_data = nal_msg_data;
-
     dm_ctx->hdr = *hdr;
-    dm_ctx->user_ptr = ppe_me->user_ptr; 
-    dm_ctx->u.ppe_me = ppe_me; 
-
-    dm_ctx->iovec.iov_base = ppe_me->xpmem_ptr->data;
     dm_ctx->iovec.iov_len = hdr->length;
-
-    dm_ctx->id = ME_CTX;
-    dm_ctx->ni = ppe_ni;
+    dm_ctx->ppe_ni = ppe_ni;
 
     _p3_ni->nal->recv( _p3_ni, 
                         nal_msg_data,
@@ -108,7 +125,7 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
 
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-            ct_inc( dm_ctx->ni, ppe_md->ct_h.s.code, 1 );
+            ct_inc( dm_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
         }
     }
     return 0;
@@ -123,13 +140,28 @@ static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
 
     if ( ppe_me->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_me->options & PTL_ME_EVENT_CT_COMM ) {
-            ct_inc( dm_ctx->ni, ppe_me->ct_h.s.code, 1 );
+            ct_inc( dm_ctx->ppe_ni, ppe_me->ct_h.s.code, 1 );
         }
     }
 
     return 0;
 }
 
+static inline int lib_le_finalize( dm_ctx_t* dm_ctx )
+{
+    ptl_ppe_le_t *ppe_le = dm_ctx->u.ppe_le;
+    PPE_DBG("\n");
+
+    --ppe_le->ref_cnt;
+
+    if ( ppe_le->ct_h.a != PTL_CT_NONE ) {
+        if ( ppe_le->options & PTL_ME_EVENT_CT_COMM ) {
+            ct_inc( dm_ctx->ppe_ni, ppe_le->ct_h.s.code, 1 );
+        }
+    }
+
+    return 0;
+}
 
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
 {
@@ -137,6 +169,8 @@ int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
 
     if ( dm_ctx->id == ME_CTX ) {
         lib_me_finalize( dm_ctx );
+    } else if ( dm_ctx->id == LE_CTX ) {
+        lib_le_finalize( dm_ctx );
     } else {
         lib_md_finalize( dm_ctx );
     }

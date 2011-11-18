@@ -32,7 +32,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
-    if ((ni.s.ni == 1) || (ni.s.ni == 3)) { // must be a non-matching NI
+    if ((ni.s.ni == 1) || (ni.s.ni == 3)) { // must be a matching NI
         VERBOSE_ERROR("must be a matching NI\n");
         return PTL_ARG_INVALID;
     }
@@ -55,7 +55,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
     entry->meAppend.me        = *me;
     entry->meAppend.list      = ptl_list;
     entry->meAppend.user_ptr  = user_ptr;
-    entry->meAppend.me_handle = (ptl_internal_handle_converter_t) me_hc.a;
+    entry->meAppend.me_handle = me_hc;
 
     ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
