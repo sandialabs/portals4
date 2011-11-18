@@ -19,7 +19,7 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len)
 {
     ptl_process_id_t dst;
-    lib_ni_t         *ni;
+    lib_ni_t         *p3_ni;
     ptl_ppe_t        *ppe_ctx;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t     *ppe_ni;
@@ -35,10 +35,10 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     //dst.pid = hdr->target_id.phys.pid;
     dst.pid = 0;
 
-    ni = p3lib_get_ni_pid(type, dst.pid); 
-    assert( ni );
+    p3_ni = p3lib_get_ni_pid(type, dst.pid); 
+    assert( p3_ni );
 
-    ppe_ctx = ni->data;
+    ppe_ctx = p3_ni->data;
     client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
     ppe_ni = &client->nis[ hdr->ni ];
     ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
@@ -88,17 +88,18 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     dm_ctx->nal_msg_data = nal_msg_data;
 
     dm_ctx->hdr = *hdr;
-    dm_ctx->user_ptr = 0; // get from me or le
+    dm_ctx->user_ptr = ppe_me->user_ptr; 
     dm_ctx->u.ppe_me = ppe_me; 
 
-    // for testing lets send out of some PPE memory
     dm_ctx->iovec.iov_base = ppe_me->xpmem_ptr->data;
     dm_ctx->iovec.iov_len = hdr->length;
+
     dm_ctx->id = ME_CTX;
+    dm_ctx->ni = ppe_ni;
 
     PPE_DBG("dm_ctx=%p\n",dm_ctx);
 
-    ni->nal->recv( ni, 
+    p3_ni->nal->recv( p3_ni, 
                         nal_msg_data,
                         dm_ctx,         // lib_data
                         &dm_ctx->iovec, // dst_iov
@@ -119,10 +120,9 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
 
     --ppe_md->ref_cnt;
 
-    if ( ppe_md->ct_h != PTL_CT_NONE ) {
+    if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-            ct_inc( dm_ctx->ni, 
-               ((ptl_internal_handle_converter_t)ppe_md->ct_h).s.code, 1 );
+            ct_inc( dm_ctx->ni, ppe_md->ct_h.s.code, 1 );
         }
     }
     return 0;
@@ -135,14 +135,14 @@ static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
     ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
     --ppe_me->ref_cnt;
 
+    PPE_DBG("\n");
     if ( ppe_me->ct_h.a != PTL_CT_NONE ) {
-        //if ( ppe_me->options & PTL_MD_EVENT_CT_SEND ) {
-            ct_inc( dm_ctx->ni, 
-               ((ptl_internal_handle_converter_t)ppe_me->ct_h).s.code, 1 );
-        //}
+        if ( ppe_me->options & PTL_ME_EVENT_CT_COMM ) {
+            ct_inc( dm_ctx->ni, ppe_me->ct_h.s.code, 1 );
+        }
     }
+    PPE_DBG("\n");
 
-    free( dm_ctx->iovec.iov_base );
     return 0;
 }
 

@@ -37,8 +37,8 @@ struct ptl_ppe_md_t {
     int                  ref_cnt;
     ptl_ppe_xpmem_ptr_t *xpmem_ptr;
     unsigned int         options;
-    ptl_handle_eq_t      eq_h;
-    ptl_handle_ct_t      ct_h;
+    ptl_handle_generic_t eq_h;
+    ptl_handle_generic_t ct_h;
 };
 typedef struct ptl_ppe_md_t ptl_ppe_md_t;
 
