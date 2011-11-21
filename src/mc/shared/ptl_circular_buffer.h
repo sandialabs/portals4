@@ -1,6 +1,7 @@
 #ifndef PTL_CIRCULAR_BUFFER_T
 #define PTL_CIRCULAR_BUFFER_T
 
+#include <stdio.h>
 #include <stdint.h>
 #include "ptl_internal_alignment.h"
 
@@ -27,16 +28,16 @@ static inline int
 ptl_circular_buffer_add_overwrite(ptl_circular_buffer_t *cb,
                                   void *entry)
 {
-    uint64_t tmp;
+    uint64_t tmp,tmp2;
 
-    tmp = __sync_fetch_and_add(&cb->head, 1);
+    tmp2 = tmp = __sync_fetch_and_add(&cb->head, 1);
     tmp &= cb->mask;
     tmp *= cb->entry_size;
     memcpy(&cb->data[tmp], entry, cb->entry_size);
 
     while (!__sync_bool_compare_and_swap(&cb->cursor,
-                                         tmp,
-                                         tmp + 1)) {}
+                                         tmp2,
+                                         tmp2 + 1)) {}
     return 0;
 }
 
@@ -45,12 +46,12 @@ static inline int
 ptl_circular_buffer_add(ptl_circular_buffer_t *cb,
                         void *entry)
 {
-    uint64_t tmp;
+    uint64_t tmp,tmp2;
 
     __sync_synchronize();
     do  {
-        tmp = cb->head;
-        if (tmp >= cb->tail + cb->num_entries) return 1;
+        tmp2 = tmp = cb->head;
+        if (tmp + 1 >= cb->tail + cb->num_entries) return 1;
     } while (!__sync_bool_compare_and_swap(&cb->head,
                                            tmp,
                                            tmp + 1));
@@ -60,8 +61,8 @@ ptl_circular_buffer_add(ptl_circular_buffer_t *cb,
     memcpy(&cb->data[tmp], entry, cb->entry_size);
 
     while (!__sync_bool_compare_and_swap(&cb->cursor,
-                                         tmp,
-                                         tmp + 1)) {}
+                                         tmp2,
+                                         tmp2 + 1)) {}
     return 0;
 }
 
@@ -80,7 +81,7 @@ ptl_circular_buffer_get(ptl_circular_buffer_t *cb,
                                            tmp,
                                            tmp + 1));
 
-    *overwrite = (tmp <= cb->tail + cb->num_entries);
+    *overwrite = (cb->head >= cb->tail + cb->num_entries);
     tmp &= cb->mask;
     tmp *= cb->entry_size;
     memcpy(entry, &cb->data[tmp], cb->entry_size);
