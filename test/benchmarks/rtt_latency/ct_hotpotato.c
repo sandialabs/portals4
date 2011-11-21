@@ -137,14 +137,8 @@ int main(int   argc,
             }
         }
         // make sure that last send completed before exiting
-        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, LOOPS, &ctc));
+        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, LOOPS+1, &ctc));
         assert(ctc.failure == 0);
-        if (myself.rank == 0) {
-            // wait for the last potato
-            CHECK_RETURNVAL(PtlCTWait(potato_catcher.ct_handle, LOOPS, &ctc));
-            assert(ctc.failure == 0);
-            printf("Final value of potato = %i\n", potato);
-        }
     }
     if (myself.rank == 0) {
         double accumulate = 0.0;
