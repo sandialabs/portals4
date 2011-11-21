@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-  <repeat count="2">
+  <repeat count="1">
     <subtest>
       <desc>Test PtlPut 32K with good parameters to ME</desc>
       <ptl>

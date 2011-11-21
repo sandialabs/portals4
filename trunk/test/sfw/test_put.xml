@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-  <repeat count="9">
+  <repeat count="1">
     <subtest>
       <desc>Test short put without offset</desc>
       <ptl>
