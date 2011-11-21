@@ -89,13 +89,13 @@ if TEST_RUNTIME_MPI
 		  'mpirun  -H localhost -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml1.sh
 endif
-if TEST_RUNTIME_SHMEMRT
-	@echo "for TEST in $(XMLTESTS1); do" \
-		  'echo testing $${TEST};' \
-		  '$(top_builddir)/src/yod/yod -c 1' \
-	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-	      "done" > runxml1.sh
-endif
+#if TEST_RUNTIME_SHMEMRT
+#	@echo "for TEST in $(XMLTESTS1); do" \
+#		  'echo testing $${TEST};' \
+#		  '$(top_builddir)/src/yod/yod -c 1 --' \
+#	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+#	      "done" > runxml1.sh
+#endif
 	chmod +x runxml1.sh
 
 runxml2.sh:
@@ -105,13 +105,13 @@ if TEST_RUNTIME_MPI
 		  'mpirun  -H localhost -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml2.sh
 endif
-if TEST_RUNTIME_SHMEMRT
-	@echo "for TEST in $(XMLTESTS2); do" \
-		  'echo testing $${TEST};' \
-		  '$(top_builddir)/src/yod/yod -c 2' \
-	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-	      "done" > runxml2.sh
-endif
+#if TEST_RUNTIME_SHMEMRT
+#	@echo "for TEST in $(XMLTESTS2); do" \
+#		  'echo testing $${TEST};' \
+#		  '$(top_builddir)/src/yod/yod -c 2 --' \
+#	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+#	      "done" > runxml2.sh
+#endif
 	chmod +x runxml2.sh
 
 CLEANFILES = runxml1.sh runxml2.sh
