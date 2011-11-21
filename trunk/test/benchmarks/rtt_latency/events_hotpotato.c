@@ -9,15 +9,16 @@
 
 #define LOOPS 1000000
 
-#define CHECK_RETURNVAL(x) do { int ret;                                                                                                                              \
-                                switch (ret = x) {                                                                                                                    \
-                                    case PTL_IGNORED: case PTL_OK: break;                                                                                             \
-                                    case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;               \
-                                    case PTL_NO_SPACE: fprintf(stderr, "=> %s returned PTL_NO_SPACE (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;       \
-                                    case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", # x, (unsigned int)__LINE__); abort(); break; \
-                                    case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;         \
-                                    default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", # x, ret, (unsigned int)__LINE__); abort(); break;             \
-                                } } while (0)
+#define CHECK_RETURNVAL(x) do {                                                                                                               \
+        int ret;                                                                                                                              \
+        switch (ret = x) {                                                                                                                    \
+            case PTL_IGNORED: case PTL_OK: break;                                                                                             \
+            case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;               \
+            case PTL_NO_SPACE: fprintf(stderr, "=> %s returned PTL_NO_SPACE (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;       \
+            case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u)\n", # x, (unsigned int)__LINE__); abort(); break; \
+            case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u)\n", # x, (unsigned int)__LINE__); abort(); break;         \
+            default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", # x, ret, (unsigned int)__LINE__); abort(); break;             \
+        } } while (0)
 
 #if INTERFACE == 1
 # define ENTRY_T  ptl_me_t
@@ -109,18 +110,9 @@ int main(int   argc,
         nextrank.rank  = myself.rank + 1;
         nextrank.rank *= (nextrank.rank <= num_procs - 1);
         gettimeofday(&start, NULL);
-        CHECK_RETURNVAL(PtlPut
-                            (potato_launcher_handle, 0, potato_launcher.length,
-                            PTL_OC_ACK_REQ, nextrank, logical_pt_index, 1, 0,
-                            NULL, 1));
-        {
-            ptl_ct_event_t junk;
-            CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, 1, &junk));
-        }
-        {
-            ptl_ct_event_t ctc = { 0, 0 };
-            CHECK_RETURNVAL(PtlCTSet(potato_launcher.ct_handle, ctc));
-        }
+        CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0, potato_launcher.length,
+                               (LOOPS == 1) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                               nextrank, logical_pt_index, 1, 0, NULL, 1));
     }
 
     {                                  /* the potato-passing loop */
@@ -143,29 +135,23 @@ int main(int   argc,
             ++potato;
             if (potato < LOOPS * (num_procs)) { // otherwise, the recipient may have exited
                 /* Bomb's away! */
-                CHECK_RETURNVAL(PtlPut
-                                    (potato_launcher_handle, 0,
-                                    potato_launcher.length, PTL_OC_ACK_REQ,
-                                    nextrank, logical_pt_index, 3, 0, NULL, 2));
+                if (myself.rank == 0) {
+                    CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0,
+                                           potato_launcher.length,
+                                           (waitfor == (LOOPS - 1)) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                                           nextrank, logical_pt_index, 3, 0, NULL, 2));
+                } else {
+                    CHECK_RETURNVAL(PtlPut(potato_launcher_handle, 0,
+                                           potato_launcher.length,
+                                           (waitfor == LOOPS) ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ,
+                                           nextrank, logical_pt_index, 3, 0, NULL, 2));
+                }
             }
         }
         // make sure that last send completed before exiting
-        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, (LOOPS - 1) * 2, &ctc));
+        CHECK_RETURNVAL(PtlCTWait(potato_launcher.ct_handle, LOOPS + 1, &ctc));
         assert(ctc.failure == 0);
         if (myself.rank == 0) {
-            // wait for the last potato
-            if (potato < LOOPS) {
-                do {
-                    ptl_event_t event;
-                    CHECK_RETURNVAL(PtlEQWait(pt_eq_handle, &event));   // wait for potato
-                    if (event.type != PTL_EVENT_PUT) {
-                        printf("unexpected event: %i\n", (int)event.type);
-                    } else {
-                        break;
-                    }
-                } while (1);
-            }
-            assert(ctc.failure == 0);
             printf("Final value of potato = %i\n", potato);
         }
     }
