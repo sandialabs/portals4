@@ -52,6 +52,9 @@ char *libtest_StrPtlError(int error_code)
         case PTL_IN_USE:
             return "PTL_IN_USE";
 
+        case PTL_IGNORED:
+            return "PTL_IGNORED";
+
         case PTL_INTERRUPTED:
             return "PTL_INTERRUPTED";
 

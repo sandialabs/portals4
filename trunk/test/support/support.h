@@ -101,7 +101,7 @@ void libtest_barrier(void);
 ** Some convenience functions
 */
 #define LIBTEST_CHECK(rc, fun)                                         \
-    if (rc != PTL_OK)   {                                              \
+    if (rc != PTL_OK && rc != PTL_IGNORED)   {							\
 	fprintf(stderr, "%s() failed (%s)\n", fun, libtest_StrPtlError(rc)); \
 	exit(1);                                                       \
     }
