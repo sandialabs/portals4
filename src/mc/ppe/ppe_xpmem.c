@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <sys/types.h>
 #include <xpmem.h>
 
 #include "ppe/ppe_xpmem.h"

@@ -36,7 +36,7 @@ int nal_init( ptl_ppe_t *ppe_ctx )
     _p3_ni = &ppe_ctx->ni;
     // pid is not used when one nal services multiple apps 
     ppe_ctx->ni.pid = PTL_PID_ANY;
-#if 0
+#if 1 
     ppe_ctx->ni.debug = 0;
 #else
 // PTL_DBG_NI_00 |

@@ -124,6 +124,7 @@ typedef struct {
 typedef struct {
     ptl_cqe_base_t base;
     ptl_internal_handle_converter_t     eq_handle; 
+    ptl_size_t                  count;
     struct ptl_circular_buffer_t *cb;
 } ptl_cqe_eqalloc_t;
 
