@@ -95,10 +95,9 @@ static int send_comp(buf_t *buf)
 			buf->completed = 1;
 			process_init(buf);
 		}
-		
-		if (buf->comp)
-			buf_put(buf);
 	}
+
+	buf_put(buf);
 
 	return STATE_RECV_DONE;
 }
