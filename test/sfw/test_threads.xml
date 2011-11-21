@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-  <repeat count="100">
+  <repeat count="1">
     <subtest>
       <desc>test bare threads</desc>
       <threads count="10">

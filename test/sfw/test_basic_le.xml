@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-  <repeat count="2">
+  <repeat count="1">
     <subtest>
       <desc>Test PtlLEAppend without init</desc>
       <arg_check>
