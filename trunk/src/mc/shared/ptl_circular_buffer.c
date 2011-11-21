@@ -21,6 +21,7 @@ ptl_circular_buffer_init(ptl_circular_buffer_t **cb,
     tmp->mask = num_entries - 1;
     tmp->entry_size = num_entries;
 
+    *cb = tmp;
     return 0;
 }
 
