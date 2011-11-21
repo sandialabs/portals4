@@ -3,6 +3,7 @@
 
 #include "ppe/nal.h"
 #include "ppe/ct.h"
+#include "ppe/eq.h"
 
 #include "shared/ptl_internal_handles.h"
 
@@ -126,6 +127,14 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
             ct_inc( dm_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
+        }
+    }
+
+    if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
+        if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
+            ptl_event_t event;
+            event.type = PTL_EVENT_SEND;
+            eq_write( dm_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
         }
     }
     return 0;

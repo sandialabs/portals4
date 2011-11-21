@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <sys/time.h>
 #include <assert.h>
 
 #include "portals4.h"
@@ -59,6 +60,7 @@ PtlEQAlloc(ptl_handle_ni_t  ni_handle,
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->eqAlloc.eq_handle = eq_hc;
     entry->eqAlloc.cb = eq->cb;
+    entry->eqAlloc.count = count;
     
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface), 
@@ -160,10 +162,6 @@ int
 PtlEQWait(ptl_handle_eq_t eq_handle,
           ptl_event_t    *event)
 {
-    int ret, overwrite;
-    ptl_internal_eq_t *eq;
-    ptl_internal_handle_converter_t eq_hc  = { eq_handle };
-
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -179,14 +177,8 @@ PtlEQWait(ptl_handle_eq_t eq_handle,
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
-
-    do {
-        ret = ptl_circular_buffer_get(eq->cb, event, &overwrite);
-        if (ret < 0) return PTL_FAIL;
-    } while (ret == 1);
-
-    return (overwrite == 1) ? PTL_EQ_DROPPED : PTL_OK;
+    unsigned int which;
+    return PtlEQPoll( &eq_handle, 1, PTL_TIME_FOREVER, event, &which );
 }
 
 
@@ -198,6 +190,7 @@ PtlEQPoll(const ptl_handle_eq_t *eq_handles,
           unsigned int          *which)
 {
     ptl_size_t eqidx; 
+    struct timeval end_time;
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized\n");
@@ -215,8 +208,40 @@ PtlEQPoll(const ptl_handle_eq_t *eq_handles,
     }   
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    /* BWB: FIX ME */
-    return PTL_FAIL;
+    if( timeout != PTL_TIME_FOREVER ) {
+        int retval = gettimeofday( &end_time, NULL ); 
+        assert( retval == 0 );
+        end_time.tv_sec += timeout / 1000;
+        end_time.tv_usec += (timeout % 1000 ) * 1000;
+        
+        if ( end_time.tv_usec >= 1000000 ) {
+            end_time.tv_usec -= 1000000;
+            ++end_time.tv_sec;
+        }
+    }
+
+    do {
+        int ret, overwrite;
+    
+        for ( eqidx = 0; eqidx < size; eqidx++ ) {
+            const ptl_internal_handle_converter_t eq_hc = { eq_handles[eqidx] };
+            ptl_internal_eq_t *eq = get_eq(eq_hc.s.ni, eq_hc.s.code);
+            ret = ptl_circular_buffer_get(eq->cb, event, &overwrite);
+            if (ret == 0)  {
+                return (overwrite == 1) ? PTL_EQ_DROPPED : PTL_OK;
+            }
+        }
+
+        if ( timeout != PTL_TIME_FOREVER ) {
+            struct timeval cur_time;
+            int retval = gettimeofday( &cur_time, NULL );
+            assert( retval == 0 );
+            if ( cur_time.tv_sec >= end_time.tv_sec &&
+                            cur_time.tv_usec >= end_time.tv_usec ) {
+                return PTL_EQ_EMPTY;
+            }  
+        }
+    } while ( 1 );   
 }
 
 

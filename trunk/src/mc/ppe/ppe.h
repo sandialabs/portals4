@@ -33,6 +33,11 @@ fprintf(stderr,"%s():%i: " fmt, __FUNCTION__, __LINE__, ## args);
 
 typedef ptl_internal_handle_converter_t ptl_handle_generic_t;
 
+struct ptl_ppe_eq_t {
+    ptl_ppe_xpmem_ptr_t    *xpmem_ptr;
+};
+typedef struct ptl_ppe_eq_t ptl_ppe_eq_t;
+
 struct ptl_ppe_md_t {
     int                  ref_cnt;
     ptl_ppe_xpmem_ptr_t *xpmem_ptr;
@@ -105,6 +110,7 @@ struct ptl_ppe_ni_t {
     ptl_ppe_me_t        *ppe_me;
     ptl_ppe_le_t        *ppe_le;
     ptl_ppe_pt_t        *ppe_pt;
+    ptl_ppe_eq_t        *ppe_eq;
 };
 typedef struct ptl_ppe_ni_t ptl_ppe_ni_t;
 

@@ -220,8 +220,8 @@ PtlCTPoll(const ptl_handle_ct_t *ct_handles,
         }
     }
 
-    while( 1 )
-    { 
+    do { 
+        __sync_synchronize();
         for ( ctidx = 0; ctidx < size; ctidx++ ) {
             const ptl_internal_handle_converter_t ct_hc = { ct_handles[ctidx] };
             // should we read the values in place or copy them and read them?
@@ -240,12 +240,8 @@ PtlCTPoll(const ptl_handle_ct_t *ct_handles,
                 return PTL_CT_NONE_REACHED;
             } 
         }
-        __sync_synchronize();
-    }
-
-    return PTL_OK;
+    } while ( 1 );
 }
-
 
 int
 PtlCTSet(ptl_handle_ct_t ct_handle,
