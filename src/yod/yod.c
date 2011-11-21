@@ -254,12 +254,10 @@ int main(int   argc,
             break;
         } else if (WIFEXITED(status) && (WEXITSTATUS(status) > 0)) {
             if (upc_mode) {
-                int child_exit_val;
                 if (yod_debug) {
                     fprintf(stderr, "yod-> child %i exited with code %x\n",
                             (int)pids[d], WEXITSTATUS(status));
                 }
-                child_exit_val = WEXITSTATUS(status) & 0x7f;
                 if (WEXITSTATUS(status) & 0x80) {
                     c += kill_all_children(pids, count, exited, status);
                 }
@@ -485,10 +483,10 @@ static size_t kill_all_children(pid_t *kids,
             switch (waitpid(kids[d], &stat, WNOHANG)) {
                 case 0:
                     if (kill(kids[d], SIGKILL) == -1) {
-                        if (yod_debug) {
-                            if (errno != ESRCH) {
-                                perror("yod-> kill failed!");
-                            } else {
+                        if (errno != ESRCH) {
+                            perror("yod-> kill failed!");
+                        } else {
+                            if (yod_debug) {
                                 fprintf(stderr, "yod-> child %i already dead\n",
                                         (int)kids[d]);
                             }
