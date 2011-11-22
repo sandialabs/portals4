@@ -69,8 +69,8 @@ ptl_stack_push(ptl_stack_t *stack, void *val)
     do {
         item->next = stack->head;
     } while (!__sync_bool_compare_and_swap(&stack->head,
-                                           item,
-                                           item->next));
+                                           item->next,
+                                           item));
 }
 
 #endif
