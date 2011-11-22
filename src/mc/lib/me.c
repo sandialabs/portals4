@@ -57,7 +57,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
     entry->meAppend.user_ptr  = user_ptr;
     entry->meAppend.me_handle = me_hc;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_meappend_t));
 
@@ -99,7 +99,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
     entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
     entry->meUnlink.me_handle = me_hc;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_meunlink_t));
 
@@ -148,7 +148,7 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
     entry->meSearch.ptl_search_op = ptl_search_op;
     entry->meSearch.user_ptr = user_ptr;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_mesearch_t));
 

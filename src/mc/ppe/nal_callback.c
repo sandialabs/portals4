@@ -81,6 +81,7 @@ if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
         dm_ctx->user_ptr = ppe_me->user_ptr; 
         dm_ctx->iovec.iov_base = ppe_me->xpmem_ptr->data;
         dm_ctx->u.ppe_me = ppe_me; 
+        ++dm_ctx->u.ppe_me->ref_cnt;
         dm_ctx->id = ME_CTX;
     }
 } else {
@@ -89,6 +90,7 @@ if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
         dm_ctx->user_ptr = ppe_le->user_ptr; 
         dm_ctx->iovec.iov_base = ppe_le->xpmem_ptr->data;
         dm_ctx->u.ppe_le = ppe_le; 
+        ++dm_ctx->u.ppe_le->ref_cnt;
         dm_ctx->id = LE_CTX;
     }
 }
@@ -102,6 +104,7 @@ if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
     dm_ctx->hdr = *hdr;
     dm_ctx->iovec.iov_len = hdr->length;
     dm_ctx->ppe_ni = ppe_ni;
+    dm_ctx->ppe_pt = ppe_pt;
 
     _p3_ni->nal->recv( _p3_ni, 
                         nal_msg_data,
@@ -143,6 +146,7 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
 static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
 {
     ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
+    ptl_ppe_pt_t *ppe_pt = dm_ctx->ppe_pt;
     PPE_DBG("\n");
 
     --ppe_me->ref_cnt;
@@ -152,6 +156,14 @@ static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
             ct_inc( dm_ctx->ppe_ni, ppe_me->ct_h.s.code, 1 );
         }
     }
+
+    if ( ppe_pt->eq_h.a != PTL_EQ_NONE ) {
+        if ( ppe_me->options & PTL_ME_EVENT_CT_COMM ) {
+            ptl_event_t event;
+            event.type = PTL_EVENT_PUT;
+            eq_write( dm_ctx->ppe_ni, ppe_pt->eq_h.s.code, &event );
+        }
+    } 
 
     return 0;
 }

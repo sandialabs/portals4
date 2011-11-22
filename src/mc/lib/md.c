@@ -63,7 +63,7 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
     entry->mdBind.md_handle = md_hc;
     entry->mdBind.md        = *md;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_mdbind_t));
 
@@ -93,7 +93,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
     entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
     entry->mdRelease.md_handle = md_hc;
     
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface),
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_mdrelease_t));
 
