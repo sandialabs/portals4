@@ -1,6 +1,6 @@
 #include "ptl_loc.h"
 
-#include "/opt/knem/include/knem_io.h"
+#include <knem_io.h>
 
 /* Initializes KNEM. */
 int knem_init(ni_t * ni)
