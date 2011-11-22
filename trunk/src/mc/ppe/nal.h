@@ -14,6 +14,7 @@ struct dm_ctx_t {
     void           *user_ptr;   
     ptl_md_iovec_t  iovec;
     ptl_ppe_ni_t   *ppe_ni;
+    ptl_ppe_pt_t   *ppe_pt;
     union {
         ptl_ppe_md_t   *ppe_md;
         ptl_ppe_me_t   *ppe_me;

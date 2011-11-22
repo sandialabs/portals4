@@ -67,8 +67,6 @@ PtlEQAlloc(ptl_handle_ni_t  ni_handle,
                                   entry, sizeof(ptl_cqe_eqalloc_t));
     if (0 != ret) return PTL_FAIL;
 
-    printf("eqalloc: %ld\n", (long) eq_hc.a);
-
     *eq_handle = eq_hc.a;
     return PTL_OK;
 }
@@ -120,6 +118,10 @@ PtlEQFree(ptl_handle_eq_t eq_handle)
 
     ret = ptl_circular_buffer_fini(cb);
     if (ret < 0) return PTL_FAIL;
+
+    // MJL: if we block for PTLEQFREE do we need to share the in_use flag with 
+    // the implementation
+    free_eq_index( eq_hc.s.ni, eq_hc.s.code );
 
     return cmd_ret;
 }

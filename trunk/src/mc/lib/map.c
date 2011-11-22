@@ -7,6 +7,7 @@
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_startup.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
@@ -49,7 +50,7 @@ PtlSetMap(ptl_handle_ni_t      ni_handle,
     entry->setMap.mapping = mapping;
     entry->setMap.mapping_len = map_size;
     entry->setMap.retval_ptr = &cmd_ret;
-    ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                             ptl_iface_get_peer(&ptl_iface), 
                             entry, sizeof(ptl_cqe_setmap_t));
     if (ret < 0) return PTL_FAIL;
@@ -103,7 +104,7 @@ PtlGetMap(ptl_handle_ni_t ni_handle,
     entry->getMap.mapping = mapping;
     entry->getMap.mapping_len = actual_map_size;
     entry->getMap.retval_ptr = &cmd_ret;
-    ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                             ptl_iface_get_peer(&ptl_iface), 
                             entry, sizeof(ptl_cqe_setmap_t));
     if (ret < 0) return PTL_FAIL;

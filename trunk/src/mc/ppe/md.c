@@ -33,7 +33,7 @@ md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
 int
 md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
 {
-    //int                 ret;
+    int                 ret;
     ptl_ppe_ni_t       *ni;
     ptl_ppe_md_t       *ppe_md; 
     ptl_ppe_client_t   *client;
@@ -51,8 +51,8 @@ md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
     assert( ppe_md->ref_cnt == 0 );
 
     // why do we hang when this is called
-    //ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_md->xpmem_ptr );
-    //assert( 0 == ret );  
+    ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_md->xpmem_ptr );
+    assert( 0 == ret );  
 
     shared_md->in_use = 0;
 

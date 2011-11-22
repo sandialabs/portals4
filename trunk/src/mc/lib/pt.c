@@ -75,7 +75,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
     entry->ptAlloc.eq_handle = ( ptl_internal_handle_converter_t ) eq_handle;
     entry->ptAlloc.pt_index  =  *pt_index;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_ptalloc_t));
 
@@ -123,7 +123,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle,
     entry->ptFree.ni_handle = ni;
     entry->ptFree.pt_index  = pt_index;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_ptfree_t));
 

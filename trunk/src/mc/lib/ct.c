@@ -87,7 +87,7 @@ PtlCTFree(ptl_handle_ct_t ct_handle)
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_ctfree_t));
 
@@ -118,7 +118,7 @@ PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 
-    ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 
+    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_ctcanceltriggered_t));
 

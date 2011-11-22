@@ -25,6 +25,9 @@ ct_free_impl( ptl_ppe_t *ctx, ptl_cqe_ctfree_t *cmd )
     ni = &ctx->clients[ cmd->base.remote_id ].nis[ cmd->ct_handle.s.ni ];
     ct =  ni->client_ct + cmd->ct_handle.s.code;
 
+    // MJL: how do we coordiate with pending data xfers that will want to
+    // use this CT?
+
     ct->in_use = 0;
     return 0;
 }

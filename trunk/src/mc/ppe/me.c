@@ -23,6 +23,7 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
     ppe_me->pt_index = cmd->pt_index;
     ppe_me->list     = cmd->list;
     ppe_me->user_ptr = cmd->user_ptr;
+    ppe_me->ref_cnt  = 0;
 
     // file in ptl_me_t data 
     ppe_me->ct_h        = (ptl_handle_generic_t)cmd->me.ct_handle;
@@ -44,6 +45,7 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
 int
 me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
 {
+    int                ret;
     ptl_ppe_ni_t      *ni;
     ptl_internal_me_t *shared_me;
     ptl_ppe_me_t      *ppe_me;
@@ -65,8 +67,8 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
     assert( ppe_me->ref_cnt == 0 );
     
     // why do we hang when this is called
-    //ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_me->xpmem_ptr );
-    //assert( 0 == ret );  
+    ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_me->xpmem_ptr );
+    assert( 0 == ret );  
 
     shared_me->in_use = 0;
     return 0;
