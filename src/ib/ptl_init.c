@@ -295,6 +295,10 @@ static int prepare_req(buf_t *buf)
 				DATA_FMT_IMMEDIATE) && (buf->event_mask &
 				(XI_SEND_EVENT | XI_CT_SEND_EVENT));
 
+	/* Protect the request packet until it is sent. */
+	if (!(buf->event_mask & XI_RECEIVE_EXPECTED))
+		buf->signaled = 1;
+
 	/* if we are not already 'connected' to destination
 	 * wait until we are */
 	if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
