@@ -306,9 +306,8 @@ static int recv_init(buf_t *buf)
  *
  * @return the next state.
  */
-static int recv_repost(buf_t *buf)
+static int recv_repost(ni_t *ni)
 {
-	ni_t *ni = obj_to_ni(buf);
 	int num_bufs;
 
 	/* compute the available room in the srq */
@@ -373,7 +372,7 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 			state = recv_init(buf);
 			break;
 		case STATE_RECV_REPOST:
-			state = recv_repost(buf);
+			state = recv_repost(ni);
 			break;
 		case STATE_RECV_DROP_BUF:
 			state = recv_drop_buf(buf);
