@@ -89,7 +89,8 @@ static int send_comp(buf_t *buf)
 	 * conn->rdma.completion_threshold), or it was completed in
 	 * error. We ignore the first type and let the second one pass
 	 * through the state machine. */
-	if (buf->comp || buf->ni_fail == PTL_NI_UNDELIVERABLE) {
+	if (buf->event_mask & XX_SIGNALED ||
+		buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* Fox XI only, restart the initiator state machine. */
 		if (!buf->xxbuf) {
 			buf->completed = 1;
@@ -118,7 +119,7 @@ static int rdma_comp(buf_t *rdma_buf)
 	/* If it's a completion that was not requested, then it's coming
 	 * from the send completion threshold mechanism (see
 	 * conn->rdma.completion_threshold), and we ignore it. */
-	if (!rdma_buf->comp)
+	if (!(rdma_buf->event_mask & XX_SIGNALED))
 		return STATE_RECV_DONE;
 
 	/* Take a ref on the XT since freeing all its rdma_buffers will also

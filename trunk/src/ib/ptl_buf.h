@@ -38,11 +38,15 @@ enum {
 	XI_CT_ACK_EVENT				= (1 << 8),
 	XI_CT_REPLY_EVENT			= (1 << 9),
 	XI_RECEIVE_EXPECTED			= (1 << 10),
+	XI_EARLY_SEND				= (1 << 13),
 
-	XT_COMM_EVENT		= (1 << 0),
-	XT_CT_COMM_EVENT	= (1 << 1),
-	XT_ACK_EVENT		= (1 << 2),
-	XT_REPLY_EVENT		= (1 << 3),
+	XT_COMM_EVENT				= (1 << 14),
+	XT_CT_COMM_EVENT			= (1 << 15),
+	XT_ACK_EVENT				= (1 << 16),
+	XT_REPLY_EVENT				= (1 << 17),
+
+	XX_SIGNALED					= (1 << 20), /* IB only */
+	XX_INLINE					= (1 << 21),
 };
 
 typedef enum buf_type buf_type_t;
@@ -183,14 +187,8 @@ struct buf {
 	/** data to hold message */
 	uint8_t			internal_data[BUF_DATA_SIZE];
 
-	/** verbs completion requested */
-	int			comp;
-
 	/** type of buf */
 	buf_type_t		type;
-
-	/** Send completion must be signaled. **/
-	int			signaled;
 
 	/* Target only. Must be out of the union. */
 	struct list_head	unexpected_list;

@@ -26,14 +26,14 @@
  */
 static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 		     uint64_t raddr, uint32_t rkey,
-		     struct ibv_sge *sg_list, int num_sge, uint8_t comp)
+		     struct ibv_sge *sg_list, int num_sge)
 {
 	int err;
 	struct ibv_send_wr wr;
 	struct ibv_send_wr *bad_wr;
 
 	/* build an infiniband rdma write work request */
-	if (likely(comp)) {
+	if (likely(buf->event_mask & XX_SIGNALED)) {
 		wr.wr_id = (uintptr_t)buf;
 		wr.send_flags = IBV_SEND_SIGNALED;
 	} else {
@@ -320,11 +320,12 @@ static int process_rdma(buf_t *buf)
  			atomic_inc(&buf->rdma.rdma_comp);
  		}
 
-		rdma_buf->comp = comp;
+		if (comp)
+			rdma_buf->event_mask |= XX_SIGNALED;
 
 		/* post the rdma read or write operation to the QP */
 		err = post_rdma(rdma_buf, buf->dest.rdma.qp, dir,
-				addr, rem_key, sge_list, entries, comp);
+				addr, rem_key, sge_list, entries);
 		if (err) {
 			pthread_spin_lock(&buf->rdma_list_lock);
 			list_del(&rdma_buf->list);
@@ -373,7 +374,6 @@ int process_rdma_desc(buf_t *buf)
 	uint32_t rlen;
 	struct ibv_sge sge;
 	int num_sge;
-	int comp;
 	void *indir_sge;
 	mr_t *mr;
 
@@ -404,15 +404,14 @@ int process_rdma_desc(buf_t *buf)
 	sge.length = rlen;
 
 	num_sge = 1;
-	comp = 1;
 
 	/* use the buf as its own rdma buf. */
-	buf->comp = 1;
+	buf->event_mask |= XX_SIGNALED;
 	buf->xxbuf = buf;
 	buf->type = BUF_RDMA;
 
 	err = post_rdma(buf, buf->dest.rdma.qp, DATA_DIR_IN,
-			raddr, rkey, &sge, num_sge, comp);
+			raddr, rkey, &sge, num_sge);
 	if (err) {
 		err = PTL_FAIL;
 		goto err1;

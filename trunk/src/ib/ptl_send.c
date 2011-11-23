@@ -7,7 +7,7 @@
  * send_message
  *	send a message to remote end
  */
-int send_message_rdma(buf_t *buf, int signaled)
+int send_message_rdma(buf_t *buf)
 {
 	int err;
 	struct ibv_send_wr *bad_wr;
@@ -19,7 +19,7 @@ int send_message_rdma(buf_t *buf, int signaled)
 	wr.sg_list = &sg_list;
 	wr.num_sge = 1;
 	wr.opcode = IBV_WR_SEND;
-	if (signaled) {
+	if (buf->event_mask & XX_SIGNALED) {
 		wr.send_flags = IBV_SEND_SIGNALED;
 		atomic_set(&buf->conn->rdma.completion_threshold, 0);
 
@@ -39,6 +39,9 @@ int send_message_rdma(buf_t *buf, int signaled)
 		}
 	}
 
+	if (buf->event_mask & XX_INLINE)
+		wr.send_flags |= IBV_SEND_INLINE;
+
 	sg_list.addr = (uintptr_t)buf->internal_data;
 	sg_list.lkey = buf->rdma.lkey;
 	sg_list.length = buf->length;
@@ -48,7 +51,6 @@ int send_message_rdma(buf_t *buf, int signaled)
 #endif
 	
 	buf->type = BUF_SEND;
-	buf->comp = signaled;
 
 	err = ibv_post_send(buf->dest.rdma.qp, &wr, &bad_wr);
 	if (err) {

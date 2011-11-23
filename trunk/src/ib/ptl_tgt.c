@@ -278,9 +278,6 @@ static int tgt_start(buf_t *buf)
 	ptl_process_t initiator;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	/* set ack/reply bits in event mask */
-	buf->event_mask = 0;
-
 	switch (hdr->operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
@@ -1297,7 +1294,10 @@ static int tgt_send_ack(buf_t *buf)
 
 	send_buf->dest = buf->dest;
 	send_buf->conn = buf->conn;
-	err = buf->conn->transport.send_message(send_buf, 1);
+	/* TODO: try to inline and skip complete. */
+	send_buf->event_mask |= XX_SIGNALED;
+
+	err = buf->conn->transport.send_message(send_buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -1338,7 +1338,9 @@ static int tgt_send_reply(buf_t *buf)
 
 	send_buf->dest = buf->dest;
 	send_buf->conn = buf->conn;
-	err = buf->conn->transport.send_message(send_buf, 1);
+	/* TODO: try to inline and skip complete. */
+	send_buf->event_mask |= XX_SIGNALED;
+	err = buf->conn->transport.send_message(send_buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;

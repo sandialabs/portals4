@@ -12,14 +12,13 @@
  *
  * @return status
  */
-static int send_message_shmem(buf_t *buf, int signaled)
+static int send_message_shmem(buf_t *buf)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
 	buf_get(buf);
 
 	buf->type = BUF_SHMEM;
-	buf->comp = signaled;
 
 	buf->shmem.source = buf->obj.obj_ni->shmem.index;
 

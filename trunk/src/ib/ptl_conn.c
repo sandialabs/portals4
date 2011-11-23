@@ -241,6 +241,26 @@ int init_connect(ni_t *ni, conn_t *conn)
 }
 
 /**
+ * Retrieve some current parameters from the QP. Right now we only
+ * need max_inline_data.
+ *
+ * @param[in] conn
+ */
+static void get_qp_param(conn_t *conn)
+{
+	int rc;
+	struct ibv_qp_attr attr;
+	struct ibv_qp_init_attr init_attr;
+
+	rc = ibv_query_qp(conn->rdma.cm_id->qp, &attr, IBV_QP_CAP, &init_attr);
+	assert(rc == 0);
+
+	if (rc == 0) {
+		conn->rdma.max_inline_data = init_attr.cap.max_inline_data;
+	}
+}
+
+/**
  * @param[in] ni
  * @param[in] conn
  * @param[in] event
@@ -274,7 +294,6 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	init_attr.recv_cq = ni->rdma.cq;
 	init_attr.srq = ni->rdma.srq;
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
-	init_attr.cap.max_inline_data = 512;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -283,6 +302,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	conn->rdma.cm_id = event->id;
 	event->id->context = conn;
+	get_qp_param(conn);
 
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
@@ -386,7 +406,6 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
 				    get_param(PTL_MAX_RDMA_WR_OUT);
 	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
-	init_attr.cap.max_inline_data = 512;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -619,7 +638,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.cap.max_recv_wr		= 0;
 		init.cap.max_send_sge		= max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
 		init.cap.max_recv_sge		= get_param(PTL_MAX_QP_RECV_SGE);
-		init.cap.max_inline_data = 512;
 
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL) {
@@ -645,6 +663,8 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 				//err = PTL_FAIL;
 				//goto err1;
 			}
+
+			get_qp_param(conn);
 
 			if (rdma_connect(conn->rdma.cm_id, &conn_param)) {
 				//todo 
