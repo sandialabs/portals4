@@ -190,7 +190,7 @@ typedef struct {
     ptl_internal_handle_converter_t     me_handle;
     ptl_pt_index_t  pt_index;
     ptl_me_t        me;
-    ptl_list_t      list;
+    ptl_list_t      ptl_list;
     void           *user_ptr;
 } ptl_cqe_meappend_t ;
 
@@ -213,7 +213,7 @@ typedef struct {
     ptl_internal_handle_converter_t     le_handle;
     ptl_pt_index_t  pt_index;
     ptl_le_t        le;
-    ptl_list_t      list;
+    ptl_list_t      ptl_list;
     void           *user_ptr;
 } ptl_cqe_leappend_t ;
 

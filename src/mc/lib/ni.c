@@ -153,7 +153,7 @@ int PtlNIInit(ptl_interface_t       iface,
             sizeof(ptl_process_t) + sizeof(ptl_rank_t) + 
             sizeof(ptl_internal_le_t) * limits->max_list_size +
             sizeof(ptl_internal_md_t) * limits->max_mds +
-            sizeof(ptl_internal_me_t) * limits->max_list_size +
+            sizeof(ptl_shared_me_t) * limits->max_list_size +
             sizeof(ptl_internal_ct_t) * limits->max_cts +
             sizeof(ptl_internal_eq_t) * limits->max_eqs +
             sizeof(ptl_internal_pt_t) * limits->max_pt_index;
