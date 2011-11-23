@@ -639,11 +639,21 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
 	}
 
 	ev->type		= type;
-	ev->rlength		= le64_to_cpu(hdr->length);
-	ev->mlength		= buf->mlength;
-	ev->remote_offset	= buf->moffset;
 	ev->user_ptr		= buf->user_ptr;
-	ev->ni_fail_type	= buf->ni_fail;
+
+	if (type == PTL_EVENT_SEND) {
+		/* The buf->ni_fail field can be overriden by the target side
+		 * before we reach this function. If the message has been
+		 * delivered then sending it was OK. */
+		if (buf->ni_fail == PTL_NI_UNDELIVERABLE)
+			ev->ni_fail_type = PTL_NI_UNDELIVERABLE;
+		else
+			ev->ni_fail_type = PTL_NI_OK;
+	} else {
+		ev->mlength		= buf->mlength;
+		ev->remote_offset	= buf->moffset;
+		ev->ni_fail_type	= buf->ni_fail;
+	}
 
 	__eq_check(eq);
 
