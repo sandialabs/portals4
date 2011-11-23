@@ -1126,9 +1126,9 @@ void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 
 	if (unlikely(buf->ni_fail))
 		ct->event.failure++;
-	else if (likely(bytes == CT_EVENTS))
+	else if (bytes == CT_EVENTS)
 		ct->event.success++;
-	else if (likely(bytes == CT_MBYTES))
+	else if (bytes == CT_MBYTES)
 		ct->event.success += buf->mlength;
 	else {
 		assert(bytes == CT_RBYTES);
