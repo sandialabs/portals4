@@ -20,7 +20,7 @@ int buf_setup(void *arg)
 	buf_t *buf = arg;
 
 	buf->num_mr = 0;
-	buf->comp = 0;
+	buf->event_mask = 0;
 	buf->data = buf->internal_data;
 	buf->rdma.recv.wr.next = NULL;
 	buf->rdma_desc_ok = 0;

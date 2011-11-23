@@ -36,7 +36,7 @@ struct transport {
 	enum transport_type	type;
 
 	int			(*post_tgt_dma)(struct buf *buf);
-	int			(*send_message)(struct buf *buf, int signaled);
+	int			(*send_message)(struct buf *buf);
 };
 
 extern struct transport transport_rdma;
@@ -62,6 +62,8 @@ struct conn {
 			int			retry_resolve_addr;
 			int			retry_resolve_route;
 			int			retry_connect;
+
+			int max_inline_data;
 
 			/* If no completion has been requested in a while, we need
 			 * to ask for one. If none is ever requested, then it's

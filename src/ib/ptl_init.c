@@ -69,6 +69,9 @@ static inline void make_reply_event(buf_t *buf)
  */
 static inline void make_ct_send_event(buf_t *buf)
 {
+	/* For send events we use the requested length instead of the
+	 * modified length since we haven't had a chance to see it
+	 * yet. This only matters if we are counting bytes. */
 	int bytes = (buf->event_mask & XI_PUT_CT_BYTES) ?
 			CT_RBYTES : CT_EVENTS;
 
@@ -119,8 +122,6 @@ static inline void make_ct_reply_event(buf_t *buf)
 static int start(buf_t *buf)
 {
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-
-	buf->event_mask = 0;
 
 	if (buf->put_md) {
 		if (buf->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
@@ -291,13 +292,21 @@ static int prepare_req(buf_t *buf)
 
 	/* For immediate data we can cause an early send event provided
 	 * we request a send completion event */
-	buf->signaled = put_data && (put_data->data_fmt ==
-				DATA_FMT_IMMEDIATE) && (buf->event_mask &
-				(XI_SEND_EVENT | XI_CT_SEND_EVENT));
+	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT) &&
+		(put_data && put_data->data_fmt == DATA_FMT_IMMEDIATE))
+		buf->event_mask |= XI_EARLY_SEND;
+
+	/* Inline the data if it fits. That may save waiting for a
+	 * completion. */
+	if (buf->conn->transport.type == CONN_TYPE_SHMEM ||
+		buf->length <= buf->conn->rdma.max_inline_data)
+		buf->event_mask |= XX_INLINE;
 
 	/* Protect the request packet until it is sent. */
-	if (!(buf->event_mask & XI_RECEIVE_EXPECTED))
-		buf->signaled = 1;
+	if (!(buf->event_mask & XX_INLINE) &&
+		((buf->event_mask & XI_EARLY_SEND) ||
+		 !(buf->event_mask & XI_RECEIVE_EXPECTED)))
+		buf->event_mask |= XX_SIGNALED;
 
 	/* if we are not already 'connected' to destination
 	 * wait until we are */
@@ -381,7 +390,6 @@ static int wait_conn(buf_t *buf)
 static int send_req(buf_t *buf)
 {
 	int err;
-	int signaled = buf->signaled;
 
 #ifdef USE_XRC
 	if (buf->conn->state == CONN_STATE_XRC_CONNECTED)
@@ -390,16 +398,14 @@ static int send_req(buf_t *buf)
 #endif
 		set_buf_dest(buf, buf->conn);
 
-	err = buf->conn->transport.send_message(buf, signaled);
+	err = buf->conn->transport.send_message(buf);
 	if (err)
 		return STATE_INIT_SEND_ERROR;
 
-	if (signaled) {
-		if (buf->conn->transport.type == CONN_TYPE_RDMA)
-			return STATE_INIT_WAIT_COMP;
-		else
-			return STATE_INIT_EARLY_SEND_EVENT;
-	}
+	if (buf->event_mask & XX_SIGNALED)
+		return STATE_INIT_WAIT_COMP;
+	else if (buf->event_mask & XI_EARLY_SEND)
+		return STATE_INIT_EARLY_SEND_EVENT;
 	else if (buf->event_mask & XI_RECEIVE_EXPECTED)
 		return STATE_INIT_WAIT_RECV;
 	else
@@ -430,10 +436,6 @@ static int send_error(buf_t *buf)
 
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
 		return STATE_INIT_LATE_SEND_EVENT;
-	else if (buf->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
-		return STATE_INIT_ACK_EVENT;
-	else if (buf->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
-		return STATE_INIT_REPLY_EVENT;
 	else
 		return STATE_INIT_CLEANUP;
 }
@@ -454,6 +456,8 @@ static int send_error(buf_t *buf)
  */
 static int wait_comp(buf_t *buf)
 {
+	assert(buf->conn->transport.type == CONN_TYPE_RDMA);
+
 	if (buf->completed || buf->recv_buf)
 		return STATE_INIT_EARLY_SEND_EVENT;
 	else
@@ -480,14 +484,8 @@ static int early_send_event(buf_t *buf)
 	if (buf->event_mask & XI_SEND_EVENT)
 		make_send_event(buf);
 
-	if (buf->event_mask & XI_CT_SEND_EVENT) {
-		/* For early send events we use the requested length
-		 * instead of the modified length since we haven't
-		 * had a chance to see it yet. This only matters
-		 * if we are counting bytes. */
-		buf->mlength = le64_to_cpu(((req_hdr_t *)buf->data)->length);
+	if (buf->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(buf);
-	}
 	
 	if ((buf->event_mask & XI_RECEIVE_EXPECTED) &&
 			(buf->ni_fail != PTL_NI_UNDELIVERABLE))
@@ -603,14 +601,13 @@ static int late_send_event(buf_t *buf)
 	if (buf->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(buf);
 	
-	if (buf->ni_fail == PTL_NI_UNDELIVERABLE)
-		return STATE_INIT_CLEANUP;
+	if (buf->ni_fail != PTL_NI_UNDELIVERABLE) {
+		if (buf->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
+			return STATE_INIT_ACK_EVENT;
 
-	else if (buf->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
-		return STATE_INIT_ACK_EVENT;
-
-	else if (buf->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
-		return STATE_INIT_REPLY_EVENT;
+		else if (buf->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
+			return STATE_INIT_REPLY_EVENT;
+	}
 
 	return STATE_INIT_CLEANUP;
 }
