@@ -420,6 +420,12 @@ static int send_req(buf_t *buf)
  */
 static int send_error(buf_t *buf)
 {
+	/* Release the put MD. */
+	if (buf->put_md) {
+		md_put(buf->put_md);
+		buf->put_md = NULL;
+	}
+
 	buf->ni_fail = PTL_NI_UNDELIVERABLE;
 
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))
@@ -504,6 +510,11 @@ static int early_send_event(buf_t *buf)
 static int wait_recv(buf_t *buf)
 {
 	hdr_t *hdr;
+
+	if (buf->ni_fail == PTL_NI_UNDELIVERABLE) {
+		/* The send completion failed. */
+		return STATE_INIT_SEND_ERROR;
+	}
 
 	if (!buf->recv_buf)
 		return STATE_INIT_WAIT_RECV;
