@@ -3,18 +3,25 @@
 #include "ppe/ppe.h"
 #include "ppe/dispatch.h"
 #include "ppe/pt.h"
+#include "ppe/matching_list_entries.h"
 
 int
 me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
 {
+#if 0
     ptl_ppe_ni_t     *ni;
     ptl_ppe_me_t     *ppe_me;
     ptl_ppe_pt_t     *ppe_pt;
     ptl_ppe_client_t *client;
+#endif
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->me_handle.s.selector,
                     cmd->me_handle.s.code, cmd->me_handle.s.ni );
 
+    _PtlMEAppend( cmd->me_handle.a, cmd->pt_index, &cmd->me, cmd->ptl_list,
+                            cmd->user_ptr );
+
+#if 0
     client = &ctx->clients[ cmd->base.remote_id ];
     ni     = &client->nis[ cmd->me_handle.s.ni ];
     ppe_me = ni->ppe_me + cmd->me_handle.s.code;
@@ -38,6 +45,7 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
     assert( ppe_me->xpmem_ptr );
 
     pt_append_me( ppe_pt, cmd->list, ppe_me ); 
+#endif
 
     return 0;
 }
@@ -45,16 +53,20 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
 int
 me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
 {
+#if 0
     int                ret;
     ptl_ppe_ni_t      *ni;
-    ptl_internal_me_t *shared_me;
+    ptl_shared_me_t *shared_me;
     ptl_ppe_me_t      *ppe_me;
     ptl_ppe_pt_t      *ppe_pt;
     ptl_ppe_client_t  *client;
+#endif
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->me_handle.s.selector,
                     cmd->me_handle.s.code, cmd->me_handle.s.ni );
 
+    _PtlMEUnlink( cmd->me_handle.a );
+#if 0
     client    = &ctx->clients[ cmd->base.remote_id ];
     ni        = &client->nis[ cmd->me_handle.s.ni ];
     ppe_me    = ni->ppe_me + cmd->me_handle.s.code;
@@ -71,6 +83,7 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
     assert( 0 == ret );  
 
     shared_me->in_use = 0;
+#endif
     return 0;
 }
 
@@ -85,5 +98,7 @@ me_search_impl( ptl_ppe_t *ctx, ptl_cqe_mesearch_t *cmd )
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->ni_handle.s.selector,
                     cmd->ni_handle.s.code, cmd->ni_handle.s.ni );
+    _PtlMESearch( cmd->ni_handle.a, cmd->pt_index, &cmd->me,
+                        cmd->ptl_search_op, cmd->user_ptr );
     return 0;
 }

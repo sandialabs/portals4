@@ -26,6 +26,8 @@ portals_engine_SOURCES = \
 	ppe/nal_callback.c \
 	ppe/nal.h \
 	ppe/nal_init.c \
+	ppe/matching_list_entries.c \
+	ppe/matching_list_entries.h \
 	ppe/ni.c \
 	ppe/ppe.c \
 	ppe/ppe.h \

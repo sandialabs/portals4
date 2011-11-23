@@ -53,7 +53,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
     entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
     entry->meAppend.pt_index  = pt_index;
     entry->meAppend.me        = *me;
-    entry->meAppend.list      = ptl_list;
+    entry->meAppend.ptl_list  = ptl_list;
     entry->meAppend.user_ptr  = user_ptr;
     entry->meAppend.me_handle = me_hc;
 

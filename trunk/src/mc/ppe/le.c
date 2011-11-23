@@ -21,7 +21,7 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
     ppe_pt = ni->ppe_pt + cmd->pt_index;
 
     ppe_le->pt_index = cmd->pt_index;
-    ppe_le->list     = cmd->list;
+    ppe_le->list     = cmd->ptl_list;
     ppe_le->user_ptr = cmd->user_ptr;
 
     // file in ptl_le_t data 
@@ -32,7 +32,7 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
                                     cmd->le.start, cmd->le.length );
     assert( ppe_le->xpmem_ptr );
 
-    pt_append_le( ppe_pt, cmd->list, ppe_le );
+    pt_append_le( ppe_pt, cmd->ptl_list, ppe_le );
 
     return 0;
 }

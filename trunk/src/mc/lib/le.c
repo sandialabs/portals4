@@ -56,7 +56,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
     entry->leAppend.le_handle = le_hc;
     entry->leAppend.pt_index  = pt_index;
     entry->leAppend.le        = *le;
-    entry->leAppend.list      = ptl_list;
+    entry->leAppend.ptl_list  = ptl_list;
     entry->leAppend.user_ptr  = user_ptr;
 
     ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),

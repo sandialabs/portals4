@@ -23,7 +23,7 @@ typedef struct {
     ptl_sr_value_t*                 status_registers;
     ptl_internal_le_t              *i_le;
     ptl_internal_md_t              *i_md;
-    ptl_internal_me_t              *i_me;
+    ptl_shared_me_t                *i_me;
     ptl_internal_ct_t              *i_ct;
     ptl_internal_eq_t              *i_eq;
     ptl_internal_pt_t              *i_pt;
