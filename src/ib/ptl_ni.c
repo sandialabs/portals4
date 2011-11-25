@@ -745,11 +745,6 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	pthread_spin_init(&ni->rdma.recv_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_mutex_init(&ni->atomic_mutex, NULL);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
-	pthread_mutex_init(&ni->eq_wait_mutex, NULL);
-	pthread_cond_init(&ni->eq_wait_cond, NULL);
-	ni->eq_waiters = 0;
-	pthread_mutex_init(&ni->ct_wait_mutex, NULL);
-	pthread_cond_init(&ni->ct_wait_cond, NULL);
 	if (options & PTL_NI_PHYSICAL) {
 		pthread_spin_init(&ni->physical.lock, PTHREAD_PROCESS_PRIVATE);
 	} else {
@@ -992,14 +987,10 @@ static void interrupt_cts(ni_t *ni)
 	ct_t *ct;
 
 	pthread_spin_lock(&ni->ct_list_lock);
-	pthread_mutex_lock(&ni->ct_wait_mutex);
 	list_for_each(l, &ni->ct_list) {
 		ct = list_entry(l, ct_t, list);
 		ct->interrupt = 1;
-		pthread_cond_broadcast(&ct->cond);
 	}
-	pthread_cond_broadcast(&ni->ct_wait_cond);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
 	pthread_spin_unlock(&ni->ct_list_lock);
 }
 
@@ -1050,10 +1041,6 @@ static void ni_cleanup(ni_t *ni)
 		ni->pt = NULL;
 	}
 
-	pthread_mutex_destroy(&ni->ct_wait_mutex);
-	pthread_cond_destroy(&ni->ct_wait_cond);
-	pthread_mutex_destroy(&ni->eq_wait_mutex);
-	pthread_cond_destroy(&ni->eq_wait_cond);
 	pthread_mutex_destroy(&ni->atomic_mutex);
 	pthread_mutex_destroy(&ni->pt_mutex);
 	pthread_spin_destroy(&ni->md_list_lock);

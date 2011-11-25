@@ -74,14 +74,6 @@ typedef struct ni {
 	RB_HEAD(the_root, mr) mr_tree;
 	pthread_spinlock_t	mr_tree_lock;
 
-	pthread_mutex_t		eq_wait_mutex;
-	pthread_cond_t		eq_wait_cond;
-	int			eq_waiters;
-
-	pthread_mutex_t		ct_wait_mutex;
-	pthread_cond_t		ct_wait_cond;
-	int			ct_waiters;
-
 	/* NI identifications */
 	ptl_process_t		id;
 	ptl_uid_t		uid;

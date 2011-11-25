@@ -17,13 +17,10 @@ struct ct {
 						     triggered operations */
 	struct list_head        list;		/**< list member of allocated
 						     counting events */
+	atomic_t list_size;			/**< Number of elements in list */
 	int			interrupt;	/**< flag indicating ct is
 						     getting shut down */
-	pthread_mutex_t		mutex;		/**< mutex for ct condition */
-	pthread_cond_t		cond;		/**< condition to break out
-						     of ct wait calls */
-	unsigned int		waiters;	/**< number of waiters for
-						     ct condition */
+	pthread_spinlock_t		lock;		/**< mutex for ct condition */
 };
 
 typedef struct ct ct_t;

@@ -34,14 +34,7 @@ struct eq {
 	unsigned int		cons_gen;	/**< consumer generation */
 	int			interrupt;	/**< if set eq is being
 						     freed or destroyed */
-	int			overflow;	/**< true if producer has
-						     wrapped the consumer */
-	pthread_mutex_t		mutex;		/**< mutex for eq condition */
-	pthread_cond_t		cond;		/**< condition to break out
-						     of eq wait calls */
-	unsigned int		waiters;	/**< number of waiters for
-						     eq condition */
-
+	pthread_spinlock_t		lock;		/**< mutex for eq condition */
 };
 
 typedef struct eq eq_t;
