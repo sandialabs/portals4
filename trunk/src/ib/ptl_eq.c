@@ -16,8 +16,7 @@ int eq_init(void *arg, void *unused)
 {
 	eq_t *eq = arg;
 
-        pthread_mutex_init(&eq->mutex, NULL);
-        pthread_cond_init(&eq->cond, NULL);
+	pthread_spin_init(&eq->lock, PTHREAD_PROCESS_PRIVATE);
 
 	return PTL_OK;
 }
@@ -31,8 +30,7 @@ void eq_fini(void *arg)
 {
 	eq_t *eq = arg;
 
-	pthread_cond_destroy(&eq->cond);
-	pthread_mutex_destroy(&eq->mutex);
+	pthread_spin_destroy(&eq->lock);
 }
 
 /**
@@ -51,8 +49,6 @@ int eq_new(void *arg)
 	eq->prod_gen = 0;
 	eq->cons_gen = 0;
 	eq->interrupt = 0;
-	eq->overflow = 0;
-	eq->waiters = 0;
 
 	return PTL_OK;
 }
@@ -153,26 +149,6 @@ err0:
 }
 
 /**
- * @brief check to see if event queue has waiters.
- *
- * @pre caller should hold eq->mutex
- *
- * @param eq the event queue to check
- */
-static void __eq_check(eq_t *eq)
-{
-	ni_t *ni = obj_to_ni(eq);
-
-	if (eq->waiters)
-		pthread_cond_broadcast(&eq->cond);
-
-	pthread_mutex_lock(&ni->eq_wait_mutex);
-	if (ni->eq_waiters)
-		pthread_cond_broadcast(&ni->eq_wait_cond);
-	pthread_mutex_unlock(&ni->eq_wait_mutex);
-}
-
-/**
  * @brief Free an event queue object.
  *
  * @param[in] eq_handle The handle of the event queue to free.
@@ -215,17 +191,13 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	ni = obj_to_ni(eq);
 #endif
 
-	/* cleanup resources waiting for an event */
-	pthread_mutex_lock(&eq->mutex);
-
+	/* cleanup resources. */
 	eq->interrupt = 1;
-	__eq_check(eq);
-
-	pthread_mutex_unlock(&eq->mutex);
+	__sync_synchronize();
 
 	err = PTL_OK;
-	eq_put(eq);
-	eq_put(eq);
+	eq_put(eq);					/* from to_eq() */
+	eq_put(eq);					/* from PtlCTAlloc() */
 
 	/* give back the limit resource */
 	(void)__sync_sub_and_fetch(&ni->current.max_eqs, 1);
@@ -239,9 +211,23 @@ err0:
 }
 
 /**
- * @brief Find next event in event queue.
+ * @brief Find whether a queue is empty.
  *
- * @pre caller should hold eq->mutex
+ * @param[in] eq the event queue
+ *
+ * @return non-zero if the queue is empty. The result is not
+ * guaranteed unless the eq->lock is taken. However it is sufficient
+ * to give an idea whether get_event() can be called. This avoids
+ * taking a lock.
+ */
+static int inline is_queue_empty(eq_t *eq)
+{
+	return ((eq->producer == eq->consumer) &&
+			(eq->prod_gen == eq->cons_gen));
+}
+
+/**
+ * @brief Find next event in event queue.
  *
  * @param[in] eq the event queue
  * @param[out] event_p the address of the returned event
@@ -251,14 +237,17 @@ err0:
  * gap since the last event returned
  * @return PTL_EQ_OK if there was an event and no gap
  */
-static int __get_event(volatile eq_t *eq, ptl_event_t *event_p)
+static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
 {
 	int dropped = 0;
 
+	pthread_spin_lock(&eq->lock);
+
 	/* check to see if the queue is empty */
-	if ((eq->producer == eq->consumer) &&
-	    (eq->prod_gen == eq->cons_gen))
+	if (is_queue_empty(eq)) {
+		pthread_spin_unlock(&eq->lock);
 		return PTL_EQ_EMPTY;
+	}
 
 	/* if we have been lapped by the producer advance the
 	 * consumer pointer until we catch up */
@@ -277,6 +266,8 @@ static int __get_event(volatile eq_t *eq, ptl_event_t *event_p)
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
+
+	pthread_spin_unlock(&eq->lock);
 
 	return dropped ? PTL_EQ_DROPPED : PTL_OK;
 }
@@ -303,7 +294,7 @@ static int __get_event(volatile eq_t *eq, ptl_event_t *event_p)
  * queue handle.
  */
 int PtlEQGet(ptl_handle_eq_t eq_handle,
-	     ptl_event_t *event_p)
+			 ptl_event_t *event_p)
 {
 	int err;
 	eq_t *eq;
@@ -325,9 +316,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	eq = fast_to_obj(eq_handle);
 #endif
 
-	pthread_mutex_lock(&eq->mutex);
-	err = __get_event(eq, event_p);
-	pthread_mutex_unlock(&eq->mutex);
+	err = get_event(eq, event_p);
 
 	eq_put(eq);
 #ifndef NO_ARG_VALIDATION
@@ -358,12 +347,11 @@ err0:
  * called by another thread while this thread was waiting in PtlEQWait().
  */
 int PtlEQWait(ptl_handle_eq_t eq_handle,
-	      ptl_event_t *event_p)
+			  ptl_event_t *event_p)
 {
 	int err;
 	eq_t *eq;
 	ni_t *ni;
-	int nloops = get_param(PTL_EQ_WAIT_LOOP_COUNT);
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -385,54 +373,26 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	ni = obj_to_ni(eq);
 
 	while(1) {
-		/* spin nloops times and then block */
-                if (nloops) {
-			pthread_mutex_lock(&eq->mutex);
-			err = __get_event(eq, event_p);
-			pthread_mutex_unlock(&eq->mutex);
+		if (!is_queue_empty(eq)) {
+			err = get_event(eq, event_p);
 			if (err != PTL_EQ_EMPTY) {
 				break;
 			}
-
-			if (eq->interrupt) {
-				err = PTL_INTERRUPTED;
-				break;
-			}
-
-                        nloops--;
-                        SPINLOCK_BODY();
-                        continue;
-                } else {
-			pthread_mutex_lock(&eq->mutex);
-
-			/* check to see if there is an event in the queue */
-			err = __get_event(eq, event_p);
-			if (err != PTL_EQ_EMPTY) {
-				pthread_mutex_unlock(&eq->mutex);
-				break;
-			}
-
-			/* check to see if we should interrupt wait */
-			if (eq->interrupt) {
-				pthread_mutex_unlock(&eq->mutex);
-				err = PTL_INTERRUPTED;
-				break;
-			}
-
-			/* block until something changes */
-			eq->waiters++;
-			pthread_cond_wait(&eq->cond, &eq->mutex);
-			eq->waiters--;
-
-			pthread_mutex_unlock(&eq->mutex);
 		}
+
+		if (eq->interrupt) {
+			err = PTL_INTERRUPTED;
+			break;
+		}
+
+		SPINLOCK_BODY();
 	}
 
 	eq_put(eq);
 #ifndef NO_ARG_VALIDATION
-err1:
+ err1:
 	gbl_put();
-err0:
+ err0:
 #endif
 	return err;
 }
@@ -461,18 +421,16 @@ err0:
  * called by another thread while this thread was waiting in PtlEQPoll().
  */
 int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
-	      ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
+			  ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
 {
 	int err;
 	ni_t *ni = NULL;
 	eq_t **eqs = NULL;
 	struct timespec expire;
 	struct timespec now;
-	int forever = (timeout == PTL_TIME_FOREVER);
 	int i;
 	int i2;
-	int found_one;
-	int nloops = get_param(PTL_EQ_POLL_LOOP_COUNT);
+	const int forever = (timeout == PTL_TIME_FOREVER);
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -527,92 +485,49 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	}
 
 	while (1) {
-		/* spin nloops times and then block */
-                if (nloops) {
-			found_one = 0;
-			for (i = 0; i < size; i++) {
-				pthread_mutex_lock(&eqs[i]->mutex);
-				err = __get_event(eqs[i], event_p);
-				pthread_mutex_unlock(&eqs[i]->mutex);
+		for (i = 0; i < size; i++) {
+			eq_t *eq = eqs[i];
+
+			if (!is_queue_empty(eq)) {
+				err = get_event(eq, event_p);
+
 				if (err != PTL_EQ_EMPTY) {
 					*which_p = i;
-					found_one++;
-					break;
-				}
-
-				if (eqs[i]->interrupt) {
-					err = PTL_INTERRUPTED;
-					found_one++;
-					break;
+					goto out;
 				}
 			}
 
-			if (found_one)
-				break;
-
-			if (!forever) {
-				clock_gettime(CLOCK_REALTIME, &now);
-				if ((now.tv_sec > expire.tv_sec) ||
-				    ((now.tv_sec == expire.tv_sec) &&
-				     (now.tv_nsec > expire.tv_nsec))) {
-					err = PTL_EQ_EMPTY;
-					break;
-				}
+			if (eq->interrupt) {
+				err = PTL_INTERRUPTED;
+				goto out;
 			}
-
-                        nloops--;
-                        SPINLOCK_BODY();
-                        continue;
-                } else {
-			pthread_mutex_lock(&ni->eq_wait_mutex);
-
-			found_one = 0;
-			for (i = 0; i < size; i++) {
-				pthread_mutex_lock(&eqs[i]->mutex);
-				err = __get_event(eqs[i], event_p);
-				pthread_mutex_unlock(&eqs[i]->mutex);
-				if (err != PTL_EQ_EMPTY) {
-					*which_p = i;
-					found_one++;
-					break;
-				}
-
-				if (eqs[i]->interrupt) {
-					err = PTL_INTERRUPTED;
-					found_one++;
-					break;
-				}
-			}
-
-			if (found_one) {
-				pthread_mutex_unlock(&ni->eq_wait_mutex);
-				break;
-			}
-
-			ni->eq_waiters++;
-			err = pthread_cond_timedwait(&ni->eq_wait_cond, &ni->eq_wait_mutex, &expire);
-			ni->eq_waiters--;
-
-			pthread_mutex_unlock(&ni->eq_wait_mutex);
-
-                        /* check to see if we timed out */
-                        if (err == ETIMEDOUT) {
-                                err = PTL_EQ_EMPTY;
-                                break;
-                        }
 		}
+
+		if (!forever) {
+			clock_gettime(CLOCK_REALTIME, &now);
+			if ((now.tv_sec > expire.tv_sec) ||
+				((now.tv_sec == expire.tv_sec) &&
+				 (now.tv_nsec > expire.tv_nsec))) {
+				err = PTL_EQ_EMPTY;
+				goto out;
+			}
+		}
+
+		SPINLOCK_BODY();
 	}
 
+ out:
+
 #ifndef NO_ARG_VALIDATION
-err2:
+ err2:
 #endif
 	for (i = i2; i >= 0; i--)
 		eq_put(eqs[i]);
 	free(eqs);
-err1:
+ err1:
 #ifndef NO_ARG_VALIDATION
-		gbl_put();
-err0:
+	gbl_put();
+ err0:
 #endif
 	return err;
 }
@@ -624,11 +539,11 @@ err0:
  * @param[in] eq The event queue.
  * @param[in] type The event type.
  */
-void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
+void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t type)
 {
 	ptl_event_t *ev;
 
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -654,9 +569,7 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
 		ev->ni_fail_type	= buf->ni_fail;
 	}
 
-	__eq_check(eq);
-
-	pthread_mutex_unlock(&eq->mutex);
+	pthread_spin_unlock(&eq->lock);
 }
 
 /**
@@ -668,8 +581,8 @@ void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type)
  * @param[in] start The start address.
  * @param[out] The address of the returned event.
  */
-void fill_target_event(buf_t *buf, ptl_event_kind_t type,
-		       void *user_ptr, void *start, ptl_event_t *ev)
+void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
+		       void *user_ptr, void *start, ptl_event_t * restrict ev)
 {
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
@@ -697,20 +610,18 @@ void fill_target_event(buf_t *buf, ptl_event_kind_t type,
  * @param[in] eq the event queue to post the event to.
  * @param[in] ev the event to post.
  */
-void send_target_event(eq_t *eq, ptl_event_t *ev)
+void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 {
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
-	memcpy(&eq->eqe_list[eq->producer++].event, ev, sizeof(*ev));
+	eq->eqe_list[eq->producer++].event = *ev;
 	if (eq->producer >= eq->count) {
 		eq->producer = 0;
 		eq->prod_gen++;
 	}
 
-	__eq_check(eq);
-
-	pthread_mutex_unlock(&eq->mutex);
+	pthread_spin_unlock(&eq->lock);
 }
 		       
 /**
@@ -722,13 +633,12 @@ void send_target_event(eq_t *eq, ptl_event_t *ev)
  * @param[in] usr_ptr The user pointer.
  * @param[in] start The start address.
  */
-void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
+void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t type,
 		       void *user_ptr, void *start)
 {
 	ptl_event_t *ev;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -737,26 +647,9 @@ void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
 		eq->prod_gen++;
 	}
 
-	ev->type		= type;
-	ev->start		= start;
-	ev->user_ptr		= user_ptr;
+	fill_target_event(buf, type, user_ptr, start, ev);
 
-	ev->ni_fail_type	= buf->ni_fail;
-	ev->mlength		= buf->mlength;
-	ev->match_bits		= le64_to_cpu(hdr->match_bits);
-	ev->hdr_data		= le64_to_cpu(hdr->hdr_data);
-	ev->pt_index		= le32_to_cpu(hdr->pt_index);
-	ev->uid			= le32_to_cpu(hdr->uid);
-	ev->rlength		= le64_to_cpu(hdr->length);
-	ev->remote_offset	= le64_to_cpu(hdr->offset);
-	ev->atomic_operation	= hdr->atom_op;
-	ev->atomic_type		= hdr->atom_type;
-	ev->initiator.phys.nid	= le32_to_cpu(hdr->src_nid);
-	ev->initiator.phys.pid	= le32_to_cpu(hdr->src_pid);
-
-	__eq_check(eq);
-
-	pthread_mutex_unlock(&eq->mutex);
+	pthread_spin_unlock(&eq->lock);
 }
 
 /**
@@ -767,12 +660,12 @@ void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
  * @param[in] type The event type.
  * @param[in] fail_type The NI fail type.
  */
-void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
+void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type,
 		   ptl_ni_fail_t fail_type)
 {
 	ptl_event_t *ev;
 
-	pthread_mutex_lock(&eq->mutex);
+	pthread_spin_lock(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -786,7 +679,5 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
 	ev->user_ptr = le->user_ptr;
 	ev->ni_fail_type = fail_type;
 
-	__eq_check(eq);
-
-	pthread_mutex_unlock(&eq->mutex);
+	pthread_spin_unlock(&eq->lock);
 }

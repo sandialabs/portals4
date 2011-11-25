@@ -7,8 +7,8 @@
 #include "ptl_loc.h"
 
 /* TODO make these unnecessary by queuing deferred operations */
-static void __ct_check(ct_t *ct);
-static void __post_trig_ct(struct buf *buf, ct_t *trig_ct);
+static void ct_check(ct_t *ct);
+static void post_trig_ct(struct buf *buf, ct_t *trig_ct);
 static void do_trig_ct_op(struct buf *buf);
 
 /**
@@ -21,9 +21,9 @@ int ct_init(void *arg, void *unused)
 {
 	ct_t *ct = arg;
 
-	pthread_mutex_init(&ct->mutex, NULL);
-	pthread_cond_init(&ct->cond, NULL);
+	pthread_spin_init(&ct->lock, PTHREAD_PROCESS_PRIVATE);
 	INIT_LIST_HEAD(&ct->trig_list);
+	atomic_set(&ct->list_size, 0);
 
 	return PTL_OK;
 }
@@ -37,8 +37,7 @@ void ct_fini(void *arg)
 {
 	ct_t *ct = arg;
 
-	pthread_cond_destroy(&ct->cond);
-	pthread_mutex_destroy(&ct->mutex);
+	pthread_spin_destroy(&ct->lock);
 }
 
 /**
@@ -54,7 +53,6 @@ int ct_new(void *arg)
 
 	assert(list_empty(&ct->trig_list));
 
-	ct->waiters = 0;
 	ct->interrupt = 0;
 	ct->event.failure = 0;
 	ct->event.success = 0;
@@ -200,15 +198,12 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	/* remove ourselves from ni->ct_list */
 	pthread_spin_lock(&ni->ct_list_lock);
 	list_del(&ct->list);
+	atomic_dec(&ct->list_size);
 	pthread_spin_unlock(&ni->ct_list_lock);
 
 	/* clean up pending operations */
-	pthread_mutex_lock(&ct->mutex);
-
 	ct->interrupt = 1;
-	__ct_check(ct);
-
-	pthread_mutex_unlock(&ct->mutex);
+	ct_check(ct);
 
 	ct_put(ct);
 	ct_put(ct);
@@ -241,8 +236,6 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	int err;
 	ct_t *ct;
 	ni_t *ni;
-	struct list_head *l;
-	struct list_head *t;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -263,22 +256,8 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	ni = obj_to_ni(ct);
 
-	pthread_mutex_lock(&ct->mutex);
-
-	list_for_each_prev_safe(l, t, &ct->trig_list) {
-		buf_t *buf = list_entry(l, buf_t, list);
-		list_del(l);
-		if (buf->type == BUF_INIT) {
-			buf->init_state = STATE_INIT_CLEANUP;
-			process_init(buf);
-		} else {
-			assert(buf->type == BUF_TRIGGERED);
-			ct_put(buf->ct);
-			buf_put(buf);
-		}
-	}
-
-	pthread_mutex_unlock(&ct->mutex);
+	ct->interrupt = 1;
+	ct_check(ct);
 
 	err = PTL_OK;
 	ct_put(ct);
@@ -365,7 +344,6 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 {
 	int err;
 	ct_t *ct;
-	int nloops = get_param(PTL_CT_WAIT_LOOP_COUNT);
 
 	/* convert handle to object */
 #ifndef NO_ARG_VALIDATION
@@ -400,28 +378,8 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 			break;
 		}
 
-		/* spin PTL_CT_WAIT_LOOP_COUNT times */
-		if (likely(nloops)) {
-			nloops--;
-			/* memory barrier */
-			SPINLOCK_BODY();
-			continue;
-		}
-
-		/* block until someone changes the counting event or
-		 * removes the ct event */
-		pthread_mutex_lock(&ct->mutex);
-
-		/* have to check condition once with the lock to
-		 * synchronize with other threads */
-		if (!ct->event.failure && !ct->interrupt &&
-		    ct->event.success < threshold) {
-			ct->waiters++;
-			pthread_cond_wait(&ct->cond, &ct->mutex);
-			ct->waiters--;
-		}
-
-		pthread_mutex_unlock(&ct->mutex);
+		/* memory barrier */
+		SPINLOCK_BODY();
 	}
 
 	ct_put(ct);
@@ -492,8 +450,8 @@ static int ct_poll_loop(int size, const ct_t **cts, const ptl_size_t *thresholds
  * in PtlCTPoll().
  */
 int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
-	      unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
-	      unsigned int *which_p)
+			  unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
+			  unsigned int *which_p)
 {
 	int err;
 	ni_t *ni = NULL;
@@ -503,7 +461,6 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	struct timespec now;
 	int i;
 	int i2;
-	int nloops = get_param(PTL_CT_POLL_LOOP_COUNT);
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -566,64 +523,35 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	/* poll loop */
 	while (1) {
 		/* spin PTL_CT_POLL_LOOP_COUNT times */
-		if (nloops) {
-			/* scan list to see if we can complete one */
-			err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
-			if (err != PTL_CT_NONE_REACHED)
-				break;
+		/* scan list to see if we can complete one */
+		err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
+		if (err != PTL_CT_NONE_REACHED)
+			break;
 
-			/* check to see if we have timed out */
-			if (have_timeout) {
-				clock_gettime(CLOCK_REALTIME, &now);
-				if ((now.tv_sec > expire.tv_sec) ||
-				    ((now.tv_sec == expire.tv_sec) &&
-				     (now.tv_nsec > expire.tv_nsec))) {
-					err = PTL_CT_NONE_REACHED;
-					break;
-				}
-			}
-
-			nloops--;
-			SPINLOCK_BODY();
-			continue;
-		} else {
-			/* block until someone changes *any* ct event
-			 * or removes a ct event */
-			pthread_mutex_lock(&ni->ct_wait_mutex);
-
-			/* check condition while holding lock */
-			err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
-			if (err != PTL_CT_NONE_REACHED) {
-				pthread_mutex_unlock(&ni->ct_wait_mutex);
-				break;
-			}
-
-			ni->ct_waiters++;
-			err = pthread_cond_timedwait(&ni->ct_wait_cond,
-						     &ni->ct_wait_mutex,
-						     &expire);
-			ni->ct_waiters--;
-
-			pthread_mutex_unlock(&ni->ct_wait_mutex);
-
-			/* check to see if we timed out */
-			if (err == ETIMEDOUT) {
+		/* check to see if we have timed out */
+		if (have_timeout) {
+			clock_gettime(CLOCK_REALTIME, &now);
+			if ((now.tv_sec > expire.tv_sec) ||
+				((now.tv_sec == expire.tv_sec) &&
+				 (now.tv_nsec > expire.tv_nsec))) {
 				err = PTL_CT_NONE_REACHED;
 				break;
 			}
 		}
+
+		SPINLOCK_BODY();
 	}
 
 #ifndef NO_ARG_VALIDATION
-err2:
+ err2:
 #endif
 	for (i = i2; i >= 0; i--)
 		ct_put((void *)cts[i]);
 	free(cts);
-err1:
+ err1:
 #ifndef NO_ARG_VALIDATION
 	gbl_put();
-err0:
+ err0:
 #endif
 	return err;
 }
@@ -632,25 +560,14 @@ err0:
  * @brief Check to see if current value of ct event will
  * trigger a further action.
  *
- * @pre caller should hold ct->mutex
- *
  * @param[in] ct The counting event to check.
  */
-static void __ct_check(ct_t *ct)
+static void ct_check(ct_t *ct)
 {
 	struct list_head *l;
 	struct list_head *t;
-	ni_t *ni = obj_to_ni(ct);
 
-	/* wake up callers to PtlCTWait on this ct if any */
-	if (ct->waiters)
-		pthread_cond_broadcast(&ct->cond);
-
-	/* wake up callers to PtlCTPoll if any */
-	pthread_mutex_lock(&ni->ct_wait_mutex);
-	if (ni->ct_waiters)
-		pthread_cond_broadcast(&ni->ct_wait_cond);
-	pthread_mutex_unlock(&ni->ct_wait_mutex);
+	pthread_spin_lock(&ct->lock);
 
 	/* check to see if any pending triggered move operations
 	 * can now be performed or discarded
@@ -662,44 +579,67 @@ static void __ct_check(ct_t *ct)
 		if (buf->type == BUF_INIT) {
 			if (ct->interrupt) {
 				list_del(l);
+				atomic_dec(&ct->list_size);
+
+				pthread_spin_unlock(&ct->lock);
+
 				buf->init_state = STATE_INIT_CLEANUP;
 				process_init(buf);
+
+				pthread_spin_lock(&ct->lock);
 			} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
 				list_del(l);
+				atomic_dec(&ct->list_size);
+
+				pthread_spin_unlock(&ct->lock);
+
 				process_init(buf);
+
+				pthread_spin_lock(&ct->lock);
 			}
 		} else {
 			assert(buf->type == BUF_TRIGGERED);
 			if (ct->interrupt) {
 				list_del(l);
+				atomic_dec(&ct->list_size);
+
+				pthread_spin_unlock(&ct->lock);
+
 				ct_put(buf->ct);
 				buf_put(buf);
+
+				pthread_spin_lock(&ct->lock);
 			} else if ((ct->event.success + ct->event.failure) >= buf->threshold) {
 				list_del(l);
-				pthread_mutex_unlock(&ct->mutex);
+				atomic_dec(&ct->list_size);
+
+				pthread_spin_unlock(&ct->lock);
+
 				do_trig_ct_op(buf);
-				pthread_mutex_lock(&ct->mutex);
+
+				pthread_spin_lock(&ct->lock);
 			}
 		}
 	}
+
+	pthread_spin_unlock(&ct->lock);
 }
 
 /**
  * @brief Set counting event to new value.
  *
- * @pre caller should hold ct->mutex
- *
  * @param[in] ct
  * @param[in] new_ct
  */
-static void __ct_set(ct_t *ct, ptl_ct_event_t new_ct)
+static void ct_set(ct_t *ct, ptl_ct_event_t new_ct)
 {
 	/* set new value */
 	ct->event = new_ct;
 
 	/* check to see if this triggers any further
 	 * actions */
-	__ct_check(ct);
+	if (atomic_read(&ct->list_size))
+		ct_check(ct);
 }
 
 /**
@@ -740,11 +680,7 @@ int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 
 	ni = obj_to_ni(ct);
 
-	pthread_mutex_lock(&ct->mutex);
-
-	__ct_set(ct, new_ct);
-
-	pthread_mutex_unlock(&ct->mutex);
+	ct_set(ct, new_ct);
 
 	err = PTL_OK;
 	ct_put(ct);
@@ -759,20 +695,21 @@ err0:
 /**
  * @brief Increment counting event by value.
  *
- * @pre caller should hold ct->mutex
- *
  * @param[in] ct The counting event to increment.
  * @param[in] increment The increment value.
  */
-static void __ct_inc(ct_t *ct, ptl_ct_event_t increment)
+static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
 {
 	/* increment ct by value */
-	ct->event.success += increment.success;
-	ct->event.failure += increment.failure;
+	if (likely(increment.success))
+		(void)__sync_add_and_fetch(&ct->event.success, increment.success);
+	else
+		(void)__sync_add_and_fetch(&ct->event.failure, increment.failure);
 
 	/* check to see if this triggers any further
 	 * actions */
-	__ct_check(ct);
+	if (atomic_read(&ct->list_size))
+		ct_check(ct);
 }
 
 /**
@@ -817,11 +754,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 
 	ni = obj_to_ni(ct);
 
-	pthread_mutex_lock(&ct->mutex);
-
-	__ct_inc(ct, increment);
-
-	pthread_mutex_unlock(&ct->mutex);
+	ct_inc(ct, increment);
 
 	err = PTL_OK;
 #ifndef NO_ARG_VALIDATION
@@ -902,11 +835,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 
 	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
 		/* Fast path. Condition is already met. */
-		pthread_mutex_lock(&ct->mutex);
-
-		__ct_inc(ct, increment);
-
-		pthread_mutex_unlock(&ct->mutex);
+		ct_inc(ct, increment);
 
 		ct_put(ct);
 	} else {
@@ -920,14 +849,11 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 		buf->type = BUF_TRIGGERED;
 		buf->op = TRIG_CT_INC;
 		buf->ct = ct;
-		buf->value = increment;
+		buf->ct_event = increment;
 		buf->threshold = threshold;
 
-		pthread_mutex_lock(&trig_ct->mutex);
+		post_trig_ct(buf, trig_ct);
 
-		__post_trig_ct(buf, trig_ct);
-
-		pthread_mutex_unlock(&trig_ct->mutex);
 	}
 
 	err = PTL_OK;
@@ -1001,11 +927,8 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 
 	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
 		/* Fast path. Condition already met. */
-		pthread_mutex_lock(&ct->mutex);
+		ct_set(ct, new_ct);
 
-		__ct_set(ct, new_ct);
-
-		pthread_mutex_unlock(&ct->mutex);
 	} else {
 		/* get container for triggered ct op */
 		err = buf_alloc(ni, &buf);
@@ -1018,14 +941,10 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 		buf->type = BUF_TRIGGERED;
 		buf->op = TRIG_CT_SET;
 		buf->ct = ct;
-		buf->value = new_ct;
+		buf->ct_event = new_ct;
 		buf->threshold = threshold;
 
-		pthread_mutex_lock(&trig_ct->mutex);
-
-		__post_trig_ct(buf, trig_ct);
-
-		pthread_mutex_unlock(&trig_ct->mutex);
+		post_trig_ct(buf, trig_ct);
 	}
 
 	err = PTL_OK;
@@ -1052,20 +971,16 @@ static void do_trig_ct_op(buf_t *buf)
 	if (ct->interrupt)
 		goto done;
 
-	pthread_mutex_lock(&ct->mutex);
-
 	switch(buf->op) {
 	case TRIG_CT_SET:
-		__ct_set(ct, buf->value);
+		ct_set(ct, buf->ct_event);
 		break;
 	case TRIG_CT_INC:
-		__ct_inc(ct, buf->value);
+		ct_inc(ct, buf->ct_event);
 		break;
 	default:
 		assert(0);
 	}
-
-	pthread_mutex_unlock(&ct->mutex);
 
 done:
 	ct_put(ct);
@@ -1081,35 +996,49 @@ done:
  */
 void post_ct(buf_t *buf, ct_t *ct)
 {
-	pthread_mutex_lock(&ct->mutex);
+	assert(buf->type == BUF_INIT);
+
+	/* Put the buffer on the wait list. */
+	pthread_spin_lock(&ct->lock);
+
+	/* We must check again to avoid a race with ct_inc/ct_set. */
 	if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
-		pthread_mutex_unlock(&ct->mutex);
+		pthread_spin_unlock(&ct->lock);
+
 		process_init(buf);
-		return;
+	} else {
+		atomic_inc(&ct->list_size);
+
+		list_add(&buf->list, &ct->trig_list);
+
+		pthread_spin_unlock(&ct->lock);
 	}
-	list_add(&buf->list, &ct->trig_list);
-	pthread_mutex_unlock(&ct->mutex);
 }
 
 /**
  * @brief Add a triggered ct operation to a list or
  * do it if threshold has already been reached.
  *
- * @pre caller should hold trig_ct->mutex
- *
  * @param[in] buf
  * @param[in] trig_ct
  */
-static void __post_trig_ct(buf_t *buf, ct_t *trig_ct)
+static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 {
-	if ((trig_ct->event.failure + trig_ct->event.success) >=
-	    buf->threshold) {
-		/* TODO enqueue buf somewhere */
-		pthread_mutex_unlock(&trig_ct->mutex);
+	/* Put the buffer on the wait list. */
+	pthread_spin_lock(&trig_ct->lock);
+
+	/* We must check again to avoid a race with ct_inc/ct_set. */
+	if ((trig_ct->event.failure + trig_ct->event.success) >= buf->threshold) {
+		pthread_spin_unlock(&trig_ct->lock);
+
 		do_trig_ct_op(buf);
-		pthread_mutex_lock(&trig_ct->mutex);
+
 	} else {
+		atomic_inc(&trig_ct->list_size);
+
 		list_add(&buf->list, &trig_ct->trig_list);
+
+		pthread_spin_unlock(&trig_ct->lock);
 	}
 }
 
@@ -1122,21 +1051,18 @@ static void __post_trig_ct(buf_t *buf, ct_t *trig_ct)
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
-	pthread_mutex_lock(&ct->mutex);
-
 	if (unlikely(buf->ni_fail))
-		ct->event.failure++;
-	else if (bytes == CT_EVENTS)
-		ct->event.success++;
-	else if (bytes == CT_MBYTES)
-		ct->event.success += buf->mlength;
+		(void)__sync_add_and_fetch(&ct->event.failure, 1);
+	else if (likely(bytes == CT_EVENTS))
+		(void)__sync_add_and_fetch(&ct->event.success, 1);
+	else if (likely(bytes == CT_MBYTES))
+		(void)__sync_add_and_fetch(&ct->event.success, buf->mlength);
 	else {
 		assert(bytes == CT_RBYTES);
-		ct->event.success +=
-			le64_to_cpu(((req_hdr_t *)buf->data)->length);
+		(void)__sync_add_and_fetch(&ct->event.success,
+								   le64_to_cpu(((req_hdr_t *)buf->data)->length));
 	}
 
-	__ct_check(ct);
-
-	pthread_mutex_unlock(&ct->mutex);
+	if (atomic_read(&ct->list_size))
+		ct_check(ct);
 }

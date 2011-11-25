@@ -165,7 +165,7 @@ struct buf {
 										   operation */
 			ct_t			*ct;		/**< counting event to perform
 										   triggered operation on */
-			ptl_ct_event_t		value;		/**< counting event data for
+			ptl_ct_event_t	ct_event;		/**< counting event data for
 											   triggered ct operation */
 			ptl_size_t		threshold;	/**< trigger threshold for
 										   triggered ct operation */
