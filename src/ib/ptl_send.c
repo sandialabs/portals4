@@ -19,7 +19,8 @@ int send_message_rdma(buf_t *buf)
 	wr.sg_list = &sg_list;
 	wr.num_sge = 1;
 	wr.opcode = IBV_WR_SEND;
-	if (buf->event_mask & XX_SIGNALED) {
+	if ((buf->event_mask & XX_SIGNALED) || 
+		atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
 		wr.send_flags = IBV_SEND_SIGNALED;
 		atomic_set(&buf->conn->rdma.completion_threshold, 0);
 
@@ -27,16 +28,7 @@ int send_message_rdma(buf_t *buf)
 		 * completion. */
 		buf_get(buf);
 	} else {
-		if (atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
-			wr.send_flags = IBV_SEND_SIGNALED;
-			atomic_set(&buf->conn->rdma.completion_threshold, 0);
-
-			/* Keep the buffer from being freed until we get the
-			 * completion. */
-			buf_get(buf);
-		} else {
-			wr.send_flags = 0;
-		}
+		wr.send_flags = 0;
 	}
 
 	if (buf->event_mask & XX_INLINE)
