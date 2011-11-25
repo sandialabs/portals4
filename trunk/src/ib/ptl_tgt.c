@@ -1294,8 +1294,14 @@ static int tgt_send_ack(buf_t *buf)
 
 	send_buf->dest = buf->dest;
 	send_buf->conn = buf->conn;
-	/* TODO: try to inline and skip complete. */
-	send_buf->event_mask |= XX_SIGNALED;
+
+	/* Inline the data if it fits. That may save waiting for a
+	 * completion. */
+	if (send_buf->conn->transport.type == CONN_TYPE_SHMEM ||
+		send_buf->length <= send_buf->conn->rdma.max_inline_data)
+		send_buf->event_mask |= XX_INLINE;
+	else
+		send_buf->event_mask |= XX_SIGNALED;
 
 	err = buf->conn->transport.send_message(send_buf);
 	if (err) {
@@ -1338,8 +1344,15 @@ static int tgt_send_reply(buf_t *buf)
 
 	send_buf->dest = buf->dest;
 	send_buf->conn = buf->conn;
-	/* TODO: try to inline and skip complete. */
-	send_buf->event_mask |= XX_SIGNALED;
+
+	/* Inline the data if it fits. That may save waiting for a
+	 * completion. */
+	if (send_buf->conn->transport.type == CONN_TYPE_SHMEM ||
+		send_buf->length <= send_buf->conn->rdma.max_inline_data)
+		send_buf->event_mask |= XX_INLINE;
+	else
+		send_buf->event_mask |= XX_SIGNALED;
+
 	err = buf->conn->transport.send_message(send_buf);
 	if (err) {
 		WARN();
