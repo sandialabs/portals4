@@ -7,8 +7,6 @@
 #ifndef PTL_HDR_H
 #define PTL_HDR_H
 
-// TODO consider developing CT/OC types that are distinct from reply
-
 /*
  * PTL_XPORT_HDR
  *	mainly carries information needed to route
