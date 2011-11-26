@@ -188,21 +188,10 @@ static int recv_packet_rdma(buf_t *buf)
  */
 static int recv_packet(buf_t *buf)
 {
-	ni_t *ni = obj_to_ni(buf);
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* sanity check received buffer */
-	if (buf->length < sizeof(hdr_t)) {
-		WARN();
-		return STATE_RECV_DROP_BUF;
-	}
-
 	if (hdr->version != PTL_HDR_VER_1) {
-		WARN();
-		return STATE_RECV_DROP_BUF;
-	}
-
-	if (hdr->ni_type != ni->ni_type) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
@@ -266,7 +255,7 @@ static int recv_init(buf_t *buf)
 {
 	int err;
 	buf_t *init_buf;
-	hdr_t *hdr = (hdr_t *)buf->data;
+	ack_hdr_t *hdr = (ack_hdr_t *)buf->data;
 
 	/* lookup the buf handle to get original buf */
 	err = to_buf(le32_to_cpu(hdr->handle), &init_buf);
@@ -277,12 +266,12 @@ static int recv_init(buf_t *buf)
 
 	/* compute data segments in response message */
 	if (hdr->data_in)
-		init_buf->data_out = (data_t *)(buf->data + hdr->hdr_size);
+		init_buf->data_out = (data_t *)(buf->data + sizeof(ack_hdr_t));
 	else
 		init_buf->data_out = NULL;
 
 	if (hdr->data_out)
-		init_buf->data_in = (data_t *)(buf->data + hdr->hdr_size +
+		init_buf->data_in = (data_t *)(buf->data  + sizeof(ack_hdr_t) +
 					  data_size(init_buf->data_out));
 	else
 		init_buf->data_in = NULL;

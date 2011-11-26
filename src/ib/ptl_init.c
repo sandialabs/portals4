@@ -224,7 +224,6 @@ static int prepare_req(buf_t *buf)
 	hdr->dst_pid = cpu_to_le32(buf->target.phys.pid);
 	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
-	hdr->hdr_size = sizeof(req_hdr_t);
 	hdr->handle = cpu_to_le32(buf_to_handle(buf));
 
 	buf->length = sizeof(req_hdr_t);
@@ -507,7 +506,7 @@ static int early_send_event(buf_t *buf)
  */
 static int wait_recv(buf_t *buf)
 {
-	hdr_t *hdr;
+	ack_hdr_t *hdr;
 
 	if (buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* The send completion failed. */
@@ -517,8 +516,6 @@ static int wait_recv(buf_t *buf)
 	if (!buf->recv_buf)
 		return STATE_INIT_WAIT_RECV;
 
-	hdr = (hdr_t *)buf->recv_buf->data;
-
 	/* Release the put MD. */
 	if (buf->put_md) {
 		md_put(buf->put_md);
@@ -526,9 +523,26 @@ static int wait_recv(buf_t *buf)
 	}
 
 	/* get returned fields */
+	hdr = (ack_hdr_t *)buf->recv_buf->data;
 	buf->ni_fail = hdr->ni_fail;
-	buf->mlength = le64_to_cpu(hdr->length);
-	buf->moffset = le64_to_cpu(hdr->offset);
+
+	/* moffset and mlength are only valid for certain reply/ack. The
+	 * target has not set their values if it wasn't necessary. */
+	if (hdr->operation <= OP_ACK) {
+		/* ACK and REPLY. */
+		buf->moffset = le64_to_cpu(hdr->offset);
+	} else {
+		/* Set a random invalid value. */
+		buf->moffset = 0x77777777;
+	}
+
+	if (hdr->operation <= OP_CT_ACK) {
+		/* ACK, CT_ACK and REPLY. */
+		buf->mlength = le64_to_cpu(hdr->length);
+	} else {
+		/* Set a random invalid value. */
+		buf->moffset = 0x66666666;
+	}
 
 	if (buf->data_in && buf->get_md)
 		return STATE_INIT_DATA_IN;
@@ -623,7 +637,7 @@ static int late_send_event(buf_t *buf)
  */
 static int ack_event(buf_t *buf)
 {
-	hdr_t *hdr = (hdr_t *)buf->recv_buf->data;
+	ack_hdr_t *ack_hdr = (ack_hdr_t *)buf->recv_buf->data;
 
 	/* Release the put MD before posting the ACK event. */
 	if (buf->put_md) {
@@ -631,7 +645,7 @@ static int ack_event(buf_t *buf)
 		buf->put_md = NULL;
 	}
 
-	if (hdr->operation != OP_NO_ACK) {
+	if (ack_hdr->operation != OP_NO_ACK) {
 		if (buf->event_mask & XI_ACK_EVENT)
 			make_ack_event(buf);
 

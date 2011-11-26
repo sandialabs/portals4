@@ -190,7 +190,7 @@ static int prepare_send_buf(buf_t *buf)
 {
 	buf_t *send_buf;
 	int err;
-	hdr_t *send_hdr;
+	ack_hdr_t *ack_hdr;
 	ni_t *ni = obj_to_ni(buf);
 
 	if (buf->conn->transport.type == CONN_TYPE_RDMA)
@@ -208,13 +208,14 @@ static int prepare_send_buf(buf_t *buf)
 	buf->send_buf = send_buf;
 
 	/* initiate response header */
-	send_hdr = (hdr_t *)send_buf->data;
+	ack_hdr = (ack_hdr_t *)send_buf->data;
 
-	memset(send_hdr, 0, sizeof(*send_hdr));
+	ack_hdr->data_in = 0;
+	ack_hdr->data_out = 0;
+	ack_hdr->version = PTL_HDR_VER_1;
+	ack_hdr->handle	= ((req_hdr_t *)buf->data)->handle;
 
-	send_buf->length = sizeof(*send_hdr);
-	//send_hdr->data_in = 0;
-	//send_hdr->data_out = 0;
+	send_buf->length = sizeof(*ack_hdr);
 
 	return PTL_OK;
 }
@@ -1258,33 +1259,39 @@ static int tgt_comm_event(buf_t *buf)
 static int tgt_send_ack(buf_t *buf)
 {
 	int err;
-	buf_t *send_buf;
-	hdr_t *send_hdr;
+	buf_t *ack_buf;
+	ack_hdr_t *ack_hdr;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	send_buf = buf->send_buf;
-	send_hdr = (hdr_t *)send_buf->data;
+	ack_buf = buf->send_buf;
+	ack_hdr = (ack_hdr_t *)ack_buf->data;
 
-	xport_hdr_from_buf(send_hdr, buf);
-	base_hdr_from_buf(send_hdr, buf);
+	ack_hdr->ni_fail = buf->ni_fail;
+	ack_hdr->length	= cpu_to_le64(buf->mlength);
+	ack_hdr->offset	= cpu_to_le64(buf->moffset);
 
 	switch (hdr->ack_req) {
 	case PTL_ACK_REQ:
-		send_hdr->operation = OP_ACK;
+		ack_hdr->operation = OP_ACK;
 		break;
 	case PTL_CT_ACK_REQ:
-		send_hdr->operation = OP_CT_ACK;
+		ack_buf->length -= sizeof(__be64); /* don't need offset */
+		ack_hdr->operation = OP_CT_ACK;
 		break;
 	case PTL_OC_ACK_REQ:
-		send_hdr->operation = OP_OC_ACK;
+		ack_buf->length -= 2*sizeof(__be64); /* don't need offset nor length */
+		ack_hdr->operation = OP_OC_ACK;
 		break;
 	default:
 		WARN();
 		return STATE_TGT_ERROR;
 	}
 
-	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE)
-		send_hdr->operation = OP_NO_ACK;
+	/* Initiator is still waiting for an ACK to unblock its buf. */
+	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
+		ack_buf->length = sizeof(ack_hdr_t) - 2*sizeof(__be64); /* don't need offset nor length */
+		ack_hdr->operation = OP_NO_ACK;
+	}
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
 		/* The LE must be released before we sent the ack. */
@@ -1292,18 +1299,18 @@ static int tgt_send_ack(buf_t *buf)
 		buf->le = NULL;
 	}
 
-	send_buf->dest = buf->dest;
-	send_buf->conn = buf->conn;
+	ack_buf->dest = buf->dest;
+	ack_buf->conn = buf->conn;
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	if (send_buf->conn->transport.type == CONN_TYPE_SHMEM ||
-		send_buf->length <= send_buf->conn->rdma.max_inline_data)
-		send_buf->event_mask |= XX_INLINE;
+	if (ack_buf->conn->transport.type == CONN_TYPE_SHMEM ||
+		ack_buf->length <= ack_buf->conn->rdma.max_inline_data)
+		ack_buf->event_mask |= XX_INLINE;
 	else
-		send_buf->event_mask |= XX_SIGNALED;
+		ack_buf->event_mask |= XX_SIGNALED;
 
-	err = buf->conn->transport.send_message(send_buf);
+	err = buf->conn->transport.send_message(ack_buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
@@ -1325,16 +1332,16 @@ static int tgt_send_ack(buf_t *buf)
 static int tgt_send_reply(buf_t *buf)
 {
 	int err;
-	buf_t *send_buf;
-	hdr_t *send_hdr;
+	buf_t *rep_buf;
+	ack_hdr_t *rep_hdr;
 
-	send_buf = buf->send_buf;
-	send_hdr = (hdr_t *)send_buf->data;
+	rep_buf = buf->send_buf;
+	rep_hdr = (ack_hdr_t *)rep_buf->data;
 
-	xport_hdr_from_buf(send_hdr, buf);
-	base_hdr_from_buf(send_hdr, buf);
-
-	send_hdr->operation = OP_REPLY;
+	rep_hdr->ni_fail = buf->ni_fail;
+	rep_hdr->length	= cpu_to_le64(buf->mlength);
+	rep_hdr->offset	= cpu_to_le64(buf->moffset);
+	rep_hdr->operation = OP_REPLY;
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
 		/* The LE must be released before we sent the ack. */
@@ -1342,18 +1349,18 @@ static int tgt_send_reply(buf_t *buf)
 		buf->le = NULL;
 	}
 
-	send_buf->dest = buf->dest;
-	send_buf->conn = buf->conn;
+	rep_buf->dest = buf->dest;
+	rep_buf->conn = buf->conn;
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	if (send_buf->conn->transport.type == CONN_TYPE_SHMEM ||
-		send_buf->length <= send_buf->conn->rdma.max_inline_data)
-		send_buf->event_mask |= XX_INLINE;
+	if (rep_buf->conn->transport.type == CONN_TYPE_SHMEM ||
+		rep_buf->length <= rep_buf->conn->rdma.max_inline_data)
+		rep_buf->event_mask |= XX_INLINE;
 	else
-		send_buf->event_mask |= XX_SIGNALED;
+		rep_buf->event_mask |= XX_SIGNALED;
 
-	err = buf->conn->transport.send_message(send_buf);
+	err = buf->conn->transport.send_message(rep_buf);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
