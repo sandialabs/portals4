@@ -7,7 +7,7 @@
 #ifndef PTL_HDR_H
 #define PTL_HDR_H
 
-// TODO consider developing CT/OC/ACK types that are distinct from reply
+// TODO consider developing CT/OC types that are distinct from reply
 
 /*
  * PTL_XPORT_HDR
@@ -25,10 +25,9 @@ enum hdr_op {
 	OP_GET,
 	OP_ATOMIC,
 	OP_FETCH,
-	OP_SWAP,
+	OP_SWAP,					/* must be last of requests */
 
-	/* from target to init */
-	OP_DATA,
+	/* from target to init. Do not change the order. */
 	OP_REPLY,
 	OP_ACK,
 	OP_CT_ACK,
@@ -48,33 +47,34 @@ enum hdr_fmt {
 /**
  * @brief Common header for portals request/response messages.
  */
-#define PTL_COMMON_HDR					\
-	unsigned		version:4;		\
-	unsigned		operation:4;		\
-	unsigned		atom_type:4;		\
-	unsigned		ack_req:4;		\
-	unsigned		ni_type:4;		\
-	unsigned		pkt_fmt:4;		\
-	unsigned		hdr_size:8;		\
-	unsigned		atom_op:5;		\
-	unsigned		data_in:1;		\
-	unsigned		data_out:1;		\
-	unsigned		reserved_1:1;		\
-	unsigned		ni_fail:4;		\
-	unsigned		reserved_20:20;		\
-	union {						\
+#define PTL_COMMON1_HDR				\
+	unsigned int	version:4;		\
+	unsigned int	operation:4;	\
+	unsigned int	ni_fail:4;	/* response only */	\
+	unsigned int	data_in:1;		\
+	unsigned int	data_out:1;		\
+	unsigned int    pad:10;			\
+	unsigned int	ni_type:4;	/* request only */	\
+	unsigned int	pkt_fmt:4;	/* request only */	\
+	__be32			handle;
+
+#define PTL_COMMON2_HDR				\
+	unsigned int	ack_req:4;		\
+	unsigned int	atom_type:4;	\
+	unsigned int	atom_op:5;		\
+	unsigned int	reserved_19:19;	\
+	union {							\
 	__be32			dst_nid;		\
 	__be32			dst_rank;		\
-	};						\
+	};								\
 	__be32			dst_pid;		\
-	union {						\
+	union {							\
 	__be32			src_nid;		\
 	__be32			src_rank;		\
-	};						\
+	};								\
 	__be32			src_pid;		\
 	__be64			length;			\
 	__be64			offset;			\
-	__be32			handle;			\
 
 /**
  * @brief Header for Portals request messages.
@@ -87,16 +87,21 @@ enum hdr_fmt {
 	__be32			uid;
 
 typedef struct ptl_hdr {
-	PTL_COMMON_HDR
+	PTL_COMMON1_HDR
+	PTL_COMMON2_HDR
 } hdr_t;
 
 typedef struct req_hdr {
-	PTL_COMMON_HDR
+	PTL_COMMON1_HDR
+	PTL_COMMON2_HDR
 	PTL_REQ_HDR
 } req_hdr_t;
 
-void xport_hdr_from_buf(hdr_t *hdr, buf_t *buf);
-
-void base_hdr_from_buf(hdr_t *hdr, buf_t *buf);
+/* Header for an ack or a reply. */
+typedef struct ack_hdr {
+	PTL_COMMON1_HDR
+	__be64			length;
+	__be64			offset;
+} ack_hdr_t;
 
 #endif /* PTL_HDR_H */
