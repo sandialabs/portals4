@@ -33,7 +33,7 @@ static char *recv_state_name[] = {
  * @return a negative number if an error occured.
  */
 static int comp_poll(ni_t *ni, int num_wc,
-		     struct ibv_wc wc_list[], buf_t *buf_list[])
+					 struct ibv_wc wc_list[], buf_t *buf_list[])
 {
 	int ret;
 	int i;
@@ -47,7 +47,14 @@ static int comp_poll(ni_t *ni, int num_wc,
 	for (i = 0; i < ret; i++) {
 		const struct ibv_wc *wc = &wc_list[i];
 
-		buf = (buf_t *)(uintptr_t)wc->wr_id;
+		buf_list[i] = buf = (buf_t *)(uintptr_t)wc->wr_id;
+
+		/* The work request id might be NULL. That can happen when an
+		 * inline send completed in error and no completion was
+		 * requested. */
+		if (!buf)
+			continue;
+
 		buf->length = wc->byte_len;
 
 		if (unlikely(wc->status)) {
@@ -68,8 +75,6 @@ static int comp_poll(ni_t *ni, int num_wc,
 			else
 				buf->recv_state = STATE_RECV_ERROR;
 		}
-
-		buf_list[i] = buf;
 	}
 
 	return ret;
@@ -459,7 +464,8 @@ void *progress_thread(void *arg)
 		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
 
 		for (i = 0; i < num_buf; i++) {
-			process_recv_rdma(ni, buf_list[i]);
+			if (buf_list[i])
+				process_recv_rdma(ni, buf_list[i]);
 		}
 
 #ifdef WITH_TRANSPORT_SHMEM
