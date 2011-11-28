@@ -614,14 +614,13 @@ done_appending_unlocked:
 }                                      /*}}} */
 
 //int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
-int _PtlMESearch(ptl_handle_ni_t ni_handle,
+int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                          ptl_pt_index_t  pt_index,
                          const ptl_me_t *me,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
 {   /*{{{*/
-#if 0
-    const ptl_internal_handle_converter_t ni = { ni_handle };
+//    const ptl_internal_handle_converter_t ni = { ni_handle };
     ptl_table_entry_t                    *t;
     int                                   found = 0;
 
@@ -655,10 +654,10 @@ int _PtlMESearch(ptl_handle_ni_t ni_handle,
         }
     }
 #endif /* ifndef NO_ARG_VALIDATION */
-    assert(mes[ni.s.ni] != NULL);
+//    assert(mes[ni.s.ni] != NULL);
     /* append to associated list */
-    assert(nit.tables[ni.s.ni] != NULL);
-    t = &(nit.tables[ni.s.ni][pt_index]);
+//    assert(nit.tables[ni.s.ni] != NULL);
+    t = &(ppe_ni->ppe_pt[pt_index]);
     PTL_LOCK_LOCK(t->lock);
     PtlInternalValidateMEPT(t);
     if (t->buffered_headers.head != NULL) {
@@ -676,7 +675,7 @@ int _PtlMESearch(ptl_handle_ni_t ni_handle,
                 continue;
             }
             /* check for match_id */
-            if (ni.s.ni <= 1) { // Logical
+            if ( ni <= 1) { // Logical
                 if ((me->match_id.rank != PTL_RANK_ANY) &&
                     (me->match_id.rank != cur->hdr.src)) {
                     continue;
@@ -770,7 +769,7 @@ int _PtlMESearch(ptl_handle_ni_t ni_handle,
                     }
                     e.mlength = mlength;
                     e.start   = cur->buffered_data;
-                    PtlInternalEQPush(t->EQ, &e);
+                    PtlInternalEQPush(ppe_ni,t->EQ, &e);
                 }
             }
             // IFF ME is *not* persistent...
@@ -783,13 +782,15 @@ int _PtlMESearch(ptl_handle_ni_t ni_handle,
         if (t->EQ != PTL_EQ_NONE) {
             ptl_internal_event_t e;
             e.type           = PTL_EVENT_SEARCH;
-            e.initiator.rank = proc_number;
+            //e.initiator.rank = proc_number;
             e.pt_index       = pt_index;
+#if 0
             {
                 ptl_uid_t tmp;
                 PtlGetUid(ni_handle, &tmp);
                 e.uid = tmp;
             }
+#endif
             e.match_bits    = me->match_bits;
             e.rlength       = 0;
             e.mlength       = 0;
@@ -798,12 +799,11 @@ int _PtlMESearch(ptl_handle_ni_t ni_handle,
             e.user_ptr      = user_ptr;
             e.hdr_data      = 0;
             e.ni_fail_type  = PTL_NI_NO_MATCH;
-            PtlInternalEQPush(t->EQ, &e);
+            PtlInternalEQPush(ppe_ni, t->EQ, &e);
         }
     }
 done_searching:
     PTL_LOCK_UNLOCK(t->lock);
-#endif
     return PTL_OK;
 } /*}}}*/
 
