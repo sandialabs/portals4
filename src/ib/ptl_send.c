@@ -31,8 +31,16 @@ int send_message_rdma(buf_t *buf)
 		wr.send_flags = 0;
 	}
 
-	if (buf->event_mask & XX_INLINE)
+	if (buf->event_mask & XX_INLINE) {
 		wr.send_flags |= IBV_SEND_INLINE;
+
+		if (wr.send_flags == IBV_SEND_INLINE) {
+			/* Inline and no completion required: fire and forget. If
+			   there is an error, we will get a completion anyway, so
+			   we must ignore it. */
+			wr.wr_id = 0;
+		}
+	}
 
 	sg_list.addr = (uintptr_t)buf->internal_data;
 	sg_list.lkey = buf->rdma.lkey;
