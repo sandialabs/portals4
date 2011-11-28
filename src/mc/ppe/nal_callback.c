@@ -4,6 +4,7 @@
 #include "ppe/nal.h"
 #include "ppe/ct.h"
 #include "ppe/eq.h"
+#include "ppe/matching_list_entries.h"
 
 #include "shared/ptl_internal_handles.h"
 
@@ -38,11 +39,34 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
     ppe_ni = &client->nis[ hdr->ni ];
     ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
+
+    foo_t *foo = malloc( sizeof( *foo ) ); 
+
+    foo->p3_ni          = _p3_ni;
+    foo->ppe_ni         = ppe_ni;
+    foo->ppe_pt         = ppe_pt;
+    foo->nal_msg_data   = nal_msg_data;
+
+    foo->hdr.match_bits = hdr->match_bits;
+    foo->hdr.hdr_data   = hdr->hdr_data;
+    foo->hdr.remaining  = hdr->length;
+    foo->hdr.ni         = hdr->ni;
+    foo->hdr.src        = hdr->src_id.phys.pid;
+    foo->hdr.length     = hdr->length;
+    foo->hdr.type       = hdr->type;
+    foo->hdr.dest_offset = hdr->remote_offset;
+    foo->hdr.entry      = NULL;
+    
+    PtlInternalMEDeliver( foo, ppe_pt, &foo->hdr );
+#if 0
+    
     ptl_ppe_me_t *ppe_me  = NULL;
     ptl_ppe_le_t *ppe_le  = NULL;
 
     dm_ctx_t *dm_ctx = malloc( sizeof( *dm_ctx ) );
     assert( dm_ctx );
+
+
 
 if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
 
@@ -116,6 +140,7 @@ if ((hdr->ni == 0) || (hdr->ni == 2)) { // must be a matching NI
                         hdr->length,    // rlen
                         NULL            // addrkey
                     ); 
+#endif
     
     return PTL_OK;
 }
@@ -143,12 +168,53 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
     return 0;
 }
 
-static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
+int lib_me_init( foo_t *foo,
+                void *const local_data, const size_t nbytes,
+                         ptl_internal_header_t *hdr  )
 {
-    ptl_ppe_me_t *ppe_me = dm_ctx->u.ppe_me;
-    ptl_ppe_pt_t *ppe_pt = dm_ctx->ppe_pt;
+    PPE_DBG("dest_addr=%p mlength=%lu rlength=%lu\n",
+                                local_data,nbytes,hdr->length); 
+
+    foo->type = ME_CTX;
+
+    foo->mlength = nbytes;
+    foo->iovec.iov_base = local_data,
+    foo->iovec.iov_len  = nbytes;
+    ++foo->u.ppe_me->ref_cnt;
+
+    foo->p3_ni->nal->recv( foo->p3_ni, 
+                        foo->nal_msg_data,
+                        foo,         // lib_data
+                        &foo->iovec, // dst_iov
+                        1,              // iovlen
+                        0,              // offset
+                        foo->mlength,   // mlen
+   //                     0,   // mlen
+                        hdr->length,    // rlen
+                        NULL            // addrkey
+                    ); 
+    return 0;
+}
+
+static inline int lib_me_finalize( foo_t* foo )
+{
+    ptl_ppe_me_t *ppe_me = foo->u.ppe_me;
     PPE_DBG("\n");
 
+    --ppe_me->ref_cnt;
+    PtlInternalAnnounceMEDelivery( foo, 
+                                    foo->ppe_pt->EQ, // eq_handle
+                                    ppe_me->visible.ct_handle,
+                                    ppe_me->visible.options,
+                                    foo->mlength, // mlength
+                                    (uintptr_t)foo->iovec.iov_base, // start,
+                                    ppe_me->ptl_list, // list
+                                    &foo->u.ppe_me->Qentry, //appendME_t
+                                    &foo->hdr, // hdr 
+                                    (ptl_handle_me_t)
+                                            ppe_me->Qentry.me_handle.a);
+
+#if 0
     --ppe_me->ref_cnt;
 
     if ( ppe_me->ct_h.a != PTL_CT_NONE ) {
@@ -164,6 +230,7 @@ static inline int lib_me_finalize( dm_ctx_t* dm_ctx )
             eq_write( dm_ctx->ppe_ni, ppe_pt->eq_h.s.code, &event );
         }
     } 
+#endif
 
     return 0;
 }
@@ -185,16 +252,19 @@ static inline int lib_le_finalize( dm_ctx_t* dm_ctx )
 }
 
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
-{
-    dm_ctx_t *dm_ctx = lib_msg_data;
 
-    if ( dm_ctx->id == ME_CTX ) {
-        lib_me_finalize( dm_ctx );
-    } else if ( dm_ctx->id == LE_CTX ) {
-        lib_le_finalize( dm_ctx );
+{
+//    dm_ctx_t *dm_ctx = lib_msg_data;
+    foo_t *foo = lib_msg_data;
+
+    PPE_DBG("%d\n",foo->type);
+    if ( foo->type == ME_CTX ) {
+        lib_me_finalize( foo );
+    } else if ( foo->type == LE_CTX ) {
+//        lib_le_finalize( dm_ctx );
     } else {
-        lib_md_finalize( dm_ctx );
+//        lib_md_finalize( dm_ctx );
     }
-    free( lib_msg_data );
+    //free( lib_msg_data );
     return PTL_OK;
 }

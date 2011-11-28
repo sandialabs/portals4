@@ -5,6 +5,7 @@
 #include <portals4.h>
 
 struct ptl_hdr_t {
+    unsigned char type;
     ptl_match_bits_t    match_bits;
     ptl_pt_index_t      pt_index; 
     ptl_process_t           src_id;
@@ -37,7 +38,6 @@ typedef struct {
     void *next;
     ptl_match_bits_t    match_bits;
     ptl_hdr_data_t   hdr_data;                // not used by GETs
-
 
     void *entry;
     

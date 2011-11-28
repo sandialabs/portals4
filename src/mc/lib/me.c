@@ -6,6 +6,7 @@
 #include "ptl_internal_global.h"
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
+#include "ptl_internal_startup.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
@@ -69,6 +70,8 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 int PtlMEUnlink(ptl_handle_me_t me_handle)
 {
     const ptl_internal_handle_converter_t         me_hc = { me_handle };
+    ptl_cqe_t *entry;
+    int ret, cmd_ret = PTL_STATUS_LAST;
 
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
@@ -91,19 +94,27 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
     }
 #endif /* ifndef NO_ARG_VALIDATION */
 
-    ptl_cqe_t *entry;
 
-    ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
+    if (0 != ret) return PTL_FAIL;
     
     entry->base.type          = PTLMEUNLINK;
     entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
     entry->meUnlink.me_handle = me_hc;
+    entry->meUnlink.retval_ptr = &cmd_ret;
 
-    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface),
                       entry, sizeof(ptl_cqe_meunlink_t));
+    if (ret < 0) return PTL_FAIL;
 
-    return PTL_OK;
+    do {
+        ret = ptl_ppe_progress(&ptl_iface, 1);
+        if (ret < 0) return PTL_FAIL;
+        __sync_synchronize();
+    } while (PTL_STATUS_LAST == cmd_ret);
+
+    return cmd_ret;
 }
 
 
