@@ -9,7 +9,7 @@ int _PtlMEAppend( ptl_ppe_ni_t *, ptl_handle_me_t me_handle,
 int _PtlMEUnlink( ptl_ppe_ni_t *, ptl_handle_me_t me_handle);
 
 
-int _PtlMESearch(ptl_handle_ni_t ni_handle,
+int _PtlMESearch( ptl_ppe_ni_t *, int ni,
                          ptl_pt_index_t  pt_index,
                          const ptl_me_t *me,
                          ptl_search_op_t ptl_search_op,

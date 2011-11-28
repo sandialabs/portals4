@@ -85,15 +85,15 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
 int
 me_search_impl( ptl_ppe_t *ctx, ptl_cqe_mesearch_t *cmd )
 {
-#if 0
-    ptl_ppe_ni_t     *ni;
-    ptl_ppe_me_t     *ppe_me;
+    ptl_ppe_ni_t     *ppe_ni;
     ptl_ppe_client_t *client;
-#endif
+
+    client = &ctx->clients[ cmd->base.remote_id ];
+    ppe_ni = &client->nis[ cmd->ni_handle.s.ni ];
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->ni_handle.s.selector,
                     cmd->ni_handle.s.code, cmd->ni_handle.s.ni );
-    _PtlMESearch( cmd->ni_handle.a, cmd->pt_index, &cmd->me,
+    _PtlMESearch( ppe_ni, cmd->ni_handle.s.ni, cmd->pt_index, &cmd->me,
                         cmd->ptl_search_op, cmd->user_ptr );
     return 0;
 }
