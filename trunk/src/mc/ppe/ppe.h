@@ -47,17 +47,31 @@ struct ptl_ppe_md_t {
 };
 typedef struct ptl_ppe_md_t ptl_ppe_md_t;
 
+typedef enum {PRIORITY, OVERFLOW} ptl_internal_listtype_t;
+
+typedef struct {
+    void                           *next;     // for nemesis
+    void                           *user_ptr;
+    ptl_internal_handle_converter_t me_handle;
+    size_t                          local_offset;
+    size_t                          messages, announced;     // for knowing when to issue PTL_EVENT_FREE
+    ptl_match_bits_t                dont_ignore_bits;
+    uint_fast8_t                    unlinked;
+} ptl_internal_appendME_t;
+
+
 struct ptl_ppe_me_t {
 
+    ptl_internal_appendME_t Qentry;
     ptl_me_t visible;
-
+    ptl_list_t ptl_list;
+    ptl_pt_index_t          pt_index;
 
     // ------------- for Mike's ---------------------------
     ptl_double_list_item_t  base;
 
     int                     ref_cnt;
 
-    ptl_pt_index_t          pt_index;
     ptl_list_t              list;
     void*                  *user_ptr;
 
@@ -95,7 +109,7 @@ struct ptl_ppe_pt_t {
 
     // from Kyle' ptl_internal_me_t
     ptl_handle_eq_t         EQ;
-        struct PTqueue {
+    struct PTqueue {
         void *head, *tail;
     } priority,
       overflow,
@@ -103,7 +117,7 @@ struct ptl_ppe_pt_t {
 
     // ------------- for Mike's ---------------------------
     unsigned int            options;
-    ptl_handle_generic_t    eq_h;
+//    ptl_handle_generic_t    eq_h;
     
     ptl_double_list_t         list[2];
 };

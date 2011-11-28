@@ -22,6 +22,11 @@ int ptl_double_list_init(ptl_double_list_t *list, int want_lock);
 int ptl_double_list_fini(ptl_double_list_t *list);
 
 
+static inline int ptl_double_list_empty( ptl_double_list_t *list )
+{
+    return ( list->head == NULL );
+}
+
 static inline ptl_double_list_item_t*
 ptl_double_list_remove_front(ptl_double_list_t *list)
 {

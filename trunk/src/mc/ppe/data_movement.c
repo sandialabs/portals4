@@ -31,6 +31,7 @@ put_impl( ptl_ppe_t *ctx, ptl_cqe_put_t *cmd )
     dm_ctx->hdr.pt_index        = cmd->pt_index;
     dm_ctx->hdr.hdr_data        = cmd->hdr_data;
     dm_ctx->hdr.ni              = cmd->md_handle.s.ni;
+    dm_ctx->hdr.type            = HDR_TYPE_PUT;
 
     dst.nid = cmd->target_id.phys.nid;
     dst.pid = cmd->target_id.phys.pid;
