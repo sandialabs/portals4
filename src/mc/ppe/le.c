@@ -7,10 +7,12 @@
 int
 le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
 {
+#if 0
     ptl_ppe_ni_t     *ni;
     ptl_ppe_le_t     *ppe_le;
     ptl_ppe_pt_t     *ppe_pt;
     ptl_ppe_client_t *client;
+#endif
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->le_handle.s.selector,
                     cmd->le_handle.s.code, cmd->le_handle.s.ni );
@@ -42,11 +44,13 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
 int
 le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
 {
+#if 0
     ptl_ppe_ni_t      *ni;
     ptl_internal_le_t *shared_le;
     ptl_ppe_le_t      *ppe_le;
     ptl_ppe_pt_t      *ppe_pt;
     ptl_ppe_client_t  *client;
+#endif
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->le_handle.s.selector,
                     cmd->le_handle.s.code, cmd->le_handle.s.ni );
