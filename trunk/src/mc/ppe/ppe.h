@@ -61,47 +61,19 @@ typedef struct {
 
 
 struct ptl_ppe_me_t {
-
     ptl_internal_appendME_t Qentry;
-    ptl_me_t visible;
-    ptl_list_t ptl_list;
+    ptl_me_t                visible;
+    ptl_list_t              ptl_list;
     ptl_pt_index_t          pt_index;
 
-    // ------------- for Mike's ---------------------------
-    ptl_double_list_item_t  base;
-
-    int                     ref_cnt;
-
-    ptl_list_t              list;
-    void*                  *user_ptr;
-
-    // from ptl_me_t
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
-    ptl_handle_generic_t    ct_h; 
-    ptl_uid_t               uid;
-    unsigned int            options;
-    ptl_process_t           match_id;
-    ptl_match_bits_t        match_bits;
-    ptl_match_bits_t        ignore_bits;
-    ptl_size_t              min_free;
+    int                     ref_cnt;
 };
 typedef struct ptl_ppe_me_t ptl_ppe_me_t;
 
 struct ptl_ppe_le_t {
-
-    ptl_double_list_item_t  base;
-
     int                     ref_cnt;
-
-    ptl_pt_index_t          pt_index;
-    ptl_list_t              list;
-    void*                  *user_ptr;
-
-    // from ptl_le_t
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
-    ptl_handle_generic_t    ct_h; 
-    ptl_uid_t               uid;
-    unsigned int            options;
 };
 typedef struct ptl_ppe_le_t ptl_ppe_le_t;
 

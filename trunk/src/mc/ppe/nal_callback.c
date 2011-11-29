@@ -35,21 +35,34 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
     assert(foo);
     foo->nal_msg_data   = nal_msg_data;
 
-    // MJL: range check pid
+    if ( ! (hdr->target_id.phys.pid < MC_PEER_COUNT ) ) {
+        PPE_DBG("pid %d out of range\n", hdr->target_id.phys.pid );
+        goto drop_message;
+    }
+
     client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
     if (  ! client->connected ) {
         PPE_DBG("pid %d not connected\n", hdr->target_id.phys.pid );
         goto drop_message;
     }
 
-    // MJL: range check ni 
+    if ( ! ( hdr->ni < 4 ) ) {
+        PPE_DBG("ni %d out of range\n", hdr->ni );
+        goto drop_message;
+    }
+
     ppe_ni = &client->nis[ hdr->ni ];
     if ( ! ppe_ni->limits ) {
         PPE_DBG("ni %d not initialized\n", hdr->ni );
         goto drop_message;
     }
 
-    // MJL: range check pt_indeex 
+    // MJL: range check pt_index 
+    if ( ! ( hdr->pt_index <  ppe_ni->limits->max_pt_index ) ) {
+        PPE_DBG("PT %d out of range\n",hdr->pt_index);
+        goto drop_message;
+    }
+
     ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
     if ( ! ppe_pt->status ) {
         PPE_DBG("PT %d not allocated\n",hdr->pt_index);
@@ -58,7 +71,7 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
 
     foo->p3_ni          = _p3_ni;
     foo->ppe_ni         = ppe_ni;
-    foo->ppe_pt         = ppe_pt;
+    foo->u.me.ppe_pt         = ppe_pt;
 
     foo->hdr.match_bits = hdr->match_bits;
     foo->hdr.hdr_data   = hdr->hdr_data;
@@ -93,16 +106,16 @@ drop_message:
 }
     
 
-static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
+static inline int lib_md_finalize( foo_t* foo )
 {
-    ptl_ppe_md_t *ppe_md = dm_ctx->u.ppe_md;
+    ptl_ppe_md_t *ppe_md = foo->u.md.ppe_md;
     PPE_DBG("\n");
 
     --ppe_md->ref_cnt;
 
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-            ct_inc( dm_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
+            ct_inc( foo->ppe_ni, ppe_md->ct_h.s.code, 1 );
         }
     }
 
@@ -110,7 +123,7 @@ static inline int lib_md_finalize( dm_ctx_t* dm_ctx )
         if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
             ptl_event_t event;
             event.type = PTL_EVENT_SEND;
-            eq_write( dm_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
+            eq_write( foo->ppe_ni, ppe_md->eq_h.s.code, &event );
         }
     }
     return 0;
@@ -125,10 +138,10 @@ int lib_me_init( foo_t *foo,
 
     foo->type = ME_CTX;
 
-    foo->mlength = nbytes;
+    foo->u.me.mlength   = nbytes;
     foo->iovec.iov_base = local_data,
     foo->iovec.iov_len  = nbytes;
-    ++foo->u.ppe_me->ref_cnt;
+    ++foo->u.me.ppe_me->ref_cnt;
 
     foo->p3_ni->nal->recv( foo->p3_ni, 
                         foo->nal_msg_data,
@@ -136,7 +149,7 @@ int lib_me_init( foo_t *foo,
                         &foo->iovec,    // dst_iov
                         1,              // iovlen
                         0,              // offset
-                        foo->mlength,   // mlen
+                        foo->u.me.mlength,   // mlen
                         hdr->length,    // rlen
                         NULL            // addrkey
                     ); 
@@ -145,19 +158,19 @@ int lib_me_init( foo_t *foo,
 
 static inline int lib_me_finalize( foo_t* foo )
 {
-    ptl_ppe_me_t *ppe_me = foo->u.ppe_me;
+    ptl_ppe_me_t *ppe_me = foo->u.me.ppe_me;
 
     PPE_DBG("\n");
 
     --ppe_me->ref_cnt;
     PtlInternalAnnounceMEDelivery( foo, 
-                                    foo->ppe_pt->EQ, 
+                                    foo->u.me.ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
-                                    foo->mlength,
+                                    foo->u.me.mlength,
                                     (uintptr_t)foo->iovec.iov_base, // start,
                                     ppe_me->ptl_list, 
-                                    &foo->u.ppe_me->Qentry, //appendME_t
+                                    &foo->u.me.ppe_me->Qentry, //appendME_t
                                     &foo->hdr,
                                     (ptl_handle_me_t)
                                             ppe_me->Qentry.me_handle.a);
@@ -165,11 +178,12 @@ static inline int lib_me_finalize( foo_t* foo )
     return 0;
 }
 
-static inline int lib_le_finalize( dm_ctx_t* dm_ctx )
+static inline int lib_le_finalize( foo_t* foo )
 {
-    ptl_ppe_le_t *ppe_le = dm_ctx->u.ppe_le;
+    ptl_ppe_le_t *ppe_le = foo->u.le.ppe_le;
     PPE_DBG("\n");
 
+#if 0
     --ppe_le->ref_cnt;
 
     if ( ppe_le->ct_h.a != PTL_CT_NONE ) {
@@ -177,6 +191,7 @@ static inline int lib_le_finalize( dm_ctx_t* dm_ctx )
             ct_inc( dm_ctx->ppe_ni, ppe_le->ct_h.s.code, 1 );
         }
     }
+#endif
 
     return 0;
 }
@@ -192,8 +207,10 @@ int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
         lib_me_finalize( foo );
         break;
       case LE_CTX:
+        lib_le_finalize( foo );
         break;
       case MD_CTX:
+        lib_md_finalize( foo );
         break;
       case DROP_CTX:
         PPE_DBG("DROP_CTX\n");
