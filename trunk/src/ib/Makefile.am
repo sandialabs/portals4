@@ -50,7 +50,6 @@ libportals_ib_la_SOURCES = \
 	ptl_rdma.c \
 	ptl_recv.c \
 	ptl_ref.h \
-	ptl_send.c \
 	ptl_tgt.c \
 	ptl_list.h \
 	tree.h
