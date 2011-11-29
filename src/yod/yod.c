@@ -492,6 +492,7 @@ static size_t kill_all_children(pid_t *kids,
                             }
                         }
                     }
+                    waitpid(kids[d], &stat, 0); // wait for the killed child to exit
                     break;
                 case -1:
                     break;
