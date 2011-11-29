@@ -14,33 +14,25 @@ struct foo_t {
     unsigned long         nal_msg_data;
     ptl_internal_header_t hdr; 
     ptl_md_iovec_t        iovec;
-    ptl_size_t            mlength;
-    ptl_ppe_pt_t         *ppe_pt;
+
+    ptl_hdr_t       _hdr;        
 
     union {
-        ptl_ppe_md_t   *ppe_md;
-        ptl_ppe_me_t   *ppe_me;
-        ptl_ppe_le_t   *ppe_le;
+        struct {
+            ptl_ppe_md_t   *ppe_md;
+            void           *user_ptr;   
+        } md;
+        struct {
+            ptl_size_t      mlength;
+            ptl_ppe_me_t   *ppe_me;
+            ptl_ppe_pt_t   *ppe_pt;
+        } me;
+        struct {
+            ptl_ppe_le_t   *ppe_le;
+        } le;
     } u;
 };
 typedef struct foo_t foo_t;
-
-struct dm_ctx_t {               
-
-
-    int             id;
-    unsigned long   nal_msg_data;
-    ptl_hdr_t       hdr;        
-    void           *user_ptr;   
-    ptl_md_iovec_t  iovec;
-    ptl_ppe_ni_t   *ppe_ni;
-    union {
-        ptl_ppe_md_t   *ppe_md;
-        ptl_ppe_me_t   *ppe_me;
-        ptl_ppe_le_t   *ppe_le;
-    } u;
-};                              
-typedef struct dm_ctx_t dm_ctx_t; 
 
 extern lib_ni_t *_p3_ni;
 

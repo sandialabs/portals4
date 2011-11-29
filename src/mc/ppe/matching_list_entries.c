@@ -1068,7 +1068,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
                 goto permission_violation;
             }
         }
-        foo->u.ppe_me = (ptl_ppe_me_t*) entry;
+        foo->u.me.ppe_me = (ptl_ppe_me_t*) entry;
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
