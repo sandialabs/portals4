@@ -101,6 +101,9 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     ni->ppe_le = malloc( sizeof( *ni->ppe_le) * ni->limits->max_list_size );
     ni->ppe_pt = malloc( sizeof( *ni->ppe_pt) * ni->limits->max_pt_index );
     ni->ppe_eq = malloc( sizeof( *ni->ppe_eq) * ni->limits->max_eqs );
+    for ( i = 0; i < ni->limits->max_pt_index; i++ ) {
+        ni->ppe_pt[i].status = 0;
+    }
     goto send_retval;
 
  cleanup:

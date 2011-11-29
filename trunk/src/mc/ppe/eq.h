@@ -10,12 +10,10 @@ static inline void PtlInternalEQPush( ptl_ppe_ni_t *ni,
 {
     ptl_internal_handle_converter_t   eq_hc = { handle };
 
-    PPE_DBG("ni=%p eq_handle=%#x event=%p\n", ni, eq_hc.a, event );
+    PPE_DBG("ni=%p eq_handle=%#x event=%d\n", ni, eq_hc.a, event->type );
 
     ptl_circular_buffer_add_overwrite( 
                         ni->ppe_eq[eq_hc.s.code].xpmem_ptr->data, event );
-
-    PPE_DBG("\n");
 }
 
 static inline int

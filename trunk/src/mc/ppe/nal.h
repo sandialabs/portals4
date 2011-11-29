@@ -5,7 +5,7 @@
 #include "ppe/ppe.h"
 #include "ppe/ptl_hdr.h"
 
-enum { MD_CTX = 1, ME_CTX, LE_CTX  };
+enum { MD_CTX = 1, ME_CTX, LE_CTX, DROP_CTX  };
 
 struct foo_t {
     int                   type;

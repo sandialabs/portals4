@@ -15,6 +15,7 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->le_handle.s.selector,
                     cmd->le_handle.s.code, cmd->le_handle.s.ni );
 
+#if 0
     client = &ctx->clients[ cmd->base.remote_id ];
     ni     = &client->nis[ cmd->le_handle.s.ni ];
     ppe_le = ni->ppe_le + cmd->le_handle.s.code;
@@ -33,6 +34,7 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
     assert( ppe_le->xpmem_ptr );
 
     pt_append_le( ppe_pt, cmd->ptl_list, ppe_le );
+#endif
 
     return 0;
 }
@@ -49,6 +51,7 @@ le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->le_handle.s.selector,
                     cmd->le_handle.s.code, cmd->le_handle.s.ni );
 
+#if 0
     client    = &ctx->clients[ cmd->base.remote_id ];
     ni        = &client->nis[ cmd->le_handle.s.ni ];
     ppe_le    = ni->ppe_le + cmd->le_handle.s.code;
@@ -65,6 +68,7 @@ le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
     //assert( 0 == ret );  
 
     shared_le->in_use = 0;
+#endif
 
     return 0;
 }
