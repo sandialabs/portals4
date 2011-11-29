@@ -22,8 +22,6 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
                                     cmd->me.start, cmd->me.length );
     assert( ppe_me->xpmem_ptr );
 
-    cmd->me.start = ppe_me->xpmem_ptr->data;
-
     _PtlMEAppend( ppe_ni, cmd->me_handle.a, cmd->pt_index, &cmd->me, 
                         cmd->ptl_list, cmd->user_ptr );
 
