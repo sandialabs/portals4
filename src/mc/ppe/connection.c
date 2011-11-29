@@ -70,7 +70,7 @@ int
 ptl_ppe_init(ptl_ppe_t *ptl_ppe, int send_queue_size, int recv_queue_size)
 {
     int ret;
-    
+
     ret = ptl_cm_server_create(&ptl_ppe->cm_h);
     if (ret < 0) {
         perror("ptl_cm_server_create");

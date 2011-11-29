@@ -106,21 +106,17 @@ struct ptl_ppe_le_t {
 typedef struct ptl_ppe_le_t ptl_ppe_le_t;
 
 struct ptl_ppe_pt_t {
-
-    // from Kyle' ptl_internal_me_t
     ptl_handle_eq_t         EQ;
+    // in a "split" implementation the "host" needs a in_use flag
+    // and we have a status flag, should that be merged?
+    uint32_t                status;
+    unsigned int            options;
     struct PTqueue {
         void *head, *tail;
     } priority,
       overflow,
       buffered_headers;
-
-    // ------------- for Mike's ---------------------------
-    unsigned int            options;
-//    ptl_handle_generic_t    eq_h;
-    
-    ptl_double_list_t         list[2];
-};
+} ALIGNED (64);
 typedef struct ptl_ppe_pt_t ptl_ppe_pt_t;
 
 typedef ptl_ppe_me_t ptl_internal_me_t;
@@ -135,7 +131,7 @@ struct ptl_ppe_ni_t {
     ptl_sr_value_t      *client_status_registers;
     ptl_internal_le_t   *client_le;
     ptl_internal_md_t   *client_md;
-    ptl_shared_me_t   *client_me;
+    ptl_shared_me_t     *client_me;
     ptl_internal_ct_t   *client_ct;
     ptl_internal_eq_t   *client_eq;
     ptl_internal_pt_t   *client_pt;

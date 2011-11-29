@@ -136,8 +136,8 @@ int PtlMESearch(ptl_handle_ni_t ni_handle,
         VERBOSE_ERROR("ni code wrong\n");
         return PTL_ARG_INVALID;
     }
-    if ((ni.s.ni == 0) || (ni.s.ni == 2)) { // must be a non-matching NI
-        VERBOSE_ERROR("must be a non-matching NI\n");
+    if ((ni.s.ni == 1) || (ni.s.ni == 3)) { // must be a matching NI
+        VERBOSE_ERROR("must be a matching NI\n");
         return PTL_ARG_INVALID;
     }
     if (pt_index > nit_limits[ni.s.ni].max_pt_index) {

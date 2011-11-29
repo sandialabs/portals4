@@ -23,7 +23,7 @@
 #define PtlInternalAmITheCatcher() 1
 #define PtlInternalFragmentSize(x) 0
 #define PtlInternalPTBufferUnexpectedHeader(t, hdr, entry, fragment_mlength, report_this_start)
-#define PtlInternalAtomicInc(x,y) printf("\n");
+#define PtlInternalAtomicInc(x,y) 0
 
 enum DM_return_codes {
     DM_SILENT_ACK,
@@ -32,6 +32,8 @@ enum DM_return_codes {
     DM_OP_VIOLATION
 };
 
+
+int lib_me_init( foo_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
 
 #define NO_ARG_VALIDATION
 
@@ -172,7 +174,8 @@ void INTERNAL PtlInternalMENITeardown(const uint_fast8_t ni)
 }                                      /*}}} */
 #endif
 
-static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restrict     Qentry,
+static void *PtlInternalPerformOverflowDelivery(foo_t *foo,
+                                                ptl_internal_appendME_t *restrict     Qentry,
                                                 uint8_t *const restrict               lstart,
                                                 const ptl_size_t                      llength,
                                                 const unsigned int                    loptions,
@@ -193,7 +196,8 @@ static void *PtlInternalPerformOverflowDelivery(ptl_internal_appendME_t *restric
         assert(hdr->length + hdr->dest_offset <= llength);
         if (mlength > 0) {
             retval = lstart + hdr->dest_offset;
-            memcpy(retval, hdr->data, mlength);
+            lib_me_init( foo, retval, mlength, hdr);
+//            memcpy(retval, hdr->data, mlength);
         }
     }
     return retval;
@@ -817,7 +821,6 @@ int _PtlMEUnlink( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle)
     const ptl_internal_appendME_t *restrict const dq_target =
         &(ppe_ni->ppe_me[me.s.code].Qentry);
 
-PPE_DBG("\n");
 #ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         VERBOSE_ERROR("communication pad not initialized");
@@ -1106,14 +1109,12 @@ permission_violation:
              *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */
             /* unlink ME */
-PPE_DBG("UNLINK ME\n");
             if (prev != NULL) {
 
                 prev->next = entry->next;
             } else {
                 if (foundin == PRIORITY) {
                     t->priority.head = entry->next;
-PPE_DBG("UNLINK ME priority\n");
                     if (entry->next == NULL) {
                         t->priority.tail = NULL;
                     }
@@ -1312,7 +1313,7 @@ check_lengths:
             }
             if ((me.length > 0) && (me.start != NULL)) {
                 report_this_start =
-                    PtlInternalPerformOverflowDelivery(entry, me.start,
+                    PtlInternalPerformOverflowDelivery(foo,entry, me.start,
                                                        me.length, me.options,
                                                        fragment_mlength, hdr);
             }
@@ -1551,7 +1552,6 @@ static void PtlInternalPerformDelivery( foo_t *foo,
                                        const size_t                    nbytes,
                                        ptl_internal_header_t *restrict hdr)
 {   /*{{{*/
-    int lib_me_init( foo_t *, void *const local_data, const size_t nbytes, ptl_internal_header_t *hdr  );
 
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
