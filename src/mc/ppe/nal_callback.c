@@ -139,7 +139,8 @@ int lib_me_init( foo_t *foo,
     foo->type = ME_CTX;
 
     foo->u.me.mlength   = nbytes;
-    foo->iovec.iov_base = local_data,
+    foo->iovec.iov_base = foo->u.me.ppe_me->xpmem_ptr->data + 
+            ( local_data - foo->u.me.ppe_me->visible.start);
     foo->iovec.iov_len  = nbytes;
     ++foo->u.me.ppe_me->ref_cnt;
 
@@ -162,13 +163,16 @@ static inline int lib_me_finalize( foo_t* foo )
 
     PPE_DBG("\n");
 
+    uintptr_t start = (foo->iovec.iov_base - foo->u.me.ppe_me->xpmem_ptr->data);
+    start += (uintptr_t)foo->u.me.ppe_me->visible.start;
+    
     --ppe_me->ref_cnt;
     PtlInternalAnnounceMEDelivery( foo, 
                                     foo->u.me.ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
                                     foo->u.me.mlength,
-                                    (uintptr_t)foo->iovec.iov_base, // start,
+                                    start,
                                     ppe_me->ptl_list, 
                                     &foo->u.me.ppe_me->Qentry, //appendME_t
                                     &foo->hdr,
@@ -180,7 +184,7 @@ static inline int lib_me_finalize( foo_t* foo )
 
 static inline int lib_le_finalize( foo_t* foo )
 {
-    ptl_ppe_le_t *ppe_le = foo->u.le.ppe_le;
+    //ptl_ppe_le_t *ppe_le = foo->u.le.ppe_le;
     PPE_DBG("\n");
 
 #if 0
