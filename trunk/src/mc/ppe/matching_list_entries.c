@@ -1015,6 +1015,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
                                         ptl_table_entry_t *restrict     t,
                                         ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
+PPE_DBG("type %#x\n",hdr->type);
     assert(t);
     assert(hdr);
     ptl_internal_listtype_t  foundin = PRIORITY;
@@ -1035,6 +1036,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
         /* To match, one must check, in order:
          * 1. The match_bits (with the ignore_bits) against hdr->match_bits 2. if notruncate, length 3. the match_id against src
          */
+PPE_DBG("\n");
         PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
                                  hdr->length, hdr->dest_offset, &entry, &prev,
                                  &me_ptr);
@@ -1054,7 +1056,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
         me    = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
         goto check_lengths;
     }
+PPE_DBG("\n");
     if (entry != NULL) {               // Match
+PPE_DBG("\n");
         /*************************************************************************
         * There is a matching ME present, and 'entry'/'me_ptr' points to it *
         *************************************************************************/
@@ -1068,12 +1072,14 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
                 goto permission_violation;
             }
         }
+PPE_DBG("\n");
         foo->u.me.ppe_me = (ptl_ppe_me_t*) entry;
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
+PPE_DBG("\n");
                 if ((me.options & PTL_ME_OP_PUT) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto operation_violation;
@@ -1083,18 +1089,22 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo,
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
+PPE_DBG("\n");
                 if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto operation_violation;
                 }
         }
+PPE_DBG("\n");
         if (0) {
 operation_violation:
+PPE_DBG("operation violation\n");
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
             return DM_OP_VIOLATION;
 
 permission_violation:
+PPE_DBG("permission violation\n");
             PtlInternalPAPIDoneC(PTL_ME_PROCESS, 1);
             PTL_LOCK_UNLOCK(t->lock);
             return DM_PERM_VIOLATION;
@@ -1109,6 +1119,7 @@ permission_violation:
              *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */
             /* unlink ME */
+PPE_DBG("\n");
             if (prev != NULL) {
 
                 prev->next = entry->next;
@@ -1153,6 +1164,7 @@ permission_violation:
         }
 check_lengths:
         /* check lengths */
+PPE_DBG("\n");
         {
             size_t max_payload;
 
@@ -1186,6 +1198,7 @@ check_lengths:
                     abort();
                 } else {
                     hdr->remaining = msg_mlength;
+PPE_DBG("TRUNC\n");
                     hdr->type     |= HDR_TYPE_TRUNCFLAG;
                 }
             }
@@ -1206,6 +1219,7 @@ check_lengths:
                 }
             }
         }
+PPE_DBG("\n");
         /*************************
         * Perform the Operation *
         *************************/
@@ -1226,6 +1240,7 @@ check_lengths:
         void *report_this_start = ((uint8_t *)me.start) + hdr->dest_offset;
         void *effective_start   = ((uint8_t *)me.start) + hdr->dest_offset + (msg_mlength - hdr->remaining);
         if (foundin == PRIORITY) {
+PPE_DBG("\n");
             if (((hdr->type & HDR_TYPE_BASICMASK) == HDR_TYPE_PUT) &&
                 ((me.options & PTL_ME_MANAGE_LOCAL) != 0)) {
                 if ((fragment_mlength != msg_mlength) &&
@@ -1241,6 +1256,7 @@ check_lengths:
                     entry->local_offset += fragment_mlength;
                 }
             }
+PPE_DBG("\n");
             if (fragment_mlength > 0) {
 #ifdef USE_TRANSFER_ENGINE
                 if (use_xfe) {
@@ -1272,6 +1288,7 @@ check_lengths:
                                                hdr);
                 }
 #else           /* ifdef USE_TRANSFER_ENGINE */
+PPE_DBG("%#x\n",hdr->type);
                 PtlInternalPerformDelivery(foo, hdr->type,
                                            effective_start,
                                            hdr->data,
@@ -1338,6 +1355,7 @@ check_lengths:
             }
 #endif
         }
+PPE_DBG("\n");
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
@@ -1567,7 +1585,8 @@ static void PtlInternalPerformDelivery( foo_t *foo,
                                      (ptl_datatype_t)hdr->atomic_datatype);
             break;
         case HDR_TYPE_GET:
-            memcpy(message_data, local_data, nbytes);
+            lib_me_init( foo, local_data, nbytes, hdr);
+     //       memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:
             PtlInternalPerformAtomicArg(local_data,

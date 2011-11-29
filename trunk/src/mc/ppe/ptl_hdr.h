@@ -4,6 +4,8 @@
 
 #include <portals4.h>
 
+// MJL merge hdrs 
+
 struct ptl_hdr_t {
     unsigned char type;
     ptl_match_bits_t    match_bits;
@@ -15,6 +17,7 @@ struct ptl_hdr_t {
     ptl_hdr_data_t      hdr_data;
     ptl_ack_req_t       ack_req;
     unsigned char       ni;
+    void                *key;
 };
 
 typedef struct ptl_hdr_t ptl_hdr_t;
@@ -41,9 +44,11 @@ typedef struct {
 
     void *entry;
     
+    void *key;
     uint32_t remaining;
     ptl_size_t          length;
     ptl_pid_t       src;
+    ptl_nid_t       src_nid;
 
     uint64_t                        dest_offset      : 48;
     uint8_t                         pt_index         : 6; // only need 5
