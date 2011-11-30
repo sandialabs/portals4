@@ -265,37 +265,30 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	int err;
 	int cqe;
 
-	/* If it is a physical address, then we bind it. */
-	if (ni->options & PTL_NI_PHYSICAL) {
+	ni->id.phys.nid = addr_to_nid(&iface->sin);
 
-		ni->id.phys.nid = addr_to_nid(&iface->sin);
+	if (iface->id.phys.nid == PTL_NID_ANY) {
+		iface->id.phys.nid = ni->id.phys.nid;
+	} else if (iface->id.phys.nid != ni->id.phys.nid) {
+		WARN();
+		goto err1;
+	}
 
-		if (iface->id.phys.nid == PTL_NID_ANY) {
-			iface->id.phys.nid = ni->id.phys.nid;
-		} else if (iface->id.phys.nid != ni->id.phys.nid) {
-			WARN();
-			goto err1;
-		}
+	if (debug)
+		printf("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
 
-		if (debug)
-			printf("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
-
-		err = __iface_bind(iface, pid_to_port(ni->id.phys.pid));
-		if (err) {
-			ptl_warn("Binding failed\n");
-			WARN();
-			goto err1;
-		}
+	err = __iface_bind(iface, pid_to_port(ni->id.phys.pid));
+	if (err) {
+		ptl_warn("Binding failed\n");
+		WARN();
+		goto err1;
 	}
 
 	if ((ni->options & PTL_NI_PHYSICAL) &&
 		(ni->id.phys.pid == PTL_PID_ANY)) {
 		/* No well know PID was given. Retrieve the pid given by
 		 * bind. */
-		ni->id.phys.pid = port_to_pid(rdma_get_src_port(iface->listen_id));
-
-		/* remember the physical pid in case application creates another NI */
-		iface->id.phys.pid = ni->id.phys.pid;
+		ni->id.phys.pid = iface->id.phys.pid;
 
 		if (debug)
 			printf("set iface pid(1) = %x\n", iface->id.phys.pid);
@@ -622,7 +615,7 @@ static int PtlNIInit_IB(iface_t *iface, ni_t *ni)
 	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
 
 	/* Ready to listen. */
-	if ((ni->options & PTL_NI_PHYSICAL) && !iface->listen) {
+	if (!iface->listen) {
 		if (rdma_listen(iface->listen_id, 0)) {
 			ptl_warn("Failed to listen\n");
 			WARN();
@@ -707,22 +700,21 @@ int PtlNIInit(ptl_interface_t	iface_id,
 
 	OBJ_NEW(ni);
 
-	if (options & PTL_NI_PHYSICAL) {
-		ni->id.phys.nid = PTL_NID_ANY;
-		ni->id.phys.pid = pid;
+	/* Set the NID/PID for that NI. */
+	ni->id.phys.nid = PTL_NID_ANY;
+	ni->id.phys.pid = pid;
 
-		if (pid == PTL_PID_ANY && iface->id.phys.pid != PTL_PID_ANY) {
-			ni->id.phys.pid = iface->id.phys.pid;
-		} else if (iface->id.phys.pid == PTL_PID_ANY && pid != PTL_PID_ANY) {
-			iface->id.phys.pid = pid;
+	if (pid == PTL_PID_ANY && iface->id.phys.pid != PTL_PID_ANY) {
+		ni->id.phys.pid = iface->id.phys.pid;
+	} else if (iface->id.phys.pid == PTL_PID_ANY && pid != PTL_PID_ANY) {
+		iface->id.phys.pid = pid;
 
-			if (debug)
-				printf("set iface pid(2) = %x\n", iface->id.phys.pid);
-		} else if (pid != iface->id.phys.pid) {
-			WARN();
-			err = PTL_ARG_INVALID;
-			goto err3;
-		}
+		if (debug)
+			printf("set iface pid(2) = %x\n", iface->id.phys.pid);
+	} else if (pid != iface->id.phys.pid) {
+		WARN();
+		err = PTL_ARG_INVALID;
+		goto err3;
 	}
 
 	ni->iface = iface;
@@ -885,7 +877,6 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	ni->shmem.hash = 0;
 
 	iface = ni->iface;
-
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
 			
