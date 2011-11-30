@@ -20,6 +20,8 @@ struct nal_ctx_t {
         struct {
             ptl_ppe_md_t   *ppe_md;
             void           *user_ptr;   
+            // this is not used correctly
+            ptl_size_t      local_offset;
         } md;
         struct {
             ptl_size_t      mlength;

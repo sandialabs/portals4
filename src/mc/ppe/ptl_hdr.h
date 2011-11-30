@@ -32,6 +32,10 @@ typedef struct {
     // how many bits is a md index?
     uint16_t         md_index;
 
+    // if we need hdr space
+    // we don't need to bounce this for acks/replys if we create/pass a key that
+    // is used to lookup the md_index and user_ptr
+    void* user_ptr;
     void           *entry;
     
     uint32_t        remaining;

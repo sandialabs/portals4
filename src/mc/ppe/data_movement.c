@@ -22,6 +22,7 @@ put_impl( ptl_ppe_t *ctx, ptl_cqe_put_t *cmd )
     nal_ctx = malloc( sizeof( *nal_ctx ) );
     assert(nal_ctx);
 
+    nal_ctx->u.md.local_offset   = cmd->local_offset;
     nal_ctx->u.md.user_ptr       = cmd->user_ptr;
     nal_ctx->hdr.length          = cmd->length;
     nal_ctx->hdr.ack_req         = cmd->ack_req;
@@ -38,6 +39,8 @@ put_impl( ptl_ppe_t *ctx, ptl_cqe_put_t *cmd )
     nal_ctx->hdr.ni              = cmd->md_handle.s.ni;
     nal_ctx->hdr.type            = HDR_TYPE_PUT;
     nal_ctx->hdr.md_index        = cmd->md_handle.s.code;
+
+    nal_ctx->hdr.user_ptr        = cmd->user_ptr;
 
     dst.nid = cmd->target_id.phys.nid;
     dst.pid = cmd->target_id.phys.pid;
@@ -84,6 +87,7 @@ get_impl( ptl_ppe_t *ctx, ptl_cqe_get_t *cmd )
     nal_ctx = malloc( sizeof( *nal_ctx ) );
     assert(nal_ctx);
 
+    nal_ctx->u.md.local_offset   = cmd->local_offset;
     nal_ctx->u.md.user_ptr       = cmd->user_ptr;
     nal_ctx->hdr.length          = cmd->length;
 
@@ -97,6 +101,8 @@ get_impl( ptl_ppe_t *ctx, ptl_cqe_get_t *cmd )
     nal_ctx->hdr.ni              = cmd->md_handle.s.ni;
     nal_ctx->hdr.type            = HDR_TYPE_GET;
     nal_ctx->hdr.md_index        = cmd->md_handle.s.code;
+
+    nal_ctx->hdr.user_ptr        = cmd->user_ptr;
 
     dst.nid = cmd->target_id.phys.nid;
     dst.pid = cmd->target_id.phys.pid;

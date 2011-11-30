@@ -57,7 +57,7 @@ ct_inc_impl( ptl_ppe_t *ctx, ptl_cqe_ctinc_t *cmd )
 
     ni = &ctx->clients[cmd->base.remote_id].nis[cmd->ct_handle.s.ni];
 
-    ct_inc( ni, cmd->ct_handle.s.code, cmd->increment.success );
+    PtlInternalCTSuccessInc( ni, cmd->ct_handle.a, cmd->increment.success );
 
     return 0;
 }
