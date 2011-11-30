@@ -8,20 +8,23 @@
           <ptl_eq>
             <ptl_pt>
               <ptl_le_append le_opt="OP_PUT" uid="ANY">
-                <ptl_md>
-                  <ptl_put target_id="SELF"/>
-                  <ptl_eq_wait>
-                    <check event_type="LINK"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="PUT"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="SEND"/>
-                  </ptl_eq_wait>
-                  <msleep time="50"/>
-                  <ptl_eq_get ret="EQ_EMPTY"/>
-                </ptl_md>
+                <ptl_eq>
+                  <ptl_md>
+                    <ptl_put target_id="SELF"/>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="LINK"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="PUT"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="SEND"/>
+                    </ptl_eq_wait>
+                    <msleep time="50"/>
+                    <ptl_eq_get eq_handle="eq[0]" ret="EQ_EMPTY"/>
+                    <ptl_eq_get eq_handle="eq[1]" ret="EQ_EMPTY"/>
+                  </ptl_md>
+                </ptl_eq>
                 <ptl_le_unlink/>
               </ptl_le_append>
             </ptl_pt>
@@ -39,23 +42,26 @@
           <ptl_eq>
             <ptl_pt>
               <ptl_le_append le_opt="OP_PUT" uid="ANY">
-                <ptl_md>
-                  <ptl_put target_id="SELF" ack_req="ACK"/>
-                  <ptl_eq_wait>
-                    <check event_type="LINK"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="PUT"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="SEND"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="ACK"/>
-                  </ptl_eq_wait>
-                  <msleep time="50"/>
-                  <ptl_eq_get ret="EQ_EMPTY"/>
-                </ptl_md>
+                <ptl_eq>
+                  <ptl_md>
+                    <ptl_put target_id="SELF" ack_req="ACK"/>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="LINK"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="PUT"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="SEND"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="ACK"/>
+                    </ptl_eq_wait>
+                    <msleep time="50"/>
+                    <ptl_eq_get eq_handle="eq[0]" ret="EQ_EMPTY"/>
+                    <ptl_eq_get eq_handle="eq[1]" ret="EQ_EMPTY"/>
+                  </ptl_md>
+                </ptl_eq>
                 <ptl_le_unlink/>
               </ptl_le_append>
             </ptl_pt>
@@ -73,20 +79,23 @@
           <ptl_eq>
             <ptl_pt>
               <ptl_le_append le_opt="OP_PUT ACK_DISABLE" uid="ANY">
-                <ptl_md>
-                  <ptl_put target_id="SELF" ack_req="ACK"/>
-                  <ptl_eq_wait>
-                    <check event_type="LINK"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="PUT"/>
-                  </ptl_eq_wait>
-                  <ptl_eq_wait>
-                    <check event_type="SEND"/>
-                  </ptl_eq_wait>
-                  <msleep time="50"/>
-                  <ptl_eq_get ret="EQ_EMPTY"/>
-                </ptl_md>
+                <ptl_eq>
+                  <ptl_md>
+                    <ptl_put target_id="SELF" ack_req="ACK"/>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="LINK"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="PUT"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="SEND"/>
+                    </ptl_eq_wait>
+                    <msleep time="50"/>
+                    <ptl_eq_get eq_handle="eq[0]" ret="EQ_EMPTY"/>
+                    <ptl_eq_get eq_handle="eq[1]" ret="EQ_EMPTY"/>
+                  </ptl_md>
+                </ptl_eq>
                 <ptl_le_unlink/>
               </ptl_le_append>
             </ptl_pt>
