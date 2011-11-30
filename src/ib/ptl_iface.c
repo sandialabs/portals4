@@ -364,6 +364,9 @@ int __iface_bind(iface_t *iface, unsigned int port)
 		goto err1;
 	}
 
+	/* remember the physical pid. */
+	iface->id.phys.pid = port_to_pid(rdma_get_src_port(iface->listen_id));
+
 	return PTL_OK;
 
  err1:

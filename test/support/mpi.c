@@ -38,26 +38,11 @@ libtest_init(void)
         }
     }
 
-    if (MPI_SUCCESS != MPI_Comm_size(MPI_COMM_WORLD, &size)) {
+    if (MPI_SUCCESS != MPI_Comm_size(MPI_COMM_WORLD, &size))
         return 1;
-    }
-    if (MPI_SUCCESS != MPI_Comm_rank(MPI_COMM_WORLD, &rank)) {
+
+    if (MPI_SUCCESS != MPI_Comm_rank(MPI_COMM_WORLD, &rank))
         return 1;
-    }
-
-	{
-		/* Temp. */
-		ptl_handle_ni_t phys_ni_h;
-
-		ret = PtlNIInit(PTL_IFACE_DEFAULT,
-						PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-						PTL_PID_ANY,
-						NULL,
-						NULL,
-						&phys_ni_h);
-		if (PTL_OK != ret) return 1;
-		PtlNIFini(phys_ni_h);
-	}
 
     return 0;
 }
