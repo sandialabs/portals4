@@ -7,6 +7,18 @@
 
 = Draft Change History =
 
+== November 29, 2011 Changelog ==
+  * Clean up use of list entry instead of match list entry in event types description
+  * Clarify mlength, particularly for Search events
+  * Add PtlGetPhysId() call to allow the user to determine the physical address of a logically addressed network interface
+  * Add feature bit PTL_COHERENT_ATOMICS to allow an implementation to specify that atomics are coherent with processor atomics and/or other network interface atomics
+  * Clarify that unless explicitly allowed, NULL as a pointer to a structure/out argument is not allowed.
+  * Allow a network interface to be reinitialized
+  * First take at a guide to implementers
+  * remove out of date FAQ
+  * Clarify meaning of PTLACKREQ vs. PTLCTACKREQ vs. PTLOCACKREQ
+  * Fix numerous typos
+
 == October 20, 2011 Changelog ==
   * Clarify that MD_VOLATILE is only applicable to send buffers
   * Clarify VOLATILE applies to all sending operations in the constants table
