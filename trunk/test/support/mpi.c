@@ -25,13 +25,11 @@
 static int rank = -1;
 static int size = 0;
 static ptl_process_t *mapping = NULL;
-static ptl_handle_ni_t phys_ni_h;
 
 int
 libtest_init(void)
 {
     int ret;
-    ptl_process_t my_id;
 
     MPI_Initialized(&ret);
     if (!ret) {
@@ -47,27 +45,19 @@ libtest_init(void)
         return 1;
     }
 
-    ret = PtlNIInit(PTL_IFACE_DEFAULT,
-                    PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                    PTL_PID_ANY,
-                    NULL,
-                    NULL,
-                    &phys_ni_h);
-    if (PTL_OK != ret) return 1;
+	{
+		/* Temp. */
+		ptl_handle_ni_t phys_ni_h;
 
-    ret = PtlGetId(phys_ni_h, &my_id);
-    if (PTL_OK != ret) return 1;
-
-    PtlNIFini(phys_ni_h);
-
-    mapping = malloc(sizeof(ptl_process_t) * size);
-    if (NULL == mapping) return 1;
-
-    if (MPI_SUCCESS != MPI_Allgather(&my_id, sizeof(my_id), MPI_BYTE,
-                                     mapping, sizeof(my_id), MPI_BYTE,
-                                     MPI_COMM_WORLD)) {
-        return 1;
-    }
+		ret = PtlNIInit(PTL_IFACE_DEFAULT,
+						PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+						PTL_PID_ANY,
+						NULL,
+						NULL,
+						&phys_ni_h);
+		if (PTL_OK != ret) return 1;
+		PtlNIFini(phys_ni_h);
+	}
 
     return 0;
 }
@@ -90,11 +80,31 @@ libtest_fini(void)
 
 
 ptl_process_t*
-libtest_get_mapping(void)
+libtest_get_mapping(ptl_handle_ni_t ni_h)
 {
+    ptl_process_t my_id;
+	int ret;
+
+	if (mapping)
+		return mapping;
+
+	ret = PtlGetPhysId(ni_h, &my_id);
+	if (ret != PTL_OK)
+		return NULL;
+
+	mapping = malloc(sizeof(ptl_process_t) * size);
+	if (!mapping)
+		return NULL;
+
+    if (MPI_Allgather(&my_id, sizeof(my_id), MPI_BYTE,
+					  mapping, sizeof(my_id), MPI_BYTE,
+					  MPI_COMM_WORLD) != MPI_SUCCESS) {
+		free(mapping);
+		mapping = NULL;
+    }
+
     return mapping;
 }
-
 
 int
 libtest_get_rank(void)

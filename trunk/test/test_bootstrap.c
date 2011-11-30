@@ -21,8 +21,12 @@ int main(int   argc,
 
     CHECK_RETURNVAL(libtest_init());
 
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
+                              PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
+                              &ni_logical));
+
     num_procs = libtest_get_size();
-    amapping  = libtest_get_mapping();
+    amapping  = libtest_get_mapping(ni_logical);
 
     dmapping = malloc(sizeof(ptl_process_t) * num_procs);
 
@@ -30,11 +34,6 @@ int main(int   argc,
     for (i = 0; i < num_procs; ++i) {
         dmapping[i] = amapping[num_procs - i - 1];
     }
-
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING |
-                              PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL,
-                              // num_procs, dmapping, amapping,
-                              &ni_logical));
 
     switch (PtlSetMap(ni_logical, num_procs, dmapping)) {
         case PTL_IGNORED:

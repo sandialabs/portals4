@@ -68,7 +68,7 @@ int main(
     assert(actual.max_fetch_atomic_size >= BUFSIZE * sizeof(*value));
 
     CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
-                              libtest_get_mapping()));
+                              libtest_get_mapping(ni_logical)));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     assert(my_rank == myself.rank);

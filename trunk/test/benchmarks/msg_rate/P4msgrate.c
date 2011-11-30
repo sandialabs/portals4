@@ -411,10 +411,10 @@ int test_type;
     }
     LIBTEST_CHECK(rc, "PtlNIInit");
 
-    rc= PtlSetMap(ni_collectives, world_size, libtest_get_mapping());
+    rc= PtlSetMap(ni_collectives, world_size, libtest_get_mapping(ni_logical));
     LIBTEST_CHECK(rc, "PtlSetMap");
 
-    rc= PtlSetMap(ni_logical, world_size, libtest_get_mapping());
+    rc= PtlSetMap(ni_logical, world_size, libtest_get_mapping(ni_logical));
     LIBTEST_CHECK(rc, "PtlSetMap");
 
     if (0 == rank)   {
