@@ -19,7 +19,7 @@
  * throw them away.
  */
 extern
-int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
+int lib_parse(ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len);
 
 /* When the NAL callbacks send or receive have finished the transaction

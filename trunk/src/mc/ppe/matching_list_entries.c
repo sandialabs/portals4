@@ -33,7 +33,7 @@ enum DM_return_codes {
 };
 
 
-int lib_me_init( foo_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
+int lib_me_recv( nal_ctx_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
 
 #define NO_ARG_VALIDATION
 
@@ -105,7 +105,7 @@ static inline void PtlInternalValidateMEPT(ptl_table_entry_t *t);
 #endif
 
 /* Static functions */
-static void PtlInternalPerformDelivery(foo_t *,
+static void PtlInternalPerformDelivery(nal_ctx_t *,
                                        const uint_fast8_t                    type,
                                        void *const restrict                  local_data,
                                        uint8_t *const restrict               message_data,
@@ -174,7 +174,7 @@ void INTERNAL PtlInternalMENITeardown(const uint_fast8_t ni)
 }                                      /*}}} */
 #endif
 
-static void *PtlInternalPerformOverflowDelivery(foo_t *foo,
+static void *PtlInternalPerformOverflowDelivery(nal_ctx_t *nal_ctx,
                                                 ptl_internal_appendME_t *restrict     Qentry,
                                                 uint8_t *const restrict               lstart,
                                                 const ptl_size_t                      llength,
@@ -196,7 +196,7 @@ static void *PtlInternalPerformOverflowDelivery(foo_t *foo,
         assert(hdr->length + hdr->dest_offset <= llength);
         if (mlength > 0) {
             retval = lstart + hdr->dest_offset;
-            lib_me_init( foo, retval, mlength, hdr);
+            lib_me_recv( nal_ctx, retval, mlength, hdr);
 //            memcpy(retval, hdr->data, mlength);
         }
     }
@@ -220,9 +220,9 @@ static void *PtlInternalPerformOverflowDelivery(foo_t *foo,
         e.user_ptr      = uptr;                              \
         e.ni_fail_type  = PTL_NI_OK;                         \
         if (hdr->ni <= 1) {            /* Logical */         \
-            e.initiator.rank = hdr->src;                     \
+            e.initiator.rank = hdr->src.rank;                \
         } else {                       /* Physical */        \
-            e.initiator.phys.pid = hdr->src;                 \
+            e.initiator.phys.pid = hdr->src.pid;             \
             e.initiator.phys.nid = 0;                        \
         }                                                    \
         switch (hdr->type & HDR_TYPE_BASICMASK) {            \
@@ -244,7 +244,6 @@ static void *PtlInternalPerformOverflowDelivery(foo_t *foo,
 
 static int PtlInternalMarkMEReusable(const ptl_handle_me_t me_handle)
 {                                      /*{{{ */
-    assert(0);
 #if 0
     const ptl_internal_handle_converter_t me = { me_handle };
 
@@ -384,7 +383,7 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                     /* check for match_id */
                     if (me_hc.s.ni <= 1) { // Logical
                         if ((me->match_id.rank != PTL_RANK_ANY) &&
-                            (me->match_id.rank != cur->hdr.src)) {
+                            (me->match_id.rank != cur->hdr.src.rank)) {
                             continue;
                         }
                     } else {           // Physical
@@ -393,7 +392,7 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                             continue;
                         }
                         if ((me->match_id.phys.pid != PTL_PID_ANY) &&
-                            (me->match_id.phys.pid != cur->hdr.src)) {
+                            (me->match_id.phys.pid != cur->hdr.src.pid)) {
                             continue;
                         }
                     }
@@ -526,7 +525,7 @@ permission_violation:
                         if ((tEQ != PTL_EQ_NONE) ||
                             (me->ct_handle != PTL_CT_NONE)) {
                             __sync_synchronize();
-                            PtlInternalAnnounceMEDelivery( NULL,//foo,
+                            PtlInternalAnnounceMEDelivery( NULL,//nal_ctx,
                                                           tEQ,
                                                           me->ct_handle,
                                                           me_options,
@@ -681,7 +680,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
             /* check for match_id */
             if ( ni <= 1) { // Logical
                 if ((me->match_id.rank != PTL_RANK_ANY) &&
-                    (me->match_id.rank != cur->hdr.src)) {
+                    (me->match_id.rank != cur->hdr.src.rank)) {
                     continue;
                 }
             } else {           // Physical
@@ -690,7 +689,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                     continue;
                 }
                 if ((me->match_id.phys.pid != PTL_PID_ANY) &&
-                    (me->match_id.phys.pid != cur->hdr.src)) {
+                    (me->match_id.phys.pid != cur->hdr.src.pid)) {
                     continue;
                 }
             }
@@ -931,7 +930,7 @@ int _PtlMEUnlink( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle)
 
 static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
                                      const uint_fast8_t        ni,
-                                     const ptl_pid_t           src,
+                                     const ptl_hdr_app_id_t    src,
                                      const ptl_size_t          length,
                                      const ptl_size_t          offset,
                                      ptl_internal_appendME_t **matchlist,
@@ -960,7 +959,7 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
         /* check for match_id */
         if (ni <= 1) {                 // Logical
             if ((me->match_id.rank != PTL_RANK_ANY) &&
-                (me->match_id.rank != src)) {
+                (me->match_id.rank != src.rank)) {
                 continue;
             }
         } else {                       // Physical
@@ -969,7 +968,7 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
                 continue;
             }
             if ((me->match_id.phys.pid != PTL_PID_ANY) &&
-                (me->match_id.phys.pid != src)) {
+                (me->match_id.phys.pid != src.pid)) {
                 continue;
             }
         }
@@ -1011,11 +1010,10 @@ static void PtlInternalValidateMEPTs(const uint_fast8_t ni)
 
 #endif /* ifdef PARANOID */
 
-ptl_pid_t INTERNAL PtlInternalMEDeliver(foo_t *foo, 
+ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx, 
                                         ptl_table_entry_t *restrict     t,
                                         ptl_internal_header_t *restrict hdr)
 {                                      /*{{{ */
-PPE_DBG("type %#x\n",hdr->type);
     assert(t);
     assert(hdr);
     ptl_internal_listtype_t  foundin = PRIORITY;
@@ -1036,7 +1034,6 @@ PPE_DBG("type %#x\n",hdr->type);
         /* To match, one must check, in order:
          * 1. The match_bits (with the ignore_bits) against hdr->match_bits 2. if notruncate, length 3. the match_id against src
          */
-PPE_DBG("\n");
         PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
                                  hdr->length, hdr->dest_offset, &entry, &prev,
                                  &me_ptr);
@@ -1056,9 +1053,7 @@ PPE_DBG("\n");
         me    = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
         goto check_lengths;
     }
-PPE_DBG("\n");
     if (entry != NULL) {               // Match
-PPE_DBG("\n");
         /*************************************************************************
         * There is a matching ME present, and 'entry'/'me_ptr' points to it *
         *************************************************************************/
@@ -1072,14 +1067,12 @@ PPE_DBG("\n");
                 goto permission_violation;
             }
         }
-PPE_DBG("\n");
-        foo->u.me.ppe_me = (ptl_ppe_me_t*) entry;
+        nal_ctx->u.me.ppe_me = (ptl_ppe_me_t*) entry;
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
-PPE_DBG("\n");
                 if ((me.options & PTL_ME_OP_PUT) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto operation_violation;
@@ -1089,13 +1082,11 @@ PPE_DBG("\n");
             case HDR_TYPE_GET:
             case HDR_TYPE_FETCHATOMIC:
             case HDR_TYPE_SWAP:
-PPE_DBG("\n");
                 if ((me.options & (PTL_ME_ACK_DISABLE | PTL_ME_OP_GET)) == 0) {
                     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                     goto operation_violation;
                 }
         }
-PPE_DBG("\n");
         if (0) {
 operation_violation:
 PPE_DBG("operation violation\n");
@@ -1119,7 +1110,6 @@ PPE_DBG("permission violation\n");
              *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */
             /* unlink ME */
-PPE_DBG("\n");
             if (prev != NULL) {
 
                 prev->next = entry->next;
@@ -1157,14 +1147,13 @@ PPE_DBG("\n");
                     e.type  = PTL_EVENT_AUTO_UNLINK;
                     e.start = (uint8_t *)me.start + hdr->dest_offset;
                     PtlInternalPAPIDoneC(PTL_ME_PROCESS, 2);
-                    PtlInternalEQPush(foo->ppe_ni, tEQ, &e);
+                    PtlInternalEQPush(nal_ctx->ppe_ni, tEQ, &e);
                     PtlInternalPAPIStartC();
                 }
             }
         }
 check_lengths:
         /* check lengths */
-PPE_DBG("\n");
         {
             size_t max_payload;
 
@@ -1198,7 +1187,6 @@ PPE_DBG("\n");
                     abort();
                 } else {
                     hdr->remaining = msg_mlength;
-PPE_DBG("TRUNC\n");
                     hdr->type     |= HDR_TYPE_TRUNCFLAG;
                 }
             }
@@ -1219,7 +1207,6 @@ PPE_DBG("TRUNC\n");
                 }
             }
         }
-PPE_DBG("\n");
         /*************************
         * Perform the Operation *
         *************************/
@@ -1240,7 +1227,6 @@ PPE_DBG("\n");
         void *report_this_start = ((uint8_t *)me.start) + hdr->dest_offset;
         void *effective_start   = ((uint8_t *)me.start) + hdr->dest_offset + (msg_mlength - hdr->remaining);
         if (foundin == PRIORITY) {
-PPE_DBG("\n");
             if (((hdr->type & HDR_TYPE_BASICMASK) == HDR_TYPE_PUT) &&
                 ((me.options & PTL_ME_MANAGE_LOCAL) != 0)) {
                 if ((fragment_mlength != msg_mlength) &&
@@ -1256,7 +1242,6 @@ PPE_DBG("\n");
                     entry->local_offset += fragment_mlength;
                 }
             }
-PPE_DBG("\n");
             if (fragment_mlength > 0) {
 #ifdef USE_TRANSFER_ENGINE
                 if (use_xfe) {
@@ -1288,8 +1273,7 @@ PPE_DBG("\n");
                                                hdr);
                 }
 #else           /* ifdef USE_TRANSFER_ENGINE */
-PPE_DBG("%#x\n",hdr->type);
-                PtlInternalPerformDelivery(foo, hdr->type,
+                PtlInternalPerformDelivery(nal_ctx, hdr->type,
                                            effective_start,
                                            hdr->data,
                                            fragment_mlength,
@@ -1330,7 +1314,7 @@ PPE_DBG("%#x\n",hdr->type);
             }
             if ((me.length > 0) && (me.start != NULL)) {
                 report_this_start =
-                    PtlInternalPerformOverflowDelivery(foo,entry, me.start,
+                    PtlInternalPerformOverflowDelivery(nal_ctx,entry, me.start,
                                                        me.length, me.options,
                                                        fragment_mlength, hdr);
             }
@@ -1355,7 +1339,6 @@ PPE_DBG("%#x\n",hdr->type);
             }
 #endif
         }
-PPE_DBG("\n");
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
@@ -1392,7 +1375,7 @@ PPE_DBG("\n");
         e.start        = NULL;
         e.ni_fail_type = PTL_NI_DROPPED;
         PtlInternalPAPIDoneC(PTL_ME_PROCESS, 4);
-        PtlInternalEQPush(foo->ppe_ni, tEQ, &e);
+        PtlInternalEQPush(nal_ctx->ppe_ni, tEQ, &e);
         PtlInternalPAPIStartC();
     }
     (void)PtlInternalAtomicInc(&nit.regs[hdr->ni][PTL_SR_DROP_COUNT], 1);
@@ -1563,7 +1546,7 @@ static void PtlInternalPerformDelivery(const uint_fast8_t              type,
 }                                      /*}}} */
 
 #else /* ifdef USE_TRANSFER_ENGINE */
-static void PtlInternalPerformDelivery( foo_t *foo,
+static void PtlInternalPerformDelivery( nal_ctx_t *nal_ctx,
                                        const uint_fast8_t              type,
                                        void *const restrict            local_data,
                                        uint8_t *const restrict         message_data,
@@ -1573,7 +1556,7 @@ static void PtlInternalPerformDelivery( foo_t *foo,
 
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
-            lib_me_init( foo, local_data, nbytes, hdr);
+            lib_me_recv( nal_ctx, local_data, nbytes, hdr);
     //        memcpy(local_data, message_data, nbytes);
             break;
         case HDR_TYPE_ATOMIC:
@@ -1585,7 +1568,7 @@ static void PtlInternalPerformDelivery( foo_t *foo,
                                      (ptl_datatype_t)hdr->atomic_datatype);
             break;
         case HDR_TYPE_GET:
-            lib_me_init( foo, local_data, nbytes, hdr);
+            lib_me_recv( nal_ctx, local_data, nbytes, hdr);
      //       memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:
@@ -1604,7 +1587,7 @@ static void PtlInternalPerformDelivery( foo_t *foo,
 
 #endif /* ifdef USE_TRANSFER_ENGINE */
 
-void PtlInternalAnnounceMEDelivery( foo_t *foo,
+void PtlInternalAnnounceMEDelivery( nal_ctx_t *nal_ctx,
                                           const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
                                           const unsigned int                options,
@@ -1626,9 +1609,9 @@ void PtlInternalAnnounceMEDelivery( foo_t *foo,
     }
     if (ct_announce != 0) {
         if ((options & PTL_ME_EVENT_CT_BYTES) == 0) {
-            PtlInternalCTSuccessInc(foo->ppe_ni, ct_handle, 1);
+            PtlInternalCTSuccessInc(nal_ctx->ppe_ni, ct_handle, 1);
         } else {
-            PtlInternalCTSuccessInc(foo->ppe_ni, ct_handle, mlength);
+            PtlInternalCTSuccessInc(nal_ctx->ppe_ni, ct_handle, mlength);
         }
         if (PtlInternalAmITheCatcher()) {
             PtlInternalCTPullTriggers(ct_handle);
@@ -1663,7 +1646,7 @@ void PtlInternalAnnounceMEDelivery( foo_t *foo,
             e.mlength = mlength;
             e.start   = (void *)start;
             // PtlInternalPAPIDoneC(PTL_ME_PROCESS, 0);
-            PtlInternalEQPush(foo->ppe_ni, eq_handle, &e);
+            PtlInternalEQPush(nal_ctx->ppe_ni, eq_handle, &e);
             // PtlInternalPAPIStartC();
         }
     }
