@@ -16,14 +16,20 @@ static inline void PtlInternalEQPush( ptl_ppe_ni_t *ni,
                         ni->ppe_eq[eq_hc.s.code].xpmem_ptr->data, event );
 }
 
-static inline int
-eq_write( ptl_ppe_ni_t *ni, int eq_index, ptl_event_t *event )
-{
-    PPE_DBG("eq_index=%d\n", eq_index );
 
-    ptl_circular_buffer_add_overwrite( 
-                        ni->ppe_eq[eq_index].xpmem_ptr->data, event );
-    return 0;
+static inline void PtlInternalEQPushESEND( ptl_ppe_ni_t *ni,
+                                    const ptl_handle_eq_t eq_handle,
+                                     const uint32_t        length,
+                                     const uint64_t        roffset,
+                                     void *const           user_ptr)
+{
+    ptl_event_t event;
+    event.type          = PTL_EVENT_SEND;
+    event.mlength       = length;
+    event.remote_offset = roffset;
+    event.user_ptr      = user_ptr;
+    event.ni_fail_type  = PTL_NI_OK;
+    PtlInternalEQPush( ni, eq_handle, &event );
 }
 
 #endif

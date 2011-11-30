@@ -111,6 +111,7 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
         return 1; 
     }
     nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ hdr->md_index ]; 
+    nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ hdr->md_index ]; 
 
     nal_ctx->type = MD_CTX;
     nal_ctx->iovec.iov_base = nal_ctx->u.md.ppe_md->xpmem_ptr->data;
@@ -147,15 +148,22 @@ static inline int finalize_md_send( nal_ctx_t* nal_ctx )
 
         if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
             if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-                ct_inc( nal_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
+                
+                if ( ( ppe_md->options & PTL_MD_EVENT_CT_BYTES ) == 0 ) {
+                    PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 1 );
+                } else {
+                    PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 
+                                                    nal_ctx->hdr.length );
+                }
             }
         }
 
         if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
             if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
-                ptl_event_t event;
-                event.type = PTL_EVENT_SEND;
-                eq_write( nal_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
+                PtlInternalEQPushESEND( nal_ctx->ppe_ni, ppe_md->eq_h.a,
+                            nal_ctx->u.md.local_offset,
+                            nal_ctx->hdr.dest_offset,
+                            nal_ctx->u.md.user_ptr );
             }
         }
     }
@@ -171,19 +179,30 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ( ppe_md->options & PTL_MD_EVENT_CT_ACK ) || 
              ( ppe_md->options & PTL_MD_EVENT_CT_REPLY ) ) {
-            ct_inc( nal_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
+            if ( ( ppe_md->options & PTL_MD_EVENT_CT_BYTES ) == 0 ) {
+                PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 1 );
+            } else {
+                PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 
+                                                    nal_ctx->hdr.length );
+            }
         }
     }
 
     if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
         if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
             ptl_event_t event;
+             
             if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
                 event.type = PTL_EVENT_ACK;
             } else {
                 event.type = PTL_EVENT_REPLY;
             }
-            eq_write( nal_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
+PPE_DBG("%p\n",nal_ctx->u.md.user_ptr);
+            event.mlength       = nal_ctx->hdr.length;
+            event.remote_offset = nal_ctx->hdr.dest_offset;
+            event.user_ptr      = nal_ctx->hdr.user_ptr;
+            event.ni_fail_type  = PTL_NI_OK;
+            PtlInternalEQPush( nal_ctx->ppe_ni, ppe_md->eq_h.a, &event );
         }
     }
 
@@ -247,6 +266,9 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 
     // do we need to copy the whole thing?
     *nal_ctx2 = *nal_ctx;
+
+PPE_DBG("%p\n",nal_ctx->u.md.user_ptr);
+PPE_DBG("%p\n",nal_ctx2->u.md.user_ptr);
 
     nal_ctx2->hdr.type      |= HDR_TYPE_ACKFLAG;
     nal_ctx2->hdr.src.pid    = nal_ctx->hdr.target.pid;
