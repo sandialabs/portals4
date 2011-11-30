@@ -16,37 +16,33 @@
 #include "nal/p3.3/include/p3lib/p3lib_support.h"
 
 
-static int do_ack( ptl_ppe_ni_t *, foo_t *,ptl_hdr_t * );
+static int process_ack( ptl_ppe_ni_t *, nal_ctx_t *,ptl_hdr_t * );
 
-int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
+int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len)
 {
     ptl_ppe_t        *ppe_ctx = _p3_ni->data;
     ptl_ppe_client_t *client;
-    ptl_ppe_ni_t     *ppe_ni;
-    ptl_ppe_pt_t     *ppe_pt;
 
-    PPE_DBG("ni=%d src=%#x,%d dst=%#x,%d match_bits=%#lx\n", hdr->ni,
-                        hdr->src_id.phys.nid, hdr->src_id.phys.pid,
-                        hdr->target_id.phys.nid, hdr->target_id.phys.pid,
-                        hdr->match_bits);
+    PPE_DBG("ni=%d src=%#x,%d dst=%d type=%#x match_bits=%#lx\n", hdr->ni,
+                        src_nid, hdr->src.pid, hdr->target.pid,
+                        hdr->type, hdr->match_bits);
 
-    PPE_DBG("type %#x\n",hdr->type)
+    nal_ctx_t *nal_ctx = malloc( sizeof( *nal_ctx ) ); 
+    assert(nal_ctx);
+    nal_ctx->nal_msg_data   = nal_msg_data;
+    nal_ctx->p3_ni          = _p3_ni;
+    nal_ctx->src_nid        = src_nid;
+    nal_ctx->hdr            = *hdr;
 
-    // get this now so it can be used for a dropped message
-    foo_t *foo = malloc( sizeof( *foo ) ); 
-    assert(foo);
-    foo->nal_msg_data   = nal_msg_data;
-    foo->p3_ni          = _p3_ni;
-
-    if ( ! (hdr->target_id.phys.pid < MC_PEER_COUNT ) ) {
-        PPE_DBG("pid %d out of range\n", hdr->target_id.phys.pid );
+    if ( ! (hdr->target.pid < MC_PEER_COUNT ) ) {
+        PPE_DBG("pid %d out of range\n", hdr->target.pid );
         goto drop_message;
     }
 
-    client = &ppe_ctx->clients[ hdr->target_id.phys.pid ];
+    client = &ppe_ctx->clients[ hdr->target.pid ];
     if (  ! client->connected ) {
-        PPE_DBG("pid %d not connected\n", hdr->target_id.phys.pid );
+        PPE_DBG("pid %d not connected\n", hdr->target.pid );
         goto drop_message;
     }
 
@@ -55,59 +51,43 @@ int lib_parse(ptl_hdr_t *hdr, unsigned long nal_msg_data,
         goto drop_message;
     }
 
-    ppe_ni = &client->nis[ hdr->ni ];
-    if ( ! ppe_ni->limits ) {
+    nal_ctx->ppe_ni = &client->nis[ hdr->ni ];
+    if ( ! nal_ctx->ppe_ni->limits ) {
         PPE_DBG("ni %d not initialized\n", hdr->ni );
         goto drop_message;
     }
 
-    foo->ppe_ni         = ppe_ni;
-
     if ( hdr->type & HDR_TYPE_ACKFLAG ) {
-        if ( do_ack( ppe_ni, foo, hdr ) ) {
+        if ( process_ack( nal_ctx->ppe_ni, nal_ctx, hdr ) ) {
             PPE_DBG("drop ACK\n");
             goto drop_message;
         } 
+        return 0;
     }
 
-    // MJL: range check pt_index 
-    if ( ! ( hdr->pt_index <  ppe_ni->limits->max_pt_index ) ) {
+    if ( ! ( hdr->pt_index <  nal_ctx->ppe_ni->limits->max_pt_index ) ) {
         PPE_DBG("PT %d out of range\n",hdr->pt_index);
         goto drop_message;
     }
 
-    ppe_pt = ppe_ni->ppe_pt + hdr->pt_index;
-    if ( ! ppe_pt->status ) {
+    nal_ctx->u.me.ppe_pt = nal_ctx->ppe_ni->ppe_pt + hdr->pt_index;
+    if ( ! nal_ctx->u.me.ppe_pt->status ) {
         PPE_DBG("PT %d not allocated\n",hdr->pt_index);
         goto drop_message;
     }
 
-    foo->u.me.ppe_pt         = ppe_pt;
-
-    foo->hdr.match_bits = hdr->match_bits;
-    foo->hdr.hdr_data   = hdr->hdr_data;
-    foo->hdr.remaining  = hdr->length;
-    foo->hdr.ni         = hdr->ni;
-    foo->hdr.src        = hdr->src_id.phys.pid;
-    foo->hdr.src_nid        = hdr->src_id.phys.nid;
-    foo->hdr.length     = hdr->length;
-    foo->hdr.type       = hdr->type;
-    foo->hdr.dest_offset = hdr->remote_offset;
-    foo->hdr.entry      = NULL;
-    foo->hdr.key = hdr->key;
-    
-    PtlInternalMEDeliver( foo, ppe_pt, &foo->hdr );
+    PtlInternalMEDeliver( nal_ctx, nal_ctx->u.me.ppe_pt, &nal_ctx->hdr );
 
     return 0;
 
 drop_message:
     PPE_DBG("Drop message\n");
 
-    foo->type = DROP_CTX;
+    nal_ctx->type = DROP_CTX;
 
     _p3_ni->nal->recv( _p3_ni, 
-                        foo->nal_msg_data,  // nal_msg_data,
-                        foo,                // lib_data
+                        nal_ctx->nal_msg_data,  // nal_msg_data,
+                        nal_ctx,                // lib_data
                         NULL,               // dst_iov
                         0,                  // iovlen
                         0,                  // offset
@@ -119,46 +99,55 @@ drop_message:
 }
     
 
-static int do_ack( ptl_ppe_ni_t *ppe_ni, foo_t *foo, ptl_hdr_t *hdr )
+static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr )
 {
-    foo_t * send_foo = hdr->key;
-    PPE_DBG("foo=%p\n", send_foo);
+    ptl_size_t rlen = hdr->length, mlen = 0;;
+    PPE_DBG("md_index=%i\n", hdr->md_index);
 
-PPE_DBG("\n");
+    // do we use a ref count and keep the md around until acks come back
+    // or do we use a inuse flag and drop the ack if the md was free'd
+    if (  ! ( hdr->md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
+        PPE_DBG("md index %d is out of range\n", hdr->md_index );
+        return 1; 
+    }
+    nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ hdr->md_index ]; 
 
-    foo->type = MD_CTX;
+    nal_ctx->type = MD_CTX;
+    nal_ctx->iovec.iov_base = nal_ctx->u.md.ppe_md->xpmem_ptr->data;
+    nal_ctx->iovec.iov_len = nal_ctx->u.md.ppe_md->xpmem_ptr->length;
 
-    foo->hdr.type = hdr->type;
-PPE_DBG("\n");
-    foo->iovec.iov_base = send_foo->u.md.ppe_md->xpmem_ptr->data;
-PPE_DBG("\n");
-    foo->iovec.iov_len = hdr->length;
+    if ( ( hdr->type & HDR_TYPE_PUT ) == HDR_TYPE_GET ) {
+        // we need the Get local offset
+        // we need to do bounds checking    
+        mlen =  hdr->length;
+    }
 
-PPE_DBG("\n");
-    foo->p3_ni->nal->recv( foo->p3_ni, 
-                        foo->nal_msg_data,
-                        foo,            // lib_data
-                        &foo->iovec,    // dst_iov
+    nal_ctx->p3_ni->nal->recv( nal_ctx->p3_ni, 
+                        nal_ctx->nal_msg_data,
+                        nal_ctx,            // lib_data
+                        &nal_ctx->iovec,    // dst_iov
                         1,              // iovlen
                         0,              // offset
-                        0,//hdr->length,    // mlen
-                        0,//hdr->length,    // rlen
+                        mlen,           // mlen
+                        rlen,           // rlen
                         NULL            // addrkey
                     ); 
     return 0;
 }
 
-static inline int lib_md_finalize( foo_t* foo )
+static inline int finalize_md_send( nal_ctx_t* nal_ctx )
 {
-    ptl_ppe_md_t *ppe_md = foo->u.md.ppe_md;
-    PPE_DBG("type %#x\n",foo->_hdr.type);
+    ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
+    PPE_DBG("\n");
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
+        // if no pending ACK 
+        if ( nal_ctx->hdr.ack_req == PTL_NO_ACK_REQ) {
+            --ppe_md->ref_cnt;
+        }
 
-    --ppe_md->ref_cnt;
-
-    if ( foo->_hdr.type == HDR_TYPE_PUT ) {
         if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
             if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-                ct_inc( foo->ppe_ni, ppe_md->ct_h.s.code, 1 );
+                ct_inc( nal_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
             }
         }
 
@@ -166,42 +155,78 @@ static inline int lib_md_finalize( foo_t* foo )
             if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
                 ptl_event_t event;
                 event.type = PTL_EVENT_SEND;
-                eq_write( foo->ppe_ni, ppe_md->eq_h.s.code, &event );
+                eq_write( nal_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
             }
         }
-    } else {
-        PPE_DBG("GET???\n");
     }
     return 0;
 }
 
-int lib_me_init( foo_t *foo,
+static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
+{
+    ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
+    PPE_DBG("\n");
+
+    --ppe_md->ref_cnt;
+    if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
+        if ( ( ppe_md->options & PTL_MD_EVENT_CT_ACK ) || 
+             ( ppe_md->options & PTL_MD_EVENT_CT_REPLY ) ) {
+            ct_inc( nal_ctx->ppe_ni, ppe_md->ct_h.s.code, 1 );
+        }
+    }
+
+    if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
+        if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
+            ptl_event_t event;
+            if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
+                event.type = PTL_EVENT_ACK;
+            } else {
+                event.type = PTL_EVENT_REPLY;
+            }
+            eq_write( nal_ctx->ppe_ni, ppe_md->eq_h.s.code, &event );
+        }
+    }
+
+    return 0;
+}
+
+static inline int finalize_md( nal_ctx_t* nal_ctx )
+{
+    PPE_DBG("type %#x\n",nal_ctx->hdr.type);
+
+    if ( ! ( nal_ctx->hdr.type & HDR_TYPE_ACKFLAG ) ) {
+        return finalize_md_send( nal_ctx );
+    } else  {
+        return finalize_md_recv( nal_ctx );
+    }
+}
+
+// local is were PUT data goes and where GET data comes from
+int lib_me_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
                         const  ptl_internal_header_t *hdr  )
 {
-    PPE_DBG("dest_addr=%p mlength=%lu rlength=%lu\n",
-                                local_data,nbytes,hdr->length); 
+    int mlen = 0, rlen = 0;
 
-    ptl_size_t rlen,mlen;
-    foo->type = ME_CTX;
-    ++foo->u.me.ppe_me->ref_cnt;
+    PPE_DBG("type=%#xaddr=%p mlength=%lu rlength=%lu\n", hdr->type,
+                                local_data, nbytes, hdr->length); 
 
-    foo->u.me.mlength   = nbytes;
-    foo->iovec.iov_base = foo->u.me.ppe_me->xpmem_ptr->data + 
-            ( local_data - foo->u.me.ppe_me->visible.start);
-    foo->iovec.iov_len  = nbytes;
+    nal_ctx->type = ME_CTX;
+    nal_ctx->u.me.ppe_me->ref_cnt++;
+    nal_ctx->u.me.mlength   = nbytes;
+    nal_ctx->iovec.iov_base = nal_ctx->u.me.ppe_me->xpmem_ptr->data + 
+            ( local_data - nal_ctx->u.me.ppe_me->visible.start);
+    nal_ctx->iovec.iov_len  = nal_ctx->u.me.ppe_me->visible.length;
 
     if ( ( hdr->type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
+        mlen = nal_ctx->u.me.mlength;
         rlen = hdr->length;
-        mlen = foo->u.me.mlength;
-    } else {
-        mlen = rlen = 0;
     }
 
-    foo->p3_ni->nal->recv( foo->p3_ni, 
-                        foo->nal_msg_data,
-                        foo,            // lib_data
-                        &foo->iovec,    // dst_iov
+    nal_ctx->p3_ni->nal->recv( nal_ctx->p3_ni, 
+                        nal_ctx->nal_msg_data,
+                        nal_ctx,            // lib_data
+                        &nal_ctx->iovec,    // dst_iov
                         1,              // iovlen
                         0,              // offset
                         mlen,           // mlen
@@ -212,87 +237,107 @@ int lib_me_init( foo_t *foo,
 }
 
 
-static inline int reply( foo_t *foo )
+static inline int send_ack( nal_ctx_t *nal_ctx )
 {
     ptl_process_id_t dst;
 
-    PPE_DBG("foo=%p\n",foo);
-    foo_t *foo2 = malloc( sizeof(*foo2) );
+    PPE_DBG("\n");
+    nal_ctx_t *nal_ctx2 = malloc( sizeof(*nal_ctx2) );
+    assert(nal_ctx2);
 
     // do we need to copy the whole thing?
-    *foo2 = *foo;
+    *nal_ctx2 = *nal_ctx;
 
-    dst.nid = foo2->hdr.src_nid;
-    dst.pid = foo2->hdr.src;
+    nal_ctx2->hdr.type      |= HDR_TYPE_ACKFLAG;
+    nal_ctx2->hdr.src.pid    = nal_ctx->hdr.target.pid;
+    nal_ctx2->hdr.target.pid = nal_ctx->hdr.src.pid;
 
-    PPE_DBG("reply to %#x,%d\n",dst.nid,dst.pid );
+    dst.nid = nal_ctx->src_nid;
+    dst.pid = nal_ctx2->hdr.src.pid;
 
-    foo2->hdr.type |= HDR_TYPE_ACKFLAG;
+    PPE_DBG("send %#x to %#x,%d\n", nal_ctx2->hdr.type, dst.nid, dst.pid );
 
-    foo2->_hdr.length          = foo->hdr.length;
-//    foo2->_hdr.src_id.phys.pid   = cmd->base.remote_id;
-//    foo2->_hdr.src_id.phys.nid   = ctx->nid;
-    foo2->_hdr.target_id.phys.pid       = foo2->hdr.src;
-//    foo2->_hdr.target_id.phys.nid       = 
-    foo2->_hdr.ni              = foo2->hdr.ni;
-    foo2->_hdr.type            = foo2->hdr.type;
-    foo2->_hdr.type            = foo2->hdr.type;
-    foo2->_hdr.key = foo2->hdr.key;
-
-    PPE_DBG("length=%lu\n",foo->hdr.length);
-    PPE_DBG("length=%lu\n",foo2->hdr.length);
-
-    foo2->p3_ni->nal->send( foo2->p3_ni, 
-                        &foo2->nal_msg_data,
-                        foo2,            // lib_data
+    nal_ctx2->p3_ni->nal->send( nal_ctx2->p3_ni, 
+                        &nal_ctx2->nal_msg_data,
+                        nal_ctx2,            // lib_data
                         dst,
-                        (lib_mem_t*) &foo2->_hdr,
-                        sizeof(foo2->_hdr),
-                        &foo2->iovec,    // dst_iov
+                        (lib_mem_t*) &nal_ctx2->hdr,
+                        sizeof(nal_ctx2->hdr),
+                        &nal_ctx2->iovec,    // dst_iov
                         1,              // iovlen
                         0,              // offset
-                        foo2->u.me.mlength,   // len
+                        nal_ctx2->u.me.mlength,   // len
                         NULL            // addrkey
                     ); 
     return 0;
 }
 
-
-static inline int lib_me_finalize( foo_t* foo )
+static inline int deliver_me_events( nal_ctx_t *nal_ctx )
 {
-    ptl_ppe_me_t *ppe_me = foo->u.me.ppe_me;
-
-    PPE_DBG("hdr type %d\n", foo->hdr.type);
-
-    if ( ( foo->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
-        if ( ! ( foo->hdr.type & HDR_TYPE_ACKFLAG )  ) {
-            reply( foo );
-            return 0;
-        }
-    }
-
-    uintptr_t start = (foo->iovec.iov_base - foo->u.me.ppe_me->xpmem_ptr->data);
-    start += (uintptr_t)foo->u.me.ppe_me->visible.start;
+    ptl_ppe_me_t *ppe_me = nal_ctx->u.me.ppe_me;
+    uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.me.ppe_me->xpmem_ptr->data);
+    start += (uintptr_t)nal_ctx->u.me.ppe_me->visible.start;
     
+    PPE_DBG("\n");
     --ppe_me->ref_cnt;
-    PtlInternalAnnounceMEDelivery( foo, 
-                                    foo->u.me.ppe_pt->EQ, 
+    PtlInternalAnnounceMEDelivery( nal_ctx, 
+                                    nal_ctx->u.me.ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
-                                    foo->u.me.mlength,
+                                    nal_ctx->u.me.mlength,
                                     start,
                                     ppe_me->ptl_list, 
-                                    &foo->u.me.ppe_me->Qentry, //appendME_t
-                                    &foo->hdr,
+                                    &nal_ctx->u.me.ppe_me->Qentry, //appendME_t
+                                    &nal_ctx->hdr,
                                     (ptl_handle_me_t)
                                             ppe_me->Qentry.me_handle.a);
-
     return 0;
 }
 
-static inline int lib_le_finalize( foo_t* foo )
+static inline int finalize_me_recv( nal_ctx_t* nal_ctx )
 {
-    //ptl_ppe_le_t *ppe_le = foo->u.le.ppe_le;
+    PPE_DBG("\n");
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
+        send_ack( nal_ctx );
+    } else {
+        deliver_me_events( nal_ctx );
+        if ( nal_ctx->hdr.ack_req == PTL_ACK_REQ ) {
+            send_ack( nal_ctx );
+        }
+    }
+    return 0;
+}
+static inline int finalize_me_send( nal_ctx_t* nal_ctx )
+{
+    PPE_DBG("\n");
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
+        deliver_me_events( nal_ctx );
+    } else {
+    }
+    return 0;
+}
+
+
+// we can get here for:
+//    PUT recv completion
+//    GET recv completion
+//    PUT-ACK sent completion
+//    GET-REPLY sent completion
+static inline int finalize_me( nal_ctx_t* nal_ctx )
+{
+    PPE_DBG("hdr type %#x\n", nal_ctx->hdr.type );
+
+    if ( ! ( nal_ctx->hdr.type & HDR_TYPE_ACKFLAG ) ) {
+        return finalize_me_recv( nal_ctx );
+    } else {
+        return finalize_me_send( nal_ctx );
+    } 
+}
+
+
+static inline int finalize_le( nal_ctx_t* nal_ctx )
+{
+    //ptl_ppe_le_t *ppe_le = nal_ctx->u.le.ppe_le;
     PPE_DBG("\n");
 
 #if 0
@@ -309,21 +354,23 @@ static inline int lib_le_finalize( foo_t* foo )
 }
 
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
-
 {
-    foo_t *foo = lib_msg_data;
+    nal_ctx_t *nal_ctx = lib_msg_data;
 
-    switch( foo->type ) 
+    switch( nal_ctx->type ) 
     {
       case ME_CTX:
-        lib_me_finalize( foo );
+        finalize_me( nal_ctx );
         break;
+
       case LE_CTX:
-        lib_le_finalize( foo );
+        finalize_le( nal_ctx );
         break;
+
       case MD_CTX:
-        lib_md_finalize( foo );
+        finalize_md( nal_ctx );
         break;
+
       case DROP_CTX:
         PPE_DBG("DROP_CTX\n");
         break;
@@ -332,5 +379,6 @@ int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
         assert(0);
     }
 
+    free( nal_ctx );
     return PTL_OK;
 }

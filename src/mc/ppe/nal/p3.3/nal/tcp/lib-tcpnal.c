@@ -2357,7 +2357,7 @@ void p3tcp_recvfrom(p3tcp_data_t *d, int fd)
 		 * is a good channel.  In the meantime, we'll drop bytes
 		 * as told by lib_parse().
 		 */
-		if (lib_parse(msg->hdr,
+		if (lib_parse( chan->rnid, msg->hdr,
 			      p3tcp_msg_id(msg), d->type, &m) == PTL_OK)
 			return;
 		else
