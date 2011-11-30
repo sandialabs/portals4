@@ -24,6 +24,7 @@
 		PtlGetId;
 		PtlGetJid;
 		PtlGetMap;
+		PtlGetPhysId;
 		PtlGetUid;
 		PtlHandleIsEqual;
 		PtlInit;

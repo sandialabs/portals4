@@ -12,7 +12,7 @@ int ompi_rt_init(struct node_info *info)
 
 	if (info->ni_handle != PTL_INVALID_HANDLE) {
 		if (!info->desired_map_ptr) {
-			info->desired_map_ptr = libtest_get_mapping();
+			info->desired_map_ptr = libtest_get_mapping(info->ni_handle);
 			if (!info->desired_map_ptr) {
 				errs ++;
 			}

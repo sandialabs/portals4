@@ -62,7 +62,7 @@ int main(int   argc,
                         NULL, NULL, &ni_logical));
 
     CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
-                              libtest_get_mapping()));
+                              libtest_get_mapping(ni_logical)));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     CHECK_RETURNVAL(PtlEQAlloc(ni_logical, 100, &pt_eq_handle));

@@ -49,7 +49,7 @@ int main(int   argc,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
 
     CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, 
-                              libtest_get_mapping()));
+                              libtest_get_mapping(ni_logical)));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,

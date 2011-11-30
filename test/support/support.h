@@ -50,7 +50,7 @@ int libtest_fini(void);
 
 
 /*
- * libtest_get_mapping(void)
+ * libtest_get_mapping(ptl_handle_ni_t ni_h)
  * 
  * Returns:
  *  non-NULL - physical address for every rank in job
@@ -60,7 +60,7 @@ int libtest_fini(void);
  *  Mapping will be a static buffer; should not be freed by
  *  the caller.
  */
-ptl_process_t* libtest_get_mapping(void);
+ptl_process_t* libtest_get_mapping(ptl_handle_ni_t ni_h);
 
 
 /*

@@ -833,6 +833,27 @@ int PtlGetUid(ptl_handle_ni_t ni_handle,
  */
 int PtlGetId(ptl_handle_ni_t ni_handle,
              ptl_process_t  *id);
+/*!
+ * @addtogroup PI Process Identification
+ * @{
+ * @fn PtlGetPhysId(ptl_handle_ni_t     ni_handle,
+ *                  ptl_process_t*      id)
+ * @brief Get the identifier for the current process.
+ * @details Retrieves the process identifier of the calling process.
+ * @param[in] ni_handle A network interface handle.
+ * @param[out] id       On successful return, this location will hold the
+ *                      identifier for the calling process.
+ * @note Note that process identifiers and ranks are dependent on the network
+ *      interface(s). In particular, if a node has multiple interfaces, it may
+ *      have multiple process identifiers and multiple ranks.
+ * @retval PTL_OK           Indicates success.
+ * @retval PTL_NO_INIT      Indicates that the portals API has not been
+ *                          successfully initialized.
+ * @retval PTL_ARG_INVALID  Indicates that \a ni_handle is not a valid network
+ *                          interface handle
+ */
+int PtlGetPhysId(ptl_handle_ni_t ni_handle,
+                 ptl_process_t  *id);
 /*! @} */
 /**********************
 * Memory Descriptors *
