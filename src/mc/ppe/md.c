@@ -24,7 +24,7 @@ md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
     ppe_md->xpmem_ptr = ppe_xpmem_attach( &client->xpmem_segments,
                                     cmd->md.start, cmd->md.length );
 
-    // should we return a failure or assert?
+    // MJL: should we return a failure or assert?
     assert( ppe_md->xpmem_ptr );
 
     return 0;
