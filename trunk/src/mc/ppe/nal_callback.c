@@ -127,7 +127,7 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
 
 
         int md_index = ack_ctx.md_h.s.code;
-        // MJL do we use a ref count and keep the md around until acks come back
+        // MJL: do we use a ref count and keep the md around until acks come back
         // or do we use a inuse flag and drop the ack if the md was free'd
         if (  ! ( md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
             PPE_DBG("md index %d is out of range\n", md_index );
@@ -295,7 +295,7 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
     nal_ctx_t *nal_ctx2 = malloc( sizeof(*nal_ctx2) );
     assert(nal_ctx2);
 
-    // MJL do we need to copy the whole thing?
+    // MJL: do we need to copy the whole thing?
     *nal_ctx2 = *nal_ctx;
 
     PPE_DBG("ack_ctx_key=%d\n",nal_ctx->hdr.ack_ctx_key);
@@ -334,13 +334,21 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 
 static inline int deliver_me_events( nal_ctx_t *nal_ctx )
 {
+    ptl_shared_me_t *shared_me;
     ptl_ppe_me_t *ppe_me = nal_ctx->u.me.ppe_me;
     uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.me.ppe_me->xpmem_ptr->data);
     start += (uintptr_t)nal_ctx->u.me.ppe_me->visible.start;
 
-    --ppe_me->ref_cnt;
-    
     PPE_DBG("\n");
+
+    // MJL: range check? 
+    shared_me = nal_ctx->ppe_ni->client_me + ppe_me->Qentry.me_handle.s.code;
+    --ppe_me->ref_cnt;
+
+    if ( nal_ctx->u.me.ppe_me->Qentry.unlinked ) {
+        PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.me_handle.a);
+        shared_me->in_use = 0;
+    }
     PtlInternalAnnounceMEDelivery( nal_ctx, 
                                     nal_ctx->u.me.ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
