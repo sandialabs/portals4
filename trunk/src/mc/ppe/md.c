@@ -38,6 +38,7 @@ md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
     ptl_ppe_md_t       *ppe_md; 
     ptl_ppe_client_t   *client;
     ptl_internal_md_t  *shared_md; 
+    ptl_cqe_t          *send_entry;
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->md_handle.s.selector,
                     cmd->md_handle.s.code, cmd->md_handle.s.ni );
@@ -47,14 +48,36 @@ md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
     ppe_md    = ni->ppe_md + cmd->md_handle.s.code;
     shared_md = ni->client_md + cmd->md_handle.s.code;
 
-    // how do we handle a md that's involved in a xfer 
-    assert( ppe_md->ref_cnt == 0 );
+    ret = ptl_cq_entry_alloc(ctx->cq_h, &send_entry);
+    if (ret < 0) {
+        perror("ptl_cq_entry_alloc");
+        return -1;
+    }
 
-    // why do we hang when this is called
-    ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_md->xpmem_ptr );
-    assert( 0 == ret );  
+    send_entry->base.type = PTLACK;
+    send_entry->ack.retval_ptr = cmd->retval_ptr;
 
-    shared_md->in_use = 0;
+    if ( ppe_md->ref_cnt == 0 ) {
+
+        if ( send_entry->ack.retval == PTL_OK ) {
+
+            ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_md->xpmem_ptr );
+            assert( 0 == ret );
+
+            // MJL: we could get rid of the shared key because this is a blocking
+            // call and the engine doesn't unlink MD's 
+            shared_md->in_use = 0;
+        }
+    } else {
+        send_entry->ack.retval = PTL_IN_USE;
+    }
+
+    ret = ptl_cq_entry_send(ctx->cq_h, cmd->base.remote_id,
+                            send_entry, sizeof(ptl_cqe_t));
+    if (ret < 0) {
+        perror("ptl_cq_entry_send");
+        return -1;
+    }
 
     return 0;
 }

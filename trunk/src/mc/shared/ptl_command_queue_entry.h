@@ -143,6 +143,7 @@ typedef struct {
 typedef struct {
     ptl_cqe_base_t base;
     ptl_internal_handle_converter_t     md_handle; 
+    int           *retval_ptr;
 } ptl_cqe_mdrelease_t;
 
 typedef struct {
