@@ -15,6 +15,8 @@
 #include "nal/p3.3/include/p3lib/p3lib.h"
 #include "nal/p3.3/include/p3lib/p3lib_support.h"
 
+#include "ppe/data_movement.h"
+
 
 static int process_ack( ptl_ppe_ni_t *, nal_ctx_t *,ptl_hdr_t * );
 
@@ -101,34 +103,60 @@ drop_message:
 
 static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr )
 {
-    ptl_size_t rlen = hdr->length, mlen = 0;;
-    PPE_DBG("md_index=%i\n", hdr->md_index);
+    ptl_size_t rlen = hdr->length, mlen = 0, offset = 0;
+    ack_ctx_t ack_ctx;
 
-    // do we use a ref count and keep the md around until acks come back
-    // or do we use a inuse flag and drop the ack if the md was free'd
-    if (  ! ( hdr->md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
-        PPE_DBG("md index %d is out of range\n", hdr->md_index );
+    PPE_DBG("type=%#x ack_ctx_key=%d\n",hdr->type, hdr->ack_ctx_key);
+
+    if ( hdr->ack_ctx_key == 0 ) {
+        PPE_DBG("invalid ack_ctx_key %d\n", hdr->ack_ctx_key );
         return 1; 
     }
-    nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ hdr->md_index ]; 
-    nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ hdr->md_index ]; 
+
+    if ( hdr->ack_ctx_key < 0 ) {
+        free_ack_ctx( hdr->ack_ctx_key * 1, &ack_ctx );
+        return 1;
+    } else {
+        free_ack_ctx( hdr->ack_ctx_key, &ack_ctx );
+    }
 
     nal_ctx->type = MD_CTX;
-    nal_ctx->iovec.iov_base = nal_ctx->u.md.ppe_md->xpmem_ptr->data;
-    nal_ctx->iovec.iov_len = nal_ctx->u.md.ppe_md->xpmem_ptr->length;
+    nal_ctx->u.md.user_ptr = ack_ctx.user_ptr;
 
-    if ( ( hdr->type & HDR_TYPE_PUT ) == HDR_TYPE_GET ) {
-        // we need the Get local offset
-        // we need to do bounds checking    
+    if ( ( hdr->type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
+
+
+        int md_index = ack_ctx.md_h.s.code;
+        // MJL do we use a ref count and keep the md around until acks come back
+        // or do we use a inuse flag and drop the ack if the md was free'd
+        if (  ! ( md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
+            PPE_DBG("md index %d is out of range\n", md_index );
+            return 1; 
+        }
+        nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ md_index ]; 
+
+        offset = ack_ctx.local_offset;
+
+        if ( offset + mlen > nal_ctx->u.md.ppe_md->xpmem_ptr->length ) {
+            PPE_DBG("local_offest=%lu mlen=%lu me_length=%lu\n",  offset,
+                    mlen, nal_ctx->u.md.ppe_md->xpmem_ptr->length );
+            return 1;
+        }
         mlen =  hdr->length;
+
+        nal_ctx->iovec.iov_base = nal_ctx->u.md.ppe_md->xpmem_ptr->data;
+        nal_ctx->iovec.iov_len = nal_ctx->u.md.ppe_md->xpmem_ptr->length;
+        PPE_DBG("iov_base=%p\n",nal_ctx->iovec.iov_base);
     }
+
+    PPE_DBG("mlen=%lu rlen=%lu offset=%lu\n",mlen,rlen,offset);
 
     nal_ctx->p3_ni->nal->recv( nal_ctx->p3_ni, 
                         nal_ctx->nal_msg_data,
                         nal_ctx,            // lib_data
                         &nal_ctx->iovec,    // dst_iov
                         1,              // iovlen
-                        0,              // offset
+                        offset,              // offset
                         mlen,           // mlen
                         rlen,           // rlen
                         NULL            // addrkey
@@ -141,10 +169,8 @@ static inline int finalize_md_send( nal_ctx_t* nal_ctx )
     ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
     PPE_DBG("\n");
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
-        // if no pending ACK 
-        if ( nal_ctx->hdr.ack_req == PTL_NO_ACK_REQ) {
-            --ppe_md->ref_cnt;
-        }
+
+        --ppe_md->ref_cnt;
 
         if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
             if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
@@ -161,7 +187,7 @@ static inline int finalize_md_send( nal_ctx_t* nal_ctx )
         if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
             if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
                 PtlInternalEQPushESEND( nal_ctx->ppe_ni, ppe_md->eq_h.a,
-                            nal_ctx->u.md.local_offset,
+                            nal_ctx->hdr.length,
                             nal_ctx->hdr.dest_offset,
                             nal_ctx->u.md.user_ptr );
             }
@@ -175,7 +201,11 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
     ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
     PPE_DBG("\n");
 
-    --ppe_md->ref_cnt;
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
+        --ppe_md->ref_cnt;
+    }
+    PPE_DBG("\n");
+
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ( ppe_md->options & PTL_MD_EVENT_CT_ACK ) || 
              ( ppe_md->options & PTL_MD_EVENT_CT_REPLY ) ) {
@@ -188,6 +218,7 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
         }
     }
 
+    PPE_DBG("\n");
     if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
         if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
             ptl_event_t event;
@@ -197,14 +228,15 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
             } else {
                 event.type = PTL_EVENT_REPLY;
             }
-PPE_DBG("%p\n",nal_ctx->u.md.user_ptr);
             event.mlength       = nal_ctx->hdr.length;
             event.remote_offset = nal_ctx->hdr.dest_offset;
-            event.user_ptr      = nal_ctx->hdr.user_ptr;
+            event.user_ptr      = nal_ctx->u.md.user_ptr;
             event.ni_fail_type  = PTL_NI_OK;
             PtlInternalEQPush( nal_ctx->ppe_ni, ppe_md->eq_h.a, &event );
+    PPE_DBG("\n");
         }
     }
+    PPE_DBG("\n");
 
     return 0;
 }
@@ -220,14 +252,14 @@ static inline int finalize_md( nal_ctx_t* nal_ctx )
     }
 }
 
-// local is were PUT data goes and where GET data comes from
+// "local_data" is were PUT data goes and where GET data comes from
 int lib_me_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
                         const  ptl_internal_header_t *hdr  )
 {
     int mlen = 0, rlen = 0;
 
-    PPE_DBG("type=%#xaddr=%p mlength=%lu rlength=%lu\n", hdr->type,
+    PPE_DBG("type=%#x addr=%p mlength=%lu rlength=%lu\n", hdr->type,
                                 local_data, nbytes, hdr->length); 
 
     nal_ctx->type = ME_CTX;
@@ -260,25 +292,31 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 {
     ptl_process_id_t dst;
 
-    PPE_DBG("\n");
     nal_ctx_t *nal_ctx2 = malloc( sizeof(*nal_ctx2) );
     assert(nal_ctx2);
 
-    // do we need to copy the whole thing?
+    // MJL do we need to copy the whole thing?
     *nal_ctx2 = *nal_ctx;
 
-PPE_DBG("%p\n",nal_ctx->u.md.user_ptr);
-PPE_DBG("%p\n",nal_ctx2->u.md.user_ptr);
-
+    PPE_DBG("ack_ctx_key=%d\n",nal_ctx->hdr.ack_ctx_key);
     nal_ctx2->hdr.type      |= HDR_TYPE_ACKFLAG;
     nal_ctx2->hdr.src.pid    = nal_ctx->hdr.target.pid;
     nal_ctx2->hdr.target.pid = nal_ctx->hdr.src.pid;
+    nal_ctx2->hdr.length     = nal_ctx->u.me.mlength;
+
+    PPE_DBG("%#x\n",nal_ctx->u.me.ppe_me->visible.options);
+    if ( nal_ctx->u.me.ppe_me->visible.options & PTL_ME_ACK_DISABLE ) {
+        // a negative key tells the initiator to free the ack_ctx without 
+        // generating events 
+        nal_ctx2->hdr.ack_ctx_key *= -1;
+        PPE_DBG("ME disable ack %#x\n",nal_ctx2->hdr.type);
+    }
 
     dst.nid = nal_ctx->src_nid;
     dst.pid = nal_ctx2->hdr.src.pid;
 
     PPE_DBG("send %#x to %#x,%d\n", nal_ctx2->hdr.type, dst.nid, dst.pid );
-
+    
     nal_ctx2->p3_ni->nal->send( nal_ctx2->p3_ni, 
                         &nal_ctx2->nal_msg_data,
                         nal_ctx2,            // lib_data
@@ -299,9 +337,10 @@ static inline int deliver_me_events( nal_ctx_t *nal_ctx )
     ptl_ppe_me_t *ppe_me = nal_ctx->u.me.ppe_me;
     uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.me.ppe_me->xpmem_ptr->data);
     start += (uintptr_t)nal_ctx->u.me.ppe_me->visible.start;
+
+    --ppe_me->ref_cnt;
     
     PPE_DBG("\n");
-    --ppe_me->ref_cnt;
     PtlInternalAnnounceMEDelivery( nal_ctx, 
                                     nal_ctx->u.me.ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
@@ -318,11 +357,12 @@ static inline int deliver_me_events( nal_ctx_t *nal_ctx )
 
 static inline int finalize_me_recv( nal_ctx_t* nal_ctx )
 {
-    PPE_DBG("\n");
+    PPE_DBG("hdr.type=%#x\n",nal_ctx->hdr.type);
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
         send_ack( nal_ctx );
     } else {
         deliver_me_events( nal_ctx );
+
         if ( nal_ctx->hdr.ack_req == PTL_ACK_REQ ) {
             send_ack( nal_ctx );
         }
