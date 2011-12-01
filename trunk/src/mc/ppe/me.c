@@ -54,6 +54,7 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
 
     send_entry->base.type = PTLACK;
     send_entry->ack.retval_ptr = cmd->retval_ptr;
+
     if ( ppe_me->ref_cnt == 0 ) {
         send_entry->ack.retval = _PtlMEUnlink( ppe_ni, cmd->me_handle.a );
         

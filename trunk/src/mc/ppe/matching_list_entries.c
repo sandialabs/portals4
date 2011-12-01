@@ -189,7 +189,8 @@ static void *PtlInternalPerformOverflowDelivery(nal_ctx_t *nal_ctx,
         if (mlength > 0) {
             ++(Qentry->messages);      // safe because the PT is locked
             retval = lstart + Qentry->local_offset;
-            memcpy(retval, hdr->data, mlength);
+            lib_me_recv( nal_ctx, retval, mlength, hdr);
+//            memcpy(retval, hdr->data, mlength);
             Qentry->local_offset += mlength;
         }
     } else {
@@ -1275,7 +1276,7 @@ check_lengths:
 #else           /* ifdef USE_TRANSFER_ENGINE */
                 PtlInternalPerformDelivery(nal_ctx, hdr->type,
                                            effective_start,
-                                           hdr->data,
+                                           0,//hdr->data,
                                            fragment_mlength,
                                            hdr);
 #endif          /* ifdef USE_TRANSFER_ENGINE */

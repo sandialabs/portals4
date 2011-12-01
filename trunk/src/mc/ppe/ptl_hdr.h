@@ -26,16 +26,12 @@ typedef union {
 typedef struct {
     void *next;
     ptl_match_bits_t match_bits;
-    ptl_hdr_data_t   hdr_data;                // not used by GETs
+    ptl_hdr_data_t   hdr_data;    // not used by GETs
     ptl_hdr_app_id_t src;
     ptl_hdr_app_id_t target;
-    // how many bits is a md index?
-    uint16_t         md_index;
 
-    // if we need hdr space
-    // we don't need to bounce this for acks/replys if we create/pass a key that
-    // is used to lookup the md_index and user_ptr
-    void* user_ptr;
+    int8_t          ack_ctx_key;
+
     void           *entry;
     
     uint32_t        remaining;
@@ -48,7 +44,7 @@ typedef struct {
     unsigned char                   ni               : 2;
     uint8_t                         atomic_operation : 5;
     uint8_t                         atomic_datatype  : 4;
-    uint8_t                         data[];
+//    uint8_t                         data[];
 } ptl_internal_header_t;
 
 typedef ptl_internal_header_t ptl_hdr_t;
