@@ -6,6 +6,7 @@
 #define PTL_NI_H
 
 struct queue;
+struct conn;
 
 /*
  * rank_entry_t
@@ -20,7 +21,7 @@ typedef struct rank_entry {
 #ifdef USE_XRC
 	uint32_t		remote_xrc_srq_num;
 #endif
-	conn_t			connect;
+	struct conn			*connect;
 } entry_t;
 
 /* Used by SHMEM to communicate the PIDs between the local ranks for a
@@ -57,6 +58,8 @@ typedef struct ni {
 	ptl_size_t		num_recv_bytes;
 	ptl_size_t		num_recv_errs;
 	ptl_size_t		num_recv_drops;
+
+	int shutting_down;
 
 	/* Serialize atomic operations on this NI. */
 	pthread_mutex_t		atomic_mutex;
@@ -115,15 +118,16 @@ typedef struct ni {
 	} shmem;
 
 	/* object allocation pools */
-	pool_t			mr_pool;
-	pool_t			md_pool;
-	pool_t			me_pool;
-	pool_t			le_pool;
-	pool_t			eq_pool;
-	pool_t			ct_pool;
-	pool_t			xt_pool;
-	pool_t			buf_pool;
-	pool_t			sbuf_pool;
+	pool_t mr_pool;
+	pool_t md_pool;
+	pool_t me_pool;
+	pool_t le_pool;
+	pool_t eq_pool;
+	pool_t ct_pool;
+	pool_t xt_pool;
+	pool_t buf_pool;
+	pool_t sbuf_pool;
+	pool_t conn_pool;
 
 	/* Connection mappings. */
 	union {
@@ -240,7 +244,7 @@ static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
 	}
 }
 
-int init_connect(ni_t *ni, conn_t *connect);
+int init_connect(ni_t *ni, struct conn *connect);
 
 /* convert ni option flags to a 2 bit type */
 static inline int ni_options_to_type(unsigned int options)

@@ -1438,6 +1438,8 @@ static void tgt_cleanup_2(buf_t *buf)
 		le_put(buf->le);
 		buf->le = NULL;
 	}
+
+	conn_put(buf->conn);
 }
 
 /**
