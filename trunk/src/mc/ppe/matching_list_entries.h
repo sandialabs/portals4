@@ -26,6 +26,5 @@ void PtlInternalAnnounceMEDelivery( nal_ctx_t *,
                                const uint_fast64_t               mlength,
                                const uintptr_t                   start,
                                const ptl_internal_listtype_t     foundin,
-                               ptl_internal_appendME_t *restrict priority_entry,
-                               ptl_internal_header_t *restrict   hdr,
-                               const ptl_handle_me_t             me_handle);
+                               void *const                       use_ptr,
+                               ptl_internal_header_t *restrict   hdr );

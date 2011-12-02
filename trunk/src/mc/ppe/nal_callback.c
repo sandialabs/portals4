@@ -5,6 +5,7 @@
 #include "ppe/ct.h"
 #include "ppe/eq.h"
 #include "ppe/matching_list_entries.h"
+#include "ppe/list_entries.h"
 
 #include "shared/ptl_internal_handles.h"
 
@@ -17,6 +18,12 @@
 
 #include "ppe/data_movement.h"
 
+int lib_le_recv( nal_ctx_t *nal_ctx,
+                void *const local_data, const size_t nbytes,
+                        const  ptl_internal_header_t *hdr  );
+int lib_me_recv( nal_ctx_t *nal_ctx,
+                void *const local_data, const size_t nbytes,
+                        const  ptl_internal_header_t *hdr  );
 
 static int process_ack( ptl_ppe_ni_t *, nal_ctx_t *,ptl_hdr_t * );
 
@@ -72,13 +79,24 @@ int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
         goto drop_message;
     }
 
-    nal_ctx->u.me.ppe_pt = nal_ctx->ppe_ni->ppe_pt + hdr->pt_index;
-    if ( ! nal_ctx->u.me.ppe_pt->status ) {
+    ptl_ppe_pt_t *ppe_pt = nal_ctx->ppe_ni->ppe_pt + hdr->pt_index;
+    if ( ! ppe_pt->status ) {
         PPE_DBG("PT %d not allocated\n",hdr->pt_index);
         goto drop_message;
     }
 
-    PtlInternalMEDeliver( nal_ctx, nal_ctx->u.me.ppe_pt, &nal_ctx->hdr );
+    switch( hdr->ni ) {
+      case 0:
+      case 2:
+        PtlInternalMEDeliver( nal_ctx, ppe_pt, &nal_ctx->hdr );
+        break;
+
+      case 1:
+      case 3:
+        PtlInternalLEDeliver( nal_ctx, ppe_pt, &nal_ctx->hdr );
+        break;
+    }
+    PPE_DBG("\n");
 
     return 0;
 
@@ -252,6 +270,16 @@ static inline int finalize_md( nal_ctx_t* nal_ctx )
     }
 }
 
+
+int lib_le_recv( nal_ctx_t *nal_ctx,
+                void *const local_data, const size_t nbytes,
+                        const  ptl_internal_header_t *hdr  )
+{
+    PPE_DBG("\n");
+    assert(0);
+    return 0;
+}
+
 // "local_data" is were PUT data goes and where GET data comes from
 int lib_me_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
@@ -349,17 +377,17 @@ static inline int deliver_me_events( nal_ctx_t *nal_ctx )
         PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.me_handle.a);
         shared_me->in_use = 0;
     }
+    ptl_ppe_pt_t *ppe_pt = nal_ctx->ppe_ni->ppe_pt + 
+                                nal_ctx->u.me.ppe_me->pt_index;
     PtlInternalAnnounceMEDelivery( nal_ctx, 
-                                    nal_ctx->u.me.ppe_pt->EQ, 
+                                    ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
                                     nal_ctx->u.me.mlength,
                                     start,
                                     ppe_me->ptl_list, 
-                                    &nal_ctx->u.me.ppe_me->Qentry, //appendME_t
-                                    &nal_ctx->hdr,
-                                    (ptl_handle_me_t)
-                                            ppe_me->Qentry.me_handle.a);
+                                    nal_ctx->u.me.ppe_me->Qentry.user_ptr, 
+                                    &nal_ctx->hdr );
     return 0;
 }
 
@@ -407,20 +435,8 @@ static inline int finalize_me( nal_ctx_t* nal_ctx )
 
 static inline int finalize_le( nal_ctx_t* nal_ctx )
 {
-    //ptl_ppe_le_t *ppe_le = nal_ctx->u.le.ppe_le;
-    PPE_DBG("\n");
-
-#if 0
-    --ppe_le->ref_cnt;
-
-    if ( ppe_le->ct_h.a != PTL_CT_NONE ) {
-        if ( ppe_le->options & PTL_ME_EVENT_CT_COMM ) {
-            ct_inc( dm_ctx->ppe_ni, ppe_le->ct_h.s.code, 1 );
-        }
-    }
-#endif
-
-    return 0;
+    PPE_DBG("hdr type %#x\n", nal_ctx->hdr.type );
+    assert(0);
 }
 
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)

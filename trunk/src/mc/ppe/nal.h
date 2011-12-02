@@ -24,9 +24,9 @@ struct nal_ctx_t {
         struct {
             ptl_size_t      mlength;
             ptl_ppe_me_t   *ppe_me;
-            ptl_ppe_pt_t   *ppe_pt;
         } me;
         struct {
+            ptl_size_t      mlength;
             ptl_ppe_le_t   *ppe_le;
         } le;
     } u;

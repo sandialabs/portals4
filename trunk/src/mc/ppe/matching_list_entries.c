@@ -128,9 +128,8 @@ static void PtlInternalPerformDeliveryXFE(const uint_fast8_t                    
                                           ptl_internal_header_t *const restrict hdr,
                                           uint8_t *const restrict               op);
 #endif /* ifdef USE_TRANSFER_ENGINE */
-#if 0
-static void PtlInternalAnnounceMEDelivery(ptl_ppe_ni_t*,
-                                          const ptl_handle_eq_t             eq_handle,
+#if 0 
+static void PtlInternalAnnounceMEDelivery( const ptl_handle_eq_t             eq_handle,
                                           const ptl_handle_ct_t             ct_handle,
                                           const unsigned int                options,
                                           const uint_fast64_t               mlength,
@@ -486,7 +485,7 @@ permission_violation:
                             if ((tEQ != PTL_EQ_NONE) ||
                                 (me->ct_handle != PTL_CT_NONE)) {
                                 __sync_synchronize();
-                                PtlInternalAnnounceMEDelivery(tEQ,
+                                PtlInternalAnnounceMEDelivery(nal_ctx,tEQ,
                                                               me->ct_handle,
                                                               me->options,
                                                               mlength,
@@ -535,8 +534,7 @@ permission_violation:
                                                           (uintptr_t)cur->buffered_data,
                                                           OVERFLOW,
                                                           Qentry,
-                                                          &(cur->hdr),
-                                                          me_hc.a);
+                                                          &(cur->hdr) );
                         }
                         if (PtlInternalMarkMEReusable(me_hc.a) != PTL_OK) {
                             abort();
@@ -1595,9 +1593,8 @@ void PtlInternalAnnounceMEDelivery( nal_ctx_t *nal_ctx,
                                           const uint_fast64_t               mlength,
                                           const uintptr_t                   start,
                                           const ptl_internal_listtype_t     foundin,
-                                          ptl_internal_appendME_t *restrict priority_entry,
-                                          ptl_internal_header_t *restrict   hdr,
-                                          const ptl_handle_me_t             me_handle)
+                                          void *const                       user_ptr,
+                                          ptl_internal_header_t *restrict   hdr )
 {                                      /*{{{ */
     int ct_announce = ct_handle != PTL_CT_NONE;
 
@@ -1624,7 +1621,7 @@ void PtlInternalAnnounceMEDelivery( nal_ctx_t *nal_ctx,
         if (((foundin == OVERFLOW) && ((options & PTL_ME_EVENT_OVER_DISABLE) == 0)) ||
             ((foundin == PRIORITY) && ((options & (PTL_ME_EVENT_COMM_DISABLE | PTL_ME_EVENT_SUCCESS_DISABLE)) == 0))) {
             ptl_internal_event_t e;
-            PTL_INTERNAL_INIT_TEVENT(e, hdr, priority_entry->user_ptr);
+            PTL_INTERNAL_INIT_TEVENT(e, hdr, user_ptr);
             if (foundin == OVERFLOW) {
                 switch (e.type) {
                     case PTL_EVENT_PUT:
