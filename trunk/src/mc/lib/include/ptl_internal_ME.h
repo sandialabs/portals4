@@ -1,10 +1,9 @@
 #ifndef PTL_INTERNAL_ME_H
 #define PTL_INTERNAL_ME_H
 
-struct ptl_shared_me_t {
-    char    in_use;
-};
-typedef struct ptl_shared_me_t ptl_shared_me_t;
+#include "ptl_internal_LE.h"
+
+typedef struct ptl_shared_le_t ptl_shared_me_t;
 
 #endif
 

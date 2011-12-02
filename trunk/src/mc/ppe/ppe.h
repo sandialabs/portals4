@@ -73,12 +73,17 @@ typedef struct ptl_match_stuff_t ptl_match_stuff_t;
 
 struct ptl_ppe_le_t {
     ptl_internal_appendLE_t Qentry;
+    // MJL: hack alert
+    // visible and visible_match_stuff must be contiguous because
+    // PtlInternalWalkMatchList does some pointer magic to get the address 
+    // of visible which it thinks is a ptl_me_t*
     ptl_le_t                visible;
     ptl_match_stuff_t       visible_match_stuff;
     ptl_list_t              ptl_list;
     ptl_pt_index_t          pt_index;
 
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
+    ptl_shared_le_t        *shared_le;
     int                     ref_cnt;
 };
 typedef struct ptl_ppe_le_t ptl_ppe_le_t;

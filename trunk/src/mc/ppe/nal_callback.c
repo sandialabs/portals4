@@ -349,20 +349,17 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 
 static inline int deliver_le_events( nal_ctx_t *nal_ctx )
 {
-    ptl_shared_me_t *shared_me;
     ptl_ppe_me_t *ppe_me = nal_ctx->u.le.ppe_le;
     uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.le.ppe_le->xpmem_ptr->data);
     start += (uintptr_t)nal_ctx->u.le.ppe_le->visible.start;
 
     PPE_DBG("\n");
 
-    // MJL: range check? 
-    shared_me = nal_ctx->ppe_ni->client_me + ppe_me->Qentry.handle.s.code;
     --ppe_me->ref_cnt;
 
     if ( nal_ctx->u.le.ppe_le->Qentry.unlinked ) {
         PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.handle.a);
-        shared_me->in_use = 0;
+        nal_ctx->u.le.ppe_le->shared_le->in_use = 0;
     }
     ptl_ppe_pt_t *ppe_pt = nal_ctx->ppe_ni->ppe_pt + 
                                 nal_ctx->u.le.ppe_le->pt_index;

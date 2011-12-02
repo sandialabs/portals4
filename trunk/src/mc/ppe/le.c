@@ -14,6 +14,7 @@ le_append_impl( ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd )
     client = &ctx->clients[ cmd->base.remote_id ];
     ppe_ni = &client->nis[ cmd->le_handle.s.ni ];
     ppe_le = ppe_ni->ppe_le + cmd->le_handle.s.code;
+    ppe_le->shared_le = ppe_ni->client_le + cmd->le_handle.s.code;
 
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->le_handle.s.selector,
                     cmd->le_handle.s.code, cmd->le_handle.s.ni );
@@ -32,7 +33,6 @@ int
 le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
 {
     int              ret;
-    ptl_shared_le_t *shared_le;
     ptl_ppe_le_t     *ppe_le;
     ptl_ppe_ni_t     *ppe_ni;
     ptl_ppe_client_t *client;
@@ -44,7 +44,6 @@ le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
     client = &ctx->clients[ cmd->base.remote_id ];
     ppe_ni = &client->nis[ cmd->le_handle.s.ni ];
     ppe_le = ppe_ni->ppe_le + cmd->le_handle.s.code;
-    shared_le = ppe_ni->client_le + cmd->le_handle.s.code;
 
     ret = ptl_cq_entry_alloc(ctx->cq_h, &send_entry);
     if (ret < 0) {
@@ -65,7 +64,7 @@ le_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd )
 
             // this is a blocking call do we need to set this?
             // who does the ppe_xpmem_detach and clears this flag for auto unlink
-            shared_le->in_use = 0;
+            ppe_le->shared_le->in_use = 0;
         }
     } else {
         send_entry->ack.retval = PTL_IN_USE;
