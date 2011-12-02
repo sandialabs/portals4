@@ -5,7 +5,7 @@
 #include "ppe/ppe.h"
 #include "ppe/ptl_hdr.h"
 
-enum { MD_CTX = 1, ME_CTX, LE_CTX, DROP_CTX };
+enum { MD_CTX = 1, LE_CTX, DROP_CTX };
 
 struct nal_ctx_t {
     int                   type;
@@ -21,10 +21,6 @@ struct nal_ctx_t {
             void           *user_ptr;
             ptl_ppe_md_t   *ppe_md;
         } md;
-        struct {
-            ptl_size_t      mlength;
-            ptl_ppe_me_t   *ppe_me;
-        } me;
         struct {
             ptl_size_t      mlength;
             ptl_ppe_le_t   *ppe_le;
