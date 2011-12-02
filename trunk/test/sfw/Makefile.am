@@ -79,8 +79,10 @@ make_test_move_SOURCES = data.c make_test_move.c
 make_test_swap_SOURCES = data.c make_test_swap.c
 make_test_atomic_SOURCES = data.c make_test_atomic.c
 
+if TEST_RUNTIME_MPI
 check_SCRIPTS = runxml1.sh runxml2.sh
 TESTS = $(check_SCRIPTS)
+endif
 
 runxml1.sh:
 if TEST_RUNTIME_MPI
