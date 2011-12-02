@@ -720,6 +720,8 @@ static void cleanup(buf_t *buf)
 		buf_put(buf->recv_buf);
 		buf->recv_buf = NULL;
 	}
+
+	conn_put(buf->conn);
 }
 
 /*

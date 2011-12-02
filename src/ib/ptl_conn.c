@@ -29,21 +29,27 @@
  * @param[in] conn the conn_t to init
  * @param[in] ni the ni that owns it
  */
-void conn_init(conn_t *conn, ni_t *ni)
+int conn_init(void *arg, void *parm)
 {
-	memset(conn, 0, sizeof(*conn));
+	conn_t *conn = arg;
+
+	OBJ_NEW(conn);
 
 	pthread_mutex_init(&conn->mutex, NULL);
 	pthread_spin_init(&conn->wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 
-	conn->ni = ni;
 	conn->state = CONN_STATE_DISCONNECTED;
 	conn->transport = transport_rdma;
+	conn->rdma.cm_id = NULL;
 
 	INIT_LIST_HEAD(&conn->buf_list);
+#ifdef USE_XRC
 	INIT_LIST_HEAD(&conn->list);
+#endif
 
 	atomic_set(&conn->rdma.completion_threshold, 0);
+
+	return PTL_OK;
 }
 
 /**
@@ -51,8 +57,19 @@ void conn_init(conn_t *conn, ni_t *ni)
  *
  * @param[in] conn
  */
-void conn_fini(conn_t *conn)
+void conn_fini(void *arg)
 {
+	conn_t *conn = arg;
+
+	if (conn->transport.type == CONN_TYPE_RDMA) {
+		if (conn->rdma.cm_id) {
+			if (conn->rdma.cm_id->qp)
+				rdma_destroy_qp(conn->rdma.cm_id);
+			rdma_destroy_id(conn->rdma.cm_id);
+			conn->rdma.cm_id = NULL;
+		}
+	}
+
 	pthread_mutex_destroy(&conn->mutex);
 	pthread_spin_destroy(&conn->wait_list_lock);
 }
@@ -72,14 +89,19 @@ void conn_fini(conn_t *conn)
  * @return 0 if a = b
  * @return < 0 if a < b
  */
-static int compare_id(const void *a, const void *b)
+static int compare_id(const ptl_process_t *id1, const ptl_process_t *id2)
+{
+	return (id1->phys.nid != id2->phys.nid) ?
+			(id1->phys.nid - id2->phys.nid) :
+			(id1->phys.pid - id2->phys.pid);
+}
+
+static int compare_conn_id(const void *a, const void *b)
 {
 	const conn_t *c1 = a;
 	const conn_t *c2 = b;
 
-	return (c1->id.phys.nid != c2->id.phys.nid) ?
-			(c1->id.phys.nid - c2->id.phys.nid) :
-			(c1->id.phys.pid - c2->id.phys.pid);
+	return compare_id(&c1->id, &c2->id);
 }
 
 /**
@@ -96,12 +118,15 @@ static int compare_id(const void *a, const void *b)
  * @param[in] ni the NI from which to get the connection
  * @param[in] id the process ID to lookup
  *
- * @return the conn_t
+ * @return the conn_t and takes a reference on it
  */
 conn_t *get_conn(ni_t *ni, ptl_process_t id)
 {
 	conn_t *conn;
 	void **ret;
+
+	if (ni->shutting_down)
+		return NULL;
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		if (unlikely(id.rank >= ni->logical.map_size)) {
@@ -110,24 +135,27 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 			return NULL;
 		}
 
-		conn = &ni->logical.rank_table[id.rank].connect;
+		conn = ni->logical.rank_table[id.rank].connect;
+		conn_get(conn);
 	} else {
+		conn_t conn_search;
+
 		pthread_spin_lock(&ni->physical.lock);
 
 		/* lookup in binary tree */
-		ret = tfind(&id, &ni->physical.tree, compare_id);
+		conn_search.id = id;
+		ret = tfind(&conn_search, &ni->physical.tree, compare_conn_id);
 		if (ret) {
 			conn = *ret;
+			conn_get(conn);
 		} else {
 			/* Not found. Allocate and insert. */
-			conn = malloc(sizeof(*conn));
-			if (!conn) {
+			if (conn_alloc(ni, &conn)) {
 				pthread_spin_unlock(&ni->physical.lock);
 				WARN();
 				return NULL;
 			}
 
-			conn_init(conn, ni);
 			conn->id = id;
 
 			/* Get the IP address from the NID. */
@@ -136,37 +164,51 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 			conn->sin.sin_port = pid_to_port(id.phys.pid);
 
 			/* insert new conn into binary tree */
-			ret = tsearch(conn, &ni->physical.tree, compare_id);
+			ret = tsearch(conn, &ni->physical.tree, compare_conn_id);
 			if (!ret) {
 				WARN();
-				free(conn);
+				conn_put(conn);
 				conn = NULL;
+			} else {
+				conn_get(conn);
 			}
 		}
-		
+
 		pthread_spin_unlock(&ni->physical.lock);
 	}
 
 	return conn;
 }
 
-static void destroy_conn(conn_t *conn)
-{
-	if (conn->transport.type == CONN_TYPE_RDMA) {
-		if (conn->rdma.cm_id) {
-			rdma_disconnect(conn->rdma.cm_id);
-			rdma_destroy_qp(conn->rdma.cm_id);
-			rdma_destroy_id(conn->rdma.cm_id);
-		}
-	}
-}
-
-static void destroy_physical_conn(void *data)
+static void destroy_conn(void *data)
 {
 	conn_t *conn = data;
-		
-	destroy_conn(conn);
-	free(conn);
+
+	pthread_mutex_lock(&conn->mutex);
+
+	if (conn->transport.type == CONN_TYPE_RDMA) {
+		switch(conn->state) {
+		case CONN_STATE_CONNECTING:
+		case CONN_STATE_CONNECTED:
+		case CONN_STATE_RESOLVING_ROUTE:
+			conn->state = CONN_STATE_DISCONNECTING;
+			rdma_disconnect(conn->rdma.cm_id);
+			break;
+
+		case CONN_STATE_RESOLVING_ADDR:
+			conn->state = CONN_STATE_DISCONNECTING;
+			break;
+
+		case CONN_STATE_DISCONNECTING:
+			abort();			/* not possible */
+			break;
+
+ 		case CONN_STATE_DISCONNECTED:
+			break;
+		}
+	}
+
+	pthread_mutex_unlock(&conn->mutex);
 }
 
 /**
@@ -175,15 +217,25 @@ static void destroy_physical_conn(void *data)
 void destroy_conns(ni_t *ni)
 {
 	if (ni->options & PTL_NI_LOGICAL) {
-		unsigned int i;
+		int i;
+		const int map_size = ni->logical.map_size;
 
 		/* Destroy active connections. */
-		for (i=0; i<ni->logical.map_size; i++) {
-			conn_t *conn = &ni->logical.rank_table[i].connect;
-
+		for (i = 0; i < map_size; i++) {
+			conn_t *conn = ni->logical.rank_table[i].connect;
 			destroy_conn(conn);
 		}
 
+#if 0
+		/* We could wait for all connections to coalesce, however this
+		 * leads to some minute-long timeout in some tests. */
+		for (i = 0; i < map_size; i++) {
+			conn_t *conn = ni->logical.rank_table[i].connect;
+			while (conn->state != CONN_STATE_DISCONNECTED) {
+				usleep(1000);
+			}
+		}
+#endif
 #ifdef USE_XRC
 		/* Destroy passive connections. */
 		while(!list_empty(&ni->logical.connect_list)) {
@@ -191,11 +243,10 @@ void destroy_conns(ni_t *ni)
 
 			list_del(&conn->list);
 			destroy_conn(conn);
-			free(conn);
 		}
 #endif
 	} else {
-		tdestroy(ni->physical.tree, destroy_physical_conn);
+		tdestroy(ni->physical.tree, destroy_conn);
 	}
 }
 
@@ -207,9 +258,18 @@ void destroy_conns(ni_t *ni)
  */
 int init_connect(ni_t *ni, conn_t *conn)
 {
+	struct rdma_cm_id *cm_id;
+
+	assert(conn->rdma.cm_id == NULL);
+
 	if (debug)
 		printf("Initiate connect with %x:%d\n",
 			   conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+
+	if (ni->shutting_down)
+		return PTL_FAIL;
+
+	conn_get(conn);
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
 
@@ -217,19 +277,22 @@ int init_connect(ni_t *ni, conn_t *conn)
 	conn->rdma.retry_resolve_route = 3;
 	conn->rdma.retry_connect = 3;
 
-	if (rdma_create_id(ni->iface->cm_channel, &conn->rdma.cm_id,
+	if (rdma_create_id(ni->iface->cm_channel, &cm_id,
 			   conn, RDMA_PS_TCP)) {
 		WARN();
+		conn_put(conn);
 		return PTL_FAIL;
 	}
 
 	conn->state = CONN_STATE_RESOLVING_ADDR;
 
-	if (rdma_resolve_addr(conn->rdma.cm_id, NULL,
+	if (rdma_resolve_addr(cm_id, NULL,
 			      (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 		conn->state = CONN_STATE_DISCONNECTED;
+		rdma_destroy_id(cm_id);
+		conn_put(conn);
 		return PTL_FAIL;
 	}
 
@@ -300,9 +363,8 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		return PTL_FAIL;
 	}
 
-	conn->rdma.cm_id = event->id;
+	assert(conn->rdma.cm_id == NULL);
 	event->id->context = conn;
-	get_qp_param(conn);
 
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
@@ -348,13 +410,10 @@ static int accept_connection_request_logical(ni_t *ni,
 	/* Accept the connection and give back our SRQ
 	 * number. This will be a passive connection (ie, nothing
 	 * will be sent from that side. */
-	conn = malloc(sizeof(*conn));
-	if (!conn) {
+	if (conn_alloc(ni, &conn)) {
 		WARN();
 		return PTL_NO_SPACE;
 	}
-
-	conn_init(conn, ni);
 
 	pthread_mutex_lock(&ni->logical.lock);
 	list_add_tail(&conn->list, &ni->logical.connect_list);
@@ -369,7 +428,7 @@ static int accept_connection_request_logical(ni_t *ni,
 		pthread_mutex_unlock(&ni->logical.lock);
 		pthread_mutex_unlock(&conn->mutex);
 
-		free(conn);
+		conn_put(conn);
 	} else {
 		pthread_mutex_unlock(&conn->mutex);
 	}
@@ -515,6 +574,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 
 	conn = get_conn(ni, priv->src_id);
 	if (!conn) {
+		WARN();
 		rej.reason = REJECT_REASON_ERROR;
 		goto reject;
 	}
@@ -599,18 +659,18 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
 		pthread_mutex_lock(&conn->mutex);
 
-		if (conn->rdma.cm_id == event->id) {
-			if (rdma_resolve_route(conn->rdma.cm_id, get_param(PTL_RDMA_TIMEOUT))) {
-				//todo 
-				abort();
-			} else {
-				conn->state = CONN_STATE_RESOLVING_ROUTE;
-			}
-		} else {
-			/* That connection attempt got overriden by a higher
-			 * priority connect request from the same node we were
-			 * trying to connect to. See process_connect_request(). Do
-			 * nothing. */	
+		if (conn->state != CONN_STATE_RESOLVING_ADDR) {
+			conn_put(conn);
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
+
+		assert(conn->rdma.cm_id == NULL);
+
+		conn->state = CONN_STATE_RESOLVING_ROUTE;
+		if (rdma_resolve_route(event->id, get_param(PTL_RDMA_TIMEOUT))) {
+			conn->state = CONN_STATE_DISCONNECTED;
+			conn_put(conn);
 		}
 
 		pthread_mutex_unlock(&conn->mutex);
@@ -626,7 +686,15 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		conn_param.private_data		= &priv;
 		conn_param.private_data_len	= sizeof(priv);
 
-		ni = conn->ni;
+		pthread_mutex_lock(&conn->mutex);
+
+		if (conn->state != CONN_STATE_RESOLVING_ROUTE) {
+			conn_put(conn);
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
+
+		ni = conn->obj.obj_ni;
 
 		/* Create the QP. */
 		memset(&init, 0, sizeof(init));
@@ -653,30 +721,22 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		}
 		priv.options			= ni->options;
 
-		pthread_mutex_lock(&conn->mutex);
+		assert(conn->rdma.cm_id == NULL);
 
-		if (conn->rdma.cm_id == event->id) {
-			if (rdma_create_qp(conn->rdma.cm_id, ni->iface->pd, &init)) {
-				WARN();
-				//todo
-				abort();
-				//err = PTL_FAIL;
-				//goto err1;
-			}
+		if (rdma_create_qp(event->id, ni->iface->pd, &init)) {
+			WARN();
+			abort();
+			conn->state = CONN_STATE_DISCONNECTED;
+			conn_put(conn);
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
 
-			get_qp_param(conn);
-
-			if (rdma_connect(conn->rdma.cm_id, &conn_param)) {
-				//todo 
-				abort();
-			} else {
-				conn->state = CONN_STATE_CONNECTING;
-			}
-		}  else {
-			/* That connection attempt got overriden by a higher
-			 * priority connect request from the same node we were
-			 * trying to connect to. See process_connect_request(). Do
-			 * nothing. */	
+		if (rdma_connect(event->id, &conn_param)) {
+			//todo
+			abort();
+		} else {
+			conn->state = CONN_STATE_CONNECTING;
 		}
 
 		pthread_mutex_unlock(&conn->mutex);
@@ -686,16 +746,33 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	case RDMA_CM_EVENT_ESTABLISHED: {
 		pthread_mutex_lock(&conn->mutex);
 
+		ni = conn->obj.obj_ni;
+
+		if (ni->rdma.self_cm_id == event->id) {
+			/* Self connection. Let the initiator side finish the
+			 * connection. */
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
+
+		assert(conn->rdma.cm_id == NULL);
+		conn->rdma.cm_id = event->id;
+
+		if (conn->state == CONN_STATE_DISCONNECTING) {
+			pthread_mutex_unlock(&conn->mutex);
+			break;
+		}
+
 		conn->state = CONN_STATE_CONNECTED;
 
-		ni = conn->ni;
+		get_qp_param(conn);
 
+#ifdef USE_XRC
 		if ((ni->options & PTL_NI_LOGICAL) &&
 			(event->param.conn.private_data_len)) {
 			/* If we have private data, it's that side asked for the
 			 * connection (as opposed to accepting an incoming
 			 * request). */
-#ifdef USE_XRC
 			const struct cm_priv_accept *priv_accept = event->param.conn.private_data;
 			struct rank_entry *entry = container_of(conn, struct rank_entry, connect);
 
@@ -703,7 +780,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 			assert(entry->remote_xrc_srq_num == 0);
 
 			entry->remote_xrc_srq_num = priv_accept->xrc_srq_num;
-#endif
 
 			/* Flush the posted requests/replies. */
 			while(!list_empty(&conn->list)) {
@@ -720,8 +796,9 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 				pthread_mutex_lock(&conn->mutex);
 			}
 		}
-
+#endif
 		flush_pending_xi_xt(conn);
+
 		pthread_mutex_unlock(&conn->mutex);
 	}
 		break;
@@ -809,14 +886,15 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		break;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
+		conn->state = CONN_STATE_DISCONNECTED;
+		conn_put(conn);
 		break;
 
 	default:
 		ptl_warn("Got unexpected CM event: %d\n", event->event);
 		break;
-	};
+	}
 
 	rdma_ack_cm_event(event);
-
-	return;
 }

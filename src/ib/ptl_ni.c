@@ -108,32 +108,6 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 	}
 }
 
-static void ni_rcqp_stop(ni_t *ni)
-{
-	int i;
-
-	if (ni->options & PTL_NI_LOGICAL) {
-		const int map_size = ni->logical.map_size;
-
-		for (i = 0; i < map_size; i++) {
-			conn_t *connect = &ni->logical.rank_table[i].connect;
-		
-			pthread_mutex_lock(&connect->mutex);
-			if (connect->state != CONN_STATE_DISCONNECTED
-#ifdef USE_XRC
-				&& connect->state != CONN_STATE_XRC_CONNECTED
-#endif
-				) {
-				if (connect->transport.type == CONN_TYPE_RDMA)
-					rdma_disconnect(connect->rdma.cm_id);
-			}
-			pthread_mutex_unlock(&connect->mutex);
-		}
-	} else {
-		// todo: physical walk and disconnect
-	}
-}
-
 static int ni_rcqp_cleanup(ni_t *ni)
 {
 	struct ibv_wc wc;
@@ -221,7 +195,6 @@ static int init_ib_srq(ni_t *ni)
 
 static int cleanup_ib(ni_t *ni)
 {
-	destroy_conns(ni);
 	if (ni->rdma.self_cm_id) {
 		rdma_destroy_qp(ni->rdma.self_cm_id);
 		rdma_destroy_id(ni->rdma.self_cm_id);
@@ -428,6 +401,16 @@ static int init_pools(ni_t *ni)
 		return err;
 	}
 
+	ni->conn_pool.init = conn_init;
+	ni->conn_pool.fini = conn_fini;
+	err = pool_init(&ni->conn_pool, "conn", sizeof(conn_t),
+					POOL_BUF, (obj_t *)ni);
+	if (err) {
+		WARN();
+		return err;
+	}
+
+
 	return PTL_OK;
 }
 
@@ -454,15 +437,18 @@ static int create_tables(ni_t *ni)
 
 	for (i = 0; i < map_size; i++) {
 		entry = &ni->logical.rank_table[i];
-		conn = &entry->connect;
+
+		assert(entry->connect == NULL);
 
 		entry->rank = i;
 		entry->nid = mapping[i].phys.nid;
 		entry->pid = mapping[i].phys.pid;
 
-		conn_init(conn, ni);
+		if (conn_alloc(ni, &entry->connect))
+			return PTL_FAIL;
 
 		/* convert nid/pid to ipv4 address */
+		conn = entry->connect;
 		conn->sin.sin_family = AF_INET;
 		conn->sin.sin_addr.s_addr = nid_to_addr(entry->nid);
 		conn->sin.sin_port = pid_to_port(entry->pid);
@@ -987,10 +973,8 @@ static void interrupt_cts(ni_t *ni)
 
 static void ni_cleanup(ni_t *ni)
 {
-	interrupt_cts(ni);
-	cleanup_mr_tree(ni);
-
-	ni_rcqp_stop(ni);
+	ni->shutting_down = 1;
+	__sync_synchronize();
 
 	/* Stop the progress thread. */
 	if (ni->has_catcher) {
@@ -998,6 +982,11 @@ static void ni_cleanup(ni_t *ni)
 		pthread_join(ni->catcher, NULL);
 		ni->has_catcher = 0;
 	}
+
+	destroy_conns(ni);
+
+	interrupt_cts(ni);
+	cleanup_mr_tree(ni);
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 
@@ -1018,6 +1007,7 @@ static void ni_cleanup(ni_t *ni)
 		}
 	}
 
+	pool_fini(&ni->conn_pool);
 	pool_fini(&ni->buf_pool);
 	pool_fini(&ni->xt_pool);
 	pool_fini(&ni->ct_pool);
@@ -1057,8 +1047,8 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	if (atomic_dec(&ni->ref_cnt) <= 0) {
-		__iface_remove_ni(ni);
 		ni_cleanup(ni);
+		__iface_remove_ni(ni);
 		ni_put(ni);
 	}
 	pthread_mutex_unlock(&gbl->gbl_mutex);

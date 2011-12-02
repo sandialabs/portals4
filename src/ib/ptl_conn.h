@@ -14,6 +14,7 @@ struct buf;
 
 enum conn_state {
 	CONN_STATE_DISCONNECTED,
+	CONN_STATE_DISCONNECTING,
 	CONN_STATE_RESOLVING_ADDR,
 	CONN_STATE_RESOLVING_ROUTE,
 	CONN_STATE_CONNECTING,
@@ -46,9 +47,11 @@ extern struct transport transport_shmem;
  * Per connection information.
  */
 struct conn {
+	/** base object */
+	obj_t			obj;
+
 	ptl_process_t		id;		/* dest nid/pid keep first */
 	pthread_mutex_t		mutex;
-	struct ni		*ni;
 	int			state;
 	struct sockaddr_in	sin;
 	struct list_head	buf_list;
@@ -79,13 +82,62 @@ struct conn {
 	};
 
 	/* logical NI only */
-	struct list_head	list;
 #ifdef USE_XRC
+	struct list_head	list;
 	struct conn		*main_connect;
 #endif
 };
 
 typedef struct conn conn_t;
+
+/**
+ * Allocate a connection from the connect pool.
+ *
+ * @param ni from which to allocate the conn
+ * @param conn_p pointer to return value
+ *
+ * @return status
+ */
+static inline int conn_alloc(struct ni *ni, conn_t **conn_p)
+{
+	int err;
+	obj_t *obj;
+
+	err = obj_alloc(&ni->conn_pool, &obj);
+	if (err) {
+		*conn_p = NULL;
+		return err;
+	}
+
+	*conn_p = container_of(obj, conn_t, obj);
+
+	return PTL_OK;
+}
+
+/**
+ * Take a reference to a conn.
+ *
+ * @param conn on which to take a reference
+ */
+static inline void conn_get(conn_t *conn)
+{
+	obj_get(&conn->obj);
+}
+
+/**
+ * Drop a reference to a conn
+ *
+ * If the last reference has been dropped the conn
+ * will be freed.
+ *
+ * @param conn on which to drop a reference
+ *
+ * @return status
+ */
+static inline int conn_put(conn_t *conn)
+{
+	return obj_put(&conn->obj);
+}
 
 /* RDMA CM private data */
 struct cm_priv_request {
@@ -120,9 +172,9 @@ conn_t *get_conn(struct ni *ni, ptl_process_t id);
 
 void destroy_conns(struct ni *ni);
 
-void conn_init(conn_t *conn, struct ni *ni);
+int conn_init(void *arg, void *parm);
 
-void conn_fini(conn_t *conn);
+void conn_fini(void *arg);
 
 int init_connect(struct ni *ni, conn_t *conn);
 
