@@ -46,25 +46,6 @@ TESTS = test_init \
 	test_ME_oversize_put \
 	test_ME_unexpected_put
 
-large_atomic_tests = \
-	test_LE_oversize_atomic \
-	test_ME_oversize_atomic \
-	test_LE_oversize_fetchatomic \
-	test_ME_oversize_fetchatomic \
-	test_LE_oversize_swap \
-	test_ME_oversize_swap
-
-if BACKEND_IMPL_SHMEM
-if USE_TRANSFER_ENGINE
-TESTS += $(large_atomic_tests)
-endif
-endif
-
-if BACKEND_IMPL_IB
-# These tests require atomic limits that cannot be supported by IB
-#TESTS += $(large_atomic_tests)
-endif
-
 BENCHMARKS =
 
 AM_CPPFLAGS += -I$(top_srcdir)/include
@@ -194,27 +175,3 @@ test_triggered_ctset_unordered_DEPENDENCIES = $(DEPENDENCIES_TEST)
 test_ME_unexpected_put_SOURCES = test_unexpected_put.c
 test_ME_unexpected_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 test_ME_unexpected_put_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_LE_oversize_atomic_SOURCES = test_oversize_atomic.c
-test_LE_oversize_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
-test_LE_oversize_atomic_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_ME_oversize_atomic_SOURCES = test_oversize_atomic.c
-test_ME_oversize_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
-test_ME_oversize_atomic_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_LE_oversize_fetchatomic_SOURCES = test_oversize_fetchatomic.c
-test_LE_oversize_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
-test_LE_oversize_fetchatomic_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_ME_oversize_fetchatomic_SOURCES = test_oversize_fetchatomic.c
-test_ME_oversize_fetchatomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
-test_ME_oversize_fetchatomic_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_LE_oversize_swap_SOURCES = test_oversize_swap.c
-test_LE_oversize_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
-test_LE_oversize_swap_DEPENDENCIES = $(DEPENDENCIES_TEST)
-
-test_ME_oversize_swap_SOURCES = test_oversize_swap.c
-test_ME_oversize_swap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
-test_ME_oversize_swap_DEPENDENCIES = $(DEPENDENCIES_TEST)
