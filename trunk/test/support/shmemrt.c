@@ -57,7 +57,7 @@ libtest_fini(void)
 }
 
 ptl_process_t*
-libtest_get_mapping(void)
+libtest_get_mapping(ptl_handle_ni_t ni_h)
 {
     return mapping;
 }
