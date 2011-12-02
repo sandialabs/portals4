@@ -21,9 +21,6 @@
 int lib_le_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
                         const  ptl_internal_header_t *hdr  );
-int lib_me_recv( nal_ctx_t *nal_ctx,
-                void *const local_data, const size_t nbytes,
-                        const  ptl_internal_header_t *hdr  );
 
 static int process_ack( ptl_ppe_ni_t *, nal_ctx_t *,ptl_hdr_t * );
 
@@ -270,18 +267,8 @@ static inline int finalize_md( nal_ctx_t* nal_ctx )
     }
 }
 
-
-int lib_le_recv( nal_ctx_t *nal_ctx,
-                void *const local_data, const size_t nbytes,
-                        const  ptl_internal_header_t *hdr  )
-{
-    PPE_DBG("\n");
-    assert(0);
-    return 0;
-}
-
 // "local_data" is were PUT data goes and where GET data comes from
-int lib_me_recv( nal_ctx_t *nal_ctx,
+int lib_le_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
                         const  ptl_internal_header_t *hdr  )
 {
@@ -290,15 +277,15 @@ int lib_me_recv( nal_ctx_t *nal_ctx,
     PPE_DBG("type=%#x addr=%p mlength=%lu rlength=%lu\n", hdr->type,
                                 local_data, nbytes, hdr->length); 
 
-    nal_ctx->type = ME_CTX;
-    nal_ctx->u.me.ppe_me->ref_cnt++;
-    nal_ctx->u.me.mlength   = nbytes;
-    nal_ctx->iovec.iov_base = nal_ctx->u.me.ppe_me->xpmem_ptr->data + 
-            ( local_data - nal_ctx->u.me.ppe_me->visible.start);
-    nal_ctx->iovec.iov_len  = nal_ctx->u.me.ppe_me->visible.length;
+    nal_ctx->type = LE_CTX;
+    nal_ctx->u.le.ppe_le->ref_cnt++;
+    nal_ctx->u.le.mlength   = nbytes;
+    nal_ctx->iovec.iov_base = nal_ctx->u.le.ppe_le->xpmem_ptr->data + 
+            ( local_data - nal_ctx->u.le.ppe_le->visible.start);
+    nal_ctx->iovec.iov_len  = nal_ctx->u.le.ppe_le->visible.length;
 
     if ( ( hdr->type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
-        mlen = nal_ctx->u.me.mlength;
+        mlen = nal_ctx->u.le.mlength;
         rlen = hdr->length;
     }
 
@@ -330,10 +317,10 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
     nal_ctx2->hdr.type      |= HDR_TYPE_ACKFLAG;
     nal_ctx2->hdr.src.pid    = nal_ctx->hdr.target.pid;
     nal_ctx2->hdr.target.pid = nal_ctx->hdr.src.pid;
-    nal_ctx2->hdr.length     = nal_ctx->u.me.mlength;
+    nal_ctx2->hdr.length     = nal_ctx->u.le.mlength;
 
-    PPE_DBG("%#x\n",nal_ctx->u.me.ppe_me->visible.options);
-    if ( nal_ctx->u.me.ppe_me->visible.options & PTL_ME_ACK_DISABLE ) {
+    PPE_DBG("%#x\n",nal_ctx->u.le.ppe_le->visible.options);
+    if ( nal_ctx->u.le.ppe_le->visible.options & PTL_ME_ACK_DISABLE ) {
         // a negative key tells the initiator to free the ack_ctx without 
         // generating events 
         nal_ctx2->hdr.ack_ctx_key *= -1;
@@ -354,50 +341,50 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
                         &nal_ctx2->iovec,    // dst_iov
                         1,              // iovlen
                         0,              // offset
-                        nal_ctx2->u.me.mlength,   // len
+                        nal_ctx2->u.le.mlength,   // len
                         NULL            // addrkey
                     ); 
     return 0;
 }
 
-static inline int deliver_me_events( nal_ctx_t *nal_ctx )
+static inline int deliver_le_events( nal_ctx_t *nal_ctx )
 {
     ptl_shared_me_t *shared_me;
-    ptl_ppe_me_t *ppe_me = nal_ctx->u.me.ppe_me;
-    uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.me.ppe_me->xpmem_ptr->data);
-    start += (uintptr_t)nal_ctx->u.me.ppe_me->visible.start;
+    ptl_ppe_me_t *ppe_me = nal_ctx->u.le.ppe_le;
+    uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.le.ppe_le->xpmem_ptr->data);
+    start += (uintptr_t)nal_ctx->u.le.ppe_le->visible.start;
 
     PPE_DBG("\n");
 
     // MJL: range check? 
-    shared_me = nal_ctx->ppe_ni->client_me + ppe_me->Qentry.me_handle.s.code;
+    shared_me = nal_ctx->ppe_ni->client_me + ppe_me->Qentry.handle.s.code;
     --ppe_me->ref_cnt;
 
-    if ( nal_ctx->u.me.ppe_me->Qentry.unlinked ) {
-        PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.me_handle.a);
+    if ( nal_ctx->u.le.ppe_le->Qentry.unlinked ) {
+        PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.handle.a);
         shared_me->in_use = 0;
     }
     ptl_ppe_pt_t *ppe_pt = nal_ctx->ppe_ni->ppe_pt + 
-                                nal_ctx->u.me.ppe_me->pt_index;
+                                nal_ctx->u.le.ppe_le->pt_index;
     PtlInternalAnnounceMEDelivery( nal_ctx, 
                                     ppe_pt->EQ, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
-                                    nal_ctx->u.me.mlength,
+                                    nal_ctx->u.le.mlength,
                                     start,
                                     ppe_me->ptl_list, 
-                                    nal_ctx->u.me.ppe_me->Qentry.user_ptr, 
+                                    nal_ctx->u.le.ppe_le->Qentry.user_ptr, 
                                     &nal_ctx->hdr );
     return 0;
 }
 
-static inline int finalize_me_recv( nal_ctx_t* nal_ctx )
+static inline int finalize_le_recv( nal_ctx_t* nal_ctx )
 {
     PPE_DBG("hdr.type=%#x\n",nal_ctx->hdr.type);
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
         send_ack( nal_ctx );
     } else {
-        deliver_me_events( nal_ctx );
+        deliver_le_events( nal_ctx );
 
         if ( nal_ctx->hdr.ack_req == PTL_ACK_REQ ) {
             send_ack( nal_ctx );
@@ -405,11 +392,11 @@ static inline int finalize_me_recv( nal_ctx_t* nal_ctx )
     }
     return 0;
 }
-static inline int finalize_me_send( nal_ctx_t* nal_ctx )
+static inline int finalize_le_send( nal_ctx_t* nal_ctx )
 {
     PPE_DBG("\n");
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
-        deliver_me_events( nal_ctx );
+        deliver_le_events( nal_ctx );
     } else {
     }
     return 0;
@@ -421,22 +408,15 @@ static inline int finalize_me_send( nal_ctx_t* nal_ctx )
 //    GET recv completion
 //    PUT-ACK sent completion
 //    GET-REPLY sent completion
-static inline int finalize_me( nal_ctx_t* nal_ctx )
+static inline int finalize_le( nal_ctx_t* nal_ctx )
 {
     PPE_DBG("hdr type %#x\n", nal_ctx->hdr.type );
 
     if ( ! ( nal_ctx->hdr.type & HDR_TYPE_ACKFLAG ) ) {
-        return finalize_me_recv( nal_ctx );
+        return finalize_le_recv( nal_ctx );
     } else {
-        return finalize_me_send( nal_ctx );
+        return finalize_le_send( nal_ctx );
     } 
-}
-
-
-static inline int finalize_le( nal_ctx_t* nal_ctx )
-{
-    PPE_DBG("hdr type %#x\n", nal_ctx->hdr.type );
-    assert(0);
 }
 
 int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
@@ -445,10 +425,6 @@ int lib_finalize(lib_ni_t *ni, void *lib_msg_data, ptl_ni_fail_t fail_type)
 
     switch( nal_ctx->type ) 
     {
-      case ME_CTX:
-        finalize_me( nal_ctx );
-        break;
-
       case LE_CTX:
         finalize_le( nal_ctx );
         break;

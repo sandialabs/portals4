@@ -32,8 +32,23 @@ enum DM_return_codes {
     DM_OP_VIOLATION
 };
 
+static inline void copyME( ptl_ppe_le_t *ppe_le, ptl_me_t *me )
+{
+    ppe_le->visible.start     = me->start; 
+    ppe_le->visible.length    = me->length; 
+    ppe_le->visible.ct_handle = me->ct_handle; 
+    ppe_le->visible.uid       = me->uid;
+    ppe_le->visible.options   = me->options; 
 
-int lib_me_recv( nal_ctx_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
+    ppe_le->visible_match_stuff.match_id    = me->match_id;
+    ppe_le->visible_match_stuff.match_bits  = me->match_bits;
+    ppe_le->visible_match_stuff.ignore_bits = me->ignore_bits;
+    ppe_le->visible_match_stuff.min_free    = me->min_free;
+}
+
+
+
+int lib_le_recv( nal_ctx_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
 
 #define NO_ARG_VALIDATION
 
@@ -188,7 +203,7 @@ static void *PtlInternalPerformOverflowDelivery(nal_ctx_t *nal_ctx,
         if (mlength > 0) {
             ++(Qentry->messages);      // safe because the PT is locked
             retval = lstart + Qentry->local_offset;
-            lib_me_recv( nal_ctx, retval, mlength, hdr);
+            lib_le_recv( nal_ctx, retval, mlength, hdr);
 //            memcpy(retval, hdr->data, mlength);
             Qentry->local_offset += mlength;
         }
@@ -196,7 +211,7 @@ static void *PtlInternalPerformOverflowDelivery(nal_ctx_t *nal_ctx,
         assert(hdr->length + hdr->dest_offset <= llength);
         if (mlength > 0) {
             retval = lstart + hdr->dest_offset;
-            lib_me_recv( nal_ctx, retval, mlength, hdr);
+            lib_le_recv( nal_ctx, retval, mlength, hdr);
 //            memcpy(retval, hdr->data, mlength);
         }
     }
@@ -340,13 +355,13 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
         return PTL_NO_SPACE;
     }
 #endif
-    ppe_ni->ppe_me[me_hc.s.code].visible = *me;
+    copyME( &ppe_ni->ppe_me[me_hc.s.code], me );
     ppe_ni->ppe_me[me_hc.s.code].pt_index = pt_index;
     ppe_ni->ppe_me[me_hc.s.code].ptl_list = ptl_list;
     Qentry = &ppe_ni->ppe_me[me_hc.s.code].Qentry;
 
     Qentry->user_ptr         = user_ptr;
-    Qentry->me_handle        = me_hc;
+    Qentry->handle           = me_hc;
     Qentry->local_offset     = 0;
     Qentry->messages         = 0;
     Qentry->announced        = 0;
@@ -555,7 +570,7 @@ permission_violation:
                             }
 #ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS
                             ptl_internal_appendME_t *const restrict overflow_entry = (ptl_internal_appendME_t *)cur->unexpected_entry;
-                            ptl_internal_me_t                      *overflow_me    = &ppe_ni->ppe_me[overflow_entry->me_handle.s.code];
+                            ptl_internal_me_t                      *overflow_me    = &ppe_ni->ppe_me[overflow_entry->handle.s.code];
                             if ((overflow_me->visible.options & PTL_ME_EVENT_UNLINK_DISABLE) == 0) {
                                 ptl_internal_event_t e;
                                 if (overflow_entry != NULL) {
@@ -1066,7 +1081,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx,
                 goto permission_violation;
             }
         }
-        nal_ctx->u.me.ppe_me = (ptl_ppe_me_t*) entry;
+        nal_ctx->u.le.ppe_le = (ptl_ppe_me_t*) entry;
         switch (hdr->type & HDR_TYPE_BASICMASK) {
             case HDR_TYPE_PUT:
             case HDR_TYPE_ATOMIC:
@@ -1555,7 +1570,7 @@ static void PtlInternalPerformDelivery( nal_ctx_t *nal_ctx,
 
     switch (type & HDR_TYPE_BASICMASK) {
         case HDR_TYPE_PUT:
-            lib_me_recv( nal_ctx, local_data, nbytes, hdr);
+            lib_le_recv( nal_ctx, local_data, nbytes, hdr);
     //        memcpy(local_data, message_data, nbytes);
             break;
         case HDR_TYPE_ATOMIC:
@@ -1567,7 +1582,7 @@ static void PtlInternalPerformDelivery( nal_ctx_t *nal_ctx,
                                      (ptl_datatype_t)hdr->atomic_datatype);
             break;
         case HDR_TYPE_GET:
-            lib_me_recv( nal_ctx, local_data, nbytes, hdr);
+            lib_le_recv( nal_ctx, local_data, nbytes, hdr);
      //       memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:

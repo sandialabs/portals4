@@ -49,36 +49,32 @@ typedef struct ptl_ppe_md_t ptl_ppe_md_t;
 
 typedef enum {PRIORITY, OVERFLOW} ptl_internal_listtype_t;
 
+// MJL: are the members of this struct order dependent?
 typedef struct {
     void                           *next;     // for nemesis
     void                           *user_ptr;
-    ptl_internal_handle_converter_t me_handle;
+    ptl_internal_handle_converter_t handle;
     size_t                          local_offset;
     size_t                          messages, announced;     // for knowing when to issue PTL_EVENT_FREE
     ptl_match_bits_t                dont_ignore_bits;
     uint_fast8_t                    unlinked;
-} ptl_internal_appendME_t;
-
-struct ptl_ppe_me_t {
-    ptl_internal_appendME_t Qentry;
-    ptl_me_t                visible;
-    ptl_list_t              ptl_list;
-    ptl_pt_index_t          pt_index;
-
-    ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
-    int                     ref_cnt;
-};
-typedef struct ptl_ppe_me_t ptl_ppe_me_t;
-
-typedef struct {
-    void                           *next;
-    void                           *user_ptr;
-    ptl_internal_handle_converter_t le_handle;
 } ptl_internal_appendLE_t;
+
+typedef ptl_internal_appendLE_t ptl_internal_appendME_t;
+
+
+struct ptl_match_stuff_t {
+    ptl_process_t    match_id;
+    ptl_match_bits_t match_bits;
+    ptl_match_bits_t ignore_bits;
+    ptl_size_t       min_free;
+};
+typedef struct ptl_match_stuff_t ptl_match_stuff_t;
 
 struct ptl_ppe_le_t {
     ptl_internal_appendLE_t Qentry;
     ptl_le_t                visible;
+    ptl_match_stuff_t       visible_match_stuff;
     ptl_list_t              ptl_list;
     ptl_pt_index_t          pt_index;
 
@@ -86,6 +82,8 @@ struct ptl_ppe_le_t {
     int                     ref_cnt;
 };
 typedef struct ptl_ppe_le_t ptl_ppe_le_t;
+
+typedef ptl_ppe_le_t ptl_ppe_me_t;
 
 struct ptl_ppe_pt_t {
     ptl_handle_eq_t         EQ;

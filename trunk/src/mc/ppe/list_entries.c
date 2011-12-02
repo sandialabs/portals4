@@ -268,7 +268,7 @@ _PtlLEAppend( ptl_ppe_ni_t *ppe_ni,
     Qentry = &ppe_ni->ppe_le[le_hc.s.code].Qentry;
 
     Qentry->user_ptr  = user_ptr;
-    Qentry->le_handle = le_hc;
+    Qentry->handle    = le_hc;
     //*le_handle        = leh.a;
     /* append to associated list */
     //assert(nit.tables[ni.s.ni] != NULL);
