@@ -59,7 +59,6 @@ typedef struct {
     uint_fast8_t                    unlinked;
 } ptl_internal_appendME_t;
 
-
 struct ptl_ppe_me_t {
     ptl_internal_appendME_t Qentry;
     ptl_me_t                visible;
@@ -71,9 +70,20 @@ struct ptl_ppe_me_t {
 };
 typedef struct ptl_ppe_me_t ptl_ppe_me_t;
 
+typedef struct {
+    void                           *next;
+    void                           *user_ptr;
+    ptl_internal_handle_converter_t le_handle;
+} ptl_internal_appendLE_t;
+
 struct ptl_ppe_le_t {
-    int                     ref_cnt;
+    ptl_internal_appendLE_t Qentry;
+    ptl_le_t                visible;
+    ptl_list_t              ptl_list;
+    ptl_pt_index_t          pt_index;
+
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr; // contains start, length 
+    int                     ref_cnt;
 };
 typedef struct ptl_ppe_le_t ptl_ppe_le_t;
 
@@ -91,6 +101,7 @@ struct ptl_ppe_pt_t {
 } ALIGNED (64);
 typedef struct ptl_ppe_pt_t ptl_ppe_pt_t;
 
+typedef ptl_ppe_le_t ptl_internal_le_t;
 typedef ptl_ppe_me_t ptl_internal_me_t;
 typedef ptl_ppe_pt_t ptl_table_entry_t;
 typedef ptl_event_t ptl_internal_event_t;
@@ -101,7 +112,7 @@ struct ptl_ppe_ni_t {
     void                *client_address;
     ptl_ppe_xpmem_ptr_t *client_ptr;
     ptl_sr_value_t      *client_status_registers;
-    ptl_internal_le_t   *client_le;
+    ptl_shared_le_t     *client_le;
     ptl_internal_md_t   *client_md;
     ptl_shared_me_t     *client_me;
     ptl_internal_ct_t   *client_ct;
