@@ -22,6 +22,7 @@ int eq_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_eqalloc_t *cmd );
 int eq_free_impl(struct ptl_ppe_t *ctx, ptl_cqe_eqfree_t *cmd );
 int md_bind_impl(struct ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd );
 int md_release_impl(struct ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd );
+int data_movement_impl(struct ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd );
 int put_impl(struct ptl_ppe_t *ctx, ptl_cqe_put_t *cmd );
 int get_impl(struct ptl_ppe_t *ctx, ptl_cqe_get_t *cmd );
 int pt_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_ptalloc_t *cmd );
