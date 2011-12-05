@@ -404,7 +404,7 @@ int PtlNIInit_shmem(ni_t *ni)
 		conn->state = CONN_STATE_CONNECTED;
 		conn->shmem.local_rank = i;
 
-		put_conn(conn);			/* from get_conn */
+		conn_put(conn);			/* from get_conn */
 	}
 
 	/* All ranks have mmaped the memory. Get rid of the file. */
