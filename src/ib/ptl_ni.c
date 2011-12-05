@@ -127,6 +127,9 @@ static int ni_rcqp_cleanup(ni_t *ni)
 
 		buf = (buf_t *)(uintptr_t)wc.wr_id;
 
+		if (!buf)
+			continue;
+
 		switch (buf->type) {
 		case BUF_SEND:
 			break;
