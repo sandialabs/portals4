@@ -23,6 +23,7 @@ struct nal_ctx_t {
         } md;
         struct {
             ptl_size_t      mlength;
+            ptl_size_t      offset;
             ptl_ppe_le_t   *ppe_le;
         } le;
     } u;

@@ -51,6 +51,7 @@ static inline void copyME( ptl_ppe_le_t *ppe_le, ptl_me_t *me )
 int lib_le_recv( nal_ctx_t *, void *const local_data, const size_t nbytes, const ptl_internal_header_t *hdr  );
 
 #define NO_ARG_VALIDATION
+#define LOUD_DROPS
 
 #if 0
 /* Internals */
@@ -246,11 +247,15 @@ static void *PtlInternalPerformOverflowDelivery(nal_ctx_t *nal_ctx,
                 break;                                       \
             case HDR_TYPE_ATOMIC: e.type = PTL_EVENT_ATOMIC; \
                 e.hdr_data               = hdr->hdr_data;    \
+                e.atomic_operation  = hdr->atomic_operation; \
+                e.atomic_type       = hdr->atomic_datatype;  \
                 break;                                       \
             case HDR_TYPE_SWAP:                              \
             case HDR_TYPE_FETCHATOMIC:                       \
                 e.type     = PTL_EVENT_FETCH_ATOMIC;         \
                 e.hdr_data = hdr->hdr_data;                  \
+                e.atomic_operation  = hdr->atomic_operation; \
+                e.atomic_type       = hdr->atomic_datatype;  \
                 break;                                       \
             case HDR_TYPE_GET: e.type = PTL_EVENT_GET;       \
                 break;                                       \
@@ -1378,7 +1383,7 @@ check_lengths:
     }
 #ifdef LOUD_DROPS
     fprintf(stderr, "PORTALS4-> Rank %u dropped a message from rank %u, no MEs posted on PT %u on NI %u\n",
-            (unsigned)proc_number, (unsigned)hdr->src,
+            -1/*(unsigned)proc_number*/, (unsigned)hdr->src.pid,
             (unsigned)hdr->pt_index, (unsigned)hdr->ni);
     fflush(stderr);
 #endif
@@ -1575,23 +1580,29 @@ static void PtlInternalPerformDelivery( nal_ctx_t *nal_ctx,
             break;
         case HDR_TYPE_ATOMIC:
         case HDR_TYPE_FETCHATOMIC:
+            lib_le_recv( nal_ctx, local_data, nbytes, hdr);
+#if 0
             PtlInternalPerformAtomic(local_data,
                                      message_data,
                                      nbytes,
                                      (ptl_op_t)hdr->atomic_operation,
                                      (ptl_datatype_t)hdr->atomic_datatype);
+#endif
             break;
         case HDR_TYPE_GET:
             lib_le_recv( nal_ctx, local_data, nbytes, hdr);
      //       memcpy(message_data, local_data, nbytes);
             break;
         case HDR_TYPE_SWAP:
+            lib_le_recv( nal_ctx, local_data, nbytes, hdr);
+#if 0
             PtlInternalPerformAtomicArg(local_data,
                                         ((uint8_t *)message_data) + 32,
                                         (uint8_t *)message_data,
                                         nbytes,
                                         (ptl_op_t)hdr->atomic_operation,
                                         (ptl_datatype_t)hdr->atomic_datatype);
+#endif
             break;
         default:
             UNREACHABLE;

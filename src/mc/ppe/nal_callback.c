@@ -1,6 +1,7 @@
 
 #include <assert.h>
 
+#include "ppe/atomic.h"
 #include "ppe/nal.h"
 #include "ppe/ct.h"
 #include "ppe/eq.h"
@@ -120,6 +121,7 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
 {
     ptl_size_t rlen = hdr->length, mlen = 0, offset = 0;
     ack_ctx_t ack_ctx;
+    int md_index;
 
     PPE_DBG("type=%#x ack_ctx_key=%d\n",hdr->type, hdr->ack_ctx_key);
 
@@ -137,18 +139,18 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
 
     nal_ctx->type = MD_CTX;
     nal_ctx->u.md.user_ptr = ack_ctx.user_ptr;
+    md_index = ack_ctx.md_h.s.code;
+
+    nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ md_index ]; 
 
     if ( ( hdr->type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
 
-
-        int md_index = ack_ctx.md_h.s.code;
         // MJL: do we use a ref count and keep the md around until acks come back
         // or do we use a inuse flag and drop the ack if the md was free'd
         if (  ! ( md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
             PPE_DBG("md index %d is out of range\n", md_index );
             return 1; 
         }
-        nal_ctx->u.md.ppe_md = &ppe_ni->ppe_md[ md_index ]; 
 
         offset = ack_ctx.local_offset;
 
@@ -170,43 +172,52 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
                         nal_ctx->nal_msg_data,
                         nal_ctx,            // lib_data
                         &nal_ctx->iovec,    // dst_iov
-                        1,              // iovlen
-                        offset,              // offset
-                        mlen,           // mlen
-                        rlen,           // rlen
-                        NULL            // addrkey
+                        1,                  // iovlen
+                        offset,             // offset
+                        mlen,               // mlen
+                        rlen,               // rlen
+                        NULL                // addrkey
                     ); 
+    return 0;
+}
+
+
+static inline int deliver_send_event( nal_ctx_t* nal_ctx )
+{
+    ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
+
+    PPE_DBG("\n");
+
+    --ppe_md->ref_cnt;
+
+    if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
+        if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
+                
+            if ( ( ppe_md->options & PTL_MD_EVENT_CT_BYTES ) == 0 ) {
+                PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 1 );
+            } else {
+                PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 
+                                                    nal_ctx->hdr.length );
+            }
+        }
+    }
+
+    if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
+        if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
+            PtlInternalEQPushESEND( nal_ctx->ppe_ni, ppe_md->eq_h.a,
+                                    nal_ctx->hdr.length,
+                                   nal_ctx->hdr.dest_offset,
+                             nal_ctx->u.md.user_ptr );
+        }
+    }
     return 0;
 }
 
 static inline int finalize_md_send( nal_ctx_t* nal_ctx )
 {
-    ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
     PPE_DBG("\n");
-    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
-
-        --ppe_md->ref_cnt;
-
-        if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
-            if ( ppe_md->options & PTL_MD_EVENT_CT_SEND ) {
-                
-                if ( ( ppe_md->options & PTL_MD_EVENT_CT_BYTES ) == 0 ) {
-                    PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 1 );
-                } else {
-                    PtlInternalCTSuccessInc( nal_ctx->ppe_ni, ppe_md->ct_h.a, 
-                                                    nal_ctx->hdr.length );
-                }
-            }
-        }
-
-        if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
-            if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
-                PtlInternalEQPushESEND( nal_ctx->ppe_ni, ppe_md->eq_h.a,
-                            nal_ctx->hdr.length,
-                            nal_ctx->hdr.dest_offset,
-                            nal_ctx->u.md.user_ptr );
-            }
-        }
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) != HDR_TYPE_GET ) {
+        deliver_send_event( nal_ctx );
     }
     return 0;
 }
@@ -214,12 +225,10 @@ static inline int finalize_md_send( nal_ctx_t* nal_ctx )
 static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
 {
     ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
-    PPE_DBG("\n");
 
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
         --ppe_md->ref_cnt;
     }
-    PPE_DBG("\n");
 
     if ( ppe_md->ct_h.a != PTL_CT_NONE ) {
         if ( ( ppe_md->options & PTL_MD_EVENT_CT_ACK ) || 
@@ -233,25 +242,23 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
         }
     }
 
-    PPE_DBG("\n");
     if ( ppe_md->eq_h.a != PTL_EQ_NONE ) {
         if ( ! (ppe_md->options & PTL_MD_EVENT_SUCCESS_DISABLE ) ) {
             ptl_event_t event;
              
-            if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
-                event.type = PTL_EVENT_ACK;
-            } else {
+            if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
                 event.type = PTL_EVENT_REPLY;
+            } else {
+                event.type = PTL_EVENT_ACK;
             }
+
             event.mlength       = nal_ctx->hdr.length;
             event.remote_offset = nal_ctx->hdr.dest_offset;
             event.user_ptr      = nal_ctx->u.md.user_ptr;
             event.ni_fail_type  = PTL_NI_OK;
             PtlInternalEQPush( nal_ctx->ppe_ni, ppe_md->eq_h.a, &event );
-    PPE_DBG("\n");
         }
     }
-    PPE_DBG("\n");
 
     return 0;
 }
@@ -272,32 +279,46 @@ int lib_le_recv( nal_ctx_t *nal_ctx,
                 void *const local_data, const size_t nbytes,
                         const  ptl_internal_header_t *hdr  )
 {
-    int mlen = 0, rlen = 0;
-
-    PPE_DBG("type=%#x addr=%p mlength=%lu rlength=%lu\n", hdr->type,
+    ptl_size_t rlen = 0, mlen = 0, offset = 0;
+    PPE_DBG("type=%#x local_addr=%p nbytes=%lu hdr->length=%lu\n", hdr->type,
                                 local_data, nbytes, hdr->length); 
 
     nal_ctx->type = LE_CTX;
     nal_ctx->u.le.ppe_le->ref_cnt++;
-    nal_ctx->u.le.mlength   = nbytes;
-    nal_ctx->iovec.iov_base = nal_ctx->u.le.ppe_le->xpmem_ptr->data + 
-            ( local_data - nal_ctx->u.le.ppe_le->visible.start);
-    nal_ctx->iovec.iov_len  = nal_ctx->u.le.ppe_le->visible.length;
+    nal_ctx->u.le.offset  = local_data - nal_ctx->u.le.ppe_le->visible.start;
+    nal_ctx->u.le.mlength = nbytes;
 
-    if ( ( hdr->type & HDR_TYPE_BASICMASK ) == HDR_TYPE_PUT ) {
-        mlen = nal_ctx->u.le.mlength;
-        rlen = hdr->length;
+    switch ( hdr->type & HDR_TYPE_BASICMASK ) {
+        case HDR_TYPE_ATOMIC:
+        case HDR_TYPE_FETCHATOMIC:
+        case HDR_TYPE_SWAP:
+            nal_ctx->iovec.iov_base = malloc( nbytes );
+            nal_ctx->iovec.iov_len  = nbytes;
+            mlen = nal_ctx->u.le.mlength;
+            rlen = hdr->length;
+            break;
+
+        case HDR_TYPE_PUT:
+            mlen = nal_ctx->u.le.mlength;
+            offset =  nal_ctx->u.le.offset;
+            rlen = hdr->length;
+            // yes we want to fall through
+
+        case HDR_TYPE_GET:
+            nal_ctx->iovec.iov_base = nal_ctx->u.le.ppe_le->xpmem_ptr->data;
+            nal_ctx->iovec.iov_len  = nal_ctx->u.le.ppe_le->xpmem_ptr->length;
+            break;
     }
 
     nal_ctx->p3_ni->nal->recv( nal_ctx->p3_ni, 
                         nal_ctx->nal_msg_data,
-                        nal_ctx,            // lib_data
-                        &nal_ctx->iovec,    // dst_iov
-                        1,              // iovlen
-                        0,              // offset
-                        mlen,           // mlen
-                        rlen,           // rlen
-                        NULL            // addrkey
+                        nal_ctx,                // lib_data
+                        &nal_ctx->iovec,        // dst_iov
+                        1,                      // iovlen
+                        offset,                 // offset
+                        mlen,                   // mlen
+                        rlen,                   // rlen
+                        NULL                    // addrkey
                     ); 
     return 0;
 }
@@ -306,6 +327,7 @@ int lib_le_recv( nal_ctx_t *nal_ctx,
 static inline int send_ack( nal_ctx_t *nal_ctx )
 {
     ptl_process_id_t dst;
+    int mlen = 0;
 
     nal_ctx_t *nal_ctx2 = malloc( sizeof(*nal_ctx2) );
     assert(nal_ctx2);
@@ -318,8 +340,12 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
     nal_ctx2->hdr.src.pid    = nal_ctx->hdr.target.pid;
     nal_ctx2->hdr.target.pid = nal_ctx->hdr.src.pid;
     nal_ctx2->hdr.length     = nal_ctx->u.le.mlength;
+    nal_ctx2->hdr.dest_offset = nal_ctx->u.le.offset;
 
-    PPE_DBG("%#x\n",nal_ctx->u.le.ppe_le->visible.options);
+    if( ( nal_ctx2->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
+        mlen = nal_ctx2->u.le.mlength;
+    } 
+
     if ( nal_ctx->u.le.ppe_le->visible.options & PTL_ME_ACK_DISABLE ) {
         // a negative key tells the initiator to free the ack_ctx without 
         // generating events 
@@ -331,18 +357,19 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
     dst.pid = nal_ctx2->hdr.src.pid;
 
     PPE_DBG("send %#x to %#x,%d\n", nal_ctx2->hdr.type, dst.nid, dst.pid );
+    PPE_DBG("offset=%lu mlength=%lu\n",nal_ctx2->u.le.offset,nal_ctx2->u.le.mlength);
     
     nal_ctx2->p3_ni->nal->send( nal_ctx2->p3_ni, 
                         &nal_ctx2->nal_msg_data,
-                        nal_ctx2,            // lib_data
-                        dst,
+                        nal_ctx2,               // lib_data
+                        dst,                    // dest process
                         (lib_mem_t*) &nal_ctx2->hdr,
                         sizeof(nal_ctx2->hdr),
-                        &nal_ctx2->iovec,    // dst_iov
-                        1,              // iovlen
-                        0,              // offset
-                        nal_ctx2->u.le.mlength,   // len
-                        NULL            // addrkey
+                        &nal_ctx2->iovec,       // dst_iov
+                        1,                      // iovlen
+                        mlen,                   // mlen
+                        nal_ctx2->u.le.offset,  // offset
+                        NULL                    // addrkey
                     ); 
     return 0;
 }
@@ -350,12 +377,31 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 static inline int deliver_le_events( nal_ctx_t *nal_ctx )
 {
     ptl_ppe_me_t *ppe_me = nal_ctx->u.le.ppe_le;
-    uintptr_t start = (nal_ctx->iovec.iov_base - nal_ctx->u.le.ppe_le->xpmem_ptr->data);
-    start += (uintptr_t)nal_ctx->u.le.ppe_le->visible.start;
+    uintptr_t start = (uintptr_t)nal_ctx->u.le.ppe_le->visible.start;
+    start += nal_ctx->u.le.offset; 
 
     PPE_DBG("\n");
 
     --ppe_me->ref_cnt;
+
+    switch ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) {
+        case HDR_TYPE_ATOMIC:
+            PPE_DBG("\n");
+            PtlInternalPerformAtomic( 
+                        nal_ctx->u.le.ppe_le->xpmem_ptr->data + nal_ctx->u.le.offset,
+                        nal_ctx->iovec.iov_base, 
+                        nal_ctx->u.le.mlength,
+                        nal_ctx->hdr.atomic_operation,
+                        nal_ctx->hdr.atomic_datatype ),
+
+            free( nal_ctx->iovec.iov_base );
+            break;
+
+        case HDR_TYPE_FETCHATOMIC:
+        case HDR_TYPE_SWAP:
+    
+            break;
+    }
 
     if ( nal_ctx->u.le.ppe_le->Qentry.unlinked ) {
         PPE_DBG("unlinked me=%#x\n",ppe_me->Qentry.handle.a);
