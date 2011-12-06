@@ -94,11 +94,9 @@ progress_loop(ptl_ppe_t *ctx)
             case PTLPUT:
             case PTLGET:
             case PTLATOMIC:
+            case PTLFETCHATOMIC:
                 data_movement_impl( ctx, &entry.put );
                 break;
-
-            //    get_impl( ctx, &entry.get );
-            //    break;
 
             case PTLPTALLOC:
                 pt_alloc_impl( ctx, &entry.ptAlloc );
@@ -130,16 +128,6 @@ progress_loop(ptl_ppe_t *ctx)
 
             case PTLLESEARCH:
                 le_search_impl( ctx, &entry.leSearch );
-                break;
-
-#if 0
-            case PTLATOMIC:
-                atomic_impl( ctx, &entry.atomic );
-                break;
-#endif
-
-            case PTLFETCHATOMIC:
-                fetch_atomic_impl( ctx, &entry.fetchAtomic );
                 break;
 
             case PTLSWAP:
