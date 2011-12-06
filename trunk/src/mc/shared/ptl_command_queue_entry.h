@@ -39,6 +39,8 @@ typedef enum {
     PTLFETCHATOMIC,
     PTLSWAP,
     PTLATOMICSYNC,
+    PTLTRIGCTINC,
+    PTLTRIGCTSET,
     PTLACK
 } ptl_cmd_type_t;
 
@@ -107,14 +109,10 @@ typedef struct {
 typedef struct {
     ptl_cqe_base_t base;
     ptl_internal_handle_converter_t     ct_handle; 
-    ptl_ct_event_t  new_ct;
-} ptl_cqe_ctset_t;
-
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     ct_handle; 
-    ptl_ct_event_t  increment;
-} ptl_cqe_ctinc_t;
+    ptl_ct_event_t                      ct_event;
+    ptl_internal_handle_converter_t     trig_ct_handle;
+    ptl_size_t                          trig_threshold;
+} ptl_cqe_ctop_t;
 
 typedef struct {
     ptl_cqe_base_t base;
@@ -256,8 +254,7 @@ union ptl_cqe_t {
     ptl_cqe_getmap_t      getMap;
     ptl_cqe_ctalloc_t     ctAlloc;
     ptl_cqe_ctfree_t      ctFree;
-    ptl_cqe_ctset_t       ctSet;
-    ptl_cqe_ctinc_t       ctInc;
+    ptl_cqe_ctop_t        ctOp;
     ptl_cqe_ctcanceltriggered_t ctCancelTriggered;
     ptl_cqe_eqalloc_t     eqAlloc;
     ptl_cqe_eqfree_t      eqFree;

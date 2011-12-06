@@ -243,9 +243,9 @@ PtlCTPoll(const ptl_handle_ct_t *ct_handles,
     } while ( 1 );
 }
 
-int
-PtlCTSet(ptl_handle_ct_t ct_handle,
-         ptl_ct_event_t  test)
+static inline int
+ct_op( int type, ptl_handle_ct_t ct_handle, ptl_ct_event_t  ct_event,
+             ptl_handle_ct_t trig_ct_handle, ptl_size_t trig_threshold )
 {
     ptl_internal_handle_converter_t ct_hc = { ct_handle };
     ptl_cqe_t *entry;
@@ -258,58 +258,62 @@ PtlCTSet(ptl_handle_ct_t ct_handle,
     if (PtlInternalCTHandleValidator(ct_handle, 0)) {
         return PTL_ARG_INVALID;
     }
+    if ( type == PTLTRIGCTSET || type == PTLTRIGCTINC ) {
+        const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+        if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
+            return PTL_ARG_INVALID;
+        }
+        if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+            VERBOSE_ERROR("Triggered operations not allowed on this NI (%i);"
+                            " max_triggered_ops set to zero\n", tct.s.ni);
+            return PTL_ARG_INVALID;
+        }
+    }
 #endif
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type       = PTLCTSET;
-    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
-    entry->ctSet.ct_handle = ct_hc;
-    entry->ctSet.new_ct    = test;
+    entry->base.type            = type;
+    entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
+    entry->ctOp.ct_handle       = ct_hc;
+    entry->ctOp.ct_event        = ct_event;
+
+    // MJL whould it be faster to simply write this or do an if ? 
+    if ( type == PTLTRIGCTSET || type == PTLTRIGCTINC ) {
+        entry->ctOp.trig_ct_handle = (ptl_internal_handle_converter_t) ct_hc;
+        entry->ctOp.trig_threshold = trig_threshold;
+    }
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface), 
-                                  entry, sizeof(ptl_cqe_ctset_t));
+                                  entry, sizeof(ptl_cqe_ctop_t));
     if (0 != ret) return PTL_FAIL;
 
     return PTL_OK;
 }
 
-
-int
-PtlCTInc(ptl_handle_ct_t ct_handle,
-         ptl_ct_event_t  increment)
+int PtlCTSet(ptl_handle_ct_t ct_h, ptl_ct_event_t  inc )
 {
-    ptl_internal_handle_converter_t ct_hc = { ct_handle };
-    ptl_cqe_t *entry;
-    int ret;
-
-#ifndef NO_ARG_VALIDATION
-    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
-        return PTL_NO_INIT;
-    }
-    if (PtlInternalCTHandleValidator(ct_handle, 0)) {
-        return PTL_ARG_INVALID;
-    }
-#endif
-
-    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
-    if (0 != ret) return PTL_FAIL;
-
-    entry->base.type       = PTLCTINC;
-    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
-    entry->ctInc.ct_handle = ct_hc;
-    entry->ctInc.increment = increment;
-
-    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
-                                  ptl_iface_get_peer(&ptl_iface), 
-                                  entry, sizeof(ptl_cqe_ctinc_t));
-    if (0 != ret) return PTL_FAIL;
-
-    return PTL_OK;
+    return ct_op( PTLCTSET, ct_h, inc, PTL_INVALID_HANDLE, 0 );
 }
 
+int PtlTriggeredCTSet(ptl_handle_ct_t ct_h, ptl_ct_event_t  test,
+                    ptl_handle_ct_t trig_ct_h, ptl_size_t threshold )
+{
+    return ct_op( PTLTRIGCTSET, ct_h, test, trig_ct_h, threshold  );
+}
+
+int PtlCTInc(ptl_handle_ct_t ct_h, ptl_ct_event_t  inc )
+{
+    return ct_op( PTLCTINC, ct_h, inc, PTL_INVALID_HANDLE, 0 );
+}
+
+int PtlTriggeredCTInc(ptl_handle_ct_t ct_h, ptl_ct_event_t  increment,
+                    ptl_handle_ct_t trig_ct_h, ptl_size_t threshold )
+{
+    return ct_op( PTLTRIGCTINC, ct_h, increment, trig_ct_h, threshold  );
+}
 
 int INTERNAL
 PtlInternalCTHandleValidator(ptl_handle_ct_t handle,

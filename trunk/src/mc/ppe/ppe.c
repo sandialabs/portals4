@@ -68,11 +68,13 @@ progress_loop(ptl_ppe_t *ctx)
                 break;
 
             case PTLCTSET:
-                ct_set_impl( ctx, &entry.ctSet );
+            case PTLTRIGCTSET:
+                ct_set_impl( ctx, &entry.ctOp );
                 break;
 
             case PTLCTINC:
-                ct_inc_impl( ctx, &entry.ctInc );
+            case PTLTRIGCTINC:
+                ct_inc_impl( ctx, &entry.ctOp );
                 break;
 
             case PTLEQALLOC:
