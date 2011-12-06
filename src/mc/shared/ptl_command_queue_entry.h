@@ -161,9 +161,15 @@ typedef struct {
 } ptl_cqe_ptfree_t;
 
 typedef struct {
+    #define cmd_put_md_handle md_handle
+    #define cmd_get_md_handle md_handle2
+    #define cmd_local_put_offset local_offset
+    #define cmd_local_get_offset local_offset2 
     ptl_cqe_base_t base;
     ptl_internal_handle_converter_t      md_handle;    
     ptl_size_t       local_offset;
+    ptl_internal_handle_converter_t      md_handle2;    
+    ptl_size_t       local_offset2;
     ptl_size_t       length;
     ptl_ack_req_t    ack_req;
     ptl_process_t    target_id;
@@ -172,19 +178,16 @@ typedef struct {
     ptl_size_t       remote_offset;
     void            *user_ptr;
     ptl_hdr_data_t   hdr_data;
-} ptl_cqe_put_t;
+    const void      *atomic_operand;
+    ptl_op_t         atomic_operation;
+    ptl_datatype_t   atomic_datatype;
+} ptl_cqe_data_movement_t;
 
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t      md_handle;    
-    ptl_size_t       local_offset;
-    ptl_size_t       length;
-    ptl_process_t    target_id;
-    ptl_pt_index_t   pt_index;
-    ptl_match_bits_t match_bits; 
-    ptl_size_t       remote_offset;
-    void            *user_ptr;
-} ptl_cqe_get_t;
+typedef ptl_cqe_data_movement_t ptl_cqe_put_t;
+typedef ptl_cqe_data_movement_t ptl_cqe_get_t;
+typedef ptl_cqe_data_movement_t ptl_cqe_atomic_t;
+typedef ptl_cqe_data_movement_t ptl_cqe_fetchatomic_t;
+typedef ptl_cqe_data_movement_t ptl_cqe_swap_t;
 
 typedef struct {
     ptl_cqe_base_t base;
@@ -233,57 +236,6 @@ typedef struct {
     ptl_search_op_t ptl_search_op;
     void           *user_ptr;
 } ptl_cqe_lesearch_t;
-
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t      md_handle;
-    ptl_size_t       local_offset;
-    ptl_size_t       length;
-    ptl_ack_req_t    ack_req;
-    ptl_process_t    target_id;
-    ptl_pt_index_t   pt_index;
-    ptl_match_bits_t match_bits;
-    ptl_size_t       remote_offset;
-    void            *user_ptr;
-    ptl_hdr_data_t   hdr_data;
-    ptl_op_t         operation;
-    ptl_datatype_t   datatype;
-} ptl_cqe_atomic_t;
-
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t      get_md_handle;
-    ptl_size_t       local_get_offset;
-    ptl_internal_handle_converter_t      put_md_handle;
-    ptl_size_t       local_put_offset;
-    ptl_size_t       length;
-    ptl_process_t    target_id;
-    ptl_pt_index_t   pt_index;
-    ptl_match_bits_t match_bits;
-    ptl_size_t       remote_offset;
-    void            *user_ptr;
-    ptl_hdr_data_t   hdr_data;
-    ptl_op_t         operation;
-    ptl_datatype_t   datatype;
-} ptl_cqe_fetchatomic_t;
-
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t      get_md_handle;
-    ptl_size_t       local_get_offset;
-    ptl_internal_handle_converter_t      put_md_handle;
-    ptl_size_t       local_put_offset;
-    ptl_size_t       length;
-    ptl_process_t    target_id;
-    ptl_pt_index_t   pt_index;
-    ptl_match_bits_t match_bits;
-    ptl_size_t       remote_offset;
-    void            *user_ptr;
-    ptl_hdr_data_t   hdr_data;
-    const void      *operand;
-    ptl_op_t         operation;
-    ptl_datatype_t   datatype;
-} ptl_cqe_swap_t;
 
 typedef struct {
     ptl_cqe_base_t base;

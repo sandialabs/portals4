@@ -44,7 +44,7 @@ typedef struct {
     unsigned char                   ni               : 2;
     uint8_t                         atomic_operation : 5;
     uint8_t                         atomic_datatype  : 4;
-//    uint8_t                         data[];
+    uint64_t                        atomic_operand;
 } ptl_internal_header_t;
 
 typedef ptl_internal_header_t ptl_hdr_t;

@@ -28,6 +28,7 @@ portals_engine_SOURCES = \
 	ppe/nal_init.c \
 	ppe/matching_list_entries.c \
 	ppe/matching_list_entries.h \
+	ppe/perform_atomic.c \
 	ppe/list_entries.c \
 	ppe/list_entries.h \
 	ppe/ni.c \
