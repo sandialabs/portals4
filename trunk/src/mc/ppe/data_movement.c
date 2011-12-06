@@ -15,6 +15,7 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
     ptl_ppe_md_t       *ppe_md;
     ptl_process_id_t    dst;
     ptl_size_t          nal_offset = 0, nal_len = 0;
+    int                 ack = PTL_NO_ACK_REQ;
 
     PPE_DBG("remote_id=%d type=%d\n",cmd->base.remote_id,cmd->base.type);
 
@@ -24,25 +25,24 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
     nal_ctx = malloc( sizeof( *nal_ctx ) );
     assert(nal_ctx);
 
-    nal_ctx->type = MD_CTX;
-    nal_ctx->ppe_ni = ppe_ni;
-    nal_ctx->u.md.ppe_md = ppe_md;
+    nal_ctx->type           = MD_CTX;
+    nal_ctx->ppe_ni         = ppe_ni;
+    nal_ctx->u.md.ppe_md    = ppe_md;
+    nal_ctx->u.md.user_ptr  = cmd->user_ptr;
     nal_ctx->iovec.iov_base = ppe_md->xpmem_ptr->data;
     nal_ctx->iovec.iov_len  = ppe_md->xpmem_ptr->length;
-
-    nal_ctx->hdr.length          = cmd->length;
 
     // MJL who should do the phys vs logical check app or engine? 
     nal_ctx->hdr.src.pid         = cmd->base.remote_id;
     nal_ctx->hdr.target.pid      = cmd->target_id.phys.pid;
 
+    nal_ctx->hdr.length          = cmd->length;
     nal_ctx->hdr.match_bits      = cmd->match_bits;
     nal_ctx->hdr.dest_offset     = cmd->remote_offset;
     nal_ctx->hdr.remaining       = cmd->length;
     nal_ctx->hdr.pt_index        = cmd->pt_index;
     nal_ctx->hdr.hdr_data        = cmd->hdr_data;
     nal_ctx->hdr.ni              = cmd->md_handle.s.ni;
-PPE_DBG("%#x %#x\n",cmd->atomic_operation,cmd->atomic_datatype);
     nal_ctx->hdr.atomic_operation = cmd->atomic_operation;
     nal_ctx->hdr.atomic_datatype  = cmd->atomic_datatype;
 
@@ -50,27 +50,34 @@ PPE_DBG("%#x %#x\n",cmd->atomic_operation,cmd->atomic_datatype);
     // ptl hdr? 
     switch ( cmd->base.type ) {
       case PTLPUT: 
-        nal_ctx->hdr.type            = HDR_TYPE_PUT;
-        break;
-      case PTLATOMIC: 
-        nal_ctx->hdr.type            = HDR_TYPE_ATOMIC;
+        nal_ctx->hdr.type   = HDR_TYPE_PUT;
+        ack = cmd->ack_req;
         break;
       case PTLGET: 
-        nal_ctx->hdr.type            = HDR_TYPE_GET;
+        nal_ctx->hdr.type   = HDR_TYPE_GET;
+        ack = PTL_ACK_REQ;
+        break;
+      case PTLATOMIC: 
+        nal_ctx->hdr.type   = HDR_TYPE_ATOMIC;
+        ack = cmd->ack_req;
+        break;
+      case PTLFETCHATOMIC: 
+        nal_ctx->hdr.type   = HDR_TYPE_FETCHATOMIC;
+        ack = PTL_ACK_REQ;
+        break;
+      case PTLSWAP: 
+        nal_ctx->hdr.type   = HDR_TYPE_SWAP;
+        ack = PTL_ACK_REQ;
         break;
     }
 
-    // MJL: if all data_movement commands initialize these correctly 
-    // whe wouldn't need a check here 
     if ( cmd->base.type != PTLGET ) {
         nal_ctx->hdr.ack_req         = cmd->ack_req;
         nal_len    = cmd->length;
         nal_offset = cmd->local_offset;
     }
 
-    nal_ctx->u.md.user_ptr = cmd->user_ptr;
-
-    if ( cmd->base.type == PTLGET || cmd->ack_req == PTL_ACK_REQ ) {
+    if ( ack == PTL_ACK_REQ ) {
         nal_ctx->hdr.ack_ctx_key = 
             alloc_ack_ctx( cmd->md_handle, cmd->local_offset, cmd->user_ptr );
         assert( nal_ctx->hdr.ack_ctx_key ); 
