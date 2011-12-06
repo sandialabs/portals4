@@ -91,6 +91,7 @@ progress_loop(ptl_ppe_t *ctx)
                 md_release_impl( ctx, &entry.mdRelease );
                 break;
 
+            case PTLSWAP:
             case PTLPUT:
             case PTLGET:
             case PTLATOMIC:
@@ -128,10 +129,6 @@ progress_loop(ptl_ppe_t *ctx)
 
             case PTLLESEARCH:
                 le_search_impl( ctx, &entry.leSearch );
-                break;
-
-            case PTLSWAP:
-                swap_impl( ctx, &entry.swap );
                 break;
 
             case PTLATOMICSYNC:
