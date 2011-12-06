@@ -33,7 +33,7 @@ ct_free_impl( ptl_ppe_t *ctx, ptl_cqe_ctfree_t *cmd )
 }
 
 int
-ct_set_impl( ptl_ppe_t *ctx, ptl_cqe_ctset_t *cmd )
+ct_set_impl( ptl_ppe_t *ctx, ptl_cqe_ctop_t *cmd )
 {
     ptl_ppe_ni_t      *ni;
 
@@ -42,13 +42,17 @@ ct_set_impl( ptl_ppe_t *ctx, ptl_cqe_ctset_t *cmd )
 
     ni = &ctx->clients[cmd->base.remote_id].nis[cmd->ct_handle.s.ni];
 
-    ct_set( ni, cmd->ct_handle.s.code, cmd->new_ct );
+    if ( cmd->base.type == PTLCTSET ) {
+        ct_set( ni, cmd->ct_handle.s.code, cmd->ct_event );
+    } else {
+        PPE_DBG("\n"); 
+    }
 
     return 0;
 }
 
 int
-ct_inc_impl( ptl_ppe_t *ctx, ptl_cqe_ctinc_t *cmd )
+ct_inc_impl( ptl_ppe_t *ctx, ptl_cqe_ctop_t *cmd )
 {
     ptl_ppe_ni_t      *ni;
 
@@ -57,7 +61,11 @@ ct_inc_impl( ptl_ppe_t *ctx, ptl_cqe_ctinc_t *cmd )
 
     ni = &ctx->clients[cmd->base.remote_id].nis[cmd->ct_handle.s.ni];
 
-    PtlInternalCTSuccessInc( ni, cmd->ct_handle.a, cmd->increment.success );
-
+    if ( cmd->base.type == PTLCTINC ) {
+        PtlInternalCTSuccessInc( ni, cmd->ct_handle.a, cmd->ct_event.success );
+    } else {
+        PPE_DBG("\n"); 
+    }
+    
     return 0;
 }
