@@ -478,22 +478,34 @@ void *progress_thread(void *arg)
 
 			if (shmem_buf) {
 				switch(shmem_buf->type) {
-				case BUF_SHMEM: {
+				case BUF_SHMEM_SEND: {
 					buf_t *buf;
 
+					/* Mark it for return now. The target state machine might
+					 * change its type to BUF_SHMEM_SEND. */
+					shmem_buf->type = BUF_SHMEM_RETURN;
+ 
 					err = buf_alloc(ni, &buf);
 					if (err) {
 						WARN();
 					} else {
 						buf->data = (hdr_t *)shmem_buf->internal_data;
 						buf->length = shmem_buf->length;
+						buf->shmem.buf = shmem_buf;
 						INIT_LIST_HEAD(&buf->list);
 						process_recv_shmem(ni, buf);
 					}
 
-					/* Send the buffer back. */
-					shmem_buf->type = BUF_SHMEM_RETURN;
-					shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.source);
+					if (shmem_buf->type == BUF_SHMEM_SEND ||
+						shmem_buf->shmem.index_owner != ni->shmem.index) {
+						/* Requested to send the buffer back, or not the
+						 * owner. Send the buffer back in both cases. */
+						shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
+					} else {
+						/* It was returned to us with a message from a remote
+						 * rank. From send_message_shmem(). */
+						buf_put(shmem_buf);
+					}
 				}
 					break;
 
