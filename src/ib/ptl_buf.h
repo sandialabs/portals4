@@ -17,7 +17,7 @@ enum buf_type {
 	BUF_RECV,
 	BUF_RDMA,
 
-	BUF_SHMEM,
+	BUF_SHMEM_SEND,
 	BUF_SHMEM_RETURN,
 
 	BUF_INIT,					/* initiator buffer */
@@ -155,6 +155,8 @@ struct buf {
 			ptl_size_t		put_resid;
 			ptl_size_t		get_resid;
 			uint32_t		rdma_dir;
+
+ 			unsigned int operation;	/* Save the operation */
 		};
 
 		/*
@@ -219,12 +221,16 @@ struct buf {
 		} rdma;
 
 		struct {
-			ptl_rank_t source;	/* local rank owning that buffer */
+			unsigned int index_owner;	/* local index owning that buffer */
 
 			/* For large (ie. KNEM) operations. */
 			struct shmem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
+
+			struct buf *buf;	/* points to a buffer in shared
+								 * memory. Set only by a buffer not in
+								 * shared memory. */
 		} shmem;
 	};
 
