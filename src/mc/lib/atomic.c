@@ -144,18 +144,18 @@ PtlAtomic(ptl_handle_md_t  md_handle,
 
     entry->base.type = PTLATOMIC;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->atomic.md_handle       = md_hc;
-    entry->atomic.local_offset    = local_offset;
-    entry->atomic.length          = length;
-    entry->atomic.ack_req         = ack_req;
-    entry->atomic.target_id       = target_id;
-    entry->atomic.pt_index        = pt_index;
-    entry->atomic.match_bits      = match_bits;
-    entry->atomic.remote_offset   = remote_offset;
-    entry->atomic.user_ptr        = user_ptr;
-    entry->atomic.hdr_data        = hdr_data;
-    entry->atomic.atomic_operation       = operation;
-    entry->atomic.atomic_datatype        = datatype;
+    entry->atomic.args.md_handle       = md_hc;
+    entry->atomic.args.local_offset    = local_offset;
+    entry->atomic.args.length          = length;
+    entry->atomic.args.ack_req         = ack_req;
+    entry->atomic.args.target_id       = target_id;
+    entry->atomic.args.pt_index        = pt_index;
+    entry->atomic.args.match_bits      = match_bits;
+    entry->atomic.args.remote_offset   = remote_offset;
+    entry->atomic.args.user_ptr        = user_ptr;
+    entry->atomic.args.hdr_data        = hdr_data;
+    entry->atomic.atomic_args.operation       = operation;
+    entry->atomic.atomic_args.datatype        = datatype;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface),
@@ -311,19 +311,19 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 
     entry->base.type = PTLFETCHATOMIC;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->fetchAtomic.cmd_get_md_handle =  get_md;  
-    entry->fetchAtomic.cmd_local_get_offset = local_get_offset;
-    entry->fetchAtomic.cmd_put_md_handle    = put_md;
-    entry->fetchAtomic.cmd_local_put_offset = local_put_offset;
-    entry->fetchAtomic.length           = length;
-    entry->fetchAtomic.target_id        = target_id;
-    entry->fetchAtomic.pt_index         = pt_index;
-    entry->fetchAtomic.match_bits       = match_bits;
-    entry->fetchAtomic.remote_offset    = remote_offset;
-    entry->fetchAtomic.user_ptr         = user_ptr;
-    entry->fetchAtomic.hdr_data         = hdr_data;
-    entry->fetchAtomic.atomic_operation = operation;
-    entry->fetchAtomic.atomic_datatype  = datatype;
+    entry->fetchAtomic.args.cmd_get_md_handle =  get_md;  
+    entry->fetchAtomic.args.cmd_local_get_offset = local_get_offset;
+    entry->fetchAtomic.args.cmd_put_md_handle    = put_md;
+    entry->fetchAtomic.args.cmd_local_put_offset = local_put_offset;
+    entry->fetchAtomic.args.length           = length;
+    entry->fetchAtomic.args.target_id        = target_id;
+    entry->fetchAtomic.args.pt_index         = pt_index;
+    entry->fetchAtomic.args.match_bits       = match_bits;
+    entry->fetchAtomic.args.remote_offset    = remote_offset;
+    entry->fetchAtomic.args.user_ptr         = user_ptr;
+    entry->fetchAtomic.args.hdr_data         = hdr_data;
+    entry->fetchAtomic.atomic_args.operation = operation;
+    entry->fetchAtomic.atomic_args.datatype  = datatype;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface), 
@@ -478,20 +478,20 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
 
     entry->base.type = PTLSWAP;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->swap.cmd_get_md_handle =  get_md_hc;  
-    entry->swap.cmd_local_get_offset = local_get_offset;
-    entry->swap.cmd_put_md_handle    = put_md_hc;
-    entry->swap.cmd_local_put_offset = local_put_offset;
-    entry->swap.length           = length;
-    entry->swap.target_id        = target_id;
-    entry->swap.pt_index         = pt_index;
-    entry->swap.match_bits       = match_bits;
-    entry->swap.remote_offset    = remote_offset;
-    entry->swap.user_ptr         = user_ptr;
-    entry->swap.hdr_data         = hdr_data;
-    entry->swap.atomic_operand   = operand;
-    entry->swap.atomic_operation = operation;
-    entry->swap.atomic_datatype  = datatype;
+    entry->swap.args.cmd_get_md_handle =  get_md_hc;  
+    entry->swap.args.cmd_local_get_offset = local_get_offset;
+    entry->swap.args.cmd_put_md_handle    = put_md_hc;
+    entry->swap.args.cmd_local_put_offset = local_put_offset;
+    entry->swap.args.length           = length;
+    entry->swap.args.target_id        = target_id;
+    entry->swap.args.pt_index         = pt_index;
+    entry->swap.args.match_bits       = match_bits;
+    entry->swap.args.remote_offset    = remote_offset;
+    entry->swap.args.user_ptr         = user_ptr;
+    entry->swap.args.hdr_data         = hdr_data;
+    entry->swap.atomic_args.operand   = operand;
+    entry->swap.atomic_args.operation = operation;
+    entry->swap.atomic_args.datatype  = datatype;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface),

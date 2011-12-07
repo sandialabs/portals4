@@ -12,7 +12,7 @@ struct ptl_triggered_op_t {
     ptl_size_t  threshold;
     int         index;
     union {
-        ptl_ctop_t   ct_op;
+        ptl_ctop_args_t   ct_op;
     } u;
 };
 typedef struct ptl_triggered_op_t ptl_triggered_op_t;

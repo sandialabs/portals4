@@ -6,7 +6,7 @@
 
 int 
 triggered_impl( struct ptl_ppe_ni_t *ppe_ni, int type,
-                                        ptl_triggered_t *cmd, void *op )
+                                        ptl_triggered_args_t *cmd, void *op )
 {
     ptl_ppe_ct_t      *ppe_ct;
 

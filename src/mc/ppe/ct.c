@@ -30,7 +30,7 @@ ct_free_impl( ptl_ppe_ni_t *ppe_ni, ptl_cqe_ctfree_t *cmd )
 }
 
 int
-ct_op_impl( ptl_ppe_ni_t *ppe_ni, int type, ptl_ctop_t *cmd )
+ct_op_impl( ptl_ppe_ni_t *ppe_ni, int type, ptl_ctop_args_t *cmd )
 {
     PPE_DBG("ct_index=%d type=%d\n", cmd->ct_handle.s.code, type );
 

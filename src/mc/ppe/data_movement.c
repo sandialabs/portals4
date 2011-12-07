@@ -19,8 +19,8 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
 
     PPE_DBG("remote_id=%d type=%d\n",cmd->base.remote_id,cmd->base.type);
 
-    ppe_ni = &ctx->clients[cmd->base.remote_id].nis[cmd->md_handle.s.ni];
-    ppe_md = ppe_ni->ppe_md + cmd->md_handle.s.code; 
+    ppe_ni = &ctx->clients[cmd->base.remote_id].nis[cmd->args.md_handle.s.ni];
+    ppe_md = ppe_ni->ppe_md + cmd->args.md_handle.s.code; 
 
     nal_ctx = malloc( sizeof( *nal_ctx ) );
     assert(nal_ctx);
@@ -28,30 +28,30 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
     nal_ctx->type           = MD_CTX;
     nal_ctx->ppe_ni         = ppe_ni;
     nal_ctx->u.md.ppe_md    = ppe_md;
-    nal_ctx->u.md.user_ptr  = cmd->user_ptr;
+    nal_ctx->u.md.user_ptr  = cmd->args.user_ptr;
     nal_ctx->iovec.iov_base = ppe_md->xpmem_ptr->data;
     nal_ctx->iovec.iov_len  = ppe_md->xpmem_ptr->length;
 
     // MJL who should do the phys vs logical check app or engine? 
     nal_ctx->hdr.src.pid         = cmd->base.remote_id;
-    nal_ctx->hdr.target.pid      = cmd->target_id.phys.pid;
+    nal_ctx->hdr.target.pid      = cmd->args.target_id.phys.pid;
 
-    nal_ctx->hdr.length          = cmd->length;
-    nal_ctx->hdr.match_bits      = cmd->match_bits;
-    nal_ctx->hdr.dest_offset     = cmd->remote_offset;
-    nal_ctx->hdr.remaining       = cmd->length;
-    nal_ctx->hdr.pt_index        = cmd->pt_index;
-    nal_ctx->hdr.hdr_data        = cmd->hdr_data;
-    nal_ctx->hdr.ni              = cmd->md_handle.s.ni;
-    nal_ctx->hdr.atomic_operation = cmd->atomic_operation;
-    nal_ctx->hdr.atomic_datatype  = cmd->atomic_datatype;
+    nal_ctx->hdr.length          = cmd->args.length;
+    nal_ctx->hdr.match_bits      = cmd->args.match_bits;
+    nal_ctx->hdr.dest_offset     = cmd->args.remote_offset;
+    nal_ctx->hdr.remaining       = cmd->args.length;
+    nal_ctx->hdr.pt_index        = cmd->args.pt_index;
+    nal_ctx->hdr.hdr_data        = cmd->args.hdr_data;
+    nal_ctx->hdr.ni              = cmd->args.md_handle.s.ni;
+    nal_ctx->hdr.atomic_operation = cmd->atomic_args.operation;
+    nal_ctx->hdr.atomic_datatype  = cmd->atomic_args.datatype;
 
     // MJL: can we structure things such that the cmd type can be used in the
     // ptl hdr? 
     switch ( cmd->base.type ) {
       case PTLPUT: 
         nal_ctx->hdr.type   = HDR_TYPE_PUT;
-        ack = cmd->ack_req;
+        ack = cmd->args.ack_req;
         break;
       case PTLGET: 
         nal_ctx->hdr.type   = HDR_TYPE_GET;
@@ -59,7 +59,7 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
         break;
       case PTLATOMIC: 
         nal_ctx->hdr.type   = HDR_TYPE_ATOMIC;
-        ack = cmd->ack_req;
+        ack = cmd->args.ack_req;
         break;
       case PTLFETCHATOMIC: 
         nal_ctx->hdr.type   = HDR_TYPE_FETCHATOMIC;
@@ -72,23 +72,25 @@ data_movement_impl( ptl_ppe_t *ctx, ptl_cqe_data_movement_t *cmd )
     }
 
     if ( cmd->base.type != PTLGET ) {
-        nal_ctx->hdr.ack_req         = cmd->ack_req;
-        nal_len    = cmd->length;
-        nal_offset = cmd->local_offset;
+        nal_ctx->hdr.ack_req         = cmd->args.ack_req;
+        nal_len    = cmd->args.length;
+        nal_offset = cmd->args.local_offset;
     }
 
     if ( ack == PTL_ACK_REQ ) {
         nal_ctx->hdr.ack_ctx_key = 
-            alloc_ack_ctx( cmd->md_handle, cmd->local_offset, cmd->user_ptr );
+            alloc_ack_ctx( cmd->args.md_handle, cmd->args.local_offset, 
+                    cmd->args.user_ptr );
         assert( nal_ctx->hdr.ack_ctx_key ); 
     }
 
-    dst.nid = cmd->target_id.phys.nid;
-    dst.pid = cmd->target_id.phys.pid;
+    dst.nid = cmd->args.target_id.phys.nid;
+    dst.pid = cmd->args.target_id.phys.pid;
     
     ++ppe_md->ref_cnt;
 
-    PPE_DBG("dst nid=%#x pid=%d length=%lu\n",dst.nid,dst.pid, cmd->length );
+    PPE_DBG("dst nid=%#x pid=%d length=%lu\n",dst.nid,dst.pid, 
+                                                    cmd->args.length );
     PPE_DBG("nal_offset=%lu nal_len=%lu\n",nal_offset,nal_len);
 
     retval = ctx->ni.nal->send( &ctx->ni,

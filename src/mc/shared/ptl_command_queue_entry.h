@@ -113,17 +113,17 @@ typedef struct {
     ptl_internal_handle_converter_t     ct_handle;
     ptl_size_t                          threshold;
     int                                 index;
-} ptl_triggered_t;
+} ptl_triggered_args_t;
 
 typedef struct {
     ptl_internal_handle_converter_t     ct_handle; 
     ptl_ct_event_t                      ct_event;
-} ptl_ctop_t;
+} ptl_ctop_args_t;
 
 typedef struct {
     ptl_cqe_base_t          base;
-    ptl_ctop_t              op;
-    ptl_triggered_t         triggered;
+    ptl_ctop_args_t         args;
+    ptl_triggered_args_t    triggered_args;
 } ptl_cqe_ctop_t;
 
 typedef struct {
@@ -171,11 +171,16 @@ typedef struct {
 } ptl_cqe_ptfree_t;
 
 typedef struct {
+    const void      *operand;
+    ptl_op_t         operation;
+    ptl_datatype_t   datatype;
+} ptl_atomic_args_t;
+
+typedef struct {
     #define cmd_put_md_handle md_handle
     #define cmd_get_md_handle md_handle2
     #define cmd_local_put_offset local_offset
     #define cmd_local_get_offset local_offset2 
-    ptl_cqe_base_t base;
     ptl_internal_handle_converter_t      md_handle;    
     ptl_size_t       local_offset;
     ptl_internal_handle_converter_t      md_handle2;    
@@ -188,9 +193,13 @@ typedef struct {
     ptl_size_t       remote_offset;
     void            *user_ptr;
     ptl_hdr_data_t   hdr_data;
-    const void      *atomic_operand;
-    ptl_op_t         atomic_operation;
-    ptl_datatype_t   atomic_datatype;
+} ptl_data_movement_args_t;
+
+typedef struct {
+    ptl_cqe_base_t           base;
+    ptl_data_movement_args_t args;
+    ptl_atomic_args_t        atomic_args;
+    ptl_triggered_args_t     triggered_args;
 } ptl_cqe_data_movement_t;
 
 typedef ptl_cqe_data_movement_t ptl_cqe_put_t;
