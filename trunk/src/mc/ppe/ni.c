@@ -91,6 +91,7 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     ni->client_ct = OFFSETPTR(ni->client_ptr->data, cmd->cts);
     ni->client_eq = OFFSETPTR(ni->client_ptr->data, cmd->eqs);
     ni->client_pt = OFFSETPTR(ni->client_ptr->data, cmd->pts);
+    ni->client_triggered = OFFSETPTR(ni->client_ptr->data, cmd->triggered);
 
     /* set client's physical process */
     phys_proc->phys.nid = ctx->nid;
@@ -101,8 +102,12 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     ni->ppe_le = malloc( sizeof( *ni->ppe_le) * ni->limits->max_list_size );
     ni->ppe_pt = malloc( sizeof( *ni->ppe_pt) * ni->limits->max_pt_index );
     ni->ppe_eq = malloc( sizeof( *ni->ppe_eq) * ni->limits->max_eqs );
+    ni->ppe_ct = malloc( sizeof( *ni->ppe_ct) * ni->limits->max_cts );
     for ( i = 0; i < ni->limits->max_pt_index; i++ ) {
         ni->ppe_pt[i].status = 0;
+    }
+    for ( i = 0; i < ni->limits->max_cts; i++ ) {
+        ptl_double_list_init( &ni->ppe_ct[i].triggered_op_list, 0 );
     }
     goto send_retval;
 

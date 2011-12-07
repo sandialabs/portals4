@@ -156,7 +156,8 @@ int PtlNIInit(ptl_interface_t       iface,
             sizeof(ptl_shared_me_t) * limits->max_list_size +
             sizeof(ptl_internal_ct_t) * limits->max_cts +
             sizeof(ptl_internal_eq_t) * limits->max_eqs +
-            sizeof(ptl_internal_pt_t) * limits->max_pt_index;
+            sizeof(ptl_internal_pt_t) * limits->max_pt_index +
+            sizeof(ptl_shared_triggered_t) * limits->max_triggered_ops;
 
         nit->shared_data = malloc(length);
 
@@ -169,6 +170,7 @@ int PtlNIInit(ptl_interface_t       iface,
         nit->i_ct = (void*) (nit->i_me + limits->max_list_size );
         nit->i_eq = (void*) (nit->i_ct + limits->max_cts );
         nit->i_pt = (void*) (nit->i_eq + limits->max_eqs );
+        nit->i_triggered = (void*) (nit->i_pt + limits->max_pt_index );
 
         ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
 
@@ -187,6 +189,7 @@ int PtlNIInit(ptl_interface_t       iface,
         entry->niInit.cts = PTROFFSET(nit->shared_data, nit->i_ct);
         entry->niInit.eqs = PTROFFSET(nit->shared_data, nit->i_eq);
         entry->niInit.pts = PTROFFSET(nit->shared_data, nit->i_pt);
+        entry->niInit.triggered = PTROFFSET(nit->shared_data, nit->i_triggered);
         entry->niInit.retval_ptr = &cmd_ret;
 
         ret = ptl_cq_entry_send(ptl_iface_get_cq(&ptl_iface), 

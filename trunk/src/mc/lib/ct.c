@@ -50,6 +50,7 @@ PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type         = PTLCTALLOC;
+    entry->base.ni           = ni.s.ni;
     entry->base.remote_id    = ptl_iface_get_rank(&ptl_iface);
     entry->ctAlloc.ct_handle = ct_hc;
 
@@ -84,6 +85,7 @@ PtlCTFree(ptl_handle_ct_t ct_handle)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type        = PTLCTFREE;
+    entry->base.ni          = ct_hc.s.ni;
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 
@@ -276,13 +278,19 @@ ct_op( int type, ptl_handle_ct_t ct_handle, ptl_ct_event_t  ct_event,
 
     entry->base.type            = type;
     entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
-    entry->ctOp.ct_handle       = ct_hc;
-    entry->ctOp.ct_event        = ct_event;
+    entry->base.ni              = ct_hc.s.ni;
+    entry->ctOp.op.ct_handle    = ct_hc;
+    entry->ctOp.op.ct_event     = ct_event;
 
-    // MJL whould it be faster to simply write this or do an if ? 
     if ( type == PTLTRIGCTSET || type == PTLTRIGCTINC ) {
-        entry->ctOp.trig_ct_handle = (ptl_internal_handle_converter_t) ct_hc;
-        entry->ctOp.trig_threshold = trig_threshold;
+        entry->ctOp.triggered.ct_handle = 
+                            (ptl_internal_handle_converter_t) trig_ct_handle;
+        entry->ctOp.triggered.threshold = trig_threshold;
+        entry->ctOp.triggered.index = find_triggered_index( ct_hc.s.ni ); 
+        if ( entry->ctOp.triggered.index == -1 ) {
+            ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
+            return PTL_FAIL; 
+        }
     }
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
