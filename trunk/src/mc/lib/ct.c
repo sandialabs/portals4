@@ -279,15 +279,15 @@ ct_op( int type, ptl_handle_ct_t ct_handle, ptl_ct_event_t  ct_event,
     entry->base.type            = type;
     entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
     entry->base.ni              = ct_hc.s.ni;
-    entry->ctOp.op.ct_handle    = ct_hc;
-    entry->ctOp.op.ct_event     = ct_event;
+    entry->ctOp.args.ct_handle    = ct_hc;
+    entry->ctOp.args.ct_event     = ct_event;
 
     if ( type == PTLTRIGCTSET || type == PTLTRIGCTINC ) {
-        entry->ctOp.triggered.ct_handle = 
+        entry->ctOp.triggered_args.ct_handle = 
                             (ptl_internal_handle_converter_t) trig_ct_handle;
-        entry->ctOp.triggered.threshold = trig_threshold;
-        entry->ctOp.triggered.index = find_triggered_index( ct_hc.s.ni ); 
-        if ( entry->ctOp.triggered.index == -1 ) {
+        entry->ctOp.triggered_args.threshold = trig_threshold;
+        entry->ctOp.triggered_args.index = find_triggered_index( ct_hc.s.ni ); 
+        if ( entry->ctOp.triggered_args.index == -1 ) {
             ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
             return PTL_FAIL; 
         }

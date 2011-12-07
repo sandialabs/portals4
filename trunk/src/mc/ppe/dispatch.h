@@ -12,9 +12,9 @@ int setmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_setmap_t *cmd);
 int getmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_getmap_t *cmd);
 int ct_alloc_impl(struct ptl_ppe_ni_t *, ptl_cqe_ctalloc_t * );
 int ct_free_impl(struct ptl_ppe_ni_t *, ptl_cqe_ctfree_t * );
-int ct_op_impl(struct ptl_ppe_ni_t *, int type, ptl_ctop_t * );
+int ct_op_impl(struct ptl_ppe_ni_t *, int type, ptl_ctop_args_t * );
 int triggered_impl(struct ptl_ppe_ni_t *, int type,
-                                        ptl_triggered_t *, void *op);
+                                        ptl_triggered_args_t *, void *op);
 int atomic_sync_impl(struct ptl_ppe_t *ctx, ptl_cqe_atomicsync_t *cmd );
 int eq_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_eqalloc_t *cmd );
 int eq_free_impl(struct ptl_ppe_t *ctx, ptl_cqe_eqfree_t *cmd );

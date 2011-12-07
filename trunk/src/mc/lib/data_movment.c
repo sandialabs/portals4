@@ -74,16 +74,16 @@ int PtlPut(ptl_handle_md_t  md_handle,
     
     entry->base.type = PTLPUT;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->put.md_handle = md_hc; 
-    entry->put.local_offset  = local_offset;
-    entry->put.length        = length;
-    entry->put.ack_req       = ack_req;
-    entry->put.target_id     = target_id;
-    entry->put.match_bits    = match_bits;
-    entry->put.remote_offset = remote_offset;
-    entry->put.user_ptr      = user_ptr;
-    entry->put.pt_index      = pt_index;
-    entry->put.hdr_data      = hdr_data; 
+    entry->put.args.md_handle = md_hc; 
+    entry->put.args.local_offset  = local_offset;
+    entry->put.args.length        = length;
+    entry->put.args.ack_req       = ack_req;
+    entry->put.args.target_id     = target_id;
+    entry->put.args.match_bits    = match_bits;
+    entry->put.args.remote_offset = remote_offset;
+    entry->put.args.user_ptr      = user_ptr;
+    entry->put.args.pt_index      = pt_index;
+    entry->put.args.hdr_data      = hdr_data; 
     
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface),
@@ -156,14 +156,14 @@ PtlGet(ptl_handle_md_t  md_handle,
     
     entry->base.type = PTLGET;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->get.md_handle     = md_hc;
-    entry->get.local_offset  = local_offset; 
-    entry->get.length        = length;
-    entry->get.target_id     = target_id; 
-    entry->get.pt_index      = pt_index; 
-    entry->get.match_bits    = match_bits; 
-    entry->get.remote_offset = remote_offset; 
-    entry->get.user_ptr      = user_ptr; 
+    entry->get.args.md_handle     = md_hc;
+    entry->get.args.local_offset  = local_offset; 
+    entry->get.args.length        = length;
+    entry->get.args.target_id     = target_id; 
+    entry->get.args.pt_index      = pt_index; 
+    entry->get.args.match_bits    = match_bits; 
+    entry->get.args.remote_offset = remote_offset; 
+    entry->get.args.user_ptr      = user_ptr; 
     
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface), 

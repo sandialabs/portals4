@@ -82,13 +82,13 @@ progress_loop(ptl_ppe_t *ctx)
 
             case PTLCTSET:
             case PTLCTINC:
-                ct_op_impl( ppe_ni, entry.base.type, &entry.ctOp.op );
+                ct_op_impl( ppe_ni, entry.base.type, &entry.ctOp.args );
                 break;
 
             case PTLTRIGCTSET:
             case PTLTRIGCTINC:
-                triggered_impl( ppe_ni, entry.base.type, &entry.ctOp.triggered, 
-                                                            &entry.ctOp.op );
+                triggered_impl( ppe_ni, entry.base.type, 
+                            &entry.ctOp.triggered_args, &entry.ctOp.args );
                 break;
 
             case PTLEQALLOC:
