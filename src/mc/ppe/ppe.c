@@ -20,6 +20,7 @@ progress_loop(ptl_ppe_t *ctx)
 {
     int ret, i;
     ptl_cqe_t entry;
+    ptl_ppe_ni_t     *ppe_ni; 
 
     while (0 == ctx->shutdown) {
         ret = ptl_cm_server_progress(ctx->cm_h);
@@ -38,6 +39,18 @@ progress_loop(ptl_ppe_t *ctx)
             } else if (ret == 1) {
                 break;
             }
+
+            if ( ! ( entry.base.remote_id < MC_PEER_COUNT ) ) { 
+                fprintf(stderr,"remote_id %d out of range\n", entry.base.remote_id );
+                break;
+            }
+
+            if ( ! ( entry.base.ni < 4 ) ) { 
+                fprintf(stderr,"ni %d out of range\n", entry.base.ni );
+                break;
+            }
+            ppe_ni = &ctx->clients[ entry.base.remote_id ].nis[ entry.base.ni ];
+
             switch(entry.base.type) {
             case PTLPROCATTACH:
                 proc_attach_impl(ctx, &entry.procAttach);
@@ -60,21 +73,22 @@ progress_loop(ptl_ppe_t *ctx)
                 break;
 
             case PTLCTALLOC:
-                ct_alloc_impl( ctx, &entry.ctAlloc );
+                ct_alloc_impl( ppe_ni, &entry.ctAlloc );
                 break;
 
             case PTLCTFREE:
-                ct_free_impl( ctx, &entry.ctFree );
+                ct_free_impl( ppe_ni, &entry.ctFree );
                 break;
 
             case PTLCTSET:
-            case PTLTRIGCTSET:
-                ct_set_impl( ctx, &entry.ctOp );
+            case PTLCTINC:
+                ct_op_impl( ppe_ni, entry.base.type, &entry.ctOp.op );
                 break;
 
-            case PTLCTINC:
+            case PTLTRIGCTSET:
             case PTLTRIGCTINC:
-                ct_inc_impl( ctx, &entry.ctOp );
+                triggered_impl( ppe_ni, entry.base.type, &entry.ctOp.triggered, 
+                                                            &entry.ctOp.op );
                 break;
 
             case PTLEQALLOC:

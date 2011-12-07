@@ -18,6 +18,7 @@
 #include "lib/include/ptl_internal_CT.h"
 #include "lib/include/ptl_internal_EQ.h"
 #include "lib/include/ptl_internal_PT.h"
+#include "lib/include/ptl_internal_triggered.h"
 
 
 #define PPE_DBG( fmt, args...) \
@@ -32,6 +33,12 @@ fprintf(stderr,"%s():%i: " fmt, __FUNCTION__, __LINE__, ## args);
 #include "nal/p3.3/include/p3lib/nal.h"
 
 typedef ptl_internal_handle_converter_t ptl_handle_generic_t;
+
+
+struct ptl_ppe_ct_t {
+    ptl_double_list_t   triggered_op_list;
+};
+typedef struct ptl_ppe_ct_t ptl_ppe_ct_t;
 
 struct ptl_ppe_eq_t {
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr;
@@ -121,11 +128,13 @@ struct ptl_ppe_ni_t {
     ptl_internal_ct_t   *client_ct;
     ptl_internal_eq_t   *client_eq;
     ptl_internal_pt_t   *client_pt;
+    ptl_shared_triggered_t   *client_triggered;
     ptl_ppe_md_t        *ppe_md;
     ptl_ppe_me_t        *ppe_me;
     ptl_ppe_le_t        *ppe_le;
     ptl_ppe_pt_t        *ppe_pt;
     ptl_ppe_eq_t        *ppe_eq;
+    ptl_ppe_ct_t        *ppe_ct;
 };
 typedef struct ptl_ppe_ni_t ptl_ppe_ni_t;
 

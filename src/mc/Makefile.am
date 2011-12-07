@@ -38,6 +38,8 @@ portals_engine_SOURCES = \
 	ppe/ppe_xpmem.c \
 	ppe/pt.c \
 	ppe/ptl_hdr.h \
+	ppe/triggered.c \
+	ppe/triggered.h \
 	ppe/nal/p3.3/include/p3-config.h \
 	ppe/nal/p3.3/include/p3nal_utcp.h \
 	ppe/nal/p3.3/include/p3/debug.h \

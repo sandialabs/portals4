@@ -14,13 +14,13 @@
 #include "ppe/eq.h"
 #include "ppe/ct.h"
 #include "ppe/atomic.h"
+//#include "ppe/triggered.h"
 #include "ppe/matching_list_entries.h"
 
 #define PTL_LOCK_UNLOCK(x)
 #define PTL_LOCK_LOCK(x)
 #define PtlInternalPAPIStartC()
 #define PtlInternalPAPIDoneC(x,y)
-#define PtlInternalAmITheCatcher() 1
 #define PtlInternalFragmentSize(x) 0
 #define PtlInternalPTBufferUnexpectedHeader(t, hdr, entry, fragment_mlength, report_this_start)
 #define PtlInternalAtomicInc(x,y) 0
@@ -1637,11 +1637,13 @@ void PtlInternalAnnounceMEDelivery( nal_ctx_t *nal_ctx,
         } else {
             PtlInternalCTSuccessInc(nal_ctx->ppe_ni, ct_handle, mlength);
         }
+#if 0
         if (PtlInternalAmITheCatcher()) {
             PtlInternalCTPullTriggers(ct_handle);
         } else {
             PtlInternalCTTriggerCheck(ct_handle);
         }
+#endif
     }
     if (eq_handle != PTL_EQ_NONE) {
         if (((foundin == OVERFLOW) && ((options & PTL_ME_EVENT_OVER_DISABLE) == 0)) ||

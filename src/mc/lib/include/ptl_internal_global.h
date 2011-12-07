@@ -131,5 +131,24 @@ get_eq( int ni, int eq_index )
     return ptl_iface.ni[ni].i_eq + eq_index;
 } 
 
+static inline int
+find_triggered_index(int ni)
+{
+    int index;
+    for ( index = 0; index < nit_limits[ni].max_triggered_ops; index++ ) {
+        if ( ! ptl_iface.ni[ni].i_triggered[ index ].in_use ) {
+            ptl_iface.ni[ni].i_triggered[ index ].in_use = 1; 
+            return index;
+        }
+    }
+    return -1;
+}
+
+static inline void
+free_triggered_index( int ni, int eq_index )
+{
+    ptl_iface.ni[ni].i_triggered[ eq_index ].in_use = 0; 
+}
+
 #endif
 /* vim:set expandtab: */

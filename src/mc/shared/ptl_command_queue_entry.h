@@ -46,7 +46,8 @@ typedef enum {
 
 struct ptl_cqe_base_t {
     unsigned char type      : 8;
-    unsigned int  remote_id : 24;
+    unsigned char ni        : 2;
+    unsigned int  remote_id : 22;
 };
 typedef struct ptl_cqe_base_t ptl_cqe_base_t;
 
@@ -71,6 +72,7 @@ typedef struct {
     int             cts;
     int             eqs;
     int             pts;
+    int             triggered;
     int            *retval_ptr;
 } ptl_cqe_niinit_t;
 
@@ -106,12 +108,22 @@ typedef struct {
     ptl_internal_handle_converter_t     ct_handle; 
 } ptl_cqe_ctfree_t;
 
+
 typedef struct {
-    ptl_cqe_base_t base;
+    ptl_internal_handle_converter_t     ct_handle;
+    ptl_size_t                          threshold;
+    int                                 index;
+} ptl_triggered_t;
+
+typedef struct {
     ptl_internal_handle_converter_t     ct_handle; 
     ptl_ct_event_t                      ct_event;
-    ptl_internal_handle_converter_t     trig_ct_handle;
-    ptl_size_t                          trig_threshold;
+} ptl_ctop_t;
+
+typedef struct {
+    ptl_cqe_base_t          base;
+    ptl_ctop_t              op;
+    ptl_triggered_t         triggered;
 } ptl_cqe_ctop_t;
 
 typedef struct {

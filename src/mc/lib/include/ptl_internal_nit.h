@@ -11,6 +11,7 @@
 #include "ptl_internal_CT.h"
 #include "ptl_internal_EQ.h"
 #include "ptl_internal_PT.h"
+#include "ptl_internal_triggered.h"
 
 
 typedef struct {
@@ -27,6 +28,7 @@ typedef struct {
     ptl_internal_ct_t              *i_ct;
     ptl_internal_eq_t              *i_eq;
     ptl_internal_pt_t              *i_pt;
+    ptl_shared_triggered_t         *i_triggered;
 } ptl_internal_ni_t;
 
 extern ptl_ni_limits_t nit_limits[4];
