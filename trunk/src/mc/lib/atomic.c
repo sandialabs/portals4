@@ -6,13 +6,14 @@
 #include "ptl_internal_error.h"
 #include "ptl_internal_nit.h"
 #include "ptl_internal_MD.h"
+#include "ptl_internal_global.h"
 #include "ptl_internal_pid.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
 
-int
-PtlAtomic(ptl_handle_md_t  md_handle,
+static inline int
+ptl_atomic(int type, ptl_handle_md_t  md_handle,
           ptl_size_t       local_offset,
           ptl_size_t       length,
           ptl_ack_req_t    ack_req,
@@ -23,7 +24,9 @@ PtlAtomic(ptl_handle_md_t  md_handle,
           void            *user_ptr,
           ptl_hdr_data_t   hdr_data,
           ptl_op_t         operation,
-          ptl_datatype_t   datatype)
+          ptl_datatype_t   datatype,
+          ptl_handle_ct_t  trig_ct_handle,
+          ptl_size_t       trig_threshold )
 {
     const ptl_internal_handle_converter_t md_hc         = { md_handle };
     int ret;
@@ -137,12 +140,24 @@ PtlAtomic(ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
+    if ( type == PTLTRIGATOMIC ) {
+        const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+        if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
+            return PTL_ARG_INVALID;
+        }
+        if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+            VERBOSE_ERROR("Triggered operations not allowed on this NI (%i);"
+                            " max_triggered_ops set to zero\n", tct.s.ni);
+            return PTL_ARG_INVALID;
+        }
+    }
+
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLATOMIC;
+    entry->base.type = type;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->atomic.args.md_handle       = md_hc;
     entry->atomic.args.local_offset    = local_offset;
@@ -157,6 +172,17 @@ PtlAtomic(ptl_handle_md_t  md_handle,
     entry->atomic.atomic_args.operation       = operation;
     entry->atomic.atomic_args.datatype        = datatype;
 
+    if ( type == PTLTRIGATOMIC ) {
+        entry->atomic.triggered_args.ct_handle = 
+                            (ptl_internal_handle_converter_t) trig_ct_handle;
+        entry->atomic.triggered_args.threshold = trig_threshold;
+        entry->atomic.triggered_args.index = find_triggered_index( md_hc.s.ni );
+        if ( entry->atomic.triggered_args.index == -1 ) {
+            ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
+            return PTL_FAIL; 
+        }
+    }                 
+
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface),
                                   entry, sizeof(ptl_cqe_atomic_t));
@@ -166,8 +192,8 @@ PtlAtomic(ptl_handle_md_t  md_handle,
 }
 
 
-int
-PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
+static inline int
+ptl_fetch_atomic( int type, ptl_handle_md_t  get_md_handle,
                ptl_size_t       local_get_offset,
                ptl_handle_md_t  put_md_handle,
                ptl_size_t       local_put_offset,
@@ -179,7 +205,9 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
                void            *user_ptr,
                ptl_hdr_data_t   hdr_data,
                ptl_op_t         operation,
-               ptl_datatype_t   datatype)
+               ptl_datatype_t   datatype,
+               ptl_handle_ct_t  trig_ct_handle,
+               ptl_size_t       trig_threshold )
 {
     const ptl_internal_handle_converter_t get_md     = { get_md_handle };
     const ptl_internal_handle_converter_t put_md     = { put_md_handle };
@@ -304,12 +332,24 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }
+    if ( type == PTLTRIGFETCHATOMIC) {
+        const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+        if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
+            return PTL_ARG_INVALID;
+        }
+        if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+            VERBOSE_ERROR("Triggered operations not allowed on this NI (%i);"
+                            " max_triggered_ops set to zero\n", tct.s.ni);
+            return PTL_ARG_INVALID;
+        }
+    }
+
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLFETCHATOMIC;
+    entry->base.type = type;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->fetchAtomic.args.cmd_get_md_handle =  get_md;  
     entry->fetchAtomic.args.cmd_local_get_offset = local_get_offset;
@@ -325,6 +365,17 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
     entry->fetchAtomic.atomic_args.operation = operation;
     entry->fetchAtomic.atomic_args.datatype  = datatype;
 
+    if ( type == PTLTRIGFETCHATOMIC ) {
+        entry->fetchAtomic.triggered_args.ct_handle = 
+                            (ptl_internal_handle_converter_t) trig_ct_handle;
+        entry->fetchAtomic.triggered_args.threshold = trig_threshold;
+        entry->fetchAtomic.triggered_args.index = find_triggered_index( get_md.s.ni );
+        if ( entry->fetchAtomic.triggered_args.index == -1 ) {
+            ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
+            return PTL_FAIL; 
+        }
+    }                 
+
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface), 
                                   entry, sizeof(ptl_cqe_fetchatomic_t));
@@ -334,8 +385,8 @@ PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
 }
 
 
-int
-PtlSwap(ptl_handle_md_t  get_md_handle,
+static inline int
+ptl_swap(int type, ptl_handle_md_t  get_md_handle,
         ptl_size_t       local_get_offset,
         ptl_handle_md_t  put_md_handle,
         ptl_size_t       local_put_offset,
@@ -348,7 +399,9 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
         ptl_hdr_data_t   hdr_data,
         const void      *operand,
         ptl_op_t         operation,
-        ptl_datatype_t   datatype)
+        ptl_datatype_t   datatype,
+        ptl_handle_ct_t  trig_ct_handle,
+        ptl_size_t       trig_threshold )
 {
     const ptl_internal_handle_converter_t get_md_hc = { get_md_handle };
     const ptl_internal_handle_converter_t put_md_hc = { put_md_handle };
@@ -471,12 +524,24 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Offsets are only stored internally as 48 bits.\n");
         return PTL_ARG_INVALID;
     }           
+    if ( type == PTLTRIGSWAP ) {
+        const ptl_internal_handle_converter_t tct = { trig_ct_handle };
+        if (PtlInternalCTHandleValidator(trig_ct_handle, 0)) {
+            return PTL_ARG_INVALID;
+        }
+        if (nit_limits[tct.s.ni].max_triggered_ops == 0) {
+            VERBOSE_ERROR("Triggered operations not allowed on this NI (%i);"
+                            " max_triggered_ops set to zero\n", tct.s.ni);
+            return PTL_ARG_INVALID;
+        }
+    }
+
 #endif  /* ifndef NO_ARG_VALIDATION */
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = PTLSWAP;
+    entry->base.type = type;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
     entry->swap.args.cmd_get_md_handle =  get_md_hc;  
     entry->swap.args.cmd_local_get_offset = local_get_offset;
@@ -493,6 +558,17 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
     entry->swap.atomic_args.operation = operation;
     entry->swap.atomic_args.datatype  = datatype;
 
+    if ( type == PTLTRIGSWAP ) {
+        entry->swap.triggered_args.ct_handle = 
+                            (ptl_internal_handle_converter_t) trig_ct_handle;
+        entry->swap.triggered_args.threshold = trig_threshold;
+        entry->swap.triggered_args.index = find_triggered_index( get_md_hc.s.ni );
+        if ( entry->swap.triggered_args.index == -1 ) {
+            ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
+            return PTL_FAIL; 
+        }
+    }                 
+
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                                   ptl_iface_get_peer(&ptl_iface),
                                   entry, sizeof(ptl_cqe_swap_t));
@@ -501,6 +577,129 @@ PtlSwap(ptl_handle_md_t  get_md_handle,
     return PTL_OK;
 }
 
+int PtlAtomic(ptl_handle_md_t  md_handle,
+                       ptl_size_t       local_offset,
+                       ptl_size_t       length,
+                       ptl_ack_req_t    ack_req,
+                       ptl_process_t    target_id,
+                       ptl_pt_index_t   pt_index,
+                       ptl_match_bits_t match_bits,
+                       ptl_size_t       remote_offset,
+                       void            *user_ptr,
+                       ptl_hdr_data_t   hdr_data,
+                       ptl_op_t         operation,
+                       ptl_datatype_t   datatype )
+{
+    return ptl_atomic( PTLATOMIC, md_handle, local_offset, length, ack_req,
+        target_id, pt_index, match_bits, remote_offset, user_ptr, hdr_data, 
+        operation, datatype, PTL_INVALID_HANDLE, 0 );
+}
+
+int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
+                       ptl_size_t       local_offset,
+                       ptl_size_t       length,
+                       ptl_ack_req_t    ack_req,
+                       ptl_process_t    target_id,
+                       ptl_pt_index_t   pt_index,
+                       ptl_match_bits_t match_bits,
+                       ptl_size_t       remote_offset,
+                       void            *user_ptr,
+                       ptl_hdr_data_t   hdr_data,
+                       ptl_op_t         operation,
+                       ptl_datatype_t   datatype,
+                       ptl_handle_ct_t  trig_ct_handle,
+                       ptl_size_t       trig_threshold)
+{
+    return ptl_atomic( PTLTRIGATOMIC, md_handle, local_offset, length, ack_req,
+        target_id, pt_index, match_bits, remote_offset, user_ptr, hdr_data,
+        operation, datatype, trig_ct_handle, trig_threshold );
+}
+
+int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
+                            ptl_size_t       local_get_offset,
+                            ptl_handle_md_t  put_md_handle,
+                            ptl_size_t       local_put_offset,
+                            ptl_size_t       length,
+                            ptl_process_t    target_id,
+                            ptl_pt_index_t   pt_index,
+                            ptl_match_bits_t match_bits,
+                            ptl_size_t       remote_offset,
+                            void            *user_ptr,
+                            ptl_hdr_data_t   hdr_data,
+                            ptl_op_t         operation,
+                            ptl_datatype_t   datatype )
+{
+    return ptl_fetch_atomic( PTLFETCHATOMIC, get_md_handle, local_get_offset,
+        put_md_handle, local_put_offset, length, target_id, pt_index, 
+        match_bits, remote_offset, user_ptr, hdr_data, operation, datatype,
+        PTL_INVALID_HANDLE, 0 );
+}
+
+int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
+                            ptl_size_t       local_get_offset,
+                            ptl_handle_md_t  put_md_handle,
+                            ptl_size_t       local_put_offset,
+                            ptl_size_t       length,
+                            ptl_process_t    target_id,
+                            ptl_pt_index_t   pt_index,
+                            ptl_match_bits_t match_bits,
+                            ptl_size_t       remote_offset,
+                            void            *user_ptr,
+                            ptl_hdr_data_t   hdr_data,
+                            ptl_op_t         operation,
+                            ptl_datatype_t   datatype,
+                            ptl_handle_ct_t  trig_ct_handle,
+                            ptl_size_t       trig_threshold)
+{
+    return ptl_fetch_atomic( PTLTRIGFETCHATOMIC, get_md_handle,
+        local_get_offset, put_md_handle, local_put_offset, length, target_id,
+        pt_index, match_bits, remote_offset, user_ptr, hdr_data, operation,
+        datatype, trig_ct_handle, trig_threshold );
+}
+
+int PtlSwap(ptl_handle_md_t  get_md_handle,
+                     ptl_size_t       local_get_offset,
+                     ptl_handle_md_t  put_md_handle,
+                     ptl_size_t       local_put_offset,
+                     ptl_size_t       length,
+                     ptl_process_t    target_id,
+                     ptl_pt_index_t   pt_index,
+                     ptl_match_bits_t match_bits,
+                     ptl_size_t       remote_offset,
+                     void            *user_ptr,
+                     ptl_hdr_data_t   hdr_data,
+                     const void      *operand,
+                     ptl_op_t         operation,
+                     ptl_datatype_t   datatype )
+{
+    return ptl_swap( PTLSWAP, get_md_handle,
+        local_get_offset, put_md_handle, local_put_offset, length, target_id,
+        pt_index, match_bits, remote_offset, user_ptr, hdr_data, operand,
+        operation, datatype, PTL_INVALID_HANDLE, 0 );
+}
+
+int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
+                     ptl_size_t       local_get_offset,
+                     ptl_handle_md_t  put_md_handle,
+                     ptl_size_t       local_put_offset,
+                     ptl_size_t       length,
+                     ptl_process_t    target_id,
+                     ptl_pt_index_t   pt_index,
+                     ptl_match_bits_t match_bits,
+                     ptl_size_t       remote_offset,
+                     void            *user_ptr,
+                     ptl_hdr_data_t   hdr_data,
+                     const void      *operand,
+                     ptl_op_t         operation,
+                     ptl_datatype_t   datatype,
+                     ptl_handle_ct_t  trig_ct_handle,
+                     ptl_size_t       trig_threshold)
+{
+    return ptl_swap( PTLTRIGSWAP, get_md_handle,
+        local_get_offset, put_md_handle, local_put_offset, length, target_id,
+        pt_index, match_bits, remote_offset, user_ptr, hdr_data, operand,
+        operation, datatype, trig_ct_handle, trig_threshold );
+}
 
 int
 PtlAtomicSync(void)

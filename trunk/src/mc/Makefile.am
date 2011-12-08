@@ -103,8 +103,7 @@ libportals_mc_la_SOURCES = \
 	lib/me.c \
 	lib/ni.c \
 	lib/pt.c \
-	lib/startup.c \
-	lib/triggered.c
+	lib/startup.c
 libportals_mc_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/mc/lib/include
 libportals_mc_la_LDFLAGS = $(XPMEM_LDFLAGS)
 libportals_mc_la_LIBADD = libportals_mc_shared.la $(XPMEM_LIBS)
