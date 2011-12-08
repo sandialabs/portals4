@@ -87,8 +87,18 @@ progress_loop(ptl_ppe_t *ctx)
 
             case PTLTRIGCTSET:
             case PTLTRIGCTINC:
-                triggered_impl( ppe_ni, entry.base.type, 
+                triggered_ct_impl( ppe_ni, entry.base.type, 
                             &entry.ctOp.triggered_args, &entry.ctOp.args );
+                break;
+
+            case PTLTRIGPUT:
+            case PTLTRIGGET:
+            case PTLTRIGATOMIC:
+            case PTLTRIGFETCHATOMIC:
+            case PTLTRIGSWAP:
+                triggered_data_movement_impl( ppe_ni, entry.base.type,
+                            &entry.put.triggered_args,
+                            &entry.put.args, &entry.put.atomic_args );
                 break;
 
             case PTLEQALLOC:
@@ -112,7 +122,8 @@ progress_loop(ptl_ppe_t *ctx)
             case PTLGET:
             case PTLATOMIC:
             case PTLFETCHATOMIC:
-                data_movement_impl( ctx, &entry.put );
+                data_movement_impl( ppe_ni, entry.base.type,
+                            &entry.put.args, &entry.put.atomic_args );
                 break;
 
             case PTLPTALLOC:

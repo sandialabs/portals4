@@ -135,6 +135,8 @@ struct ptl_ppe_ni_t {
     ptl_ppe_pt_t        *ppe_pt;
     ptl_ppe_eq_t        *ppe_eq;
     ptl_ppe_ct_t        *ppe_ct;
+    lib_ni_t            *nal_ni;
+    ptl_pid_t           pid;
 };
 typedef struct ptl_ppe_ni_t ptl_ppe_ni_t;
 

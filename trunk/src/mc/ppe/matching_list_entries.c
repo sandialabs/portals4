@@ -953,15 +953,16 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
                                      const ptl_size_t          length,
                                      const ptl_size_t          offset,
                                      ptl_internal_appendME_t **matchlist,
-                                     ptl_internal_appendME_t **mprev,
-                                     ptl_me_t                **mme)
+                                     ptl_internal_appendME_t **mprev )
 {                                      /*{{{ */
     ptl_internal_appendME_t *current = *matchlist;
     ptl_internal_appendME_t *prev    = *mprev;
-    ptl_me_t                *me      = *mme;
+    ptl_le_t                *le;
+    ptl_match_stuff_t       *me;
 
     for (; current != NULL; prev = current, current = current->next) {
-        me = (ptl_me_t *)(((uint8_t *)current) + offsetof(ptl_internal_me_t, visible));
+        le = (ptl_le_t *)(((uint8_t *)current) + offsetof(ptl_internal_le_t, visible));
+        me = (ptl_match_stuff_t *)(((uint8_t *)current) + offsetof(ptl_internal_le_t, visible_match_stuff));
 
         //assert(((ptl_internal_me_t *)current)->status != ME_FREE);      // Sanity checking (Brian's bug)
 
@@ -971,8 +972,8 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
             continue;
         }
         /* check for forbidden truncation */
-        if (((me->options & PTL_ME_NO_TRUNCATE) != 0) &&
-            ((length + offset) > (me->length - current->local_offset))) {
+        if (((le->options & PTL_ME_NO_TRUNCATE) != 0) &&
+            ((length + offset) > (le->length - current->local_offset))) {
             continue;
         }
         /* check for match_id */
@@ -995,7 +996,6 @@ static void PtlInternalWalkMatchList(const ptl_match_bits_t    incoming_bits,
     }
     *matchlist = current;
     *mprev     = prev;
-    *mme       = me;
 }                                      /*}}} */
 
 #ifdef PARANOID
@@ -1037,9 +1037,9 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx,
     assert(hdr);
     ptl_internal_listtype_t  foundin = PRIORITY;
     ptl_internal_appendME_t *prev    = NULL, *entry = t->priority.head;
-    ptl_me_t                *me_ptr  = NULL;
     ptl_handle_eq_t          tEQ     = t->EQ;
-    ptl_me_t                 me;
+    ptl_le_t                 me;
+    ptl_match_stuff_t        me2;
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
     uint_fast8_t             need_more_data = 0;
     uint_fast8_t             need_to_unlock = 1; // to decide whether to unlock the table upon return or whether it was unlocked earlier
@@ -1054,14 +1054,12 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx,
          * 1. The match_bits (with the ignore_bits) against hdr->match_bits 2. if notruncate, length 3. the match_id against src
          */
         PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
-                                 hdr->length, hdr->dest_offset, &entry, &prev,
-                                 &me_ptr);
+                                 hdr->length, hdr->dest_offset, &entry, &prev );
         if ((entry == NULL) && (hdr->type != HDR_TYPE_GET)) {       // check overflow list
             prev  = NULL;
             entry = t->overflow.head;
             PtlInternalWalkMatchList(hdr->match_bits, hdr->ni, hdr->src,
-                                     hdr->length, hdr->dest_offset, &entry,
-                                     &prev, &me_ptr);
+                                     hdr->length, hdr->dest_offset, &entry, &prev );
             if (entry != NULL) {
                 foundin = OVERFLOW;
             }
@@ -1069,14 +1067,15 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx,
         hdr->entry = entry;
     } else {
         entry = hdr->entry;
-        me    = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
+        me    = *(ptl_le_t *)(((uint8_t *)entry) + offsetof(ptl_internal_le_t, visible));
         goto check_lengths;
     }
     if (entry != NULL) {               // Match
         /*************************************************************************
         * There is a matching ME present, and 'entry'/'me_ptr' points to it *
         *************************************************************************/
-        me = *(ptl_me_t *)(((uint8_t *)entry) + offsetof(ptl_internal_me_t, visible));
+        me = *(ptl_le_t *)(((uint8_t *)entry) + offsetof(ptl_internal_le_t, visible));
+        me2 = *(ptl_match_stuff_t *)(((uint8_t *)entry) + offsetof(ptl_internal_le_t, visible_match_stuff));
        // assert(mes[hdr->ni][entry->me_handle.s.code].status != ME_FREE);
         // check permissions on the ME
         {
@@ -1123,8 +1122,8 @@ PPE_DBG("permission violation\n");
         * We have permissions on this ME, now check if it's a use-once ME *
         *******************************************************************/
         if ((me.options & PTL_ME_USE_ONCE) ||
-            ((me.options & PTL_ME_MANAGE_LOCAL) && (me.min_free != 0) &&
-             ((me.length - entry->local_offset) - me.min_free < hdr->length))) {
+            ((me.options & PTL_ME_MANAGE_LOCAL) && (me2.min_free != 0) &&
+            ((me.length - entry->local_offset) - me2.min_free < hdr->length))) {
             /* that last bit of math only works because we already know that the hdr body can, at least partially, fit into this entry. In essence, the comparison is:
              *      avalable_space - reserved_space <= incoming_block We calculate how much space is available without using reserved space (math which should NOT cause the offsets to roll-over or go negative), and compare that to the length of the incoming data. This works even if we will have to truncate the incoming data. The gyrations here, rather than something straightforward like available_space - incoming_block <= reserved_space are to avoid problems with offsets rolling over when enormous messages are sent (esp. ones that are allowed to be truncated).
              */

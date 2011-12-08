@@ -41,6 +41,11 @@ typedef enum {
     PTLATOMICSYNC,
     PTLTRIGCTINC,
     PTLTRIGCTSET,
+    PTLTRIGPUT,
+    PTLTRIGGET,
+    PTLTRIGATOMIC,
+    PTLTRIGFETCHATOMIC,
+    PTLTRIGSWAP,
     PTLACK
 } ptl_cmd_type_t;
 
@@ -171,9 +176,9 @@ typedef struct {
 } ptl_cqe_ptfree_t;
 
 typedef struct {
-    const void      *operand;
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
+    const void      *operand;
 } ptl_atomic_args_t;
 
 typedef struct {
