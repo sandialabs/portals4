@@ -28,6 +28,7 @@ static int process_ack( ptl_ppe_ni_t *, nal_ctx_t *,ptl_hdr_t * );
 int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
           ptl_interface_t type, ptl_size_t *drop_len)
 {
+    // MJL: should make ppe_ctx global instead of _p3_ni
     ptl_ppe_t        *ppe_ctx = _p3_ni->data;
     ptl_ppe_client_t *client;
 
@@ -42,12 +43,20 @@ int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
     nal_ctx->src_nid        = src_nid;
     nal_ctx->hdr            = *hdr;
 
-    if ( ! (hdr->target.pid < MC_PEER_COUNT ) ) {
+    // MJL shmem legacy
+    nal_ctx->hdr.entry = NULL;
+
+    if ( ! (hdr->target.pid < PTL_PID_MAX ) ) {
         PPE_DBG("pid %d out of range\n", hdr->target.pid );
         goto drop_message;
     }
 
-    client = &ppe_ctx->clients[ hdr->target.pid ];
+    if ( ppe_ctx->pids[ hdr->target.pid ] == -1 )  {
+        PPE_DBG("pid %d not initialized\n", hdr->target.pid );
+        goto drop_message;
+    }
+
+    client = &ppe_ctx->clients[ ppe_ctx->pids[ hdr->target.pid ] ];
     if (  ! client->connected ) {
         PPE_DBG("pid %d not connected\n", hdr->target.pid );
         goto drop_message;
@@ -94,12 +103,11 @@ int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
         PtlInternalLEDeliver( nal_ctx, ppe_pt, &nal_ctx->hdr );
         break;
     }
-    PPE_DBG("\n");
 
     return 0;
 
 drop_message:
-    PPE_DBG("Drop message\n");
+    PPE_DBG("Drop message, bytes=%lu\n",hdr->length);
 
     nal_ctx->type = DROP_CTX;
 
@@ -239,6 +247,7 @@ static inline int finalize_md_recv( nal_ctx_t* nal_ctx )
 {
     ptl_ppe_md_t *ppe_md = nal_ctx->u.md.ppe_md;
 
+    PPE_DBG("\n");
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_GET ) {
         --ppe_md->ref_cnt;
     }

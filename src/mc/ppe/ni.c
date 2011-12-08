@@ -109,6 +109,9 @@ ni_init_impl( ptl_ppe_t *ctx, ptl_cqe_niinit_t *cmd )
     for ( i = 0; i < ni->limits->max_cts; i++ ) {
         ptl_double_list_init( &ni->ppe_ct[i].triggered_op_list, 0 );
     }
+
+    ni->nal_ni = &ctx->ni;
+    ni->pid    = client->pid;
     goto send_retval;
 
  cleanup:
