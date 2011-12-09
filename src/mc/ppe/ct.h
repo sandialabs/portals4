@@ -4,7 +4,6 @@
 
 #include "ppe/ppe.h"
 #include "ppe/triggered.h"
-#include "shared/ptl_command_queue_entry.h"
 
 
 static inline void PtlInternalCTSuccessInc(

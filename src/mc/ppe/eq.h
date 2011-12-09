@@ -1,6 +1,8 @@
-
 #ifndef MC_PPE_EQ_H
 #define MC_PPE_EQ_H
+
+#include "shared/ptl_circular_buffer.h"
+#include "ppe/ppe.h"
 
 typedef uint16_t ptl_internal_uid_t;
 

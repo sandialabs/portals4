@@ -9,7 +9,7 @@
 #include <inttypes.h>
 
 //#define INTERNAL
-#include "ppe/atomic.h"
+#include "ppe/perform_atomic.h"
 /* Internal headers */
 //#include "ptl_internal_performatomic.h"
 //#include "ptl_visibility.h"

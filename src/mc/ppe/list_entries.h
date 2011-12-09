@@ -1,4 +1,7 @@
 
+#ifndef MC_PPE_LIST_ENTRIES_H
+#define MC_PPE_LIST_ENTRIES_H
+
 #include <portals4.h>
 #include "ppe/ppe.h"
 #include "ppe/nal.h"
@@ -36,3 +39,4 @@ ptl_pid_t PtlInternalLEDeliver( nal_ctx_t *,
                     ptl_table_entry_t *restrict     t,     
                                         ptl_internal_header_t *restrict hdr);
 
+#endif
