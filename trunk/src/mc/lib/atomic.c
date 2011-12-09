@@ -174,8 +174,9 @@ ptl_atomic(int type, ptl_handle_md_t  md_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = type;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type                   = type;
+    entry->base.remote_id              = ptl_iface_get_rank(&ptl_iface);
+    entry->base.ni                     = md_hc.s.ni;
     entry->atomic.args.md_handle       = md_hc;
     entry->atomic.args.local_offset    = local_offset;
     entry->atomic.args.length          = length;
@@ -492,19 +493,20 @@ ptl_atomic_op(int type, ptl_handle_md_t  get_md_handle,
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
-    entry->base.type = type;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->dm.args.cmd_get_md_handle =  get_md_hc;  
+    entry->base.type                    = type;
+    entry->base.remote_id               = ptl_iface_get_rank(&ptl_iface);
+    entry->base.ni                      = put_md_hc.s.ni;
+    entry->dm.args.cmd_get_md_handle    =  get_md_hc;  
     entry->dm.args.cmd_local_get_offset = local_get_offset;
     entry->dm.args.cmd_put_md_handle    = put_md_hc;
     entry->dm.args.cmd_local_put_offset = local_put_offset;
-    entry->dm.args.length           = length;
-    entry->dm.args.target_id        = target_id;
-    entry->dm.args.pt_index         = pt_index;
-    entry->dm.args.match_bits       = match_bits;
-    entry->dm.args.remote_offset    = remote_offset;
-    entry->dm.args.user_ptr         = user_ptr;
-    entry->dm.args.hdr_data         = hdr_data;
+    entry->dm.args.length               = length;
+    entry->dm.args.target_id            = target_id;
+    entry->dm.args.pt_index             = pt_index;
+    entry->dm.args.match_bits           = match_bits;
+    entry->dm.args.remote_offset        = remote_offset;
+    entry->dm.args.user_ptr             = user_ptr;
+    entry->dm.args.hdr_data             = hdr_data;
     if ( operand ) {
         memcpy( &entry->dm.atomic_args.operand, operand, calc_multiple(datatype));
     }
