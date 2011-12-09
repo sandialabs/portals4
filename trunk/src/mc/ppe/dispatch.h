@@ -12,11 +12,14 @@ int setmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_setmap_t *cmd);
 int getmap_impl(struct ptl_ppe_t *ctx, ptl_cqe_getmap_t *cmd);
 int ct_alloc_impl(struct ptl_ppe_ni_t *, ptl_cqe_ctalloc_t * );
 int ct_free_impl(struct ptl_ppe_ni_t *, ptl_cqe_ctfree_t * );
+
 int ct_op_impl(struct ptl_ppe_ni_t *, int type, ptl_ctop_args_t * );
 int triggered_ct_impl(struct ptl_ppe_ni_t *, int type,
                                 ptl_triggered_args_t *, ptl_ctop_args_t *);
 int triggered_data_movement_impl( struct ptl_ppe_ni_t *ppe_ni, int type,
         ptl_triggered_args_t *, ptl_data_movement_args_t *, ptl_atomic_args_t * );
+int cancel_triggered_impl(struct ptl_ppe_ni_t *, 
+                                            ptl_cqe_ctcanceltriggered_t * );
 
 int atomic_sync_impl(struct ptl_ppe_t *ctx, ptl_cqe_atomicsync_t *cmd );
 int eq_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_eqalloc_t *cmd );
