@@ -25,7 +25,10 @@ md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
                                     cmd->md.start, cmd->md.length );
 
     // MJL: should we return a failure or assert?
-    assert( ppe_md->xpmem_ptr );
+    if( ppe_md->xpmem_ptr == NULL ) {
+        perror( "ppe_xpmem_attach" );
+        return -1;
+    }
 
     return 0;
 }
@@ -62,7 +65,10 @@ md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
         if ( send_entry->ack.retval == PTL_OK ) {
 
             ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_md->xpmem_ptr );
-            assert( 0 == ret );
+            if( ret < 0 ) {
+                perror( "ppe_xpmem_detach" );
+                return -1;
+            }
 
             // MJL: we could get rid of the shared key because this is a blocking
             // call and the engine doesn't unlink MD's 

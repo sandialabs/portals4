@@ -22,6 +22,11 @@ eq_alloc_impl( ptl_ppe_t *ctx, ptl_cqe_eqalloc_t *cmd )
                  cmd->cb, sizeof(ptl_circular_buffer_t)  +
                         sizeof(ptl_event_t) * cmd->count );
 
+    if (  ppe_eq->xpmem_ptr == NULL ) {
+        perror( "ppe_xpmem_detach");
+        return -1;
+    }
+
     return 0;
 }
 

@@ -96,11 +96,13 @@ int lib_parse( ptl_nid_t src_nid, ptl_hdr_t *hdr, unsigned long nal_msg_data,
       case 0:
       case 2:
         PtlInternalMEDeliver( nal_ctx, ppe_pt, &nal_ctx->hdr );
+        // MJL handle returned error
         break;
 
       case 1:
       case 3:
         PtlInternalLEDeliver( nal_ctx, ppe_pt, &nal_ctx->hdr );
+        // MJL handle returned error
         break;
     }
 
@@ -111,6 +113,7 @@ drop_message:
 
     nal_ctx->type = DROP_CTX;
 
+    // MJL: can this fail?
     _p3_ni->nal->recv( _p3_ni, 
                         nal_ctx->nal_msg_data,  // nal_msg_data,
                         nal_ctx,                // lib_data
@@ -137,12 +140,12 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
 
     if ( hdr->ack_ctx_key == 0 ) {
         PPE_DBG("invalid ack_ctx_key %d\n", hdr->ack_ctx_key );
-        return 1; 
+        return -1; 
     }
 
     if ( hdr->ack_ctx_key < 0 ) {
         free_ack_ctx( hdr->ack_ctx_key * -1, &ack_ctx );
-        return 1;
+        return -1;
     } else {
         free_ack_ctx( hdr->ack_ctx_key, &ack_ctx );
     }
@@ -167,7 +170,7 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
             // or do we use a inuse flag and drop the ack if the md was free'd
             if (  ! ( md_index < nal_ctx->ppe_ni->limits->max_mds ) ) {
                 PPE_DBG("md index %d is out of range\n", md_index );
-                return 1; 
+                return -1; 
             }
 
             offset = ack_ctx.local_offset;
@@ -175,7 +178,7 @@ static int process_ack( ptl_ppe_ni_t *ppe_ni, nal_ctx_t *nal_ctx, ptl_hdr_t *hdr
             if ( offset + mlen > nal_ctx->u.md.ppe_md->xpmem_ptr->length ) {
                 PPE_DBG("local_offest=%lu mlen=%lu me_length=%lu\n",  offset,
                     mlen, nal_ctx->u.md.ppe_md->xpmem_ptr->length );
-                return 1;
+                return -1;
             }
             mlen =  hdr->length;
 
