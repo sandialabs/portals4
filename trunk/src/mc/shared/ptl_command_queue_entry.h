@@ -286,8 +286,7 @@ union ptl_cqe_t {
     ptl_cqe_eqfree_t      eqFree;
     ptl_cqe_mdbind_t      mdBind;
     ptl_cqe_mdrelease_t   mdRelease;
-    ptl_cqe_put_t         put;
-    ptl_cqe_get_t         get;
+    ptl_cqe_data_movement_t dm;
     ptl_cqe_ptalloc_t     ptAlloc;
     ptl_cqe_ptfree_t      ptFree;
     ptl_cqe_meappend_t    meAppend;
