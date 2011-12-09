@@ -1,7 +1,7 @@
 
 #include <assert.h>
 
-#include "ppe/atomic.h"
+#include "ppe/perform_atomic.h"
 #include "ppe/nal.h"
 #include "ppe/ct.h"
 #include "ppe/eq.h"

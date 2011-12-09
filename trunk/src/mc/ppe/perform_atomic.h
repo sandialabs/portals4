@@ -1,3 +1,7 @@
+
+#ifndef MC_PPE_PERFORM_ATOMIC_H
+#define MC_PPE_PERFORM_ATOMIC_H
+
 #include "ppe/ppe.h"
 
 void PtlInternalPerformAtomic(uint8_t *restrict dest,
@@ -12,3 +16,4 @@ void PtlInternalPerformAtomicArg(uint8_t *restrict dest,
                                  ptl_size_t        size,
                                  ptl_op_t          op,
                                  ptl_datatype_t    dt);
+#endif

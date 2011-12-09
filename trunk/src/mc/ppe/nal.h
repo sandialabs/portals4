@@ -1,6 +1,6 @@
 
-#ifndef MC_NAL_H
-#define MC_NAL_H
+#ifndef MC_PPE_NAL_H
+#define MC_PPE_NAL_H
 
 #include "ppe/ppe.h"
 #include "ppe/ptl_hdr.h"

@@ -13,8 +13,7 @@
 #include "ppe/ppe.h"
 #include "ppe/eq.h"
 #include "ppe/ct.h"
-#include "ppe/atomic.h"
-//#include "ppe/triggered.h"
+#include "ppe/perform_atomic.h"
 #include "ppe/matching_list_entries.h"
 
 #define PTL_LOCK_UNLOCK(x)

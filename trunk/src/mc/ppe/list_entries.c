@@ -14,7 +14,7 @@
 #include "ppe/eq.h"
 #include "ppe/ct.h"
 #include "ppe/nal.h"
-#include "ppe/atomic.h"
+#include "ppe/perform_atomic.h"
 
 
 #define PTL_LOCK_UNLOCK(x)

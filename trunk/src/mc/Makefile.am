@@ -16,22 +16,26 @@ portals_engine_SOURCES = \
 	ppe/atomic.c \
 	ppe/connection.c \
 	ppe/ct.c \
+	ppe/ct.h \
 	ppe/data_movement.c \
+	ppe/data_movement.h \
 	ppe/dispatch.h \
 	ppe/eq.c \
+	ppe/eq.h \
 	ppe/le.c \
+	ppe/list_entries.c \
+	ppe/list_entries.h \
 	ppe/map.c \
+	ppe/matching_list_entries.c \
+	ppe/matching_list_entries.h \
 	ppe/md.c \
 	ppe/me.c \
 	ppe/nal_callback.c \
 	ppe/nal.h \
 	ppe/nal_init.c \
-	ppe/matching_list_entries.c \
-	ppe/matching_list_entries.h \
-	ppe/perform_atomic.c \
-	ppe/list_entries.c \
-	ppe/list_entries.h \
 	ppe/ni.c \
+	ppe/perform_atomic.c \
+	ppe/perform_atomic.h \
 	ppe/ppe.c \
 	ppe/ppe.h \
 	ppe/ppe_xpmem.h \

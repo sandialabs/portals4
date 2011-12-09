@@ -1,6 +1,6 @@
 
-#ifndef MC_PTL_HDR_T 
-#define MC_PTL_HDR_T 
+#ifndef MC_PPE_PTL_HDR_H
+#define MC_PPE_PTL_HDR_H
 
 #include <portals4.h>
 
