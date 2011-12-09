@@ -41,8 +41,8 @@ ptl_stack_pop(ptl_stack_t *stack)
     do {
         item->next = stack->freeq;
     } while (!__sync_bool_compare_and_swap(&stack->freeq,
-                                           item,
-                                           item->next));
+                                           item->next,
+                                           item));
     return ret;
 }
 
