@@ -28,8 +28,20 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
     nal_ctx->ppe_ni         = ppe_ni;
     nal_ctx->u.md.ppe_md    = ppe_md;
     nal_ctx->u.md.user_ptr  = args->user_ptr;
-    nal_ctx->iovec.iov_base = ppe_md->xpmem_ptr->data;
-    nal_ctx->iovec.iov_len  = ppe_md->xpmem_ptr->length;
+
+    if ( type != PTLSWAP ) {
+        nal_ctx->iovec.iov_base = ppe_md->xpmem_ptr->data;
+        nal_ctx->iovec.iov_len  = ppe_md->xpmem_ptr->length;
+    } else {
+        size_t tmp_len = 32 + args->length;
+        void *tmp_ptr = malloc( tmp_len );
+        nal_ctx->iovec.iov_len  = tmp_len; 
+        nal_ctx->iovec.iov_base = tmp_ptr;
+        memcpy( tmp_ptr, ppe_md->xpmem_ptr->data + args->local_offset, 
+                                                        args->length );
+        memcpy( tmp_ptr + args->length, atomic_args->operand, 32 );
+        PPE_DBG("%p\n",nal_ctx->iovec.iov_base );
+    }
 
     // MJL who should do the phys vs logical check app or engine? 
     PPE_DBG("src=%d trg=%d\n",ppe_ni->pid,args->target_id.phys.pid);
@@ -71,11 +83,14 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
         break;
     }
 
-    if ( type != PTLGET ) {
+    if ( type == PTLSWAP ) {
+        nal_len    = 32 + args->length;
+    } else if ( type != PTLGET ) {
         nal_ctx->hdr.ack_req         = args->ack_req;
         nal_len    = args->length;
         nal_offset = args->local_offset;
     }
+
 
     if ( ack == PTL_ACK_REQ ) {
         nal_ctx->hdr.ack_ctx_key = 

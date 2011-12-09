@@ -240,6 +240,10 @@ static inline int finalize_md_send( nal_ctx_t* nal_ctx )
     if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) != HDR_TYPE_GET ) {
         deliver_send_event( nal_ctx );
     }
+    if ( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_SWAP ) {
+        PPE_DBG("%p\n",nal_ctx->iovec.iov_base );
+        free( nal_ctx->iovec.iov_base );
+    } 
     return 0;
 }
 
@@ -324,6 +328,13 @@ int lib_le_recv( nal_ctx_t *nal_ctx,
             nal_ctx->iovec.iov_len  = nbytes;
             mlen = nal_ctx->u.le.mlength;
             rlen = hdr->length;
+            break;
+
+        case HDR_TYPE_SWAP:
+            nal_ctx->iovec.iov_base = malloc( nbytes + 32);
+            nal_ctx->iovec.iov_len  = nbytes + 32;
+            mlen = nal_ctx->u.le.mlength + 32;
+            rlen = hdr->length + 32;
             break;
 
         case HDR_TYPE_PUT:
@@ -415,12 +426,23 @@ static inline int send_ack( nal_ctx_t *nal_ctx )
 static inline int perform_atomic( nal_ctx_t *nal_ctx )
 {
     PPE_DBG("\n");
-    PtlInternalPerformAtomic( 
+    if( ( nal_ctx->hdr.type & HDR_TYPE_BASICMASK ) == HDR_TYPE_SWAP ) {
+        PtlInternalPerformAtomicArg( 
+                nal_ctx->u.le.ppe_le->xpmem_ptr->data + nal_ctx->u.le.offset,
+                nal_ctx->iovec.iov_base, 
+                nal_ctx->iovec.iov_base + nal_ctx->hdr.length, 
+                nal_ctx->u.le.mlength,
+                nal_ctx->hdr.atomic_operation,
+                nal_ctx->hdr.atomic_datatype);
+    } else {
+
+        PtlInternalPerformAtomic( 
                 nal_ctx->u.le.ppe_le->xpmem_ptr->data + nal_ctx->u.le.offset,
                 nal_ctx->iovec.iov_base, 
                 nal_ctx->u.le.mlength,
                 nal_ctx->hdr.atomic_operation,
-                nal_ctx->hdr.atomic_datatype );
+                nal_ctx->hdr.atomic_datatype);
+    }
     return 0;
 }
 
