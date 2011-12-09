@@ -296,8 +296,6 @@ union ptl_cqe_t {
     ptl_cqe_leunlink_t    leUnlink;
     ptl_cqe_lesearch_t    leSearch;
     ptl_cqe_atomic_t      atomic;
-    ptl_cqe_fetchatomic_t fetchAtomic;
-    ptl_cqe_swap_t        swap;
     ptl_cqe_atomicsync_t  atomicSync;
     ptl_cqe_ack_t         ack;
 };

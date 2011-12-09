@@ -11,28 +11,49 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
+static inline int calc_multiple( ptl_datatype_t datatype )
+{
+    switch (datatype) {
+        case PTL_INT8_T:
+        case PTL_UINT8_T:
+            return 1;
+        case PTL_INT16_T:
+        case PTL_UINT16_T:
+            return 2;
+        case PTL_INT32_T:
+        case PTL_UINT32_T:
+        case PTL_FLOAT:
+            return 4;
+        case PTL_INT64_T:
+        case PTL_UINT64_T:
+        case PTL_DOUBLE:
+        case PTL_FLOAT_COMPLEX:
+            return 8;
+        case PTL_LONG_DOUBLE:
+        case PTL_DOUBLE_COMPLEX:
+            return 16;
+        case PTL_LONG_DOUBLE_COMPLEX:
+            return 32;
+    }
+    return 1; 
+}
 
-static inline int
-ptl_atomic(int type, ptl_handle_md_t  md_handle,
-          ptl_size_t       local_offset,
-          ptl_size_t       length,
-          ptl_ack_req_t    ack_req,
-          ptl_process_t    target_id,
-          ptl_pt_index_t   pt_index,
-          ptl_match_bits_t match_bits,
-          ptl_size_t       remote_offset,
-          void            *user_ptr,
-          ptl_hdr_data_t   hdr_data,
-          ptl_op_t         operation,
-          ptl_datatype_t   datatype,
-          ptl_handle_ct_t  trig_ct_handle,
-          ptl_size_t       trig_threshold )
+#ifndef NO_ARG_VALIDATION
+static inline int 
+ptl_atomic_validate_args( 
+        int             type,
+        ptl_handle_md_t md_handle,
+        ptl_size_t      local_offset,
+        ptl_size_t      length,
+        ptl_process_t   target_id,
+        ptl_pt_index_t  pt_index,
+        ptl_size_t      remote_offset,
+        ptl_op_t        operation,
+        ptl_datatype_t  datatype,
+        ptl_handle_ct_t trig_ct_handle 
+)
 {
     const ptl_internal_handle_converter_t md_hc         = { md_handle };
-    int ret;
-    ptl_cqe_t   *entry;
-    
-#ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }   
@@ -46,40 +67,9 @@ ptl_atomic(int type, ptl_handle_md_t  md_handle,
         VERBOSE_ERROR("Invalid MD\n");
         return PTL_ARG_INVALID;
     }
-    {
-        int multiple = 1;
-        switch (datatype) {
-            case PTL_INT8_T:
-            case PTL_UINT8_T:
-                multiple = 1;
-                break;
-            case PTL_INT16_T:
-            case PTL_UINT16_T:
-                multiple = 2;
-                break;
-            case PTL_INT32_T:
-            case PTL_UINT32_T:
-            case PTL_FLOAT:
-                multiple = 4;
-                break;
-            case PTL_INT64_T:
-            case PTL_UINT64_T:
-            case PTL_DOUBLE:
-            case PTL_FLOAT_COMPLEX:
-                multiple = 8;
-                break;
-            case PTL_LONG_DOUBLE:
-            case PTL_DOUBLE_COMPLEX:
-                multiple = 16;
-                break;
-            case PTL_LONG_DOUBLE_COMPLEX:
-                multiple = 32;
-                break;
-        }
-        if (length % multiple != 0) {
-            VERBOSE_ERROR("Length not a multiple of datatype size\n");
-            return PTL_ARG_INVALID;
-        }
+    if (length % calc_multiple(datatype) != 0) {
+        VERBOSE_ERROR("Length not a multiple of datatype size\n");
+        return PTL_ARG_INVALID;
     }
     switch (md_hc.s.ni) {
         case 0:                       // Logical
@@ -151,8 +141,35 @@ ptl_atomic(int type, ptl_handle_md_t  md_handle,
             return PTL_ARG_INVALID;
         }
     }
-
+    return PTL_OK;
+}
 #endif  /* ifndef NO_ARG_VALIDATION */
+
+static inline int
+ptl_atomic(int type, ptl_handle_md_t  md_handle,
+          ptl_size_t       local_offset,
+          ptl_size_t       length,
+          ptl_ack_req_t    ack_req,
+          ptl_process_t    target_id,
+          ptl_pt_index_t   pt_index,
+          ptl_match_bits_t match_bits,
+          ptl_size_t       remote_offset,
+          void            *user_ptr,
+          ptl_hdr_data_t   hdr_data,
+          ptl_op_t         operation,
+          ptl_datatype_t   datatype,
+          ptl_handle_ct_t  trig_ct_handle,
+          ptl_size_t       trig_threshold )
+{
+    const ptl_internal_handle_converter_t md_hc         = { md_handle };
+    int ret;
+    ptl_cqe_t   *entry;
+    
+#ifndef NO_ARG_VALIDATION
+    ret = ptl_atomic_validate_args( type, md_handle, local_offset, length, target_id,
+            pt_index, remote_offset, operation, datatype, trig_ct_handle );
+    if ( ret != PTL_OK ) return ret;
+#endif
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
@@ -192,29 +209,26 @@ ptl_atomic(int type, ptl_handle_md_t  md_handle,
 }
 
 
+#ifndef NO_ARG_VALIDATION
 static inline int
-ptl_fetch_atomic( int type, ptl_handle_md_t  get_md_handle,
-               ptl_size_t       local_get_offset,
-               ptl_handle_md_t  put_md_handle,
-               ptl_size_t       local_put_offset,
-               ptl_size_t       length,
-               ptl_process_t    target_id,
-               ptl_pt_index_t   pt_index,
-               ptl_match_bits_t match_bits,
-               ptl_size_t       remote_offset,
-               void            *user_ptr,
-               ptl_hdr_data_t   hdr_data,
-               ptl_op_t         operation,
-               ptl_datatype_t   datatype,
-               ptl_handle_ct_t  trig_ct_handle,
-               ptl_size_t       trig_threshold )
+ptl_fetch_atomic_validate_args( 
+        int                 type, 
+        ptl_handle_md_t     get_md_handle,
+        ptl_size_t          local_get_offset,
+        ptl_handle_md_t     put_md_handle,
+        ptl_size_t          local_put_offset,
+        ptl_size_t          length,
+        ptl_process_t       target_id,
+        ptl_pt_index_t      pt_index,
+        ptl_size_t          remote_offset,
+        ptl_op_t            operation,
+        ptl_datatype_t      datatype,
+        ptl_handle_ct_t     trig_ct_handle
+)
 {
     const ptl_internal_handle_converter_t get_md     = { get_md_handle };
     const ptl_internal_handle_converter_t put_md     = { put_md_handle };
-    ptl_cqe_t   *entry;
-    int ret;
 
-#ifndef NO_ARG_VALIDATION
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
     }
@@ -232,40 +246,9 @@ ptl_fetch_atomic( int type, ptl_handle_md_t  get_md_handle,
                       (unsigned int)nit_limits[get_md.s.ni].max_atomic_size);
         return PTL_ARG_INVALID;
     }
-    {
-        int multiple = 1;
-        switch (datatype) {
-            case PTL_INT8_T:
-            case PTL_UINT8_T:
-                multiple = 1;
-                break;
-            case PTL_INT16_T:
-            case PTL_UINT16_T:
-                multiple = 2;
-                break;
-            case PTL_INT32_T:
-            case PTL_UINT32_T:
-            case PTL_FLOAT:
-                multiple = 4;
-                break;
-            case PTL_INT64_T:
-            case PTL_UINT64_T:
-            case PTL_DOUBLE:
-            case PTL_FLOAT_COMPLEX:
-                multiple = 8;
-                break;
-            case PTL_LONG_DOUBLE:
-            case PTL_DOUBLE_COMPLEX:
-                multiple = 16;
-                break;
-            case PTL_LONG_DOUBLE_COMPLEX:
-                multiple = 32;
-                break;
-        }
-        if (length % multiple != 0) {
-            VERBOSE_ERROR("Length not a multiple of datatype size\n");
-            return PTL_ARG_INVALID;
-        }
+    if (length % calc_multiple( datatype ) != 0) {
+        VERBOSE_ERROR("Length not a multiple of datatype size\n");
+        return PTL_ARG_INVALID;
     }
     if (get_md.s.ni != put_md.s.ni) {
         VERBOSE_ERROR("MDs *must* be on the same NI\n");
@@ -343,73 +326,29 @@ ptl_fetch_atomic( int type, ptl_handle_md_t  get_md_handle,
             return PTL_ARG_INVALID;
         }
     }
-
-#endif  /* ifndef NO_ARG_VALIDATION */
-
-    ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
-    if (0 != ret) return PTL_FAIL;
-
-    entry->base.type = type;
-    entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->fetchAtomic.args.cmd_get_md_handle =  get_md;  
-    entry->fetchAtomic.args.cmd_local_get_offset = local_get_offset;
-    entry->fetchAtomic.args.cmd_put_md_handle    = put_md;
-    entry->fetchAtomic.args.cmd_local_put_offset = local_put_offset;
-    entry->fetchAtomic.args.length           = length;
-    entry->fetchAtomic.args.target_id        = target_id;
-    entry->fetchAtomic.args.pt_index         = pt_index;
-    entry->fetchAtomic.args.match_bits       = match_bits;
-    entry->fetchAtomic.args.remote_offset    = remote_offset;
-    entry->fetchAtomic.args.user_ptr         = user_ptr;
-    entry->fetchAtomic.args.hdr_data         = hdr_data;
-    entry->fetchAtomic.atomic_args.operation = operation;
-    entry->fetchAtomic.atomic_args.datatype  = datatype;
-
-    if ( type == PTLTRIGFETCHATOMIC ) {
-        entry->fetchAtomic.triggered_args.ct_handle = 
-                            (ptl_internal_handle_converter_t) trig_ct_handle;
-        entry->fetchAtomic.triggered_args.threshold = trig_threshold;
-        entry->fetchAtomic.triggered_args.index = find_triggered_index( get_md.s.ni );
-        if ( entry->fetchAtomic.triggered_args.index == -1 ) {
-            ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
-            return PTL_FAIL; 
-        }
-    }                 
-
-    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
-                                  ptl_iface_get_peer(&ptl_iface), 
-                                  entry, sizeof(ptl_cqe_fetchatomic_t));
-    if (0 != ret) return PTL_FAIL;
-
     return PTL_OK;
 }
 
+#endif  /* ifndef NO_ARG_VALIDATION */
 
+#ifndef NO_ARG_VALIDATION
 static inline int
-ptl_swap(int type, ptl_handle_md_t  get_md_handle,
+ptl_swap_validate_args( 
+        int              type, 
+        ptl_handle_md_t  get_md_handle,
         ptl_size_t       local_get_offset,
         ptl_handle_md_t  put_md_handle,
         ptl_size_t       local_put_offset,
         ptl_size_t       length,
         ptl_process_t    target_id,
         ptl_pt_index_t   pt_index,
-        ptl_match_bits_t match_bits,
         ptl_size_t       remote_offset,
-        void            *user_ptr,
-        ptl_hdr_data_t   hdr_data,
-        const void      *operand,
         ptl_op_t         operation,
         ptl_datatype_t   datatype,
-        ptl_handle_ct_t  trig_ct_handle,
-        ptl_size_t       trig_threshold )
+        ptl_handle_ct_t  trig_ct_handle
+    )
 {
     const ptl_internal_handle_converter_t get_md_hc = { get_md_handle };
-    const ptl_internal_handle_converter_t put_md_hc = { put_md_handle };
-    ptl_cqe_t   *entry;
-    int ret;
-    int multiple = 1;
-
-#ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
     if (PtlInternalLibraryInitialized() == PTL_FAIL) {
         return PTL_NO_INIT;
@@ -422,39 +361,9 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
         VERBOSE_ERROR("Swap saw invalid put_md_handle\n");
         return PTL_ARG_INVALID;
     }
-    {
-        switch (datatype) {
-            case PTL_INT8_T:
-            case PTL_UINT8_T:
-                multiple = 1;
-                break;
-            case PTL_INT16_T:
-            case PTL_UINT16_T:
-                multiple = 2;
-                break;
-            case PTL_INT32_T:
-            case PTL_UINT32_T:
-            case PTL_FLOAT:
-                multiple = 4;
-                break;
-            case PTL_INT64_T:
-            case PTL_UINT64_T:
-            case PTL_DOUBLE:
-            case PTL_FLOAT_COMPLEX:
-                multiple = 8;
-                break;
-            case PTL_LONG_DOUBLE:
-            case PTL_DOUBLE_COMPLEX:
-                multiple = 16;
-                break;
-            case PTL_LONG_DOUBLE_COMPLEX:
-                multiple = 32;
-                break;
-        }
-        if (length % multiple != 0) {
-            VERBOSE_ERROR("Length not a multiple of datatype size\n");
-            return PTL_ARG_INVALID;
-        }
+    if (length % calc_multiple(datatype) != 0) {
+        VERBOSE_ERROR("Length not a multiple of datatype size\n");
+        return PTL_ARG_INVALID;
     }
     if (get_md_hc.s.ni != put_md.s.ni) {
         VERBOSE_ERROR("MDs *must* be on the same NI\n");
@@ -535,35 +444,79 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
             return PTL_ARG_INVALID;
         }
     }
-
+    return PTL_OK;
+}
 #endif  /* ifndef NO_ARG_VALIDATION */
+
+static inline int
+ptl_atomic_op(int type, ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        const void      *operand,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype,
+        ptl_handle_ct_t  trig_ct_handle,
+        ptl_size_t       trig_threshold )
+{
+    const ptl_internal_handle_converter_t get_md_hc = { get_md_handle };
+    const ptl_internal_handle_converter_t put_md_hc = { put_md_handle };
+    ptl_cqe_t   *entry;
+    int ret = PTL_FAIL;
+
+#ifndef NO_ARG_VALIDATION
+    switch( type ) {
+        case PTLSWAP:
+        case PTLTRIGSWAP:
+            ret = ptl_swap_validate_args( type, get_md_handle, local_get_offset,
+                put_md_handle, local_put_offset, length, target_id, pt_index,
+                remote_offset, operation, datatype, trig_ct_handle );
+            break;
+        case PTLFETCHATOMIC:
+        case PTLTRIGFETCHATOMIC:
+            ret = ptl_fetch_atomic_validate_args( type, get_md_handle, local_get_offset,
+                put_md_handle, local_put_offset, length, target_id, pt_index,
+                remote_offset, operation, datatype, trig_ct_handle );
+            break;
+    }
+    if ( ret != PTL_OK ) return ret;
+#endif
 
     ret = ptl_cq_entry_alloc(ptl_iface_get_cq(&ptl_iface), &entry);
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type = type;
     entry->base.remote_id = ptl_iface_get_rank(&ptl_iface);
-    entry->swap.args.cmd_get_md_handle =  get_md_hc;  
-    entry->swap.args.cmd_local_get_offset = local_get_offset;
-    entry->swap.args.cmd_put_md_handle    = put_md_hc;
-    entry->swap.args.cmd_local_put_offset = local_put_offset;
-    entry->swap.args.length           = length;
-    entry->swap.args.target_id        = target_id;
-    entry->swap.args.pt_index         = pt_index;
-    entry->swap.args.match_bits       = match_bits;
-    entry->swap.args.remote_offset    = remote_offset;
-    entry->swap.args.user_ptr         = user_ptr;
-    entry->swap.args.hdr_data         = hdr_data;
-    memcpy( &entry->swap.atomic_args.operand, operand, multiple);
-    entry->swap.atomic_args.operation = operation;
-    entry->swap.atomic_args.datatype  = datatype;
+    entry->dm.args.cmd_get_md_handle =  get_md_hc;  
+    entry->dm.args.cmd_local_get_offset = local_get_offset;
+    entry->dm.args.cmd_put_md_handle    = put_md_hc;
+    entry->dm.args.cmd_local_put_offset = local_put_offset;
+    entry->dm.args.length           = length;
+    entry->dm.args.target_id        = target_id;
+    entry->dm.args.pt_index         = pt_index;
+    entry->dm.args.match_bits       = match_bits;
+    entry->dm.args.remote_offset    = remote_offset;
+    entry->dm.args.user_ptr         = user_ptr;
+    entry->dm.args.hdr_data         = hdr_data;
+    if ( operand ) {
+        memcpy( &entry->dm.atomic_args.operand, operand, calc_multiple(datatype));
+    }
+    entry->dm.atomic_args.operation = operation;
+    entry->dm.atomic_args.datatype  = datatype;
 
-    if ( type == PTLTRIGSWAP ) {
-        entry->swap.triggered_args.ct_handle = 
+    if ( type == PTLTRIGSWAP || type == PTLTRIGFETCHATOMIC ) {
+        entry->dm.triggered_args.ct_handle = 
                             (ptl_internal_handle_converter_t) trig_ct_handle;
-        entry->swap.triggered_args.threshold = trig_threshold;
-        entry->swap.triggered_args.index = find_triggered_index( get_md_hc.s.ni );
-        if ( entry->swap.triggered_args.index == -1 ) {
+        entry->dm.triggered_args.threshold = trig_threshold;
+        entry->dm.triggered_args.index = find_triggered_index( get_md_hc.s.ni );
+        if ( entry->dm.triggered_args.index == -1 ) {
             ptl_cq_entry_free(ptl_iface_get_cq(&ptl_iface), entry);
             return PTL_FAIL; 
         }
@@ -577,125 +530,136 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
     return PTL_OK;
 }
 
-int PtlAtomic(ptl_handle_md_t  md_handle,
-                       ptl_size_t       local_offset,
-                       ptl_size_t       length,
-                       ptl_ack_req_t    ack_req,
-                       ptl_process_t    target_id,
-                       ptl_pt_index_t   pt_index,
-                       ptl_match_bits_t match_bits,
-                       ptl_size_t       remote_offset,
-                       void            *user_ptr,
-                       ptl_hdr_data_t   hdr_data,
-                       ptl_op_t         operation,
-                       ptl_datatype_t   datatype )
+int PtlAtomic(
+        ptl_handle_md_t  md_handle,
+        ptl_size_t       local_offset,
+        ptl_size_t       length,
+        ptl_ack_req_t    ack_req,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype 
+)
 {
     return ptl_atomic( PTLATOMIC, md_handle, local_offset, length, ack_req,
         target_id, pt_index, match_bits, remote_offset, user_ptr, hdr_data, 
         operation, datatype, PTL_INVALID_HANDLE, 0 );
 }
 
-int PtlTriggeredAtomic(ptl_handle_md_t  md_handle,
-                       ptl_size_t       local_offset,
-                       ptl_size_t       length,
-                       ptl_ack_req_t    ack_req,
-                       ptl_process_t    target_id,
-                       ptl_pt_index_t   pt_index,
-                       ptl_match_bits_t match_bits,
-                       ptl_size_t       remote_offset,
-                       void            *user_ptr,
-                       ptl_hdr_data_t   hdr_data,
-                       ptl_op_t         operation,
-                       ptl_datatype_t   datatype,
-                       ptl_handle_ct_t  trig_ct_handle,
-                       ptl_size_t       trig_threshold)
+int PtlTriggeredAtomic(
+        ptl_handle_md_t  md_handle,
+        ptl_size_t       local_offset,
+        ptl_size_t       length,
+        ptl_ack_req_t    ack_req,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype,
+        ptl_handle_ct_t  trig_ct_handle,
+        ptl_size_t       trig_threshold
+)
 {
     return ptl_atomic( PTLTRIGATOMIC, md_handle, local_offset, length, ack_req,
         target_id, pt_index, match_bits, remote_offset, user_ptr, hdr_data,
         operation, datatype, trig_ct_handle, trig_threshold );
 }
 
-int PtlFetchAtomic(ptl_handle_md_t  get_md_handle,
-                            ptl_size_t       local_get_offset,
-                            ptl_handle_md_t  put_md_handle,
-                            ptl_size_t       local_put_offset,
-                            ptl_size_t       length,
-                            ptl_process_t    target_id,
-                            ptl_pt_index_t   pt_index,
-                            ptl_match_bits_t match_bits,
-                            ptl_size_t       remote_offset,
-                            void            *user_ptr,
-                            ptl_hdr_data_t   hdr_data,
-                            ptl_op_t         operation,
-                            ptl_datatype_t   datatype )
+int PtlFetchAtomic(
+        ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype 
+)
 {
-    return ptl_fetch_atomic( PTLFETCHATOMIC, get_md_handle, local_get_offset,
+    return ptl_atomic_op( PTLFETCHATOMIC, get_md_handle, local_get_offset,
         put_md_handle, local_put_offset, length, target_id, pt_index, 
-        match_bits, remote_offset, user_ptr, hdr_data, operation, datatype,
+        match_bits, remote_offset, user_ptr, hdr_data, NULL, operation, datatype,
         PTL_INVALID_HANDLE, 0 );
 }
 
-int PtlTriggeredFetchAtomic(ptl_handle_md_t  get_md_handle,
-                            ptl_size_t       local_get_offset,
-                            ptl_handle_md_t  put_md_handle,
-                            ptl_size_t       local_put_offset,
-                            ptl_size_t       length,
-                            ptl_process_t    target_id,
-                            ptl_pt_index_t   pt_index,
-                            ptl_match_bits_t match_bits,
-                            ptl_size_t       remote_offset,
-                            void            *user_ptr,
-                            ptl_hdr_data_t   hdr_data,
-                            ptl_op_t         operation,
-                            ptl_datatype_t   datatype,
-                            ptl_handle_ct_t  trig_ct_handle,
-                            ptl_size_t       trig_threshold)
+int PtlTriggeredFetchAtomic(
+        ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype,
+        ptl_handle_ct_t  trig_ct_handle,
+        ptl_size_t       trig_threshold
+)
 {
-    return ptl_fetch_atomic( PTLTRIGFETCHATOMIC, get_md_handle,
+    return ptl_atomic_op( PTLTRIGFETCHATOMIC, get_md_handle,
         local_get_offset, put_md_handle, local_put_offset, length, target_id,
-        pt_index, match_bits, remote_offset, user_ptr, hdr_data, operation,
+        pt_index, match_bits, remote_offset, user_ptr, hdr_data, NULL, operation,
         datatype, trig_ct_handle, trig_threshold );
 }
 
-int PtlSwap(ptl_handle_md_t  get_md_handle,
-                     ptl_size_t       local_get_offset,
-                     ptl_handle_md_t  put_md_handle,
-                     ptl_size_t       local_put_offset,
-                     ptl_size_t       length,
-                     ptl_process_t    target_id,
-                     ptl_pt_index_t   pt_index,
-                     ptl_match_bits_t match_bits,
-                     ptl_size_t       remote_offset,
-                     void            *user_ptr,
-                     ptl_hdr_data_t   hdr_data,
-                     const void      *operand,
-                     ptl_op_t         operation,
-                     ptl_datatype_t   datatype )
+int PtlSwap(
+        ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        const void      *operand,
+        ptl_op_t         operation,
+       ptl_datatype_t   datatype 
+)
 {
-    return ptl_swap( PTLSWAP, get_md_handle,
+    return ptl_atomic_op( PTLSWAP, get_md_handle,
         local_get_offset, put_md_handle, local_put_offset, length, target_id,
         pt_index, match_bits, remote_offset, user_ptr, hdr_data, operand,
         operation, datatype, PTL_INVALID_HANDLE, 0 );
 }
 
-int PtlTriggeredSwap(ptl_handle_md_t  get_md_handle,
-                     ptl_size_t       local_get_offset,
-                     ptl_handle_md_t  put_md_handle,
-                     ptl_size_t       local_put_offset,
-                     ptl_size_t       length,
-                     ptl_process_t    target_id,
-                     ptl_pt_index_t   pt_index,
-                     ptl_match_bits_t match_bits,
-                     ptl_size_t       remote_offset,
-                     void            *user_ptr,
-                     ptl_hdr_data_t   hdr_data,
-                     const void      *operand,
-                     ptl_op_t         operation,
-                     ptl_datatype_t   datatype,
-                     ptl_handle_ct_t  trig_ct_handle,
-                     ptl_size_t       trig_threshold)
+int PtlTriggeredSwap(
+        ptl_handle_md_t  get_md_handle,
+        ptl_size_t       local_get_offset,
+        ptl_handle_md_t  put_md_handle,
+        ptl_size_t       local_put_offset,
+        ptl_size_t       length,
+        ptl_process_t    target_id,
+        ptl_pt_index_t   pt_index,
+        ptl_match_bits_t match_bits,
+        ptl_size_t       remote_offset,
+        void            *user_ptr,
+        ptl_hdr_data_t   hdr_data,
+        const void      *operand,
+        ptl_op_t         operation,
+        ptl_datatype_t   datatype,
+        ptl_handle_ct_t  trig_ct_handle,
+        ptl_size_t       trig_threshold)
 {
-    return ptl_swap( PTLTRIGSWAP, get_md_handle,
+    return ptl_atomic_op( PTLTRIGSWAP, get_md_handle,
         local_get_offset, put_md_handle, local_put_offset, length, target_id,
         pt_index, match_bits, remote_offset, user_ptr, hdr_data, operand,
         operation, datatype, trig_ct_handle, trig_threshold );
