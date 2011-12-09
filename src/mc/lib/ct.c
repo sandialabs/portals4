@@ -117,6 +117,7 @@ PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     if (0 != ret) return PTL_FAIL;
 
     entry->base.type        = PTLCTCANCELTRIGGERED;
+    entry->base.ni          = ct_hc.s.ni;
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
     entry->ctFree.ct_handle = ct_hc;
 

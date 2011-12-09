@@ -80,6 +80,10 @@ progress_loop(ptl_ppe_t *ctx)
                 ct_free_impl( ppe_ni, &entry.ctFree );
                 break;
 
+            case PTLCTCANCELTRIGGERED:
+                cancel_triggered_impl( ppe_ni, &entry.ctCancelTriggered );
+                break;
+
             case PTLCTSET:
             case PTLCTINC:
                 ct_op_impl( ppe_ni, entry.base.type, &entry.ctOp.args );

@@ -53,6 +53,34 @@ triggered_data_movement_impl( struct ptl_ppe_ni_t *ppe_ni, int type,
     return 0;
 }
 
+int 
+cancel_triggered_impl(struct ptl_ppe_ni_t *ppe_ni,
+                        ptl_cqe_ctcanceltriggered_t *cmd )
+{
+    ptl_ppe_ct_t      *ppe_ct;
+    PPE_DBG("ct_index=%d\n", cmd->ct_handle.s.code );
+    
+    ppe_ct =  ppe_ni->ppe_ct + cmd->ct_handle.s.code;
+
+    struct ptl_double_list_item_t *cur = ppe_ct->triggered_op_list.head;
+    while ( cur ) {
+        ptl_triggered_op_t *op = (ptl_triggered_op_t*) cur;
+        ptl_shared_triggered_t *shared_triggered;
+
+        shared_triggered = ppe_ni->client_triggered + op->index;
+        shared_triggered->in_use = 0;
+
+        PPE_DBG("index=%d type=%d\n", op->index, op->type );
+
+        cur = cur->next;
+        ptl_double_list_remove_item( &ppe_ct->triggered_op_list, 
+                                    (struct ptl_double_list_item_t *)op );
+        free( op );
+
+    }
+    
+    return 0;
+}
 
 void 
 PtlInternalCTPullTriggers( ptl_ppe_ni_t *ppe_ni, ptl_handle_ct_t ct_handle)
