@@ -325,6 +325,7 @@ int lib_le_recv( nal_ctx_t *nal_ctx,
         case HDR_TYPE_ATOMIC:
         case HDR_TYPE_FETCHATOMIC:
             nal_ctx->iovec.iov_base = malloc( nbytes );
+            assert( nal_ctx->iovec.iov_base );
             nal_ctx->iovec.iov_len  = nbytes;
             mlen = nal_ctx->u.le.mlength;
             rlen = hdr->length;
@@ -332,6 +333,7 @@ int lib_le_recv( nal_ctx_t *nal_ctx,
 
         case HDR_TYPE_SWAP:
             nal_ctx->iovec.iov_base = malloc( nbytes + 32);
+            assert( nal_ctx->iovec.iov_base ); 
             nal_ctx->iovec.iov_len  = nbytes + 32;
             mlen = nal_ctx->u.le.mlength + 32;
             rlen = hdr->length + 32;

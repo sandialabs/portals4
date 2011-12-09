@@ -35,6 +35,7 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
     } else {
         size_t tmp_len = 32 + args->length;
         void *tmp_ptr = malloc( tmp_len );
+        assert( tmp_ptr );
         nal_ctx->iovec.iov_len  = tmp_len; 
         nal_ctx->iovec.iov_base = tmp_ptr;
         memcpy( tmp_ptr, ppe_md->xpmem_ptr->data + args->local_offset, 
