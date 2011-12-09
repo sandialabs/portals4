@@ -11,11 +11,12 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
                                 ptl_data_movement_args_t *args,
                                     ptl_atomic_args_t *atomic_args )
 {
-    nal_ctx_t           *nal_ctx;
+    nal_ctx_t          *nal_ctx;
     ptl_ppe_md_t       *ppe_md;
     ptl_process_id_t    dst;
     ptl_size_t          nal_offset = 0, nal_len = 0;
     int                 ack = PTL_NO_ACK_REQ;
+    int                 ret;
 
     PPE_DBG("type=%d\n", type);
 
@@ -41,7 +42,6 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
         memcpy( tmp_ptr, ppe_md->xpmem_ptr->data + args->local_offset, 
                                                         args->length );
         memcpy( tmp_ptr + args->length, atomic_args->operand, 32 );
-        PPE_DBG("%p\n",nal_ctx->iovec.iov_base );
     }
 
     // MJL who should do the phys vs logical check app or engine? 
@@ -92,15 +92,13 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
         nal_offset = args->local_offset;
     }
 
-
     if ( ack == PTL_ACK_REQ ) {
-        nal_ctx->hdr.ack_ctx_key = 
-            alloc_ack_ctx( args->md_handle, args->local_offset, 
-                    args->user_ptr );
-        PPE_DBG("ack_ctx_key=%d\n",nal_ctx->hdr.ack_ctx_key);
-        assert( nal_ctx->hdr.ack_ctx_key ); 
+        nal_ctx->hdr.ack_ctx_key = alloc_ack_ctx( args->md_handle,
+                                args->local_offset, args->user_ptr );
+        if ( nal_ctx->hdr.ack_ctx_key == 0 ) return -1;
     }
 
+    // MJL should we range check the nid?
     dst.nid = args->target_id.phys.nid;
     dst.pid = args->target_id.phys.pid;
     
@@ -109,7 +107,8 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
     PPE_DBG("dst nid=%#x pid=%d length=%lu\n",dst.nid,dst.pid, args->length );
     PPE_DBG("nal_offset=%lu nal_len=%lu\n",nal_offset,nal_len);
 
-    ppe_ni->nal_ni->nal->send( ppe_ni->nal_ni,
+    // MJL do we need back pressure on sends?
+    ret = ppe_ni->nal_ni->nal->send( ppe_ni->nal_ni,
                                 &nal_ctx->nal_msg_data,      // nal_msg_data 
                                 nal_ctx,                     // lib_data
                                 dst,                        // dest 
@@ -121,9 +120,10 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
                                 nal_len,                    // len
                                 NULL                        // addrkey
                              );
-    return 0;
+    return ret == PTL_OK ? 0 : -1;
 }
 
+// MJL should we have this per ppe, client or ni?
 #define NUM_ACK_CTX 10
 static ack_ctx_t _ack_ctx[NUM_ACK_CTX] = 
             { [0 ...( NUM_ACK_CTX - 1)].md_h.a = PTL_INVALID_HANDLE };

@@ -20,7 +20,10 @@ me_append_impl( ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd )
 
     ppe_me->xpmem_ptr   = ppe_xpmem_attach( &client->xpmem_segments,
                                     cmd->me.start, cmd->me.length );
-    assert( ppe_me->xpmem_ptr );
+    if( ppe_me->xpmem_ptr == NULL ) {
+        perror("ppe_xpmem_attach");
+        return -1;
+    }
 
     _PtlMEAppend( ppe_ni, cmd->me_handle.a, cmd->pt_index, &cmd->me, 
                         cmd->ptl_list, cmd->user_ptr );
@@ -59,7 +62,10 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
         if ( send_entry->ack.retval == PTL_OK ) {
         
             ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_me->xpmem_ptr );
-            assert( 0 == ret );  
+            if ( ret < 0 ) {
+                perror("ppe_xpmem_detach");
+                return -1;
+            }
 
             // this is a blocking call do we need to set this?
             // who does the ppe_xpmem_detach and clears this flag for auto unlink
