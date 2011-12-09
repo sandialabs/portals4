@@ -153,6 +153,7 @@ ni_fini_impl( ptl_ppe_t *ctx, ptl_cqe_nifini_t *cmd )
     int peer = cmd->base.remote_id;
     ptl_ppe_client_t *client;
     ptl_ppe_ni_t *ni;
+    int i;
 
     client = &ctx->clients[peer];
     ni = &client->nis[cmd->ni_handle.s.ni];
@@ -170,6 +171,16 @@ ni_fini_impl( ptl_ppe_t *ctx, ptl_cqe_nifini_t *cmd )
         ppe_xpmem_detach(&client->xpmem_segments, ni->client_ptr);
     }
     memset(ni, 0, sizeof(ptl_ppe_ni_t));
+
+    for ( i = 0; i < ni->limits->max_cts; i++ ) {
+        ptl_double_list_fini( &ni->ppe_ct[i].triggered_op_list );
+    }
+    free( ni->ppe_md );
+    free( ni->ppe_me );
+    free( ni->ppe_le );
+    free( ni->ppe_pt );
+    free( ni->ppe_eq );
+    free( ni->ppe_ct );
 
     send_entry->base.type = PTLACK;
     send_entry->ack.retval_ptr = cmd->retval_ptr;
