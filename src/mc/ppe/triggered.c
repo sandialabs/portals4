@@ -15,6 +15,7 @@ triggered_ct_impl( struct ptl_ppe_ni_t *ppe_ni, int type,
     ppe_ct =  ppe_ni->ppe_ct + cmd->ct_handle.s.code;
 
     ptl_triggered_op_t *t_op = (ptl_triggered_op_t*) malloc( sizeof(*t_op) );
+    assert( t_op );
 
     t_op->type      = type;
     t_op->index     = cmd->index;
@@ -39,6 +40,7 @@ triggered_data_movement_impl( struct ptl_ppe_ni_t *ppe_ni, int type,
     ppe_ct =  ppe_ni->ppe_ct + cmd->ct_handle.s.code;
 
     ptl_triggered_op_t *t_op = (ptl_triggered_op_t*) malloc( sizeof(*t_op) );
+    assert( t_op );
 
     t_op->type      = type;
     t_op->index     = cmd->index;
