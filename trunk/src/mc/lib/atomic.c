@@ -407,6 +407,7 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
     const ptl_internal_handle_converter_t put_md_hc = { put_md_handle };
     ptl_cqe_t   *entry;
     int ret;
+    int multiple = 1;
 
 #ifndef NO_ARG_VALIDATION
     const ptl_internal_handle_converter_t put_md = { put_md_handle };
@@ -422,7 +423,6 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
         return PTL_ARG_INVALID;
     }
     {
-        int multiple = 1;
         switch (datatype) {
             case PTL_INT8_T:
             case PTL_UINT8_T:
@@ -554,7 +554,7 @@ ptl_swap(int type, ptl_handle_md_t  get_md_handle,
     entry->swap.args.remote_offset    = remote_offset;
     entry->swap.args.user_ptr         = user_ptr;
     entry->swap.args.hdr_data         = hdr_data;
-    entry->swap.atomic_args.operand   = operand;
+    memcpy( &entry->swap.atomic_args.operand, operand, multiple);
     entry->swap.atomic_args.operation = operation;
     entry->swap.atomic_args.datatype  = datatype;
 

@@ -178,7 +178,7 @@ typedef struct {
 typedef struct {
     ptl_op_t         operation;
     ptl_datatype_t   datatype;
-    const void      *operand;
+    uint8_t          operand[32];
 } ptl_atomic_args_t;
 
 typedef struct {
