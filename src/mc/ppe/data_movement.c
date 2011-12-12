@@ -11,7 +11,7 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
                                 ptl_data_movement_args_t *args,
                                     ptl_atomic_args_t *atomic_args )
 {
-    nal_ctx_t          *nal_ctx;
+    nal_ctx_t          *nal_ctx = NULL;
     ptl_ppe_md_t       *ppe_md;
     ptl_process_id_t    dst;
     ptl_size_t          nal_offset = 0, nal_len = 0;
@@ -21,6 +21,10 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
     PPE_DBG("type=%d\n", type);
 
     ppe_md = ppe_ni->ppe_md + args->md_handle.s.code; 
+
+    if ( args->local_offset + args->length > ppe_md->xpmem_ptr->length ) { 
+        return -1;
+    }
 
     nal_ctx = malloc( sizeof( *nal_ctx ) );
     assert(nal_ctx);
@@ -37,6 +41,9 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
         size_t tmp_len = 32 + args->length;
         void *tmp_ptr = malloc( tmp_len );
         assert( tmp_ptr );
+
+        // MJL: instead of mallocing enough space for the data and the operand
+        // we could use a seperate iovec slot for operand 
         nal_ctx->iovec.iov_len  = tmp_len; 
         nal_ctx->iovec.iov_base = tmp_ptr;
         memcpy( tmp_ptr, ppe_md->xpmem_ptr->data + args->local_offset, 
@@ -95,7 +102,9 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
     if ( ack == PTL_ACK_REQ ) {
         nal_ctx->hdr.ack_ctx_key = alloc_ack_ctx( args->md_handle,
                                 args->local_offset, args->user_ptr );
-        if ( nal_ctx->hdr.ack_ctx_key == 0 ) return -1;
+        if ( nal_ctx->hdr.ack_ctx_key == 0 ) {
+            goto error;
+        }
     }
 
     // MJL should we range check the nid?
@@ -120,7 +129,17 @@ data_movement_impl( ptl_ppe_ni_t *ppe_ni, int type,
                                 nal_len,                    // len
                                 NULL                        // addrkey
                              );
-    return ret == PTL_OK ? 0 : -1;
+    
+    assert ( ret == PTL_OK );
+    return PTL_OK;
+
+error:
+
+    if ( nal_ctx ) {
+        free( nal_ctx );
+    }
+    
+    return -1;
 }
 
 // MJL should we have this per ppe, client or ni?
