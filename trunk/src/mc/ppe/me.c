@@ -67,8 +67,6 @@ me_unlink_impl( ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd )
                 return -1;
             }
 
-            // this is a blocking call do we need to set this?
-            // who does the ppe_xpmem_detach and clears this flag for auto unlink
             ppe_me->shared_le->in_use = 0;
         }
     } else {
