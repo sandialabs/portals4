@@ -46,6 +46,7 @@ typedef struct ptl_ppe_ct_t ptl_ppe_ct_t;
 
 struct ptl_ppe_eq_t {
     ptl_ppe_xpmem_ptr_t    *xpmem_ptr;
+    boolean_t               in_use;
 };
 typedef struct ptl_ppe_eq_t ptl_ppe_eq_t;
 
