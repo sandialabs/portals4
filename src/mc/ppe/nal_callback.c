@@ -468,7 +468,7 @@ static inline int deliver_le_events( nal_ctx_t *nal_ctx )
     ptl_ppe_pt_t *ppe_pt = nal_ctx->ppe_ni->ppe_pt + 
                                 nal_ctx->u.le.ppe_le->pt_index;
     PtlInternalAnnounceMEDelivery( nal_ctx, 
-                                    ppe_pt->EQ, 
+                                    ppe_pt->eq_handle, 
                                     ppe_me->visible.ct_handle,
                                     ppe_me->visible.options,
                                     nal_ctx->u.le.mlength,

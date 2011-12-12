@@ -471,7 +471,7 @@ permission_violation:
                         // etc.
                     } else {
                         size_t                mlength;
-                        const ptl_handle_eq_t tEQ        = t->EQ;
+                        const ptl_handle_eq_t tEQ        = t->eq_handle;
                         const unsigned int    me_options = me->options;
                         // deliver
                         if (me->length == 0) {
@@ -600,7 +600,7 @@ permission_violation:
                 /* either nothing matched in the buffered_headers, or something did but we're appending a persistent ME, so go on and append to the priority list */
             }
             {
-                const ptl_handle_eq_t tEQ     = t->EQ;
+                const ptl_handle_eq_t tEQ     = t->eq_handle;
                 const unsigned int    options = me->options;
 
                 if (t->priority.tail == NULL) {
@@ -614,7 +614,7 @@ permission_violation:
             break;
         case PTL_OVERFLOW_LIST:
         {
-            const ptl_handle_eq_t tEQ     = t->EQ;
+            const ptl_handle_eq_t tEQ     = t->eq_handle;
             const unsigned int    options = me->options;
 
             if (t->overflow.tail == NULL) {
@@ -766,7 +766,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                     mlength = cur->hdr.length;
                 }
                 // notify
-                if (t->EQ != PTL_EQ_NONE) {
+                if (t->eq_handle != PTL_EQ_NONE) {
                     ptl_internal_event_t e;
                     PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
                     if (ptl_search_op == PTL_SEARCH_ONLY) {
@@ -790,7 +790,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                     }
                     e.mlength = mlength;
                     e.start   = cur->buffered_data;
-                    PtlInternalEQPush(ppe_ni,t->EQ, &e);
+                    PtlInternalEQPush(ppe_ni,t->eq_handle, &e);
                 }
             }
             // IFF ME is *not* persistent...
@@ -800,7 +800,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
         }
     }
     if (!found) {
-        if (t->EQ != PTL_EQ_NONE) {
+        if (t->eq_handle != PTL_EQ_NONE) {
             ptl_internal_event_t e;
             e.type           = PTL_EVENT_SEARCH;
             //e.initiator.rank = proc_number;
@@ -820,7 +820,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
             e.user_ptr      = user_ptr;
             e.hdr_data      = 0;
             e.ni_fail_type  = PTL_NI_NO_MATCH;
-            PtlInternalEQPush(ppe_ni, t->EQ, &e);
+            PtlInternalEQPush(ppe_ni, t->eq_handle, &e);
         }
     }
 done_searching:
@@ -1036,7 +1036,7 @@ ptl_pid_t INTERNAL PtlInternalMEDeliver(nal_ctx_t *nal_ctx,
     assert(hdr);
     ptl_internal_listtype_t  foundin = PRIORITY;
     ptl_internal_appendME_t *prev    = NULL, *entry = t->priority.head;
-    ptl_handle_eq_t          tEQ     = t->EQ;
+    ptl_handle_eq_t          tEQ     = t->eq_handle;
     ptl_le_t                 me;
     ptl_match_stuff_t        me2;
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;

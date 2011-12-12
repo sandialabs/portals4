@@ -347,7 +347,7 @@ permission_violation:
                         // etc.
                     } else {
                         size_t                mlength;
-                        const ptl_handle_eq_t tEQ = t->EQ;
+                        const ptl_handle_eq_t tEQ = t->eq_handle;
                         // deliver
                         if (le->length == 0) {
                             mlength = 0;
@@ -420,7 +420,7 @@ permission_violation:
                  * to the priority list. */
             }
             {
-                const ptl_handle_eq_t tEQ     = t->EQ;
+                const ptl_handle_eq_t tEQ     = t->eq_handle;
                 const unsigned int    options = le->options;
 
                 if (t->priority.tail == NULL) {
@@ -435,7 +435,7 @@ permission_violation:
             break;
         case PTL_OVERFLOW_LIST:
         {
-            const ptl_handle_eq_t tEQ     = t->EQ;
+            const ptl_handle_eq_t tEQ     = t->eq_handle;
             const unsigned int    options = le->options;
 
             if (t->overflow.tail == NULL) {
@@ -561,7 +561,7 @@ _PtlLESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                     mlength = cur->hdr.length;
                 }
                 // notify
-                if (t->EQ != PTL_EQ_NONE) {
+                if (t->eq_handle != PTL_EQ_NONE) {
                     ptl_internal_event_t e;
                     PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
                     if (ptl_search_op == PTL_SEARCH_ONLY) {
@@ -585,7 +585,7 @@ _PtlLESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                     }
                     e.mlength = mlength;
                     e.start   = cur->buffered_data;
-                    PtlInternalEQPush(ppe_ni, t->EQ, &e);
+                    PtlInternalEQPush(ppe_ni, t->eq_handle, &e);
                 }
             }
             // (2) iff LE is NOT persistent
@@ -595,7 +595,7 @@ _PtlLESearch( ptl_ppe_ni_t *ppe_ni, int ni,
         }
     }
     if (!found) {
-        if (t->EQ != PTL_EQ_NONE) {
+        if (t->eq_handle != PTL_EQ_NONE) {
             ptl_internal_event_t e;
             e.type           = PTL_EVENT_SEARCH;
             //e.initiator.rank = proc_number;
@@ -615,7 +615,7 @@ _PtlLESearch( ptl_ppe_ni_t *ppe_ni, int ni,
             e.user_ptr      = user_ptr;
             e.hdr_data      = 0;
             e.ni_fail_type  = PTL_NI_NO_MATCH;
-            PtlInternalEQPush(ppe_ni,t->EQ, &e);
+            PtlInternalEQPush(ppe_ni,t->eq_handle, &e);
         }
     }
 done_searching:
@@ -743,7 +743,7 @@ ptl_pid_t INTERNAL PtlInternalLEDeliver( nal_ctx_t *nal_ctx,
 {                                      /*{{{ */
     enum {PRIORITY, OVERFLOW} foundin = PRIORITY;
     ptl_internal_appendLE_t *entry    = NULL;
-    ptl_handle_eq_t          tEQ      = t->EQ;
+    ptl_handle_eq_t          tEQ      = t->eq_handle;
     ptl_le_t                 le;
     ptl_size_t               msg_mlength    = 0, fragment_mlength = 0;
     uint_fast8_t             need_more_data = 0;

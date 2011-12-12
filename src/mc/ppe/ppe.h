@@ -99,7 +99,7 @@ typedef struct ptl_ppe_le_t ptl_ppe_le_t;
 typedef ptl_ppe_le_t ptl_ppe_me_t;
 
 struct ptl_ppe_pt_t {
-    ptl_handle_eq_t         EQ;
+    ptl_handle_eq_t         eq_handle;
     // MJL: in a "split" implementation the "host" needs a in_use flag
     // and we have a status flag, should that be merged?
     uint32_t                status;

@@ -17,9 +17,9 @@ pt_alloc_impl( ptl_ppe_t *ctx, ptl_cqe_ptalloc_t *cmd )
     ni     = &client->nis[ cmd->ni_handle.s.ni ];
     ppe_pt = ni->ppe_pt + cmd->pt_index;
 
-    ppe_pt->EQ      = (ptl_handle_eq_t)cmd->eq_handle.a;
+    ppe_pt->eq_handle = (ptl_handle_eq_t)cmd->eq_handle.a;
     ppe_pt->options   = cmd->options;
-    ppe_pt->status = 1;
+    ppe_pt->status    = 1;
     
     return 0;
 }
