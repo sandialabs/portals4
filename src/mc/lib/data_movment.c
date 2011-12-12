@@ -10,6 +10,7 @@
 #include "ptl_internal_nit.h"
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
+
 static inline int calc_multiple( ptl_datatype_t datatype )
 {
     switch (datatype) {

@@ -24,7 +24,6 @@ md_bind_impl( ptl_ppe_t *ctx, ptl_cqe_mdbind_t *cmd )
     ppe_md->xpmem_ptr = ppe_xpmem_attach( &client->xpmem_segments,
                                     cmd->md.start, cmd->md.length );
 
-    // MJL: should we return a failure or assert?
     if( ppe_md->xpmem_ptr == NULL ) {
         perror( "ppe_xpmem_attach" );
         return -1;
@@ -70,8 +69,8 @@ md_release_impl( ptl_ppe_t *ctx, ptl_cqe_mdrelease_t *cmd )
                 return -1;
             }
 
-            // MJL: we could get rid of the shared key because this is a blocking
-            // call and the engine doesn't unlink MD's 
+            // MJL: we could get rid of the shared key because this is a 
+            // blocking call and the engine doesn't unlink MD's 
             shared_md->in_use = 0;
         }
     } else {
