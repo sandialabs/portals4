@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include "ppe/ct.h"
 #include "ppe/ppe.h"
 #include "ppe/dispatch.h"
 #include "ppe/triggered.h"
@@ -61,6 +62,13 @@ cancel_triggered_impl(struct ptl_ppe_ni_t *ppe_ni,
     PPE_DBG("ct_index=%d\n", cmd->ct_handle.s.code );
     
     ppe_ct =  ppe_ni->ppe_ct + cmd->ct_handle.s.code;
+    
+    cancel_triggered( ppe_ni, ppe_ct );
+    return 0;
+}
+
+int cancel_triggered( struct ptl_ppe_ni_t *ppe_ni, ptl_ppe_ct_t *ppe_ct )
+{
 
     struct ptl_double_list_item_t *cur = ppe_ct->triggered_op_list.head;
     while ( cur ) {

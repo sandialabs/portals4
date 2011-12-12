@@ -25,6 +25,8 @@ ct_free_impl( ptl_ppe_ni_t *ppe_ni, ptl_cqe_ctfree_t *cmd )
     // use this CT?
     // what about triggered ops for this ct?
 
+    cancel_triggered( ppe_ni, ct ); 
+
     ct->in_use = 0;
     return 0;
 }
