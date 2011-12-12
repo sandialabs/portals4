@@ -1,4 +1,3 @@
-
 #ifndef MC_PPE_CT_H
 #define MC_PPE_CT_H
 
@@ -18,7 +17,6 @@ ct_inc( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle, ptl_size_t increment)
         fprintf(stderr,"%s():%d, unused ct %d\n",__func__,__LINE__,ct_handle);
     }
 }
-
 
 static inline void 
 PtlInternalCTSuccessInc( ptl_ppe_ni_t *ppe_ni,
@@ -42,6 +40,5 @@ ct_set( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle,
     }
     return 0;
 }
-
 
 #endif

@@ -11,11 +11,17 @@ static inline void PtlInternalEQPush( ptl_ppe_ni_t *ni,
                        ptl_internal_event_t *event)
 {
     ptl_internal_handle_converter_t   eq_hc = { handle };
+    ptl_ppe_eq_t   *ppe_eq = ni->ppe_eq + eq_hc.s.code;
 
     PPE_DBG("ni=%p eq_handle=%#x event=%d\n", ni, eq_hc.a, event->type );
 
-    ptl_circular_buffer_add_overwrite( 
-                        ni->ppe_eq[eq_hc.s.code].xpmem_ptr->data, event );
+    if ( ppe_eq->in_use ) { 
+
+        ptl_circular_buffer_add_overwrite( 
+                        ppe_eq->xpmem_ptr->data, event );
+    } else {
+        fprintf(stderr,"%s():%d, unused eq %d\n",__func__,__LINE__,eq_hc.s.code);
+    }
 }
 
 

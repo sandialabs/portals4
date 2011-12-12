@@ -18,6 +18,7 @@ eq_alloc_impl( ptl_ppe_t *ctx, ptl_cqe_eqalloc_t *cmd )
     ni     = &client->nis[ cmd->eq_handle.s.ni ];
     ppe_eq = ni->ppe_eq + cmd->eq_handle.s.code;
 
+    ppe_eq->in_use = True;
     ppe_eq->xpmem_ptr = ppe_xpmem_attach( &client->xpmem_segments,
                  cmd->cb, sizeof(ptl_circular_buffer_t)  +
                         sizeof(ptl_event_t) * cmd->count );
@@ -48,6 +49,7 @@ eq_free_impl( ptl_ppe_t *ctx, ptl_cqe_eqfree_t *cmd )
     client = &ctx->clients[ cmd->base.remote_id ];
     ni     = &client->nis[ cmd->eq_handle.s.ni ];
     ppe_eq = ni->ppe_eq + cmd->eq_handle.s.code;
+    ppe_eq->in_use = False;
 
     ret = ppe_xpmem_detach( &client->xpmem_segments, ppe_eq->xpmem_ptr );
     if (ret < 0) {
