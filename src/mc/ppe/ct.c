@@ -10,7 +10,7 @@ ct_alloc_impl( ptl_ppe_ni_t *ppe_ni, ptl_cqe_ctalloc_t *cmd )
 {
     PPE_DBG("ct_index=%d\n", cmd->ct_handle );
 
-    ppe_ni->client_ct[ cmd->ct_handle ].in_use = True;
+    ppe_ni->ppe_ct[ cmd->ct_handle ].in_use = True;
 
     return 0;
 }
