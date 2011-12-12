@@ -9,7 +9,8 @@ int cancel_triggered( struct ptl_ppe_ni_t *ppe_ni, ptl_ppe_ct_t *ct );
 static inline void 
 ct_inc( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle, ptl_size_t increment)
 {
-    PPE_DBG( "ct_index=%d value=%lu\n", ct_handle, increment );
+    PPE_DBG( "ct_index=%d increment=%lu\n", ct_handle, increment );
+
     if ( ppe_ni->ppe_ct[ ct_handle ].in_use ) {
         ppe_ni->client_ct[ ct_handle ].ct_event.success += increment;
         ct_pull_triggers( ppe_ni, ct_handle );
