@@ -175,6 +175,7 @@ typedef struct {
     ptl_cqe_base_t base;
     ptl_internal_handle_converter_t     ni_handle;
     ptl_pt_index_t  pt_index;
+    int           *retval_ptr;
 } ptl_cqe_ptfree_t;
 
 typedef struct {
