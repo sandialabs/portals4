@@ -5,6 +5,7 @@
 #include "ppe/ppe.h"
 #include "ppe/triggered.h"
 
+int cancel_triggered( struct ptl_ppe_ni_t *ppe_ni, ptl_ppe_ct_t *ct );
 
 static inline void PtlInternalCTSuccessInc(
         ptl_ppe_ni_t *ppe_ni, ptl_handle_ct_t ct_handle, ptl_size_t  increment)
