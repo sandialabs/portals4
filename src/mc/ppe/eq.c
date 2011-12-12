@@ -44,8 +44,6 @@ eq_free_impl( ptl_ppe_t *ctx, ptl_cqe_eqfree_t *cmd )
     PPE_DBG("selector=%d code=%d ni=%d\n", cmd->eq_handle.s.selector,
                     cmd->eq_handle.s.code, cmd->eq_handle.s.ni);
 
-    // MJL: how do we coordiate with pending data xfers that will want to
-    // use this EQ?
     client = &ctx->clients[ cmd->base.remote_id ];
     ni     = &client->nis[ cmd->eq_handle.s.ni ];
     ppe_eq = ni->ppe_eq + cmd->eq_handle.s.code;
