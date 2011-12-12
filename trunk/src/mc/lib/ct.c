@@ -52,7 +52,7 @@ PtlCTAlloc(ptl_handle_ni_t  ni_handle,
     entry->base.type         = PTLCTALLOC;
     entry->base.ni           = ni.s.ni;
     entry->base.remote_id    = ptl_iface_get_rank(&ptl_iface);
-    entry->ctAlloc.ct_handle = ct_hc;
+    entry->ctAlloc.ct_handle = ct_hc.s.code;
 
     ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                                   ptl_iface_get_peer(&ptl_iface),
@@ -87,7 +87,7 @@ PtlCTFree(ptl_handle_ct_t ct_handle)
     entry->base.type        = PTLCTFREE;
     entry->base.ni          = ct_hc.s.ni;
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
-    entry->ctFree.ct_handle = ct_hc;
+    entry->ctFree.ct_handle = ct_hc.s.code;
 
     ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
@@ -119,7 +119,7 @@ PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
     entry->base.type        = PTLCTCANCELTRIGGERED;
     entry->base.ni          = ct_hc.s.ni;
     entry->base.remote_id   = ptl_iface_get_rank(&ptl_iface);
-    entry->ctFree.ct_handle = ct_hc;
+    entry->ctFree.ct_handle = ct_hc.s.code;
 
     ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface), 
                       ptl_iface_get_peer(&ptl_iface), 
@@ -280,7 +280,7 @@ ct_op( int type, ptl_handle_ct_t ct_handle, ptl_ct_event_t  ct_event,
     entry->base.type            = type;
     entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
     entry->base.ni              = ct_hc.s.ni;
-    entry->ctOp.args.ct_handle    = ct_hc;
+    entry->ctOp.args.ct_handle    = ct_hc.s.code;
     entry->ctOp.args.ct_event     = ct_event;
 
     if ( type == PTLTRIGCTSET || type == PTLTRIGCTINC ) {

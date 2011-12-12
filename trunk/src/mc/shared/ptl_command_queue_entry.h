@@ -6,6 +6,8 @@
 #include "portals4.h"
 #include "ptl_internal_handles.h"
 
+typedef uint8_t ptl_cqe_handle_t;
+
 struct ptl_circular_buffer_t;
 
 typedef enum {
@@ -104,13 +106,13 @@ typedef struct {
 } ptl_cqe_getmap_t;
 
 typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     ct_handle; 
+    ptl_cqe_base_t      base;
+    ptl_cqe_handle_t    ct_handle;
 } ptl_cqe_ctalloc_t;
 
 typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     ct_handle; 
+    ptl_cqe_base_t      base;
+    ptl_cqe_handle_t    ct_handle; 
 } ptl_cqe_ctfree_t;
 
 
@@ -121,8 +123,8 @@ typedef struct {
 } ptl_triggered_args_t;
 
 typedef struct {
-    ptl_internal_handle_converter_t     ct_handle; 
-    ptl_ct_event_t                      ct_event;
+    ptl_cqe_handle_t    ct_handle; 
+    ptl_ct_event_t      ct_event;
 } ptl_ctop_args_t;
 
 typedef struct {
