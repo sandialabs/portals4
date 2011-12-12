@@ -7,26 +7,32 @@
 
 int cancel_triggered( struct ptl_ppe_ni_t *ppe_ni, ptl_ppe_ct_t *ct );
 
-static inline void PtlInternalCTSuccessInc(
-        ptl_ppe_ni_t *ppe_ni, ptl_handle_ct_t ct_handle, ptl_size_t  increment)
+static inline void 
+ct_inc( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle, ptl_size_t increment)
+{
+    PPE_DBG( "ct_index=%d value=%lu\n", ct_handle, increment );
+    ppe_ni->client_ct[ ct_handle ].ct_event.success += increment;
+    ct_pull_triggers( ppe_ni, ct_handle );
+}
+
+
+static inline void 
+PtlInternalCTSuccessInc( ptl_ppe_ni_t *ppe_ni,
+                        ptl_handle_ct_t ct_handle, ptl_size_t  increment)
 {
     const ptl_internal_handle_converter_t ct_hc = {ct_handle};
-    PPE_DBG("ct_index=%d value=%lu\n",ct_hc.s.code,increment);
-    ppe_ni->client_ct[ct_hc.s.code].ct_event.success += increment;
-    PtlInternalCTPullTriggers( ppe_ni, ct_handle );
+    ct_inc( ppe_ni, ct_hc.s.code, increment );
 }
 
 static inline int
-ct_set( ptl_ppe_ni_t *ppe_ni, int ct_index, ptl_ct_event_t new_event )
+ct_set( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle, 
+                                ptl_ct_event_t new_event )
 {
-    const ptl_internal_handle_converter_t ct_hc = {.s.code = ct_index};
+    PPE_DBG("ct_index=%d value=%lu\n", ct_handle, new_event.success );
 
-    PPE_DBG("ct_index=%d value=%lu\n",ct_index,new_event.success);
+    ppe_ni->client_ct[ ct_handle ].ct_event = new_event; 
 
-    ppe_ni->client_ct[ct_index].ct_event = new_event; 
-
-    // PtlInternalCTPullTriggers only uses code field in ct_handle
-    PtlInternalCTPullTriggers( ppe_ni, (ptl_handle_ct_t) ct_hc.a );
+    ct_pull_triggers( ppe_ni, ct_handle );
     return 0;
 }
 

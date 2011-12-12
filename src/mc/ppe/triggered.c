@@ -91,19 +91,18 @@ int cancel_triggered( struct ptl_ppe_ni_t *ppe_ni, ptl_ppe_ct_t *ppe_ct )
 }
 
 void 
-PtlInternalCTPullTriggers( ptl_ppe_ni_t *ppe_ni, ptl_handle_ct_t ct_handle)
+ct_pull_triggers( ptl_ppe_ni_t *ppe_ni, ptl_ppe_handle_t ct_handle)
 {
-    const ptl_internal_handle_converter_t ct_hc = { ct_handle };
     ptl_ppe_ct_t       *ppe_ct;
     ptl_internal_ct_t  *client_ct;
 
-    PPE_DBG("ct_index=%d\n", ct_hc.s.code );
+    PPE_DBG("ct_index=%d\n", ct_handle );
 
-    ppe_ct    = ppe_ni->ppe_ct + ct_hc.s.code;
+    ppe_ct    = ppe_ni->ppe_ct + ct_handle;
 
-    // MJL: we need the count for this ct and it's stored in client 
+    // MJL: we need the count for this ct, it's stored in client 
     // memory and shared with the ppe, should we keep our own copy in the ppe_ct?
-    client_ct = ppe_ni->client_ct + ct_hc.s.code;
+    client_ct = ppe_ni->client_ct + ct_handle;
 
     struct ptl_double_list_item_t *cur = ppe_ct->triggered_op_list.head;
     while ( cur ) {

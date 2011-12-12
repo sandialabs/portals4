@@ -21,6 +21,6 @@ struct ptl_triggered_op_t {
 };
 typedef struct ptl_triggered_op_t ptl_triggered_op_t;
 
-void PtlInternalCTPullTriggers( ptl_ppe_ni_t *, ptl_handle_ct_t );
+void ct_pull_triggers( ptl_ppe_ni_t *, ptl_ppe_handle_t );
 
 #endif

@@ -10,6 +10,7 @@
 #include "shared/ptl_command_queue.h"
 #include "shared/ptl_connection_manager.h"
 #include "shared/ptl_internal_handles.h"
+#include "shared/ptl_command_queue_entry.h"
 #include "ppe/ppe_xpmem.h"
 
 #include "lib/include/ptl_internal_MD.h"
@@ -33,10 +34,13 @@ fprintf(stderr,"%s():%i: " fmt, __FUNCTION__, __LINE__, ## args);
 #include "nal/p3.3/include/p3lib/nal.h"
 
 typedef ptl_internal_handle_converter_t ptl_handle_generic_t;
+typedef ptl_cqe_handle_t    ptl_ppe_handle_t;
 
+typedef enum { False = 0, True = 1 } boolean_t;
 
 struct ptl_ppe_ct_t {
     ptl_double_list_t   triggered_op_list;
+    boolean_t           in_use;
 };
 typedef struct ptl_ppe_ct_t ptl_ppe_ct_t;
 
