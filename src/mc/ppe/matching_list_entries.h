@@ -5,7 +5,7 @@
 #include "ppe/nal.h"
 int _PtlMEAppend( ptl_ppe_ni_t *, ptl_handle_me_t me_handle,
                          ptl_pt_index_t   pt_index,
-                         ptl_me_t        *me,
+                         const ptl_cqe_me_t        *me,
                          ptl_list_t       ptl_list,
                          void            *user_ptr );
 
@@ -14,7 +14,7 @@ int _PtlMEUnlink( ptl_ppe_ni_t *, ptl_handle_me_t me_handle);
 
 int _PtlMESearch( ptl_ppe_ni_t *, int ni,
                          ptl_pt_index_t  pt_index,
-                         const ptl_me_t *me,
+                         const ptl_cqe_me_t *me,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr);
 

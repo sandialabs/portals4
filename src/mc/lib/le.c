@@ -1,3 +1,4 @@
+#if 0
 #include "config.h"
 
 #include <assert.h>
@@ -12,12 +13,22 @@
 #include "shared/ptl_internal_handles.h"
 #include "shared/ptl_command_queue_entry.h"
 
-int PtlLEAppend(ptl_handle_ni_t  ni_handle,
-                ptl_pt_index_t   pt_index,
-                const ptl_le_t  *le,
-                ptl_list_t       ptl_list,
-                void            *user_ptr,
-                ptl_handle_le_t *le_handle)
+union le_me_t {
+    ptl_le_t le;
+    ptl_me_t me;
+};
+typedef union le_me_t le_me_t;
+
+static inline int 
+le_append(
+        int                 type, 
+        ptl_handle_ni_t     ni_handle,
+        ptl_pt_index_t      pt_index,
+        const le_me_t      *le_me,
+        ptl_list_t          ptl_list,
+        void                *user_ptr,
+        ptl_handle_le_t     *le_handle
+)
 {
     const ptl_internal_handle_converter_t ni     = { ni_handle };
     ptl_internal_handle_converter_t le_hc     = { .s.ni = ni.s.ni,
@@ -52,23 +63,58 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
     ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     if ( 0 != ret ) return PTL_FAIL;
 
-    entry->base.type = PTLLEAPPEND;
-    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
-    entry->leAppend.le_handle = le_hc;
-    entry->leAppend.pt_index  = pt_index;
-    entry->leAppend.le        = *le;
-    entry->leAppend.ptl_list  = ptl_list;
-    entry->leAppend.user_ptr  = user_ptr;
+#if 0
+    entry->base.type            = type;
+    entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
+    entry->lemeAppend.handle    = le_hc.s.code;
+    entry->lemeAppend.pt_index  = pt_index;
+    entry->lemeAppend.ptl_list  = ptl_list;
+    entry->lemeAppend.user_ptr  = user_ptr;
 
-    ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
+    if ( type == PTLLEAPPEND ) {
+        entry->lemeAppend.me.le.start      = le_me->le.start;
+        entry->lemeAppend.me.le.length     = le_me->le.length;
+        entry->lemeAppend.me.le.ct_handle  = le_me->le.ct_handle;
+        entry->lemeAppend.me.le.uid        = le_me->le.uid;
+        entry->lemeAppend.me.le.options    = le_me->le.options;
+    } else {
+        entry->lemeAppend.me.le.start      = le_me->me.start;
+        entry->lemeAppend.me.le.length     = le_me->me.length;
+        entry->lemeAppend.me.le.ct_handle  = le_me->me.ct_handle;
+        entry->lemeAppend.me.le.uid        = le_me->me.uid;
+        entry->lemeAppend.me.le.options    = le_me->me.options;
+        entry->lemeAppend.me.match_id      = le_me->me.match_id;
+        entry->lemeAppend.me.match_bits    = le_me->me.match_bits;
+        entry->lemeAppend.me.ignore_bits   = le_me->me.ignore_bits;
+        entry->lemeAppend.me.min_free      = le_me->me.min_free;
+    }
+#endif
+
+    ret = ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface), 
                       entry, sizeof(ptl_cqe_leappend_t));
+    if ( ret != 0 ) return PTL_FAIL;
 
     *le_handle = le_hc.a; 
     return PTL_OK;
 }
 
-int PtlLEUnlink(ptl_handle_le_t le_handle)
+int
+PtlLEAppend(
+        ptl_handle_ni_t     ni_handle,
+        ptl_pt_index_t      pt_index,
+        const ptl_le_t     *le,
+        ptl_list_t          ptl_list,
+        void               *user_ptr,
+        ptl_handle_le_t    *le_handle
+)
+{
+    return le_append( PTLLEAPPEND, ni_handle, pt_index, (le_me_t*) le, ptl_list,
+                    user_ptr, le_handle );
+}
+
+static inline int 
+le_unlink( int type, ptl_handle_le_t le_handle)
 {
    const ptl_internal_handle_converter_t le_hc = { le_handle };
    ptl_cqe_t *entry;
@@ -98,8 +144,8 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
     ret = ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
     if ( 0!= ret ) return PTL_FAIL;
 
-    entry->base.type = PTLLEUNLINK;
-    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
+    entry->base.type          = type;
+    entry->base.remote_id     = ptl_iface_get_rank(&ptl_iface);
     entry->leUnlink.le_handle = le_hc;
     entry->leUnlink.retval_ptr = &cmd_ret;
 
@@ -118,11 +164,21 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
     return PTL_OK;
 }
 
-int PtlLESearch(ptl_handle_ni_t ni_handle,
-                ptl_pt_index_t  pt_index,
-                const ptl_le_t *le,
-                ptl_search_op_t ptl_search_op,
-                void           *user_ptr)
+int PtlLEUnlink(ptl_handle_le_t le_handle)
+{
+    return le_unlink( PTLLEUNLINK, le_handle );
+}
+
+
+static inline int 
+le_search( 
+        int                 type,
+        ptl_handle_ni_t     ni_handle,
+        ptl_pt_index_t      pt_index,
+        const le_me_t     *le_me,
+        ptl_search_op_t     ptl_search_op,
+        void               *user_ptr
+)
 {
 
     const ptl_internal_handle_converter_t ni = { ni_handle };
@@ -151,13 +207,16 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 
     ptl_cq_entry_alloc( ptl_iface_get_cq(&ptl_iface), &entry );
 
-    entry->base.type = PTLLESEARCH;
-    entry->base.remote_id  = ptl_iface_get_rank(&ptl_iface);
-    entry->leSearch.ni_handle = ni;
-    entry->leSearch.pt_index = pt_index;
-    entry->leSearch.le = *le;
+    entry->base.type            = type;
+    entry->base.remote_id       = ptl_iface_get_rank(&ptl_iface);
+    entry->leSearch.ni_handle   = ni;
+    entry->leSearch.pt_index    = pt_index;
+    if ( type == PTLLESEARCH ) {
+        entry->leSearch.le          = le_me->le;
+    } else {
+    }
     entry->leSearch.ptl_search_op = ptl_search_op;
-    entry->leSearch.user_ptr = user_ptr;
+    entry->leSearch.user_ptr    = user_ptr;
 
     ptl_cq_entry_send_block(ptl_iface_get_cq(&ptl_iface),
                       ptl_iface_get_peer(&ptl_iface), 
@@ -165,3 +224,16 @@ int PtlLESearch(ptl_handle_ni_t ni_handle,
 
     return PTL_OK;
 }
+
+int PtlLESearch(
+        ptl_handle_ni_t     ni_handle,
+        ptl_pt_index_t      pt_index,
+        const ptl_le_t     *le,
+        ptl_search_op_t     ptl_search_op,
+        void               *user_ptr
+)
+{
+    return le_search( PTLLESEARCH, ni_handle, pt_index, (le_me_t*) le, 
+                            ptl_search_op, user_ptr);
+}
+#endif

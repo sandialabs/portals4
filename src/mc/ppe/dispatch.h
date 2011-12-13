@@ -30,11 +30,9 @@ int data_movement_impl(struct ptl_ppe_ni_t *, int type,
                        ptl_data_movement_args_t *, ptl_atomic_args_t * );
 int pt_alloc_impl(struct ptl_ppe_t *ctx, ptl_cqe_ptalloc_t *cmd );
 int pt_free_impl(struct ptl_ppe_t *ctx, ptl_cqe_ptfree_t *cmd );
-int me_append_impl(struct ptl_ppe_t *ctx, ptl_cqe_meappend_t *cmd );
-int me_unlink_impl(struct ptl_ppe_t *ctx, ptl_cqe_meunlink_t *cmd );
-int me_search_impl(struct ptl_ppe_t *ctx, ptl_cqe_mesearch_t *cmd );
-int le_append_impl(struct ptl_ppe_t *ctx, ptl_cqe_leappend_t *cmd );
-int le_unlink_impl(struct ptl_ppe_t *ctx, ptl_cqe_leunlink_t *cmd );
-int le_search_impl(struct ptl_ppe_t *ctx, ptl_cqe_lesearch_t *cmd );
+
+int list_append_impl(struct ptl_ppe_t *ctx, ptl_cqe_list_append_t *cmd );
+int list_unlink_impl(struct ptl_ppe_t *ctx, ptl_cqe_list_unlink_t *cmd );
+int list_search_impl(struct ptl_ppe_t *ctx, ptl_cqe_list_search_t *cmd );
 
 #endif

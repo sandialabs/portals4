@@ -138,28 +138,19 @@ progress_loop(ptl_ppe_t *ctx)
                 pt_free_impl( ctx, &entry.ptFree );
                 break;
 
-            case PTLMEAPPEND:
-                me_append_impl( ctx, &entry.meAppend );
-                break;
-
-            case PTLMEUNLINK:
-                me_unlink_impl( ctx, &entry.meUnlink );
-                break;
-
-            case PTLMESEARCH:
-                me_search_impl( ctx, &entry.meSearch );
-                break;
-
             case PTLLEAPPEND:
-                le_append_impl( ctx, &entry.leAppend );
+            case PTLMEAPPEND:
+                list_append_impl( ctx, &entry.list_append );
                 break;
 
             case PTLLEUNLINK:
-                le_unlink_impl( ctx, &entry.leUnlink );
+            case PTLMEUNLINK:
+                list_unlink_impl( ctx, &entry.list_unlink );
                 break;
 
             case PTLLESEARCH:
-                le_search_impl( ctx, &entry.leSearch );
+            case PTLMESEARCH:
+                list_search_impl( ctx, &entry.list_search );
                 break;
 
             case PTLATOMICSYNC:
