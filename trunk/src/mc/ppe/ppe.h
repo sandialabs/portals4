@@ -85,7 +85,7 @@ typedef struct ptl_match_stuff_t ptl_match_stuff_t;
 
 struct ptl_ppe_le_t {
     ptl_internal_appendLE_t Qentry;
-    ptl_le_t                visible;
+    ptl_cqe_le_t            visible;
     ptl_match_stuff_t       visible_match_stuff;
     ptl_list_t              ptl_list;
     ptl_pt_index_t          pt_index;

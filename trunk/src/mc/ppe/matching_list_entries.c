@@ -31,13 +31,9 @@ enum DM_return_codes {
     DM_OP_VIOLATION
 };
 
-static inline void copyME( ptl_ppe_le_t *ppe_le, ptl_me_t *me )
+static inline void copyME( ptl_ppe_le_t *ppe_le, const ptl_cqe_me_t *me )
 {
-    ppe_le->visible.start     = me->start; 
-    ppe_le->visible.length    = me->length; 
-    ppe_le->visible.ct_handle = me->ct_handle; 
-    ppe_le->visible.uid       = me->uid;
-    ppe_le->visible.options   = me->options; 
+    ppe_le->visible     = me->le; 
 
     ppe_le->visible_match_stuff.match_id    = me->match_id;
     ppe_le->visible_match_stuff.match_bits  = me->match_bits;
@@ -297,7 +293,7 @@ int _PtlMEAppend(ptl_handle_ni_t  ni_handle,
 #endif
 int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                          ptl_pt_index_t   pt_index,
-                         ptl_me_t        *me,
+                         const ptl_cqe_me_t        *me,
                          ptl_list_t       ptl_list,
                          void            *user_ptr )
 {                                      /*{{{ */
@@ -394,9 +390,9 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                         continue;
                     }
                     /* check for forbidden truncation */
-                    if (((me->options & PTL_ME_NO_TRUNCATE) != 0) &&
+                    if (((me->le.options & PTL_ME_NO_TRUNCATE) != 0) &&
                         ((cur->hdr.length + cur->hdr.dest_offset) >
-                         me->length)) {
+                         me->le.length)) {
                         continue;
                     }
                     /* check for match_id */
@@ -438,7 +434,7 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                         case HDR_TYPE_ATOMIC:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me->options & PTL_ME_OP_PUT) == 0) {
+                            if ((me->le.options & PTL_ME_OP_PUT) == 0) {
                                 (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
@@ -447,7 +443,7 @@ int _PtlMEAppend( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle,
                         case HDR_TYPE_GET:
                         case HDR_TYPE_FETCHATOMIC:
                         case HDR_TYPE_SWAP:
-                            if ((me->options & PTL_ME_OP_GET) == 0) {
+                            if ((me->le.options & PTL_ME_OP_GET) == 0) {
                                 (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                                 goto permission_violation;
                             }
@@ -462,7 +458,7 @@ permission_violation:
                         continue;
                     }
                     // iff ME is persistent...
-                    if ((me->options & PTL_ME_USE_ONCE) == 0) {
+                    if ((me->le.options & PTL_ME_USE_ONCE) == 0) {
                         fprintf(stderr, "PtlMEAppend() does not work with persistent MEs and buffered headers (implementation needs to be fleshed out)\n");
                         /* suggested plan: put an ME-specific buffered header list on each ME, and when the ME is persistent, it gets the buffered headers that it matched, in order. Then, this list can be used to start reworking (e.g.
                          * retransmitting/restarting) the original order of deliveries. While this list exists on the ME, new packets get added to that list. Once the list is empty, the ME becomes a normal persistent ME. */
@@ -472,14 +468,14 @@ permission_violation:
                     } else {
                         size_t                mlength;
                         const ptl_handle_eq_t tEQ        = t->eq_handle;
-                        const unsigned int    me_options = me->options;
+                        const unsigned int    me_options = me->le.options;
                         // deliver
-                        if (me->length == 0) {
+                        if (me->le.length == 0) {
                             mlength = 0;
                         } else if (cur->hdr.length + cur->hdr.dest_offset >
-                                   me->length) {
-                            if (me->length > cur->hdr.dest_offset) {
-                                mlength = me->length - cur->hdr.dest_offset;
+                                   me->le.length) {
+                            if (me->le.length > cur->hdr.dest_offset) {
+                                mlength = me->le.length - cur->hdr.dest_offset;
                             } else {
                                 mlength = 0;
                             }
@@ -542,11 +538,11 @@ permission_violation:
                         }
 #else               /* ifndef ALWAYS_TRIGGER_OVERFLOW_EVENTS *//*}}}*/
                         if ((tEQ != PTL_EQ_NONE) ||
-                            (me->ct_handle != PTL_CT_NONE)) {
+                            (me->le.ct_handle != PTL_CT_NONE)) {
                             __sync_synchronize();
                             PtlInternalAnnounceMEDelivery( NULL,//nal_ctx,
                                                           tEQ,
-                                                          me->ct_handle,
+                                                          me->le.ct_handle,
                                                           me_options,
                                                           //mlength,
                                                           cur->buffered_size,
@@ -569,7 +565,7 @@ permission_violation:
                                 ptl_internal_event_t e;
                                 PTL_INTERNAL_INIT_TEVENT(e, (&(cur->hdr)), user_ptr);
                                 e.type  = PTL_EVENT_AUTO_UNLINK;
-                                e.start = (uint8_t *)me->start + cur->hdr.dest_offset;
+                                e.start = (uint8_t *)me->le.start + cur->hdr.dest_offset;
                                 PtlInternalEQPush(ppe_ni, tEQ, &e);
                             }
 #ifdef ALWAYS_TRIGGER_OVERFLOW_EVENTS
@@ -601,7 +597,7 @@ permission_violation:
             }
             {
                 const ptl_handle_eq_t tEQ     = t->eq_handle;
-                const unsigned int    options = me->options;
+                const unsigned int    options = me->le.options;
 
                 if (t->priority.tail == NULL) {
                     t->priority.head = Qentry;
@@ -615,7 +611,7 @@ permission_violation:
         case PTL_OVERFLOW_LIST:
         {
             const ptl_handle_eq_t tEQ     = t->eq_handle;
-            const unsigned int    options = me->options;
+            const unsigned int    options = me->le.options;
 
             if (t->overflow.tail == NULL) {
                 t->overflow.head = Qentry;
@@ -637,7 +633,7 @@ done_appending_unlocked:
 //int API_FUNC PtlMESearch(ptl_handle_ni_t ni_handle,
 int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                          ptl_pt_index_t  pt_index,
-                         const ptl_me_t *me,
+                         const ptl_cqe_me_t *me,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
 {   /*{{{*/
@@ -691,8 +687,8 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                 continue;
             }
             /* check for forbidden truncation */
-            if (((me->options & PTL_ME_NO_TRUNCATE) != 0) &&
-                ((cur->hdr.length + cur->hdr.dest_offset) > me->length)) {
+            if (((me->le.options & PTL_ME_NO_TRUNCATE) != 0) &&
+                ((cur->hdr.length + cur->hdr.dest_offset) > me->le.length)) {
                 continue;
             }
             /* check for match_id */
@@ -729,7 +725,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                 case HDR_TYPE_ATOMIC:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
-                    if ((me->options & PTL_ME_OP_PUT) == 0) {
+                    if ((me->le.options & PTL_ME_OP_PUT) == 0) {
                         (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                         continue;
                     }
@@ -738,7 +734,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                 case HDR_TYPE_GET:
                 case HDR_TYPE_FETCHATOMIC:
                 case HDR_TYPE_SWAP:
-                    if ((me->options & PTL_ME_OP_GET) == 0) {
+                    if ((me->le.options & PTL_ME_OP_GET) == 0) {
                         (void)PtlInternalAtomicInc(&nit.regs[cur->hdr.ni][PTL_SR_OPERATIONS_VIOLATIONS], 1);
                         continue;
                     }
@@ -753,12 +749,12 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
             {
                 size_t mlength;
                 // deliver
-                if (me->length == 0) {
+                if (me->le.length == 0) {
                     mlength = 0;
                 } else if (cur->hdr.length + cur->hdr.dest_offset >
-                           me->length) {
-                    if (me->length > cur->hdr.dest_offset) {
-                        mlength = me->length - cur->hdr.dest_offset;
+                           me->le.length) {
+                    if (me->le.length > cur->hdr.dest_offset) {
+                        mlength = me->le.length - cur->hdr.dest_offset;
                     } else {
                         mlength = 0;
                     }
@@ -794,7 +790,7 @@ int _PtlMESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                 }
             }
             // IFF ME is *not* persistent...
-            if (me->options & PTL_ME_USE_ONCE) {
+            if (me->le.options & PTL_ME_USE_ONCE) {
                 goto done_searching;
             }
         }
@@ -833,6 +829,7 @@ int _PtlMEUnlink( ptl_ppe_ni_t *ppe_ni, ptl_handle_me_t me_handle)
 {                                      /*{{{ */
     const ptl_internal_handle_converter_t         me = { me_handle };
     ptl_table_entry_t *restrict                   t;
+
     //const ptl_internal_appendME_t *restrict const dq_target =
 //        &(mes[me.s.ni][me.s.code].Qentry);
     const ptl_internal_appendME_t *restrict const dq_target =

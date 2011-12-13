@@ -249,20 +249,53 @@ typedef struct {
     void           *user_ptr;
 } ptl_cqe_leappend_t ;
 
-typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     le_handle;
-    int            *retval_ptr;
-} ptl_cqe_leunlink_t;
 
 typedef struct {
-    ptl_cqe_base_t base;
-    ptl_internal_handle_converter_t     ni_handle;
-    ptl_pt_index_t  pt_index;
-    ptl_le_t        le;
-    ptl_search_op_t ptl_search_op;
-    void           *user_ptr;
-} ptl_cqe_lesearch_t;
+    void*               start;
+    ptl_size_t          length;
+    ptl_handle_ct_t     ct_handle;
+    ptl_uid_t           uid;
+    unsigned int        options;
+} ptl_cqe_le_t;
+
+typedef struct {
+    ptl_cqe_le_t        le;
+    ptl_process_t       match_id;
+    ptl_match_bits_t    match_bits;
+    ptl_match_bits_t    ignore_bits;
+    ptl_size_t          min_free;
+} ptl_cqe_me_t;
+
+typedef struct {
+    ptl_process_t       match_id;
+    ptl_match_bits_t    match_bits;
+    ptl_match_bits_t    ignore_bits;
+    ptl_size_t          min_free;
+} ptl_cqe_match_t;
+
+typedef struct {
+    ptl_cqe_base_t                  base;
+    ptl_internal_handle_converter_t entry_handle;
+    ptl_pt_index_t                  pt_index;
+    ptl_cqe_me_t                    me;
+    ptl_list_t                      ptl_list;
+    void                            *user_ptr;
+} ptl_cqe_list_append_t;
+
+typedef struct {
+    ptl_cqe_base_t                  base;
+    ptl_internal_handle_converter_t entry_handle;
+    int                             *retval_ptr;
+} ptl_cqe_list_unlink_t;
+
+typedef struct {
+    ptl_cqe_base_t                  base;
+    ptl_internal_handle_converter_t ni_handle;
+    ptl_pt_index_t                  pt_index;
+    ptl_cqe_me_t                    me;
+    ptl_search_op_t                 ptl_search_op;
+    void                            *user_ptr;
+} ptl_cqe_list_search_t;
 
 typedef struct {
     ptl_cqe_base_t base;
@@ -292,13 +325,9 @@ union ptl_cqe_t {
     ptl_cqe_data_movement_t dm;
     ptl_cqe_ptalloc_t     ptAlloc;
     ptl_cqe_ptfree_t      ptFree;
-    ptl_cqe_meappend_t    meAppend;
-    ptl_cqe_meunlink_t    meUnlink;
-    ptl_cqe_mesearch_t    meSearch;
-    ptl_cqe_leappend_t    leAppend;
-    ptl_cqe_leunlink_t    leUnlink;
-    ptl_cqe_lesearch_t    leSearch;
-    ptl_cqe_atomic_t      atomic;
+    ptl_cqe_list_append_t list_append;
+    ptl_cqe_list_unlink_t list_unlink;
+    ptl_cqe_list_search_t list_search;
     ptl_cqe_atomicsync_t  atomicSync;
     ptl_cqe_ack_t         ack;
 };

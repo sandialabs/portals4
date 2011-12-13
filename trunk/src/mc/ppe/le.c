@@ -1,3 +1,6 @@
+
+#if 0
+
 #include "config.h"
 
 #include "ppe/ppe.h"
@@ -98,3 +101,4 @@ le_search_impl( ptl_ppe_t *ctx, ptl_cqe_lesearch_t *cmd )
                         cmd->ptl_search_op, cmd->user_ptr );
     return 0;
 }
+#endif

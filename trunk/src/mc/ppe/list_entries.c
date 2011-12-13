@@ -201,7 +201,7 @@ int
 _PtlLEAppend( ptl_ppe_ni_t *ppe_ni, 
                         ptl_handle_le_t le_h,
                          ptl_pt_index_t   pt_index,
-                         const ptl_le_t  *le,
+                         const ptl_cqe_le_t  *le,
                          ptl_list_t       ptl_list,
                          void            *user_ptr )
 {                                      /*{{{ */
@@ -458,7 +458,7 @@ done_appending:
 int 
 _PtlLESearch( ptl_ppe_ni_t *ppe_ni, int ni,
                          ptl_pt_index_t  pt_index,
-                         const ptl_le_t *le,
+                         const ptl_cqe_le_t *le,
                          ptl_search_op_t ptl_search_op,
                          void           *user_ptr)
 {   /*{{{*/
