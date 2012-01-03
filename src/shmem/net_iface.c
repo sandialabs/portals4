@@ -132,13 +132,22 @@ static int64_t PtlInternalGetShmPid(int pid)
 void INTERNAL PtlInternalMapInPid(int pid)
 {
     int64_t shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), S_IRUSR | S_IWUSR);
+    struct rank_comm_pad *tmp_pad;
 
     if (shmid == -1) {
         VERBOSE_ERROR("failure to shmget pid %i\n", pid);
         return;
     }
-    comm_pads[pid]   = shmat(shmid, NULL, 0);
-    comm_shmids[pid] = shmid;
+    tmp_pad = shmat(shmid, NULL, 0);
+    if (PtlInternalAtomicCasPtr(&(comm_pads[pid]), NULL, tmp_pad) != NULL) {
+        int err = shmdt(tmp_pad);
+        if (err) {
+            VERBOSE_ERROR("failure to detach from redundant comm_pad (%p); will be leaked!\n", tmp_pad);
+        }
+    } else {
+        // XXX Is this a race condition?... I don't think so, but it's remotely possible
+        comm_shmids[pid] = shmid;
+    }
 }
 
 void INTERNAL PtlInternalDetachCommPads(void)
