@@ -131,7 +131,7 @@ static int64_t PtlInternalGetShmPid(int pid)
 
 void INTERNAL PtlInternalMapInPid(int pid)
 {
-    int64_t shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), S_IRUSR | S_IWUSR);
+    int64_t               shmid = shmget(pid | PTL_SHM_HIGH_BIT, per_proc_comm_buf_size + sizeof(struct rank_comm_pad), S_IRUSR | S_IWUSR);
     struct rank_comm_pad *tmp_pad;
 
     if (shmid == -1) {
