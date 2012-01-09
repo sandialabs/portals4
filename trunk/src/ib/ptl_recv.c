@@ -511,7 +511,7 @@ void *progress_thread(void *arg)
 
 				case BUF_SHMEM_RETURN:
 					/* Buffer returned to us by remote node. */
-					assert(shmem_buf->shmem.source == ni->shmem.index);
+					assert(shmem_buf->shmem.index_owner == ni->shmem.index);
 
 					/* From send_message_shmem(). */
 					buf_put(shmem_buf);
