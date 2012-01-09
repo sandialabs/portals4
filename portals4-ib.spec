@@ -29,6 +29,7 @@ rm -rf $RPM_BUILD_ROOT
 make DESTDIR=%{buildroot} install
 # remove unpackaged files from the buildroot
 rm -rf $RPM_BUILD_ROOT%{_includedir}
+rm -rf $RPM_BUILD_ROOT%{_bindir}/yod
 
 
 %files
