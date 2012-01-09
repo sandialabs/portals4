@@ -343,7 +343,7 @@ shmid_gen:
             }
             if (tmp_shmid == -1) {
                 for (pid = 1; pid <= PTL_PID_MAX; ++pid) {
-                    PtlInternalGetShmPid(pid);
+                    tmp_shmid = PtlInternalGetShmPid(pid);
                     if (tmp_shmid != -1) { break; }
                 }
             }
