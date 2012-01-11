@@ -1032,7 +1032,7 @@ static int tgt_shmem_desc(buf_t *buf)
 	err = knem_copy(ni, data->shmem.knem_iovec[0].cookie,
 			data->shmem.knem_iovec[0].offset,
 			mr->knem_cookie,
-			indir_sge - mr->ibmr->addr, len);
+			indir_sge - mr->addr, len);
 	if (err != len) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;

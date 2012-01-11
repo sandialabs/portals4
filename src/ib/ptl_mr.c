@@ -45,8 +45,8 @@ void mr_cleanup(void *arg)
  */
 static int mr_compare(struct mr *m1, struct mr *m2)
 {
-	return (m1->ibmr->addr < m2->ibmr->addr ? -1 :
-		m1->ibmr->addr > m2->ibmr->addr);
+	return (m1->addr < m2->addr ? -1 :
+		m1->addr > m2->addr);
 }
 
 /**
@@ -76,6 +76,12 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int access;
 	uint64_t knem_cookie = 0;
 
+	err = mr_alloc(ni, &mr);
+	if (err) {
+		WARN();
+		goto err1;
+	}
+
 	start = (void *)((uintptr_t)start & ~((uintptr_t)pagesize - 1));
 	end = (void *)(((uintptr_t)end + pagesize - 1) &
 			~((uintptr_t)pagesize - 1));
@@ -96,6 +102,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		err = PTL_FAIL;
 		goto err1;
 	}
+	mr->ibmr = ibmr;
 
 	if ((ni->options & PTL_NI_LOGICAL) &&
 		get_param(PTL_ENABLE_SHMEM)) {
@@ -106,15 +113,10 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			goto err1;
 		}
 	}
-
-	err = mr_alloc(ni, &mr);
-	if (err) {
-		WARN();
-		goto err1;
-	}
-
-	mr->ibmr = ibmr;
 	mr->knem_cookie = knem_cookie;
+
+	mr->addr = start;
+	mr->length = length;
 	*mr_p = mr;
 
 	return PTL_OK;
@@ -125,6 +127,9 @@ err1:
 
 	if (knem_cookie)
 		knem_unregister(ni, knem_cookie);
+
+	if (mr)
+		mr_put(mr);
 
 	return err;
 }
@@ -166,10 +171,10 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	while (link) {
 		mr = link;
 
-		if (start < mr->ibmr->addr)
+		if (start < mr->addr)
 			link = RB_LEFT(mr, entry);
 		else {
-			if (mr->ibmr->addr+mr->ibmr->length >= start+length) {
+			if (mr->addr+mr->length >= start+length) {
 				/* Requested mr fits in an existing region. */
 				mr_get(mr);
 				ret = 0;
@@ -185,9 +190,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 
 	/* Extend region to the left. */
 	if (left_node &&
-		(start <= (left_node->ibmr->addr + left_node->ibmr->length))) {
-			length += start - left_node->ibmr->addr;
-			start = left_node->ibmr->addr;
+		(start <= (left_node->addr + left_node->length))) {
+			length += start - left_node->addr;
+			start = left_node->addr;
 
 			/* First merge node. Will be replaced later. */
 			mr = left_node;
@@ -202,10 +207,10 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		struct mr *next_rb = RB_NEXT(the_root, &ni->mr_tree, rb);
 
 		/* Check whether new region can be merged with this node. */
-		if (start+length >= rb->ibmr->addr) {
+		if (start+length >= rb->addr) {
 			/* Is it completely part of the new region ? */
-			size_t new_length = rb->ibmr->addr +
-				rb->ibmr->length - start;
+			size_t new_length = rb->addr +
+				rb->length - start;
 			if (new_length > length)
 				length = new_length;
 
