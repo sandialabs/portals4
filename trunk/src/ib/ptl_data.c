@@ -133,7 +133,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				data->shmem.knem_iovec[0].cookie
 					= md->sge_list_mr->knem_cookie;
 				data->shmem.knem_iovec[0].offset
-					= (void *)md->knem_iovecs - md->sge_list_mr->ibmr->addr;
+					= (void *)md->knem_iovecs - md->sge_list_mr->addr;
 				data->shmem.knem_iovec[0].length
 					= num_sge * sizeof(struct shmem_iovec);
 
@@ -190,7 +190,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			data->data_fmt = DATA_FMT_SHMEM_DMA;
 			data->shmem.num_knem_iovecs = 1;
 			data->shmem.knem_iovec[0].cookie = mr->knem_cookie;
-			data->shmem.knem_iovec[0].offset = addr - mr->ibmr->addr;
+			data->shmem.knem_iovec[0].offset = addr - mr->addr;
 			data->shmem.knem_iovec[0].length = length;
 
 			buf->length += sizeof(*data) + sizeof(struct shmem_iovec);

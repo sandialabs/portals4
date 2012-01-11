@@ -123,7 +123,7 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 		sge->lkey = cpu_to_le32(mr->ibmr->rkey);
 
 		knem_iovec->cookie = mr->knem_cookie;
-		knem_iovec->offset = iov->iov_base - mr->ibmr->addr;
+		knem_iovec->offset = iov->iov_base - mr->addr;
 		knem_iovec->length = iov->iov_len;
 
 		iov++;

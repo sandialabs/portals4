@@ -77,10 +77,10 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (dir == DATA_DIR_IN)
 				err = knem_copy(ni, rcookie, roffset, 
 						mr->knem_cookie,
-						addr - mr->ibmr->addr, len);
+						addr - mr->addr, len);
 			else
 				err = knem_copy(ni, mr->knem_cookie,
-						addr - mr->ibmr->addr,
+						addr - mr->addr,
 						rcookie, roffset, len);
 
 			mr_put(mr);
@@ -115,10 +115,10 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (dir == DATA_DIR_IN)
 				knem_copy(ni, rcookie, roffset, 
 					  mr->knem_cookie,
-					  addr - mr->ibmr->addr, len);
+					  addr - mr->addr, len);
 			else
 				knem_copy(ni, mr->knem_cookie,
-					  addr - mr->ibmr->addr, rcookie,
+					  addr - mr->addr, rcookie,
 					  roffset, len);
 
 			mr_put(mr);
@@ -126,7 +126,7 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
 			tot_len += len;
 			*loc_off += len;
 			roffset += len;
-			if (tot_len < rem_len && *loc_off >= mr->ibmr->length)
+			if (tot_len < rem_len && *loc_off >= mr->length)
 				break;
 		}
 	}
