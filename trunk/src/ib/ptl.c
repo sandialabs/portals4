@@ -177,7 +177,18 @@ static void dump_everything(int unused)
 			}
 
 #endif
-
+			if (ni->options & PTL_NI_LOGICAL) {
+				printf("  Connections on logical NI:\n");
+				
+				if (ni->logical.rank_table) {
+					for(k=0; k<ni->logical.map_size; k++) {
+						struct rank_entry *entry = &ni->logical.rank_table[k];
+						printf("    rank            = %d\n", entry->rank);
+						printf("    max pending wr  = %d\n", entry->connect->rdma.max_req_avail);
+						printf("    pending send wr = %d\n", atomic_read(&entry->connect->rdma.num_req_posted));
+					}
+				}
+			}
 #if 0
 			{
 				/* Note: This will break everything if the process is not stuck
