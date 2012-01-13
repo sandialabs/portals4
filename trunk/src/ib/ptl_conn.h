@@ -37,7 +37,7 @@ struct transport {
 	enum transport_type	type;
 
 	int			(*post_tgt_dma)(struct buf *buf);
-	int			(*send_message)(struct buf *buf);
+	int			(*send_message)(struct buf *buf, int from_init);
 };
 
 extern struct transport transport_rdma;
@@ -73,7 +73,22 @@ struct conn {
 			 * possible the send queue will become full because none
 			 * of the sends are flushed. The completion generated will
 			 * be ignored by the receiver. */
-			atomic_t    completion_threshold;
+			atomic_t send_comp_threshold;
+			atomic_t rdma_comp_threshold;
+
+			/* Count the number of posted work requests and the number
+			 * of work requests since last time a completion was
+			 * requested. This is used to rate limit the initiator. */
+			atomic_t num_req_posted;
+			atomic_t num_req_not_comp;
+			
+			/* Limit on the number of outstanding requests send
+			 * buffers (ie. from the initiator). Set once after the
+			 * connection is established. There's an implicit
+			 * requirement that every process in the cluster is
+			 * running with the same values.
+			 * TODO: negociate values during connection setup. */
+			int max_req_avail;
 		} rdma;
 
 		struct {

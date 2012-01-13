@@ -1331,7 +1331,7 @@ static int tgt_send_ack(buf_t *buf)
 		else
 			ack_buf->event_mask |= XX_SIGNALED;
 
-		err = buf->conn->transport.send_message(ack_buf);
+		err = buf->conn->transport.send_message(ack_buf, 0);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
@@ -1387,7 +1387,7 @@ static int tgt_send_reply(buf_t *buf)
 	else
 		rep_buf->event_mask |= XX_SIGNALED;
 
-	err = buf->conn->transport.send_message(rep_buf);
+	err = buf->conn->transport.send_message(rep_buf, 0);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
