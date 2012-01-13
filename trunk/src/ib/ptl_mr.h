@@ -18,10 +18,8 @@ typedef struct mr {
 	void           *addr;
 	size_t          length;
 
-#if WITH_TRANSPORT_IB
 	/** OFA verbs mr for memory region */
 	struct ibv_mr		*ibmr;
-#endif
 
 	/** knem cookie for memory region */
 	uint64_t		knem_cookie;
