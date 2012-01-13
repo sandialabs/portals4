@@ -47,7 +47,13 @@ int conn_init(void *arg, void *parm)
 	INIT_LIST_HEAD(&conn->list);
 #endif
 
-	atomic_set(&conn->rdma.completion_threshold, 0);
+	atomic_set(&conn->rdma.send_comp_threshold, 0);
+	atomic_set(&conn->rdma.rdma_comp_threshold, 0);
+
+	atomic_set(&conn->rdma.num_req_posted, 0);
+	atomic_set(&conn->rdma.num_req_not_comp, 0);
+
+	conn->rdma.max_req_avail = 0;
 
 	return PTL_OK;
 }
@@ -320,6 +326,10 @@ static void get_qp_param(conn_t *conn)
 
 	if (rc == 0) {
 		conn->rdma.max_inline_data = init_attr.cap.max_inline_data;
+
+		/* Limit the send buffer operations from the initiator to 1/4th
+		 * of the work requests. */
+		conn->rdma.max_req_avail = init_attr.cap.max_send_wr / 4;
 	}
 }
 
@@ -763,9 +773,9 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 			break;
 		}
 
-		conn->state = CONN_STATE_CONNECTED;
-
 		get_qp_param(conn);
+
+		conn->state = CONN_STATE_CONNECTED;
 
 #ifdef USE_XRC
 		if ((ni->options & PTL_NI_LOGICAL) &&

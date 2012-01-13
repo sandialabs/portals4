@@ -153,7 +153,7 @@ param_t param[] = {
 				.name	= "PTL_MAX_SEND_COMP_THRESHOLD",
 				.min	= 0,
 				.max	= LONG_MAX,
-				.val	= 500,	/* half of PTL_MAX_QP_SEND_WR */
+				.val	= 20,	/* should be a fraction of than max_req_avail. */
 			},
 	[PTL_MAX_QP_SEND_SGE]			= {
 				.name	= "PTL_MAX_QP_SEND_SGE",

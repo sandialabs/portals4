@@ -25,6 +25,7 @@ int buf_setup(void *arg)
 	buf->rdma.recv.wr.next = NULL;
 	buf->rdma_desc_ok = 0;
 	buf->ni_fail = PTL_NI_OK;
+	buf->rdma.num_req_completes = 0;
 
 	return PTL_OK;
 }
@@ -51,6 +52,11 @@ void buf_cleanup(void *arg)
 	if (buf->xxbuf) {
 		buf_put(buf->xxbuf);
 		buf->xxbuf = NULL;
+	}
+
+	if (buf->rdma.num_req_completes) {
+		atomic_sub(&buf->conn->rdma.num_req_posted, buf->rdma.num_req_completes);
+		assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
 	}
 
 	buf->type = BUF_FREE;

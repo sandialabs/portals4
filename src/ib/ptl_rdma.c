@@ -12,22 +12,25 @@
  *
  * @return status
  */
-static int send_message_rdma(buf_t *buf)
+static int send_message_rdma(buf_t *buf, int from_init)
 {
 	int err;
 	struct ibv_send_wr *bad_wr;
 	struct ibv_send_wr wr;
 	struct ibv_sge sg_list;
+	conn_t *conn = buf->conn;
 
 	wr.wr_id = (uintptr_t)buf;
 	wr.next = NULL;
 	wr.sg_list = &sg_list;
 	wr.num_sge = 1;
 	wr.opcode = IBV_WR_SEND;
+
 	if ((buf->event_mask & XX_SIGNALED) || 
-		atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
+		(atomic_inc(&buf->conn->rdma.send_comp_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) ||
+		(from_init && atomic_read(&conn->rdma.num_req_not_comp) >= get_param(PTL_MAX_SEND_COMP_THRESHOLD))) {
 		wr.send_flags = IBV_SEND_SIGNALED;
-		atomic_set(&buf->conn->rdma.completion_threshold, 0);
+		atomic_set(&buf->conn->rdma.send_comp_threshold, 0);
 
 		/* Keep the buffer from being freed until we get the
 		 * completion. */
@@ -56,6 +59,33 @@ static int send_message_rdma(buf_t *buf)
 #endif
 	
 	buf->type = BUF_SEND;
+
+	/* Rate limit the initiator. If the IB/RDMA send queue gets full, there
+	 * wouldn't be any space left to send the ACKs/replies, and we
+	 * would get a deadlock. */
+	if (from_init) {
+		int limit = buf->conn->rdma.max_req_avail;
+
+		atomic_inc(&conn->rdma.num_req_posted);
+		atomic_inc(&conn->rdma.num_req_not_comp);
+
+		/* If the high water mark is reached, wait until we go back to
+		 * the low watermark (=1/2 high WM). */
+		if (atomic_read(&buf->conn->rdma.num_req_posted) >= limit) {
+			limit /= 2;
+			while (atomic_read(&buf->conn->rdma.num_req_posted) >= limit) {
+				pthread_yield();
+				SPINLOCK_BODY();
+			}
+		}
+
+		if (wr.send_flags & IBV_SEND_SIGNALED) {
+			/* Atomically set buf->init_req_completes to the current value of
+			 * conn->rdma.num_req_posted and set
+			 * conn->rdma.num_req_posted to 0. */
+			buf->rdma.num_req_completes = atomic_swap(&conn->rdma.num_req_not_comp, 0);
+		}	
+	}
 
 	err = ibv_post_send(buf->dest.rdma.qp, &wr, &bad_wr);
 	if (err) {
@@ -100,9 +130,9 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 		wr.send_flags = IBV_SEND_SIGNALED;
 	} else {
 		wr.wr_id = 0;
-		if (atomic_inc(&buf->conn->rdma.completion_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
+		if (atomic_inc(&buf->conn->rdma.rdma_comp_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) {
 			wr.send_flags = IBV_SEND_SIGNALED;
-			atomic_set(&buf->conn->rdma.completion_threshold, 0);
+			atomic_set(&buf->conn->rdma.rdma_comp_threshold, 0);
 		} else {
 			wr.send_flags = 0;
 		}

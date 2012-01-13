@@ -397,7 +397,7 @@ static int send_req(buf_t *buf)
 #endif
 		set_buf_dest(buf, buf->conn);
 
-	err = buf->conn->transport.send_message(buf);
+	err = buf->conn->transport.send_message(buf, 1);
 	if (err)
 		return STATE_INIT_SEND_ERROR;
 

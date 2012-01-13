@@ -218,6 +218,10 @@ struct buf {
 			ptl_size_t		cur_rem_off;
 			atomic_t 		rdma_comp;
 			int			interim_rdma;
+
+			/* How many previous requests buffer (ie. from initiator)
+			 * will this one completes. */
+			int num_req_completes;
 		} rdma;
 
 		struct {
