@@ -15,6 +15,9 @@ typedef struct mr {
 	/** base class */
 	obj_t			obj;
 
+	struct list_head list;		/* internal management */
+
+	/* Boundaries of the region. */
 	void           *addr;
 	size_t          length;
 
