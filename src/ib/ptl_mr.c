@@ -160,6 +160,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	struct mr *mr;
 	struct mr *left_node;
 	int ret;
+	struct list_head mr_list;	
+	
+	INIT_LIST_HEAD(&mr_list);
 
 	pthread_spin_lock(&ni->mr_tree_lock);
 
@@ -215,10 +218,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 				length = new_length;
 
 			if (mr) {
-				/* Remove the node since it will be included
+				/* Mark the node for removal since it will be included
 				 * in the new mr. */
-				RB_REMOVE(the_root, &ni->mr_tree, rb);
-				mr_put(rb);
+				list_add_tail(&rb->list, &mr_list);
 			} else {
 				/* First merge node. Will be replaced later. */
 				mr = rb;
@@ -231,24 +233,30 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 
 	if (mr) {
-		/* Remove included mr on the right. */
-		RB_REMOVE(the_root, &ni->mr_tree, mr);
-		mr_put(mr);
+		/* Mark for removal the included mr on the right. */
+		list_add_tail(&mr->list, &mr_list);
 		mr = NULL;
 	}
 
 	/* Insert the new node */
 	ret = mr_create(ni, start, length, mr_p);
 	if (ret) {
-		/* That's not going to be good since we may have removed some
-		 * regions. However that case should not happen. */
+		/* That should not happen unless we try to register to much
+		 * memory. */
 		WARN();
 	} else {
 		void *res;
 
+		/* Remove all the MRs that are included in the new MR. We must
+		 * create the new MR first before eliminating these. */
+		list_for_each_entry(mr, &mr_list, list) {
+			RB_REMOVE(the_root, &ni->mr_tree, mr);
+			mr_put(mr);
+		}
+
+		/* Finally we can insert the new MR in the tree. */
 		mr = *mr_p;
 		mr_get(mr);
-
 		res = RB_INSERT(the_root, &ni->mr_tree, mr);
 		assert(res == NULL);	/* should never happen */
 	}
