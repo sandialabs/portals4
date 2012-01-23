@@ -141,8 +141,8 @@ typedef struct ni {
 			 * the main rank. */
 #ifdef USE_XRC
 			int			is_main;
-#endif
 			int			main_rank;
+#endif
 
 			/* Rank table. This is used to connection TO remote ranks */
 			int			map_size;

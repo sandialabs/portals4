@@ -4,6 +4,7 @@
 
 #include "ptl_loc.h"
 
+#ifdef USE_XRC
 static int compare_nid_pid(const void *a, const void *b)
 {
 	const entry_t *entry1 = a;
@@ -22,6 +23,7 @@ static int compare_rank(const void *a, const void *b)
 
 	return(entry1->rank - entry2->rank);
 }
+#endif
 
 static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 {
@@ -425,9 +427,10 @@ static int init_pools(ni_t *ni)
 static int create_tables(ni_t *ni)
 {
 	int i;
+#ifdef USE_XRC
 	ptl_nid_t curr_nid;
 	int main_rank;	/* rank of lowest pid in each nid */
-	entry_t *entry;
+#endif
 	conn_t *conn;
 	const ptl_size_t map_size = ni->logical.map_size;
 	ptl_process_t *mapping = ni->logical.mapping;
@@ -439,9 +442,7 @@ static int create_tables(ni_t *ni)
 	}
 
 	for (i = 0; i < map_size; i++) {
-		entry = &ni->logical.rank_table[i];
-
-		assert(entry->connect == NULL);
+		entry_t *entry = &ni->logical.rank_table[i];
 
 		entry->rank = i;
 		entry->nid = mapping[i].phys.nid;
@@ -457,6 +458,7 @@ static int create_tables(ni_t *ni)
 		conn->sin.sin_port = pid_to_port(entry->pid);
 	}
 
+#ifdef USE_XRC
 	/* temporarily sort the rank table by NID/PID */
 	qsort(ni->logical.rank_table, map_size,
 	      sizeof(entry_t), compare_nid_pid);
@@ -466,17 +468,15 @@ static int create_tables(ni_t *ni)
 	main_rank = -1;
 
 	for (i = 0; i < map_size; i++) {
-		entry = &ni->logical.rank_table[i];
+		entry_t *entry = &ni->logical.rank_table[i];
 
 		if (entry->nid != curr_nid) {
 			/* start new NID. */
 			curr_nid = entry->nid;
 			main_rank = entry->rank;
 
-#ifdef USE_XRC
 			if (ni->id.rank == main_rank)
 				ni->logical.is_main = 1;
-#endif
 		}
 
 		entry->main_rank = main_rank;
@@ -485,6 +485,7 @@ static int create_tables(ni_t *ni)
 	/* Sort back the rank table by rank. */
 	qsort(ni->logical.rank_table, map_size,
 	      sizeof(entry_t), compare_rank);
+#endif
 
 	return PTL_OK;
 }
