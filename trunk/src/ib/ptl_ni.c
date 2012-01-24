@@ -161,7 +161,7 @@ static int init_ib_srq(ni_t *ni)
 	int num_post;
 
 	srq_init_attr.srq_context = ni;
-	srq_init_attr.attr.max_wr = get_param(PTL_MAX_SRQ_RECV_WR);
+	srq_init_attr.attr.max_wr = iface->cap.max_srq_wr;
 	srq_init_attr.attr.max_sge = 1;
 	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
 
@@ -185,7 +185,7 @@ static int init_ib_srq(ni_t *ni)
 #define min(a,b) ((a) < (b)) ? (a) : (b)
 
 	/* post receive buffers to the shared receive queue */
-	while ((num_post = min(get_param(PTL_MAX_SRQ_RECV_WR)
+	while ((num_post = min(ni->iface->cap.max_srq_wr
 						   - atomic_read(&ni->rdma.num_posted_recv),
 				get_param(PTL_SRQ_REPOST_SIZE))) > 0) {
 		err = ptl_post_recv(ni, num_post);
@@ -280,8 +280,10 @@ static int init_ib(iface_t *iface, ni_t *ni)
 		goto err1;
 	}
 
-	cqe = get_param(PTL_MAX_QP_SEND_WR) + get_param(PTL_MAX_RDMA_WR_OUT) +
-	      get_param(PTL_MAX_SRQ_RECV_WR) + 10;
+	/* TODO: this is not enough, but we don't know the number of ranks yet. */
+	cqe = ni->iface->cap.max_send_wr * 10 + ni->iface->cap.max_srq_wr + 10;
+	if (cqe > ni->iface->cap.device_attr.max_cqe)
+		cqe = ni->iface->cap.device_attr.max_cqe;
 
 	ni->rdma.cq = ibv_create_cq(iface->ibv_context, cqe, ni, ni->rdma.ch, 0);
 	if (!ni->rdma.cq) {

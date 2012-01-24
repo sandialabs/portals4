@@ -306,7 +306,7 @@ static int recv_repost(ni_t *ni)
 	int num_bufs;
 
 	/* compute the available room in the srq */
-	num_bufs = get_param(PTL_MAX_SRQ_RECV_WR) - atomic_read(&ni->rdma.num_posted_recv);
+	num_bufs = ni->iface->cap.max_srq_wr - atomic_read(&ni->rdma.num_posted_recv);
 
 	/* if rooms exceeds threshold repost that many buffers
 	 * this should reduce the number of receive queue doorbells

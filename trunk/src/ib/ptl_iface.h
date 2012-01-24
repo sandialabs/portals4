@@ -39,6 +39,16 @@ struct iface {
 	struct ibv_pd		*pd;
 	/** Libev handler for CM events */
 	ev_io			cm_watcher;
+	
+	/** QP/SRQ Capabilities. */
+	struct {
+		unsigned int max_send_wr;
+		unsigned int max_send_sge;
+
+		unsigned int max_srq_wr;
+
+		struct ibv_device_attr device_attr;
+	} cap;
 };
 
 typedef struct iface iface_t;

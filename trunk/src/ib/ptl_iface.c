@@ -40,6 +40,37 @@ void cleanup_iface(iface_t *iface)
 	iface->ifname[0] = 0;
 }
 
+#define max(a,b)	(((a) > (b)) ? (a) : (b))
+#define min(a,b)	(((a) > (b)) ? (b) : (a))
+
+/**
+ * @brief Query the RDMA interface and set some parameters.
+ */
+static int query_rdma_interface(iface_t *iface)
+{
+	int ret;
+
+	ret = ibv_query_device(iface->ibv_context,
+						   &iface->cap.device_attr);
+	if (ret)
+		return ret;
+
+	/* We need SRQs. */
+	if (iface->cap.device_attr.max_srq == 0)
+		return -1;
+
+	/* Preset QP parameters. */
+	iface->cap.max_send_wr = min(get_param(PTL_MAX_QP_SEND_WR) + get_param(PTL_MAX_RDMA_WR_OUT),
+									iface->cap.device_attr.max_qp_wr);
+
+	iface->cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
+	iface->cap.max_send_sge = min(iface->cap.max_send_sge, iface->cap.device_attr.max_sge);
+
+	iface->cap.max_srq_wr = min(get_param(PTL_MAX_SRQ_RECV_WR), iface->cap.device_attr.max_srq_wr);
+
+	return 0;
+}
+
 /**
  * @brief Get an IPv4 address from network device name (e.g. ib0).
  *
@@ -353,6 +384,13 @@ int __iface_bind(iface_t *iface, unsigned int port)
 	/* check to see we have rdma device and protection domain */
 	if (iface->ibv_context == NULL || iface->pd == NULL) {
 		ptl_warn("unable to get the CM ID context or PD\n");
+		goto err1;
+	}
+
+	/* Query the RDMA interface. */
+	ret = query_rdma_interface(iface);
+	if (ret) {
+		ptl_warn("unable to query the RDMA interface\n");
 		goto err1;
 	}
 
