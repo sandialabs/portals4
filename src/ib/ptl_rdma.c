@@ -321,7 +321,7 @@ static int process_rdma(buf_t *buf)
 	ptl_size_t resid;
 	int comp = 0;
 	buf_t *rdma_buf;
-	int sge_size = get_param(PTL_MAX_QP_SEND_SGE);
+	int sge_size = buf->obj.obj_ni->iface->cap.max_send_sge;
 	struct ibv_sge sge_list[sge_size];
 	int entries = 0;
 	int cur_rdma_ops = 0;

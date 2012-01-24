@@ -360,13 +360,12 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 #endif
 	{
 		init_attr.qp_type = IBV_QPT_RC;
-		init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
-					    get_param(PTL_MAX_RDMA_WR_OUT);
+		init_attr.cap.max_send_wr = ni->iface->cap.max_send_wr;
 	}
 	init_attr.send_cq = ni->rdma.cq;
 	init_attr.recv_cq = ni->rdma.cq;
 	init_attr.srq = ni->rdma.srq;
-	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
+	init_attr.cap.max_send_sge = ni->iface->cap.max_send_sge;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -472,9 +471,8 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	init_attr.send_cq = ni->rdma.cq;
 	init_attr.recv_cq = ni->rdma.cq;
 	init_attr.srq = ni->rdma.srq;
-	init_attr.cap.max_send_wr = get_param(PTL_MAX_QP_SEND_WR) +
-				    get_param(PTL_MAX_RDMA_WR_OUT);
-	init_attr.cap.max_send_sge = max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
+	init_attr.cap.max_send_wr = ni->iface->cap.max_send_wr;
+	init_attr.cap.max_send_sge = ni->iface->cap.max_send_sge;
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -711,11 +709,8 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.qp_context			= ni;
 		init.send_cq			= ni->rdma.cq;
 		init.recv_cq			= ni->rdma.cq;
-		init.cap.max_send_wr		= get_param(PTL_MAX_QP_SEND_WR) +
-						  get_param(PTL_MAX_RDMA_WR_OUT);
-		init.cap.max_recv_wr		= 0;
-		init.cap.max_send_sge		= max(get_param(PTL_MAX_INLINE_SGE), get_param(PTL_MAX_QP_SEND_SGE));
-		init.cap.max_recv_sge		= get_param(PTL_MAX_QP_RECV_SGE);
+		init.cap.max_send_wr		= ni->iface->cap.max_send_wr;
+		init.cap.max_send_sge		= ni->iface->cap.max_send_sge;
 
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL) {
