@@ -182,7 +182,7 @@ static int libtest_CreateME(ptl_handle_ni_t  ni,
                          unsigned int     options,
                          ptl_handle_me_t *mh)
 {                                      /*{{{ */
-    int           rc;
+    int           rc = 0;
     int           i;
     ptl_me_t      me;
     ptl_process_t src;
