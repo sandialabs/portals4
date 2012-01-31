@@ -21,20 +21,19 @@
 			__func__, __FILE__, __LINE__,  ## arg);		\
 	} while (0)
 
+#else
+
+#define ptl_enter(format, arg...)
+#define ptl_enter(format, arg...)
+
+#endif
+
 #define ptl_info(format, arg...)					\
 	do {								\
 		if (ptl_log_level > 2)					\
 		fprintf(stderr, "info  %s(%s:%d): " format,		\
 			__func__, __FILE__, __LINE__,  ## arg);		\
 	} while (0)
-
-#else
-
-#define ptl_enter(format, arg...)
-#define ptl_enter(format, arg...)
-#define ptl_info(format, arg...)
-
-#endif
 
 #define ptl_warn(format, arg...)					\
 	do {								\

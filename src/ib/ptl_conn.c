@@ -268,9 +268,8 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	assert(conn->rdma.cm_id == NULL);
 
-	if (debug)
-		printf("Initiate connect with %x:%d\n",
-			   conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+	ptl_info("Initiate connect with %x:%d\n",
+			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 
 	if (ni->shutting_down)
 		return PTL_FAIL;
@@ -302,9 +301,8 @@ int init_connect(ni_t *ni, conn_t *conn)
 		return PTL_FAIL;
 	}
 
-	if (debug)
-		printf("Connection initiated successfully to %x:%d\n",
-			   conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+	ptl_info("Connection initiated successfully to %x:%d\n",
+			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 
 	return PTL_OK;
 }
@@ -660,8 +658,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 	conn = event->id->context;
 
-	if (debug)
-		printf("Rank got CM event %d for id %p\n", event->event, event->id);
+	ptl_info("Rank got CM event %d for id %p\n", event->event, event->id);
 
 	switch(event->event) {
 	case RDMA_CM_EVENT_ADDR_RESOLVED:

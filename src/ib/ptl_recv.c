@@ -344,9 +344,8 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 	enum recv_state state = buf->recv_state;
 
 	while(1) {
-		if (debug)
-			printf("tid:%lx buf:%p: state = %s\n",
-				   pthread_self(), buf, recv_state_name[state]);
+		ptl_info("tid:%lx buf:%p: state = %s\n",
+				 pthread_self(), buf, recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_SEND_COMP:
 			state = send_comp(buf);
@@ -401,9 +400,8 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 	enum recv_state state = STATE_RECV_PACKET;
 
 	while(1) {
-		if (debug)
-			printf("tid:%lx buf:%p: recv state local = %s\n",
-				   pthread_self(), buf,
+		ptl_info("tid:%lx buf:%p: recv state local = %s\n",
+				 pthread_self(), buf,
 				   recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_PACKET:

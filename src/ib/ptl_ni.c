@@ -252,8 +252,7 @@ static int init_ib(iface_t *iface, ni_t *ni)
 		goto err1;
 	}
 
-	if (debug)
-		printf("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
+	ptl_info("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
 
 	err = __iface_bind(iface, pid_to_port(ni->id.phys.pid));
 	if (err) {
@@ -268,8 +267,7 @@ static int init_ib(iface_t *iface, ni_t *ni)
 		 * bind. */
 		ni->id.phys.pid = iface->id.phys.pid;
 
-		if (debug)
-			printf("set iface pid(1) = %x\n", iface->id.phys.pid);
+		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
 
 	/* Create CC, CQ, SRQ. */
@@ -701,8 +699,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	} else if (iface->id.phys.pid == PTL_PID_ANY && pid != PTL_PID_ANY) {
 		iface->id.phys.pid = pid;
 
-		if (debug)
-			printf("set iface pid(2) = %x\n", iface->id.phys.pid);
+		ptl_info("set iface pid(2) = %x\n", iface->id.phys.pid);
 	} else if (pid != iface->id.phys.pid) {
 		WARN();
 		err = PTL_ARG_INVALID;

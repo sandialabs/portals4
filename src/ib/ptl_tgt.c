@@ -1571,9 +1571,8 @@ int process_tgt(buf_t *buf)
 	state = buf->tgt_state;
 
 	while(1) {
-		if (debug)
-			printf("%p: tgt state = %s\n",
-				   buf, tgt_state_name[state]);
+		ptl_info("%p: tgt state = %s\n",
+				 buf, tgt_state_name[state]);
 
 		switch (state) {
 		case STATE_TGT_START:

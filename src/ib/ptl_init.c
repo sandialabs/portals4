@@ -756,9 +756,8 @@ int process_init(buf_t *buf)
 	state = buf->init_state;
 
 	while (1) {
-		if (debug)
-			printf("[%d]%p: init state = %s\n",
-			       getpid(), buf, init_state_name[state]);
+		ptl_info("[%d]%p: init state = %s\n",
+				 getpid(), buf, init_state_name[state]);
 
 		switch (state) {
 		case STATE_INIT_START:
