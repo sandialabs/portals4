@@ -719,6 +719,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
 	RB_INIT(&ni->mr_tree);
+	ni->umn_fd = -1;
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
@@ -735,6 +736,8 @@ int PtlNIInit(ptl_interface_t	iface_id,
 		ni->logical.xrc_domain_fd = -1;
 #endif
 	}
+
+	mr_init(ni);
 
 	/* Note: pt range is [0..max_pt_index]. */
 	ni->pt = calloc(ni->limits.max_pt_index + 1, sizeof(*ni->pt));

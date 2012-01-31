@@ -68,7 +68,11 @@ Options to configure include:
         http://software.schmorp.de/pkg/libev.html
       + The KNEM driver from http://runtime.bordeaux.inria.fr/knem/.  (optional)
         Ensure that /dev/knem is readable/writable by the user running the portals
-        software. 
+        software.
+      + The ummunotify driver from
+        http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2
+        (optional but recommended). Ensure that /dev/ummunotify is
+        readable/writable by the user running the portals software.
 
     Build:
 	  Note that the paths tp mpi may no be necessary or may need to be changed depending on your linux distribution. 
