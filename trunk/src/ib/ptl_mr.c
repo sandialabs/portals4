@@ -7,6 +7,8 @@
 
 #include "ptl_loc.h"
 
+#include "ummunotify.h"
+
 /**
  * Cleanup mr object.
  *
@@ -18,6 +20,10 @@ void mr_cleanup(void *arg)
 {
 	int err;
 	mr_t *mr = (mr_t *)arg;
+
+	if (mr->obj.obj_ni->umn_fd != -1 && mr->umn_cookie != 0) {
+		ioctl(mr->obj.obj_ni->umn_fd, UMMUNOTIFY_UNREGISTER_REGION, &mr->umn_cookie);
+	}
 
 	if (mr->ibmr) {
 		err = ibv_dereg_mr(mr->ibmr);
@@ -47,6 +53,31 @@ static int mr_compare(struct mr *m1, struct mr *m2)
 {
 	return (m1->addr < m2->addr ? -1 :
 		m1->addr > m2->addr);
+}
+
+static atomic_t umn_cookie = { .val = 1 };
+
+/* Last kernel generation counter seen. If it is different than the
+ * current counter, then some messages are waiting. */
+static uint64_t generation_counter;
+
+static void umn_register(ni_t *ni, mr_t *mr, void *start, size_t size)
+{
+	struct ummunotify_register_ioctl r = {
+		.start = (uintptr_t) start,
+		.end = (uintptr_t) start + size,
+		.user_cookie = atomic_inc(&umn_cookie)
+	};
+
+	if (ni->umn_fd == -1)
+		return;
+
+	if (ioctl(ni->umn_fd, UMMUNOTIFY_REGISTER_REGION, &r)) {
+		perror("register ioctl");
+		return;
+	}
+
+	mr->umn_cookie = r.user_cookie;
 }
 
 /**
@@ -86,6 +117,10 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	end = (void *)(((uintptr_t)end + pagesize - 1) &
 			~((uintptr_t)pagesize - 1));
 	length = end - start;
+
+	/* Register the region with ummunotify to be notified when the
+	 * application frees the buffer, or parts of it. */
+	umn_register(ni, mr, start, length);
 
 	/*
 	 * for now ask for everything
@@ -162,6 +197,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int ret;
 	struct list_head mr_list;	
 	
+ again:
 	INIT_LIST_HEAD(&mr_list);
 
 	pthread_spin_lock(&ni->mr_tree_lock);
@@ -241,9 +277,21 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	/* Insert the new node */
 	ret = mr_create(ni, start, length, mr_p);
 	if (ret) {
-		/* That should not happen unless we try to register to much
-		 * memory. */
-		WARN();
+		if (ret == EFAULT && ni->umn_fd != -1) {
+			/* Some pages cannot be registered. This happens when the
+			 * application has freed some regions, and we tried to
+			 * extend the requeted MR. In that case, we wait for all
+			 * the notification messages to be consummed by
+			 * process_ummunotify() then try again.
+			 * 
+			 * This case should rarely happen as it is there only to
+			 * close that small race. */
+			pthread_spin_unlock(&ni->mr_tree_lock);
+			while(generation_counter != *ni->umn_counter) {
+				SPINLOCK_BODY();
+			}
+			goto again;
+		}
 	} else {
 		void *res;
 
@@ -267,6 +315,73 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	return ret;
 }
 
+static void process_ummunotify(EV_P_ ev_io *w, int revents)
+{
+	ni_t *ni = w->data;
+	struct ummunotify_event	ev;
+	int len;
+
+	while(1) {
+
+		/* Read an event. */
+		len = read(ni->umn_fd, &ev, sizeof ev);
+		if (len < 0 || len != sizeof ev) {
+			WARN();
+			return;
+		}
+
+		switch(ev.type) {
+		case UMMUNOTIFY_EVENT_TYPE_INVAL: {
+			/* Search the tree for the MR with that cookie and remove it. */
+			struct mr *mr;
+
+			pthread_spin_lock(&ni->mr_tree_lock);
+
+			RB_FOREACH(mr, the_root, &ni->mr_tree) {
+				if (mr->umn_cookie == ev.user_cookie_counter) {
+					/* All or part of that region is now invalid. We must not reuse it. Remove it from the tree. */
+					RB_REMOVE(the_root, &ni->mr_tree, mr);
+					mr_put(mr);
+
+					break;
+				}
+			}
+
+			pthread_spin_unlock(&ni->mr_tree_lock);
+		}
+		break;
+	
+		case UMMUNOTIFY_EVENT_TYPE_LAST:
+			generation_counter = ev.user_cookie_counter;
+			return;
+		}
+	}
+}
+
+/**
+ * Try to use the ummunotify driver if present
+ */
+void mr_init(ni_t *ni)
+{
+	ni->umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
+	if (ni->umn_fd == -1) {
+		return;
+	}
+
+	ni->umn_counter = mmap(NULL, sizeof *(ni->umn_counter), PROT_READ,
+						   MAP_SHARED, ni->umn_fd, 0);
+	if (ni->umn_counter == MAP_FAILED) {
+		close(ni->umn_fd);
+		ni->umn_fd = -1;
+		return;
+	}
+
+	ni->umn_watcher.data = ni;
+	ev_io_init(&ni->umn_watcher, process_ummunotify,
+			   ni->umn_fd, EV_READ);
+	EVL_WATCH(ev_io_start(evl.loop, &ni->umn_watcher));
+}
+
 /**
  * Empty the mr cache.
  *
@@ -276,6 +391,10 @@ void cleanup_mr_tree(ni_t *ni)
 {
 	mr_t *mr;
 	mr_t *next_mr;
+
+	if (ni->umn_fd != -1) {
+		EVL_WATCH(ev_io_stop(evl.loop, &ni->umn_watcher));
+	}
 
 	pthread_spin_lock(&ni->mr_tree_lock);
 

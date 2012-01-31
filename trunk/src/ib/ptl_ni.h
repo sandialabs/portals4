@@ -76,6 +76,9 @@ typedef struct ni {
 
 	RB_HEAD(the_root, mr) mr_tree;
 	pthread_spinlock_t	mr_tree_lock;
+	int umn_fd;
+	ev_io umn_watcher;
+	uint64_t *umn_counter;
 
 	/* NI identifications */
 	ptl_process_t		id;

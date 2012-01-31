@@ -27,6 +27,9 @@ typedef struct mr {
 	/** knem cookie for memory region */
 	uint64_t		knem_cookie;
 
+	/* ummunotify kernel memory notification cookie */
+	uint64_t umn_cookie;
+
 	/** entry in mr cache */
 	RB_ENTRY(mr)		entry;
 } mr_t;
@@ -36,6 +39,7 @@ void mr_cleanup(void *arg);
 int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr);
 
 void cleanup_mr_tree(ni_t *ni);
+void mr_init(ni_t *ni);
 
 /**
  * Allocate an mr object.
