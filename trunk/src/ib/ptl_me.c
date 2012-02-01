@@ -199,6 +199,7 @@ err1:
 	gbl_put();
 err0:
 #endif
+	WARN();
 	return err;
 }
 

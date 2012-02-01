@@ -218,6 +218,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
 			pt->priority_size--;
 			pthread_spin_unlock(&pt->lock);
+			WARN();
 			return PTL_NO_SPACE;
 		}
 		list_add(&le->list, &pt->priority_list);
@@ -226,6 +227,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
 			pt->overflow_size--;
 			pthread_spin_unlock(&pt->lock);
+			WARN();
 			return PTL_NO_SPACE;
 		}
 		list_add(&le->list, &pt->overflow_list);
