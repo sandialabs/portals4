@@ -88,7 +88,7 @@ runxml1.sh:
 if TEST_RUNTIME_MPI
 	@echo "for TEST in $(XMLTESTS1); do" \
 		  'echo testing $${TEST};' \
-		  'mpirun  -H localhost -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+		  'mpirun -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml1.sh
 endif
 #if TEST_RUNTIME_SHMEMRT
@@ -104,7 +104,7 @@ runxml2.sh:
 if TEST_RUNTIME_MPI
 	@echo "for TEST in $(XMLTESTS2); do" \
 		  'echo testing $${TEST};' \
-		  'mpirun  -H localhost -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+		  'mpirun -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml2.sh
 endif
 #if TEST_RUNTIME_SHMEMRT
