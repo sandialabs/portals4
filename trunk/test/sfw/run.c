@@ -1723,7 +1723,7 @@ static void set_default_info(struct node_info *info)
 	info->pid				= PTL_PID_ANY;
 	info->rank				= PTL_RANK_ANY;
 	info->ni_opt				= PTL_NI_MATCHING | PTL_NI_PHYSICAL;
-	info->desired.max_entries		= 10;
+	info->desired.max_entries		= 15;
 	info->desired.max_mds			= 10;
 	info->desired.max_cts			= 10;
 	info->desired.max_eqs			= 10;
