@@ -152,8 +152,10 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 	/* post the work request to the QP send queue for the
 	 * destination/initiator */
 	err = ibv_post_send(buf->dest.rdma.qp, &wr, &bad_wr);
-	if (err)
+	if (err) {
+		WARN();
 		return PTL_FAIL;
+	}
 
 	return PTL_OK;
 }
