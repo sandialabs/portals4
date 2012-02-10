@@ -83,7 +83,7 @@ static int send_message_rdma(buf_t *buf, int from_init)
 			/* Atomically set buf->init_req_completes to the current value of
 			 * conn->rdma.num_req_posted and set
 			 * conn->rdma.num_req_posted to 0. */
-			buf->rdma.num_req_completes = atomic_swap(&conn->rdma.num_req_not_comp, 0);
+			buf->transfer.rdma.num_req_completes = atomic_swap(&conn->rdma.num_req_not_comp, 0);
 		}	
 	}
 
@@ -339,8 +339,8 @@ static int process_rdma(buf_t *buf)
 	iov_index = buf->cur_loc_iov_index;
 	iov_off = buf->cur_loc_iov_off;
 
-	rem_sge = buf->rdma.cur_rem_sge;
-	rem_off = buf->rdma.cur_rem_off;
+	rem_sge = buf->transfer.rdma.cur_rem_sge;
+	rem_off = buf->transfer.rdma.cur_rem_off;
 	rem_size = le32_to_cpu(rem_sge->length);
 	rem_key = le32_to_cpu(rem_sge->lkey);
 
@@ -434,8 +434,8 @@ static int process_rdma(buf_t *buf)
 	/* update the current rdma state */
 	buf->cur_loc_iov_index = iov_index;
 	buf->cur_loc_iov_off = iov_off;
-	buf->rdma.cur_rem_off = rem_off;
-	buf->rdma.cur_rem_sge = rem_sge;
+	buf->transfer.rdma.cur_rem_off = rem_off;
+	buf->transfer.rdma.cur_rem_sge = rem_sge;
 
 	if (dir == DATA_DIR_IN)
 		buf->put_resid = resid;

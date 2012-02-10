@@ -197,6 +197,7 @@ struct buf {
 	struct list_head	rdma_list;
 	pthread_spinlock_t	rdma_list_lock;
 
+	/* Fields that survive between buffer reuse. */
 	union {
 		struct {
 			/* IB LKEY for that buffer. It's coming from the pool
@@ -212,11 +213,25 @@ struct buf {
 				struct ibv_sge sg_list;
 			} recv;
 
+			atomic_t rdma_comp;
+
+		} rdma;
+
+		struct {
+			/* TODO: this field should be set only once; when
+			 * initializing the buffer, not in send_message_shmem. */
+			unsigned int index_owner;	/* local index owning that buffer */
+		} shmem;
+	};
+
+	/* Used during transfer. These fields are only valid while the
+	 * buffer is allocated. */
+	union {
+		struct {
 			/* For RDMA operations. */
 			struct ibv_sge		*cur_rem_sge;
 			ptl_size_t		num_rem_sge;
 			ptl_size_t		cur_rem_off;
-			atomic_t 		rdma_comp;
 			int			interim_rdma;
 
 			/* How many previous requests buffer (ie. from initiator)
@@ -225,14 +240,12 @@ struct buf {
 		} rdma;
 
 		struct {
-			unsigned int index_owner;	/* local index owning that buffer */
-
 			/* For large (ie. KNEM) operations. */
 			struct shmem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
 		} shmem;
-	};
+	} transfer;
 
 	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
 	 * allocated to process the data through the receive state machine
