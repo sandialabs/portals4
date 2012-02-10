@@ -16,6 +16,7 @@ static int send_message_shmem(buf_t *buf, int from_init)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
+	assert(buf->obj.obj_pool->type == POOL_SBUF);
 	buf_get(buf);
 
 	buf->type = BUF_SHMEM_SEND;

@@ -231,12 +231,14 @@ struct buf {
 			struct shmem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
-
-			struct buf *buf;	/* points to a buffer in shared
-								 * memory. Set only by a buffer not in
-								 * shared memory. */
 		} shmem;
 	};
+
+	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
+	 * allocated to process the data through the receive state machine
+	 * without destroying the sbuf that belongs to
+	 * another process. Keep a pointer to that sbuf. */
+	struct buf *shmem_buf;
 
 	/** number of mr's used in message */
 	int			num_mr;
