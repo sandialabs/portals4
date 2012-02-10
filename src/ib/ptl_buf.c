@@ -22,10 +22,13 @@ int buf_setup(void *arg)
 	buf->num_mr = 0;
 	buf->event_mask = 0;
 	buf->data = buf->internal_data;
-	buf->rdma.recv.wr.next = NULL;
 	buf->rdma_desc_ok = 0;
 	buf->ni_fail = PTL_NI_OK;
-	buf->rdma.num_req_completes = 0;
+
+	if (buf->obj.obj_pool->type == POOL_BUF) {
+		buf->rdma.recv.wr.next = NULL;
+		buf->transfer.rdma.num_req_completes = 0;
+	}
 
 	return PTL_OK;
 }
@@ -54,8 +57,8 @@ void buf_cleanup(void *arg)
 		buf->xxbuf = NULL;
 	}
 
-	if (buf->rdma.num_req_completes) {
-		atomic_sub(&buf->conn->rdma.num_req_posted, buf->rdma.num_req_completes);
+	if (buf->transfer.rdma.num_req_completes) {
+		atomic_sub(&buf->conn->rdma.num_req_posted, buf->transfer.rdma.num_req_completes);
 		assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
 	}
 
@@ -97,6 +100,8 @@ int buf_init(void *arg, void *parm)
 		buf->rdma.recv.sg_list.lkey = mr->lkey;
 
 		buf->rdma.lkey = mr->lkey;
+
+		atomic_set(&buf->rdma.rdma_comp, 0);
 	}
 
 	pthread_spin_init(&buf->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);

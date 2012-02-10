@@ -842,17 +842,17 @@ static int tgt_data_out(buf_t *buf)
 
 	switch (data->data_fmt) {
 	case DATA_FMT_RDMA_DMA:
-		buf->rdma.cur_rem_sge = &data->rdma.sge_list[0];
-		buf->rdma.cur_rem_off = 0;
-		buf->rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
+		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
+		buf->transfer.rdma.cur_rem_off = 0;
+		buf->transfer.rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
 
 		next = STATE_TGT_RDMA;
 		break;
 
 	case DATA_FMT_SHMEM_DMA:
-		buf->shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->shmem.cur_rem_off = 0;
+		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
+		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
+		buf->transfer.shmem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
@@ -972,17 +972,17 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 	/* setup the remote end of the dma state
 	 * to point to the indirect scatter/gather list */
 	if (buf->rdma_dir == DATA_DIR_IN) {
-		buf->rdma.cur_rem_sge = buf->indir_sge;
-		buf->rdma.num_rem_sge =
+		buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
+		buf->transfer.rdma.num_rem_sge =
 			(le32_to_cpu(buf->data_in->rdma.sge_list[0].length))
 				/sizeof(struct ibv_sge);
-		buf->rdma.cur_rem_off = 0;
+		buf->transfer.rdma.cur_rem_off = 0;
 	} else {
-		buf->rdma.cur_rem_sge = buf->indir_sge;
-		buf->rdma.num_rem_sge =
+		buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
+		buf->transfer.rdma.num_rem_sge =
 			(le32_to_cpu(buf->data_out->rdma.sge_list[0].length))
 				/sizeof(struct ibv_sge);
-		buf->rdma.cur_rem_off = 0;
+		buf->transfer.rdma.cur_rem_off = 0;
 	}
 
 	return STATE_TGT_RDMA;
@@ -1041,9 +1041,9 @@ static int tgt_shmem_desc(buf_t *buf)
 
 	buf->indir_sge = indir_sge;
 	buf->mr_list[buf->num_mr++] = mr;
-	buf->shmem.cur_rem_iovec = indir_sge;
-	buf->shmem.cur_rem_off = 0;
-	buf->shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
+	buf->transfer.shmem.cur_rem_iovec = indir_sge;
+	buf->transfer.shmem.cur_rem_off = 0;
+	buf->transfer.shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
 
 	next = STATE_TGT_RDMA;
 done:
@@ -1082,17 +1082,17 @@ static int tgt_data_in(buf_t *buf)
 		break;
 	case DATA_FMT_RDMA_DMA:
 		/* Read from SG list provided directly in request */
-		buf->rdma.cur_rem_sge = &data->rdma.sge_list[0];
-		buf->rdma.cur_rem_off = 0;
-		buf->rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
+		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
+		buf->transfer.rdma.cur_rem_off = 0;
+		buf->transfer.rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
 
 		next = STATE_TGT_RDMA;
 		break;
 
 	case DATA_FMT_SHMEM_DMA:
-		buf->shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->shmem.cur_rem_off = 0;
+		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
+		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
+		buf->transfer.shmem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
