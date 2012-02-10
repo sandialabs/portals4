@@ -1339,7 +1339,7 @@ static int tgt_send_ack(buf_t *buf)
 	} else {
 		/* The same buffer is used to send the data back. Let the
 		 * progress thread return it. */
-		assert(buf->shmem.buf);
+		assert(buf->shmem_buf);
 		buf->shmem_buf->type = BUF_SHMEM_SEND;
   	}
 
