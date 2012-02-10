@@ -49,6 +49,10 @@ static int comp_poll(ni_t *ni, int num_wc,
 
 		buf_list[i] = buf = (buf_t *)(uintptr_t)wc->wr_id;
 
+		if (unlikely(wc->status != IBV_WC_SUCCESS &&
+					 wc->status != IBV_WC_WR_FLUSH_ERR))
+			WARN();
+
 		/* The work request id might be NULL. That can happen when an
 		 * inline send completed in error and no completion was
 		 * requested. */
@@ -489,7 +493,7 @@ void *progress_thread(void *arg)
 					} else {
 						buf->data = (hdr_t *)shmem_buf->internal_data;
 						buf->length = shmem_buf->length;
-						buf->shmem.buf = shmem_buf;
+						buf->shmem_buf = shmem_buf;
 						INIT_LIST_HEAD(&buf->list);
 						process_recv_shmem(ni, buf);
 					}
