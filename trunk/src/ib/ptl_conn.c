@@ -198,7 +198,8 @@ static void destroy_conn(void *data)
 		case CONN_STATE_CONNECTED:
 		case CONN_STATE_RESOLVING_ROUTE:
 			conn->state = CONN_STATE_DISCONNECTING;
-			rdma_disconnect(conn->rdma.cm_id);
+			if (conn->rdma.cm_id)
+				rdma_disconnect(conn->rdma.cm_id);
 			break;
 
 		case CONN_STATE_RESOLVING_ADDR:
