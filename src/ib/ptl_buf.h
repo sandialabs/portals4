@@ -112,6 +112,7 @@ struct buf {
 	struct data		*data_in;
 	struct data		*data_out;
 
+	/* Fields only valid during the lifetime of a buffer. */
 	union {
 		/* Initiator side only. */
 		struct {
@@ -192,7 +193,7 @@ struct buf {
 	/** type of buf */
 	buf_type_t		type;
 
-	/* Target only. Must be out of the union. */
+	/* Target only. Must survive through buffer reuse. */
 	struct list_head	unexpected_list;
 	struct list_head	rdma_list;
 	pthread_spinlock_t	rdma_list_lock;
