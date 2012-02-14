@@ -24,6 +24,7 @@ int buf_setup(void *arg)
 	buf->data = buf->internal_data;
 	buf->rdma_desc_ok = 0;
 	buf->ni_fail = PTL_NI_OK;
+	buf->conn = NULL;
 
 	if (buf->obj.obj_pool->type == POOL_BUF) {
 		buf->rdma.recv.wr.next = NULL;

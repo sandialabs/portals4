@@ -290,6 +290,12 @@ static int tgt_start(buf_t *buf)
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
 	buf->operation = hdr->operation;
+	buf->pt = NULL;
+	buf->in_atomic = 0;
+	buf->matching.le = NULL;
+	buf->le = NULL;
+	buf->indir_sge = NULL;
+	buf->send_buf = NULL;
 
 	switch (hdr->operation) {
 	case OP_PUT:
@@ -534,6 +540,7 @@ static int tgt_get_match(buf_t *buf)
 	/* Failed to match any elements */
 	buf->le = NULL;
 	buf->ni_fail = PTL_NI_DROPPED;
+	WARN();
 	return STATE_TGT_DROP;
 
 found_one:
@@ -1429,21 +1436,22 @@ static int tgt_cleanup(buf_t *buf)
 	}
 
 	pt = buf->pt;
+	if (pt) {
+		pthread_spin_lock(&pt->lock);
+		pt->num_tgt_active--;
+		if ((pt->disable & PT_AUTO_DISABLE) && !pt->num_tgt_active) {
+			pt->enabled = 0;
+			pt->disable &= ~PT_AUTO_DISABLE;
+			pthread_spin_unlock(&pt->lock);
 
-	pthread_spin_lock(&pt->lock);
-	pt->num_tgt_active--;
-	if ((pt->disable & PT_AUTO_DISABLE) && !pt->num_tgt_active) {
-		pt->enabled = 0;
-		pt->disable &= ~PT_AUTO_DISABLE;
-		pthread_spin_unlock(&pt->lock);
-
-		// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
-		make_target_event(buf, pt->eq,
-				  PTL_EVENT_PT_DISABLED,
-				  buf->matching.le ? buf->matching.le->user_ptr
-						  : NULL, NULL);
-	} else
-		pthread_spin_unlock(&pt->lock);
+			// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
+			make_target_event(buf, pt->eq,
+							  PTL_EVENT_PT_DISABLED,
+							  buf->matching.le ? buf->matching.le->user_ptr
+							  : NULL, NULL);
+		} else
+			pthread_spin_unlock(&pt->lock);
+	}
 
 	return state;
 }
@@ -1466,7 +1474,10 @@ static void tgt_cleanup_2(buf_t *buf)
 		buf->le = NULL;
 	}
 
-	conn_put(buf->conn);
+	if (buf->conn) {
+		conn_put(buf->conn);
+		buf->conn = NULL;
+	}
 }
 
 /**
@@ -1627,6 +1638,7 @@ int process_tgt(buf_t *buf)
 			state = tgt_send_reply(buf);
 			break;
 		case STATE_TGT_DROP:
+			WARN();
 			state = request_drop(buf);
 			break;
 		case STATE_TGT_WAIT_APPEND:

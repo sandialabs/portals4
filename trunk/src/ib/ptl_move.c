@@ -30,8 +30,10 @@ static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **retbuf)
 	else
 		err = sbuf_alloc(ni, &buf);
 
-	if (unlikely(err))
+	if (unlikely(err)) {
+		conn_put(conn);
 		return err;
+	}
 
 	assert(buf->type == BUF_FREE);
 	buf->type = BUF_INIT;

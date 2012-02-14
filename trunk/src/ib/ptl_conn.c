@@ -131,8 +131,10 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 	conn_t *conn;
 	void **ret;
 
-	if (ni->shutting_down)
+	if (ni->shutting_down) {
+		WARN();
 		return NULL;
+	}
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		if (unlikely(id.rank >= ni->logical.map_size)) {
@@ -262,6 +264,8 @@ void destroy_conns(ni_t *ni)
  * @param[in] conn
  *
  * @return status
+ *
+ * conn must be locked
  */
 int init_connect(ni_t *ni, conn_t *conn)
 {
@@ -890,8 +894,14 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 	case RDMA_CM_EVENT_DISCONNECTED:
 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
-		conn->state = CONN_STATE_DISCONNECTED;
-		conn_put(conn);
+		pthread_mutex_lock(&conn->mutex);
+		if (conn->state != CONN_STATE_DISCONNECTED) {
+			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_mutex_unlock(&conn->mutex);
+			conn_put(conn);
+		} else {
+			pthread_mutex_unlock(&conn->mutex);
+		}
 		break;
 
 	default:
