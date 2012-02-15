@@ -295,12 +295,14 @@ int init_connect(ni_t *ni, conn_t *conn)
 	}
 
 	conn->state = CONN_STATE_RESOLVING_ADDR;
+	conn->rdma.cm_id = cm_id;
 
 	if (rdma_resolve_addr(cm_id, NULL,
 			      (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 		conn->state = CONN_STATE_DISCONNECTED;
+		conn->rdma.cm_id = NULL;
 		rdma_destroy_id(cm_id);
 		conn_put(conn);
 		return PTL_FAIL;
@@ -342,6 +344,8 @@ static void get_qp_param(conn_t *conn)
  * @param[in] event
  *
  * @return status
+ *
+ * conn is locked
  */
 static int accept_connection_request(ni_t *ni, conn_t *conn,
 				     struct rdma_cm_event *event)
@@ -375,8 +379,14 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		return PTL_FAIL;
 	}
 
-	assert(conn->rdma.cm_id == NULL);
+	/* If we were already trying to connect ourselves, cancel it. */
+	if (conn->rdma.cm_id != NULL) {
+		assert(conn->rdma.cm_id->context == conn);
+		conn->rdma.cm_id->context = NULL;
+	}
+
 	event->id->context = conn;
+	conn->rdma.cm_id = event->id;
 
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
@@ -395,6 +405,7 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	if (rdma_accept(event->id, &conn_param)) {
 		rdma_destroy_qp(event->id);
+		conn->rdma.cm_id = NULL;
 		conn->state = CONN_STATE_DISCONNECTED;
 		return PTL_FAIL;
 	}
@@ -597,6 +608,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		/* We received a connection request but we are already connected. Reject it. */
 		rej.reason = REJECT_REASON_CONNECTED;
 		pthread_mutex_unlock(&conn->mutex);
+		conn_put(conn);
 		goto reject;
 		break;
 
@@ -607,7 +619,15 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		ret = accept_connection_request(ni, conn, event);
 		break;
 
-	default:
+	case CONN_STATE_DISCONNECTING:
+		/* Not sure how to handle that case. Ignore and disconnect
+		 * anyway? */
+		abort();
+		break;
+
+	case CONN_STATE_RESOLVING_ADDR:
+	case CONN_STATE_RESOLVING_ROUTE:
+	case CONN_STATE_CONNECTING:
 		/* we received a connection request but we are already connecting
 		 * - accept connection from higher id
 		 * - reject connection from lower id
@@ -619,6 +639,7 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 		else if (c < 0) {
 			rej.reason = REJECT_REASON_CONNECTING;
 			pthread_mutex_unlock(&conn->mutex);
+			conn_put(conn);
 			goto reject;
 		}
 		else {
@@ -662,6 +683,11 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	}
 
 	conn = event->id->context;
+	if (!conn && event->event != RDMA_CM_EVENT_CONNECT_REQUEST) {
+		/* Ignore this event. */
+		rdma_ack_cm_event(event);
+		return;
+	}
 
 	ptl_info("Rank got CM event %d for id %p\n", event->event, event->id);
 
@@ -670,16 +696,19 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		pthread_mutex_lock(&conn->mutex);
 
 		if (conn->state != CONN_STATE_RESOLVING_ADDR) {
+			/* Our connect attempt got overriden by the remote
+			 * side. */
 			conn_put(conn);
 			pthread_mutex_unlock(&conn->mutex);
 			break;
 		}
 
-		assert(conn->rdma.cm_id == NULL);
+		assert(conn->rdma.cm_id == event->id);
 
 		conn->state = CONN_STATE_RESOLVING_ROUTE;
 		if (rdma_resolve_route(event->id, get_param(PTL_RDMA_TIMEOUT))) {
 			conn->state = CONN_STATE_DISCONNECTED;
+			conn->rdma.cm_id = NULL;
 			conn_put(conn);
 		}
 
@@ -699,10 +728,14 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		pthread_mutex_lock(&conn->mutex);
 
 		if (conn->state != CONN_STATE_RESOLVING_ROUTE) {
+			/* Our connect attempt got overriden by the remote
+			 * side. */
 			conn_put(conn);
 			pthread_mutex_unlock(&conn->mutex);
 			break;
 		}
+
+		assert(conn->rdma.cm_id == event->id);
 
 		ni = conn->obj.obj_ni;
 
@@ -728,20 +761,20 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		}
 		priv.options			= ni->options;
 
-		assert(conn->rdma.cm_id == NULL);
+		assert(conn->rdma.cm_id == event->id);
 
 		if (rdma_create_qp(event->id, ni->iface->pd, &init)) {
 			WARN();
-			abort();
 			conn->state = CONN_STATE_DISCONNECTED;
+			conn->rdma.cm_id = NULL;
 			conn_put(conn);
-			pthread_mutex_unlock(&conn->mutex);
-			break;
 		}
-
-		if (rdma_connect(event->id, &conn_param)) {
-			//todo
-			abort();
+		else if (rdma_connect(event->id, &conn_param)) {
+			WARN();
+			conn->state = CONN_STATE_DISCONNECTED;
+			rdma_destroy_qp(conn->rdma.cm_id);
+			conn->rdma.cm_id = NULL;
+			conn_put(conn);
 		} else {
 			conn->state = CONN_STATE_CONNECTING;
 		}
@@ -762,13 +795,12 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 			break;
 		}
 
-		assert(conn->rdma.cm_id == NULL);
-		conn->rdma.cm_id = event->id;
-
-		if (conn->state == CONN_STATE_DISCONNECTING) {
+		if (conn->state != CONN_STATE_CONNECTING) {
 			pthread_mutex_unlock(&conn->mutex);
 			break;
 		}
+
+		assert(conn->rdma.cm_id == event->id);
 
 		get_qp_param(conn);
 
@@ -830,6 +862,8 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		if (rej->reason == REJECT_REASON_CONNECTED ||
 			rej->reason == REJECT_REASON_CONNECTING) {
+			/* Both sides tried to connect at the same time. This is
+			 * good. */
 			pthread_mutex_unlock(&conn->mutex);
 			break;
 		}
@@ -887,17 +921,27 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		}
 #endif
 
+		rdma_destroy_qp(conn->rdma.cm_id);
+		rdma_destroy_id(conn->rdma.cm_id);
+		conn->rdma.cm_id = NULL;
+
 		pthread_mutex_unlock(&conn->mutex);
 
-		/* todo: destroy QP and reset connect. */
+		conn_put(conn);
 		break;
 
+	case RDMA_CM_EVENT_CONNECT_ERROR:
 	case RDMA_CM_EVENT_DISCONNECTED:
 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
 		pthread_mutex_lock(&conn->mutex);
 		if (conn->state != CONN_STATE_DISCONNECTED) {
 			conn->state = CONN_STATE_DISCONNECTED;
+			conn->rdma.cm_id->context = NULL;
+			rdma_destroy_qp(conn->rdma.cm_id);
+			conn->rdma.cm_id = NULL;
+
 			pthread_mutex_unlock(&conn->mutex);
+
 			conn_put(conn);
 		} else {
 			pthread_mutex_unlock(&conn->mutex);
