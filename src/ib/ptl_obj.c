@@ -310,19 +310,6 @@ int pool_fini(pool_t *pool)
 	if (!pool->name)
 		return err;
 
-	pthread_mutex_destroy(&pool->mutex);
-
-	if (atomic_read(&pool->count)) {
-		/*
-		 * we shouldn't get here since we
-		 * are supposed to clean up all the
-		 * objects during processing PtlFini
-		 * so this would be a library bug
-		 */
-		ptl_warn("leaked %d %s objects\n", atomic_read(&pool->count), pool->name);
-		err = PTL_FAIL;
-	}
-
 	/*
 	 * if pool has a fini routine call it on
 	 * each free object
@@ -334,6 +321,15 @@ int pool_fini(pool_t *pool)
 			pool->fini(obj);
 		}
 	}
+
+	if (atomic_read(&pool->count)) {
+		/* There's still an object allocated. Do not free the pool
+		 * else we open the library to memory scribble bugs. */
+		ptl_warn("leaked %d %s objects\n", atomic_read(&pool->count), pool->name);
+		return PTL_FAIL;
+	}
+
+	pthread_mutex_destroy(&pool->mutex);
 
 	/*
 	 * free slabs and chunks
