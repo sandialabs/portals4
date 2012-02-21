@@ -63,12 +63,12 @@ void iface_fini(struct gbl *gbl);
 
 iface_t *get_iface(struct gbl *gbl, ptl_interface_t iface_id);
 
-struct ni *__iface_get_ni(iface_t *iface, int ni_type);
+struct ni *iface_get_ni(iface_t *iface, int ni_type);
 
-void __iface_add_ni(iface_t *iface, struct ni *ni);
+void iface_add_ni(iface_t *iface, struct ni *ni);
 
-void __iface_remove_ni(struct ni *ni);
+void iface_remove_ni(struct ni *ni);
 
-int __iface_bind(iface_t *iface, unsigned int port);
+int iface_bind(iface_t *iface, unsigned int port);
 
 #endif /* PTL_IFACE_H */

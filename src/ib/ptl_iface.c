@@ -266,7 +266,7 @@ iface_t *get_iface(gbl_t *gbl, ptl_interface_t iface_id)
  *
  * @return ni or NULL
  */
-ni_t *__iface_get_ni(iface_t *iface, int ni_type)
+ni_t *iface_get_ni(iface_t *iface, int ni_type)
 {
 	ni_t *ni;
 
@@ -288,7 +288,7 @@ ni_t *__iface_get_ni(iface_t *iface, int ni_type)
  * @param[in] iface the interface table entry to use
  * @param[in] ni the ni to add to the entry
  */
-void __iface_add_ni(iface_t *iface, ni_t *ni)
+void iface_add_ni(iface_t *iface, ni_t *ni)
 {
 	int type = ni->ni_type;
 
@@ -306,7 +306,7 @@ void __iface_add_ni(iface_t *iface, ni_t *ni)
  *
  * @param[in] ni The ni to remove from interface
  */
-void __iface_remove_ni(ni_t *ni)
+void iface_remove_ni(ni_t *ni)
 {
 	iface_t *iface = ni->iface;
 	int type = ni->ni_type;
@@ -336,7 +336,7 @@ void __iface_remove_ni(ni_t *ni)
  *
  * @return status
  */
-int __iface_bind(iface_t *iface, unsigned int port)
+int iface_bind(iface_t *iface, unsigned int port)
 {
 	int ret;
 	int flags;
