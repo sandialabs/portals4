@@ -254,7 +254,7 @@ static int init_ib(iface_t *iface, ni_t *ni)
 
 	ptl_info("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
 
-	err = __iface_bind(iface, pid_to_port(ni->id.phys.pid));
+	err = iface_bind(iface, pid_to_port(ni->id.phys.pid));
 	if (err) {
 		ptl_warn("Binding failed\n");
 		WARN();
@@ -670,7 +670,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	pthread_mutex_lock(&gbl->gbl_mutex);
 
 	/* check to see if ni of type ni_type already exists */
-	ni = __iface_get_ni(iface, ni_type);
+	ni = iface_get_ni(iface, ni_type);
 	if (ni)
 		goto done;
 
@@ -766,7 +766,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	}
 	ni->has_catcher = 1;
 
-	__iface_add_ni(iface, ni);
+	iface_add_ni(iface, ni);
 
  done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
@@ -1054,7 +1054,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	if (atomic_dec(&ni->ref_cnt) <= 0) {
 		ni_cleanup(ni);
-		__iface_remove_ni(ni);
+		iface_remove_ni(ni);
 		ni_put(ni);
 	}
 	pthread_mutex_unlock(&gbl->gbl_mutex);
