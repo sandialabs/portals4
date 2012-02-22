@@ -683,10 +683,16 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	}
 
 	conn = event->id->context;
-	if (!conn && event->event != RDMA_CM_EVENT_CONNECT_REQUEST) {
-		/* Ignore this event. */
-		rdma_ack_cm_event(event);
-		return;
+	if (conn) {
+		ni = conn->obj.obj_ni;
+		if (ni->shutting_down)
+			goto done;
+	} else {
+		if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST) {
+			/* Ignore this event. */
+			goto done;
+		}
+		ni = NULL;
 	}
 
 	ptl_info("Rank got CM event %d for id %p\n", event->event, event->id);
@@ -737,8 +743,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		assert(conn->rdma.cm_id == event->id);
 
-		ni = conn->obj.obj_ni;
-
 		/* Create the QP. */
 		memset(&init, 0, sizeof(init));
 		init.qp_context			= ni;
@@ -785,8 +789,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 	case RDMA_CM_EVENT_ESTABLISHED: {
 		pthread_mutex_lock(&conn->mutex);
-
-		ni = conn->obj.obj_ni;
 
 		if (ni->rdma.self_cm_id == event->id) {
 			/* Self connection. Let the initiator side finish the
@@ -884,8 +886,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 			 * trying to connect. */
 			assert(list_empty(&conn->list));
 
-			ni = conn->ni;
-
 			entry = container_of(conn, struct rank_entry, connect);
 			main_connect = &ni->logical.rank_table[entry->main_rank].connect;
 
@@ -953,5 +953,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		break;
 	}
 
+ done:
 	rdma_ack_cm_event(event);
 }

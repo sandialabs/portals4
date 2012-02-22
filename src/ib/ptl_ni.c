@@ -1000,6 +1000,8 @@ static void ni_cleanup(ni_t *ni)
 		cleanup_shmem(ni);
 	cleanup_ib(ni);
 
+	ni->iface = NULL;
+
 	release_buffers(ni);
 
 	if (ni->options & PTL_NI_LOGICAL) {
@@ -1053,8 +1055,8 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 	if (atomic_dec(&ni->ref_cnt) <= 0) {
-		ni_cleanup(ni);
 		iface_remove_ni(ni);
+		ni_cleanup(ni);
 		ni_put(ni);
 	}
 	pthread_mutex_unlock(&gbl->gbl_mutex);

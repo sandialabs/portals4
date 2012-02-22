@@ -315,7 +315,6 @@ void iface_remove_ni(ni_t *ni)
 	assert(ni == iface->ni[type]);
 
 	iface->ni[type] = NULL;
-	ni->iface = NULL;
 }
 
 /**
