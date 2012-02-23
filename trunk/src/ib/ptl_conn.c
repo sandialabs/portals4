@@ -39,21 +39,25 @@ int conn_init(void *arg, void *parm)
 	pthread_spin_init(&conn->wait_list_lock, PTHREAD_PROCESS_PRIVATE);
 
 	conn->state = CONN_STATE_DISCONNECTED;
+	INIT_LIST_HEAD(&conn->buf_list);
+
+#if WITH_TRANSPORT_IB
 	conn->transport = transport_rdma;
 	conn->rdma.cm_id = NULL;
 
-	INIT_LIST_HEAD(&conn->buf_list);
 #ifdef USE_XRC
 	INIT_LIST_HEAD(&conn->list);
 #endif
 
 	atomic_set(&conn->rdma.send_comp_threshold, 0);
 	atomic_set(&conn->rdma.rdma_comp_threshold, 0);
-
 	atomic_set(&conn->rdma.num_req_posted, 0);
 	atomic_set(&conn->rdma.num_req_not_comp, 0);
 
 	conn->rdma.max_req_avail = 0;
+#elif WITH_TRANSPORT_SHMEM
+	conn->transport = transport_shmem;
+#endif
 
 	return PTL_OK;
 }
@@ -67,6 +71,7 @@ void conn_fini(void *arg)
 {
 	conn_t *conn = arg;
 
+#if WITH_TRANSPORT_IB
 	if (conn->transport.type == CONN_TYPE_RDMA) {
 		if (conn->rdma.cm_id) {
 			if (conn->rdma.cm_id->qp)
@@ -75,6 +80,7 @@ void conn_fini(void *arg)
 			conn->rdma.cm_id = NULL;
 		}
 	}
+#endif
 
 	pthread_mutex_destroy(&conn->mutex);
 	pthread_spin_destroy(&conn->wait_list_lock);
@@ -200,8 +206,10 @@ static void destroy_conn(void *data)
 		case CONN_STATE_CONNECTED:
 		case CONN_STATE_RESOLVING_ROUTE:
 			conn->state = CONN_STATE_DISCONNECTING;
+#if WITH_TRANSPORT_IB
 			if (conn->rdma.cm_id)
 				rdma_disconnect(conn->rdma.cm_id);
+#endif
 			break;
 
 		case CONN_STATE_RESOLVING_ADDR:
@@ -269,12 +277,10 @@ void destroy_conns(ni_t *ni)
  */
 int init_connect(ni_t *ni, conn_t *conn)
 {
-	struct rdma_cm_id *cm_id;
+	struct rdma_cm_id *cm_id = cm_id;
 
-	assert(conn->rdma.cm_id == NULL);
-
-	ptl_info("Initiate connect with %x:%d\n",
-			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+#if WITH_TRANSPORT_IB
+	assert(conn->transport.type == CONN_TYPE_RDMA);
 
 	if (ni->shutting_down)
 		return PTL_FAIL;
@@ -282,13 +288,17 @@ int init_connect(ni_t *ni, conn_t *conn)
 	conn_get(conn);
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
+	assert(conn->rdma.cm_id == NULL);
+ 
+	ptl_info("Initiate connect with %x:%d\n",
+			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 
 	conn->rdma.retry_resolve_addr = 3;
 	conn->rdma.retry_resolve_route = 3;
 	conn->rdma.retry_connect = 3;
 
 	if (rdma_create_id(ni->iface->cm_channel, &cm_id,
-			   conn, RDMA_PS_TCP)) {
+					   conn, RDMA_PS_TCP)) {
 		WARN();
 		conn_put(conn);
 		return PTL_FAIL;
@@ -298,7 +308,7 @@ int init_connect(ni_t *ni, conn_t *conn)
 	conn->rdma.cm_id = cm_id;
 
 	if (rdma_resolve_addr(cm_id, NULL,
-			      (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
+						  (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 		conn->state = CONN_STATE_DISCONNECTED;
@@ -310,10 +320,12 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	ptl_info("Connection initiated successfully to %x:%d\n",
 			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+#endif
 
 	return PTL_OK;
 }
 
+#if WITH_TRANSPORT_IB
 /**
  * Retrieve some current parameters from the QP. Right now we only
  * need max_inline_data.
@@ -956,3 +968,4 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
  done:
 	rdma_ack_cm_event(event);
 }
+#endif

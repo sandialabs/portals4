@@ -25,6 +25,8 @@ struct iface {
 	char			ifname[IF_NAMESIZE];
 	/** The NID/PID for this interface */
 	ptl_process_t		id;
+
+#if WITH_TRANSPORT_IB
 	/** The CM event channel for this interface */
 	struct rdma_event_channel *cm_channel;
 	/** The CM ID for this interface */
@@ -49,6 +51,7 @@ struct iface {
 
 		struct ibv_device_attr device_attr;
 	} cap;
+#endif
 };
 
 typedef struct iface iface_t;

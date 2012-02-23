@@ -21,11 +21,15 @@ typedef struct mr {
 	void           *addr;
 	size_t          length;
 
+#if WITH_TRANSPORT_IB
 	/** OFA verbs mr for memory region */
 	struct ibv_mr		*ibmr;
+#endif
 
+#if WITH_TRANSPORT_SHMEM
 	/** knem cookie for memory region */
 	uint64_t		knem_cookie;
+#endif
 
 	/* ummunotify kernel memory notification cookie */
 	uint64_t umn_cookie;

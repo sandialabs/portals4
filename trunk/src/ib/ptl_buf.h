@@ -387,10 +387,12 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 #endif
 
 	if (connect->transport.type == CONN_TYPE_RDMA) {
+#if WITH_TRANSPORT_IB
 		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			buf->dest.xrc_remote_srq_num = ni->logical.rank_table[buf->xi.target.rank].remote_xrc_srq_num;
+#endif
 #endif
 	} else {
 		assert(connect->transport.type == CONN_TYPE_SHMEM);
@@ -407,12 +409,14 @@ static inline void set_tgt_dest(buf_t *buf, const conn_t *connect)
 #endif
 
 	if (connect->transport.type == CONN_TYPE_RDMA) {
+#if WITH_TRANSPORT_IB
 		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
 #ifdef USE_XRC
 		if (ni->options & PTL_NI_LOGICAL)
 			buf->dest.xrc_remote_srq_num =
 				ni->logical.rank_table[xt->
 					initiator.rank].remote_xrc_srq_num;
+#endif
 #endif
 	} else {
 		assert(connect->transport.type == CONN_TYPE_SHMEM);

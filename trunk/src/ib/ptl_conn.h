@@ -60,6 +60,7 @@ struct conn {
 	struct transport	transport;
 
 	union {
+#if WITH_TRANSPORT_IB
 		struct {
 			struct rdma_cm_id	*cm_id;
 			int			retry_resolve_addr;
@@ -90,6 +91,7 @@ struct conn {
 			 * TODO: negociate values during connection setup. */
 			int max_req_avail;
 		} rdma;
+#endif
 
 		struct {
 			ptl_rank_t	local_rank;	/* local rank on that node. */

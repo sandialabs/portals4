@@ -227,7 +227,6 @@ static int pool_alloc_slab(pool_t *pool)
 	int i;
 	obj_t *obj;
 	struct ibv_mr *mr = NULL;
-	ni_t *ni;
 	struct list_head temp_list;
 
 	err = pool_get_chunk(pool, &chunk);
@@ -238,11 +237,12 @@ static int pool_alloc_slab(pool_t *pool)
 	if (unlikely(!p))
 		return PTL_NO_SPACE;
 
+#if WITH_TRANSPORT_IB
 	/*
 	 * want to abstract this a little but just hack it for now
 	 */
 	if (pool->type == POOL_BUF) {
-		ni = (ni_t *)pool->parent;
+		const ni_t *ni = (ni_t *)pool->parent;
 		mr = ibv_reg_mr(ni->iface->pd, p, pool->slab_size,
 				IBV_ACCESS_LOCAL_WRITE);
 		if (!mr) {
@@ -252,6 +252,7 @@ static int pool_alloc_slab(pool_t *pool)
 		}
 		chunk->slab_list[chunk->num_slabs].priv = mr;
 	}
+#endif
 
 	chunk->slab_list[chunk->num_slabs++].addr = p;
 	INIT_LIST_HEAD(&temp_list);

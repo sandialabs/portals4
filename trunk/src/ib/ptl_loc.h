@@ -225,6 +225,16 @@ int check_match(buf_t *buf, const me_t *me);
 
 int check_perm(buf_t *buf, const le_t *le);
 
+#ifdef WITH_TRANSPORT_IB
+int PtlNIInit_IB(iface_t *iface, ni_t *ni);
+void cleanup_ib(ni_t *ni);
+int init_iface_ib(iface_t *iface);
+#else
+static inline int PtlNIInit_IB(iface_t *iface, ni_t *ni) { return PTL_OK; }
+static inline void cleanup_ib(ni_t *ni) {  }
+static inline int init_iface_ib(iface_t *iface) { return PTL_OK; }
+#endif
+
 #ifdef WITH_TRANSPORT_SHMEM
 int knem_init(ni_t *ni);
 void knem_fini(ni_t *ni);
