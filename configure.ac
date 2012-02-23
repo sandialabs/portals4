@@ -147,6 +147,13 @@ AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_shmem" == "yes"],
   [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
 
+AC_ARG_ENABLE([ib-ib],
+  [AS_HELP_STRING([--disable-ib-ib],
+    [Disable IB for communication.])])
+AS_IF([test "x$with_implementation" = "xib" -a x"$enable_ib_ib" != xno],
+  [AC_DEFINE([WITH_TRANSPORT_IB], [1], [Define to enable IB support])])
+AM_CONDITIONAL(WITH_TRANSPORT_IB, test "x$enable_ib_ib" != xno)
+
 # Whether to use XRC or not. If RC is selected then they are used like
 # an XRC qp (ie. half-duplex connection). This is a temporary mesure.
 AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])

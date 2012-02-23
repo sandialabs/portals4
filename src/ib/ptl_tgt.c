@@ -942,6 +942,7 @@ static int tgt_rdma(buf_t *buf)
 	return STATE_TGT_COMM_EVENT;
 }
 
+#if WITH_TRANSPORT_IB
 /**
  * @brief Send rdma read for indirect scatter/gather list
  * and wait for response.
@@ -994,6 +995,14 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 
 	return STATE_TGT_RDMA;
 }
+#else
+static int tgt_wait_rdma_desc(buf_t *buf)
+{
+	/* This state can only be reached through IB. */
+	abort();
+	return STATE_TGT_RDMA;
+}
+#endif
 
 /**
  * @brief target shared memory read long iovec descriptor state.
@@ -1332,8 +1341,11 @@ static int tgt_send_ack(buf_t *buf)
 
 		/* Inline the data if it fits. That may save waiting for a
 		 * completion. */
-		if (ack_buf->conn->transport.type == CONN_TYPE_SHMEM ||
-			ack_buf->length <= ack_buf->conn->rdma.max_inline_data)
+		if (ack_buf->conn->transport.type == CONN_TYPE_SHMEM
+#if WITH_TRANSPORT_IB
+			 || ack_buf->length <= ack_buf->conn->rdma.max_inline_data
+#endif
+			)
 			ack_buf->event_mask |= XX_INLINE;
 		else
 			ack_buf->event_mask |= XX_SIGNALED;
@@ -1388,8 +1400,11 @@ static int tgt_send_reply(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	if (rep_buf->conn->transport.type == CONN_TYPE_SHMEM ||
-		rep_buf->length <= rep_buf->conn->rdma.max_inline_data)
+	if (rep_buf->conn->transport.type == CONN_TYPE_SHMEM
+#if WITH_TRANSPORT_IB
+		|| rep_buf->length <= rep_buf->conn->rdma.max_inline_data
+#endif
+		)
 		rep_buf->event_mask |= XX_INLINE;
 	else
 		rep_buf->event_mask |= XX_SIGNALED;

@@ -47,12 +47,17 @@ libportals_ib_la_SOURCES = \
 	ptl_param.h \
 	ptl_pt.c \
 	ptl_pt.h \
-	ptl_rdma.c \
 	ptl_recv.c \
 	ptl_ref.h \
 	ptl_tgt.c \
 	ptl_list.h \
 	tree.h
+
+if WITH_TRANSPORT_IB
+libportals_ib_la_SOURCES += \
+	ptl_rdma.c \
+	ptl_iface_ib.c
+endif
 
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \

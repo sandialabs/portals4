@@ -18,25 +18,30 @@
  */
 void mr_cleanup(void *arg)
 {
-	int err;
 	mr_t *mr = (mr_t *)arg;
 
 	if (mr->obj.obj_ni->umn_fd != -1 && mr->umn_cookie != 0) {
 		ioctl(mr->obj.obj_ni->umn_fd, UMMUNOTIFY_UNREGISTER_REGION, &mr->umn_cookie);
 	}
 
+#if WITH_TRANSPORT_IB
 	if (mr->ibmr) {
+		int err;
+
 		err = ibv_dereg_mr(mr->ibmr);
 		if (err) {
 			ptl_error("ibv_dereg_mr failed, ret = %d\n", err);
 		}
 		mr->ibmr = NULL;
 	}
+#endif
 
+#if WITH_TRANSPORT_SHMEM
 	if (mr->knem_cookie) {
 		knem_unregister(mr->obj.obj_ni, mr->knem_cookie);
 		mr->knem_cookie = 0;
 	}
+#endif
 }
 
 /**
@@ -101,10 +106,9 @@ RB_GENERATE_STATIC(the_root, mr, entry, mr_compare);
 static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	int err;
-	mr_t *mr;
+	mr_t *mr = NULL;
 	void *end = start + length;
 	struct ibv_mr *ibmr = NULL;
-	int access;
 	uint64_t knem_cookie = 0;
 
 	err = mr_alloc(ni, &mr);
@@ -122,23 +126,23 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	 * application frees the buffer, or parts of it. */
 	umn_register(ni, mr, start, length);
 
+#if WITH_TRANSPORT_IB
 	/*
 	 * for now ask for everything
 	 * TODO get more particular later
 	 */
-	access = IBV_ACCESS_LOCAL_WRITE
-	       | IBV_ACCESS_REMOTE_WRITE
-	       | IBV_ACCESS_REMOTE_READ
-	       | IBV_ACCESS_REMOTE_ATOMIC;
-
-	ibmr = ibv_reg_mr(ni->iface->pd, start, length, access);
+	ibmr = ibv_reg_mr(ni->iface->pd, start, length,
+					  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
+					  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 	if (!ibmr) {
 		WARN();
 		err = PTL_FAIL;
 		goto err1;
 	}
 	mr->ibmr = ibmr;
+#endif
 
+#if WITH_TRANSPORT_SHMEM
 	if ((ni->options & PTL_NI_LOGICAL) &&
 		get_param(PTL_ENABLE_SHMEM)) {
 		knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
@@ -149,6 +153,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		}
 	}
 	mr->knem_cookie = knem_cookie;
+#endif
 
 	mr->addr = start;
 	mr->length = length;
@@ -162,6 +167,9 @@ err1:
 
 	if (knem_cookie)
 		knem_unregister(ni, knem_cookie);
+
+	if (mr)
+		mr_put(mr);
 
 	if (mr)
 		mr_put(mr);

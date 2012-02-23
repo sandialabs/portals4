@@ -21,6 +21,7 @@ static char *recv_state_name[] = {
 	[STATE_RECV_DONE]		= "recv_done",
 };
 
+#ifdef WITH_TRANSPORT_IB
 /**
  * Poll the rdma completion queue.
  *
@@ -187,6 +188,7 @@ static int recv_packet_rdma(buf_t *buf)
 
 	return STATE_RECV_PACKET;
 }
+#endif	/* WITH_TRANSPORT_RDMA */
 
 /**
  * Process a received buffer. Common for RDMA and SHMEM.
@@ -298,6 +300,7 @@ static int recv_init(buf_t *buf)
 	return STATE_RECV_REPOST;
 }
 
+#if WITH_TRANSPORT_IB
 /**
  * Repost receive buffers to srq.
  *
@@ -320,6 +323,7 @@ static int recv_repost(ni_t *ni)
 
 	return STATE_RECV_DONE;
 }
+#endif
 
 /**
  * Drop the received buffer.
@@ -338,6 +342,7 @@ static int recv_drop_buf(buf_t *buf)
 	return STATE_RECV_REPOST;
 }
 
+#ifdef WITH_TRANSPORT_IB
 /**
  * Completion queue polling thread.
  *
@@ -392,6 +397,7 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
  done:
 	return;
 }
+#endif
 
 /**
  * Process a received message in shared memory.
@@ -450,25 +456,30 @@ exit:
 void *progress_thread(void *arg)
 {
 	ni_t *ni = arg;
+#ifdef WITH_TRANSPORT_IB
 	const int num_wc = get_param(PTL_WC_COUNT);
 	struct ibv_wc wc_list[num_wc];
 	buf_t *buf_list[num_wc];
+#endif
 
 	while(!ni->catcher_stop
 #ifdef WITH_TRANSPORT_SHMEM
 		  || atomic_read(&ni->sbuf_pool.count)
 #endif
 		  ) {
+
+#ifdef WITH_TRANSPORT_IB
+		/* Infiniband. */
 		int i;
 		int num_buf;
 
-		/* Infiniband. */
 		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
 
 		for (i = 0; i < num_buf; i++) {
 			if (buf_list[i])
 				process_recv_rdma(ni, buf_list[i]);
 		}
+#endif
 
 #ifdef WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */

@@ -26,10 +26,12 @@ int buf_setup(void *arg)
 	buf->ni_fail = PTL_NI_OK;
 	buf->conn = NULL;
 
+#if WITH_TRANSPORT_IB
 	if (buf->obj.obj_pool->type == POOL_BUF) {
 		buf->rdma.recv.wr.next = NULL;
 		buf->transfer.rdma.num_req_completes = 0;
 	}
+#endif
 
 	return PTL_OK;
 }
@@ -58,10 +60,12 @@ void buf_cleanup(void *arg)
 		buf->xxbuf = NULL;
 	}
 
+#if WITH_TRANSPORT_IB
 	if (buf->transfer.rdma.num_req_completes) {
 		atomic_sub(&buf->conn->rdma.num_req_posted, buf->transfer.rdma.num_req_completes);
 		assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
 	}
+#endif
 
 	buf->type = BUF_FREE;
 }
