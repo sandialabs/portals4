@@ -258,8 +258,10 @@ int PtlNIInit_shmem(ni_t *ni)
 					ni->sbuf_pool.round_size;
 
 	/* Open KNEM device */
-	if (knem_init(ni))
+	if (knem_init(ni)) {
+		WARN();
 		goto exit_fail;
+	}
 
 	/* Create a unique name for the shared memory file. Use the hash
 	 * created from the mapping. */
@@ -398,6 +400,7 @@ int PtlNIInit_shmem(ni_t *ni)
 		conn = get_conn(ni, ptable[i].id);
 		if (!conn) {
 			/* It's hard to recover from here. */
+			WARN();
 			goto exit_fail;
 		}
 
