@@ -415,7 +415,7 @@ int setup_shmem(ni_t *ni)
 	}
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		/* Can Now Announce My Presence. */
+		/* Can now announce my Presence. */
 
 		/* The PID table is a the beginning of the comm pad. 
 		 *
@@ -457,7 +457,7 @@ int setup_shmem(ni_t *ni)
 		free(ni->shmem.comm_pad_shm_name);
 		ni->shmem.comm_pad_shm_name = NULL;
 	} else {
-		/* We are connected to ourselves. */
+		/* Physical interface. We are connected to ourselves. */
 		conn_t *conn = get_conn(ni, ni->id);
 
 		if (!conn) {

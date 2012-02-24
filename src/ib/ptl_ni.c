@@ -690,9 +690,7 @@ static void ni_cleanup(ni_t *ni)
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 
-	if (ni->options & PTL_NI_LOGICAL)
-		cleanup_shmem(ni);
-
+	cleanup_shmem(ni);
 	cleanup_ib(ni);
 
 	ni->iface = NULL;
