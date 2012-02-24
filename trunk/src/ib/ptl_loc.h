@@ -250,6 +250,7 @@ size_t knem_copy(ni_t * ni,
 				 size_t length);
 extern int PtlNIInit_shmem(ni_t *ni);
 void cleanup_shmem(ni_t *ni);
+int setup_shmem(ni_t *ni);
 #else
 static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
 {
@@ -258,7 +259,7 @@ static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int p
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
 static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
 static inline void cleanup_shmem(ni_t *ni) { }
-
+static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
 #endif
 
 extern int ptl_log_level;

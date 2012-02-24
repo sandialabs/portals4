@@ -6,18 +6,16 @@
 
 int test_ptl_init(struct node_info *info)
 {
-	int ret;
+	libtest_init();
+	info->err = PtlInit();
 
-	ret = PtlInit();
-
-	info->err = ret;
-
-	return info->ret != ret;
+	return info->ret != info->err;
 }
 
 void test_ptl_fini(struct node_info *info)
 {
 	PtlFini();
+	libtest_fini();
 }
 
 int test_ptl_ni_init(struct node_info *info)
@@ -38,8 +36,9 @@ int test_ptl_ni_init(struct node_info *info)
 		info->ni_stack[info->next_ni++] = info->ni_handle;
 	}
 
-	if (info->ni_opt & PTL_NI_LOGICAL)
+	if (info->ni_opt & PTL_NI_LOGICAL) {
 		PtlSetMap(info->ni_handle, info->map_size, info->desired_map_ptr);
+	}
 
 	return info->ret != ret;
 }

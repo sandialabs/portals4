@@ -433,6 +433,22 @@ int PtlNIInit(ptl_interface_t	iface_id,
 		goto err3;
 	}
 
+	if (get_param(PTL_ENABLE_SHMEM)) {
+		err = PtlNIInit_shmem(ni);
+		if (unlikely(err)) {
+			WARN();
+			goto err3;
+		}
+
+		if (options & PTL_NI_PHYSICAL) {
+			err = setup_shmem(ni);
+			if (unlikely(err)) {
+				WARN();
+				goto err3;
+			}
+		}
+	}
+
 	/* Add a progress thread. */
 	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
 	if (err) {
@@ -547,7 +563,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	iface = ni->iface;
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
-			
+
 			if (mapping[i].phys.pid == iface->id.phys.pid) {
 				ni->id.rank = i;
 				ni->shmem.index = ni->shmem.world_size;
@@ -572,7 +588,9 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	if (get_param(PTL_ENABLE_SHMEM) && PtlNIInit_shmem(ni)) {
+	if (get_param(PTL_ENABLE_SHMEM) &&
+		(ni->options & PTL_NI_LOGICAL) &&
+		setup_shmem(ni)) {
 		WARN();
 		goto err2;
 	}

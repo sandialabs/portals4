@@ -84,25 +84,17 @@ int init_iface_table(gbl_t *gbl)
 			return PTL_NO_SPACE;
 	}
 
-#if WITH_TRANSPORT_IB
 	for (i = 0; i < num_iface; i++) {
 		gbl->iface[i].iface_id = i;
 		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
 		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
 
+#if WITH_TRANSPORT_IB
 		/* the interface name is "ib" followed by the interface id
 		 * in the future we may support other RDMA devices */
 		sprintf(gbl->iface[i].ifname, "ib%d", i);
-	}
-#else
-	/* IB not present, so all ranks are on the same node. Set NID to 0
-	 * and rank PID to the process id. */
-	for (i = 0; i < num_iface; i++) {
-		gbl->iface[i].iface_id = i;
-		gbl->iface[i].id.phys.nid = 0;
-		gbl->iface[i].id.phys.pid = getpid();
-	}
 #endif
+	}
 
 	return PTL_OK;
 }

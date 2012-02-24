@@ -320,6 +320,10 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	ptl_info("Connection initiated successfully to %x:%d\n",
 			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+#elif WITH_TRANSPORT_SHMEM
+	/* We should get here for physical NIs only, since logical NIs are
+	 * automatically connected when other ranks are discovered. */
+	assert(ni->options & PTL_NI_PHYSICAL);
 #endif
 
 	return PTL_OK;

@@ -5,8 +5,6 @@ int ompi_rt_init(struct node_info *info)
 {
 	int errs = 0;
 
-	libtest_init();
-
 	info->rank = libtest_get_rank();
 	info->map_size = libtest_get_size();
 
@@ -27,9 +25,6 @@ int ompi_rt_fini(struct node_info *info)
 	if (info->desired_map_ptr) {
 		info->desired_map_ptr = NULL;
 	}
-
-	libtest_fini();
-
 
 	return 0;
 }
