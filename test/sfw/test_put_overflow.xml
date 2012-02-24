@@ -542,7 +542,7 @@
                         <ptl_eq_wait>
                           <check event_type="AUTO_FREE"/>
                         </ptl_eq_wait>
-                         
+                        
                         
                         <ptl_eq_wait>
                           <check event_type="AUTO_UNLINK"/>
