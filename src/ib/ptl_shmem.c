@@ -235,6 +235,39 @@ static void release_shmem_resources(ni_t *ni)
  */
 int PtlNIInit_shmem(ni_t *ni)
 {
+	/* Only if IB hasn't setup the NID first. */
+	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
+		ni->iface->id.phys.nid = 0;
+	}
+	if (ni->iface->id.phys.pid == PTL_PID_ANY)
+		ni->iface->id.phys.pid = getpid();
+
+	ni->id.phys.nid = ni->iface->id.phys.nid;
+
+	if (ni->id.phys.pid == PTL_PID_ANY)
+		ni->id.phys.pid = ni->iface->id.phys.pid;
+
+	if (ni->options & PTL_NI_PHYSICAL) {
+		/* Used later to setup the buffers. */
+		ni->shmem.index = 0;
+		ni->shmem.world_size = 1;
+	}
+
+	return PTL_OK;
+}
+
+/**
+ * @brief Initialize shared memory resources.
+ *
+ * This function is called during NI creation if the NI is physical,
+ * or after PtlSetMap if it is logical.
+ *
+ * @param[in] ni
+ *
+ * @return status
+ */
+int setup_shmem(ni_t *ni)
+{
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
 	int err;
@@ -255,7 +288,7 @@ int PtlNIInit_shmem(ni_t *ni)
 	ni->sbuf_pool.use_pre_alloc_buffer = 1;
 	ni->sbuf_pool.round_size = real_buf_t_size();
 	ni->sbuf_pool.slab_size = ni->shmem.per_proc_comm_buf_numbers *
-					ni->sbuf_pool.round_size;
+		ni->sbuf_pool.round_size;
 
 	/* Open KNEM device */
 	if (knem_init(ni)) {
@@ -263,10 +296,17 @@ int PtlNIInit_shmem(ni_t *ni)
 		goto exit_fail;
 	}
 
-	/* Create a unique name for the shared memory file. Use the hash
-	 * created from the mapping. */
-	snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
-		 "/portals4-shmem-%x-%d", ni->shmem.hash, ni->options);
+	if (ni->options & PTL_NI_PHYSICAL) {
+		/* Create a unique name for the shared memory file. */
+		snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
+				 "/portals4-shmem-pid%d-%d", 
+				 ni->id.phys.pid, ni->options);
+	} else {
+		/* Create a unique name for the shared memory file. Use the hash
+		 * created from the mapping. */
+		snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
+				 "/portals4-shmem-%x-%d", ni->shmem.hash, ni->options);
+	}
 	ni->shmem.comm_pad_shm_name = strdup(comm_pad_shm_name);
 
 	/* Allocate a pool of buffers in the mmapped region. */
@@ -285,13 +325,13 @@ int PtlNIInit_shmem(ni_t *ni)
 		shm_unlink(comm_pad_shm_name);
 
 		shm_fd = shm_open(comm_pad_shm_name,
-				  O_RDWR | O_CREAT | O_EXCL,
-				  S_IRUSR | S_IWUSR);
+						  O_RDWR | O_CREAT | O_EXCL,
+						  S_IRUSR | S_IWUSR);
 		assert(shm_fd >= 0);
 
 		if (shm_fd < 0) {
 			ptl_warn("shm_open of %s failed (errno=%d)",
-				 comm_pad_shm_name, errno);
+					 comm_pad_shm_name, errno);
 			goto exit_fail;
 		}
 
@@ -309,7 +349,7 @@ int PtlNIInit_shmem(ni_t *ni)
 		try_count = 100;
 		do {
 			shm_fd = shm_open(comm_pad_shm_name, O_RDWR,
-					  S_IRUSR | S_IWUSR);
+							  S_IRUSR | S_IWUSR);
 
 			if (shm_fd != -1)
 				break;
@@ -319,7 +359,7 @@ int PtlNIInit_shmem(ni_t *ni)
 		} while(try_count);
 
 		if (shm_fd == -1) {
-			ptl_warn("Couln't open the shared memory file\n");
+			ptl_warn("Couln't open the shared memory file %s\n", comm_pad_shm_name);
 			goto exit_fail;
 		}
 
@@ -350,7 +390,7 @@ int PtlNIInit_shmem(ni_t *ni)
 	/* Fill our portion of the comm pad. */
 	ni->shmem.comm_pad =
 		(uint8_t *)mmap(NULL, ni->shmem.comm_pad_size,
-				PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+						PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 	if (ni->shmem.comm_pad == MAP_FAILED) {
 		ptl_warn("mmap failed (%d)", errno);
 		perror("");
@@ -374,47 +414,63 @@ int PtlNIInit_shmem(ni_t *ni)
 		goto exit_fail;
 	}
 
-	/* Can Now Announce My Presence. */
+	if (ni->options & PTL_NI_LOGICAL) {
+		/* Can Now Announce My Presence. */
 
-	/* The PID table is a the beginning of the comm pad. 
-	 *
-	 * TODO: there's an assumption that a page size is enough
-	 * (ie. that is enough for 341 local ranks).. */
-	ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
+		/* The PID table is a the beginning of the comm pad. 
+		 *
+		 * TODO: there's an assumption that a page size is enough
+		 * (ie. that is enough for 341 local ranks).. */
+		ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
 
-	ptable[ni->shmem.index].id = ni->id;
-	__sync_synchronize(); /* ensure "valid" is not written before pid. */
-	ptable[ni->shmem.index].valid = 1;
+		ptable[ni->shmem.index].id = ni->id;
+		__sync_synchronize(); /* ensure "valid" is not written before pid. */
+		ptable[ni->shmem.index].valid = 1;
 
-	/* Now, wait for my siblings to get here. */
-	for (i = 0; i < ni->shmem.world_size; ++i) {
-		conn_t *conn;
+		/* Now, wait for my siblings to get here. */
+		for (i = 0; i < ni->shmem.world_size; ++i) {
+			conn_t *conn;
 
-		/* oddly enough, this should reduce cache traffic
-		 * for large numbers of siblings */
-		while (ptable[i].valid == 0)
-			SPINLOCK_BODY();
+			/* oddly enough, this should reduce cache traffic
+			 * for large numbers of siblings */
+			while (ptable[i].valid == 0)
+				SPINLOCK_BODY();
 
-		/* Reconfigure this connection to go through SHMEM
-		 * instead of the default. */
-		conn = get_conn(ni, ptable[i].id);
+			/* Reconfigure this connection to go through SHMEM
+			 * instead of the default. */
+			conn = get_conn(ni, ptable[i].id);
+			if (!conn) {
+				/* It's hard to recover from here. */
+				WARN();
+				goto exit_fail;
+			}
+
+			conn->transport = transport_shmem;
+			conn->state = CONN_STATE_CONNECTED;
+			conn->shmem.local_rank = i;
+
+			conn_put(conn);			/* from get_conn */
+		}
+
+		/* All ranks have mmaped the memory. Get rid of the file. */
+		shm_unlink(ni->shmem.comm_pad_shm_name);
+		free(ni->shmem.comm_pad_shm_name);
+		ni->shmem.comm_pad_shm_name = NULL;
+	} else {
+		/* We are connected to ourselves. */
+		conn_t *conn = get_conn(ni, ni->id);
+
 		if (!conn) {
 			/* It's hard to recover from here. */
 			WARN();
 			goto exit_fail;
 		}
-
+		
 		conn->transport = transport_shmem;
 		conn->state = CONN_STATE_CONNECTED;
-		conn->shmem.local_rank = i;
 
 		conn_put(conn);			/* from get_conn */
 	}
-
-	/* All ranks have mmaped the memory. Get rid of the file. */
-	shm_unlink(ni->shmem.comm_pad_shm_name);
-	free(ni->shmem.comm_pad_shm_name);
-	ni->shmem.comm_pad_shm_name = NULL;
 
 	return PTL_OK;
 

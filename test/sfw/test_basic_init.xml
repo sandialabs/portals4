@@ -7,6 +7,7 @@
     </subtest>
     <subtest>
       <desc>Test PtlFini</desc>
+      <ptl_init ret="OK"/>
       <ptl_fini/>
     </subtest>
     <subtest>
@@ -14,10 +15,6 @@
       <ptl_init ret="OK"/>
       <ptl_init ret="OK"/>
       <ptl_fini/>
-      <ptl_fini/>
-    </subtest>
-    <subtest>
-      <desc>Test PtlFini without init</desc>
       <ptl_fini/>
     </subtest>
   </repeat>
