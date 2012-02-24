@@ -47,6 +47,7 @@ TESTS = test_init \
 	test_ME_unexpected_put
 
 BENCHMARKS =
+check_PROGRAMS =
 
 AM_CPPFLAGS += -I$(top_srcdir)/include
 LDADD = libtestsupport.la $(top_builddir)/src/libportals.la
@@ -60,7 +61,7 @@ EXTRA_PROGRAMS = $(BENCHMARKS)
 
 all: $(TESTS) $(BENCHMARKS)
 
-check_PROGRAMS = $(TESTS)
+check_PROGRAMS += $(TESTS)
 CLEANFILES = $(BENCHMARKS)
 
 THREADS ?= 1
