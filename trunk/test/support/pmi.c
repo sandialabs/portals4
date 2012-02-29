@@ -24,10 +24,17 @@
 
 #include "support/support.h"
 
+struct map_t {
+    ptl_handle_ni_t handle;
+    ptl_process_t *mapping;
+};
+
 static int rank = -1;
 static int size = 0;
-static ptl_process_t *mapping = NULL;
-static ptl_handle_ni_t phys_ni_h;
+struct map_t maps[4] = { { PTL_INVALID_HANDLE, NULL },
+                         { PTL_INVALID_HANDLE, NULL },
+                         { PTL_INVALID_HANDLE, NULL },
+                         { PTL_INVALID_HANDLE, NULL } };
 
 static int
 encode(const void *inval, int invallen, char *outval, int outvallen)
@@ -86,9 +93,6 @@ int
 libtest_init(void)
 {
     PMI_BOOL initialized;
-    int i, ret, max_name_len, max_key_len, max_val_len;
-    char *name, *key, *val;
-    ptl_process_t my_id;
 
     if (PMI_SUCCESS != PMI_Initialized(&initialized)) {
         return 1;
@@ -100,24 +104,6 @@ libtest_init(void)
         }
     }
 
-    if (PMI_SUCCESS != PMI_KVS_Get_name_length_max(&max_name_len)) {
-        return 6;
-    }
-    name = (char*) malloc(max_name_len);
-    if (NULL == name) return 7;
-
-    if (PMI_SUCCESS != PMI_KVS_Get_key_length_max(&max_key_len)) {
-        return 1;
-    }
-    key = (char*) malloc(max_key_len);
-    if (NULL == key) return 1;
-
-    if (PMI_SUCCESS != PMI_KVS_Get_value_length_max(&max_val_len)) {
-        return 1;
-    }
-    val = (char*) malloc(max_val_len);
-    if (NULL == val) return 1;
-
     if (PMI_SUCCESS != PMI_Get_rank(&rank)) {
         return 3;
     }
@@ -126,81 +112,19 @@ libtest_init(void)
         return 4;
     }
 
-    ret = PtlNIInit(PTL_IFACE_DEFAULT,
-                    PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                    PTL_PID_ANY,
-                    NULL,
-                    NULL,
-                    &phys_ni_h);
-    if (PTL_OK != ret) return 1;
-
-    ret = PtlGetId(phys_ni_h, &my_id);
-    if (PTL_OK != ret) return 1;
-
-    if (PMI_SUCCESS != PMI_KVS_Get_my_name(name, max_name_len)) {
-        return 7;
-    }
-
-    /* put my information */
-    snprintf(key, max_key_len, "shmem-%lu-nid", (long unsigned) rank);
-    if (0 != encode(&my_id.phys.nid, sizeof(my_id.phys.nid), val, 
-                    max_val_len)) {
-        return 1;
-    }
-    if (PMI_SUCCESS != PMI_KVS_Put(name, key, val)) {
-        return 8;
-    }
-
-    snprintf(key, max_key_len, "shmem-%lu-pid", (long unsigned) rank);
-    if (0 != encode(&my_id.phys.pid, sizeof(my_id.phys.pid), val, 
-                    max_val_len)) {
-        return 1;
-    }
-    if (PMI_SUCCESS != PMI_KVS_Put(name, key, val)) {
-        return 8;
-    }
-
-    if (PMI_SUCCESS != PMI_KVS_Commit(name)) {
-        return 5;
-    }
-
-    if (PMI_SUCCESS != PMI_Barrier()) {
-        return 5;
-    }
-
-    /* get everyone's information */
-    mapping = malloc(sizeof(ptl_process_t) * size);
-    if (NULL == mapping) return 9;
-
-    for (i = 0 ; i < size ; ++i) {
-        snprintf(key, max_key_len, "shmem-%lu-nid", (long unsigned) i);
-        if (PMI_SUCCESS != PMI_KVS_Get(name, key, val, max_val_len)) {
-            return 1;
-        }
-        if (0 != decode(val, &mapping[i].phys.nid, 
-                        sizeof(mapping[i].phys.nid))) {
-            return 1;
-        }
-
-        snprintf(key, max_key_len, "shmem-%lu-pid", (long unsigned) i);
-        if (PMI_SUCCESS != PMI_KVS_Get(name, key, val, max_val_len)) {
-            return 1;
-        }
-        if (0 != decode(val, &mapping[i].phys.pid,
-                        sizeof(mapping[i].phys.pid))) {
-            return 1;
-        }
-    }
-
     return 0;
 }
 
 int
 libtest_fini(void)
 {
-    if (NULL != mapping) free(mapping);
+    int i;
 
-    PtlNIFini(phys_ni_h);
+    for (i = 0 ; i < 4 ; ++i) {
+        if (NULL != maps[i].mapping) {
+            free(maps[i].mapping);
+        }
+    }
 
     PMI_Finalize();
 
@@ -208,9 +132,109 @@ libtest_fini(void)
 }
 
 ptl_process_t*
-libtest_get_mapping(void)
+libtest_get_mapping(ptl_handle_ni_t ni_h)
 {
-    return mapping;
+    int i, ret, max_name_len, max_key_len, max_val_len;
+    char *name, *key, *val;
+    ptl_process_t my_id;
+    struct map_t *map = NULL;
+    
+    for (i = 0 ; i < 4 ; ++i) {
+        if (maps[i].handle == ni_h) {
+            return maps[i].mapping;
+        }
+    }
+
+    for (i = 0 ; i < 4 ; ++i) {
+        if (PTL_INVALID_HANDLE == maps[i].handle) {
+            map = &maps[i];
+            break;
+        }
+    }
+
+    if (NULL == map) return NULL;
+
+    if (PMI_SUCCESS != PMI_KVS_Get_name_length_max(&max_name_len)) {
+        return NULL;
+    }
+    name = (char*) malloc(max_name_len);
+    if (NULL == name) return NULL;
+
+    if (PMI_SUCCESS != PMI_KVS_Get_key_length_max(&max_key_len)) {
+        return NULL;
+    }
+    key = (char*) malloc(max_key_len);
+    if (NULL == key) return NULL;
+
+    if (PMI_SUCCESS != PMI_KVS_Get_value_length_max(&max_val_len)) {
+        return NULL;
+    }
+    val = (char*) malloc(max_val_len);
+    if (NULL == val) return NULL;
+
+    ret = PtlGetId(ni_h, &my_id);
+    if (PTL_OK != ret) return NULL;
+
+    if (PMI_SUCCESS != PMI_KVS_Get_my_name(name, max_name_len)) {
+        return NULL;
+    }
+
+    /* put my information */
+    snprintf(key, max_key_len, "libsupport-%lu-%lu-nid", 
+             (long unsigned) ni_h, (long unsigned) rank);
+    if (0 != encode(&my_id.phys.nid, sizeof(my_id.phys.nid), val, 
+                    max_val_len)) {
+        return NULL;
+    }
+    if (PMI_SUCCESS != PMI_KVS_Put(name, key, val)) {
+        return NULL;
+    }
+
+    snprintf(key, max_key_len, "libsupport-%lu-%lu-pid",
+             (long unsigned) ni_h, (long unsigned) rank);
+    if (0 != encode(&my_id.phys.pid, sizeof(my_id.phys.pid), val, 
+                    max_val_len)) {
+        return NULL;
+    }
+    if (PMI_SUCCESS != PMI_KVS_Put(name, key, val)) {
+        return NULL;
+    }
+
+    if (PMI_SUCCESS != PMI_KVS_Commit(name)) {
+        return NULL;
+    }
+
+    if (PMI_SUCCESS != PMI_Barrier()) {
+        return NULL;
+    }
+
+    /* get everyone's information */
+    map->mapping = malloc(sizeof(ptl_process_t) * size);
+    if (NULL == map->mapping) return NULL;
+
+    for (i = 0 ; i < size ; ++i) {
+        snprintf(key, max_key_len, "libsupport-%lu-%lu-nid",
+                 (long unsigned) ni_h, (long unsigned) i);
+        if (PMI_SUCCESS != PMI_KVS_Get(name, key, val, max_val_len)) {
+            return NULL;
+        }
+        if (0 != decode(val, &(map->mapping)[i].phys.nid, 
+                        sizeof((map->mapping)[i].phys.nid))) {
+            return NULL;
+        }
+
+        snprintf(key, max_key_len, "libsupport-%lu-%lu-pid",
+                 (long unsigned) ni_h, (long unsigned) i);
+        if (PMI_SUCCESS != PMI_KVS_Get(name, key, val, max_val_len)) {
+            return NULL;
+        }
+        if (0 != decode(val, &(map->mapping)[i].phys.pid,
+                        sizeof((map->mapping)[i].phys.pid))) {
+            return NULL;
+        }
+    }
+
+    return map->mapping;
 }
 
 
