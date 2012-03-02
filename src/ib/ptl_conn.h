@@ -52,7 +52,7 @@ struct conn {
 
 	ptl_process_t		id;		/* dest nid/pid keep first */
 	pthread_mutex_t		mutex;
-	int			state;
+	enum conn_state		state;
 	struct sockaddr_in	sin;
 	struct list_head	buf_list;
 	pthread_spinlock_t	wait_list_lock;
@@ -90,6 +90,13 @@ struct conn {
 			 * running with the same values.
 			 * TODO: negociate values during connection setup. */
 			int max_req_avail;
+
+			/* Set to 1 when the local side and the remote side,
+			 * respectively, are ready to shutdown. Only when both are
+			 * set, then we can truly disconnect. */
+			int local_disc;
+			int remote_disc;
+
 		} rdma;
 #endif
 

@@ -229,6 +229,8 @@ int check_perm(buf_t *buf, const le_t *le);
 int PtlNIInit_IB(iface_t *iface, ni_t *ni);
 void cleanup_ib(ni_t *ni);
 int init_iface_ib(iface_t *iface);
+void initiate_disconnect_all(ni_t *ni);
+void disconnect_conn_locked(conn_t *conn);
 #else
 static inline int PtlNIInit_IB(iface_t *iface, ni_t *ni) { return PTL_OK; }
 static inline void cleanup_ib(ni_t *ni) {  }

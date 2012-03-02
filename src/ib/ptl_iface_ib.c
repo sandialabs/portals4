@@ -421,7 +421,6 @@ static int ni_rcqp_cleanup(ni_t *ni)
 void cleanup_ib(ni_t *ni)
 {
 	if (ni->rdma.self_cm_id) {
-		rdma_destroy_qp(ni->rdma.self_cm_id);
 		rdma_destroy_id(ni->rdma.self_cm_id);
 	}
 

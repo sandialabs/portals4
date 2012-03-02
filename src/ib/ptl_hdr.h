@@ -25,6 +25,9 @@ enum hdr_op {
 	OP_FETCH,
 	OP_SWAP,					/* must be last of requests */
 
+	/* Either way. */
+	OP_RDMA_DISC,
+
 	/* from target to init. Do not change the order. */
 	OP_REPLY,
 	OP_ACK,

@@ -213,8 +213,34 @@ static int recv_packet(buf_t *buf)
 			return STATE_RECV_DROP_BUF;
 		else
 			return STATE_RECV_REQ;
-	} else {
+	}
+	else if (hdr->operation >= OP_REPLY) {
 		return STATE_RECV_INIT;
+	}
+	else {
+		/* Disconnect. */
+		conn_t *conn;
+		const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+		ptl_process_t initiator;
+
+		/* get per conn info */
+		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+		
+		conn = get_conn(buf->obj.obj_ni, initiator);
+
+		pthread_mutex_lock(&conn->mutex);
+
+		conn->rdma.remote_disc = 1;
+
+		/* Remote side ready to disconnect, and if we are too, then
+		 * disconnect. */
+		if (conn->rdma.local_disc)
+			disconnect_conn_locked(conn);
+
+		pthread_mutex_unlock(&conn->mutex);
+
+		return STATE_RECV_DROP_BUF;
 	}
 }
 
