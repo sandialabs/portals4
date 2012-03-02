@@ -668,7 +668,7 @@ static void flush_pending_xi_xt(conn_t *conn)
  *
  * @return status
  */
-static int process_connect_request(struct iface *iface, struct rdma_cm_event *event)
+static void process_connect_request(struct iface *iface, struct rdma_cm_event *event)
 {
 	const struct cm_priv_request *priv;
 	struct cm_priv_reject rej;
@@ -772,11 +772,86 @@ static int process_connect_request(struct iface *iface, struct rdma_cm_event *ev
 
 	pthread_mutex_unlock(&conn->mutex);
 
-	return ret;
+	return;
 
  reject:
 	rdma_reject(event->id, &rej, sizeof(rej));
-	return PTL_FAIL;
+	return;
+}
+
+static void process_connect_reject(struct rdma_cm_event *event, conn_t *conn)
+{
+	pthread_mutex_lock(&conn->mutex);
+
+	if (event->status == 28) {
+		/* 28 = Consumer Reject. The remote side called rdma_reject,
+		 * so there is a payload. */
+		const struct cm_priv_reject *rej = event->param.conn.private_data;
+
+		if (rej->reason == REJECT_REASON_CONNECTED ||
+			rej->reason == REJECT_REASON_CONNECTING) {
+			/* Both sides tried to connect at the same time. This is
+			 * good. */
+			pthread_mutex_unlock(&conn->mutex);
+			return;
+		} 
+#ifdef USE_XRC
+		else if ((conn->ni->options & PTL_NI_LOGICAL) &&
+				 rej->reason == REJECT_REASON_GOOD_SRQ) {
+
+			struct rank_entry *entry;
+			conn_t *main_connect;
+
+			/* The connection list must be empty, since we're still
+			 * trying to connect. */
+			assert(list_empty(&conn->list));
+
+			entry = container_of(conn, struct rank_entry, connect);
+			main_connect = &ni->logical.rank_table[entry->main_rank].connect;
+
+			assert(conn != main_connect);
+
+			entry->remote_xrc_srq_num = rej->xrc_srq_num;
+
+			/* We can now connect to the real endpoint. */
+			conn->state = CONN_STATE_XRC_CONNECTED;
+
+			pthread_spin_lock(&main_connect->wait_list_lock);
+
+			conn->main_connect = main_connect;
+
+			if (main_connect->state == CONN_STATE_DISCONNECTED) {
+				list_add_tail(&conn->list, &main_connect->list);
+				init_connect(ni, main_connect);
+				pthread_spin_unlock(&main_connect->wait_list_lock);
+			}
+			else if (main_connect->state == CONN_STATE_CONNECTED) {
+				pthread_spin_unlock(&main_connect->wait_list_lock);
+				flush_pending_xi_xt(conn);
+			}
+			else {
+				/* move xi/xt so they will be processed when the node is
+				 * connected. */
+				pthread_spin_lock(&conn->wait_list_lock);
+				list_splice_init(&conn->buf_list, &main_connect->buf_list);
+				list_splice_init(&conn->xt_list, &main_connect->xt_list);
+				pthread_spin_unlock(&conn->wait_list_lock);
+				pthread_spin_unlock(&main_connect->wait_list_lock);
+			}
+		}
+#endif
+	}
+
+	/* That's bad, and that should not happen. */
+	conn->state = CONN_STATE_DISCONNECTED;
+
+	/* TODO: flush xt/xi. */
+
+	rdma_destroy_qp(conn->rdma.cm_id);
+
+	pthread_mutex_unlock(&conn->mutex);
+
+	conn_put(conn);
 }
 
 /**
@@ -797,7 +872,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	struct rdma_conn_param conn_param;
 	struct cm_priv_request priv;
 	struct ibv_qp_init_attr init;
-	const struct cm_priv_reject *rej;
 	uintptr_t ctx;
 
 	if (rdma_get_cm_event(iface->cm_channel, &event)) {
@@ -982,85 +1056,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		if (!conn)
 			break;
 
-		pthread_mutex_lock(&conn->mutex);
-
-		if (!event->param.conn.private_data ||
-			(event->param.conn.private_data_len < sizeof(struct cm_priv_reject))) {
-			ptl_warn("Invalid reject private data size (%d, %zd)\n",
-					 event->param.conn.private_data_len, 
-					 sizeof(struct cm_priv_reject));
-			pthread_mutex_unlock(&conn->mutex);
-			break;
-		}
-
-		rej = event->param.conn.private_data;
-
-		if (rej->reason == REJECT_REASON_CONNECTED ||
-			rej->reason == REJECT_REASON_CONNECTING) {
-			/* Both sides tried to connect at the same time. This is
-			 * good. */
-			pthread_mutex_unlock(&conn->mutex);
-			break;
-		}
-			
-		/* TODO: handle other reject cases. */
-		assert(rej->reason == REJECT_REASON_GOOD_SRQ);
-
-		conn->state = CONN_STATE_DISCONNECTED;
-
-#ifdef USE_XRC
-		if ((conn->ni->options & PTL_NI_LOGICAL) &&
-			rej->reason == REJECT_REASON_GOOD_SRQ) {
-
-			struct rank_entry *entry;
-			conn_t *main_connect;
-
-			/* The connection list must be empty, since we're still
-			 * trying to connect. */
-			assert(list_empty(&conn->list));
-
-			entry = container_of(conn, struct rank_entry, connect);
-			main_connect = &ni->logical.rank_table[entry->main_rank].connect;
-
-			assert(conn != main_connect);
-
-			entry->remote_xrc_srq_num = rej->xrc_srq_num;
-
-			/* We can now connect to the real endpoint. */
-			conn->state = CONN_STATE_XRC_CONNECTED;
-
-			pthread_spin_lock(&main_connect->wait_list_lock);
-
-			conn->main_connect = main_connect;
-
-			if (main_connect->state == CONN_STATE_DISCONNECTED) {
-				list_add_tail(&conn->list, &main_connect->list);
-				init_connect(ni, main_connect);
-				pthread_spin_unlock(&main_connect->wait_list_lock);
-			}
-			else if (main_connect->state == CONN_STATE_CONNECTED) {
-				pthread_spin_unlock(&main_connect->wait_list_lock);
-				flush_pending_xi_xt(conn);
-			}
-			else {
-				/* move xi/xt so they will be processed when the node is
-				 * connected. */
-				pthread_spin_lock(&conn->wait_list_lock);
-				list_splice_init(&conn->buf_list, &main_connect->buf_list);
-				list_splice_init(&conn->xt_list, &main_connect->xt_list);
-				pthread_spin_unlock(&conn->wait_list_lock);
-				pthread_spin_unlock(&main_connect->wait_list_lock);
-			}
-		}
-#endif
-
-		rdma_destroy_qp(conn->rdma.cm_id);
-		rdma_destroy_id(conn->rdma.cm_id);
-		conn->rdma.cm_id = NULL;
-
-		pthread_mutex_unlock(&conn->mutex);
-
-		conn_put(conn);
+		process_connect_reject(event, conn);
 		break;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
