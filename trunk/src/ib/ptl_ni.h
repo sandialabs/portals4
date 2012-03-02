@@ -104,6 +104,9 @@ typedef struct ni {
 		atomic_t			num_posted_recv;
 
 		struct rdma_cm_id *self_cm_id;
+
+		/* Number of established connections. */
+		atomic_t num_conn;
 	} rdma;
 
 	/* SHMEM transport specific */

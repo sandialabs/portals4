@@ -137,11 +137,6 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 	conn_t *conn;
 	void **ret;
 
-	if (ni->shutting_down) {
-		WARN();
-		return NULL;
-	}
-
 	if (ni->options & PTL_NI_LOGICAL) {
 		if (unlikely(id.rank >= ni->logical.map_size)) {
 			ptl_warn("Invalid rank (%d >= %d)\n",
@@ -194,12 +189,117 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 	return conn;
 }
 
-static void destroy_conn(void *data)
+static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 {
-	conn_t *conn = data;
+	req_hdr_t *hdr;
+	int err;
+	buf_t *buf;
+
+	if (conn->transport.type != CONN_TYPE_RDMA)
+		return PTL_OK;
+
+	err = buf_alloc(ni, &buf);
+	if (unlikely(err)) {
+		return err;
+	}
+
+	assert(buf->type == BUF_FREE);
+
+	buf->type = BUF_SEND;
+	buf->conn = conn;
+	buf->length = sizeof(req_hdr_t);
+
+	/* Inline if possible and don't request a completion because we
+	 * don't care. */
+	buf->event_mask = XX_INLINE;
+
+	hdr = (req_hdr_t *)buf->data;
+
+	hdr->operation = OP_RDMA_DISC;
+	hdr->version = PTL_HDR_VER_1;
+	hdr->ni_type = conn->obj.obj_ni->ni_type;
+	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+
+	set_buf_dest(buf, conn);
+
+	err = conn->transport.send_message(buf, 0);
+
+	buf_put(buf);
+
+	return err;
+}
+
+static void initiate_disconnect_one(conn_t *conn)
+{
 
 	pthread_mutex_lock(&conn->mutex);
 
+	switch(conn->state) {
+	case CONN_STATE_DISCONNECTED:
+		break;
+
+	case CONN_STATE_CONNECTED:
+		conn->rdma.local_disc = 1;
+		send_disconnect_msg(conn->obj.obj_ni, conn);
+
+		/* If the remote side has already informed us of its
+		 * intention to disconnect, then we can destroy that
+		 * connection. */
+		if (conn->rdma.remote_disc)
+			disconnect_conn_locked(conn);
+
+		break;
+
+	default:
+		/* Can that case ever happen? */
+		abort();
+	}
+
+	pthread_mutex_unlock(&conn->mutex);
+}
+
+static void initiate_disconnect_one_twalk(const void *data,
+									  const VISIT which,
+									  const int depth)
+{
+	conn_t *conn = *(conn_t **)data;
+
+	if (which != leaf && which != postorder)
+		return;
+
+	initiate_disconnect_one(conn);
+}
+
+/* When an application destroy an NI, it cannot just close its
+ * connections because there might be some packets in flight. So it
+ * just informs the remote sides that it is ready to shutdown. */
+void initiate_disconnect_all(ni_t *ni)
+{
+	if (ni->options & PTL_NI_LOGICAL) {
+		int i;
+		const int map_size = ni->logical.map_size;
+
+		/* Send a disconnect message. */
+		for (i = 0; i < map_size; i++) {
+			conn_t *conn = ni->logical.rank_table[i].connect;
+
+			initiate_disconnect_one(conn);
+		}
+	} else {
+		twalk(ni->physical.tree, initiate_disconnect_one_twalk);
+	}
+
+	/* Wait for all to be disconnected. RDMA CM is handling
+	 * disconnection timeouts, so we should never block forever
+	 * here. */
+	while(atomic_read(&ni->rdma.num_conn) != 0) {
+		usleep(10000);
+	}
+}
+
+void disconnect_conn_locked(conn_t *conn)
+{
 	if (conn->transport.type == CONN_TYPE_RDMA) {
 		switch(conn->state) {
 		case CONN_STATE_CONNECTING:
@@ -217,17 +317,30 @@ static void destroy_conn(void *data)
 			break;
 
 		case CONN_STATE_DISCONNECTING:
-			abort();			/* not possible */
+			/* That case should not be possible because it would mean
+			 * this function got called twice. */
+			abort();
 			break;
 
  		case CONN_STATE_DISCONNECTED:
 			break;
 		}
 	}
-
-	pthread_mutex_unlock(&conn->mutex);
 }
 
+/* Cleanup a connection. */
+static void destroy_conn(void *data)
+{
+	conn_t *conn = data;
+
+	assert(conn->state == CONN_STATE_DISCONNECTED);
+
+	if (conn->rdma.cm_id) {
+		rdma_destroy_id(conn->rdma.cm_id);
+		conn->rdma.cm_id = NULL;
+	}
+}
+	
 /**
  * Destroys all connections belonging to an NI
  */
@@ -243,16 +356,6 @@ void destroy_conns(ni_t *ni)
 			destroy_conn(conn);
 		}
 
-#if 0
-		/* We could wait for all connections to coalesce, however this
-		 * leads to some minute-long timeout in some tests. */
-		for (i = 0; i < map_size; i++) {
-			conn_t *conn = ni->logical.rank_table[i].connect;
-			while (conn->state != CONN_STATE_DISCONNECTED) {
-				usleep(1000);
-			}
-		}
-#endif
 #ifdef USE_XRC
 		/* Destroy passive connections. */
 		while(!list_empty(&ni->logical.connect_list)) {
@@ -511,7 +614,10 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 
 	ni->rdma.self_cm_id = event->id;
 
-	event->id->context = conn;
+	/* The lower 2 bits (on 32 bits hosts), or 3 bits (on 64 bits
+	   hosts) of a pointer is always 0. Use it to store the type of
+	   context. 0=conn; 1=NI. */
+	event->id->context = (void *)((uintptr_t)ni | 1);
 
 	memset(&conn_param, 0, sizeof conn_param);
 	conn_param.responder_resources = 1;
@@ -692,29 +798,33 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 	struct cm_priv_request priv;
 	struct ibv_qp_init_attr init;
 	const struct cm_priv_reject *rej;
+	uintptr_t ctx;
 
 	if (rdma_get_cm_event(iface->cm_channel, &event)) {
 		WARN();
 		return;
 	}
 
-	conn = event->id->context;
-	if (conn) {
-		ni = conn->obj.obj_ni;
-		if (ni->shutting_down)
-			goto done;
+	/* In case of connection requests conn will be NULL. */
+	ctx = (uintptr_t)event->id->context;
+	if (ctx & 1) {
+		/* Loopback. The context is not a conn but the NI. */
+		ctx &= ~1;
+
+		conn = NULL;
+		ni = (void *)ctx;
 	} else {
-		if (event->event != RDMA_CM_EVENT_CONNECT_REQUEST) {
-			/* Ignore this event. */
-			goto done;
-		}
-		ni = NULL;
+		conn = (void *)ctx;
+		ni = conn ? conn->obj.obj_ni : NULL;
 	}
 
 	ptl_info("Rank got CM event %d for id %p\n", event->event, event->id);
 
 	switch(event->event) {
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
+		if (!conn)
+			break;
+
 		pthread_mutex_lock(&conn->mutex);
 
 		if (conn->state != CONN_STATE_RESOLVING_ADDR) {
@@ -738,6 +848,9 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		break;
 
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
+		if (!conn)
+			break;
+
 		memset(&conn_param, 0, sizeof conn_param);
 
 		conn_param.responder_resources	= 1;
@@ -803,15 +916,16 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		break;
 
-	case RDMA_CM_EVENT_ESTABLISHED: {
-		pthread_mutex_lock(&conn->mutex);
-
-		if (ni->rdma.self_cm_id == event->id) {
+	case RDMA_CM_EVENT_ESTABLISHED:
+		if (!conn) {
 			/* Self connection. Let the initiator side finish the
 			 * connection. */
-			pthread_mutex_unlock(&conn->mutex);
 			break;
 		}
+
+		pthread_mutex_lock(&conn->mutex);
+
+		atomic_inc(&ni->rdma.num_conn);
 
 		if (conn->state != CONN_STATE_CONNECTING) {
 			pthread_mutex_unlock(&conn->mutex);
@@ -857,7 +971,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		flush_pending_xi_xt(conn);
 
 		pthread_mutex_unlock(&conn->mutex);
-	}
+
 		break;
 
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
@@ -865,6 +979,9 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		break;
 
 	case RDMA_CM_EVENT_REJECTED:
+		if (!conn)
+			break;
+
 		pthread_mutex_lock(&conn->mutex);
 
 		if (!event->param.conn.private_data ||
@@ -946,15 +1063,42 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		conn_put(conn);
 		break;
 
-	case RDMA_CM_EVENT_CONNECT_ERROR:
 	case RDMA_CM_EVENT_DISCONNECTED:
-	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
+		if (!conn) {
+			/* That should be the loopback connection only. */
+			assert(ni->rdma.self_cm_id == event->id);
+			rdma_disconnect(ni->rdma.self_cm_id);
+			rdma_destroy_qp(ni->rdma.self_cm_id);
+			break;
+		}
+
 		pthread_mutex_lock(&conn->mutex);
+
+		assert(conn->state != CONN_STATE_DISCONNECTED);
+
+		if (conn->state != CONN_STATE_DISCONNECTING) {
+			/* Not disconnecting yet, so we have to disconnect too. */
+			rdma_disconnect(conn->rdma.cm_id);
+			rdma_destroy_qp(conn->rdma.cm_id);
+		}
+
+		conn->state = CONN_STATE_DISCONNECTED;
+
+		atomic_dec(&ni->rdma.num_conn);
+
+		pthread_mutex_unlock(&conn->mutex);
+		break;
+
+	case RDMA_CM_EVENT_CONNECT_ERROR:
+		if (!conn)
+			break;
+
+		pthread_mutex_lock(&conn->mutex);
+
 		if (conn->state != CONN_STATE_DISCONNECTED) {
 			conn->state = CONN_STATE_DISCONNECTED;
 			conn->rdma.cm_id->context = NULL;
 			rdma_destroy_qp(conn->rdma.cm_id);
-			conn->rdma.cm_id = NULL;
 
 			pthread_mutex_unlock(&conn->mutex);
 
@@ -964,12 +1108,14 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		}
 		break;
 
+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
+		break;
+
 	default:
 		ptl_warn("Got unexpected CM event: %d\n", event->event);
 		break;
 	}
 
- done:
 	rdma_ack_cm_event(event);
 }
 #endif

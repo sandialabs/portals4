@@ -397,6 +397,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	RB_INIT(&ni->mr_tree);
 	ni->umn_fd = -1;
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
+	atomic_set(&ni->rdma.num_conn, 0);
 	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
 	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
@@ -676,6 +677,8 @@ static void ni_cleanup(ni_t *ni)
 	ni->shutting_down = 1;
 	__sync_synchronize();
 
+	initiate_disconnect_all(ni);
+	
 	/* Stop the progress thread. */
 	if (ni->has_catcher) {
 		ni->catcher_stop = 1;
