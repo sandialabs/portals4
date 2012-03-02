@@ -392,13 +392,14 @@ static int wait_conn(buf_t *buf)
 static int send_req(buf_t *buf)
 {
 	int err;
+	conn_t *conn = buf->conn;
 
 #ifdef USE_XRC
-	if (buf->conn->state == CONN_STATE_XRC_CONNECTED)
-		set_buf_dest(buf, buf->conn->main_connect);
+	if (conn->state == CONN_STATE_XRC_CONNECTED)
+		set_buf_dest(buf, conn->main_connect);
 	else
 #endif
-		set_buf_dest(buf, buf->conn);
+		set_buf_dest(buf, conn);
 
 	err = buf->conn->transport.send_message(buf, 1);
 	if (err)
@@ -510,6 +511,8 @@ static int early_send_event(buf_t *buf)
 static int wait_recv(buf_t *buf)
 {
 	ack_hdr_t *hdr;
+
+	assert(buf->event_mask & XI_RECEIVE_EXPECTED);
 
 	if (buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* The send completion failed. */
