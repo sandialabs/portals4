@@ -333,11 +333,13 @@ static void destroy_conn(void *data)
 {
 	conn_t *conn = data;
 
-	assert(conn->state == CONN_STATE_DISCONNECTED);
+	if (conn->transport.type == CONN_TYPE_RDMA) {
+		assert(conn->state == CONN_STATE_DISCONNECTED);
 
-	if (conn->rdma.cm_id) {
-		rdma_destroy_id(conn->rdma.cm_id);
-		conn->rdma.cm_id = NULL;
+		if (conn->rdma.cm_id) {
+			rdma_destroy_id(conn->rdma.cm_id);
+			conn->rdma.cm_id = NULL;
+		}
 	}
 }
 	
