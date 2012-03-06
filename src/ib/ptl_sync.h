@@ -6,7 +6,7 @@
 #define PTL_SYNC_H
 
 typedef struct {
-	volatile int val;
+	volatile int val __attribute__ ((aligned (8)));
 } atomic_t;
 
 static inline void atomic_set(atomic_t *var, int val)
