@@ -241,15 +241,6 @@ static inline ni_t *obj_to_ni(const void *obj)
 	return ((obj_t *)obj)->obj_ni;
 }
 
-static inline void ni_inc_status(ni_t *ni, ptl_sr_index_t index)
-{
-	if (index < PTL_STATUS_LAST) {
-		pthread_spin_lock(&ni->obj.obj_lock);
-		ni->status[index]++;
-		pthread_spin_unlock(&ni->obj.obj_lock);
-	}
-}
-
 int init_connect(ni_t *ni, struct conn *connect);
 
 /* convert ni option flags to a 2 bit type */
