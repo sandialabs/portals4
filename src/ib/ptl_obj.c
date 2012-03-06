@@ -171,22 +171,23 @@ static int pool_get_chunk(pool_t *pool, chunk_t **chunk_p)
  */
 static inline obj_t *dequeue_free_obj(pool_t *pool)
 {
-	obj_t *oldv, *newv, *retv;
+	union counted_ptr oldv, newv, retv;
 
-	retv = pool->free_list;
+	retv.c16 = pool->free_list.c16;
 
 	do {
 		oldv = retv;
-		if (retv != NULL) {
-			newv = retv->next;
+		if (retv.obj != NULL) {
+			newv.obj = retv.obj->next;
 		} else {
-			newv = NULL;
+			newv.obj = NULL;
 		}
-		retv = __sync_val_compare_and_swap(&pool->free_list,
-						   oldv, newv);
-	} while (retv != oldv);
+		newv.counter = oldv.counter + 1;
 
-	return retv;
+		retv.c16 = __sync_val_compare_and_swap(&pool->free_list.c16, oldv.c16, newv.c16);
+	} while (retv.c16 != oldv.c16);
+
+	return retv.obj;
 }
 
 /**
@@ -200,16 +201,17 @@ static inline obj_t *dequeue_free_obj(pool_t *pool)
  */
 static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
 {
-	obj_t *oldv, *newv, *tmpv;
+	union counted_ptr oldv, newv, tmpv;
 
-	tmpv = pool->free_list;
+	tmpv.c16 = pool->free_list.c16;
 
 	do {
-		oldv = obj->next = tmpv;
-		newv = obj;
-		tmpv = __sync_val_compare_and_swap(&pool->free_list,
-						   oldv, newv);
-	} while (tmpv != oldv);
+		oldv = tmpv;
+		obj->next = tmpv.obj;
+		newv.obj = obj;
+		newv.counter = oldv.counter + 1;
+		tmpv.c16 = __sync_val_compare_and_swap(&pool->free_list.c16, oldv.c16, newv.c16);
+	} while (tmpv.c16 != oldv.c16);
 }
 
 /**
@@ -314,9 +316,9 @@ int pool_fini(pool_t *pool)
 	 * each free object
 	 */
 	if (pool->fini) {
-		while(pool->free_list) {
-			obj = pool->free_list;
-			pool->free_list = obj->next;
+		while(pool->free_list.obj) {
+			obj = pool->free_list.obj;
+			pool->free_list.obj = obj->next;
 			pool->fini(obj);
 		}
 	}
@@ -395,7 +397,8 @@ int pool_init(pool_t *pool, char *name, int size,
 	}
 
 	atomic_set(&pool->count, 0);
-	pool->free_list = NULL;
+	pool->free_list.obj = NULL;
+	pool->free_list.counter = 0;
 	INIT_LIST_HEAD(&pool->chunk_list);
 	pthread_mutex_init(&pool->mutex, NULL);
 
