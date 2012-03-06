@@ -271,9 +271,9 @@ int PtlInit(void)
 	/* if first call to PtlInit do real initialization */
 	if (gbl->ref_cnt == 0) {
 		/* check for dangling reference */
-		if (gbl->ref.ref_cnt > 0)
+		if (ref_cnt(&gbl->ref) > 0)
 			usleep(100000);
-		if (gbl->ref.ref_cnt > 0) {
+		if (ref_cnt(&gbl->ref) > 0) {
 			WARN();
 			ret = PTL_FAIL;
 			goto err1;

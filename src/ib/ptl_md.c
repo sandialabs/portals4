@@ -312,7 +312,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 #endif
 
 	/* Ensure there is no in-flight transfer. */
-	if (md->obj.obj_ref.ref_cnt > 2) {
+	if (ref_cnt(&md->obj.obj_ref) > 2) {
 		err = PTL_ARG_INVALID;
 	} else {
 		err = PTL_OK;

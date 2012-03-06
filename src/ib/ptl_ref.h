@@ -16,7 +16,7 @@
  */
 typedef struct ref {
 	/** The reference count. */
-	int ref_cnt;
+	atomic_t ref_cnt;
 } ref_t;
 
 /**
@@ -28,7 +28,7 @@ typedef struct ref {
  */
 static inline int ref_cnt(struct ref *ref)
 {
-	return ref->ref_cnt;
+	return atomic_read(&ref->ref_cnt);
 }
 
 /**
@@ -41,7 +41,7 @@ static inline int ref_cnt(struct ref *ref)
  */
 static inline void ref_set(struct ref *ref, int num)
 {
-	ref->ref_cnt = num;
+	atomic_set(&ref->ref_cnt, num);
 }
 
 /**
@@ -56,7 +56,7 @@ static inline void ref_get(struct ref *ref)
 {
 	int ref_cnt;
 
-	ref_cnt = __sync_fetch_and_add(&ref->ref_cnt, 1);
+	ref_cnt = atomic_inc(&ref->ref_cnt);
 
 	assert(ref_cnt >= 1);
 }
@@ -74,7 +74,7 @@ static inline int ref_put(struct ref *ref, void (*release)(ref_t *ref))
 {
 	int ref_cnt;
 
-	ref_cnt = __sync_sub_and_fetch(&ref->ref_cnt, 1);
+	ref_cnt = atomic_dec(&ref->ref_cnt);
 
 	assert(ref_cnt >= 0);
 
