@@ -276,8 +276,6 @@ static int pool_alloc_slab(pool_t *pool)
 		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) |
 					index;
 
-		pthread_spin_init(&obj->obj_lock, PTHREAD_PROCESS_PRIVATE);
-
 		if (pool->init) {
 			err = pool->init(obj, mr);
 			if (err) {
