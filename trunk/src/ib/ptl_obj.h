@@ -273,7 +273,7 @@ static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 static inline void *fast_to_obj(ptl_handle_any_t handle)
 {
 	obj_t *obj = (obj_t *)index_map[handle & HANDLE_INDEX_MASK];
-	(void)__sync_fetch_and_add(&obj->obj_ref.ref_cnt, 1);
+	atomic_inc(&obj->obj_ref.ref_cnt);
 	return obj;
 }
 
