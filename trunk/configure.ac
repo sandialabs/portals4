@@ -238,13 +238,13 @@ AS_IF([test "x$sandia_cv_cxx_compiler_type" = "xIntel"],
 AX_C_RESTRICT
 AS_IF([test "x$enable_picky" == xyes],
   [AS_CASE([$sandia_cv_c_compiler_type],
-		   [GNU], [CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"],
+		   [GNU], [CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes -mcx16 $CFLAGS"],
 		   [Intel], [CFLAGS="-Wall -wd981 $CFLAGS"],
 		   [SunStudio], [], dnl This compiler defaults to enabling all warnings
 		   [PortlandGroup], [CFLAGS="-Minform=inform $CFLAGS"],
 		   [CFLAGS="-Wall $CFLAGS"])
    AS_CASE([$sandia_cv_cxx_compiler_type],
-		   [GNU], [CXXFLAGS="-Wall $CXXFLAGS"],
+		   [GNU], [CXXFLAGS="-Wall -mcx16 $CXXFLAGS"],
 		   [Intel], [CXXFLAGS="-Wall -wd981 $CXXFLAGS"],
 		   [SunStudio], [], dnl This compiler defaults to enabling all warnings
 		   [PortlandGroup], [CXXFLAGS="-Minform=inform $CXXFLAGS"],
