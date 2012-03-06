@@ -468,6 +468,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	}
 
 	assert(obj->obj_free == 1);
+	obj->obj_free = 0;
 
 	ref_set(&obj->obj_ref, 1);
 
@@ -486,7 +487,6 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 		}
 	}
 
-	obj->obj_free = 0;
 	*obj_p = obj;
 
 	return PTL_OK;
