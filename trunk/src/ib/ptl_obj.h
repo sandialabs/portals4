@@ -179,9 +179,6 @@ struct obj {
 	/** object handle */
 	ptl_handle_any_t	obj_handle;
 
-	/** spinlock to protect object */
-	pthread_spinlock_t	obj_lock;
-
 	/** object reference count */
 	ref_t			obj_ref;
 
