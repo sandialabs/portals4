@@ -102,7 +102,9 @@ static int send_comp(buf_t *buf)
 	if (buf->event_mask & XX_SIGNALED ||
 		buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* Fox XI only, restart the initiator state machine. */
-		if (!buf->xxbuf) {
+		hdr_t *hdr = (hdr_t *)buf->data;
+
+		if (hdr->operation <= OP_SWAP) {
 			buf->completed = 1;
 			process_init(buf);
 		}
