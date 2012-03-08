@@ -41,4 +41,6 @@ SUBDIRS += mc
 libportals_la_LIBADD += mc/libportals_mc.la
 endif
 
+if !BACKEND_IMPL_IB
 SUBDIRS += . yod
+endif
