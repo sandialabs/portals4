@@ -279,9 +279,9 @@ static void __match_le_unexpected(const le_t *le, int perm,
 	}
 }
 
-static void flush_from_expected_list(le_t *le, buf_t *buf, struct list_head *buf_list, int delete)
+static void flush_from_expected_list(le_t *le, const struct list_head *buf_list, int delete)
 {
-
+	buf_t *buf;
 	buf_t *n;
 
 	/* PT lock must not be taken. */
@@ -337,7 +337,6 @@ int __check_overflow(le_t *le, int delete)
 {
 	ni_t *ni = obj_to_ni(le);
 	pt_t *pt = &ni->pt[le->pt_index];
-	buf_t *buf;
 	struct list_head buf_list;
 	int ret;
 
@@ -350,7 +349,7 @@ int __check_overflow(le_t *le, int delete)
 		/* Process the elements of the list. */
 		pthread_spin_unlock(&pt->lock);
 
-		flush_from_expected_list(le, buf, &buf_list, 0);
+		flush_from_expected_list(le, &buf_list, 0);
 
 		pthread_spin_lock(&pt->lock);
 	}
@@ -429,7 +428,6 @@ int check_overflow_search_delete(le_t *le)
 	ni_t *ni = obj_to_ni(le);
 	pt_t *pt = &ni->pt[le->pt_index];
 	struct list_head buf_list;
-	buf_t *buf;
 
 	/* scan the unexpected list removing each
 	 * matching message and adding to the buf_list */
@@ -442,7 +440,7 @@ int check_overflow_search_delete(le_t *le)
 	if (list_empty(&buf_list)) {
 		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	} else {
-		flush_from_expected_list(le, buf, &buf_list, 1);
+		flush_from_expected_list(le, &buf_list, 1);
 	}
 
 	return PTL_OK;
