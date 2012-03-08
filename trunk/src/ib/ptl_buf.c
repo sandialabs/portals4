@@ -91,6 +91,9 @@ int buf_init(void *arg, void *parm)
 	buf->length = 0;
 	buf->type = BUF_FREE;
 
+	pthread_mutex_init(&buf->mutex, NULL);
+
+#if WITH_TRANSPORT_IB
 	if (parm) {
 		/* This buffer carries an MR, so it's an IB buffer, not a
 		 * buffer in shared memory. */
@@ -108,9 +111,8 @@ int buf_init(void *arg, void *parm)
 
 		atomic_set(&buf->rdma.rdma_comp, 0);
 	}
-
 	pthread_spin_init(&buf->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_mutex_init(&buf->mutex, NULL);
+#endif
 
 	return 0;
 }
@@ -142,6 +144,7 @@ void buf_dump(buf_t *buf)
 	printf("\n");
 }
 
+#if WITH_TRANSPORT_IB
 /**
  * Post a receive buffer.
  *
@@ -218,3 +221,4 @@ int ptl_post_recv(ni_t *ni, int count)
 
 	return PTL_OK;
 }
+#endif

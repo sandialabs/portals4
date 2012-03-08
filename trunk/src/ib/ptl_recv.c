@@ -206,7 +206,7 @@ static int recv_packet_rdma(buf_t *buf)
 
 	return STATE_RECV_PACKET;
 }
-#endif	/* WITH_TRANSPORT_RDMA */
+#endif	/* WITH_TRANSPORT_IB */
 
 /**
  * Process a received buffer. Common for RDMA and SHMEM.
@@ -236,6 +236,7 @@ static int recv_packet(buf_t *buf)
 		return STATE_RECV_INIT;
 	}
 	else {
+#ifdef WITH_TRANSPORT_IB
 		/* Disconnect. */
 		conn_t *conn;
 		const req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -257,6 +258,7 @@ static int recv_packet(buf_t *buf)
 			disconnect_conn_locked(conn);
 
 		pthread_mutex_unlock(&conn->mutex);
+#endif
 
 		return STATE_RECV_DROP_BUF;
 	}

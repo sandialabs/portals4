@@ -296,8 +296,10 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 	  [AC_DEFINE([USE_TRANSFER_ENGINE], [1], [Define to enable the use of a transfer engine (e.g. KNEM)])])
 
 AS_IF([test "$with_implementation" = "ib"],
-  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
-   SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
+	  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])])
+
+AS_IF([test "$with_implementation" = "ib" -a x"$enable_ib_ib" = xyes],
+	  [SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
 
 AS_IF([test "$with_implementation" = "mc"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])

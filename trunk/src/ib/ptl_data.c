@@ -42,12 +42,14 @@ int data_size(data_t *data)
 	case DATA_FMT_IMMEDIATE:
 		size += le32_to_cpu(data->immediate.data_length);
 		break;
+#if WITH_TRANSPORT_IB
 	case DATA_FMT_RDMA_DMA:
 		size += le32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
 		break;
 	case DATA_FMT_RDMA_INDIRECT:
 		size += sizeof(struct ibv_sge);
 		break;
+#endif
 	case DATA_FMT_SHMEM_DMA:
 		size += data->shmem.num_knem_iovecs * sizeof(struct shmem_iovec);
 		break;
@@ -145,6 +147,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			}
 		} else {
 			if (type == CONN_TYPE_RDMA) {
+#if WITH_TRANSPORT_IB
 				data->data_fmt = DATA_FMT_RDMA_DMA;
 				data->rdma.num_sge = cpu_to_le32(num_sge);
 				memcpy(data->rdma.sge_list,
@@ -153,6 +156,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 				buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
+#endif
 			} else {
 				data->data_fmt = DATA_FMT_SHMEM_DMA;
 				data->shmem.num_knem_iovecs = num_sge;

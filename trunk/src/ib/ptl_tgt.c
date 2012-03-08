@@ -848,6 +848,7 @@ static int tgt_data_out(buf_t *buf)
 	assert(buf->in_atomic == 0);
 
 	switch (data->data_fmt) {
+#ifdef WITH_TRANSPORT_IB
 	case DATA_FMT_RDMA_DMA:
 		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
 		buf->transfer.rdma.cur_rem_off = 0;
@@ -856,16 +857,17 @@ static int tgt_data_out(buf_t *buf)
 		next = STATE_TGT_RDMA;
 		break;
 
+	case DATA_FMT_RDMA_INDIRECT:
+		next = STATE_TGT_WAIT_RDMA_DESC;
+		break;
+#endif
+
 	case DATA_FMT_SHMEM_DMA:
 		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
 		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
 		buf->transfer.shmem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_RDMA_INDIRECT:
-		next = STATE_TGT_WAIT_RDMA_DESC;
 		break;
 
 	case DATA_FMT_SHMEM_INDIRECT:
@@ -911,7 +913,11 @@ static int tgt_rdma(buf_t *buf)
 	 * machine and have the completion of the rdma
 	 * operation reenter this state to issue more
 	 * operations. */
-	if (*resid || atomic_read(&buf->rdma.rdma_comp))
+	if (*resid
+#ifdef WITH_TRANSPORT_IB
+		|| atomic_read(&buf->rdma.rdma_comp)
+#endif
+		)
 		return STATE_TGT_RDMA;
 
 	/* here we are done so, if we got one, free the
@@ -1096,6 +1102,8 @@ static int tgt_data_in(buf_t *buf)
 
 		next = STATE_TGT_COMM_EVENT;
 		break;
+
+#ifdef WITH_TRANSPORT_IB
 	case DATA_FMT_RDMA_DMA:
 		/* Read from SG list provided directly in request */
 		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
@@ -1105,16 +1113,17 @@ static int tgt_data_in(buf_t *buf)
 		next = STATE_TGT_RDMA;
 		break;
 
+	case DATA_FMT_RDMA_INDIRECT:
+		next = STATE_TGT_WAIT_RDMA_DESC;
+		break;
+#endif
+
 	case DATA_FMT_SHMEM_DMA:
 		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
 		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
 		buf->transfer.shmem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_RDMA_INDIRECT:
-		next = STATE_TGT_WAIT_RDMA_DESC;
 		break;
 
 	case DATA_FMT_SHMEM_INDIRECT:
