@@ -108,6 +108,22 @@ static int send_comp(buf_t *buf)
 			buf->completed = 1;
 			process_init(buf);
 		}
+		else if (hdr->operation == OP_RDMA_DISC) {
+			conn_t * conn = buf->conn;
+
+			pthread_mutex_lock(&conn->mutex);
+
+			assert(conn->rdma.local_disc == 1);
+			conn->rdma.local_disc = 2;
+
+			/* If the remote side has already informed us of its
+			 * intention to disconnect, then we can destroy that
+			 * connection. */
+			if (conn->rdma.remote_disc)
+				disconnect_conn_locked(conn);
+
+			pthread_mutex_unlock(&conn->mutex);
+		}
 	}
 
 	buf_put(buf);
@@ -237,7 +253,7 @@ static int recv_packet(buf_t *buf)
 
 		/* Remote side ready to disconnect, and if we are too, then
 		 * disconnect. */
-		if (conn->rdma.local_disc)
+		if (conn->rdma.local_disc == 2)
 			disconnect_conn_locked(conn);
 
 		pthread_mutex_unlock(&conn->mutex);

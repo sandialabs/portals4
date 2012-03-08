@@ -91,9 +91,16 @@ struct conn {
 			 * TODO: negociate values during connection setup. */
 			int max_req_avail;
 
-			/* Set to 1 when the local side and the remote side,
-			 * respectively, are ready to shutdown. Only when both are
-			 * set, then we can truly disconnect. */
+			/* local_disc is set to 1 when the local side is ready to
+			 * shutdown and has sent its in band disconnect request,
+			 * and 2 when that send request has completed, meaning all
+			 * the sends have been flushed.
+			 * 
+			 * remote_disc is set to 1 when the remote in band
+			 * disconnect request is received.
+			 *
+			 * We can truly disconnect only when local_disc == 2 and
+			 * remote_disc == 1. */
 			int local_disc;
 			int remote_disc;
 

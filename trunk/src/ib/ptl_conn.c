@@ -211,7 +211,7 @@ static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 
 	/* Inline if possible and don't request a completion because we
 	 * don't care. */
-	buf->event_mask = XX_INLINE;
+	buf->event_mask = XX_INLINE | XX_SIGNALED;
 
 	hdr = (req_hdr_t *)buf->data;
 
@@ -242,13 +242,6 @@ static void initiate_disconnect_one(conn_t *conn)
 	case CONN_STATE_CONNECTED:
 		conn->rdma.local_disc = 1;
 		send_disconnect_msg(conn->obj.obj_ni, conn);
-
-		/* If the remote side has already informed us of its
-		 * intention to disconnect, then we can destroy that
-		 * connection. */
-		if (conn->rdma.remote_disc)
-			disconnect_conn_locked(conn);
-
 		break;
 
 	default:
