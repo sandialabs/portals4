@@ -341,11 +341,13 @@ int pool_fini(pool_t *pool)
 
 		for (i = 0; i < chunk->num_slabs; i++) {
 			/* see below TODO make more elegant */
+#if WITH_TRANSPORT_IB
 			if (chunk->slab_list[i].priv) {
 				struct ibv_mr *mr = chunk->slab_list[i].priv;
 
 				ibv_dereg_mr(mr);
 			}
+#endif
 
 			if (!pool->use_pre_alloc_buffer)
 				free(chunk->slab_list[i].addr);

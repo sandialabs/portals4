@@ -189,6 +189,7 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 	return conn;
 }
 
+#if WITH_TRANSPORT_IB
 static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 {
 	req_hdr_t *hdr;
@@ -335,6 +336,9 @@ static void destroy_conn(void *data)
 		}
 	}
 }
+#else
+static void destroy_conn(void *data) { return; }
+#endif
 	
 /**
  * Destroys all connections belonging to an NI

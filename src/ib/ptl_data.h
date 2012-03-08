@@ -17,8 +17,10 @@ typedef enum data_dir data_dir_t;
 enum data_fmt {
 	DATA_FMT_NONE = 0,
 	DATA_FMT_IMMEDIATE,
+#if WITH_TRANSPORT_IB
 	DATA_FMT_RDMA_DMA,
 	DATA_FMT_RDMA_INDIRECT,
+#endif
 	DATA_FMT_SHMEM_DMA,
 	DATA_FMT_SHMEM_INDIRECT,
 	DATA_FMT_LAST,
@@ -45,11 +47,15 @@ struct data {
 			__le32			data_length;
 			uint8_t			data[0];
 		} immediate;
+
+#if WITH_TRANSPORT_IB
 		/** DMA or Indirect RDMA data */
 		struct {
 			__le32			num_sge;
 			struct ibv_sge		sge_list[0];
 		} rdma;
+#endif
+
 		/* DMA or Indirect shmem data */
 		struct {
 			unsigned int		num_knem_iovecs;

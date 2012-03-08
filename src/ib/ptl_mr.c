@@ -108,7 +108,9 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int err;
 	mr_t *mr = NULL;
 	void *end = start + length;
+#if WITH_TRANSPORT_IB
 	struct ibv_mr *ibmr = NULL;
+#endif
 	uint64_t knem_cookie = 0;
 
 	err = mr_alloc(ni, &mr);
@@ -161,8 +163,10 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	return PTL_OK;
 
 err1:
+#if WITH_TRANSPORT_IB
 	if (ibmr)
 		ibv_dereg_mr(ibmr);
+#endif
 
 	if (knem_cookie)
 		knem_unregister(ni, knem_cookie);

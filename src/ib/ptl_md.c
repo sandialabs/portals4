@@ -71,8 +71,11 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	md->num_iov = num_iov;
 
-	md->internal_data = calloc(num_iov, sizeof(struct ibv_sge) +
-				   sizeof(mr_t) + sizeof(struct shmem_iovec));
+	md->internal_data = calloc(num_iov, sizeof(mr_t)
+#if WITH_TRANSPORT_IB
+							   + sizeof(struct ibv_sge)
+#endif
+							   + sizeof(struct shmem_iovec));
 	if (!md->internal_data) {
 		err = PTL_NO_SPACE;
 		goto err1;
@@ -80,8 +83,10 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	p = md->internal_data;
 
+#if WITH_TRANSPORT_IB
 	md->sge_list = p;
 	p += num_iov*sizeof(struct ibv_sge);
+#endif
 
 	md->mr_list = p;
 	p += num_iov*sizeof(mr_t);
@@ -118,21 +123,21 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 		mr = md->mr_list[i];
 
+#if WITH_TRANSPORT_IB
 		sge->addr = cpu_to_le64((uintptr_t)iov->iov_base);
 		sge->length = cpu_to_le32(iov->iov_len);
-#if WITH_TRANSPORT_IB
 		sge->lkey = cpu_to_le32(mr->ibmr->rkey);
+		sge++;
 #endif
 
 #if WITH_TRANSPORT_SHMEM
 		knem_iovec->cookie = mr->knem_cookie;
 		knem_iovec->offset = iov->iov_base - mr->addr;
 		knem_iovec->length = iov->iov_len;
+		knem_iovec++;
 #endif
 
 		iov++;
-		sge++;
-		knem_iovec++;
 	}
 
 	return PTL_OK;

@@ -200,6 +200,7 @@ struct buf {
 
 	/* Fields that survive between buffer reuse. */
 	union {
+#if WITH_TRANSPORT_IB
 		struct {
 			/* IB LKEY for that buffer. It's coming from the pool
 			 * slab. */
@@ -217,6 +218,7 @@ struct buf {
 			atomic_t rdma_comp;
 
 		} rdma;
+#endif
 
 		struct {
 			/* TODO: this field should be set only once; when

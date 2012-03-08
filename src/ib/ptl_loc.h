@@ -6,13 +6,11 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>
-#include <infiniband/verbs.h>
 #include <limits.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <pthread.h>
-#include <rdma/rdma_cma.h>
 #include <sched.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -38,6 +36,11 @@
 #include "tree.h"
 
 #include "config.h"
+
+#if WITH_TRANSPORT_IB
+#include <rdma/rdma_cma.h>
+#include <infiniband/verbs.h>
+#endif
 
 #include "portals4.h"
 
@@ -235,6 +238,7 @@ void disconnect_conn_locked(conn_t *conn);
 static inline int PtlNIInit_IB(iface_t *iface, ni_t *ni) { return PTL_OK; }
 static inline void cleanup_ib(ni_t *ni) {  }
 static inline int init_iface_ib(iface_t *iface) { return PTL_OK; }
+static inline void initiate_disconnect_all(ni_t *ni) { }
 #endif
 
 #ifdef WITH_TRANSPORT_SHMEM
