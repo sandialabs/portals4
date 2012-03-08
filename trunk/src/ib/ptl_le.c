@@ -208,7 +208,6 @@ int le_append_pt(ni_t *ni, le_t *le)
 {
 	pt_t *pt = &ni->pt[le->pt_index];
 
-	// TODO should this be the pt mutex instead??
 	assert(pthread_spin_trylock(&pt->lock) != 0);
 
 	le->pt = pt;
