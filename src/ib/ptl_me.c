@@ -137,7 +137,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 			
 			/* To avoid races we must cycle through the list until
 			 * nothing matches anymore. */
-			while(__check_overflow((le_t *)me)) {
+			while(__check_overflow((le_t *)me, 0)) {
 				/* Some XT were processed. */
 				if (me->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[me->pt_index].eq;

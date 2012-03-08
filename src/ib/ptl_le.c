@@ -279,6 +279,47 @@ static void __match_le_unexpected(const le_t *le, int perm,
 	}
 }
 
+static void flush_from_expected_list(le_t *le, buf_t *buf, struct list_head *buf_list, int delete)
+{
+
+	buf_t *n;
+
+	/* PT lock must not be taken. */
+	assert(pthread_spin_trylock(&pt->lock) == 0);
+
+	list_for_each_entry_safe(buf, n, buf_list,
+							 unexpected_list) {
+		int err;
+		int state;
+
+		pthread_mutex_lock(&buf->mutex);
+
+		assert(buf->matching.le == NULL);
+		buf->matching.le = le;
+		le_get(le);
+
+		if (delete && buf->le) {
+			le_put(buf->le);
+			buf->le = NULL;
+		}
+
+		list_del(&buf->unexpected_list);
+
+		state = buf->tgt_state;
+
+		pthread_mutex_unlock(&buf->mutex);
+
+		if (state == STATE_TGT_WAIT_APPEND) {
+			err = process_tgt(buf);
+			if (err)
+				WARN();
+		}
+
+		/* From get_match(). */
+		buf_put(buf);
+	}
+}
+
 /**
  * @brief Check whether the LE/ME matches one or more messages on the
  * unexpected list.
@@ -292,12 +333,11 @@ static void __match_le_unexpected(const le_t *le, int perm,
  *
  * @return status
  */
-int __check_overflow(le_t *le)
+int __check_overflow(le_t *le, int delete)
 {
 	ni_t *ni = obj_to_ni(le);
 	pt_t *pt = &ni->pt[le->pt_index];
 	buf_t *buf;
-	buf_t *n;
 	struct list_head buf_list;
 	int ret;
 
@@ -310,32 +350,7 @@ int __check_overflow(le_t *le)
 		/* Process the elements of the list. */
 		pthread_spin_unlock(&pt->lock);
 
-		list_for_each_entry_safe(buf, n, &buf_list,
-					 unexpected_list) {
-			int err;
-			int state;
-
-			pthread_mutex_lock(&buf->mutex);
-
-			assert(buf->matching.le == NULL);
-			buf->matching.le = le;
-			le_get(le);
-
-			list_del(&buf->unexpected_list);
-
-			state = buf->tgt_state;
-
-			pthread_mutex_unlock(&buf->mutex);
-
-			if (state == STATE_TGT_WAIT_APPEND) {
-				err = process_tgt(buf);
-				if (err)
-					WARN();
-			}
-
-			/* From get_match(). */
-			buf_put(buf);
-		}
+		flush_from_expected_list(le, buf, &buf_list, 0);
 
 		pthread_spin_lock(&pt->lock);
 	}
@@ -415,7 +430,6 @@ int check_overflow_search_delete(le_t *le)
 	pt_t *pt = &ni->pt[le->pt_index];
 	struct list_head buf_list;
 	buf_t *buf;
-	buf_t *n;
 
 	/* scan the unexpected list removing each
 	 * matching message and adding to the buf_list */
@@ -428,41 +442,7 @@ int check_overflow_search_delete(le_t *le)
 	if (list_empty(&buf_list)) {
 		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	} else {
-
-		// TODO looks like common code with check_overflow, combine??
-		list_for_each_entry_safe(buf, n, &buf_list,
-					 unexpected_list) {
-			int err;
-			int state;
-
-			/* make sure the message is not currently
-			 * being processed by the target */
-			pthread_mutex_lock(&buf->mutex);
-
-			assert(buf->matching.le == NULL);
-			buf->matching.le = le;
-			le_get(le);
-
-			if (buf->le) {
-				le_put(buf->le);
-				buf->le = NULL;
-			}
-
-			list_del(&buf->unexpected_list);
-
-			state = buf->tgt_state;
-
-			pthread_mutex_unlock(&buf->mutex);
-
-			if (state == STATE_TGT_WAIT_APPEND) {
-				err = process_tgt(buf);
-				if (err)
-					WARN();
-			}
-
-			/* From get_match. */
-			buf_put(buf);
-		}
+		flush_from_expected_list(le, buf, &buf_list, 1);
 	}
 
 	return PTL_OK;
@@ -576,7 +556,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 		if (ptl_list == PTL_PRIORITY_LIST) {
 			/* To avoid races we must cycle through the list until
 			 * nothing matches anymore. */
-			while(__check_overflow(le)) {
+			while(__check_overflow(le, 0)) {
 				/* Some XT were processed. */
 				if (le->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[le->pt_index].eq;

@@ -64,7 +64,7 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 		    ptl_search_op_t search_op,
 		    ptl_handle_le_t *le_handle);
 
-int __check_overflow(le_t *le);
+int __check_overflow(le_t *le, int delete);
 
 int check_overflow_search_only(le_t *le);
 
