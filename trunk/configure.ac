@@ -298,7 +298,7 @@ AS_IF([test "x$enable_transfer_engine" == xyes],
 AS_IF([test "$with_implementation" = "ib"],
 	  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])])
 
-AS_IF([test "$with_implementation" = "ib" -a x"$enable_ib_ib" = xyes],
+AS_IF([test "$with_implementation" = "ib" -a x"$enable_ib_ib" != xno],
 	  [SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
 
 AS_IF([test "$with_implementation" = "mc"],
