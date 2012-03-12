@@ -284,9 +284,6 @@ static void flush_from_expected_list(le_t *le, const struct list_head *buf_list,
 	buf_t *buf;
 	buf_t *n;
 
-	/* PT lock must not be taken. */
-	assert(pthread_spin_trylock(&pt->lock) == 0);
-
 	list_for_each_entry_safe(buf, n, buf_list,
 							 unexpected_list) {
 		int err;
