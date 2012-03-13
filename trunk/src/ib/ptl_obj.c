@@ -184,7 +184,7 @@ static inline obj_t *dequeue_free_obj(pool_t *pool)
 		}
 		newv.counter = oldv.counter + 1;
 
-		retv.c16 = __sync_val_compare_and_swap(&pool->free_list.c16, oldv.c16, newv.c16);
+		retv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
 	} while (retv.c16 != oldv.c16);
 
 	return retv.obj;
@@ -210,7 +210,7 @@ static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
 		obj->next = tmpv.obj;
 		newv.obj = obj;
 		newv.counter = oldv.counter + 1;
-		tmpv.c16 = __sync_val_compare_and_swap(&pool->free_list.c16, oldv.c16, newv.c16);
+		tmpv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
 	} while (tmpv.c16 != oldv.c16);
 }
 
