@@ -5,9 +5,27 @@
 # Largely stolen from Qthreads
 #
 
+# SANDIA_CHECK_MCX16()
+# ------------------------------------------------------------------------------
+AC_DEFUN([SANDIA_CHECK_MCX16],[dnl
+AC_CACHE_CHECK(
+  [if compiler accepts -mcx16],
+  [sandia_cv_c_mcx16],
+  [CFLAGS_save="$CFLAGS"
+   CFLAGS="CFLAGS -mcx16"
+   AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+int foo = 1;]])],
+     [sandia_cv_c_mcx16=yes],
+     [sandia_cv_c_mcx16=no])
+   CFLAGS="$CFLAGS_save"])
+AS_IF([test "x$sandia_cv_c_mcx16" = xyes],
+  [CFLAGS="$CFLAGS -mcx16"])
+])
+
 # SANDIA_CHECK_ATOMICS([action-if-found], [action-if-not-found])
 # ------------------------------------------------------------------------------
 AC_DEFUN([SANDIA_CHECK_ATOMICS], [
+AC_REQUIRE([SANDIA_CHECK_MCX16])
 AC_ARG_ENABLE([builtin-atomics],
      [AS_HELP_STRING([--disable-builtin-atomics],
 	                 [force the use of inline-assembly (if possible) rather than compiler-builtins for atomics. This is useful for working around some compiler bugs; normally, it's preferable to use compiler builtins.])])
