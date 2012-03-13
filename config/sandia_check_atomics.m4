@@ -12,7 +12,7 @@ AC_CACHE_CHECK(
   [if compiler accepts -mcx16],
   [sandia_cv_c_mcx16],
   [CFLAGS_save="$CFLAGS"
-   CFLAGS="CFLAGS -mcx16"
+   CFLAGS="$CFLAGS -mcx16"
    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 int foo = 1;]])],
      [sandia_cv_c_mcx16=yes],
@@ -210,6 +210,9 @@ AS_IF([test "x$sandia_cv_atomic_CAS32" = "xyes"],
 AS_IF([test "x$sandia_cv_atomic_CAS64" = "xyes"],
       [AC_DEFINE([SANDIA_BUILTIN_CAS64],[1],
 	  	[if the compiler supports __sync_val_compare_and_swap on 64-bit ints])])
+AS_IF([test "x$sandia_cv_c_mcx16" = "xyes"],
+      [AC_DEFINE([SANDIA_BUILTIN_CAS128],[1],
+	  	[if the compiler supports __sync_val_compare_and_swap on 128-bit ints])])
 AS_IF([test "x$sandia_cv_atomic_CAS" = "xyes"],
 	[AC_DEFINE([SANDIA_BUILTIN_CAS],[1],[if the compiler supports __sync_val_compare_and_swap])])
 AS_IF([test "$sandia_cv_atomic_incr" = "yes"],
