@@ -172,7 +172,7 @@ libtest_get_mapping(ptl_handle_ni_t ni_h)
     val = (char*) malloc(max_val_len);
     if (NULL == val) return NULL;
 
-    ret = PtlGetId(ni_h, &my_id);
+    ret = PtlGetPhysId(ni_h, &my_id);
     if (PTL_OK != ret) return NULL;
 
     if (PMI_SUCCESS != PMI_KVS_Get_my_name(name, max_name_len)) {
