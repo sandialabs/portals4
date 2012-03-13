@@ -75,6 +75,31 @@ PtlGetId(ptl_handle_ni_t ni_handle,
     return PTL_OK;
 }
 
+
+int
+PtlGetPhysId(ptl_handle_ni_t ni_handle,
+             ptl_process_t  *id)
+{
+    ptl_internal_handle_converter_t ni = { ni_handle };
+    ptl_internal_ni_t *nit;
+
+#ifndef NO_ARG_VALIDATION
+    if (PtlInternalLibraryInitialized() == PTL_FAIL) {
+        return PTL_NO_INIT;
+    }
+    if (PtlInternalNIValidator(ni)) {
+        VERBOSE_ERROR("bad NI\n");
+        return PTL_ARG_INVALID;
+    }
+#endif
+
+    nit = &ptl_iface.ni[ni.s.ni];
+
+    id->phys = nit->physical_address->phys;
+
+    return PTL_OK;
+}
+
 #ifndef NO_ARG_VALIDATION
 int INTERNAL PtlInternalLogicalProcessValidator(ptl_process_t p)
 {
