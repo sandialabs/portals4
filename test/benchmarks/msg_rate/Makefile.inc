@@ -10,6 +10,4 @@ P4msgrate_SOURCES = \
     benchmarks/msg_rate/test_prepostME.c             \
     benchmarks/msg_rate/test_prepostLE.c
 
-P4msgrate_DEPENDENCIES = $(DEPENDENCIES_TEST)
-                
 P4msgrate_CPPFLAGS = $(AM_CPPFLAGS) -Ibenchmarks/msg_rate
