@@ -263,10 +263,11 @@ int main(int   argc,
                                 break;
                         }
                     }
-                    assert(myself.rank == 0);
+
                     switch (event.type) {
                         case PTL_EVENT_GET:
                         case PTL_EVENT_GET_OVERFLOW:
+                            assert(myself.rank == 0);
                             validate_event(&event, 0x3ff4, TARGET); break;
                         case PTL_EVENT_PUT:
                         case PTL_EVENT_PUT_OVERFLOW:
