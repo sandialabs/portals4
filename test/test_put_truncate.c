@@ -120,7 +120,7 @@ static void validate_event(ptl_event_t *e,
             assert(e->ni_fail_type == PTL_NI_OK);
         }
         if (fields & (1 << evnt_mlength)) {
-            assert(e->mlength == BUFSIZE / 2);
+            assert(e->mlength == (BUFSIZE / 2) - (e->initiator.rank % sizeof(uint64_t)));
         }
         if (fields & (1 << evnt_rlength)) {
             assert(e->rlength == BUFSIZE);
@@ -231,7 +231,7 @@ int main(int   argc,
         ptl_process_t  r0 = { .rank = 0 };
         CHECK_RETURNVAL(PtlPut
                             (write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ, r0,
-                            logical_pt_index, 1, 0, NULL, 0));
+                            logical_pt_index, 1, myself.rank % sizeof(uint64_t), NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
         assert(ctc.success == BUFSIZE);
@@ -321,13 +321,14 @@ int main(int   argc,
                                 break;
                         }
                     }
-                    assert(myself.rank == 0);
+
                     switch (event.type) {
                         case PTL_EVENT_GET:
                         case PTL_EVENT_GET_OVERFLOW:
                             validate_event(&event, 0x3ff4, TARGET); break;
                         case PTL_EVENT_PUT:
                         case PTL_EVENT_PUT_OVERFLOW:
+                            assert(myself.rank == 0);
                             validate_event(&event, 0x3ffc, TARGET); break;
                         case PTL_EVENT_SEARCH:
                         case PTL_EVENT_ATOMIC:
