@@ -220,7 +220,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 			WARN();
 			return PTL_NO_SPACE;
 		}
-		list_add(&le->list, &pt->priority_list);
+		list_add_tail(&le->list, &pt->priority_list);
 	} else if (le->ptl_list == PTL_OVERFLOW_LIST) {
 		pt->overflow_size++;
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
@@ -229,7 +229,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 			WARN();
 			return PTL_NO_SPACE;
 		}
-		list_add(&le->list, &pt->overflow_list);
+		list_add_tail(&le->list, &pt->overflow_list);
 	}
 
 	if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE))
@@ -283,6 +283,8 @@ static void flush_from_expected_list(le_t *le, const struct list_head *buf_list,
 {
 	buf_t *buf;
 	buf_t *n;
+
+	/* PT lock must not be taken. */
 
 	list_for_each_entry_safe(buf, n, buf_list,
 							 unexpected_list) {
