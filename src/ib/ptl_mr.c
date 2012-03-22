@@ -174,9 +174,6 @@ err1:
 	if (mr)
 		mr_put(mr);
 
-	if (mr)
-		mr_put(mr);
-
 	return err;
 }
 
