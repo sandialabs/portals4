@@ -116,6 +116,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	err = mr_alloc(ni, &mr);
 	if (err) {
 		WARN();
+		err = ENOMEM;
 		goto err1;
 	}
 
@@ -137,8 +138,8 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 					  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
 					  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 	if (!ibmr) {
+		err = errno;
 		WARN();
-		err = PTL_FAIL;
 		goto err1;
 	}
 	mr->ibmr = ibmr;
@@ -148,8 +149,8 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	if (get_param(PTL_ENABLE_SHMEM)) {
 		knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
 		if (!knem_cookie) {
+			err = EINVAL;
 			WARN();
-			err = PTL_FAIL;
 			goto err1;
 		}
 	}
@@ -160,7 +161,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	mr->length = length;
 	*mr_p = mr;
 
-	return PTL_OK;
+	return 0;
 
 err1:
 #if WITH_TRANSPORT_IB
@@ -300,6 +301,8 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			}
 			goto again;
 		}
+
+		ret = PTL_FAIL;
 	} else {
 		void *res;
 
