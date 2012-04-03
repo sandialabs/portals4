@@ -229,7 +229,7 @@ static int PtlInternalMarkMEReusable(const ptl_handle_me_t me_handle)
 
 int API_FUNC PtlMEAppend(ptl_handle_ni_t  ni_handle,
                          ptl_pt_index_t   pt_index,
-                         ptl_me_t        *me,
+                         const ptl_me_t        *me,
                          ptl_list_t       ptl_list,
                          void            *user_ptr,
                          ptl_handle_me_t *me_handle)
