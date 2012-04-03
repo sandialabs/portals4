@@ -348,14 +348,14 @@ static int tgt_start(buf_t *buf)
 	}
 
 	/* synchronize with enable/disable APIs */
-	pthread_spin_lock(&buf->pt->lock);
+	PTL_FASTLOCK_LOCK(&buf->pt->lock);
 	if (!buf->pt->enabled || buf->pt->disable) {
-		pthread_spin_unlock(&buf->pt->lock);
+		PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
 		buf->ni_fail = PTL_NI_DROPPED;
 		return STATE_TGT_DROP;
 	}
 	buf->pt->num_tgt_active++;
-	pthread_spin_unlock(&buf->pt->lock);
+	PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
 
 	return STATE_TGT_GET_MATCH;
 }
@@ -492,14 +492,14 @@ static int tgt_get_match(buf_t *buf)
 	ptl_ni_fail_t ni_fail;
 
 	/* Synchronize with LE/ME append/search APIs */
-	pthread_spin_lock(&pt->lock);
+	PTL_FASTLOCK_LOCK(&pt->lock);
 
 	/* Check to see if lists are empty and flow control enabled */
 	if (pt->options & PTL_PT_FLOWCTRL) {
 		if (list_empty(&pt->priority_list) &&
 		    list_empty(&pt->overflow_list)) {
 			pt->disable |= PT_AUTO_DISABLE;
-			pthread_spin_unlock(&pt->lock);
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 			buf->ni_fail = PTL_NI_FLOW_CTRL;
 			buf->le = NULL;
 			return STATE_TGT_DROP;
@@ -535,7 +535,7 @@ static int tgt_get_match(buf_t *buf)
 		}
 	}
 
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* Failed to match any elements */
 	buf->le = NULL;
@@ -547,7 +547,7 @@ found_one:
 	/* Check to see if we have permission for the operation */
 	ni_fail = check_perm(buf, buf->le);
 	if (ni_fail) {
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		le_put(buf->le);
 		buf->le = NULL;
 		buf->ni_fail = ni_fail;
@@ -562,7 +562,7 @@ found_one:
 			      &buf->le->pt->unexpected_list);
 	}
 
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* now that we have determined the list element
 	 * compute the remainign event mask bits */
@@ -713,16 +713,16 @@ static int tgt_wait_conn(buf_t *buf)
 	 * retried once connected/disconnected. */
 	pthread_mutex_lock(&conn->mutex);
 	if (conn->state < CONN_STATE_CONNECTED) {
-		pthread_spin_lock(&conn->wait_list_lock);
+		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 		list_add_tail(&buf->list, &conn->buf_list);
-		pthread_spin_unlock(&conn->wait_list_lock);
+		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 
 		if (conn->state == CONN_STATE_DISCONNECTED) {
 			/* Initiate connection. */
 			if (init_connect(ni, conn)) {
-				pthread_spin_lock(&conn->wait_list_lock);
+				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 				list_del(&buf->list);
-				pthread_spin_unlock(&conn->wait_list_lock);
+				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 				pthread_mutex_unlock(&conn->mutex);
 				return STATE_TGT_ERROR;
 			}
@@ -1461,12 +1461,12 @@ static int tgt_cleanup(buf_t *buf)
 
 	pt = buf->pt;
 	if (pt) {
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 		pt->num_tgt_active--;
 		if ((pt->disable & PT_AUTO_DISABLE) && !pt->num_tgt_active) {
 			pt->enabled = 0;
 			pt->disable &= ~PT_AUTO_DISABLE;
-			pthread_spin_unlock(&pt->lock);
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 			// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
 			make_target_event(buf, pt->eq,
@@ -1474,7 +1474,7 @@ static int tgt_cleanup(buf_t *buf)
 							  buf->matching.le ? buf->matching.le->user_ptr
 							  : NULL, NULL);
 		} else
-			pthread_spin_unlock(&pt->lock);
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 	}
 
 	return state;

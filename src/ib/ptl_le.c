@@ -60,7 +60,7 @@ void le_unlink(le_t *le, int auto_event)
 	pt_t *pt = le->pt;
 
 	if (pt) {
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 
 		/* Avoid a race between PTLMeUnlink and autounlink. */ 
 		if (le->pt) {
@@ -81,7 +81,7 @@ void le_unlink(le_t *le, int auto_event)
 			le->pt = NULL;
 		}
 
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 		if (le->type == TYPE_ME)
 			me_put((me_t *)le);
@@ -208,15 +208,13 @@ int le_append_pt(ni_t *ni, le_t *le)
 {
 	pt_t *pt = &ni->pt[le->pt_index];
 
-	assert(pthread_spin_trylock(&pt->lock) != 0);
-
 	le->pt = pt;
 
 	if (le->ptl_list == PTL_PRIORITY_LIST) {
 		pt->priority_size++;
 		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
 			pt->priority_size--;
-			pthread_spin_unlock(&pt->lock);
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 			WARN();
 			return PTL_NO_SPACE;
 		}
@@ -225,7 +223,7 @@ int le_append_pt(ni_t *ni, le_t *le)
 		pt->overflow_size++;
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
 			pt->overflow_size--;
-			pthread_spin_unlock(&pt->lock);
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 			WARN();
 			return PTL_NO_SPACE;
 		}
@@ -260,8 +258,6 @@ static void __match_le_unexpected(const le_t *le, int perm,
 	pt_t *pt = &ni->pt[le->pt_index];
 	buf_t *buf;
 	buf_t *n;
-
-	assert(pthread_spin_trylock(&pt->lock) != 0);
 
 	INIT_LIST_HEAD(buf_list);
 
@@ -339,18 +335,16 @@ int __check_overflow(le_t *le, int delete)
 	struct list_head buf_list;
 	int ret;
 
-	assert(pthread_spin_trylock(&pt->lock) != 0);
-
 	__match_le_unexpected(le, DONT_CHECK_PERM, &buf_list);
 
 	ret = !list_empty(&buf_list);
 	if (ret) {
 		/* Process the elements of the list. */
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 		flush_from_expected_list(le, &buf_list, 0);
 
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
 
 	return ret;
@@ -374,7 +368,7 @@ int check_overflow_search_only(le_t *le)
 	int found = 0;
 	ptl_event_t event;
 
-	pthread_spin_lock(&pt->lock);
+	PTL_FASTLOCK_LOCK(&pt->lock);
 
 	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
 				 unexpected_list) {
@@ -393,7 +387,7 @@ int check_overflow_search_only(le_t *le)
 		}
 	}
 
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* note there is a race where the buf can get removed before
 	 * the event is delivered to the target so we save the contents
@@ -430,11 +424,11 @@ int check_overflow_search_delete(le_t *le)
 
 	/* scan the unexpected list removing each
 	 * matching message and adding to the buf_list */
-	pthread_spin_lock(&pt->lock);
+	PTL_FASTLOCK_LOCK(&pt->lock);
 
 	__match_le_unexpected(le, CHECK_PERM, &buf_list);
 
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	if (list_empty(&buf_list)) {
 		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
@@ -548,7 +542,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 #endif
 
 	if (le_handle_p) {
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 
 		if (ptl_list == PTL_PRIORITY_LIST) {
 			/* To avoid races we must cycle through the list until
@@ -558,7 +552,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 				if (le->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[le->pt_index].eq;
 
-					pthread_spin_unlock(&pt->lock);					
+					PTL_FASTLOCK_UNLOCK(&pt->lock);					
 
 					if (eq && !(le->options &
 					    PTL_ME_EVENT_UNLINK_DISABLE)) {
@@ -578,7 +572,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 
 		err = le_append_pt(ni, le);
 
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 		if (unlikely(err))
 			goto err3;

@@ -5,6 +5,8 @@
 #ifndef PTL_CT_H
 #define PTL_CT_H
 
+#include "ptl_locks.h"
+
 struct buf;
 
 /**
@@ -20,7 +22,7 @@ struct ct {
 	atomic_t list_size;			/**< Number of elements in list */
 	int			interrupt;	/**< flag indicating ct is
 						     getting shut down */
-	pthread_spinlock_t		lock;		/**< mutex for ct condition */
+	PTL_FASTLOCK_TYPE		lock;		/**< mutex for ct condition */
 };
 
 typedef struct ct ct_t;

@@ -8,6 +8,8 @@
 #ifndef PTL_CONN_H
 #define PTL_CONN_H
 
+#include "ptl_locks.h"
+
 /* forward declarations */
 struct ni;
 struct buf;
@@ -55,7 +57,7 @@ struct conn {
 	enum conn_state		state;
 	struct sockaddr_in	sin;
 	struct list_head	buf_list;
-	pthread_spinlock_t	wait_list_lock;
+	PTL_FASTLOCK_TYPE	wait_list_lock;
 
 	struct transport	transport;
 

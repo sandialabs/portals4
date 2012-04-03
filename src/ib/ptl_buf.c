@@ -119,9 +119,7 @@ int buf_init(void *arg, void *parm)
 
 void buf_fini(void *arg)
 {
-	buf_t *buf = arg;
-
-	pthread_spin_destroy(&buf->rdma_list_lock);
+	PTL_FASTLOCK_DESTROY(&((buf_t*)arg)->rdma_list_lock);
 }
 
 /**

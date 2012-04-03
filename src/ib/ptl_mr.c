@@ -209,7 +209,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
  again:
 	INIT_LIST_HEAD(&mr_list);
 
-	pthread_spin_lock(&ni->mr_tree_lock);
+	PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
 
 	link = RB_ROOT(&ni->mr_tree);
 	left_node = NULL;
@@ -295,7 +295,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			 * 
 			 * This case should rarely happen as it is there only to
 			 * close that small race. */
-			pthread_spin_unlock(&ni->mr_tree_lock);
+			PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
 			while(generation_counter != *ni->umn_counter) {
 				SPINLOCK_BODY();
 			}
@@ -321,7 +321,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	}
 
  done:
-	pthread_spin_unlock(&ni->mr_tree_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
 
 	return ret;
 }
@@ -346,7 +346,7 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
 			/* Search the tree for the MR with that cookie and remove it. */
 			struct mr *mr;
 
-			pthread_spin_lock(&ni->mr_tree_lock);
+			PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
 
 			RB_FOREACH(mr, the_root, &ni->mr_tree) {
 				if (mr->umn_cookie == ev.user_cookie_counter) {
@@ -358,7 +358,7 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
 				}
 			}
 
-			pthread_spin_unlock(&ni->mr_tree_lock);
+			PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
 		}
 		break;
 	
@@ -407,7 +407,7 @@ void cleanup_mr_tree(ni_t *ni)
 		EVL_WATCH(ev_io_stop(evl.loop, &ni->umn_watcher));
 	}
 
-	pthread_spin_lock(&ni->mr_tree_lock);
+	PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
 
 	for (mr = RB_MIN(the_root, &ni->mr_tree); mr != NULL; mr = next_mr) {
 		next_mr = RB_NEXT(the_root, &ni->mr_tree, mr);
@@ -415,5 +415,5 @@ void cleanup_mr_tree(ni_t *ni)
 		mr_put(mr);
 	}
 
-	pthread_spin_unlock(&ni->mr_tree_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
 }

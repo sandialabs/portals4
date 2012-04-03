@@ -9,6 +9,8 @@
 #ifndef PTL_PT_H
 #define PTL_PT_H
 
+#include "ptl_locks.h"
+
 struct eq;
 
 /**
@@ -65,7 +67,7 @@ struct pt {
 	struct list_head	unexpected_list;
 
 	/** spin lock to protect pt lists */
-	pthread_spinlock_t	lock;
+	PTL_FASTLOCK_TYPE       lock;
 };
 
 typedef struct pt pt_t;

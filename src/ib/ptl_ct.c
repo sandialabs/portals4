@@ -5,6 +5,7 @@
  */
 
 #include "ptl_loc.h"
+#include "ptl_timer.h"
 
 /* TODO make these unnecessary by queuing deferred operations */
 static void ct_check(ct_t *ct);
@@ -21,7 +22,7 @@ int ct_init(void *arg, void *unused)
 {
 	ct_t *ct = arg;
 
-	pthread_spin_init(&ct->lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&ct->lock);
 	INIT_LIST_HEAD(&ct->trig_list);
 	atomic_set(&ct->list_size, 0);
 
@@ -35,9 +36,7 @@ int ct_init(void *arg, void *unused)
  */
 void ct_fini(void *arg)
 {
-	ct_t *ct = arg;
-
-	pthread_spin_destroy(&ct->lock);
+	PTL_FASTLOCK_DESTROY(&((ct_t*)arg)->lock);
 }
 
 /**
@@ -133,9 +132,9 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	 * this list is used by ni to interrupt
 	 * any ct's that are in PtlCTWait at the time
 	 * that PtlNIFini is called */
-	pthread_spin_lock(&ni->ct_list_lock);
+	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
 	list_add(&ct->list, &ni->ct_list);
-	pthread_spin_unlock(&ni->ct_list_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 
 	*ct_handle_p = ct_to_handle(ct);
 
@@ -196,10 +195,10 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	ni = obj_to_ni(ct);
 
 	/* remove ourselves from ni->ct_list */
-	pthread_spin_lock(&ni->ct_list_lock);
+	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
 	list_del(&ct->list);
 	atomic_dec(&ct->list_size);
-	pthread_spin_unlock(&ni->ct_list_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 
 	/* clean up pending operations */
 	ct->interrupt = 1;
@@ -457,8 +456,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	ni_t *ni = NULL;
 	ct_t **cts = NULL;
 	int have_timeout = (timeout != PTL_TIME_FOREVER);
-	struct timespec expire;
-	struct timespec now;
+	size_t nstart;
 	int i;
 	int i2;
 
@@ -508,16 +506,11 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	ni = obj_to_ni(cts[0]);
 #endif
 
-	/* compute expiration of poll time
-	 * if forever just set to some time way in the future */
-	clock_gettime(CLOCK_REALTIME, &now);
-	expire.tv_nsec = now.tv_nsec + 1000000UL * timeout;
-	expire.tv_sec = now.tv_sec + !have_timeout * 9999999UL;
-
-	/* normalize */
-	while (expire.tv_nsec >= 1000000000UL) {
-		expire.tv_nsec -= 1000000000UL;
-		expire.tv_sec++;
+	/* compute expiration of poll time */
+	{
+	    TIMER_TYPE start;
+	    MARK_TIMER(start);
+	    nstart = TIMER_INTS(start);
 	}
 
 	/* poll loop */
@@ -530,13 +523,12 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 
 		/* check to see if we have timed out */
 		if (have_timeout) {
-			clock_gettime(CLOCK_REALTIME, &now);
-			if ((now.tv_sec > expire.tv_sec) ||
-				((now.tv_sec == expire.tv_sec) &&
-				 (now.tv_nsec > expire.tv_nsec))) {
-				err = PTL_CT_NONE_REACHED;
-				break;
-			}
+		    TIMER_TYPE tp;
+		    MARK_TIMER(tp);
+		    if ((TIMER_INTS(tp) - nstart) >= timeout) {
+			err = PTL_CT_NONE_REACHED;
+			break;
+		    }
 		}
 
 		SPINLOCK_BODY();
@@ -567,7 +559,7 @@ static void ct_check(ct_t *ct)
 	struct list_head *l;
 	struct list_head *t;
 
-	pthread_spin_lock(&ct->lock);
+	PTL_FASTLOCK_LOCK(&ct->lock);
 
 	/* check to see if any pending triggered move operations
 	 * can now be performed or discarded
@@ -581,21 +573,21 @@ static void ct_check(ct_t *ct)
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
-				pthread_spin_unlock(&ct->lock);
+				PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 				buf->init_state = STATE_INIT_CLEANUP;
 				process_init(buf);
 
-				pthread_spin_lock(&ct->lock);
+				PTL_FASTLOCK_LOCK(&ct->lock);
 			} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
-				pthread_spin_unlock(&ct->lock);
+				PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 				process_init(buf);
 
-				pthread_spin_lock(&ct->lock);
+				PTL_FASTLOCK_LOCK(&ct->lock);
 			}
 		} else {
 			assert(buf->type == BUF_TRIGGERED);
@@ -603,26 +595,26 @@ static void ct_check(ct_t *ct)
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
-				pthread_spin_unlock(&ct->lock);
+				PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 				ct_put(buf->ct);
 				buf_put(buf);
 
-				pthread_spin_lock(&ct->lock);
+				PTL_FASTLOCK_LOCK(&ct->lock);
 			} else if ((ct->event.success + ct->event.failure) >= buf->threshold) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
-				pthread_spin_unlock(&ct->lock);
+				PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 				do_trig_ct_op(buf);
 
-				pthread_spin_lock(&ct->lock);
+				PTL_FASTLOCK_LOCK(&ct->lock);
 			}
 		}
 	}
 
-	pthread_spin_unlock(&ct->lock);
+	PTL_FASTLOCK_UNLOCK(&ct->lock);
 }
 
 /**
@@ -999,11 +991,11 @@ void post_ct(buf_t *buf, ct_t *ct)
 	assert(buf->type == BUF_INIT);
 
 	/* Put the buffer on the wait list. */
-	pthread_spin_lock(&ct->lock);
+	PTL_FASTLOCK_LOCK(&ct->lock);
 
 	/* We must check again to avoid a race with ct_inc/ct_set. */
 	if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
-		pthread_spin_unlock(&ct->lock);
+		PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 		process_init(buf);
 	} else {
@@ -1011,7 +1003,7 @@ void post_ct(buf_t *buf, ct_t *ct)
 
 		list_add(&buf->list, &ct->trig_list);
 
-		pthread_spin_unlock(&ct->lock);
+		PTL_FASTLOCK_UNLOCK(&ct->lock);
 	}
 }
 
@@ -1025,11 +1017,11 @@ void post_ct(buf_t *buf, ct_t *ct)
 static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 {
 	/* Put the buffer on the wait list. */
-	pthread_spin_lock(&trig_ct->lock);
+	PTL_FASTLOCK_LOCK(&trig_ct->lock);
 
 	/* We must check again to avoid a race with ct_inc/ct_set. */
 	if ((trig_ct->event.failure + trig_ct->event.success) >= buf->threshold) {
-		pthread_spin_unlock(&trig_ct->lock);
+		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 
 		do_trig_ct_op(buf);
 
@@ -1038,7 +1030,7 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 
 		list_add(&buf->list, &trig_ct->trig_list);
 
-		pthread_spin_unlock(&trig_ct->lock);
+		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 	}
 }
 
