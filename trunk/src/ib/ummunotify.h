@@ -18,7 +18,13 @@
 #ifndef _LINUX_UMMUNOTIFY_H
 #define _LINUX_UMMUNOTIFY_H
 
-#include <linux/ioctl.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifdef HAVE_LINUX_IOCTL_H
+# include <linux/ioctl.h>
+#endif
 
 /*
  * Ummunotify relays MMU notifier events to userspace.  A userspace

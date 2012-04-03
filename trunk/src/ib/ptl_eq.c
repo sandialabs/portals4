@@ -5,6 +5,7 @@
  */
 
 #include "ptl_loc.h"
+#include "ptl_timer.h"
 
 /**
  * @brief Initialize a eq object once when created.
@@ -16,7 +17,7 @@ int eq_init(void *arg, void *unused)
 {
 	eq_t *eq = arg;
 
-	pthread_spin_init(&eq->lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&eq->lock);
 
 	return PTL_OK;
 }
@@ -28,9 +29,7 @@ int eq_init(void *arg, void *unused)
  */
 void eq_fini(void *arg)
 {
-	eq_t *eq = arg;
-
-	pthread_spin_destroy(&eq->lock);
+	PTL_FASTLOCK_DESTROY(&((eq_t*)arg)->lock);
 }
 
 /**
@@ -241,11 +240,11 @@ static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
 {
 	int dropped = 0;
 
-	pthread_spin_lock(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->lock);
 
 	/* check to see if the queue is empty */
 	if (is_queue_empty(eq)) {
-		pthread_spin_unlock(&eq->lock);
+		PTL_FASTLOCK_UNLOCK(&eq->lock);
 		return PTL_EQ_EMPTY;
 	}
 
@@ -267,7 +266,7 @@ static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
 		eq->cons_gen++;
 	}
 
-	pthread_spin_unlock(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->lock);
 
 	return dropped ? PTL_EQ_DROPPED : PTL_OK;
 }
@@ -426,8 +425,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	int err;
 	ni_t *ni = NULL;
 	eq_t **eqs = NULL;
-	struct timespec expire;
-	struct timespec now;
+	size_t nstart;
 	int i;
 	int i2;
 	const int forever = (timeout == PTL_TIME_FOREVER);
@@ -475,13 +473,10 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	ni = obj_to_ni(eqs[0]);
 #endif
 
-	clock_gettime(CLOCK_REALTIME, &expire);
-	expire.tv_nsec += 1000000UL * timeout;
-	expire.tv_sec += 9999999999UL * forever;
-
-	while (expire.tv_nsec > 1000000000UL) {
-		expire.tv_nsec -= 1000000000UL;
-		expire.tv_sec++;
+	{
+	    TIMER_TYPE start;
+	    MARK_TIMER(start);
+	    nstart = TIMER_INTS(start);
 	}
 
 	while (1) {
@@ -504,12 +499,11 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		}
 
 		if (!forever) {
-			clock_gettime(CLOCK_REALTIME, &now);
-			if ((now.tv_sec > expire.tv_sec) ||
-				((now.tv_sec == expire.tv_sec) &&
-				 (now.tv_nsec > expire.tv_nsec))) {
-				err = PTL_EQ_EMPTY;
-				goto out;
+			TIMER_TYPE tp;
+			MARK_TIMER(tp);
+			if ((TIMER_INTS(tp) - nstart) >= timeout) {
+			    err = PTL_EQ_EMPTY;
+			    goto out;
 			}
 		}
 
@@ -543,7 +537,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 {
 	ptl_event_t *ev;
 
-	pthread_spin_lock(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -569,7 +563,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		ev->ni_fail_type	= buf->ni_fail;
 	}
 
-	pthread_spin_unlock(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
 
 /**
@@ -612,7 +606,7 @@ void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
  */
 void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 {
-	pthread_spin_lock(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	eq->eqe_list[eq->producer++].event = *ev;
@@ -621,7 +615,7 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 		eq->prod_gen++;
 	}
 
-	pthread_spin_unlock(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
 		       
 /**
@@ -638,7 +632,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 {
 	ptl_event_t *ev;
 
-	pthread_spin_lock(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -649,7 +643,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 
 	fill_target_event(buf, type, user_ptr, start, ev);
 
-	pthread_spin_unlock(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
 
 /**
@@ -665,7 +659,7 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 {
 	ptl_event_t *ev;
 
-	pthread_spin_lock(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->lock);
 
 	eq->eqe_list[eq->producer].generation = eq->prod_gen;
 	ev = &eq->eqe_list[eq->producer++].event;
@@ -679,5 +673,5 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 	ev->user_ptr = le->user_ptr;
 	ev->ni_fail_type = fail_type;
 
-	pthread_spin_unlock(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }

@@ -1,12 +1,17 @@
 #ifndef PTL_LOC_H
 #define PTL_LOC_H
 
-#define _GNU_SOURCE
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #define _XOPEN_SOURCE 600
+#define _DARWIN_C_SOURCE
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
+#include <sys/types.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -22,7 +27,6 @@
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -31,11 +35,11 @@
 #include <sys/time.h>
 #include <search.h>
 #include <sys/ioctl.h>
-#include <endian.h>
+#ifdef HAVE_ENDIAN_H
+# include <endian.h>
+#endif
 
 #include "tree.h"
-
-#include "config.h"
 
 #if WITH_TRANSPORT_IB
 #include <rdma/rdma_cma.h>

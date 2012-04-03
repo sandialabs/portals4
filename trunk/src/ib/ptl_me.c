@@ -131,7 +131,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 #endif
 
 	if (me_handle_p) {
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 
 		if (ptl_list == PTL_PRIORITY_LIST) {
 			
@@ -142,7 +142,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 				if (me->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[me->pt_index].eq;
 
-					pthread_spin_unlock(&pt->lock);					
+					PTL_FASTLOCK_UNLOCK(&pt->lock);					
 					if (eq && !(me->options &
 					    PTL_ME_EVENT_UNLINK_DISABLE)) {
 						make_le_event((le_t *)me, eq,
@@ -164,7 +164,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 
 		err = le_append_pt(ni, (le_t *)me);
 
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 		if (unlikely(err)) {
 			WARN();

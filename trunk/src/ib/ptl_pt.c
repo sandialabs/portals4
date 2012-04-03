@@ -133,7 +133,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->options = options;
 	pt->eq = eq;
 
-	pthread_spin_init(&pt->lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&pt->lock);
 	INIT_LIST_HEAD(&pt->priority_list);
 	INIT_LIST_HEAD(&pt->overflow_list);
 	INIT_LIST_HEAD(&pt->unexpected_list);
@@ -206,7 +206,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 		goto err2;
 	}
 
-	pthread_spin_destroy(&pt->lock);
+	PTL_FASTLOCK_DESTROY(&pt->lock);
 
 	pt->in_use = 0;
 	pt->enabled = 0;
@@ -268,16 +268,16 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	/* Serialize with progress to let active target processing complete */
-	pthread_spin_lock(&pt->lock);
+	PTL_FASTLOCK_LOCK(&pt->lock);
 	pt->disable |= PT_API_DISABLE;
 	while(pt->num_tgt_active) {
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		sched_yield();
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
 	pt->enabled = 0;
 	pt->disable &= ~PT_API_DISABLE;
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	ni_put(ni);
 	gbl_put();
@@ -331,14 +331,14 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	}
 
 	/* Serialize with disable operations */
-	pthread_spin_lock(&pt->lock);
+	PTL_FASTLOCK_LOCK(&pt->lock);
 	if (pt->disable) {
-		pthread_spin_unlock(&pt->lock);
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		sched_yield();
-		pthread_spin_lock(&pt->lock);
+		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
 	pt->enabled = 1;
-	pthread_spin_unlock(&pt->lock);
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	ni_put(ni);
 	gbl_put();

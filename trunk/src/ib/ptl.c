@@ -230,7 +230,11 @@ static int gbl_init(gbl_t *gbl)
 		return err;
 
 	pagesize = sysconf(_SC_PAGESIZE);
+#ifdef _SC_LEVEL1_DCACHE_LINESIZE
 	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#else
+	linesize = 64;
+#endif
 
 	/* Create the event loop thread. */
 	evl_init(&evl);

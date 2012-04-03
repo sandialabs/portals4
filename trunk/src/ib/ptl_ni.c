@@ -398,14 +398,14 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	ni->umn_fd = -1;
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	atomic_set(&ni->rdma.num_conn, 0);
-	pthread_spin_init(&ni->md_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->ct_list_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->mr_tree_lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init(&ni->rdma.recv_list_lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&ni->md_list_lock);
+	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
+	PTL_FASTLOCK_INIT(&ni->mr_tree_lock);
+	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
 	pthread_mutex_init(&ni->atomic_mutex, NULL);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	if (options & PTL_NI_PHYSICAL) {
-		pthread_spin_init(&ni->physical.lock, PTHREAD_PROCESS_PRIVATE);
+		PTL_FASTLOCK_INIT(&ni->physical.lock);
 	} else {
 #ifdef USE_XRC
 		pthread_mutex_init(&ni->logical.lock, NULL);
@@ -664,12 +664,12 @@ static void interrupt_cts(ni_t *ni)
 	struct list_head *l;
 	ct_t *ct;
 
-	pthread_spin_lock(&ni->ct_list_lock);
+	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
 	list_for_each(l, &ni->ct_list) {
 		ct = list_entry(l, ct_t, list);
 		ct->interrupt = 1;
 	}
-	pthread_spin_unlock(&ni->ct_list_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 }
 
 static void ni_cleanup(ni_t *ni)
@@ -728,10 +728,10 @@ static void ni_cleanup(ni_t *ni)
 
 	pthread_mutex_destroy(&ni->atomic_mutex);
 	pthread_mutex_destroy(&ni->pt_mutex);
-	pthread_spin_destroy(&ni->md_list_lock);
-	pthread_spin_destroy(&ni->ct_list_lock);
-	pthread_spin_destroy(&ni->mr_tree_lock);
-	pthread_spin_destroy(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_DESTROY(&ni->md_list_lock);
+	PTL_FASTLOCK_DESTROY(&ni->ct_list_lock);
+	PTL_FASTLOCK_DESTROY(&ni->mr_tree_lock);
+	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
 }
 
 int PtlNIFini(ptl_handle_ni_t ni_handle)

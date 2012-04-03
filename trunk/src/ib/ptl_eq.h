@@ -8,6 +8,8 @@
 #ifndef PTL_EQ_H
 #define PTL_EQ_H
 
+#include "ptl_locks.h"
+
 /**
  * Event queue entry.
  */
@@ -34,7 +36,7 @@ struct eq {
 	unsigned int		cons_gen;	/**< consumer generation */
 	int			interrupt;	/**< if set eq is being
 						     freed or destroyed */
-	pthread_spinlock_t		lock;		/**< mutex for eq condition */
+	PTL_FASTLOCK_TYPE		lock;		/**< mutex for eq condition */
 };
 
 typedef struct eq eq_t;

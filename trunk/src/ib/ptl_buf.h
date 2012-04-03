@@ -7,6 +7,8 @@
 #ifndef PTL_BUF_H
 #define PTL_BUF_H
 
+#include "ptl_locks.h"
+
 /**
  * Type of buf object. It will change over the lifetime of the
  * buffer. For instance a buffer reserved by the initiator will have
@@ -196,7 +198,7 @@ struct buf {
 	/* Target only. Must survive through buffer reuse. */
 	struct list_head	unexpected_list;
 	struct list_head	rdma_list;
-	pthread_spinlock_t	rdma_list_lock;
+	PTL_FASTLOCK_TYPE	rdma_list_lock;
 
 	/* Fields that survive between buffer reuse. */
 	union {

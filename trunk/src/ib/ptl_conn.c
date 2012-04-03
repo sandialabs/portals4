@@ -36,7 +36,7 @@ int conn_init(void *arg, void *parm)
 	OBJ_NEW(conn);
 
 	pthread_mutex_init(&conn->mutex, NULL);
-	pthread_spin_init(&conn->wait_list_lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&conn->wait_list_lock);
 
 	conn->state = CONN_STATE_DISCONNECTED;
 	INIT_LIST_HEAD(&conn->buf_list);
@@ -83,7 +83,7 @@ void conn_fini(void *arg)
 #endif
 
 	pthread_mutex_destroy(&conn->mutex);
-	pthread_spin_destroy(&conn->wait_list_lock);
+	PTL_FASTLOCK_DESTROY(&conn->wait_list_lock);
 }
 
 /**
@@ -149,7 +149,7 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 	} else {
 		conn_t conn_search;
 
-		pthread_spin_lock(&ni->physical.lock);
+		PTL_FASTLOCK_LOCK(&ni->physical.lock);
 
 		/* lookup in binary tree */
 		conn_search.id = id;
@@ -160,7 +160,7 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 		} else {
 			/* Not found. Allocate and insert. */
 			if (conn_alloc(ni, &conn)) {
-				pthread_spin_unlock(&ni->physical.lock);
+				PTL_FASTLOCK_UNLOCK(&ni->physical.lock);
 				WARN();
 				return NULL;
 			}
@@ -183,7 +183,7 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 			}
 		}
 
-		pthread_spin_unlock(&ni->physical.lock);
+		PTL_FASTLOCK_UNLOCK(&ni->physical.lock);
 	}
 
 	return conn;
@@ -365,7 +365,11 @@ void destroy_conns(ni_t *ni)
 		}
 #endif
 	} else {
+#ifdef HAVE_TDESTROY
 		tdestroy(ni->physical.tree, destroy_conn);
+#else
+#warning Not running on GNU, so leaking memory (implement tdestroy manually!)
+#endif
 	}
 }
 
@@ -639,11 +643,11 @@ static void flush_pending_xi_xt(conn_t *conn)
 {
 	buf_t *buf;
 
-	pthread_spin_lock(&conn->wait_list_lock);
+	PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 	while(!list_empty(&conn->buf_list)) {
 		buf = list_first_entry(&conn->buf_list, buf_t, list);
 		list_del_init(&buf->list);
-		pthread_spin_unlock(&conn->wait_list_lock);
+		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 
 		if (buf->type == BUF_TGT)
 			process_tgt(buf);
@@ -652,11 +656,11 @@ static void flush_pending_xi_xt(conn_t *conn)
 			process_init(buf);
 		}
 			
-		pthread_spin_lock(&conn->wait_list_lock);
+		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 	}
 
 
-	pthread_spin_unlock(&conn->wait_list_lock);
+	PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 }
 
 /**
@@ -815,27 +819,27 @@ static void process_connect_reject(struct rdma_cm_event *event, conn_t *conn)
 			/* We can now connect to the real endpoint. */
 			conn->state = CONN_STATE_XRC_CONNECTED;
 
-			pthread_spin_lock(&main_connect->wait_list_lock);
+			PTL_FASTLOCK_LOCK(&main_connect->wait_list_lock);
 
 			conn->main_connect = main_connect;
 
 			if (main_connect->state == CONN_STATE_DISCONNECTED) {
 				list_add_tail(&conn->list, &main_connect->list);
 				init_connect(ni, main_connect);
-				pthread_spin_unlock(&main_connect->wait_list_lock);
+				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
 			}
 			else if (main_connect->state == CONN_STATE_CONNECTED) {
-				pthread_spin_unlock(&main_connect->wait_list_lock);
+				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
 				flush_pending_xi_xt(conn);
 			}
 			else {
 				/* move xi/xt so they will be processed when the node is
 				 * connected. */
-				pthread_spin_lock(&conn->wait_list_lock);
+				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 				list_splice_init(&conn->buf_list, &main_connect->buf_list);
 				list_splice_init(&conn->xt_list, &main_connect->xt_list);
-				pthread_spin_unlock(&conn->wait_list_lock);
-				pthread_spin_unlock(&main_connect->wait_list_lock);
+				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
+				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
 			}
 		}
 #endif

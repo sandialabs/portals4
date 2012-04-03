@@ -5,6 +5,8 @@
 #ifndef PTL_NI_H
 #define PTL_NI_H
 
+#include "ptl_locks.h"
+
 struct queue;
 struct conn;
 
@@ -69,13 +71,13 @@ typedef struct ni {
 	ptl_pt_index_t		last_pt;
 
 	struct list_head	md_list;
-	pthread_spinlock_t	md_list_lock;
+	PTL_FASTLOCK_TYPE	md_list_lock;
 
 	struct list_head	ct_list;
-	pthread_spinlock_t	ct_list_lock;
+	PTL_FASTLOCK_TYPE	ct_list_lock;
 
 	RB_HEAD(the_root, mr) mr_tree;
-	pthread_spinlock_t	mr_tree_lock;
+	PTL_FASTLOCK_TYPE	mr_tree_lock;
 	int umn_fd;
 	ev_io umn_watcher;
 	uint64_t *umn_counter;
@@ -99,7 +101,7 @@ typedef struct ni {
 
 		/* Pending send and receive operations. */
 		struct list_head	recv_list;
-		pthread_spinlock_t	recv_list_lock;
+		PTL_FASTLOCK_TYPE	recv_list_lock;
 
 		atomic_t			num_posted_recv;
 
@@ -172,7 +174,7 @@ typedef struct ni {
 		struct {
 			/* Physical NI. */
 			void			*tree;
-			pthread_spinlock_t	lock;
+			PTL_FASTLOCK_TYPE	lock;
 		} physical;
 	};
 } ni_t;
