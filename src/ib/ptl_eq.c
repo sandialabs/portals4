@@ -29,7 +29,9 @@ int eq_init(void *arg, void *unused)
  */
 void eq_fini(void *arg)
 {
-	PTL_FASTLOCK_DESTROY(&((eq_t*)arg)->lock);
+	eq_t *eq = arg;
+
+	PTL_FASTLOCK_DESTROY(&eq->lock);
 }
 
 /**
@@ -425,7 +427,9 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	int err;
 	ni_t *ni = NULL;
 	eq_t **eqs = NULL;
-	size_t nstart;
+	uint64_t nstart;
+	uint64_t timeout_ns;
+	TIMER_TYPE start;
 	int i;
 	int i2;
 	const int forever = (timeout == PTL_TIME_FOREVER);
@@ -473,11 +477,11 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	ni = obj_to_ni(eqs[0]);
 #endif
 
-	{
-	    TIMER_TYPE start;
-	    MARK_TIMER(start);
-	    nstart = TIMER_INTS(start);
-	}
+	/* compute expiration of poll time */
+	MARK_TIMER(start);
+	nstart = TIMER_INTS(start);
+
+	timeout_ns = MILLI_TO_TIMER_INTS(timeout);
 
 	while (1) {
 		for (i = 0; i < size; i++) {
@@ -501,7 +505,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		if (!forever) {
 			TIMER_TYPE tp;
 			MARK_TIMER(tp);
-			if ((TIMER_INTS(tp) - nstart) >= timeout) {
+			if ((TIMER_INTS(tp) - nstart) >= timeout_ns) {
 			    err = PTL_EQ_EMPTY;
 			    goto out;
 			}

@@ -158,9 +158,9 @@ static int rdma_comp(buf_t *rdma_buf)
 	if (rdma_buf != buf) {
 		atomic_dec(&buf->rdma.rdma_comp);
 
-		pthread_spin_lock(&buf->rdma_list_lock);
+		PTL_FASTLOCK_LOCK(&buf->rdma_list_lock);
 		list_cut_position(&temp_list, &buf->rdma_list, &rdma_buf->list);
-		pthread_spin_unlock(&buf->rdma_list_lock);
+		PTL_FASTLOCK_UNLOCK(&buf->rdma_list_lock);
 
 		/* free the chain of rdma bufs */
 		while(!list_empty(&temp_list)) {
@@ -200,9 +200,9 @@ static int recv_packet_rdma(buf_t *buf)
 	/* remove buf from pending receive list */
 	assert(!list_empty(&buf->list));
 
-	pthread_spin_lock(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
 	list_del(&buf->list);
-	pthread_spin_unlock(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
 
 	return STATE_RECV_PACKET;
 }

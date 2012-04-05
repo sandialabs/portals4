@@ -15,7 +15,10 @@
 # define TIMER_TYPE struct timespec
 # define MARK_TIMER(x)          clock_gettime(CLOCK_MONOTONIC, &x)
 # define TIMER_INTS(x)          (x.tv_sec * 1000000000 + x.tv_nsec)
-# define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
+static inline uint64_t MILLI_TO_TIMER_INTS(uint64_t x)
+{
+	return x * 1000000;
+}
 #else /* ifdef HAVE_MACH_TIMER */
 # error No timers are defined!
 #endif /* ifdef HAVE_MACH_TIMER */

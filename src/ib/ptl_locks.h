@@ -5,7 +5,7 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_PTHREAD_SPINLOCK_CREATE
+#ifdef HAVE_PTHREAD_SPIN_INIT
 # define PTL_FASTLOCK_TYPE pthread_spinlock_t
 # define PTL_FASTLOCK_INIT(x)    pthread_spin_init((x), PTHREAD_PROCESS_PRIVATE)
 # define PTL_FASTLOCK_DESTROY(x) pthread_spin_destroy(x)
@@ -24,7 +24,7 @@ typedef struct ptl_spin_exclusive_s { /* stolen from Qthreads */
                                    while (val != (x)->exit) SPINLOCK_BODY(); }
 # define PTL_FASTLOCK_UNLOCK(x)  { __sync_fetch_and_add(&(x)->exit, 1); \
                                    __sync_synchronize(); }
-#endif // ifdef HAVE_PTHREAD_SPINLOCK_CREATE
+#endif // ifdef HAVE_PTHREAD_SPIN_INIT
 
 #endif // ifndef PTL_LOCKS_H
 /* vim:set expandtab: */
