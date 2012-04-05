@@ -36,7 +36,9 @@ int ct_init(void *arg, void *unused)
  */
 void ct_fini(void *arg)
 {
-	PTL_FASTLOCK_DESTROY(&((ct_t*)arg)->lock);
+	ct_t *ct = arg;
+
+	PTL_FASTLOCK_DESTROY(&ct->lock);
 }
 
 /**
@@ -456,7 +458,9 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 	ni_t *ni = NULL;
 	ct_t **cts = NULL;
 	int have_timeout = (timeout != PTL_TIME_FOREVER);
-	size_t nstart;
+	uint64_t timeout_ns;
+	uint64_t nstart;
+	TIMER_TYPE start;
 	int i;
 	int i2;
 
@@ -507,11 +511,10 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 #endif
 
 	/* compute expiration of poll time */
-	{
-	    TIMER_TYPE start;
-	    MARK_TIMER(start);
-	    nstart = TIMER_INTS(start);
-	}
+	MARK_TIMER(start);
+	nstart = TIMER_INTS(start);
+
+	timeout_ns = MILLI_TO_TIMER_INTS(timeout);
 
 	/* poll loop */
 	while (1) {
@@ -525,7 +528,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 		if (have_timeout) {
 		    TIMER_TYPE tp;
 		    MARK_TIMER(tp);
-		    if ((TIMER_INTS(tp) - nstart) >= timeout) {
+		    if ((TIMER_INTS(tp) - nstart) >= timeout_ns) {
 			err = PTL_CT_NONE_REACHED;
 			break;
 		    }

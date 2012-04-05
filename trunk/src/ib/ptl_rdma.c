@@ -391,9 +391,9 @@ static int process_rdma(buf_t *buf)
 		 * transfers at the buf. These will get
 		 * cleaned up in tgt_cleanup. The mr's will
 		 * get dropped in buf_cleanup */
-		pthread_spin_lock(&buf->rdma_list_lock);
+		PTL_FASTLOCK_LOCK(&buf->rdma_list_lock);
 		list_add_tail(&rdma_buf->list, &buf->rdma_list);
-		pthread_spin_unlock(&buf->rdma_list_lock);
+		PTL_FASTLOCK_UNLOCK(&buf->rdma_list_lock);
 
 		/* update dma info */
 		resid -= bytes;
@@ -421,9 +421,9 @@ static int process_rdma(buf_t *buf)
 		err = post_rdma(rdma_buf, buf->dest.rdma.qp, dir,
 				addr, rem_key, sge_list, entries);
 		if (err) {
-			pthread_spin_lock(&buf->rdma_list_lock);
+			PTL_FASTLOCK_LOCK(&buf->rdma_list_lock);
 			list_del(&rdma_buf->list);
-			pthread_spin_unlock(&buf->rdma_list_lock);
+			PTL_FASTLOCK_UNLOCK(&buf->rdma_list_lock);
 			return err;
 		}
 

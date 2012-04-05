@@ -6,7 +6,8 @@
 #endif
 
 #define _XOPEN_SOURCE 600
-#define _DARWIN_C_SOURCE
+#define _DARWIN_C_SOURCE		/* For Mac OS X */
+
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>

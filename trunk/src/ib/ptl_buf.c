@@ -111,7 +111,7 @@ int buf_init(void *arg, void *parm)
 
 		atomic_set(&buf->rdma.rdma_comp, 0);
 	}
-	pthread_spin_init(&buf->rdma_list_lock, PTHREAD_PROCESS_PRIVATE);
+	PTL_FASTLOCK_INIT(&buf->rdma_list_lock);
 #endif
 
 	return 0;
@@ -119,7 +119,11 @@ int buf_init(void *arg, void *parm)
 
 void buf_fini(void *arg)
 {
-	PTL_FASTLOCK_DESTROY(&((buf_t*)arg)->rdma_list_lock);
+#if WITH_TRANSPORT_IB
+	buf_t *buf = arg;
+
+	PTL_FASTLOCK_DESTROY(&buf->rdma_list_lock);
+#endif
 }
 
 /**
@@ -193,9 +197,9 @@ int ptl_post_recv(ni_t *ni, int count)
 	}
 
 	/* add buffers to ni recv_list for recovery during shutdown */
-	pthread_spin_lock(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
 	list_splice_tail(&list, &ni->rdma.recv_list);
-	pthread_spin_unlock(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
 
 	/* account for posted buffers */
 	atomic_add(&ni->rdma.num_posted_recv, actual);
@@ -205,7 +209,7 @@ int ptl_post_recv(ni_t *ni, int count)
 		WARN();
 
 		/* re-stock any unposted buffers */
-		pthread_spin_lock(&ni->rdma.recv_list_lock);
+		PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
 		for (wr = bad_wr; wr; wr = wr->next) {
 			buf = container_of(wr, buf_t, rdma.recv.wr);
 			list_del(&buf->list);
@@ -214,7 +218,7 @@ int ptl_post_recv(ni_t *ni, int count)
 			/* account for failed buffers */
 			atomic_dec(&ni->rdma.num_posted_recv);
 		}
-		pthread_spin_unlock(&ni->rdma.recv_list_lock);
+		PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
 	}
 
 	return PTL_OK;
