@@ -62,9 +62,12 @@ struct xremote {
 #endif
 		} rdma;
 
+#if WITH_TRANSPORT_SHMEM
 		struct {
 			ptl_rank_t local_rank;
 		} shmem;
+#endif
+
 	};
 };
 
@@ -222,11 +225,13 @@ struct buf {
 		} rdma;
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 		struct {
 			/* TODO: this field should be set only once; when
 			 * initializing the buffer, not in send_message_shmem. */
 			unsigned int index_owner;	/* local index owning that buffer */
 		} shmem;
+#endif
 	};
 
 	/* Used during transfer. These fields are only valid while the
@@ -244,19 +249,23 @@ struct buf {
 			int num_req_completes;
 		} rdma;
 
+#if WITH_TRANSPORT_SHMEM
 		struct {
 			/* For large (ie. KNEM) operations. */
 			struct shmem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
 		} shmem;
+#endif
 	} transfer;
 
+#if WITH_TRANSPORT_SHMEM
 	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
 	 * allocated to process the data through the receive state machine
 	 * without destroying the sbuf that belongs to
 	 * another process. Keep a pointer to that sbuf. */
 	struct buf *shmem_buf;
+#endif
 
 	/** number of mr's used in message */
 	int			num_mr;
@@ -399,9 +408,11 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 #endif
 #endif
 	} else {
+#if WITH_TRANSPORT_SHMEM
 		assert(connect->transport.type == CONN_TYPE_SHMEM);
 		assert(connect->shmem.local_rank != -1);
 		buf->dest.shmem.local_rank = connect->shmem.local_rank;
+#endif
 	}
 }
 
@@ -423,9 +434,11 @@ static inline void set_tgt_dest(buf_t *buf, const conn_t *connect)
 #endif
 #endif
 	} else {
+#if WITH_TRANSPORT_SHMEM
 		assert(connect->transport.type == CONN_TYPE_SHMEM);
 		assert(connect->shmem.local_rank != -1);
 		buf->dest.shmem.local_rank = connect->shmem.local_rank;
+#endif
 	}
 }
 

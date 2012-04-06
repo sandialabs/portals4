@@ -59,13 +59,17 @@ void md_cleanup(void *arg)
  * @return PTL_NO_SPACE Indicates that there is insufficient memory to
  * allocate the sge lists for the iovec.
  */
-static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
+static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 {
 	int err;
 	ni_t *ni = obj_to_ni(md);
-	ptl_iovec_t *iov;
+	const ptl_iovec_t *iov;
+#if WITH_TRANSPORT_IB
 	struct ibv_sge *sge;
+#endif
+#if WITH_TRANSPORT_SHMEM
 	struct shmem_iovec *knem_iovec;
+#endif
 	void *p;
 	int i;
 
@@ -75,7 +79,10 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 #if WITH_TRANSPORT_IB
 							   + sizeof(struct ibv_sge)
 #endif
-							   + sizeof(struct shmem_iovec));
+#if WITH_TRANSPORT_SHMEM
+							   + sizeof(struct shmem_iovec)
+#endif
+							   );
 	if (!md->internal_data) {
 		err = PTL_NO_SPACE;
 		goto err1;
@@ -83,16 +90,18 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 
 	p = md->internal_data;
 
-#if WITH_TRANSPORT_IB
-	md->sge_list = p;
-	p += num_iov*sizeof(struct ibv_sge);
-#endif
-
 	md->mr_list = p;
 	p += num_iov*sizeof(mr_t);
 
-	md->knem_iovecs = p;
+#if WITH_TRANSPORT_IB
+	sge = md->sge_list = p;
+	p += num_iov*sizeof(struct ibv_sge);
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+	knem_iovec = md->knem_iovecs = p;
 	p += num_iov*sizeof(struct shmem_iovec);
+#endif
 
 	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		/* Pin the whole thing. It's not big enough to make a
@@ -108,8 +117,6 @@ static int init_iovec(md_t *md, ptl_iovec_t *iov_list, int num_iov)
 	md->length = 0;
 
 	iov = iov_list;
-	sge = md->sge_list;
-	knem_iovec = md->knem_iovecs;
 
 	for (i = 0; i < num_iov; i++) {
 		mr_t *mr;

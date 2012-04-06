@@ -36,19 +36,23 @@ struct md {
 	 * or NULL if num_iov is zero */
 	void			*internal_data;
 
+#if WITH_TRANSPORT_IB
 	/** scatter gather list passed to the target that
 	 * contains a list of addresses, lengths and rkeys
 	 * in network byte order for use by messages sent
 	 * over the OFA verbs API */
 	struct ibv_sge		*sge_list;
+#endif
 
 	/** mrs to register memory regions for verbs API
 	 * can hold one mr per iovec contained in internal_data	 */
 	mr_t			**mr_list;
 
+#if WITH_TRANSPORT_SHMEM
 	/** list of knem info for each iovec for use in long
 	 * messages send through shared memory */
 	struct shmem_iovec	*knem_iovecs;
+#endif
 
 	/** mr to register long array of iovecs passed to target
 	 * when num_iov exceeds the amount that will fit in a
