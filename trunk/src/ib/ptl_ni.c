@@ -390,8 +390,6 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	ni->gbl = gbl;
 	set_limits(ni, desired);
 	ni->uid = geteuid();
-	ni->shmem.knem_fd = -1;
-	ni->shmem.comm_pad = MAP_FAILED;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
 	RB_INIT(&ni->mr_tree);
@@ -481,20 +479,6 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	return err;
 }
 
-/* Computes a hash (crc32 based), for shmem. */
-static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
-{
-    while (size--) {
-		int n;
-
-        crc ^= *p++;
-        for (n = 0; n < 8; n++)
-            crc = (crc >> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
-    }
-
-    return crc;
-}
-
 int PtlSetMap(ptl_handle_ni_t ni_handle,
 			  ptl_size_t	  map_size,
 			  const ptl_process_t  *mapping)
@@ -557,23 +541,14 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 
 	/* lookup our nid/pid to determine rank */
 	ni->id.rank = PTL_RANK_ANY;
-	ni->shmem.world_size = 0;
-	ni->shmem.index = -1;
-	ni->shmem.hash = 0;
 
 	iface = ni->iface;
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
 
-			if (mapping[i].phys.pid == iface->id.phys.pid) {
+			if (mapping[i].phys.pid == iface->id.phys.pid)
 				ni->id.rank = i;
-				ni->shmem.index = ni->shmem.world_size;
-			}
-
-			ni->shmem.world_size ++;
 		}
-
-		ni->shmem.hash = crc32((unsigned char *)&mapping[i].phys, ni->shmem.hash, sizeof(mapping[i].phys));
 	}
 
 	if (ni->id.rank == PTL_RANK_ANY) {
@@ -582,6 +557,8 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		ni->logical.map_size = 0;
 		goto err2;
 	}
+
+	PtlSetMap_shmem(ni, map_size, mapping);
 
 	err = create_tables(ni);
 	if (err) {

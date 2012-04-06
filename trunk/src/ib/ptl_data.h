@@ -56,11 +56,14 @@ struct data {
 		} rdma;
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 		/* DMA or Indirect shmem data */
 		struct {
 			unsigned int		num_knem_iovecs;
 			struct shmem_iovec	knem_iovec[0];
 		} shmem;
+#endif
+
 	};
 } __attribute__((__packed__));
 

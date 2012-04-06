@@ -862,6 +862,7 @@ static int tgt_data_out(buf_t *buf)
 		break;
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 	case DATA_FMT_SHMEM_DMA:
 		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
 		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
@@ -873,6 +874,7 @@ static int tgt_data_out(buf_t *buf)
 	case DATA_FMT_SHMEM_INDIRECT:
 		next = STATE_TGT_SHMEM_DESC;
 		break;
+#endif
 
 	default:
 		abort();
@@ -1118,6 +1120,7 @@ static int tgt_data_in(buf_t *buf)
 		break;
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 	case DATA_FMT_SHMEM_DMA:
 		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
 		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
@@ -1129,6 +1132,7 @@ static int tgt_data_in(buf_t *buf)
 	case DATA_FMT_SHMEM_INDIRECT:
 		next = STATE_TGT_SHMEM_DESC;
 		break;
+#endif
 		
 	default:
 		assert(0);
