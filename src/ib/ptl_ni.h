@@ -111,6 +111,7 @@ typedef struct ni {
 		atomic_t num_conn;
 	} rdma;
 
+#if WITH_TRANSPORT_SHMEM
 	/* SHMEM transport specific */
 	struct {
 		uint8_t *comm_pad;
@@ -124,6 +125,7 @@ typedef struct ni {
 		struct queue *queue;
 		char *comm_pad_shm_name;
 	} shmem;
+#endif
 
 	/* object allocation pools */
 	pool_t mr_pool;

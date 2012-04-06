@@ -235,6 +235,9 @@ static void release_shmem_resources(ni_t *ni)
  */
 int PtlNIInit_shmem(ni_t *ni)
 {
+	ni->shmem.knem_fd = -1;
+	ni->shmem.comm_pad = MAP_FAILED;
+
 	/* Only if IB hasn't setup the NID first. */
 	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
 		ni->iface->id.phys.nid = 0;
@@ -254,6 +257,44 @@ int PtlNIInit_shmem(ni_t *ni)
 	}
 
 	return PTL_OK;
+}
+
+/* Computes a hash (crc32 based), for shmem. */
+static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
+{
+    while (size--) {
+		int n;
+
+        crc ^= *p++;
+        for (n = 0; n < 8; n++)
+            crc = (crc >> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+    }
+
+    return crc;
+}
+
+/* lookup our nid/pid to determine local rank */
+void PtlSetMap_shmem(ni_t *ni,
+					 ptl_size_t map_size,
+					 const ptl_process_t *mapping)
+{
+	iface_t *iface = ni->iface;
+	int i;
+
+	ni->shmem.world_size = 0;
+	ni->shmem.index = -1;
+	ni->shmem.hash = 0;
+
+	for (i = 0; i < map_size; i++) {
+		if (mapping[i].phys.nid == iface->id.phys.nid) {
+			if (mapping[i].phys.pid == iface->id.phys.pid)
+				ni->shmem.index = ni->shmem.world_size;
+
+			ni->shmem.world_size ++;
+		}
+
+		ni->shmem.hash = crc32((unsigned char *)&mapping[i].phys, ni->shmem.hash, sizeof(mapping[i].phys));
+	}
 }
 
 /**
