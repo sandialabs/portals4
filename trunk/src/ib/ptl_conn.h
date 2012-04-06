@@ -109,9 +109,11 @@ struct conn {
 		} rdma;
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 		struct {
 			ptl_rank_t	local_rank;	/* local rank on that node. */
 		} shmem;
+#endif
 	};
 
 	/* logical NI only */

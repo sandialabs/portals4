@@ -17,12 +17,17 @@ typedef enum data_dir data_dir_t;
 enum data_fmt {
 	DATA_FMT_NONE = 0,
 	DATA_FMT_IMMEDIATE,
+
 #if WITH_TRANSPORT_IB
 	DATA_FMT_RDMA_DMA,
 	DATA_FMT_RDMA_INDIRECT,
 #endif
+
+#if WITH_TRANSPORT_SHMEM
 	DATA_FMT_SHMEM_DMA,
 	DATA_FMT_SHMEM_INDIRECT,
+#endif
+
 	DATA_FMT_LAST,
 };
 
