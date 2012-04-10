@@ -275,7 +275,7 @@ static void __match_le_unexpected(const le_t *le, int perm,
 	}
 }
 
-static void flush_from_expected_list(le_t *le, const struct list_head *buf_list, int delete)
+static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_list, int delete)
 {
 	buf_t *buf;
 	buf_t *n;
@@ -315,6 +315,33 @@ static void flush_from_expected_list(le_t *le, const struct list_head *buf_list,
 	}
 }
 
+/* Flush all entries on an unexpected list that points to the given LE. */
+void flush_le_references(le_t *le)
+{
+	buf_t *buf;
+	buf_t *n;
+	ni_t *ni = obj_to_ni(le);
+	pt_t *pt = &ni->pt[le->pt_index];
+	struct list_head buf_list;
+
+	/* Build a list of entries that match. */
+	INIT_LIST_HEAD(&buf_list);
+
+	PTL_FASTLOCK_LOCK(&pt->lock);
+	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
+							 unexpected_list) {
+		if (buf->le == le) {
+			list_del(&buf->unexpected_list);
+			list_add_tail(&buf->unexpected_list, &buf_list);
+		}
+	}
+	PTL_FASTLOCK_UNLOCK(&pt->lock);
+
+	if (!list_empty(&buf_list))
+		/* Process the elements of the list. */
+		flush_from_unexpected_list(le, &buf_list, 1);
+}
+
 /**
  * @brief Check whether the LE/ME matches one or more messages on the
  * unexpected list.
@@ -342,7 +369,7 @@ int __check_overflow(le_t *le, int delete)
 		/* Process the elements of the list. */
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-		flush_from_expected_list(le, &buf_list, 0);
+		flush_from_unexpected_list(le, &buf_list, 0);
 
 		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
@@ -434,7 +461,7 @@ int check_overflow_search_delete(le_t *le)
 	if (list_empty(&buf_list)) {
 		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	} else {
-		flush_from_expected_list(le, &buf_list, 1);
+		flush_from_unexpected_list(le, &buf_list, 1);
 	}
 
 	return PTL_OK;
@@ -731,6 +758,12 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 #endif
 
 	ref_cnt = le_ref_cnt(le);
+
+	if (ref_cnt >= 3) {
+		/* Something else has a reference on that LE. If it is on the
+		 * unexpected list, remove it. */
+		flush_le_references(le);
+	}
 
 	/* There should only be 2 references on the object before we can
 	 * release it. */
