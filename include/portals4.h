@@ -375,26 +375,37 @@ enum ni_types {
 /*! @typedef ptl_ni_fail_t
  * A network interface can use this integral type to define specific
  * information regarding the failure of an operation. */
-typedef enum {
-    PTL_NI_OK,             /*!< Used in successful end events to indicate that there has
-                            * been no failure. */
-    PTL_NI_UNDELIVERABLE,  /*!< Indicates a system failure that prevents message
-                            * delivery. */
-    PTL_NI_DROPPED,        /*!< Indicates that a message was dropped for some reason. */
-    PTL_NI_FLOW_CTRL,      /*!< Indicates that the remote node has exhausted its
-                            * resources, enabled flow control, and dropped this
-                            * message. */
-    PTL_NI_PERM_VIOLATION, /*!< Indicates that the remote Portals addressing
-                            * indicated a permissions violation for this
-                            * message. */
-    PTL_NI_OP_VIOLATION,   /*!< Indicates that the remote Portals addressing
-                            * indicated an operations violation for this message.
-                            */
-    PTL_NI_NO_MATCH,       /*!< Indicates that the search did not find an entry in the
-                            * unexpected list. */
-    PTL_NI_SEGV            /*!< Indicates that a message attempted to access
-                            * inaccessible memory */
-} ptl_ni_fail_t;
+typedef unsigned char ptl_ni_fail_t;
+
+/*!< Used in successful end events to indicate that there has been no
+ * failure. */
+#define PTL_NI_OK 0
+
+/*!< Indicates a system failure that prevents message delivery. */
+#define PTL_NI_UNDELIVERABLE 1
+
+/*!< Indicates that a message was dropped for some reason. */
+#define PTL_NI_DROPPED 2
+
+/*!< Indicates that the remote node has exhausted its resources,
+ * enabled flow control, and dropped this message. */
+#define PTL_NI_FLOW_CTRL 3
+
+/*!< Indicates that the remote Portals addressing indicated a
+ * permissions violation for this message. */
+#define PTL_NI_PERM_VIOLATION 4
+
+/*!< Indicates that the remote Portals addressing indicated an
+ * operations violation for this message. */
+#define PTL_NI_OP_VIOLATION 5
+
+/*!< Indicates that the search did not find an entry in the unexpected
+ * list. */
+#define PTL_NI_NO_MATCH 6
+
+/*!< Indicates that a message attempted to access inaccessible
+ * memory */
+#define PTL_NI_SEGV 7
 
 enum ni_features {
     NI_BIND_INACCESSIBLE,
@@ -979,25 +990,25 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
 /*!
  * @addtogroup LEL (LE) List Entries and Lists
  * @{
- * @enum ptl_list_t
+ * @typedef ptl_list_t
  * @brief A behavior for list appending.
  * @see PtlLEAppend(), PtlMEAppend()
  * @ingroup LEL
  * @ingroup MLEML
  */
-typedef unsigned int ptl_list_t;
+typedef unsigned char ptl_list_t;
 #define PTL_PRIORITY_LIST 0   /*!< The priority list associated with a portal table entry. */
 #define PTL_OVERFLOW_LIST 1   /*!< The overflow list associated with a portal table entry. */
 
 /*!
- * @enum ptl_search_op_t
+ * @typedef ptl_search_op_t
  * @brief A behavior for list searching.
  * @see PtlLESearch()
  * @see PtlMESearch()
  * @ingroup LEL
  * @ingroup MLEML
  */
-typedef unsigned int ptl_search_op_t;
+typedef unsigned char ptl_search_op_t;
 #define PTL_SEARCH_ONLY   0  /*!< Use the LE/ME to search the unexpected list,
                               * without consuming an item in the list. */
 #define PTL_SEARCH_DELETE 1  /*!< Use the LE/ME to search the unexpected list
@@ -1932,6 +1943,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
  * @implnote Other than PtlPut(), PtlGet(), PtlAtomic(), PtlFetchAtomic(), and
  *      PtlSwap() (and their triggered variants), no function in the portals
  *      API requires communication with other nodes in the system.
+ * @typedef ptl_ack_req_t
  * @brief Values of the type ptl_ack_req_t are used to control whether an
  *      acknowledgment should be sent when the operation completes (i.e., when
  *      the data has been written to a match list entry of the \e target
@@ -1956,7 +1968,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
  *      counting acknowledgment with weaker semantics. That is, it is a
  *      counting type of acknowledgment, but it can only count operations.
  */
-typedef unsigned int ptl_ack_req_t;
+typedef unsigned char ptl_ack_req_t;
 #define PTL_NO_ACK_REQ 0 /*!< Requests that no acknowledgment should be
                           * generated. */
 #define PTL_ACK_REQ    1 /*!< Requests an acknowledgment. */
@@ -2169,9 +2181,10 @@ int PtlGet(ptl_handle_md_t  md_handle,
  *      standard syntax for fixed width floating-point types, Portals uses a
  *      system defined width for PTL_LONG_DOUBLE and PTL_LONG_DOUBLE_COMPLEX.
  *
+ * @typedef ptl_op_t
  * @brief An atomic operation type
  */
-typedef unsigned int ptl_op_t;
+typedef unsigned char ptl_op_t;
 #define PTL_MIN       0    /*!< Compute and return the minimum of the
                             * initiator and target value. */
 #define PTL_MAX       1    /*!< Compute and return the maximum of the
@@ -2234,9 +2247,10 @@ typedef unsigned int ptl_op_t;
 #define PTL_OP_LAST  18
 
 /*!
+ * @typedef ptl_datatype_t
  * @brief The type of data an atomic operation is operating on
  */
-typedef unsigned int ptl_datatype_t;
+typedef unsigned char ptl_datatype_t;
 
 #define PTL_INT8_T   0      /*!< 8-bit signed integer */
 #define PTL_UINT8_T  1      /*!< 8-bit unsigned integer */
@@ -2549,6 +2563,7 @@ int PtlAtomicSync(void);
 /*!
  * @addtogroup EQ (EQ) Events and Event Queues
  * @{
+ * @typedef ptl_event_kind_t
  * @brief The portals API defines twelve types of events that can be logged in
  *      an event queue.
  * @implnote An implementation is not required to deliver overflow events, if
@@ -2557,7 +2572,7 @@ int PtlAtomicSync(void);
  *      choose to deliver the message into the memory of the ME that would
  *      eventually be posted.
  */
-typedef unsigned int ptl_event_kind_t;
+typedef unsigned char ptl_event_kind_t;
 
 /*! A \p get operation completed on the \e target. Portals will not read
  * from memory on behalf of this operation once this event has been logged.
@@ -2692,11 +2707,14 @@ typedef struct {
      * target, this is the offset requested by th initiator. */
     ptl_size_t remote_offset;
 
+    /*! The identifier of the \e initiator. */
+    ptl_process_t initiator;
+
     /*! The user identifier of the \e initiator. */
     ptl_uid_t uid;
 
-    /*! The identifier of the \e initiator. */
-    ptl_process_t initiator;
+    /*! The portal table index where the message arrived. */
+    ptl_pt_index_t pt_index;
 
     /*! Indicates the type of the event. */
     ptl_event_kind_t type;
@@ -2704,9 +2722,6 @@ typedef struct {
     /*! The list entry or match list entry list in which the operation
      * was delivered */
     ptl_list_t ptl_list;
-
-    /*! The portal table index where the message arrived. */
-    ptl_pt_index_t pt_index;
 
     /*! Is used to convey the failure of an operation. Success is indicated by
      * \c PTL_NI_OK. */

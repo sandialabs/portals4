@@ -541,7 +541,7 @@ static int wait_recv(buf_t *buf)
 	} else {
 		/* Set a random invalid value. */
 		buf->moffset = 0x77777777;
-		buf->matching_list = 0x88888888;
+		buf->matching_list = 0x88;
 	}
 
 	if (hdr->operation <= OP_CT_ACK) {
