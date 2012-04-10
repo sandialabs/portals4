@@ -7,7 +7,7 @@
 
 = Draft Change History =
 
-== April 10, 2012 ChangeLog ==
+== April 10, 2012 Changelog ==
   * Clarify ordering text for portal table entries
   * Clarify length of time for which handles must remain valid for Unlink
   * Don't make constants be enums
