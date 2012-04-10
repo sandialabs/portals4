@@ -985,9 +985,9 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  * @ingroup LEL
  * @ingroup MLEML
  */
-typedef int ptl_list_t;
-#define PTL_PRIORITY_LIST 1   /*!< The priority list associated with a portal table entry. */
-#define PTL_OVERFLOW_LIST 2   /*!< The overflow list associated with a portal table entry. */
+typedef unsigned int ptl_list_t;
+#define PTL_PRIORITY_LIST 0   /*!< The priority list associated with a portal table entry. */
+#define PTL_OVERFLOW_LIST 1   /*!< The overflow list associated with a portal table entry. */
 
 /*!
  * @enum ptl_search_op_t
@@ -997,12 +997,11 @@ typedef int ptl_list_t;
  * @ingroup LEL
  * @ingroup MLEML
  */
-typedef enum {
-    PTL_SEARCH_ONLY,  /*!< Use the LE/ME to search the unexpected list, without
-                       * consuming an item in the list. */
-    PTL_SEARCH_DELETE /*!< Use the LE/ME to search the unexpected list and
-                       * delete the item from the list. */
-} ptl_search_op_t;
+typedef unsigned int ptl_search_op_t;
+#define PTL_SEARCH_ONLY   0  /*!< Use the LE/ME to search the unexpected list,
+                              * without consuming an item in the list. */
+#define PTL_SEARCH_DELETE 1  /*!< Use the LE/ME to search the unexpected list
+                              * and delete the item from the list. */
 
 /*! Specifies that the list entry will respond to \p put operations. By
  * default, list entries reject \p put operations. If a \p put operation
@@ -1933,7 +1932,6 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
  * @implnote Other than PtlPut(), PtlGet(), PtlAtomic(), PtlFetchAtomic(), and
  *      PtlSwap() (and their triggered variants), no function in the portals
  *      API requires communication with other nodes in the system.
- * @enum ptl_ack_req_t
  * @brief Values of the type ptl_ack_req_t are used to control whether an
  *      acknowledgment should be sent when the operation completes (i.e., when
  *      the data has been written to a match list entry of the \e target
@@ -1958,12 +1956,14 @@ int PtlCTInc(ptl_handle_ct_t ct_handle,
  *      counting acknowledgment with weaker semantics. That is, it is a
  *      counting type of acknowledgment, but it can only count operations.
  */
-typedef enum {
-    PTL_NO_ACK_REQ, /*!< Requests that no acknowledgment should be generated. */
-    PTL_ACK_REQ,    /*!< Requests an acknowledgment. */
-    PTL_CT_ACK_REQ, /*!< Requests a simple counting acknowledgment. */
-    PTL_OC_ACK_REQ  /*!< Requests an operation completed acknowledgment. */
-} ptl_ack_req_t;
+typedef unsigned int ptl_ack_req_t;
+#define PTL_NO_ACK_REQ 0 /*!< Requests that no acknowledgment should be
+                          * generated. */
+#define PTL_ACK_REQ    1 /*!< Requests an acknowledgment. */
+#define PTL_CT_ACK_REQ 2 /*!< Requests a simple counting acknowledgment. */
+#define PTL_OC_ACK_REQ 3 /*!< Requests an operation completed 
+                          * acknowledgment. */
+
 /*!
  * @fn PtlPut(ptl_handle_md_t   md_handle,
  *            ptl_size_t        local_offset,
@@ -2169,96 +2169,91 @@ int PtlGet(ptl_handle_md_t  md_handle,
  *      standard syntax for fixed width floating-point types, Portals uses a
  *      system defined width for PTL_LONG_DOUBLE and PTL_LONG_DOUBLE_COMPLEX.
  *
- * @enum ptl_op_t
  * @brief An atomic operation type
  */
-typedef enum {
-    PTL_MIN,                    /*!< Compute and return the minimum of the
-                                 * initiator and target value. */
-    PTL_MAX,                    /*!< Compute and return the maximum of the
-                                 * initiator and target value. */
-    PTL_SUM,                    /*!< Compute and return the sum of the
-                                 * initiator and target value. */
-    PTL_PROD,                   /*!< Compute and return the product of the
-                                 * initiator and target value. */
-    PTL_LOR,                    /*!< Compute and return the logical OR of the
-                                 * initiator and target value. */
-    PTL_LAND,                   /*!< Compute and return the logical AND of the
-                                 * initiator and target value. */
-    PTL_BOR,                    /*!< Compute and return the bitwise OR of the
-                                 * initiator and target value. */
-    PTL_BAND,                   /*!< Compute and return the bitwise AND of the
-                                 * initiator and target value. */
-    PTL_LXOR,                   /*!< Compute and return the logical XOR of the
-                                 * initiator and target value. */
-    PTL_BXOR,                   /*!< Compute and return the bitwise XOR of the
-                                 * initiator and target value. */
-    PTL_SWAP,                   /*!< Swap the initiator and target value and
-                                 * return the target value. */
-    PTL_CSWAP,                  /*!< A conditional swap -- if the value of the
-                                 * operand is equal to the target value, the
-                                 * initiator and target value are swapped. The
-                                 * target value is always returned. This
-                                 * operation is limited to single data items.
-                                 */
-    PTL_CSWAP_NE,               /*!< A conditional swap -- if the value of the
-                                 * operand is not equal to the target value,
-                                 * the initiator and target value are swapped.
-                                 * The target value is always returned. This
-                                 * operation is limited to single data items.
-                                 */
-    PTL_CSWAP_LE,               /*!< A conditional swap -- if the value of the
-                                 * operand is less than or equal to the target
-                                 * value, the initiator and target value are
-                                 * swapped. The target value is always
-                                 * returned. This operation is limited to
-                                 * single data items. */
-    PTL_CSWAP_LT,               /*!< A conditional swap -- if the value of the
-                                 * operand is les than the target value, the
-                                 * initiator and target value are swapped. The
-                                 * target value is always returned. This
-                                 * operation is limited to single data items.
-                                 */
-    PTL_CSWAP_GE,               /*!< A conditional swap -- if the value of the
-                                 * operand is greater than or equal to the
-                                 * target value, the initiator and target value
-                                 * are swapped. The target value is always
-                                 * returned. This operation is limited to
-                                 * single data items. */
-    PTL_CSWAP_GT,               /*!< A conditional swap -- if the value of the
-                                 * operand is greater than the target value,
-                                 * the initiator and target value are swapped.
-                                 * The target value is always returned. This
-                                 * operation is limited to single data items.
-                                 */
-    PTL_MSWAP                   /*!< A swap under mask -- update the bits of
-                                 * the target value that are set to 1 in the
-                                 * operand and return the target value. This
-                                 * operation is limited to single data items.
-                                 */
-} ptl_op_t;
-#define PTL_OP_LAST (PTL_MSWAP + 1)
+typedef unsigned int ptl_op_t;
+#define PTL_MIN       0    /*!< Compute and return the minimum of the
+                            * initiator and target value. */
+#define PTL_MAX       1    /*!< Compute and return the maximum of the
+                            * initiator and target value. */
+#define PTL_SUM       2    /*!< Compute and return the sum of the
+                            * initiator and target value. */
+#define PTL_PROD      3    /*!< Compute and return the product of the
+                            * initiator and target value. */
+#define PTL_LOR       4    /*!< Compute and return the logical OR of the
+                            * initiator and target value. */
+#define PTL_LAND      5    /*!< Compute and return the logical AND of the
+                            * initiator and target value. */
+#define PTL_BOR       6    /*!< Compute and return the bitwise OR of the
+                            * initiator and target value. */
+#define PTL_BAND      7    /*!< Compute and return the bitwise AND of the
+                            * initiator and target value. */
+#define PTL_LXOR      8    /*!< Compute and return the logical XOR of the
+                            * initiator and target value. */
+#define PTL_BXOR      9    /*!< Compute and return the bitwise XOR of the
+                            * initiator and target value. */
+#define PTL_SWAP     10    /*!< Swap the initiator and target value and
+                            * return the target value. */
+#define PTL_CSWAP    11    /*!< A conditional swap -- if the value of the
+                            * operand is equal to the target value, the
+                            * initiator and target value are swapped. The
+                            * target value is always returned. This
+                            * operation is limited to single data items. */
+#define PTL_CSWAP_NE 12    /*!< A conditional swap -- if the value of the
+                            * operand is not equal to the target value,
+                            * the initiator and target value are swapped.
+                            * The target value is always returned. This
+                            * operation is limited to single data items. */
+#define PTL_CSWAP_LE 13    /*!< A conditional swap -- if the value of the
+                            * operand is less than or equal to the target
+                            * value, the initiator and target value are
+                            * swapped. The target value is always
+                            * returned. This operation is limited to
+                            * single data items. */
+#define PTL_CSWAP_LT 14    /*!< A conditional swap -- if the value of the
+                            * operand is les than the target value, the
+                            * initiator and target value are swapped. The
+                            * target value is always returned. This
+                            * operation is limited to single data items.
+                            */
+#define PTL_CSWAP_GE 15    /*!< A conditional swap -- if the value of the
+                            * operand is greater than or equal to the
+                            * target value, the initiator and target value
+                            * are swapped. The target value is always
+                            * returned. This operation is limited to
+                            * single data items. */
+#define PTL_CSWAP_GT 16    /*!< A conditional swap -- if the value of the
+                            * operand is greater than the target value,
+                            * the initiator and target value are swapped.
+                            * The target value is always returned. This
+                            * operation is limited to single data items. */
+#define PTL_MSWAP    17    /*!< A swap under mask -- update the bits of
+                            * the target value that are set to 1 in the
+                            * operand and return the target value. This
+                            * operation is limited to single data items. */
+#define PTL_OP_LAST  18
+
 /*!
- * @enum ptl_datatype_t
  * @brief The type of data an atomic operation is operating on
  */
-typedef enum {
-    PTL_INT8_T,         /*!< 8-bit signed integer */
-    PTL_UINT8_T,        /*!< 8-bit unsigned integer */
-    PTL_INT16_T,        /*!< 16-bit signed integer */
-    PTL_UINT16_T,       /*!< 16-bit unsigned integer */
-    PTL_INT32_T,        /*!< 32-bit signed integer */
-    PTL_UINT32_T,       /*!< 32-bit unsigned integer */
-    PTL_FLOAT,          /*!< 32-bit floating-point number */
-    PTL_INT64_T,        /*!< 64-bit signed integer */
-    PTL_UINT64_T,       /*!< 64-bit unsigned integer */
-    PTL_DOUBLE,         /*!< 64-bit floating-point number */
-    PTL_FLOAT_COMPLEX,  /*!< 32-bit floating-point complex number */
-    PTL_DOUBLE_COMPLEX, /*!< 64-bit floating-point complex number */
-    PTL_LONG_DOUBLE,
-    PTL_LONG_DOUBLE_COMPLEX
-} ptl_datatype_t;
-#define PTL_DATATYPE_LAST (PTL_LONG_DOUBLE_COMPLEX + 1)
+typedef unsigned int ptl_datatype_t;
+
+#define PTL_INT8_T   0      /*!< 8-bit signed integer */
+#define PTL_UINT8_T  1      /*!< 8-bit unsigned integer */
+#define PTL_INT16_T  2      /*!< 16-bit signed integer */
+#define PTL_UINT16_T 3      /*!< 16-bit unsigned integer */
+#define PTL_INT32_T  4      /*!< 32-bit signed integer */
+#define PTL_UINT32_T 5      /*!< 32-bit unsigned integer */
+#define PTL_FLOAT    6      /*!< 32-bit floating-point number */
+#define PTL_INT64_T  7      /*!< 64-bit signed integer */
+#define PTL_UINT64_T 8      /*!< 64-bit unsigned integer */
+#define PTL_DOUBLE   9      /*!< 64-bit floating-point number */
+#define PTL_FLOAT_COMPLEX  10  /*!< 32-bit floating-point complex number */
+#define PTL_DOUBLE_COMPLEX 11  /*!< 64-bit floating-point complex number */
+#define PTL_LONG_DOUBLE    12 
+#define PTL_LONG_DOUBLE_COMPLEX 13
+#define PTL_DATATYPE_LAST  14
+
 /*!
  * @fn PtlAtomic(ptl_handle_md_t    md_handle,
  *               ptl_size_t         local_offset,
@@ -2554,7 +2549,6 @@ int PtlAtomicSync(void);
 /*!
  * @addtogroup EQ (EQ) Events and Event Queues
  * @{
- * @enum ptl_event_kind_t
  * @brief The portals API defines twelve types of events that can be logged in
  *      an event queue.
  * @implnote An implementation is not required to deliver overflow events, if
@@ -2563,93 +2557,94 @@ int PtlAtomicSync(void);
  *      choose to deliver the message into the memory of the ME that would
  *      eventually be posted.
  */
-typedef enum {
-    /*! A \p get operation completed on the \e target. Portals will not read
-     * from memory on behalf of this operation once this event has been logged.
-     */
-    PTL_EVENT_GET,
+typedef unsigned int ptl_event_kind_t;
 
-    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p get
-     * header in the unexpected list. */
-    PTL_EVENT_GET_OVERFLOW,
+/*! A \p get operation completed on the \e target. Portals will not read
+ * from memory on behalf of this operation once this event has been logged.
+ */
+#define PTL_EVENT_GET 0
 
-    /*! A \p put operation completed at the \e target. Portals will not alter
-     * the memory (on behalf of this operation) once this event has been
-     * logged. */
-    PTL_EVENT_PUT,
+/*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p get
+ * header in the unexpected list. */
+#define PTL_EVENT_GET_OVERFLOW 1
 
-    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p put
-     * header in the unexpected list. */
-    PTL_EVENT_PUT_OVERFLOW,
+/*! A \p put operation completed at the \e target. Portals will not alter
+ * the memory (on behalf of this operation) once this event has been
+ * logged. */
+#define PTL_EVENT_PUT 2
 
-    /*! An \p atomic operation that does not return data to the \e initiator
-     * completed at the \e target. Portals will not read from or alter memory
-     * on behalf of this operation once this event has been logged. */
-    PTL_EVENT_ATOMIC,
+/*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched a \p put
+ * header in the unexpected list. */
+#define PTL_EVENT_PUT_OVERFLOW 3
 
-    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
-     * header in the unexpected list for an operation which does not return
-     * data to the \e initiator. */
-    PTL_EVENT_ATOMIC_OVERFLOW,
+/*! An \p atomic operation that does not return data to the \e initiator
+ * completed at the \e target. Portals will not read from or alter memory
+ * on behalf of this operation once this event has been logged. */
+#define PTL_EVENT_ATOMIC 4
 
-    /*! An \p atomic operation that returns data to the \e initiator completed
-     * at the \e target. Portals will not read from or alter memory on behalf
-     * of this operation once this event has been logged. */
-    PTL_EVENT_FETCH_ATOMIC,
+/*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+ * header in the unexpected list for an operation which does not return
+ * data to the \e initiator. */
+#define PTL_EVENT_ATOMIC_OVERFLOW 5
 
-    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
-     * header in the unexpected list for an operation which returns data to the
-     * \e initiator. */
-    PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+/*! An \p atomic operation that returns data to the \e initiator completed
+ * at the \e target. Portals will not read from or alter memory on behalf
+ * of this operation once this event has been logged. */
+#define PTL_EVENT_FETCH_ATOMIC 6
 
-    /*! A \p reply operation has completed at the \e initiator. This event is
-     * logged after the data (if any) from the reply has been written into the
-     * memory descriptor. */
-    PTL_EVENT_REPLY,
+/*! A list entry posted by PtlLEAppend() or PtlMEAppend() matched an \p atomic
+ * header in the unexpected list for an operation which returns data to the
+ * \e initiator. */
+#define PTL_EVENT_FETCH_ATOMIC_OVERFLOW 7
 
-    /*! A \p send operation has completed at the \e initiator. This event is
-     * logged after it is safe to reuse the buffer, but does not mean the
-     * message has been processed by the \e target. */
-    PTL_EVENT_SEND,
+/*! A \p reply operation has completed at the \e initiator. This event is
+ * logged after the data (if any) from the reply has been written into the
+ * memory descriptor. */
+#define PTL_EVENT_REPLY 8
 
-    /*! An \p acknowledgment was received. This event is logged when the
-     * acknowledgment is received. Receipt of a \c PTL_EVENT_ACK indicates
-     * remote completion of the operation. Remote completion indicates that
-     * local completion has also occurred. */
-    PTL_EVENT_ACK,
+/*! A \p send operation has completed at the \e initiator. This event is
+ * logged after it is safe to reuse the buffer, but does not mean the
+ * message has been processed by the \e target. */
+#define PTL_EVENT_SEND 9
 
-    /*! Resource exhaustion has occurred on this portal table entry, which has
-     * entered a flow control situation. */
-    PTL_EVENT_PT_DISABLED,
+/*! An \p acknowledgment was received. This event is logged when the
+ * acknowledgment is received. Receipt of a \c PTL_EVENT_ACK indicates
+ * remote completion of the operation. Remote completion indicates that
+ * local completion has also occurred. */
+#define PTL_EVENT_ACK 10
 
-    /*! A list entry posted by PtlLEAppend() or PtlMEAppend() has successfully
-     * linked into the specified list. */
-    PTL_EVENT_LINK,
+/*! Resource exhaustion has occurred on this portal table entry, which has
+ * entered a flow control situation. */
+#define PTL_EVENT_PT_DISABLED 11
 
-    /*! A list entry/match list entry was automatically unlinked. A \c
-     * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match
-     * list entry passed into the PtlLEAppend()/PtlMEAppend() operation was
-     * marked with the \c PTL_LE_USE_ONCE / \c PTL_ME_USE_ONCE option and found
-     * a corresponding unexpected message before being "linked" into the
-     * priority list. */
-    PTL_EVENT_AUTO_UNLINK,
+/*! A list entry posted by PtlLEAppend() or PtlMEAppend() has successfully
+ * linked into the specified list. */
+#define PTL_EVENT_LINK 12
 
-    /*! A list entry/match list entry previously automatically unlinked from
-     * the overflow list is now free to be reused by the application. A \c
-     * PTL_EVENT_AUTO_FREE event is generated when Portals will not generate
-     * any further events which resulted from messages delivered into the
-     * specified overflow list entry. This also indicates that the unexpected
-     * list contains no more items associated with this entry. */
-    PTL_EVENT_AUTO_FREE,
+/*! A list entry/match list entry was automatically unlinked. A \c
+ * PTL_EVENT_AUTO_UNLINK event is generated even if the list entry/match
+ * list entry passed into the PtlLEAppend()/PtlMEAppend() operation was
+ * marked with the \c PTL_LE_USE_ONCE / \c PTL_ME_USE_ONCE option and found
+ * a corresponding unexpected message before being "linked" into the
+ * priority list. */
+#define PTL_EVENT_AUTO_UNLINK 13
 
-    /*! A PtlLESearch() or PtlMESearch() call completed. If a matching message was
-     * found in the unexpected list, \c PTL_NI_OK is returned in the \a
-     * ni_fail_type field of the event and the event queue entries are filled
-     * in as if it were an overflow event. Otherwise, a failure is recorded in
-     * the \a ni_fail_type field using \c PTL_NI_NO_MATCH, the \a user_ptr is
-     * filled in correctly, and the other fields are undefined. */
-    PTL_EVENT_SEARCH
-} ptl_event_kind_t;
+/*! A list entry/match list entry previously automatically unlinked from
+ * the overflow list is now free to be reused by the application. A \c
+ * PTL_EVENT_AUTO_FREE event is generated when Portals will not generate
+ * any further events which resulted from messages delivered into the
+ * specified overflow list entry. This also indicates that the unexpected
+ * list contains no more items associated with this entry. */
+#define PTL_EVENT_AUTO_FREE 14
+
+/*! A PtlLESearch() or PtlMESearch() call completed. If a matching message was
+ * found in the unexpected list, \c PTL_NI_OK is returned in the \a
+ * ni_fail_type field of the event and the event queue entries are filled
+ * in as if it were an overflow event. Otherwise, a failure is recorded in
+ * the \a ni_fail_type field using \c PTL_NI_NO_MATCH, the \a user_ptr is
+ * filled in correctly, and the other fields are undefined. */
+#define PTL_EVENT_SEARCH 15
+
 /*!
  * @struct ptl_event_t
  * @brief An event queue contains ptl_event_t structures, which contain a \a
