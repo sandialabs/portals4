@@ -111,6 +111,7 @@ struct buf {
 	ptl_size_t		mlength;	/* todo: may remove */
 	ptl_size_t		moffset;	/* todo: may remove */
 	ptl_ni_fail_t	ni_fail;	/* todo: may remove */
+	ptl_list_t		matching_list; /* for ptl_list event field */
 
 	conn_t			*conn;
 

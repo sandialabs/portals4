@@ -565,6 +565,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		ev->mlength		= buf->mlength;
 		ev->remote_offset	= buf->moffset;
 		ev->ni_fail_type	= buf->ni_fail;
+		ev->ptl_list		= buf->matching_list;
 	}
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
@@ -592,6 +593,7 @@ void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
 	ev->mlength		= buf->mlength;
 	ev->match_bits		= le64_to_cpu(hdr->match_bits);
 	ev->hdr_data		= le64_to_cpu(hdr->hdr_data);
+	ev->ptl_list		= buf->matching_list;
 	ev->pt_index		= le32_to_cpu(hdr->pt_index);
 	ev->uid			= le32_to_cpu(hdr->uid);
 	ev->rlength		= le64_to_cpu(hdr->length);
