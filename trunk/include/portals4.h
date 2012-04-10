@@ -985,10 +985,9 @@ int PtlMDRelease(ptl_handle_md_t md_handle);
  * @ingroup LEL
  * @ingroup MLEML
  */
-typedef enum {
-    PTL_PRIORITY_LIST, /*!< The priority list associated with a portal table entry. */
-    PTL_OVERFLOW_LIST  /*!< The overflow list associated with a portal table entry. */
-} ptl_list_t;
+typedef int ptl_list_t;
+#define PTL_PRIORITY_LIST 1   /*!< The priority list associated with a portal table entry. */
+#define PTL_OVERFLOW_LIST 2   /*!< The overflow list associated with a portal table entry. */
 
 /*!
  * @enum ptl_search_op_t
