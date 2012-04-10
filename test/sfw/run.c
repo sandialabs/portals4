@@ -1146,6 +1146,11 @@ static int check_attr(struct node_info *info, xmlNode *node)
 				return 1;
 			}
 			break;
+		case ATTR_EVENT_PTL_LIST:
+			if(info->eq_event.ptl_list != get_list(val)) {
+				return 1;
+			}
+			break;
 		case ATTR_CT_EVENT_SUCCESS:
 			if(info->ct_event.success != get_number(info, val)) {
 				return 1;

@@ -562,6 +562,8 @@ found_one:
 			      &buf->le->pt->unexpected_list);
 	}
 
+	buf->matching_list = buf->le->ptl_list;
+
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* now that we have determined the list element
@@ -1318,6 +1320,7 @@ static int tgt_send_ack(buf_t *buf)
 	ack_hdr->ni_fail = buf->ni_fail;
 	ack_hdr->length	= cpu_to_le64(buf->mlength);
 	ack_hdr->offset	= cpu_to_le64(buf->moffset);
+	ack_hdr->matching_list = buf->matching_list;
 
 	switch (ack_req) {
 	case PTL_ACK_REQ:
@@ -1406,6 +1409,7 @@ static int tgt_send_reply(buf_t *buf)
 	rep_hdr->length	= cpu_to_le64(buf->mlength);
 	rep_hdr->offset	= cpu_to_le64(buf->moffset);
 	rep_hdr->operation = OP_REPLY;
+	rep_hdr->matching_list = buf->matching_list;
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
 		/* The LE must be released before we sent the ack. */

@@ -24,6 +24,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
@@ -114,6 +115,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -155,6 +157,7 @@
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -241,6 +244,7 @@
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                         <barrier/>
@@ -286,6 +290,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -380,6 +385,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -426,6 +432,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -475,6 +482,7 @@
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
+                              <check event_ptl_list="PRIORITY"/>
                             </ptl_eq_poll>
                             <barrier/>
                           </ptl_md>
@@ -579,6 +587,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                           <barrier/>
@@ -625,6 +634,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -675,6 +685,7 @@
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
+                              <check event_ptl_list="PRIORITY"/>
                             </ptl_eq_poll>
                             <ptl_eq_poll ret="EQ_EMPTY"/>
                             <barrier/>
@@ -780,6 +791,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -826,6 +838,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -916,6 +929,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="432"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -956,6 +970,7 @@
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -1041,6 +1056,7 @@
                           <check event_type="REPLY"/>
                           <check event_user_ptr="234"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -1086,6 +1102,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -1178,6 +1195,7 @@
                           <check event_type="ACK"/>
                           <check event_user_ptr="265"/>
                           <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
                         </ptl_eq_poll>
                         <ptl_eq_poll ret="EQ_EMPTY"/>
                         <barrier/>
@@ -1224,6 +1242,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -1273,6 +1292,7 @@
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
+                              <check event_ptl_list="PRIORITY"/>
                             </ptl_eq_poll>
                             <ptl_eq_poll ret="EQ_EMPTY"/>
                             <barrier/>
@@ -1375,6 +1395,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -1422,6 +1443,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll ret="EQ_EMPTY"/>
                           <barrier/>
@@ -1471,6 +1493,7 @@
                               <check event_type="REPLY"/>
                               <check event_user_ptr="523"/>
                               <check event_ni_fail="OK"/>
+                              <check event_ptl_list="PRIORITY"/>
                             </ptl_eq_poll>
                             <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                             <barrier/>
@@ -1573,6 +1596,7 @@
                             <check event_type="REPLY"/>
                             <check event_user_ptr="523"/>
                             <check event_ni_fail="OK"/>
+                            <check event_ptl_list="PRIORITY"/>
                           </ptl_eq_poll>
                           <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                           <barrier/>

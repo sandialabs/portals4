@@ -49,6 +49,7 @@
                           <!-- Wait for PTL_NI_OK event -->
                           <ptl_eq_wait>
                             <check event_type="SEARCH" event_ni_fail="OK"/>
+                            <check event_ptl_list="OVERFLOW"/>
                           </ptl_eq_wait>
                           
                         </ptl_me_search>
@@ -144,6 +145,7 @@
                           <!-- Wait for PTL_NI_OK event -->
                           <ptl_eq_wait>
                             <check event_type="SEARCH" event_ni_fail="OK"/>
+                            <check event_ptl_list="OVERFLOW"/>
                           </ptl_eq_wait>
                           
                         </ptl_le_search>
@@ -239,6 +241,7 @@
                           <!-- Wait for PTL_NI_OK event -->
                           <ptl_eq_wait>
                             <check event_type="SEARCH" event_ni_fail="OK"/>
+                            <check event_ptl_list="OVERFLOW"/>
                           </ptl_eq_wait>
                           
                         </ptl_me_search>
@@ -334,6 +337,7 @@
                           <!-- Wait for PTL_NI_OK event -->
                           <ptl_eq_wait>
                             <check event_type="SEARCH" event_ni_fail="OK"/>
+                            <check event_ptl_list="OVERFLOW"/>
                           </ptl_eq_wait>
                           
                         </ptl_le_search>
@@ -438,6 +442,7 @@
                         <!-- Wait for PTL_NI_OK event -->
                         <ptl_eq_wait>
                           <check event_type="SEARCH" event_ni_fail="OK"/>
+                          <check event_ptl_list="OVERFLOW"/>
                         </ptl_eq_wait>
                         
                       </ptl_me_search>
@@ -556,6 +561,7 @@
                         <!-- Wait for PTL_NI_OK event -->
                         <ptl_eq_wait>
                           <check event_type="SEARCH" event_ni_fail="OK"/>
+                          <check event_ptl_list="OVERFLOW"/>
                         </ptl_eq_wait>
                         
                       </ptl_me_search>

@@ -537,9 +537,11 @@ static int wait_recv(buf_t *buf)
 	if (hdr->operation <= OP_ACK) {
 		/* ACK and REPLY. */
 		buf->moffset = le64_to_cpu(hdr->offset);
+		buf->matching_list = hdr->matching_list;
 	} else {
 		/* Set a random invalid value. */
 		buf->moffset = 0x77777777;
+		buf->matching_list = 0x88888888;
 	}
 
 	if (hdr->operation <= OP_CT_ACK) {

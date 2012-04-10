@@ -103,6 +103,7 @@ typedef struct ack_hdr {
 	PTL_COMMON1_HDR
 	__be64			length;
 	__be64			offset;
+	unsigned char   matching_list;
 } ack_hdr_t;
 
 #endif /* PTL_HDR_H */

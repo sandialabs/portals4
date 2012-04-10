@@ -2707,6 +2707,10 @@ typedef struct {
     /*! Indicates the type of the event. */
     ptl_event_kind_t type;
 
+    /*! The list entry or match list entry list in which the operation
+     * was delivered */
+    ptl_list_t ptl_list;
+
     /*! The portal table index where the message arrived. */
     ptl_pt_index_t pt_index;
 

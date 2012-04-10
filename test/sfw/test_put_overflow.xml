@@ -27,6 +27,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -88,6 +89,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -158,6 +160,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -230,6 +233,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -311,6 +315,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -371,6 +376,7 @@
                       
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
+                        <check event_ptl_list="OVERFLOW"/>
                         <check event_type="ACK"/>
                       </ptl_eq_wait>
                       
@@ -439,6 +445,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -511,6 +518,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -592,6 +600,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>
@@ -662,6 +671,7 @@
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
+                        <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
                       
                     </ptl_md>

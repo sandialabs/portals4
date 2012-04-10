@@ -169,6 +169,7 @@ static struct dict_init {
 	{"event_ni_fail",		TYPE_ATTR,		ATTR_EVENT_NI_FAIL},
 	{"event_atom_op",		TYPE_ATTR,		ATTR_EVENT_ATOM_OP},
 	{"event_atom_type",		TYPE_ATTR,		ATTR_EVENT_ATOM_TYPE},
+	{"event_ptl_list",		TYPE_ATTR,		ATTR_EVENT_PTL_LIST},
 
 	{"ct_handle",			TYPE_ATTR,		ATTR_CT_HANDLE},
 	{"ct_event_success",		TYPE_ATTR,		ATTR_CT_EVENT_SUCCESS},
