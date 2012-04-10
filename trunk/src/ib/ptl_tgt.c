@@ -312,7 +312,7 @@ static int tgt_start(buf_t *buf)
 		return STATE_TGT_ERROR;
 	}
 
-	/* initilize fields */
+	/* initialize fields */
 	INIT_LIST_HEAD(&buf->unexpected_list);
 	INIT_LIST_HEAD(&buf->rdma_list);
 	buf->matching.le = NULL;
