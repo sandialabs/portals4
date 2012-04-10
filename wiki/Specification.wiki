@@ -7,6 +7,21 @@
 
 = Draft Change History =
 
+== April 10, 2012 ChangeLog ==
+
+  * Clarify ordering text for portal table entries
+  * Clarify length of time for which handles must remain valid for Unlink
+  * Don't make constants be enums
+  * Add the ptl_list an operation was delivered to as one of the event fields
+  * Update event structure table to say some fields are undefined in error conditions
+  * Added advice to users about recovering from flow control
+  * Define match_bits to be 0 in events when using LEs.
+  * Update text around ME/LEUnlink race conditions
+  * Fix a typo regading node vs. process in ptl_process_t description
+  * clarify "properly" (by no longer using the word "properly")
+  * Clean up use of list entry instead of match list entry in event types description
+  * Clarify mlength, particularly for Search events
+
 == November 29, 2011 Changelog ==
   * Clean up use of list entry instead of match list entry in event types description
   * Clarify mlength, particularly for Search events
