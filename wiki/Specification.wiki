@@ -2,12 +2,12 @@
 
 
 = Latest Draft =
-  * [http://portals4.googlecode.com/files/portals40.pdf Portals Document (pdf)]
-  * [http://portals4.googlecode.com/files/portals40-diff.pdf Portals Document with changes (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120409.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120409-diff.pdf Portals Document with changes (pdf)]
 
 = Draft Change History =
 
-== April 10, 2012 Changelog ==
+== April 09, 2012 Changelog ==
   * Clarify ordering text for portal table entries
   * Clarify length of time for which handles must remain valid for Unlink
   * Don't make constants be enums
