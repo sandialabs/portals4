@@ -196,6 +196,7 @@ static int do_knem_transfer(buf_t *buf)
 
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
+	.buf_alloc = sbuf_alloc,
 	.post_tgt_dma = do_knem_transfer,
 	.send_message = send_message_shmem,
 };

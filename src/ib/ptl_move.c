@@ -25,11 +25,7 @@ static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **retbuf)
 		return PTL_FAIL;
 
 	/* allocate the correct type of buf */
-	if (conn->transport.type == CONN_TYPE_RDMA)
-		err = buf_alloc(ni, &buf);
-	else
-		err = sbuf_alloc(ni, &buf);
-
+	err = conn->transport.buf_alloc(ni, &buf);
 	if (unlikely(err)) {
 		conn_put(conn);
 		return err;

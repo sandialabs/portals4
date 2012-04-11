@@ -447,6 +447,7 @@ static int process_rdma(buf_t *buf)
 
 struct transport transport_rdma = {
 	.type = CONN_TYPE_RDMA,
+	.buf_alloc = buf_alloc,
 	.post_tgt_dma = process_rdma,
 	.send_message = send_message_rdma,
 };
