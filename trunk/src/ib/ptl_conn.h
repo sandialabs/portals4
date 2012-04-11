@@ -38,8 +38,9 @@ enum transport_type {
 struct transport {
 	enum transport_type	type;
 
-	int			(*post_tgt_dma)(struct buf *buf);
-	int			(*send_message)(struct buf *buf, int from_init);
+	int (*buf_alloc)(ni_t *ni, struct buf **buf_p);
+	int (*post_tgt_dma)(struct buf *buf);
+	int (*send_message)(struct buf *buf, int from_init);
 };
 
 extern struct transport transport_rdma;
