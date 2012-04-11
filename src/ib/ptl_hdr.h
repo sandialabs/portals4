@@ -54,10 +54,11 @@ enum hdr_fmt {
 	unsigned int	ni_fail:4;	/* response only */	\
 	unsigned int	data_in:1;		\
 	unsigned int	data_out:1;		\
-	unsigned int    pad:10;			\
+	unsigned int    matching_list:2; 	/* response only */	\
+	unsigned int    pad:8;			\
 	unsigned int	ni_type:4;	/* request only */	\
 	unsigned int	pkt_fmt:4;	/* request only */	\
-	__be32			handle;
+	__le32			handle;
 
 #define PTL_COMMON2_HDR				\
 	unsigned int	ack_req:4;		\
@@ -65,27 +66,27 @@ enum hdr_fmt {
 	unsigned int	atom_op:5;		\
 	unsigned int	reserved_19:19;	\
 	union {							\
-	__be32			dst_nid;		\
-	__be32			dst_rank;		\
+	__le32			dst_nid;		\
+	__le32			dst_rank;		\
 	};								\
-	__be32			dst_pid;		\
+	__le32			dst_pid;		\
 	union {							\
-	__be32			src_nid;		\
-	__be32			src_rank;		\
+	__le32			src_nid;		\
+	__le32			src_rank;		\
 	};								\
-	__be32			src_pid;		\
-	__be64			length;			\
-	__be64			offset;			\
+	__le32			src_pid;		\
+	__le64			length;			\
+	__le64			offset;			\
 
 /**
  * @brief Header for Portals request messages.
  */
 #define PTL_REQ_HDR					\
-	__be64			match_bits;		\
-	__be64			hdr_data;		\
-	__be64			operand;		\
-	__be32			pt_index;		\
-	__be32			uid;
+	__le64			match_bits;		\
+	__le64			hdr_data;		\
+	__le64			operand;		\
+	__le32			pt_index;		\
+	__le32			uid;
 
 typedef struct ptl_hdr {
 	PTL_COMMON1_HDR
@@ -101,9 +102,8 @@ typedef struct req_hdr {
 /* Header for an ack or a reply. */
 typedef struct ack_hdr {
 	PTL_COMMON1_HDR
-	__be64			length;
-	__be64			offset;
-	unsigned char   matching_list;
+	__le64			length;
+	__le64			offset;
 } ack_hdr_t;
 
 #endif /* PTL_HDR_H */
