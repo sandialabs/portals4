@@ -1331,11 +1331,12 @@ static int tgt_send_ack(buf_t *buf)
 		ack_hdr->operation = OP_ACK;
 		break;
 	case PTL_CT_ACK_REQ:
-		ack_buf->length -= sizeof(__be64); /* don't need offset */
+		ack_buf->length -= sizeof(ack_hdr->offset); /* don't need offset */
 		ack_hdr->operation = OP_CT_ACK;
 		break;
 	case PTL_OC_ACK_REQ:
-		ack_buf->length -= 2*sizeof(__be64); /* don't need offset nor length */
+		ack_buf->length -= (sizeof(ack_hdr->offset) +
+							sizeof(ack_hdr->length)); /* don't need offset nor length */
 		ack_hdr->operation = OP_OC_ACK;
 		break;
 	default:
@@ -1345,7 +1346,8 @@ static int tgt_send_ack(buf_t *buf)
 
 	/* Initiator is still waiting for an ACK to unblock its buf. */
 	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
-		ack_buf->length = sizeof(ack_hdr_t) - 2*sizeof(__be64); /* don't need offset nor length */
+		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->offset) -
+			sizeof(ack_hdr->length); /* don't need offset nor length */
 		ack_hdr->operation = OP_NO_ACK;
 	}
 
