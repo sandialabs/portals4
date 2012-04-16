@@ -264,6 +264,8 @@ void cleanup_shmem(ni_t *ni);
 int setup_shmem(ni_t *ni);
 void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
 					 const ptl_process_t *mapping);
+void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
+buf_t *shmem_dequeue(ni_t *ni);
 #else
 static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
 {

@@ -444,7 +444,9 @@ int setup_shmem(ni_t *ni)
 	shm_fd = -1;
 
 	/* Now we can create the buffer pool */
-	queue_init(ni);
+	ni->shmem.queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
+						(ni->shmem.per_proc_comm_buf_size*ni->shmem.index));
+	queue_init(ni->shmem.queue);
 
 	/* The buffer is right after the nemesis queue. */
 	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.queue + 1);
@@ -533,4 +535,30 @@ int setup_shmem(ni_t *ni)
 void cleanup_shmem(ni_t *ni)
 {
 	release_shmem_resources(ni);
+}
+
+/**
+ * @brief enqueue a buf to a pid using shared memory.
+ *
+ * @param[in] ni the network interface
+ * @param[in] buf the buf
+ * @param[in] dest the destination pid
+ */
+void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
+{	      
+	queue_t *queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
+			   (ni->shmem.per_proc_comm_buf_size * dest));
+
+	buf->obj.next = NULL;
+	enqueue(ni->shmem.comm_pad, queue, buf);
+}
+
+/**
+ * @brief dequeue a buf using shared memory.
+ *
+ * @param[in] ni the network interface.
+ */
+buf_t *shmem_dequeue(ni_t *ni)
+{			       
+	return dequeue(ni->shmem.comm_pad, ni->shmem.queue);
 }
