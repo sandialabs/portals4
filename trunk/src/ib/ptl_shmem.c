@@ -401,7 +401,7 @@ int setup_shmem(ni_t *ni)
 		} while(try_count);
 
 		if (shm_fd == -1) {
-			ptl_warn("Couln't open the shared memory file %s\n", comm_pad_shm_name);
+			ptl_warn("Couldn't open the shared memory file %s\n", comm_pad_shm_name);
 			goto exit_fail;
 		}
 
@@ -412,7 +412,7 @@ int setup_shmem(ni_t *ni)
 			struct stat buf;
 
 			if (fstat(shm_fd, &buf) == -1) {
-				ptl_warn("Couln't fstat the shared memory file\n");
+				ptl_warn("Couldn't fstat the shared memory file\n");
 				goto exit_fail;
 			}
 
