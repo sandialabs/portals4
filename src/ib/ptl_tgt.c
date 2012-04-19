@@ -498,18 +498,6 @@ static int tgt_get_match(buf_t *buf)
 	/* Synchronize with LE/ME append/search APIs */
 	PTL_FASTLOCK_LOCK(&pt->lock);
 
-	/* Check to see if lists are empty and flow control enabled */
-	if (pt->options & PTL_PT_FLOWCTRL) {
-		if (list_empty(&pt->priority_list) &&
-		    list_empty(&pt->overflow_list)) {
-			pt->disable |= PT_AUTO_DISABLE;
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
-			buf->ni_fail = PTL_NI_FLOW_CTRL;
-			buf->le = NULL;
-			return STATE_TGT_DROP;
-		}
-	}
-
 	/* Check the priority list.
 	 * If we find a match take a reference to protect
 	 * the list element pointer.
@@ -542,9 +530,17 @@ static int tgt_get_match(buf_t *buf)
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* Failed to match any elements */
+	if (pt->options & PTL_PT_FLOWCTRL) {
+		pt->disable |= PT_AUTO_DISABLE;
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
+		buf->ni_fail = PTL_NI_FLOW_CTRL;
+	} else {
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
+		buf->ni_fail = PTL_NI_DROPPED;		
+	}
 	buf->le = NULL;
-	buf->ni_fail = PTL_NI_DROPPED;
 	WARN();
+
 	return STATE_TGT_DROP;
 
 found_one:
