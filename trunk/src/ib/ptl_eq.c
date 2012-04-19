@@ -557,8 +557,9 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		/* The buf->ni_fail field can be overriden by the target side
 		 * before we reach this function. If the message has been
 		 * delivered then sending it was OK. */
-		if (buf->ni_fail == PTL_NI_UNDELIVERABLE)
-			ev->ni_fail_type = PTL_NI_UNDELIVERABLE;
+		if (buf->ni_fail == PTL_NI_UNDELIVERABLE ||
+			buf->ni_fail == PTL_NI_FLOW_CTRL)
+			ev->ni_fail_type = buf->ni_fail;
 		else
 			ev->ni_fail_type = PTL_NI_OK;
 	} else {
