@@ -85,8 +85,8 @@ void eq_cleanup(void *arg)
  * allocate the event queue.
  */
 int PtlEQAlloc(ptl_handle_ni_t ni_handle,
-	       ptl_size_t count,
-	       ptl_handle_eq_t *eq_handle_p)
+			   ptl_size_t count,
+			   ptl_handle_eq_t *eq_handle_p)
 {
 	int err;
 	ni_t *ni;
@@ -110,18 +110,18 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	ni = fast_to_obj(ni_handle);
 #endif
 
-        /* check limit resources to see if we can allocate another eq */
-        if (unlikely(__sync_add_and_fetch(&ni->current.max_eqs, 1) >
-            ni->limits.max_eqs)) {
-                (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
-                err = PTL_NO_SPACE;
-                goto err2;
-        }
+	/* check limit resources to see if we can allocate another eq */
+	if (unlikely(__sync_add_and_fetch(&ni->current.max_eqs, 1) >
+				 ni->limits.max_eqs)) {
+		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+		err = PTL_NO_SPACE;
+		goto err2;
+	}
 
 	/* allocate event queue object */
 	err = eq_alloc(ni, &eq);
 	if (unlikely(err)) {
-                (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
 		goto err2;
 	}
 
@@ -129,7 +129,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eq->eqe_list = calloc(count, sizeof(*eq->eqe_list));
 	if (!eq->eqe_list) {
 		err = PTL_NO_SPACE;
-                (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
 		eq_put(eq);
 		goto err2;
 	}
@@ -139,12 +139,12 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	*eq_handle_p = eq_to_handle(eq);
 
 	err = PTL_OK;
-err2:
+ err2:
 	ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
+ err1:
 	gbl_put();
-err0:
+ err0:
 #endif
 	return err;
 }
@@ -530,6 +530,25 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	return err;
 }
 
+static inline ptl_event_t *reserve_ev(eq_t * restrict eq)
+{
+	ptl_event_t *ev;
+	eqe_t *eqe;
+
+	eqe = &eq->eqe_list[eq->producer];
+
+	eqe->generation = eq->prod_gen;
+	ev = &eqe->event;
+
+	eq->producer ++;
+	if (eq->producer >= eq->count) {
+		eq->producer = 0;
+		eq->prod_gen++;
+	}
+
+	return ev;
+}
+
 /**
  * @brief Make and add a new event to the event queue from a buf.
  *
@@ -543,13 +562,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 
 	PTL_FASTLOCK_LOCK(&eq->lock);
 
-	eq->eqe_list[eq->producer].generation = eq->prod_gen;
-	ev = &eq->eqe_list[eq->producer++].event;
-	if (eq->producer >= eq->count) {
-		eq->producer = 0;
-		eq->prod_gen++;
-	}
-
+	ev = reserve_ev(eq);
 	ev->type		= type;
 	ev->user_ptr		= buf->user_ptr;
 
@@ -615,12 +628,7 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 {
 	PTL_FASTLOCK_LOCK(&eq->lock);
 
-	eq->eqe_list[eq->producer].generation = eq->prod_gen;
-	eq->eqe_list[eq->producer++].event = *ev;
-	if (eq->producer >= eq->count) {
-		eq->producer = 0;
-		eq->prod_gen++;
-	}
+	*(reserve_ev(eq)) = *ev;
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
@@ -641,12 +649,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 
 	PTL_FASTLOCK_LOCK(&eq->lock);
 
-	eq->eqe_list[eq->producer].generation = eq->prod_gen;
-	ev = &eq->eqe_list[eq->producer++].event;
-	if (eq->producer >= eq->count) {
-		eq->producer = 0;
-		eq->prod_gen++;
-	}
+	ev = reserve_ev(eq);
 
 	fill_target_event(buf, type, user_ptr, start, ev);
 
@@ -668,13 +671,7 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 
 	PTL_FASTLOCK_LOCK(&eq->lock);
 
-	eq->eqe_list[eq->producer].generation = eq->prod_gen;
-	ev = &eq->eqe_list[eq->producer++].event;
-	if (eq->producer >= eq->count) {
-		eq->producer = 0;
-		eq->prod_gen++;
-	}
-
+	ev = reserve_ev(eq);
 	ev->type = type;
 	ev->pt_index = le->pt_index;
 	ev->user_ptr = le->user_ptr;
