@@ -127,6 +127,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pt->in_use = 1;
 	pthread_mutex_unlock(&ni->pt_mutex);
 
+	pt->index = index;
 	pt->disable = 0;
 	pt->enabled = 1;
 	pt->num_tgt_active = 0;
@@ -137,6 +138,13 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	INIT_LIST_HEAD(&pt->priority_list);
 	INIT_LIST_HEAD(&pt->overflow_list);
 	INIT_LIST_HEAD(&pt->unexpected_list);
+	INIT_LIST_HEAD(&pt->flowctrl_list);
+
+	if (options & PTL_PT_FLOWCTRL) {
+		PTL_FASTLOCK_LOCK(&eq->lock);
+		list_add_tail(&pt->flowctrl_list, &eq->flowctrl_list);
+		PTL_FASTLOCK_UNLOCK(&eq->lock);
+	}
 
 	*pt_index = index;
 
