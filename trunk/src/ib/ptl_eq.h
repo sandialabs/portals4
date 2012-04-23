@@ -30,12 +30,19 @@ struct eq {
 	eqe_t			*eqe_list;	/**< circular buffer for
 						     holding events */
 	unsigned int		count;		/**< size of event queue */
+	unsigned int		count_simple;		/**< size of event queue minus reserved entries */
+	unsigned int		used;				/**< number of unreserved slots used */
 	unsigned int		producer;	/**< producer index */
 	unsigned int		consumer;	/**< consumer index */
 	unsigned int		prod_gen;	/**< producer generation */
 	unsigned int		cons_gen;	/**< consumer generation */
 	int			interrupt;	/**< if set eq is being
 						     freed or destroyed */
+
+	/** to attach the PTs supporting flow control. **/
+	struct list_head	flowctrl_list;
+	int overflowing;			/* the queue is overflowing */
+
 	PTL_FASTLOCK_TYPE		lock;		/**< mutex for eq condition */
 };
 

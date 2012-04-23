@@ -47,9 +47,12 @@ int eq_new(void *arg)
 
 	eq->producer = 0;
 	eq->consumer = 0;
+	eq->used = 0;
 	eq->prod_gen = 0;
 	eq->cons_gen = 0;
 	eq->interrupt = 0;
+
+	INIT_LIST_HEAD(&eq->flowctrl_list);
 
 	return PTL_OK;
 }
@@ -125,16 +128,19 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	/* allocate memory for event circular buffer */
-	eq->eqe_list = calloc(count, sizeof(*eq->eqe_list));
+	/* Allocate memory for event circular buffer. Add some extra room
+	 * to account for PTs with flow control. See implementation note
+	 * 19 for PtlEQAlloc(). */
+	eq->count_simple = count;
+	eq->count = count + ni->limits.max_pt_index + 1;
+
+	eq->eqe_list = calloc(eq->count, sizeof(*eq->eqe_list));
 	if (!eq->eqe_list) {
 		err = PTL_NO_SPACE;
 		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
 		eq_put(eq);
 		goto err2;
 	}
-
-	eq->count = count;
 
 	*eq_handle_p = eq_to_handle(eq);
 
@@ -259,6 +265,7 @@ static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
 			eq->cons_gen++;
 		}
 		dropped = 1;
+		eq->used --;
 	}
 
 	/* return the next valid event and update the consumer pointer */
@@ -267,6 +274,8 @@ static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
 		eq->consumer = 0;
 		eq->cons_gen++;
 	}
+
+	eq->used --;
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 
@@ -546,7 +555,49 @@ static inline ptl_event_t *reserve_ev(eq_t * restrict eq)
 		eq->prod_gen++;
 	}
 
+	eq->used ++;
+
+	/* If all unreserved entries are used, then the queue is
+	 * overflowing. It matters only if an attached PT wants flow
+	 * control. TODO: we should not be counting already inserted
+	 * reserved entries. */
+	if (eq->used == eq->count_simple &&
+		!list_empty(&eq->flowctrl_list)) {
+		eq->overflowing = 1;
+	}
+
 	return ev;
+}
+
+/* Overflow situation. The EQ lock must be taken. */
+static void process_overflowing(eq_t * restrict eq)
+{
+	/* If the EQ is overflowing, warn every PT not already stopped by
+	 * using one of the reserved EQ entries. */
+	struct list_head *l;
+	pt_t *pt;
+	ptl_event_t *ev;
+
+	assert(eq->overflowing);
+
+	list_for_each(l, &eq->flowctrl_list) {
+		pt = list_entry(l, pt_t, flowctrl_list);
+
+		if (pt->enabled || !pt->disable) {
+			pt->enabled = 0;
+			pt->disable |= PT_AUTO_DISABLE;
+
+			/* Note/TODO: this will take a reserved entry but it
+			 * will be counted as a regular entry later. */
+			ev = reserve_ev(eq);
+
+			ev->type = PTL_EVENT_PT_DISABLED;
+			ev->pt_index = pt->index;
+			ev->ni_fail_type = PTL_NI_FLOW_CTRL;
+		}
+	}
+	
+	eq->overflowing = 0;
 }
 
 /**
@@ -581,6 +632,11 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		ev->ni_fail_type	= buf->ni_fail;
 		ev->ptl_list		= buf->matching_list;
 	}
+
+	/* If the EQ is overflowing, warn every PT not already stopped by
+	 * using one of the reserved EQ entries. */
+	if (eq->overflowing)
+		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
@@ -630,6 +686,9 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 
 	*(reserve_ev(eq)) = *ev;
 
+	if (eq->overflowing)
+		process_overflowing(eq);
+
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
 		       
@@ -652,6 +711,9 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 	ev = reserve_ev(eq);
 
 	fill_target_event(buf, type, user_ptr, start, ev);
+
+	if (eq->overflowing)
+		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }
@@ -676,6 +738,9 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 	ev->pt_index = le->pt_index;
 	ev->user_ptr = le->user_ptr;
 	ev->ni_fail_type = fail_type;
+
+	if (eq->overflowing)
+		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->lock);
 }

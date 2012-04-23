@@ -33,6 +33,9 @@ struct pt {
 	/** pt options */
 	unsigned int		options;
 
+	/** Its index in the NI. */
+	unsigned int index;
+
 	/** pt entry is is use */
 	int			in_use;
 
@@ -65,6 +68,9 @@ struct pt {
 
 	/** list of unexpected xt's */
 	struct list_head	unexpected_list;
+
+	/** to attach on the EQ flow control list if this PT does it. **/
+	struct list_head	flowctrl_list;
 
 	/** spin lock to protect pt lists */
 	PTL_FASTLOCK_TYPE       lock;
