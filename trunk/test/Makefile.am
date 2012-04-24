@@ -46,7 +46,9 @@ TESTS = test_init \
 	test_ME_oversize_put \
 	test_ME_unexpected_put \
 	test_LE_flowctl_noeq \
-	test_ME_flowctl_noeq
+	test_ME_flowctl_noeq \
+	test_LE_flowctl_norecv \
+	test_ME_flowctl_norecv
 
 BENCHMARKS =
 check_PROGRAMS =
@@ -154,3 +156,9 @@ test_LE_flowctl_noeq_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
 test_ME_flowctl_noeq_SOURCES = test_flowctl_noeq.c
 test_ME_flowctl_noeq_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_flowctl_norecv_SOURCES = test_flowctl_norecv.c
+test_LE_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_flowctl_norecv_SOURCES = test_flowctl_norecv.c
+test_ME_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
