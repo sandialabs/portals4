@@ -44,7 +44,9 @@ TESTS = test_init \
 	test_ME_oversize_get \
 	test_LE_oversize_put \
 	test_ME_oversize_put \
-	test_ME_unexpected_put
+	test_ME_unexpected_put \
+	test_LE_flowctl_noeq \
+	test_ME_flowctl_noeq
 
 BENCHMARKS =
 check_PROGRAMS =
@@ -146,3 +148,9 @@ test_triggered_ctset_unordered_SOURCES = test_triggered_ctset.c
 
 test_ME_unexpected_put_SOURCES = test_unexpected_put.c
 test_ME_unexpected_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_flowctl_noeq_SOURCES = test_flowctl_noeq.c
+test_LE_flowctl_noeq_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_flowctl_noeq_SOURCES = test_flowctl_noeq.c
+test_ME_flowctl_noeq_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
