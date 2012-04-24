@@ -24,7 +24,6 @@
 
 static int rank = -1;
 static int size = 0;
-static ptl_process_t *mapping = NULL;
 
 int
 libtest_init(void)
@@ -67,8 +66,9 @@ libtest_fini(void)
 ptl_process_t*
 libtest_get_mapping(ptl_handle_ni_t ni_h)
 {
+    static ptl_process_t *mapping = NULL;
     ptl_process_t my_id;
-	int ret;
+    int ret;
 
 	if (mapping)
 		return mapping;
