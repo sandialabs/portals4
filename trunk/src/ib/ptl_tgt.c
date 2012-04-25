@@ -533,7 +533,7 @@ static int tgt_get_match(buf_t *buf)
 	if (pt->options & PTL_PT_FLOWCTRL) {
 		pt->disable |= PT_AUTO_DISABLE;
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
-		buf->ni_fail = PTL_NI_FLOW_CTRL;
+		buf->ni_fail = PTL_NI_PT_DISABLED;
 	} else {
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		buf->ni_fail = PTL_NI_DROPPED;		

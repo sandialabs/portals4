@@ -387,9 +387,11 @@ typedef unsigned char ptl_ni_fail_t;
 /*!< Indicates that a message was dropped for some reason. */
 #define PTL_NI_DROPPED 2
 
-/*!< Indicates that the remote node has exhausted its resources,
- * enabled flow control, and dropped this message. */
-#define PTL_NI_FLOW_CTRL 3
+/*!< Indicates that the portal table entry at the target was disabled
+ * and did not process the operation, either because the entry was
+ * disabled or because the entry provides flow control and a resource
+ * has been exhausted.*/
+#define PTL_NI_PT_DISABLED 3
 
 /*!< Indicates that the remote Portals addressing indicated a
  * permissions violation for this message. */
