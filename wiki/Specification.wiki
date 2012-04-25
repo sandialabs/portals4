@@ -1,13 +1,15 @@
 #summary Draft copy of the Portals 4 specification, with changelog
 
+== April 25, 2012 Draft and Changelog ==
+  * [http://portals4.googlecode.com/files/portals40-20120425.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120425-diff.pdf Portals Document with changes (pdf)]* Rename PTL_NI_FLOW_CTRL to PTL_NI_PT_DISABLED and clarify that it should be returned any time an operation targets a PT that has been disabled.  Also, clarify that PTL_NI_DROPPED should not be returned when the PT has been disabled.
+* Fixed missing closing parenthesis.
+* ptl_list field in events is not defined if in error (since the message may not have made it to the remote node)
 
-= Latest Draft =
+
+== April 09, 2012 Draft and Changelog ==
   * [http://portals4.googlecode.com/files/portals40-20120409.pdf Portals Document (pdf)]
   * [http://portals4.googlecode.com/files/portals40-20120409-diff.pdf Portals Document with changes (pdf)]
-
-= Draft Change History =
-
-== April 09, 2012 Changelog ==
   * Clarify ordering text for portal table entries
   * Clarify length of time for which handles must remain valid for Unlink
   * Don't make constants be enums
