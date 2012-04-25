@@ -355,7 +355,7 @@ static int tgt_start(buf_t *buf)
 	PTL_FASTLOCK_LOCK(&buf->pt->lock);
 	if (!buf->pt->enabled || buf->pt->disable) {
 		PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
-		buf->ni_fail = PTL_NI_DROPPED;
+		buf->ni_fail = PTL_NI_PT_DISABLED;
 		return STATE_TGT_DROP;
 	}
 	buf->pt->num_tgt_active++;
@@ -404,17 +404,22 @@ int check_match(buf_t *buf, const me_t *me)
 	ptl_size_t offset;
 	ptl_size_t length = le64_to_cpu(hdr->length);
 	ptl_size_t req_off = le64_to_cpu(hdr->offset);
-	ptl_process_t initiator;
-
-	initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-	initiator.phys.pid = le32_to_cpu(hdr->src_pid);
 
 	if (ni->options & PTL_NI_LOGICAL) {
+		ptl_process_t initiator;
+
+		initiator.rank = le32_to_cpu(hdr->src_rank);
+
 		if (!(me->id.rank == PTL_RANK_ANY ||
 		     (me->id.rank == initiator.rank))) {
 			return 0;
 		}
 	} else {
+		ptl_process_t initiator;
+
+		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+
 		if (!(me->id.phys.nid == PTL_NID_ANY ||
 		     (me->id.phys.nid == initiator.phys.nid)))
 			return 0;
