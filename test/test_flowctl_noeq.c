@@ -187,7 +187,7 @@ int main(int   argc,
                 } else {
                     fprintf(stderr, "%d: Unexpected event type %d\n", rank, ev.type);
                 }
-            } else if (ev.ni_fail_type == PTL_NI_FLOW_CTRL) {
+            } else if (ev.ni_fail_type == PTL_NI_PT_DISABLED) {
                 count++;
                 fails++;
             } else {
