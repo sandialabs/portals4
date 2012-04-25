@@ -23,7 +23,7 @@
                       <ptl_eq_poll time="200">
                         <check event_type="ACK"/>
                         <check event_user_ptr="432"/>
-                        <check event_ni_fail="FLOW_CTRL"/>
+                        <check event_ni_fail="PT_DISABLED"/>
                       </ptl_eq_poll>
                       <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                       <barrier/>
@@ -36,7 +36,7 @@
                     <ptl_eq_poll time="200">
                       <check which="INVALID"/>
                       <check event_type="PT_DISABLED"/>
-                      <check event_ni_fail="FLOW_CTRL"/>
+                      <check event_ni_fail="PT_DISABLED"/>
                     </ptl_eq_poll>
                     <ptl_eq_poll time="200" ret="EQ_EMPTY"/>
                   </if>

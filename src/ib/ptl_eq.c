@@ -593,7 +593,7 @@ static void process_overflowing(eq_t * restrict eq)
 
 			ev->type = PTL_EVENT_PT_DISABLED;
 			ev->pt_index = pt->index;
-			ev->ni_fail_type = PTL_NI_FLOW_CTRL;
+			ev->ni_fail_type = PTL_NI_PT_DISABLED;
 		}
 	}
 	
@@ -622,7 +622,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		 * before we reach this function. If the message has been
 		 * delivered then sending it was OK. */
 		if (buf->ni_fail == PTL_NI_UNDELIVERABLE ||
-			buf->ni_fail == PTL_NI_FLOW_CTRL)
+			buf->ni_fail == PTL_NI_PT_DISABLED)
 			ev->ni_fail_type = buf->ni_fail;
 		else
 			ev->ni_fail_type = PTL_NI_OK;
