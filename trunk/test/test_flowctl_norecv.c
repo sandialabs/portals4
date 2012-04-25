@@ -79,6 +79,7 @@ int main(int   argc,
         value_e.uid = PTL_UID_ANY;
         value_e.options = OPTIONS | PTL_LE_EVENT_CT_COMM;
 #if INTERFACE == 1
+        value_e.match_id.rank = PTL_RANK_ANY;
         value_e.match_bits = 0;
         value_e.ignore_bits = 0;
 #endif
@@ -183,18 +184,19 @@ int main(int   argc,
             }
         }
 
-        fprintf(stderr, "%d: Saw %d of %d events as fails\n", rank, fails, count);
+        fprintf(stderr, "%d: Saw %d of %d ACKs as fails\n", rank, fails, count);
 
         CHECK_RETURNVAL(PtlPut(md_handle,
                                0,
                                0,
-                               PTL_ACK_REQ,
+                               PTL_NO_ACK_REQ,
                                target,
                                6,
                                0,
                                0,
                                NULL,
                                0));
+        CHECK_RETURNVAL(PtlEQWait(eq_handle, &ev));
     }
 
     if (0 == rank) {
