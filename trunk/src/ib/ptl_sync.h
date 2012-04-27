@@ -64,4 +64,9 @@ static inline void *atomic_swap_ptr(void *volatile *addr, void *newval)
 	return oldval;
 }
 
+static inline void SPINLOCK_BODY(void)
+{
+	__asm__ __volatile__ ("pause" ::: "memory");
+}
+
 #endif /* PTL_SYNC_H */
