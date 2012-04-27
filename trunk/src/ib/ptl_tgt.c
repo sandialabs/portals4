@@ -318,8 +318,10 @@ static int tgt_start(buf_t *buf)
 
 	/* initialize fields */
 	INIT_LIST_HEAD(&buf->unexpected_list);
+#if WITH_TRANSPORT_IB
 	INIT_LIST_HEAD(&buf->rdma_list);
 	buf->matching.le = NULL;
+#endif
 	buf->in_atomic = 0;
 
 	/* get per conn info */
@@ -1472,7 +1474,9 @@ static int tgt_cleanup(buf_t *buf)
 		state = STATE_TGT_CLEANUP_2;
 
 	assert(!buf->indir_sge);
+#if WITH_TRANSPORT_IB
 	assert(list_empty(&buf->rdma_list));
+#endif
 
 	if (buf->send_buf) {
 		buf_put(buf->send_buf);

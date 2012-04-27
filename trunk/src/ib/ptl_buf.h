@@ -19,8 +19,10 @@ enum buf_type {
 	BUF_RECV,
 	BUF_RDMA,
 
+#ifdef WITH_TRANSPORT_SHMEM
 	BUF_SHMEM_SEND,
 	BUF_SHMEM_RETURN,
+#endif
 
 	BUF_INIT,					/* initiator buffer */
 	BUF_TGT,					/* target buffer */
@@ -201,8 +203,11 @@ struct buf {
 
 	/* Target only. Must survive through buffer reuse. */
 	struct list_head	unexpected_list;
+#if WITH_TRANSPORT_IB
+	// TODO: can we move these fields into the next rdma union?
 	struct list_head	rdma_list;
 	PTL_FASTLOCK_TYPE	rdma_list_lock;
+#endif
 
 	/* Fields that survive between buffer reuse. */
 	union {
@@ -261,6 +266,7 @@ struct buf {
 	} transfer;
 
 #if WITH_TRANSPORT_SHMEM
+	//TODO: can be moved inside transfer union ?
 	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
 	 * allocated to process the data through the receive state machine
 	 * without destroying the sbuf that belongs to
