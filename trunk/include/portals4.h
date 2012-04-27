@@ -1904,7 +1904,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles,
  * @see PtlCTInc()
  */
 int PtlCTSet(ptl_handle_ct_t ct_handle,
-             ptl_ct_event_t  test);
+             ptl_ct_event_t  new_ct);
 /*!
  * @fn PtlCTInc(ptl_handle_ct_t ct_handle,
  *              ptl_ct_event_t  increment)
