@@ -445,13 +445,14 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 }
 #endif
 
+#ifdef WITH_TRANSPORT_SHMEM
 /**
  * Process a received message in shared memory.
  *
  * @param ni the ni to poll.
  * @param buf the received buffer.
  */
-void process_recv_shmem(ni_t *ni, buf_t *buf)
+static void process_recv_shmem(ni_t *ni, buf_t *buf)
 {
 	enum recv_state state = STATE_RECV_PACKET;
 
@@ -492,6 +493,7 @@ void process_recv_shmem(ni_t *ni, buf_t *buf)
 exit:
 	return;
 }
+#endif
 
 /**
  * Progress thread. Waits for both ib and shared memory messages.
