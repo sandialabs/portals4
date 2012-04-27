@@ -75,6 +75,7 @@ extern unsigned int linesize;
 #include "ptl_iface.h"
 #include "ptl_gbl.h"
 #include "ptl_pt.h"
+#include "ptl_queue.h"
 #include "ptl_ni.h"
 #include "ptl_conn.h"
 #include "ptl_mr.h"
@@ -86,9 +87,6 @@ extern unsigned int linesize;
 #include "ptl_eq.h"
 #include "ptl_data.h"
 #include "ptl_hdr.h"
-
-/* SHMEM. */
-#include "ptl_queue.h"
 
 static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }
 static inline uint16_t be16_to_cpu(__be16 x) { return htons(x); }
