@@ -269,4 +269,9 @@ static inline void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
 
 extern int ptl_log_level;
 
+int misc_init_once(void);
+int _PtlInit(gbl_t *gbl);
+int gbl_init(gbl_t *gbl);
+void _PtlFini(gbl_t *gbl);
+
 #endif /* PTL_LOC_H */

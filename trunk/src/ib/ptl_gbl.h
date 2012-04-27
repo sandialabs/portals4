@@ -11,7 +11,6 @@ typedef struct gbl {
 	int			num_iface;	/* size of interface table */
 	iface_t			*iface;		/* interface table */
 	pthread_mutex_t		gbl_mutex;
-	int			init_once;
 	int			ref_cnt;	/* count PtlInit/PtlFini */
 	ref_t			ref;		/* sub objects references */
 	int			fd;
