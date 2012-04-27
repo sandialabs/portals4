@@ -57,4 +57,8 @@
 		abort();						\
 	} while (0)
 
+extern int debug;
+
+#define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
+
 #endif /* PTL_LOG_H */

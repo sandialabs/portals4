@@ -90,10 +90,6 @@ extern unsigned int linesize;
 /* SHMEM. */
 #include "ptl_queue.h"
 
-extern int debug;
-
-#define WARN()	do { if (debug) printf("\033[1;33mwarn:\033[0m %s(%s:%d)\n", __func__, __FILE__, __LINE__); } while(0)
-
 static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }
 static inline uint16_t be16_to_cpu(__be16 x) { return htons(x); }
 static inline __be32 cpu_to_be32(uint32_t x) { return htonl(x); }
