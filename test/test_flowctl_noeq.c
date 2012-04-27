@@ -129,18 +129,20 @@ int main(int   argc,
         while (count < ITERS * (num_procs - 1)) {
             ret = PtlEQGet(eq_handle, &ev);
             if (PTL_OK == ret) {
-                count++;
+                ;
             } else if (PTL_EQ_DROPPED) {
-                count++;
                 saw_dropped++;
+                break;
             } else {
                 fprintf(stderr, "0: Unexpected return code from EQGet: %d\n", ret);
                 return 1;
             }
 
             if (ev.type == PTL_EVENT_PT_DISABLED) {
+                CHECK_RETURNVAL(PtlPTEnable(ni_handle, pt_index));
                 saw_flowctl++;
-                break;
+            } else {
+                count++;
             }
         }
 
@@ -168,7 +170,7 @@ int main(int   argc,
                                    0));
         }
 
-        fprintf(stderr, "%d: done with sends\n", rank);
+        fprintf(stderr, "%d: done with first set of sends\n", rank);
 
         while (count < ITERS) {
             ret = PtlEQGet(eq_handle, &ev);
@@ -178,8 +180,6 @@ int main(int   argc,
                 fprintf(stderr, "%d: PtlEQGet returned %d\n", rank, ret);
                 return 1;
             }
-
-            fprintf(stderr, "%d: got event %d (%d %d)\n", rank, count, ev.type, ev.ni_fail_type);
 
             if (ev.ni_fail_type == PTL_NI_OK) {
                 if (ev.type == PTL_EVENT_SEND) {
@@ -212,6 +212,45 @@ int main(int   argc,
                                0));
         /* wait for the send event on the last put */
         CHECK_RETURNVAL(PtlEQWait(eq_handle, &ev));
+
+        while (fails > 0) {
+            CHECK_RETURNVAL(PtlPut(md_handle,
+                                   0,
+                                   0,
+                                   PTL_ACK_REQ,
+                                   target,
+                                   5,
+                                   0,
+                                   0,
+                                   NULL,
+                                   0));
+            while (1) {
+                ret = PtlEQGet(eq_handle, &ev);
+                if (PTL_EQ_EMPTY == ret) {
+                    continue;
+                } else if (PTL_OK != ret) {
+                    fprintf(stderr, "%d: PtlEQGet returned %d\n", rank, ret);
+                    return 1;
+                }
+
+                fprintf(stderr, "%d: got event (%d %d)\n", rank, ev.type, ev.ni_fail_type);
+
+                if (ev.ni_fail_type == PTL_NI_OK) {
+                    if (ev.type == PTL_EVENT_SEND) {
+                        continue;
+                    } else if (ev.type == PTL_EVENT_ACK) {
+                        fails--;
+                    } else {
+                        fprintf(stderr, "%d: Unexpected event type %d\n", rank, ev.type);
+                    }
+                } else if (ev.ni_fail_type == PTL_NI_PT_DISABLED) {
+                    ;
+                } else {
+                    fprintf(stderr, "%d: Unexpected fail type: %d\n", rank, ev.ni_fail_type);
+                    return 1;
+                }
+            }
+        }
     }
 
     if (0 == rank) {
