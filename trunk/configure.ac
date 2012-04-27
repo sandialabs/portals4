@@ -345,7 +345,7 @@ AS_CASE([$with_test_runtime],
 		[shmemrt], [AS_IF([test "$with_implementation" != "shmem"],
 						  [AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])])
 		            TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'],
-		[mpi], [TEST_INVOKE_CMD='mpirun -np $(THREADS)'],
+		[mpi], [TEST_INVOKE_CMD='mpirun -mca pml ob1 -np $(THREADS)'],
 		[pmi], [OMPI_CHECK_PMI([], [AC_MSG_ERROR([PMI runtime requested, not found.])])
 		        TEST_INVOKE_CMD='srun -n $(THREADS)'],
 		[single], [TEST_INVOKE_CMD=],
