@@ -1,18 +1,13 @@
 /*
- * ptl_gbl.c
+ * ptl.c
+ *
+ * Specific parts for the fat library only (ie. IB and/or shmem).
  */
 
 #include "ptl_loc.h"
 
-#include <netdb.h>
-#include <sys/wait.h>
-
 /* Define to be able to get a dump of some of the data structures. */
 //#define DEBUG_DUMP
-
-/* Internal debug tuning variables. */
-int debug;
-int ptl_log_level;
 
 /*
  * per process global state
@@ -20,10 +15,6 @@ int ptl_log_level;
  * that require atomicity
  */
 gbl_t per_proc_gbl;
-static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-unsigned int pagesize;
-unsigned int linesize;
 
 /* Event loop. */
 struct evl evl;
@@ -206,7 +197,7 @@ static void dump_everything(int unused)
 }
 #endif
 
-static int gbl_init(gbl_t *gbl)
+int gbl_init(gbl_t *gbl)
 {
 	int err;
 
@@ -214,27 +205,15 @@ static int gbl_init(gbl_t *gbl)
 	signal(SIGUSR1, dump_everything);
 #endif
 
-	init_param();
-	debug = get_param(PTL_DEBUG);
-	ptl_log_level = get_param(PTL_LOG_LEVEL);
+	err = misc_init_once();
+	if (err)
+		return PTL_FAIL;
 
 	err = init_iface_table(gbl);
 	if (err)
 		return err;
 
 	pthread_mutex_init(&gbl->gbl_mutex, NULL);
-
-	/* init the index service */
-	err = index_init();
-	if (err)
-		return err;
-
-	pagesize = sysconf(_SC_PAGESIZE);
-#ifdef _SC_LEVEL1_DCACHE_LINESIZE
-	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-#else
-	linesize = 64;
-#endif
 
 	/* Create the event loop thread. */
 	evl_init(&evl);
@@ -262,91 +241,10 @@ err:
 
 int PtlInit(void)
 {
-	int ret;
-	gbl_t *gbl = &per_proc_gbl;
-
-	ret = pthread_mutex_lock(&per_proc_gbl_mutex);
-	if (ret) {
-		ptl_warn("unable to acquire proc_gbl mutex\n");
-		ret = PTL_FAIL;
-		goto err0;
-	}
-
-	/* if first call to PtlInit do real initialization */
-	if (gbl->ref_cnt == 0) {
-		/* check for dangling reference */
-		if (ref_cnt(&gbl->ref) > 0)
-			usleep(100000);
-		if (ref_cnt(&gbl->ref) > 0) {
-			WARN();
-			ret = PTL_FAIL;
-			goto err1;
-		} else {
-			ref_set(&gbl->ref, 1);
-		}
-
-		ret = gbl_init(gbl);
-		if (ret != PTL_OK) {
-			goto err1;
-		}
-	}
-
-	gbl->ref_cnt++;
-	pthread_mutex_unlock(&per_proc_gbl_mutex);
-
-	return PTL_OK;
-
-err1:
-	pthread_mutex_unlock(&per_proc_gbl_mutex);
-err0:
-	return ret;
+	return _PtlInit(&per_proc_gbl);
 }
 
 void PtlFini(void)
 {
-	int ret;
-	gbl_t *gbl = &per_proc_gbl;
-
-	ret = pthread_mutex_lock(&per_proc_gbl_mutex);
-	if (ret) {
-		ptl_warn("unable to acquire proc_gbl mutex\n");
-		abort();
-		goto err0;
-	}
-
-	/* this would be a bug */
-	if (gbl->ref_cnt == 0) {
-		ptl_warn("ref_cnt already 0 ?!!\n");
-		goto err1;
-	}
-
-	/* note the order is significant here
-	   gbl->ref_cnt != 0 implies that the
-	   spinlock in gbl->ref has been init'ed
-	   so ref_set must come before the initial
-	   ref_cnt++ and ref_put must come after
-	   the last ref_cnt-- */
-	gbl->ref_cnt--;
-
-	if (gbl->ref_cnt == 0)
-		ref_put(&gbl->ref, gbl_release);	/* matches ref_set */
-
-	pthread_mutex_unlock(&per_proc_gbl_mutex);
-
-	return;
-
-err1:
-	pthread_mutex_unlock(&per_proc_gbl_mutex);
-err0:
-	return;
-}
-
-/* can return
-PTL_OK
-PTL_FAIL
-*/
-int PtlHandleIsEqual(ptl_handle_any_t handle1,
-		     ptl_handle_any_t handle2)
-{
-	return (handle1 == handle2) ? PTL_OK : PTL_FAIL;
+	_PtlFini(&per_proc_gbl);
 }
