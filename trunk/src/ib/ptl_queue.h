@@ -25,8 +25,8 @@ struct queue {
 typedef struct queue queue_t;
 
 void queue_init(queue_t *queue);
-void enqueue(const void *comm_pad, queue_t *restrict queue, buf_t *buf);
-buf_t *dequeue(const void *comm_pad, queue_t *queue);
+void enqueue(const void *comm_pad, queue_t *restrict queue, obj_t *obj);
+obj_t *dequeue(const void *comm_pad, queue_t *queue);
 
 
 #endif /* PTL_QUEUE_H */

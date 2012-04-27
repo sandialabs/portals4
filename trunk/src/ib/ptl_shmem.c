@@ -549,8 +549,7 @@ void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
 	queue_t *queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
 			   (ni->shmem.per_proc_comm_buf_size * dest));
 
-	buf->obj.next = NULL;
-	enqueue(ni->shmem.comm_pad, queue, buf);
+	enqueue(ni->shmem.comm_pad, queue, &buf->obj);
 }
 
 /**
@@ -559,6 +558,6 @@ void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
  * @param[in] ni the network interface.
  */
 buf_t *shmem_dequeue(ni_t *ni)
-{			       
-	return dequeue(ni->shmem.comm_pad, ni->shmem.queue);
+{
+	return (buf_t *)dequeue(ni->shmem.comm_pad, ni->shmem.queue);
 }
