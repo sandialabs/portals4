@@ -39,8 +39,6 @@ struct shmem_pid_table {
 typedef struct ni {
 	obj_t			obj;
 
-	gbl_t			*gbl;
-
 	ptl_ni_limits_t		limits;		/* max number of xxx */
 	ptl_ni_limits_t		current;	/* current num of xxx */
 
