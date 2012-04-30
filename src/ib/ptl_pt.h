@@ -16,14 +16,11 @@ struct eq;
 /**
  * pt state variables.
  *
- * @todo	This is way too complicated
- * 		pt state is encoded in in_use,
- * 		enabled and disabled. Should
- * 		just use one state variable.
  */
 enum pt_state {
-	PT_API_DISABLE		= 1,
-	PT_AUTO_DISABLE		= 1 << 1
+	PT_ENABLED			= 0,	/* ie. no disabled flag */
+	PT_DISABLED			= 1 << 0,
+	PT_AUTO_DISABLED	= 1 << 1,
 };
 
 /**
@@ -39,11 +36,8 @@ struct pt {
 	/** pt entry is is use */
 	int			in_use;
 
-	/** pt entry is enabled */
-	int			enabled;
-
-	/** pt entry is disabled with some hysteresis with enabled */
-	int			disable;
+	/** pt entry is enabled/disabled */
+	enum pt_state state;
 
 	/** number of currently active target transactions on pt */
 	int			num_tgt_active;

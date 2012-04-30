@@ -128,8 +128,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	pthread_mutex_unlock(&ni->pt_mutex);
 
 	pt->index = index;
-	pt->disable = 0;
-	pt->enabled = 1;
+	pt->state = PT_ENABLED;
 	pt->num_tgt_active = 0;
 	pt->options = options;
 	pt->eq = eq;
@@ -217,7 +216,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	PTL_FASTLOCK_DESTROY(&pt->lock);
 
 	pt->in_use = 0;
-	pt->enabled = 0;
+	pt->state = PT_DISABLED;
 
 	if (pt->eq)
 		eq_put(pt->eq);
@@ -277,14 +276,12 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 
 	/* Serialize with progress to let active target processing complete */
 	PTL_FASTLOCK_LOCK(&pt->lock);
-	pt->disable |= PT_API_DISABLE;
+	pt->state = PT_DISABLED;
 	while(pt->num_tgt_active) {
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		sched_yield();
 		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
-	pt->enabled = 0;
-	pt->disable &= ~PT_API_DISABLE;
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	ni_put(ni);
@@ -340,12 +337,12 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 
 	/* Serialize with disable operations */
 	PTL_FASTLOCK_LOCK(&pt->lock);
-	if (pt->disable) {
+	if (pt->state != PT_ENABLED) {
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		sched_yield();
 		PTL_FASTLOCK_LOCK(&pt->lock);
 	}
-	pt->enabled = 1;
+	pt->state = PT_ENABLED;
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	ni_put(ni);

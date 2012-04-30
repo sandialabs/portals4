@@ -355,7 +355,7 @@ static int tgt_start(buf_t *buf)
 
 	/* synchronize with enable/disable APIs */
 	PTL_FASTLOCK_LOCK(&buf->pt->lock);
-	if (!buf->pt->enabled || buf->pt->disable) {
+	if (buf->pt->state != PT_ENABLED) {
 		PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
 		buf->ni_fail = PTL_NI_PT_DISABLED;
 		return STATE_TGT_DROP;
@@ -538,7 +538,7 @@ static int tgt_get_match(buf_t *buf)
 
 	/* Failed to match any elements */
 	if (pt->options & PTL_PT_FLOWCTRL) {
-		pt->disable |= PT_AUTO_DISABLE;
+		pt->state |= PT_AUTO_DISABLED;
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		buf->ni_fail = PTL_NI_PT_DISABLED;
 	} else {
@@ -1487,9 +1487,8 @@ static int tgt_cleanup(buf_t *buf)
 	if (pt) {
 		PTL_FASTLOCK_LOCK(&pt->lock);
 		pt->num_tgt_active--;
-		if ((pt->disable & PT_AUTO_DISABLE) && !pt->num_tgt_active) {
-			pt->enabled = 0;
-			pt->disable &= ~PT_AUTO_DISABLE;
+		if ((pt->state & PT_AUTO_DISABLED) && !pt->num_tgt_active) {
+			pt->state = PT_DISABLED;
 			PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 			// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
