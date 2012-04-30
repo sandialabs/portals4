@@ -333,7 +333,6 @@ int PtlNIInit(ptl_interface_t	iface_id,
 	atomic_set(&ni->ref_cnt, 1);
 	ni->options = options;
 	ni->last_pt = -1;
-	ni->gbl = gbl;
 	set_limits(ni, desired);
 	ni->uid = geteuid();
 	INIT_LIST_HEAD(&ni->md_list);
