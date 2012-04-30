@@ -91,7 +91,7 @@ param_t param[] = {
 				.name	= "PTL_LIM_MAX_MSG_SIZE",
 				.min	= 0,
 				.max	= 4*GiB,
-				.val	= 16*MiB,
+				.val	= 4*GiB,
 			},
 	/* must be less than MAX_INLINE_DATA */
 	[PTL_LIM_MAX_ATOMIC_SIZE]		= {
