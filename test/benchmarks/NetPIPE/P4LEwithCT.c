@@ -51,11 +51,14 @@
 **
 ** Run it using
 **     yod -c 2 -- ./NPptlLECT
+**
+** IB build example:
+** gcc -I NetPIPE-3.7.1/src -I portals4/include -I portals4/test -DMEMCPY NetPIPE-3.7.1/src/netpipe.c P4LEwithCT.c -Lportals4_install/lib -Lportals4/test/.libs -L /cluster_tools/lw_linux/src/slurm-2.1.15-install/lib -lportals -ltestsupport -lpmi -o NPptlLECT
+** srun -n 2 ./NPptlLECT
 */
 #include <netpipe.h>
 #include <portals4.h>
 #include <support/support.h>
-#include <libP4support.h>
 
 
 /* Some globals */
@@ -111,11 +114,13 @@ Init(ArgStruct *p, int* pargc, char*** pargv)
 {
 
 int rc;
-
+ptl_pt_index_t pt_handle;
 
     /* Initialize Portals and get some runtime info */
     rc= PtlInit();
-    PTL_CHECK(rc, "PtlInit");
+    LIBTEST_CHECK(rc, "PtlInit");
+
+    libtest_init();
     _my_rank= libtest_get_rank();
     _nprocs= libtest_get_size();
 
@@ -126,46 +131,43 @@ int rc;
         exit(-2);
     }
 
-
     /*
     ** We need an ni to do barriers and allreduces on.
     ** It needs to be a non-matching ni.
     */
-    rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL,
-	    NULL, 0, NULL, NULL, &ni_logical);
-    PTL_CHECK(rc, "PtlNIInit");
+    rc= PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_NO_MATCHING | PTL_NI_LOGICAL, PTL_PID_ANY, NULL, NULL, &ni_logical);
+    LIBTEST_CHECK(rc, "PtlNIInit");
 
+    rc= PtlSetMap(ni_logical, _nprocs, libtest_get_mapping(ni_logical));
+    LIBTEST_CHECK(rc, "PtlSetMap");
 
     /* Initialize the barrier in the P4support library.  */
-    __PtlBarrierInit(ni_logical, _my_rank, _nprocs);
+    libtest_BarrierInit(ni_logical, _my_rank, _nprocs);
 
     /* Allocate a Portal Table Index entry for data transmission */
-    __PtlPTAlloc(ni_logical, PTL_XMIT_INDEX, PTL_EQ_NONE);
+    PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_XMIT_INDEX, &pt_handle);
 
     /* Allocate a Portal Table Index entry to receive an int */
-    __PtlPTAlloc(ni_logical, PTL_SEND_INT_INDEX, PTL_EQ_NONE);
+    PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_SEND_INT_INDEX, &pt_handle);
 
     /* Allocate a Portal Table Index entry to receive a double */
-    __PtlPTAlloc(ni_logical, PTL_SEND_DOUBLE_INDEX, PTL_EQ_NONE);
+    PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_SEND_DOUBLE_INDEX, &pt_handle);
 
     /* Set up the MD to send a single int */
     send_int_ct_handle= PTL_INVALID_HANDLE;
-    __PtlCreateMDCT(ni_logical, &send_int, sizeof(int), &send_int_md_handle, &send_int_ct_handle);
+    libtest_CreateMDCT(ni_logical, &send_int, sizeof(int), &send_int_md_handle, &send_int_ct_handle);
 
     /* Set up the MD to send a single double */
     send_double_ct_handle= PTL_INVALID_HANDLE;
-    __PtlCreateMDCT(ni_logical, &send_double, sizeof(double), &send_double_md_handle,
-	&send_double_ct_handle);
+    libtest_CreateMDCT(ni_logical, &send_double, sizeof(double), &send_double_md_handle, &send_double_ct_handle);
 
     /* Create a persistent LE to receive a single int */
     recv_int_ct_handle= PTL_INVALID_HANDLE;
-    __PtlCreateLECT(ni_logical, PTL_SEND_INT_INDEX, &recv_int, sizeof(int),
-	&recv_int_le_handle, &recv_int_ct_handle);
+    libtest_CreateLECT(ni_logical, PTL_SEND_INT_INDEX, &recv_int, sizeof(int), &recv_int_le_handle, &recv_int_ct_handle);
 
     /* Create a persistent LE to receive a single double */
     recv_double_ct_handle= PTL_INVALID_HANDLE;
-    __PtlCreateLECT(ni_logical, PTL_SEND_DOUBLE_INDEX, &recv_double, sizeof(double),
-	&recv_double_le_handle, &recv_double_ct_handle);
+    libtest_CreateLECT(ni_logical, PTL_SEND_DOUBLE_INDEX, &recv_double, sizeof(double), &recv_double_le_handle, &recv_double_ct_handle);
 
     /*
     ** Initialize the benchmark data ct handles. Once allocated we'll
@@ -212,7 +214,7 @@ void
 Sync(ArgStruct *p)
 {
 
-    __PtlBarrier();
+    libtest_barrier();
 
 }  /* end of Sync() */
 
@@ -243,11 +245,11 @@ ptl_ct_event_t cnt_value;
 
     index= PTL_XMIT_INDEX;
     dest.rank= p->source_node;
-    rc= __PtlPut(md_handle, p->bufflen, dest, index);
-    PTL_CHECK(rc, "PtlPut in SendData()");
+    rc= PtlPut(md_handle, 0, p->bufflen, PTL_NO_ACK_REQ, dest, index, 0, 0, NULL, 0);
+    LIBTEST_CHECK(rc, "PtlPut in SendData()");
 
     rc= PtlCTWait(send_ct_handle, total_sends, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in SendData()");
+    LIBTEST_CHECK(rc, "PtlCTWait in SendData()");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "SendData() PtlPut failed %d (%d succeeded)\n",
 	   (int)cnt_value.failure, (int)cnt_value.success);
@@ -271,7 +273,7 @@ ptl_ct_event_t cnt_value;
 
 
     rc= PtlCTWait(recv_ct_handle, total_recvs, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in RecvData");
+    LIBTEST_CHECK(rc, "PtlCTWait in RecvData");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "RecvData() PtlPut failed %d (%d succeeded)\n",
 	    (int)cnt_value.failure, (int)cnt_value.success);
@@ -299,11 +301,11 @@ ptl_ct_event_t cnt_value;
     send_double= *t;
     index= PTL_SEND_DOUBLE_INDEX;
     dest.rank= p->source_node;
-    rc= __PtlPut(send_double_md_handle, sizeof(double), dest, index);
-    PTL_CHECK(rc, "PtlPut in SendTime()");
+    rc= PtlPut(send_double_md_handle, 0, sizeof(double), PTL_NO_ACK_REQ, dest, index, 0, 0, NULL, 0);
+    LIBTEST_CHECK(rc, "PtlPut in SendTime()");
 
     rc= PtlCTWait(send_double_ct_handle, total_double_sends, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in SendTime()");
+    LIBTEST_CHECK(rc, "PtlCTWait in SendTime()");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "SendTime() PtlPut failed %d (%d succeeded)\n",
 	   (int)cnt_value.failure, (int)cnt_value.success);
@@ -327,7 +329,7 @@ ptl_ct_event_t cnt_value;
 
 
     rc= PtlCTWait(recv_double_ct_handle, total_double_recvs, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in RecvTime");
+    LIBTEST_CHECK(rc, "PtlCTWait in RecvTime");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "RecvTime() PtlPut failed %d (%d succeeded)\n",
 	    (int)cnt_value.failure, (int)cnt_value.success);
@@ -356,11 +358,11 @@ ptl_ct_event_t cnt_value;
     send_int= rpt;
     index= PTL_SEND_INT_INDEX;
     dest.rank= p->source_node;
-    rc= __PtlPut(send_int_md_handle, sizeof(int), dest, index);
-    PTL_CHECK(rc, "PtlPut in SendRepeat()");
+    rc= PtlPut(send_int_md_handle, 0, sizeof(int), PTL_NO_ACK_REQ, dest, index, 0, 0, NULL, 0);
+    LIBTEST_CHECK(rc, "PtlPut in SendRepeat()");
 
     rc= PtlCTWait(send_int_ct_handle, total_int_sends, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in SendRepeat()");
+    LIBTEST_CHECK(rc, "PtlCTWait in SendRepeat()");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "SendRepeat() PtlPut failed %d (%d succeeded)\n",
 	   (int)cnt_value.failure, (int)cnt_value.success);
@@ -384,7 +386,7 @@ ptl_ct_event_t cnt_value;
 
 
     rc= PtlCTWait(recv_int_ct_handle, total_int_recvs, &cnt_value);
-    PTL_CHECK(rc, "PtlCTWait in RecvRepeat");
+    LIBTEST_CHECK(rc, "PtlCTWait in RecvRepeat");
     if (cnt_value.failure != 0)   {
 	fprintf(stderr, "RecvRepeat() PtlPut failed %d (%d succeeded)\n",
 	    (int)cnt_value.failure, (int)cnt_value.success);
@@ -406,52 +408,52 @@ int rc;
 
     /* Free all CTs */
     rc= PtlCTFree(send_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(send_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(send_ct_handle) in CleanUp");
 
     rc= PtlCTFree(send_int_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(send_int_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(send_int_ct_handle) in CleanUp");
 
     rc= PtlCTFree(send_double_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(send_double_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(send_double_ct_handle) in CleanUp");
 
     rc= PtlCTFree(recv_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(recv_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(recv_ct_handle) in CleanUp");
 
     rc= PtlCTFree(recv_int_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(recv_int_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(recv_int_ct_handle) in CleanUp");
 
     rc= PtlCTFree(recv_double_ct_handle);
-    PTL_CHECK(rc, "PtlCTFree(recv_double_ct_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlCTFree(recv_double_ct_handle) in CleanUp");
 
     /* Free all MDs */
     rc= PtlMDRelease(md_handle);
-    PTL_CHECK(rc, "PtlMDRelease(md_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlMDRelease(md_handle) in CleanUp");
 
     rc= PtlMDRelease(send_int_md_handle);
-    PTL_CHECK(rc, "PtlMDRelease (send_int_md_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlMDRelease (send_int_md_handle) in CleanUp");
 
     rc= PtlMDRelease(send_double_md_handle);
-    PTL_CHECK(rc, "PtlMDRelease (send_double_md_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlMDRelease (send_double_md_handle) in CleanUp");
 
     /* Free all LEs */
     rc= PtlLEUnlink(le_handle);
-    PTL_CHECK(rc, "PtlLEUnlink(le_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlLEUnlink(le_handle) in CleanUp");
 
     rc= PtlLEUnlink(recv_int_le_handle);
-    PTL_CHECK(rc, "PtlLEUnlink(recv_int_le_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlLEUnlink(recv_int_le_handle) in CleanUp");
 
     rc= PtlLEUnlink(recv_double_le_handle);
-    PTL_CHECK(rc, "PtlLEUnlink(recv_double_le_handle) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlLEUnlink(recv_double_le_handle) in CleanUp");
 
     /* Free the Portal table entries we used */
     rc= PtlPTFree(ni_logical, PTL_XMIT_INDEX);
-    PTL_CHECK(rc, "PtlPTFree(PTL_XMIT_INDEX) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlPTFree(PTL_XMIT_INDEX) in CleanUp");
 
     rc= PtlPTFree(ni_logical, PTL_SEND_INT_INDEX);
-    PTL_CHECK(rc, "PtlPTFree(PTL_SEND_INT_INDEX) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlPTFree(PTL_SEND_INT_INDEX) in CleanUp");
 
     rc= PtlPTFree(ni_logical, PTL_SEND_DOUBLE_INDEX);
-    PTL_CHECK(rc, "PtlPTFree(PTL_SEND_DOUBLE_INDEX) in CleanUp");
+    LIBTEST_CHECK(rc, "PtlPTFree(PTL_SEND_DOUBLE_INDEX) in CleanUp");
 
     /* Almost done */
     PtlNIFini(ni_logical);
@@ -489,14 +491,14 @@ int rc;
     /* Create a persistent ME to send from */
     if (PtlHandleIsEqual(md_handle, PTL_INVALID_HANDLE) == PTL_OK)   {
 	/* First time here, setup an MD to send benchmark data */
-	__PtlCreateMDCT(ni_logical, p->s_buff, p->bufflen, &md_handle, &send_ct_handle);
+	libtest_CreateMDCT(ni_logical, p->s_buff, p->bufflen, &md_handle, &send_ct_handle);
 	md_size= p->bufflen;
 	md_buf= p->s_buff;
     } else if ((md_size != p->bufflen) || (md_buf != p->s_buff))   {
 	/* Release the existing MD and create a new one */
 	rc= PtlMDRelease(md_handle);
-	PTL_CHECK(rc, "PtlMDRelease(md_handle) in AfterAlignmentInit");
-	__PtlCreateMDCT(ni_logical, p->s_buff, p->bufflen, &md_handle, &send_ct_handle);
+	LIBTEST_CHECK(rc, "PtlMDRelease(md_handle) in AfterAlignmentInit");
+	libtest_CreateMDCT(ni_logical, p->s_buff, p->bufflen, &md_handle, &send_ct_handle);
 	md_size= p->bufflen;
 	md_buf= p->s_buff;
     } else   {
@@ -505,14 +507,14 @@ int rc;
 
     /* Create a persistent LE to receive into */
     if (PtlHandleIsEqual(le_handle, PTL_INVALID_HANDLE) == PTL_OK)   {
-	__PtlCreateLECT(ni_logical, PTL_XMIT_INDEX, p->r_buff, p->bufflen,
+	libtest_CreateLECT(ni_logical, PTL_XMIT_INDEX, p->r_buff, p->bufflen,
 		&le_handle, &recv_ct_handle);
 	le_size= p->bufflen;
 	le_buf= p->r_buff;
     } else if ((le_size != p->bufflen) || (le_buf != p->r_buff))   {
 	rc= PtlLEUnlink(le_handle);
-	PTL_CHECK(rc, "PtlLEUnlink(le_handle) in CleanUp");
-	__PtlCreateLECT(ni_logical, PTL_XMIT_INDEX, p->r_buff, p->bufflen,
+	LIBTEST_CHECK(rc, "PtlLEUnlink(le_handle) in CleanUp");
+	libtest_CreateLECT(ni_logical, PTL_XMIT_INDEX, p->r_buff, p->bufflen,
 		&le_handle, &recv_ct_handle);
 	le_size= p->bufflen;
 	le_buf= p->r_buff;
