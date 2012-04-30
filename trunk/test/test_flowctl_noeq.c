@@ -17,14 +17,14 @@
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
-# define OPTIONS  (PTL_ME_OP_PUT)
+# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE)
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink
 #else
 # define ENTRY_T  ptl_le_t
 # define HANDLE_T ptl_handle_le_t
 # define NI_TYPE  PTL_NI_NO_MATCHING
-# define OPTIONS  (PTL_LE_OP_PUT)
+# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_LINK_DISABLE | PTL_LE_EVENT_UNLINK_DISABLE)
 # define APPEND   PtlLEAppend
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
@@ -88,7 +88,7 @@ int main(int   argc,
         value_e.length = 0;
         value_e.ct_handle = ct_handle;
         value_e.uid = PTL_UID_ANY;
-        value_e.options = OPTIONS | PTL_LE_EVENT_CT_COMM;
+        value_e.options = OPTIONS | PTL_LE_EVENT_SUCCESS_DISABLE | PTL_LE_EVENT_CT_COMM;
 #if INTERFACE == 1
         value_e.match_id.rank = PTL_RANK_ANY;
         value_e.match_bits = 0;
@@ -123,18 +123,16 @@ int main(int   argc,
             return 1;
         }
 
-        fprintf(stderr, "0: got all my signals\n");
-        
         /* wait for event entries */
         while (count < ITERS * (num_procs - 1)) {
-            ret = PtlEQGet(eq_handle, &ev);
+            ret = PtlEQWait(eq_handle, &ev);
             if (PTL_OK == ret) {
                 ;
-            } else if (PTL_EQ_DROPPED) {
+            } else if (PTL_EQ_DROPPED == ret) {
                 saw_dropped++;
                 break;
             } else {
-                fprintf(stderr, "0: Unexpected return code from EQGet: %d\n", ret);
+                fprintf(stderr, "0: Unexpected return code from EQWait: %d\n", ret);
                 return 1;
             }
 
@@ -169,8 +167,6 @@ int main(int   argc,
                                    NULL,
                                    0));
         }
-
-        fprintf(stderr, "%d: done with first set of sends\n", rank);
 
         while (count < ITERS) {
             ret = PtlEQGet(eq_handle, &ev);
@@ -225,26 +221,23 @@ int main(int   argc,
                                    NULL,
                                    0));
             while (1) {
-                ret = PtlEQGet(eq_handle, &ev);
-                if (PTL_EQ_EMPTY == ret) {
-                    continue;
-                } else if (PTL_OK != ret) {
-                    fprintf(stderr, "%d: PtlEQGet returned %d\n", rank, ret);
+                ret = PtlEQWait(eq_handle, &ev);
+                if (PTL_OK != ret) {
+                    fprintf(stderr, "%d: PtlEQWait returned %d\n", rank, ret);
                     return 1;
                 }
-
-                fprintf(stderr, "%d: got event (%d %d)\n", rank, ev.type, ev.ni_fail_type);
 
                 if (ev.ni_fail_type == PTL_NI_OK) {
                     if (ev.type == PTL_EVENT_SEND) {
                         continue;
                     } else if (ev.type == PTL_EVENT_ACK) {
                         fails--;
+                        break;
                     } else {
                         fprintf(stderr, "%d: Unexpected event type %d\n", rank, ev.type);
                     }
                 } else if (ev.ni_fail_type == PTL_NI_PT_DISABLED) {
-                    ;
+                    break;
                 } else {
                     fprintf(stderr, "%d: Unexpected fail type: %d\n", rank, ev.ni_fail_type);
                     return 1;
@@ -252,6 +245,8 @@ int main(int   argc,
             }
         }
     }
+
+    libtest_barrier();
 
     if (0 == rank) {
         CHECK_RETURNVAL(UNLINK(signal_e_handle));
@@ -264,8 +259,6 @@ int main(int   argc,
         CHECK_RETURNVAL(PtlMDRelease(md_handle));
         CHECK_RETURNVAL(PtlEQFree(eq_handle));
     }
-
-    libtest_barrier();
 
     CHECK_RETURNVAL(PtlNIFini(ni_handle));
     CHECK_RETURNVAL(libtest_fini());
