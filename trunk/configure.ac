@@ -154,12 +154,6 @@ AS_IF([test "x$with_implementation" = "xib" -a x"$enable_ib_ib" != xno],
   [AC_DEFINE([WITH_TRANSPORT_IB], [1], [Define to enable IB support])])
 AM_CONDITIONAL(WITH_TRANSPORT_IB, test "x$enable_ib_ib" != xno)
 
-# Whether to use XRC or not. If RC is selected then they are used like
-# an XRC qp (ie. half-duplex connection). This is a temporary mesure.
-AC_ARG_ENABLE([xrc], [AS_HELP_STRING([--enable-xrc], [Use XRC instead of RC])])
-AS_IF([test "x$enable_xrc" == xyes],
-      [AC_DEFINE([USE_XRC], [1], [Define to use XRC instead of RC])])
-
 AC_ARG_WITH([mc-peer-count],
   [AS_HELP_STRING([--with-mc-peer-count=COUNT],
      [Multicore server will support COUNT peers.  Default is 16.])])

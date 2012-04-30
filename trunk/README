@@ -68,10 +68,6 @@ Options to configure include:
         Intel cpus. Either upgrade to the latest 1.4 or 1.5 or use the
         hack at
         https://bugzilla.redhat.com/show_bug.cgi?id=638477#c38.
-      + only if using XRC: OFED 1.5.2 with patches to librdmacm (see
-        patches/rdmacm-xrc-v?.diff). patches/rdma-bw-xrc-v?.diff is not necessary,
-        but allows to test XRC+RDMA CM with the rdma_bw test.
-		Note that this support is currently not functionnal.
       + libev-4.0.4 (or similar), available at
         http://software.schmorp.de/pkg/libev.html
       + The KNEM driver from http://runtime.bordeaux.inria.fr/knem/.  (optional)
@@ -91,8 +87,6 @@ Options to configure include:
 
       * x86_64 (optimized, with shared memory):
 ./configure CFLAGS="-ggdb -Wall -I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib" --with-implementation=ib --with-test-runtime=mpi --with-knem=/opt/knem --enable-ib-shmem --enable-fast
-
-      * add --enable-xrc if XRC support is desired (currently broken).
 
     Test :
       * Type "make check" in the main directory.

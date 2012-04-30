@@ -54,10 +54,6 @@ static int send_message_rdma(buf_t *buf, int from_init)
 	sg_list.lkey = buf->rdma.lkey;
 	sg_list.length = buf->length;
 
-#ifdef USE_XRC
-	wr.xrc_remote_srq_num = buf->dest.xrc_remote_srq_num;
-#endif
-	
 	buf->type = BUF_SEND;
 
 	/* Rate limit the initiator. If the IB/RDMA send queue gets full, there
@@ -145,9 +141,6 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 					   IBV_WR_RDMA_WRITE;
 	wr.wr.rdma.remote_addr = raddr;
 	wr.wr.rdma.rkey	= rkey;
-#ifdef USE_XRC
-	wr.xrc_remote_srq_num = buf->dest.xrc_remote_srq_num;
-#endif
 
 	/* post the work request to the QP send queue for the
 	 * destination/initiator */

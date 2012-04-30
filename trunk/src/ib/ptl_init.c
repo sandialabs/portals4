@@ -394,12 +394,7 @@ static int send_req(buf_t *buf)
 	int err;
 	conn_t *conn = buf->conn;
 
-#ifdef USE_XRC
-	if (conn->state == CONN_STATE_XRC_CONNECTED)
-		set_buf_dest(buf, conn->main_connect);
-	else
-#endif
-		set_buf_dest(buf, conn);
+	set_buf_dest(buf, conn);
 
 	err = buf->conn->transport.send_message(buf, 1);
 	if (err)

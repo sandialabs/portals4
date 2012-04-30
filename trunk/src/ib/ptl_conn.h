@@ -21,9 +21,6 @@ enum conn_state {
 	CONN_STATE_RESOLVING_ROUTE,
 	CONN_STATE_CONNECTING,
 	CONN_STATE_CONNECTED,
-#ifdef USE_XRC
-	CONN_STATE_XRC_CONNECTED,
-#endif
 };
 
 enum transport_type {
@@ -116,12 +113,6 @@ struct conn {
 		} shmem;
 #endif
 	};
-
-	/* logical NI only */
-#ifdef USE_XRC
-	struct list_head	list;
-	struct conn		*main_connect;
-#endif
 };
 
 typedef struct conn conn_t;
@@ -193,15 +184,9 @@ enum {
 
 struct cm_priv_reject {
 	uint32_t		reason;
-#ifdef USE_XRC
-	uint32_t		xrc_srq_num;
-#endif
 };
 
 struct cm_priv_accept {
-#ifdef USE_XRC
-	uint32_t		xrc_srq_num;
-#endif
 };
 
 conn_t *get_conn(struct ni *ni, ptl_process_t id);
