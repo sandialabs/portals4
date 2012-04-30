@@ -5,20 +5,17 @@ noinst_LTLIBRARIES = libportals_ib.la
 libportals_ib_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) -lpthread -lrt 
 libportals_ib_la_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS)
 libportals_ib_la_SOURCES = \
-	ptl.c \
 	ptl_atomic.c \
 	ptl_atomic.h \
 	ptl_buf.c \
 	ptl_buf.h \
+	ptl.c \
 	ptl_conn.c \
 	ptl_conn.h \
-	ptl_iface.c \
-	ptl_iface.h \
 	ptl_ct.c \
 	ptl_ct.h \
 	ptl_data.c \
 	ptl_data.h \
-	ptl_iov.c \
 	ptl_eq.c \
 	ptl_eq.h \
 	ptl_evloop.c \
@@ -26,11 +23,15 @@ libportals_ib_la_SOURCES = \
 	ptl_gbl.h \
 	ptl_hdr.h \
 	ptl_id.c \
+	ptl_iface.c \
+	ptl_iface.h \
 	ptl_init.c \
-	ptl_sync.h \
+	ptl_iov.c \
 	ptl_le.c \
 	ptl_le.h \
+	ptl_list.h \
 	ptl_loc.h \
+	ptl_locks.h \
 	ptl_log.h \
 	ptl_md.c \
 	ptl_md.h \
@@ -50,14 +51,15 @@ libportals_ib_la_SOURCES = \
 	ptl_pt.h \
 	ptl_recv.c \
 	ptl_ref.h \
+	ptl_sync.h \
 	ptl_tgt.c \
-	ptl_list.h \
 	tree.h
 
 if WITH_TRANSPORT_IB
 libportals_ib_la_SOURCES += \
 	ptl_rdma.c \
-	ptl_iface_ib.c
+	ptl_iface_ib.c \
+	ummunotify.h
 endif
 
 if WITH_TRANSPORT_SHMEM
