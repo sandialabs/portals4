@@ -13,6 +13,7 @@ typedef struct gbl {
 	pthread_mutex_t		gbl_mutex;
 	int			ref_cnt;	/* count PtlInit/PtlFini */
 	ref_t			ref;		/* sub objects references */
+	int finalized;
 	int			fd;
 	struct sockaddr_in	addr;
 	pthread_t		event_thread;

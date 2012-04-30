@@ -50,21 +50,19 @@ int _PtlInit(gbl_t *gbl)
 		goto err0;
 	}
 
+	if (gbl->finalized) {
+		ptl_warn("Portals was finalized\n");
+		ret = PTL_FAIL;
+		goto err1;
+	}
+
 	/* if first call to PtlInit do real initialization */
 	if (gbl->ref_cnt == 0) {
-		/* check for dangling reference */
-		if (ref_cnt(&gbl->ref) > 0)
-			usleep(100000);
-		if (ref_cnt(&gbl->ref) > 0) {
-			WARN();
-			ret = PTL_FAIL;
-			goto err1;
-		} else {
-			ref_set(&gbl->ref, 1);
-		}
+		ref_set(&gbl->ref, 1);
 
 		ret = gbl_init(gbl);
 		if (ret != PTL_OK) {
+			ref_set(&gbl->ref, 0);
 			goto err1;
 		}
 	}
@@ -91,6 +89,11 @@ void _PtlFini(gbl_t *gbl)
 		goto err0;
 	}
 
+	if (gbl->finalized == 1) {
+		ptl_warn("Portals already finalized\n");
+		goto err0;
+	}
+
 	/* this would be a bug */
 	if (gbl->ref_cnt == 0) {
 		ptl_warn("ref_cnt already 0 ?!!\n");
@@ -105,8 +108,10 @@ void _PtlFini(gbl_t *gbl)
 	   the last ref_cnt-- */
 	gbl->ref_cnt--;
 
-	if (gbl->ref_cnt == 0)
+	if (gbl->ref_cnt == 0) {
+		gbl->finalized = 1;
 		ref_put(&gbl->ref, gbl_release);	/* matches ref_set */
+	}
 
 	pthread_mutex_unlock(&per_proc_gbl_mutex);
 
