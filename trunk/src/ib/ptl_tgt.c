@@ -625,7 +625,7 @@ static int tgt_get_length(buf_t *buf)
 
 	case OP_GET:
 		if (length > ni->limits.max_msg_size)
-		length = ni->limits.max_msg_size;
+			length = ni->limits.max_msg_size;
 		buf->put_resid = 0;
 		buf->get_resid = length;
 		break;
