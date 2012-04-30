@@ -583,9 +583,8 @@ static void process_overflowing(eq_t * restrict eq)
 	list_for_each(l, &eq->flowctrl_list) {
 		pt = list_entry(l, pt_t, flowctrl_list);
 
-		if (pt->enabled || !pt->disable) {
-			pt->enabled = 0;
-			pt->disable |= PT_AUTO_DISABLE;
+		if (pt->state == PT_ENABLED) {
+			pt->state = PT_AUTO_DISABLED;
 
 			/* Note/TODO: this will take a reserved entry but it
 			 * will be counted as a regular entry later. */
