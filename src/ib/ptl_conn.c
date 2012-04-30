@@ -10,13 +10,6 @@
  * For local peer NIs on the same node a shared memory transport
  * is used that does not require a connection but the library
  * still has a conn_t for each local peer NI.
- *
- * The code supports two options for connection setup: RC and XRC.
- * XRC has better scaling behavior in very large systems and uses
- * a single receive QP per node (NID) and a shared receive queue (SRQ)
- * per process (PID). There is a separate send QP per process for
- * each remote node. For RC there is a send and receive QP for each
- * remote process (NID/PID).
  */
 
 #include "ptl_loc.h"
@@ -44,10 +37,6 @@ int conn_init(void *arg, void *parm)
 #if WITH_TRANSPORT_IB
 	conn->transport = transport_rdma;
 	conn->rdma.cm_id = NULL;
-
-#ifdef USE_XRC
-	INIT_LIST_HEAD(&conn->list);
-#endif
 
 	atomic_set(&conn->rdma.send_comp_threshold, 0);
 	atomic_set(&conn->rdma.rdma_comp_threshold, 0);
@@ -354,16 +343,6 @@ void destroy_conns(ni_t *ni)
 			conn_t *conn = ni->logical.rank_table[i].connect;
 			destroy_conn(conn);
 		}
-
-#ifdef USE_XRC
-		/* Destroy passive connections. */
-		while(!list_empty(&ni->logical.connect_list)) {
-			conn_t *conn = list_first_entry(&ni->logical.connect_list, conn_t, list);
-
-			list_del(&conn->list);
-			destroy_conn(conn);
-		}
-#endif
 	} else {
 #ifdef HAVE_TDESTROY
 		tdestroy(ni->physical.tree, destroy_conn);
@@ -480,17 +459,8 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	memset(&init_attr, 0, sizeof(init_attr));
 
-#ifdef USE_XRC
-	if (ni->options & PTL_NI_LOGICAL) {
-		init_attr.qp_type = IBV_QPT_XRC;
-		init_attr.xrc_domain = ni->logical.xrc_domain;
-		init_attr.cap.max_send_wr = 0;
-	} else
-#endif
-	{
-		init_attr.qp_type = IBV_QPT_RC;
-		init_attr.cap.max_send_wr = ni->iface->cap.max_send_wr;
-	}
+	init_attr.qp_type = IBV_QPT_RC;
+	init_attr.cap.max_send_wr = ni->iface->cap.max_send_wr;
 	init_attr.send_cq = ni->rdma.cq;
 	init_attr.recv_cq = ni->rdma.cq;
 	init_attr.srq = ni->rdma.srq;
@@ -519,10 +489,6 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 	if (ni->options & PTL_NI_LOGICAL) {
 		conn_param.private_data = &priv;
 		conn_param.private_data_len = sizeof(priv);
-
-#ifdef USE_XRC
-		priv.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
-#endif
 	}
 
 	if (rdma_accept(event->id, &conn_param)) {
@@ -534,53 +500,6 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	return PTL_OK;
 }
-
-#ifdef USE_XRC
-/**
- * Accept a connection request from/to a logical NI.
- *
- * @param[in] ni
- * @param[in] event
- *
- * @return status
- */
-static int accept_connection_request_logical(ni_t *ni,
-					     struct rdma_cm_event *event)
-{
-	int ret;
-	conn_t *conn;
-
-	assert(ni->options & PTL_NI_LOGICAL);
-
-	/* Accept the connection and give back our SRQ
-	 * number. This will be a passive connection (ie, nothing
-	 * will be sent from that side. */
-	if (conn_alloc(ni, &conn)) {
-		WARN();
-		return PTL_NO_SPACE;
-	}
-
-	pthread_mutex_lock(&ni->logical.lock);
-	list_add_tail(&conn->list, &ni->logical.connect_list);
-	pthread_mutex_unlock(&ni->logical.lock);
-
-	pthread_mutex_lock(&conn->mutex);
-	ret = accept_connection_request(ni, conn, event);
-	if (ret) {
-		WARN();
-		pthread_mutex_lock(&ni->logical.lock);
-		list_del_init(&conn->list);
-		pthread_mutex_unlock(&ni->logical.lock);
-		pthread_mutex_unlock(&conn->mutex);
-
-		conn_put(conn);
-	} else {
-		pthread_mutex_unlock(&conn->mutex);
-	}
-
-	return ret;
-}
-#endif
 
 /**
  * Accept an RC connection request to self.
@@ -695,30 +614,6 @@ static void process_connect_request(struct iface *iface, struct rdma_cm_event *e
 		goto reject;
 	}
 
-#ifdef USE_XRC
-	if (ni->options & PTL_NI_LOGICAL) {
-		if (ni->logical.is_main) {
-			ret = accept_connection_request_logical(ni, event);
-			if (!ret) {
-				/* Good. */
-				return ret;
-			}
-			
-			WARN();
-			rej.reason = REJECT_REASON_ERROR;
-			rej.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
-		}
-		else {
-			/* If this is not the main process on this node, reject
-			 * the connection but give out SRQ number. */	
-			rej.reason = REJECT_REASON_GOOD_SRQ;
-			rej.xrc_srq_num = ni->rdma.srq->xrc_srq_num;
-		}
-
-		goto reject;
-	}
-#endif
-
 	conn = get_conn(ni, priv->src_id);
 	if (!conn) {
 		WARN();
@@ -798,51 +693,6 @@ static void process_connect_reject(struct rdma_cm_event *event, conn_t *conn)
 			pthread_mutex_unlock(&conn->mutex);
 			return;
 		} 
-#ifdef USE_XRC
-		else if ((conn->ni->options & PTL_NI_LOGICAL) &&
-				 rej->reason == REJECT_REASON_GOOD_SRQ) {
-
-			struct rank_entry *entry;
-			conn_t *main_connect;
-
-			/* The connection list must be empty, since we're still
-			 * trying to connect. */
-			assert(list_empty(&conn->list));
-
-			entry = container_of(conn, struct rank_entry, connect);
-			main_connect = &ni->logical.rank_table[entry->main_rank].connect;
-
-			assert(conn != main_connect);
-
-			entry->remote_xrc_srq_num = rej->xrc_srq_num;
-
-			/* We can now connect to the real endpoint. */
-			conn->state = CONN_STATE_XRC_CONNECTED;
-
-			PTL_FASTLOCK_LOCK(&main_connect->wait_list_lock);
-
-			conn->main_connect = main_connect;
-
-			if (main_connect->state == CONN_STATE_DISCONNECTED) {
-				list_add_tail(&conn->list, &main_connect->list);
-				init_connect(ni, main_connect);
-				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
-			}
-			else if (main_connect->state == CONN_STATE_CONNECTED) {
-				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
-				flush_pending_xi_xt(conn);
-			}
-			else {
-				/* move xi/xt so they will be processed when the node is
-				 * connected. */
-				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-				list_splice_init(&conn->buf_list, &main_connect->buf_list);
-				list_splice_init(&conn->xt_list, &main_connect->xt_list);
-				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-				PTL_FASTLOCK_UNLOCK(&main_connect->wait_list_lock);
-			}
-		}
-#endif
 	}
 
 	/* That's bad, and that should not happen. */
@@ -956,19 +806,10 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		init.recv_cq			= ni->rdma.cq;
 		init.cap.max_send_wr		= ni->iface->cap.max_send_wr;
 		init.cap.max_send_sge		= ni->iface->cap.max_send_sge;
+		init.qp_type			= IBV_QPT_RC;
+		init.srq			= ni->rdma.srq;
 
-#ifdef USE_XRC
-		if (ni->options & PTL_NI_LOGICAL) {
-			init.qp_type			= IBV_QPT_XRC;
-			init.xrc_domain			= ni->logical.xrc_domain;
-			priv.src_id.rank		= ni->id.rank;
-		} else
-#endif
-		{
-			init.qp_type			= IBV_QPT_RC;
-			init.srq			= ni->rdma.srq;
-			priv.src_id			= ni->id;
-		}
+		priv.src_id			= ni->id;
 		priv.options			= ni->options;
 
 		assert(conn->rdma.cm_id == event->id);
@@ -1015,36 +856,6 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		conn->state = CONN_STATE_CONNECTED;
 
-#ifdef USE_XRC
-		if ((ni->options & PTL_NI_LOGICAL) &&
-			(event->param.conn.private_data_len)) {
-			/* If we have private data, it's that side asked for the
-			 * connection (as opposed to accepting an incoming
-			 * request). */
-			const struct cm_priv_accept *priv_accept = event->param.conn.private_data;
-			struct rank_entry *entry = container_of(conn, struct rank_entry, connect);
-
-			/* Should not be set yet. */
-			assert(entry->remote_xrc_srq_num == 0);
-
-			entry->remote_xrc_srq_num = priv_accept->xrc_srq_num;
-
-			/* Flush the posted requests/replies. */
-			while(!list_empty(&conn->list)) {
-				conn_t *c = list_first_entry(&conn->list, conn_t, list);
-
-				list_del_init(&c->list);
-
-				pthread_mutex_unlock(&conn->mutex);
-
-				pthread_mutex_lock(&c->mutex);
-				flush_pending_xi_xt(c);
-				pthread_mutex_unlock(&c->mutex);
-
-				pthread_mutex_lock(&conn->mutex);
-			}
-		}
-#endif
 		flush_pending_xi_xt(conn);
 
 		pthread_mutex_unlock(&conn->mutex);

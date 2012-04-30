@@ -192,12 +192,8 @@ int iface_bind(iface_t *iface, unsigned int port)
 	/* in case we asked for any port get the actual source port */
 	iface->sin.sin_port = rdma_get_src_port(iface->listen_id);
 
-#ifdef USE_XRC
-	rdma_query_id(iface->listen_id, &iface->ibv_context, &iface->pd);
-#else
 	iface->ibv_context = iface->listen_id->verbs;
 	iface->pd = ibv_alloc_pd(iface->ibv_context);
-#endif
 
 	/* check to see we have rdma device and protection domain */
 	if (iface->ibv_context == NULL || iface->pd == NULL) {
@@ -235,73 +231,6 @@ int iface_bind(iface_t *iface, unsigned int port)
 
 	return PTL_FAIL;
 }
-
-#ifdef USE_XRC
-/* If this rank is the main one on the NID, create the domain, else
- * attach to an existing one. */
-static int get_xrc_domain(ni_t *ni)
-{
-	entry_t *entry;
-	entry_t *main_entry;
-	char domain_fname[100];
-
-	/* Create filename for our domain. */
-	entry = &ni->logical.rank_table[ni->id.rank];
-	main_entry = &ni->logical.rank_table[entry->main_rank];
-	sprintf(domain_fname, "/tmp/p4-xrc-%u-%u-%u", 
-			ni->gbl->jid, main_entry->nid, main_entry->pid);
-
-	if (ni->logical.is_main) {
-		ni->logical.xrc_domain_fd = open(domain_fname, O_RDWR|O_CREAT,
-						 S_IRUSR|S_IWUSR);
-		if (ni->logical.xrc_domain_fd < 0) {
-			WARN();
-			return PTL_FAIL;
-		}
-
-		/* Create XRC domain. */
-		ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
-							     ni->logical.xrc_domain_fd, O_CREAT);
-		if (!ni->logical.xrc_domain) {
-			close(ni->logical.xrc_domain_fd);
-			WARN();
-			return PTL_FAIL;
-		}
-	} else {
-		int try;
-		
-		/* Open domain file. Try for 10 seconds. */
-		try = 50;
-		do {
-			ni->logical.xrc_domain_fd = open(domain_fname,
-							 O_RDWR, S_IRUSR | S_IWUSR);
-			if (ni->logical.xrc_domain_fd >= 0)
-				break;
-			try --;
-			usleep(200000);
-		} while(try && ni->logical.xrc_domain_fd < 0);
-
-		if (ni->logical.xrc_domain_fd < 0) {
-			WARN();
-			return PTL_FAIL;
-		}
-
-		/* Open XRC domain. Try for 10 seconds. */
-		try = 10;
-		do {
-			ni->logical.xrc_domain = ibv_open_xrc_domain(ni->iface->ibv_context,
-								     ni->logical.xrc_domain_fd, 0);
-		} while(try && !ni->logical.xrc_domain);
-
-		if (!ni->logical.xrc_domain) {
-			WARN();
-			return PTL_FAIL;
-		}
-	}
-
-	return PTL_OK;
-}
-#endif
 
 static void process_async(EV_P_ ev_io *w, int revents)
 {
@@ -344,17 +273,8 @@ static int init_ib_srq(ni_t *ni)
 	srq_init_attr.attr.max_sge = 1;
 	srq_init_attr.attr.srq_limit = 0; /* should be ignored */
 
-#ifdef USE_XRC
-	if (ni->options & PTL_NI_LOGICAL) {
-		/* Create XRC SRQ. */
-		ni->rdma.srq = ibv_create_xrc_srq(iface->pd, ni->logical.xrc_domain,
-					     ni->rdma.cq, &srq_init_attr);
-	} else
-#endif
-	{
-		/* Create regular SRQ. */
-		ni->rdma.srq = ibv_create_srq(iface->pd, &srq_init_attr);
-	}
+	/* Create regular SRQ. */
+	ni->rdma.srq = ibv_create_srq(iface->pd, &srq_init_attr);
 
 	if (!ni->rdma.srq) {
 		WARN();
@@ -430,18 +350,6 @@ void cleanup_ib(ni_t *ni)
 	}
 
 	ni_rcqp_cleanup(ni);
-
-#ifdef USE_XRC
-	if (ni->logical.xrc_domain_fd != -1) {
-		close(ni->logical.xrc_domain_fd);
-		ni->logical.xrc_domain_fd = -1;
-	}
-
-	if (ni->logical.xrc_domain) {
-		ibv_close_xrc_domain(ni->logical.xrc_domain);
-		ni->logical.xrc_domain = NULL;
-	}
-#endif
 
 	if (ni->rdma.cq) {
 		ibv_destroy_cq(ni->rdma.cq);

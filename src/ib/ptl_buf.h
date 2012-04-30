@@ -59,9 +59,6 @@ struct xremote {
 	union {
 		struct {
 			struct ibv_qp *qp;					   /* from RDMA CM */
-#ifdef USE_XRC
-			uint32_t xrc_remote_srq_num;
-#endif
 		} rdma;
 
 #if WITH_TRANSPORT_SHMEM
@@ -402,17 +399,9 @@ static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
 
 static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 {
-#ifdef USE_XRC
-	ni_t *ni = to_ni(xi);
-#endif
-
 	if (connect->transport.type == CONN_TYPE_RDMA) {
 #if WITH_TRANSPORT_IB
 		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
-#ifdef USE_XRC
-		if (ni->options & PTL_NI_LOGICAL)
-			buf->dest.xrc_remote_srq_num = ni->logical.rank_table[buf->xi.target.rank].remote_xrc_srq_num;
-#endif
 #endif
 	} else {
 #if WITH_TRANSPORT_SHMEM
@@ -426,19 +415,9 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 // TODO merge with set_buf_dest
 static inline void set_tgt_dest(buf_t *buf, const conn_t *connect)
 {
-#ifdef USE_XRC
-	ni_t *ni = to_ni(buf);
-#endif
-
 	if (connect->transport.type == CONN_TYPE_RDMA) {
 #if WITH_TRANSPORT_IB
 		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
-#ifdef USE_XRC
-		if (ni->options & PTL_NI_LOGICAL)
-			buf->dest.xrc_remote_srq_num =
-				ni->logical.rank_table[xt->
-					initiator.rank].remote_xrc_srq_num;
-#endif
 #endif
 	} else {
 #if WITH_TRANSPORT_SHMEM

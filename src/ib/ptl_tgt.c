@@ -763,14 +763,6 @@ static int tgt_data(buf_t *buf)
 
 	/* save the addressing information to the initiator
 	 * in buf */
-#ifdef USE_XRC
-	if (buf->conn->state == CONN_STATE_XRC_CONNECTED)
-		/* for XRC QPs we address the IB traffic
-		 * to one recv QP on each node with an
-		 * SRQ number in the work request. */
-		set_tgt_dest(buf, buf->conn->main_connect);
-	else
-#endif
 	if (buf->conn->state >= CONN_STATE_CONNECTED)
 		set_tgt_dest(buf, buf->conn);
 
