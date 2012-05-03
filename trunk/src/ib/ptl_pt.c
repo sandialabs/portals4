@@ -140,9 +140,9 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 	INIT_LIST_HEAD(&pt->flowctrl_list);
 
 	if (options & PTL_PT_FLOWCTRL) {
-		PTL_FASTLOCK_LOCK(&eq->lock);
+		PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 		list_add_tail(&pt->flowctrl_list, &eq->flowctrl_list);
-		PTL_FASTLOCK_UNLOCK(&eq->lock);
+		PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 	}
 
 	*pt_index = index;
