@@ -153,8 +153,6 @@ static int init_pools(ni_t *ni)
 		}
 	}
 
-	ni->eq_pool.init = eq_init;
-	ni->eq_pool.fini = eq_fini;
 	ni->eq_pool.setup = eq_new;
 	ni->eq_pool.cleanup = eq_cleanup;
 

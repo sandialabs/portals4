@@ -8,33 +8,6 @@
 #include "ptl_timer.h"
 
 /**
- * @brief Initialize a eq object once when created.
- *
- * @param[in] arg opaque eq address
- * @param[in] unused unused
- */
-int eq_init(void *arg, void *unused)
-{
-	eq_t *eq = arg;
-
-	PTL_FASTLOCK_INIT(&eq->lock);
-
-	return PTL_OK;
-}
-
-/**
- * @brief Cleanup a eq object once when destroyed.
- *
- * @param[in] arg opaque eq address
- */
-void eq_fini(void *arg)
-{
-	eq_t *eq = arg;
-
-	PTL_FASTLOCK_DESTROY(&eq->lock);
-}
-
-/**
  * @brief Initialize eq each time when allocated from free list.
  *
  * @param[in] arg opaque eq address
@@ -44,13 +17,6 @@ void eq_fini(void *arg)
 int eq_new(void *arg)
 {
 	eq_t *eq = arg;
-
-	eq->producer = 0;
-	eq->consumer = 0;
-	eq->used = 0;
-	eq->prod_gen = 0;
-	eq->cons_gen = 0;
-	eq->interrupt = 0;
 
 	INIT_LIST_HEAD(&eq->flowctrl_list);
 
@@ -68,8 +34,10 @@ void eq_cleanup(void *arg)
 {
 	eq_t *eq = arg;
 
-	if (eq->eqe_list)
+	if (eq->eqe_list) {
+		PTL_FASTLOCK_DESTROY(&eq->eqe_list->lock);
 		free(eq->eqe_list);
+	}
 	eq->eqe_list = NULL;
 }
 
@@ -94,6 +62,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	int err;
 	ni_t *ni;
 	eq_t *eq;
+	struct eqe_list *eqe_list;
 
 	/* convert handle to object */
 #ifndef NO_ARG_VALIDATION
@@ -132,15 +101,28 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	 * to account for PTs with flow control. See implementation note
 	 * 19 for PtlEQAlloc(). */
 	eq->count_simple = count;
-	eq->count = count + ni->limits.max_pt_index + 1;
+	count += ni->limits.max_pt_index + 1;
 
-	eq->eqe_list = calloc(eq->count, sizeof(*eq->eqe_list));
+	eq->eqe_list_size = sizeof(struct eqe_list) + count * sizeof(eqe_t);
+	eq->eqe_list = calloc(1, eq->eqe_list_size);
 	if (!eq->eqe_list) {
 		err = PTL_NO_SPACE;
 		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
 		eq_put(eq);
 		goto err2;
 	}
+
+	eqe_list = eq->eqe_list;
+
+	eqe_list->producer = 0;
+	eqe_list->consumer = 0;
+	eqe_list->used = 0;
+	eqe_list->prod_gen = 0;
+	eqe_list->cons_gen = 0;
+	eqe_list->interrupt = 0;
+	eqe_list->count = count;
+
+	PTL_FASTLOCK_INIT(&eqe_list->lock);
 
 	*eq_handle_p = eq_to_handle(eq);
 
@@ -199,7 +181,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 #endif
 
 	/* cleanup resources. */
-	eq->interrupt = 1;
+	eq->eqe_list->interrupt = 1;
 	__sync_synchronize();
 
 	err = PTL_OK;
@@ -227,10 +209,10 @@ err0:
  * to give an idea whether get_event() can be called. This avoids
  * taking a lock.
  */
-static int inline is_queue_empty(eq_t *eq)
+static int inline is_queue_empty(struct eqe_list *eqe_list)
 {
-	return ((eq->producer == eq->consumer) &&
-			(eq->prod_gen == eq->cons_gen));
+	return ((eqe_list->producer == eqe_list->consumer) &&
+			(eqe_list->prod_gen == eqe_list->cons_gen));
 }
 
 /**
@@ -244,40 +226,40 @@ static int inline is_queue_empty(eq_t *eq)
  * gap since the last event returned
  * @return PTL_EQ_OK if there was an event and no gap
  */
-static int get_event(eq_t * restrict eq, ptl_event_t * restrict event_p)
+static int get_event(struct eqe_list * restrict eqe_list, ptl_event_t * restrict event_p)
 {
 	int dropped = 0;
 
-	PTL_FASTLOCK_LOCK(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eqe_list->lock);
 
 	/* check to see if the queue is empty */
-	if (is_queue_empty(eq)) {
-		PTL_FASTLOCK_UNLOCK(&eq->lock);
+	if (is_queue_empty(eqe_list)) {
+		PTL_FASTLOCK_UNLOCK(&eqe_list->lock);
 		return PTL_EQ_EMPTY;
 	}
 
 	/* if we have been lapped by the producer advance the
 	 * consumer pointer until we catch up */
-	while (eq->cons_gen < eq->eqe_list[eq->consumer].generation) {
-		eq->consumer++;
-		if (eq->consumer == eq->count) {
-			eq->consumer = 0;
-			eq->cons_gen++;
+	while (eqe_list->cons_gen < eqe_list->eqe[eqe_list->consumer].generation) {
+		eqe_list->consumer++;
+		if (eqe_list->consumer == eqe_list->count) {
+			eqe_list->consumer = 0;
+			eqe_list->cons_gen++;
 		}
 		dropped = 1;
-		eq->used --;
+		eqe_list->used --;
 	}
 
 	/* return the next valid event and update the consumer pointer */
-	*event_p = eq->eqe_list[eq->consumer++].event;
-	if (eq->consumer >= eq->count) {
-		eq->consumer = 0;
-		eq->cons_gen++;
+	*event_p = eqe_list->eqe[eqe_list->consumer++].event;
+	if (eqe_list->consumer >= eqe_list->count) {
+		eqe_list->consumer = 0;
+		eqe_list->cons_gen++;
 	}
 
-	eq->used --;
+	eqe_list->used --;
 
-	PTL_FASTLOCK_UNLOCK(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eqe_list->lock);
 
 	return dropped ? PTL_EQ_DROPPED : PTL_OK;
 }
@@ -326,7 +308,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	eq = fast_to_obj(eq_handle);
 #endif
 
-	err = get_event(eq, event_p);
+	err = get_event(eq->eqe_list, event_p);
 
 	eq_put(eq);
 #ifndef NO_ARG_VALIDATION
@@ -383,14 +365,14 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	ni = obj_to_ni(eq);
 
 	while(1) {
-		if (!is_queue_empty(eq)) {
-			err = get_event(eq, event_p);
+		if (!is_queue_empty(eq->eqe_list)) {
+			err = get_event(eq->eqe_list, event_p);
 			if (err != PTL_EQ_EMPTY) {
 				break;
 			}
 		}
 
-		if (eq->interrupt) {
+		if (eq->eqe_list->interrupt) {
 			err = PTL_INTERRUPTED;
 			break;
 		}
@@ -495,9 +477,10 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	while (1) {
 		for (i = 0; i < size; i++) {
 			eq_t *eq = eqs[i];
+			struct eqe_list *eqe_list = eq->eqe_list;
 
-			if (!is_queue_empty(eq)) {
-				err = get_event(eq, event_p);
+			if (!is_queue_empty(eqe_list)) {
+				err = get_event(eqe_list, event_p);
 
 				if (err != PTL_EQ_EMPTY) {
 					*which_p = i;
@@ -505,7 +488,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 				}
 			}
 
-			if (eq->interrupt) {
+			if (eqe_list->interrupt) {
 				err = PTL_INTERRUPTED;
 				goto out;
 			}
@@ -543,25 +526,27 @@ static inline ptl_event_t *reserve_ev(eq_t * restrict eq)
 {
 	ptl_event_t *ev;
 	eqe_t *eqe;
+	struct eqe_list *eqe_list;
 
-	eqe = &eq->eqe_list[eq->producer];
+	eqe_list = eq->eqe_list;
+	eqe = &eqe_list->eqe[eqe_list->producer];
 
-	eqe->generation = eq->prod_gen;
+	eqe->generation = eqe_list->prod_gen;
 	ev = &eqe->event;
 
-	eq->producer ++;
-	if (eq->producer >= eq->count) {
-		eq->producer = 0;
-		eq->prod_gen++;
+	eqe_list->producer ++;
+	if (eqe_list->producer >= eqe_list->count) {
+		eqe_list->producer = 0;
+		eqe_list->prod_gen++;
 	}
 
-	eq->used ++;
+	eqe_list->used ++;
 
 	/* If all unreserved entries are used, then the queue is
 	 * overflowing. It matters only if an attached PT wants flow
 	 * control. TODO: we should not be counting already inserted
 	 * reserved entries. */
-	if (eq->used == eq->count_simple &&
+	if (eqe_list->used == eq->count_simple &&
 		!list_empty(&eq->flowctrl_list)) {
 		eq->overflowing = 1;
 	}
@@ -610,7 +595,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 {
 	ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
 	ev = reserve_ev(eq);
 	ev->type		= type;
@@ -637,7 +622,7 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 	if (eq->overflowing)
 		process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 }
 
 /**
@@ -681,14 +666,14 @@ void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
  */
 void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 {
-	PTL_FASTLOCK_LOCK(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
 	*(reserve_ev(eq)) = *ev;
 
 	if (eq->overflowing)
 		process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 }
 		       
 /**
@@ -705,7 +690,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 {
 	ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
 	ev = reserve_ev(eq);
 
@@ -714,7 +699,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 	if (eq->overflowing)
 		process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 }
 
 /**
@@ -730,7 +715,7 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 {
 	ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->lock);
+	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
 	ev = reserve_ev(eq);
 	ev->type = type;
@@ -741,5 +726,5 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 	if (eq->overflowing)
 		process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->lock);
+	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 }

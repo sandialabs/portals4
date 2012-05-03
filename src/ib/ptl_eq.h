@@ -9,48 +9,24 @@
 #define PTL_EQ_H
 
 #include "ptl_locks.h"
-
-/**
- * Event queue entry.
- */
-struct eqe {
-	unsigned int		generation;	/**< increments each time
-						     the producer pointer
-						     wraps */
-	ptl_event_t		event;		/**< portals event */
-};
-
-typedef struct eqe eqe_t;
+#include "ptl_eq_common.h"
 
 /**
  * Event queue info.
  */
 struct eq {
 	obj_t			obj;		/**< object base class */
-	eqe_t			*eqe_list;	/**< circular buffer for
-						     holding events */
-	unsigned int		count;		/**< size of event queue */
+	struct eqe_list		*eqe_list;	/**< circular buffer for
+									   holding events */
+	int eqe_list_size;
 	unsigned int		count_simple;		/**< size of event queue minus reserved entries */
-	unsigned int		used;				/**< number of unreserved slots used */
-	unsigned int		producer;	/**< producer index */
-	unsigned int		consumer;	/**< consumer index */
-	unsigned int		prod_gen;	/**< producer generation */
-	unsigned int		cons_gen;	/**< consumer generation */
-	int			interrupt;	/**< if set eq is being
-						     freed or destroyed */
 
 	/** to attach the PTs supporting flow control. **/
 	struct list_head	flowctrl_list;
 	int overflowing;			/* the queue is overflowing */
-
-	PTL_FASTLOCK_TYPE		lock;		/**< mutex for eq condition */
 };
 
 typedef struct eq eq_t;
-
-int eq_init(void *arg, void *unused);
-
-void eq_fini(void *arg);
 
 int eq_new(void *arg);
 
