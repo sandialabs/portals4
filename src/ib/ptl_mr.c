@@ -111,7 +111,9 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 #if WITH_TRANSPORT_IB
 	struct ibv_mr *ibmr = NULL;
 #endif
+#if WITH_TRANSPORT_SHMEM
 	uint64_t knem_cookie = 0;
+#endif
 
 	err = mr_alloc(ni, &mr);
 	if (err) {

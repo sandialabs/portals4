@@ -1416,14 +1416,7 @@ static int tgt_send_reply(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	if (rep_buf->conn->transport.type == CONN_TYPE_SHMEM
-#if WITH_TRANSPORT_IB
-		|| rep_buf->length <= rep_buf->conn->rdma.max_inline_data
-#endif
-		)
-		rep_buf->event_mask |= XX_INLINE;
-	else
-		rep_buf->event_mask |= XX_SIGNALED;
+	buf->conn->transport.set_send_flags(buf);
 
 	err = buf->conn->transport.send_message(rep_buf, 0);
 	if (err) {
