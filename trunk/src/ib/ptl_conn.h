@@ -24,8 +24,12 @@ enum conn_state {
 };
 
 enum transport_type {
+#if WITH_TRANSPORT_IB
 	CONN_TYPE_RDMA = 1,
+#endif
+#if WITH_TRANSPORT_SHMEM
 	CONN_TYPE_SHMEM,
+#endif
 };
 
 /**
