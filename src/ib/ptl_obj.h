@@ -73,7 +73,9 @@ struct slab_info {
 	void			*addr;
 
 	/** slab private data */
-	void			*priv;
+#if WITH_TRANSPORT_IB
+	struct ibv_mr	*mr;
+#endif
 };
 
 typedef struct slab_info slab_info_t;
