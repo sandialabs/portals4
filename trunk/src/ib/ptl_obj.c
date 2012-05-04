@@ -252,7 +252,7 @@ static int pool_alloc_slab(pool_t *pool)
 			free(p);
 			return PTL_FAIL;
 		}
-		chunk->slab_list[chunk->num_slabs].priv = mr;
+		chunk->slab_list[chunk->num_slabs].mr = mr;
 	}
 #endif
 
@@ -340,13 +340,10 @@ int pool_fini(pool_t *pool)
 		chunk = list_entry(l, chunk_t, list);
 
 		for (i = 0; i < chunk->num_slabs; i++) {
-			/* see below TODO make more elegant */
 #if WITH_TRANSPORT_IB
-			if (chunk->slab_list[i].priv) {
-				struct ibv_mr *mr = chunk->slab_list[i].priv;
-
+			struct ibv_mr *mr = chunk->slab_list[i].mr;
+			if (mr)
 				ibv_dereg_mr(mr);
-			}
 #endif
 
 			if (!pool->use_pre_alloc_buffer)
