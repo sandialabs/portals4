@@ -122,8 +122,9 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
 			/* Indirect case. The IOVs do not fit in a buf_t. */
 
-			if (type == CONN_TYPE_RDMA) {
+			switch(type) {
 #if WITH_TRANSPORT_IB
+			case CONN_TYPE_RDMA:
 				data->data_fmt = DATA_FMT_RDMA_INDIRECT;
 				data->rdma.num_sge = cpu_to_le32(1);
 				data->rdma.sge_list[0].addr
@@ -134,9 +135,11 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 					= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
 
 				buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+				break;
 #endif
-			} else {
+
 #if WITH_TRANSPORT_SHMEM
+			case CONN_TYPE_SHMEM:
 				data->data_fmt = DATA_FMT_SHMEM_INDIRECT;
 				data->shmem.num_knem_iovecs = num_sge;
 
@@ -148,11 +151,13 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 					= num_sge * sizeof(struct shmem_iovec);
 
 				buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+				break;
 #endif
 			}
 		} else {
-			if (type == CONN_TYPE_RDMA) {
+			switch(type) {
 #if WITH_TRANSPORT_IB
+			case CONN_TYPE_RDMA:
 				data->data_fmt = DATA_FMT_RDMA_DMA;
 				data->rdma.num_sge = cpu_to_le32(num_sge);
 				memcpy(data->rdma.sge_list,
@@ -161,17 +166,20 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 				buf->length += sizeof(*data) + num_sge *
 					sizeof(struct ibv_sge);
+				break;
 #endif
-			} else {
+
 #if WITH_TRANSPORT_SHMEM
+			case CONN_TYPE_SHMEM:
 				data->data_fmt = DATA_FMT_SHMEM_DMA;
 				data->shmem.num_knem_iovecs = num_sge;
 				memcpy(data->shmem.knem_iovec,
 					   &md->knem_iovecs[iov_start],
 					   num_sge*sizeof(struct shmem_iovec));
-
+				
 				buf->length += sizeof(*data) + num_sge *
 					sizeof(struct shmem_iovec);
+				break;
 #endif
 			}
 		}
@@ -193,8 +201,9 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 		buf->mr_list[buf->num_mr++] = mr;
 
-		if (type == CONN_TYPE_RDMA) {
+		switch(type) {
 #if WITH_TRANSPORT_IB
+		case CONN_TYPE_RDMA:
 			data->data_fmt = DATA_FMT_RDMA_DMA;
 			data->rdma.num_sge = cpu_to_le32(1);
 			data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
@@ -202,9 +211,11 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
 
 			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+			break;
 #endif
-		} else {
+
 #if WITH_TRANSPORT_SHMEM
+		case CONN_TYPE_SHMEM:
 			data->data_fmt = DATA_FMT_SHMEM_DMA;
 			data->shmem.num_knem_iovecs = 1;
 			data->shmem.knem_iovec[0].cookie = mr->knem_cookie;
@@ -212,6 +223,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			data->shmem.knem_iovec[0].length = length;
 
 			buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+			break;
 #endif
 		}
 	}

@@ -399,31 +399,18 @@ static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
 
 static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 {
-	if (connect->transport.type == CONN_TYPE_RDMA) {
+	switch(connect->transport.type) {
 #if WITH_TRANSPORT_IB
+	case CONN_TYPE_RDMA:
 		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
+		break;
 #endif
-	} else {
-#if WITH_TRANSPORT_SHMEM
-		assert(connect->transport.type == CONN_TYPE_SHMEM);
-		assert(connect->shmem.local_rank != -1);
-		buf->dest.shmem.local_rank = connect->shmem.local_rank;
-#endif
-	}
-}
 
-// TODO merge with set_buf_dest
-static inline void set_tgt_dest(buf_t *buf, const conn_t *connect)
-{
-	if (connect->transport.type == CONN_TYPE_RDMA) {
-#if WITH_TRANSPORT_IB
-		buf->dest.rdma.qp = connect->rdma.cm_id->qp;
-#endif
-	} else {
 #if WITH_TRANSPORT_SHMEM
-		assert(connect->transport.type == CONN_TYPE_SHMEM);
+	case CONN_TYPE_SHMEM:
 		assert(connect->shmem.local_rank != -1);
 		buf->dest.shmem.local_rank = connect->shmem.local_rank;
+		break;
 #endif
 	}
 }

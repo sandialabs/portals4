@@ -764,7 +764,7 @@ static int tgt_data(buf_t *buf)
 	/* save the addressing information to the initiator
 	 * in buf */
 	if (buf->conn->state >= CONN_STATE_CONNECTED)
-		set_tgt_dest(buf, buf->conn);
+		set_buf_dest(buf, buf->conn);
 
 	/* This implementation guarantees atomicity between
 	 * the three atomic type operations by only alowing a
@@ -1358,14 +1358,7 @@ static int tgt_send_ack(buf_t *buf)
 
 		/* Inline the data if it fits. That may save waiting for a
 		 * completion. */
-		if (ack_buf->conn->transport.type == CONN_TYPE_SHMEM
-#if WITH_TRANSPORT_IB
-			 || ack_buf->length <= ack_buf->conn->rdma.max_inline_data
-#endif
-			)
-			ack_buf->event_mask |= XX_INLINE;
-		else
-			ack_buf->event_mask |= XX_SIGNALED;
+		buf->conn->transport.set_send_flags(buf);
 
 		err = buf->conn->transport.send_message(ack_buf, 0);
 		if (err) {

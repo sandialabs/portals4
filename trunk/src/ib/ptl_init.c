@@ -297,12 +297,7 @@ static int prepare_req(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	if (buf->conn->transport.type == CONN_TYPE_SHMEM
-#if WITH_TRANSPORT_IB
-		|| buf->length <= buf->conn->rdma.max_inline_data
-#endif
-		)
-		buf->event_mask |= XX_INLINE;
+	buf->conn->transport.set_send_flags(buf);
 
 	/* Protect the request packet until it is sent. */
 	if (!(buf->event_mask & XX_INLINE) &&
