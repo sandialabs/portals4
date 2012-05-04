@@ -169,8 +169,10 @@ err1:
 		ibv_dereg_mr(ibmr);
 #endif
 
+#if WITH_TRANSPORT_SHMEM
 	if (knem_cookie)
 		knem_unregister(ni, knem_cookie);
+#endif
 
 	if (mr)
 		mr_put(mr);
