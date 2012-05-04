@@ -24,8 +24,7 @@ enum conn_state {
 };
 
 enum transport_type {
-	CONN_TYPE_NONE,
-	CONN_TYPE_RDMA,
+	CONN_TYPE_RDMA = 1,
 	CONN_TYPE_SHMEM,
 };
 
@@ -38,6 +37,11 @@ struct transport {
 	int (*buf_alloc)(ni_t *ni, struct buf **buf_p);
 	int (*post_tgt_dma)(struct buf *buf);
 	int (*send_message)(struct buf *buf, int from_init);
+
+	/* Sets some sent flags, which determine what to do once the
+	 * buffer has been sent. So far, it's either XX_INLINE or
+	 * XX_SIGNALED. */
+	void (*set_send_flags)(struct buf *buf);
 };
 
 extern struct transport transport_rdma;

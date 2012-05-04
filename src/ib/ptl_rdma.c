@@ -93,6 +93,19 @@ static int send_message_rdma(buf_t *buf, int from_init)
 	return PTL_OK;
 }
 
+static void set_send_flags_rdma(buf_t *buf)
+{
+	/* If the buffer fits in the work request inline data, then we can
+	 * inline, in which case the data will be copied during
+	 * ibv_post_send, else we can't and must wait for the data to be
+	 * sent before disposing of the buffer. */
+	if (buf->length <= buf->conn->rdma.max_inline_data) {
+		buf->event_mask |= XX_INLINE;
+	} else {
+		buf->event_mask |= XX_SIGNALED;
+	}
+}
+
 /**
  * @brief Build and post an RDMA read/write work request to transfer
  * data to/from one or more local memory segments from/to a single remote
@@ -443,6 +456,7 @@ struct transport transport_rdma = {
 	.buf_alloc = buf_alloc,
 	.post_tgt_dma = process_rdma,
 	.send_message = send_message_rdma,
+	.set_send_flags = set_send_flags_rdma,
 };
 
 /**

@@ -194,11 +194,18 @@ static int do_knem_transfer(buf_t *buf)
 	return PTL_OK;
 }
 
+void shmem_set_send_flags(buf_t *buf)
+{
+	/* The data is always in the buffer. */
+	buf->event_mask |= XX_INLINE;
+}
+
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
 	.post_tgt_dma = do_knem_transfer,
 	.send_message = send_message_shmem,
+	.set_send_flags = shmem_set_send_flags,
 };
 
 /**
