@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<test>
+  <subtest>
+    <desc>Test PtlGetMap on physical interface</desc>
+    <ptl>
+      <ptl_ni>
+        <ompi_rt>
+          <ptl_get_map ret="ARG_INVALID"/>
+        </ompi_rt>
+      </ptl_ni>
+      
+    </ptl>
+  </subtest>
+  
+  <subtest>
+    <desc>Test PtlGetMap with empty map</desc>
+    <ptl>
+      <ptl_ni>
+        <ompi_rt>
+          <ptl_ni ni_opt="MATCH LOGICAL">
+            <ptl_get_map/>
+            
+          </ptl_ni>
+        </ompi_rt>
+      </ptl_ni>
+      
+    </ptl>
+  </subtest>
+  
+  <subtest>
+    <desc>Test PtlGetMap 50 entries in map</desc>
+    <ptl>
+      <ptl_ni>
+        <ompi_rt>
+          <ptl_ni ni_opt="MATCH LOGICAL">
+            <ptl_get_map get_map_size="50"/>
+          </ptl_ni>
+        </ompi_rt>
+      </ptl_ni>
+      
+    </ptl>
+  </subtest>
+  
+</test>
