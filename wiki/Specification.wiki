@@ -1,8 +1,15 @@
 #summary Draft copy of the Portals 4 specification, with changelog
 
 == Latest Draft Specification ==
-  * [http://portals4.googlecode.com/files/portals40-20120425.pdf Portals Document (pdf)]
-  * [http://portals4.googlecode.com/files/portals40-20120425-diff.pdf Portals Document with changes (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120507.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120507-diff.pdf Portals Document with changes (pdf)]
+
+== May 5, 2012 Changelog ==
+  * Remove the duplicate event descriptions from the event location table, as they're in the constants descriptions directly above it.
+  * Convert the paragraph describing failure type constants into a proper constants table
+  * Remove an implementation note on events and make normative test (since it really was anyways...)
+  * Changed the description of PTL_{LE,ME}_EVENT_FLOWCTRL_DISABLE flag to specify that a PTL_EVENT_PT_DISABLED event shoudl be generated when a flow control situation not associated with a single LE/ME is hit, not PTL_{LE,ME}_EVENT_FLOWCTRL_DISABLE, which isn't even an event type.
+
 
 == April 25, 2012 Changelog ==
   * Rename PTL_NI_FLOW_CTRL to PTL_NI_PT_DISABLED and clarify that it should be returned any time an operation targets a PT that has been disabled.  Also, clarify that PTL_NI_DROPPED should not be returned when the PT has been disabled.
