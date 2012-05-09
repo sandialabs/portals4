@@ -763,6 +763,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 		/* Something else has a reference on that LE. If it is on the
 		 * unexpected list, remove it. */
 		flush_le_references(le);
+		ref_cnt = le_ref_cnt(le);
 	}
 
 	/* There should only be 2 references on the object before we can
