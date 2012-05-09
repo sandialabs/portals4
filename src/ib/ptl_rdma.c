@@ -93,7 +93,7 @@ static int send_message_rdma(buf_t *buf, int from_init)
 	return PTL_OK;
 }
 
-static void set_send_flags_rdma(buf_t *buf)
+static void set_send_flags_rdma(buf_t *buf, int can_signal)
 {
 	/* If the buffer fits in the work request inline data, then we can
 	 * inline, in which case the data will be copied during
@@ -102,7 +102,8 @@ static void set_send_flags_rdma(buf_t *buf)
 	if (buf->length <= buf->conn->rdma.max_inline_data) {
 		buf->event_mask |= XX_INLINE;
 	} else {
-		buf->event_mask |= XX_SIGNALED;
+		if (can_signal)
+			buf->event_mask |= XX_SIGNALED;
 	}
 }
 

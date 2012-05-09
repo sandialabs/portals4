@@ -44,8 +44,10 @@ struct transport {
 
 	/* Sets some sent flags, which determine what to do once the
 	 * buffer has been sent. So far, it's either XX_INLINE or
-	 * XX_SIGNALED. */
-	void (*set_send_flags)(struct buf *buf);
+	 * XX_SIGNALED. can_signal is a bit hacking, and indicates to IB
+	 * whether it can signal the completion or not, if it can't
+	 * inline. can_signal is ignored on other transports. */
+	void (*set_send_flags)(struct buf *buf, int can_signal);
 };
 
 extern struct transport transport_rdma;

@@ -194,7 +194,7 @@ static int do_knem_transfer(buf_t *buf)
 	return PTL_OK;
 }
 
-void shmem_set_send_flags(buf_t *buf)
+static void shmem_set_send_flags(buf_t *buf, int can_signal)
 {
 	/* The data is always in the buffer. */
 	buf->event_mask |= XX_INLINE;
