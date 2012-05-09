@@ -1358,9 +1358,9 @@ static int tgt_send_ack(buf_t *buf)
 
 		/* Inline the data if it fits. That may save waiting for a
 		 * completion. */
-		buf->conn->transport.set_send_flags(buf);
+		ack_buf->conn->transport.set_send_flags(ack_buf, 1);
 
-		err = buf->conn->transport.send_message(ack_buf, 0);
+		err = ack_buf->conn->transport.send_message(ack_buf, 0);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
@@ -1416,9 +1416,9 @@ static int tgt_send_reply(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	buf->conn->transport.set_send_flags(buf);
+	rep_buf->conn->transport.set_send_flags(rep_buf, 1);
 
-	err = buf->conn->transport.send_message(rep_buf, 0);
+	err = rep_buf->conn->transport.send_message(rep_buf, 0);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;

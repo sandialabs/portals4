@@ -297,7 +297,7 @@ static int prepare_req(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	buf->conn->transport.set_send_flags(buf);
+	buf->conn->transport.set_send_flags(buf, 0);
 
 	/* Protect the request packet until it is sent. */
 	if (!(buf->event_mask & XX_INLINE) &&
