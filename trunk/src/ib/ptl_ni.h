@@ -40,7 +40,7 @@ typedef struct ni {
 	obj_t			obj;
 
 	ptl_ni_limits_t		limits;		/* max number of xxx */
-	ptl_ni_limits_t		current;	/* current num of xxx */
+	ptl_ni_limits_t		current;	/* used for accounting of objects, not real limits. */
 
 	atomic_t			ref_cnt;
 
