@@ -562,6 +562,9 @@ static int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_DESIRED_MAX_ATOMIC_SIZE:
 			info->desired.max_atomic_size = get_number(info, val);
 			break;
+		case ATTR_DESIRED_MAX_VOLATILE_SIZE:
+			info->desired.max_volatile_size = get_number(info, val);
+			break;
 		case ATTR_DESIRED_FEATURES:
 			info->desired.features = get_ni_features(val);
 			break;
