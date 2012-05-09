@@ -281,6 +281,19 @@ void init_param(void)
 		else
 			p->val = val;
 	}
+
+	/* Fix dependencies. */
+	if (param[PTL_MAX_INLINE_DATA].val > (BUF_DATA_SIZE - sizeof(struct req_hdr))) {
+		param[PTL_MAX_INLINE_DATA].val =  (BUF_DATA_SIZE - sizeof(struct req_hdr));
+		ptl_error("PTL_MAX_INLINE_DATA too big. Clipping it down to %zd\n",
+				 param[PTL_MAX_INLINE_DATA].val);
+	}
+
+	if (param[PTL_LIM_MAX_VOLATILE_SIZE].val > param[PTL_MAX_INLINE_DATA].val) {
+		param[PTL_LIM_MAX_VOLATILE_SIZE].val = param[PTL_MAX_INLINE_DATA].val;
+		ptl_error("PTL_LIM_MAX_VOLATILE_SIZE too big. Clipping it down to %zd\n",
+				  param[PTL_LIM_MAX_VOLATILE_SIZE].val);
+	}
 }
 
 /**
