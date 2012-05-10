@@ -38,7 +38,6 @@ libportals_ib_la_SOURCES = \
 	ptl_md.h \
 	ptl_me.c \
 	ptl_me.h \
-	ptl_mem.c \
 	ptl_misc.c \
 	ptl_move.c \
 	ptl_mr.c \
@@ -67,6 +66,7 @@ endif
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \
 	ptl_knem.c \
+	ptl_mem.c \
 	ptl_queue.c \
 	ptl_queue.h \
 	ptl_shmem.c
