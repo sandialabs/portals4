@@ -155,14 +155,14 @@ static int do_knem_transfer(buf_t *buf)
 	ptl_size_t *resid = (dir == DATA_DIR_IN) ?
 				&buf->put_resid : &buf->get_resid;
 
-	rseg_length = buf->transfer.shmem.cur_rem_iovec->length;
-	rcookie = buf->transfer.shmem.cur_rem_iovec->cookie;
-	roffset = buf->transfer.shmem.cur_rem_iovec->offset;
+	rseg_length = buf->transfer.mem.cur_rem_iovec->length;
+	rcookie = buf->transfer.mem.cur_rem_iovec->cookie;
+	roffset = buf->transfer.mem.cur_rem_iovec->offset;
 
 	while (*resid > 0) {
 
-		roffset += buf->transfer.shmem.cur_rem_off;
-		rlength = rseg_length - buf->transfer.shmem.cur_rem_off;
+		roffset += buf->transfer.mem.cur_rem_off;
+		rlength = rseg_length - buf->transfer.mem.cur_rem_off;
 
 		if (rlength > *resid)
 			rlength = *resid;
@@ -176,15 +176,15 @@ static int do_knem_transfer(buf_t *buf)
 		*resid -= bytes;
 		buf->cur_loc_iov_index = iov_index;
 		buf->cur_loc_iov_off = iov_off;
-		buf->transfer.shmem.cur_rem_off += bytes;
+		buf->transfer.mem.cur_rem_off += bytes;
 
-		if (*resid && buf->transfer.shmem.cur_rem_off >= rseg_length) {
-			if (buf->transfer.shmem.num_rem_iovecs) {
-				buf->transfer.shmem.cur_rem_iovec++;
-				rseg_length = buf->transfer.shmem.cur_rem_iovec->length;
-				rcookie = buf->transfer.shmem.cur_rem_iovec->cookie;
-				roffset = buf->transfer.shmem.cur_rem_iovec->offset;
-				buf->transfer.shmem.cur_rem_off = 0;
+		if (*resid && buf->transfer.mem.cur_rem_off >= rseg_length) {
+			if (buf->transfer.mem.num_rem_iovecs) {
+				buf->transfer.mem.cur_rem_iovec++;
+				rseg_length = buf->transfer.mem.cur_rem_iovec->length;
+				rcookie = buf->transfer.mem.cur_rem_iovec->cookie;
+				roffset = buf->transfer.mem.cur_rem_iovec->offset;
+				buf->transfer.mem.cur_rem_off = 0;
 			} else {
 				return PTL_FAIL;
 			}

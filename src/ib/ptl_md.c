@@ -68,7 +68,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	struct ibv_sge *sge;
 #endif
 #if WITH_TRANSPORT_SHMEM
-	struct shmem_iovec *knem_iovec;
+	struct mem_iovec *knem_iovec;
 #endif
 	void *p;
 	int i;
@@ -80,7 +80,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 							   + sizeof(struct ibv_sge)
 #endif
 #if WITH_TRANSPORT_SHMEM
-							   + sizeof(struct shmem_iovec)
+							   + sizeof(struct mem_iovec)
 #endif
 							   );
 	if (!md->internal_data) {
@@ -99,8 +99,8 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #endif
 
 #if WITH_TRANSPORT_SHMEM
-	knem_iovec = md->knem_iovecs = p;
-	p += num_iov*sizeof(struct shmem_iovec);
+	knem_iovec = md->mem_iovecs = p;
+	p += num_iov*sizeof(struct mem_iovec);
 #endif
 
 	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {

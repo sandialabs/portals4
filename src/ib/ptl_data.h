@@ -33,8 +33,10 @@ enum data_fmt {
 
 typedef enum data_fmt data_fmt_t;
 
-struct shmem_iovec {
+struct mem_iovec {
+#if WITH_TRANSPORT_SHMEM
 	uint64_t		cookie;
+#endif
 	uint64_t		offset;
 	uint64_t		length;
 };
@@ -64,9 +66,9 @@ struct data {
 #if WITH_TRANSPORT_SHMEM
 		/* DMA or Indirect shmem data */
 		struct {
-			unsigned int		num_knem_iovecs;
-			struct shmem_iovec	knem_iovec[0];
-		} shmem;
+			unsigned int		num_mem_iovecs;
+			struct mem_iovec	mem_iovec[0];
+		} mem;
 #endif
 
 	};

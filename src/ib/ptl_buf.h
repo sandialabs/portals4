@@ -255,10 +255,10 @@ struct buf {
 #if WITH_TRANSPORT_SHMEM
 		struct {
 			/* For large (ie. KNEM) operations. */
-			struct shmem_iovec	*cur_rem_iovec;
+			struct mem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
-		} shmem;
+		} mem;
 #endif
 	} transfer;
 
