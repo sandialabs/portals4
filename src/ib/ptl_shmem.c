@@ -43,8 +43,8 @@ static int send_message_shmem(buf_t *buf, int from_init)
  *
  * @return the number of bytes to be transferred by the SG list.
  */
-static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
-			       uint64_t rcookie, uint64_t roffset,
+static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
+			       const struct mem_iovec *iovec, uint64_t roffset,
 			       ptl_size_t *loc_index, ptl_size_t *loc_off,
 			       int max_loc_index, data_dir_t dir)
 {
@@ -76,13 +76,13 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
 				break;
 
 			if (dir == DATA_DIR_IN)
-				err = knem_copy(ni, rcookie, roffset, 
+				err = knem_copy(ni, iovec->cookie, roffset, 
 						mr->knem_cookie,
 						addr - mr->addr, len);
 			else
 				err = knem_copy(ni, mr->knem_cookie,
 						addr - mr->addr,
-						rcookie, roffset, len);
+						iovec->cookie, roffset, len);
 
 			mr_put(mr);
 
@@ -114,12 +114,12 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
 				break;
 
 			if (dir == DATA_DIR_IN)
-				knem_copy(ni, rcookie, roffset, 
+				knem_copy(ni, iovec->cookie, roffset, 
 					  mr->knem_cookie,
 					  addr - mr->addr, len);
 			else
 				knem_copy(ni, mr->knem_cookie,
-					  addr - mr->addr, rcookie,
+					  addr - mr->addr, iovec->cookie,
 					  roffset, len);
 
 			mr_put(mr);
@@ -142,34 +142,32 @@ static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
  *
  * @return status
  */
-static int do_knem_transfer(buf_t *buf)
+static int do_mem_transfer(buf_t *buf)
 {
-	uint64_t rcookie;
 	uint64_t roffset;
 	ptl_size_t bytes;
 	ptl_size_t iov_index = buf->cur_loc_iov_index;
 	ptl_size_t iov_off = buf->cur_loc_iov_off;
 	uint32_t rlength;
-	uint32_t rseg_length;
 	data_dir_t dir = buf->rdma_dir;
 	ptl_size_t *resid = (dir == DATA_DIR_IN) ?
 				&buf->put_resid : &buf->get_resid;
+	struct mem_iovec *iovec;
 
-	rseg_length = buf->transfer.mem.cur_rem_iovec->length;
-	rcookie = buf->transfer.mem.cur_rem_iovec->cookie;
-	roffset = buf->transfer.mem.cur_rem_iovec->offset;
+	iovec = buf->transfer.mem.cur_rem_iovec;
+	roffset = iovec->offset;
 
 	while (*resid > 0) {
 
 		roffset += buf->transfer.mem.cur_rem_off;
-		rlength = rseg_length - buf->transfer.mem.cur_rem_off;
+		rlength = iovec->length - buf->transfer.mem.cur_rem_off;
 
 		if (rlength > *resid)
 			rlength = *resid;
 
-		bytes = do_knem_copy(buf, rlength, rcookie, roffset,
-				     &iov_index, &iov_off, buf->le->num_iov,
-							 dir);
+		bytes = do_mem_copy(buf, rlength, iovec, roffset,
+							&iov_index, &iov_off, buf->le->num_iov,
+							dir);
 		if (!bytes)
 			return PTL_FAIL;
 
@@ -178,12 +176,11 @@ static int do_knem_transfer(buf_t *buf)
 		buf->cur_loc_iov_off = iov_off;
 		buf->transfer.mem.cur_rem_off += bytes;
 
-		if (*resid && buf->transfer.mem.cur_rem_off >= rseg_length) {
+		if (*resid && buf->transfer.mem.cur_rem_off >= iovec->length) {
 			if (buf->transfer.mem.num_rem_iovecs) {
 				buf->transfer.mem.cur_rem_iovec++;
-				rseg_length = buf->transfer.mem.cur_rem_iovec->length;
-				rcookie = buf->transfer.mem.cur_rem_iovec->cookie;
-				roffset = buf->transfer.mem.cur_rem_iovec->offset;
+				iovec = buf->transfer.mem.cur_rem_iovec;
+				roffset = iovec->offset;
 				buf->transfer.mem.cur_rem_off = 0;
 			} else {
 				return PTL_FAIL;
@@ -203,7 +200,7 @@ static void shmem_set_send_flags(buf_t *buf, int can_signal)
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
-	.post_tgt_dma = do_knem_transfer,
+	.post_tgt_dma = do_mem_transfer,
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
 };
