@@ -15,7 +15,7 @@
  * an external segment list. These formats are called IMMEDIATE, DMA and
  * INDIRECT. InfiniBand DMA descriptors are based on OFA verbs sge's
  * (scatter gather elements). Shared memory DMA descriptors are based on
- * struct shmem_iovec descibed below.
+ * struct mem_iovec descibed below.
  *
  * Three APIs are provided with the data_t struct: data_size returns
  * the actual size of a data segment, append_init_data and append_tgt_data
@@ -54,10 +54,10 @@ int data_size(data_t *data)
 
 #if WITH_TRANSPORT_SHMEM
 	case DATA_FMT_SHMEM_DMA:
-		size += data->shmem.num_knem_iovecs * sizeof(struct shmem_iovec);
+		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
 		break;
 	case DATA_FMT_SHMEM_INDIRECT:
-		size += sizeof(struct shmem_iovec);
+		size += sizeof(struct mem_iovec);
 		break;
 #endif
 
@@ -141,16 +141,16 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 #if WITH_TRANSPORT_SHMEM
 			case CONN_TYPE_SHMEM:
 				data->data_fmt = DATA_FMT_SHMEM_INDIRECT;
-				data->shmem.num_knem_iovecs = num_sge;
+				data->mem.num_mem_iovecs = num_sge;
 
-				data->shmem.knem_iovec[0].cookie
+				data->mem.mem_iovec[0].cookie
 					= md->sge_list_mr->knem_cookie;
-				data->shmem.knem_iovec[0].offset
-					= (void *)md->knem_iovecs - md->sge_list_mr->addr;
-				data->shmem.knem_iovec[0].length
-					= num_sge * sizeof(struct shmem_iovec);
+				data->mem.mem_iovec[0].offset
+					= (void *)md->mem_iovecs - md->sge_list_mr->addr;
+				data->mem.mem_iovec[0].length
+					= num_sge * sizeof(struct mem_iovec);
 
-				buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 				break;
 #endif
 			}
@@ -172,13 +172,13 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 #if WITH_TRANSPORT_SHMEM
 			case CONN_TYPE_SHMEM:
 				data->data_fmt = DATA_FMT_SHMEM_DMA;
-				data->shmem.num_knem_iovecs = num_sge;
-				memcpy(data->shmem.knem_iovec,
-					   &md->knem_iovecs[iov_start],
-					   num_sge*sizeof(struct shmem_iovec));
+				data->mem.num_mem_iovecs = num_sge;
+				memcpy(data->mem.mem_iovec,
+					   &md->mem_iovecs[iov_start],
+					   num_sge*sizeof(struct mem_iovec));
 				
 				buf->length += sizeof(*data) + num_sge *
-					sizeof(struct shmem_iovec);
+					sizeof(struct mem_iovec);
 				break;
 #endif
 			}
@@ -217,12 +217,12 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 #if WITH_TRANSPORT_SHMEM
 		case CONN_TYPE_SHMEM:
 			data->data_fmt = DATA_FMT_SHMEM_DMA;
-			data->shmem.num_knem_iovecs = 1;
-			data->shmem.knem_iovec[0].cookie = mr->knem_cookie;
-			data->shmem.knem_iovec[0].offset = addr - mr->addr;
-			data->shmem.knem_iovec[0].length = length;
+			data->mem.num_mem_iovecs = 1;
+			data->mem.mem_iovec[0].cookie = mr->knem_cookie;
+			data->mem.mem_iovec[0].offset = addr - mr->addr;
+			data->mem.mem_iovec[0].length = length;
 
-			buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
+			buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 			break;
 #endif
 		}

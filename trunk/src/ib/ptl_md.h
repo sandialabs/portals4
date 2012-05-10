@@ -51,7 +51,7 @@ struct md {
 #if WITH_TRANSPORT_SHMEM
 	/** list of knem info for each iovec for use in long
 	 * messages send through shared memory */
-	struct shmem_iovec	*knem_iovecs;
+	struct mem_iovec	*mem_iovecs;
 #endif
 
 	/** mr to register long array of iovecs passed to target

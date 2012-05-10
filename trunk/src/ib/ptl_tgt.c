@@ -865,9 +865,9 @@ static int tgt_data_out(buf_t *buf)
 
 #if WITH_TRANSPORT_SHMEM
 	case DATA_FMT_SHMEM_DMA:
-		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->transfer.shmem.cur_rem_off = 0;
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
@@ -1035,7 +1035,7 @@ static int tgt_shmem_desc(buf_t *buf)
 	mr_t *mr;
 
 	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
-	len = data->shmem.knem_iovec[0].length;
+	len = data->mem.mem_iovec[0].length;
 
 	/*
 	 * Allocate and map indirect buffer and setup to read
@@ -1054,8 +1054,8 @@ static int tgt_shmem_desc(buf_t *buf)
 		goto done;
 	}
 
-	err = knem_copy(ni, data->shmem.knem_iovec[0].cookie,
-			data->shmem.knem_iovec[0].offset,
+	err = knem_copy(ni, data->mem.mem_iovec[0].cookie,
+			data->mem.mem_iovec[0].offset,
 			mr->knem_cookie,
 			indir_sge - mr->addr, len);
 	if (err != len) {
@@ -1066,9 +1066,9 @@ static int tgt_shmem_desc(buf_t *buf)
 
 	buf->indir_sge = indir_sge;
 	buf->mr_list[buf->num_mr++] = mr;
-	buf->transfer.shmem.cur_rem_iovec = indir_sge;
-	buf->transfer.shmem.cur_rem_off = 0;
-	buf->transfer.shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
+	buf->transfer.mem.cur_rem_iovec = indir_sge;
+	buf->transfer.mem.cur_rem_off = 0;
+	buf->transfer.mem.num_rem_iovecs = len/sizeof(struct mem_iovec);
 
 	next = STATE_TGT_RDMA;
 done:
@@ -1123,9 +1123,9 @@ static int tgt_data_in(buf_t *buf)
 
 #if WITH_TRANSPORT_SHMEM
 	case DATA_FMT_SHMEM_DMA:
-		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->transfer.shmem.cur_rem_off = 0;
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
