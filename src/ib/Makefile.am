@@ -38,6 +38,7 @@ libportals_ib_la_SOURCES = \
 	ptl_md.h \
 	ptl_me.c \
 	ptl_me.h \
+	ptl_mem.c \
 	ptl_misc.c \
 	ptl_move.c \
 	ptl_mr.c \
