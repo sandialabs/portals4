@@ -449,7 +449,9 @@ static int send_error(buf_t *buf)
  */
 static int wait_comp(buf_t *buf)
 {
+#if WITH_TRANSPORT_IB
 	assert(buf->conn->transport.type == CONN_TYPE_RDMA);
+#endif
 
 	if (buf->completed || buf->recv_buf)
 		return STATE_INIT_EARLY_SEND_EVENT;
