@@ -195,9 +195,12 @@ static int prepare_send_buf(buf_t *buf)
 
 	/* Determine whether to reuse the current buffer to reply, or get
 	 * a new one. */
+#if WITH_TRANSPORT_IB
 	if (buf->conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, &send_buf);
-	else {
+	else
+#endif
+		{
 		if (!(buf->event_mask & XT_ACK_EVENT)) {
 			/* No ack but a reply. The current buffer cannot be
 			 * reused. */
