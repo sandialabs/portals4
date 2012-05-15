@@ -11,8 +11,7 @@
  *
  * @param[in] buf
  * @param[in] rem_len
- * @param[in] rcookie
- * @param[in] roffset
+ * @param[in] iovec
  * @param[in,out] loc_index
  * @param[in,out] loc_off
  * @param[in] max_loc_index
@@ -21,9 +20,9 @@
  * @return the number of bytes to be transferred by the SG list.
  */
 static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
-			       const struct mem_iovec *iovec, uint64_t roffset,
-			       ptl_size_t *loc_index, ptl_size_t *loc_off,
-			       int max_loc_index, data_dir_t dir)
+							  struct mem_iovec *iovec,
+							  ptl_size_t *loc_index, ptl_size_t *loc_off,
+							  int max_loc_index, data_dir_t dir)
 {
 	ni_t *ni = obj_to_ni(buf);
 	me_t *me = buf->me;
@@ -52,20 +51,22 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (err)
 				break;
 
+#if WITH_TRANSPORT_SHMEM
 			if (dir == DATA_DIR_IN)
-				err = knem_copy(ni, iovec->cookie, roffset, 
+				err = knem_copy(ni, iovec->cookie, iovec->offset, 
 						mr->knem_cookie,
 						addr - mr->addr, len);
 			else
 				err = knem_copy(ni, mr->knem_cookie,
 						addr - mr->addr,
-						iovec->cookie, roffset, len);
+						iovec->cookie, iovec->offset, len);
+			iovec->offset += len;
+#endif
 
 			mr_put(mr);
 
 			tot_len += len;
 			*loc_off += len;
-			roffset += len;
 			if (tot_len < rem_len && *loc_off >= iov->iov_len) {
 				if (*loc_index < max_loc_index) {
 					*loc_off = 0;
@@ -90,20 +91,22 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (err)
 				break;
 
+#if WITH_TRANSPORT_SHMEM
 			if (dir == DATA_DIR_IN)
-				knem_copy(ni, iovec->cookie, roffset, 
-					  mr->knem_cookie,
-					  addr - mr->addr, len);
+				knem_copy(ni, iovec->cookie, iovec->offset, 
+						  mr->knem_cookie,
+						  addr - mr->addr, len);
 			else
 				knem_copy(ni, mr->knem_cookie,
-					  addr - mr->addr, iovec->cookie,
-					  roffset, len);
+						  addr - mr->addr, iovec->cookie,
+						  iovec->offset, len);
+			iovec->offset += len;
+#endif
 
 			mr_put(mr);
 
 			tot_len += len;
 			*loc_off += len;
-			roffset += len;
 			if (tot_len < rem_len && *loc_off >= mr->length)
 				break;
 		}
@@ -113,7 +116,7 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 }
 
 /**
- * @brief Complete a data phase using shared memory knem device.
+ * @brief Copy from one buffer to another, including from and/or to iovecs.
  *
  * @param[in] buf
  *
@@ -121,28 +124,27 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
  */
 int do_mem_transfer(buf_t *buf)
 {
-	uint64_t roffset;
 	ptl_size_t bytes;
 	ptl_size_t iov_index = buf->cur_loc_iov_index;
 	ptl_size_t iov_off = buf->cur_loc_iov_off;
-	uint32_t rlength;
 	data_dir_t dir = buf->rdma_dir;
 	ptl_size_t *resid = (dir == DATA_DIR_IN) ?
 				&buf->put_resid : &buf->get_resid;
-	struct mem_iovec *iovec;
+	struct mem_iovec iovec;
 
-	iovec = buf->transfer.mem.cur_rem_iovec;
-	roffset = iovec->offset;
+	iovec = *buf->transfer.mem.cur_rem_iovec;
 
 	while (*resid > 0) {
 
-		roffset += buf->transfer.mem.cur_rem_off;
-		rlength = iovec->length - buf->transfer.mem.cur_rem_off;
+#ifdef WITH_TRANSPORT_SHMEM
+		iovec.offset += buf->transfer.mem.cur_rem_off;
+#endif
+		iovec.length -= buf->transfer.mem.cur_rem_off;
 
-		if (rlength > *resid)
-			rlength = *resid;
+		if (iovec.length > *resid)
+			iovec.length = *resid;
 
-		bytes = do_mem_copy(buf, rlength, iovec, roffset,
+		bytes = do_mem_copy(buf, iovec.length, &iovec,
 							&iov_index, &iov_off, buf->le->num_iov,
 							dir);
 		if (!bytes)
@@ -153,11 +155,10 @@ int do_mem_transfer(buf_t *buf)
 		buf->cur_loc_iov_off = iov_off;
 		buf->transfer.mem.cur_rem_off += bytes;
 
-		if (*resid && buf->transfer.mem.cur_rem_off >= iovec->length) {
+		if (*resid && buf->transfer.mem.cur_rem_off >= iovec.length) {
 			if (buf->transfer.mem.num_rem_iovecs) {
 				buf->transfer.mem.cur_rem_iovec++;
-				iovec = buf->transfer.mem.cur_rem_iovec;
-				roffset = iovec->offset;
+				iovec = *buf->transfer.mem.cur_rem_iovec;
 				buf->transfer.mem.cur_rem_off = 0;
 			} else {
 				return PTL_FAIL;
