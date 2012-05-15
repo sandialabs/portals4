@@ -402,8 +402,8 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 {
 	int err;
 	ni_t *ni = NULL;
-	struct ct_info **cts_info = NULL;
-	ct_t **cts = NULL;
+	struct ct_info *cts_info[size];
+	ct_t *cts[size];
 	int i;
 	int i2;
 
@@ -415,20 +415,6 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 
 	if (size == 0) {
 		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
-	/* TODO if usage allows can put a small array on
-	 * the stack and only call malloc for larger sizes */
-	cts = malloc(size*sizeof(*cts));
-	if (!cts) {
-		err = PTL_NO_SPACE;
-		goto err1;
-	}
-
-	cts_info = malloc(size*sizeof(struct ct_info *));
-	if (!cts_info) {
-		err = PTL_NO_SPACE;
 		goto err1;
 	}
 

@@ -334,8 +334,8 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 			  ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
 {
 	int err;
-	eq_t **eqs = NULL;
-	struct eqe_list **eqes_list = NULL;
+	eq_t *eqs[size];
+	struct eqe_list *eqes_list[size];
 	int i;
 	int i2;
 
@@ -349,18 +349,6 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 
 	if (size == 0) {
 		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
-	eqs = malloc(size*sizeof(*eqs));
-	if (!eqs) {
-		err = PTL_NO_SPACE;
-		goto err1;
-	}
-
-	eqes_list = malloc(size*sizeof(struct eqe_list));
-	if (!eqes_list) {
-		err = PTL_NO_SPACE;
 		goto err1;
 	}
 
@@ -401,10 +389,6 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 	for (i = i2; i >= 0; i--)
 		eq_put(eqs[i]);
  err1:
-	if (eqs)
-		free(eqs);
-	if (eqes_list)
-		free(eqes_list);
 #ifndef NO_ARG_VALIDATION
 	gbl_put();
  err0:
