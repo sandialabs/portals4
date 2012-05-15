@@ -122,7 +122,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eqe_list->interrupt = 0;
 	eqe_list->count = count;
 
-	PTL_FASTLOCK_INIT(&eqe_list->lock);
+	PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
 
 	*eq_handle_p = eq_to_handle(eq);
 
