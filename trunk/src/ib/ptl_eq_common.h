@@ -35,4 +35,10 @@ struct eqe_list {
 	eqe_t eqe[0];
 };
 
+int PtlEQGet_work(struct eqe_list *eqe_list, ptl_event_t *event_p);
+int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p);
+int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
+				   ptl_time_t timeout, ptl_event_t *event_p,
+				   unsigned int *which_p);
+
 #endif /* PTL_EQ_COMMON_H */

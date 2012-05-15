@@ -572,7 +572,7 @@ static void interrupt_cts(ni_t *ni)
 	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
 	list_for_each(l, &ni->ct_list) {
 		ct = list_entry(l, ct_t, list);
-		ct->interrupt = 1;
+		ct->info.interrupt = 1;
 	}
 	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 }
