@@ -54,9 +54,9 @@ int ct_new(void *arg)
 
 	assert(list_empty(&ct->trig_list));
 
-	ct->interrupt = 0;
-	ct->event.failure = 0;
-	ct->event.success = 0;
+	ct->info.interrupt = 0;
+	ct->info.event.failure = 0;
+	ct->info.event.success = 0;
 
 	return PTL_OK;
 }
@@ -72,7 +72,7 @@ void ct_cleanup(void *arg)
 {
 	ct_t *ct = arg;
 
-	ct->interrupt = 0;
+	ct->info.interrupt = 0;
 }
 
 /**
@@ -203,7 +203,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 
 	/* clean up pending operations */
-	ct->interrupt = 1;
+	ct->info.interrupt = 1;
 	ct_check(ct);
 
 	ct_put(ct);
@@ -257,7 +257,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 
 	ni = obj_to_ni(ct);
 
-	ct->interrupt = 1;
+	ct->info.interrupt = 1;
 	ct_check(ct);
 
 	err = PTL_OK;
@@ -310,7 +310,7 @@ int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 	ct = fast_to_obj(ct_handle);
 #endif
 
-	*event_p = ct->event;
+	*event_p = ct->info.event;
 
 	err = PTL_OK;
 	ct_put(ct);
@@ -364,24 +364,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	ct = fast_to_obj(ct_handle);
 #endif
 
-	/* wait loop */
-	while (1) {
-		/* check if wait condition satisfied */
-		if (unlikely(ct->event.success >= threshold || ct->event.failure)) {
-			*event_p = ct->event;
-			err = PTL_OK;
-			break;
-		}
-		
-		/* someone called PtlCTFree or PtlNIFini, leave */
-		if (unlikely(ct->interrupt)) {
-			err = PTL_INTERRUPTED;
-			break;
-		}
-
-		/* memory barrier */
-		SPINLOCK_BODY();
-	}
+	err = PtlCTWait_work(&ct->info, threshold, event_p);
 
 	ct_put(ct);
 #ifndef NO_ARG_VALIDATION
@@ -390,43 +373,6 @@ err1:
 err0:
 #endif
 	return err;
-}
-
-/**
- * @brief Perform one trip around the polling loop
- *
- * @see PtlCTPoll
- *
- * @param size number of elements in the array
- * @param cts array of ct objects
- * @param thresholds array of thresholds
- * @param event_p address of returned event
- * @param which_p address of returned which
- *
- * @return PTL_OK if found an event
- * @return PTL_INTERRUPTED if someone is tearing down a ct
- * @return PTL_CT_NONE_REACHED if did not find an event
- */
-static int ct_poll_loop(int size, const ct_t **cts, const ptl_size_t *thresholds,
-			ptl_ct_event_t *event_p, unsigned int *which_p)
-{
-	int i;
-
-	for (i = 0; i < size; i++) {
-		const ct_t *ct = cts[i];
-
-		if (ct->event.success >= thresholds[i] || ct->event.failure) {
-			*event_p = ct->event;
-			*which_p = i;
-			return PTL_OK;
-		}
-
-		if (ct->interrupt) {
-			return PTL_INTERRUPTED;
-		}
-	}
-
-	return PTL_CT_NONE_REACHED;
 }
 
 /**
@@ -456,11 +402,8 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 {
 	int err;
 	ni_t *ni = NULL;
+	struct ct_info **cts_info = NULL;
 	ct_t **cts = NULL;
-	int have_timeout = (timeout != PTL_TIME_FOREVER);
-	uint64_t timeout_ns;
-	uint64_t nstart;
-	TIMER_TYPE start;
 	int i;
 	int i2;
 
@@ -483,6 +426,12 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 		goto err1;
 	}
 
+	cts_info = malloc(size*sizeof(struct ct_info *));
+	if (!cts_info) {
+		err = PTL_NO_SPACE;
+		goto err1;
+	}
+
 	/* convert handles to pointers */
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
@@ -492,6 +441,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 			err = PTL_ARG_INVALID;
 			goto err2;
 		}
+		cts_info[i] = &cts[i]->info;
 
 		i2 = i;
 
@@ -504,38 +454,15 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 		}
 	}
 #else
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) {
 		cts[i] = fast_to_obj(ct_handles[i]);
+		cts_info[i] = &cts[i]->info;
+	}
 	i2 = size - 1;
 	ni = obj_to_ni(cts[0]);
 #endif
 
-	/* compute expiration of poll time */
-	MARK_TIMER(start);
-	nstart = TIMER_INTS(start);
-
-	timeout_ns = MILLI_TO_TIMER_INTS(timeout);
-
-	/* poll loop */
-	while (1) {
-		/* spin PTL_CT_POLL_LOOP_COUNT times */
-		/* scan list to see if we can complete one */
-		err = ct_poll_loop(size, (const ct_t **)cts, thresholds, event_p, which_p);
-		if (err != PTL_CT_NONE_REACHED)
-			break;
-
-		/* check to see if we have timed out */
-		if (have_timeout) {
-		    TIMER_TYPE tp;
-		    MARK_TIMER(tp);
-		    if ((TIMER_INTS(tp) - nstart) >= timeout_ns) {
-			err = PTL_CT_NONE_REACHED;
-			break;
-		    }
-		}
-
-		SPINLOCK_BODY();
-	}
+	err = PtlCTPoll_work(cts_info, thresholds, size, timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
  err2:
@@ -572,7 +499,7 @@ static void ct_check(ct_t *ct)
 		buf_t *buf = list_entry(l, buf_t, list);
 
 		if (buf->type == BUF_INIT) {
-			if (ct->interrupt) {
+			if (ct->info.interrupt) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
@@ -582,7 +509,7 @@ static void ct_check(ct_t *ct)
 				process_init(buf);
 
 				PTL_FASTLOCK_LOCK(&ct->lock);
-			} else if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
+			} else if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
@@ -594,7 +521,7 @@ static void ct_check(ct_t *ct)
 			}
 		} else {
 			assert(buf->type == BUF_TRIGGERED);
-			if (ct->interrupt) {
+			if (ct->info.interrupt) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
@@ -604,7 +531,7 @@ static void ct_check(ct_t *ct)
 				buf_put(buf);
 
 				PTL_FASTLOCK_LOCK(&ct->lock);
-			} else if ((ct->event.success + ct->event.failure) >= buf->threshold) {
+			} else if ((ct->info.event.success + ct->info.event.failure) >= buf->threshold) {
 				list_del(l);
 				atomic_dec(&ct->list_size);
 
@@ -629,7 +556,7 @@ static void ct_check(ct_t *ct)
 static void ct_set(ct_t *ct, ptl_ct_event_t new_ct)
 {
 	/* set new value */
-	ct->event = new_ct;
+	ct->info.event = new_ct;
 
 	/* check to see if this triggers any further
 	 * actions */
@@ -697,9 +624,9 @@ static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
 {
 	/* increment ct by value */
 	if (likely(increment.success))
-		(void)__sync_add_and_fetch(&ct->event.success, increment.success);
+		(void)__sync_add_and_fetch(&ct->info.event.success, increment.success);
 	else
-		(void)__sync_add_and_fetch(&ct->event.failure, increment.failure);
+		(void)__sync_add_and_fetch(&ct->info.event.failure, increment.failure);
 
 	/* check to see if this triggers any further
 	 * actions */
@@ -828,7 +755,7 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	ni = obj_to_ni(trig_ct);
 #endif
 
-	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
+	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= threshold) {
 		/* Fast path. Condition is already met. */
 		ct_inc(ct, increment);
 
@@ -920,7 +847,7 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	ni = obj_to_ni(trig_ct);
 #endif
 
-	if ((trig_ct->event.failure + trig_ct->event.success) >= threshold) {
+	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= threshold) {
 		/* Fast path. Condition already met. */
 		ct_set(ct, new_ct);
 
@@ -963,7 +890,7 @@ static void do_trig_ct_op(buf_t *buf)
 	ct_t *ct = buf->ct;
 
 	/* we're a zombie */
-	if (ct->interrupt)
+	if (ct->info.interrupt)
 		goto done;
 
 	switch(buf->op) {
@@ -997,7 +924,7 @@ void post_ct(buf_t *buf, ct_t *ct)
 	PTL_FASTLOCK_LOCK(&ct->lock);
 
 	/* We must check again to avoid a race with ct_inc/ct_set. */
-	if ((ct->event.success + ct->event.failure) >= buf->ct_threshold) {
+	if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
 		PTL_FASTLOCK_UNLOCK(&ct->lock);
 
 		process_init(buf);
@@ -1023,7 +950,7 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 	PTL_FASTLOCK_LOCK(&trig_ct->lock);
 
 	/* We must check again to avoid a race with ct_inc/ct_set. */
-	if ((trig_ct->event.failure + trig_ct->event.success) >= buf->threshold) {
+	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= buf->threshold) {
 		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 
 		do_trig_ct_op(buf);
@@ -1047,14 +974,14 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
 	if (unlikely(buf->ni_fail))
-		(void)__sync_add_and_fetch(&ct->event.failure, 1);
+		(void)__sync_add_and_fetch(&ct->info.event.failure, 1);
 	else if (likely(bytes == CT_EVENTS))
-		(void)__sync_add_and_fetch(&ct->event.success, 1);
+		(void)__sync_add_and_fetch(&ct->info.event.success, 1);
 	else if (likely(bytes == CT_MBYTES))
-		(void)__sync_add_and_fetch(&ct->event.success, buf->mlength);
+		(void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
 	else {
 		assert(bytes == CT_RBYTES);
-		(void)__sync_add_and_fetch(&ct->event.success,
+		(void)__sync_add_and_fetch(&ct->info.event.success,
 								   le64_to_cpu(((req_hdr_t *)buf->data)->length));
 	}
 

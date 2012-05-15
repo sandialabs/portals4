@@ -200,71 +200,6 @@ err0:
 }
 
 /**
- * @brief Find whether a queue is empty.
- *
- * @param[in] eq the event queue
- *
- * @return non-zero if the queue is empty. The result is not
- * guaranteed unless the eq->lock is taken. However it is sufficient
- * to give an idea whether get_event() can be called. This avoids
- * taking a lock.
- */
-static int inline is_queue_empty(struct eqe_list *eqe_list)
-{
-	return ((eqe_list->producer == eqe_list->consumer) &&
-			(eqe_list->prod_gen == eqe_list->cons_gen));
-}
-
-/**
- * @brief Find next event in event queue.
- *
- * @param[in] eq the event queue
- * @param[out] event_p the address of the returned event
- *
- * @return PTL_EQ_EMPTY if there are no events in the queue
- * @return PTL_EQ_DROPPED if there was an event but there was a
- * gap since the last event returned
- * @return PTL_EQ_OK if there was an event and no gap
- */
-static int get_event(struct eqe_list * restrict eqe_list, ptl_event_t * restrict event_p)
-{
-	int dropped = 0;
-
-	PTL_FASTLOCK_LOCK(&eqe_list->lock);
-
-	/* check to see if the queue is empty */
-	if (is_queue_empty(eqe_list)) {
-		PTL_FASTLOCK_UNLOCK(&eqe_list->lock);
-		return PTL_EQ_EMPTY;
-	}
-
-	/* if we have been lapped by the producer advance the
-	 * consumer pointer until we catch up */
-	while (eqe_list->cons_gen < eqe_list->eqe[eqe_list->consumer].generation) {
-		eqe_list->consumer++;
-		if (eqe_list->consumer == eqe_list->count) {
-			eqe_list->consumer = 0;
-			eqe_list->cons_gen++;
-		}
-		dropped = 1;
-		eqe_list->used --;
-	}
-
-	/* return the next valid event and update the consumer pointer */
-	*event_p = eqe_list->eqe[eqe_list->consumer++].event;
-	if (eqe_list->consumer >= eqe_list->count) {
-		eqe_list->consumer = 0;
-		eqe_list->cons_gen++;
-	}
-
-	eqe_list->used --;
-
-	PTL_FASTLOCK_UNLOCK(&eqe_list->lock);
-
-	return dropped ? PTL_EQ_DROPPED : PTL_OK;
-}
-
-/**
  * @brief Get the next event in an event queue.
  *
  * The PtlEQGet() function is a nonblocking function that can be used to get
@@ -308,7 +243,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	eq = fast_to_obj(eq_handle);
 #endif
 
-	err = get_event(eq->eqe_list, event_p);
+	err = PtlEQGet_work(eq->eqe_list, event_p);
 
 	eq_put(eq);
 #ifndef NO_ARG_VALIDATION
@@ -343,7 +278,6 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 {
 	int err;
 	eq_t *eq;
-	ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -362,23 +296,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	eq = fast_to_obj(eq_handle);
 #endif
 
-	ni = obj_to_ni(eq);
-
-	while(1) {
-		if (!is_queue_empty(eq->eqe_list)) {
-			err = get_event(eq->eqe_list, event_p);
-			if (err != PTL_EQ_EMPTY) {
-				break;
-			}
-		}
-
-		if (eq->eqe_list->interrupt) {
-			err = PTL_INTERRUPTED;
-			break;
-		}
-
-		SPINLOCK_BODY();
-	}
+	err = PtlEQWait_work(eq->eqe_list, event_p);
 
 	eq_put(eq);
 #ifndef NO_ARG_VALIDATION
@@ -416,16 +334,14 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 			  ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
 {
 	int err;
-	ni_t *ni = NULL;
 	eq_t **eqs = NULL;
-	uint64_t nstart;
-	uint64_t timeout_ns;
-	TIMER_TYPE start;
+	struct eqe_list **eqes_list = NULL;
 	int i;
 	int i2;
-	const int forever = (timeout == PTL_TIME_FOREVER);
 
 #ifndef NO_ARG_VALIDATION
+	ni_t *ni = NULL;
+
 	err = gbl_get();
 	if (err)
 		goto err0;
@@ -442,6 +358,12 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		goto err1;
 	}
 
+	eqes_list = malloc(size*sizeof(struct eqe_list));
+	if (!eqes_list) {
+		err = PTL_NO_SPACE;
+		goto err1;
+	}
+
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
 	for (i = 0; i < size; i++) {
@@ -450,6 +372,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 			err = PTL_ARG_INVALID;
 			goto err2;
 		}
+		eqes_list[i] = eqs[i]->eqe_list;
 
 		i2 = i;
 
@@ -462,59 +385,26 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 		}
 	}
 #else
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) {
 		eqs[i] = fast_to_obj(eq_handles[i]);
+		eqes_list[i] = eqs[i]->eqe_list;
+	}
 	i2 = size - 1;
-	ni = obj_to_ni(eqs[0]);
 #endif
 
-	/* compute expiration of poll time */
-	MARK_TIMER(start);
-	nstart = TIMER_INTS(start);
-
-	timeout_ns = MILLI_TO_TIMER_INTS(timeout);
-
-	while (1) {
-		for (i = 0; i < size; i++) {
-			eq_t *eq = eqs[i];
-			struct eqe_list *eqe_list = eq->eqe_list;
-
-			if (!is_queue_empty(eqe_list)) {
-				err = get_event(eqe_list, event_p);
-
-				if (err != PTL_EQ_EMPTY) {
-					*which_p = i;
-					goto out;
-				}
-			}
-
-			if (eqe_list->interrupt) {
-				err = PTL_INTERRUPTED;
-				goto out;
-			}
-		}
-
-		if (!forever) {
-			TIMER_TYPE tp;
-			MARK_TIMER(tp);
-			if ((TIMER_INTS(tp) - nstart) >= timeout_ns) {
-			    err = PTL_EQ_EMPTY;
-			    goto out;
-			}
-		}
-
-		SPINLOCK_BODY();
-	}
-
- out:
+	err = PtlEQPoll_work(eqes_list, size,
+						 timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
  err2:
 #endif
 	for (i = i2; i >= 0; i--)
 		eq_put(eqs[i]);
-	free(eqs);
  err1:
+	if (eqs)
+		free(eqs);
+	if (eqes_list)
+		free(eqes_list);
 #ifndef NO_ARG_VALIDATION
 	gbl_put();
  err0:

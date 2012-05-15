@@ -6,6 +6,7 @@
 #define PTL_CT_H
 
 #include "ptl_locks.h"
+#include "ptl_ct_common.h"
 
 struct buf;
 
@@ -14,15 +15,15 @@ struct buf;
  */
 struct ct {
 	obj_t			obj;		/**< object base class */
-	ptl_ct_event_t		event;		/**< counting event data */
 	struct list_head	trig_list;	/**< list head of pending
 						     triggered operations */
 	struct list_head        list;		/**< list member of allocated
 						     counting events */
 	atomic_t list_size;			/**< Number of elements in list */
-	int			interrupt;	/**< flag indicating ct is
-						     getting shut down */
+
 	PTL_FASTLOCK_TYPE		lock;		/**< mutex for ct condition */
+
+	struct ct_info info;
 };
 
 typedef struct ct ct_t;

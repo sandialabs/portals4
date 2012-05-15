@@ -14,10 +14,13 @@ libportals_ib_la_SOURCES = \
 	ptl_conn.h \
 	ptl_ct.c \
 	ptl_ct.h \
+	ptl_ct_common.c \
+	ptl_ct_common.h \
 	ptl_data.c \
 	ptl_data.h \
 	ptl_eq.c \
 	ptl_eq.h \
+	ptl_eq_common.c \
 	ptl_eq_common.h \
 	ptl_evloop.c \
 	ptl_evloop.h \
