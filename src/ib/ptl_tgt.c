@@ -1372,8 +1372,8 @@ static int tgt_send_ack(buf_t *buf)
 #if WITH_TRANSPORT_SHMEM
 		/* The same buffer is used to send the data back. Let the
 		 * progress thread return it. */
-		assert(buf->shmem_buf);
-		buf->shmem_buf->type = BUF_SHMEM_SEND;
+		assert(buf->mem_buf);
+		buf->mem_buf->type = BUF_SHMEM_SEND;
 #else
 		/* Unreachable. */
 		abort();
