@@ -28,6 +28,12 @@ enum data_fmt {
 	DATA_FMT_SHMEM_INDIRECT,
 #endif
 
+#if IS_PPE
+	//todo: merge with WITH_TRANSPORT_SHMEM
+	DATA_FMT_MEM_DMA,
+	DATA_FMT_MEM_INDIRECT,
+#endif
+
 	DATA_FMT_LAST,
 };
 
@@ -37,6 +43,9 @@ struct mem_iovec {
 #if WITH_TRANSPORT_SHMEM
 	uint64_t		cookie;
 	uint64_t		offset;		/* add to cookie to get address */
+#endif
+#if IS_PPE
+	void *		    addr;
 #endif
 	uint64_t		length;
 };
@@ -63,14 +72,13 @@ struct data {
 		} rdma;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 		/* DMA or Indirect shmem data */
 		struct {
 			unsigned int		num_mem_iovecs;
 			struct mem_iovec	mem_iovec[0];
 		} mem;
 #endif
-
 	};
 } __attribute__((__packed__));
 

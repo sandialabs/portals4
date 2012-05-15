@@ -119,11 +119,15 @@ typedef struct ni {
 	} shmem;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 	struct {
 		int node_size;		/* number of ranks on the node */
 		int index;	   /* local index on this node [0..node_size[ */
 		uint32_t hash;
+
+#ifdef IS_PPE
+		int in_group;
+#endif
 	} mem;
 #endif
 

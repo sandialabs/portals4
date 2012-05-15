@@ -445,14 +445,14 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 }
 #endif
 
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 /**
  * Process a received message in shared memory.
  *
  * @param ni the ni to poll.
  * @param buf the received buffer.
  */
-static void process_recv_shmem(ni_t *ni, buf_t *buf)
+void process_recv_mem(ni_t *ni, buf_t *buf)
 {
 	enum recv_state state = STATE_RECV_PACKET;
 
@@ -554,7 +554,7 @@ void *progress_thread(void *arg)
 						buf->length = shmem_buf->length;
 						buf->mem_buf = shmem_buf;
 						INIT_LIST_HEAD(&buf->list);
-						process_recv_shmem(ni, buf);
+						process_recv_mem(ni, buf);
 					}
 
 					if (shmem_buf->type == BUF_SHMEM_SEND ||

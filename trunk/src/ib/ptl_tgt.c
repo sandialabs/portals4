@@ -204,7 +204,7 @@ static int prepare_send_buf(buf_t *buf)
 		if (!(buf->event_mask & XT_ACK_EVENT)) {
 			/* No ack but a reply. The current buffer cannot be
 			 * reused. */
-			err = sbuf_alloc(ni, &send_buf);
+			err = buf->conn->transport.buf_alloc(ni, &send_buf);
 		} else {
 			/* Itself. */
 			send_buf = NULL;
@@ -230,6 +230,10 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->data_out = 0;
 		ack_hdr->version = PTL_HDR_VER_1;
 		ack_hdr->handle	= ((req_hdr_t *)buf->data)->handle;
+
+#ifdef IS_PPE
+		ack_hdr->hash = cpu_to_le32(ni->mem.hash);
+#endif
 
 		send_buf->length = sizeof(*ack_hdr);
 	}
@@ -270,10 +274,18 @@ static int init_local_offset(buf_t *buf)
 
 		buf->cur_loc_iov_index = i;
 		buf->cur_loc_iov_off = iov_offset;
+#if IS_PPE
+		buf->start = (void *)me->ppe.iovecs_mappings[i].source_addr + iov_offset;
+#else
 		buf->start = iov->iov_base + iov_offset;
+#endif
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
+#if IS_PPE
+		buf->start = (void *)me->ppe.mapping.source_addr + buf->moffset;
+#else
 		buf->start = me->start + buf->moffset;
+#endif
 	}
 
 	return PTL_OK;
@@ -880,6 +892,25 @@ static int tgt_data_out(buf_t *buf)
 		break;
 #endif
 
+
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs; 
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_MEM_INDIRECT:
+		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+#endif
+
 	default:
 		abort();
 		WARN();
@@ -1137,7 +1168,26 @@ static int tgt_data_in(buf_t *buf)
 		next = STATE_TGT_SHMEM_DESC;
 		break;
 #endif
-		
+
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+	
+		break;
+
+	case DATA_FMT_MEM_INDIRECT:
+		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+#endif
+
 	default:
 		assert(0);
 		WARN();
@@ -1374,6 +1424,8 @@ static int tgt_send_ack(buf_t *buf)
 		 * progress thread return it. */
 		assert(buf->mem_buf);
 		buf->mem_buf->type = BUF_SHMEM_SEND;
+#elif IS_PPE
+		buf->mem_buf->type = BUF_MEM_SEND;
 #else
 		/* Unreachable. */
 		abort();

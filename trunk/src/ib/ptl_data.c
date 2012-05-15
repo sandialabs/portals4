@@ -61,6 +61,15 @@ int data_size(data_t *data)
 		break;
 #endif
 
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
+		break;
+	case DATA_FMT_MEM_INDIRECT:
+		size += sizeof(struct mem_iovec);
+		break;
+#endif
+
 	default:
 		abort();
 		break;
@@ -110,10 +119,12 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		buf->length += sizeof(*data) + length;
 	} 
 	else if (md->options & PTL_IOVEC) {
+		ptl_iovec_t *iovecs = md->start;
+
 		/* Find the index and offset of the first IOV as well as the
 		 * total number of IOVs to transfer. */
-		num_sge = iov_count_elem((ptl_iovec_t *)md->start, md->num_iov,
-					 offset, length, &iov_start, &iov_offset);
+		num_sge = iov_count_elem(iovecs, md->num_iov,
+								 offset, length, &iov_start, &iov_offset);
 		if (num_sge < 0) {
 			WARN();
 			return PTL_FAIL;
@@ -153,6 +164,19 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 				break;
 #endif
+
+#if IS_PPE
+			case CONN_TYPE_MEM:
+				data->data_fmt = DATA_FMT_MEM_INDIRECT;
+				data->mem.num_mem_iovecs = num_sge;
+
+				data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
+				data->mem.mem_iovec[0].length = num_sge * sizeof(struct mem_iovec);
+
+				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+				break;
+#endif
+
 			}
 		} else {
 			switch(type) {
@@ -181,6 +205,20 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 					sizeof(struct mem_iovec);
 				break;
 #endif
+
+#if IS_PPE
+			case CONN_TYPE_MEM:
+				/* Actually this is the same as the other indirect
+				 * case. PPE doesn't need to copy iovecs anytime. */
+				data->data_fmt = DATA_FMT_MEM_INDIRECT;
+				data->mem.num_mem_iovecs = num_sge;
+
+				data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
+				data->mem.mem_iovec[0].length = num_sge * sizeof(struct mem_iovec);
+
+				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+				break;
+#endif
 			}
 		}
 
@@ -191,7 +229,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		void *addr;
 		mr_t *mr;
 		ni_t *ni = obj_to_ni(md);
-		
+
 		addr = md->start + offset;
 		err = mr_lookup(ni, addr, length, &mr);
 		if (err) {
@@ -220,6 +258,18 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			data->mem.num_mem_iovecs = 1;
 			data->mem.mem_iovec[0].cookie = mr->knem_cookie;
 			data->mem.mem_iovec[0].offset = addr - mr->addr;
+			data->mem.mem_iovec[0].length = length;
+
+			buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+			break;
+#endif
+
+#if IS_PPE
+		case CONN_TYPE_MEM:
+			data->data_fmt = DATA_FMT_MEM_DMA;
+
+			data->mem.num_mem_iovecs = 1;
+			data->mem.mem_iovec[0].addr = addr;
 			data->mem.mem_iovec[0].length = length;
 
 			buf->length += sizeof(*data) + sizeof(struct mem_iovec);

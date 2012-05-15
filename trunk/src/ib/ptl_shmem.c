@@ -353,6 +353,8 @@ void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
 	queue_t *queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
 			   (ni->shmem.per_proc_comm_buf_size * dest));
 
+	buf->obj.next = NULL;
+
 	enqueue(ni->shmem.comm_pad, queue, &buf->obj);
 }
 

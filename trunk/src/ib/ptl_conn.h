@@ -30,6 +30,9 @@ enum transport_type {
 #if WITH_TRANSPORT_SHMEM
 	CONN_TYPE_SHMEM,
 #endif
+#if WITH_PPE
+	CONN_TYPE_MEM,
+#endif
 };
 
 /**

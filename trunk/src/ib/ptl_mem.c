@@ -61,6 +61,12 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 						addr - mr->addr,
 						iovec->cookie, iovec->offset, len);
 			iovec->offset += len;
+#elif IS_PPE
+			if (dir == DATA_DIR_IN)
+				memcpy(addr, iovec->addr, len);
+			else
+				memcpy(iovec->addr, addr, len);
+			iovec->addr += len;
 #endif
 
 			mr_put(mr);
@@ -101,6 +107,12 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 						  addr - mr->addr, iovec->cookie,
 						  iovec->offset, len);
 			iovec->offset += len;
+#elif IS_PPE
+			if (dir == DATA_DIR_IN)
+				memcpy(addr, iovec->addr, len);
+			else
+				memcpy(iovec->addr, addr, len);
+			iovec->addr += len;
 #endif
 
 			mr_put(mr);
