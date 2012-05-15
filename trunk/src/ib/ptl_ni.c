@@ -486,7 +486,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	PtlSetMap_shmem(ni, map_size, mapping);
+	PtlSetMap_mem(ni, map_size, mapping);
 
 	err = create_tables(ni);
 	if (err) {

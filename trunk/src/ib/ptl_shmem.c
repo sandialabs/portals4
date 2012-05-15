@@ -102,44 +102,6 @@ int PtlNIInit_shmem(ni_t *ni)
 	return PTL_OK;
 }
 
-/* Computes a hash (crc32 based), for shmem. */
-static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
-{
-    while (size--) {
-		int n;
-
-        crc ^= *p++;
-        for (n = 0; n < 8; n++)
-            crc = (crc >> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
-    }
-
-    return crc;
-}
-
-/* lookup our nid/pid to determine local rank */
-void PtlSetMap_shmem(ni_t *ni,
-					 ptl_size_t map_size,
-					 const ptl_process_t *mapping)
-{
-	iface_t *iface = ni->iface;
-	int i;
-
-	ni->mem.node_size = 0;
-	ni->mem.index = -1;
-	ni->mem.hash = 0;
-
-	for (i = 0; i < map_size; i++) {
-		if (mapping[i].phys.nid == iface->id.phys.nid) {
-			if (mapping[i].phys.pid == iface->id.phys.pid)
-				ni->mem.index = ni->mem.node_size;
-
-			ni->mem.node_size ++;
-		}
-
-		ni->mem.hash = crc32((unsigned char *)&mapping[i].phys, ni->mem.hash, sizeof(mapping[i].phys));
-	}
-}
-
 /**
  * @brief Initialize shared memory resources.
  *
