@@ -48,10 +48,18 @@ struct md {
 	 * can hold one mr per iovec contained in internal_data	 */
 	mr_t			**mr_list;
 
-#if WITH_TRANSPORT_SHMEM
-	/** list of knem info for each iovec for use in long
-	 * messages send through shared memory */
+#if WITH_TRANSPORT_SHMEM || IS_PPE
+	/** list of info for each iovec for use in long
+	 * messages sent through shared memory */
 	struct mem_iovec	*mem_iovecs;
+#endif
+
+#if IS_PPE
+	struct {
+		/* start/length XPMEM mapping */
+		struct xpmem_map mapping;
+		struct xpmem_map *iovecs_mappings;
+	} ppe;
 #endif
 
 	/** mr to register long array of iovecs passed to target

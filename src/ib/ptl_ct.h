@@ -23,6 +23,13 @@ struct ct {
 
 	PTL_FASTLOCK_TYPE		lock;		/**< mutex for ct condition */
 
+#if IS_PPE
+	/* PPE transport specific */
+	struct {
+		struct xpmem_map ct_mapping; /* for the info */
+	} ppe;
+#endif
+
 	struct ct_info info;
 };
 

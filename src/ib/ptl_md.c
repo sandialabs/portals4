@@ -67,7 +67,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #if WITH_TRANSPORT_IB
 	struct ibv_sge *sge;
 #endif
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 	struct mem_iovec *mem_iovec;
 #endif
 	void *p;
@@ -79,7 +79,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #if WITH_TRANSPORT_IB
 							   + sizeof(struct ibv_sge)
 #endif
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 							   + sizeof(struct mem_iovec)
 #endif
 							   );
@@ -98,7 +98,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	p += num_iov*sizeof(struct ibv_sge);
 #endif
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 	mem_iovec = md->mem_iovecs = p;
 	p += num_iov*sizeof(struct mem_iovec);
 #endif
@@ -137,9 +137,15 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		sge++;
 #endif
 
+
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 #if WITH_TRANSPORT_SHMEM
 		mem_iovec->cookie = mr->knem_cookie;
 		mem_iovec->offset = iov->iov_base - mr->addr;
+#endif
+#if IS_PPE
+		mem_iovec->addr = iov->iov_base;
+#endif
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;
 #endif
@@ -220,6 +226,16 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	if (unlikely(err))
 		goto err2;
 
+#if IS_PPE
+	{
+		/* Under the PPE, the md_init structure has been silently extend. */
+		const struct ptl_md_ppe *md_init_ppe = (const struct ptl_md_ppe *)md_init;
+		md->ppe.mapping = md_init_ppe->mapping;
+		if (md_init->options & PTL_IOVEC)
+			md->ppe.iovecs_mappings = md_init_ppe->iovecs_mappings;
+	}
+#endif
+
 	if (md_init->options & PTL_IOVEC) {
 		err = init_iovec(md, (ptl_iovec_t *)md_init->start,
 				 md_init->length);
@@ -257,8 +273,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 
 	md->start = md_init->start;
 	md->options = md_init->options;
-
-	//	printf("FZ[%d] - md bind start=%p, len=%zd\n", getpid(), md->start, md->length);
 
 	/* account for the number of MDs allocated */
 	if (unlikely(__sync_add_and_fetch(&ni->current.max_mds, 1) >

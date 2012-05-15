@@ -47,6 +47,10 @@
 #include <infiniband/verbs.h>
 #endif
 
+#if WITH_PPE
+#include "xpmem.h"
+#endif
+
 #include "portals4.h"
 
 /* use these for network byte order */
@@ -57,9 +61,6 @@ typedef uint16_t	__le16;
 typedef uint32_t	__le32;
 typedef uint64_t	__le64;
 
-extern unsigned int pagesize;
-extern unsigned int linesize;
-
 #include "ptl_log.h"
 #include "ptl_list.h"
 #include "ptl_sync.h"
@@ -69,9 +70,9 @@ extern unsigned int linesize;
 #include "ptl_evloop.h"
 #include "ptl_obj.h"
 #include "ptl_iface.h"
-#include "ptl_gbl.h"
 #include "ptl_pt.h"
 #include "ptl_queue.h"
+#include "ptl_ppe.h"
 #include "ptl_ni.h"
 #include "ptl_conn.h"
 #include "ptl_mr.h"
@@ -83,6 +84,14 @@ extern unsigned int linesize;
 #include "ptl_eq.h"
 #include "ptl_data.h"
 #include "ptl_hdr.h"
+#if IS_PPE
+#include "p4ppe.h"
+#elif IS_LIGHT_LIB
+#include "ptl_light_lib.h"
+#else
+#include "ptl_gbl.h"
+#endif
+#include "ptl_misc.h"
 
 static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }
 static inline uint16_t be16_to_cpu(__be16 x) { return htons(x); }
@@ -259,20 +268,29 @@ static inline void cleanup_shmem(ni_t *ni) { }
 static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
 #endif
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 				   const ptl_process_t *mapping);
+void process_recv_mem(ni_t *ni, buf_t *buf);
 int do_mem_transfer(buf_t *buf);
 #else
 static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 								 const ptl_process_t *mapping) { }
 #endif
 
-extern int ptl_log_level;
+#ifdef IS_PPE
+int PtlNIInit_ppe(ni_t *ni);
+#else
+static inline int PtlNIInit_ppe(ni_t *ni) { return PTL_OK; }
+#endif
 
-int misc_init_once(void);
+
 int _PtlInit(gbl_t *gbl);
-int gbl_init(gbl_t *gbl);
 void _PtlFini(gbl_t *gbl);
+int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
+			   ptl_pid_t  pid, const ptl_ni_limits_t *desired,
+			   ptl_ni_limits_t *actual, ptl_handle_ni_t *ni_handle);
+int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle);
+
 
 #endif /* PTL_LOC_H */

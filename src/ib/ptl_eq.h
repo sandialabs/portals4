@@ -24,6 +24,13 @@ struct eq {
 	/** to attach the PTs supporting flow control. **/
 	struct list_head	flowctrl_list;
 	int overflowing;			/* the queue is overflowing */
+
+#if IS_PPE
+	/* PPE transport specific */
+	struct {
+		struct xpmem_map eqe_list; /* for the eqe_list */
+	} ppe;
+#endif
 };
 
 typedef struct eq eq_t;

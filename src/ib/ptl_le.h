@@ -20,6 +20,17 @@ enum list_element_type {
 	TYPE_ME,
 };
 
+#if IS_PPE
+#define LE_XPMEM_MAPPING \
+	struct { \
+		/* start/length XPMEM mapping. */ \
+		struct xpmem_map mapping;		  \
+		struct xpmem_map *iovecs_mappings;		  \
+	} ppe
+#else
+#define LE_XPMEM_MAPPING
+#endif
+
 /**
  * @brief Common struct members for LE and ME objects.
  */
@@ -37,7 +48,8 @@ enum list_element_type {
 	unsigned int		type;		\
 	unsigned int		options;	\
 	unsigned int		num_iov;	\
-	unsigned int		do_auto_free;
+	unsigned int		do_auto_free; \
+	LE_XPMEM_MAPPING;
 
 /**
  * @brief Portals list element.

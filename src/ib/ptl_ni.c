@@ -239,18 +239,18 @@ static int create_tables(ni_t *ni)
 	return PTL_OK;
 }
 
-int PtlNIInit(ptl_interface_t	iface_id,
-	      unsigned int	options,
-	      ptl_pid_t		pid,
-	      const ptl_ni_limits_t *desired,
-	      ptl_ni_limits_t	*actual,
-	      ptl_handle_ni_t	*ni_handle)
+int _PtlNIInit(gbl_t *gbl,
+			   ptl_interface_t	iface_id,
+			   unsigned int	options,
+			   ptl_pid_t		pid,
+			   const ptl_ni_limits_t *desired,
+			   ptl_ni_limits_t	*actual,
+			   ptl_handle_ni_t	*ni_handle)
 {
 	int err;
 	ni_t *ni;
 	int ni_type;
 	iface_t *iface;
-	gbl_t *gbl = &per_proc_gbl;
 
 	err = gbl_get();
 	if (unlikely(err)) {
@@ -385,6 +385,13 @@ int PtlNIInit(ptl_interface_t	iface_id,
 		}
 	}
 
+	err = PtlNIInit_ppe(ni);
+	if (unlikely(err)) {
+		WARN();
+		goto err3;
+	}
+
+#ifndef IS_PPE
 	/* Add a progress thread. */
 	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
 	if (err) {
@@ -393,6 +400,7 @@ int PtlNIInit(ptl_interface_t	iface_id,
 		goto err3;
 	}
 	ni->has_catcher = 1;
+#endif
 
 	iface_add_ni(iface, ni);
 
@@ -639,11 +647,10 @@ static void ni_cleanup(ni_t *ni)
 	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
 }
 
-int PtlNIFini(ptl_handle_ni_t ni_handle)
+int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 {
 	int err;
 	ni_t *ni;
-	gbl_t *gbl = &per_proc_gbl;
 
 	err = gbl_get();
 	if (unlikely(err)) {

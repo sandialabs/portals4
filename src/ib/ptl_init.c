@@ -226,6 +226,10 @@ static int prepare_req(buf_t *buf)
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 	hdr->handle = cpu_to_le32(buf_to_handle(buf));
 
+#ifdef IS_PPE
+	hdr->hash = cpu_to_le32(ni->mem.hash);
+#endif
+
 	buf->length = sizeof(req_hdr_t);
 
 	switch (hdr->operation) {
@@ -449,8 +453,8 @@ static int send_error(buf_t *buf)
  */
 static int wait_comp(buf_t *buf)
 {
-#if WITH_TRANSPORT_IB
-	assert(buf->conn->transport.type == CONN_TYPE_RDMA);
+#if WITH_TRANSPORT_SHMEM
+	assert(buf->conn->transport.type != CONN_TYPE_SHMEM);
 #endif
 
 	if (buf->completed || buf->recv_buf)

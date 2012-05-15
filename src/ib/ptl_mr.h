@@ -31,6 +31,11 @@ typedef struct mr {
 	uint64_t		knem_cookie;
 #endif
 
+#if IS_PPE
+	/* To share with PPE. */
+	xpmem_segid_t segid;
+#endif
+
 	/* ummunotify kernel memory notification cookie */
 	uint64_t umn_cookie;
 

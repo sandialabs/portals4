@@ -19,9 +19,14 @@ enum buf_type {
 	BUF_RECV,
 	BUF_RDMA,
 
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM
 	BUF_SHMEM_SEND,
 	BUF_SHMEM_RETURN,
+#endif
+
+#if WITH_PPE
+	BUF_MEM_SEND,
+	BUF_MEM_RELEASE,
 #endif
 
 	BUF_INIT,					/* initiator buffer */
@@ -252,7 +257,7 @@ struct buf {
 			int num_req_completes;
 		} rdma;
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 		struct {
 			/* For large (ie. KNEM) operations. */
 			struct mem_iovec	*cur_rem_iovec;
@@ -262,7 +267,7 @@ struct buf {
 #endif
 	} transfer;
 
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 	//TODO: can be moved inside transfer union ?
 	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
 	 * allocated to process the data through the receive state machine
@@ -410,6 +415,11 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 	case CONN_TYPE_SHMEM:
 		assert(connect->shmem.local_rank != -1);
 		buf->dest.shmem.local_rank = connect->shmem.local_rank;
+		break;
+#endif
+
+#if WITH_PPE
+	case CONN_TYPE_MEM:
 		break;
 #endif
 	}
