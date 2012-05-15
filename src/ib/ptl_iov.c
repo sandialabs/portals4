@@ -262,40 +262,51 @@ int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 {
 	ptl_size_t index_start;
 	ptl_size_t index_stop;
-	ptl_size_t base;
 	ptl_size_t iov_len;
 
 	/* find the index of the iovec element and its starting
 	 * offset that contains the start of the data region */
-	base = 0;
 	for (index_start = 0; index_start < num_iov; index_start++) {
-		iov_len = (iov++)->iov_len;
-		if (offset < base + iov_len)
+		iov_len = iov->iov_len;
+
+		if (offset < iov_len) {
+			/* Adjust total length so we start at the beggining of
+			 * that iovec buffer. */
+			length += offset;
+
+			*base_p = offset;
 			break;
-		base += iov_len;
+		}
+
+		offset -= iov_len;
+		iov++;
 	}
 
-	if (index_start == num_iov)
+	/* Check out of range. */
+	if (unlikely(index_start == num_iov)) {
+		WARN();
 		return -1;
-
-	/* adjust for offset into first element */
-	if (offset > base)
-		length += offset - base;
+	}
 
 	/* find the index of the iovec element that contains the
 	 * end of the data region */
 	for (index_stop = index_start; index_stop < num_iov; index_stop++) {
-		iov_len = (iov++)->iov_len;
+		iov_len = iov->iov_len;
+
 		if (length <= iov_len)
 			break;
+
 		length -= iov_len;
+		iov++;
 	}
 
-	if (index_stop == num_iov)
+	/* Check out of range. */
+	if (unlikely(index_stop == num_iov)) {
+		WARN();
 		return -1;
+	}
 
 	*index_p = index_start;
-	*base_p = base;
 
 	return index_stop - index_start + 1;
 }
