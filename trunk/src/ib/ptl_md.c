@@ -68,7 +68,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	struct ibv_sge *sge;
 #endif
 #if WITH_TRANSPORT_SHMEM
-	struct mem_iovec *knem_iovec;
+	struct mem_iovec *mem_iovec;
 #endif
 	void *p;
 	int i;
@@ -99,7 +99,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #endif
 
 #if WITH_TRANSPORT_SHMEM
-	knem_iovec = md->mem_iovecs = p;
+	mem_iovec = md->mem_iovecs = p;
 	p += num_iov*sizeof(struct mem_iovec);
 #endif
 
@@ -138,10 +138,10 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #endif
 
 #if WITH_TRANSPORT_SHMEM
-		knem_iovec->cookie = mr->knem_cookie;
-		knem_iovec->offset = iov->iov_base - mr->addr;
-		knem_iovec->length = iov->iov_len;
-		knem_iovec++;
+		mem_iovec->cookie = mr->knem_cookie;
+		mem_iovec->offset = iov->iov_base - mr->addr;
+		mem_iovec->length = iov->iov_len;
+		mem_iovec++;
 #endif
 
 		iov++;
