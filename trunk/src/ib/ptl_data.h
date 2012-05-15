@@ -36,8 +36,8 @@ typedef enum data_fmt data_fmt_t;
 struct mem_iovec {
 #if WITH_TRANSPORT_SHMEM
 	uint64_t		cookie;
+	uint64_t		offset;		/* add to cookie to get address */
 #endif
-	uint64_t		offset;
 	uint64_t		length;
 };
 
