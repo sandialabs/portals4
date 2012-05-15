@@ -246,11 +246,8 @@ size_t knem_copy(ni_t * ni,
 extern int PtlNIInit_shmem(ni_t *ni);
 void cleanup_shmem(ni_t *ni);
 int setup_shmem(ni_t *ni);
-void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
-					 const ptl_process_t *mapping);
 void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
 buf_t *shmem_dequeue(ni_t *ni);
-int do_mem_transfer(buf_t *buf);
 #else
 static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
 {
@@ -260,8 +257,15 @@ static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
 static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
 static inline void cleanup_shmem(ni_t *ni) { }
 static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
-static inline void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
-								   const ptl_process_t *mapping) { }
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+				   const ptl_process_t *mapping);
+int do_mem_transfer(buf_t *buf);
+#else
+static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+								 const ptl_process_t *mapping) { }
 #endif
 
 extern int ptl_log_level;
