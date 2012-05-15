@@ -15,7 +15,7 @@
  * an external segment list. These formats are called IMMEDIATE, DMA and
  * INDIRECT. InfiniBand DMA descriptors are based on OFA verbs sge's
  * (scatter gather elements). Shared memory DMA descriptors are based on
- * struct mem_iovec descibed below.
+ * struct mem_iovec described below.
  *
  * Three APIs are provided with the data_t struct: data_size returns
  * the actual size of a data segment, append_init_data and append_tgt_data
