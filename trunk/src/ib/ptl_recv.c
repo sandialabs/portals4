@@ -552,13 +552,13 @@ void *progress_thread(void *arg)
 					} else {
 						buf->data = (hdr_t *)shmem_buf->internal_data;
 						buf->length = shmem_buf->length;
-						buf->shmem_buf = shmem_buf;
+						buf->mem_buf = shmem_buf;
 						INIT_LIST_HEAD(&buf->list);
 						process_recv_shmem(ni, buf);
 					}
 
 					if (shmem_buf->type == BUF_SHMEM_SEND ||
-						shmem_buf->shmem.index_owner != ni->shmem.index) {
+						shmem_buf->shmem.index_owner != ni->mem.index) {
 						/* Requested to send the buffer back, or not the
 						 * owner. Send the buffer back in both cases. */
 						shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
@@ -572,7 +572,7 @@ void *progress_thread(void *arg)
 
 				case BUF_SHMEM_RETURN:
 					/* Buffer returned to us by remote node. */
-					assert(shmem_buf->shmem.index_owner == ni->shmem.index);
+					assert(shmem_buf->shmem.index_owner == ni->mem.index);
 
 					/* From send_message_shmem(). */
 					buf_put(shmem_buf);

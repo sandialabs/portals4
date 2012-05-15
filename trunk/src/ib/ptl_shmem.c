@@ -21,7 +21,7 @@ static int send_message_shmem(buf_t *buf, int from_init)
 
 	buf->type = BUF_SHMEM_SEND;
 
-	buf->shmem.index_owner = buf->obj.obj_ni->shmem.index;
+	buf->shmem.index_owner = buf->obj.obj_ni->mem.index;
 
 	shmem_enqueue(buf->obj.obj_ni, buf,
 				buf->dest.shmem.local_rank);
@@ -95,8 +95,8 @@ int PtlNIInit_shmem(ni_t *ni)
 
 	if (ni->options & PTL_NI_PHYSICAL) {
 		/* Used later to setup the buffers. */
-		ni->shmem.index = 0;
-		ni->shmem.world_size = 1;
+		ni->mem.index = 0;
+		ni->mem.node_size = 1;
 	}
 
 	return PTL_OK;
@@ -124,19 +124,19 @@ void PtlSetMap_shmem(ni_t *ni,
 	iface_t *iface = ni->iface;
 	int i;
 
-	ni->shmem.world_size = 0;
-	ni->shmem.index = -1;
-	ni->shmem.hash = 0;
+	ni->mem.node_size = 0;
+	ni->mem.index = -1;
+	ni->mem.hash = 0;
 
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
 			if (mapping[i].phys.pid == iface->id.phys.pid)
-				ni->shmem.index = ni->shmem.world_size;
+				ni->mem.index = ni->mem.node_size;
 
-			ni->shmem.world_size ++;
+			ni->mem.node_size ++;
 		}
 
-		ni->shmem.hash = crc32((unsigned char *)&mapping[i].phys, ni->shmem.hash, sizeof(mapping[i].phys));
+		ni->mem.hash = crc32((unsigned char *)&mapping[i].phys, ni->mem.hash, sizeof(mapping[i].phys));
 	}
 }
 
@@ -189,7 +189,7 @@ int setup_shmem(ni_t *ni)
 		/* Create a unique name for the shared memory file. Use the hash
 		 * created from the mapping. */
 		snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
-				 "/portals4-shmem-%x-%d", ni->shmem.hash, ni->options);
+				 "/portals4-shmem-%x-%d", ni->mem.hash, ni->options);
 	}
 	ni->shmem.comm_pad_shm_name = strdup(comm_pad_shm_name);
 
@@ -199,12 +199,12 @@ int setup_shmem(ni_t *ni)
 		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
-		(ni->shmem.per_proc_comm_buf_size * ni->shmem.world_size);
+		(ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == MAP_FAILED);
 
-	if (ni->shmem.index == 0) {
+	if (ni->mem.index == 0) {
 		/* Just in case, remove that file if it already exist. */
 		shm_unlink(comm_pad_shm_name);
 
@@ -287,7 +287,7 @@ int setup_shmem(ni_t *ni)
 
 	/* Now we can create the buffer pool */
 	ni->shmem.queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
-						(ni->shmem.per_proc_comm_buf_size*ni->shmem.index));
+						(ni->shmem.per_proc_comm_buf_size*ni->mem.index));
 	queue_init(ni->shmem.queue);
 
 	/* The buffer is right after the nemesis queue. */
@@ -309,12 +309,12 @@ int setup_shmem(ni_t *ni)
 		 * (ie. that is enough for 341 local ranks).. */
 		ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
 
-		ptable[ni->shmem.index].id = ni->id;
+		ptable[ni->mem.index].id = ni->id;
 		__sync_synchronize(); /* ensure "valid" is not written before pid. */
-		ptable[ni->shmem.index].valid = 1;
+		ptable[ni->mem.index].valid = 1;
 
 		/* Now, wait for my siblings to get here. */
-		for (i = 0; i < ni->shmem.world_size; ++i) {
+		for (i = 0; i < ni->mem.node_size; ++i) {
 			conn_t *conn;
 
 			/* oddly enough, this should reduce cache traffic

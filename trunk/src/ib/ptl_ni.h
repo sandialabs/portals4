@@ -113,13 +113,18 @@ typedef struct ni {
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
-		uint32_t hash;
-		int world_size;		/* number of ranks on the node */
-		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
 		struct queue *queue;
 		char *comm_pad_shm_name;
 	} shmem;
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+	struct {
+		int node_size;		/* number of ranks on the node */
+		int index;	   /* local index on this node [0..node_size[ */
+		uint32_t hash;
+	} mem;
 #endif
 
 	/* object allocation pools */

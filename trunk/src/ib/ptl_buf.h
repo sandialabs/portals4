@@ -268,7 +268,7 @@ struct buf {
 	 * allocated to process the data through the receive state machine
 	 * without destroying the sbuf that belongs to
 	 * another process. Keep a pointer to that sbuf. */
-	struct buf *shmem_buf;
+	struct buf *mem_buf;
 #endif
 
 	/** number of mr's used in message */
