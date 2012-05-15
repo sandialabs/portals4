@@ -49,10 +49,6 @@
 
 #include "portals4.h"
 
-/* branch prediction hints for compiler */
-#define unlikely(x)	__builtin_expect((x),0)
-#define likely(x)	__builtin_expect((x),1)
-
 /* use these for network byte order */
 typedef uint16_t	__be16;
 typedef uint32_t	__be32;
