@@ -230,6 +230,7 @@ static int pool_alloc_slab(pool_t *pool)
 	obj_t *obj;
 	struct ibv_mr *mr = NULL;
 	struct list_head temp_list;
+	slab_info_t *slab;
 
 	err = pool_get_chunk(pool, &chunk);
 	if (unlikely(err))
@@ -238,6 +239,9 @@ static int pool_alloc_slab(pool_t *pool)
 	p = pool_get_slab(pool);
 	if (unlikely(!p))
 		return PTL_NO_SPACE;
+
+	slab = &chunk->slab_list[chunk->num_slabs];
+	slab->addr = p;
 
 #if WITH_TRANSPORT_IB
 	/*
@@ -252,11 +256,10 @@ static int pool_alloc_slab(pool_t *pool)
 			free(p);
 			return PTL_FAIL;
 		}
-		chunk->slab_list[chunk->num_slabs].mr = mr;
+		slab->mr = mr;
 	}
 #endif
 
-	chunk->slab_list[chunk->num_slabs++].addr = p;
 	INIT_LIST_HEAD(&temp_list);
 
 	for (i = 0; i < pool->obj_per_slab; i++) {
@@ -273,6 +276,7 @@ static int pool_alloc_slab(pool_t *pool)
 		err = index_get(obj, &index);
 		if (err) {
 			WARN();
+			//todo: leak
 			return err;
 		}
 		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) |
@@ -282,12 +286,15 @@ static int pool_alloc_slab(pool_t *pool)
 			err = pool->init(obj, mr);
 			if (err) {
 				WARN();
+				//todo: leak
 				return PTL_FAIL;
 			}
 		}
 		enqueue_free_obj(pool, obj);
 		p += pool->round_size;
 	}
+
+	chunk->num_slabs++;
 
 	return PTL_OK;
 }
