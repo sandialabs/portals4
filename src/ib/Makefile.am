@@ -70,11 +70,15 @@ endif
 
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \
-	ptl_knem.c \
 	ptl_mem.c \
 	ptl_queue.c \
 	ptl_queue.h \
 	ptl_shmem.c
+
+if USE_KNEM
+libportals_ib_la_SOURCES += \
+	ptl_knem.c
+endif
 endif
 
 else

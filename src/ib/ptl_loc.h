@@ -240,6 +240,18 @@ static inline void initiate_disconnect_all(ni_t *ni) { }
 #endif
 
 #ifdef WITH_TRANSPORT_SHMEM
+extern int PtlNIInit_shmem(ni_t *ni);
+void cleanup_shmem(ni_t *ni);
+int setup_shmem(ni_t *ni);
+void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
+buf_t *shmem_dequeue(ni_t *ni);
+#else
+static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
+static inline void cleanup_shmem(ni_t *ni) { }
+static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
+#endif
+
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
 int knem_init(ni_t *ni);
 void knem_fini(ni_t *ni);
 uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot);
@@ -252,20 +264,11 @@ size_t knem_copy(ni_t * ni,
 				 uint64_t scookie, uint64_t soffset, 
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
-extern int PtlNIInit_shmem(ni_t *ni);
-void cleanup_shmem(ni_t *ni);
-int setup_shmem(ni_t *ni);
-void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
-buf_t *shmem_dequeue(ni_t *ni);
 #else
-static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
-{
-	return 1;
-}
+static inline int knem_init(ni_t *ni) { return PTL_OK; }
+static inline void knem_fini(ni_t *ni) { }
+static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot) { return 1; }
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
-static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
-static inline void cleanup_shmem(ni_t *ni) { }
-static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
 #endif
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -273,6 +276,8 @@ void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 				   const ptl_process_t *mapping);
 void process_recv_mem(ni_t *ni, buf_t *buf);
 int do_mem_transfer(buf_t *buf);
+ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec,
+						   void *local_addr, mr_t *local_mr, ptl_size_t len);
 #else
 static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 								 const ptl_process_t *mapping) { }
