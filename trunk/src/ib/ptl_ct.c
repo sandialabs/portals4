@@ -455,7 +455,6 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 #endif
 	for (i = i2; i >= 0; i--)
 		ct_put((void *)cts[i]);
-	free(cts);
  err1:
 #ifndef NO_ARG_VALIDATION
 	gbl_put();
