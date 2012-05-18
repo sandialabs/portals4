@@ -38,7 +38,9 @@ static void shmem_set_send_flags(buf_t *buf, int can_signal)
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
+#if USE_KNEM
 	.post_tgt_dma = do_mem_transfer,
+#endif
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
 };

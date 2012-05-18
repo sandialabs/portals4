@@ -142,7 +142,7 @@ AC_ARG_WITH([test-runtime],
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
-    [Use Shared memory / KNEM for local communication with IB implementation.])])
+    [Use Shared memory for local communication with IB implementation.])])
 AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_shmem" == "yes"],
   [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)

@@ -892,7 +892,6 @@ static int tgt_data_out(buf_t *buf)
 		break;
 #endif
 
-
 #if IS_PPE
 	case DATA_FMT_MEM_DMA:
 		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
@@ -1047,6 +1046,7 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 }
 #endif
 
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
 /**
  * @brief target shared memory read long iovec descriptor state.
  *
@@ -1060,9 +1060,7 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 static int tgt_shmem_desc(buf_t *buf)
 {
 	int next;
-#ifdef WITH_TRANSPORT_SHMEM
 	data_t *data;
-	int err;
 	size_t len;
 	ni_t *ni = obj_to_ni(buf);
 	void *indir_sge;
@@ -1088,15 +1086,7 @@ static int tgt_shmem_desc(buf_t *buf)
 		goto done;
 	}
 
-	err = knem_copy(ni, data->mem.mem_iovec[0].cookie,
-			data->mem.mem_iovec[0].offset,
-			mr->knem_cookie,
-			indir_sge - mr->addr, len);
-	if (err != len) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
+	copy_mem_to_mem(ni, DATA_DIR_IN, &data->mem.mem_iovec[0], indir_sge, mr, len);
 
 	buf->indir_sge = indir_sge;
 	buf->mr_list[buf->num_mr++] = mr;
@@ -1106,12 +1096,15 @@ static int tgt_shmem_desc(buf_t *buf)
 
 	next = STATE_TGT_RDMA;
 done:
-#else
-	abort();
-	next = STATE_TGT_ERROR;
-#endif
 	return next;
 }
+#else
+static int tgt_shmem_desc(buf_t *buf)
+{
+	/* Inmvalid state in this configuration. */
+	abort();
+}
+#endif
 
 /**
  * @brief target data in state.

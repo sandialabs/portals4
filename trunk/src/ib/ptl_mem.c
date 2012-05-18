@@ -6,6 +6,40 @@
 
 #include "ptl_loc.h"
 
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
+ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec, void *local_addr, mr_t *local_mr, ptl_size_t len)
+{
+	ptl_size_t copied;
+
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
+	if (dir == DATA_DIR_IN)
+		copied = knem_copy(ni, remote_iovec->cookie, remote_iovec->offset, 
+						local_mr->knem_cookie,
+						local_addr - local_mr->addr, len);
+	else
+		copied = knem_copy(ni, local_mr->knem_cookie,
+						local_addr - local_mr->addr,
+						remote_iovec->cookie, remote_iovec->offset, len);
+#elif IS_PPE
+	if (dir == DATA_DIR_IN)
+		memcpy(local_addr, remote_iovec->addr, len);
+	else
+		memcpy(remote_iovec->addr, local_addr, len);
+	copied = len;
+#endif
+
+	return copied;
+}
+
+static inline void advance_remote_addr(struct mem_iovec *remote_iovec, ptl_size_t len)
+{
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
+	remote_iovec->offset += len;
+#elif IS_PPE
+	remote_iovec->addr += len;
+#endif	
+}
+
 /**
  * @brief Do a shared memory copy using the knem device.
  *
@@ -51,23 +85,8 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (err)
 				break;
 
-#if WITH_TRANSPORT_SHMEM
-			if (dir == DATA_DIR_IN)
-				err = knem_copy(ni, iovec->cookie, iovec->offset, 
-						mr->knem_cookie,
-						addr - mr->addr, len);
-			else
-				err = knem_copy(ni, mr->knem_cookie,
-						addr - mr->addr,
-						iovec->cookie, iovec->offset, len);
-			iovec->offset += len;
-#elif IS_PPE
-			if (dir == DATA_DIR_IN)
-				memcpy(addr, iovec->addr, len);
-			else
-				memcpy(iovec->addr, addr, len);
-			iovec->addr += len;
-#endif
+			copy_mem_to_mem(ni, dir, iovec, addr, mr, len);
+			advance_remote_addr(iovec, len);
 
 			mr_put(mr);
 
@@ -97,23 +116,8 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (err)
 				break;
 
-#if WITH_TRANSPORT_SHMEM
-			if (dir == DATA_DIR_IN)
-				knem_copy(ni, iovec->cookie, iovec->offset, 
-						  mr->knem_cookie,
-						  addr - mr->addr, len);
-			else
-				knem_copy(ni, mr->knem_cookie,
-						  addr - mr->addr, iovec->cookie,
-						  iovec->offset, len);
-			iovec->offset += len;
-#elif IS_PPE
-			if (dir == DATA_DIR_IN)
-				memcpy(addr, iovec->addr, len);
-			else
-				memcpy(iovec->addr, addr, len);
-			iovec->addr += len;
-#endif
+			copy_mem_to_mem(ni, dir, iovec, addr, mr, len);
+			advance_remote_addr(iovec, len);
 
 			mr_put(mr);
 
@@ -180,6 +184,7 @@ int do_mem_transfer(buf_t *buf)
 
 	return PTL_OK;
 }
+#endif
 
 /* Computes a hash (crc32 based), to identify which group this NI belong to. */
 static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
