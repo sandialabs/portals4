@@ -549,8 +549,6 @@ static int tgt_get_match(buf_t *buf)
 		}
 	}
 
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
-
 	/* Failed to match any elements */
 	if (pt->options & PTL_PT_FLOWCTRL) {
 		pt->state |= PT_AUTO_DISABLED;
