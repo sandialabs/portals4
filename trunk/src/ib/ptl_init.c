@@ -241,7 +241,7 @@ static int prepare_req(buf_t *buf)
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;
@@ -252,7 +252,7 @@ static int prepare_req(buf_t *buf)
 
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;
@@ -264,14 +264,14 @@ static int prepare_req(buf_t *buf)
 
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;

@@ -35,15 +35,21 @@ enum transport_type {
 #endif
 };
 
+struct md;
+struct data;
+
 /**
  * Per transport methods.
  */
 struct transport {
 	enum transport_type	type;
 
+	/* Allocate a transport buffer suited for this transport. */
 	int (*buf_alloc)(ni_t *ni, struct buf **buf_p);
-	int (*post_tgt_dma)(struct buf *buf);
+
+	/* Sends a short or long message. */
 	int (*send_message)(struct buf *buf, int from_init);
+	int (*post_tgt_dma)(struct buf *buf);
 
 	/* Sets some sent flags, which determine what to do once the
 	 * buffer has been sent. So far, it's either XX_INLINE or
@@ -51,6 +57,21 @@ struct transport {
 	 * whether it can signal the completion or not, if it can't
 	 * inline. can_signal is ignored on other transports. */
 	void (*set_send_flags)(struct buf *buf, int can_signal);
+
+	/* Different ways to append the init data: 
+	 *   direct: single buffer too large to fit in message
+	 *   iovec direct: iovec fits in message
+	 *   iovec indirect: iovec does not fit in message
+	 */
+	void (*append_init_data_direct)(struct data *data, struct mr *mr,
+									void *addr, ptl_size_t length,
+									struct buf *buf);
+	void (*append_init_data_iovec_direct)(struct data *data, struct md *md,
+										  int num_sge, int iov_start,
+										  struct buf *buf);
+	void (*append_init_data_iovec_indirect)(struct data *data, struct md *md,
+											int num_sge, int iov_start,
+											struct buf *buf);
 };
 
 extern struct transport transport_rdma;
