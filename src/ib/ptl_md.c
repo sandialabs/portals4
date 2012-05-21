@@ -139,12 +139,9 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
 		mem_iovec->cookie = mr->knem_cookie;
 		mem_iovec->offset = iov->iov_base - mr->addr;
-#endif
-#if IS_PPE
-		mem_iovec->addr = iov->iov_base;
 #endif
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;

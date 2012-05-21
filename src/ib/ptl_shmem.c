@@ -35,6 +35,51 @@ static void shmem_set_send_flags(buf_t *buf, int can_signal)
 	buf->event_mask |= XX_INLINE;
 }
 
+#if USE_KNEM
+static void append_init_data_shmem_direct(data_t *data, mr_t *mr, void *addr,
+										  ptl_size_t length, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_DMA;
+	data->mem.num_mem_iovecs = 1;
+	data->mem.mem_iovec[0].cookie = mr->knem_cookie;
+	data->mem.mem_iovec[0].offset = addr - mr->addr;
+	data->mem.mem_iovec[0].length = length;
+
+	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+}
+
+static void append_init_data_shmem_iovec_direct(data_t *data, md_t *md,
+												int iov_start, int num_iov,
+												buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_DMA;
+	data->mem.num_mem_iovecs = num_iov;
+	memcpy(data->mem.mem_iovec,
+		   &md->mem_iovecs[iov_start],
+		   num_iov*sizeof(struct mem_iovec));
+
+	buf->length += sizeof(*data) + num_iov * sizeof(struct mem_iovec);
+}
+
+static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
+												  int iov_start, int num_iov,
+												  buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_INDIRECT;
+	data->mem.num_mem_iovecs = num_iov;
+
+	data->mem.mem_iovec[0].cookie
+		= md->sge_list_mr->knem_cookie;
+   //TODO: BUG ALERT? iov_start not used - should affect offset!
+	data->mem.mem_iovec[0].offset
+		= (void *)md->mem_iovecs - md->sge_list_mr->addr;
+	data->mem.mem_iovec[0].length
+		= num_iov * sizeof(struct mem_iovec);
+
+	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+}
+#endif
+
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
@@ -43,6 +88,9 @@ struct transport transport_shmem = {
 #endif
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
+	.append_init_data_direct = append_init_data_shmem_direct,
+	.append_init_data_iovec_direct = append_init_data_shmem_iovec_direct,
+	.append_init_data_iovec_indirect = append_init_data_shmem_iovec_indirect,
 };
 
 /**

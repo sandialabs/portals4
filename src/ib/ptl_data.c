@@ -52,11 +52,11 @@ int data_size(data_t *data)
 		break;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
-	case DATA_FMT_SHMEM_DMA:
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
+	case DATA_FMT_KNEM_DMA:
 		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
 		break;
-	case DATA_FMT_SHMEM_INDIRECT:
+	case DATA_FMT_KNEM_INDIRECT:
 		size += sizeof(struct mem_iovec);
 		break;
 #endif
@@ -91,7 +91,7 @@ int data_size(data_t *data)
  * @return status
  */
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf, enum transport_type type)
+		     ptl_size_t length, buf_t *buf, const conn_t *conn)
 {
 	int err = PTL_OK;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -130,97 +130,11 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 			return PTL_FAIL;
 		}
 
-		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
+		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
 			/* Indirect case. The IOVs do not fit in a buf_t. */
-
-			switch(type) {
-#if WITH_TRANSPORT_IB
-			case CONN_TYPE_RDMA:
-				data->data_fmt = DATA_FMT_RDMA_INDIRECT;
-				data->rdma.num_sge = cpu_to_le32(1);
-				data->rdma.sge_list[0].addr
-					= cpu_to_le64((uintptr_t)&md->sge_list[iov_start]);
-				data->rdma.sge_list[0].length
-					= cpu_to_le32(num_sge * sizeof(struct ibv_sge));
-				data->rdma.sge_list[0].lkey
-					= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
-
-				buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-				break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-			case CONN_TYPE_SHMEM:
-				data->data_fmt = DATA_FMT_SHMEM_INDIRECT;
-				data->mem.num_mem_iovecs = num_sge;
-
-				data->mem.mem_iovec[0].cookie
-					= md->sge_list_mr->knem_cookie;
-				data->mem.mem_iovec[0].offset
-					= (void *)md->mem_iovecs - md->sge_list_mr->addr;
-				data->mem.mem_iovec[0].length
-					= num_sge * sizeof(struct mem_iovec);
-
-				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
-				break;
-#endif
-
-#if IS_PPE
-			case CONN_TYPE_MEM:
-				data->data_fmt = DATA_FMT_MEM_INDIRECT;
-				data->mem.num_mem_iovecs = num_sge;
-
-				data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
-				data->mem.mem_iovec[0].length = num_sge * sizeof(struct mem_iovec);
-
-				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
-				break;
-#endif
-
-			}
-		} else {
-			switch(type) {
-#if WITH_TRANSPORT_IB
-			case CONN_TYPE_RDMA:
-				data->data_fmt = DATA_FMT_RDMA_DMA;
-				data->rdma.num_sge = cpu_to_le32(num_sge);
-				memcpy(data->rdma.sge_list,
-					   &md->sge_list[iov_start],
-					   num_sge*sizeof(struct ibv_sge));
-
-				buf->length += sizeof(*data) + num_sge *
-					sizeof(struct ibv_sge);
-				break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-			case CONN_TYPE_SHMEM:
-				data->data_fmt = DATA_FMT_SHMEM_DMA;
-				data->mem.num_mem_iovecs = num_sge;
-				memcpy(data->mem.mem_iovec,
-					   &md->mem_iovecs[iov_start],
-					   num_sge*sizeof(struct mem_iovec));
-				
-				buf->length += sizeof(*data) + num_sge *
-					sizeof(struct mem_iovec);
-				break;
-#endif
-
-#if IS_PPE
-			case CONN_TYPE_MEM:
-				/* Actually this is the same as the other indirect
-				 * case. PPE doesn't need to copy iovecs anytime. */
-				data->data_fmt = DATA_FMT_MEM_INDIRECT;
-				data->mem.num_mem_iovecs = num_sge;
-
-				data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
-				data->mem.mem_iovec[0].length = num_sge * sizeof(struct mem_iovec);
-
-				buf->length += sizeof(*data) + sizeof(struct mem_iovec);
-				break;
-#endif
-			}
-		}
+			conn->transport.append_init_data_iovec_indirect(data, md, iov_start, num_sge, buf);
+		else
+			conn->transport.append_init_data_iovec_direct(data, md, iov_start, num_sge, buf);
 
 		/* @todo this is completely bogus */
 		/* Adjust the header offset for iov start. */
@@ -239,43 +153,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 		buf->mr_list[buf->num_mr++] = mr;
 
-		switch(type) {
-#if WITH_TRANSPORT_IB
-		case CONN_TYPE_RDMA:
-			data->data_fmt = DATA_FMT_RDMA_DMA;
-			data->rdma.num_sge = cpu_to_le32(1);
-			data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
-			data->rdma.sge_list[0].length = cpu_to_le32(length);
-			data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
-
-			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-			break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-		case CONN_TYPE_SHMEM:
-			data->data_fmt = DATA_FMT_SHMEM_DMA;
-			data->mem.num_mem_iovecs = 1;
-			data->mem.mem_iovec[0].cookie = mr->knem_cookie;
-			data->mem.mem_iovec[0].offset = addr - mr->addr;
-			data->mem.mem_iovec[0].length = length;
-
-			buf->length += sizeof(*data) + sizeof(struct mem_iovec);
-			break;
-#endif
-
-#if IS_PPE
-		case CONN_TYPE_MEM:
-			data->data_fmt = DATA_FMT_MEM_DMA;
-
-			data->mem.num_mem_iovecs = 1;
-			data->mem.mem_iovec[0].addr = addr;
-			data->mem.mem_iovec[0].length = length;
-
-			buf->length += sizeof(*data) + sizeof(struct mem_iovec);
-			break;
-#endif
-		}
+		conn->transport.append_init_data_direct(data, mr, addr, length, buf);
 	}
 
 	assert(buf->length <= BUF_DATA_SIZE);

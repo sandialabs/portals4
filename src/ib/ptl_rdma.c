@@ -167,6 +167,43 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 	return PTL_OK;
 }
 
+static void append_init_data_rdma_direct(data_t *data, mr_t *mr, void *addr,
+										  ptl_size_t length, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_RDMA_DMA;
+	data->rdma.num_sge = cpu_to_le32(1);
+	data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
+	data->rdma.sge_list[0].length = cpu_to_le32(length);
+	data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
+
+	buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+}
+
+static void append_init_data_rdma_iovec_direct(data_t *data, md_t *md, int iov_start, int num_iov, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_RDMA_DMA;
+	data->rdma.num_sge = cpu_to_le32(num_iov);
+	memcpy(data->rdma.sge_list,
+		   &md->sge_list[iov_start],
+		   num_iov*sizeof(struct ibv_sge));
+
+	buf->length += sizeof(*data) + num_iov * sizeof(struct ibv_sge);
+}
+
+static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md, int iov_start, int num_iov, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_RDMA_INDIRECT;
+	data->rdma.num_sge = cpu_to_le32(1);
+	data->rdma.sge_list[0].addr
+		= cpu_to_le64((uintptr_t)&md->sge_list[iov_start]);
+	data->rdma.sge_list[0].length
+		= cpu_to_le32(num_iov * sizeof(struct ibv_sge));
+	data->rdma.sge_list[0].lkey
+		= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
+
+	buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+}
+
 /**
  * @brief Build the local scatter gather list for a target RDMA operation.
  *
@@ -458,6 +495,9 @@ struct transport transport_rdma = {
 	.post_tgt_dma = process_rdma,
 	.send_message = send_message_rdma,
 	.set_send_flags = set_send_flags_rdma,
+	.append_init_data_direct = append_init_data_rdma_direct,
+	.append_init_data_iovec_direct = append_init_data_rdma_iovec_direct,
+	.append_init_data_iovec_indirect = append_init_data_rdma_iovec_indirect,
 };
 
 /**
