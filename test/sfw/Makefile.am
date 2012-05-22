@@ -77,41 +77,21 @@ make_test_move_SOURCES = data.c make_test_move.c
 make_test_swap_SOURCES = data.c make_test_swap.c
 make_test_atomic_SOURCES = data.c make_test_atomic.c
 
-# if TEST_RUNTIME_MPI
-# check_SCRIPTS = runxml1.sh runxml2.sh
-# TESTS = $(check_SCRIPTS)
-# endif
+check_SCRIPTS = runxml1.sh runxml2.sh
+TESTS = $(check_SCRIPTS)
 
 runxml1.sh:
-# if TEST_RUNTIME_MPI
-# 	@echo "for TEST in $(XMLTESTS1); do" \
-# 		  'echo testing $${TEST};' \
-# 		  'mpirun -mca pml ob1 -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-# 	      "done" > runxml1.sh
-# endif
-#if TEST_RUNTIME_SHMEMRT
-#	@echo "for TEST in $(XMLTESTS1); do" \
-#		  'echo testing $${TEST};' \
-#		  '$(top_builddir)/src/yod/yod -c 1 --' \
-#	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-#	      "done" > runxml1.sh
-#endif
+	@echo "for TEST in $(XMLTESTS1); do" \
+		  'echo testing $${TEST};' \
+		  'yod -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+	      "done" > runxml1.sh
 	chmod +x runxml1.sh
 
 runxml2.sh:
-# if TEST_RUNTIME_MPI
-# 	@echo "for TEST in $(XMLTESTS2); do" \
-# 		  'echo testing $${TEST};' \
-# 		  'mpirun -mca pml ob1 -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-# 	      "done" > runxml2.sh
-# endif
-#if TEST_RUNTIME_SHMEMRT
-#	@echo "for TEST in $(XMLTESTS2); do" \
-#		  'echo testing $${TEST};' \
-#		  '$(top_builddir)/src/yod/yod -c 2 --' \
-#	      ' ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-#	      "done" > runxml2.sh
-#endif
+	@echo "for TEST in $(XMLTESTS2); do" \
+		  'echo testing $${TEST};' \
+		  'yod -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+	      "done" > runxml2.sh
 	chmod +x runxml2.sh
 
 CLEANFILES = runxml1.sh runxml2.sh
