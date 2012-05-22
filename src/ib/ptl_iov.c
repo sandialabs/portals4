@@ -22,7 +22,7 @@
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length)
 {
-	ptl_size_t i;
+	unsigned int i;
 	ptl_size_t iov_offset = 0;
 	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
@@ -33,11 +33,14 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 	 * dst_offset == offset, iov points to iovec entry
 	 * containing starting point, i is its index in the
 	 * array and iov_offset contains the offset into iov */
-	for (i = 0; i < num_iov && src_offset < offset; i++, iov++) {
+	for (i = 0; i < num_iov; i++, iov++) {
 		iov_offset = offset - src_offset;
 		if (iov_offset > iov->iov_len)
 			iov_offset = iov->iov_len;
 		src_offset += iov_offset;
+
+		if (src_offset >= offset)
+			break;
 	}
 
 	/* check if we ran off the end of the iovec before we started */
@@ -85,17 +88,20 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length)
 {
-	ptl_size_t i;
+	unsigned int i;
 	ptl_size_t iov_offset = 0;
 	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
 
-	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
+	for (i = 0; i < num_iov; i++, iov++) {
 		iov_offset = offset - dst_offset;
 		if (iov_offset > iov->iov_len)
 			iov_offset = iov->iov_len;
 		dst_offset += iov_offset;
+
+		if (dst_offset >= offset)
+			break;
 	}
 
 	if (dst_offset < offset) {
