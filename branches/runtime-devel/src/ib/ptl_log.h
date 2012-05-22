@@ -44,14 +44,12 @@
 
 #define ptl_error(format, arg...)					\
 	do {								\
-		if (ptl_log_level > 0)					\
 		fprintf(stderr, "error %s(%s:%d): " format,		\
 			__func__, __FILE__, __LINE__,  ## arg);		\
 	} while (0)
 
 #define ptl_fatal(format, arg...)					\
 	do {								\
-		if (ptl_log_level > 0)					\
 		fprintf(stderr, "fatal %s(%s:%d): " format,		\
 			__func__, __FILE__, __LINE__,  ## arg);		\
 		abort();						\

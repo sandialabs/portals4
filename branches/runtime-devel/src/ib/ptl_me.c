@@ -111,6 +111,16 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	me->match_bits = me_init->match_bits;
 	me->ignore_bits = me_init->ignore_bits;
 
+#if IS_PPE
+	{
+		/* Under the PPE, the me_init structure has been silently extended. */
+		const struct ptl_me_ppe *me_init_ppe = (const struct ptl_me_ppe *)me_init;
+		me->ppe.mapping = me_init_ppe->mapping;
+		if (me_init->options & PTL_IOVEC)
+			me->ppe.iovecs_mappings = me_init_ppe->iovecs_mappings;
+	}
+#endif
+
 #ifndef NO_ARG_VALIDATION
 	if (me_handle_p) {
 		/* Only append can modify counters. */
@@ -338,6 +348,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 		/* Something else has a reference on that ME. If it is on the
 		 * unexpected list, remove it. */
 		flush_le_references((le_t *)me);
+		ref_cnt = me_ref_cnt(me);
 	}
 
 	/* There should only be 2 references on the object before we can

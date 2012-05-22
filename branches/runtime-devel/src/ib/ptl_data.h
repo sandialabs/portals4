@@ -23,9 +23,14 @@ enum data_fmt {
 	DATA_FMT_RDMA_INDIRECT,
 #endif
 
-#if WITH_TRANSPORT_SHMEM
-	DATA_FMT_SHMEM_DMA,
-	DATA_FMT_SHMEM_INDIRECT,
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
+	DATA_FMT_KNEM_DMA,
+	DATA_FMT_KNEM_INDIRECT,
+#endif
+
+#if IS_PPE
+	DATA_FMT_MEM_DMA,
+	DATA_FMT_MEM_INDIRECT,
 #endif
 
 	DATA_FMT_LAST,
@@ -33,9 +38,11 @@ enum data_fmt {
 
 typedef enum data_fmt data_fmt_t;
 
-struct shmem_iovec {
+struct mem_iovec {
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
 	uint64_t		cookie;
-	uint64_t		offset;
+	uint64_t		offset;		/* add to cookie to get address */
+#endif
 	uint64_t		length;
 };
 
@@ -61,14 +68,13 @@ struct data {
 		} rdma;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
 		/* DMA or Indirect shmem data */
 		struct {
-			unsigned int		num_knem_iovecs;
-			struct shmem_iovec	knem_iovec[0];
-		} shmem;
+			unsigned int		num_mem_iovecs;
+			struct mem_iovec	mem_iovec[0];
+		} mem;
 #endif
-
 	};
 } __attribute__((__packed__));
 
@@ -77,7 +83,7 @@ typedef struct data data_t;
 int data_size(data_t *data);
 
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf, enum transport_type type);
+		     ptl_size_t length, buf_t *buf, const struct conn *conn);
 
 int append_tgt_data(me_t *me, ptl_size_t offset,
 		    ptl_size_t length, buf_t *buf);

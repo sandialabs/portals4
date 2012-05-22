@@ -546,6 +546,16 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	le->do_auto_free = 0;
 	le->ptl_list = ptl_list;
 
+#if IS_PPE
+	{
+		/* Under the PPE, the le_init structure has been silently extend. */
+		const struct ptl_le_ppe *le_init_ppe = (const struct ptl_le_ppe *)le_init;
+		le->ppe.mapping = le_init_ppe->mapping;
+		if (le_init->options & PTL_IOVEC)
+			le->ppe.iovecs_mappings = le_init_ppe->iovecs_mappings;
+	}
+#endif
+
 #ifndef NO_ARG_VALIDATION
 	if (le_handle_p) {
 		/* Only append can modify counters. */
@@ -763,6 +773,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 		/* Something else has a reference on that LE. If it is on the
 		 * unexpected list, remove it. */
 		flush_le_references(le);
+		ref_cnt = le_ref_cnt(le);
 	}
 
 	/* There should only be 2 references on the object before we can

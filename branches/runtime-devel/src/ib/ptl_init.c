@@ -226,6 +226,10 @@ static int prepare_req(buf_t *buf)
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 	hdr->handle = cpu_to_le32(buf_to_handle(buf));
 
+#ifdef IS_PPE
+	hdr->hash = cpu_to_le32(ni->mem.hash);
+#endif
+
 	buf->length = sizeof(req_hdr_t);
 
 	switch (hdr->operation) {
@@ -237,7 +241,7 @@ static int prepare_req(buf_t *buf)
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;
@@ -248,7 +252,7 @@ static int prepare_req(buf_t *buf)
 
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;
@@ -260,14 +264,14 @@ static int prepare_req(buf_t *buf)
 
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 
 		put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
-				       buf->conn->transport.type);
+				       buf->conn);
 		if (err)
 			goto error;
 		break;
@@ -297,7 +301,7 @@ static int prepare_req(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	buf->conn->transport.set_send_flags(buf);
+	buf->conn->transport.set_send_flags(buf, 0);
 
 	/* Protect the request packet until it is sent. */
 	if (!(buf->event_mask & XX_INLINE) &&
@@ -449,7 +453,9 @@ static int send_error(buf_t *buf)
  */
 static int wait_comp(buf_t *buf)
 {
-	assert(buf->conn->transport.type == CONN_TYPE_RDMA);
+#if WITH_TRANSPORT_SHMEM
+	assert(buf->conn->transport.type != CONN_TYPE_SHMEM);
+#endif
 
 	if (buf->completed || buf->recv_buf)
 		return STATE_INIT_EARLY_SEND_EVENT;

@@ -21,7 +21,7 @@ static int send_message_shmem(buf_t *buf, int from_init)
 
 	buf->type = BUF_SHMEM_SEND;
 
-	buf->shmem.index_owner = buf->obj.obj_ni->shmem.index;
+	buf->shmem.index_owner = buf->obj.obj_ni->mem.index;
 
 	shmem_enqueue(buf->obj.obj_ni, buf,
 				buf->dest.shmem.local_rank);
@@ -29,183 +29,68 @@ static int send_message_shmem(buf_t *buf, int from_init)
 	return PTL_OK;
 }
 
-/**
- * @brief Do a shared memory copy using the knem device.
- *
- * @param[in] buf
- * @param[in] rem_len
- * @param[in] rcookie
- * @param[in] roffset
- * @param[in,out] loc_index
- * @param[in,out] loc_off
- * @param[in] max_loc_index
- * @param[in] dir
- *
- * @return the number of bytes to be transferred by the SG list.
- */
-static ptl_size_t do_knem_copy(buf_t *buf, ptl_size_t rem_len,
-			       uint64_t rcookie, uint64_t roffset,
-			       ptl_size_t *loc_index, ptl_size_t *loc_off,
-			       int max_loc_index, data_dir_t dir)
-{
-	ni_t *ni = obj_to_ni(buf);
-	me_t *me = buf->me;
-	ptl_iovec_t *iov;
-	ptl_size_t tot_len = 0;
-	ptl_size_t len;
-	mr_t *mr;
-
-	while (tot_len < rem_len) {
-		len = rem_len - tot_len;
-		if (me->num_iov) {
-			void *addr;
-			int err;
-
-			if (*loc_index >= max_loc_index)
-				break;
-
-			iov = ((ptl_iovec_t *)me->start) + *loc_index;
-
-			addr = iov->iov_base + *loc_off;
-
-			if (len > iov->iov_len - *loc_off)
-				len = iov->iov_len - *loc_off;
-
-			err = mr_lookup(buf->obj.obj_ni, addr, len, &mr);
-			if (err)
-				break;
-
-			if (dir == DATA_DIR_IN)
-				err = knem_copy(ni, rcookie, roffset, 
-						mr->knem_cookie,
-						addr - mr->addr, len);
-			else
-				err = knem_copy(ni, mr->knem_cookie,
-						addr - mr->addr,
-						rcookie, roffset, len);
-
-			mr_put(mr);
-
-			tot_len += len;
-			*loc_off += len;
-			roffset += len;
-			if (tot_len < rem_len && *loc_off >= iov->iov_len) {
-				if (*loc_index < max_loc_index) {
-					*loc_off = 0;
-					(*loc_index)++;
-				} else
-					break;
-			}
-		} else {
-			int err;
-			mr_t *mr;
-			void *addr;
-			ptl_size_t len_available = me->length - *loc_off;
-
-			assert(me->length > *loc_off);
-				
-			if (len > len_available)
-				len = len_available;
-
-			addr = me->start + *loc_off;
-
-			err = mr_lookup(ni, addr, len, &mr);
-			if (err)
-				break;
-
-			if (dir == DATA_DIR_IN)
-				knem_copy(ni, rcookie, roffset, 
-					  mr->knem_cookie,
-					  addr - mr->addr, len);
-			else
-				knem_copy(ni, mr->knem_cookie,
-					  addr - mr->addr, rcookie,
-					  roffset, len);
-
-			mr_put(mr);
-
-			tot_len += len;
-			*loc_off += len;
-			roffset += len;
-			if (tot_len < rem_len && *loc_off >= mr->length)
-				break;
-		}
-	}
-
-	return tot_len;
-}
-
-/**
- * @brief Complete a data phase using shared memory knem device.
- *
- * @param[in] buf
- *
- * @return status
- */
-static int do_knem_transfer(buf_t *buf)
-{
-	uint64_t rcookie;
-	uint64_t roffset;
-	ptl_size_t bytes;
-	ptl_size_t iov_index = buf->cur_loc_iov_index;
-	ptl_size_t iov_off = buf->cur_loc_iov_off;
-	uint32_t rlength;
-	uint32_t rseg_length;
-	data_dir_t dir = buf->rdma_dir;
-	ptl_size_t *resid = (dir == DATA_DIR_IN) ?
-				&buf->put_resid : &buf->get_resid;
-
-	rseg_length = buf->transfer.shmem.cur_rem_iovec->length;
-	rcookie = buf->transfer.shmem.cur_rem_iovec->cookie;
-	roffset = buf->transfer.shmem.cur_rem_iovec->offset;
-
-	while (*resid > 0) {
-
-		roffset += buf->transfer.shmem.cur_rem_off;
-		rlength = rseg_length - buf->transfer.shmem.cur_rem_off;
-
-		if (rlength > *resid)
-			rlength = *resid;
-
-		bytes = do_knem_copy(buf, rlength, rcookie, roffset,
-				     &iov_index, &iov_off, buf->le->num_iov,
-							 dir);
-		if (!bytes)
-			return PTL_FAIL;
-
-		*resid -= bytes;
-		buf->cur_loc_iov_index = iov_index;
-		buf->cur_loc_iov_off = iov_off;
-		buf->transfer.shmem.cur_rem_off += bytes;
-
-		if (*resid && buf->transfer.shmem.cur_rem_off >= rseg_length) {
-			if (buf->transfer.shmem.num_rem_iovecs) {
-				buf->transfer.shmem.cur_rem_iovec++;
-				rseg_length = buf->transfer.shmem.cur_rem_iovec->length;
-				rcookie = buf->transfer.shmem.cur_rem_iovec->cookie;
-				roffset = buf->transfer.shmem.cur_rem_iovec->offset;
-				buf->transfer.shmem.cur_rem_off = 0;
-			} else {
-				return PTL_FAIL;
-			}
-		}
-	}
-
-	return PTL_OK;
-}
-
-void shmem_set_send_flags(buf_t *buf)
+static void shmem_set_send_flags(buf_t *buf, int can_signal)
 {
 	/* The data is always in the buffer. */
 	buf->event_mask |= XX_INLINE;
 }
 
+#if USE_KNEM
+static void append_init_data_shmem_direct(data_t *data, mr_t *mr, void *addr,
+										  ptl_size_t length, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_DMA;
+	data->mem.num_mem_iovecs = 1;
+	data->mem.mem_iovec[0].cookie = mr->knem_cookie;
+	data->mem.mem_iovec[0].offset = addr - mr->addr;
+	data->mem.mem_iovec[0].length = length;
+
+	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+}
+
+static void append_init_data_shmem_iovec_direct(data_t *data, md_t *md,
+												int iov_start, int num_iov,
+												buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_DMA;
+	data->mem.num_mem_iovecs = num_iov;
+	memcpy(data->mem.mem_iovec,
+		   &md->mem_iovecs[iov_start],
+		   num_iov*sizeof(struct mem_iovec));
+
+	buf->length += sizeof(*data) + num_iov * sizeof(struct mem_iovec);
+}
+
+static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
+												  int iov_start, int num_iov,
+												  buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_KNEM_INDIRECT;
+	data->mem.num_mem_iovecs = num_iov;
+
+	data->mem.mem_iovec[0].cookie
+		= md->sge_list_mr->knem_cookie;
+   //TODO: BUG ALERT? iov_start not used - should affect offset!
+	data->mem.mem_iovec[0].offset
+		= (void *)md->mem_iovecs - md->sge_list_mr->addr;
+	data->mem.mem_iovec[0].length
+		= num_iov * sizeof(struct mem_iovec);
+
+	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+}
+#endif
+
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
-	.post_tgt_dma = do_knem_transfer,
+#if USE_KNEM
+	.post_tgt_dma = do_mem_transfer,
+#endif
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
+	.append_init_data_direct = append_init_data_shmem_direct,
+	.append_init_data_iovec_direct = append_init_data_shmem_iovec_direct,
+	.append_init_data_iovec_indirect = append_init_data_shmem_iovec_indirect,
 };
 
 /**
@@ -260,49 +145,11 @@ int PtlNIInit_shmem(ni_t *ni)
 
 	if (ni->options & PTL_NI_PHYSICAL) {
 		/* Used later to setup the buffers. */
-		ni->shmem.index = 0;
-		ni->shmem.world_size = 1;
+		ni->mem.index = 0;
+		ni->mem.node_size = 1;
 	}
 
 	return PTL_OK;
-}
-
-/* Computes a hash (crc32 based), for shmem. */
-static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
-{
-    while (size--) {
-		int n;
-
-        crc ^= *p++;
-        for (n = 0; n < 8; n++)
-            crc = (crc >> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
-    }
-
-    return crc;
-}
-
-/* lookup our nid/pid to determine local rank */
-void PtlSetMap_shmem(ni_t *ni,
-					 ptl_size_t map_size,
-					 const ptl_process_t *mapping)
-{
-	iface_t *iface = ni->iface;
-	int i;
-
-	ni->shmem.world_size = 0;
-	ni->shmem.index = -1;
-	ni->shmem.hash = 0;
-
-	for (i = 0; i < map_size; i++) {
-		if (mapping[i].phys.nid == iface->id.phys.nid) {
-			if (mapping[i].phys.pid == iface->id.phys.pid)
-				ni->shmem.index = ni->shmem.world_size;
-
-			ni->shmem.world_size ++;
-		}
-
-		ni->shmem.hash = crc32((unsigned char *)&mapping[i].phys, ni->shmem.hash, sizeof(mapping[i].phys));
-	}
 }
 
 /**
@@ -354,7 +201,7 @@ int setup_shmem(ni_t *ni)
 		/* Create a unique name for the shared memory file. Use the hash
 		 * created from the mapping. */
 		snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
-				 "/portals4-shmem-%x-%d", ni->shmem.hash, ni->options);
+				 "/portals4-shmem-%x-%d", ni->mem.hash, ni->options);
 	}
 	ni->shmem.comm_pad_shm_name = strdup(comm_pad_shm_name);
 
@@ -364,12 +211,12 @@ int setup_shmem(ni_t *ni)
 		ni->sbuf_pool.slab_size;
 
 	ni->shmem.comm_pad_size = pagesize +
-		(ni->shmem.per_proc_comm_buf_size * ni->shmem.world_size);
+		(ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == MAP_FAILED);
 
-	if (ni->shmem.index == 0) {
+	if (ni->mem.index == 0) {
 		/* Just in case, remove that file if it already exist. */
 		shm_unlink(comm_pad_shm_name);
 
@@ -452,7 +299,7 @@ int setup_shmem(ni_t *ni)
 
 	/* Now we can create the buffer pool */
 	ni->shmem.queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
-						(ni->shmem.per_proc_comm_buf_size*ni->shmem.index));
+						(ni->shmem.per_proc_comm_buf_size*ni->mem.index));
 	queue_init(ni->shmem.queue);
 
 	/* The buffer is right after the nemesis queue. */
@@ -474,12 +321,12 @@ int setup_shmem(ni_t *ni)
 		 * (ie. that is enough for 341 local ranks).. */
 		ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
 
-		ptable[ni->shmem.index].id = ni->id;
+		ptable[ni->mem.index].id = ni->id;
 		__sync_synchronize(); /* ensure "valid" is not written before pid. */
-		ptable[ni->shmem.index].valid = 1;
+		ptable[ni->mem.index].valid = 1;
 
 		/* Now, wait for my siblings to get here. */
-		for (i = 0; i < ni->shmem.world_size; ++i) {
+		for (i = 0; i < ni->mem.node_size; ++i) {
 			conn_t *conn;
 
 			/* oddly enough, this should reduce cache traffic
@@ -555,6 +402,8 @@ void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
 {	      
 	queue_t *queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
 			   (ni->shmem.per_proc_comm_buf_size * dest));
+
+	buf->obj.next = NULL;
 
 	enqueue(ni->shmem.comm_pad, queue, &buf->obj);
 }

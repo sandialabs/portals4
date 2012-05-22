@@ -40,7 +40,7 @@ typedef struct ni {
 	obj_t			obj;
 
 	ptl_ni_limits_t		limits;		/* max number of xxx */
-	ptl_ni_limits_t		current;	/* current num of xxx */
+	ptl_ni_limits_t		current;	/* used for accounting of objects, not real limits. */
 
 	atomic_t			ref_cnt;
 
@@ -113,13 +113,22 @@ typedef struct ni {
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
-		uint32_t hash;
-		int world_size;		/* number of ranks on the node */
-		int index;	   /* local index on this node [0..world_size[ */
 		int knem_fd;
 		struct queue *queue;
 		char *comm_pad_shm_name;
 	} shmem;
+#endif
+
+#if WITH_TRANSPORT_SHMEM || IS_PPE
+	struct {
+		int node_size;		/* number of ranks on the node */
+		int index;	   /* local index on this node [0..node_size[ */
+		uint32_t hash;
+
+#ifdef IS_PPE
+		int in_group;
+#endif
+	} mem;
 #endif
 
 	/* object allocation pools */

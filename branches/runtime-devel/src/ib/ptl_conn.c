@@ -34,7 +34,11 @@ int conn_init(void *arg, void *parm)
 	conn->state = CONN_STATE_DISCONNECTED;
 	INIT_LIST_HEAD(&conn->buf_list);
 
-#if WITH_TRANSPORT_IB
+#if IS_PPE
+	//todo: local only. use IB if remote node is not the same
+	conn->transport = transport_mem;
+	conn->state = CONN_STATE_CONNECTED;
+#elif WITH_TRANSPORT_IB
 	conn->transport = transport_rdma;
 	conn->rdma.cm_id = NULL;
 

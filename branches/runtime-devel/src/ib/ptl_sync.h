@@ -69,4 +69,8 @@ static inline void SPINLOCK_BODY(void)
 	__asm__ __volatile__ ("pause" ::: "memory");
 }
 
+/* branch prediction hints for compiler */
+#define unlikely(x)	__builtin_expect((x),0)
+#define likely(x)	__builtin_expect((x),1)
+
 #endif /* PTL_SYNC_H */

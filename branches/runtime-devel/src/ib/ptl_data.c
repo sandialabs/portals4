@@ -15,7 +15,7 @@
  * an external segment list. These formats are called IMMEDIATE, DMA and
  * INDIRECT. InfiniBand DMA descriptors are based on OFA verbs sge's
  * (scatter gather elements). Shared memory DMA descriptors are based on
- * struct shmem_iovec descibed below.
+ * struct mem_iovec described below.
  *
  * Three APIs are provided with the data_t struct: data_size returns
  * the actual size of a data segment, append_init_data and append_tgt_data
@@ -52,12 +52,21 @@ int data_size(data_t *data)
 		break;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
-	case DATA_FMT_SHMEM_DMA:
-		size += data->shmem.num_knem_iovecs * sizeof(struct shmem_iovec);
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
+	case DATA_FMT_KNEM_DMA:
+		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
 		break;
-	case DATA_FMT_SHMEM_INDIRECT:
-		size += sizeof(struct shmem_iovec);
+	case DATA_FMT_KNEM_INDIRECT:
+		size += sizeof(struct mem_iovec);
+		break;
+#endif
+
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
+		break;
+	case DATA_FMT_MEM_INDIRECT:
+		size += sizeof(struct mem_iovec);
 		break;
 #endif
 
@@ -82,7 +91,7 @@ int data_size(data_t *data)
  * @return status
  */
 int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf, enum transport_type type)
+		     ptl_size_t length, buf_t *buf, const conn_t *conn)
 {
 	int err = PTL_OK;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -110,79 +119,22 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		buf->length += sizeof(*data) + length;
 	} 
 	else if (md->options & PTL_IOVEC) {
+		ptl_iovec_t *iovecs = md->start;
+
 		/* Find the index and offset of the first IOV as well as the
 		 * total number of IOVs to transfer. */
-		num_sge = iov_count_elem((ptl_iovec_t *)md->start, md->num_iov,
-					 offset, length, &iov_start, &iov_offset);
+		num_sge = iov_count_elem(iovecs, md->num_iov,
+								 offset, length, &iov_start, &iov_offset);
 		if (num_sge < 0) {
 			WARN();
 			return PTL_FAIL;
 		}
 
-		if (num_sge > get_param(PTL_MAX_INLINE_SGE)) {
+		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
 			/* Indirect case. The IOVs do not fit in a buf_t. */
-
-			switch(type) {
-#if WITH_TRANSPORT_IB
-			case CONN_TYPE_RDMA:
-				data->data_fmt = DATA_FMT_RDMA_INDIRECT;
-				data->rdma.num_sge = cpu_to_le32(1);
-				data->rdma.sge_list[0].addr
-					= cpu_to_le64((uintptr_t)&md->sge_list[iov_start]);
-				data->rdma.sge_list[0].length
-					= cpu_to_le32(num_sge * sizeof(struct ibv_sge));
-				data->rdma.sge_list[0].lkey
-					= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
-
-				buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-				break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-			case CONN_TYPE_SHMEM:
-				data->data_fmt = DATA_FMT_SHMEM_INDIRECT;
-				data->shmem.num_knem_iovecs = num_sge;
-
-				data->shmem.knem_iovec[0].cookie
-					= md->sge_list_mr->knem_cookie;
-				data->shmem.knem_iovec[0].offset
-					= (void *)md->knem_iovecs - md->sge_list_mr->addr;
-				data->shmem.knem_iovec[0].length
-					= num_sge * sizeof(struct shmem_iovec);
-
-				buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
-				break;
-#endif
-			}
-		} else {
-			switch(type) {
-#if WITH_TRANSPORT_IB
-			case CONN_TYPE_RDMA:
-				data->data_fmt = DATA_FMT_RDMA_DMA;
-				data->rdma.num_sge = cpu_to_le32(num_sge);
-				memcpy(data->rdma.sge_list,
-					   &md->sge_list[iov_start],
-					   num_sge*sizeof(struct ibv_sge));
-
-				buf->length += sizeof(*data) + num_sge *
-					sizeof(struct ibv_sge);
-				break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-			case CONN_TYPE_SHMEM:
-				data->data_fmt = DATA_FMT_SHMEM_DMA;
-				data->shmem.num_knem_iovecs = num_sge;
-				memcpy(data->shmem.knem_iovec,
-					   &md->knem_iovecs[iov_start],
-					   num_sge*sizeof(struct shmem_iovec));
-				
-				buf->length += sizeof(*data) + num_sge *
-					sizeof(struct shmem_iovec);
-				break;
-#endif
-			}
-		}
+			conn->transport.append_init_data_iovec_indirect(data, md, iov_start, num_sge, buf);
+		else
+			conn->transport.append_init_data_iovec_direct(data, md, iov_start, num_sge, buf);
 
 		/* @todo this is completely bogus */
 		/* Adjust the header offset for iov start. */
@@ -191,7 +143,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 		void *addr;
 		mr_t *mr;
 		ni_t *ni = obj_to_ni(md);
-		
+
 		addr = md->start + offset;
 		err = mr_lookup(ni, addr, length, &mr);
 		if (err) {
@@ -201,31 +153,7 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 		buf->mr_list[buf->num_mr++] = mr;
 
-		switch(type) {
-#if WITH_TRANSPORT_IB
-		case CONN_TYPE_RDMA:
-			data->data_fmt = DATA_FMT_RDMA_DMA;
-			data->rdma.num_sge = cpu_to_le32(1);
-			data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
-			data->rdma.sge_list[0].length = cpu_to_le32(length);
-			data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
-
-			buf->length += sizeof(*data) + sizeof(struct ibv_sge);
-			break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-		case CONN_TYPE_SHMEM:
-			data->data_fmt = DATA_FMT_SHMEM_DMA;
-			data->shmem.num_knem_iovecs = 1;
-			data->shmem.knem_iovec[0].cookie = mr->knem_cookie;
-			data->shmem.knem_iovec[0].offset = addr - mr->addr;
-			data->shmem.knem_iovec[0].length = length;
-
-			buf->length += sizeof(*data) + sizeof(struct shmem_iovec);
-			break;
-#endif
-		}
+		conn->transport.append_init_data_direct(data, mr, addr, length, buf);
 	}
 
 	assert(buf->length <= BUF_DATA_SIZE);

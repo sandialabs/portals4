@@ -47,11 +47,11 @@
 #include <infiniband/verbs.h>
 #endif
 
-#include "portals4.h"
+#if WITH_PPE
+#include "xpmem.h"
+#endif
 
-/* branch prediction hints for compiler */
-#define unlikely(x)	__builtin_expect((x),0)
-#define likely(x)	__builtin_expect((x),1)
+#include "portals4.h"
 
 /* use these for network byte order */
 typedef uint16_t	__be16;
@@ -60,9 +60,6 @@ typedef uint64_t	__be64;
 typedef uint16_t	__le16;
 typedef uint32_t	__le32;
 typedef uint64_t	__le64;
-
-extern unsigned int pagesize;
-extern unsigned int linesize;
 
 #include "ptl_log.h"
 #include "ptl_list.h"
@@ -73,9 +70,9 @@ extern unsigned int linesize;
 #include "ptl_evloop.h"
 #include "ptl_obj.h"
 #include "ptl_iface.h"
-#include "ptl_gbl.h"
 #include "ptl_pt.h"
 #include "ptl_queue.h"
+#include "ptl_ppe.h"
 #include "ptl_ni.h"
 #include "ptl_conn.h"
 #include "ptl_mr.h"
@@ -87,6 +84,14 @@ extern unsigned int linesize;
 #include "ptl_eq.h"
 #include "ptl_data.h"
 #include "ptl_hdr.h"
+#if IS_PPE
+#include "p4ppe.h"
+#elif IS_LIGHT_LIB
+#include "ptl_light_lib.h"
+#else
+#include "ptl_gbl.h"
+#endif
+#include "ptl_misc.h"
 
 static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }
 static inline uint16_t be16_to_cpu(__be16 x) { return htons(x); }
@@ -235,6 +240,18 @@ static inline void initiate_disconnect_all(ni_t *ni) { }
 #endif
 
 #ifdef WITH_TRANSPORT_SHMEM
+extern int PtlNIInit_shmem(ni_t *ni);
+void cleanup_shmem(ni_t *ni);
+int setup_shmem(ni_t *ni);
+void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
+buf_t *shmem_dequeue(ni_t *ni);
+#else
+static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
+static inline void cleanup_shmem(ni_t *ni) { }
+static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
+#endif
+
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
 int knem_init(ni_t *ni);
 void knem_fini(ni_t *ni);
 uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot);
@@ -247,31 +264,38 @@ size_t knem_copy(ni_t * ni,
 				 uint64_t scookie, uint64_t soffset, 
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
-extern int PtlNIInit_shmem(ni_t *ni);
-void cleanup_shmem(ni_t *ni);
-int setup_shmem(ni_t *ni);
-void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
-					 const ptl_process_t *mapping);
-void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
-buf_t *shmem_dequeue(ni_t *ni);
 #else
-static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot)
-{
-	return 1;
-}
+static inline int knem_init(ni_t *ni) { return PTL_OK; }
+static inline void knem_fini(ni_t *ni) { }
+static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot) { return 1; }
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
-static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
-static inline void cleanup_shmem(ni_t *ni) { }
-static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
-static inline void PtlSetMap_shmem(ni_t *ni, ptl_size_t map_size,
-								   const ptl_process_t *mapping) { }
 #endif
 
-extern int ptl_log_level;
+#if WITH_TRANSPORT_SHMEM || IS_PPE
+void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+				   const ptl_process_t *mapping);
+void process_recv_mem(ni_t *ni, buf_t *buf);
+int do_mem_transfer(buf_t *buf);
+ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec,
+						   void *local_addr, mr_t *local_mr, ptl_size_t len);
+#else
+static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+								 const ptl_process_t *mapping) { }
+#endif
 
-int misc_init_once(void);
+#ifdef IS_PPE
+int PtlNIInit_ppe(ni_t *ni);
+#else
+static inline int PtlNIInit_ppe(ni_t *ni) { return PTL_OK; }
+#endif
+
+
 int _PtlInit(gbl_t *gbl);
-int gbl_init(gbl_t *gbl);
 void _PtlFini(gbl_t *gbl);
+int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
+			   ptl_pid_t  pid, const ptl_ni_limits_t *desired,
+			   ptl_ni_limits_t *actual, ptl_handle_ni_t *ni_handle);
+int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle);
+
 
 #endif /* PTL_LOC_H */

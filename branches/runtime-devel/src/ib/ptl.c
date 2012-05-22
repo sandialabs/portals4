@@ -248,3 +248,18 @@ void PtlFini(void)
 {
 	_PtlFini(&per_proc_gbl);
 }
+
+int PtlNIInit(ptl_interface_t	iface_id,
+			  unsigned int	options,
+			  ptl_pid_t		pid,
+			  const ptl_ni_limits_t *desired,
+			  ptl_ni_limits_t	*actual,
+			  ptl_handle_ni_t	*ni_handle)
+{
+	return _PtlNIInit(&per_proc_gbl, iface_id, options, pid, desired, actual, ni_handle);
+}
+
+int PtlNIFini(ptl_handle_ni_t ni_handle)
+{
+	return _PtlNIFini(&per_proc_gbl, ni_handle);
+}

@@ -45,6 +45,13 @@ enum hdr_fmt {
 	PKT_FMT_LAST,
 };
 
+#ifdef IS_PPE
+/* Padded to 64 bits. Might not be necessary. todo: try removing. */
+#define PPE_HASH __le32 hash; __le32 pad_unused;
+#else
+#define PPE_HASH
+#endif
+
 /**
  * @brief Common header for portals request/response messages.
  */
@@ -58,7 +65,8 @@ enum hdr_fmt {
 	unsigned int    pad:8;			\
 	unsigned int	ni_type:4;	/* request only */	\
 	unsigned int	pkt_fmt:4;	/* request only */	\
-	__le32			handle;
+	__le32			handle; \
+	PPE_HASH
 
 #define PTL_COMMON2_HDR				\
 	unsigned int	ack_req:4;		\

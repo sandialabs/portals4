@@ -142,7 +142,7 @@ AC_ARG_WITH([test-runtime],
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
-    [Use Shared memory / KNEM for local communication with IB implementation.])])
+    [Use Shared memory for local communication with IB implementation.])])
 AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_shmem" == "yes"],
   [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
@@ -153,6 +153,13 @@ AC_ARG_ENABLE([ib-ib],
 AS_IF([test "x$with_implementation" = "xib" -a x"$enable_ib_ib" != xno],
   [AC_DEFINE([WITH_TRANSPORT_IB], [1], [Define to enable IB support])])
 AM_CONDITIONAL(WITH_TRANSPORT_IB, test "x$enable_ib_ib" != xno)
+
+AC_ARG_ENABLE([ib-ppe],
+  [AS_HELP_STRING([--enable-ib-ppe],
+    [Enable IB/PPE for communication.])])
+AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_ppe" == "yes"],
+  [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE / XPMEM])])
+AM_CONDITIONAL(WITH_PPE, test "x$enable_ib_ppe" == xyes)
 
 AC_ARG_WITH([mc-peer-count],
   [AS_HELP_STRING([--with-mc-peer-count=COUNT],

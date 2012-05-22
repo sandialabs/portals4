@@ -17,8 +17,8 @@ param_t param[] = {
 	[PTL_MAX_INLINE_DATA]			= {
 				.name	= "PTL_MAX_INLINE_DATA",
 				.min	= 0,
-				.max	= LONG_MAX,
-				.val	= 512,
+				.max	= BUF_DATA_SIZE - sizeof(data_t) - sizeof(struct req_hdr),
+				.val	= BUF_DATA_SIZE - sizeof(data_t) - sizeof(struct req_hdr),
 			},
 	[PTL_MAX_INLINE_SGE]			= {
 				.name	= "PTL_MAX_INLINE_SGE",
@@ -281,6 +281,12 @@ void init_param(void)
 		else
 			p->val = val;
 	}
+
+	/* Fix dependencies. */
+	if (param[PTL_LIM_MAX_VOLATILE_SIZE].max > param[PTL_MAX_INLINE_DATA].val)
+		param[PTL_LIM_MAX_VOLATILE_SIZE].max = param[PTL_MAX_INLINE_DATA].val;
+	if (param[PTL_LIM_MAX_VOLATILE_SIZE].val > param[PTL_MAX_INLINE_DATA].val)
+		param[PTL_LIM_MAX_VOLATILE_SIZE].val = param[PTL_MAX_INLINE_DATA].val;
 }
 
 /**

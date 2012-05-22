@@ -903,7 +903,7 @@
         <ptl>
           <ptl_ni ni_opt="MATCH PHYSICAL">
             <ompi_rt>
-              <ptl_ni ni_opt="MATCH LOGICAL">
+              <ptl_ni ni_opt="MATCH LOGICAL" desired_max_volatile_size="512">
                 <ptl_eq>
                   <ptl_pt>
                     <ptl_get_id>
@@ -914,7 +914,7 @@
                           <!-- Wait for rank 1 to set up the receiving buffer -->
                           <barrier/>
                           
-                          <!-- Harcoded value: 512 is the max inline limit -->
+                          <!-- max_volatile_size is 512 bytes, so any transfer below must fail. -->
                           <ptl_put ack_req="ACK" length="9000" match="0x5555" target_id="1" ret="ARG_INVALID"/>
                           <ptl_put ack_req="ACK" length="513" match="0x5555" target_id="1" ret="ARG_INVALID"/>
                           <ptl_put ack_req="ACK" length="512" match="0x5555" target_id="1" ret="OK"/>

@@ -230,6 +230,7 @@ static int pool_alloc_slab(pool_t *pool)
 	obj_t *obj;
 	struct ibv_mr *mr = NULL;
 	struct list_head temp_list;
+	slab_info_t *slab;
 
 	err = pool_get_chunk(pool, &chunk);
 	if (unlikely(err))
@@ -238,6 +239,9 @@ static int pool_alloc_slab(pool_t *pool)
 	p = pool_get_slab(pool);
 	if (unlikely(!p))
 		return PTL_NO_SPACE;
+
+	slab = &chunk->slab_list[chunk->num_slabs];
+	slab->addr = p;
 
 #if WITH_TRANSPORT_IB
 	/*
@@ -252,11 +256,10 @@ static int pool_alloc_slab(pool_t *pool)
 			free(p);
 			return PTL_FAIL;
 		}
-		chunk->slab_list[chunk->num_slabs].mr = mr;
+		slab->mr = mr;
 	}
 #endif
 
-	chunk->slab_list[chunk->num_slabs++].addr = p;
 	INIT_LIST_HEAD(&temp_list);
 
 	for (i = 0; i < pool->obj_per_slab; i++) {
@@ -273,6 +276,7 @@ static int pool_alloc_slab(pool_t *pool)
 		err = index_get(obj, &index);
 		if (err) {
 			WARN();
+			//todo: leak
 			return err;
 		}
 		obj->obj_handle	= ((uint64_t)(pool->type) << HANDLE_SHIFT) |
@@ -282,12 +286,15 @@ static int pool_alloc_slab(pool_t *pool)
 			err = pool->init(obj, mr);
 			if (err) {
 				WARN();
+				//todo: leak
 				return PTL_FAIL;
 			}
 		}
 		enqueue_free_obj(pool, obj);
 		p += pool->round_size;
 	}
+
+	chunk->num_slabs++;
 
 	return PTL_OK;
 }
@@ -401,6 +408,13 @@ int pool_init(pool_t *pool, char *name, int size,
 	INIT_LIST_HEAD(&pool->chunk_list);
 	pthread_mutex_init(&pool->mutex, NULL);
 
+	if (pool->use_pre_alloc_buffer) {
+		/* This pool cannot expand. Allocate its slab now. */
+		assert(pool->pre_alloc_buffer);
+
+		pool_alloc_slab(pool);
+	}
+
 	return PTL_OK;
 }
 
@@ -450,22 +464,27 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	/* reserve an object */
 	atomic_inc(&pool->count);
 
-	while ((obj = dequeue_free_obj(pool)) == NULL) {
-
-		pthread_mutex_lock(&pool->mutex);
-		err = pool_alloc_slab(pool);
-		pthread_mutex_unlock(&pool->mutex);
-
-		if (unlikely(err)) {
-			if (pool->type == POOL_SBUF) {
-				/* Wait for some buffers to be released. */
+	obj = dequeue_free_obj(pool);
+	if (unlikely(!obj)) {
+		if (pool->use_pre_alloc_buffer) {
+			/* The pool cannot expand, for instance in the case of the
+			 * SBUF pool, so we must busy wait until a new buffer appears
+			 * on the list. */
+			do {
 				SPINLOCK_BODY();
-			}
-			else {
-				atomic_dec(&pool->count);
-				WARN();
-				return err;
-			}
+			} while ((obj = dequeue_free_obj(pool)) == NULL);
+		} else {
+			do {
+				pthread_mutex_lock(&pool->mutex);
+				err = pool_alloc_slab(pool);
+				pthread_mutex_unlock(&pool->mutex);
+			
+				if (unlikely(err)) {
+					atomic_dec(&pool->count);
+					WARN();
+					return err;
+				}
+			} while ((obj = dequeue_free_obj(pool)) == NULL);
 		}
 	}
 

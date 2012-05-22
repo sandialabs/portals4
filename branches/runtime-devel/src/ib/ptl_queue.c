@@ -15,14 +15,12 @@
  * @brief enqueue a buf on a queue.
  *
  * @param[in] queue the queue.
- * @param[in] obj the object to enqueue.
+ * @param[in] obj the object to enqueue. obj->next MUST be NULL.
  */
 void enqueue(const void *comm_pad, queue_t *restrict queue, obj_t *obj)
 {
 	unsigned long off;
 	unsigned long off_prev;
-
-	obj->next = NULL;
 
 	off = PTR2OFF(comm_pad, obj);
 	off_prev = (uintptr_t)atomic_swap_ptr(

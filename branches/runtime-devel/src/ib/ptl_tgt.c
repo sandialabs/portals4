@@ -195,13 +195,16 @@ static int prepare_send_buf(buf_t *buf)
 
 	/* Determine whether to reuse the current buffer to reply, or get
 	 * a new one. */
+#if WITH_TRANSPORT_IB
 	if (buf->conn->transport.type == CONN_TYPE_RDMA)
 		err = buf_alloc(ni, &send_buf);
-	else {
+	else
+#endif
+		{
 		if (!(buf->event_mask & XT_ACK_EVENT)) {
 			/* No ack but a reply. The current buffer cannot be
 			 * reused. */
-			err = sbuf_alloc(ni, &send_buf);
+			err = buf->conn->transport.buf_alloc(ni, &send_buf);
 		} else {
 			/* Itself. */
 			send_buf = NULL;
@@ -227,6 +230,10 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->data_out = 0;
 		ack_hdr->version = PTL_HDR_VER_1;
 		ack_hdr->handle	= ((req_hdr_t *)buf->data)->handle;
+
+#ifdef IS_PPE
+		ack_hdr->hash = cpu_to_le32(ni->mem.hash);
+#endif
 
 		send_buf->length = sizeof(*ack_hdr);
 	}
@@ -267,10 +274,18 @@ static int init_local_offset(buf_t *buf)
 
 		buf->cur_loc_iov_index = i;
 		buf->cur_loc_iov_off = iov_offset;
+#if IS_PPE
+		buf->start = (void *)me->ppe.iovecs_mappings[i].source_addr + iov_offset;
+#else
 		buf->start = iov->iov_base + iov_offset;
+#endif
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
+#if IS_PPE
+		buf->start = (void *)me->ppe.mapping.source_addr + buf->moffset;
+#else
 		buf->start = me->start + buf->moffset;
+#endif
 	}
 
 	return PTL_OK;
@@ -533,8 +548,6 @@ static int tgt_get_match(buf_t *buf)
 			goto found_one;
 		}
 	}
-
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* Failed to match any elements */
 	if (pt->options & PTL_PT_FLOWCTRL) {
@@ -863,17 +876,35 @@ static int tgt_data_out(buf_t *buf)
 		break;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
-	case DATA_FMT_SHMEM_DMA:
-		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->transfer.shmem.cur_rem_off = 0;
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
+	case DATA_FMT_KNEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
 
-	case DATA_FMT_SHMEM_INDIRECT:
+	case DATA_FMT_KNEM_INDIRECT:
 		next = STATE_TGT_SHMEM_DESC;
+		break;
+#endif
+
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs; 
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_MEM_INDIRECT:
+		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
 		break;
 #endif
 
@@ -1013,6 +1044,7 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 }
 #endif
 
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
 /**
  * @brief target shared memory read long iovec descriptor state.
  *
@@ -1026,16 +1058,14 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 static int tgt_shmem_desc(buf_t *buf)
 {
 	int next;
-#ifdef WITH_TRANSPORT_SHMEM
 	data_t *data;
-	int err;
 	size_t len;
 	ni_t *ni = obj_to_ni(buf);
 	void *indir_sge;
 	mr_t *mr;
 
 	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
-	len = data->shmem.knem_iovec[0].length;
+	len = data->mem.mem_iovec[0].length;
 
 	/*
 	 * Allocate and map indirect buffer and setup to read
@@ -1054,30 +1084,25 @@ static int tgt_shmem_desc(buf_t *buf)
 		goto done;
 	}
 
-	err = knem_copy(ni, data->shmem.knem_iovec[0].cookie,
-			data->shmem.knem_iovec[0].offset,
-			mr->knem_cookie,
-			indir_sge - mr->addr, len);
-	if (err != len) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
+	copy_mem_to_mem(ni, DATA_DIR_IN, &data->mem.mem_iovec[0], indir_sge, mr, len);
 
 	buf->indir_sge = indir_sge;
 	buf->mr_list[buf->num_mr++] = mr;
-	buf->transfer.shmem.cur_rem_iovec = indir_sge;
-	buf->transfer.shmem.cur_rem_off = 0;
-	buf->transfer.shmem.num_rem_iovecs = len/sizeof(struct shmem_iovec);
+	buf->transfer.mem.cur_rem_iovec = indir_sge;
+	buf->transfer.mem.cur_rem_off = 0;
+	buf->transfer.mem.num_rem_iovecs = len/sizeof(struct mem_iovec);
 
 	next = STATE_TGT_RDMA;
 done:
-#else
-	abort();
-	next = STATE_TGT_ERROR;
-#endif
 	return next;
 }
+#else
+static int tgt_shmem_desc(buf_t *buf)
+{
+	/* Inmvalid state in this configuration. */
+	abort();
+}
+#endif
 
 /**
  * @brief target data in state.
@@ -1121,20 +1146,39 @@ static int tgt_data_in(buf_t *buf)
 		break;
 #endif
 
-#if WITH_TRANSPORT_SHMEM
-	case DATA_FMT_SHMEM_DMA:
-		buf->transfer.shmem.cur_rem_iovec = &data->shmem.knem_iovec[0];
-		buf->transfer.shmem.num_rem_iovecs = data->shmem.num_knem_iovecs;
-		buf->transfer.shmem.cur_rem_off = 0;
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
+	case DATA_FMT_KNEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
 		break;
 
-	case DATA_FMT_SHMEM_INDIRECT:
+	case DATA_FMT_KNEM_INDIRECT:
 		next = STATE_TGT_SHMEM_DESC;
 		break;
 #endif
-		
+
+#if IS_PPE
+	case DATA_FMT_MEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+	
+		break;
+
+	case DATA_FMT_MEM_INDIRECT:
+		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+#endif
+
 	default:
 		assert(0);
 		WARN();
@@ -1358,9 +1402,9 @@ static int tgt_send_ack(buf_t *buf)
 
 		/* Inline the data if it fits. That may save waiting for a
 		 * completion. */
-		buf->conn->transport.set_send_flags(buf);
+		ack_buf->conn->transport.set_send_flags(ack_buf, 1);
 
-		err = buf->conn->transport.send_message(ack_buf, 0);
+		err = ack_buf->conn->transport.send_message(ack_buf, 0);
 		if (err) {
 			WARN();
 			return STATE_TGT_ERROR;
@@ -1369,8 +1413,10 @@ static int tgt_send_ack(buf_t *buf)
 #if WITH_TRANSPORT_SHMEM
 		/* The same buffer is used to send the data back. Let the
 		 * progress thread return it. */
-		assert(buf->shmem_buf);
-		buf->shmem_buf->type = BUF_SHMEM_SEND;
+		assert(buf->mem_buf);
+		buf->mem_buf->type = BUF_SHMEM_SEND;
+#elif IS_PPE
+		buf->mem_buf->type = BUF_MEM_SEND;
 #else
 		/* Unreachable. */
 		abort();
@@ -1416,9 +1462,9 @@ static int tgt_send_reply(buf_t *buf)
 
 	/* Inline the data if it fits. That may save waiting for a
 	 * completion. */
-	buf->conn->transport.set_send_flags(buf);
+	rep_buf->conn->transport.set_send_flags(rep_buf, 1);
 
-	err = buf->conn->transport.send_message(rep_buf, 0);
+	err = rep_buf->conn->transport.send_message(rep_buf, 0);
 	if (err) {
 		WARN();
 		return STATE_TGT_ERROR;
