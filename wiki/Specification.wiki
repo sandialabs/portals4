@@ -1,8 +1,19 @@
 #summary Draft copy of the Portals 4 specification, with changelog
 
 == Latest Draft Specification ==
-  * [http://portals4.googlecode.com/files/portals40-20120507.pdf Portals Document (pdf)]
-  * [http://portals4.googlecode.com/files/portals40-20120507-diff.pdf Portals Document with changes (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120521.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120521-diff.pdf Portals Document with changes (pdf)]
+
+== May 21, 2012 Changelog ==
+  * Add list match to the ack and reply
+  * Fix a number of spelling errors
+  * Update acknowledgment type section
+  * Clean up the PtlLEUnlink/PtlMEUnlink text and add implementation note saying why we have such an insane description.  Less insane descriptions welcomed.
+  * Make PtlHandleIsEqual return zero/non-zero instead of PTL_OK/PTL_FAIL to make it nicer to use in conditional expressions
+  * Update distribution list
+  * Remove people names from index
+  * Clarify that, like ACK events, REPLY events must be generated in all error conditions
+  * Change name from message passing interface to network programming interface
 
 == May 5, 2012 Changelog ==
   * Remove the duplicate event descriptions from the event location table, as they're in the constants descriptions directly above it.
