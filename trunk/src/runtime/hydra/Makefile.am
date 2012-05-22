@@ -29,9 +29,8 @@ SUBDIRS = ${external_subdirs} .
 # Provide an alias for mpirun to support tools that assume that
 # mpiexec is called mpirun
 install-exec-hook:
-	if [ -x ${DESTDIR}${bindir}/mpiexec.hydra ] ; then \
-	    cd ${DESTDIR}${bindir} && ln -f -s mpiexec.hydra mpiexec ; \
-	    cd ${DESTDIR}${bindir} && ln -f -s mpiexec.hydra mpirun ; \
+	if [ -x ${DESTDIR}${bindir}/yod.hydra ] ; then \
+	    cd ${DESTDIR}${bindir} && ln -f -s yod.hydra yod ; \
 	fi
 
 # A special alternate installation target when using multiple process

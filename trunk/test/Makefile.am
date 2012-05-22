@@ -3,7 +3,6 @@
 # Copyright (c) 2010 Sandia Corporation
 #
 
-CC=$(TEST_CC)
 AM_CPPFLAGS=
 AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 
@@ -68,7 +67,7 @@ check_PROGRAMS += $(TESTS)
 CLEANFILES = $(BENCHMARKS)
 
 THREADS ?= 1
-TESTS_ENVIRONMENT = $(TEST_INVOKE_CMD)
+TESTS_ENVIRONMENT = yod -np $(THREADS)
 
 test_init_SOURCES = test_init.c
 

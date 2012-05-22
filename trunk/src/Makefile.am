@@ -1,13 +1,14 @@
 # -*- Makefile -*-
 #
-# Copyright (c) 2010 Sandia Corporation
+# Copyright (c) 2012 Sandia Corporation
 
 
-DIST_SUBDIRS = ib mc shmem yod
-SUBDIRS = 
+DIST_SUBDIRS = ib mc
+SUBDIRS = runtime
 
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=
+
 # version-info fields are:
 # 1. the current interface revision number (i.e. whenever arguments of existing
 #    functions change, increment this number)
@@ -25,11 +26,6 @@ libportals_la_SOURCES=
 libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
 libportals_la_LIBADD =
 
-if BACKEND_IMPL_SHMEM
-SUBDIRS += shmem
-libportals_la_LIBADD += shmem/libportals_shmem.la
-endif
-
 if BACKEND_IMPL_IB
 SUBDIRS += ib
 libportals_la_LIBADD += ib/libportals_ib.la
@@ -39,8 +35,4 @@ endif
 if BACKEND_IMPL_MC
 SUBDIRS += mc
 libportals_la_LIBADD += mc/libportals_mc.la
-endif
-
-if !BACKEND_IMPL_IB
-SUBDIRS += . yod
 endif

@@ -15,7 +15,7 @@ AC_PREREQ(2.60)
 AC_INIT([portals4], [1.0a1], [portals4-devel@googlegroups.com])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
-AC_CONFIG_SRCDIR([src/shmem/init.c])
+AC_CONFIG_SRCDIR([src/ib/ptl.c])
 
 dnl Automake's silent rules were implemented in the same version that
 dnl color-tests was implemented, so we can use one to detect the other.
@@ -117,28 +117,18 @@ AC_ARG_ENABLE([paranoia],
 AS_IF([test "x$enable_paranoia" == xyes],
   [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
 
-AC_ARG_ENABLE([internal-overflow],
-  [AS_HELP_STRING([--enable-internal-overflow],
-    [Handle overflow messages internally, rather than using the overflow lists (EXPERIMENTAL).])])
-AS_IF([test "x$enable_internal_overflow" != xyes],
-	  [AC_DEFINE([ALWAYS_TRIGGER_OVERFLOW_EVENTS], [1], [Define to force overflow events for buffered data])])
-
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
 AC_ARG_WITH([implementation],
-			[AS_HELP_STRING([--with-implementation=IMPL],
-							[Specify implemenation backend.  Options for IMPL
-							 are shmem, mc, or ib. Shmem is single-node shared
-							 memory, mc is multicore (read: shared progress
-			                 threads in shared memory), and ib is Infiniband.])],
-		    [AS_CASE([$with_implementation],
-					 [ib|shmem|mc], [],
-					 [AC_MSG_ERROR([Unrecognized implementation. Valid implementations are shmem, mc, or ib.])])],
-			[with_implementation=ib])
-AC_ARG_WITH([test-runtime],
-  [AS_HELP_STRING([--with-test-runtime=IMPL],
-    [Specify runtime to use for test harness.  Options for IMPL are shmemrt, mpi, or single.])])
+  [AS_HELP_STRING([--with-implementation=IMPL],
+                  [Specify implemenation backend.  Options for IMPL
+                   are ib or mc. mc is multicore (read: shared progress
+                   threads in shared memory), and ib is Infiniband.])],
+  [AS_CASE([$with_implementation],
+            [ib|mc], [],
+            [AC_MSG_ERROR([Unrecognized implementation. Valid implementations are mc or ib.])])],
+  [with_implementation=ib])
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -333,55 +323,21 @@ AC_SUBST(LD_VERSION_SCRIPT)
 ## Output and done ##
 ## --------------- ##
 
-AS_CASE([$with_implementation],
-		[mc|ib], [],
-		[shmem], [AS_IF([test "x$with_test_runtime" != "xshmemrt"],
-						[AS_IF([test "x$with_test_runtime" != "x"],
-							   [AC_MSG_WARN([Resetting test harness runtime to shmemrt])])
-						with_test_runtime=shmemrt])],
-		[AS_IF([test "x$with_implementation" != "x"],
-			   [AC_MSG_WARN([Setting implementation to ib])])
-		 with_implementation=ib])
-AS_CASE([$with_test_runtime],
-		[shmemrt], [AS_IF([test "$with_implementation" != "shmem"],
-						  [AC_MSG_ERROR([Can not use shmemrt test harness runtime without shmem implementation])])
-		            TEST_INVOKE_CMD='$(top_builddir)/src/yod/yod -c $(THREADS)'],
-		[mpi], [TEST_INVOKE_CMD='mpirun -mca pml ob1 -np $(THREADS)'],
-		[pmi], [OMPI_CHECK_PMI([], [AC_MSG_ERROR([PMI runtime requested, not found.])])
-		        TEST_INVOKE_CMD='srun -n $(THREADS)'],
-		[single], [TEST_INVOKE_CMD=],
-    	[AS_IF([test "$with_test_runtime" != ""],
-			   [AC_MSG_WARN([Setting test runtime to single])])
-		 with_test_runtime=single
-		 TEST_INVOKE_CMD=])
-AC_SUBST(TEST_INVOKE_CMD)
-
-AM_CONDITIONAL([BACKEND_IMPL_SHMEM], [test "$with_implementation" = "shmem"])
 AM_CONDITIONAL([BACKEND_IMPL_IB], [test "$with_implementation" = "ib"])
 AM_CONDITIONAL([BACKEND_IMPL_MC], [test "$with_implementation" = "mc"])
-
-AM_CONDITIONAL([TEST_RUNTIME_SHMEMRT], [test "$with_test_runtime" = "shmemrt"])
-AM_CONDITIONAL([TEST_RUNTIME_MPI], [test "$with_test_runtime" = "mpi"])
-AM_CONDITIONAL([TEST_RUNTIME_PMI], [test "$with_test_runtime" = "pmi"])
-AM_CONDITIONAL([TEST_RUNTIME_SINGLE], [test "$with_test_runtime" = "single"])
-
-AS_IF([test "$with_test_runtime" = "mpi"],
-  [TEST_CC="mpicc "`echo $CC | cut -f2- -d' '`],
-  [TEST_CC="$CC"])
-AC_SUBST(TEST_CC)
 
 DISTCHECK_CONFIGURE_FLAGS=
 AS_IF([test -n "$with_implementation"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"])
-AS_IF([test -n "$with_test_runtime"],
-  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-test-runtime=${with_test_runtime}"])
 AS_IF([test -n "$with_xpmem"],
-  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-xpmem=${wiht_xpmem}"])
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-xpmem=${with_xpmem}"])
 AS_IF([test -n "$with_ev"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ev=${with_ev}"])
 AS_IF([test -n "$with_ofed"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ofed=${with_ofed}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
+
+AC_CONFIG_SUBDIRS([src/runtime/hydra])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
@@ -391,8 +347,7 @@ AC_CONFIG_FILES([Makefile
                  src/ib/Makefile
                  src/mc/Makefile
 		 src/mc/test/Makefile
-                 src/shmem/Makefile
-                 src/yod/Makefile
+		 src/runtime/Makefile
                  test/Makefile
                  test/sfw/Makefile])
 AC_OUTPUT

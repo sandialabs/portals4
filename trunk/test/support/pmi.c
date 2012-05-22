@@ -16,11 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <portals4.h>
-#ifdef PMI_SLURM
-#include <slurm/pmi.h>
-#else
-#include <pmi.h>
-#endif
+#include <portals4/pmi.h>
 
 #include "support/support.h"
 
@@ -92,13 +88,13 @@ decode(const char *inval, void *outval, int outvallen)
 int
 libtest_init(void)
 {
-    PMI_BOOL initialized;
+    int initialized;
 
     if (PMI_SUCCESS != PMI_Initialized(&initialized)) {
         return 1;
     }
 
-    if (PMI_TRUE != initialized) {
+    if (0 == initialized) {
         if (PMI_SUCCESS != PMI_Init(&initialized)) {
             return 2;
         }
