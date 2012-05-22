@@ -11,7 +11,7 @@
    the PMI interface itself.  Reading and writing on pipes, signals, and parsing
    key=value messages
 */
-#include "pmiconf.h"
+#include "config.h"
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
@@ -26,11 +26,6 @@
 #endif
 #include <errno.h>
 #include "simple_pmiutil.h"
-
-/* Use the memory definitions from mpich2/src/include */
-#include "mpimem.h"
-/* Use the MPI error message routines from mpich2/src/include */
-#include "mpibase.h"
 
 #define MAXVALLEN 1024
 #define MAXKEYLEN   32
@@ -52,11 +47,11 @@ static char PMIU_print_id[PMIU_IDSIZE] = "unset";
 
 void PMIU_Set_rank( int PMI_rank )
 {
-    MPIU_Snprintf( PMIU_print_id, PMIU_IDSIZE, "cli_%d", PMI_rank );
+    snprintf( PMIU_print_id, PMIU_IDSIZE, "cli_%d", PMI_rank );
 }
 void PMIU_SetServer( void )
 {
-    MPIU_Strncpy( PMIU_print_id, "server", PMIU_IDSIZE );
+    strncpy( PMIU_print_id, "server", PMIU_IDSIZE );
 }
 
 /* Note that vfprintf is part of C89 */
@@ -79,7 +74,7 @@ void PMIU_printf( int print_flag, const char *fmt, ... )
 	    char filename[1024];
 	    p = getenv("PMI_ID");
 	    if (p) {
-		MPIU_Snprintf( filename, sizeof(filename), 
+		snprintf( filename, sizeof(filename), 
 			       "testclient-%s.out", p );
 		logfile = fopen( filename, "w" );
 	    }
@@ -123,7 +118,7 @@ int PMIU_readline( int fd, char *buf, int maxlen )
        Server side code should not use this routine (see the 
        replacement version in src/pm/util/pmiserv.c) */
     if (nextChar != lastChar && fd != lastfd) {
-	MPIU_Internal_error_printf( "Panic - buffer inconsistent\n" );
+	fprintf(stderr, "Panic - buffer inconsistent\n" );
 	return -1;
     }
 
@@ -237,14 +232,14 @@ int PMIU_parse_keyvals( char *st )
 	/* Null terminate the key */
 	*p = 0;
 	/* store key */
-        MPIU_Strncpy( PMIU_keyval_tab[PMIU_keyval_tab_idx].key, keystart, 
+        strncpy( PMIU_keyval_tab[PMIU_keyval_tab_idx].key, keystart, 
 		      MAXKEYLEN );
 
 	valstart = ++p;			/* start of value */
 	while ( *p != ' ' && *p != '\n' && *p != '\0' )
 	    p++;
 	/* store value */
-        MPIU_Strncpy( PMIU_keyval_tab[PMIU_keyval_tab_idx].value, valstart, 
+        strncpy( PMIU_keyval_tab[PMIU_keyval_tab_idx].value, valstart, 
 		      MAXVALLEN );
 	offset = p - valstart;
 	/* When compiled with -fPIC, the pgcc compiler generates incorrect
@@ -268,15 +263,11 @@ void PMIU_dump_keyvals( void )
 
 char *PMIU_getval( const char *keystr, char *valstr, int vallen )
 {
-    int i, rc;
+    int i;
     
     for (i = 0; i < PMIU_keyval_tab_idx; i++) {
 	if ( strcmp( keystr, PMIU_keyval_tab[i].key ) == 0 ) { 
-	    rc = MPIU_Strncpy( valstr, PMIU_keyval_tab[i].value, vallen );
-	    if (rc != 0) {
-		PMIU_printf( 1, "MPIU_Strncpy failed in PMIU_getval\n" );
-		return NULL;
-	    }
+	    strncpy( valstr, PMIU_keyval_tab[i].value, vallen );
 	    return valstr;
        } 
     }
@@ -290,7 +281,7 @@ void PMIU_chgval( const char *keystr, char *valstr )
     
     for ( i = 0; i < PMIU_keyval_tab_idx; i++ ) {
 	if ( strcmp( keystr, PMIU_keyval_tab[i].key ) == 0 ) {
-	    MPIU_Strncpy( PMIU_keyval_tab[i].value, valstr, MAXVALLEN - 1 );
+	    strncpy( PMIU_keyval_tab[i].value, valstr, MAXVALLEN - 1 );
 	    PMIU_keyval_tab[i].value[MAXVALLEN - 1] = '\0';
 	}
     }
