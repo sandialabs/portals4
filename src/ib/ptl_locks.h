@@ -24,7 +24,7 @@ typedef struct ptl_spin_exclusive_s { /* stolen from Qthreads */
 # define PTL_FASTLOCK_TYPE ptl_spin_exclusive_t
 # define PTL_FASTLOCK_INIT(x)    do { (x)->enter = 0; (x)->exit = 0; } while (0)
 # define PTL_FASTLOCK_INIT_SHARED(x)    do { (x)->enter = 0; (x)->exit = 0; } while (0)
-# define PTL_FASTLOCK_DESTROY(x) do { } while (0)
+# define PTL_FASTLOCK_DESTROY(x) do { (x)->enter = 0; (x)->exit = 0; } while (0)
 # define PTL_FASTLOCK_LOCK(x)    { unsigned long val = __sync_fetch_and_add(&(x)->enter, 1); \
                                    __sync_synchronize();                                     \
                                    while (val != (x)->exit) SPINLOCK_BODY(); }
