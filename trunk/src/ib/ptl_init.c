@@ -214,7 +214,6 @@ static int prepare_req(buf_t *buf)
 	int err;
 	ni_t *ni = obj_to_ni(buf);
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	data_t *put_data = NULL;
 	ptl_size_t length = le64_to_cpu(hdr->length);
 
 	hdr->version = PTL_HDR_VER_1;
@@ -238,7 +237,8 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 0;
 		hdr->data_out = 1;
 
-		put_data = (data_t *)(buf->data + buf->length);
+		buf->get_data = NULL;
+		buf->put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
 				       buf->conn);
@@ -250,6 +250,8 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 1;
 		hdr->data_out = 0;
 
+		buf->put_data = NULL;
+		buf->get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
 				       buf->conn);
@@ -262,13 +264,14 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 1;
 		hdr->data_out = 1;
 
+		buf->get_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->get_md, DATA_DIR_IN,
 				       buf->get_offset, length, buf,
 				       buf->conn);
 		if (err)
 			goto error;
 
-		put_data = (data_t *)(buf->data + buf->length);
+		buf->put_data = (data_t *)(buf->data + buf->length);
 		err = append_init_data(buf->put_md, DATA_DIR_OUT,
 				       buf->put_offset, length, buf,
 				       buf->conn);
@@ -286,7 +289,7 @@ static int prepare_req(buf_t *buf)
 	 * operation for the Put. Until the response is received, we
 	 * cannot free the MR nor post the send events. Note we
 	 * have already set event_mask. */
-	if ((put_data && (put_data->data_fmt != DATA_FMT_IMMEDIATE) &&
+	if ((buf->put_data && (buf->put_data->data_fmt != DATA_FMT_IMMEDIATE) &&
 	    (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
 	    buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
@@ -296,7 +299,7 @@ static int prepare_req(buf_t *buf)
 	/* For immediate data we can cause an early send event provided
 	 * we request a send completion event */
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT) &&
-		(put_data && put_data->data_fmt == DATA_FMT_IMMEDIATE))
+		(buf->put_data && buf->put_data->data_fmt == DATA_FMT_IMMEDIATE))
 		buf->event_mask |= XI_EARLY_SEND;
 
 	/* Inline the data if it fits. That may save waiting for a

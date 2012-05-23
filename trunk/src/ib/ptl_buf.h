@@ -119,6 +119,9 @@ struct buf {
 
 	conn_t			*conn;
 
+	struct data *put_data;
+	struct data *get_data;
+
 	struct data		*data_in;
 	struct data		*data_out;
 
