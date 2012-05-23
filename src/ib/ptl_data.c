@@ -132,9 +132,9 @@ int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 
 		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
 			/* Indirect case. The IOVs do not fit in a buf_t. */
-			conn->transport.append_init_data_iovec_indirect(data, md, iov_start, num_sge, buf);
+			conn->transport.append_init_data_iovec_indirect(data, md, iov_start, num_sge, length, buf);
 		else
-			conn->transport.append_init_data_iovec_direct(data, md, iov_start, num_sge, buf);
+			conn->transport.append_init_data_iovec_direct(data, md, iov_start, num_sge, length, buf);
 
 		/* @todo this is completely bogus */
 		/* Adjust the header offset for iov start. */

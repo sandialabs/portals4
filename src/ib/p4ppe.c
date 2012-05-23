@@ -145,7 +145,7 @@ static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr,
  * for both direct and indirect iovecs cases. That avoids a copy into
  * the message buffer. */
 static void append_init_data_ppe_iovec_direct_indirect(data_t *data, md_t *md, int iov_start,
-												int num_iov, buf_t *buf)
+												int num_iov, ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_MEM_INDIRECT;
 	data->mem.num_mem_iovecs = num_sge;
@@ -154,6 +154,33 @@ static void append_init_data_ppe_iovec_direct_indirect(data_t *data, md_t *md, i
 	data->mem.mem_iovec[0].length = num_iov * sizeof(struct mem_iovec);
 
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
+}
+
+static int ppe_tgt_data_out(buf_t *buf, data_t *data)
+{
+	switch(data->data_fmy) {
+	case DATA_FMT_MEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+	
+		break;
+
+	case DATA_FMT_MEM_INDIRECT:
+		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	default:
+		assert(0);
+		WARN();
+		next = STATE_TGT_ERROR;
+	}
 }
 
 struct transport transport_mem = {
@@ -165,6 +192,7 @@ struct transport transport_mem = {
 	.append_init_data_direct = append_init_data_ppe_direct,
 	.append_init_data_iovec_direct = append_init_data_ppe_iovec_direct_indirect,
 	.append_init_data_iovec_indirect = append_init_data_ppe_iovec_direct_indirect,
+	.tgt_data_out = ppe_tgt_data_out,
 };
 
 /* Return object to client. The PPE cannot access that buf afterwards. */

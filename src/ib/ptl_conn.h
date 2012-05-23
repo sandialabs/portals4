@@ -68,10 +68,14 @@ struct transport {
 									struct buf *buf);
 	void (*append_init_data_iovec_direct)(struct data *data, struct md *md,
 										  int num_sge, int iov_start,
-										  struct buf *buf);
+										  ptl_size_t length, struct buf *buf);
 	void (*append_init_data_iovec_indirect)(struct data *data, struct md *md,
 											int num_sge, int iov_start,
-											struct buf *buf);
+											ptl_size_t length, struct buf *buf);
+
+	/* Prepare to copy the data in/out in the target. Similar to
+	 * append_init_data on the initiator. */
+	int (*tgt_data_out)(struct buf *buf, struct data *data);
 };
 
 extern struct transport transport_rdma;
