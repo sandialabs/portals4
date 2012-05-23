@@ -236,7 +236,7 @@ struct obj {
 
 typedef struct obj obj_t;
 
-void **index_map;
+extern void **index_map;
 
 int index_init(void);
 
