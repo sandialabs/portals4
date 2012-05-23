@@ -6,7 +6,11 @@
 # define TIMER_TYPE uint64_t
 # define MARK_TIMER(x)          do { x = mach_absolute_time(); } while (0)
 # define TIMER_INTS(x)          (x)
-# define MILLI_TO_TIMER_INTS(x) do { x *= 1000000; } while (0)
+static inline uint64_t MILLI_TO_TIMER_INTS(uint64_t x)
+{
+	return x * 1000000;
+}
+
 #elif defined(HAVE_GETTIME_TIMER)
 # ifndef _POSIX_C_SOURCE
 #  define _POSIX_C_SOURCE 199309L
