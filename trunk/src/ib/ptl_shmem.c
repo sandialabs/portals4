@@ -50,7 +50,7 @@ static void append_init_data_shmem_direct(data_t *data, mr_t *mr, void *addr,
 
 static void append_init_data_shmem_iovec_direct(data_t *data, md_t *md,
 												int iov_start, int num_iov,
-												buf_t *buf)
+												ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_KNEM_DMA;
 	data->mem.num_mem_iovecs = num_iov;
@@ -63,7 +63,7 @@ static void append_init_data_shmem_iovec_direct(data_t *data, md_t *md,
 
 static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
 												  int iov_start, int num_iov,
-												  buf_t *buf)
+												  ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_KNEM_INDIRECT;
 	data->mem.num_mem_iovecs = num_iov;
@@ -78,19 +78,46 @@ static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
 
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 }
+
+static int knem_tgt_data_out(buf_t *buf, data_t *data)
+{
+	int next;
+
+	switch(data->data_fmt) {
+	case DATA_FMT_KNEM_DMA:
+		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
+		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
+		buf->transfer.mem.cur_rem_off = 0;
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_KNEM_INDIRECT:
+		next = STATE_TGT_SHMEM_DESC;
+		break;
+
+	default:
+		assert(0);
+		WARN();
+		next = STATE_TGT_ERROR;
+	}
+
+	return next;
+}
 #endif
 
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
-#if USE_KNEM
-	.post_tgt_dma = do_mem_transfer,
-#endif
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
+#if USE_KNEM
 	.append_init_data_direct = append_init_data_shmem_direct,
 	.append_init_data_iovec_direct = append_init_data_shmem_iovec_direct,
 	.append_init_data_iovec_indirect = append_init_data_shmem_iovec_indirect,
+	.post_tgt_dma = do_mem_transfer,
+	.tgt_data_out = knem_tgt_data_out,
+#endif
 };
 
 /**

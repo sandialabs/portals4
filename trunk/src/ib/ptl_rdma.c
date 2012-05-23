@@ -168,7 +168,7 @@ static int post_rdma(buf_t *buf, struct ibv_qp *qp, data_dir_t dir,
 }
 
 static void append_init_data_rdma_direct(data_t *data, mr_t *mr, void *addr,
-										  ptl_size_t length, buf_t *buf)
+										 ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_RDMA_DMA;
 	data->rdma.num_sge = cpu_to_le32(1);
@@ -179,7 +179,9 @@ static void append_init_data_rdma_direct(data_t *data, mr_t *mr, void *addr,
 	buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 }
 
-static void append_init_data_rdma_iovec_direct(data_t *data, md_t *md, int iov_start, int num_iov, buf_t *buf)
+static void append_init_data_rdma_iovec_direct(data_t *data, md_t *md,
+											   int iov_start, int num_iov,
+											   ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_RDMA_DMA;
 	data->rdma.num_sge = cpu_to_le32(num_iov);
@@ -190,7 +192,9 @@ static void append_init_data_rdma_iovec_direct(data_t *data, md_t *md, int iov_s
 	buf->length += sizeof(*data) + num_iov * sizeof(struct ibv_sge);
 }
 
-static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md, int iov_start, int num_iov, buf_t *buf)
+static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md,
+												 int iov_start, int num_iov,
+												 ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_RDMA_INDIRECT;
 	data->rdma.num_sge = cpu_to_le32(1);
@@ -202,6 +206,33 @@ static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md, int iov
 		= cpu_to_le32(md->sge_list_mr->ibmr->rkey);
 
 	buf->length += sizeof(*data) + sizeof(struct ibv_sge);
+}
+
+static int rdma_tgt_data_out(buf_t *buf, data_t *data)
+{
+	int next;
+
+	switch(data->data_fmt) {
+	case DATA_FMT_RDMA_DMA:
+		/* Read from SG list provided directly in request */
+		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
+		buf->transfer.rdma.cur_rem_off = 0;
+		buf->transfer.rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
+
+		next = STATE_TGT_RDMA;
+		break;
+
+	case DATA_FMT_RDMA_INDIRECT:
+		next = STATE_TGT_WAIT_RDMA_DESC;
+		break;
+
+	default:
+		assert(0);
+		WARN();
+		next = STATE_TGT_ERROR;
+	}
+
+	return next;
 }
 
 /**
@@ -492,12 +523,13 @@ static int process_rdma(buf_t *buf)
 struct transport transport_rdma = {
 	.type = CONN_TYPE_RDMA,
 	.buf_alloc = buf_alloc,
-	.post_tgt_dma = process_rdma,
 	.send_message = send_message_rdma,
 	.set_send_flags = set_send_flags_rdma,
 	.append_init_data_direct = append_init_data_rdma_direct,
 	.append_init_data_iovec_direct = append_init_data_rdma_iovec_direct,
 	.append_init_data_iovec_indirect = append_init_data_rdma_iovec_indirect,
+	.post_tgt_dma = process_rdma,
+	.tgt_data_out = rdma_tgt_data_out,
 };
 
 /**

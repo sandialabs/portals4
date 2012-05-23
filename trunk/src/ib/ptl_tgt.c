@@ -825,7 +825,6 @@ static int tgt_data_out(buf_t *buf)
 	int err;
 	data_t *data = buf->data_out;
 	hdr_t *send_hdr = (hdr_t *)buf->send_buf->data;
-	int next;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
 	if (!data)
@@ -861,61 +860,7 @@ static int tgt_data_out(buf_t *buf)
 	/* all atomic or swap data should fit as immediate data so */
 	assert(buf->in_atomic == 0);
 
-	switch (data->data_fmt) {
-#ifdef WITH_TRANSPORT_IB
-	case DATA_FMT_RDMA_DMA:
-		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
-		buf->transfer.rdma.cur_rem_off = 0;
-		buf->transfer.rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
-
-		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_RDMA_INDIRECT:
-		next = STATE_TGT_WAIT_RDMA_DESC;
-		break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM && USE_KNEM
-	case DATA_FMT_KNEM_DMA:
-		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_KNEM_INDIRECT:
-		next = STATE_TGT_SHMEM_DESC;
-		break;
-#endif
-
-#if IS_PPE
-	case DATA_FMT_MEM_DMA:
-		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs; 
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_MEM_INDIRECT:
-		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-		break;
-#endif
-
-	default:
-		abort();
-		WARN();
-		return STATE_TGT_ERROR;
-		break;
-	}
-
-	return next;
+	return buf->conn->transport.tgt_data_out(buf, data);
 }
 
 /**
@@ -1122,67 +1067,14 @@ static int tgt_data_in(buf_t *buf)
 
 	buf->rdma_dir = DATA_DIR_IN;
 
-	switch (data->data_fmt) {
-	case DATA_FMT_IMMEDIATE:
+	if (data->data_fmt == DATA_FMT_IMMEDIATE) {
 		err = tgt_copy_in(buf, me, data->immediate.data);
 		if (err)
 			return STATE_TGT_ERROR;
 
 		next = STATE_TGT_COMM_EVENT;
-		break;
-
-#ifdef WITH_TRANSPORT_IB
-	case DATA_FMT_RDMA_DMA:
-		/* Read from SG list provided directly in request */
-		buf->transfer.rdma.cur_rem_sge = &data->rdma.sge_list[0];
-		buf->transfer.rdma.cur_rem_off = 0;
-		buf->transfer.rdma.num_rem_sge = le32_to_cpu(data->rdma.num_sge);
-
-		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_RDMA_INDIRECT:
-		next = STATE_TGT_WAIT_RDMA_DESC;
-		break;
-#endif
-
-#if WITH_TRANSPORT_SHMEM && USE_KNEM
-	case DATA_FMT_KNEM_DMA:
-		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-		break;
-
-	case DATA_FMT_KNEM_INDIRECT:
-		next = STATE_TGT_SHMEM_DESC;
-		break;
-#endif
-
-#if IS_PPE
-	case DATA_FMT_MEM_DMA:
-		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-	
-		break;
-
-	case DATA_FMT_MEM_INDIRECT:
-		buf->transfer.mem.cur_rem_iovec = data->mem.mem_iovec[0].addr;
-		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
-		buf->transfer.mem.cur_rem_off = 0;
-
-		next = STATE_TGT_RDMA;
-		break;
-#endif
-
-	default:
-		assert(0);
-		WARN();
-		next = STATE_TGT_ERROR;
+	} else {
+		next = buf->conn->transport.tgt_data_out(buf, data);
 	}
 
 	/* this can happen for a simple swap operation */
