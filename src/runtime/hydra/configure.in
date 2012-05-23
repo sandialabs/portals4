@@ -98,8 +98,7 @@ if test "$FROM_MPICH2" = "yes" ; then
    mpl_srcdir="../../mpl"
 else
    mpl_srcdir="mpl"
-dnl   PAC_CONFIG_SUBDIR(mpl,,AC_ERROR(MPL configure failed))
-   AC_CONFIG_SUBDIRS([mpl])
+   PAC_CONFIG_SUBDIR(mpl,,AC_ERROR(MPL configure failed))
 fi
 AC_SUBST(mpl_srcdir)
 
