@@ -23,48 +23,39 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length)
 {
 	unsigned int i;
-	ptl_size_t iov_offset = 0;
-	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
 
-	/* find starting point in iovec from offset,
-	 * when loop stops and there is enough room in iovec,
-	 * dst_offset == offset, iov points to iovec entry
-	 * containing starting point, i is its index in the
-	 * array and iov_offset contains the offset into iov */
+	/* Find starting point in iovec from offset. i is the index of the first iovec. */
 	for (i = 0; i < num_iov; i++, iov++) {
-		iov_offset = offset - src_offset;
-		if (iov_offset > iov->iov_len)
-			iov_offset = iov->iov_len;
-		src_offset += iov_offset;
-
-		if (src_offset >= offset)
+		if (offset > iov->iov_len)
+			offset -= iov->iov_len;
+		else
 			break;
 	}
 
 	/* check if we ran off the end of the iovec before we started */
-	if (src_offset < offset) {
+	if (i >= num_iov) {
 		WARN();
 		return PTL_FAIL;
 	}
 
 	/* copy each segment. The first one can have a non zero offset */
-	for( ; i < num_iov && dst_offset < length; i++, iov++) {
-		bytes = iov->iov_len - iov_offset;
-		if (bytes == 0)
-			continue;
-		if (dst_offset + bytes > length)
-			bytes = length - dst_offset;
+	for( ; i < num_iov && length; i++, iov++) {
+		bytes = iov->iov_len - offset;
 
-		memcpy(dst + dst_offset, iov->iov_base + iov_offset, bytes);
+		if (bytes > length)
+			bytes = length;
 
-		iov_offset = 0;
+		memcpy(dst + dst_offset, iov->iov_base + offset, bytes);
+
+		offset = 0;
+		length -= bytes;
 		dst_offset += bytes;
 	}
 
 	/* check if we ran off the end of the iovec after we started */
-	if (dst_offset < length) {
+	if (length) {
 		WARN();
 		return PTL_FAIL;
 	}
@@ -89,40 +80,35 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length)
 {
 	unsigned int i;
-	ptl_size_t iov_offset = 0;
 	ptl_size_t src_offset = 0;
-	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
 
 	for (i = 0; i < num_iov; i++, iov++) {
-		iov_offset = offset - dst_offset;
-		if (iov_offset > iov->iov_len)
-			iov_offset = iov->iov_len;
-		dst_offset += iov_offset;
-
-		if (dst_offset >= offset)
+		if (offset >= iov->iov_len)
+			offset -= iov->iov_len;
+		else
 			break;
 	}
 
-	if (dst_offset < offset) {
+	if (i >= num_iov) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-	for( ; i < num_iov && src_offset < length; i++, iov++) {
-		bytes = iov->iov_len - iov_offset;
-		if (bytes == 0)
-			continue;
-		if (src_offset + bytes > length)
-			bytes = length - src_offset;
+	for( ; i < num_iov && length; i++, iov++) {
+		bytes = iov->iov_len - offset;
 
-		memcpy(iov->iov_base + iov_offset, src + src_offset, bytes);
+		if (bytes > length)
+			bytes = length;
 
-		iov_offset = 0;
-		src_offset += bytes;
+		memcpy(iov->iov_base + offset, src + src_offset, bytes);
+
+		offset = 0;
+		length -= bytes;
+		src_offset -= bytes;
 	}
 
-	if (src_offset < length) {
+	if (length) {
 		WARN();
 		return PTL_FAIL;
 	}
