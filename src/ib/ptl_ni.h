@@ -109,12 +109,13 @@ typedef struct ni {
 #if WITH_TRANSPORT_SHMEM
 	/* SHMEM transport specific */
 	struct {
-		uint8_t *comm_pad;
+		uint8_t *comm_pad;		/* in shared memory */
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
 		int knem_fd;
-		struct queue *queue;
+		struct queue *queue;	/* own queue, in the comm pad */
+		void *first_queue;		/* addr of rank 0 queue, in the comm pad */
 		char *comm_pad_shm_name;
 	} shmem;
 #endif

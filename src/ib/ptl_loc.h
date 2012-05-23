@@ -197,6 +197,9 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 	return ntohs(port);
 }
 
+/* round up x to multiple of y. y MUST be a power of 2. */
+#define ROUND_UP(x,y) ((x) + (y) - 1) & ~((y)-1);
+
 int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);
 
