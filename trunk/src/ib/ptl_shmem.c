@@ -195,7 +195,7 @@ int setup_shmem(ni_t *ni)
 	char comm_pad_shm_name[200] = "";
 	int err;
 	int i;
-	struct shmem_pid_table *ptable;
+	int pid_table_size;
 
 	/* 
 	 * Buffers in shared memory. The buffers will be allocated later,
@@ -237,7 +237,10 @@ int setup_shmem(ni_t *ni)
 		sizeof(queue_t) +
 		ni->sbuf_pool.slab_size;
 
-	ni->shmem.comm_pad_size = pagesize +
+	pid_table_size = ni->mem.node_size * sizeof(struct shmem_pid_table);
+	pid_table_size = ROUND_UP(pid_table_size, pagesize);
+
+	ni->shmem.comm_pad_size = pid_table_size +
 		(ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
@@ -325,8 +328,9 @@ int setup_shmem(ni_t *ni)
 	shm_fd = -1;
 
 	/* Now we can create the buffer pool */
-	ni->shmem.queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
-						(ni->shmem.per_proc_comm_buf_size*ni->mem.index));
+	ni->shmem.first_queue = ni->shmem.comm_pad + pid_table_size;
+	ni->shmem.queue = (queue_t *)(ni->shmem.first_queue +
+								  (ni->shmem.per_proc_comm_buf_size*ni->mem.index));
 	queue_init(ni->shmem.queue);
 
 	/* The buffer is right after the nemesis queue. */
@@ -340,17 +344,15 @@ int setup_shmem(ni_t *ni)
 	}
 
 	if (ni->options & PTL_NI_LOGICAL) {
-		/* Can now announce my Presence. */
+		/* Can now announce my presence. */
 
-		/* The PID table is a the beginning of the comm pad. 
-		 *
-		 * TODO: there's an assumption that a page size is enough
-		 * (ie. that is enough for 341 local ranks).. */
-		ptable = (struct shmem_pid_table *)ni->shmem.comm_pad;
+		/* The PID table is a the beginning of the comm pad. */
+		struct shmem_pid_table *pid_table =
+			(struct shmem_pid_table *)ni->shmem.comm_pad;
 
-		ptable[ni->mem.index].id = ni->id;
+		pid_table[ni->mem.index].id = ni->id;
 		__sync_synchronize(); /* ensure "valid" is not written before pid. */
-		ptable[ni->mem.index].valid = 1;
+		pid_table[ni->mem.index].valid = 1;
 
 		/* Now, wait for my siblings to get here. */
 		for (i = 0; i < ni->mem.node_size; ++i) {
@@ -358,12 +360,12 @@ int setup_shmem(ni_t *ni)
 
 			/* oddly enough, this should reduce cache traffic
 			 * for large numbers of siblings */
-			while (ptable[i].valid == 0)
+			while (pid_table[i].valid == 0)
 				SPINLOCK_BODY();
 
 			/* Reconfigure this connection to go through SHMEM
 			 * instead of the default. */
-			conn = get_conn(ni, ptable[i].id);
+			conn = get_conn(ni, pid_table[i].id);
 			if (!conn) {
 				/* It's hard to recover from here. */
 				WARN();
@@ -427,7 +429,7 @@ void cleanup_shmem(ni_t *ni)
  */
 void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
 {	      
-	queue_t *queue = (queue_t *)(ni->shmem.comm_pad + pagesize +
+	queue_t *queue = (queue_t *)(ni->shmem.first_queue +
 			   (ni->shmem.per_proc_comm_buf_size * dest));
 
 	buf->obj.next = NULL;
