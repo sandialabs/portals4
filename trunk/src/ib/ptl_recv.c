@@ -516,7 +516,7 @@ void *progress_thread(void *arg)
 #endif
 		  ) {
 
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 		/* Infiniband. */
 		int i;
 		int num_buf;
@@ -529,7 +529,7 @@ void *progress_thread(void *arg)
 		}
 #endif
 
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */
 		if (ni->shmem.queue) {
 			int err;
