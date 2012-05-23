@@ -84,7 +84,7 @@ int data_size(data_t *data)
  * @param[in] md the md that contains the data
  * @param[in] dir the data direction, in or out
  * @param[in] offset the offset into the md
- * @param[in] length the lenth of the data
+ * @param[in] length the length of the data
  * @param[in] buf the buf the add the data segment to
  * @param[in] type the transport type
  *

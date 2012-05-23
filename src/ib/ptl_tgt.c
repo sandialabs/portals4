@@ -1199,7 +1199,7 @@ static int tgt_data_in(buf_t *buf)
 /**
  * @brief target atomic data in state.
  *
- * This phase handles the data in phase for an atomic or getch operation.
+ * This phase handles the data in phase for an atomic or fetch operation.
  *
  * @param[in] buf The message buf received by the target.
  *
