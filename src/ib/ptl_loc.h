@@ -63,6 +63,7 @@ typedef uint64_t	__le64;
 
 #include "ptl_log.h"
 #include "ptl_list.h"
+#include "ptl_lockfree.h"
 #include "ptl_sync.h"
 #include "ptl_ref.h"
 #include "ptl_atomic.h"
