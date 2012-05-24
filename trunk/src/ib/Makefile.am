@@ -36,6 +36,7 @@ libportals_ib_la_SOURCES = \
 	ptl_le.h \
 	ptl_list.h \
 	ptl_loc.h \
+	ptl_lockfree.h \
 	ptl_locks.h \
 	ptl_log.h \
 	ptl_md.c \

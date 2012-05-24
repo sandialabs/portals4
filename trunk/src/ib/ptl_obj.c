@@ -160,61 +160,6 @@ static int pool_get_chunk(pool_t *pool, chunk_t **chunk_p)
 }
 
 /**
- * Return an object from pool freelist.
- *
- * This algorithm is thanks to Kyle and does not
- * require a holding a lock.
- *
- * @param pool the pool
- *
- * @return the object
- */
-static inline obj_t *dequeue_free_obj(pool_t *pool)
-{
-	union counted_ptr oldv, newv, retv;
-
-	retv.c16 = pool->free_list.c16;
-
-	do {
-		oldv = retv;
-		if (retv.obj != NULL) {
-			newv.obj = retv.obj->next;
-		} else {
-			newv.obj = NULL;
-		}
-		newv.counter = oldv.counter + 1;
-
-		retv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
-	} while (retv.c16 != oldv.c16);
-
-	return retv.obj;
-}
-
-/**
- * Add an object to pool freelist.
- *
- * This algorithm is thanks to Kyle and does not
- * require a holding a lock.
- *
- * @param pool the pool
- * @param obj the object
- */
-static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
-{
-	union counted_ptr oldv, newv, tmpv;
-
-	tmpv.c16 = pool->free_list.c16;
-
-	do {
-		oldv = tmpv;
-		obj->next = tmpv.obj;
-		newv.obj = obj;
-		newv.counter = oldv.counter + 1;
-		tmpv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
-	} while (tmpv.c16 != oldv.c16);
-}
-
-/**
  * Allocate a new slab of objects for a given pool
  *
  * @param pool
@@ -290,7 +235,7 @@ static int pool_alloc_slab(pool_t *pool)
 				return PTL_FAIL;
 			}
 		}
-		enqueue_free_obj(pool, obj);
+		enqueue_free_obj(&pool->free_list, obj);
 		p += pool->round_size;
 	}
 
@@ -441,7 +386,7 @@ void obj_release(ref_t *ref)
 
 	__sync_synchronize();
 
-	enqueue_free_obj(pool, obj);
+	enqueue_free_obj(&pool->free_list, obj);
 	atomic_dec(&pool->count);
 }
 
@@ -464,7 +409,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	/* reserve an object */
 	atomic_inc(&pool->count);
 
-	obj = dequeue_free_obj(pool);
+	obj = dequeue_free_obj(&pool->free_list);
 	if (unlikely(!obj)) {
 		if (pool->use_pre_alloc_buffer) {
 			/* The pool cannot expand, for instance in the case of the
@@ -472,7 +417,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 			 * on the list. */
 			do {
 				SPINLOCK_BODY();
-			} while ((obj = dequeue_free_obj(pool)) == NULL);
+			} while ((obj = dequeue_free_obj(&pool->free_list)) == NULL);
 		} else {
 			do {
 				pthread_mutex_lock(&pool->mutex);
@@ -484,7 +429,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 					WARN();
 					return err;
 				}
-			} while ((obj = dequeue_free_obj(pool)) == NULL);
+			} while ((obj = dequeue_free_obj(&pool->free_list)) == NULL);
 		}
 	}
 

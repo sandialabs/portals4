@@ -102,51 +102,6 @@ struct chunk {
 
 typedef struct chunk chunk_t;
 
-/* Since we use a lock free linked list, we can (and did) fall victim
- * of the ABA problem
- * (https://en.wikipedia.org/wiki/ABA_problem). Work around by using a
- * counter for the pointer. That implies that the platform can support
- * 16 bytes compare and swap. Every time the pointer must be changed,
- * a 64 bits counter is incremented. */
-typedef unsigned int ptlinternal_uint128_t __attribute__((mode(TI)));
-union counted_ptr {
-	struct {
-		struct obj *obj;
-		unsigned long counter;
-	};
-	unsigned int __attribute__((mode(TI))) c16; /* 16 bytes */
-};
-
-static inline ptlinternal_uint128_t PtlInternalAtomicCas128(ptlinternal_uint128_t *addr,
-															const union counted_ptr oldval,
-															const union counted_ptr newval)
-{
-    union counted_ptr ret;
-
-    assert(((uintptr_t)addr & 0xf) == 0);
-
-#if defined SANDIA_BUILTIN_CAS128
-	ret.c16 = __sync_val_compare_and_swap(addr, oldval.c16, newval.c16);
-
-#elif defined HAVE_CMPXCHG16B
-    __asm__ __volatile__ ("lock cmpxchg16b %0\n\t"
-                          : "+m" (*addr),
-                          "=a" (ret.obj),
-                          "=d" (ret.counter)
-                          : "a"  (oldval.obj),
-                          "d"  (oldval.counter),
-                          "b"  (newval.obj),
-                          "c"  (newval.counter)
-                          : "cc",
-                          "memory");
-
-#else  /* ifdef HAVE_CMPXCHG16B */
-# error No known 128-bit atomic CAS operations are available
-#endif  /* ifdef HAVE_CMPXCHG16B */
-
-    return ret.c16;
-}
-
 /**
  * A pool struct holds information about a type of object
  * that it manages.
