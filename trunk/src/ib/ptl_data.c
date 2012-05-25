@@ -91,36 +91,7 @@ int data_size(data_t *data)
  *
  * @return status
  */
-int append_tgt_data(me_t *me, ptl_size_t offset,
-		    ptl_size_t length, buf_t *buf)
-{
-	int err = PTL_OK;
-	data_t *data = (data_t *)(buf->data + buf->length);
-
-	assert(length <= get_param(PTL_MAX_INLINE_DATA));
-
-	data->data_fmt = DATA_FMT_IMMEDIATE;
-	data->immediate.data_length = cpu_to_le32(length);
-
-	if (me->options & PTL_IOVEC) {
-		err = iov_copy_out(data->immediate.data, me->start,
-				   me->num_iov, offset, length);
-		if (err) {
-			WARN();
-			return err;
-		}
-	} else {
-		memcpy(data->immediate.data, me->start + offset, length);
-	}
-
-	buf->length += sizeof(*data) + length;
-	assert(buf->length <= BUF_DATA_SIZE);
-
-	return err;
-}
-
-//TODO: merge with append_tgt_data
-int append_immediate_data(md_t *md, data_dir_t dir, ptl_size_t offset,
+int append_immediate_data(void *start, int num_iov, data_dir_t dir, ptl_size_t offset,
 						  ptl_size_t length, buf_t *buf)
 {
 	int err;
@@ -131,15 +102,15 @@ int append_immediate_data(md_t *md, data_dir_t dir, ptl_size_t offset,
 	if (dir == DATA_DIR_OUT) {
 		data->immediate.data_length = cpu_to_le32(length);
 			
-		if (md->options & PTL_IOVEC) {
-			err = iov_copy_out(data->immediate.data, md->start,
-							   md->num_iov, offset, length);
+		if (num_iov) {
+			err = iov_copy_out(data->immediate.data, start,
+							   num_iov, offset, length);
 			if (err) {
 				WARN();
 				return err;
 			}
 		} else {
-			memcpy(data->immediate.data, md->start + offset,
+			memcpy(data->immediate.data, start + offset,
 				   length);
 		}
 

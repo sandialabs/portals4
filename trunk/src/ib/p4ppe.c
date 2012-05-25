@@ -179,7 +179,7 @@ static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
-		err = append_immediate_data(md, dir, offset, length, buf);
+		err = append_immediate_data(md->start, md->num_iov, dir, offset, length, buf);
 	}
 	else if (md->options & PTL_IOVEC) {
 		ptl_iovec_t *iovecs = md->start;
