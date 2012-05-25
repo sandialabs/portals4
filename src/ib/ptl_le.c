@@ -188,6 +188,7 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 		}
 
 		le->length = le_init->length;
+		le->num_iov = 0;
 	}
 
 	return PTL_OK;
@@ -468,7 +469,7 @@ int check_overflow_search_delete(le_t *le)
 }
 
 /**
- * @brief Common code for implemtation of PtlLEAppend and PtlLESearch.
+ * @brief Common code for implementation of PtlLEAppend and PtlLESearch.
  *
  * Performs an append if le_handle_p != NULL, else a search.
  *

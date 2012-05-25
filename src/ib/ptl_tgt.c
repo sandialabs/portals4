@@ -848,8 +848,8 @@ static int tgt_data_out(buf_t *buf)
 		assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
 
 		send_hdr->data_out = 1;
-		err = append_tgt_data(buf->me, buf->moffset,
-				      buf->mlength, buf->send_buf);
+		err = append_immediate_data(buf->me->start, buf->me->num_iov, DATA_DIR_OUT,
+									buf->moffset, buf->mlength, buf->send_buf);
 		if (err)
 			return STATE_TGT_ERROR;
 

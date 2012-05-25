@@ -114,10 +114,7 @@ struct me;
 
 int data_size(data_t *data);
 
-int append_immediate_data(struct md *md, data_dir_t dir, ptl_size_t offset,
+int append_immediate_data(void *start, int num_iov, data_dir_t dir, ptl_size_t offset,
 						  ptl_size_t length, struct buf *buf);
-
-int append_tgt_data(struct me *me, ptl_size_t offset,
-					ptl_size_t length, struct buf *buf);
 
 #endif /* PTL_DATA_H */
