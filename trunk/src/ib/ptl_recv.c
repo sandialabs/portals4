@@ -557,15 +557,17 @@ void *progress_thread(void *arg)
 						process_recv_mem(ni, buf);
 					}
 
-					if (shmem_buf->type == BUF_SHMEM_SEND ||
-						shmem_buf->shmem.index_owner != ni->mem.index) {
-						/* Requested to send the buffer back, or not the
-						 * owner. Send the buffer back in both cases. */
-						shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
-					} else {
-						/* It was returned to us with a message from a remote
-						 * rank. From send_message_shmem(). */
-						buf_put(shmem_buf);
+					if (list_empty(&buf->list)) {
+						if (shmem_buf->type == BUF_SHMEM_SEND ||
+							shmem_buf->shmem.index_owner != ni->mem.index) {
+							/* Requested to send the buffer back, or not the
+							 * owner. Send the buffer back in both cases. */
+							shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
+						} else {
+							/* It was returned to us with a message from a remote
+							 * rank. From send_message_shmem(). */
+							buf_put(shmem_buf);
+						}
 					}
 				}
 					break;
@@ -586,6 +588,50 @@ void *progress_thread(void *arg)
 		}
 #endif
 
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+		struct list_head *l, *t;
+
+		/* TODO: instead of having a lock, the initiator should send
+		 * the buf to itself, and on receiving it, the progress thread
+		 * will put it on the list. That way, only the progress thread
+		 * has access to the list. */
+		PTL_FASTLOCK_LOCK(&ni->noknem_lock);
+
+		list_for_each_safe(l, t, &ni->noknem_list) {
+			buf_t *buf = list_entry(l, buf_t, list);
+			data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+
+			if (buf->transfer.noknem.transfer_state_expected == data->noknem.state) {
+				if (data->noknem.state == 0)
+					process_init(buf);
+				else if (data->noknem.state == 2) {
+					if (data->noknem.init_done) {
+						buf_t *shmem_buf = buf->mem_buf;
+
+						list_del(&buf->list);
+
+						process_tgt(buf);
+
+						if (shmem_buf->type == BUF_SHMEM_SEND ||
+							shmem_buf->shmem.index_owner != ni->mem.index) {
+							/* Requested to send the buffer back, or not the
+							 * owner. Send the buffer back in both cases. */
+							shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
+						} else {
+							/* It was returned to us with a message from a remote
+							 * rank. From send_message_shmem(). */
+							buf_put(shmem_buf);
+						}
+
+					} else {
+						process_tgt(buf);
+					}
+				}
+			}
+		}
+
+		PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+#endif
 	}
 
 	return NULL;

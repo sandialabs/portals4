@@ -16,6 +16,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_WAIT_CONN]		= "tgt_wait_conn",
 	[STATE_TGT_DATA]		= "tgt_data",
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
+	[STATE_TGT_START_COPY]		= "tgt_start_copy",
 	[STATE_TGT_RDMA]		= "tgt_rdma",
 	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
 	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
@@ -801,8 +802,16 @@ static int tgt_data(buf_t *buf)
 		return (buf->operation == OP_ATOMIC) ?
 			STATE_TGT_ATOMIC_DATA_IN :
 			STATE_TGT_DATA_IN;
-	else
+	else {
+		/* Dropping. */
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+		if (buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)
+			return STATE_TGT_DATA_OUT;
+		else if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM)
+			return STATE_TGT_DATA_IN;
+#endif
 		return STATE_TGT_COMM_EVENT;
+	}
 }
 
 /**
@@ -832,10 +841,12 @@ static int tgt_data_out(buf_t *buf)
 
 	buf->rdma_dir = DATA_DIR_OUT;
 
-	/* If reply data fits in a reply message, then use immediate
-	 * data instead of rdma.
-	 * TODO: ensure it's faster than KNEM too. */
-	if (buf->mlength < get_param(PTL_MAX_INLINE_DATA)) {
+	/* The initiator picks how we reply. */
+	if (data->data_fmt == DATA_FMT_IMMEDIATE) {
+		/* We assummed that both the initiator and the target have the
+		 * same max inline data. */
+		assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
+
 		send_hdr->data_out = 1;
 		err = append_tgt_data(buf->me, buf->moffset,
 				      buf->mlength, buf->send_buf);
@@ -862,6 +873,22 @@ static int tgt_data_out(buf_t *buf)
 
 	return buf->conn->transport.tgt_data_out(buf, data);
 }
+
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+static int tgt_start_copy(buf_t *buf)
+{
+	/* Add to the data queue. */ 
+	ni_t *ni = obj_to_ni(buf);
+
+	PTL_FASTLOCK_LOCK(&ni->noknem_lock);
+	list_add_tail(&buf->list, &ni->noknem_list);
+	PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+
+	return STATE_TGT_RDMA;
+}	
+#else
+static int tgt_start_copy(buf_t *buf) { abort(); }
+#endif
 
 /**
  * @brief target rdma state.
@@ -895,6 +922,9 @@ static int tgt_rdma(buf_t *buf)
 	if (*resid
 #ifdef WITH_TRANSPORT_IB
 		|| atomic_read(&buf->rdma.rdma_comp)
+#endif
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+		|| ((data_t *)(buf->data + sizeof(req_hdr_t)))->noknem.init_done == 0
 #endif
 		)
 		return STATE_TGT_RDMA;
@@ -1576,6 +1606,10 @@ int process_tgt(buf_t *buf)
 			break;
 		case STATE_TGT_SHMEM_DESC:
 			state = tgt_shmem_desc(buf);
+			break;
+		case STATE_TGT_START_COPY:
+			state = tgt_start_copy(buf);
+			goto exit;
 			break;
 		case STATE_TGT_RDMA:
 			state = tgt_rdma(buf);

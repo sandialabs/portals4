@@ -81,7 +81,7 @@ static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *v
 		oldv = retv;
 		if (retv.obj != NULL) {
 			/* first object field is the next ptr */
-			newv.obj = *(void **)retv.obj + (vaddr - alien_vaddr); 
+			newv.obj = *(void **)(retv.obj + (vaddr - alien_vaddr)); 
 		} else {
 			newv.obj = NULL;
 		}
@@ -90,7 +90,10 @@ static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *v
 		retv.c16 = PtlInternalAtomicCas128(&free_list->c16, oldv, newv);
 	} while (retv.c16 != oldv.c16);
 
-	return retv.obj + (vaddr - alien_vaddr);
+	if (retv.obj)
+		return retv.obj + (vaddr - alien_vaddr);
+	else
+		return NULL;
 }
 
 /**

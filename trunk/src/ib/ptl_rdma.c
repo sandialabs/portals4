@@ -208,6 +208,72 @@ static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md,
 	buf->length += sizeof(*data) + sizeof(struct ibv_sge);
 }
 
+/**
+ * @brief Build and append a data segment to a request message.
+ *
+ * @param[in] md the md that contains the data
+ * @param[in] dir the data direction, in or out
+ * @param[in] offset the offset into the md
+ * @param[in] length the length of the data
+ * @param[in] buf the buf the add the data segment to
+ * @param[in] type the transport type
+ *
+ * @return status
+ */
+static int init_prepare_transfer_rdma(md_t *md, data_dir_t dir, ptl_size_t offset,
+									  ptl_size_t length, buf_t *buf)
+{
+	int err = PTL_OK;
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	data_t *data = (data_t *)(buf->data + buf->length);
+	int num_sge;
+	ptl_size_t iov_start = 0;
+	ptl_size_t iov_offset = 0;
+
+	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
+		err = append_immediate_data(md, dir, offset, length, buf);
+	}
+	else if (md->options & PTL_IOVEC) {
+		ptl_iovec_t *iovecs = md->start;
+
+		/* Find the index and offset of the first IOV as well as the
+		 * total number of IOVs to transfer. */
+		num_sge = iov_count_elem(iovecs, md->num_iov,
+								 offset, length, &iov_start, &iov_offset);
+		if (num_sge < 0) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
+			/* Indirect case. The IOVs do not fit in a buf_t. */
+			append_init_data_rdma_iovec_indirect(data, md, iov_start, num_sge, length, buf);
+		else
+			append_init_data_rdma_iovec_direct(data, md, iov_start, num_sge, length, buf);
+
+		/* @todo this is completely bogus */
+		/* Adjust the header offset for iov start. */
+		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+	} else {
+		void *addr;
+		mr_t *mr;
+		ni_t *ni = obj_to_ni(md);
+
+		addr = md->start + offset;
+		err = mr_lookup(ni, addr, length, &mr);
+		if (!err) {
+			buf->mr_list[buf->num_mr++] = mr;
+
+			append_init_data_rdma_direct(data, mr, addr, length, buf);
+		}
+	}
+
+	if (!err)
+		assert(buf->length <= BUF_DATA_SIZE);
+
+	return err;
+}
+
 static int rdma_tgt_data_out(buf_t *buf, data_t *data)
 {
 	int next;
@@ -525,9 +591,7 @@ struct transport transport_rdma = {
 	.buf_alloc = buf_alloc,
 	.send_message = send_message_rdma,
 	.set_send_flags = set_send_flags_rdma,
-	.append_init_data_direct = append_init_data_rdma_direct,
-	.append_init_data_iovec_direct = append_init_data_rdma_iovec_direct,
-	.append_init_data_iovec_indirect = append_init_data_rdma_iovec_indirect,
+	.init_prepare_transfer = init_prepare_transfer_rdma,
 	.post_tgt_dma = process_rdma,
 	.tgt_data_out = rdma_tgt_data_out,
 };

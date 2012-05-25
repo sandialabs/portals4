@@ -245,6 +245,18 @@ param_t param[] = {
 				.max	= 1,
 				.val	= 1,
 			},
+	[PTL_BOUNCE_NUM_BUFS]	= {
+				.name	= "PTL_BOUNCE_NUM_BUFS",
+				.min	= 1,
+				.max	= 10000,
+				.val	= 100,
+			},
+	[PTL_BOUNCE_BUF_SIZE]	= {
+				.name	= "PTL_BOUNCE_BUF_SIZE",
+				.min	= 1,
+				.max	= 10000000,
+				.val	= 8*4096,
+			},
 };
 
 /**

@@ -58,20 +58,12 @@ struct transport {
 	 * inline. can_signal is ignored on other transports. */
 	void (*set_send_flags)(struct buf *buf, int can_signal);
 
-	/* Different ways to append the init data: 
-	 *   direct: single buffer too large to fit in message
-	 *   iovec direct: iovec fits in message
-	 *   iovec indirect: iovec does not fit in message
-	 */
-	void (*append_init_data_direct)(struct data *data, struct mr *mr,
-									void *addr, ptl_size_t length,
-									struct buf *buf);
-	void (*append_init_data_iovec_direct)(struct data *data, struct md *md,
-										  int num_sge, int iov_start,
-										  ptl_size_t length, struct buf *buf);
-	void (*append_init_data_iovec_indirect)(struct data *data, struct md *md,
-											int num_sge, int iov_start,
-											ptl_size_t length, struct buf *buf);
+	/* Prepare the initiator to transfer the data. It can copy the
+	 * immediate data into the buffer if it fits, or prepare some
+	 * descriptor to transfer that data with other means (RDMA,
+	 * KNEM, ...). */
+	int (*init_prepare_transfer)(struct md *md, data_dir_t dir, ptl_size_t offset,
+								 ptl_size_t length, struct buf *buf);
 
 	/* Prepare to copy the data in/out in the target. Similar to
 	 * append_init_data on the initiator. */

@@ -33,6 +33,10 @@ int buf_setup(void *arg)
 	}
 #endif
 
+#if WITH_TRANSPORT_SHMEM &&!USE_KNEM
+	buf->transfer.noknem.data = NULL;
+#endif
+
 	return PTL_OK;
 }
 
