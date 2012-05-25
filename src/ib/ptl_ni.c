@@ -335,6 +335,10 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->uid = geteuid();
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	PTL_FASTLOCK_INIT(&ni->noknem_lock);
+	INIT_LIST_HEAD(&ni->noknem_list);
+#endif
 	RB_INIT(&ni->mr_tree);
 	ni->umn_fd = -1;
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
@@ -645,6 +649,9 @@ static void ni_cleanup(ni_t *ni)
 	PTL_FASTLOCK_DESTROY(&ni->ct_list_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_tree_lock);
 	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	PTL_FASTLOCK_DESTROY(&ni->noknem_lock);
+#endif
 }
 
 int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)

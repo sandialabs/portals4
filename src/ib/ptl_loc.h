@@ -75,6 +75,7 @@ typedef uint64_t	__le64;
 #include "ptl_queue.h"
 #include "ptl_ppe.h"
 #include "ptl_ni.h"
+#include "ptl_data.h"
 #include "ptl_conn.h"
 #include "ptl_mr.h"
 #include "ptl_md.h"
@@ -83,7 +84,6 @@ typedef uint64_t	__le64;
 #include "ptl_ct.h"
 #include "ptl_buf.h"
 #include "ptl_eq.h"
-#include "ptl_data.h"
 #include "ptl_hdr.h"
 #if IS_PPE
 #include "p4ppe.h"
@@ -136,6 +136,7 @@ enum tgt_state {
 	STATE_TGT_WAIT_CONN,
 	STATE_TGT_DATA,
 	STATE_TGT_DATA_IN,
+	STATE_TGT_START_COPY,
 	STATE_TGT_RDMA,
 	STATE_TGT_ATOMIC_DATA_IN,
 	STATE_TGT_SWAP_DATA_IN,
@@ -158,6 +159,10 @@ enum init_state {
 	STATE_INIT_PREP_REQ,
 	STATE_INIT_WAIT_CONN,
 	STATE_INIT_SEND_REQ,
+	STATE_INIT_COPY_START,
+	STATE_INIT_COPY_IN,
+	STATE_INIT_COPY_OUT,
+	STATE_INIT_COPY_DONE,
 	STATE_INIT_WAIT_COMP,
 	STATE_INIT_SEND_ERROR,
 	STATE_INIT_EARLY_SEND_EVENT,

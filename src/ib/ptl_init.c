@@ -10,6 +10,10 @@ static char *init_state_name[] = {
 	[STATE_INIT_PREP_REQ]		= "prepare_req",
 	[STATE_INIT_WAIT_CONN]		= "wait_conn",
 	[STATE_INIT_SEND_REQ]		= "send_req",
+	[STATE_INIT_COPY_START]		= "copy_start",
+	[STATE_INIT_COPY_IN]		= "copy_in",
+	[STATE_INIT_COPY_OUT]		= "copy_out",
+	[STATE_INIT_COPY_DONE]		= "copy_done",
 	[STATE_INIT_WAIT_COMP]		= "wait_comp",
 	[STATE_INIT_SEND_ERROR]		= "send_error",
 	[STATE_INIT_EARLY_SEND_EVENT]	= "early_send_event",
@@ -237,11 +241,10 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 0;
 		hdr->data_out = 1;
 
-		buf->get_data = NULL;
-		buf->put_data = (data_t *)(buf->data + buf->length);
-		err = append_init_data(buf->put_md, DATA_DIR_OUT,
-				       buf->put_offset, length, buf,
-				       buf->conn);
+		buf->data_in = NULL;
+		buf->data_out = (data_t *)(buf->data + buf->length);
+		err = buf->conn->transport.init_prepare_transfer(buf->put_md, DATA_DIR_OUT,
+														 buf->put_offset, length, buf);
 		if (err)
 			goto error;
 		break;
@@ -250,11 +253,10 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 1;
 		hdr->data_out = 0;
 
-		buf->put_data = NULL;
-		buf->get_data = (data_t *)(buf->data + buf->length);
-		err = append_init_data(buf->get_md, DATA_DIR_IN,
-				       buf->get_offset, length, buf,
-				       buf->conn);
+		buf->data_out = NULL;
+		buf->data_in = (data_t *)(buf->data + buf->length);
+		err = buf->conn->transport.init_prepare_transfer(buf->get_md, DATA_DIR_IN,
+														 buf->get_offset, length, buf);
 		if (err)
 			goto error;
 		break;
@@ -264,17 +266,15 @@ static int prepare_req(buf_t *buf)
 		hdr->data_in = 1;
 		hdr->data_out = 1;
 
-		buf->get_data = (data_t *)(buf->data + buf->length);
-		err = append_init_data(buf->get_md, DATA_DIR_IN,
-				       buf->get_offset, length, buf,
-				       buf->conn);
+		buf->data_in = (data_t *)(buf->data + buf->length);
+		err = buf->conn->transport.init_prepare_transfer(buf->get_md, DATA_DIR_IN,
+														 buf->get_offset, length, buf);
 		if (err)
 			goto error;
 
-		buf->put_data = (data_t *)(buf->data + buf->length);
-		err = append_init_data(buf->put_md, DATA_DIR_OUT,
-				       buf->put_offset, length, buf,
-				       buf->conn);
+		buf->data_out = (data_t *)(buf->data + buf->length);
+		err = buf->conn->transport.init_prepare_transfer(buf->put_md, DATA_DIR_OUT,
+														 buf->put_offset, length, buf);
 		if (err)
 			goto error;
 		break;
@@ -289,8 +289,8 @@ static int prepare_req(buf_t *buf)
 	 * operation for the Put. Until the response is received, we
 	 * cannot free the MR nor post the send events. Note we
 	 * have already set event_mask. */
-	if ((buf->put_data && (buf->put_data->data_fmt != DATA_FMT_IMMEDIATE) &&
-	    (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
+	if ((buf->data_out && (buf->data_out->data_fmt != DATA_FMT_IMMEDIATE) &&
+		 (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
 	    buf->num_mr) {
 		hdr->ack_req = PTL_ACK_REQ;
 		buf->event_mask |= XI_RECEIVE_EXPECTED;
@@ -299,7 +299,7 @@ static int prepare_req(buf_t *buf)
 	/* For immediate data we can cause an early send event provided
 	 * we request a send completion event */
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT) &&
-		(buf->put_data && buf->put_data->data_fmt == DATA_FMT_IMMEDIATE))
+		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_IMMEDIATE))
 		buf->event_mask |= XI_EARLY_SEND;
 
 	/* Inline the data if it fits. That may save waiting for a
@@ -319,7 +319,7 @@ static int prepare_req(buf_t *buf)
 	else
 		return STATE_INIT_WAIT_CONN;
 
-error:
+ error:
 	return STATE_INIT_ERROR;
 }
 
@@ -402,6 +402,12 @@ static int send_req(buf_t *buf)
 	if (err)
 		return STATE_INIT_SEND_ERROR;
 
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	if ((buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) ||
+		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM))
+		return STATE_INIT_COPY_START;
+	else
+#endif
 	if (buf->event_mask & XX_SIGNALED)
 		return STATE_INIT_WAIT_COMP;
 	else if (buf->event_mask & XI_EARLY_SEND)
@@ -440,6 +446,135 @@ static int send_error(buf_t *buf)
 		return STATE_INIT_CLEANUP;
 }
 
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+static int init_copy_start(buf_t *buf)
+{
+	ni_t *ni = obj_to_ni(buf);
+
+	PTL_FASTLOCK_LOCK(&ni->noknem_lock);
+	list_add_tail(&buf->list, &ni->noknem_list);
+	PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+
+	if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) {
+		return STATE_INIT_COPY_IN;
+	} else {
+		assert(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM);
+
+		return STATE_INIT_COPY_OUT;
+	}
+}
+
+static int init_copy_in(buf_t *buf)
+{
+	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	ptl_size_t to_copy;
+	int ret;
+
+	data->noknem.state = 1;
+
+	/* Copy the data from the bounce buffer. */
+	to_copy = data->noknem.length;
+
+	/* Target should never send more than requested. */
+	assert(to_copy <= buf->transfer.noknem.length_left);
+
+	ret = iov_copy_in(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+					  buf->transfer.noknem.num_iovecs,
+					  buf->transfer.noknem.offset,
+					  to_copy);
+	if (ret == PTL_FAIL) {
+		WARN();
+		return STATE_INIT_ERROR;
+	}
+
+	if (data->noknem.target_done)
+		return STATE_INIT_COPY_DONE;
+
+	buf->transfer.noknem.length_left -= to_copy;
+	buf->transfer.noknem.offset += to_copy;
+	
+	//todo: should be conn->data_send()
+	/* Tell the target the data is ready. */
+	__sync_synchronize();
+	data->noknem.state = 2;
+
+	return STATE_INIT_COPY_IN;
+}
+
+static int init_copy_out(buf_t *buf)
+{
+	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	ptl_size_t to_copy;
+	int ret;
+
+	if (data->noknem.target_done)
+		return STATE_INIT_COPY_DONE;
+
+	data->noknem.state = 1;
+
+	/* Copy the data to the bounce buffer. */
+	to_copy = buf->transfer.noknem.data_length;
+	if (to_copy > buf->transfer.noknem.length_left)
+		to_copy = buf->transfer.noknem.length_left;
+
+	ret = iov_copy_out(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+					   buf->transfer.noknem.num_iovecs,
+					   buf->transfer.noknem.offset,
+					   to_copy);
+	if (ret == PTL_FAIL) {
+		WARN();
+		return STATE_INIT_ERROR;
+	}
+
+	buf->transfer.noknem.length_left -= to_copy;
+	buf->transfer.noknem.offset += to_copy;
+	
+	data->noknem.length = to_copy;
+
+	//todo: should be conn->data_send()
+	/* Tell the target the data is ready. */
+	__sync_synchronize();
+	data->noknem.state = 2;
+
+	return STATE_INIT_COPY_OUT;
+}
+
+static int init_copy_done(buf_t *buf)
+{
+	ni_t *ni = obj_to_ni(buf);
+	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+
+	/* Ack. */
+	data->noknem.init_done = 1;
+	__sync_synchronize();
+	data->noknem.state = 2;
+
+	/* Free the bounce buffer allocated in init_append_data. */
+	enqueue_free_obj_alien(&ni->shmem.bounce_buf.head->free_list,
+						   buf->transfer.noknem.data,
+						   ni->shmem.bounce_buf.head,
+						   ni->shmem.bounce_buf.head->head_index0);
+
+	/* Only called from the progress thread, so ni->noknem_lock is
+	 * already locked. */
+	list_del(&buf->list);
+
+	if (buf->event_mask & XI_EARLY_SEND)
+		return STATE_INIT_EARLY_SEND_EVENT;
+	else if (buf->event_mask & XI_RECEIVE_EXPECTED)
+		return STATE_INIT_WAIT_RECV;
+	else
+		return STATE_INIT_CLEANUP;
+}
+
+
+#else
+static int init_copy_start(buf_t *buf) { abort(); }
+static int init_copy_in(buf_t *buf) { abort(); }
+static int init_copy_out(buf_t *buf) { abort(); }
+static int init_copy_done(buf_t *buf) { abort(); }
+#endif
+
 /**
  * @brief initiator wait for send completion state.
  *
@@ -456,10 +591,6 @@ static int send_error(buf_t *buf)
  */
 static int wait_comp(buf_t *buf)
 {
-#if WITH_TRANSPORT_SHMEM
-	assert(buf->conn->transport.type != CONN_TYPE_SHMEM);
-#endif
-
 	if (buf->completed || buf->recv_buf)
 		return STATE_INIT_EARLY_SEND_EVENT;
 	else
@@ -780,6 +911,25 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_SEND_REQ:
 			state = send_req(buf);
+			break;
+		case STATE_INIT_COPY_START:
+			state = init_copy_start(buf);
+			goto exit;
+			break;
+		case STATE_INIT_COPY_IN:
+			state = init_copy_in(buf);
+			if (state == STATE_INIT_COPY_IN)
+				goto exit;
+			break;
+		case STATE_INIT_COPY_OUT:
+			state = init_copy_out(buf);
+			if (state == STATE_INIT_COPY_OUT)
+				goto exit;
+			break;
+		case STATE_INIT_COPY_DONE:
+			state = init_copy_done(buf);
+			if (state == STATE_INIT_COPY_DONE)
+				goto exit;
 			break;
 		case STATE_INIT_WAIT_COMP:
 			state = wait_comp(buf);

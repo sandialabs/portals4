@@ -32,6 +32,12 @@ struct shmem_pid_table {
 	int valid;
 };
 
+struct shmem_bounce_head {
+	union counted_ptr free_list;	 /* head of free list of bounce buffers */
+	void *head_index0;	 /* logical address of the head of local index
+						  * 0. Invariant. */
+};
+
 /*
  * ni_t
  *	per NI info
@@ -109,7 +115,7 @@ typedef struct ni {
 #if WITH_TRANSPORT_SHMEM
 	/* SHMEM transport specific */
 	struct {
-		uint8_t *comm_pad;		/* in shared memory */
+		void *comm_pad;		/* in shared memory */
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
@@ -117,6 +123,18 @@ typedef struct ni {
 		struct queue *queue;	/* own queue, in the comm pad */
 		void *first_queue;		/* addr of rank 0 queue, in the comm pad */
 		char *comm_pad_shm_name;
+
+#if !USE_KNEM
+		/* Bounce buffers used when KNEM is not available. They are
+		 * created and linked by rank 0. */
+		struct {
+			struct shmem_bounce_head *head;
+			void *bbs;			/* local address of the bounce buffers */
+
+			size_t buf_size;
+			unsigned int num_bufs;
+		} bounce_buf;
+#endif
 	} shmem;
 #endif
 
@@ -130,6 +148,11 @@ typedef struct ni {
 		int in_group;
 #endif
 	} mem;
+#endif
+
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	PTL_FASTLOCK_TYPE noknem_lock;
+	struct list_head noknem_list;
 #endif
 
 	/* object allocation pools */

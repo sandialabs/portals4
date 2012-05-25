@@ -79,6 +79,72 @@ static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 }
 
+/**
+ * @brief Build and append a data segment to a request message.
+ *
+ * @param[in] md the md that contains the data
+ * @param[in] dir the data direction, in or out
+ * @param[in] offset the offset into the md
+ * @param[in] length the length of the data
+ * @param[in] buf the buf the add the data segment to
+ * @param[in] type the transport type
+ *
+ * @return status
+ */
+static int init_prepare_transfer_shmem(md_t *md, data_dir_t dir, ptl_size_t offset,
+									   ptl_size_t length, buf_t *buf)
+{
+	int err = PTL_OK;
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	data_t *data = (data_t *)(buf->data + buf->length);
+	int num_sge;
+	ptl_size_t iov_start = 0;
+	ptl_size_t iov_offset = 0;
+
+	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
+		err = append_immediate_data(md, dir, offset, length, buf);
+	}
+	else if (md->options & PTL_IOVEC) {
+		ptl_iovec_t *iovecs = md->start;
+
+		/* Find the index and offset of the first IOV as well as the
+		 * total number of IOVs to transfer. */
+		num_sge = iov_count_elem(iovecs, md->num_iov,
+								 offset, length, &iov_start, &iov_offset);
+		if (num_sge < 0) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
+			/* Indirect case. The IOVs do not fit in a buf_t. */
+			append_init_data_shmem_iovec_indirect(data, md, iov_start, num_sge, length, buf);
+		else
+			append_init_data_shmem_iovec_direct(data, md, iov_start, num_sge, length, buf);
+
+		/* @todo this is completely bogus */
+		/* Adjust the header offset for iov start. */
+		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+	} else {
+		void *addr;
+		mr_t *mr;
+		ni_t *ni = obj_to_ni(md);
+
+		addr = md->start + offset;
+		err = mr_lookup(ni, addr, length, &mr);
+		if (!err) {
+			buf->mr_list[buf->num_mr++] = mr;
+
+			append_init_data_shmem_direct(data, mr, addr, length, buf);
+		}
+	}
+
+	if (!err)
+		assert(buf->length <= BUF_DATA_SIZE);
+
+	return err;
+}
+
 static int knem_tgt_data_out(buf_t *buf, data_t *data)
 {
 	int next;
@@ -104,6 +170,238 @@ static int knem_tgt_data_out(buf_t *buf, data_t *data)
 
 	return next;
 }
+
+#else
+static void attach_bounce_buffer(buf_t *buf, data_t *data)
+{
+	void *bb;
+	ni_t *ni = obj_to_ni(buf);
+
+	while ((bb = dequeue_free_obj_alien(&ni->shmem.bounce_buf.head->free_list,
+										ni->shmem.bounce_buf.head,
+										ni->shmem.bounce_buf.head->head_index0)) == NULL)
+		SPINLOCK_BODY();
+
+	buf->transfer.noknem.data = bb;
+	buf->transfer.noknem.data_length = ni->shmem.bounce_buf.buf_size;
+	buf->transfer.noknem.bounce_offset = bb - (void *)ni->shmem.bounce_buf.head;
+
+	data->noknem.bounce_offset = buf->transfer.noknem.bounce_offset;
+}
+
+static void append_init_data_noknem_iovec(data_t *data, md_t *md,
+										  int iov_start, int num_iov,
+										  ptl_size_t length, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_NOKNEM;
+
+	data->noknem.target_done = 0;
+	data->noknem.init_done = 0;
+
+	buf->transfer.noknem.transfer_state_expected = 0; /* always the initiator here */
+
+	attach_bounce_buffer(buf, data);
+
+	buf->transfer.noknem.num_iovecs = num_iov;
+	buf->transfer.noknem.iovecs = &((ptl_iovec_t *)md->start)[iov_start];
+	buf->transfer.noknem.offset = 0;
+
+	buf->transfer.noknem.length_left = length;
+
+	buf->length += sizeof(*data);
+}
+
+static void append_init_data_noknem_direct(data_t *data, mr_t *mr, void *addr,
+										   ptl_size_t length, buf_t *buf)
+{
+	data->data_fmt = DATA_FMT_NOKNEM;
+
+	data->noknem.target_done = 0;
+	data->noknem.init_done = 0;
+
+	buf->transfer.noknem.transfer_state_expected = 0; /* always the initiator here */
+
+	attach_bounce_buffer(buf, data);
+
+	/* Describes local memory */
+	buf->transfer.noknem.my_iovec.iov_base = addr;
+	buf->transfer.noknem.my_iovec.iov_len = length;
+
+	buf->transfer.noknem.num_iovecs = 1;
+	buf->transfer.noknem.iovecs = &buf->transfer.noknem.my_iovec;
+	buf->transfer.noknem.offset = 0;
+
+	buf->transfer.noknem.length_left = length;
+
+	buf->length += sizeof(*data);
+}
+
+/**
+ * @brief Build and append a data segment to a request message.
+ *
+ * @param[in] md the md that contains the data
+ * @param[in] dir the data direction, in or out
+ * @param[in] offset the offset into the md
+ * @param[in] length the length of the data
+ * @param[in] buf the buf the add the data segment to
+ * @param[in] type the transport type
+ *
+ * @return status
+ */
+static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t offset,
+										ptl_size_t length, buf_t *buf)
+{
+	int err = PTL_OK;
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	data_t *data = (data_t *)(buf->data + buf->length);
+	int num_sge;
+	ptl_size_t iov_start = 0;
+	ptl_size_t iov_offset = 0;
+
+	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
+		err = append_immediate_data(md, dir, offset, length, buf);
+	}
+	else {
+		if (dir == DATA_DIR_IN)
+			buf->data_in->noknem.state = 2;
+		else 
+			buf->data_out->noknem.state = 0;
+
+		if (md->options & PTL_IOVEC) {
+			ptl_iovec_t *iovecs = md->start;
+
+			/* Find the index and offset of the first IOV as well as the
+			 * total number of IOVs to transfer. */
+			num_sge = iov_count_elem(iovecs, md->num_iov,
+									 offset, length, &iov_start, &iov_offset);
+			if (num_sge < 0) {
+				WARN();
+				return PTL_FAIL;
+			}
+
+			append_init_data_noknem_iovec(data, md, iov_start, num_sge, length, buf);
+
+			/* @todo this is completely bogus */
+			/* Adjust the header offset for iov start. */
+			hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+		} else {
+			void *addr;
+			mr_t *mr;
+			ni_t *ni = obj_to_ni(md);
+
+			addr = md->start + offset;
+			err = mr_lookup(ni, addr, length, &mr);
+			if (!err) {
+				buf->mr_list[buf->num_mr++] = mr;
+
+				append_init_data_noknem_direct(data, mr, addr, length, buf);
+			}
+		}
+	}
+
+	if (!err)
+		assert(buf->length <= BUF_DATA_SIZE);
+
+	return err;
+}
+
+static int do_noknem_transfer(buf_t *buf)
+{
+	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
+		&buf->put_resid : &buf->get_resid;
+	ptl_size_t to_copy;
+	int err;
+
+	if (data->noknem.state != 2)
+		return PTL_OK;
+
+	if (data->noknem.init_done) {
+		assert(data->noknem.target_done);
+		return PTL_OK;
+	}
+
+	data->noknem.state = 3;
+
+	if (*resid) {
+		if (buf->rdma_dir == DATA_DIR_IN) {
+			to_copy = data->noknem.length;
+			if (to_copy > *resid)
+				to_copy = *resid;
+
+			err = iov_copy_in(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+							  buf->transfer.noknem.num_iovecs,
+							  buf->transfer.noknem.offset, to_copy);
+		} else {
+			to_copy = buf->transfer.noknem.data_length;
+			if (to_copy > *resid)
+				to_copy = *resid;
+
+			err = iov_copy_out(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+							   buf->transfer.noknem.num_iovecs,
+							   buf->transfer.noknem.offset, to_copy);
+
+			data->noknem.length = to_copy;
+		}
+
+		/* That should never happen since all lengths were properly
+		 * computed before entering. */
+		assert(err == PTL_OK);
+
+	} else {
+		/* Dropped case. Nothing to transfer, but the buffer must
+		 * still be returned. */
+		to_copy = 0;
+		err = PTL_OK;
+	}
+
+	buf->transfer.noknem.offset += to_copy;
+	*resid -= to_copy;
+
+	if (*resid == 0)
+		data->noknem.target_done = 1;
+
+	/* Tell the initiator the buffer is his again. */
+	__sync_synchronize();
+	data->noknem.state = 0;
+
+	return err;
+}
+
+static int noknem_tgt_data_out(buf_t *buf, data_t *data)
+{
+	int next;
+	ni_t *ni = obj_to_ni(buf);
+
+	if (data->data_fmt != DATA_FMT_NOKNEM) {
+		assert(0);
+		WARN();
+		next = STATE_TGT_ERROR;
+	}
+
+	buf->transfer.noknem.transfer_state_expected = 2; /* always the target here */
+
+	if ((buf->rdma_dir == DATA_DIR_IN && buf->put_resid) ||
+		(buf->rdma_dir == DATA_DIR_OUT && buf->get_resid)) {
+		if (buf->me->options & PTL_IOVEC) {
+			buf->transfer.noknem.num_iovecs = buf->me->length;
+			buf->transfer.noknem.iovecs = buf->me->start;
+		} else {
+			buf->transfer.noknem.num_iovecs = 1;
+			buf->transfer.noknem.iovecs = &buf->transfer.noknem.my_iovec;
+
+			buf->transfer.noknem.my_iovec.iov_base = buf->me->start;
+			buf->transfer.noknem.my_iovec.iov_len = buf->me->length;
+		}
+	}
+
+	buf->transfer.noknem.offset = buf->moffset;
+	buf->transfer.noknem.length_left = buf->get_resid;
+	buf->transfer.noknem.data = (void *)ni->shmem.bounce_buf.head + data->noknem.bounce_offset;
+	buf->transfer.noknem.data_length = ni->shmem.bounce_buf.buf_size;
+
+	return STATE_TGT_START_COPY;
+}
 #endif
 
 struct transport transport_shmem = {
@@ -112,11 +410,14 @@ struct transport transport_shmem = {
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
 #if USE_KNEM
-	.append_init_data_direct = append_init_data_shmem_direct,
-	.append_init_data_iovec_direct = append_init_data_shmem_iovec_direct,
-	.append_init_data_iovec_indirect = append_init_data_shmem_iovec_indirect,
+	.init_prepare_transfer = init_prepare_transfer_shmem,
 	.post_tgt_dma = do_mem_transfer,
 	.tgt_data_out = knem_tgt_data_out,
+#else
+	.post_tgt_dma = do_noknem_transfer,
+	.init_prepare_transfer = init_prepare_transfer_noknem,
+	.post_tgt_dma = do_noknem_transfer,
+	.tgt_data_out = noknem_tgt_data_out,
 #endif
 };
 
@@ -142,7 +443,7 @@ static void release_shmem_resources(ni_t *ni)
 		free(ni->shmem.comm_pad_shm_name);
 		ni->shmem.comm_pad_shm_name = NULL;
 	}
-		
+
 	knem_fini(ni);
 }
 
@@ -196,6 +497,7 @@ int setup_shmem(ni_t *ni)
 	int err;
 	int i;
 	int pid_table_size;
+	off_t first_queue_offset;
 
 	/* 
 	 * Buffers in shared memory. The buffers will be allocated later,
@@ -240,8 +542,24 @@ int setup_shmem(ni_t *ni)
 	pid_table_size = ni->mem.node_size * sizeof(struct shmem_pid_table);
 	pid_table_size = ROUND_UP(pid_table_size, pagesize);
 
-	ni->shmem.comm_pad_size = pid_table_size +
-		(ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
+	ni->shmem.comm_pad_size = pid_table_size;
+
+	first_queue_offset = ni->shmem.comm_pad_size;
+	ni->shmem.comm_pad_size += (ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
+
+#if !USE_KNEM
+	off_t bounce_buf_offset;
+	off_t bounce_head_offset;
+
+	bounce_head_offset = ni->shmem.comm_pad_size;
+	ni->shmem.comm_pad_size += ROUND_UP(sizeof(struct shmem_bounce_head), pagesize);
+	
+	ni->shmem.bounce_buf.buf_size = get_param(PTL_BOUNCE_BUF_SIZE);
+	ni->shmem.bounce_buf.num_bufs = get_param(PTL_BOUNCE_NUM_BUFS);
+
+	bounce_buf_offset = ni->shmem.comm_pad_size;
+	ni->shmem.comm_pad_size += ni->shmem.bounce_buf.buf_size * ni->shmem.bounce_buf.num_bufs;
+#endif
 
 	/* Open the communication pad. Let rank 0 create the shared memory. */
 	assert(ni->shmem.comm_pad == MAP_FAILED);
@@ -342,6 +660,25 @@ int setup_shmem(ni_t *ni)
 		WARN();
 		goto exit_fail;
 	}
+
+#if !USE_KNEM
+	/* Initialize the bounce buffers and let index 0 link them
+	 * together. */
+	ni->shmem.bounce_buf.head = ni->shmem.comm_pad + bounce_head_offset;
+	ni->shmem.bounce_buf.bbs = ni->shmem.comm_pad + bounce_buf_offset;
+
+	if (ni->mem.index == 0) {
+		ni->shmem.bounce_buf.head->head_index0 = ni->shmem.bounce_buf.head;
+		ni->shmem.bounce_buf.head->free_list.obj = NULL;
+		ni->shmem.bounce_buf.head->free_list.counter = 0;
+
+		for (i = 0; i < ni->shmem.bounce_buf.num_bufs; i++) {
+			void *bb = ni->shmem.bounce_buf.bbs + i*ni->shmem.bounce_buf.buf_size;
+
+			enqueue_free_obj(&ni->shmem.bounce_buf.head->free_list, bb);
+		}
+	}
+#endif
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		/* Can now announce my presence. */

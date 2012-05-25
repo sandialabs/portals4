@@ -28,12 +28,14 @@ enum data_fmt {
 	DATA_FMT_KNEM_INDIRECT,
 #endif
 
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	DATA_FMT_NOKNEM,
+#endif
+
 #if IS_PPE
 	DATA_FMT_MEM_DMA,
 	DATA_FMT_MEM_INDIRECT,
 #endif
-
-	DATA_FMT_LAST,
 };
 
 typedef enum data_fmt data_fmt_t;
@@ -42,6 +44,9 @@ struct mem_iovec {
 #if WITH_TRANSPORT_SHMEM && USE_KNEM
 	uint64_t		cookie;
 	uint64_t		offset;		/* add to cookie to get address */
+#endif
+#if IS_PPE
+	void		   *addr;
 #endif
 	uint64_t		length;
 };
@@ -75,17 +80,44 @@ struct data {
 			struct mem_iovec	mem_iovec[0];
 		} mem;
 #endif
+
+#if (WITH_TRANSPORT_SHMEM && !USE_KNEM)
+		/* State memory shared by both sides of the transfer. */
+		struct {
+			/* Transfer state.
+			 * 0 = initiator to process (set by initiator)
+			 * 1 = initiator processing (set by initiator)
+			 * 2 = target to process (set by target)
+			 * 3 = target processing (set by target)
+			 * 4 = transfert done (set by target only.)
+			 */
+			int state;
+
+			/* Length being transfered. Only the current owner can modify it. */
+			int length;
+
+			/* Bounce buffer. */
+			off_t bounce_offset;
+
+			/* Transfer done. Set by the target only. */
+			int init_done;
+			int target_done;
+		} noknem;
+#endif
 	};
 } __attribute__((__packed__));
 
 typedef struct data data_t;
+struct buf;
+struct md;
+struct me;
 
 int data_size(data_t *data);
 
-int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf, const struct conn *conn);
+int append_immediate_data(struct md *md, data_dir_t dir, ptl_size_t offset,
+						  ptl_size_t length, struct buf *buf);
 
-int append_tgt_data(me_t *me, ptl_size_t offset,
-		    ptl_size_t length, buf_t *buf);
+int append_tgt_data(struct me *me, ptl_size_t offset,
+					ptl_size_t length, struct buf *buf);
 
 #endif /* PTL_DATA_H */

@@ -105,7 +105,7 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 
 		offset = 0;
 		length -= bytes;
-		src_offset -= bytes;
+		src_offset += bytes;
 	}
 
 	if (length) {

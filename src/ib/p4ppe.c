@@ -144,11 +144,11 @@ static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr,
 /* Let the remote side know where we store the IOVECS. This is used
  * for both direct and indirect iovecs cases. That avoids a copy into
  * the message buffer. */
-static void append_init_data_ppe_iovec_direct_indirect(data_t *data, md_t *md, int iov_start,
+static void append_init_data_ppe_iovec(data_t *data, md_t *md, int iov_start,
 												int num_iov, ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_MEM_INDIRECT;
-	data->mem.num_mem_iovecs = num_sge;
+	data->mem.num_mem_iovecs = num_iov;
 
 	data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
 	data->mem.mem_iovec[0].length = num_iov * sizeof(struct mem_iovec);
@@ -156,9 +156,73 @@ static void append_init_data_ppe_iovec_direct_indirect(data_t *data, md_t *md, i
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
 }
 
+/**
+ * @brief Build and append a data segment to a request message.
+ *
+ * @param[in] md the md that contains the data
+ * @param[in] dir the data direction, in or out
+ * @param[in] offset the offset into the md
+ * @param[in] length the length of the data
+ * @param[in] buf the buf the add the data segment to
+ * @param[in] type the transport type
+ *
+ * @return status
+ */
+static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset,
+									 ptl_size_t length, buf_t *buf)
+{
+	int err = PTL_OK;
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	data_t *data = (data_t *)(buf->data + buf->length);
+	int num_sge;
+	ptl_size_t iov_start = 0;
+	ptl_size_t iov_offset = 0;
+
+	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
+		err = append_immediate_data(md, dir, offset, length, buf);
+	}
+	else if (md->options & PTL_IOVEC) {
+		ptl_iovec_t *iovecs = md->start;
+
+		/* Find the index and offset of the first IOV as well as the
+		 * total number of IOVs to transfer. */
+		num_sge = iov_count_elem(iovecs, md->num_iov,
+								 offset, length, &iov_start, &iov_offset);
+		if (num_sge < 0) {
+			WARN();
+			return PTL_FAIL;
+		}
+
+		append_init_data_ppe_iovec(data, md, iov_start, num_sge, length, buf);
+
+		/* @todo this is completely bogus */
+		/* Adjust the header offset for iov start. */
+		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+	} else {
+		void *addr;
+		mr_t *mr;
+		ni_t *ni = obj_to_ni(md);
+
+		addr = md->start + offset;
+		err = mr_lookup(ni, addr, length, &mr);
+		if (!err) {
+			buf->mr_list[buf->num_mr++] = mr;
+
+			append_init_data_ppe_direct(data, mr, addr, length, buf);
+		}
+	}
+
+	if (!err)
+		assert(buf->length <= BUF_DATA_SIZE);
+
+	return err;
+}
+
 static int ppe_tgt_data_out(buf_t *buf, data_t *data)
 {
-	switch(data->data_fmy) {
+	int next;
+
+	switch(data->data_fmt) {
 	case DATA_FMT_MEM_DMA:
 		buf->transfer.mem.cur_rem_iovec = &data->mem.mem_iovec[0];
 		buf->transfer.mem.num_rem_iovecs = data->mem.num_mem_iovecs;
@@ -181,6 +245,8 @@ static int ppe_tgt_data_out(buf_t *buf, data_t *data)
 		WARN();
 		next = STATE_TGT_ERROR;
 	}
+
+	return next;
 }
 
 struct transport transport_mem = {
@@ -189,9 +255,7 @@ struct transport transport_mem = {
 	.post_tgt_dma = do_mem_transfer,
 	.send_message = send_message_mem,
 	.set_send_flags = mem_set_send_flags,
-	.append_init_data_direct = append_init_data_ppe_direct,
-	.append_init_data_iovec_direct = append_init_data_ppe_iovec_direct_indirect,
-	.append_init_data_iovec_indirect = append_init_data_ppe_iovec_direct_indirect,
+	.init_prepare_transfer = init_prepare_transfer_ppe,
 	.tgt_data_out = ppe_tgt_data_out,
 };
 

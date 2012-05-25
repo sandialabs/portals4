@@ -79,88 +79,6 @@ int data_size(data_t *data)
 }
 
 /**
- * @brief Build and append a data segment to a request message.
- *
- * @param[in] md the md that contains the data
- * @param[in] dir the data direction, in or out
- * @param[in] offset the offset into the md
- * @param[in] length the length of the data
- * @param[in] buf the buf the add the data segment to
- * @param[in] type the transport type
- *
- * @return status
- */
-int append_init_data(md_t *md, data_dir_t dir, ptl_size_t offset,
-		     ptl_size_t length, buf_t *buf, const conn_t *conn)
-{
-	int err = PTL_OK;
-	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	data_t *data = (data_t *)(buf->data + buf->length);
-	int num_sge;
-	ptl_size_t iov_start = 0;
-	ptl_size_t iov_offset = 0;
-
-	if (dir == DATA_DIR_OUT && length <= get_param(PTL_MAX_INLINE_DATA)) {
-		data->data_fmt = DATA_FMT_IMMEDIATE;
-		data->immediate.data_length = cpu_to_le32(length);
-
-		if (md->options & PTL_IOVEC) {
-			err = iov_copy_out(data->immediate.data, md->start,
-					   md->num_iov, offset, length);
-			if (err) {
-				WARN();
-				return err;
-			}
-		} else {
-			memcpy(data->immediate.data, md->start + offset,
-			       length);
-		}
-
-		buf->length += sizeof(*data) + length;
-	} 
-	else if (md->options & PTL_IOVEC) {
-		ptl_iovec_t *iovecs = md->start;
-
-		/* Find the index and offset of the first IOV as well as the
-		 * total number of IOVs to transfer. */
-		num_sge = iov_count_elem(iovecs, md->num_iov,
-								 offset, length, &iov_start, &iov_offset);
-		if (num_sge < 0) {
-			WARN();
-			return PTL_FAIL;
-		}
-
-		if (num_sge > get_param(PTL_MAX_INLINE_SGE))
-			/* Indirect case. The IOVs do not fit in a buf_t. */
-			conn->transport.append_init_data_iovec_indirect(data, md, iov_start, num_sge, length, buf);
-		else
-			conn->transport.append_init_data_iovec_direct(data, md, iov_start, num_sge, length, buf);
-
-		/* @todo this is completely bogus */
-		/* Adjust the header offset for iov start. */
-		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
-	} else {
-		void *addr;
-		mr_t *mr;
-		ni_t *ni = obj_to_ni(md);
-
-		addr = md->start + offset;
-		err = mr_lookup(ni, addr, length, &mr);
-		if (err) {
-			WARN();
-			return err;
-		}
-
-		buf->mr_list[buf->num_mr++] = mr;
-
-		conn->transport.append_init_data_direct(data, mr, addr, length, buf);
-	}
-
-	assert(buf->length <= BUF_DATA_SIZE);
-	return err;
-}
-
-/**
  * @brief Build and append a data segment to a response message.
  *
  * This is only called for short Get/Fetch/Swap responses
@@ -199,4 +117,42 @@ int append_tgt_data(me_t *me, ptl_size_t offset,
 	assert(buf->length <= BUF_DATA_SIZE);
 
 	return err;
+}
+
+//TODO: merge with append_tgt_data
+int append_immediate_data(md_t *md, data_dir_t dir, ptl_size_t offset,
+						  ptl_size_t length, buf_t *buf)
+{
+	int err;
+	data_t *data = (data_t *)(buf->data + buf->length);
+
+	data->data_fmt = DATA_FMT_IMMEDIATE;
+
+	if (dir == DATA_DIR_OUT) {
+		data->immediate.data_length = cpu_to_le32(length);
+			
+		if (md->options & PTL_IOVEC) {
+			err = iov_copy_out(data->immediate.data, md->start,
+							   md->num_iov, offset, length);
+			if (err) {
+				WARN();
+				return err;
+			}
+		} else {
+			memcpy(data->immediate.data, md->start + offset,
+				   length);
+		}
+
+		buf->length += sizeof(*data) + length;
+	} else {
+		assert(dir == DATA_DIR_IN);
+
+		/* The reply will be immediate. No need to build an array of
+		 * iovecs. This assumes that PTL_MAX_INLINE_DATA is consistent
+		 * amongst the ranks. */
+		data->immediate.data_length = 0;
+		buf->length += sizeof(*data);
+	}
+
+	return PTL_OK;
 }

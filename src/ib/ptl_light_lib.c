@@ -77,28 +77,6 @@ static void release_ppe_resources(void)
 	}
 }
 
-static inline obj_t *dequeue_free_obj(pool_t *pool)
-{
-	union counted_ptr oldv, newv, retv;
-
-	retv.c16 = pool->free_list.c16;
-
-	do {
-		oldv = retv;
-		if (retv.obj != NULL) {
-			obj_t *obj = ((void *)retv.obj) + (ppe.ppebufs_addr - ppe.ppebufs_ppeaddr);
-			newv.obj = obj->next;
-		} else {
-			newv.obj = NULL;
-		}
-		newv.counter = oldv.counter + 1;
-
-		retv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
-	} while (retv.c16 != oldv.c16);
-
-	return ((void *)retv.obj) + (ppe.ppebufs_addr - ppe.ppebufs_ppeaddr);
-}
-
 /**
  * Allocate a ppebuf from the shared memory pool.
  *
@@ -115,28 +93,13 @@ static inline int ppebuf_alloc(ppebuf_t **buf_p)
 		return PTL_NO_INIT;
 #endif
 
-	while ((obj = dequeue_free_obj(&ppe.ppe_comm_pad->ppebuf_pool)) == NULL) {
+	while ((obj = dequeue_free_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list,
+										 ppe.ppebufs_addr, ppe.ppebufs_ppeaddr)) == NULL) {
 		SPINLOCK_BODY();
 	}
 
 	*buf_p = container_of(obj, ppebuf_t, obj);
 	return PTL_OK;
-}
-
-static inline void enqueue_free_obj(pool_t *pool, obj_t *obj)
-{
-	union counted_ptr oldv, newv, tmpv;
-	obj_t *ppe_obj = ((void *)obj) - ppe.ppebufs_addr + ppe.ppebufs_ppeaddr; /* vaddr of obj in PPE */
-
-	tmpv.c16 = pool->free_list.c16;
-
-	do {
-		oldv = tmpv;
-		obj->next = tmpv.obj;
-		newv.obj = ppe_obj;
-		newv.counter = oldv.counter + 1;
-		tmpv.c16 = PtlInternalAtomicCas128(&pool->free_list.c16, oldv, newv);
-	} while (tmpv.c16 != oldv.c16);
 }
 
 /**
@@ -155,7 +118,8 @@ static inline void ppebuf_release(ppebuf_t *buf)
 
 	__sync_synchronize();
 
-	enqueue_free_obj(&ppe.ppe_comm_pad->ppebuf_pool, obj);
+	enqueue_free_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list, obj,
+						   ppe.ppebufs_addr, ppe.ppebufs_ppeaddr);
 }
 
 /* Format of the shared space (through XPMEM):

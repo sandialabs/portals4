@@ -119,9 +119,6 @@ struct buf {
 
 	conn_t			*conn;
 
-	struct data *put_data;
-	struct data *get_data;
-
 	struct data		*data_in;
 	struct data		*data_out;
 
@@ -260,13 +257,38 @@ struct buf {
 			int num_req_completes;
 		} rdma;
 
-#if WITH_TRANSPORT_SHMEM || IS_PPE
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
 		struct {
 			/* For large (ie. KNEM) operations. */
 			struct mem_iovec	*cur_rem_iovec;
 			ptl_size_t		num_rem_iovecs;
 			ptl_size_t		cur_rem_off;
 		} mem;
+#endif
+
+#if (WITH_TRANSPORT_SHMEM && !USE_KNEM)
+		struct {
+			/* Invariant during the transfer, 
+			 * 0=initiator, 2=target */
+			int transfer_state_expected;
+
+			/* Local MD/ME/LE */
+			ptl_iovec_t *iovecs;
+			ptl_size_t num_iovecs;
+			ptl_size_t length_left;
+			ptl_size_t offset;
+
+			/* Fake local iovec used when the MD/LE doesn't have an
+			 * iovec array. */
+			ptl_iovec_t my_iovec;
+
+			/* The associated bounce buffer. Its address, its total
+			 * length, and its offset in the comm pad, relative to the
+			 * NI's bounce buffers head. */
+			unsigned char *data;
+			ptl_size_t data_length;
+			off_t bounce_offset;
+		} noknem;
 #endif
 	} transfer;
 
