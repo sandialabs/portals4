@@ -266,6 +266,62 @@ static inline void buf_completed(ppebuf_t *buf)
 	__sync_synchronize();
 }
 
+/* Given a memory segment, create a mapping for XPMEM, and return the
+ * segid and the offset of the buffer. Return PTL_OK on success. */
+static int create_mapping_ppe(const void *addr_in, size_t length, struct xpmem_map *mapping)
+{
+	void *addr;
+
+	/* Align the address to a page boundary. */
+	addr = (void *)(((uintptr_t)addr_in) & ~(pagesize-1));
+	mapping->offset = addr_in - addr;
+	mapping->source_addr = addr_in;
+
+	/* Adjust the size to comprise full pages. */
+	mapping->size = length;
+	length += mapping->offset;
+	length = (length + pagesize-1) & ~(pagesize-1);
+
+	mapping->segid = xpmem_make(addr, length,	
+								XPMEM_PERMIT_MODE, (void *)0600);
+
+	return mapping->segid == -1 ? PTL_ARG_INVALID : PTL_OK;
+}
+
+/* Delete an existing mapping. */
+static void delete_mapping_ppe(struct xpmem_map *mapping)
+{
+	 xpmem_remove(mapping->segid);
+}
+
+/* Attach to an XPMEM segment from a given client. */
+static void *map_segment_ppe(struct client *client, struct xpmem_map *mapping)
+{
+	off_t offset;
+    struct xpmem_addr addr;
+
+	/* Hack. When addr.offset is not page aligned, xpmem_attach()
+	 * always fail. So fix the ptr afterwards. */
+	offset = ((uintptr_t)mapping->source_addr) & (pagesize-1);
+	addr.offset = mapping->offset - offset;
+	addr.apid = client->apid;
+
+	mapping->ptr_attach = xpmem_attach(addr, mapping->size+offset, NULL);
+	if (mapping->ptr_attach == (void *)-1) {
+		WARN();
+		return NULL;
+	}
+
+	return mapping->ptr_attach + offset;
+}
+
+/* Detach from an XPMEM segment. */
+static void unmap_segment_ppe(struct xpmem_map *mapping)
+{
+	if (xpmem_detach(mapping->ptr_attach) != 0)
+		WARN();
+}
+
 static void do_OP_PtlInit(ppebuf_t *buf)
 {
 	struct client *client = buf->cookie;
@@ -440,9 +496,10 @@ static void insert_ni_into_group(ptl_handle_ni_t ni_handle)
 
 static void do_OP_PtlSetMap(ppebuf_t *buf)
 {
+	struct client *client = buf->cookie;
 	ptl_process_t *mapping;
 
-	mapping = map_segment(&buf->msg.PtlSetMap.mapping);
+	mapping = map_segment_ppe(client, &buf->msg.PtlSetMap.mapping);
 	if (mapping) {
 		int ret;
 
@@ -456,7 +513,7 @@ static void do_OP_PtlSetMap(ppebuf_t *buf)
 			insert_ni_into_group(buf->msg.PtlSetMap.ni_handle);
 		}
 
-		unmap_segment(&buf->msg.PtlSetMap.mapping);
+		unmap_segment_ppe(&buf->msg.PtlSetMap.mapping);
 	} else {
 		WARN();
 		buf->msg.ret = PTL_ARG_INVALID;
@@ -465,16 +522,17 @@ static void do_OP_PtlSetMap(ppebuf_t *buf)
 
 static void do_OP_PtlGetMap(ppebuf_t *buf)
 {
+	struct client *client = buf->cookie;
 	ptl_process_t *mapping;
 
-	mapping = map_segment(&buf->msg.PtlGetMap.mapping);
+	mapping = map_segment_ppe(client, &buf->msg.PtlGetMap.mapping);
 	if (mapping) {
 		buf->msg.ret = PtlGetMap(buf->msg.PtlSetMap.ni_handle,
 								 buf->msg.PtlSetMap.map_size,
 								 mapping,
 								 &buf->msg.PtlGetMap.actual_map_size);
 
-		unmap_segment(&buf->msg.PtlGetMap.mapping);
+		unmap_segment_ppe(&buf->msg.PtlGetMap.mapping);
 	}
 }
 
@@ -508,13 +566,13 @@ static void destroy_local_iovecs(struct xpmem_map *mappings, int num_iov)
 	int i;
 
 	for (i=0; i<num_iov; i++) {
-		unmap_segment(&mappings[i]);
+		unmap_segment_ppe(&mappings[i]);
 	}
 }
 
 /* Given a mapping, recreate a set of iovecs in our own address
  * space. */
-static ptl_iovec_t *create_local_iovecs(struct xpmem_map *mappings, int num_iov)
+static ptl_iovec_t *create_local_iovecs(struct client *client, struct xpmem_map *mappings, int num_iov)
 {
 	int i;
 	ptl_iovec_t *iovecs;
@@ -527,7 +585,7 @@ static ptl_iovec_t *create_local_iovecs(struct xpmem_map *mappings, int num_iov)
 	for (i=0; i<num_iov; i++) {
 		ptl_iovec_t *iovec = &iovecs[i];
 
-		iovec->iov_base = map_segment(&mappings[i]);
+		iovec->iov_base = map_segment_ppe(client, &mappings[i]);
 		if (!iovec->iov_base)
 			goto err;
 
@@ -545,11 +603,12 @@ static ptl_iovec_t *create_local_iovecs(struct xpmem_map *mappings, int num_iov)
 
 static void do_OP_PtlMEAppend(ppebuf_t *buf)
 {
+	struct client *client = buf->cookie;
 	void *start;
 	struct ptl_me_ppe me_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
 
-	start = map_segment(&buf->msg.PtlMEAppend.mapping);
+	start = map_segment_ppe(client, &buf->msg.PtlMEAppend.mapping);
 
 	if (start) {
 
@@ -557,9 +616,9 @@ static void do_OP_PtlMEAppend(ppebuf_t *buf)
 		me_init_ppe.mapping = buf->msg.PtlMEAppend.mapping;
 
 		if (buf->msg.PtlMEAppend.me.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(start, buf->msg.PtlMEAppend.me.length);
+			iovecs = create_local_iovecs(client, start, buf->msg.PtlMEAppend.me.length);
 			if (!iovecs) {
-				unmap_segment(&buf->msg.PtlMEAppend.mapping);
+				unmap_segment_ppe(&buf->msg.PtlMEAppend.mapping);
 
 				buf->msg.ret = PTL_NO_SPACE;
 				return;
@@ -583,7 +642,7 @@ static void do_OP_PtlMEAppend(ppebuf_t *buf)
 								   &buf->msg.PtlMEAppend.me_handle);
 
 		if (buf->msg.ret != PTL_OK) {
-			unmap_segment(&buf->msg.PtlMEAppend.mapping);
+			unmap_segment_ppe(&buf->msg.PtlMEAppend.mapping);
 
 			// todo
 			//	if (iovecs)
@@ -612,26 +671,27 @@ static void do_OP_PtlMEUnlink(ppebuf_t *buf)
 	buf->msg.ret = PtlMEUnlink(buf->msg.PtlMEUnlink.me_handle);
 
 	if (buf->msg.ret == PTL_OK) {
-		unmap_segment(&mapping);
+		unmap_segment_ppe(&mapping);
 	}	
 }
 
 static void do_OP_PtlLEAppend(ppebuf_t *buf)
 {
+	struct client *client = buf->cookie;
 	void *start;
 	struct ptl_le_ppe le_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
 
-	start = map_segment(&buf->msg.PtlLEAppend.mapping);
+	start = map_segment_ppe(client, &buf->msg.PtlLEAppend.mapping);
 
 	if (start) {
 		le_init_ppe.le_init = buf->msg.PtlLEAppend.le;
 		le_init_ppe.mapping = buf->msg.PtlLEAppend.mapping;
 
 		if (buf->msg.PtlLEAppend.le.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(start, buf->msg.PtlLEAppend.le.length);
+			iovecs = create_local_iovecs(client, start, buf->msg.PtlLEAppend.le.length);
 			if (!iovecs) {
-				unmap_segment(&buf->msg.PtlLEAppend.mapping);
+				unmap_segment_ppe(&buf->msg.PtlLEAppend.mapping);
 
 				buf->msg.ret = PTL_NO_SPACE;
 				return;
@@ -655,7 +715,7 @@ static void do_OP_PtlLEAppend(ppebuf_t *buf)
 								   &buf->msg.PtlLEAppend.le_handle);
 
 		if (buf->msg.ret != PTL_OK) {
-			unmap_segment(&buf->msg.PtlLEAppend.mapping);
+			unmap_segment_ppe(&buf->msg.PtlLEAppend.mapping);
 
 			// todo
 			//	if (iovecs)
@@ -693,7 +753,7 @@ static void do_OP_PtlLEUnlink(ppebuf_t *buf)
 	buf->msg.ret = PtlLEUnlink(buf->msg.PtlLEUnlink.le_handle);
 
 	if (buf->msg.ret == PTL_OK) {
-		unmap_segment(&mapping);
+		unmap_segment_ppe(&mapping);
 
 		// todo
 		//	if (iovecs)
@@ -703,20 +763,21 @@ static void do_OP_PtlLEUnlink(ppebuf_t *buf)
 
 static void do_OP_PtlMDBind(ppebuf_t *buf)
 {
+	struct client *client = buf->cookie;
 	void *start;
 	struct ptl_md_ppe md_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
 
-	start = map_segment(&buf->msg.PtlMDBind.mapping);
+	start = map_segment_ppe(client, &buf->msg.PtlMDBind.mapping);
 
 	if (start) {
 		md_init_ppe.md_init = buf->msg.PtlMDBind.md;
 		md_init_ppe.mapping = buf->msg.PtlMDBind.mapping;
 
 		if (buf->msg.PtlMDBind.md.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(start, buf->msg.PtlMDBind.md.length);
+			iovecs = create_local_iovecs(client, start, buf->msg.PtlMDBind.md.length);
 			if (!iovecs) {
-				unmap_segment(&buf->msg.PtlMDBind.mapping);
+				unmap_segment_ppe(&buf->msg.PtlMDBind.mapping);
 
 				buf->msg.ret = PTL_NO_SPACE;
 				return;
@@ -757,7 +818,7 @@ static void do_OP_PtlMDRelease(ppebuf_t *buf)
 	buf->msg.ret = PtlMDRelease(buf->msg.PtlMDRelease.md_handle);
 
 	if (buf->msg.ret == PTL_OK) {
-		unmap_segment(&mapping);
+		unmap_segment_ppe(&mapping);
 	}
 }
 
@@ -968,8 +1029,8 @@ static void do_OP_PtlEQAlloc(ppebuf_t *buf)
 		err = to_eq(buf->msg.PtlEQAlloc.eq_handle, &eq);
 		assert(err == PTL_OK);
 
-		err = create_mapping(eq->eqe_list, eq->eqe_list_size,
-							 &eq->ppe.eqe_list);
+		err = create_mapping_ppe(eq->eqe_list, eq->eqe_list_size,
+								 &eq->ppe.eqe_list);
 		buf->msg.PtlEQAlloc.eqe_list = eq->ppe.eqe_list;
 
 		eq_put(eq);
@@ -999,7 +1060,7 @@ static void do_OP_PtlEQFree(ppebuf_t *buf)
 	buf->msg.ret = PtlEQFree(buf->msg.PtlEQFree.eq_handle);
 
 	if (buf->msg.ret == PTL_OK)
-		delete_mapping(&mapping);
+		delete_mapping_ppe(&mapping);
 }
 
 static void do_OP_PtlCTAlloc(ppebuf_t *buf)
@@ -1015,8 +1076,8 @@ static void do_OP_PtlCTAlloc(ppebuf_t *buf)
 		err = to_ct(buf->msg.PtlCTAlloc.ct_handle, &ct);
 		assert(err == PTL_OK);
 
-		err = create_mapping(&ct->info, sizeof(struct ct_info),
-							 &ct->ppe.ct_mapping);
+		err = create_mapping_ppe(&ct->info, sizeof(struct ct_info),
+								 &ct->ppe.ct_mapping);
 		buf->msg.PtlCTAlloc.ct_mapping = ct->ppe.ct_mapping;
 
 		ct_put(ct);
@@ -1056,7 +1117,7 @@ static void do_OP_PtlCTFree(ppebuf_t *buf)
 	buf->msg.ret = PtlCTFree(buf->msg.PtlCTFree.ct_handle);
 
 	if (buf->msg.ret == PTL_OK)
-		delete_mapping(&mapping);
+		delete_mapping_ppe(&mapping);
 }
 
 static void do_OP_PtlPTDisable(ppebuf_t *buf)
@@ -1189,6 +1250,15 @@ static void ppe_progress(void)
 			client = calloc(1, sizeof(struct client));
 			if (client) {
 				client->pid = comm_pad->cmd.pid;
+				
+				client->apid = xpmem_get(comm_pad->cmd.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+				if (client->apid == -1) {
+					/* That is possible, but should not happen. */
+					WARN();
+					free(client);
+					goto bad_client;
+				}
+
 				list_add(&client->list, &clients);
 			
 				comm_pad->cmd.cookie = client;
@@ -1196,6 +1266,7 @@ static void ppe_progress(void)
 				comm_pad->cmd.ppebufs_ppeaddr = ppe.ppebuf.slab;
 				comm_pad->cmd.ret = PTL_OK;
 			} else {
+			bad_client:
 				WARN();
 				comm_pad->cmd.ret = PTL_FAIL;
 			}
@@ -1378,7 +1449,7 @@ static int setup_ppebufs(void)
 	}
 
 	/* Make the communication pad shareable through XPMEM. */
-	ret = create_mapping(ppe.ppebuf.slab, size, &ppe.ppebuf.slab_mapping);
+	ret = create_mapping_ppe(ppe.ppebuf.slab, size, &ppe.ppebuf.slab_mapping);
 	if (ret == -1) {
 		WARN();
 		return 1;

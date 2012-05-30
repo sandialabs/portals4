@@ -34,6 +34,9 @@ struct client
 
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;
+	
+	/* Mapping of the whole process. */
+	xpmem_apid_t apid;
 
 	gbl_t gbl;
 };
