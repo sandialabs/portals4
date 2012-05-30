@@ -43,6 +43,9 @@ static struct {
 	/* Virtual address of the slab containing the ppebufs in this
 	 * process. */
 	void *ppebufs_addr;
+
+	/* XPMEM segid for that whole process. */
+	xpmem_segid_t segid;
 } ppe;
 
 void gbl_release(ref_t *ref)
@@ -122,6 +125,51 @@ static inline void ppebuf_release(ppebuf_t *buf)
 						   ppe.ppebufs_addr, ppe.ppebufs_ppeaddr);
 }
 
+/* Attach to an XPMEM segment. */
+static void *map_segment(struct xpmem_map *mapping)
+{
+	off_t offset;
+
+	mapping->addr.apid = xpmem_get(mapping->segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+	if (mapping->addr.apid == -1) {
+		WARN();
+		return NULL;
+	}
+
+	/* Hack. When addr.offset is not page aligned, xpmem_attach()
+	 * always fail. So fix the ptr afterwards. */
+	offset = ((uintptr_t)mapping->source_addr) & (pagesize-1);
+	mapping->addr.offset = mapping->offset - offset;
+	mapping->ptr_attach = xpmem_attach(mapping->addr, mapping->size+offset, NULL);
+	if (mapping->ptr_attach == (void *)-1) {
+		WARN();
+		xpmem_release(mapping->addr.apid);
+		return NULL;
+	}
+
+	return mapping->ptr_attach + offset;
+}
+
+/* Detach from an XPMEM segment. */
+static void unmap_segment(struct xpmem_map *mapping)
+{
+	if (xpmem_detach(mapping->ptr_attach) != 0) {
+		WARN();
+		return;
+	}
+
+	xpmem_release(mapping->addr.apid);
+}
+
+static inline void fill_mapping_info(const void *addr_in, size_t length,
+									 struct xpmem_map *mapping)
+{
+	mapping->offset = (uintptr_t)addr_in; /* segid is for whole space */
+	mapping->source_addr = addr_in;
+	mapping->size = length;
+	mapping->segid = ppe.segid;
+}
+
 /* Format of the shared space (through XPMEM):
  * 0: PPE queue
  * 4KiB: rank 0 queue + buffers
@@ -135,9 +183,15 @@ static int setup_ppe(void)
 
 	ppe.ppe_comm_pad = MAP_FAILED;
 
+	/* XPMEM the whole memory of that process. */
+
 	/*
 	 * Allocate the buffers in memory to communicate with the PPE.
 	 */
+	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,	
+						   XPMEM_PERMIT_MODE, (void *)0600);
+	if (ppe.segid == -1)
+		goto exit_fail;
 
 	/* Connect to the PPE shared memory. */
 	/* Try for 10 seconds. That should leave enough time for the PPE
@@ -201,6 +255,7 @@ static int setup_ppe(void)
 
 	/* Fill the command. */
 	ppe.ppe_comm_pad->cmd.pid = getpid();
+	ppe.ppe_comm_pad->cmd.segid = ppe.segid;
 
 	switch_cmd_level(ppe.ppe_comm_pad, 1, 2);
 
@@ -484,17 +539,12 @@ int PtlSetMap(ptl_handle_ni_t      ni_handle,
 	buf->msg.PtlSetMap.ni_handle = ni_handle;
 	buf->msg.PtlSetMap.map_size = map_size;
 
-	err = create_mapping(mapping, map_size, &buf->msg.PtlSetMap.mapping);
-	if (err)
-		goto done;
+	fill_mapping_info(mapping, map_size * sizeof(ptl_process_t), &buf->msg.PtlSetMap.mapping);
 
 	transfer_msg(buf);
 
-	delete_mapping(&buf->msg.PtlSetMap.mapping);
-
 	err = buf->msg.ret;
 
- done:
 	ppebuf_release(buf);
 
 	return err;
@@ -518,19 +568,14 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	buf->msg.PtlGetMap.ni_handle = ni_handle;
 	buf->msg.PtlGetMap.map_size = map_size;
 
-	err = create_mapping(mapping, map_size, &buf->msg.PtlGetMap.mapping);
-	if (err)
-		goto done;
+	fill_mapping_info(mapping, map_size, &buf->msg.PtlGetMap.mapping);
 
 	transfer_msg(buf);
-
-	delete_mapping(&buf->msg.PtlGetMap.mapping);
 
 	*actual_map_size = buf->msg.PtlGetMap.actual_map_size;
 
 	err = buf->msg.ret;
 
- done:
 	ppebuf_release(buf);
 
 	return err;
@@ -725,7 +770,6 @@ static struct xpmem_map *create_iovec_mapping(const ptl_iovec_t *iov_list, int n
 {
 	struct xpmem_map *mapping;
 	int i;
-	int err;
 
 	mapping = calloc(num_iov, sizeof(struct xpmem_map));
 	if (!mapping) {
@@ -736,31 +780,14 @@ static struct xpmem_map *create_iovec_mapping(const ptl_iovec_t *iov_list, int n
 	for (i = 0; i < num_iov; i++) {
 		const ptl_iovec_t *iov = &iov_list[i];
 		
-		err = create_mapping(iov->iov_base, iov->iov_len, &mapping[i]);
-		if (err)
-			goto err;
+		fill_mapping_info(iov->iov_base, iov->iov_len, &mapping[i]);
 	}
 
 	return mapping;
-
- err:
-	for (i = 0; i < num_iov; i++) {
-		delete_mapping(&mapping[i]);
-	}
-
-	free(mapping);
-
-	return NULL;
 }
 
 static void destroy_iovec_mapping(struct xpmem_map *mapping, int num_iov)
 {
-	int i;
-
-	for (i = 0; i < num_iov; i++) {
-		delete_mapping(&mapping[i]);
-	}
-
 	free(mapping);
 }
 
@@ -788,23 +815,16 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
 			err = PTL_NO_SPACE;
 			goto done;
 		}
-		err = create_mapping(iovec_mapping, md->length*sizeof(struct xpmem_map),
+		fill_mapping_info(iovec_mapping, md->length*sizeof(struct xpmem_map),
 							 &buf->msg.PtlMDBind.mapping);
-		if (err) {
-			destroy_iovec_mapping(iovec_mapping, md->length);
-			goto done;
-		}
 	} else {
-		err = create_mapping(md->start, md->length, &buf->msg.PtlMDBind.mapping);
-		if (err)
-			goto done;
+		fill_mapping_info(md->start, md->length, &buf->msg.PtlMDBind.mapping);
 	}
 
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
 	if (err) {
-		delete_mapping(&buf->msg.PtlMDBind.mapping);
 		if (md->options & PTL_IOVEC)
 			destroy_iovec_mapping(iovec_mapping, md->length);
 	} else {
@@ -834,8 +854,6 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err == PTL_OK)
-		delete_mapping(&buf->msg.PtlMDRelease.md_start);
 
 	ppebuf_release(buf);
 
@@ -872,23 +890,16 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 			err = PTL_NO_SPACE;
 			goto done;
 		}
-		err = create_mapping(iovec_mapping, le->length*sizeof(struct xpmem_map),
+		fill_mapping_info(iovec_mapping, le->length*sizeof(struct xpmem_map),
 							 &buf->msg.PtlLEAppend.mapping);
-		if (err) {
-			destroy_iovec_mapping(iovec_mapping, le->length);
-			goto done;
-		}
 	} else {
-		err = create_mapping(le->start, le->length, &buf->msg.PtlLEAppend.mapping);
-		if (err)
-			goto done;
+		fill_mapping_info(le->start, le->length, &buf->msg.PtlLEAppend.mapping);
 	}
 
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
 	if (err) {
-		delete_mapping(&buf->msg.PtlLEAppend.mapping);
 		if (le->options & PTL_IOVEC)
 			destroy_iovec_mapping(iovec_mapping, le->length);
 	} else {
@@ -918,8 +929,6 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err == PTL_OK)
-		delete_mapping(&buf->msg.PtlLEUnlink.le_start);
 
 	ppebuf_release(buf);
 
@@ -987,23 +996,16 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 			err = PTL_NO_SPACE;
 			goto done;
 		}
-		err = create_mapping(iovec_mapping, me->length*sizeof(struct xpmem_map),
+		fill_mapping_info(iovec_mapping, me->length*sizeof(struct xpmem_map),
 							 &buf->msg.PtlMEAppend.mapping);
-		if (err) {
-			destroy_iovec_mapping(iovec_mapping, me->length);
-			goto done;
-		}
 	} else {
-		err = create_mapping(me->start, me->length, &buf->msg.PtlMEAppend.mapping);
-		if (err)
-			goto done;
+		fill_mapping_info(me->start, me->length, &buf->msg.PtlMEAppend.mapping);
 	}
 
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
 	if (err) {
-		delete_mapping(&buf->msg.PtlMEAppend.mapping);
 		if (me->options & PTL_IOVEC)
 			destroy_iovec_mapping(iovec_mapping, me->length);
 	} else {
@@ -1033,8 +1035,6 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err == PTL_OK)
-		delete_mapping(&buf->msg.PtlMEUnlink.me_start);
 
 	ppebuf_release(buf);
 

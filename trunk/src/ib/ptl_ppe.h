@@ -4,17 +4,21 @@
 
 #define COMM_PAD_FNAME "/portals4-ppe"
 
-/* XPMEM mapping. */
+/* XPMEM mapping. Maybe this structure should be split into 2
+ * differents ones: one for the client and one for the PPE. */
 struct xpmem_map {
 	/* From source process. */
-	xpmem_segid_t segid;
-	size_t size;
-	off_t offset;
 	const void *source_addr;
+	size_t size;
+
+	off_t offset;				/* from start of segid to source_addr */
+	xpmem_segid_t segid;
 
 	/* On dest process. */
+	void *ptr_attach;			/* registered address with xpmem_attach */
+
+	/* Both. */
     struct xpmem_addr addr;
-	void *ptr;					/* virtual address in client */
 };
 
 struct ppe_comm_pad {
@@ -38,6 +42,7 @@ struct ppe_comm_pad {
 		
 		/* Arguments for the command (from the client to the PPE) */
 		pid_t pid;
+		xpmem_segid_t segid;
 
 		/* Response from the PPE to the client. */
 		int ret;
@@ -493,11 +498,5 @@ typedef struct ppebuf {
 	/** Message from client to PPE, with response from PPE. */
 	struct ppe_msg msg;
 } ppebuf_t;
-
-int create_mapping(const void *addr_in, size_t length,
-				   struct xpmem_map *mapping);
-void delete_mapping(struct xpmem_map *mapping);
-void *map_segment(struct xpmem_map *mapping);
-void unmap_segment(struct xpmem_map *mapping);
 
 #endif
