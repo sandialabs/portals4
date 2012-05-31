@@ -109,7 +109,7 @@ AH_BOTTOM([
 CFLAGS_save="$CFLAGS"
 AC_PROG_CC
 AM_PROG_CC_C_O
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
 CFLAGS="$CFLAGS_save"
 
 # Define hwloc's configure arguments
