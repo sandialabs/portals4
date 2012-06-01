@@ -276,14 +276,14 @@ static int init_local_offset(buf_t *buf)
 		buf->cur_loc_iov_index = i;
 		buf->cur_loc_iov_off = iov_offset;
 #if IS_PPE
-		buf->start = (void *)me->ppe.iovecs_mappings[i].source_addr + iov_offset;
+		buf->start = me->ppe.client_iovecs[i].iov_base + iov_offset;
 #else
 		buf->start = iov->iov_base + iov_offset;
 #endif
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
 #if IS_PPE
-		buf->start = (void *)me->ppe.mapping.source_addr + buf->moffset;
+		buf->start = me->ppe.client_start + buf->moffset;
 #else
 		buf->start = me->start + buf->moffset;
 #endif

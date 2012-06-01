@@ -551,9 +551,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	{
 		/* Under the PPE, the le_init structure has been silently extend. */
 		const struct ptl_le_ppe *le_init_ppe = (const struct ptl_le_ppe *)le_init;
-		le->ppe.mapping = le_init_ppe->mapping;
-		if (le_init->options & PTL_IOVEC)
-			le->ppe.iovecs_mappings = le_init_ppe->iovecs_mappings;
+		le->ppe.client_start = le_init_ppe->client_start;
 	}
 #endif
 

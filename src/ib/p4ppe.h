@@ -46,22 +46,19 @@ extern struct transport transport_mem;
 /* Extends the ptl_le_t structure to store mappings. */
 struct ptl_le_ppe {
 	ptl_le_t le_init;
-	struct xpmem_map mapping;
-	struct xpmem_map *iovecs_mappings;
+	void *client_start;
 };
 
 /* Extends the ptl_le_t structure to store mappings. */
 struct ptl_me_ppe {
 	ptl_me_t me_init;
-	struct xpmem_map mapping;
-	struct xpmem_map *iovecs_mappings;
+	void *client_start;
 };
 
 /* Extends the ptl_md_t structure to store mappings. */
 struct ptl_md_ppe {
 	ptl_md_t md_init;
-	struct xpmem_map mapping;
-	struct xpmem_map *iovecs_mappings;
+	void *client_start;
 };
 
 #endif /* PTL_GBL_H */

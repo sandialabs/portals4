@@ -538,8 +538,7 @@ int PtlSetMap(ptl_handle_ni_t      ni_handle,
 
 	buf->msg.PtlSetMap.ni_handle = ni_handle;
 	buf->msg.PtlSetMap.map_size = map_size;
-
-	fill_mapping_info(mapping, map_size * sizeof(ptl_process_t), &buf->msg.PtlSetMap.mapping);
+	buf->msg.PtlSetMap.mapping = mapping;
 
 	transfer_msg(buf);
 
@@ -567,8 +566,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 
 	buf->msg.PtlGetMap.ni_handle = ni_handle;
 	buf->msg.PtlGetMap.map_size = map_size;
-
-	fill_mapping_info(mapping, map_size, &buf->msg.PtlGetMap.mapping);
+	buf->msg.PtlGetMap.mapping = mapping;
 
 	transfer_msg(buf);
 
@@ -766,38 +764,12 @@ int PtlGetPhysId(ptl_handle_ni_t ni_handle,
 	return err;
 }
 
-static struct xpmem_map *create_iovec_mapping(const ptl_iovec_t *iov_list, int num_iov)
-{
-	struct xpmem_map *mapping;
-	int i;
-
-	mapping = calloc(num_iov, sizeof(struct xpmem_map));
-	if (!mapping) {
-		WARN();
-		return NULL;
-	}
-
-	for (i = 0; i < num_iov; i++) {
-		const ptl_iovec_t *iov = &iov_list[i];
-		
-		fill_mapping_info(iov->iov_base, iov->iov_len, &mapping[i]);
-	}
-
-	return mapping;
-}
-
-static void destroy_iovec_mapping(struct xpmem_map *mapping, int num_iov)
-{
-	free(mapping);
-}
-
 int PtlMDBind(ptl_handle_ni_t  ni_handle,
               const ptl_md_t  *md,
               ptl_handle_md_t *md_handle)
 {
 	ppebuf_t *buf;
 	int err;
-	struct xpmem_map *iovec_mapping = NULL;
 
 	if ((err = ppebuf_alloc(&buf))) {
 		WARN();
@@ -809,29 +781,11 @@ int PtlMDBind(ptl_handle_ni_t  ni_handle,
 	buf->msg.PtlMDBind.ni_handle = ni_handle;
 	buf->msg.PtlMDBind.md = *md;
 
-	if (md->options & PTL_IOVEC) {
-		iovec_mapping = create_iovec_mapping(md->start, md->length);
-		if (!iovec_mapping) {
-			err = PTL_NO_SPACE;
-			goto done;
-		}
-		fill_mapping_info(iovec_mapping, md->length*sizeof(struct xpmem_map),
-							 &buf->msg.PtlMDBind.mapping);
-	} else {
-		fill_mapping_info(md->start, md->length, &buf->msg.PtlMDBind.mapping);
-	}
-
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err) {
-		if (md->options & PTL_IOVEC)
-			destroy_iovec_mapping(iovec_mapping, md->length);
-	} else {
-		*md_handle = buf->msg.PtlMDBind.md_handle;
-	}
+	*md_handle = buf->msg.PtlMDBind.md_handle;
 
- done:
 	ppebuf_release(buf);
 
 	return err;
@@ -869,7 +823,6 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 {
 	ppebuf_t *buf;
 	int err;
-	struct xpmem_map *iovec_mapping = NULL;
 
 	if ((err = ppebuf_alloc(&buf))) {
 		WARN();
@@ -884,29 +837,11 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 	buf->msg.PtlLEAppend.ptl_list = ptl_list;
 	buf->msg.PtlLEAppend.user_ptr = user_ptr;
 
-	if (le->options & PTL_IOVEC) {
-		iovec_mapping = create_iovec_mapping(le->start, le->length);
-		if (!iovec_mapping) {
-			err = PTL_NO_SPACE;
-			goto done;
-		}
-		fill_mapping_info(iovec_mapping, le->length*sizeof(struct xpmem_map),
-							 &buf->msg.PtlLEAppend.mapping);
-	} else {
-		fill_mapping_info(le->start, le->length, &buf->msg.PtlLEAppend.mapping);
-	}
-
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err) {
-		if (le->options & PTL_IOVEC)
-			destroy_iovec_mapping(iovec_mapping, le->length);
-	} else {
-		*le_handle = buf->msg.PtlLEAppend.le_handle;
-	}
+	*le_handle = buf->msg.PtlLEAppend.le_handle;
 	
- done:
 	ppebuf_release(buf);
 
 	return err;
@@ -975,7 +910,6 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 {
 	ppebuf_t *buf;
 	int err;
-	struct xpmem_map *iovec_mapping = NULL;
 
 	if ((err = ppebuf_alloc(&buf))) {
 		WARN();
@@ -990,29 +924,11 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 	buf->msg.PtlMEAppend.ptl_list = ptl_list;
 	buf->msg.PtlMEAppend.user_ptr = user_ptr;
 
-	if (me->options & PTL_IOVEC) {
-		iovec_mapping = create_iovec_mapping(me->start, me->length);
-		if (!iovec_mapping) {
-			err = PTL_NO_SPACE;
-			goto done;
-		}
-		fill_mapping_info(iovec_mapping, me->length*sizeof(struct xpmem_map),
-							 &buf->msg.PtlMEAppend.mapping);
-	} else {
-		fill_mapping_info(me->start, me->length, &buf->msg.PtlMEAppend.mapping);
-	}
-
 	transfer_msg(buf);
 
 	err = buf->msg.ret;
-	if (err) {
-		if (me->options & PTL_IOVEC)
-			destroy_iovec_mapping(iovec_mapping, me->length);
-	} else {
-		*me_handle = buf->msg.PtlMEAppend.me_handle;
-	}
+	*me_handle = buf->msg.PtlMEAppend.me_handle;
 	
- done:
 	ppebuf_release(buf);
 
 	return err;

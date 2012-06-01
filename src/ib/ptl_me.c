@@ -115,9 +115,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	{
 		/* Under the PPE, the me_init structure has been silently extended. */
 		const struct ptl_me_ppe *me_init_ppe = (const struct ptl_me_ppe *)me_init;
-		me->ppe.mapping = me_init_ppe->mapping;
-		if (me_init->options & PTL_IOVEC)
-			me->ppe.iovecs_mappings = me_init_ppe->iovecs_mappings;
+		me->ppe.client_start = me_init_ppe->client_start;
 	}
 #endif
 

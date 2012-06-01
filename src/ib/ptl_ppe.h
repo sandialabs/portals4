@@ -143,13 +143,13 @@ struct ppe_msg {
 		struct {
 			ptl_handle_ni_t      ni_handle;
 			ptl_size_t           map_size;
-			struct xpmem_map     mapping;
+			const ptl_process_t *mapping;
 		} PtlSetMap;
 
 		struct {
 			ptl_handle_ni_t ni_handle;
 			ptl_size_t      map_size;
-			struct xpmem_map     mapping;
+			ptl_process_t *mapping;
 			ptl_size_t     actual_map_size;
 		} PtlGetMap;
 
@@ -195,14 +195,10 @@ struct ppe_msg {
 			ptl_handle_ni_t  ni_handle;
 			ptl_md_t   md;
 			ptl_handle_md_t  md_handle;
-
-			/* Eitheir start or the fake iovec table */
-			struct xpmem_map mapping;
 		} PtlMDBind;
 
 		struct {
 			ptl_handle_md_t md_handle;
-			struct xpmem_map md_start; /* From PPE. */
 		} PtlMDRelease;
 
 		struct {
@@ -212,14 +208,10 @@ struct ppe_msg {
 			ptl_list_t       ptl_list;
 			void            *user_ptr;
 			ptl_handle_le_t  le_handle;
-
-			/* Eitheir start or the fake iovec table */
-			struct xpmem_map mapping;
 		} PtlLEAppend;
 
 		struct {
 			ptl_handle_le_t le_handle;
-			struct xpmem_map le_start; /* From PPE. */
 		} PtlLEUnlink;
 
 		struct {
@@ -237,14 +229,10 @@ struct ppe_msg {
 			ptl_list_t       ptl_list;
 			void            *user_ptr;
 			ptl_handle_me_t  me_handle;
-
-			/* Eitheir start or the fake iovec table */
-			struct xpmem_map mapping;
 		} PtlMEAppend;
 
 		struct {
 			ptl_handle_me_t me_handle;
-			struct xpmem_map me_start; /* From PPE. */
 		} PtlMEUnlink;
 
 		struct {
