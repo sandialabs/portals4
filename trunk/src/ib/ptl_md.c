@@ -143,6 +143,9 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		mem_iovec->cookie = mr->knem_cookie;
 		mem_iovec->offset = iov->iov_base - mr->addr;
 #endif
+#if IS_PPE
+		mem_iovec->addr = iov->iov_base;
+#endif
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;
 #endif
@@ -227,9 +230,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	{
 		/* Under the PPE, the md_init structure has been silently extend. */
 		const struct ptl_md_ppe *md_init_ppe = (const struct ptl_md_ppe *)md_init;
-		md->ppe.mapping = md_init_ppe->mapping;
-		if (md_init->options & PTL_IOVEC)
-			md->ppe.iovecs_mappings = md_init_ppe->iovecs_mappings;
+		md->ppe.client_start = md_init_ppe->client_start;
 	}
 #endif
 
