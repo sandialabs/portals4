@@ -580,7 +580,7 @@ found_one:
 		 * unexpected list entry */
 		buf_get(buf);
 		list_add_tail(&buf->unexpected_list,
-			      &buf->le->pt->unexpected_list);
+			      &pt->unexpected_list);
 	}
 
 	buf->matching_list = buf->le->ptl_list;
@@ -588,7 +588,7 @@ found_one:
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	/* now that we have determined the list element
-	 * compute the remainign event mask bits */
+	 * compute the remaining event mask bits */
 	init_events(buf);
 
 	return STATE_TGT_GET_LENGTH;
@@ -1414,9 +1414,30 @@ static int tgt_cleanup(buf_t *buf)
 		 * ME/LE. */
 		assert(buf->le->ptl_list == PTL_OVERFLOW_LIST);
 		state = STATE_TGT_OVERFLOW_EVENT;
-	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST)
+	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+#if WITH_TRANSPORT_SHMEM || IS_PPE
+		/* If it is a shared memory buffer, then the data is actually
+		 * in a different buffer, which will be returned as soon as we
+		 * leave the state machine. The data has been copied to the
+		 * ME/LE on the overflow list, but we still need to keep the
+		 * header. */
+		if (buf->data != buf->internal_data) {
+			const req_hdr_t *hdr1 = (req_hdr_t *)buf->data;
+			req_hdr_t *hdr2 = (req_hdr_t *)buf->internal_data;
+
+			*hdr2 = *hdr1;
+
+			/* Unfortunately, there might be a race with
+			 * __match_le_unexpected, so we have have to protect the
+			 * data. There might be an optimization to be done here. */
+			PTL_FASTLOCK_LOCK(&buf->pt->lock);
+			buf->data = buf->internal_data;
+			PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
+		}
+#endif
+
 		state = STATE_TGT_WAIT_APPEND;
-	else
+	}	else
 		state = STATE_TGT_CLEANUP_2;
 
 	assert(!buf->indir_sge);

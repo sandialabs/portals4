@@ -557,17 +557,21 @@ void *progress_thread(void *arg)
 						process_recv_mem(ni, buf);
 					}
 
-					if (list_empty(&buf->list)) {
-						if (shmem_buf->type == BUF_SHMEM_SEND ||
-							shmem_buf->shmem.index_owner != ni->mem.index) {
-							/* Requested to send the buffer back, or not the
-							 * owner. Send the buffer back in both cases. */
-							shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
-						} else {
-							/* It was returned to us with a message from a remote
-							 * rank. From send_message_shmem(). */
-							buf_put(shmem_buf);
-						}
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+					/* Don't send back if it's on the noknem list. */
+					if (!list_empty(&buf->list))
+						break;
+#endif
+
+					if (shmem_buf->type == BUF_SHMEM_SEND ||
+						shmem_buf->shmem.index_owner != ni->mem.index) {
+						/* Requested to send the buffer back, or not the
+						 * owner. Send the buffer back in both cases. */
+						shmem_enqueue(ni, shmem_buf, shmem_buf->shmem.index_owner);
+					} else {
+						/* It was returned to us with a message from a remote
+						 * rank. From send_message_shmem(). */
+						buf_put(shmem_buf);
 					}
 				}
 					break;
@@ -608,6 +612,8 @@ void *progress_thread(void *arg)
 					if (data->noknem.init_done) {
 						buf_t *shmem_buf = buf->mem_buf;
 
+						/* The transfer is now done. Remove from
+						 * noknem_list. */
 						list_del(&buf->list);
 
 						process_tgt(buf);
