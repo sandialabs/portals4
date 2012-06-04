@@ -45,9 +45,11 @@ typedef struct mr {
 
 void mr_cleanup(void *arg);
 
-int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr);
+int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length, mr_t **mr_p);
+static inline int mr_lookup_app(ni_t *ni, void *start, ptl_size_t length, mr_t **mr) { return mr_lookup(ni, &ni->mr_app, start, length, mr); }
+static inline int mr_lookup_self(ni_t *ni, void *start, ptl_size_t length, mr_t **mr) { return mr_lookup(ni, &ni->mr_self, start, length, mr); }
 
-void cleanup_mr_tree(ni_t *ni);
+void cleanup_mr_trees(ni_t *ni);
 void mr_init(ni_t *ni);
 
 /**

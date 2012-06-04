@@ -196,7 +196,7 @@ err1:
  *
  * @return status
  */ 
-int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
+int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	/*
 	 * Search for an existing mr. The start address of the node must
@@ -213,9 +213,9 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
  again:
 	INIT_LIST_HEAD(&mr_list);
 
-	PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
+	PTL_FASTLOCK_LOCK(&tree->tree_lock);
 
-	link = RB_ROOT(&ni->mr_tree);
+	link = RB_ROOT(&tree->tree);
 	left_node = NULL;
 
 	mr = NULL;
@@ -252,11 +252,11 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 
 	/* Extend the region to the right. */
 	if (left_node)
-		rb = RB_NEXT(the_root, &ni->mr_tree, left_node);
+		rb = RB_NEXT(the_root, &tree->tree, left_node);
 	else
-		rb = RB_MIN(the_root, &ni->mr_tree);
+		rb = RB_MIN(the_root, &tree->tree);
 	while (rb) {
-		struct mr *next_rb = RB_NEXT(the_root, &ni->mr_tree, rb);
+		struct mr *next_rb = RB_NEXT(the_root, &tree->tree, rb);
 
 		/* Check whether new region can be merged with this node. */
 		if (start+length >= rb->addr) {
@@ -299,7 +299,7 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			 * 
 			 * This case should rarely happen as it is there only to
 			 * close that small race. */
-			PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
+			PTL_FASTLOCK_UNLOCK(&tree->tree_lock);
 			while(generation_counter != *ni->umn_counter) {
 				SPINLOCK_BODY();
 			}
@@ -313,19 +313,19 @@ int mr_lookup(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		/* Remove all the MRs that are included in the new MR. We must
 		 * create the new MR first before eliminating these. */
 		list_for_each_entry(mr, &mr_list, list) {
-			RB_REMOVE(the_root, &ni->mr_tree, mr);
+			RB_REMOVE(the_root, &tree->tree, mr);
 			mr_put(mr);
 		}
 
 		/* Finally we can insert the new MR in the tree. */
 		mr = *mr_p;
 		mr_get(mr);
-		res = RB_INSERT(the_root, &ni->mr_tree, mr);
+		res = RB_INSERT(the_root, &tree->tree, mr);
 		assert(res == NULL);	/* should never happen */
 	}
 
  done:
-	PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
+	PTL_FASTLOCK_UNLOCK(&tree->tree_lock);
 
 	return ret;
 }
@@ -347,22 +347,23 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
 
 		switch(ev.type) {
 		case UMMUNOTIFY_EVENT_TYPE_INVAL: {
-			/* Search the tree for the MR with that cookie and remove it. */
+			/* Search the app tree for the MR with that cookie and
+			 * remove it. We don't care for the self tree. */
 			struct mr *mr;
 
-			PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
+			PTL_FASTLOCK_LOCK(&ni->mr_app.tree_lock);
 
-			RB_FOREACH(mr, the_root, &ni->mr_tree) {
+			RB_FOREACH(mr, the_root, &ni->mr_app.tree) {
 				if (mr->umn_cookie == ev.user_cookie_counter) {
 					/* All or part of that region is now invalid. We must not reuse it. Remove it from the tree. */
-					RB_REMOVE(the_root, &ni->mr_tree, mr);
+					RB_REMOVE(the_root, &ni->mr_app.tree, mr);
 					mr_put(mr);
 
 					break;
 				}
 			}
 
-			PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
+			PTL_FASTLOCK_UNLOCK(&ni->mr_app.tree_lock);
 		}
 		break;
 	
@@ -398,26 +399,37 @@ void mr_init(ni_t *ni)
 }
 
 /**
- * Empty the mr cache.
+ * Empty an mr cache.
  *
  * @param[in] ni for which cache is emptied
  */
-void cleanup_mr_tree(ni_t *ni)
+static void cleanup_mr_tree(struct ni_mr_tree *tree)
 {
 	mr_t *mr;
 	mr_t *next_mr;
 
+	PTL_FASTLOCK_LOCK(&tree->tree_lock);
+
+	for (mr = RB_MIN(the_root, &tree->tree); mr != NULL; mr = next_mr) {
+		next_mr = RB_NEXT(the_root, &tree->tree, mr);
+		RB_REMOVE(the_root, &tree->tree, mr);
+		mr_put(mr);
+	}
+
+	PTL_FASTLOCK_UNLOCK(&tree->tree_lock);
+}
+
+/**
+ * Empty the two mr caches.
+ *
+ * @param[in] ni for which caches are emptied
+ */
+void cleanup_mr_trees(ni_t *ni)
+{
 	if (ni->umn_fd != -1) {
 		EVL_WATCH(ev_io_stop(evl.loop, &ni->umn_watcher));
 	}
 
-	PTL_FASTLOCK_LOCK(&ni->mr_tree_lock);
-
-	for (mr = RB_MIN(the_root, &ni->mr_tree); mr != NULL; mr = next_mr) {
-		next_mr = RB_NEXT(the_root, &ni->mr_tree, mr);
-		RB_REMOVE(the_root, &ni->mr_tree, mr);
-		mr_put(mr);
-	}
-
-	PTL_FASTLOCK_UNLOCK(&ni->mr_tree_lock);
+	cleanup_mr_tree(&ni->mr_self);
+	cleanup_mr_tree(&ni->mr_app);
 }

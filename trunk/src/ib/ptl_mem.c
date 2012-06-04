@@ -81,7 +81,7 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (len > iov->iov_len - *loc_off)
 				len = iov->iov_len - *loc_off;
 
-			err = mr_lookup(buf->obj.obj_ni, addr, len, &mr);
+			err = mr_lookup_app(buf->obj.obj_ni, addr, len, &mr);
 			if (err)
 				break;
 
@@ -112,7 +112,7 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 
 			addr = me->start + *loc_off;
 
-			err = mr_lookup(ni, addr, len, &mr);
+			err = mr_lookup_app(ni, addr, len, &mr);
 			if (err)
 				break;
 

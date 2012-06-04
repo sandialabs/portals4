@@ -106,7 +106,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	if (num_iov > get_param(PTL_MAX_INLINE_SGE)) {
 		/* Pin the whole thing. It's not big enough to make a
 		 * difference. */
-		err = mr_lookup(ni, md->internal_data,
+		err = mr_lookup_self(ni, md->internal_data,
 				p - md->internal_data, &md->sge_list_mr);
 		if (err)
 			goto err2;
@@ -123,7 +123,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 
 		md->length += iov->iov_len;
 
-		err = mr_lookup(ni, iov->iov_base,
+		err = mr_lookup_app(ni, iov->iov_base,
 				iov->iov_len, &md->mr_list[i]);
 		if (err)
 			goto err3;
