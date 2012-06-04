@@ -295,11 +295,17 @@ static void delete_mapping_ppe(struct xpmem_map *mapping)
 }
 
 /* Attach to an XPMEM segment from a given client. */
-static void *map_segment_ppe(struct client *client, const void *client_addr, size_t len)
+static int map_segment_ppe(struct client *client, const void *client_addr, size_t len, void **ret)
 {
 	off_t offset;
     struct xpmem_addr addr;
 	void *ptr_attach;
+
+	if (len == 0) {
+		/* Nothing to map. It's still a valid call. */
+		*ret = NULL;
+		return 0;
+	}
 
 	/* Hack. When addr.offset is not page aligned, xpmem_attach()
 	 * always fail. So fix the ptr afterwards. */
@@ -310,10 +316,14 @@ static void *map_segment_ppe(struct client *client, const void *client_addr, siz
 	ptr_attach = xpmem_attach(addr, len+offset, NULL);
 	if (ptr_attach == (void *)-1) {
 		WARN();
-		return NULL;
+		printf("FZ- %p %ld %ld\n", client_addr, len, offset);
+		*ret = NULL;
+		return 1;
 	}
 
-	return ptr_attach + offset;
+	*ret = ptr_attach + offset;
+
+	return 0;
 }
 
 /* Detach from an XPMEM segment. */
@@ -503,12 +513,12 @@ static void do_OP_PtlSetMap(ppebuf_t *buf)
 {
 	struct client *client = buf->cookie;
 	ptl_process_t *mapping;
+	int ret;
 
-	mapping = map_segment_ppe(client, buf->msg.PtlSetMap.mapping,
-								  buf->msg.PtlSetMap.map_size*sizeof(ptl_process_t));
-	if (mapping) {
-		int ret;
-
+	ret = map_segment_ppe(client, buf->msg.PtlSetMap.mapping,
+						  buf->msg.PtlSetMap.map_size*sizeof(ptl_process_t),
+						  (void **)&mapping);
+	if (!ret) {
 		ret = PtlSetMap(buf->msg.PtlSetMap.ni_handle,
 						buf->msg.PtlSetMap.map_size,
 						mapping);
@@ -530,9 +540,10 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 {
 	struct client *client = buf->cookie;
 	ptl_process_t *mapping;
+	int ret;
 
-	mapping = map_segment_ppe(client, buf->msg.PtlGetMap.mapping, buf->msg.PtlGetMap.map_size);
-	if (mapping) {
+	ret = map_segment_ppe(client, buf->msg.PtlGetMap.mapping, buf->msg.PtlGetMap.map_size, (void **)&mapping);
+	if (!ret) {
 		buf->msg.ret = PtlGetMap(buf->msg.PtlSetMap.ni_handle,
 								 buf->msg.PtlSetMap.map_size,
 								 mapping,
@@ -591,8 +602,9 @@ static ptl_iovec_t *create_local_iovecs(struct client *client, ptl_iovec_t *clie
 
 	for (i=0; i<num_iov; i++) {
 		ptl_iovec_t *iovec = &iovecs[i];
+		int ret;
 
-		iovec->iov_base = map_segment_ppe(client, client_iovecs[i].iov_base, client_iovecs[i].iov_len);
+		ret = map_segment_ppe(client, client_iovecs[i].iov_base, client_iovecs[i].iov_len, &iovec->iov_base);
 		if (!iovec->iov_base)
 			goto err;
 
@@ -614,11 +626,13 @@ static void do_OP_PtlMEAppend(ppebuf_t *buf)
 	void *start;
 	struct ptl_me_ppe me_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
+	int ret;
 
-	start = map_segment_ppe(client, buf->msg.PtlMEAppend.me.start,
-								buf->msg.PtlMEAppend.me.length);
+	ret = map_segment_ppe(client, buf->msg.PtlMEAppend.me.start,
+							buf->msg.PtlMEAppend.me.length,
+							&start);
 
-	if (start) {
+	if (!ret) {
 		me_init_ppe.me_init = buf->msg.PtlMEAppend.me;
 
 		if (buf->msg.PtlMEAppend.me.options & PTL_IOVEC) {
@@ -698,11 +712,12 @@ static void do_OP_PtlLEAppend(ppebuf_t *buf)
 	void *start;
 	struct ptl_le_ppe le_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
+	int ret;
 
-	start = map_segment_ppe(client, buf->msg.PtlLEAppend.le.start, 
-								buf->msg.PtlLEAppend.le.length);
+	ret = map_segment_ppe(client, buf->msg.PtlLEAppend.le.start, 
+						  buf->msg.PtlLEAppend.le.length, &start);
 
-	if (start) {
+	if (!ret) {
 		le_init_ppe.le_init = buf->msg.PtlLEAppend.le;
 
 		if (buf->msg.PtlLEAppend.le.options & PTL_IOVEC) {
@@ -791,11 +806,12 @@ static void do_OP_PtlMDBind(ppebuf_t *buf)
 	void *start;
 	struct ptl_md_ppe md_init_ppe;
 	ptl_iovec_t *iovecs = NULL;
+	int ret;
 
-	start = map_segment_ppe(client, buf->msg.PtlMDBind.md.start,
-								buf->msg.PtlMDBind.md.length);
+	ret = map_segment_ppe(client, buf->msg.PtlMDBind.md.start,
+						  buf->msg.PtlMDBind.md.length, &start);
 
-	if (start) {
+	if (!ret) {
 		md_init_ppe.md_init = buf->msg.PtlMDBind.md;
 
 		if (buf->msg.PtlMDBind.md.options & PTL_IOVEC) {
