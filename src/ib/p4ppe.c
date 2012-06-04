@@ -204,7 +204,7 @@ static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset
 		ni_t *ni = obj_to_ni(md);
 
 		addr = md->start + offset;
-		err = mr_lookup(ni, addr, length, &mr);
+		err = mr_lookup_app(ni, addr, length, &mr);
 		if (!err) {
 			buf->mr_list[buf->num_mr++] = mr;
 

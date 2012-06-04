@@ -260,7 +260,7 @@ static int init_prepare_transfer_rdma(md_t *md, data_dir_t dir, ptl_size_t offse
 		ni_t *ni = obj_to_ni(md);
 
 		addr = md->start + offset;
-		err = mr_lookup(ni, addr, length, &mr);
+		err = mr_lookup_app(ni, addr, length, &mr);
 		if (!err) {
 			buf->mr_list[buf->num_mr++] = mr;
 
@@ -367,7 +367,7 @@ static int build_sge(buf_t *buf,
 		}
 
 		/* lookup the mr for the current local segment */
-		err = mr_lookup(ni, addr, bytes, &mr);
+		err = mr_lookup_app(ni, addr, bytes, &mr);
 		if (err)
 			return err;
 
@@ -629,7 +629,7 @@ int process_rdma_desc(buf_t *buf)
 		goto err1;
 	}
 
-	if (mr_lookup(ni, indir_sge, rlen, &mr)) {
+	if (mr_lookup_self(ni, indir_sge, rlen, &mr)) {
 		WARN();
 		err = PTL_FAIL;
 		goto err1;

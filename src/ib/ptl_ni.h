@@ -38,6 +38,13 @@ struct shmem_bounce_head {
 						  * 0. Invariant. */
 };
 
+/* Memory regions tree attached to an NI. The PPE must have 2, the
+ * other transports need one. */
+struct ni_mr_tree {
+	RB_HEAD(the_root, mr) tree;
+	PTL_FASTLOCK_TYPE	tree_lock;
+};
+
 /*
  * ni_t
  *	per NI info
@@ -77,8 +84,12 @@ typedef struct ni {
 	struct list_head	ct_list;
 	PTL_FASTLOCK_TYPE	ct_list_lock;
 
-	RB_HEAD(the_root, mr) mr_tree;
-	PTL_FASTLOCK_TYPE	mr_tree_lock;
+	/* The PPE must have a tree indexed on the application addresses,
+	 * and one tree for its own addresses. The other implementations
+	 * don't need that distinction. */
+	struct ni_mr_tree mr_self;		/* the PPE */
+	struct ni_mr_tree mr_app;		/* the client */
+
 	int umn_fd;
 	ev_io umn_watcher;
 	uint64_t *umn_counter;
