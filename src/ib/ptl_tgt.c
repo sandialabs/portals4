@@ -1019,7 +1019,7 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 }
 #endif
 
-#if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
+#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
 /**
  * @brief target shared memory read long iovec descriptor state.
  *
