@@ -5,6 +5,8 @@
 #ifndef PTL_GBL_H
 #define PTL_GBL_H
 
+// todo: can we merge client and gbl ?
+// todo: have common parameters for the various gbl_t in a structure or define.
 typedef struct gbl {
 	int			num_iface;	/* size of interface table */
 	iface_t			*iface;		/* interface table */
@@ -14,6 +16,11 @@ typedef struct gbl {
 
 	pthread_mutex_t		gbl_mutex;
 	pool_t			ni_pool;
+
+	/* PPE specific. */
+
+	/* Mapping of the whole process. */
+	xpmem_apid_t apid;
 } gbl_t;
 
 static inline int gbl_get(void)
@@ -35,30 +42,9 @@ struct client
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;
 	
-	/* Mapping of the whole process. */
-	xpmem_apid_t apid;
-
 	gbl_t gbl;
 };
 
 extern struct transport transport_mem;
-
-/* Extends the ptl_le_t structure to store mappings. */
-struct ptl_le_ppe {
-	ptl_le_t le_init;
-	void *client_start;
-};
-
-/* Extends the ptl_le_t structure to store mappings. */
-struct ptl_me_ppe {
-	ptl_me_t me_init;
-	void *client_start;
-};
-
-/* Extends the ptl_md_t structure to store mappings. */
-struct ptl_md_ppe {
-	ptl_md_t md_init;
-	void *client_start;
-};
 
 #endif /* PTL_GBL_H */

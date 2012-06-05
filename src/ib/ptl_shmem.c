@@ -259,7 +259,7 @@ static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t off
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
-		err = append_immediate_data(md->start, md->num_iov, dir, offset, length, buf);
+		err = append_immediate_data(md->start, NULL, md->num_iov, dir, offset, length, buf);
 	}
 	else {
 		if (dir == DATA_DIR_IN)
@@ -338,6 +338,7 @@ static int do_noknem_transfer(buf_t *buf)
 				to_copy = *resid;
 
 			err = iov_copy_out(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+							   NULL,
 							   buf->transfer.noknem.num_iovecs,
 							   buf->transfer.noknem.offset, to_copy);
 

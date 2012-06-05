@@ -21,13 +21,9 @@ enum list_element_type {
 };
 
 #if IS_PPE
-#define LE_XPMEM_MAPPING											\
-	struct {														\
-	/* The client was overriden, but we still need it. */			\
-		union {														\
-			void *client_start;										\
-			ptl_iovec_t *client_iovecs;								\
-		};															\
+#define LE_XPMEM_MAPPING												\
+	struct {															\
+		ptl_iovec_t *client_iovecs; /* start in client space, iovecs only. */ \
 	} ppe
 #else
 #define LE_XPMEM_MAPPING
@@ -43,6 +39,8 @@ enum list_element_type {
 	struct ct		*ct;		\
 	void			*user_ptr;	\
 	void			*start;		\
+	mr_t		    *mr_start;	\
+	mr_t			**mr_list;	\
 	ptl_size_t		length;		\
 	ptl_pt_index_t		pt_index;	\
 	ptl_list_t		ptl_list;	\

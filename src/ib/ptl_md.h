@@ -56,8 +56,7 @@ struct md {
 
 #if IS_PPE
 	struct {
-		/* start/length XPMEM mapping */
-		void *client_start;		/* vaddr of start in client space */
+		mr_t *mr_start;		/* mr containing start */
 	} ppe;
 #endif
 

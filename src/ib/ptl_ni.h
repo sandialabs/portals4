@@ -157,6 +157,7 @@ typedef struct ni {
 
 #ifdef IS_PPE
 		int in_group;
+		xpmem_apid_t apid;		/* from the struct client the client belongs to. */
 #endif
 	} mem;
 #endif

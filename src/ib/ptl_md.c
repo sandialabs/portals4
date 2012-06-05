@@ -44,6 +44,13 @@ void md_cleanup(void *arg)
 		md->internal_data = NULL;
 	}
 
+#if IS_PPE
+	if (md->ppe.mr_start) {
+		mr_put(md->ppe.mr_start);
+		md->ppe.mr_start = NULL;
+	}
+#endif
+
 	(void)__sync_sub_and_fetch(&ni->current.max_mds, 1);
 }
 
@@ -124,7 +131,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		md->length += iov->iov_len;
 
 		err = mr_lookup_app(ni, iov->iov_base,
-				iov->iov_len, &md->mr_list[i]);
+							iov->iov_len, &md->mr_list[i]);
 		if (err)
 			goto err3;
 
@@ -144,7 +151,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		mem_iovec->offset = iov->iov_base - mr->addr;
 #endif
 #if IS_PPE
-		mem_iovec->addr = iov->iov_base;
+		mem_iovec->addr = addr_to_ppe(iov->iov_base, md->mr_list[i]);
 #endif
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;
@@ -226,20 +233,27 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	if (unlikely(err))
 		goto err2;
 
+	if (md_init->options & PTL_IOVEC) {
 #if IS_PPE
-	{
-		/* Under the PPE, the md_init structure has been silently extend. */
-		const struct ptl_md_ppe *md_init_ppe = (const struct ptl_md_ppe *)md_init;
-		md->ppe.client_start = md_init_ppe->client_start;
-	}
+		/* Lookup the IOVEC list. */
+		err = mr_lookup_app(ni, md_init->start,
+							md_init->length * sizeof(ptl_iovec_t),
+							&md->ppe.mr_start);
+		if (err)
+			goto err3;
+
+		/* start from the client has no further use. */
+		md->start = addr_to_ppe(md_init->start, md->ppe.mr_start);
+#else
+		md->start = md_init->start;
 #endif
 
-	if (md_init->options & PTL_IOVEC) {
-		err = init_iovec(md, (ptl_iovec_t *)md_init->start,
+		err = init_iovec(md, (ptl_iovec_t *)md->start,
 				 md_init->length);
 		if (err)
 			goto err3;
 	} else {
+		md->start = md_init->start;
 		md->length = md_init->length;
 		md->num_iov = 0;
 	}
@@ -269,7 +283,6 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 		fast_to_obj(md_init->ct_handle) : NULL;
 #endif
 
-	md->start = md_init->start;
 	md->options = md_init->options;
 
 	/* account for the number of MDs allocated */

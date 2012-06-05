@@ -91,11 +91,14 @@ int data_size(data_t *data)
  *
  * @return status
  */
-int append_immediate_data(void *start, int num_iov, data_dir_t dir, ptl_size_t offset,
+int append_immediate_data(void *start, mr_t **mr_list, int num_iov, data_dir_t dir, ptl_size_t offset,
 						  ptl_size_t length, buf_t *buf)
 {
 	int err;
 	data_t *data = (data_t *)(buf->data + buf->length);
+
+	if (!length)
+		return PTL_OK;
 
 	data->data_fmt = DATA_FMT_IMMEDIATE;
 
@@ -103,15 +106,15 @@ int append_immediate_data(void *start, int num_iov, data_dir_t dir, ptl_size_t o
 		data->immediate.data_length = cpu_to_le32(length);
 			
 		if (num_iov) {
-			err = iov_copy_out(data->immediate.data, start,
+			err = iov_copy_out(data->immediate.data, start, mr_list,
 							   num_iov, offset, length);
 			if (err) {
 				WARN();
 				return err;
 			}
 		} else {
-			memcpy(data->immediate.data, start + offset,
-				   length);
+			void *from = addr_to_ppe(start + offset, mr_list[0]);
+			memcpy(data->immediate.data, from, length);
 		}
 
 		buf->length += sizeof(*data) + length;

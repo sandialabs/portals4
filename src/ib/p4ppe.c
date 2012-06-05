@@ -135,7 +135,7 @@ static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr,
 	data->data_fmt = DATA_FMT_MEM_DMA;
 
 	data->mem.num_mem_iovecs = 1;
-	data->mem.mem_iovec[0].addr = addr;
+	data->mem.mem_iovec[0].addr = addr_to_ppe(addr, mr);
 	data->mem.mem_iovec[0].length = length;
 
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
@@ -179,7 +179,20 @@ static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
-		err = append_immediate_data(md->start, md->num_iov, dir, offset, length, buf);
+		mr_t *mr;
+		if (md->num_iov) {
+			err = append_immediate_data(md->start, md->mr_list, md->num_iov, dir, offset, length, buf);
+		} else {
+			err = mr_lookup_app(obj_to_ni(md), md->start + offset, length, &mr);
+			if (err) {
+				WARN();
+				return PTL_FAIL;
+			}
+
+			err = append_immediate_data(md->start, &mr, md->num_iov, dir, offset, length, buf);
+
+			mr_put(mr);
+		}
 	}
 	else if (md->options & PTL_IOVEC) {
 		ptl_iovec_t *iovecs = md->start;
@@ -311,7 +324,7 @@ static int map_segment_ppe(struct client *client, const void *client_addr, size_
 	 * always fail. So fix the ptr afterwards. */
 	offset = ((uintptr_t)client_addr) & (pagesize-1);
 	addr.offset = (uintptr_t)client_addr - offset;
-	addr.apid = client->apid;
+	addr.apid = client->gbl.apid;
 
 	ptr_attach = xpmem_attach(addr, len+offset, NULL);
 	if (ptr_attach == (void *)-1) {
@@ -577,186 +590,29 @@ static void do_OP_PtlMESearch(ppebuf_t *buf)
 							   buf->msg.PtlMESearch.user_ptr);
 }
 
-/* Destroy mapping created by create_local_iovecs(). */
-static void destroy_local_iovecs(ptl_iovec_t *iovecs, int num_iov)
-{
-	int i;
-
-	for (i=0; i<num_iov; i++) {
-		if (iovecs[i].iov_base)
-			unmap_segment_ppe(iovecs[i].iov_base);
-	}
-}
-
-/* Given a client mapping, recreate a set of iovecs in our own address
- * space. */
-static ptl_iovec_t *create_local_iovecs(struct client *client, ptl_iovec_t *client_iovecs, int num_iov)
-{
-	int i;
-	ptl_iovec_t *iovecs;
-
-	iovecs = calloc(num_iov, sizeof(ptl_iovec_t));
-	if (!iovecs) {
-		return NULL;
-	}
-
-	for (i=0; i<num_iov; i++) {
-		ptl_iovec_t *iovec = &iovecs[i];
-		int ret;
-
-		ret = map_segment_ppe(client, client_iovecs[i].iov_base, client_iovecs[i].iov_len, &iovec->iov_base);
-		if (!iovec->iov_base)
-			goto err;
-
-		iovec->iov_len = client_iovecs[i].iov_len;
-	}
-
-	return iovecs;
-
- err:
-	destroy_local_iovecs(iovecs, num_iov);
-	free(iovecs);
-
-	return NULL;
-}
-
 static void do_OP_PtlMEAppend(ppebuf_t *buf)
 {
-	struct client *client = buf->cookie;
-	void *start;
-	struct ptl_me_ppe me_init_ppe;
-	ptl_iovec_t *iovecs = NULL;
-	int ret;
-
-	ret = map_segment_ppe(client, buf->msg.PtlMEAppend.me.start,
-							buf->msg.PtlMEAppend.me.length,
-							&start);
-
-	if (!ret) {
-		me_init_ppe.me_init = buf->msg.PtlMEAppend.me;
-
-		if (buf->msg.PtlMEAppend.me.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(client, start, buf->msg.PtlMEAppend.me.length);
-			if (!iovecs) {
-				unmap_segment_ppe(start);
-
-				buf->msg.ret = PTL_NO_SPACE;
-				return;
-			}
-
-			/* Fix the start pointer, by touching the buffer source. */
-			me_init_ppe.me_init.start = iovecs;
-
-			me_init_ppe.client_start = start;
-		} else {
-			/* Fix the start pointer, by touching the buffer source. */
-			me_init_ppe.me_init.start = start;
-
-			me_init_ppe.client_start = buf->msg.PtlMEAppend.me.start;
-		}
-
-		buf->msg.ret = PtlMEAppend(buf->msg.PtlMEAppend.ni_handle,
-								   buf->msg.PtlMEAppend.pt_index,
-								   &me_init_ppe.me_init,
-								   buf->msg.PtlMEAppend.ptl_list,
-								   buf->msg.PtlMEAppend.user_ptr,
-								   &buf->msg.PtlMEAppend.me_handle);
-
-		if (buf->msg.ret != PTL_OK) {
-			if (buf->msg.PtlMEAppend.me.options & PTL_IOVEC)
-				destroy_local_iovecs(iovecs, buf->msg.PtlMEAppend.me.length);
-
-			unmap_segment_ppe(start);
-		}
-	} else {
-		WARN();
-		buf->msg.ret = PTL_ARG_INVALID;
-	}
+	buf->msg.ret = PtlMEAppend(buf->msg.PtlMEAppend.ni_handle,
+							   buf->msg.PtlMEAppend.pt_index,
+							   &buf->msg.PtlMEAppend.me,
+							   buf->msg.PtlMEAppend.ptl_list,
+							   buf->msg.PtlMEAppend.user_ptr,
+							   &buf->msg.PtlMEAppend.me_handle);
 }
 
 static void do_OP_PtlMEUnlink(ppebuf_t *buf)
 {
-	me_t *me;
-	void *start;
-	void *client_start;
-	int num_iov;
-
-	if (to_me(buf->msg.PtlMEUnlink.me_handle, &me) != PTL_OK) {
-		/* Already freed? Whatever. */
-		buf->msg.ret = PTL_ARG_INVALID;
-		return;
-	}
-
-	start = me->start;
-	client_start = me->ppe.client_start;
-	num_iov = me->num_iov;
-
-	me_put(me);					/* from to_md() */
-
 	buf->msg.ret = PtlMEUnlink(buf->msg.PtlMEUnlink.me_handle);
-
-	if (buf->msg.ret == PTL_OK) {
-		if (num_iov) {
-			destroy_local_iovecs(start, num_iov);
-			free(start);
-			unmap_segment_ppe(client_start);
-		} else {
-			unmap_segment_ppe(start);
-		}
-	}
 }
 
 static void do_OP_PtlLEAppend(ppebuf_t *buf)
 {
-	struct client *client = buf->cookie;
-	void *start;
-	struct ptl_le_ppe le_init_ppe;
-	ptl_iovec_t *iovecs = NULL;
-	int ret;
-
-	ret = map_segment_ppe(client, buf->msg.PtlLEAppend.le.start, 
-						  buf->msg.PtlLEAppend.le.length, &start);
-
-	if (!ret) {
-		le_init_ppe.le_init = buf->msg.PtlLEAppend.le;
-
-		if (buf->msg.PtlLEAppend.le.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(client, start, buf->msg.PtlLEAppend.le.length);
-			if (!iovecs) {
-				unmap_segment_ppe(start);
-
-				buf->msg.ret = PTL_NO_SPACE;
-				return;
-			}
-			
-			/* Fix the start pointer, by touching the buffer source. */
-			le_init_ppe.le_init.start = iovecs;
-
-			le_init_ppe.client_start = start;
-		} else {
-			/* Fix the start pointer, by touching the buffer source. */
-			le_init_ppe.le_init.start = start;
-
-			le_init_ppe.client_start = buf->msg.PtlLEAppend.le.start;
-		}
-
-		buf->msg.ret = PtlLEAppend(buf->msg.PtlLEAppend.ni_handle,
-								   buf->msg.PtlLEAppend.pt_index,
-								   &le_init_ppe.le_init,
-								   buf->msg.PtlLEAppend.ptl_list,
-								   buf->msg.PtlLEAppend.user_ptr,
-								   &buf->msg.PtlLEAppend.le_handle);
-
-		if (buf->msg.ret != PTL_OK) {
-			if (buf->msg.PtlLEAppend.le.options & PTL_IOVEC)
-				destroy_local_iovecs(iovecs, buf->msg.PtlLEAppend.le.length);
-			
-			unmap_segment_ppe(start);
-		}
-	} else {
-		WARN();
-		buf->msg.ret = PTL_ARG_INVALID;
-	}
+	buf->msg.ret = PtlLEAppend(buf->msg.PtlLEAppend.ni_handle,
+							   buf->msg.PtlLEAppend.pt_index,
+							   &buf->msg.PtlLEAppend.le,
+							   buf->msg.PtlLEAppend.ptl_list,
+							   buf->msg.PtlLEAppend.user_ptr,
+							   &buf->msg.PtlLEAppend.le_handle);
 }
 
 static void do_OP_PtlLESearch(ppebuf_t *buf)
@@ -770,116 +626,19 @@ static void do_OP_PtlLESearch(ppebuf_t *buf)
 
 static void do_OP_PtlLEUnlink(ppebuf_t *buf)
 {
-	le_t *le;
-	void *start;
-	void *client_start;
-	int num_iov;
-
-	if (to_le(buf->msg.PtlLEUnlink.le_handle, &le) != PTL_OK) {
-		/* Already freed? Whatever. */
-		buf->msg.ret = PTL_ARG_INVALID;
-		return;
-	}
-
-	start = le->start;
-	client_start = le->ppe.client_start;
-	num_iov = le->num_iov;
-
-	le_put(le);					/* from to_md() */
-
 	buf->msg.ret = PtlLEUnlink(buf->msg.PtlLEUnlink.le_handle);
-	
-	if (buf->msg.ret == PTL_OK) {
-		if (num_iov) {
-			destroy_local_iovecs(start, num_iov);
-			free(start);
-			unmap_segment_ppe(client_start);
-		} else {
-			unmap_segment_ppe(start);
-		}
-	}	
 }
 
 static void do_OP_PtlMDBind(ppebuf_t *buf)
 {
-	struct client *client = buf->cookie;
-	void *start;
-	struct ptl_md_ppe md_init_ppe;
-	ptl_iovec_t *iovecs = NULL;
-	int ret;
-
-	ret = map_segment_ppe(client, buf->msg.PtlMDBind.md.start,
-						  buf->msg.PtlMDBind.md.length, &start);
-
-	if (!ret) {
-		md_init_ppe.md_init = buf->msg.PtlMDBind.md;
-
-		if (buf->msg.PtlMDBind.md.options & PTL_IOVEC) {
-			iovecs = create_local_iovecs(client, start, buf->msg.PtlMDBind.md.length);
-			if (!iovecs) {
-				unmap_segment_ppe(start);
-
-				buf->msg.ret = PTL_NO_SPACE;
-				return;
-			}
-
-			/* Fix the start pointer, by touching the buffer source. */
-			md_init_ppe.md_init.start = iovecs;
-
-			md_init_ppe.client_start = start;
-		} else {
-			/* Fix the start pointer, by touching the buffer source. */
-			md_init_ppe.md_init.start = start;
-			md_init_ppe.client_start = buf->msg.PtlMDBind.md.start;
-		}
-
-		buf->msg.ret = PtlMDBind(buf->msg.PtlMDBind.ni_handle,
-								 &md_init_ppe.md_init,
-								 &buf->msg.PtlMDBind.md_handle);
-
-		if (buf->msg.ret != PTL_OK) {
-			if (buf->msg.PtlMDBind.md.options & PTL_IOVEC)
-				destroy_local_iovecs(iovecs, buf->msg.PtlMDBind.md.length);
-
-			unmap_segment_ppe(start);
-		}
-
-	} else {
-		WARN();
-		buf->msg.ret = PTL_ARG_INVALID;
-	}
+	buf->msg.ret = PtlMDBind(buf->msg.PtlMDBind.ni_handle,
+							 &buf->msg.PtlMDBind.md,
+							 &buf->msg.PtlMDBind.md_handle);
 }
 
 static void do_OP_PtlMDRelease(ppebuf_t *buf)
 {
-	md_t *md = to_md(buf->msg.PtlMDRelease.md_handle);
-	void *start;
-	void *client_start;
-	int num_iov;
-
-	if (!md) {
-		/* Already freed? Whatever. */
-		buf->msg.ret = PTL_ARG_INVALID;
-		return;
-	}
-
-	start = md->start;
-	client_start = md->ppe.client_start;
-	num_iov = md->num_iov;
-
-	md_put(md);					/* from to_md() */
-
 	buf->msg.ret = PtlMDRelease(buf->msg.PtlMDRelease.md_handle);
-
-	if (buf->msg.ret == PTL_OK) {
-		if (num_iov) {
-			destroy_local_iovecs(start, num_iov);
-			free(start);
-			unmap_segment_ppe(client_start);
-		} else {
-			unmap_segment_ppe(start);
-		}
-	}
 }
 
 static void do_OP_PtlGetId(ppebuf_t *buf)
@@ -1311,14 +1070,13 @@ static void ppe_progress(void)
 			if (client) {
 				client->pid = comm_pad->cmd.pid;
 				
-				client->apid = xpmem_get(comm_pad->cmd.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
-				if (client->apid == -1) {
+				client->gbl.apid = xpmem_get(comm_pad->cmd.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+				if (client->gbl.apid == -1) {
 					/* That is possible, but should not happen. */
 					WARN();
 					free(client);
 					goto bad_client;
 				}
-
 				list_add(&client->list, &clients);
 			
 				comm_pad->cmd.cookie = client;
