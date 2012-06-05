@@ -479,6 +479,7 @@ static int init_copy_in(buf_t *buf)
 	assert(to_copy <= buf->transfer.noknem.length_left);
 
 	ret = iov_copy_in(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+					  NULL,
 					  buf->transfer.noknem.num_iovecs,
 					  buf->transfer.noknem.offset,
 					  to_copy);
