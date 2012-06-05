@@ -330,6 +330,7 @@ static int do_noknem_transfer(buf_t *buf)
 				to_copy = *resid;
 
 			err = iov_copy_in(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+							  NULL,
 							  buf->transfer.noknem.num_iovecs,
 							  buf->transfer.noknem.offset, to_copy);
 		} else {
