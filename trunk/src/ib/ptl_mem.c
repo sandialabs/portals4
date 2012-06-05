@@ -21,6 +21,7 @@ ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_io
 						local_addr - local_mr->addr,
 						remote_iovec->cookie, remote_iovec->offset, len);
 #elif IS_PPE
+	local_addr = addr_to_ppe(local_addr, local_mr);
 	if (dir == DATA_DIR_IN)
 		memcpy(local_addr, remote_iovec->addr, len);
 	else
@@ -74,14 +75,14 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			if (*loc_index >= max_loc_index)
 				break;
 
-			iov = ((ptl_iovec_t *)me->start) + *loc_index;
+			iov = ((ptl_iovec_t *)addr_to_ppe(me->start, me->mr_start)) + *loc_index;
 
 			addr = iov->iov_base + *loc_off;
 
 			if (len > iov->iov_len - *loc_off)
 				len = iov->iov_len - *loc_off;
 
-			err = mr_lookup_app(buf->obj.obj_ni, addr, len, &mr);
+			err = mr_lookup_app(obj_to_ni(buf), addr, len, &mr);
 			if (err)
 				break;
 

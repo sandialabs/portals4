@@ -18,7 +18,7 @@ typedef struct mr {
 	struct list_head list;		/* internal management */
 
 	/* Boundaries of the region. */
-	void           *addr;
+	void           *addr;		/* in application space */
 	size_t          length;
 
 #if WITH_TRANSPORT_IB
@@ -34,6 +34,7 @@ typedef struct mr {
 #if IS_PPE
 	/* To share with PPE. */
 	xpmem_segid_t segid;
+	void *ppe_addr;				/* same as addr in the PPE  */
 #endif
 
 	/* ummunotify kernel memory notification cookie */
@@ -43,11 +44,22 @@ typedef struct mr {
 	RB_ENTRY(mr)		entry;
 } mr_t;
 
+int mr_new(void *arg);
 void mr_cleanup(void *arg);
 
 int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length, mr_t **mr_p);
-static inline int mr_lookup_app(ni_t *ni, void *start, ptl_size_t length, mr_t **mr) { return mr_lookup(ni, &ni->mr_app, start, length, mr); }
-static inline int mr_lookup_self(ni_t *ni, void *start, ptl_size_t length, mr_t **mr) { return mr_lookup(ni, &ni->mr_self, start, length, mr); }
+
+/* Lookup an address range in the application space. */
+static inline int mr_lookup_app(ni_t *ni, void *start, ptl_size_t length, mr_t **mr)
+{
+	return mr_lookup(ni, &ni->mr_app, start, length, mr);
+}
+
+/* Lookup an address range in the library space. */
+static inline int mr_lookup_self(ni_t *ni, void *start, ptl_size_t length, mr_t **mr)
+{
+	return mr_lookup(ni, &ni->mr_self, start, length, mr);
+}
 
 void cleanup_mr_trees(ni_t *ni);
 void mr_init(ni_t *ni);

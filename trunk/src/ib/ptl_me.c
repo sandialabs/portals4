@@ -77,12 +77,12 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 #endif
 
 	// TODO convert these to atomic_inc/dec macros
-        if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
-            ni->limits.max_entries)) {
-                (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
-                err = PTL_NO_SPACE;
-                goto err2;
-        }
+	if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
+				 ni->limits.max_entries)) {
+		(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+		err = PTL_NO_SPACE;
+		goto err2;
+	}
 
 	err = me_alloc(ni, &me);
 	if (unlikely(err)) {
@@ -110,14 +110,6 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	me->id = me_init->match_id;
 	me->match_bits = me_init->match_bits;
 	me->ignore_bits = me_init->ignore_bits;
-
-#if IS_PPE
-	{
-		/* Under the PPE, the me_init structure has been silently extended. */
-		const struct ptl_me_ppe *me_init_ppe = (const struct ptl_me_ppe *)me_init;
-		me->ppe.client_start = me_init_ppe->client_start;
-	}
-#endif
 
 #ifndef NO_ARG_VALIDATION
 	if (me_handle_p) {

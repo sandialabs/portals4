@@ -109,10 +109,31 @@ static int tgt_copy_in(buf_t *buf, me_t *me, void *data)
 	ptl_size_t length = buf->mlength;
 
 	if (me->num_iov) {
-		err = iov_copy_in(data, (ptl_iovec_t *)me->start,
+		err = iov_copy_in(data, (ptl_iovec_t *)me->start, me->mr_list,
 				  me->num_iov, offset, length);
 	} else {
-		memcpy(me->start + offset, data, length);
+		void *start = me->start + offset;
+#if IS_PPE
+		mr_t *mr;
+
+		if (me->mr_start)
+			mr = me->mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
+			if (err) {
+				WARN();
+				return err;
+			}
+		}
+
+		memcpy(addr_to_ppe(start, mr), data, length);
+		err = PTL_OK;
+
+		if (!me->mr_start)
+			mr_put(mr);
+#else
+		memcpy(start, data, length);
+#endif
 		err = PTL_OK;
 	}
 
@@ -142,10 +163,30 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 
 	if (me->num_iov) {
 		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
-				    data, (ptl_iovec_t *)me->start,
-				    me->num_iov, offset, length);
+							data, (ptl_iovec_t *)me->start, me->mr_list,
+							me->num_iov, offset, length);
 	} else {
-		(*op)(me->start + offset, data, length);
+		void *start = me->start + offset;
+#if IS_PPE
+		mr_t *mr;
+
+		if (me->mr_start)
+			mr = me->mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
+			if (err) {
+				WARN();
+				return err;
+			}
+		}
+
+		(*op)(addr_to_ppe(start, mr), data, length);
+
+		if (!me->mr_start)
+			mr_put(mr);
+#else
+		(*op)(start, data, length);
+#endif
 		err = PTL_OK;
 	}
 
@@ -170,8 +211,8 @@ static int copy_out(buf_t *buf, me_t *me, void *data)
 	ptl_size_t length = buf->mlength;
 
 	if (me->num_iov) {
-		err = iov_copy_out(data, (ptl_iovec_t *)me->start,
-				me->num_iov, offset, length);
+		err = iov_copy_out(data, (ptl_iovec_t *)me->start, NULL,
+						   me->num_iov, offset, length);
 	} else {
 		memcpy(data, me->start + offset, length);
 		err = PTL_OK;
@@ -276,17 +317,13 @@ static int init_local_offset(buf_t *buf)
 		buf->cur_loc_iov_index = i;
 		buf->cur_loc_iov_off = iov_offset;
 #if IS_PPE
-		buf->start = me->ppe.client_iovecs[i].iov_base + iov_offset;
+		buf->start = ((ptl_iovec_t *)(me->mr_start->ppe_addr))[i].iov_base + iov_offset;
 #else
 		buf->start = iov->iov_base + iov_offset;
 #endif
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
-#if IS_PPE
-		buf->start = me->ppe.client_start + buf->moffset;
-#else
 		buf->start = me->start + buf->moffset;
-#endif
 	}
 
 	return PTL_OK;
@@ -845,11 +882,38 @@ static int tgt_data_out(buf_t *buf)
 	if (data->data_fmt == DATA_FMT_IMMEDIATE) {
 		/* We assummed that both the initiator and the target have the
 		 * same max inline data. */
+		me_t *me = buf->me;
+
 		assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
 
 		send_hdr->data_out = 1;
-		err = append_immediate_data(buf->me->start, buf->me->num_iov, DATA_DIR_OUT,
-									buf->moffset, buf->mlength, buf->send_buf);
+
+		if (me->num_iov) {
+			abort();
+		} else {
+#if IS_PPE
+			mr_t *mr;
+
+			if (me->mr_start)
+				mr = me->mr_start;
+			else {
+				err = mr_lookup_app(obj_to_ni(me), me->start+buf->moffset, buf->mlength, &mr);
+				if (err) {
+					WARN();
+					return err;
+				}
+			}
+			
+			err = append_immediate_data(me->start, &mr, me->num_iov, DATA_DIR_OUT,
+										buf->moffset, buf->mlength, buf->send_buf);
+
+			if (!me->mr_start)
+				mr_put(mr);
+#else
+			err = append_immediate_data(me->start, NULL, me->num_iov, DATA_DIR_OUT,
+										buf->moffset, buf->mlength, buf->send_buf);
+#endif
+		}
 		if (err)
 			return STATE_TGT_ERROR;
 

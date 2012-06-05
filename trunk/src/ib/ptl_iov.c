@@ -19,8 +19,8 @@
  *
  * @return status
  */
-int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
-		 ptl_size_t offset, ptl_size_t length)
+int iov_copy_out(void *dst, ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
+				 ptl_size_t offset, ptl_size_t length)
 {
 	unsigned int i;
 	ptl_size_t dst_offset = 0;
@@ -47,7 +47,7 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
 		if (bytes > length)
 			bytes = length;
 
-		memcpy(dst + dst_offset, iov->iov_base + offset, bytes);
+		memcpy(dst + dst_offset, addr_to_ppe(iov->iov_base + offset, mr_list[i]), bytes);
 
 		offset = 0;
 		length -= bytes;
@@ -76,7 +76,7 @@ int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
  *
  * @return status
  */
-int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+int iov_copy_in(void *src, ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length)
 {
 	unsigned int i;
@@ -101,7 +101,7 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
 		if (bytes > length)
 			bytes = length;
 
-		memcpy(iov->iov_base + offset, src + src_offset, bytes);
+		memcpy(addr_to_ppe(iov->iov_base + offset, mr_list[i]), src + src_offset, bytes);
 
 		offset = 0;
 		length -= bytes;
@@ -132,7 +132,7 @@ int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
  * @return status
  */
 int iov_atomic_in(atom_op_t op, int atom_size, void *src,
-		  ptl_iovec_t *iov, ptl_size_t num_iov,
+		  ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
 		  ptl_size_t offset, ptl_size_t length)
 {
 	ptl_size_t i;
@@ -192,10 +192,10 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 				WARN();
 				return PTL_NO_SPACE;
 			}
-
-			iov_copy_out(copy, iov, num_iov, offset, length);
+			/* Don't fix - this code will go away. have_odd_size_chunk is now invalid case */
+			iov_copy_out(copy, iov, NULL, num_iov, offset, length);
 			op(copy, src, length);
-			iov_copy_in(copy, iov, num_iov, offset, length);
+			iov_copy_in(copy, iov, NULL, num_iov, offset, length);
 			free(copy);
 			return PTL_OK;
 		}
@@ -213,7 +213,7 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 		if (src_offset + bytes > length)
 			bytes = length - src_offset;
 
-		op(iov->iov_base + iov_offset, src + src_offset, bytes);
+		op(addr_to_ppe(iov->iov_base + iov_offset, mr_list[i]), src + src_offset, bytes);
 
 		iov_offset = 0;
 		src_offset += bytes;

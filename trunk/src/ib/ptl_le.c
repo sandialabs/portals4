@@ -41,8 +41,25 @@ void le_cleanup(void *arg)
 		le->pt = NULL;
 	}
 
+	if (le->mr_start) {
+		mr_put(le->mr_start);
+		le->mr_start = NULL;
+	}
+
 	if (le->do_auto_free)
 		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
+
+	if (le->mr_list) {
+		int i;
+
+		for (i = 0; i < le->num_iov; i++) {
+			if (le->mr_list[i])
+				mr_put(le->mr_list[i]);
+		}
+
+		free(le->mr_list);
+		le->mr_list = NULL;
+	}
 
 	(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
 }
@@ -159,17 +176,28 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 	ptl_iovec_t *iov;
 
 	if (le_init->options & PTL_IOVEC) {
-		le->num_iov = le_init->length;
 
+#if IS_PPE
+		if (!mr_lookup_app(ni, le_init->start,
+						   le_init->length*sizeof(ptl_iovec_t),
+						   &le->mr_start) == PTL_OK)
+			return PTL_ARG_INVALID;
+#endif
+
+		le->num_iov = le_init->length;
 		le->length = 0;
-		iov = (ptl_iovec_t *)le_init->start;
+
+		le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
+		if (!le->mr_list)
+			return PTL_NO_SPACE;
+
+		iov = (ptl_iovec_t *)addr_to_ppe(le_init->start, le->mr_start);
 
 		for (i = 0; i < le->num_iov; i++) {
-			mr_t *mr;
-
-			if (mr_lookup_app(ni, iov->iov_base, iov->iov_len, &mr) == PTL_OK)
-				mr_put(mr);
-			else
+			printf("FZ10\n");
+			printf("FZ10a %p\n", iov->iov_base);
+			if (!mr_lookup_app(ni, iov->iov_base,
+							   iov->iov_len, &le->mr_list[i]) == PTL_OK)
 				return PTL_ARG_INVALID;
 
 			le->length += iov->iov_len;
@@ -179,11 +207,9 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 		/* If the memory is supposedly all accessible, register it. */
 		if (!(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
 			(le_init->options & PTL_LE_IS_ACCESSIBLE)) {
-			mr_t *mr;
 
-			if (mr_lookup_app(ni, le_init->start, le_init->length, &mr) == PTL_OK)
-				mr_put(mr);
-			else
+			if (!mr_lookup_app(ni, le_init->start,
+							   le_init->length, &le->mr_start) == PTL_OK)
 				return PTL_ARG_INVALID;
 		}
 
@@ -546,14 +572,6 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	le->options = le_init->options;
 	le->do_auto_free = 0;
 	le->ptl_list = ptl_list;
-
-#if IS_PPE
-	{
-		/* Under the PPE, the le_init structure has been silently extend. */
-		const struct ptl_le_ppe *le_init_ppe = (const struct ptl_le_ppe *)le_init;
-		le->ppe.client_start = le_init_ppe->client_start;
-	}
-#endif
 
 #ifndef NO_ARG_VALIDATION
 	if (le_handle_p) {

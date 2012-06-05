@@ -10,6 +10,32 @@
 #include "ummunotify.h"
 
 /**
+ * @brief Initialize mr each time when allocated from free list.
+ *
+ * @param[in] arg opaque mr address
+ *
+ * @return PTL_OK Indicates success.
+ */
+int mr_new(void *arg)
+{
+	mr_t *mr = arg;
+
+#if WITH_TRANSPORT_IB
+	mr->ibmr = NULL;
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+	mr->knem_cookie = 0;
+#endif
+
+#if IS_PPE
+	mr->ppe_addr = (void *)-1;
+#endif
+
+	return PTL_OK;
+}
+
+/**
  * Cleanup mr object.
  *
  * Called when the mr object is freed to the mr pool.
@@ -42,6 +68,14 @@ void mr_cleanup(void *arg)
 		mr->knem_cookie = 0;
 	}
 #endif
+
+#if IS_PPE
+	if (mr->ppe_addr != (void *)-1) {
+		xpmem_detach((void *)((uintptr_t)mr->ppe_addr & ~(pagesize-1)));
+		mr->ppe_addr = (void *)-1;
+	}
+#endif
+
 }
 
 /**
@@ -108,12 +142,6 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int err;
 	mr_t *mr = NULL;
 	void *end = start + length;
-#if WITH_TRANSPORT_IB
-	struct ibv_mr *ibmr = NULL;
-#endif
-#if WITH_TRANSPORT_SHMEM
-	uint64_t knem_cookie = 0;
-#endif
 
 	err = mr_alloc(ni, &mr);
 	if (err) {
@@ -136,27 +164,50 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	 * for now ask for everything
 	 * TODO get more particular later
 	 */
-	ibmr = ibv_reg_mr(ni->iface->pd, start, length,
-					  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
-					  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-	if (!ibmr) {
+	mr->ibmr = ibv_reg_mr(ni->iface->pd, start, length,
+						  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
+						  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+	if (!mr->ibmr) {
 		err = errno;
 		WARN();
 		goto err1;
 	}
-	mr->ibmr = ibmr;
 #endif
 
 #if WITH_TRANSPORT_SHMEM
 	if (get_param(PTL_ENABLE_SHMEM)) {
-		knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
-		if (!knem_cookie) {
+		mr->knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
+		if (!mr->knem_cookie) {
 			err = EINVAL;
 			WARN();
 			goto err1;
 		}
 	}
-	mr->knem_cookie = knem_cookie;
+#endif
+
+#if IS_PPE
+	if (length == 0) {
+		/* Nothing to map. ppe_addr should never be used. Leave it at
+		 * -1. */
+	} else {
+		off_t offset;
+		struct xpmem_addr addr;
+
+		/* Hack. When addr.offset is not page aligned, xpmem_attach()
+		 * always fails. So fix the ptr afterwards. */
+		offset = ((uintptr_t)start) & (pagesize-1);
+		addr.offset = (uintptr_t)start - offset;
+		addr.apid = ni->mem.apid;
+
+		mr->ppe_addr = xpmem_attach(addr, length+offset, NULL);
+		if (mr->ppe_addr == (void *)-1) {
+			err = EINVAL;
+			WARN();
+			goto err1;
+		}
+
+		mr->ppe_addr += offset;
+	}
 #endif
 
 	mr->addr = start;
@@ -166,16 +217,6 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	return 0;
 
 err1:
-#if WITH_TRANSPORT_IB
-	if (ibmr)
-		ibv_dereg_mr(ibmr);
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-	if (knem_cookie)
-		knem_unregister(ni, knem_cookie);
-#endif
-
 	if (mr)
 		mr_put(mr);
 
@@ -190,7 +231,7 @@ err1:
  * one or more existing mrs will be merged into one.
  *
  * @param[in] ni in which to lookup range
- * @param[in] start starting address of memory range
+ * @param[in] start starting address of memory range in application space
  * @param[in] length length of range
  * @param[out] mr_p address of return value
  *
@@ -208,11 +249,9 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 	struct mr *mr;
 	struct mr *left_node;
 	int ret;
-	struct list_head mr_list;	
-	
- again:
-	INIT_LIST_HEAD(&mr_list);
+	struct list_head mr_list;
 
+ again:
 	PTL_FASTLOCK_LOCK(&tree->tree_lock);
 
 	link = RB_ROOT(&tree->tree);
@@ -237,6 +276,9 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 			link = RB_RIGHT(mr, entry);
 		}
 	}
+
+	/* Not found. */
+	INIT_LIST_HEAD(&mr_list);
 
 	mr = NULL;
 
@@ -306,6 +348,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 			goto again;
 		}
 
+		*mr_p = NULL;
 		ret = PTL_FAIL;
 	} else {
 		void *res;

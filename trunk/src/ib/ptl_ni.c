@@ -113,6 +113,7 @@ static int init_pools(ni_t *ni)
 {
 	int err;
 
+	ni->mr_pool.setup = mr_new;
 	ni->mr_pool.cleanup = mr_cleanup;
 
 	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
@@ -397,7 +398,11 @@ int _PtlNIInit(gbl_t *gbl,
 		goto err3;
 	}
 
-#ifndef IS_PPE
+#if IS_PPE
+	/* Note: somewhow, that belongs to PtlNIInit_ppe, but gbl is not
+	 * accessible there. */
+	ni->mem.apid = gbl->apid;
+#else
 	/* Add a progress thread. */
 	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
 	if (err) {

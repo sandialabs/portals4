@@ -206,14 +206,14 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 /* round up x to multiple of y. y MUST be a power of 2. */
 #define ROUND_UP(x,y) ((x) + (y) - 1) & ~((y)-1);
 
-int iov_copy_out(void *dst, ptl_iovec_t *iov, ptl_size_t num_iov,
+int iov_copy_out(void *dst, ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);
 
-int iov_copy_in(void *src, ptl_iovec_t *iov, ptl_size_t num_iov,
+int iov_copy_in(void *src, ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
 		ptl_size_t offset, ptl_size_t length);
 
 int iov_atomic_in(atom_op_t op, int atom_size, void *src,
-		  ptl_iovec_t *iov, ptl_size_t num_iov,
+		  ptl_iovec_t *iov,  mr_t **mr_list, ptl_size_t num_iov,
 		  ptl_size_t offset, ptl_size_t length);
 
 int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
@@ -294,8 +294,17 @@ static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 
 #ifdef IS_PPE
 int PtlNIInit_ppe(ni_t *ni);
+
+/* Translate a client address to the PPE space given an mr to which the address belong to. */
+static inline void *addr_to_ppe(void *addr, mr_t *mr)
+{
+	assert(addr >= mr->addr && addr < (mr->addr+mr->length));
+	return mr->ppe_addr + (addr - mr->addr);
+}
+
 #else
 static inline int PtlNIInit_ppe(ni_t *ni) { return PTL_OK; }
+#define addr_to_ppe(addr,dontcare) (addr)
 #endif
 
 

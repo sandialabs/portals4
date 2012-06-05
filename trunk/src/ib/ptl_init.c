@@ -518,6 +518,7 @@ static int init_copy_out(buf_t *buf)
 		to_copy = buf->transfer.noknem.length_left;
 
 	ret = iov_copy_out(buf->transfer.noknem.data, buf->transfer.noknem.iovecs,
+					   NULL,
 					   buf->transfer.noknem.num_iovecs,
 					   buf->transfer.noknem.offset,
 					   to_copy);
@@ -718,12 +719,30 @@ static int data_in(buf_t *buf)
 	assert(buf->data_in->data_fmt == DATA_FMT_IMMEDIATE);
 
 	if (md->num_iov) {
-		err = iov_copy_in(data, (ptl_iovec_t *)md->start,
+		err = iov_copy_in(data, (ptl_iovec_t *)md->start, md->mr_list,
 				      md->num_iov, offset, length);
 		if (err)
 			return STATE_INIT_ERROR;
 	} else {
-		memcpy(md->start + offset, data, length);
+		void *start = md->start + offset;
+#if IS_PPE
+		mr_t *mr;
+
+		if (md->ppe.mr_start)
+			mr = md->ppe.mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(md), start, length, &mr);
+			if (err)
+				return STATE_INIT_ERROR;
+		}
+
+		memcpy(addr_to_ppe(start, mr), data, length);
+
+		if (!md->ppe.mr_start)
+			mr_put(mr);
+#else
+		memcpy(start, data, length);
+#endif
 	}
 
 	if (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))

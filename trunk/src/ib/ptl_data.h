@@ -109,12 +109,11 @@ struct data {
 
 typedef struct data data_t;
 struct buf;
-struct md;
-struct me;
+struct mr;
 
 int data_size(data_t *data);
 
-int append_immediate_data(void *start, int num_iov, data_dir_t dir, ptl_size_t offset,
-						  ptl_size_t length, struct buf *buf);
+int append_immediate_data(void *start, struct mr **mr_list, int num_iov, data_dir_t dir,
+						  ptl_size_t offset, ptl_size_t length, struct buf *buf);
 
 #endif /* PTL_DATA_H */
