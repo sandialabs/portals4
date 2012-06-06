@@ -115,6 +115,7 @@ struct node_info {
 	/*
 	 */
 	ptl_iovec_t		iov[IOV_SIZE];
+	unsigned int	iovec_length; /* length of each segments */
 
 	/*
 	 * Node buffer - can be buffer for MD/LE/ME.  A non-zero

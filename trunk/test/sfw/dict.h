@@ -145,7 +145,7 @@ enum {
 
 	/* md */
 	ATTR_IOV_BASE,
-	ATTR_IOV_LEN,
+	ATTR_IOVEC_LEN,
 
 	ATTR_MD_START,
 	ATTR_MD_LENGTH,
