@@ -253,8 +253,8 @@ static struct node_info *push_info(struct node_info *head, int tok)
 			return NULL;
 		}
 		for (i = 0; i < IOV_SIZE; i++) {
-			info->iov[i].iov_base	= info->buf + IOVEC_LENGTH*i;
-			info->iov[i].iov_len	= IOVEC_LENGTH;
+			info->iov[i].iov_base	= info->buf + info->iovec_length*i;
+			info->iov[i].iov_len	= info->iovec_length;
 		}
 		info->buf_alloc = 1;
 		break;
@@ -595,6 +595,17 @@ static int get_attr(struct node_info *info, xmlNode *node)
 
 		case ATTR_IOV_BASE:
 			info->iov[0].iov_base = get_ptr(val);
+			break;
+
+		case ATTR_IOVEC_LEN:
+			info->iovec_length = get_number(info, val);
+			{
+				int i;
+				for (i = 0; i < IOV_SIZE; i++) {
+					info->iov[i].iov_base	= info->buf + info->iovec_length*i;
+					info->iov[i].iov_len	= info->iovec_length;
+				}
+			}
 			break;
 
 		/* md */
@@ -1743,6 +1754,7 @@ static void set_default_info(struct node_info *info)
 	info->map_size				= 10;
 	info->ni_handle				= PTL_INVALID_HANDLE;
 	info->handle				= PTL_INVALID_HANDLE;
+	info->iovec_length			= IOVEC_LENGTH;
 
 	info->timeout				= 10;	/* msec */
 	info->eq_count				= 10;

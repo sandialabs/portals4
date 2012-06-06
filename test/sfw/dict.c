@@ -128,6 +128,7 @@ static struct dict_init {
 	{"pt_opt",			TYPE_ATTR,		ATTR_PT_OPT},
 	{"pt_index",			TYPE_ATTR,		ATTR_PT_INDEX},
 	{"iov_base",			TYPE_ATTR,		ATTR_IOV_BASE},
+	{"iovec_len",		TYPE_ATTR,		ATTR_IOVEC_LEN},
 	{"md_start",			TYPE_ATTR,		ATTR_MD_START},
 	{"md_length",			TYPE_ATTR,		ATTR_MD_LENGTH},
 	{"md_opt",			TYPE_ATTR,		ATTR_MD_OPT},
