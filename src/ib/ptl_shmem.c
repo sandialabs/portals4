@@ -102,7 +102,7 @@ static int init_prepare_transfer_shmem(md_t *md, data_dir_t dir, ptl_size_t offs
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
-		err = append_immediate_data(md->start, md->num_iov, dir, offset, length, buf);
+		err = append_immediate_data(md->start, NULL, md->num_iov, dir, offset, length, buf);
 	}
 	else if (md->options & PTL_IOVEC) {
 		ptl_iovec_t *iovecs = md->start;
@@ -131,7 +131,7 @@ static int init_prepare_transfer_shmem(md_t *md, data_dir_t dir, ptl_size_t offs
 		ni_t *ni = obj_to_ni(md);
 
 		addr = md->start + offset;
-		err = mr_lookup(ni, addr, length, &mr);
+		err = mr_lookup_app(ni, addr, length, &mr);
 		if (!err) {
 			buf->mr_list[buf->num_mr++] = mr;
 

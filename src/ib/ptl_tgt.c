@@ -1117,7 +1117,7 @@ static int tgt_shmem_desc(buf_t *buf)
 		goto done;
 	}
 
-	if (mr_lookup(obj_to_ni(buf), indir_sge, len, &mr)) {
+	if (mr_lookup_self(obj_to_ni(buf), indir_sge, len, &mr)) {
 		WARN();
 		next = STATE_TGT_COMM_EVENT;
 		goto done;
