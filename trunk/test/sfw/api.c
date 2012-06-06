@@ -90,9 +90,9 @@ int test_ptl_handle_is_eq(struct node_info *info)
 
 	ret = PtlHandleIsEqual(info->handle1, info->handle2);
 
-	info->err = ret;
+	info->err = ret ? PTL_OK : PTL_FAIL;
 
-	return info->ret != ret;
+	return info->ret != info->err;
 }
 
 int test_ptl_get_uid(struct node_info *info)
