@@ -53,7 +53,8 @@ typedef union datatype {
 #define PTL_TEST_RETURN_EXIT	(2)
 
 #define MAP_SIZE		(10)
-#define IOV_SIZE		(32)
+#define IOV_SIZE			(32)	/* number of iovecs in an MD/ME/LE */
+#define IOVEC_LENGTH		(1024)	/* size of an iovec */
 #define EQ_LIST_SIZE		(10)
 #define CT_LIST_SIZE		(10)
 #define STACK_SIZE		(20)

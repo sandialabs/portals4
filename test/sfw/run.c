@@ -253,8 +253,8 @@ static struct node_info *push_info(struct node_info *head, int tok)
 			return NULL;
 		}
 		for (i = 0; i < IOV_SIZE; i++) {
-			info->iov[i].iov_base	= info->buf + 1024*i;
-			info->iov[i].iov_len	= 1024;
+			info->iov[i].iov_base	= info->buf + IOVEC_LENGTH*i;
+			info->iov[i].iov_len	= IOVEC_LENGTH;
 		}
 		info->buf_alloc = 1;
 		break;
@@ -1738,7 +1738,7 @@ static void set_default_info(struct node_info *info)
 	info->desired.max_pt_index		= 63;
 	info->desired.max_iovecs		= IOV_SIZE;
 	info->desired.max_list_size		= 10;
-	info->desired.max_msg_size		= IOV_SIZE*1024;
+	info->desired.max_msg_size		= IOV_SIZE*IOVEC_LENGTH;
 	info->desired.max_atomic_size		= 64;
 	info->map_size				= 10;
 	info->ni_handle				= PTL_INVALID_HANDLE;
