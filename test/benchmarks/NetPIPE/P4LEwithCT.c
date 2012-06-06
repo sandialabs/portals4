@@ -489,7 +489,7 @@ int rc;
 
 
     /* Create a persistent ME to send from */
-    if (PtlHandleIsEqual(md_handle, PTL_INVALID_HANDLE) == PTL_OK)   {
+    if (PtlHandleIsEqual(md_handle, PTL_INVALID_HANDLE))   {
 	/* First time here, setup an MD to send benchmark data */
 	libtest_CreateMDCT(ni_logical, p->s_buff, p->bufflen, &md_handle, &send_ct_handle);
 	md_size= p->bufflen;
@@ -506,7 +506,7 @@ int rc;
     }
 
     /* Create a persistent LE to receive into */
-    if (PtlHandleIsEqual(le_handle, PTL_INVALID_HANDLE) == PTL_OK)   {
+    if (PtlHandleIsEqual(le_handle, PTL_INVALID_HANDLE))   {
 	libtest_CreateLECT(ni_logical, PTL_XMIT_INDEX, p->r_buff, p->bufflen,
 		&le_handle, &recv_ct_handle);
 	le_size= p->bufflen;

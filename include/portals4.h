@@ -3380,8 +3380,8 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle);
  * @details Compares two handles to determine if they represent the same object.
  * @param[in] handle1   An object handle. May be the constant \c PTL_INVALID_HANDLE.
  * @param[in] handle2   An object handle. May be the constant \c PTL_INVALID_HANDLE.
- * @retval PTL_OK       Indicates that the handles are equivalent.
- * @retval PTL_FAIL     Indicates that the handles are not equivalent.
+ * @retval zero         Indicates that the two handles are not equivalent.
+ * @retval non-zero     Indicates that the two handles are equivalent.
  */
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
                      ptl_handle_any_t handle2);
