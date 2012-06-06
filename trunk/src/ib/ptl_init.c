@@ -494,7 +494,6 @@ static int init_copy_in(buf_t *buf)
 	buf->transfer.noknem.length_left -= to_copy;
 	buf->transfer.noknem.offset += to_copy;
 	
-	//todo: should be conn->data_send()
 	/* Tell the target the data is ready. */
 	__sync_synchronize();
 	data->noknem.state = 2;

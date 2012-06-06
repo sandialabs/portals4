@@ -107,7 +107,6 @@ static int init_ppe(void)
 	return PTL_FAIL;
 }
 
-//todo: merge with send_message_shmem
 static int send_message_mem(buf_t *buf, int from_init)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. will be
@@ -1037,7 +1036,6 @@ static struct client *find_client(pid_t pid)
 }
 
 /* Progress thread for the PPE. */
-// TODO: tooo many spinlock_body here
 static void ppe_progress(void)
 {
 	struct ppe_comm_pad * const comm_pad = ppe.comm_pad_info.comm_pad;
