@@ -194,8 +194,6 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
 		iov = (ptl_iovec_t *)addr_to_ppe(le_init->start, le->mr_start);
 
 		for (i = 0; i < le->num_iov; i++) {
-			printf("FZ10\n");
-			printf("FZ10a %p\n", iov->iov_base);
 			if (!mr_lookup_app(ni, iov->iov_base,
 							   iov->iov_len, &le->mr_list[i]) == PTL_OK)
 				return PTL_ARG_INVALID;
