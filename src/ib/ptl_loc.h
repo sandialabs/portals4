@@ -293,7 +293,7 @@ static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 #endif
 
 #ifdef IS_PPE
-int PtlNIInit_ppe(ni_t *ni);
+int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni);
 
 /* Translate a client address to the PPE space given an mr to which the address belong to. */
 static inline void *addr_to_ppe(void *addr, mr_t *mr)
@@ -303,7 +303,7 @@ static inline void *addr_to_ppe(void *addr, mr_t *mr)
 }
 
 #else
-static inline int PtlNIInit_ppe(ni_t *ni) { return PTL_OK; }
+static inline int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni) { return PTL_OK; }
 #define addr_to_ppe(addr,dontcare) (addr)
 #endif
 

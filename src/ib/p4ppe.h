@@ -21,6 +21,9 @@ typedef struct gbl {
 
 	/* Mapping of the whole process. */
 	xpmem_apid_t apid;
+
+	/* Number of the progress thread assigned to this client. */
+	unsigned int prog_thread;
 } gbl_t;
 
 static inline int gbl_get(void)
@@ -47,7 +50,7 @@ struct client
 
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;
-	
+
 	gbl_t gbl;
 };
 

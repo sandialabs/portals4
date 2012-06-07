@@ -21,19 +21,31 @@ struct logical_group {
 	int members;				/* number of rank in the group */
 };
 
-struct ppe {
-
-	/* Communication pad. */
-	struct ppe_comm_pad *comm_pad;
-	struct xpmem_map comm_pad_mapping;
+struct prog_thread {
+	pthread_t thread;
 
 	/* When to stop the progress thread. */
 	int stop;
 
+	/* Points to own queue in comm pad. */
+	queue_t *queue;
+	
 	/* Internal queue. Used for communication regarding transfer
 	 * between clients. */
 	queue_t internal_queue;
+};
 
+struct {
+	/* Communication pad. */
+	struct ppe_comm_pad *comm_pad;
+	struct xpmem_map comm_pad_mapping;
+
+	/* The progress threads. */
+	int num_prog_threads;		/* in prog_thread[] */
+	int current_prog_thread;
+	struct prog_thread prog_thread[MAX_PROGRESS_THREADS];
+
+	/* The event loop thread. */
 	pthread_t		event_thread;
 	int			event_thread_run;
 
@@ -184,11 +196,19 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 		/* That is possible, but should not happen. */
 		msg.rep.ret = PTL_FAIL;
 	} else {
+		/* Designate a progress thread for this client. They are alloted
+		 * on a round-round fashion. */
+		client->gbl.prog_thread = ppe.current_prog_thread;
+		ppe.current_prog_thread++;
+		if (ppe.current_prog_thread >= ppe.num_prog_threads)
+			ppe.current_prog_thread = 0;
+
 		list_add(&client->list, &clients);
 			
 		msg.rep.cookie = client;
 		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
 		msg.rep.ppebufs_ppeaddr = ppe.comm_pad->ppebuf_slab;
+		msg.rep.queue_index = client->gbl.prog_thread;
 		msg.rep.ret = PTL_OK;
 	}
 
@@ -234,6 +254,7 @@ static int init_ppe(void)
 {
     struct sockaddr_un sockaddr;
 	int err;
+	int i;
 
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -268,11 +289,14 @@ static int init_ppe(void)
 		goto exit_fail;
 	}
 
-	/* Our own queue. */
-	queue_init(&ppe.internal_queue);
+	for (i=0; i<ppe.num_prog_threads; i++) {
+		struct prog_thread *pt = &ppe.prog_thread[i];
 
-	/* Now we can create the buffer pool */
-	queue_init(&ppe.comm_pad->queue);
+		/* Initialize both thread queues. */
+		pt->queue = &ppe.comm_pad->q[i].queue;
+		queue_init(pt->queue);
+		queue_init(&pt->internal_queue);
+	}
 
 	return PTL_OK;
 
@@ -290,7 +314,8 @@ static int send_message_mem(buf_t *buf, int from_init)
 	buf->type = BUF_MEM_SEND;
 	buf->obj.next = NULL;
 
-	enqueue(NULL, &ppe.internal_queue, (obj_t *)buf);
+	/* Enqueue on the internal queue attached to that NI. */
+	enqueue(NULL, obj_to_ni(buf)->mem.internal_queue, (obj_t *)buf);
 
 	return PTL_OK;
 }
@@ -1163,16 +1188,16 @@ static struct {
 };
 
 /* Progress thread for the PPE. */
-static void ppe_progress(void)
+static void *ppe_progress(void *arg)
 {
-	struct ppe_comm_pad * const comm_pad = ppe.comm_pad;
-
-	while (!ppe.stop) {
+	struct prog_thread *pt = arg;
+	
+	while (!pt->stop) {
 		ppebuf_t *ppebuf;
 		buf_t *mem_buf;
 
 		/* Get message from the message queue. */
-		ppebuf = (ppebuf_t *)dequeue(NULL, &comm_pad->queue);
+		ppebuf = (ppebuf_t *)dequeue(NULL, pt->queue);
 
 		if (ppebuf) {
 			ppe_ops[ppebuf->op].func(ppebuf);
@@ -1182,7 +1207,7 @@ static void ppe_progress(void)
 		}
 
 		/* Get message from our own queue. */
-		mem_buf = (buf_t *)dequeue(NULL, &ppe.internal_queue);
+		mem_buf = (buf_t *)dequeue(NULL, &pt->internal_queue);
 		if (mem_buf) {
 			int err;
 
@@ -1230,6 +1255,8 @@ static void ppe_progress(void)
 		/* TODO: don't spin if we got messages. */
 		SPINLOCK_BODY();
 	}
+
+	return NULL;
 }
 
 void gbl_release(ref_t *ref)
@@ -1283,7 +1310,7 @@ static unsigned int fakepid(void)
  *
  * @return status
  */
-int PtlNIInit_ppe(ni_t *ni)
+int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 {
 	/* Only if IB hasn't setup the NID first. */
 	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
@@ -1298,20 +1325,10 @@ int PtlNIInit_ppe(ni_t *ni)
 	if (ni->id.phys.pid == PTL_PID_ANY)
 		ni->id.phys.pid = ni->iface->id.phys.pid;
 
+	ni->mem.internal_queue = &ppe.prog_thread[gbl->prog_thread].internal_queue;
+	ni->mem.apid = gbl->apid;
+
 	return PTL_OK;
-}
-
-#if 0
-static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
-{
-	ev_break(evl.loop, EVBREAK_ALL);
-}
-#endif
-
-static void *event_loop_func(void *arg)
-{
-	evl_run(&evl);
-	return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -1320,16 +1337,19 @@ int main(int argc, char *argv[])
 	int i;
 	int c;
 
+	/* Set some default values. */
 	ppe.ppebuf.num = 1000;
+	ppe.num_prog_threads = 1;
 
 	while (1) {
 		int option_index;
 		static struct option long_options[] = {
 			{"nppebufs", 1, 0, 'n'},
+			{"nprogthreads", 1, 0, 'p'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "n:",
+		c = getopt_long(argc, argv, "n:p:",
                         long_options, &option_index);
 
 		if (c == -1)
@@ -1344,12 +1364,19 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		case 'p':
+			ppe.num_prog_threads = atoi(optarg);
+			if (ppe.num_prog_threads < 1 || ppe.num_prog_threads>MAX_PROGRESS_THREADS) {
+				ptl_warn("Invalid argument value for nprogthreads\n");
+				return 1;
+			}
+			break;
+
 		default:
 			ptl_warn("Invalid option %s\n", argv[option_index]);
 			return 1;
 		}
 	}	
-
 
 	err = misc_init_once();
 	if (err)
@@ -1359,13 +1386,6 @@ int main(int argc, char *argv[])
 	/* Create the event loop thread. */
 	evl_init(&evl);
 
-	err = pthread_create(&ppe.event_thread, NULL, event_loop_func, NULL);
-	if (unlikely(err)) {
-		ptl_warn("event loop creation failed\n");
-		return 1;
-	}
-	ppe.event_thread_run = 1;
-
 	for (i=0; i<0x100; i++)
 		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
 
@@ -1374,7 +1394,16 @@ int main(int argc, char *argv[])
 	if (err)
 		return 1;
 
-	ppe_progress();
+	for (i=0; i<ppe.num_prog_threads; i++) {
+		struct prog_thread *pt = &ppe.prog_thread[i];
+		err = pthread_create(&pt->thread, NULL, ppe_progress, pt);
+		if (unlikely(err)) {
+			ptl_warn("Failed to create a progress thread.\n");
+			return 1;
+		}
+	}
 
-	//todo : cleanup (evl, shm, ...)
+	evl_run(&evl);
+
+	//todo: on shutdown, we might want to cleanup
 }

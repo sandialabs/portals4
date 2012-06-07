@@ -42,6 +42,12 @@ static struct {
 	 * process. */
 	void *ppebufs_addr;
 
+	/* Offset of the ppebuf slab in the comm_pad */
+	off_t ppebufs_offset;
+
+	/* Points to own queue in comm pad. */
+	queue_t *queue;
+
 	/* XPMEM segid for that whole process. */
 	xpmem_segid_t segid;
 } ppe;
@@ -227,6 +233,9 @@ static int connect_to_ppe(void)
 	ppe.ppebufs_ppeaddr = msg.rep.ppebufs_ppeaddr;
 	ppe.ppebufs_addr = ppe.ppe_comm_pad->ppebuf_slab;
 
+	ppe.ppebufs_offset = ppe.ppebufs_addr - ppe.ppebufs_ppeaddr;
+	ppe.queue = &ppe.ppe_comm_pad->q[msg.rep.queue_index].queue;
+
 	/* This client can now communicate through regular messages with the PPE. */
 	return PTL_OK;
 
@@ -246,7 +255,7 @@ static void transfer_msg(ppebuf_t *buf)
 	buf->completed = 0;
 	buf->cookie = ppe.cookie;
 
-	enqueue((void *)(uintptr_t)(ppe.ppebufs_addr - ppe.ppebufs_ppeaddr), &ppe.ppe_comm_pad->queue, (obj_t *)buf);
+	enqueue((void *)(uintptr_t)ppe.ppebufs_offset, ppe.queue, (obj_t *)buf);
 
 	/* Wait for the reply from the PPE. */
 	while(buf->completed == 0)
