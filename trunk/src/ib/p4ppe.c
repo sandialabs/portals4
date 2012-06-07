@@ -6,6 +6,7 @@
 
 #include "ptl_loc.h"
 
+#include <getopt.h>
 #include <sys/un.h>
 
 /* Event loop. */
@@ -87,8 +88,6 @@ static int setup_ppebufs(void)
 	int ret;
 	pool_t *pool;
 	size_t slab_size;
-
-	ppe.ppebuf.num = 1000;		/* todo: make a variable or PPE parameter ? */
 
 	slab_size = ppe.ppebuf.num * sizeof(ppebuf_t);
 
@@ -274,6 +273,8 @@ static int init_ppe(void)
 
 	/* Now we can create the buffer pool */
 	queue_init(&ppe.comm_pad->queue);
+
+	return PTL_OK;
 
  exit_fail:
 	return PTL_FAIL;
@@ -472,7 +473,6 @@ static int map_segment_ppe(struct client *client, const void *client_addr, size_
 	ptr_attach = xpmem_attach(addr, len+offset, NULL);
 	if (ptr_attach == (void *)-1) {
 		WARN();
-		printf("FZ- %p %ld %ld\n", client_addr, len, offset);
 		*ret = NULL;
 		return 1;
 	}
@@ -1314,10 +1314,42 @@ static void *event_loop_func(void *arg)
 	return NULL;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	int err;
 	int i;
+	int c;
+
+	ppe.ppebuf.num = 1000;
+
+	while (1) {
+		int option_index;
+		static struct option long_options[] = {
+			{"nppebufs", 1, 0, 'n'},
+			{0, 0, 0, 0}
+		};
+
+		c = getopt_long(argc, argv, "n:",
+                        long_options, &option_index);
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'n':
+			ppe.ppebuf.num = atoi(optarg);
+			if (ppe.ppebuf.num < 1) {
+				ptl_warn("Invalid argument value for nppebufs\n");
+				return 1;
+			}
+			break;
+
+		default:
+			ptl_warn("Invalid option %s\n", argv[option_index]);
+			return 1;
+		}
+	}	
+
 
 	err = misc_init_once();
 	if (err)
@@ -1338,7 +1370,9 @@ int main(void)
 		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
 
 	/* Setup the PPE exchange zone. */
-	init_ppe();
+	err = init_ppe();
+	if (err)
+		return 1;
 
 	ppe_progress();
 
