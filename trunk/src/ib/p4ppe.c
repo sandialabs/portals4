@@ -6,6 +6,8 @@
 
 #include "ptl_loc.h"
 
+#include <sys/un.h>
+
 /* Event loop. */
 struct evl evl;
 
@@ -21,14 +23,8 @@ struct logical_group {
 struct ppe {
 
 	/* Communication pad. */
-	struct {
-		int size;
-		int name;
-
-		/* The communication pad in shared memory. */
-		struct ppe_comm_pad *comm_pad;
-
-	} comm_pad_info;
+	struct ppe_comm_pad *comm_pad;
+	struct xpmem_map comm_pad_mapping;
 
 	/* When to stop the progress thread. */
 	int stop;
@@ -43,67 +39,243 @@ struct ppe {
 	/* Pool/list of ppebufs, used by client to talk to PPE. */
 	struct {
 		void *slab;
-		struct xpmem_map slab_mapping;
 		int num;				/* total number of ppebufs */
 	} ppebuf;
 
 	/* Hash table to keep tables of logical tables, indexed by the
 	 * lower byte of crc32. */
 	struct list_head logical_group_list[0x100];
+
+	/* Watcher for incoming connection from clients. */
+	ev_io client_watcher;
+	int client_fd;
+
 } ppe;
+
+/* Given a memory segment, create a mapping for XPMEM, and return the
+ * segid and the offset of the buffer. Return PTL_OK on success. */
+static int create_mapping_ppe(const void *addr_in, size_t length, struct xpmem_map *mapping)
+{
+	void *addr;
+
+	/* Align the address to a page boundary. */
+	addr = (void *)(((uintptr_t)addr_in) & ~(pagesize-1));
+	mapping->offset = addr_in - addr;
+	mapping->source_addr = addr_in;
+
+	/* Adjust the size to comprise full pages. */
+	mapping->size = length;
+	length += mapping->offset;
+	length = (length + pagesize-1) & ~(pagesize-1);
+
+	mapping->segid = xpmem_make(addr, length,	
+								XPMEM_PERMIT_MODE, (void *)0600);
+
+	return mapping->segid == -1 ? PTL_ARG_INVALID : PTL_OK;
+}
+
+/* Delete an existing mapping. */
+static void delete_mapping_ppe(struct xpmem_map *mapping)
+{
+	 xpmem_remove(mapping->segid);
+}
+
+/* Create a unique ppebuf pool, to be used/shared by all clients. */
+static int setup_ppebufs(void)
+{
+	size_t size;
+	int ret;
+	pool_t *pool;
+	size_t slab_size;
+
+	ppe.ppebuf.num = 1000;		/* todo: make a variable or PPE parameter ? */
+
+	slab_size = ppe.ppebuf.num * sizeof(ppebuf_t);
+
+	/* Round up to page size. */
+	size = sizeof(struct ppe_comm_pad) + slab_size;
+	size = ROUND_UP(size, pagesize);
+
+	if (posix_memalign((void **)&ppe.comm_pad, pagesize, size)) {
+		WARN();
+		return 1;
+	}
+
+	ppe.ppebuf.slab = ppe.comm_pad->ppebuf_slab;
+
+	/* Make the whole thing shareable through XPMEM. */
+	ret = create_mapping_ppe(ppe.comm_pad, size, &ppe.comm_pad_mapping);
+	if (ret == -1) {
+		WARN();
+		return 1;
+	}
+
+	/* Now we can create the buffer pool */
+	pool = &ppe.comm_pad->ppebuf_pool;
+	pool->pre_alloc_buffer = ppe.ppebuf.slab;
+	pool->use_pre_alloc_buffer = 1;
+	pool->slab_size = slab_size;
+
+	ret = pool_init(pool, "ppebuf", sizeof(ppebuf_t),
+					POOL_PPEBUF, NULL);
+	if (ret) {
+		WARN();
+		return 1;
+	}
+
+	return 0;
+}
+
+/* List of existing clients. May replace with a tree someday. */
+PTL_LIST_HEAD(clients);
+
+static struct client *find_client(pid_t pid)
+{
+	struct list_head *l;
+
+	list_for_each(l, &clients) {
+		struct client *client = list_entry(l, struct client, list);
+
+		if (client->pid == pid)
+			return client;
+	}
+
+	return NULL;
+}
+
+static void destroy_client(struct client *client)
+{
+	if (!list_empty(&client->list))
+		list_del(&client->list);
+
+	ev_io_stop(evl.loop, &client->watcher);
+
+	close(client->s);
+
+	/* If the client has crashed, then we should free all its
+	 * ressources. TODO */
+
+	free(client);
+}
+
+/* Process a request from a client. */
+static void process_client_msg(EV_P_ ev_io *w, int revents)
+{
+	union msg_ppe_client msg;
+	int len;
+	struct client *client = w->data;
+	struct client *client2;
+
+	len = recv(client->s, &msg, sizeof(msg), 0);
+	if (len != sizeof(msg)) {
+		destroy_client(client);
+		return;
+	}
+
+	client2 = find_client(msg.req.pid);
+	if (client2) {
+		/* If we already have a client with the same PID, the old client
+		 * died and we don't know yet. */
+		destroy_client(client2);
+	}
+
+	client->pid = msg.req.pid;
+	client->gbl.apid = xpmem_get(msg.req.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+	if (client->gbl.apid == -1) {
+		/* That is possible, but should not happen. */
+		msg.rep.ret = PTL_FAIL;
+	} else {
+		list_add(&client->list, &clients);
+			
+		msg.rep.cookie = client;
+		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
+		msg.rep.ppebufs_ppeaddr = ppe.comm_pad->ppebuf_slab;
+		msg.rep.ret = PTL_OK;
+	}
+
+	if (send(client->s, &msg, sizeof(msg), 0) != sizeof(msg)) {
+		/* The client just died. Whatever. */
+		destroy_client(client);
+	}
+}
+
+/* Process an incomig connection request. */
+static void process_client_connection(EV_P_ ev_io *w, int revents)
+{
+	int s;
+
+	s = accept(ppe.client_fd, NULL, NULL);
+
+	if (s != -1) {
+		/* Create the new client and add a watcher. */
+		struct client *client = calloc(1, sizeof(struct client));
+		if (client) {
+			INIT_LIST_HEAD(&client->list);
+			client->s = s;
+
+			/* Add a watcher on this client. */
+			ev_io_init(&client->watcher, process_client_msg, s, EV_READ);
+			client->watcher.data = client;
+			
+			ev_io_start(evl.loop, &client->watcher);
+
+			/* TODO: is there a need to client on a pending connection
+			 * list? */
+		} else {
+			/* An error occurred. Reject the client. */
+			WARN();
+			close(s);
+		}
+	}
+}
 
 /* The communication pad for the PPE is only 4KB, and only contains a
  * queue structure. There is no buffers */
 static int init_ppe(void)
 {
-	int shm_fd = -1;
+    struct sockaddr_un sockaddr;
+	int err;
+
+	/* Create the socket on which the client connect to. */
+	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+		WARN();
+		goto exit_fail;
+    }
+
+    sockaddr.sun_family = AF_UNIX;
+    strcpy(sockaddr.sun_path, PPE_SOCKET_NAME);
+    unlink(PPE_SOCKET_NAME);
+    if (bind(ppe.client_fd, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_un)) == -1) {
+		WARN();
+		goto exit_fail;
+    }
+
+    if (listen(ppe.client_fd, 50) == -1) {
+		WARN();
+		goto exit_fail;
+    }
+
+	/* Add a watcher for incoming requests. */
+	ppe.client_watcher.data = NULL;
+	ev_io_init(&ppe.client_watcher, process_client_connection,
+		   ppe.client_fd, EV_READ);
+
+	EVL_WATCH(ev_io_start(evl.loop, &ppe.client_watcher));
+
+	/* Create the PPEBUFs. */
+	err = setup_ppebufs();
+	if (err) {
+		WARN();
+		goto exit_fail;
+	}
 
 	/* Our own queue. */
 	queue_init(&ppe.internal_queue);
 
-	ppe.comm_pad_info.size = 4096;	/* bigger than a queue_t */
-
-	/* Just in case, remove that file if it already exist. */
-	shm_unlink(COMM_PAD_FNAME);
-
-	shm_fd = shm_open(COMM_PAD_FNAME,
-					  O_RDWR | O_CREAT | O_EXCL,
-					  S_IRUSR | S_IWUSR);
-	assert(shm_fd >= 0);
-
-	if (shm_fd < 0) {
-		ptl_warn("shm_open of %s failed (errno=%d)",
-				 COMM_PAD_FNAME, errno);
-		goto exit_fail;
-	}
-
-	/* Enlarge the memory zone to the size we need. */
-	if (ftruncate(shm_fd, ppe.comm_pad_info.size) != 0) {
-		ptl_warn("share memory ftruncate failed");
-		shm_unlink(COMM_PAD_FNAME);
-		goto exit_fail;
-	}
-
-	/* Fill our portion of the comm pad. */
-	ppe.comm_pad_info.comm_pad = mmap(NULL, ppe.comm_pad_info.size,
-							   PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-	if (ppe.comm_pad_info.comm_pad == MAP_FAILED) {
-		ptl_warn("mmap failed (%d)", errno);
-		perror("");
-		goto exit_fail;
-	}
-
-	/* The share memory is mmaped, so we can close the file. */
-	close(shm_fd);
-	shm_fd = -1;
-
 	/* Now we can create the buffer pool */
-	queue_init(&ppe.comm_pad_info.comm_pad->queue);
+	queue_init(&ppe.comm_pad->queue);
 
  exit_fail:
-	if (shm_fd != -1)
-		close(shm_fd);
-
 	return PTL_FAIL;
 }
 
@@ -276,34 +448,6 @@ static inline void buf_completed(ppebuf_t *buf)
 {
 	buf->completed = 1;
 	__sync_synchronize();
-}
-
-/* Given a memory segment, create a mapping for XPMEM, and return the
- * segid and the offset of the buffer. Return PTL_OK on success. */
-static int create_mapping_ppe(const void *addr_in, size_t length, struct xpmem_map *mapping)
-{
-	void *addr;
-
-	/* Align the address to a page boundary. */
-	addr = (void *)(((uintptr_t)addr_in) & ~(pagesize-1));
-	mapping->offset = addr_in - addr;
-	mapping->source_addr = addr_in;
-
-	/* Adjust the size to comprise full pages. */
-	mapping->size = length;
-	length += mapping->offset;
-	length = (length + pagesize-1) & ~(pagesize-1);
-
-	mapping->segid = xpmem_make(addr, length,	
-								XPMEM_PERMIT_MODE, (void *)0600);
-
-	return mapping->segid == -1 ? PTL_ARG_INVALID : PTL_OK;
-}
-
-/* Delete an existing mapping. */
-static void delete_mapping_ppe(struct xpmem_map *mapping)
-{
-	 xpmem_remove(mapping->segid);
 }
 
 /* Attach to an XPMEM segment from a given client. */
@@ -1018,87 +1162,14 @@ static struct {
 	ADD_OP(PtlTriggeredSwap),
 };
 
-/* List of existing clients. May replace with a tree someday. */
-PTL_LIST_HEAD(clients);
-
-static struct client *find_client(pid_t pid)
-{
-	struct list_head *l;
-
-	list_for_each(l, &clients) {
-		struct client *client = list_entry(l, struct client, list);
-
-		if (client->pid == pid)
-			return client;
-	}
-
-	return NULL;
-}
-
 /* Progress thread for the PPE. */
 static void ppe_progress(void)
 {
-	struct ppe_comm_pad * const comm_pad = ppe.comm_pad_info.comm_pad;
+	struct ppe_comm_pad * const comm_pad = ppe.comm_pad;
 
 	while (!ppe.stop) {
 		ppebuf_t *ppebuf;
 		buf_t *mem_buf;
-		struct client *client;
-
-		/* Get init message from the comm pad. */
-		switch(comm_pad->cmd.level) {
-		case 0:
-			/* Nothing to do. */
-			break;
-
-		case 1:
-			/* A client is writing a command. */
-			break;
-
-		case 2:
-			client = find_client(comm_pad->cmd.pid);
-			if (client) {
-				/* Already exists. So it means the old one went
-				 * away. Destroy. */
-				//todo
-				abort();
-			}
-
-			client = calloc(1, sizeof(struct client));
-			if (client) {
-				client->pid = comm_pad->cmd.pid;
-				
-				client->gbl.apid = xpmem_get(comm_pad->cmd.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
-				if (client->gbl.apid == -1) {
-					/* That is possible, but should not happen. */
-					WARN();
-					free(client);
-					goto bad_client;
-				}
-				list_add(&client->list, &clients);
-			
-				comm_pad->cmd.cookie = client;
-				comm_pad->cmd.ppebufs_mapping = ppe.ppebuf.slab_mapping;
-				comm_pad->cmd.ppebufs_ppeaddr = ppe.ppebuf.slab;
-				comm_pad->cmd.ret = PTL_OK;
-			} else {
-			bad_client:
-				WARN();
-				comm_pad->cmd.ret = PTL_FAIL;
-			}
-
-			/* Let the client read the result. */
-			switch_cmd_level(comm_pad, 2, 3);
-
-			break;
-
-		case 3:
-			/* Client's move. Nothing to do. */
-			break;
-
-		default:
-			abort();
-		}
 
 		/* Get message from the message queue. */
 		ppebuf = (ppebuf_t *)dequeue(NULL, &comm_pad->queue);
@@ -1243,47 +1314,6 @@ static void *event_loop_func(void *arg)
 	return NULL;
 }
 
-/* Create a unique ppebuf pool, to be used/shared by all clients. */
-static int setup_ppebufs(void)
-{
-	size_t size;
-	int ret;
-	pool_t *pool = &ppe.comm_pad_info.comm_pad->ppebuf_pool;
-
-	ppe.ppebuf.num = 1000;
-
-	pool->use_pre_alloc_buffer = 1;
-	pool->slab_size = ppe.ppebuf.num * sizeof(ppebuf_t);
-
-	/* Round up to page size. */
-	size = (pool->slab_size + pagesize - 1) & ~(pagesize-1);
-
-	if (posix_memalign((void **)&ppe.ppebuf.slab, pagesize, size)) {
-		WARN();
-		ppe.ppebuf.slab = NULL;
-		return 1;
-	}
-
-	/* Make the communication pad shareable through XPMEM. */
-	ret = create_mapping_ppe(ppe.ppebuf.slab, size, &ppe.ppebuf.slab_mapping);
-	if (ret == -1) {
-		WARN();
-		return 1;
-	}
-
-	/* Now we can create the buffer pool */
-	pool->pre_alloc_buffer = ppe.ppebuf.slab;
-
-	ret = pool_init(pool, "ppebuf", sizeof(ppebuf_t),
-					POOL_PPEBUF, NULL);
-	if (ret) {
-		WARN();
-		return 1;
-	}
-
-	return 0;
-}
-
 int main(void)
 {
 	int err;
@@ -1309,10 +1339,6 @@ int main(void)
 
 	/* Setup the PPE exchange zone. */
 	init_ppe();
-
-	err = setup_ppebufs();
-	if (err)
-		return 1;
 
 	ppe_progress();
 
