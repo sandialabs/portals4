@@ -34,10 +34,16 @@ static inline void gbl_put(void)
 
 extern void gbl_release(ref_t *ref);
 
-/* Represents a client connected to this PPE. */
+/* Represents a client connected to the PPE. */
 struct client
 {
 	struct list_head list;
+
+	/* Unix socket to the PPE. */
+	int s;
+
+	/* Watcher for connection to client. */
+	ev_io watcher;
 
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;

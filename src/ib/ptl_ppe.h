@@ -2,8 +2,6 @@
 
 #ifdef WITH_PPE
 
-#define COMM_PAD_FNAME "/portals4-ppe"
-
 /* XPMEM mapping. Maybe this structure should be split into 2
  * differents ones: one for the client and one for the PPE. */
 struct xpmem_map {
@@ -21,48 +19,7 @@ struct xpmem_map {
     struct xpmem_addr addr;
 };
 
-struct ppe_comm_pad {
-	/* Clients enqueue ppebufs here, and PPE consummes. */
-	queue_t queue __attribute__ ((aligned (64)));
-
-	/* Pool of ppebufs, for clients to use. The slab itself has been
-	 * mapped through XPMEM by the PPE. */
-	pool_t ppebuf_pool __attribute__ ((aligned (64)));
-
-	struct {
-		/* Communication between the PPE and a client. Used only to
-		 * say hello and prepare SBUFs.
-		 *
-		 * 0 = free,
-		 * 1 = reserved by a client to issue a new command,
-		 * 2 = command ready (ie. doorbell),
-		 * 3 = command processed by PPE.
-		 */
-		int level;
-		
-		/* Arguments for the command (from the client to the PPE) */
-		pid_t pid;
-		xpmem_segid_t segid;
-
-		/* Response from the PPE to the client. */
-		int ret;
-		void *cookie;
-		struct xpmem_map ppebufs_mapping;
-		void *ppebufs_ppeaddr;
-	} cmd;
-};
-
-/* Atomically switch the command level. */
-static inline void switch_cmd_level(struct ppe_comm_pad *ppe_comm_pad, unsigned int from, unsigned int to)
-{
-	/* Ensure that all fields were properly flushed before writing the
-	 * level. This might no be necessary because CAS is/should be a
-	 * barrier. */
-	__sync_synchronize();
-
- 	while (!__sync_bool_compare_and_swap(&ppe_comm_pad->cmd.level, from, to))
-		SPINLOCK_BODY();
-}
+#define PPE_SOCKET_NAME "/tmp/portals4-ppe"
 
 enum ppe_op {
 	OP_PtlAtomic = 1,
@@ -445,17 +402,6 @@ struct ppe_msg {
 			ptl_handle_ct_t trig_ct_handle;
 			ptl_size_t threshold;
 		} PtlTriggeredCTSet;
-
-#if 0
-		struct {
-			xpmem_segid_t segid;
-			size_t size;
-			unsigned int num_obj;
-			unsigned int size_obj;
-
-			off_t offset;
-		} slab;
-#endif
 	};
 };
 
@@ -467,16 +413,11 @@ typedef struct ppebuf {
 	/** base object */
 	obj_t			obj;
 
-	/* Cookie given by the PPE to that client and used for almost any
+	/** Cookie given by the PPE to that client and used for almost any
 	 * communication. */
 	void *cookie;
 
-	//	pthread_mutex_t		mutex;
-
-	/** enables holding buf on lists */
-	//struct list_head	list;
-
-	/** type of buf */
+	/** Type of operation */
 	enum ppe_op op;
 
 	/** Set to 1 when the PPE has completed the request in the
@@ -486,5 +427,38 @@ typedef struct ppebuf {
 	/** Message from client to PPE, with response from PPE. */
 	struct ppe_msg msg;
 } ppebuf_t;
+
+/* Communication PAD. Created by the PPE and shared with the clients. */
+struct ppe_comm_pad {
+	/* Clients enqueue ppebufs here, and PPE consummes. */
+	queue_t queue __attribute__ ((aligned (64)));
+
+	/* Pool of ppebufs, for clients to use. The slab itself has been
+	 * mapped through XPMEM by the PPE. */
+	pool_t ppebuf_pool __attribute__ ((aligned (64)));
+
+	/* The ppebufs slab. */
+	ppebuf_t ppebuf_slab[0]  __attribute__ ((aligned (4096)));
+};
+
+/* Message sent by a new client to the PPE, through the socket. */
+union msg_ppe_client {
+	/* Request, from client to PPE. */
+	struct {
+		/* Client's process ID. */
+		pid_t pid;
+
+		/* Client's whole memory space. */
+		xpmem_segid_t segid;
+	} req;
+
+	/* Reply, from PPE to client. */
+	struct {
+		int ret;
+		void *cookie;
+		struct xpmem_map ppebufs_mapping;
+		void *ppebufs_ppeaddr;
+	} rep;
+};
 
 #endif

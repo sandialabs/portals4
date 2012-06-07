@@ -10,6 +10,8 @@
 
 #include "ptl_loc.h"
 
+#include <sys/un.h>
+
 /*
  * per process global state
  * acquire proc_gbl_mutex before making changes
@@ -19,14 +21,10 @@ static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct {
 	/* Communication with PPE. */
-	size_t comm_pad_size;
-
-	struct {
-		/* Variable numbers of sbufs. */
-		unsigned char buffers[0];
-	} *comm_pad;
-
 	struct ppe_comm_pad *ppe_comm_pad;
+
+	/* Lifeline to the PPE. */
+	int s;
 
 	/* Cookie given by the PPE to that client and used for almost
 	 * any communication. */
@@ -60,24 +58,6 @@ int gbl_init(gbl_t *gbl)
 	pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
 	return PTL_OK;
-}
-
-/**
- * @brief Cleanup shared memory resources.
- *
- * @param[in] ni
- */
-static void release_ppe_resources(void)
-{
-	if (ppe.ppe_comm_pad != MAP_FAILED) {
-		munmap(ppe.ppe_comm_pad, sizeof(struct ppe_comm_pad));
-		ppe.ppe_comm_pad = MAP_FAILED;
-	}
-
-	if (ppe.comm_pad) {
-		free(ppe.comm_pad);
-		ppe.comm_pad = NULL;
-	}
 }
 
 /**
@@ -170,122 +150,87 @@ static inline void fill_mapping_info(const void *addr_in, size_t length,
 	mapping->segid = ppe.segid;
 }
 
-/* Format of the shared space (through XPMEM):
- * 0: PPE queue
- * 4KiB: rank 0 queue + buffers
- * ....
+/**
+ * @brief Cleanup shared memory resources.
+ *
+ * @param[in] ni
  */
-static int setup_ppe(void)
+static void release_ppe_resources(void)
 {
-	int try_count;
-	int shm_fd = -1;
-	int cmd_ret;
+	if (ppe.segid != -1)
+		xpmem_remove(ppe.segid);
 
-	ppe.ppe_comm_pad = MAP_FAILED;
+	if (ppe.s != -1)
+		close(ppe.s);
+
+	if (ppe.ppebufs_addr)
+		unmap_segment(ppe.ppebufs_addr);
+}
+
+/* Establish the link with the PPE. */
+static int connect_to_ppe(void)
+{
+	struct sockaddr_un ppe_sock_addr;
+	union msg_ppe_client msg;
+	size_t len;
+
+	ppe.s = -1;
 
 	/* XPMEM the whole memory of that process. */
-
-	/*
-	 * Allocate the buffers in memory to communicate with the PPE.
-	 */
 	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,	
 						   XPMEM_PERMIT_MODE, (void *)0600);
 	if (ppe.segid == -1)
 		goto exit_fail;
 
-	/* Connect to the PPE shared memory. */
-	/* Try for 10 seconds. That should leave enough time for the PPE
-	 * to start and create the file. */
-	try_count = 100;
-	do {
-		shm_fd = shm_open(COMM_PAD_FNAME, O_RDWR, S_IRUSR | S_IWUSR);
-
-		if (shm_fd != -1)
-			break;
-
-		usleep(100000);		/* 100ms */
-		try_count --;
-	} while(try_count);
-
-	if (shm_fd == -1) {
-		ptl_warn("Couldn't open the shared memory file %s\n", COMM_PAD_FNAME);
+	/* Connect to the PPE. */
+	if ((ppe.s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+		ptl_warn("Couldn't create a unix socket.\n");
 		goto exit_fail;
-	}
+    }
 
-	/* Wait for the file to have the right size before mmaping it. */
-	try_count = 100;
-	do {
-		struct stat buf;
-
-		if (fstat(shm_fd, &buf) == -1) {
-			ptl_warn("Couldn't fstat the shared memory file\n");
-			goto exit_fail;
-		}
-
-		if (buf.st_size >= sizeof(struct ppe_comm_pad))
-			break;
-
-		usleep(100000);		/* 100ms */
-		try_count --;
-	} while(try_count);
-
-	if (try_count >= 100000) {
-		ptl_warn("Shared memory file has wrong size\n");
+	ppe_sock_addr.sun_family = AF_UNIX;
+    strcpy(ppe_sock_addr.sun_path, PPE_SOCKET_NAME);
+    if (connect(ppe.s, (struct sockaddr *)&ppe_sock_addr, sizeof(ppe_sock_addr)) == -1) {
+		ptl_warn("Connection to PPE failed.\n");
 		goto exit_fail;
-	}
+    }
 
-	/* Map it. */
-	ppe.ppe_comm_pad = mmap(NULL, sizeof(struct ppe_comm_pad),
-								PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-	if (ppe.ppe_comm_pad == MAP_FAILED) {
-		ptl_warn("mmap failed (%d)", errno);
-		perror("");
+	/* Connected. Send the request. */
+	msg.req.pid = getpid();
+	msg.req.segid = ppe.segid;
+
+	if (send(ppe.s, &msg, sizeof(msg), 0) == -1) {
+		ptl_warn("Failed to say hello to PPE.\n");
 		goto exit_fail;
-	}
+    }
 
-	/* The share memory is mmaped, so we can close the file. */
-	close(shm_fd);
-	shm_fd = -1;
-
-	/* Say hello to the PPE. */
-	/* Step 0 -> 1. Reserve the PPE command field. Once it is 1, then
-	 * the cmd field is ours, and no other client can claim until we
-	 * are done. */
-	switch_cmd_level(ppe.ppe_comm_pad, 0, 1);
-
-	/* Fill the command. */
-	ppe.ppe_comm_pad->cmd.pid = getpid();
-	ppe.ppe_comm_pad->cmd.segid = ppe.segid;
-
-	switch_cmd_level(ppe.ppe_comm_pad, 1, 2);
-
-	/* Once done processing, the PPE will switch the level to
-	 * 3. */
-	while(ppe.ppe_comm_pad->cmd.level != 3)
-		SPINLOCK_BODY();
-
-	/* Process the reply. */
-	ppe.cookie = ppe.ppe_comm_pad->cmd.cookie;
-	ppe.ppebufs_ppeaddr = ppe.ppe_comm_pad->cmd.ppebufs_ppeaddr;
-	ppe.ppebufs_addr = map_segment(&ppe.ppe_comm_pad->cmd.ppebufs_mapping);
-
-	cmd_ret = (ppe.ppebufs_addr == NULL);
-
-	/*	Switch it back to 0 for the other clients. */
-	switch_cmd_level(ppe.ppe_comm_pad, 3, 0);
-
-	if (cmd_ret) {
+	/* Wait for the reply. */
+	len = recv(ppe.s, &msg, sizeof(msg), 0);
+	if (len != sizeof(msg)) {
 		WARN();
 		goto exit_fail;
 	}
+
+	/* Process the reply. */
+	if (msg.rep.ret != PTL_OK) {
+		WARN();
+		goto exit_fail;
+	}
+
+	ppe.ppe_comm_pad = map_segment(&msg.rep.ppebufs_mapping);
+	if (ppe.ppe_comm_pad == NULL) {
+		WARN();
+		goto exit_fail;
+	}
+
+	ppe.cookie = msg.rep.cookie;
+	ppe.ppebufs_ppeaddr = msg.rep.ppebufs_ppeaddr;
+	ppe.ppebufs_addr = ppe.ppe_comm_pad->ppebuf_slab;
 
 	/* This client can now communicate through regular messages with the PPE. */
 	return PTL_OK;
 
  exit_fail:
-	if (shm_fd != -1)
-		close(shm_fd);
-
 	release_ppe_resources();
 
 	return PTL_FAIL;
@@ -332,7 +277,7 @@ int PtlInit(void)
 			goto err1;
 		}
 
-		ret = setup_ppe();
+		ret = connect_to_ppe();
 		if (ret != PTL_OK) {
 			goto err1;
 		}
@@ -389,7 +334,7 @@ void PtlFini(void)
 	if (ppe.ref_cnt == 0) {
 		ppe.finalized = 1;
 
-		//todo: cleanup.
+		release_ppe_resources();
 	}
 
 	pthread_mutex_unlock(&per_proc_gbl_mutex);
