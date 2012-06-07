@@ -392,17 +392,13 @@ int _PtlNIInit(gbl_t *gbl,
 		}
 	}
 
-	err = PtlNIInit_ppe(ni);
+	err = PtlNIInit_ppe(gbl, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;
 	}
 
-#if IS_PPE
-	/* Note: somewhow, that belongs to PtlNIInit_ppe, but gbl is not
-	 * accessible there. */
-	ni->mem.apid = gbl->apid;
-#else
+#if !IS_PPE
 	/* Add a progress thread. */
 	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
 	if (err) {

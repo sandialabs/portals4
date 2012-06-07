@@ -428,10 +428,15 @@ typedef struct ppebuf {
 	struct ppe_msg msg;
 } ppebuf_t;
 
+/* Maximum number of progress threads on the PPE. */
+#define MAX_PROGRESS_THREADS 10
+
 /* Communication PAD. Created by the PPE and shared with the clients. */
 struct ppe_comm_pad {
 	/* Clients enqueue ppebufs here, and PPE consummes. */
-	queue_t queue __attribute__ ((aligned (64)));
+	struct {
+		queue_t queue __attribute__ ((aligned (64)));
+	} q[MAX_PROGRESS_THREADS];
 
 	/* Pool of ppebufs, for clients to use. The slab itself has been
 	 * mapped through XPMEM by the PPE. */
@@ -458,6 +463,7 @@ union msg_ppe_client {
 		void *cookie;
 		struct xpmem_map ppebufs_mapping;
 		void *ppebufs_ppeaddr;
+		int queue_index;
 	} rep;
 };
 
