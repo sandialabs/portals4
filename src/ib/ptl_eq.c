@@ -36,9 +36,26 @@ void eq_cleanup(void *arg)
 
 	if (eq->eqe_list) {
 		PTL_FASTLOCK_DESTROY(&eq->eqe_list->lock);
+		pthread_mutex_destroy(&eq->eqe_list->mutex);
+		pthread_cond_destroy(&eq->eqe_list->cond);
 		free(eq->eqe_list);
 	}
 	eq->eqe_list = NULL;
+}
+
+/* After an event is posted, check if there is any waiter. */
+static inline void check_waiter(struct eqe_list *eqe_list)
+{
+	if (atomic_read(&eqe_list->waiter)) {
+		pthread_mutex_lock(&eqe_list->mutex);
+
+		if (atomic_read(&eqe_list->waiter) > 1)
+			pthread_cond_broadcast(&eqe_list->cond);
+		else
+			pthread_cond_signal(&eqe_list->cond);
+
+		pthread_mutex_unlock(&eqe_list->mutex);
+	}
 }
 
 /**
@@ -123,6 +140,8 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eqe_list->count = count;
 
 	PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
+	pthread_mutex_init(&eqe_list->mutex, NULL);
+	pthread_cond_init(&eqe_list->cond, NULL);
 
 	*eq_handle_p = eq_to_handle(eq);
 
@@ -183,6 +202,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	/* cleanup resources. */
 	eq->eqe_list->interrupt = 1;
 	__sync_synchronize();
+	check_waiter(eq->eqe_list);
 
 	err = PTL_OK;
 	eq_put(eq);					/* from to_eq() */
@@ -497,6 +517,8 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
 		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+
+	check_waiter(eq->eqe_list);
 }
 
 /**
@@ -548,6 +570,8 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+
+	check_waiter(eq->eqe_list);
 }
 		       
 /**
@@ -574,6 +598,8 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+
+	check_waiter(eq->eqe_list);
 }
 
 /**
@@ -601,4 +627,6 @@ void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type
 		process_overflowing(eq);
 
 	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+
+	check_waiter(eq->eqe_list);
 }
