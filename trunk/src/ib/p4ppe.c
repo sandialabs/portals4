@@ -256,6 +256,11 @@ static int init_ppe(void)
 	int err;
 	int i;
 
+	/* Initialize the application groups. */
+	for (i=0; i<0x100; i++)
+		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
+
+
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		WARN();
@@ -1382,18 +1387,15 @@ int main(int argc, char *argv[])
 	if (err)
 		return 1;
 
-	//todo: merge all evl into one func in misc.
 	/* Create the event loop thread. */
 	evl_init(&evl);
 
-	for (i=0; i<0x100; i++)
-		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
-
-	/* Setup the PPE exchange zone. */
+	/* Setup the PPE. */
 	err = init_ppe();
 	if (err)
 		return 1;
 
+	/* Launch the threads. */
 	for (i=0; i<ppe.num_prog_threads; i++) {
 		struct prog_thread *pt = &ppe.prog_thread[i];
 		err = pthread_create(&pt->thread, NULL, ppe_progress, pt);
@@ -1403,6 +1405,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* Start the event loop. Does not exit. */
 	evl_run(&evl);
 
 	//todo: on shutdown, we might want to cleanup
