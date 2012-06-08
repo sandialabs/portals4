@@ -5,8 +5,6 @@
 #ifndef PTL_GBL_H
 #define PTL_GBL_H
 
-// todo: can we merge client and gbl ?
-// todo: have common parameters for the various gbl_t in a structure or define.
 typedef struct gbl {
 	int			num_iface;	/* size of interface table */
 	iface_t			*iface;		/* interface table */
