@@ -109,8 +109,28 @@ static int tgt_copy_in(buf_t *buf, me_t *me, void *data)
 	ptl_size_t length = buf->mlength;
 
 	if (me->num_iov) {
+#if IS_PPE
+		mr_t *mr;
+
+		if (me->mr_start)
+			mr = me->mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(me), me->start, length*sizeof(ptl_iovec_t), &mr);
+			if (err) {
+				WARN();
+				return err;
+			}
+		}
+
+		err = iov_copy_in(data, addr_to_ppe(me->start, mr), me->mr_list,
+						  me->num_iov, offset, length);
+
+		if (!me->mr_start)
+			mr_put(mr);
+#else
 		err = iov_copy_in(data, (ptl_iovec_t *)me->start, me->mr_list,
 				  me->num_iov, offset, length);
+#endif
 	} else {
 		void *start = me->start + offset;
 #if IS_PPE
@@ -162,9 +182,30 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 	assert(op);
 
 	if (me->num_iov) {
+#if IS_PPE
+		mr_t *mr;
+
+		if (me->mr_start)
+			mr = me->mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(me), me->start, length*sizeof(ptl_iovec_t), &mr);
+			if (err) {
+				WARN();
+				return err;
+			}
+		}
+
+		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
+							data, addr_to_ppe(me->start, mr), me->mr_list,
+							me->num_iov, offset, length);
+
+		if (!me->mr_start)
+			mr_put(mr);
+#else
 		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
 							data, (ptl_iovec_t *)me->start, me->mr_list,
 							me->num_iov, offset, length);
+#endif
 	} else {
 		void *start = me->start + offset;
 #if IS_PPE
@@ -889,7 +930,30 @@ static int tgt_data_out(buf_t *buf)
 		send_hdr->data_out = 1;
 
 		if (me->num_iov) {
-			abort();
+#if IS_PPE
+			mr_t *mr;
+
+			if (me->mr_start)
+				mr = me->mr_start;
+			else {
+				err = mr_lookup_app(obj_to_ni(me), me->start, me->length*sizeof(ptl_iovec_t), &mr);
+				if (err) {
+					WARN();
+					return err;
+				}
+			}
+
+			err = append_immediate_data(addr_to_ppe(me->start, mr), me->mr_list,
+										me->num_iov, DATA_DIR_OUT,
+										buf->moffset, buf->mlength, buf->send_buf);
+
+			if (!me->mr_start)
+				mr_put(mr);
+#else
+			err = append_immediate_data(me->start, me->mr_list,
+										me->num_iov, DATA_DIR_OUT,
+										buf->moffset, buf->mlength, buf->send_buf);
+#endif
 		} else {
 #if IS_PPE
 			mr_t *mr;
