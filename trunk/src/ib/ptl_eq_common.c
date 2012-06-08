@@ -97,6 +97,23 @@ int PtlEQGet_work(struct eqe_list *eqe_list,
 	return err;
 }
 
+static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
+{
+	int err;
+
+	if (!is_queue_empty(eqe_list)) {
+		err = get_event(eqe_list, event_p);
+		if (err != PTL_EQ_EMPTY)
+			return err;
+	}
+
+	if (eqe_list->interrupt) {
+		return PTL_INTERRUPTED;
+	}
+
+	return PTL_EQ_EMPTY;
+}
+
 /**
  * Do the work for PtlEQWait
  */
@@ -104,21 +121,41 @@ int PtlEQWait_work(struct eqe_list *eqe_list,
 				   ptl_event_t *event_p)
 {
 	int err;
+	int count = 100000;
 
 	while(1) {
-		if (!is_queue_empty(eqe_list)) {
-			err = get_event(eqe_list, event_p);
-			if (err != PTL_EQ_EMPTY) {
-				break;
-			}
-		}
-
-		if (eqe_list->interrupt) {
-			err = PTL_INTERRUPTED;
+		err = check_eq(eqe_list, event_p);
+		if (err != PTL_EQ_EMPTY) {
 			break;
 		}
 
 		SPINLOCK_BODY();
+
+		if (--count == 0) {
+
+			atomic_inc(&eqe_list->waiter);
+
+			pthread_mutex_lock(&eqe_list->mutex);
+
+			/* Check one more time. */
+			err = check_eq(eqe_list, event_p);
+			if (err != PTL_EQ_EMPTY) {
+				atomic_dec(&eqe_list->waiter);
+				pthread_mutex_unlock(&eqe_list->mutex);
+				break;
+			}
+
+			pthread_cond_wait(&eqe_list->cond, &eqe_list->mutex);
+
+			pthread_mutex_unlock(&eqe_list->mutex);
+
+			atomic_dec(&eqe_list->waiter);
+
+			/* Just in case we come back because some other thread
+			 * consummed the event. */
+			count = 1;
+		}
+
 	}
 
 	return err;

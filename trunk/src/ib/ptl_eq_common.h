@@ -30,7 +30,11 @@ struct eqe_list {
 	unsigned int		used;		/**< number of slots used */
 	unsigned int		count;		/**< size of event queue */
 
-	PTL_FASTLOCK_TYPE	lock;	/**< mutex for eq condition */
+	PTL_FASTLOCK_TYPE	lock;	/**< lock for adding */
+
+	pthread_mutex_t 	mutex;	/**< mutex for eq condition */
+	pthread_cond_t		cond;
+	atomic_t			waiter;
 
 	eqe_t eqe[0];
 };
