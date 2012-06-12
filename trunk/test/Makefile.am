@@ -67,7 +67,7 @@ check_PROGRAMS += $(TESTS)
 CLEANFILES = $(BENCHMARKS)
 
 THREADS ?= 1
-TESTS_ENVIRONMENT = yod -np $(THREADS)
+TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(THREADS)
 
 test_init_SOURCES = test_init.c
 
