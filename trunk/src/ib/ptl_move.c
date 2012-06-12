@@ -90,7 +90,7 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	if (local_offset + length > md->length)
 		return PTL_ARG_INVALID;
 
-	if (/*ack_req < PTL_NO_ACK_REQ ||*/ ack_req > PTL_OC_ACK_REQ)
+	if (ack_req > PTL_OC_ACK_REQ)
 		return PTL_ARG_INVALID;
 
 	if (ack_req == PTL_ACK_REQ && !md->eq)
@@ -454,7 +454,7 @@ static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	if (length > ni->limits.max_atomic_size)
 		return PTL_ARG_INVALID;
 
-	if (/*ack_req < PTL_NO_ACK_REQ ||*/ ack_req > PTL_OC_ACK_REQ)
+	if (ack_req > PTL_OC_ACK_REQ)
 		return PTL_ARG_INVALID;
 
 	if (ack_req == PTL_ACK_REQ && !md->eq)
@@ -463,13 +463,13 @@ static int check_atomic(md_t *md, ptl_size_t local_offset, ptl_size_t length,
 	if (ack_req == PTL_CT_ACK_REQ && !md->ct)
 		return PTL_ARG_INVALID;
 
-	if (/*atom_op < PTL_MIN ||*/ atom_op >= PTL_OP_LAST)
+	if (atom_op >= PTL_OP_LAST)
 		return PTL_ARG_INVALID;
 
 	if (!op_info[atom_op].atomic_ok)
 		return PTL_ARG_INVALID;
 
-	if (/*atom_type < PTL_INT8_T ||*/ atom_type >= PTL_DATATYPE_LAST)
+	if (atom_type >= PTL_DATATYPE_LAST)
 		return PTL_ARG_INVALID;
 
 	if ((atom_type == PTL_FLOAT || atom_type == PTL_DOUBLE) &&
@@ -946,13 +946,13 @@ static int check_swap(md_t *get_md, ptl_size_t local_get_offset, md_t *put_md,
 	if (length > ni->limits.max_atomic_size)
 		return PTL_ARG_INVALID;
 
-	if (/*atom_op < PTL_MIN ||*/ atom_op >= PTL_OP_LAST)
+	if (atom_op >= PTL_OP_LAST)
 		return PTL_ARG_INVALID;
 
 	if (!op_info[atom_op].swap_ok)
 		return PTL_ARG_INVALID;
 
-	if (/*atom_type < PTL_INT8_T ||*/ atom_type >= PTL_DATATYPE_LAST)
+	if (atom_type >= PTL_DATATYPE_LAST)
 		return PTL_ARG_INVALID;
 
 	if ((atom_type == PTL_FLOAT || atom_type == PTL_DOUBLE) &&
