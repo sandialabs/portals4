@@ -10,6 +10,7 @@
 #include "portals4.h"
 
 #include "ptl_locks.h"
+#include "ptl_sync.h"
 #include "ptl_eq_common.h"
 #include "ptl_sync.h"
 #include "ptl_timer.h"
