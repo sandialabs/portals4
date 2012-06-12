@@ -351,7 +351,10 @@ void destroy_conns(ni_t *ni)
 #ifdef HAVE_TDESTROY
 		tdestroy(ni->physical.tree, destroy_conn);
 #else
-#warning Not running on GNU, so leaking memory (implement tdestroy manually!)
+		while (ni->physical.tree != NULL) {
+		    destroy_conn(*(void**)ni->physical.tree);
+		    tdelete(*(void**)ni->physical.tree, &ni->physical.tree, compare_conn_id);
+		}
 #endif
 	}
 }
