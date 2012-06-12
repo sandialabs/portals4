@@ -8,6 +8,7 @@ AC_INIT([MPL], [0.1])
 AC_CONFIG_AUX_DIR(confdb)
 AC_CONFIG_MACRO_DIR(confdb)
 AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.10])
+AC_CONFIG_SRCDIR([src/mplenv.c])
 
 LT_PREREQ([2.2.6])
 

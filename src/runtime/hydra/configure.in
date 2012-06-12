@@ -96,12 +96,12 @@ AC_DEFINE_UNQUOTED(HYDRA_CONFIGURE_ARGS_CLEAN,"`echo $ac_configure_args`",[Confi
 # Dirty hack -- If we are compiling within MPICH2, use the MPL in the
 # src/mpl directory. If not, use the one we checked out separately for
 # Hydra.
-if test "$FROM_MPICH2" = "yes" ; then
-   mpl_srcdir="../../mpl"
-else
+#if test "$FROM_MPICH2" = "yes" ; then
+#   mpl_srcdir="../../mpl"
+#else
    mpl_srcdir="mpl"
-   PAC_CONFIG_SUBDIR(mpl,,AC_ERROR(MPL configure failed))
-fi
+   AC_CONFIG_SUBDIRS(mpl)
+#fi
 AC_SUBST(mpl_srcdir)
 
 # Documentation
@@ -307,15 +307,15 @@ AM_CONDITIONAL([hydra_ui_mpich], [test $hydra_ui = "mpich"])
 # System hwloc and plpa
 #########################################################################
 PAC_CHECK_PREFIX(hwloc)
-PAC_CHECK_PREFIX(plpa)
+dnl PAC_CHECK_PREFIX(plpa)
 
 
 #########################################################################
 # Processor Topology
 #########################################################################
-AC_ARG_WITH(hydra-topolib, [  --with-hydra-topolib=name - Processor Topology Library (hwloc, plpa)],
+AC_ARG_WITH(hydra-topolib, [  --with-hydra-topolib=name - Processor Topology Library (hwloc)],
 			   [ hydra_topolib_list=$withval ],
-			   [ hydra_topolib_list=hwloc,plpa ])
+			   [ hydra_topolib_list=hwloc ])
 AC_MSG_CHECKING([desired processor topology libraries])
 AC_MSG_RESULT([$hydra_topolib_list])
 
@@ -327,12 +327,13 @@ for hydra_topolib in ${hydra_topolibs}; do
     case "$hydra_topolib" in
     	plpa)
 		if test "$with_plpa_prefix" = "embedded" ; then
-		   PAC_CONFIG_SUBDIR_ARGS([tools/topo/plpa/plpa],[--enable-included-mode],
-			[have_plpa=yes],[have_plpa=no])
-		   # Only build plpa in embedded mode
-		   if test "$have_plpa" = "yes" ; then
-		      hydra_use_embedded_plpa=yes
-		   fi
+dnl 		   PAC_CONFIG_SUBDIR_ARGS([tools/topo/plpa/plpa],[--enable-included-mode],
+dnl 			[have_plpa=yes],[have_plpa=no])
+dnl 		   # Only build plpa in embedded mode
+dnl 		   if test "$have_plpa" = "yes" ; then
+dnl 		      hydra_use_embedded_plpa=yes
+dnl 		   fi
+		   have_plpa=no
                 else
                     AC_CHECK_HEADERS([plpa.h])
                     AC_CHECK_LIB([plpa],[api_probe])
@@ -351,12 +352,13 @@ for hydra_topolib in ${hydra_topolibs}; do
 		;;		
 	hwloc)
 		if test "$with_hwloc_prefix" = "embedded" ; then
-		   PAC_CONFIG_SUBDIR_ARGS([tools/topo/hwloc/hwloc],[--enable-embedded-mode],
-			[have_hwloc=yes],[have_hwloc=no])
-		   # Only build hwloc in embedded mode
-		   if test "$have_hwloc" = "yes" ; then
-		      hydra_use_embedded_hwloc=yes
-		   fi
+dnl		   PAC_CONFIG_SUBDIR_ARGS([tools/topo/hwloc/hwloc],[--enable-embedded-mode],
+dnl			[have_hwloc=yes],[have_hwloc=no])
+dnl		   # Only build hwloc in embedded mode
+dnl		   if test "$have_hwloc" = "yes" ; then
+dnl		      hydra_use_embedded_hwloc=yes
+dnl		   fi
+		   have_hwloc=no
                 else
                     AC_CHECK_HEADERS([hwloc.h])
                     # hwloc_topology_set_pid was added in hwloc-1.0.0, which is our minimum
@@ -664,3 +666,4 @@ AC_OUTPUT(Makefile
 	tools/bootstrap/src/bsci_init.c
 	hydra-doxygen.cfg
 )
+
