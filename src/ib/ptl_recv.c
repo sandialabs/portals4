@@ -458,7 +458,7 @@ void process_recv_mem(ni_t *ni, buf_t *buf)
 
 	while(1) {
 		ptl_info("tid:%lx buf:%p: recv state local = %s\n",
-				 pthread_self(), buf,
+				 (long unsigned int)pthread_self(), buf,
 				   recv_state_name[state]);
 		switch (state) {
 		case STATE_RECV_PACKET:
