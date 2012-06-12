@@ -146,11 +146,11 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
 	}
 
 	if (le_handle) {
-		if (ptl_list < PTL_PRIORITY_LIST ||
+		if (/*ptl_list < PTL_PRIORITY_LIST ||*/ /* PTL_PRIORITY_LIST is 0, which is the minimum unsigned char value */
 		    ptl_list > PTL_OVERFLOW_LIST)
 			return PTL_ARG_INVALID;
 	} else {
-		if (search_op < PTL_SEARCH_ONLY ||
+		if (/*search_op < PTL_SEARCH_ONLY ||*/ /* PTL_SEARCH_ONLY is 0, which is the minimum unsigned char value */
 		    search_op > PTL_SEARCH_DELETE)
 			return PTL_ARG_INVALID;
 	}
