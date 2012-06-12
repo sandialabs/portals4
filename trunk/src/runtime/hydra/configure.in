@@ -307,7 +307,7 @@ AM_CONDITIONAL([hydra_ui_mpich], [test $hydra_ui = "mpich"])
 # System hwloc and plpa
 #########################################################################
 PAC_CHECK_PREFIX(hwloc)
-dnl PAC_CHECK_PREFIX(plpa)
+PAC_CHECK_PREFIX(plpa)
 
 
 #########################################################################
