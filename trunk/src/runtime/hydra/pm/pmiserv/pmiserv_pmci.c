@@ -98,6 +98,9 @@ HYD_status HYD_pmci_launch_procs(void)
     status =
         HYDT_dmx_register_fd(1, &HYD_server_info.cleanup_pipe[0], POLLIN, NULL, ui_cmd_cb);
     HYDU_ERR_POP(status, "unable to register fd\n");
+     
+    if (HYDU_sock_cloexec(HYD_server_info.cleanup_pipe[0]) < 0)
+        HYDU_ERR_POP(status, "unable to cloexec fd");
 
     status = HYD_pmcd_pmi_alloc_pg_scratch(&HYD_server_info.pg_list);
     HYDU_ERR_POP(status, "error allocating pg scratch space\n");

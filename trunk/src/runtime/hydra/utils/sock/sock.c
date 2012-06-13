@@ -138,6 +138,10 @@ HYD_status HYDU_sock_listen(int *listen_fd, char *port_range, uint16_t * port)
         *port = ntohs(sa.sin_port);
     }
 
+    if (HYDU_sock_cloexec(*listen_fd) < 0)
+        HYDU_ERR_SETANDJUMP(status, HYD_SOCK_ERROR, "cloexec (%s)\n",
+                            HYDU_strerror(errno));
+
   fn_exit:
     HYDU_FUNC_EXIT();
     return status;

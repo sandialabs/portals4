@@ -242,6 +242,10 @@ int main(int argc, char **argv)
 
     if (pipe(HYD_server_info.cleanup_pipe) < 0)
         HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "pipe error\n");
+     
+    if (HYDU_sock_cloexec(HYD_server_info.cleanup_pipe[1]) < 0)
+        HYDU_ERR_SETANDJUMP(status, HYD_SOCK_ERROR, "cloexec (%s)\n",
+                            HYDU_strerror(errno));
 
     status = HYDT_ftb_init();
     HYDU_ERR_POP(status, "unable to initialize FTB\n");

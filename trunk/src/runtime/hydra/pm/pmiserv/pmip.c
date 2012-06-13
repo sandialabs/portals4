@@ -220,6 +220,9 @@ int main(int argc, char **argv)
                                   HYD_POLLIN, NULL, HYD_pmcd_pmip_control_cmd_cb);
     HYDU_ERR_POP(status, "unable to register fd\n");
 
+    if (HYDU_sock_cloexec(HYD_pmcd_pmip.upstream.control) < 0)
+        HYDU_ERR_POP(status, "unable to cloexec control");
+
     while (1) {
         /* Wait for some event to occur */
         status = HYDT_dmx_wait_for_event(-1);
