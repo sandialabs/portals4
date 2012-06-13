@@ -199,6 +199,8 @@ int main(int   argc,
         CHECK_RETURNVAL(PtlEQWait(eq_handle, &ev));
     }
 
+    libtest_barrier();
+
     if (0 == rank) {
         CHECK_RETURNVAL(UNLINK(signal_e_handle));
         CHECK_RETURNVAL(PtlPTFree(ni_handle, signal_pt_index));
@@ -209,8 +211,6 @@ int main(int   argc,
         CHECK_RETURNVAL(PtlMDRelease(md_handle));
         CHECK_RETURNVAL(PtlEQFree(eq_handle));
     }
-
-    libtest_barrier();
 
     CHECK_RETURNVAL(PtlNIFini(ni_handle));
     CHECK_RETURNVAL(libtest_fini());
