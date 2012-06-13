@@ -34,6 +34,7 @@ HYD_status HYDU_create_process(char **client_arg, struct HYD_env *env_list,
             if (dup2(inpipe[0], STDIN_FILENO) < 0)
                 HYDU_ERR_SETANDJUMP(status, HYD_SOCK_ERROR, "dup2 error (%s)\n",
                                     HYDU_strerror(errno));
+            close(inpipe[0]);
         }
 
         close(STDOUT_FILENO);
@@ -42,6 +43,7 @@ HYD_status HYDU_create_process(char **client_arg, struct HYD_env *env_list,
             if (dup2(outpipe[1], STDOUT_FILENO) < 0)
                 HYDU_ERR_SETANDJUMP(status, HYD_SOCK_ERROR, "dup2 error (%s)\n",
                                     HYDU_strerror(errno));
+            close(outpipe[1]);
         }
 
         close(STDERR_FILENO);
@@ -50,6 +52,7 @@ HYD_status HYDU_create_process(char **client_arg, struct HYD_env *env_list,
             if (dup2(errpipe[1], STDERR_FILENO) < 0)
                 HYDU_ERR_SETANDJUMP(status, HYD_SOCK_ERROR, "dup2 error (%s)\n",
                                     HYDU_strerror(errno));
+            close(errpipe[1]);
         }
 
         /* Forced environment overwrites existing environment */
