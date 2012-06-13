@@ -17,7 +17,8 @@ OR
 http://www.open-mpi.org/nightly/trunk/
 }}}
 
-  * Then configure Open MPI.  If you're building for the OFED implementation, you'll want to use something like the following:
+  * Then configure Open MPI:
+
 {{{
    ./configure --prefix=<PREFIX> \
       --with-portals4=<PORTALS4> \
@@ -25,13 +26,6 @@ http://www.open-mpi.org/nightly/trunk/
    make all install
 }}}
 
-  * If you're building for the SHMEM implementation, you'll want to use something like the following:
-{{{
-   ./configure --prefix=<PREFIX> \
-      --with-portals4=<PORTALS4> \
-      --with-platform=contrib/platform/snl/portals4-shmem
-   make all install
-}}}
 
 The implementation is still a work in progress and likely to die in strange ways.  The one-sided and collective algorithms have not been optimized for Portals 4 at this time.
 
