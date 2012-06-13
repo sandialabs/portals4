@@ -18,7 +18,6 @@ http://www.open-mpi.org/nightly/trunk/
 }}}
 
   * Then configure Open MPI:
-
 {{{
    ./configure --prefix=<PREFIX> \
       --with-portals4=<PORTALS4> \
