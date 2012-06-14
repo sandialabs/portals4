@@ -1,3 +1,5 @@
+SUBDIRS = test_n1 test_n2
+
 XMLEXTRA = \
 	test_atomic_mixed.xml \
 	test_atomic_physical_lb.xml \
@@ -44,23 +46,6 @@ test_SOURCES = \
 make_test_move_SOURCES = data.c make_test_move.c
 make_test_swap_SOURCES = data.c make_test_swap.c
 make_test_atomic_SOURCES = data.c make_test_atomic.c
-
-check_SCRIPTS = runxml1.sh runxml2.sh
-TESTS = $(check_SCRIPTS)
-
-runxml1.sh:
-	@echo "for TEST in test_n1/*.xml; do" \
-		  'echo Running test $${TEST};' \
-		  '$(top_builddir)/src/runtime/hydra/yod.hydra -np 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-	      "done" > runxml1.sh
-	chmod +x runxml1.sh
-
-runxml2.sh:
-	@echo "for TEST in test_n2/*.xml; do" \
-		  'echo Running test $${TEST};' \
-		  '$(top_builddir)/src/runtime/hydra/yod.hydra -np 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
-	      "done" > runxml2.sh
-	chmod +x runxml2.sh
 
 CLEANFILES = runxml1.sh runxml2.sh
 
