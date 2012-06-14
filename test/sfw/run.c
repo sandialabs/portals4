@@ -502,7 +502,7 @@ static int get_attr(struct node_info *info, xmlNode *node)
 	int set_me_start = 0;
 	int set_me_len = 0;
 	int set_me_data = 0;
-	char *data_val;
+	char *data_val = data_val;
 
 	for (attr = node->properties; attr; attr = attr->next) {
 		val = (char *)attr->children->content;
@@ -982,7 +982,7 @@ static int check_attr(struct node_info *info, xmlNode *node)
 	unsigned int length = 1;
 	int type = PTL_UINT8_T;
 	int do_check_data = 0;
-	char *check_data_val;
+	char *check_data_val = check_data_val;
 
 	for (attr = node->properties; attr; attr = attr->next) {
 		val = (char *)attr->children->content;
@@ -1307,8 +1307,8 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 					errs = walk_tree(info, node->children);
 				goto done;
 			case NODE_DESC:
-				printf("%-60s", node->children->content);
-				fflush(stdout);
+				/* printf("%-60s", node->children->content);
+				   fflush(stdout); */
 				goto done;
 			case NODE_COMMENT:
 				goto done;
@@ -1757,7 +1757,8 @@ int run_doc(xmlDocPtr doc)
 
 	free(info);
 
-	printf("	Total Errors %d\n\n", errs);
+	if (errs != 0)
+		printf("	Total Errors %d\n\n", errs);
 
 	return errs != 0;
 }
