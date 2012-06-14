@@ -350,5 +350,7 @@ AC_CONFIG_FILES([Makefile
 		 src/mc/test/Makefile
 		 src/runtime/Makefile
                  test/Makefile
-                 test/sfw/Makefile])
+                 test/sfw/Makefile
+                 test/sfw/test_n1/Makefile
+                 test/sfw/test_n2/Makefile])
 AC_OUTPUT
