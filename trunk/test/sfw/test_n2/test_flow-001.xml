@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<test>
+    <desc>Test events with put to generate PTL_EVENT_PT_DISABLED</desc>
+    <ptl>
+      <ptl_ni>
+        <ompi_rt>
+          <ptl_ni ni_opt="NO_MATCH LOGICAL">
+            <ptl_eq>
+              <ptl_pt pt_opt="FLOW">
+                <ptl_get_id>
+                  
+                  <if rank="0">
+                    <ptl_md>
+                      <barrier/>
+                      <ptl_put ack_req="ACK" target_id="1" user_ptr="432"/>
+                      
+                      <ptl_eq_poll time="200">
+                        <check event_type="SEND"/>
+                        <check event_user_ptr="432"/>
+                        <check event_ni_fail="OK"/>
+                      </ptl_eq_poll>
+                      <ptl_eq_poll time="200">
+                        <check event_type="ACK"/>
+                        <check event_user_ptr="432"/>
+                        <check event_ni_fail="PT_DISABLED"/>
+                      </ptl_eq_poll>
+                      <ptl_eq_poll ret="EQ_EMPTY" time="200"/>
+                      <barrier/>
+                    </ptl_md>
+                  </if>
+                  
+                  <if rank="1">
+                    <barrier/>
+                    <barrier/>
+                    <ptl_eq_poll time="200">
+                      <check which="INVALID"/>
+                      <check event_type="PT_DISABLED"/>
+                      <check event_ni_fail="PT_DISABLED"/>
+                    </ptl_eq_poll>
+                    <ptl_eq_poll ret="EQ_EMPTY" time="200"/>
+                  </if>
+                </ptl_get_id>
+              </ptl_pt>
+            </ptl_eq>
+          </ptl_ni>
+        </ompi_rt>
+      </ptl_ni>
+    </ptl>
+  </test>
