@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic SUM/UINT length=12</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x3cd29892" le_opt="OP_PUT" type="UINT">
+          <ptl_md md_data="0x38cacdf7" type="UINT">
+            <ptl_atomic atom_op="SUM" atom_type="UINT" length="12" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="12" md_data="0x38cacdf7" type="UINT"/>
+            <check length="4" md_data="0x38cacdf7" offset="12" type="UINT"/>
+          </ptl_md>
+          <check le_data="0x759d6689" length="12" type="UINT"/>
+          <check le_data="0x3cd29892" length="4" offset="12" type="UINT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

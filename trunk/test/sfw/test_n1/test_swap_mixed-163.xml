@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP/FLOAT</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0.2390364408" le_opt="OP_PUT OP_GET" type="FLOAT">
+          <ptl_md md_data="0.4515601695" type="FLOAT">
+            <ptl_md md_data="0.0315537602" type="FLOAT">
+              <ptl_swap atom_op="CSWAP" atom_type="FLOAT" length="4" operand="0.2360842526" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="4" md_data="0.2390364408" type="FLOAT"/>
+              <check length="4" md_data="0.0315537602" offset="4" type="FLOAT"/>
+            </ptl_md>
+            <check length="4" md_data="0.4515601695" type="FLOAT"/>
+            <check length="4" md_data="0.4515601695" offset="4" type="FLOAT"/>
+          </ptl_md>
+          <check le_data="0.2390364408" length="4" type="FLOAT"/>
+          <check le_data="0.2390364408" length="4" offset="4" type="FLOAT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

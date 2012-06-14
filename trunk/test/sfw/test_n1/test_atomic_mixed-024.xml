@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic BOR/UCHAR length=4</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x88" le_opt="OP_PUT" type="UCHAR">
+          <ptl_md md_data="0x87" type="UCHAR">
+            <ptl_atomic atom_op="BOR" atom_type="UCHAR" length="4" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="4" md_data="0x87" type="UCHAR"/>
+            <check length="1" md_data="0x87" offset="4" type="UCHAR"/>
+          </ptl_md>
+          <check le_data="0x8f" length="4" type="UCHAR"/>
+          <check le_data="0x88" length="1" offset="4" type="UCHAR"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

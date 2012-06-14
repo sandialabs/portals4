@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap MSWAP/ULONG</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x13959f2518a1fbb4" le_opt="OP_PUT OP_GET" type="ULONG">
+          <ptl_md md_data="0x5a0d8c7637d46de0" type="ULONG">
+            <ptl_md md_data="0x1a6bd2247ea0474f" type="ULONG">
+              <ptl_swap atom_op="MSWAP" atom_type="ULONG" length="8" operand="0x06a540f66223c5af" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="8" md_data="0x13959f2518a1fbb4" type="ULONG"/>
+              <check length="8" md_data="0x1a6bd2247ea0474f" offset="8" type="ULONG"/>
+            </ptl_md>
+            <check length="8" md_data="0x5a0d8c7637d46de0" type="ULONG"/>
+            <check length="8" md_data="0x5a0d8c7637d46de0" offset="8" type="ULONG"/>
+          </ptl_md>
+          <check le_data="0x13159f773a807fb0" length="8" type="ULONG"/>
+          <check le_data="0x13959f2518a1fbb4" length="8" offset="8" type="ULONG"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

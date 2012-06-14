@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic LXOR/USHORT length=14</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x493c" me_match="0x1415816136073980800" me_opt="OP_PUT" type="USHORT">
+          <ptl_md md_data="0x8947" type="USHORT">
+            <ptl_atomic atom_op="LXOR" atom_type="USHORT" length="14" match="0x1415816136073980800" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="14" md_data="0x8947" type="USHORT"/>
+            <check length="2" md_data="0x8947" offset="14" type="USHORT"/>
+          </ptl_md>
+          <check length="14" me_data="0x0000" type="USHORT"/>
+          <check length="2" me_data="0x493c" offset="14" type="USHORT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

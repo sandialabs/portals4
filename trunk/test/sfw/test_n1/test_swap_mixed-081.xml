@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_NE/SHORT</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x3406" le_opt="OP_PUT OP_GET" type="SHORT">
+          <ptl_md md_data="0xef5b" type="SHORT">
+            <ptl_md md_data="0x5590" type="SHORT">
+              <ptl_swap atom_op="CSWAP_NE" atom_type="SHORT" length="2" operand="0x40f1" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="2" md_data="0x3406" type="SHORT"/>
+              <check length="2" md_data="0x5590" offset="2" type="SHORT"/>
+            </ptl_md>
+            <check length="2" md_data="0xef5b" type="SHORT"/>
+            <check length="2" md_data="0xef5b" offset="2" type="SHORT"/>
+          </ptl_md>
+          <check le_data="0xef5b" length="2" type="SHORT"/>
+          <check le_data="0x3406" length="2" offset="2" type="SHORT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

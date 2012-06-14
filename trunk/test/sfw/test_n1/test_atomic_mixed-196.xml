@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic MAX/ULONG length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x396c7d11228d16e5" le_opt="OP_PUT" type="ULONG">
+          <ptl_md md_data="0x0d423c9b073bf24f" type="ULONG">
+            <ptl_atomic atom_op="MAX" atom_type="ULONG" length="32" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="32" md_data="0x0d423c9b073bf24f" type="ULONG"/>
+            <check length="8" md_data="0x0d423c9b073bf24f" offset="32" type="ULONG"/>
+          </ptl_md>
+          <check le_data="0x396c7d11228d16e5" length="32" type="ULONG"/>
+          <check le_data="0x396c7d11228d16e5" length="8" offset="32" type="ULONG"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

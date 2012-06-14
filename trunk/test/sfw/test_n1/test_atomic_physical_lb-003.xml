@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic max/char (1)</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="7" me_match="0x5555" me_opt="OP_PUT">
+          <ptl_md md_data="9">
+            <ptl_atomic atom_op="MAX" atom_type="CHAR" length="4" match="0x5555" target_id="SELF"/>
+            <msleep count="50"/>
+          </ptl_md>
+          <check length="4" me_data="9" type="CHAR"/>
+          <check length="1" me_data="7" offset="4" type="CHAR"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

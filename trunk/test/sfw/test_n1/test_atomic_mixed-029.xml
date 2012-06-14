@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic BAND/UINT length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x30944f28" le_opt="OP_PUT" type="UINT">
+          <ptl_md md_data="0x76a683a7" type="UINT">
+            <ptl_atomic atom_op="BAND" atom_type="UINT" length="16" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="16" md_data="0x76a683a7" type="UINT"/>
+            <check length="4" md_data="0x76a683a7" offset="16" type="UINT"/>
+          </ptl_md>
+          <check le_data="0x30840320" length="16" type="UINT"/>
+          <check le_data="0x30944f28" length="4" offset="16" type="UINT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

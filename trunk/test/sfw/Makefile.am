@@ -1,9 +1,6 @@
 SUBDIRS = test_n1 test_n2
 
 XMLEXTRA = \
-	test_atomic_mixed.xml \
-	test_atomic_physical_lb.xml \
-	test_mapping.xml \
 	test_phys_client.xml \
 	test_phys_server.xml \
 	test_put.xml \

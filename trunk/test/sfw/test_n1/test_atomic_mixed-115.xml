@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic BOR/CHAR length=29</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0xcc" me_match="0x512292452048028284" me_opt="OP_PUT" type="CHAR">
+          <ptl_md md_data="0x33" type="CHAR">
+            <ptl_atomic atom_op="BOR" atom_type="CHAR" length="29" match="0x512292452048028284" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="29" md_data="0x33" type="CHAR"/>
+            <check length="1" md_data="0x33" offset="29" type="CHAR"/>
+          </ptl_md>
+          <check length="29" me_data="0xff" type="CHAR"/>
+          <check length="1" me_data="0xcc" offset="29" type="CHAR"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
