@@ -1,8 +1,15 @@
 #summary Draft copy of the Portals 4 specification, with changelog
 
 == Latest Draft Specification ==
-  * [http://portals4.googlecode.com/files/portals40-20120521.pdf Portals Document (pdf)]
-  * [http://portals4.googlecode.com/files/portals40-20120521-diff.pdf Portals Document with changes (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120614.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-201200614-diff.pdf Portals Document with changes (pdf)]
+
+== June 14, 2012 Changelog ==
+  * Clarify behavior of flow control when local operations are causing the event
+  * Datatypes can't span iovec entries for atomic operations.
+  * Ptl{LE,ME}Unlink of a list entry on the overflow list with unexpected headers should return IN_USE if unexpected headers associated with list entry.
+  * Fix minor documentation issue; EQs are now associated with PTs, not MEs.
+  * Fixed some formatting issues with the document and updated the cover sheet and title page to match the current look and feel guidelines.
 
 == May 21, 2012 Changelog ==
   * Add list match to the ack and reply
