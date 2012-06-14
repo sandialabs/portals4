@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap MSWAP/LONG</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x33d7349e6d36dc46" me_match="0xf7d1448" me_opt="OP_PUT OP_GET" type="LONG">
+          <ptl_md md_data="0x2f25aa7b7f819f8d" type="LONG">
+            <ptl_md md_data="0x760a664f767ef4f5" type="LONG">
+              <ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" match="0xf7d1448" operand="0x2f9471d84bcfcef8" target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+            <check length="8" md_data="0x2f25aa7b7f819f8d" type="LONG"/>
+            <check length="8" md_data="0x2f25aa7b7f819f8d" offset="8" type="LONG"/>
+          </ptl_md>
+          <check length="8" me_data="0x3f47245e6fb19e8e" type="LONG"/>
+          <check length="8" me_data="0x33d7349e6d36dc46" offset="8" type="LONG"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
