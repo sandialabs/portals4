@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTAlloc with req = 0 and slot busy</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt_alloc pt_index="0"/>
+      <ptl_pt_alloc pt_index="0" ret="PT_IN_USE"/>
+    </ptl_ni>
+  </ptl>
+</test>

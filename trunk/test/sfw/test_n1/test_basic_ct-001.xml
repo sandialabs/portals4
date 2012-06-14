@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTAlloc without init</desc>
+  <arg_check>
+    <ptl_ct_alloc ret="NO_INIT"/>
+  </arg_check>
+</test>

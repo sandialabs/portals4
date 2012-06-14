@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTGet with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct>
+        <ptl_ct_get>
+          <check ct_event_failure="0" ct_event_success="0"/>
+        </ptl_ct_get>
+      </ptl_ct>
+    </ptl_ni>
+  </ptl>
+</test>

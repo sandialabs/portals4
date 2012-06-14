@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlTriggeredSwap with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET">
+          <ptl_md>
+            <ptl_md>
+              <ptl_ct>
+                <ptl_trig_swap target_id="SELF"/>
+                <msleep count="50"/>
+              </ptl_ct>
+            </ptl_md>
+          </ptl_md>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

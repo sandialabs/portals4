@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_iovecs up to limit for le</desc>
+  <ptl>
+    <ptl_ni desired_max_iovecs="4" ni_opt="NO_MATCH PHYSICAL">
+      <check actual_max_iovecs="4"/>
+      <ptl_pt>
+        <ptl_le le_length="4" le_opt="IOVEC"/>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

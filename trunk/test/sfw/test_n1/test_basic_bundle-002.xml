@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlEndBundle without init</desc>
+  <arg_check>
+    <ptl_end_bundle ret="NO_INIT"/>
+  </arg_check>
+</test>

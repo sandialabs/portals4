@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIStatus with INVALID register index</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ni_status reg="0x7fffffff" ret="ARG_INVALID"/>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with no feature</desc>
+  <ptl>
+    <ptl_ni desired_features="">
+      <check actual_features=""/>
+    </ptl_ni>
+  </ptl>
+</test>

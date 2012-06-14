@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_pt_index up to limit</desc>
+  <ptl>
+    <ptl_ni desired_max_pt_index="3">
+      <check actual_max_pt_index="3"/>
+      <ptl_pt count="4" pt_index="ANY"/>
+    </ptl_ni>
+  </ptl>
+</test>

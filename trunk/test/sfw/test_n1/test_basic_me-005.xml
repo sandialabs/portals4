@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlMESearch on a no matching NI</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+        <ptl_pt>
+          <ptl_me_search me_opt="OP_PUT" ret="ARG_INVALID" uid="ANY"/>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

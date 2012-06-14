@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlEQGet with empty queue</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_eq>
+        <ptl_eq_get ret="EQ_EMPTY"/>
+      </ptl_eq>
+    </ptl_ni>
+  </ptl>
+</test>

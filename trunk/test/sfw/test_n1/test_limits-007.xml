@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_eqs up to limit</desc>
+  <ptl>
+    <ptl_ni desired_max_eqs="4">
+      <check actual_max_eqs="4"/>
+      <ptl_eq count="4"/>
+    </ptl_ni>
+  </ptl>
+</test>

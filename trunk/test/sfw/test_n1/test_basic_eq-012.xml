@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlEQPoll with eq_handle = EQ_NONE</desc>
+  <arg_check>
+    <ptl>
+      <ptl_eq_poll eq_handle="EQ_NONE" ret="ARG_INVALID"/>
+    </ptl>
+  </arg_check>
+</test>

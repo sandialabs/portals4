@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_mds up to limit</desc>
+  <ptl>
+    <ptl_ni desired_max_mds="4">
+      <check actual_max_mds="4"/>
+      <ptl_md count="4"/>
+    </ptl_ni>
+  </ptl>
+</test>

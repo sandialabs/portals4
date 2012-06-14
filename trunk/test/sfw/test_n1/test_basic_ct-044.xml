@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTCancelTriggered with valid operation</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT">
+            <ptl_md>
+              <ptl_ct>
+                <ptl_trig_put target_id="SELF" threshold="1"/>
+                <ptl_ct_cancel_trig/>
+              </ptl_ct>
+            </ptl_md>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlTriggeredAtomic without init</desc>
+  <arg_check>
+    <ptl_trig_atomic ret="NO_INIT"/>
+  </arg_check>
+</test>

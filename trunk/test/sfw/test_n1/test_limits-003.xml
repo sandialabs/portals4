@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_entries up to limit for me</desc>
+  <ptl>
+    <ptl_ni desired_max_entries="4">
+      <check actual_max_entries="4"/>
+      <ptl_pt>
+        <ptl_me count="4"/>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

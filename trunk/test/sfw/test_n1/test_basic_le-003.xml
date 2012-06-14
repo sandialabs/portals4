@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlLESearch without init</desc>
+  <arg_check>
+    <ptl_le_search ret="NO_INIT"/>
+  </arg_check>
+</test>

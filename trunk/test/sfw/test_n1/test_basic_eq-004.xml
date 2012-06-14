@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlEQWait without init</desc>
+  <arg_check>
+    <ptl_eq_wait ret="NO_INIT"/>
+  </arg_check>
+</test>

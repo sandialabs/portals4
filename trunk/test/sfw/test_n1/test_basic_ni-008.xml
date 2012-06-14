@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with bad options (1)</desc>
+  <ptl>
+    <ptl_ni_init ni_opt="0" ret="ARG_INVALID"/>
+  </ptl>
+</test>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_LT/USHORT</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="NO_MATCH LOGICAL">
+          <ptl_pt>
+            <ptl_le le_data="0xfd67" le_opt="OP_PUT OP_GET" type="USHORT">
+              <ptl_md md_data="0x26b4" type="USHORT">
+                <ptl_md md_data="0xa5c5" type="USHORT">
+                  <ptl_swap atom_op="CSWAP_LT" atom_type="USHORT" length="2" operand="0x3e3f" target_id="SELF"/>
+                  <msleep count="50"/>
+                </ptl_md>
+                <check length="2" md_data="0x26b4" type="USHORT"/>
+                <check length="2" md_data="0x26b4" offset="2" type="USHORT"/>
+              </ptl_md>
+              <check le_data="0x26b4" length="2" type="USHORT"/>
+              <check le_data="0xfd67" length="2" offset="2" type="USHORT"/>
+            </ptl_le>
+          </ptl_pt>
+          <barrier/>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

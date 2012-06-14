@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_mds over limit</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni desired_max_mds="4">
+        <check actual_max_mds="4"/>
+        <ptl_md count="4">
+          <ptl_md_bind ret="NO_SPACE"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>
