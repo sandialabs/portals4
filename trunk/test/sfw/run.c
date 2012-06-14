@@ -502,6 +502,7 @@ static int get_attr(struct node_info *info, xmlNode *node)
 	int set_me_start = 0;
 	int set_me_len = 0;
 	int set_me_data = 0;
+	char *data_val;
 
 	for (attr = node->properties; attr; attr = attr->next) {
 		val = (char *)attr->children->content;
@@ -624,7 +625,7 @@ static int get_attr(struct node_info *info, xmlNode *node)
 			info->md_handle = get_handle(info, val);
 			break;
 		case ATTR_MD_DATA:
-			info->md_data = get_datatype(info->type, val);
+			data_val = val;
 			set_md_data++;
 			break;
 
@@ -641,7 +642,7 @@ static int get_attr(struct node_info *info, xmlNode *node)
 			info->le.options = get_le_opt(val);
 			break;
 		case ATTR_LE_DATA:
-			info->le_data = get_datatype(info->type, val);
+			data_val = val;
 			set_le_data++;
 			break;
 		case ATTR_SEARCH_OP:
@@ -670,7 +671,7 @@ static int get_attr(struct node_info *info, xmlNode *node)
 			info->me.min_free = get_number(info, val);
 			break;
 		case ATTR_ME_DATA:
-			info->me_data = get_datatype(info->type, val);
+			data_val = val;
 			set_me_data++;
 			break;
 
@@ -788,16 +789,19 @@ static int get_attr(struct node_info *info, xmlNode *node)
 	}
 
 	if (set_md_data) {
+		info->md_data = get_datatype(info->type, data_val);
 		set_data(info->md_data, info->buf, info->type,
 			info->actual.max_msg_size);
 	}
 
 	if (set_le_data) {
+		info->le_data = get_datatype(info->type, data_val);
 		set_data(info->le_data, info->buf, info->type,
 			info->actual.max_msg_size);
 	}
 
 	if (set_me_data) {
+		info->me_data = get_datatype(info->type, data_val);
 		set_data(info->me_data, info->buf, info->type,
 			info->actual.max_msg_size);
 	}
@@ -977,6 +981,8 @@ static int check_attr(struct node_info *info, xmlNode *node)
 	unsigned int offset = 0;
 	unsigned int length = 1;
 	int type = PTL_UINT8_T;
+	int do_check_data = 0;
+	char *check_data_val;
 
 	for (attr = node->properties; attr; attr = attr->next) {
 		val = (char *)attr->children->content;
@@ -1185,16 +1191,10 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			type = get_atom_type(val);
 			break;
 		case ATTR_MD_DATA:
-			if (check_data(info, val, &info->buf[offset], type, length))
-				return 1;
-			break;
 		case ATTR_LE_DATA:
-			if (check_data(info, val, &info->buf[offset], type, length))
-				return 1;
-			break;
 		case ATTR_ME_DATA:
-			if (check_data(info, val, &info->buf[offset], type, length))
-				return 1;
+			do_check_data = 1;
+			check_data_val = val;
 			break;
 		case ATTR_RANK:
 			if (info->id.rank != get_number(info, val)) {
@@ -1206,6 +1206,10 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			return 1;
 		}
 	}
+
+	if (do_check_data &&
+		check_data(info, check_data_val, &info->buf[offset], type, length))
+		return 1;
 
 	return 0;
 }
@@ -1322,46 +1326,6 @@ static int walk_tree(struct node_info *info, xmlNode *parent)
 			switch (e->token) {
 			case NODE_TEST:
 				errs = walk_tree(info, node->children);
-				break;
-			case NODE_SUBTEST: {
-				skipped = 0;
-				pid_t pid = fork();
-				int status;
-				switch(pid) {
-				case -1:
-					printf("Fork failed = %d\n", errs);
-					errs ++;
-					break;
-
-				case 0:
-					errs = walk_tree(info, node->children);
-					if (skipped)
-						exit(-1);
-					else
-						exit(errs);
-					break;
-
-				default:
-					waitpid(pid, &status, 0);
-					if (WIFEXITED(status)) {
-						int child_errs = WEXITSTATUS(status);
-						if (child_errs == 0xff)
-							skipped++;
-						else
-							errs += child_errs;
-					} else {
-						errs ++;
-					}
-
-					if (errs)
-						printf("Errors = %d\n", errs);
-					else if (skipped)
-						printf("\033[1;34mSkipped\033[0m\n");
-					else
-						printf("\033[1;32mPassed\033[0m\n");
-					break;
-				}
-			}
 				break;
 			case NODE_REPEAT:
 				for (i = 0; i < info->count; i++)
