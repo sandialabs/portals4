@@ -1,35 +1,3 @@
-XMLTESTS1 = \
-	test_basic_init.xml \
-	test_basic_ni.xml \
-	test_basic_handle.xml \
-	test_basic_pt.xml \
-	test_basic_eq.xml \
-	test_basic_ct.xml \
-	test_basic_id.xml \
-	test_basic_md.xml \
-	test_basic_le.xml \
-	test_basic_me.xml \
-	test_basic_move.xml \
-	test_basic_bundle.xml \
-	test_basic_trig.xml \
-	test_limits.xml \
-	test_ct_events.xml \
-	test_unlink.xml \
-	test_short.xml \
-	test_atomic_logical_lb.xml \
-	test_swap_logical_lb.xml \
-	test_advanced_le.xml \
-	test_advanced_me.xml
-
-XMLTESTS2 = \
-	test_rdma_move_logical.xml \
-	test_events_logical.xml \
-	test_flow.xml \
-	test_eq_overflow.xml \
-	test_put_overflow.xml \
-	test_atomic_overflow.xml \
-	test_search.xml
-
 XMLEXTRA = \
 	test_atomic_mixed.xml \
 	test_atomic_physical_lb.xml \
@@ -43,7 +11,7 @@ XMLEXTRA = \
 	test_swap_physical_lb.xml \
 	test_threads.xml
 
-EXTRA_DIST = $(XMLTESTS1) $(XMLTESTS2) $(XMLEXTRA)
+EXTRA_DIST = test_n1/*.xml test_n2/*.xml $(XMLEXTRA)
 
 noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 
@@ -81,16 +49,16 @@ check_SCRIPTS = runxml1.sh runxml2.sh
 TESTS = $(check_SCRIPTS)
 
 runxml1.sh:
-	@echo "for TEST in $(XMLTESTS1); do" \
-		  'echo testing $${TEST};' \
-		  'yod -n 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+	@echo "for TEST in test_n1/*.xml; do" \
+		  'echo Running test $${TEST};' \
+		  '$(top_builddir)/src/runtime/hydra/yod.hydra -np 1 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml1.sh
 	chmod +x runxml1.sh
 
 runxml2.sh:
-	@echo "for TEST in $(XMLTESTS2); do" \
-		  'echo testing $${TEST};' \
-		  'yod -n 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
+	@echo "for TEST in test_n2/*.xml; do" \
+		  'echo Running test $${TEST};' \
+		  '$(top_builddir)/src/runtime/hydra/yod.hydra -np 2 ./ptl_test -f $(top_srcdir)/test/sfw/$${TEST} || exit 1;' \
 	      "done" > runxml2.sh
 	chmod +x runxml2.sh
 
