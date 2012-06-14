@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test ct events with atomic to me, no CT_COMM</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ct>
+          <ptl_pt pt_index="2">
+            <ptl_me me_ignore="0xff00" me_match="0xa5a5" me_opt="OP_PUT OP_GET" pt_index="2" uid="ANY">
+              <ptl_ct>
+                <ptl_md md_opt="CT_SEND CT_ACK">
+                  <ptl_atomic ack_req="CT_ACK" atom_op="LXOR" match="0x5aa5" pt_index="2" target_id="SELF"/>
+                  <ptl_ct_wait ct_handle="ct[0]" ct_test="0"/>
+                  <ptl_ct_get ct_handle="ct[0]">
+                    <check ct_event_failure="0" ct_event_success="0"/>
+                  </ptl_ct_get>
+                  <ptl_ct_wait ct_handle="ct[1]" ct_test="2"/>
+                  <ptl_ct_get ct_handle="ct[1]">
+                    <check ct_event_failure="0" ct_event_success="2"/>
+                  </ptl_ct_get>
+                </ptl_md>
+              </ptl_ct>
+            </ptl_me>
+          </ptl_pt>
+        </ptl_ct>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

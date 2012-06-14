@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTAlloc with missing EQ</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt_alloc pt_opt="FLOW" ret="PT_EQ_NEEDED"/>
+    </ptl_ni>
+  </ptl>
+</test>

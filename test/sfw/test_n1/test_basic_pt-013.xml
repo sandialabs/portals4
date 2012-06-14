@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTAlloc with index = INVALID</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt_alloc pt_index="INVALID" ret="ARG_INVALID"/>
+    </ptl_ni>
+  </ptl>
+</test>

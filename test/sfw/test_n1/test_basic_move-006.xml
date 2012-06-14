@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlSwap without init</desc>
+  <arg_check>
+    <ptl_swap ret="NO_INIT"/>
+  </arg_check>
+</test>

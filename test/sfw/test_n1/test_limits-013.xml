@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_iovecs up to limit for md</desc>
+  <ptl>
+    <ptl_ni desired_max_iovecs="4">
+      <check actual_max_iovecs="4"/>
+      <ptl_md md_length="4" md_opt="IOVEC"/>
+    </ptl_ni>
+  </ptl>
+</test>

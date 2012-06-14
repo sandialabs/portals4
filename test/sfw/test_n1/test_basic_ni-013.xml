@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with default iface</desc>
+  <ptl>
+    <ptl_ni/>
+  </ptl>
+</test>

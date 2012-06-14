@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GE/LONG</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="NO_MATCH LOGICAL">
+          <ptl_pt>
+            <ptl_le le_data="0x508d5a9c455f2079" le_opt="OP_PUT OP_GET" type="LONG">
+              <ptl_md md_data="0x1a992e885e404f6d" type="LONG">
+                <ptl_md md_data="0x1fbb02672dfadaa4" type="LONG">
+                  <ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x6a28205b5cd18e82" target_id="SELF"/>
+                  <msleep count="50"/>
+                </ptl_md>
+                <check length="8" md_data="0x1a992e885e404f6d" type="LONG"/>
+                <check length="8" md_data="0x1a992e885e404f6d" offset="8" type="LONG"/>
+              </ptl_md>
+              <check le_data="0x1a992e885e404f6d" length="8" type="LONG"/>
+              <check le_data="0x508d5a9c455f2079" length="8" offset="8" type="LONG"/>
+            </ptl_le>
+          </ptl_pt>
+          <barrier/>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

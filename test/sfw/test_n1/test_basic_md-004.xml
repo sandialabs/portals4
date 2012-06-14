@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlMDBind with ni_handle = INVALID</desc>
+  <arg_check>
+    <ptl>
+      <ptl_md_bind ni_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </arg_check>
+</test>

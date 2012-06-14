@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_atomic_size over limit for fetch</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni desired_max_atomic_size="4">
+        <check actual_max_atomic_size="4"/>
+        <ptl_pt>
+          <ptl_me>
+            <ptl_md>
+              <ptl_md>
+                <ptl_fetch length="5" ret="ARG_INVALID" target_id="SELF"/>
+              </ptl_md>
+            </ptl_md>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

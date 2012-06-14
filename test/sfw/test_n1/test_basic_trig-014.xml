@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlTriggeredAtomic with ack_req = INVALID</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_trig_atomic ack_req="INVALID" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

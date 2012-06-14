@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIStatus without init</desc>
+  <arg_check>
+    <ptl_ni_status ret="NO_INIT"/>
+  </arg_check>
+</test>

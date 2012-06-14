@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTPoll until Inc</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct>
+        <threads count="2">
+          <if thread_id="0">
+            <ptl_ct_poll ct_test="10" time="130"/>
+          </if>
+          <if thread_id="1">
+            <msleep count="50"/>
+            <repeat count="10">
+              <ptl_ct_inc ct_event_success="1"/>
+            </repeat>
+          </if>
+        </threads>
+      </ptl_ct>
+    </ptl_ni>
+  </ptl>
+</test>

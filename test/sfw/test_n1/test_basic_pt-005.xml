@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTAlloc with unsupported options</desc>
+  <ptl>
+    <ptl_pt_alloc pt_opt="INVALID" ret="ARG_INVALID"/>
+  </ptl>
+</test>

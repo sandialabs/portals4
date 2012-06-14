@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTWait with failure set</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct>
+        <ptl_ct_set ct_event_failure="1" ct_event_success="1"/>
+        <ptl_ct_wait ct_test="10"/>
+      </ptl_ct>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTAlloc/Free with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct/>
+    </ptl_ni>
+  </ptl>
+</test>

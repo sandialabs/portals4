@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlMEAppend with bad ptl_list(1)</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_me_append list="INVALID" ret="ARG_INVALID"/>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

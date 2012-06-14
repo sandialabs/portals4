@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIHandle without init</desc>
+  <arg_check>
+    <ptl_ni_handle ret="NO_INIT"/>
+  </arg_check>
+</test>

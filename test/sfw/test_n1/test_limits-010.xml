@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_cts over limit</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni desired_max_cts="4">
+        <check actual_max_cts="4"/>
+        <ptl_ct count="4">
+          <ptl_ct_alloc ret="NO_SPACE"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

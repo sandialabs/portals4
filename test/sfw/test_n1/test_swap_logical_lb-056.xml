@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_LE/ULONG</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="MATCH LOGICAL">
+          <ptl_pt>
+            <ptl_me me_data="0x2d6974080ae18eb9" me_match="0x2c967474" me_opt="OP_PUT OP_GET" type="ULONG">
+              <ptl_md md_data="0x079279790ee94d77" type="ULONG">
+                <ptl_md md_data="0x2e78874539a8965b" type="ULONG">
+                  <ptl_swap atom_op="CSWAP_LE" atom_type="ULONG" length="8" match="0x2c967474" operand="0x0a4d4cab15ccb66f" target_id="SELF"/>
+                  <msleep count="50"/>
+                </ptl_md>
+                <check length="8" md_data="0x079279790ee94d77" type="ULONG"/>
+                <check length="8" md_data="0x079279790ee94d77" offset="8" type="ULONG"/>
+              </ptl_md>
+              <check length="8" me_data="0x079279790ee94d77" type="ULONG"/>
+              <check length="8" me_data="0x2d6974080ae18eb9" offset="8" type="ULONG"/>
+            </ptl_me>
+          </ptl_pt>
+          <barrier/>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

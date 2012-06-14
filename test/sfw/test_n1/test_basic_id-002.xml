@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGetId without init</desc>
+  <arg_check>
+    <ptl_get_id ret="NO_INIT"/>
+  </arg_check>
+</test>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlAtomic with ack_req = ACK and no EQ</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_md>
+          <ptl_atomic ack_req="ACK" ret="ARG_INVALID"/>
+        </ptl_md>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

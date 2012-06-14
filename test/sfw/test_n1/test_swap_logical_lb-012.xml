@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GE/DOUBLE</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="MATCH LOGICAL">
+          <ptl_pt>
+            <ptl_me me_data="0.158704568052551453" me_match="0x70bf2a30" me_opt="OP_PUT OP_GET" type="DOUBLE">
+              <ptl_md md_data="0.286958918105080785" type="DOUBLE">
+                <ptl_md md_data="0.160116162153021241" type="DOUBLE">
+                  <ptl_swap atom_op="CSWAP_GE" atom_type="DOUBLE" length="8" match="0x70bf2a30" operand="0.077781869507885487" target_id="SELF"/>
+                  <msleep count="50"/>
+                </ptl_md>
+                <check length="8" md_data="0.286958918105080785" type="DOUBLE"/>
+                <check length="8" md_data="0.286958918105080785" offset="8" type="DOUBLE"/>
+              </ptl_md>
+              <check length="8" me_data="0.158704568052551453" type="DOUBLE"/>
+              <check length="8" me_data="0.158704568052551453" offset="8" type="DOUBLE"/>
+            </ptl_me>
+          </ptl_pt>
+          <barrier/>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

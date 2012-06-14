@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTEnable with no PtlPTAlloc</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt_enable ret="ARG_INVALID"/>
+    </ptl_ni>
+  </ptl>
+</test>

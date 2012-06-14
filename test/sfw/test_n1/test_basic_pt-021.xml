@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTDisable index out of range</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt_disable pt_index="9999" ret="ARG_INVALID"/>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with bad options (4)</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni_init ni_opt="MATCH NO_MATCH LOGICAL PHYSICAL" ret="ARG_INVALID"/>
+    </ptl>
+  </arg_check>
+</test>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPut with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT">
+          <ptl_md>
+            <ptl_put target_id="SELF"/>
+            <msleep count="50"/>
+          </ptl_md>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
