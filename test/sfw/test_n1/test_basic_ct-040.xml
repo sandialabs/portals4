@@ -7,15 +7,12 @@
         <ptl_ct>
           <threads count="3">
             <if thread_id="0">
-              <barrier/>
               <ptl_ct_poll ct_test="15" ret="CT_NONE_REACHED" time="130"/>
             </if>
             <if thread_id="1">
-              <barrier/>
               <ptl_ct_poll ct_test="10" time="130"/>
             </if>
             <if thread_id="2">
-              <barrier/>
               <msleep count="50"/>
               <repeat count="10">
                 <ptl_ct_inc ct_event_success="1"/>
