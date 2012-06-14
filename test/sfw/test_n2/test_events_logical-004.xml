@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<test>
+      <desc>Test events with get to me</desc>
+      <ptl>
+        <ptl_ni>
+          <ompi_rt>
+            <ptl_ni ni_opt="MATCH LOGICAL">
+              <ptl_eq>
+                <ptl_pt>
+                  <ptl_get_id>
+                    
+                    <if rank="0">
+                      <ptl_md>
+                        <barrier/>
+                        <ptl_get match="0x3f5c" target_id="1" user_ptr="234"/>
+                        
+                        <ptl_eq_poll time="200">
+                          <check event_type="REPLY"/>
+                          <check event_user_ptr="234"/>
+                          <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                        <barrier/>
+                      </ptl_md>
+                    </if>
+                    
+                    <if rank="1">
+                      <ptl_me me_ignore="0xff00" me_match="0x725c" me_opt="OP_GET EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
+                        <barrier/>
+                        <ptl_eq_poll time="200">
+                          <check event_type="GET"/>
+                          <check event_match="0x3f5c"/>
+                          <check event_user_ptr="654"/>
+                          <check event_ni_fail="OK"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                        <barrier/>
+                      </ptl_me>
+                    </if>
+                  </ptl_get_id>
+                </ptl_pt>
+              </ptl_eq>
+            </ptl_ni>
+          </ompi_rt>
+        </ptl_ni>
+      </ptl>
+    </test>

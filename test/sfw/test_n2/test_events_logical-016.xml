@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<test>
+      <desc>Test events with swap to me, get_md with no eq</desc>
+      <ptl>
+        <ptl_ni>
+          <ompi_rt>
+            <ptl_ni ni_opt="MATCH LOGICAL">
+              <ptl_eq>
+                <ptl_pt>
+                  <ptl_get_id>
+                    
+                    <if rank="0">
+                      <ptl_md>
+                        <ptl_md eq_handle="EQ_NONE">
+                          <barrier/>
+                          <ptl_swap atom_op="SWAP" match="0x442c" target_id="1" user_ptr="523"/>
+                          <barrier/>
+                        </ptl_md>
+                        <ptl_eq_poll time="200">
+                          <check event_type="SEND"/>
+                          <check event_user_ptr="523"/>
+                          <check event_ni_fail="OK"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                      </ptl_md>
+                    </if>
+                    
+                    <if rank="1">
+                      <ptl_me me_ignore="0xff00" me_match="0xf32c" me_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
+                        <barrier/>
+                        <ptl_eq_poll time="200">
+                          <check event_type="ATOMIC"/>
+                          <check event_match="0x442c"/>
+                          <check event_user_ptr="654"/>
+                          <check event_ni_fail="OK"/>
+                          <check event_atom_op="SWAP"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                        <barrier/>
+                      </ptl_me>
+                    </if>
+                    
+                  </ptl_get_id>
+                </ptl_pt>
+              </ptl_eq>
+            </ptl_ni>
+          </ompi_rt>
+        </ptl_ni>
+      </ptl>
+    </test>

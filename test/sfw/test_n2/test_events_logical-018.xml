@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<test>
+      <desc>Test events with put le</desc>
+      <ptl>
+        <ptl_ni>
+          <ompi_rt>
+            <ptl_ni ni_opt="NO_MATCH LOGICAL">
+              <ptl_eq>
+                <ptl_pt>
+                  <ptl_get_id>
+                    
+                    <if rank="0">
+                      <ptl_md>
+                        <barrier/>
+                        <ptl_put ack_req="ACK" match="0x5aa5" target_id="1" user_ptr="432"/>
+                        <ptl_eq_poll time="200">
+                          <check event_type="SEND"/>
+                          <check event_user_ptr="432"/>
+                          <check event_ni_fail="OK"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll time="200">
+                          <check event_type="ACK"/>
+                          <check event_user_ptr="432"/>
+                          <check event_ni_fail="OK"/>
+                          <check event_ptl_list="PRIORITY"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                        <barrier/>
+                      </ptl_md>
+                    </if>
+                    
+                    <if rank="1">
+                      <ptl_le le_opt="OP_PUT EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
+                        <barrier/>
+                        <ptl_eq_poll time="200">
+                          <check event_type="PUT"/>
+                          <check event_user_ptr="654"/>
+                          <check event_ni_fail="OK"/>
+                        </ptl_eq_poll>
+                        <ptl_eq_poll ret="EQ_EMPTY"/>
+                        <barrier/>
+                      </ptl_le>
+                    </if>
+                    
+                  </ptl_get_id>
+                </ptl_pt>
+              </ptl_eq>
+            </ptl_ni>
+          </ompi_rt>
+        </ptl_ni>
+      </ptl>
+    </test>
