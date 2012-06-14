@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP/ULONG</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x3fa371256c5eabfa" me_match="0x32f78d1e" me_opt="OP_PUT OP_GET" type="ULONG">
+          <ptl_md md_data="0x39fbe23342636071" type="ULONG">
+            <ptl_md md_data="0x1716a3391b9ab4d1" type="ULONG">
+              <ptl_swap atom_op="CSWAP" atom_type="ULONG" length="8" match="0x32f78d1e" operand="0x4300dd3c66889f6e" target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+            <check length="8" md_data="0x39fbe23342636071" type="ULONG"/>
+            <check length="8" md_data="0x39fbe23342636071" offset="8" type="ULONG"/>
+          </ptl_md>
+          <check length="8" me_data="0x3fa371256c5eabfa" type="ULONG"/>
+          <check length="8" me_data="0x3fa371256c5eabfa" offset="8" type="ULONG"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

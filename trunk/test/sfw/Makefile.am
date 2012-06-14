@@ -3,11 +3,6 @@ SUBDIRS = test_n1 test_n2
 XMLEXTRA = \
 	test_phys_client.xml \
 	test_phys_server.xml \
-	test_put.xml \
-	test_rdma_move_logical_lb.xml \
-	test_rdma_move_physical_lb.xml \
-	test_swap_mixed.xml \
-	test_swap_physical_lb.xml \
 	test_threads.xml
 
 EXTRA_DIST = test_n1/*.xml test_n2/*.xml $(XMLEXTRA)

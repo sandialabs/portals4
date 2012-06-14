@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GT/FLOAT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0.26122248" me_match="0xaabb47c" me_opt="OP_PUT OP_GET" type="FLOAT">
+          <ptl_md md_data="0.26166433" type="FLOAT">
+            <ptl_md md_data="0.24120314" type="FLOAT">
+              <ptl_swap atom_op="CSWAP_GT" atom_type="FLOAT" length="4" match="0xaabb47c" operand="0.31014273" target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+            <check length="4" md_data="0.26166433" type="FLOAT"/>
+            <check length="4" md_data="0.26166433" offset="4" type="FLOAT"/>
+          </ptl_md>
+          <check length="4" me_data="0.26166433" type="FLOAT"/>
+          <check length="4" me_data="0.26122248" offset="4" type="FLOAT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
