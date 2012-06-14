@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GE/USHORT</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x3d94" le_opt="OP_PUT OP_GET" type="USHORT">
+          <ptl_md md_data="0xa2e7" type="USHORT">
+            <ptl_md md_data="0x11c3" type="USHORT">
+              <ptl_swap atom_op="CSWAP_GE" atom_type="USHORT" length="2" operand="0x25dc" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="2" md_data="0x3d94" type="USHORT"/>
+              <check length="2" md_data="0x11c3" offset="2" type="USHORT"/>
+            </ptl_md>
+            <check length="2" md_data="0xa2e7" type="USHORT"/>
+            <check length="2" md_data="0xa2e7" offset="2" type="USHORT"/>
+          </ptl_md>
+          <check le_data="0x3d94" length="2" type="USHORT"/>
+          <check le_data="0x3d94" length="2" offset="2" type="USHORT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

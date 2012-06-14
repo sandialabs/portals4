@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic LXOR/SHORT length=28</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0xfee2" le_opt="OP_PUT" type="SHORT">
+          <ptl_md md_data="0xef0d" type="SHORT">
+            <ptl_atomic atom_op="LXOR" atom_type="SHORT" length="28" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="28" md_data="0xef0d" type="SHORT"/>
+            <check length="2" md_data="0xef0d" offset="28" type="SHORT"/>
+          </ptl_md>
+          <check le_data="0x0000" length="28" type="SHORT"/>
+          <check le_data="0xfee2" length="2" offset="28" type="SHORT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

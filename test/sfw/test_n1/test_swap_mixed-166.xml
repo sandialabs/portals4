@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap MSWAP/USHORT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x2f6d" me_match="0x36578653289137028" me_opt="OP_PUT OP_GET" type="USHORT">
+          <ptl_md md_data="0x538a" type="USHORT">
+            <ptl_md md_data="0xd7fe" type="USHORT">
+              <ptl_swap atom_op="MSWAP" atom_type="USHORT" length="2" match="0x36578653289137028" operand="0x2d00" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="2" md_data="0x2f6d" type="USHORT"/>
+              <check length="2" md_data="0xd7fe" offset="2" type="USHORT"/>
+            </ptl_md>
+            <check length="2" md_data="0x538a" type="USHORT"/>
+            <check length="2" md_data="0x538a" offset="2" type="USHORT"/>
+          </ptl_md>
+          <check length="2" me_data="0x036d" type="USHORT"/>
+          <check length="2" me_data="0x2f6d" offset="2" type="USHORT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

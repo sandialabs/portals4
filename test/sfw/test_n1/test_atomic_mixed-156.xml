@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic SUM/LONG length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="3706488660008836354" me_match="0x3296612636755600402" me_opt="OP_PUT" type="LONG">
+          <ptl_md md_data="1768312592291532997" type="LONG">
+            <ptl_atomic atom_op="SUM" atom_type="LONG" length="8" match="0x3296612636755600402" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="8" md_data="1768312592291532997" type="LONG"/>
+            <check length="8" md_data="1768312592291532997" offset="8" type="LONG"/>
+          </ptl_md>
+          <check length="8" me_data="5474801252300369351" type="LONG"/>
+          <check length="8" me_data="3706488660008836354" offset="8" type="LONG"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

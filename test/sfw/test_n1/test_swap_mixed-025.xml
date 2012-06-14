@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP/CHAR</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0xd0" le_opt="OP_PUT OP_GET" type="CHAR">
+          <ptl_md md_data="0xf1" type="CHAR">
+            <ptl_md md_data="0x72" type="CHAR">
+              <ptl_swap atom_op="CSWAP" atom_type="CHAR" length="1" operand="0xc5" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="1" md_data="0xd0" type="CHAR"/>
+              <check length="1" md_data="0x72" offset="1" type="CHAR"/>
+            </ptl_md>
+            <check length="1" md_data="0xf1" type="CHAR"/>
+            <check length="1" md_data="0xf1" offset="1" type="CHAR"/>
+          </ptl_md>
+          <check le_data="0xd0" length="1" type="CHAR"/>
+          <check le_data="0xd0" length="1" offset="1" type="CHAR"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

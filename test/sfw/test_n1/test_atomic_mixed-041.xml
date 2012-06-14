@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic PROD/LONG length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="5936566881104158459" me_match="0x3901808739524080933" me_opt="OP_PUT" type="LONG">
+          <ptl_md md_data="5070289438429305313" type="LONG">
+            <ptl_atomic atom_op="PROD" atom_type="LONG" length="32" match="0x3901808739524080933" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="32" md_data="5070289438429305313" type="LONG"/>
+            <check length="8" md_data="5070289438429305313" offset="32" type="LONG"/>
+          </ptl_md>
+          <check length="32" me_data="8980458955255987611" type="LONG"/>
+          <check length="8" me_data="5936566881104158459" offset="32" type="LONG"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

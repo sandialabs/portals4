@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGetMap on physical interface</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_get_map ret="ARG_INVALID"/>
+      </ompi_rt>
+    </ptl_ni>
+    
+  </ptl>
+</test>

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic PROD/FLOAT length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0.4511539638" le_opt="OP_PUT" type="FLOAT">
+          <ptl_md md_data="0.0638005510" type="FLOAT">
+            <ptl_atomic atom_op="PROD" atom_type="FLOAT" length="8" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="8" md_data="0.0638005510" type="FLOAT"/>
+            <check length="4" md_data="0.0638005510" offset="8" type="FLOAT"/>
+          </ptl_md>
+          <check le_data="0.0287838709" length="8" type="FLOAT"/>
+          <check le_data="0.4511539638" length="4" offset="8" type="FLOAT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

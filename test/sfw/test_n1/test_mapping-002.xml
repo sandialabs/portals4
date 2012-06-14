@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGetMap with empty map</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="MATCH LOGICAL">
+          <ptl_get_map/>
+          
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+    
+  </ptl>
+</test>

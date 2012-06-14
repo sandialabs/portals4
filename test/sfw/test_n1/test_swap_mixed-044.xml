@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_LE/INT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x5cef9ded" me_match="0x7962076331141961102" me_opt="OP_PUT OP_GET" type="INT">
+          <ptl_md md_data="0x2c288b7c" type="INT">
+            <ptl_md md_data="0x43d32df6" type="INT">
+              <ptl_swap atom_op="CSWAP_LE" atom_type="INT" length="4" match="0x7962076331141961102" operand="0x1df86fec" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="4" md_data="0x5cef9ded" type="INT"/>
+              <check length="4" md_data="0x43d32df6" offset="4" type="INT"/>
+            </ptl_md>
+            <check length="4" md_data="0x2c288b7c" type="INT"/>
+            <check length="4" md_data="0x2c288b7c" offset="4" type="INT"/>
+          </ptl_md>
+          <check length="4" me_data="0x2c288b7c" type="INT"/>
+          <check length="4" me_data="0x5cef9ded" offset="4" type="INT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

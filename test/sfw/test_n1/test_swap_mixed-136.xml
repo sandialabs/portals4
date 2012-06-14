@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap SWAP/SHORT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0xaf65" me_match="0x3410289318392336728" me_opt="OP_PUT OP_GET" type="SHORT">
+          <ptl_md md_data="0xaf3e" type="SHORT">
+            <ptl_md md_data="0x5150" type="SHORT">
+              <ptl_swap atom_op="SWAP" atom_type="SHORT" length="24" match="0x3410289318392336728" operand="0xb3b7" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="24" md_data="0xaf65" type="SHORT"/>
+              <check length="2" md_data="0x5150" offset="24" type="SHORT"/>
+            </ptl_md>
+            <check length="24" md_data="0xaf3e" type="SHORT"/>
+            <check length="2" md_data="0xaf3e" offset="24" type="SHORT"/>
+          </ptl_md>
+          <check length="24" me_data="0xaf3e" type="SHORT"/>
+          <check length="2" me_data="0xaf65" offset="24" type="SHORT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
