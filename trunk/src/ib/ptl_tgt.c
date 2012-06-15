@@ -478,9 +478,13 @@ static int request_drop(buf_t *buf)
 	buf->put_resid = 0;
 	buf->get_resid = 0;
 
-	if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT))
-		return STATE_TGT_WAIT_CONN;
-	else
+	if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) {
+		/* if we are already connected to the initiator skip wait_conn */
+		if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
+			return STATE_TGT_DATA;
+		else
+			return STATE_TGT_WAIT_CONN;
+	} else
 		return STATE_TGT_CLEANUP;
 }
 
@@ -651,14 +655,6 @@ found_one:
 		buf->le = NULL;
 		buf->ni_fail = ni_fail;
 		return STATE_TGT_DROP;
-	}
-
-	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-		/* take a reference to the buf for the
-		 * unexpected list entry */
-		buf_get(buf);
-		list_add_tail(&buf->unexpected_list,
-			      &pt->unexpected_list);
 	}
 
 	buf->matching_list = buf->le->ptl_list;
@@ -1362,6 +1358,20 @@ static int tgt_swap_data_in(buf_t *buf)
  */
 static int tgt_comm_event(buf_t *buf)
 {
+	if (buf->le && 
+		buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+		pt_t *pt = buf->pt;
+
+		PTL_FASTLOCK_LOCK(&pt->lock);
+		/* take a reference to the buf for the
+		 * unexpected list entry */
+		buf_get(buf);
+		list_add_tail(&buf->unexpected_list,
+					  &pt->unexpected_list);
+
+		PTL_FASTLOCK_UNLOCK(&pt->lock);
+	}
+
 	if (buf->event_mask & XT_COMM_EVENT)
 		make_comm_event(buf);
 
