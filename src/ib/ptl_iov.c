@@ -140,7 +140,6 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 	ptl_size_t src_offset = 0;
 	ptl_size_t dst_offset = 0;
 	ptl_size_t bytes;
-	int have_odd_size_chunk = 0;
 
 	for (i = 0; i < num_iov && dst_offset < offset; i++, iov++) {
 		iov_offset = offset - dst_offset;
@@ -172,32 +171,8 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 			if (src_offset + bytes > length)
 				bytes = length - src_offset;
 
-			if (bytes & (atom_size - 1)) {
-				have_odd_size_chunk++;
-				break;
-			}
-
 			iov_offset = 0;
 			src_offset += bytes;
-		}
-
-		/* if we have an odd size chunk it will cross an atom_data
-		 * boundary and op will not work. So make a copy of the
-		 * target data and do the operation there */
-		if (have_odd_size_chunk) {
-			void *copy;
-
-			copy = malloc(length);
-			if (!copy) {
-				WARN();
-				return PTL_NO_SPACE;
-			}
-			/* Don't fix - this code will go away. have_odd_size_chunk is now invalid case */
-			iov_copy_out(copy, iov, NULL, num_iov, offset, length);
-			op(copy, src, length);
-			iov_copy_in(copy, iov, NULL, num_iov, offset, length);
-			free(copy);
-			return PTL_OK;
 		}
 
 		i = save_i;
