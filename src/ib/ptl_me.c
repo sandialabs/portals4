@@ -334,13 +334,6 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 
 	ref_cnt = me_ref_cnt(me);
 
-	if (ref_cnt >= 3) {
-		/* Something else has a reference on that ME. If it is on the
-		 * unexpected list, remove it. */
-		flush_le_references((le_t *)me);
-		ref_cnt = me_ref_cnt(me);
-	}
-
 	/* There should only be 2 references on the object before we can
 	 * release it. */
 	if (ref_cnt > 2) {
