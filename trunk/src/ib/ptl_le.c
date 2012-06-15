@@ -338,33 +338,6 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
 	}
 }
 
-/* Flush all entries on an unexpected list that points to the given LE. */
-void flush_le_references(le_t *le)
-{
-	buf_t *buf;
-	buf_t *n;
-	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = &ni->pt[le->pt_index];
-	struct list_head buf_list;
-
-	/* Build a list of entries that match. */
-	INIT_LIST_HEAD(&buf_list);
-
-	PTL_FASTLOCK_LOCK(&pt->lock);
-	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
-							 unexpected_list) {
-		if (buf->le == le) {
-			list_del(&buf->unexpected_list);
-			list_add_tail(&buf->unexpected_list, &buf_list);
-		}
-	}
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
-
-	if (!list_empty(&buf_list))
-		/* Process the elements of the list. */
-		flush_from_unexpected_list(le, &buf_list, 1);
-}
-
 /**
  * @brief Check whether the LE/ME matches one or more messages on the
  * unexpected list.
@@ -781,13 +754,6 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 #endif
 
 	ref_cnt = le_ref_cnt(le);
-
-	if (ref_cnt >= 3) {
-		/* Something else has a reference on that LE. If it is on the
-		 * unexpected list, remove it. */
-		flush_le_references(le);
-		ref_cnt = le_ref_cnt(le);
-	}
 
 	/* There should only be 2 references on the object before we can
 	 * release it. */
