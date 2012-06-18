@@ -150,6 +150,8 @@ libtest_get_mapping(ptl_handle_ni_t ni_h)
 
     if (NULL == map) return NULL;
 
+    map->handle = ni_h;
+
     if (PMI_SUCCESS != PMI_KVS_Get_name_length_max(&max_name_len)) {
         return NULL;
     }

@@ -59,6 +59,9 @@ int libtest_fini(void);
  * Notes:
  *  Mapping will be a static buffer; should not be freed by
  *  the caller.
+ *
+ *  This call is collective and must be called in the same order on
+ *  all processes.
  */
 ptl_process_t* libtest_get_mapping(ptl_handle_ni_t ni_h);
 
