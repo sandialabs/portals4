@@ -312,6 +312,12 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
 
 		pthread_mutex_lock(&buf->mutex);
 
+		/* It is possible that there is a still a transfer occurring
+		 * on this buffer. So wait for it to finish. */
+		if (buf->unexpected_busy)
+			pthread_cond_wait(&buf->cond, &buf->mutex);
+		assert(buf->unexpected_busy == 0);
+
 		assert(buf->matching.le == NULL);
 		buf->matching.le = le;
 		le_get(le);
