@@ -205,6 +205,9 @@ struct buf {
 
 	/* Target only. Must survive through buffer reuse. */
 	struct list_head	unexpected_list;
+	int unexpected_busy;
+	pthread_cond_t cond;
+
 #if WITH_TRANSPORT_IB
 	// TODO: can we move these fields into the next rdma union?
 	struct list_head	rdma_list;

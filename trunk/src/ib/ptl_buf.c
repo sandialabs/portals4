@@ -96,6 +96,7 @@ int buf_init(void *arg, void *parm)
 	buf->type = BUF_FREE;
 
 	pthread_mutex_init(&buf->mutex, NULL);
+	pthread_cond_init(&buf->cond, NULL);
 
 #if WITH_TRANSPORT_IB
 	if (parm) {
@@ -128,6 +129,8 @@ void buf_fini(void *arg)
 
 	PTL_FASTLOCK_DESTROY(&buf->rdma_list_lock);
 #endif
+	pthread_mutex_destroy(&buf->mutex);
+	pthread_cond_destroy(&buf->cond);
 }
 
 /**

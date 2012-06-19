@@ -414,7 +414,6 @@ static int tgt_start(buf_t *buf)
 	INIT_LIST_HEAD(&buf->unexpected_list);
 #if WITH_TRANSPORT_IB
 	INIT_LIST_HEAD(&buf->rdma_list);
-	buf->matching.le = NULL;
 #endif
 	buf->in_atomic = 0;
 
@@ -655,6 +654,19 @@ found_one:
 		buf->le = NULL;
 		buf->ni_fail = ni_fail;
 		return STATE_TGT_DROP;
+	}
+
+	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+		/* take a reference to the buf for the
+		 * unexpected list entry */
+		buf_get(buf);
+
+		/* Mark the buffer as busy. If something is trying to dequeue
+		 * it (ie. through an append), then it will have to wait until
+		 * the transfer is completed. */
+		buf->unexpected_busy = 1;
+		list_add_tail(&buf->unexpected_list,
+					  &pt->unexpected_list);
 	}
 
 	buf->matching_list = buf->le->ptl_list;
@@ -1360,16 +1372,13 @@ static int tgt_comm_event(buf_t *buf)
 {
 	if (buf->le && 
 		buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-		pt_t *pt = buf->pt;
 
-		PTL_FASTLOCK_LOCK(&pt->lock);
-		/* take a reference to the buf for the
-		 * unexpected list entry */
-		buf_get(buf);
-		list_add_tail(&buf->unexpected_list,
-					  &pt->unexpected_list);
-
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
+		/* The buf should be on the unexpected list, unless an
+		 * append/search operation removed it since the buffer was in
+		 * the check_match state. Tell the potential waiter the buffer
+		 * is now ready. */
+		buf->unexpected_busy = 0;
+		pthread_cond_signal(&buf->cond);
 	}
 
 	if (buf->event_mask & XT_COMM_EVENT)
