@@ -215,10 +215,36 @@ void PtlSetMap_mem(ni_t *ni,
 
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
+			conn_t *conn;
+			ptl_process_t id;
+
 			if (mapping[i].phys.pid == iface->id.phys.pid) {
+				/* Self. */
 				ni->mem.index = ni->mem.node_size;
 			}
 
+			/* Connect local ranks through XPMEM or SHMEM. */
+			id.rank = i;
+			conn = get_conn(ni, id);
+			if (!conn) {
+				/* It's hard to recover from here. */
+				WARN();
+				abort();
+				return;
+			}
+
+#if IS_PPE
+			conn->transport = transport_mem;
+#elif WITH_TRANSPORT_SHMEM
+			conn->transport = transport_shmem;
+			conn->shmem.local_rank = i;
+#else
+#error
+#endif
+			conn->state = CONN_STATE_CONNECTED;
+
+			conn_put(conn);			/* from get_conn */
+			
 			ni->mem.node_size ++;
 		}
 
