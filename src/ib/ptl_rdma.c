@@ -172,7 +172,7 @@ static void append_init_data_rdma_direct(data_t *data, mr_t *mr, void *addr,
 {
 	data->data_fmt = DATA_FMT_RDMA_DMA;
 	data->rdma.num_sge = cpu_to_le32(1);
-	data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr);
+	data->rdma.sge_list[0].addr = cpu_to_le64((uintptr_t)addr_to_ppe(addr, mr));
 	data->rdma.sge_list[0].length = cpu_to_le32(length);
 	data->rdma.sge_list[0].lkey = cpu_to_le32(mr->ibmr->rkey);
 
@@ -199,7 +199,7 @@ static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md,
 	data->data_fmt = DATA_FMT_RDMA_INDIRECT;
 	data->rdma.num_sge = cpu_to_le32(1);
 	data->rdma.sge_list[0].addr
-		= cpu_to_le64((uintptr_t)&md->sge_list[iov_start]);
+		= cpu_to_le64((uintptr_t)addr_to_ppe(&md->sge_list[iov_start], md->ppe.mr_start));
 	data->rdma.sge_list[0].length
 		= cpu_to_le32(num_iov * sizeof(struct ibv_sge));
 	data->rdma.sge_list[0].lkey
@@ -231,7 +231,20 @@ static int init_prepare_transfer_rdma(md_t *md, data_dir_t dir, ptl_size_t offse
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
-		err = append_immediate_data(md->start, NULL, md->num_iov, dir, offset, length, buf);
+		mr_t *mr;
+		if (md->num_iov) {
+			err = append_immediate_data(md->start, md->mr_list, md->num_iov, dir, offset, length, buf);
+		} else {
+			err = mr_lookup_app(obj_to_ni(md), md->start + offset, length, &mr);
+			if (err) {
+				WARN();
+				return PTL_FAIL;
+			}
+
+			err = append_immediate_data(md->start, &mr, md->num_iov, dir, offset, length, buf);
+
+			mr_put(mr);
+		}
 	}
 	else if (md->options & PTL_IOVEC) {
 		ptl_iovec_t *iovecs = md->start;
@@ -371,7 +384,7 @@ static int build_sge(buf_t *buf,
 		if (err)
 			return err;
 
-		sge->addr = (uintptr_t)addr;
+		sge->addr = (uintptr_t)addr_to_ppe(addr, mr);
 		sge->length = bytes;
 		sge->lkey = mr->ibmr->lkey;
 
