@@ -124,9 +124,9 @@ int buf_init(void *arg, void *parm)
 
 void buf_fini(void *arg)
 {
-#if WITH_TRANSPORT_IB
 	buf_t *buf = arg;
 
+#if WITH_TRANSPORT_IB
 	PTL_FASTLOCK_DESTROY(&buf->rdma_list_lock);
 #endif
 	pthread_mutex_destroy(&buf->mutex);
