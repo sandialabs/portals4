@@ -511,6 +511,7 @@ exit:
 }
 #endif
 
+#if !IS_PPE
 /**
  * Progress thread. Waits for both ib and shared memory messages.
  *
@@ -642,3 +643,4 @@ void *progress_thread(void *arg)
 
 	return NULL;
 }
+#endif

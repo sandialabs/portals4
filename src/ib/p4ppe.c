@@ -35,7 +35,7 @@ struct prog_thread {
 	queue_t internal_queue;
 };
 
-struct {
+static struct {
 	/* Communication pad. */
 	struct ppe_comm_pad *comm_pad;
 	struct xpmem_map comm_pad_mapping;
@@ -63,6 +63,8 @@ struct {
 	ev_io client_watcher;
 	int client_fd;
 
+	/* Linked list of active NIs. */
+	struct list_head ni_list;
 } ppe;
 
 /* Given a memory segment, create a mapping for XPMEM, and return the
@@ -260,7 +262,6 @@ static int init_ppe(void)
 	for (i=0; i<0x100; i++)
 		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
 
-
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		WARN();
@@ -302,6 +303,8 @@ static int init_ppe(void)
 		queue_init(pt->queue);
 		queue_init(&pt->internal_queue);
 	}
+
+	INIT_LIST_HEAD(&ppe.ni_list);
 
 	return PTL_OK;
 
@@ -591,17 +594,8 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
 }
 
 /* Remove an NI from a PPE group. */
-static void remove_ni_from_group(ptl_handle_ni_t ni_handle)
+static void remove_ni_from_group(ni_t *ni)
 {
-	int err;
-	ni_t *ni;
-
-	err = to_ni(ni_handle, &ni);
-	if (unlikely(err)) {
-		WARN();
-		return;
-	}
-
 	if (!ni->mem.in_group)
 		return;
 
@@ -632,12 +626,26 @@ static void remove_ni_from_group(ptl_handle_ni_t ni_handle)
 
 static void do_OP_PtlNIFini(ppebuf_t *buf)
 {
+	int err;
 	struct client *client = buf->cookie;
+	ni_t *ni;
 
-	remove_ni_from_group(buf->msg.PtlNIFini.ni_handle);
+	err = to_ni(buf->msg.PtlNIFini.ni_handle, &ni);
+	if (unlikely(err)) {
+		WARN();
+		return;
+	}
 
 	buf->msg.ret = _PtlNIFini(&client->gbl,
 							  buf->msg.PtlNIFini.ni_handle);
+
+	if (buf->msg.ret != PTL_IN_USE) {
+		remove_ni_from_group(ni);
+		list_del(&ni->rdma.ppe_ni_list);
+	}
+
+	ni_put(ni);
+
 	if (buf->msg.ret)
 		WARN();
 }
@@ -1196,10 +1204,18 @@ static struct {
 static void *ppe_progress(void *arg)
 {
 	struct prog_thread *pt = arg;
-	
+
 	while (!pt->stop) {
 		ppebuf_t *ppebuf;
 		buf_t *mem_buf;
+
+#if WITH_TRANSPORT_IB
+		/* Infiniband. Walking the list of active NIs to find work. */
+		ni_t *ni;
+		list_for_each_entry(ni, &ppe.ni_list, rdma.ppe_ni_list) {
+			progress_thread_ib(ni);
+		}
+#endif
 
 		/* Get message from the message queue. */
 		ppebuf = (ppebuf_t *)dequeue(NULL, pt->queue);
@@ -1332,6 +1348,10 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 
 	ni->mem.internal_queue = &ppe.prog_thread[gbl->prog_thread].internal_queue;
 	ni->mem.apid = gbl->apid;
+
+#if WITH_TRANSPORT_IB
+	list_add_tail(&ni->rdma.ppe_ni_list, &ppe.ni_list);
+#endif
 
 	return PTL_OK;
 }

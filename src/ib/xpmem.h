@@ -13,8 +13,13 @@
 #ifndef _XPMEM_H
 #define _XPMEM_H
 
-#include <sys/ioctl.h>
+#ifdef __KERNEL__
+#include <linux/types.h>
+#include <asm/ioctl.h>
+#else
+#include <stdint.h>
 #include <sys/types.h>
+#endif
 
 /*
  * basic argument type definitions
@@ -103,6 +108,12 @@ struct xpmem_cmd_attach {
 struct xpmem_cmd_detach {
 	uint64_t vaddr;
 };
+
+/* For use with XPMEM + IB, to declare that a region being registered
+ * with ibv_reg_mr() is actally a region that has been mapped by
+ * xpmem_attach(). Both xpmem and the ib core drivers need to be
+ * patched for this to work. */
+#define IBV_ACCESS_XPMEM 0x100
 
 #ifndef __KERNEL__
 extern int xpmem_version(void);

@@ -387,7 +387,7 @@ int _PtlNIInit(gbl_t *gbl,
 		goto err3;
 	}
 
-	if (get_param(PTL_ENABLE_SHMEM)) {
+	if (get_param(PTL_ENABLE_MEM)) {
 		err = PtlNIInit_shmem(ni);
 		if (unlikely(err)) {
 			WARN();
@@ -520,7 +520,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 
 	PtlSetMap_mem(ni, map_size, mapping);
 
-	if (get_param(PTL_ENABLE_SHMEM) &&
+	if (get_param(PTL_ENABLE_MEM) &&
 		(ni->options & PTL_NI_LOGICAL) &&
 		setup_shmem(ni)) {
 		WARN();
@@ -622,12 +622,14 @@ static void ni_cleanup(ni_t *ni)
 		ni->cleanup_state = NI_FINISH_CLEANUP;
 	}
 
+#if !IS_PPE
 	/* Stop the progress thread. */
 	if (ni->has_catcher) {
 		ni->catcher_stop = 1;
 		pthread_join(ni->catcher, NULL);
 		ni->has_catcher = 0;
 	}
+#endif
 
 	destroy_conns(ni);
 
