@@ -408,13 +408,22 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 		return err;
 	}
 
-	buf->op = OP_PtlNIFini;
+	for(;;) {
+		buf->op = OP_PtlNIFini;
 
-	buf->msg.PtlNIFini.ni_handle = ni_handle;
+		buf->msg.PtlNIFini.ni_handle = ni_handle;
 
-	transfer_msg(buf);
+		transfer_msg(buf);
 
-	err = buf->msg.ret;
+		err = buf->msg.ret;
+
+		if (err == PTL_IN_USE)
+			/* The NI is not fully disconnected yet. Retry. This is an
+			 * internal error, not seen by the application. */
+			usleep(100000);
+		else
+			break;
+	}
 
 	ppebuf_release(buf);
 

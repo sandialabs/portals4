@@ -196,6 +196,13 @@ static inline int conn_put(conn_t *conn)
 	return obj_put(&conn->obj);
 }
 
+/* Wait for all to be disconnected. RDMA CM is handling disconnection
+ * timeouts, so we should never block forever because of this test. */
+static inline int is_disconnected_all(ni_t *ni)
+{
+	return atomic_read(&ni->rdma.num_conn) == 0;
+}
+
 /* RDMA CM private data */
 struct cm_priv_request {
 	uint32_t		options;	  /* NI options (physical/logical, ...) */

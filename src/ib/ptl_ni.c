@@ -240,6 +240,12 @@ static int create_tables(ni_t *ni)
 	return PTL_OK;
 }
 
+enum {
+	NI_INIT_CLEANUP,
+	NI_WAIT_DISCONNECT_ALL,
+	NI_FINISH_CLEANUP
+};
+
 int _PtlNIInit(gbl_t *gbl,
 			   ptl_interface_t	iface_id,
 			   unsigned int	options,
@@ -334,6 +340,7 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->last_pt = -1;
 	set_limits(ni, desired);
 	ni->uid = geteuid();
+	ni->cleanup_state = NI_INIT_CLEANUP;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
@@ -594,11 +601,23 @@ static void interrupt_cts(ni_t *ni)
 
 static void ni_cleanup(ni_t *ni)
 {
-	ni->shutting_down = 1;
-	__sync_synchronize();
+	if (ni->cleanup_state == NI_INIT_CLEANUP) {
+		ni->shutting_down = 1;
+		__sync_synchronize();
 
-	initiate_disconnect_all(ni);
+		initiate_disconnect_all(ni);
+
+		ni->cleanup_state = NI_WAIT_DISCONNECT_ALL;
+	}
 	
+	if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
+		if (!is_disconnected_all(ni)) {
+			return;
+		}
+
+		ni->cleanup_state = NI_FINISH_CLEANUP;
+	}
+
 	/* Stop the progress thread. */
 	if (ni->has_catcher) {
 		ni->catcher_stop = 1;
@@ -612,6 +631,8 @@ static void ni_cleanup(ni_t *ni)
 	cleanup_mr_trees(ni);
 
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
+
+	iface_remove_ni(ni);
 
 	cleanup_shmem(ni);
 	cleanup_ib(ni);
@@ -673,11 +694,29 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 		goto err1;
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
-	if (atomic_dec(&ni->ref_cnt) <= 0) {
-		iface_remove_ni(ni);
+
+	assert(atomic_read(&ni->ref_cnt) >= 1);
+
+	while(atomic_read(&ni->ref_cnt) == 1) {
 		ni_cleanup(ni);
+		
+		assert(ni->cleanup_state == NI_FINISH_CLEANUP ||
+			   ni->cleanup_state == NI_WAIT_DISCONNECT_ALL);
+	
+		if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
+			/* Private return code. Not seen by the application. */
+			err = PTL_IN_USE;
+			break;
+		}
+		
+		/* Release the interface. */
+		atomic_dec(&ni->ref_cnt);
 		ni_put(ni);
+
+		err = PTL_OK;
+		break;
 	}
+
 	pthread_mutex_unlock(&gbl->gbl_mutex);
 
 	ni_put(ni);
