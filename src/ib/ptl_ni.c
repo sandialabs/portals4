@@ -92,6 +92,7 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 /* Release the buffers still on the send_list and recv_list. */
 static void release_buffers(ni_t *ni)
 {
+#if WITH_TRANSPORT_IB
 	buf_t *buf;
 
 	/* TODO: cleanup of the XT/XI and their buffers that might still
@@ -104,6 +105,7 @@ static void release_buffers(ni_t *ni)
 		buf = list_entry(entry, buf_t, list);
 		buf_put(buf);
 	}
+#endif
 }
 
 /*
@@ -352,11 +354,13 @@ int _PtlNIInit(gbl_t *gbl,
 	RB_INIT(&ni->mr_app.tree);
 	PTL_FASTLOCK_INIT(&ni->mr_app.tree_lock);
 	ni->umn_fd = -1;
+#if WITH_TRANSPORT_IB
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	atomic_set(&ni->rdma.num_conn, 0);
+	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
+#endif
 	PTL_FASTLOCK_INIT(&ni->md_list_lock);
 	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
-	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
 	pthread_mutex_init(&ni->atomic_mutex, NULL);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
 	if (options & PTL_NI_PHYSICAL) {
@@ -630,7 +634,9 @@ static void ni_cleanup(ni_t *ni)
 	interrupt_cts(ni);
 	cleanup_mr_trees(ni);
 
+#if WITH_TRANSPORT_IB
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
+#endif
 
 	iface_remove_ni(ni);
 
@@ -673,7 +679,9 @@ static void ni_cleanup(ni_t *ni)
 	PTL_FASTLOCK_DESTROY(&ni->ct_list_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_self.tree_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_app.tree_lock);
+#if WITH_TRANSPORT_IB
 	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
+#endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 	PTL_FASTLOCK_DESTROY(&ni->noknem_lock);
 #endif
