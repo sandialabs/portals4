@@ -276,13 +276,6 @@ void initiate_disconnect_all(ni_t *ni)
 	} else {
 		twalk(ni->physical.tree, initiate_disconnect_one_twalk);
 	}
-
-	/* Wait for all to be disconnected. RDMA CM is handling
-	 * disconnection timeouts, so we should never block forever
-	 * here. */
-	while(atomic_read(&ni->rdma.num_conn) != 0) {
-		usleep(10000);
-	}
 }
 
 void disconnect_conn_locked(conn_t *conn)

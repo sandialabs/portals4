@@ -261,5 +261,15 @@ int PtlNIInit(ptl_interface_t	iface_id,
 
 int PtlNIFini(ptl_handle_ni_t ni_handle)
 {
-	return _PtlNIFini(&per_proc_gbl, ni_handle);
+	int ret;
+
+	for(;;) {
+		ret = _PtlNIFini(&per_proc_gbl, ni_handle);
+		if (ret == PTL_IN_USE)
+			usleep(1000000);
+		else
+			break;
+	}
+
+	return ret;
 }

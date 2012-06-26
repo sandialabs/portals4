@@ -103,6 +103,8 @@ typedef struct ni {
 	int has_catcher;
 	int catcher_stop;
 
+	int cleanup_state;
+
 	/* RDMA transport specific */
 	struct {
 		struct ibv_cq		*cq;
