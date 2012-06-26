@@ -239,8 +239,8 @@ param_t param[] = {
 				.max	= 1,
 				.val	= 0,
 			},
-	[PTL_ENABLE_SHMEM]		= {
-				.name	= "PTL_ENABLE_SHMEM",
+	[PTL_ENABLE_MEM]		= {
+				.name	= "PTL_ENABLE_MEM",
 				.min	= 0,
 				.max	= 1,
 				.val	= 1,

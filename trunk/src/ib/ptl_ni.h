@@ -98,10 +98,12 @@ typedef struct ni {
 	ptl_process_t		id;
 	ptl_uid_t		uid;
 
+#if !IS_PPE
 	/* Progress thread. */
 	pthread_t catcher;
 	int has_catcher;
 	int catcher_stop;
+#endif
 
 	int cleanup_state;
 
@@ -124,6 +126,11 @@ typedef struct ni {
 
 		/* Number of established connections. */
 		atomic_t num_conn;
+
+#if IS_PPE
+		/* Link the active NIs together so that the PPE can poll their IB CQ. */
+		struct list_head ppe_ni_list;
+#endif
 	} rdma;
 #endif
 

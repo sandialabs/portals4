@@ -75,7 +75,6 @@ void mr_cleanup(void *arg)
 		mr->ppe_addr = (void *)-1;
 	}
 #endif
-
 }
 
 /**
@@ -142,6 +141,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 	int err;
 	mr_t *mr = NULL;
 	void *end = start + length;
+	void *ib_start;
 
 	err = mr_alloc(ni, &mr);
 	if (err) {
@@ -155,35 +155,11 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 			~((uintptr_t)pagesize - 1));
 	length = end - start;
 
+	ib_start = start;
+
 	/* Register the region with ummunotify to be notified when the
 	 * application frees the buffer, or parts of it. */
 	umn_register(ni, mr, start, length);
-
-#if WITH_TRANSPORT_IB
-	/*
-	 * for now ask for everything
-	 * TODO get more particular later
-	 */
-	mr->ibmr = ibv_reg_mr(ni->iface->pd, start, length,
-						  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
-						  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-	if (!mr->ibmr) {
-		err = errno;
-		WARN();
-		goto err1;
-	}
-#endif
-
-#if WITH_TRANSPORT_SHMEM
-	if (get_param(PTL_ENABLE_SHMEM)) {
-		mr->knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
-		if (!mr->knem_cookie) {
-			err = EINVAL;
-			WARN();
-			goto err1;
-		}
-	}
-#endif
 
 #if IS_PPE
 	if (length == 0) {
@@ -207,6 +183,39 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 		}
 
 		mr->ppe_addr += offset;
+
+		/* Adjust parameter for IB. */
+		ib_start = mr->ppe_addr;
+	}
+#endif
+
+#if WITH_TRANSPORT_IB
+	/*
+	 * for now ask for everything
+	 * TODO get more particular later
+	 */
+	mr->ibmr = ibv_reg_mr(ni->iface->pd, ib_start, length,
+						  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
+						  IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC
+#ifdef IS_PPE
+						  | IBV_ACCESS_XPMEM
+#endif
+						  );
+	if (!mr->ibmr) {
+		err = errno;
+		WARN();
+		goto err1;
+	}
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+	if (get_param(PTL_ENABLE_MEM)) {
+		mr->knem_cookie = knem_register(ni, start, length, PROT_READ | PROT_WRITE);
+		if (!mr->knem_cookie) {
+			err = EINVAL;
+			WARN();
+			goto err1;
+		}
 	}
 #endif
 

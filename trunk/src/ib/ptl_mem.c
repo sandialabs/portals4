@@ -223,29 +223,31 @@ void PtlSetMap_mem(ni_t *ni,
 				ni->mem.index = ni->mem.node_size;
 			}
 
-			/* Connect local ranks through XPMEM or SHMEM. */
-			id.rank = i;
-			conn = get_conn(ni, id);
-			if (!conn) {
-				/* It's hard to recover from here. */
-				WARN();
-				abort();
-				return;
-			}
+			ni->mem.node_size ++;
+
+			if (get_param(PTL_ENABLE_MEM)) {
+				/* Connect local ranks through XPMEM or SHMEM. */
+				id.rank = i;
+				conn = get_conn(ni, id);
+				if (!conn) {
+					/* It's hard to recover from here. */
+					WARN();
+					abort();
+					return;
+				}
 
 #if IS_PPE
-			conn->transport = transport_mem;
+				conn->transport = transport_mem;
 #elif WITH_TRANSPORT_SHMEM
-			conn->transport = transport_shmem;
-			conn->shmem.local_rank = i;
+				conn->transport = transport_shmem;
+				conn->shmem.local_rank = i;
 #else
 #error
 #endif
-			conn->state = CONN_STATE_CONNECTED;
+				conn->state = CONN_STATE_CONNECTED;
 
-			conn_put(conn);			/* from get_conn */
-			
-			ni->mem.node_size ++;
+				conn_put(conn);			/* from get_conn */
+			}
 		}
 
 		ni->mem.hash = crc32((unsigned char *)&mapping[i].phys, ni->mem.hash, sizeof(mapping[i].phys));
