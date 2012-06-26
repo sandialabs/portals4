@@ -105,6 +105,7 @@ typedef struct ni {
 
 	int cleanup_state;
 
+#if WITH_TRANSPORT_IB
 	/* RDMA transport specific */
 	struct {
 		struct ibv_cq		*cq;
@@ -124,6 +125,7 @@ typedef struct ni {
 		/* Number of established connections. */
 		atomic_t num_conn;
 	} rdma;
+#endif
 
 #if WITH_TRANSPORT_SHMEM
 	/* SHMEM transport specific */
