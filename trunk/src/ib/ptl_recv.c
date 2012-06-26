@@ -443,6 +443,22 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
  done:
 	return;
 }
+
+void progress_thread_ib(ni_t *ni)
+{
+	const int num_wc = get_param(PTL_WC_COUNT);
+	buf_t *buf_list[num_wc];
+	int i;
+	int num_buf;
+	struct ibv_wc wc_list[num_wc];
+
+	num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
+
+	for (i = 0; i < num_buf; i++) {
+		if (buf_list[i])
+			process_recv_rdma(ni, buf_list[i]);
+	}
+}
 #endif
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -504,11 +520,6 @@ exit:
 void *progress_thread(void *arg)
 {
 	ni_t *ni = arg;
-#ifdef WITH_TRANSPORT_IB
-	const int num_wc = get_param(PTL_WC_COUNT);
-	struct ibv_wc wc_list[num_wc];
-	buf_t *buf_list[num_wc];
-#endif
 
 	while(!ni->catcher_stop
 #ifdef WITH_TRANSPORT_SHMEM
@@ -516,18 +527,7 @@ void *progress_thread(void *arg)
 #endif
 		  ) {
 
-#if WITH_TRANSPORT_IB
-		/* Infiniband. */
-		int i;
-		int num_buf;
-
-		num_buf = comp_poll(ni, num_wc, wc_list, buf_list);
-
-		for (i = 0; i < num_buf; i++) {
-			if (buf_list[i])
-				process_recv_rdma(ni, buf_list[i]);
-		}
-#endif
+		progress_thread_ib(ni);
 
 #if WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */

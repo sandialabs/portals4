@@ -241,11 +241,13 @@ void cleanup_ib(ni_t *ni);
 int init_iface_ib(iface_t *iface);
 void initiate_disconnect_all(ni_t *ni);
 void disconnect_conn_locked(conn_t *conn);
+void progress_thread_ib(ni_t *ni);
 #else
 static inline int PtlNIInit_IB(iface_t *iface, ni_t *ni) { return PTL_OK; }
 static inline void cleanup_ib(ni_t *ni) {  }
 static inline int init_iface_ib(iface_t *iface) { return PTL_OK; }
 static inline void initiate_disconnect_all(ni_t *ni) { }
+static inline void progress_thread_ib(ni_t *ni) { }
 #endif
 
 #ifdef WITH_TRANSPORT_SHMEM
