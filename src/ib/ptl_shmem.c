@@ -695,27 +695,10 @@ int setup_shmem(ni_t *ni)
 
 		/* Now, wait for my siblings to get here. */
 		for (i = 0; i < ni->mem.node_size; ++i) {
-			conn_t *conn;
-
 			/* oddly enough, this should reduce cache traffic
 			 * for large numbers of siblings */
 			while (pid_table[i].valid == 0)
 				SPINLOCK_BODY();
-
-			/* Reconfigure this connection to go through SHMEM
-			 * instead of the default. */
-			conn = get_conn(ni, pid_table[i].id);
-			if (!conn) {
-				/* It's hard to recover from here. */
-				WARN();
-				goto exit_fail;
-			}
-
-			conn->transport = transport_shmem;
-			conn->state = CONN_STATE_CONNECTED;
-			conn->shmem.local_rank = i;
-
-			conn_put(conn);			/* from get_conn */
 		}
 
 		/* All ranks have mmaped the memory. Get rid of the file. */

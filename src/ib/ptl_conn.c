@@ -34,11 +34,10 @@ int conn_init(void *arg, void *parm)
 	conn->state = CONN_STATE_DISCONNECTED;
 	INIT_LIST_HEAD(&conn->buf_list);
 
-#if IS_PPE
-	//todo: local only. use IB if remote node is not the same
-	conn->transport = transport_mem;
-	conn->state = CONN_STATE_CONNECTED;
-#elif WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
+	/* If IB is available, set it as the default transport. If may be
+	 * overriden later in PtlSetMap to use a local transport such as
+	 * XPMEM or SHMEM. */
 	conn->transport = transport_rdma;
 	conn->rdma.cm_id = NULL;
 
@@ -48,8 +47,6 @@ int conn_init(void *arg, void *parm)
 	atomic_set(&conn->rdma.num_req_not_comp, 0);
 
 	conn->rdma.max_req_avail = 0;
-#elif WITH_TRANSPORT_SHMEM
-	conn->transport = transport_shmem;
 #endif
 
 	return PTL_OK;

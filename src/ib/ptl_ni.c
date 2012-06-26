@@ -512,13 +512,13 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	PtlSetMap_mem(ni, map_size, mapping);
-
 	err = create_tables(ni);
 	if (err) {
 		WARN();
 		goto err2;
 	}
+
+	PtlSetMap_mem(ni, map_size, mapping);
 
 	if (get_param(PTL_ENABLE_SHMEM) &&
 		(ni->options & PTL_NI_LOGICAL) &&
