@@ -641,7 +641,9 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 
 	if (buf->msg.ret != PTL_IN_USE) {
 		remove_ni_from_group(ni);
+#ifdef WITH_TRANSPORT_IB
 		list_del(&ni->rdma.ppe_ni_list);
+#endif
 	}
 
 	ni_put(ni);
