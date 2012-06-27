@@ -740,8 +740,8 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 
 	ret = map_segment_ppe(client, buf->msg.PtlGetMap.mapping, buf->msg.PtlGetMap.map_size, (void **)&mapping);
 	if (!ret) {
-		buf->msg.ret = PtlGetMap(buf->msg.PtlSetMap.ni_handle,
-								 buf->msg.PtlSetMap.map_size,
+		buf->msg.ret = PtlGetMap(buf->msg.PtlGetMap.ni_handle,
+								 buf->msg.PtlGetMap.map_size,
 								 mapping,
 								 &buf->msg.PtlGetMap.actual_map_size);
 
