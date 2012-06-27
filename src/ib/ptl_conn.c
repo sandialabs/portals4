@@ -283,10 +283,8 @@ void disconnect_conn_locked(conn_t *conn)
 		case CONN_STATE_CONNECTED:
 		case CONN_STATE_RESOLVING_ROUTE:
 			conn->state = CONN_STATE_DISCONNECTING;
-#if WITH_TRANSPORT_IB
 			if (conn->rdma.cm_id)
 				rdma_disconnect(conn->rdma.cm_id);
-#endif
 			break;
 
 		case CONN_STATE_RESOLVING_ADDR:
@@ -304,12 +302,14 @@ void disconnect_conn_locked(conn_t *conn)
 		}
 	}
 }
+#endif
 
 /* Cleanup a connection. */
 static void destroy_conn(void *data)
 {
 	conn_t *conn = data;
 
+#if WITH_TRANSPORT_IB
 	if (conn->transport.type == CONN_TYPE_RDMA) {
 		assert(conn->state == CONN_STATE_DISCONNECTED);
 
@@ -318,10 +318,10 @@ static void destroy_conn(void *data)
 			conn->rdma.cm_id = NULL;
 		}
 	}
-}
-#else
-static void destroy_conn(void *data) { return; }
 #endif
+
+	conn_put(conn);
+}
 	
 /**
  * Destroys all connections belonging to an NI
@@ -334,8 +334,9 @@ void destroy_conns(ni_t *ni)
 
 		/* Destroy active connections. */
 		for (i = 0; i < map_size; i++) {
-			conn_t *conn = ni->logical.rank_table[i].connect;
-			destroy_conn(conn);
+			entry_t *entry = &ni->logical.rank_table[i];
+			destroy_conn(entry->connect);
+			entry->connect = NULL;
 		}
 	} else {
 #ifdef HAVE_TDESTROY
