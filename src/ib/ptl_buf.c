@@ -145,11 +145,11 @@ void buf_dump(buf_t *buf)
 	printf("buf: %p\n", buf);
 	printf("buf->size	= %d\n", BUF_DATA_SIZE);
 	printf("buf->length	= %d\n", buf->length);
-	printf("hdr->version	= %d\n", hdr->version);
-	printf("hdr->operation	= %d\n", hdr->operation);
-	printf("hdr->ni_type	= %d\n", hdr->ni_type);
-	printf("hdr->pkt_fmt	= %d\n", hdr->pkt_fmt);
-	printf("hdr->length	= %" PRId64 "\n", le64_to_cpu(hdr->length));
+	printf("hdr->h1.version	= %d\n", hdr->h1.version);
+	printf("hdr->h1.operation	= %d\n", hdr->h1.operation);
+	printf("hdr->ni_type	= %d\n", hdr->h1.ni_type);
+	printf("hdr->pkt_fmt	= %d\n", hdr->h1.pkt_fmt);
+	printf("hdr->h3.length	= %" PRId64 "\n", le64_to_cpu(hdr->h3.length));
 	printf("\n");
 }
 

@@ -283,7 +283,7 @@ static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t off
 
 			/* @todo this is completely bogus */
 			/* Adjust the header offset for iov start. */
-			hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+			hdr->h3.offset = cpu_to_le64(le64_to_cpu(hdr->h3.offset) - iov_offset);
 		} else {
 			void *addr;
 			mr_t *mr;

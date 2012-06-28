@@ -41,7 +41,7 @@ static char *tgt_state_name[] = {
 static void make_comm_event(buf_t *buf)
 {
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	unsigned operation = hdr->operation;
+	unsigned operation = hdr->h1.operation;
 	ptl_event_kind_t type;
 
 	if (buf->ni_fail || !(buf->le->options
@@ -178,7 +178,7 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 	atom_op_t op;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	op = atom_op[hdr->atom_op][hdr->atom_type];
+	op = atom_op[hdr->h2.atom_op][hdr->h2.atom_type];
 	assert(op);
 
 	if (me->num_iov) {
@@ -195,14 +195,14 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 			}
 		}
 
-		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
+		err = iov_atomic_in(op, atom_type_size[hdr->h2.atom_type],
 							data, addr_to_ppe(me->start, mr), me->mr_list,
 							me->num_iov, offset, length);
 
 		if (!me->mr_start)
 			mr_put(mr);
 #else
-		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
+		err = iov_atomic_in(op, atom_type_size[hdr->h2.atom_type],
 							data, (ptl_iovec_t *)me->start, me->mr_list,
 							me->num_iov, offset, length);
 #endif
@@ -309,13 +309,13 @@ static int prepare_send_buf(buf_t *buf)
 		/* initiate response header */
 		ack_hdr = (ack_hdr_t *)send_buf->data;
 
-		ack_hdr->data_in = 0;
-		ack_hdr->data_out = 0;
-		ack_hdr->version = PTL_HDR_VER_1;
-		ack_hdr->handle	= ((req_hdr_t *)buf->data)->handle;
+		ack_hdr->h1.data_in = 0;
+		ack_hdr->h1.data_out = 0;
+		ack_hdr->h1.version = PTL_HDR_VER_1;
+		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
 
 #ifdef IS_PPE
-		ack_hdr->hash = cpu_to_le32(ni->mem.hash);
+		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 #endif
 
 		send_buf->length = sizeof(*ack_hdr);
@@ -387,7 +387,7 @@ static int tgt_start(buf_t *buf)
 	ptl_process_t initiator;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	buf->operation = hdr->operation;
+	buf->operation = hdr->h1.operation;
 	buf->pt = NULL;
 	buf->in_atomic = 0;
 	buf->matching.le = NULL;
@@ -395,10 +395,10 @@ static int tgt_start(buf_t *buf)
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
 
-	switch (hdr->operation) {
+	switch (hdr->h1.operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
-		if (hdr->ack_req != PTL_NO_ACK_REQ)
+		if (hdr->h2.ack_req != PTL_NO_ACK_REQ)
 			buf->event_mask |= XT_ACK_EVENT;
 		break;
 	case OP_GET:
@@ -418,8 +418,8 @@ static int tgt_start(buf_t *buf)
 	buf->in_atomic = 0;
 
 	/* get per conn info */
-	initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-	initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+	initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
+	initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
 
 	buf->conn = get_conn(ni, initiator);
 	if (unlikely(!buf->conn)) {
@@ -501,13 +501,13 @@ int check_match(buf_t *buf, const me_t *me)
 	const ni_t *ni = obj_to_ni(buf);
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ptl_size_t offset;
-	ptl_size_t length = le64_to_cpu(hdr->length);
-	ptl_size_t req_off = le64_to_cpu(hdr->offset);
+	ptl_size_t length = le64_to_cpu(hdr->h3.length);
+	ptl_size_t req_off = le64_to_cpu(hdr->h3.offset);
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		ptl_process_t initiator;
 
-		initiator.rank = le32_to_cpu(hdr->src_rank);
+		initiator.rank = le32_to_cpu(hdr->h2.src_rank);
 
 		if (!(me->id.rank == PTL_RANK_ANY ||
 		     (me->id.rank == initiator.rank))) {
@@ -516,8 +516,8 @@ int check_match(buf_t *buf, const me_t *me)
 	} else {
 		ptl_process_t initiator;
 
-		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+		initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
 
 		if (!(me->id.phys.nid == PTL_NID_ANY ||
 		     (me->id.phys.nid == initiator.phys.nid)))
@@ -700,8 +700,8 @@ static int tgt_get_length(buf_t *buf)
 	ptl_size_t offset;
 	ptl_size_t length;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint64_t rlength = le64_to_cpu(hdr->length);
-	uint64_t roffset = le64_to_cpu(hdr->offset);
+	uint64_t rlength = le64_to_cpu(hdr->h3.length);
+	uint64_t roffset = le64_to_cpu(hdr->h3.offset);
 
 	/* note only MEs can have PTL_ME_MANAGE_LOCAL set */
 	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : roffset;
@@ -745,12 +745,12 @@ static int tgt_get_length(buf_t *buf)
 		break;
 
 	case OP_SWAP:
-		if (hdr->atom_op == PTL_SWAP) {
+		if (hdr->h2.atom_op == PTL_SWAP) {
 			if (length > ni->limits.max_atomic_size)
 				length = ni->limits.max_atomic_size;
 		} else {
-			if (length > atom_type_size[hdr->atom_type])
-				length = atom_type_size[hdr->atom_type];
+			if (length > atom_type_size[hdr->h2.atom_type])
+				length = atom_type_size[hdr->h2.atom_type];
 		}
 		buf->put_resid = length;
 		buf->get_resid = length;
@@ -935,7 +935,7 @@ static int tgt_data_out(buf_t *buf)
 
 		assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
 
-		send_hdr->data_out = 1;
+		send_hdr->h1.data_out = 1;
 
 		if (me->num_iov) {
 #if IS_PPE
@@ -994,7 +994,7 @@ static int tgt_data_out(buf_t *buf)
 			if (buf->operation == OP_FETCH)
 				return STATE_TGT_ATOMIC_DATA_IN;
 			else if (buf->operation == OP_SWAP)
-				return (hdr->atom_op == PTL_SWAP)
+				return (hdr->h2.atom_op == PTL_SWAP)
 					? STATE_TGT_DATA_IN
 					: STATE_TGT_SWAP_DATA_IN;
 			else
@@ -1079,10 +1079,10 @@ static int tgt_rdma(buf_t *buf)
 		if (err)
 			return STATE_TGT_ERROR;
 
-		if (hdr->operation == OP_FETCH)
+		if (hdr->h1.operation == OP_FETCH)
 			return STATE_TGT_ATOMIC_DATA_IN;
-		else if (hdr->operation == OP_SWAP)
-			return (hdr->atom_op == PTL_SWAP) ?
+		else if (hdr->h1.operation == OP_SWAP)
+			return (hdr->h2.atom_op == PTL_SWAP) ?
 				STATE_TGT_DATA_IN :
 				STATE_TGT_SWAP_DATA_IN;
 		else
@@ -1278,7 +1278,7 @@ static int tgt_atomic_data_in(buf_t *buf)
 	}
 
 	// TODO should we return an ni fail??
-	if (hdr->atom_op > PTL_BXOR || hdr->atom_type >= PTL_DATATYPE_LAST) {
+	if (hdr->h2.atom_op > PTL_BXOR || hdr->h2.atom_type >= PTL_DATATYPE_LAST) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -1338,7 +1338,7 @@ static int tgt_swap_data_in(buf_t *buf)
 		dst = me->start + buf->moffset;
 	}
 
-	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
+	err = swap_data_in(hdr->h2.atom_op, hdr->h2.atom_type, dst,
 			   data->immediate.data, &operand);
 	if (err)
 		return STATE_TGT_ERROR;
@@ -1411,7 +1411,7 @@ static int tgt_send_ack(buf_t *buf)
 	int err;
 	buf_t *ack_buf;
 	ack_hdr_t *ack_hdr;
- 	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
+ 	const int ack_req = ((req_hdr_t *)(buf->data))->h2.ack_req;
 
 	if (!buf->send_buf) {
 		/* Reusing received buffer. */
@@ -1421,31 +1421,31 @@ static int tgt_send_ack(buf_t *buf)
 		/* Reset some header values while keeping others. */
 		ack_buf->length = sizeof(*ack_hdr);
 
-		ack_hdr->data_in = 0;
-		ack_hdr->data_out = 0;	/* can get reset to one for short replies */
-		ack_hdr->pkt_fmt = PKT_FMT_REPLY;
+		ack_hdr->h1.data_in = 0;
+		ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
+		ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
 	} else {
 		ack_buf = buf->send_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->data;
 	}
 
-	ack_hdr->ni_fail = buf->ni_fail;
-	ack_hdr->length	= cpu_to_le64(buf->mlength);
-	ack_hdr->offset	= cpu_to_le64(buf->moffset);
-	ack_hdr->matching_list = buf->matching_list;
+	ack_hdr->h1.ni_fail = buf->ni_fail;
+	ack_hdr->h3.length	= cpu_to_le64(buf->mlength);
+	ack_hdr->h3.offset	= cpu_to_le64(buf->moffset);
+	ack_hdr->h1.matching_list = buf->matching_list;
 
 	switch (ack_req) {
 	case PTL_ACK_REQ:
-		ack_hdr->operation = OP_ACK;
+		ack_hdr->h1.operation = OP_ACK;
 		break;
 	case PTL_CT_ACK_REQ:
-		ack_buf->length -= sizeof(ack_hdr->offset); /* don't need offset */
-		ack_hdr->operation = OP_CT_ACK;
+		ack_buf->length -= sizeof(ack_hdr->h3.offset); /* don't need offset */
+		ack_hdr->h1.operation = OP_CT_ACK;
 		break;
 	case PTL_OC_ACK_REQ:
-		ack_buf->length -= (sizeof(ack_hdr->offset) +
-							sizeof(ack_hdr->length)); /* don't need offset nor length */
-		ack_hdr->operation = OP_OC_ACK;
+		ack_buf->length -= (sizeof(ack_hdr->h3.offset) +
+							sizeof(ack_hdr->h3.length)); /* don't need offset nor length */
+		ack_hdr->h1.operation = OP_OC_ACK;
 		break;
 	default:
 		WARN();
@@ -1454,9 +1454,9 @@ static int tgt_send_ack(buf_t *buf)
 
 	/* Initiator is still waiting for an ACK to unblock its buf. */
 	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
-		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->offset) -
-			sizeof(ack_hdr->length); /* don't need offset nor length */
-		ack_hdr->operation = OP_NO_ACK;
+		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->h3.offset) -
+			sizeof(ack_hdr->h3.length); /* don't need offset nor length */
+		ack_hdr->h1.operation = OP_NO_ACK;
 	}
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
@@ -1514,11 +1514,11 @@ static int tgt_send_reply(buf_t *buf)
 	rep_buf = buf->send_buf;
 	rep_hdr = (ack_hdr_t *)rep_buf->data;
 
-	rep_hdr->ni_fail = buf->ni_fail;
-	rep_hdr->length	= cpu_to_le64(buf->mlength);
-	rep_hdr->offset	= cpu_to_le64(buf->moffset);
-	rep_hdr->operation = OP_REPLY;
-	rep_hdr->matching_list = buf->matching_list;
+	rep_hdr->h1.ni_fail = buf->ni_fail;
+	rep_hdr->h3.length	= cpu_to_le64(buf->mlength);
+	rep_hdr->h3.offset	= cpu_to_le64(buf->moffset);
+	rep_hdr->h1.operation = OP_REPLY;
+	rep_hdr->h1.matching_list = buf->matching_list;
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
 		/* The LE must be released before we sent the ack. */
