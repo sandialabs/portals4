@@ -967,7 +967,7 @@ void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 	else {
 		assert(bytes == CT_RBYTES);
 		(void)__sync_add_and_fetch(&ct->info.event.success,
-								   le64_to_cpu(((req_hdr_t *)buf->data)->length));
+								   le64_to_cpu(((req_hdr_t *)buf->data)->h3.length));
 	}
 
 	if (atomic_read(&ct->list_size))

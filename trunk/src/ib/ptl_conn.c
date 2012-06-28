@@ -206,11 +206,11 @@ static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 
 	hdr = (req_hdr_t *)buf->data;
 
-	hdr->operation = OP_RDMA_DISC;
-	hdr->version = PTL_HDR_VER_1;
-	hdr->ni_type = conn->obj.obj_ni->ni_type;
-	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
-	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->h1.operation = OP_RDMA_DISC;
+	hdr->h1.version = PTL_HDR_VER_1;
+	hdr->h1.ni_type = conn->obj.obj_ni->ni_type;
+	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
 
 	set_buf_dest(buf, conn);
 

@@ -415,7 +415,7 @@ static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset
 
 		/* @todo this is completely bogus */
 		/* Adjust the header offset for iov start. */
-		hdr->offset = cpu_to_le64(le64_to_cpu(hdr->offset) - iov_offset);
+		hdr->h3.offset = cpu_to_le64(le64_to_cpu(hdr->h3.offset) - iov_offset);
 	} else {
 		void *addr;
 		mr_t *mr;
@@ -585,12 +585,12 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
 	struct ptl_hdr *hdr = mem_buf->data;
 	struct logical_group *group;
 
-	group = get_ni_group(le32_to_cpu(hdr->hash));
+	group = get_ni_group(le32_to_cpu(hdr->h1.hash));
 
 	if (!group)
 		return NULL;
 
-	return group->ni[le32_to_cpu(hdr->dst_rank)];
+	return group->ni[le32_to_cpu(hdr->h2.dst_rank)];
 }
 
 /* Remove an NI from a PPE group. */

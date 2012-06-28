@@ -104,11 +104,11 @@ static int send_comp(buf_t *buf)
 		/* Fox XI only, restart the initiator state machine. */
 		hdr_t *hdr = (hdr_t *)buf->data;
 
-		if (hdr->operation <= OP_SWAP) {
+		if (hdr->h1.operation <= OP_SWAP) {
 			buf->completed = 1;
 			process_init(buf);
 		}
-		else if (hdr->operation == OP_RDMA_DISC) {
+		else if (hdr->h1.operation == OP_RDMA_DISC) {
 			conn_t * conn = buf->conn;
 
 			pthread_mutex_lock(&conn->mutex);
@@ -220,19 +220,19 @@ static int recv_packet(buf_t *buf)
 	hdr_t *hdr = (hdr_t *)buf->data;
 
 	/* sanity check received buffer */
-	if (hdr->version != PTL_HDR_VER_1) {
+	if (hdr->h1.version != PTL_HDR_VER_1) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
 
 	/* compute next state */
-	if (hdr->operation <= OP_SWAP) {
+	if (hdr->h1.operation <= OP_SWAP) {
 		if (buf->length < sizeof(req_hdr_t))
 			return STATE_RECV_DROP_BUF;
 		else
 			return STATE_RECV_REQ;
 	}
-	else if (hdr->operation >= OP_REPLY) {
+	else if (hdr->h1.operation >= OP_REPLY) {
 		return STATE_RECV_INIT;
 	}
 	else {
@@ -243,8 +243,8 @@ static int recv_packet(buf_t *buf)
 		ptl_process_t initiator;
 
 		/* get per conn info */
-		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+		initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
 		
 		conn = get_conn(buf->obj.obj_ni, initiator);
 
@@ -278,12 +278,12 @@ static int recv_req(buf_t *buf)
 
 	/* compute the data segments in the message
 	 * note req packet data direction is wrt init */
-	if (hdr->data_in)
+	if (hdr->h1.data_in)
 		buf->data_out = (data_t *)(buf->data + sizeof(*hdr));
 	else
 		buf->data_out = NULL;
 
-	if (hdr->data_out)
+	if (hdr->h1.data_out)
 		buf->data_in = (data_t *)(buf->data + sizeof(*hdr) +
 					  data_size(buf->data_out));
 	else
@@ -315,19 +315,19 @@ static int recv_init(buf_t *buf)
 	ack_hdr_t *hdr = (ack_hdr_t *)buf->data;
 
 	/* lookup the buf handle to get original buf */
-	err = to_buf(le32_to_cpu(hdr->handle), &init_buf);
+	err = to_buf(le32_to_cpu(hdr->h1.handle), &init_buf);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
 
 	/* compute data segments in response message */
-	if (hdr->data_in)
+	if (hdr->h1.data_in)
 		init_buf->data_out = (data_t *)(buf->data + sizeof(ack_hdr_t));
 	else
 		init_buf->data_out = NULL;
 
-	if (hdr->data_out)
+	if (hdr->h1.data_out)
 		init_buf->data_in = (data_t *)(buf->data  + sizeof(ack_hdr_t) +
 					  data_size(init_buf->data_out));
 	else

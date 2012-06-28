@@ -143,13 +143,13 @@ static int start(buf_t *buf)
 			buf->event_mask |= XI_GET_CT_BYTES;
 	}
 
-	switch (hdr->operation) {
+	switch (hdr->h1.operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
 		if (buf->put_md->eq)
 			buf->event_mask |= XI_SEND_EVENT;
 
-		if (hdr->ack_req == PTL_ACK_REQ) {
+		if (hdr->h2.ack_req == PTL_ACK_REQ) {
 			buf->event_mask |= XI_RECEIVE_EXPECTED;
 			if (buf->put_md->eq)
 				buf->event_mask |= XI_ACK_EVENT;
@@ -159,8 +159,8 @@ static int start(buf_t *buf)
 		    (buf->put_md->options & PTL_MD_EVENT_CT_SEND))
 			buf->event_mask |= XI_CT_SEND_EVENT;
 
-		if ((hdr->ack_req == PTL_CT_ACK_REQ ||
-		     hdr->ack_req == PTL_OC_ACK_REQ)) {
+		if ((hdr->h2.ack_req == PTL_CT_ACK_REQ ||
+		     hdr->h2.ack_req == PTL_OC_ACK_REQ)) {
 			buf->event_mask |= XI_RECEIVE_EXPECTED;
 			if (buf->put_md->ct && (buf->put_md->options &
 									PTL_MD_EVENT_CT_ACK))
@@ -218,28 +218,28 @@ static int prepare_req(buf_t *buf)
 	int err;
 	ni_t *ni = obj_to_ni(buf);
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ptl_size_t length = le64_to_cpu(hdr->length);
+	ptl_size_t length = le64_to_cpu(hdr->h3.length);
 
-	hdr->version = PTL_HDR_VER_1;
-	hdr->ni_type = ni->ni_type;
-	hdr->pkt_fmt = PKT_FMT_REQ;
-	hdr->dst_nid = cpu_to_le32(buf->target.phys.nid);
-	hdr->dst_pid = cpu_to_le32(buf->target.phys.pid);
-	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
-	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
-	hdr->handle = cpu_to_le32(buf_to_handle(buf));
+	hdr->h1.version = PTL_HDR_VER_1;
+	hdr->h1.ni_type = ni->ni_type;
+	hdr->h1.pkt_fmt = PKT_FMT_REQ;
+	hdr->h2.dst_nid = cpu_to_le32(buf->target.phys.nid);
+	hdr->h2.dst_pid = cpu_to_le32(buf->target.phys.pid);
+	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 
 #ifdef IS_PPE
-	hdr->hash = cpu_to_le32(ni->mem.hash);
+	hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 #endif
 
 	buf->length = sizeof(req_hdr_t);
 
-	switch (hdr->operation) {
+	switch (hdr->h1.operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
-		hdr->data_in = 0;
-		hdr->data_out = 1;
+		hdr->h1.data_in = 0;
+		hdr->h1.data_out = 1;
 
 		buf->data_in = NULL;
 		buf->data_out = (data_t *)(buf->data + buf->length);
@@ -250,8 +250,8 @@ static int prepare_req(buf_t *buf)
 		break;
 
 	case OP_GET:
-		hdr->data_in = 1;
-		hdr->data_out = 0;
+		hdr->h1.data_in = 1;
+		hdr->h1.data_out = 0;
 
 		buf->data_out = NULL;
 		buf->data_in = (data_t *)(buf->data + buf->length);
@@ -263,8 +263,8 @@ static int prepare_req(buf_t *buf)
 
 	case OP_FETCH:
 	case OP_SWAP:
-		hdr->data_in = 1;
-		hdr->data_out = 1;
+		hdr->h1.data_in = 1;
+		hdr->h1.data_out = 1;
 
 		buf->data_in = (data_t *)(buf->data + buf->length);
 		err = buf->conn->transport.init_prepare_transfer(buf->get_md, DATA_DIR_IN,
@@ -292,7 +292,7 @@ static int prepare_req(buf_t *buf)
 	if ((buf->data_out && (buf->data_out->data_fmt != DATA_FMT_IMMEDIATE) &&
 		 (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
 	    buf->num_mr) {
-		hdr->ack_req = PTL_ACK_REQ;
+		hdr->h2.ack_req = PTL_ACK_REQ;
 		buf->event_mask |= XI_RECEIVE_EXPECTED;
 	}
 
@@ -660,23 +660,23 @@ static int wait_recv(buf_t *buf)
 
 	/* get returned fields */
 	hdr = (ack_hdr_t *)buf->recv_buf->data;
-	buf->ni_fail = hdr->ni_fail;
+	buf->ni_fail = hdr->h1.ni_fail;
 
 	/* moffset and mlength are only valid for certain reply/ack. The
 	 * target has not set their values if it wasn't necessary. */
-	if (hdr->operation <= OP_ACK) {
+	if (hdr->h1.operation <= OP_ACK) {
 		/* ACK and REPLY. */
-		buf->moffset = le64_to_cpu(hdr->offset);
-		buf->matching_list = hdr->matching_list;
+		buf->moffset = le64_to_cpu(hdr->h3.offset);
+		buf->matching_list = hdr->h1.matching_list;
 	} else {
 		/* Set a random invalid value. */
 		buf->moffset = 0x77777777;
 		buf->matching_list = 0x88;
 	}
 
-	if (hdr->operation <= OP_CT_ACK) {
+	if (hdr->h1.operation <= OP_CT_ACK) {
 		/* ACK, CT_ACK and REPLY. */
-		buf->mlength = le64_to_cpu(hdr->length);
+		buf->mlength = le64_to_cpu(hdr->h3.length);
 	} else {
 		/* Set a random invalid value. */
 		buf->moffset = 0x66666666;
@@ -801,7 +801,7 @@ static int ack_event(buf_t *buf)
 		buf->put_md = NULL;
 	}
 
-	if (ack_hdr->operation != OP_NO_ACK) {
+	if (ack_hdr->h1.operation != OP_NO_ACK) {
 		if (buf->event_mask & XI_ACK_EVENT)
 			make_ack_event(buf);
 
