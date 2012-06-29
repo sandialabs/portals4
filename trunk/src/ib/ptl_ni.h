@@ -170,6 +170,9 @@ typedef struct ni {
 		int in_group;
 		xpmem_apid_t apid; /* from the struct client the client belongs to. */
 		queue_t *internal_queue;
+
+		/** entry in PPE physical NI cache */
+		RB_ENTRY(ni) entry;
 #endif
 	} mem;
 #endif
