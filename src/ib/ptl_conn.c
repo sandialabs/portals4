@@ -212,6 +212,10 @@ static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
 
+#if IS_PPE
+	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+#endif
+
 	set_buf_dest(buf, conn);
 
 	err = conn->transport.send_message(buf, 0);

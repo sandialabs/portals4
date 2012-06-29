@@ -223,13 +223,14 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.version = PTL_HDR_VER_1;
 	hdr->h1.ni_type = ni->ni_type;
 	hdr->h1.pkt_fmt = PKT_FMT_REQ;
-	hdr->h2.dst_nid = cpu_to_le32(buf->target.phys.nid);
-	hdr->h2.dst_pid = cpu_to_le32(buf->target.phys.pid);
+	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
-	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 
 #ifdef IS_PPE
+	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+	hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+	hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
 	hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 #endif
 

@@ -35,6 +35,24 @@ struct prog_thread {
 	queue_t internal_queue;
 };
 
+/**
+ * Compare two NIs, from their PIDs.
+ *
+ * @param[in] m1 first mr
+ * @param[in] m2 second mr
+ *
+ * @return -1, 0, or +1 as m1 address is <, == or > m2 address
+ */
+static int ni_compare(struct ni *ni1, struct ni *ni2)
+{
+	assert(ni1->options & PTL_NI_PHYSICAL);
+	assert(ni2->options & PTL_NI_PHYSICAL);
+	assert(ni1->id.phys.nid == ni2->id.phys.nid);
+
+	return (ni1->id.phys.pid < ni2->id.phys.pid ? -1 :
+			ni1->id.phys.pid > ni2->id.phys.pid);
+}
+
 static struct {
 	/* Communication pad. */
 	struct ppe_comm_pad *comm_pad;
@@ -59,6 +77,9 @@ static struct {
 	 * lower byte of crc32. */
 	struct list_head logical_group_list[0x100];
 
+	/* Tree for physical NIs, indexed on PID. */
+	RB_HEAD(ni_root, ni) tree;
+
 	/* Watcher for incoming connection from clients. */
 	ev_io client_watcher;
 	int client_fd;
@@ -66,6 +87,11 @@ static struct {
 	/* Linked list of active NIs. */
 	struct list_head ni_list;
 } ppe;
+
+/**
+ * Generate RB tree internal functions for the physical NIs.
+ */
+RB_GENERATE_STATIC(ni_root, ni, mem.entry, ni_compare);
 
 /* Given a memory segment, create a mapping for XPMEM, and return the
  * segid and the offset of the buffer. Return PTL_OK on success. */
@@ -261,6 +287,8 @@ static int init_ppe(void)
 	/* Initialize the application groups. */
 	for (i=0; i<0x100; i++)
 		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
+
+	RB_INIT(&ppe.tree);
 
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -583,14 +611,27 @@ static struct logical_group *get_ni_group(unsigned int hash)
 static ni_t *get_dest_ni(buf_t *mem_buf)
 {
 	struct ptl_hdr *hdr = mem_buf->data;
-	struct logical_group *group;
 
-	group = get_ni_group(le32_to_cpu(hdr->h1.hash));
+	if (hdr->h1.physical) {
+		struct ni find, *res;
 
-	if (!group)
-		return NULL;
+		find.options = PTL_NI_PHYSICAL;
+		find.id.phys.nid = le32_to_cpu(hdr->h1.dst_nid);
+		find.id.phys.pid = le32_to_cpu(hdr->h1.dst_pid);
 
-	return group->ni[le32_to_cpu(hdr->h2.dst_rank)];
+		res = RB_FIND(ni_root, &ppe.tree, &find);
+
+		return res;
+	} else {
+		struct logical_group *group;
+
+		group = get_ni_group(le32_to_cpu(hdr->h1.hash));
+
+		if (!group)
+			return NULL;
+
+		return group->ni[le32_to_cpu(hdr->h1.dst_rank)];
+	}
 }
 
 /* Remove an NI from a PPE group. */
@@ -602,8 +643,7 @@ static void remove_ni_from_group(ni_t *ni)
 	ni->mem.in_group = 0;
 
 	if (ni->options & PTL_NI_PHYSICAL) {
-		// todo
-		abort();
+		RB_REMOVE(ni_root, &ppe.tree, ni);
 	} else {
 		struct logical_group *group;
 
@@ -671,8 +711,9 @@ static void insert_ni_into_group(ptl_handle_ni_t ni_handle)
 	}
 
 	if (ni->options & PTL_NI_PHYSICAL) {
-		// todo
-		abort();
+		void *res;
+		res = RB_INSERT(ni_root, &ppe.tree, ni);
+		assert(res == NULL);	/* should never happen */
 	} else {
 		struct logical_group *group;
 
@@ -1354,6 +1395,24 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 #if WITH_TRANSPORT_IB
 	list_add_tail(&ni->rdma.ppe_ni_list, &ppe.ni_list);
 #endif
+
+	if (ni->options & PTL_NI_PHYSICAL) {
+		/* Physical interface. We are connected to ourselves. */
+		conn_t *conn = get_conn(ni, ni->id);
+
+		if (!conn) {
+			/* It's hard to recover from here. */
+			WARN();
+			abort();
+		}
+		
+		conn->transport = transport_mem;
+		conn->state = CONN_STATE_CONNECTED;
+
+		conn_put(conn);			/* from get_conn */
+
+		insert_ni_into_group(ni_to_handle(ni));
+	}
 
 	return PTL_OK;
 }
