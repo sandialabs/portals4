@@ -45,6 +45,13 @@ static int ni_set_compare(struct logical_ni_set *set1,
 RB_GENERATE_STATIC(phys_ni_root, ni, mem.entry, ni_compare);
 RB_GENERATE_STATIC(logical_ni_set_root, logical_ni_set, entry, ni_set_compare);
 
+static int  clients_compare(struct client *client1, struct client *client2)
+{
+	return client2->pid - client1->pid;
+}
+
+RB_GENERATE_STATIC(clients_root, client, entry, clients_compare);
+
 /* Given a memory segment, create a mapping for XPMEM, and return the
  * segid and the offset of the buffer. Return PTL_OK on success. */
 static int create_mapping_ppe(const void *addr_in, size_t length, struct xpmem_map *mapping)
@@ -119,22 +126,18 @@ static int setup_ppebufs(void)
 
 static struct client *find_client(pid_t pid)
 {
-	struct list_head *l;
+	struct client find;
+	struct client *res;
 
-	list_for_each(l, &ppe.clients) {
-		struct client *client = list_entry(l, struct client, list);
+	find.pid = pid;
+	res = RB_FIND(clients_root, &ppe.clients_tree, &find);
 
-		if (client->pid == pid)
-			return client;
-	}
-
-	return NULL;
+	return res;
 }
 
 static void destroy_client(struct client *client)
 {
-	if (!list_empty(&client->list))
-		list_del(&client->list);
+	RB_REMOVE(clients_root, &ppe.clients_tree, client);
 
 	ev_io_stop(evl.loop, &client->watcher);
 
@@ -180,7 +183,7 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 		if (ppe.current_prog_thread >= ppe.num_prog_threads)
 			ppe.current_prog_thread = 0;
 
-		list_add(&client->list, &ppe.clients);
+		RB_INSERT(clients_root, &ppe.clients_tree, client);
 			
 		msg.rep.cookie = client;
 		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
@@ -206,7 +209,6 @@ static void process_client_connection(EV_P_ ev_io *w, int revents)
 		/* Create the new client and add a watcher. */
 		struct client *client = calloc(1, sizeof(struct client));
 		if (client) {
-			INIT_LIST_HEAD(&client->list);
 			client->s = s;
 
 			/* Add a watcher on this client. */
@@ -215,8 +217,8 @@ static void process_client_connection(EV_P_ ev_io *w, int revents)
 			
 			ev_io_start(evl.loop, &client->watcher);
 
-			/* TODO: is there a need to client on a pending connection
-			 * list? */
+			/* TODO: is there a need to keep a client on a pending
+			 * connection list? */
 		} else {
 			/* An error occurred. Reject the client. */
 			WARN();
@@ -237,7 +239,7 @@ static int init_ppe(void)
 	RB_INIT(&ppe.physni_tree);
 	RB_INIT(&ppe.set_tree);
 
-	INIT_LIST_HEAD(&ppe.clients);
+	RB_INIT(&ppe.clients_tree);
 
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
