@@ -12,31 +12,11 @@
 /* Event loop. */
 struct evl evl;
 
-/* Hash table to keep tables of logical NIs, indexed by the lower
- * byte of crc32. */
-struct logical_group {
-	struct list_head list;
-	ni_t **ni;
-	uint32_t hash;
-	int members;				/* number of rank in the group */
-};
-
-struct prog_thread {
-	pthread_t thread;
-
-	/* When to stop the progress thread. */
-	int stop;
-
-	/* Points to own queue in comm pad. */
-	queue_t *queue;
-	
-	/* Internal queue. Used for communication regarding transfer
-	 * between clients. */
-	queue_t internal_queue;
-};
+/* Keep global data. */
+static struct ppe ppe;
 
 /**
- * Compare two NIs, from their PIDs.
+ * Compare two physical NIs belonging to the same node, from their PIDs.
  *
  * @param[in] m1 first mr
  * @param[in] m2 second mr
@@ -53,45 +33,17 @@ static int ni_compare(struct ni *ni1, struct ni *ni2)
 			ni1->id.phys.pid > ni2->id.phys.pid);
 }
 
-static struct {
-	/* Communication pad. */
-	struct ppe_comm_pad *comm_pad;
-	struct xpmem_map comm_pad_mapping;
-
-	/* The progress threads. */
-	int num_prog_threads;		/* in prog_thread[] */
-	int current_prog_thread;
-	struct prog_thread prog_thread[MAX_PROGRESS_THREADS];
-
-	/* The event loop thread. */
-	pthread_t		event_thread;
-	int			event_thread_run;
-
-	/* Pool/list of ppebufs, used by client to talk to PPE. */
-	struct {
-		void *slab;
-		int num;				/* total number of ppebufs */
-	} ppebuf;
-
-	/* Hash table to keep tables of logical tables, indexed by the
-	 * lower byte of crc32. */
-	struct list_head logical_group_list[0x100];
-
-	/* Tree for physical NIs, indexed on PID. */
-	RB_HEAD(ni_root, ni) tree;
-
-	/* Watcher for incoming connection from clients. */
-	ev_io client_watcher;
-	int client_fd;
-
-	/* Linked list of active NIs. */
-	struct list_head ni_list;
-} ppe;
+static int ni_set_compare(struct logical_ni_set *set1,
+						  struct logical_ni_set *set2)
+{
+	return(set2->hash - set1->hash);
+}
 
 /**
- * Generate RB tree internal functions for the physical NIs.
+ * Generate RB tree internal functions for the physical NIs, and sets of logical NIs.
  */
-RB_GENERATE_STATIC(ni_root, ni, mem.entry, ni_compare);
+RB_GENERATE_STATIC(phys_ni_root, ni, mem.entry, ni_compare);
+RB_GENERATE_STATIC(logical_ni_set_root, logical_ni_set, entry, ni_set_compare);
 
 /* Given a memory segment, create a mapping for XPMEM, and return the
  * segid and the offset of the buffer. Return PTL_OK on success. */
@@ -165,14 +117,11 @@ static int setup_ppebufs(void)
 	return 0;
 }
 
-/* List of existing clients. May replace with a tree someday. */
-PTL_LIST_HEAD(clients);
-
 static struct client *find_client(pid_t pid)
 {
 	struct list_head *l;
 
-	list_for_each(l, &clients) {
+	list_for_each(l, &ppe.clients) {
 		struct client *client = list_entry(l, struct client, list);
 
 		if (client->pid == pid)
@@ -225,13 +174,13 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 		msg.rep.ret = PTL_FAIL;
 	} else {
 		/* Designate a progress thread for this client. They are alloted
-		 * on a round-round fashion. */
+		 * on a round-robin fashion. */
 		client->gbl.prog_thread = ppe.current_prog_thread;
 		ppe.current_prog_thread++;
 		if (ppe.current_prog_thread >= ppe.num_prog_threads)
 			ppe.current_prog_thread = 0;
 
-		list_add(&client->list, &clients);
+		list_add(&client->list, &ppe.clients);
 			
 		msg.rep.cookie = client;
 		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
@@ -284,11 +233,11 @@ static int init_ppe(void)
 	int err;
 	int i;
 
-	/* Initialize the application groups. */
-	for (i=0; i<0x100; i++)
-		INIT_LIST_HEAD(&(ppe.logical_group_list[i]));
+	/* Initialize the NI trees. */
+	RB_INIT(&ppe.physni_tree);
+	RB_INIT(&ppe.set_tree);
 
-	RB_INIT(&ppe.tree);
+	INIT_LIST_HEAD(&ppe.clients);
 
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -592,22 +541,17 @@ static void do_OP_PtlNIStatus(ppebuf_t *buf)
 							   &buf->msg.PtlNIStatus.status);
 }
 
-static struct logical_group *get_ni_group(unsigned int hash)
+static struct logical_ni_set *get_ni_set(unsigned int hash)
 {
-	unsigned int key = hash & 0xff;
-	struct list_head *l;
+	struct logical_ni_set find, *res;
 
-	list_for_each(l, &ppe.logical_group_list[key]) {
-		struct logical_group *group = list_entry(l, struct logical_group, list);
+	find.hash = hash;
+	res = RB_FIND(logical_ni_set_root, &ppe.set_tree, &find);
 
-		if (group->hash == hash)
-			return group;
-	}
-
-	return NULL;
+	return res;
 }
 
-/* Find the NI group for an incoming buffer. */
+/* Find the NI set for an incoming buffer. */
 static ni_t *get_dest_ni(buf_t *mem_buf)
 {
 	struct ptl_hdr *hdr = mem_buf->data;
@@ -619,47 +563,47 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
 		find.id.phys.nid = le32_to_cpu(hdr->h1.dst_nid);
 		find.id.phys.pid = le32_to_cpu(hdr->h1.dst_pid);
 
-		res = RB_FIND(ni_root, &ppe.tree, &find);
+		res = RB_FIND(phys_ni_root, &ppe.physni_tree, &find);
 
 		return res;
 	} else {
-		struct logical_group *group;
+		struct logical_ni_set *set;
 
-		group = get_ni_group(le32_to_cpu(hdr->h1.hash));
+		set = get_ni_set(le32_to_cpu(hdr->h1.hash));
 
-		if (!group)
+		if (!set)
 			return NULL;
 
-		return group->ni[le32_to_cpu(hdr->h1.dst_rank)];
+		return set->ni[le32_to_cpu(hdr->h1.dst_rank)];
 	}
 }
 
-/* Remove an NI from a PPE group. */
-static void remove_ni_from_group(ni_t *ni)
+/* Remove an NI from a PPE set. */
+static void remove_ni(ni_t *ni)
 {
-	if (!ni->mem.in_group)
+	if (!ni->mem.in_set)
 		return;
 
-	ni->mem.in_group = 0;
+	ni->mem.in_set = 0;
 
 	if (ni->options & PTL_NI_PHYSICAL) {
-		RB_REMOVE(ni_root, &ppe.tree, ni);
+		RB_REMOVE(phys_ni_root, &ppe.physni_tree, ni);
 	} else {
-		struct logical_group *group;
+		struct logical_ni_set *set;
 
-		group = get_ni_group(ni->mem.hash);
+		set = get_ni_set(ni->mem.hash);
 
-		assert(group);
-		assert(group->ni[ni->id.rank] == ni);
+		assert(set);
+		assert(set->ni[ni->id.rank] == ni);
 
-		group->ni[ni->id.rank] = NULL;
-		group->members --;
-		if (group->members == 0) {
-			/* Remove group. */
-			list_del(&group->list);
+		set->ni[ni->id.rank] = NULL;
+		set->members --;
+		if (set->members == 0) {
+			/* Remove set. */
+			RB_REMOVE(logical_ni_set_root, &ppe.set_tree, set);
 
-			free(group->ni);
-			free(group);
+			free(set->ni);
+			free(set);
 		}
 	}
 }
@@ -680,7 +624,7 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 							  buf->msg.PtlNIFini.ni_handle);
 
 	if (buf->msg.ret != PTL_IN_USE) {
-		remove_ni_from_group(ni);
+		remove_ni(ni);
 #ifdef WITH_TRANSPORT_IB
 		list_del(&ni->rdma.ppe_ni_list);
 #endif
@@ -698,7 +642,7 @@ static void do_OP_PtlNIHandle(ppebuf_t *buf)
 							   &buf->msg.PtlNIHandle.ni_handle);
 }
 
-static void insert_ni_into_group(ptl_handle_ni_t ni_handle)
+static void insert_ni_into_set(ptl_handle_ni_t ni_handle)
 {
 	ni_t *ni;
 	int err;
@@ -712,24 +656,24 @@ static void insert_ni_into_group(ptl_handle_ni_t ni_handle)
 
 	if (ni->options & PTL_NI_PHYSICAL) {
 		void *res;
-		res = RB_INSERT(ni_root, &ppe.tree, ni);
+		res = RB_INSERT(phys_ni_root, &ppe.physni_tree, ni);
 		assert(res == NULL);	/* should never happen */
 	} else {
-		struct logical_group *group;
+		struct logical_ni_set *set;
 
-		group = get_ni_group(ni->mem.hash);
+		set = get_ni_set(ni->mem.hash);
 
-		if (group == NULL) {
-			//todo: should group be a pool?
-			group = calloc(1, sizeof(*group));
+		if (set == NULL) {
+			//todo: should set be a pool?
+			set = calloc(1, sizeof(*set));
 
-			group->hash = ni->mem.hash;
-			group->ni = calloc(sizeof (ni_t *), ni->logical.map_size);
+			set->hash = ni->mem.hash;
+			set->ni = calloc(sizeof (ni_t *), ni->logical.map_size);
 
-			list_add_tail(&group->list, &ppe.logical_group_list[ni->mem.hash & 0xff]);
+			RB_INSERT(logical_ni_set_root, &ppe.set_tree, set);
 		} else {
-			/* The group already exists. */
-			if (group->ni[ni->id.rank]) {
+			/* The set already exists. */
+			if (set->ni[ni->id.rank]) {
 				/* Error. There is something there already. Cannot
 				 * happen, unless there is a hash collision. Hard to
 				 * recover from. */
@@ -737,10 +681,10 @@ static void insert_ni_into_group(ptl_handle_ni_t ni_handle)
 			}
 		}
 				
-		group->ni[ni->id.rank] = ni;
-		group->members ++;
+		set->ni[ni->id.rank] = ni;
+		set->members ++;
 
-		ni->mem.in_group = 1;
+		ni->mem.in_set = 1;
 	}		
 	
 	ni_put(ni);
@@ -763,7 +707,7 @@ static void do_OP_PtlSetMap(ppebuf_t *buf)
 		buf->msg.ret = ret;
 
 		if (ret == PTL_OK) {
-			insert_ni_into_group(buf->msg.PtlSetMap.ni_handle);
+			insert_ni_into_set(buf->msg.PtlSetMap.ni_handle);
 		}
 
 		unmap_segment_ppe(mapping);
@@ -1411,7 +1355,7 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 
 		conn_put(conn);			/* from get_conn */
 
-		insert_ni_into_group(ni_to_handle(ni));
+		insert_ni_into_set(ni_to_handle(ni));
 	}
 
 	return PTL_OK;

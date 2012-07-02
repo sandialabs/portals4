@@ -167,7 +167,7 @@ typedef struct ni {
 		uint32_t hash;
 
 #ifdef IS_PPE
-		int in_group;
+		int in_set;
 		xpmem_apid_t apid; /* from the struct client the client belongs to. */
 		queue_t *internal_queue;
 
