@@ -38,7 +38,7 @@ extern void gbl_release(ref_t *ref);
 /* Represents a client connected to the PPE. */
 struct client
 {
-	struct list_head list;
+	RB_ENTRY(client) entry;
 
 	/* Unix socket to the PPE. */
 	int s;
@@ -112,7 +112,7 @@ struct ppe {
 	struct list_head ni_list;
 
 	/* List of existing clients. May replace with a tree someday. */
-	struct list_head clients;
+	RB_HEAD(clients_root, client) clients_tree;
 };
 
 #endif /* PTL_GBL_H */
