@@ -47,7 +47,8 @@ TESTS = test_init \
 	test_LE_flowctl_noeq \
 	test_ME_flowctl_noeq \
 	test_LE_flowctl_norecv \
-	test_ME_flowctl_norecv
+	test_ME_flowctl_norecv \
+	test_ct_ack
 
 BENCHMARKS =
 check_PROGRAMS =
@@ -161,3 +162,5 @@ test_LE_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
 test_ME_flowctl_norecv_SOURCES = test_flowctl_norecv.c
 test_ME_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_ct_ack_SOURCES = test_ct_ack.c
