@@ -919,7 +919,7 @@ static int tgt_data_out(buf_t *buf)
 {
 	int err;
 	data_t *data = buf->data_out;
-	hdr_t *send_hdr = (hdr_t *)buf->send_buf->data;
+	struct ack_hdr *send_hdr = (ack_hdr_t *)buf->send_buf->data;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
 	if (!data)

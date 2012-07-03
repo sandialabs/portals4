@@ -304,6 +304,13 @@ struct buf {
 	struct buf *mem_buf;
 #endif
 
+#if IS_PPE
+	/* When a memory transfer happens inside the PPE, keep the
+	 * destination NI, so we can find which progress threads will
+	 * process the buffer. */
+	ni_t *dest_ni;
+#endif
+
 	/** number of mr's used in message */
 	int			num_mr;
 
