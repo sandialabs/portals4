@@ -104,12 +104,6 @@ struct hdr_region {
  * Due to headers being reused to send a reply/ack, hdr_common1 must
  * be first, followed by hdr_region.
  */
-typedef struct ptl_hdr {
-	struct hdr_common1 h1;
-	struct hdr_common2 h2;
-	struct hdr_region h3;
-} hdr_t;
-
 typedef struct req_hdr {
 	struct hdr_common1 h1;
 	struct hdr_common2 h2;

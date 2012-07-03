@@ -291,8 +291,49 @@ static int init_ppe(void)
 	return PTL_FAIL;
 }
 
+static struct logical_ni_set *get_ni_set(unsigned int hash)
+{
+	struct logical_ni_set find, *res;
+
+	find.hash = hash;
+	res = RB_FIND(logical_ni_set_root, &ppe.set_tree, &find);
+
+	return res;
+}
+
+/* Find the NI set for an incoming buffer. */
+static ni_t *get_dest_ni(buf_t *mem_buf)
+{
+	struct hdr_common1 *hdr = mem_buf->data;
+
+	if (hdr->physical) {
+		struct ni find, *res;
+
+		find.options = PTL_NI_PHYSICAL;
+		find.id.phys.nid = le32_to_cpu(hdr->dst_nid);
+		find.id.phys.pid = le32_to_cpu(hdr->dst_pid);
+
+		res = RB_FIND(phys_ni_root, &ppe.physni_tree, &find);
+
+		return res;
+	} else {
+		struct logical_ni_set *set;
+		ni_t *ni;
+
+		set = get_ni_set(le32_to_cpu(hdr->hash));
+
+		if (!set)
+			return NULL;
+
+		ni = set->ni[le32_to_cpu(hdr->dst_rank)];
+		return ni;
+	}
+}
+
 static int send_message_mem(buf_t *buf, int from_init)
 {
+	ni_t *ni;
+
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
 	assert(buf->obj.obj_pool->type == POOL_BUF);
@@ -301,8 +342,10 @@ static int send_message_mem(buf_t *buf, int from_init)
 	buf->type = BUF_MEM_SEND;
 	buf->obj.next = NULL;
 
+	ni = buf->dest_ni = get_dest_ni(buf);
+
 	/* Enqueue on the internal queue attached to that NI. */
-	enqueue(NULL, obj_to_ni(buf)->mem.internal_queue, (obj_t *)buf);
+	enqueue(NULL, ni->mem.internal_queue, (obj_t *)buf);
 
 	return PTL_OK;
 }
@@ -541,43 +584,6 @@ static void do_OP_PtlNIStatus(ppebuf_t *buf)
 	buf->msg.ret = PtlNIStatus(buf->msg.PtlNIStatus.ni_handle,
 							   buf->msg.PtlNIStatus.status_register,
 							   &buf->msg.PtlNIStatus.status);
-}
-
-static struct logical_ni_set *get_ni_set(unsigned int hash)
-{
-	struct logical_ni_set find, *res;
-
-	find.hash = hash;
-	res = RB_FIND(logical_ni_set_root, &ppe.set_tree, &find);
-
-	return res;
-}
-
-/* Find the NI set for an incoming buffer. */
-static ni_t *get_dest_ni(buf_t *mem_buf)
-{
-	struct ptl_hdr *hdr = mem_buf->data;
-
-	if (hdr->h1.physical) {
-		struct ni find, *res;
-
-		find.options = PTL_NI_PHYSICAL;
-		find.id.phys.nid = le32_to_cpu(hdr->h1.dst_nid);
-		find.id.phys.pid = le32_to_cpu(hdr->h1.dst_pid);
-
-		res = RB_FIND(phys_ni_root, &ppe.physni_tree, &find);
-
-		return res;
-	} else {
-		struct logical_ni_set *set;
-
-		set = get_ni_set(le32_to_cpu(hdr->h1.hash));
-
-		if (!set)
-			return NULL;
-
-		return set->ni[le32_to_cpu(hdr->h1.dst_rank)];
-	}
 }
 
 /* Remove an NI from a PPE set. */
@@ -1229,18 +1235,13 @@ static void *ppe_progress(void *arg)
 				 * change its type back to BUF_MEM_SEND. */
 				mem_buf->type = BUF_MEM_RELEASE;
 
-				/* Find the destination NI. */
-				ni = get_dest_ni(mem_buf);				
-				if (!ni) {
-					/* Old packet ? Lost packet ? Drop it. todo. */
-					abort();
-				}
-
+				/* The destination NI has been computed by send_message_mem. */
+				ni = mem_buf->dest_ni;
 				err = buf_alloc(ni, &buf);
 				if (err) {
 					WARN();
 				} else {
-					buf->data = (hdr_t *)mem_buf->internal_data;
+					buf->data = mem_buf->internal_data;
 					buf->length = mem_buf->length;
 					buf->mem_buf = mem_buf;
 					INIT_LIST_HEAD(&buf->list);

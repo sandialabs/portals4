@@ -102,13 +102,13 @@ static int send_comp(buf_t *buf)
 	if (buf->event_mask & XX_SIGNALED ||
 		buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* Fox XI only, restart the initiator state machine. */
-		hdr_t *hdr = (hdr_t *)buf->data;
+		struct hdr_common1 *hdr = (struct hdr_common1 *)buf->data;
 
-		if (hdr->h1.operation <= OP_SWAP) {
+		if (hdr->operation <= OP_SWAP) {
 			buf->completed = 1;
 			process_init(buf);
 		}
-		else if (hdr->h1.operation == OP_RDMA_DISC) {
+		else if (hdr->operation == OP_RDMA_DISC) {
 			conn_t * conn = buf->conn;
 
 			pthread_mutex_lock(&conn->mutex);
@@ -217,22 +217,22 @@ static int recv_packet_rdma(buf_t *buf)
  */
 static int recv_packet(buf_t *buf)
 {
-	hdr_t *hdr = (hdr_t *)buf->data;
+	struct hdr_common1 *hdr = (struct hdr_common1 *)buf->data;
 
 	/* sanity check received buffer */
-	if (hdr->h1.version != PTL_HDR_VER_1) {
+	if (hdr->version != PTL_HDR_VER_1) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
 	}
 
 	/* compute next state */
-	if (hdr->h1.operation <= OP_SWAP) {
+	if (hdr->operation <= OP_SWAP) {
 		if (buf->length < sizeof(req_hdr_t))
 			return STATE_RECV_DROP_BUF;
 		else
 			return STATE_RECV_REQ;
 	}
-	else if (hdr->h1.operation >= OP_REPLY) {
+	else if (hdr->operation >= OP_REPLY) {
 		return STATE_RECV_INIT;
 	}
 	else {

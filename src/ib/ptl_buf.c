@@ -140,7 +140,7 @@ void buf_fini(void *arg)
  */
 void buf_dump(buf_t *buf)
 {
-	hdr_t *hdr = (hdr_t *)buf->data;
+	struct req_hdr *hdr = (struct req_hdr *)buf->data;
 
 	printf("buf: %p\n", buf);
 	printf("buf->size	= %d\n", BUF_DATA_SIZE);
@@ -149,7 +149,6 @@ void buf_dump(buf_t *buf)
 	printf("hdr->h1.operation	= %d\n", hdr->h1.operation);
 	printf("hdr->ni_type	= %d\n", hdr->h1.ni_type);
 	printf("hdr->pkt_fmt	= %d\n", hdr->h1.pkt_fmt);
-	printf("hdr->h3.length	= %" PRId64 "\n", le64_to_cpu(hdr->h3.length));
 	printf("\n");
 }
 
