@@ -218,7 +218,7 @@ static int prepare_req(buf_t *buf)
 	int err;
 	ni_t *ni = obj_to_ni(buf);
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ptl_size_t length = buf->data_length;
+	ptl_size_t length = buf->rlength;
 
 	hdr->h1.version = PTL_HDR_VER_1;
 	hdr->h1.ni_type = ni->ni_type;
@@ -226,7 +226,8 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
-	hdr->length = cpu_to_le64(length);
+	hdr->rlength = cpu_to_le64(length);
+	hdr->roffset = cpu_to_le64(buf->roffset);
 
 #ifdef IS_PPE
 	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);

@@ -98,8 +98,8 @@ typedef struct req_hdr {
 		__le32			src_rank;		
 	};								
 	__le32			src_pid;		
-	__le64			length;			
-	__le64			offset;			
+	__le64			rlength;			
+	__le64			roffset;			
 	__le64			match_bits;		
 	__le64			hdr_data;		
 	__le64			operand;		
