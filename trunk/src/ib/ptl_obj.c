@@ -268,9 +268,7 @@ int pool_fini(pool_t *pool)
 	 * each free object
 	 */
 	if (pool->fini) {
-		while(pool->free_list.head) {
-			obj = pool->free_list.head;
-			pool->free_list.head = obj->next;
+		while((obj = ll_dequeue_obj(&pool->free_list))) {
 			pool->fini(obj);
 		}
 	}
