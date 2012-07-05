@@ -564,10 +564,10 @@ void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
 	ev->uid			= le32_to_cpu(hdr->uid);
 	ev->rlength		= le64_to_cpu(hdr->length);
 	ev->remote_offset	= le64_to_cpu(hdr->offset);
-	ev->atomic_operation	= hdr->h2.atom_op;
-	ev->atomic_type		= hdr->h2.atom_type;
-	ev->initiator.phys.nid	= le32_to_cpu(hdr->h2.src_nid);
-	ev->initiator.phys.pid	= le32_to_cpu(hdr->h2.src_pid);
+	ev->atomic_operation	= hdr->atom_op;
+	ev->atomic_type		= hdr->atom_type;
+	ev->initiator.phys.nid	= le32_to_cpu(hdr->src_nid);
+	ev->initiator.phys.pid	= le32_to_cpu(hdr->src_pid);
 }
 
 /**

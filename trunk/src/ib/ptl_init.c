@@ -149,7 +149,7 @@ static int start(buf_t *buf)
 		if (buf->put_md->eq)
 			buf->event_mask |= XI_SEND_EVENT;
 
-		if (hdr->h2.ack_req == PTL_ACK_REQ) {
+		if (hdr->ack_req == PTL_ACK_REQ) {
 			buf->event_mask |= XI_RECEIVE_EXPECTED;
 			if (buf->put_md->eq)
 				buf->event_mask |= XI_ACK_EVENT;
@@ -159,8 +159,8 @@ static int start(buf_t *buf)
 		    (buf->put_md->options & PTL_MD_EVENT_CT_SEND))
 			buf->event_mask |= XI_CT_SEND_EVENT;
 
-		if ((hdr->h2.ack_req == PTL_CT_ACK_REQ ||
-		     hdr->h2.ack_req == PTL_OC_ACK_REQ)) {
+		if ((hdr->ack_req == PTL_CT_ACK_REQ ||
+		     hdr->ack_req == PTL_OC_ACK_REQ)) {
 			buf->event_mask |= XI_RECEIVE_EXPECTED;
 			if (buf->put_md->ct && (buf->put_md->options &
 									PTL_MD_EVENT_CT_ACK))
@@ -224,8 +224,8 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.ni_type = ni->ni_type;
 	hdr->h1.pkt_fmt = PKT_FMT_REQ;
 	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
-	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
-	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 	hdr->length = cpu_to_le64(length);
 
 #ifdef IS_PPE
@@ -294,7 +294,7 @@ static int prepare_req(buf_t *buf)
 	if ((buf->data_out && (buf->data_out->data_fmt != DATA_FMT_IMMEDIATE) &&
 		 (buf->event_mask & (XI_SEND_EVENT | XI_CT_SEND_EVENT))) ||
 	    buf->num_mr) {
-		hdr->h2.ack_req = PTL_ACK_REQ;
+		hdr->ack_req = PTL_ACK_REQ;
 		buf->event_mask |= XI_RECEIVE_EXPECTED;
 	}
 

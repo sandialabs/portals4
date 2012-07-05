@@ -209,8 +209,8 @@ static int send_disconnect_msg(ni_t *ni, conn_t *conn)
 	hdr->h1.operation = OP_RDMA_DISC;
 	hdr->h1.version = PTL_HDR_VER_1;
 	hdr->h1.ni_type = conn->obj.obj_ni->ni_type;
-	hdr->h2.src_nid = cpu_to_le32(ni->id.phys.nid);
-	hdr->h2.src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 
 #if IS_PPE
 	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
