@@ -93,11 +93,6 @@ struct hdr_common2 {
 	__le32			src_pid;		
 };
 
-struct hdr_region {
-	__le64			length;			
-	__le64			offset;			
-};
-
 /**
  * @brief Header for Portals request messages.
  *
@@ -107,7 +102,8 @@ struct hdr_region {
 typedef struct req_hdr {
 	struct hdr_common1 h1;
 	struct hdr_common2 h2;
-	struct hdr_region h3;
+	__le64			length;			
+	__le64			offset;			
 	__le64			match_bits;		
 	__le64			hdr_data;		
 	__le64			operand;		
@@ -118,7 +114,8 @@ typedef struct req_hdr {
 /* Header for an ack or a reply. */
 typedef struct ack_hdr {
 	struct hdr_common1 h1;
-	struct hdr_region h3;
+	__le64			mlength;			
+	__le64			moffset;			
 } ack_hdr_t;
 
 #endif /* PTL_HDR_H */

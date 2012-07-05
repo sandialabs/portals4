@@ -501,8 +501,8 @@ int check_match(buf_t *buf, const me_t *me)
 	const ni_t *ni = obj_to_ni(buf);
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ptl_size_t offset;
-	ptl_size_t length = le64_to_cpu(hdr->h3.length);
-	ptl_size_t req_off = le64_to_cpu(hdr->h3.offset);
+	ptl_size_t length = le64_to_cpu(hdr->length);
+	ptl_size_t req_off = le64_to_cpu(hdr->offset);
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		ptl_process_t initiator;
@@ -700,8 +700,8 @@ static int tgt_get_length(buf_t *buf)
 	ptl_size_t offset;
 	ptl_size_t length;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint64_t rlength = le64_to_cpu(hdr->h3.length);
-	uint64_t roffset = le64_to_cpu(hdr->h3.offset);
+	uint64_t rlength = le64_to_cpu(hdr->length);
+	uint64_t roffset = le64_to_cpu(hdr->offset);
 
 	/* note only MEs can have PTL_ME_MANAGE_LOCAL set */
 	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : roffset;
@@ -1430,8 +1430,8 @@ static int tgt_send_ack(buf_t *buf)
 	}
 
 	ack_hdr->h1.ni_fail = buf->ni_fail;
-	ack_hdr->h3.length	= cpu_to_le64(buf->mlength);
-	ack_hdr->h3.offset	= cpu_to_le64(buf->moffset);
+	ack_hdr->mlength	= cpu_to_le64(buf->mlength);
+	ack_hdr->moffset	= cpu_to_le64(buf->moffset);
 	ack_hdr->h1.matching_list = buf->matching_list;
 
 	switch (ack_req) {
@@ -1439,12 +1439,12 @@ static int tgt_send_ack(buf_t *buf)
 		ack_hdr->h1.operation = OP_ACK;
 		break;
 	case PTL_CT_ACK_REQ:
-		ack_buf->length -= sizeof(ack_hdr->h3.offset); /* don't need offset */
+		ack_buf->length -= sizeof(ack_hdr->moffset); /* don't need offset */
 		ack_hdr->h1.operation = OP_CT_ACK;
 		break;
 	case PTL_OC_ACK_REQ:
-		ack_buf->length -= (sizeof(ack_hdr->h3.offset) +
-							sizeof(ack_hdr->h3.length)); /* don't need offset nor length */
+		ack_buf->length -= (sizeof(ack_hdr->moffset) +
+							sizeof(ack_hdr->mlength)); /* don't need offset nor length */
 		ack_hdr->h1.operation = OP_OC_ACK;
 		break;
 	default:
@@ -1454,8 +1454,8 @@ static int tgt_send_ack(buf_t *buf)
 
 	/* Initiator is still waiting for an ACK to unblock its buf. */
 	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
-		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->h3.offset) -
-			sizeof(ack_hdr->h3.length); /* don't need offset nor length */
+		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->moffset) -
+			sizeof(ack_hdr->mlength); /* don't need offset nor length */
 		ack_hdr->h1.operation = OP_NO_ACK;
 	}
 
@@ -1515,8 +1515,8 @@ static int tgt_send_reply(buf_t *buf)
 	rep_hdr = (ack_hdr_t *)rep_buf->data;
 
 	rep_hdr->h1.ni_fail = buf->ni_fail;
-	rep_hdr->h3.length	= cpu_to_le64(buf->mlength);
-	rep_hdr->h3.offset	= cpu_to_le64(buf->moffset);
+	rep_hdr->mlength	= cpu_to_le64(buf->mlength);
+	rep_hdr->moffset	= cpu_to_le64(buf->moffset);
 	rep_hdr->h1.operation = OP_REPLY;
 	rep_hdr->h1.matching_list = buf->matching_list;
 
