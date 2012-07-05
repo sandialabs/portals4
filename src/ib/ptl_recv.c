@@ -102,7 +102,7 @@ static int send_comp(buf_t *buf)
 	if (buf->event_mask & XX_SIGNALED ||
 		buf->ni_fail == PTL_NI_UNDELIVERABLE) {
 		/* Fox XI only, restart the initiator state machine. */
-		struct hdr_common1 *hdr = (struct hdr_common1 *)buf->data;
+		struct hdr_common *hdr = (struct hdr_common *)buf->data;
 
 		if (hdr->operation <= OP_SWAP) {
 			buf->completed = 1;
@@ -217,7 +217,7 @@ static int recv_packet_rdma(buf_t *buf)
  */
 static int recv_packet(buf_t *buf)
 {
-	struct hdr_common1 *hdr = (struct hdr_common1 *)buf->data;
+	struct hdr_common *hdr = (struct hdr_common *)buf->data;
 
 	/* sanity check received buffer */
 	if (hdr->version != PTL_HDR_VER_1) {

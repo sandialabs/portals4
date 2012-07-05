@@ -304,7 +304,7 @@ static struct logical_ni_set *get_ni_set(unsigned int hash)
 /* Find the NI set for an incoming buffer. */
 static ni_t *get_dest_ni(buf_t *mem_buf)
 {
-	struct hdr_common1 *hdr = mem_buf->data;
+	struct hdr_common *hdr = mem_buf->data;
 
 	if (hdr->physical) {
 		struct ni find, *res;

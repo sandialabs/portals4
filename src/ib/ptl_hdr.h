@@ -48,7 +48,7 @@ enum hdr_fmt {
 /**
  * @brief Common header for portals request/response messages.
  */
-struct hdr_common1 {
+struct hdr_common {
 	unsigned int	version:4;
 	unsigned int	operation:4;
 	unsigned int	ni_fail:4;	/* response only */
@@ -84,11 +84,11 @@ struct hdr_common1 {
 /**
  * @brief Header for Portals request messages.
  *
- * Due to headers being reused to send a reply/ack, hdr_common1 must
+ * Due to headers being reused to send a reply/ack, hdr_common must
  * be first, followed by hdr_region.
  */
 typedef struct req_hdr {
-	struct hdr_common1 h1;
+	struct hdr_common h1;
 	unsigned int	ack_req:4;		
 	unsigned int	atom_type:4;	
 	unsigned int	atom_op:5;		
@@ -109,7 +109,7 @@ typedef struct req_hdr {
 
 /* Header for an ack or a reply. */
 typedef struct ack_hdr {
-	struct hdr_common1 h1;
+	struct hdr_common h1;
 	__le64			mlength;			
 	__le64			moffset;			
 } ack_hdr_t;
