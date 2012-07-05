@@ -69,15 +69,6 @@ struct hdr_common {
 		__le32			dst_rank;		
 	};								
 	__le32			dst_pid;
-
-	/* TODO - there is an issue when a packet received goes on
-	 * the unexpected list and we send back an ack. The header is
-	 * modified and re-used to send the ack, while an append will
-	 * also read it later, expecting to actually have the original
-	 * values. The following variable will shift values a bit so
-	 * everything works. But this is really ugly and need to go
-	 * away. This issue exist with all transports. */
-	__le32          big_ugly_kludge;
 #endif
 };
 
