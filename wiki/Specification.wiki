@@ -1,8 +1,16 @@
 #summary Draft copy of the Portals 4 specification, with changelog
 
 == Latest Draft Specification ==
-  * [http://portals4.googlecode.com/files/portals40-20120614.pdf Portals Document (pdf)]
-  * [http://portals4.googlecode.com/files/portals40-201200614-diff.pdf Portals Document with changes (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120705.pdf Portals Document (pdf)]
+  * [http://portals4.googlecode.com/files/portals40-20120705-diff.pdf Portals Document with changes (pdf)]
+
+== July 5, 2012 Changelog ==
+  * Clean up the triggered operations and counting events sections.
+  * Loosened the atomicity requirements in the counting events section to better match what we've been discussing.
+  * Fix the last of the places where there was a leading space in an ipmlementation note
+  * Added events implementation notes section
+  * Clarify the event success disable text a bit
+  * Clarify mlength for overflow events
 
 == June 14, 2012 Changelog ==
   * Clarify behavior of flow control when local operations are causing the event
