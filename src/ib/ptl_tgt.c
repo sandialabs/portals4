@@ -501,8 +501,8 @@ int check_match(buf_t *buf, const me_t *me)
 	const ni_t *ni = obj_to_ni(buf);
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ptl_size_t offset;
-	ptl_size_t length = le64_to_cpu(hdr->length);
-	ptl_size_t req_off = le64_to_cpu(hdr->offset);
+	ptl_size_t length = le64_to_cpu(hdr->rlength);
+	ptl_size_t req_off = le64_to_cpu(hdr->roffset);
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		ptl_process_t initiator;
@@ -700,8 +700,8 @@ static int tgt_get_length(buf_t *buf)
 	ptl_size_t offset;
 	ptl_size_t length;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint64_t rlength = le64_to_cpu(hdr->length);
-	uint64_t roffset = le64_to_cpu(hdr->offset);
+	uint64_t rlength = le64_to_cpu(hdr->rlength);
+	uint64_t roffset = le64_to_cpu(hdr->roffset);
 
 	/* note only MEs can have PTL_ME_MANAGE_LOCAL set */
 	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : roffset;

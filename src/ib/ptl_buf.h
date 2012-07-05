@@ -112,8 +112,10 @@ struct buf {
 	struct buf		*xxbuf;
 	unsigned int	event_mask;
 
-	ptl_size_t		mlength;	/* todo: may remove */
-	ptl_size_t		moffset;	/* todo: may remove */
+	ptl_size_t		rlength;
+	ptl_size_t		roffset;
+	ptl_size_t		mlength;
+	ptl_size_t		moffset;
 	ptl_ni_fail_t	ni_fail;	/* todo: may remove */
 	ptl_list_t		matching_list; /* for ptl_list event field */
 
@@ -199,9 +201,6 @@ struct buf {
 
 	/** data to hold message */
 	uint8_t			internal_data[BUF_DATA_SIZE];
-
-	/** data sent, not including headers */
-	ptl_size_t data_length;
 
 	/** type of buf */
 	buf_type_t		type;
