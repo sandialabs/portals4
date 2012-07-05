@@ -81,7 +81,14 @@ struct hdr_common1 {
 #endif
 };
 
-struct hdr_common2 {
+/**
+ * @brief Header for Portals request messages.
+ *
+ * Due to headers being reused to send a reply/ack, hdr_common1 must
+ * be first, followed by hdr_region.
+ */
+typedef struct req_hdr {
+	struct hdr_common1 h1;
 	unsigned int	ack_req:4;		
 	unsigned int	atom_type:4;	
 	unsigned int	atom_op:5;		
@@ -91,17 +98,6 @@ struct hdr_common2 {
 		__le32			src_rank;		
 	};								
 	__le32			src_pid;		
-};
-
-/**
- * @brief Header for Portals request messages.
- *
- * Due to headers being reused to send a reply/ack, hdr_common1 must
- * be first, followed by hdr_region.
- */
-typedef struct req_hdr {
-	struct hdr_common1 h1;
-	struct hdr_common2 h2;
 	__le64			length;			
 	__le64			offset;			
 	__le64			match_bits;		

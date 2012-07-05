@@ -243,8 +243,8 @@ static int recv_packet(buf_t *buf)
 		ptl_process_t initiator;
 
 		/* get per conn info */
-		initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
+		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
 		
 		conn = get_conn(buf->obj.obj_ni, initiator);
 

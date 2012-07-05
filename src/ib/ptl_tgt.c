@@ -178,7 +178,7 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 	atom_op_t op;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-	op = atom_op[hdr->h2.atom_op][hdr->h2.atom_type];
+	op = atom_op[hdr->atom_op][hdr->atom_type];
 	assert(op);
 
 	if (me->num_iov) {
@@ -195,14 +195,14 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 			}
 		}
 
-		err = iov_atomic_in(op, atom_type_size[hdr->h2.atom_type],
+		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
 							data, addr_to_ppe(me->start, mr), me->mr_list,
 							me->num_iov, offset, length);
 
 		if (!me->mr_start)
 			mr_put(mr);
 #else
-		err = iov_atomic_in(op, atom_type_size[hdr->h2.atom_type],
+		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
 							data, (ptl_iovec_t *)me->start, me->mr_list,
 							me->num_iov, offset, length);
 #endif
@@ -398,7 +398,7 @@ static int tgt_start(buf_t *buf)
 	switch (hdr->h1.operation) {
 	case OP_PUT:
 	case OP_ATOMIC:
-		if (hdr->h2.ack_req != PTL_NO_ACK_REQ)
+		if (hdr->ack_req != PTL_NO_ACK_REQ)
 			buf->event_mask |= XT_ACK_EVENT;
 		break;
 	case OP_GET:
@@ -418,8 +418,8 @@ static int tgt_start(buf_t *buf)
 	buf->in_atomic = 0;
 
 	/* get per conn info */
-	initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
-	initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
+	initiator.phys.nid = le32_to_cpu(hdr->src_nid);
+	initiator.phys.pid = le32_to_cpu(hdr->src_pid);
 
 	buf->conn = get_conn(ni, initiator);
 	if (unlikely(!buf->conn)) {
@@ -507,7 +507,7 @@ int check_match(buf_t *buf, const me_t *me)
 	if (ni->options & PTL_NI_LOGICAL) {
 		ptl_process_t initiator;
 
-		initiator.rank = le32_to_cpu(hdr->h2.src_rank);
+		initiator.rank = le32_to_cpu(hdr->src_rank);
 
 		if (!(me->id.rank == PTL_RANK_ANY ||
 		     (me->id.rank == initiator.rank))) {
@@ -516,8 +516,8 @@ int check_match(buf_t *buf, const me_t *me)
 	} else {
 		ptl_process_t initiator;
 
-		initiator.phys.nid = le32_to_cpu(hdr->h2.src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->h2.src_pid);
+		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
 
 		if (!(me->id.phys.nid == PTL_NID_ANY ||
 		     (me->id.phys.nid == initiator.phys.nid)))
@@ -745,12 +745,12 @@ static int tgt_get_length(buf_t *buf)
 		break;
 
 	case OP_SWAP:
-		if (hdr->h2.atom_op == PTL_SWAP) {
+		if (hdr->atom_op == PTL_SWAP) {
 			if (length > ni->limits.max_atomic_size)
 				length = ni->limits.max_atomic_size;
 		} else {
-			if (length > atom_type_size[hdr->h2.atom_type])
-				length = atom_type_size[hdr->h2.atom_type];
+			if (length > atom_type_size[hdr->atom_type])
+				length = atom_type_size[hdr->atom_type];
 		}
 		buf->put_resid = length;
 		buf->get_resid = length;
@@ -994,7 +994,7 @@ static int tgt_data_out(buf_t *buf)
 			if (buf->operation == OP_FETCH)
 				return STATE_TGT_ATOMIC_DATA_IN;
 			else if (buf->operation == OP_SWAP)
-				return (hdr->h2.atom_op == PTL_SWAP)
+				return (hdr->atom_op == PTL_SWAP)
 					? STATE_TGT_DATA_IN
 					: STATE_TGT_SWAP_DATA_IN;
 			else
@@ -1082,7 +1082,7 @@ static int tgt_rdma(buf_t *buf)
 		if (hdr->h1.operation == OP_FETCH)
 			return STATE_TGT_ATOMIC_DATA_IN;
 		else if (hdr->h1.operation == OP_SWAP)
-			return (hdr->h2.atom_op == PTL_SWAP) ?
+			return (hdr->atom_op == PTL_SWAP) ?
 				STATE_TGT_DATA_IN :
 				STATE_TGT_SWAP_DATA_IN;
 		else
@@ -1278,7 +1278,7 @@ static int tgt_atomic_data_in(buf_t *buf)
 	}
 
 	// TODO should we return an ni fail??
-	if (hdr->h2.atom_op > PTL_BXOR || hdr->h2.atom_type >= PTL_DATATYPE_LAST) {
+	if (hdr->atom_op > PTL_BXOR || hdr->atom_type >= PTL_DATATYPE_LAST) {
 		WARN();
 		return STATE_TGT_ERROR;
 	}
@@ -1338,7 +1338,7 @@ static int tgt_swap_data_in(buf_t *buf)
 		dst = me->start + buf->moffset;
 	}
 
-	err = swap_data_in(hdr->h2.atom_op, hdr->h2.atom_type, dst,
+	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
 			   data->immediate.data, &operand);
 	if (err)
 		return STATE_TGT_ERROR;
@@ -1411,7 +1411,7 @@ static int tgt_send_ack(buf_t *buf)
 	int err;
 	buf_t *ack_buf;
 	ack_hdr_t *ack_hdr;
- 	const int ack_req = ((req_hdr_t *)(buf->data))->h2.ack_req;
+ 	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
 
 	if (!buf->send_buf) {
 		/* Reusing received buffer. */
