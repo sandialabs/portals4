@@ -177,7 +177,7 @@ static void attach_bounce_buffer(buf_t *buf, data_t *data)
 	void *bb;
 	ni_t *ni = obj_to_ni(buf);
 
-	while ((bb = dequeue_free_obj_alien(&ni->shmem.bounce_buf.head->free_list,
+	while ((bb = ll_dequeue_obj_alien(&ni->shmem.bounce_buf.head->free_list,
 										ni->shmem.bounce_buf.head,
 										ni->shmem.bounce_buf.head->head_index0)) == NULL)
 		SPINLOCK_BODY();
@@ -676,7 +676,7 @@ int setup_shmem(ni_t *ni)
 		for (i = 0; i < ni->shmem.bounce_buf.num_bufs; i++) {
 			void *bb = ni->shmem.bounce_buf.bbs + i*ni->shmem.bounce_buf.buf_size;
 
-			enqueue_free_obj(&ni->shmem.bounce_buf.head->free_list, bb);
+			ll_enqueue_obj(&ni->shmem.bounce_buf.head->free_list, bb);
 		}
 	}
 #endif

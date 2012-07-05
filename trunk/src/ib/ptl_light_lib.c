@@ -82,7 +82,7 @@ static inline int ppebuf_alloc(ppebuf_t **buf_p)
 		return PTL_NO_INIT;
 #endif
 
-	while ((obj = dequeue_free_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list,
+	while ((obj = ll_dequeue_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list,
 										 ppe.ppebufs_addr, ppe.ppebufs_ppeaddr)) == NULL) {
 		SPINLOCK_BODY();
 	}

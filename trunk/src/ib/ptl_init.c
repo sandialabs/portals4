@@ -553,7 +553,7 @@ static int init_copy_done(buf_t *buf)
 	data->noknem.state = 2;
 
 	/* Free the bounce buffer allocated in init_append_data. */
-	enqueue_free_obj_alien(&ni->shmem.bounce_buf.head->free_list,
+	ll_enqueue_obj_alien(&ni->shmem.bounce_buf.head->free_list,
 						   buf->transfer.noknem.data,
 						   ni->shmem.bounce_buf.head,
 						   ni->shmem.bounce_buf.head->head_index0);
