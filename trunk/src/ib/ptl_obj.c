@@ -348,8 +348,7 @@ int pool_init(pool_t *pool, char *name, int size,
 	}
 
 	atomic_set(&pool->count, 0);
-	pool->free_list.obj = NULL;
-	pool->free_list.counter = 0;
+	ll_init(&pool->free_list);
 	INIT_LIST_HEAD(&pool->chunk_list);
 	pthread_mutex_init(&pool->mutex, NULL);
 

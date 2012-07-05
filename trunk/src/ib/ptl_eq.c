@@ -139,11 +139,11 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	eqe_list->interrupt = 0;
 	eqe_list->count = count;
 
-	PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
-
 #if IS_PPE
 	pthread_mutexattr_t mattr;
 	pthread_condattr_t cattr;
+
+	PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
 
 	pthread_mutexattr_init(&mattr);
 	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
@@ -155,6 +155,8 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	pthread_cond_init(&eqe_list->cond, &cattr);
 	pthread_condattr_destroy(&cattr);
 #else
+	PTL_FASTLOCK_INIT(&eqe_list->lock);
+
 	pthread_mutex_init(&eqe_list->mutex, NULL);
 	pthread_cond_init(&eqe_list->cond, NULL);
 #endif

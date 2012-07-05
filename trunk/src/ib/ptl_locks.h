@@ -8,11 +8,7 @@
 #ifdef HAVE_PTHREAD_SPIN_INIT
 # define PTL_FASTLOCK_TYPE pthread_spinlock_t
 # define PTL_FASTLOCK_INIT(x)    pthread_spin_init((x), PTHREAD_PROCESS_PRIVATE)
-#if WITH_PPE
 # define PTL_FASTLOCK_INIT_SHARED(x)    pthread_spin_init((x), PTHREAD_PROCESS_SHARED)
-#else
-# define PTL_FASTLOCK_INIT_SHARED(x)    pthread_spin_init((x), PTHREAD_PROCESS_PRIVATE)
-#endif
 # define PTL_FASTLOCK_DESTROY(x) pthread_spin_destroy(x)
 # define PTL_FASTLOCK_LOCK(x)    pthread_spin_lock(x)
 # define PTL_FASTLOCK_UNLOCK(x)  pthread_spin_unlock(x)
