@@ -551,7 +551,7 @@ void *progress_thread(void *arg)
 					if (err) {
 						WARN();
 					} else {
-						buf->data = (hdr_t *)shmem_buf->internal_data;
+						buf->data = shmem_buf->internal_data;
 						buf->length = shmem_buf->length;
 						buf->mem_buf = shmem_buf;
 						INIT_LIST_HEAD(&buf->list);
