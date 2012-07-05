@@ -200,6 +200,9 @@ struct buf {
 	/** data to hold message */
 	uint8_t			internal_data[BUF_DATA_SIZE];
 
+	/** data sent, not including headers */
+	ptl_size_t data_length;
+
 	/** type of buf */
 	buf_type_t		type;
 

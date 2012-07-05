@@ -158,7 +158,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->h2.ack_req = ack_req;
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -240,7 +240,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->h2.ack_req = ack_req;
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -331,7 +331,7 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -410,7 +410,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -567,7 +567,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -653,7 +653,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -753,7 +753,7 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -869,7 +869,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -1051,7 +1051,7 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->operand = cpu_to_le64(opval);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
@@ -1172,7 +1172,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->operand = cpu_to_le64(opval);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->length = cpu_to_le64(length);
+	buf->data_length = length;
 	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
