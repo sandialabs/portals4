@@ -667,6 +667,19 @@ found_one:
 		buf->unexpected_busy = 1;
 		list_add_tail(&buf->unexpected_list,
 					  &pt->unexpected_list);
+
+#if WITH_TRANSPORT_SHMEM || IS_PPE
+		/* If it is a shared memory buffer, then the data is actually
+		 * in a different buffer. This second buffer will be used to
+		 * send back an ack/reply, while the first buffer has been put
+		 * on the unexpected list. So sever the connection between the
+		 * two buffers right now to avoid races with MEAppend() and
+		 * sending that ack. */
+		if (buf->data != buf->internal_data) {
+			memcpy(buf->internal_data, buf->data, buf->length);
+			buf->data = buf->internal_data;
+		}
+#endif
 	}
 
 	buf->matching_list = buf->le->ptl_list;
@@ -1413,22 +1426,28 @@ static int tgt_send_ack(buf_t *buf)
 	ack_hdr_t *ack_hdr;
  	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
 
-	if (!buf->send_buf) {
-		/* Reusing received buffer. */
-		ack_buf = buf;
-		ack_hdr = (ack_hdr_t *)buf->data;
-
-		/* Reset some header values while keeping others. */
-		ack_buf->length = sizeof(*ack_hdr);
-
-		ack_hdr->h1.data_in = 0;
-		ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
-		ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
-	} else {
+	if (buf->send_buf) {
 		ack_buf = buf->send_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->data;
 	}
+#if WITH_TRANSPORT_SHMEM
+	else if (buf->mem_buf) {
+		ack_buf = buf->mem_buf;
+		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
+	}
+#endif
+	else {
+		/* Reusing received buffer. */
+		ack_buf = buf;
+		ack_hdr = (ack_hdr_t *)buf->data;
+	}
 
+	/* Reset some header values while keeping others. */
+	ack_buf->length = sizeof(*ack_hdr);
+
+	ack_hdr->h1.data_in = 0;
+	ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
+	ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
 	ack_hdr->h1.ni_fail = buf->ni_fail;
 	ack_hdr->mlength	= cpu_to_le64(buf->mlength);
 	ack_hdr->moffset	= cpu_to_le64(buf->moffset);
@@ -1562,27 +1581,6 @@ static int tgt_cleanup(buf_t *buf)
 		assert(buf->le->ptl_list == PTL_OVERFLOW_LIST);
 		state = STATE_TGT_OVERFLOW_EVENT;
 	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-#if WITH_TRANSPORT_SHMEM || IS_PPE
-		/* If it is a shared memory buffer, then the data is actually
-		 * in a different buffer, which will be returned as soon as we
-		 * leave the state machine. The data has been copied to the
-		 * ME/LE on the overflow list, but we still need to keep the
-		 * header. */
-		if (buf->data != buf->internal_data) {
-			const req_hdr_t *hdr1 = (req_hdr_t *)buf->data;
-			req_hdr_t *hdr2 = (req_hdr_t *)buf->internal_data;
-
-			*hdr2 = *hdr1;
-
-			/* Unfortunately, there might be a race with
-			 * __match_le_unexpected, so we have have to protect the
-			 * data. There might be an optimization to be done here. */
-			PTL_FASTLOCK_LOCK(&buf->pt->lock);
-			buf->data = buf->internal_data;
-			PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
-		}
-#endif
-
 		state = STATE_TGT_WAIT_APPEND;
 	}	else
 		state = STATE_TGT_CLEANUP_2;
