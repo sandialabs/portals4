@@ -671,8 +671,7 @@ int setup_shmem(ni_t *ni)
 
 	if (ni->mem.index == 0) {
 		ni->shmem.bounce_buf.head->head_index0 = ni->shmem.bounce_buf.head;
-		ni->shmem.bounce_buf.head->free_list.obj = NULL;
-		ni->shmem.bounce_buf.head->free_list.counter = 0;
+		ll_init(&ni->shmem.bounce_buf.head->free_list);
 
 		for (i = 0; i < ni->shmem.bounce_buf.num_bufs; i++) {
 			void *bb = ni->shmem.bounce_buf.bbs + i*ni->shmem.bounce_buf.buf_size;

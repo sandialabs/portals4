@@ -5,6 +5,7 @@
 #ifndef PTL_LOCKFREE_H
 #define PTL_LOCKFREE_H
 
+#if SANDIA_BUILTIN_CAS128 || HAVE_CMPXCHG16B
 /*
  * Lock free linked list. Enqueue/dequeue at the head (FIFO). Can be
  * used by multiple enqueuers/dequeuers.
@@ -121,6 +122,61 @@ static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *ob
 		tmpv.c16 = PtlInternalAtomicCas128(&free_list->c16, oldv, newv);
 	} while (tmpv.c16 != oldv.c16);
 }
+
+static inline void ll_init(union counted_ptr *free_list)
+{
+	free_list->obj = NULL;
+	free_list->counter = 0;
+}
+
+#else
+
+#include "ptl_locks.h"
+
+/* No cpmxchg128 available. Use a regular list head + shared spinlock. */
+union counted_ptr {
+	struct {
+		void *obj;
+		PTL_FASTLOCK_TYPE lock;
+	};
+};
+
+static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *vaddr, void *alien_vaddr)
+{
+	void *ret;
+
+	PTL_FASTLOCK_LOCK(&free_list->lock);
+	ret = free_list->obj;
+	if (ret)
+		free_list->obj = *(void **)(free_list->obj + (vaddr - alien_vaddr));
+	PTL_FASTLOCK_UNLOCK(&free_list->lock);
+
+	if (ret)
+		return ret + (vaddr - alien_vaddr);
+	else
+		return NULL;
+}
+
+static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
+{
+	void *alien_obj = ((void *)obj) + (alien_vaddr - vaddr); /* vaddr of obj in alien process */
+	
+	PTL_FASTLOCK_LOCK(&free_list->lock);
+
+	/* first field of obj is the next ptr */
+	*(void **)obj = free_list->obj;
+	free_list->obj = alien_obj;
+
+	PTL_FASTLOCK_UNLOCK(&free_list->lock);
+}
+
+static inline void ll_init(union counted_ptr *free_list)
+{
+	free_list->obj = NULL;
+	PTL_FASTLOCK_INIT_SHARED(&free_list->lock);
+}
+
+#endif
 
 static inline void *dequeue_free_obj(union counted_ptr *free_list)
 {
