@@ -218,7 +218,7 @@ static int prepare_req(buf_t *buf)
 	int err;
 	ni_t *ni = obj_to_ni(buf);
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ptl_size_t length = le64_to_cpu(hdr->h3.length);
+	ptl_size_t length = le64_to_cpu(hdr->length);
 
 	hdr->h1.version = PTL_HDR_VER_1;
 	hdr->h1.ni_type = ni->ni_type;
@@ -667,7 +667,7 @@ static int wait_recv(buf_t *buf)
 	 * target has not set their values if it wasn't necessary. */
 	if (hdr->h1.operation <= OP_ACK) {
 		/* ACK and REPLY. */
-		buf->moffset = le64_to_cpu(hdr->h3.offset);
+		buf->moffset = le64_to_cpu(hdr->moffset);
 		buf->matching_list = hdr->h1.matching_list;
 	} else {
 		/* Set a random invalid value. */
@@ -677,7 +677,7 @@ static int wait_recv(buf_t *buf)
 
 	if (hdr->h1.operation <= OP_CT_ACK) {
 		/* ACK, CT_ACK and REPLY. */
-		buf->mlength = le64_to_cpu(hdr->h3.length);
+		buf->mlength = le64_to_cpu(hdr->mlength);
 	} else {
 		/* Set a random invalid value. */
 		buf->moffset = 0x66666666;

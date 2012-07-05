@@ -158,8 +158,8 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->h2.ack_req = ack_req;
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = md;
@@ -240,8 +240,8 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->h2.ack_req = ack_req;
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = md;
@@ -331,8 +331,8 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->get_md = md;
@@ -410,8 +410,8 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->get_md = md;
@@ -567,8 +567,8 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = md;
@@ -653,8 +653,8 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = md;
@@ -753,8 +753,8 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = put_md;
@@ -869,8 +869,8 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	hdr->hdr_data = cpu_to_le64(hdr_data);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = put_md;
@@ -1051,8 +1051,8 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->operand = cpu_to_le64(opval);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = put_md;
@@ -1172,8 +1172,8 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->operand = cpu_to_le64(opval);
 	hdr->h2.atom_op = atom_op;
 	hdr->h2.atom_type = atom_type;
-	hdr->h3.length = cpu_to_le64(length);
-	hdr->h3.offset = cpu_to_le64(remote_offset);
+	hdr->length = cpu_to_le64(length);
+	hdr->offset = cpu_to_le64(remote_offset);
 
 	buf->target = target_id;
 	buf->put_md = put_md;
