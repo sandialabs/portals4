@@ -29,7 +29,7 @@
 typedef unsigned int ptlinternal_uint128_t __attribute__((mode(TI)));
 union counted_ptr {
 	struct {
-		void *obj;				/* the object to be linked */
+		void *head;
 		unsigned long counter;
 	};
 	unsigned int __attribute__((mode(TI))) c16; /* 16 bytes */
@@ -49,11 +49,11 @@ static inline ptlinternal_uint128_t PtlInternalAtomicCas128(ptlinternal_uint128_
 #elif defined HAVE_CMPXCHG16B
     __asm__ __volatile__ ("lock cmpxchg16b %0\n\t"
                           : "+m" (*addr),
-                          "=a" (ret.obj),
+                          "=a" (ret.head),
                           "=d" (ret.counter)
-                          : "a"  (oldval.obj),
+                          : "a"  (oldval.head),
                           "d"  (oldval.counter),
-                          "b"  (newval.obj),
+                          "b"  (newval.head),
                           "c"  (newval.counter)
                           : "cc",
                           "memory");
@@ -72,7 +72,7 @@ static inline ptlinternal_uint128_t PtlInternalAtomicCas128(ptlinternal_uint128_
  *
  * @return the object
  */
-static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *vaddr, void *alien_vaddr)
+static inline void *ll_dequeue_obj_alien(union counted_ptr *free_list, void *vaddr, void *alien_vaddr)
 {
 	union counted_ptr oldv, newv, retv;
 
@@ -80,19 +80,19 @@ static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *v
 
 	do {
 		oldv = retv;
-		if (retv.obj != NULL) {
+		if (retv.head != NULL) {
 			/* first object field is the next ptr */
-			newv.obj = *(void **)(retv.obj + (vaddr - alien_vaddr)); 
+			newv.head = *(void **)(retv.head + (vaddr - alien_vaddr)); 
 		} else {
-			newv.obj = NULL;
+			newv.head = NULL;
 		}
 		newv.counter = oldv.counter + 1;
 
 		retv.c16 = PtlInternalAtomicCas128(&free_list->c16, oldv, newv);
 	} while (retv.c16 != oldv.c16);
 
-	if (retv.obj)
-		return retv.obj + (vaddr - alien_vaddr);
+	if (retv.head)
+		return retv.head + (vaddr - alien_vaddr);
 	else
 		return NULL;
 }
@@ -106,7 +106,7 @@ static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *v
  * @param pool the pool
  * @param obj the object
  */
-static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
+static inline void ll_enqueue_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
 {
 	union counted_ptr oldv, newv, tmpv;
 	void *alien_obj = ((void *)obj) + (alien_vaddr - vaddr); /* vaddr of obj in alien process */
@@ -116,8 +116,8 @@ static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *ob
 	do {
 		oldv = tmpv;
 		/* first field of obj is the next ptr */
-		*(void **)obj = tmpv.obj; 
-		newv.obj = alien_obj;
+		*(void **)obj = tmpv.head; 
+		newv.head = alien_obj;
 		newv.counter = oldv.counter + 1;
 		tmpv.c16 = PtlInternalAtomicCas128(&free_list->c16, oldv, newv);
 	} while (tmpv.c16 != oldv.c16);
@@ -125,7 +125,7 @@ static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *ob
 
 static inline void ll_init(union counted_ptr *free_list)
 {
-	free_list->obj = NULL;
+	free_list->head = NULL;
 	free_list->counter = 0;
 }
 
@@ -136,19 +136,19 @@ static inline void ll_init(union counted_ptr *free_list)
 /* No cpmxchg128 available. Use a regular list head + shared spinlock. */
 union counted_ptr {
 	struct {
-		void *obj;
+		void *head;
 		PTL_FASTLOCK_TYPE lock;
 	};
 };
 
-static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *vaddr, void *alien_vaddr)
+static inline void *ll_dequeue_obj_alien(union counted_ptr *free_list, void *vaddr, void *alien_vaddr)
 {
 	void *ret;
 
 	PTL_FASTLOCK_LOCK(&free_list->lock);
-	ret = free_list->obj;
+	ret = free_list->head;
 	if (ret)
-		free_list->obj = *(void **)(free_list->obj + (vaddr - alien_vaddr));
+		free_list->head = *(void **)(free_list->head + (vaddr - alien_vaddr));
 	PTL_FASTLOCK_UNLOCK(&free_list->lock);
 
 	if (ret)
@@ -157,35 +157,35 @@ static inline void *dequeue_free_obj_alien(union counted_ptr *free_list, void *v
 		return NULL;
 }
 
-static inline void enqueue_free_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
+static inline void ll_enqueue_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
 {
 	void *alien_obj = ((void *)obj) + (alien_vaddr - vaddr); /* vaddr of obj in alien process */
 	
 	PTL_FASTLOCK_LOCK(&free_list->lock);
 
 	/* first field of obj is the next ptr */
-	*(void **)obj = free_list->obj;
-	free_list->obj = alien_obj;
+	*(void **)obj = free_list->head;
+	free_list->head = alien_obj;
 
 	PTL_FASTLOCK_UNLOCK(&free_list->lock);
 }
 
 static inline void ll_init(union counted_ptr *free_list)
 {
-	free_list->obj = NULL;
+	free_list->head = NULL;
 	PTL_FASTLOCK_INIT_SHARED(&free_list->lock);
 }
 
 #endif
 
-static inline void *dequeue_free_obj(union counted_ptr *free_list)
+static inline void *ll_dequeue_obj(union counted_ptr *free_list)
 {
-	return dequeue_free_obj_alien(free_list, NULL, NULL);
+	return ll_dequeue_obj_alien(free_list, NULL, NULL);
 }
 
-static inline void enqueue_free_obj(union counted_ptr *free_list, void *obj)
+static inline void ll_enqueue_obj(union counted_ptr *free_list, void *obj)
 {
-	enqueue_free_obj_alien(free_list, obj, NULL, NULL);
+	ll_enqueue_obj_alien(free_list, obj, NULL, NULL);
 }
 
 #endif

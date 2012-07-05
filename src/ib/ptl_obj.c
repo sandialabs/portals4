@@ -235,7 +235,7 @@ static int pool_alloc_slab(pool_t *pool)
 				return PTL_FAIL;
 			}
 		}
-		enqueue_free_obj(&pool->free_list, obj);
+		ll_enqueue_obj(&pool->free_list, obj);
 		p += pool->round_size;
 	}
 
@@ -268,9 +268,9 @@ int pool_fini(pool_t *pool)
 	 * each free object
 	 */
 	if (pool->fini) {
-		while(pool->free_list.obj) {
-			obj = pool->free_list.obj;
-			pool->free_list.obj = obj->next;
+		while(pool->free_list.head) {
+			obj = pool->free_list.head;
+			pool->free_list.head = obj->next;
 			pool->fini(obj);
 		}
 	}
@@ -385,7 +385,7 @@ void obj_release(ref_t *ref)
 
 	__sync_synchronize();
 
-	enqueue_free_obj(&pool->free_list, obj);
+	ll_enqueue_obj(&pool->free_list, obj);
 	atomic_dec(&pool->count);
 }
 
@@ -408,7 +408,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 	/* reserve an object */
 	atomic_inc(&pool->count);
 
-	obj = dequeue_free_obj(&pool->free_list);
+	obj = ll_dequeue_obj(&pool->free_list);
 	if (unlikely(!obj)) {
 		if (pool->use_pre_alloc_buffer) {
 			/* The pool cannot expand, for instance in the case of the
@@ -416,7 +416,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 			 * on the list. */
 			do {
 				SPINLOCK_BODY();
-			} while ((obj = dequeue_free_obj(&pool->free_list)) == NULL);
+			} while ((obj = ll_dequeue_obj(&pool->free_list)) == NULL);
 		} else {
 			do {
 				pthread_mutex_lock(&pool->mutex);
@@ -428,7 +428,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 					WARN();
 					return err;
 				}
-			} while ((obj = dequeue_free_obj(&pool->free_list)) == NULL);
+			} while ((obj = ll_dequeue_obj(&pool->free_list)) == NULL);
 		}
 	}
 
