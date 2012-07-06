@@ -326,7 +326,7 @@ static void destroy_conn(void *data)
 
 	conn_put(conn);
 }
-	
+
 /**
  * Destroys all connections belonging to an NI
  */
@@ -376,7 +376,7 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
 	assert(conn->rdma.cm_id == NULL);
- 
+
 	ptl_info("Initiate connect with %x:%d\n",
 			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 
@@ -576,7 +576,7 @@ static void flush_pending_xi_xt(conn_t *conn)
 			assert(buf->type == BUF_INIT);
 			process_init(buf);
 		}
-			
+
 		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 	}
 
@@ -694,7 +694,7 @@ static void process_connect_reject(struct rdma_cm_event *event, conn_t *conn)
 			 * good. */
 			pthread_mutex_unlock(&conn->mutex);
 			return;
-		} 
+		}
 	}
 
 	/* That's bad, and that should not happen. */

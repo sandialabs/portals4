@@ -68,7 +68,7 @@ static int create_mapping_ppe(const void *addr_in, size_t length, struct xpmem_m
 	length += mapping->offset;
 	length = (length + pagesize-1) & ~(pagesize-1);
 
-	mapping->segid = xpmem_make(addr, length,	
+	mapping->segid = xpmem_make(addr, length,
 								XPMEM_PERMIT_MODE, (void *)0600);
 
 	return mapping->segid == -1 ? PTL_ARG_INVALID : PTL_OK;
@@ -184,7 +184,7 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 			ppe.current_prog_thread = 0;
 
 		RB_INSERT(clients_root, &ppe.clients_tree, client);
-			
+
 		msg.rep.cookie = client;
 		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
 		msg.rep.ppebufs_ppeaddr = ppe.comm_pad->ppebuf_slab;
@@ -214,7 +214,7 @@ static void process_client_connection(EV_P_ ev_io *w, int revents)
 			/* Add a watcher on this client. */
 			ev_io_init(&client->watcher, process_client_msg, s, EV_READ);
 			client->watcher.data = client;
-			
+
 			ev_io_start(evl.loop, &client->watcher);
 
 			/* TODO: is there a need to keep a client on a pending
@@ -335,7 +335,7 @@ static int send_message_mem(buf_t *buf, int from_init)
 	ni_t *ni;
 
 	/* Keep a reference on the buffer so it doesn't get freed. will be
-	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
+	 * returned by the remote side with type=BUF_SHMEM_RETURN. */
 	assert(buf->obj.obj_pool->type == POOL_BUF);
 	buf_get(buf);
 
@@ -469,7 +469,7 @@ static int ppe_tgt_data_out(buf_t *buf, data_t *data)
 		buf->transfer.mem.cur_rem_off = 0;
 
 		next = STATE_TGT_RDMA;
-	
+
 		break;
 
 	case DATA_FMT_MEM_INDIRECT:
@@ -688,13 +688,13 @@ static void insert_ni_into_set(ptl_handle_ni_t ni_handle)
 				abort();
 			}
 		}
-				
+
 		set->ni[ni->id.rank] = ni;
 		set->members ++;
 
 		ni->mem.in_set = 1;
-	}		
-	
+	}
+
 	ni_put(ni);
 }
 
@@ -1352,7 +1352,7 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 			WARN();
 			abort();
 		}
-		
+
 		conn->transport = transport_mem;
 		conn->state = CONN_STATE_CONNECTED;
 
@@ -1409,7 +1409,7 @@ int main(int argc, char *argv[])
 			ptl_warn("Invalid option %s\n", argv[option_index]);
 			return 1;
 		}
-	}	
+	}
 
 	err = misc_init_once();
 	if (err)

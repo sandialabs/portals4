@@ -497,7 +497,7 @@ static int init_copy_in(buf_t *buf)
 
 	buf->transfer.noknem.length_left -= to_copy;
 	buf->transfer.noknem.offset += to_copy;
-	
+
 	/* Tell the target the data is ready. */
 	__sync_synchronize();
 	noknem->state = 2;
@@ -533,7 +533,7 @@ static int init_copy_out(buf_t *buf)
 
 	buf->transfer.noknem.length_left -= to_copy;
 	buf->transfer.noknem.offset += to_copy;
-	
+
 	noknem->length = to_copy;
 
 	/* Tell the target the data is ready. */
@@ -623,7 +623,7 @@ static int early_send_event(buf_t *buf)
 
 	if (buf->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(buf);
-	
+
 	if ((buf->event_mask & XI_RECEIVE_EXPECTED) &&
 			(buf->ni_fail != PTL_NI_UNDELIVERABLE))
 		return STATE_INIT_WAIT_RECV;
@@ -697,7 +697,7 @@ static int wait_recv(buf_t *buf)
 
 	if (buf->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
 		return STATE_INIT_REPLY_EVENT;
-	
+
 	return STATE_INIT_CLEANUP;
 }
 
@@ -753,7 +753,7 @@ static int data_in(buf_t *buf)
 
 	if (buf->event_mask & (XI_REPLY_EVENT | XI_CT_REPLY_EVENT))
 		return STATE_INIT_REPLY_EVENT;
-	
+
 	return STATE_INIT_CLEANUP;
 }
 
@@ -774,7 +774,7 @@ static int late_send_event(buf_t *buf)
 
 	if (buf->event_mask & XI_CT_SEND_EVENT)
 		make_ct_send_event(buf);
-	
+
 	if (buf->ni_fail != PTL_NI_UNDELIVERABLE) {
 		if (buf->event_mask & (XI_ACK_EVENT | XI_CT_ACK_EVENT))
 			return STATE_INIT_ACK_EVENT;
@@ -814,7 +814,7 @@ static int ack_event(buf_t *buf)
 	} else {
 		buf->event_mask &= ~(XI_ACK_EVENT | XI_CT_ACK_EVENT);
 	}
-	
+
 	return STATE_INIT_CLEANUP;
 }
 
@@ -838,7 +838,7 @@ static int reply_event(buf_t *buf)
 
 	if (buf->event_mask & XI_CT_REPLY_EVENT)
 		make_ct_reply_event(buf);
-	
+
 	return STATE_INIT_CLEANUP;
 }
 
@@ -924,7 +924,7 @@ int process_init(buf_t *buf)
 			state = start(buf);
 			break;
 		case STATE_INIT_PREP_REQ:
-			state = prepare_req(buf);	
+			state = prepare_req(buf);
 			break;
 		case STATE_INIT_WAIT_CONN:
 			state = wait_conn(buf);

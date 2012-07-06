@@ -420,7 +420,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
 				pthread_mutex_lock(&pool->mutex);
 				err = pool_alloc_slab(pool);
 				pthread_mutex_unlock(&pool->mutex);
-			
+
 				if (unlikely(err)) {
 					atomic_dec(&pool->count);
 					WARN();

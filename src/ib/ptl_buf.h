@@ -273,7 +273,7 @@ struct buf {
 
 #if (WITH_TRANSPORT_SHMEM && !USE_KNEM)
 		struct {
-			/* Invariant during the transfer, 
+			/* Invariant during the transfer,
 			 * 0=initiator, 2=target */
 			int transfer_state_expected;
 

@@ -1,7 +1,7 @@
 /**
  * @file ptl_iface.c
  *
- * @brief 
+ * @brief
  */
 #include "ptl_loc.h"
 

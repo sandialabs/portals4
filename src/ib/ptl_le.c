@@ -79,7 +79,7 @@ void le_unlink(le_t *le, int auto_event)
 	if (pt) {
 		PTL_FASTLOCK_LOCK(&pt->lock);
 
-		/* Avoid a race between PTLMeUnlink and autounlink. */ 
+		/* Avoid a race between PTLMeUnlink and autounlink. */
 		if (le->pt) {
 			if (le->ptl_list == PTL_PRIORITY_LIST)
 				pt->priority_size--;
@@ -266,7 +266,7 @@ enum {
 
 /**
  * @brief Compares an ME/LE with the unexpected list
- * and returns a list of messages that match. 
+ * and returns a list of messages that match.
  * @note Common code for LE/ME list elements.
  * @pre PT lock must be held by caller.
  *
@@ -274,7 +274,7 @@ enum {
  * @param[in] perm Flag to control permission checking.
  * @param[out] buf_list The returned message list.
  */
-static void __match_le_unexpected(const le_t *le, int perm, 
+static void __match_le_unexpected(const le_t *le, int perm,
 				  struct list_head *buf_list)
 {
 	ni_t *ni = obj_to_ni(le);
@@ -582,7 +582,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 				if (le->options & PTL_ME_USE_ONCE) {
 					eq_t *eq = ni->pt[le->pt_index].eq;
 
-					PTL_FASTLOCK_UNLOCK(&pt->lock);					
+					PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 					if (eq && !(le->options &
 					    PTL_ME_EVENT_UNLINK_DISABLE)) {

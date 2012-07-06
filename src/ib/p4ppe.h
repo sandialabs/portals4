@@ -72,7 +72,7 @@ struct prog_thread {
 
 	/* Points to own queue in comm pad. */
 	queue_t *queue;
-	
+
 	/* Internal queue. Used for communication regarding transfer
 	 * between clients. */
 	queue_t internal_queue;

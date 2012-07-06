@@ -11,7 +11,7 @@
 struct gbl;
 
 /** @brief Size of ni table per iface */
-#define MAX_NI_TYPES		(4)	
+#define MAX_NI_TYPES		(4)
 
 /**
  * @brief Per network interface information.
@@ -41,7 +41,7 @@ struct iface {
 	struct ibv_pd		*pd;
 	/** Libev handler for CM events */
 	ev_io			cm_watcher;
-	
+
 	/** QP/SRQ Capabilities. */
 	struct {
 		unsigned int max_send_wr;

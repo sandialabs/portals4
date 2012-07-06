@@ -104,7 +104,7 @@ int append_immediate_data(void *start, mr_t **mr_list, int num_iov, data_dir_t d
 
 	if (dir == DATA_DIR_OUT) {
 		data->immediate.data_length = cpu_to_le32(length);
-			
+
 		if (num_iov) {
 			err = iov_copy_out(data->immediate.data, start, mr_list,
 							   num_iov, offset, length);

@@ -200,7 +200,7 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 	}
 
 	return PTL_OK;
-} 
+}
 
 /**
  * Get the number of iovec elements, starting element and offset.

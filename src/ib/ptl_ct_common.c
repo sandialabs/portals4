@@ -26,7 +26,7 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
 			err = PTL_OK;
 			break;
 		}
-		
+
 		/* someone called PtlCTFree or PtlNIFini, leave */
 		if (unlikely(ct_info->interrupt)) {
 			err = PTL_INTERRUPTED;

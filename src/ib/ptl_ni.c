@@ -464,7 +464,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	if (ni->logical.mapping) {
 		ni_put(ni);
 		gbl_put();
-		
+
 		return PTL_IGNORED;
 	}
 
@@ -531,7 +531,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	gbl_put();
 	return PTL_OK;
 
- err2:	
+ err2:
 	ni_put(ni);
  err1:
 	gbl_put();
@@ -546,7 +546,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 {
 	int err;
 	ni_t *ni;
-  
+
 	err = gbl_get();
 	if (unlikely(err)) {
 		return err;
@@ -582,7 +582,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 	gbl_put();
 	return PTL_OK;
 
- err2:	
+ err2:
 	ni_put(ni);
  err1:
 	gbl_put();
@@ -613,7 +613,7 @@ static void ni_cleanup(ni_t *ni)
 
 		ni->cleanup_state = NI_WAIT_DISCONNECT_ALL;
 	}
-	
+
 	if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
 		if (!is_disconnected_all(ni)) {
 			return;
@@ -709,16 +709,16 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 
 	while(atomic_read(&ni->ref_cnt) == 1) {
 		ni_cleanup(ni);
-		
+
 		assert(ni->cleanup_state == NI_FINISH_CLEANUP ||
 			   ni->cleanup_state == NI_WAIT_DISCONNECT_ALL);
-	
+
 		if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
 			/* Private return code. Not seen by the application. */
 			err = PTL_IN_USE;
 			break;
 		}
-		
+
 		/* Release the interface. */
 		atomic_dec(&ni->ref_cnt);
 		ni_put(ni);

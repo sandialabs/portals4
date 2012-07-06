@@ -638,7 +638,7 @@ static int tgt_get_match(buf_t *buf)
 		buf->ni_fail = PTL_NI_PT_DISABLED;
 	} else {
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
-		buf->ni_fail = PTL_NI_DROPPED;		
+		buf->ni_fail = PTL_NI_DROPPED;
 	}
 	buf->le = NULL;
 	WARN();
@@ -919,7 +919,7 @@ static int tgt_data(buf_t *buf)
  * This state is reached after finding a match, computing length/offset and
  * establishing that there is a connection. It handles sending data
  * from get, fetch and swap operations to the initiators get_md depending
- * on the data descriptor and length of the data. Short data is 
+ * on the data descriptor and length of the data. Short data is
  * sent inline with the reply event information. Long data is sent using
  * RDMA write operations to the initiator and may require first copying
  * an indirect sge list from the initiators iovec is too long.
@@ -988,7 +988,7 @@ static int tgt_data_out(buf_t *buf)
 					return err;
 				}
 			}
-			
+
 			err = append_immediate_data(me->start, &mr, me->num_iov, DATA_DIR_OUT,
 										buf->moffset, buf->mlength, buf->send_buf);
 
@@ -1026,7 +1026,7 @@ static int tgt_data_out(buf_t *buf)
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 static int tgt_start_copy(buf_t *buf)
 {
-	/* Add to the data queue. */ 
+	/* Add to the data queue. */
 	ni_t *ni = obj_to_ni(buf);
 
 	PTL_FASTLOCK_LOCK(&ni->noknem_lock);
@@ -1034,7 +1034,7 @@ static int tgt_start_copy(buf_t *buf)
 	PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
 
 	return STATE_TGT_RDMA;
-}	
+}
 #else
 static int tgt_start_copy(buf_t *buf) { abort(); }
 #endif
@@ -1259,7 +1259,7 @@ static int tgt_data_in(buf_t *buf)
 	/* this can happen for a simple swap operation */
 	if (buf->in_atomic) {
 		ni_t *ni = obj_to_ni(buf);
-		
+
 		pthread_mutex_unlock(&ni->atomic_mutex);
 		buf->in_atomic = 0;
 	}
@@ -1383,7 +1383,7 @@ static int tgt_swap_data_in(buf_t *buf)
  */
 static int tgt_comm_event(buf_t *buf)
 {
-	if (buf->le && 
+	if (buf->le &&
 		buf->le->ptl_list == PTL_OVERFLOW_LIST) {
 
 		/* The buf should be on the unexpected list, unless an

@@ -183,7 +183,7 @@ static int connect_to_ppe(void)
 	ppe.s = -1;
 
 	/* XPMEM the whole memory of that process. */
-	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,	
+	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,
 						   XPMEM_PERMIT_MODE, (void *)0600);
 	if (ppe.segid == -1)
 		goto exit_fail;
@@ -804,7 +804,7 @@ int PtlLEAppend(ptl_handle_ni_t  ni_handle,
 
 	err = buf->msg.ret;
 	*le_handle = buf->msg.PtlLEAppend.le_handle;
-	
+
 	ppebuf_release(buf);
 
 	return err;
@@ -891,7 +891,7 @@ int PtlMEAppend(ptl_handle_ni_t  ni_handle,
 
 	err = buf->msg.ret;
 	*me_handle = buf->msg.PtlMEAppend.me_handle;
-	
+
 	ppebuf_release(buf);
 
 	return err;

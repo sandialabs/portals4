@@ -245,7 +245,7 @@ static int recv_packet(buf_t *buf)
 		/* get per conn info */
 		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
 		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
-		
+
 		conn = get_conn(buf->obj.obj_ni, initiator);
 
 		pthread_mutex_lock(&conn->mutex);
@@ -546,7 +546,7 @@ void *progress_thread(void *arg)
 					/* Mark it for return now. The target state machine might
 					 * change its type to BUF_SHMEM_SEND. */
 					shmem_buf->type = BUF_SHMEM_RETURN;
- 
+
 					err = buf_alloc(ni, &buf);
 					if (err) {
 						WARN();

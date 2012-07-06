@@ -28,12 +28,12 @@ enum ppe_op {
 	OP_PtlCTCancelTriggered,
 	OP_PtlCTFree,
 	OP_PtlCTInc,
-	OP_PtlCTSet,			
+	OP_PtlCTSet,
 	OP_PtlEQAlloc,
 	OP_PtlEQFree,
 	OP_PtlFetchAtomic,
 	OP_PtlFini,
-	OP_PtlGet,					
+	OP_PtlGet,
 	OP_PtlGetId,
 	OP_PtlGetMap,
 	OP_PtlGetPhysId,
@@ -209,7 +209,7 @@ struct ppe_msg {
 		struct {
 			ptl_handle_ct_t ct_handle;
 		} PtlCTFree;
-		
+
 		struct {
 			ptl_handle_ct_t ct_handle;
 		} PtlCTCancelTriggered;
@@ -224,7 +224,7 @@ struct ppe_msg {
 			ptl_ct_event_t  increment;
 		} PtlCTInc;
 
-		struct { 
+		struct {
 			ptl_handle_md_t  md_handle;
 			ptl_size_t       local_offset;
 			ptl_size_t       length;
@@ -302,12 +302,12 @@ struct ppe_msg {
 			ptl_handle_eq_t  eq_handle;
 			struct xpmem_map eqe_list;
 		} PtlEQAlloc;
-		
+
 		struct {
 			ptl_handle_eq_t eq_handle;
 		} PtlEQFree;
 
-		struct { 
+		struct {
 			ptl_handle_md_t  md_handle;
 			ptl_size_t       local_offset;
 			ptl_size_t       length;
