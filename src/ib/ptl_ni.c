@@ -730,9 +730,6 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 	pthread_mutex_unlock(&gbl->gbl_mutex);
 
 	ni_put(ni);
-	gbl_put();
-	return PTL_OK;
-
 err1:
 	gbl_put();
 	return err;
