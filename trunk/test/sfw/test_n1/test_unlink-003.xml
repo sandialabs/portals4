@@ -13,7 +13,7 @@
                   <ptl_eq_wait eq_handle="eq[0]">
                     <check event_type="LINK"/>
                   </ptl_eq_wait>
-                  
+
                   <ptl_eq_wait eq_handle="eq[0]">
                     <check event_type="PUT"/>
                   </ptl_eq_wait>

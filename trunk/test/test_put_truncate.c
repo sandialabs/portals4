@@ -185,7 +185,7 @@ int main(int   argc,
                         PTL_PID_ANY,
                         NULL, NULL, &ni_logical));
 
-    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs, 
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
                               libtest_get_mapping(ni_logical)));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));

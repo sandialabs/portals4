@@ -7,6 +7,6 @@
         <ptl_get_map ret="ARG_INVALID"/>
       </ompi_rt>
     </ptl_ni>
-    
+
   </ptl>
 </test>

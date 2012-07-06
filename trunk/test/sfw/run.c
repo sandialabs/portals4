@@ -61,7 +61,7 @@ static long get_number(struct node_info *info, char *orig_val)
 	if (info && val[0] == '$') {
 		val++;
 		i = 0;
-		while((tok[i++] = strtok_r(val, ".", &save))) 
+		while((tok[i++] = strtok_r(val, ".", &save)))
 			val = NULL;
 
 		if (tok[0]) {
@@ -148,7 +148,7 @@ static int get_uid(struct node_info *info, char *val)
 {
 	if (!strcmp("ANY", val)) return PTL_UID_ANY;
 	else return get_number(info, val);
-	
+
 }
 
 static ptl_process_t get_target_id(struct node_info *info, char *val)
@@ -157,7 +157,7 @@ static ptl_process_t get_target_id(struct node_info *info, char *val)
 	char *dotpos;
 
 	memset(&id, 0, sizeof(id));
-	
+
 	if (!strcmp(val, "SELF")) {
 		if (PtlGetId(info->ni_handle, &id) != PTL_OK) {
 			printf("PtlGetId failed\n");
@@ -282,7 +282,7 @@ static struct node_info *push_info(struct node_info *head, int tok)
 	if (info->ni_opt & PTL_NI_PHYSICAL) {
 		info->me.match_id.phys.pid  = PTL_PID_ANY;
 		info->me.match_id.phys.nid  = PTL_NID_ANY;
-	} else 
+	} else
 		info->me.match_id.rank  = PTL_RANK_ANY;
 
 	switch(tok) {

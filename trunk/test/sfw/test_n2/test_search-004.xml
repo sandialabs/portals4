@@ -8,84 +8,84 @@
             <ptl_eq>
               <ptl_pt>
                 <ptl_get_id>
-                  
+
                   <if rank="0">
                     <ptl_md md_data="0xaa">
-                      
+
                       <!-- Wait for rank 1 to set up the receiving buffer -->
                       <barrier/>
-                      
+
                       <ptl_atomic ack_req="ACK" length="4" match="0x5555" target_id="1"/>
-                      
+
                       <!-- Wait for the packet containing the ack -->
                       <ptl_eq_wait>
                         <check event_type="SEND"/>
                       </ptl_eq_wait>
-                      
+
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
                       </ptl_eq_wait>
-                      
+
                     </ptl_md>
                   </if>
-                  
+
                   <if rank="1">
                     <ptl_le le_data="0x77" le_opt="OP_PUT EVENT_LINK_DISABLE" list="OVERFLOW">
-                      
+
                       <!-- Force rank 0 to wait for the buffer to be ready -->
                       <barrier/>
-                      
+
                       <ptl_eq_wait>
                         <check event_type="ATOMIC"/>
                       </ptl_eq_wait>
-                      
+
                       <!-- Search a few times -->
                       <repeat count="3">
                         <ptl_le_search le_opt="OP_PUT" search_op="ONLY">
-                          
+
                           <!-- Wait for PTL_NI_OK event -->
                           <ptl_eq_wait>
                             <check event_ni_fail="OK" event_type="SEARCH"/>
                             <check event_ptl_list="OVERFLOW"/>
                           </ptl_eq_wait>
-                          
+
                         </ptl_le_search>
                       </repeat>
-                      
+
                       <!-- Delete -->
                       <ptl_le_search le_opt="OP_PUT" search_op="DELETE">
-                        
+
                         <!-- Wait for PTL_NI_OK event -->
                         <ptl_eq_wait>
                           <check event_type="ATOMIC_OVERFLOW"/>
                         </ptl_eq_wait>
-                        
+
                       </ptl_le_search>
-                      
+
                       <!-- Try to delete again -->
                       <ptl_le_search le_opt="OP_PUT" search_op="DELETE">
-                        
+
                         <!-- Wait for PTL_NI_OK event -->
                         <ptl_eq_wait>
                           <check event_ni_fail="NO_MATCH" event_type="SEARCH"/>
                         </ptl_eq_wait>
-                        
+
                       </ptl_le_search>
-                      
+
                       <!-- Try to search again -->
                       <ptl_le_search le_opt="OP_PUT" search_op="ONLY">
-                        
+
                         <!-- Wait for PTL_NI_OK event -->
                         <ptl_eq_wait>
                           <check event_ni_fail="NO_MATCH" event_type="SEARCH"/>
                         </ptl_eq_wait>
-                        
+
                       </ptl_le_search>
-                      
+
                     </ptl_le>
                   </if>
-                  
+
                 </ptl_get_id>
               </ptl_pt>
             </ptl_eq>

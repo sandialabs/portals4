@@ -8,7 +8,7 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md eq_handle="EQ_NONE">
                         <barrier/>
@@ -17,7 +17,7 @@
                       </ptl_md>
                       <ptl_eq_poll ret="EQ_EMPTY" time="200"/>
                     </if>
-                    
+
                     <if rank="1">
                       <ptl_me me_ignore="0xff00" me_match="0x725c" me_opt="OP_GET EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
                         <barrier/>

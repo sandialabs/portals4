@@ -8,43 +8,43 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md md_data="0xaa">
-                        
+
                         <!-- Wait for rank 1 to set up the receiving buffer -->
                         <barrier/>
-                        
+
                         <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
-                        
+
                         <!-- Wait for the packet containing the ack -->
                         <ptl_eq_wait>
                           <check event_type="SEND"/>
                         </ptl_eq_wait>
-                        
+
                         <!-- Wait for the ack -->
                         <ptl_eq_wait>
                           <check event_type="ACK"/>
                           <check event_ni_fail="PERM_VIOLATION"/>
                         </ptl_eq_wait>
-                        
+
                         <barrier/>
-                        
+
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <ptl_me me_data="0x77" me_match="0x5555" me_opt="OP_PUT EVENT_LINK_DISABLE" uid="98765453">
-                        
+
                         <!-- Force rank 0 to wait for the buffer to be ready -->
                         <barrier/>
-                        
+
                         <!-- Wait for rank 0 to coalesce -->
                         <barrier/>
-                        
+
                       </ptl_me>
                     </if>
-                    
+
                   </ptl_get_id>
                 </ptl_pt>
               </ptl_eq>

@@ -24,10 +24,10 @@ int main(
 #endif
     CHECK_RETURNVAL(PtlInit());
     CHECK_RETURNVAL(PtlInit());
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, 
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT,
                               PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
-                              PTL_PID_ANY, 
-                              NULL, &actual, 
+                              PTL_PID_ANY,
+                              NULL, &actual,
                               &ni_handle_phys));
     CHECK_RETURNVAL(PtlNIFini(ni_handle_phys));
     PtlFini();

@@ -1,5 +1,5 @@
 /*
- * Test flow control where we have no receive space 
+ * Test flow control where we have no receive space
  */
 
 #include <portals4.h>
@@ -86,7 +86,7 @@ int main(int   argc,
         CHECK_RETURNVAL(APPEND(ni_handle, 6, &value_e, PTL_PRIORITY_LIST, NULL, &signal_e_handle));
     } else {
         ptl_md_t        md;
-        
+
         /* 16 extra just in case... */
         CHECK_RETURNVAL(PtlEQAlloc(ni_handle, ITERS * 2 + 16, &eq_handle));
 
@@ -113,7 +113,7 @@ int main(int   argc,
         }
 
         fprintf(stderr, "0: got all my signals\n");
-        
+
         /* wait for event entries */
         while (1) {
             ret = PtlEQGet(eq_handle, &ev);

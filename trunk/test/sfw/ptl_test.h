@@ -99,7 +99,7 @@ struct node_info {
 	ptl_sr_index_t		reg;
 	ptl_sr_value_t		status;
 	ptl_handle_any_t	handle;
-	
+
 	/*
 	 * pt_alloc, pt_free, pt_disable, pt_enable
 	 */

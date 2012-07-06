@@ -8,7 +8,7 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md md_data="0xffffffff" md_length="16384" type="UINT">
                         <barrier/>
@@ -20,7 +20,7 @@
                         <barrier/>
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <ptl_le le_data="0x0f0f0f0f" le_length="16384" le_opt="OP_GET EVENT_LINK_DISABLE" type="UINT">
                         <barrier/>
@@ -30,7 +30,7 @@
                         <barrier/>
                       </ptl_le>
                     </if>
-                    
+
                   </ptl_get_id>
                 </ptl_pt>
               </ptl_eq>

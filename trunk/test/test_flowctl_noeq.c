@@ -1,5 +1,5 @@
 /*
- * Test flow control where we exhaust the eq, but have room to receive messages 
+ * Test flow control where we exhaust the eq, but have room to receive messages
  */
 
 #include <portals4.h>
@@ -97,7 +97,7 @@ int main(int   argc,
         CHECK_RETURNVAL(APPEND(ni_handle, 6, &value_e, PTL_PRIORITY_LIST, NULL, &signal_e_handle));
     } else {
         ptl_md_t        md;
-        
+
         /* 16 extra just in case... */
         CHECK_RETURNVAL(PtlEQAlloc(ni_handle, ITERS * 2 + 16, &eq_handle));
 

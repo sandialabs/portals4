@@ -8,7 +8,7 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md md_length="32768">
                         <barrier/>
@@ -22,7 +22,7 @@
                         <barrier/>
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <barrier/>
                       <ptl_eq_poll ret="EQ_EMPTY" time="200"/>
