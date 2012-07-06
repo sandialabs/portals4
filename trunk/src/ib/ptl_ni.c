@@ -707,7 +707,9 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 
 	assert(atomic_read(&ni->ref_cnt) >= 1);
 
-	while(atomic_read(&ni->ref_cnt) == 1) {
+	atomic_dec(&ni->ref_cnt);
+
+	while(atomic_read(&ni->ref_cnt) == 0) {
 		ni_cleanup(ni);
 
 		assert(ni->cleanup_state == NI_FINISH_CLEANUP ||
@@ -720,7 +722,6 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 		}
 
 		/* Release the interface. */
-		atomic_dec(&ni->ref_cnt);
 		ni_put(ni);
 
 		err = PTL_OK;
