@@ -1073,7 +1073,7 @@ static int tgt_rdma(buf_t *buf)
 		|| atomic_read(&buf->rdma.rdma_comp)
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-		|| buf->transfer.noknem.noknem->init_done == 0
+		|| (buf->transfer.noknem.noknem && buf->transfer.noknem.noknem->init_done == 0)
 #endif
 		)
 		return STATE_TGT_RDMA;
