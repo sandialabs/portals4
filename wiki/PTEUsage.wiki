@@ -1,0 +1,20 @@
+#summary Portal Table Entry Reservations
+
+|| *PT* || *Matching/Physical* || *Matching/Logical* || *Non-matching/Physical* || *Non-matching/Logical* ||
+||  0 || || || || ||
+||  1 || || || || ||
+||  2 || || || || ||
+||  3 || || || || ||
+||  4 || OMPI OSC || || || ||
+||  5 || || || || ||
+||  6 || || GASNET || || ||
+||  7 || || GASNET || || ||
+||  8 || || || || ||
+||  9 || || || || ||
+|| 10 || || || || SHMEM ||
+|| 11 || || || || SHMEM ||
+|| 12 || OMPI PT2PT || || || ||
+|| 13 || OMPI PT2PT || || || ||
+|| 14 || OMPI PT2PT || || || ||
+|| 15 || || || || ||
+|| 16 || || || || ||
