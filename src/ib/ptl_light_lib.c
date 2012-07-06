@@ -107,8 +107,8 @@ static inline void ppebuf_release(ppebuf_t *buf)
 
 	__sync_synchronize();
 
-	enqueue_free_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list, obj,
-						   ppe.ppebufs_addr, ppe.ppebufs_ppeaddr);
+	ll_enqueue_obj_alien(&ppe.ppe_comm_pad->ppebuf_pool.free_list, obj,
+						 ppe.ppebufs_addr, ppe.ppebufs_ppeaddr);
 }
 
 /* Attach to an XPMEM segment. */
