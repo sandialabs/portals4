@@ -631,7 +631,7 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 	buf->msg.ret = _PtlNIFini(&client->gbl,
 							  buf->msg.PtlNIFini.ni_handle);
 
-	if (buf->msg.ret != PTL_IN_USE) {
+	if (atomic_read(&ni->ref_cnt) == 0) {
 		remove_ni(ni);
 #ifdef WITH_TRANSPORT_IB
 		list_del(&ni->rdma.ppe_ni_list);
