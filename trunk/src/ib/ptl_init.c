@@ -149,23 +149,24 @@ static int start(buf_t *buf)
 		if (buf->put_md->eq)
 			buf->event_mask |= XI_SEND_EVENT;
 
-		if (hdr->ack_req == PTL_ACK_REQ) {
+		if (hdr->ack_req) {
+			/* Some sort of ACK has been requested. */
 			buf->event_mask |= XI_RECEIVE_EXPECTED;
-			if (buf->put_md->eq)
+
+			if (hdr->ack_req == PTL_ACK_REQ &&
+				buf->put_md->eq)
 				buf->event_mask |= XI_ACK_EVENT;
+
+			/* All three forms of ACK can generate a counting
+			 * event. */
+			if (buf->put_md->ct &&
+				(buf->put_md->options & PTL_MD_EVENT_CT_ACK))
+				buf->event_mask |= XI_CT_ACK_EVENT;
 		}
 
 		if (buf->put_md->ct &&
 		    (buf->put_md->options & PTL_MD_EVENT_CT_SEND))
 			buf->event_mask |= XI_CT_SEND_EVENT;
-
-		if ((hdr->ack_req == PTL_CT_ACK_REQ ||
-		     hdr->ack_req == PTL_OC_ACK_REQ)) {
-			buf->event_mask |= XI_RECEIVE_EXPECTED;
-			if (buf->put_md->ct && (buf->put_md->options &
-									PTL_MD_EVENT_CT_ACK))
-				buf->event_mask |= XI_CT_ACK_EVENT;
-		}
 		break;
 	case OP_GET:
 		buf->event_mask |= XI_RECEIVE_EXPECTED;
