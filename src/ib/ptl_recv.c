@@ -604,13 +604,13 @@ void *progress_thread(void *arg)
 
 		list_for_each_safe(l, t, &ni->noknem_list) {
 			buf_t *buf = list_entry(l, buf_t, list);
-			data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+			struct noknem *noknem = buf->transfer.noknem.noknem;
 
-			if (buf->transfer.noknem.transfer_state_expected == data->noknem.state) {
-				if (data->noknem.state == 0)
+			if (buf->transfer.noknem.transfer_state_expected == noknem->state) {
+				if (noknem->state == 0)
 					process_init(buf);
-				else if (data->noknem.state == 2) {
-					if (data->noknem.init_done) {
+				else if (noknem->state == 2) {
+					if (noknem->init_done) {
 						buf_t *shmem_buf = buf->mem_buf;
 
 						/* The transfer is now done. Remove from

@@ -469,14 +469,14 @@ static int init_copy_start(buf_t *buf)
 
 static int init_copy_in(buf_t *buf)
 {
-	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	struct noknem *noknem = buf->transfer.noknem.noknem;
 	ptl_size_t to_copy;
 	int ret;
 
-	data->noknem.state = 1;
+	noknem->state = 1;
 
 	/* Copy the data from the bounce buffer. */
-	to_copy = data->noknem.length;
+	to_copy = noknem->length;
 
 	/* Target should never send more than requested. */
 	assert(to_copy <= buf->transfer.noknem.length_left);
@@ -491,7 +491,7 @@ static int init_copy_in(buf_t *buf)
 		return STATE_INIT_ERROR;
 	}
 
-	if (data->noknem.target_done)
+	if (noknem->target_done)
 		return STATE_INIT_COPY_DONE;
 
 	buf->transfer.noknem.length_left -= to_copy;
@@ -499,21 +499,21 @@ static int init_copy_in(buf_t *buf)
 	
 	/* Tell the target the data is ready. */
 	__sync_synchronize();
-	data->noknem.state = 2;
+	noknem->state = 2;
 
 	return STATE_INIT_COPY_IN;
 }
 
 static int init_copy_out(buf_t *buf)
 {
-	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	struct noknem *noknem = buf->transfer.noknem.noknem;
 	ptl_size_t to_copy;
 	int ret;
 
-	if (data->noknem.target_done)
+	if (noknem->target_done)
 		return STATE_INIT_COPY_DONE;
 
-	data->noknem.state = 1;
+	noknem->state = 1;
 
 	/* Copy the data to the bounce buffer. */
 	to_copy = buf->transfer.noknem.data_length;
@@ -533,11 +533,11 @@ static int init_copy_out(buf_t *buf)
 	buf->transfer.noknem.length_left -= to_copy;
 	buf->transfer.noknem.offset += to_copy;
 	
-	data->noknem.length = to_copy;
+	noknem->length = to_copy;
 
 	/* Tell the target the data is ready. */
 	__sync_synchronize();
-	data->noknem.state = 2;
+	noknem->state = 2;
 
 	return STATE_INIT_COPY_OUT;
 }
@@ -545,12 +545,12 @@ static int init_copy_out(buf_t *buf)
 static int init_copy_done(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
-	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	struct noknem *noknem = buf->transfer.noknem.noknem;
 
 	/* Ack. */
-	data->noknem.init_done = 1;
+	noknem->init_done = 1;
 	__sync_synchronize();
-	data->noknem.state = 2;
+	noknem->state = 2;
 
 	/* Free the bounce buffer allocated in init_append_data. */
 	ll_enqueue_obj_alien(&ni->shmem.bounce_buf.head->free_list,

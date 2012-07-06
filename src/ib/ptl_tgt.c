@@ -1073,7 +1073,7 @@ static int tgt_rdma(buf_t *buf)
 		|| atomic_read(&buf->rdma.rdma_comp)
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-		|| ((data_t *)(buf->data + sizeof(req_hdr_t)))->noknem.init_done == 0
+		|| buf->transfer.noknem.noknem->init_done == 0
 #endif
 		)
 		return STATE_TGT_RDMA;
@@ -1429,6 +1429,11 @@ static int tgt_send_ack(buf_t *buf)
 	if (buf->send_buf) {
 		ack_buf = buf->send_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->data;
+
+		ack_hdr->h1.data_in = 0;
+		ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
+		ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
+
 	}
 #if WITH_TRANSPORT_SHMEM
 	else if (buf->mem_buf) {
@@ -1445,9 +1450,6 @@ static int tgt_send_ack(buf_t *buf)
 	/* Reset some header values while keeping others. */
 	ack_buf->length = sizeof(*ack_hdr);
 
-	ack_hdr->h1.data_in = 0;
-	ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
-	ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
 	ack_hdr->h1.ni_fail = buf->ni_fail;
 	ack_hdr->mlength	= cpu_to_le64(buf->mlength);
 	ack_hdr->moffset	= cpu_to_le64(buf->moffset);

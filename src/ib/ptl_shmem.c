@@ -199,6 +199,7 @@ static void append_init_data_noknem_iovec(data_t *data, md_t *md,
 	data->noknem.init_done = 0;
 
 	buf->transfer.noknem.transfer_state_expected = 0; /* always the initiator here */
+	buf->transfer.noknem.noknem = &data->noknem;
 
 	attach_bounce_buffer(buf, data);
 
@@ -220,6 +221,7 @@ static void append_init_data_noknem_direct(data_t *data, mr_t *mr, void *addr,
 	data->noknem.init_done = 0;
 
 	buf->transfer.noknem.transfer_state_expected = 0; /* always the initiator here */
+	buf->transfer.noknem.noknem = &data->noknem;
 
 	attach_bounce_buffer(buf, data);
 
@@ -307,25 +309,25 @@ static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t off
 
 static int do_noknem_transfer(buf_t *buf)
 {
-	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
+	struct noknem *noknem = buf->transfer.noknem.noknem;
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 		&buf->put_resid : &buf->get_resid;
 	ptl_size_t to_copy;
 	int err;
 
-	if (data->noknem.state != 2)
+	if (noknem->state != 2)
 		return PTL_OK;
 
-	if (data->noknem.init_done) {
-		assert(data->noknem.target_done);
+	if (noknem->init_done) {
+		assert(noknem->target_done);
 		return PTL_OK;
 	}
 
-	data->noknem.state = 3;
+	noknem->state = 3;
 
 	if (*resid) {
 		if (buf->rdma_dir == DATA_DIR_IN) {
-			to_copy = data->noknem.length;
+			to_copy = noknem->length;
 			if (to_copy > *resid)
 				to_copy = *resid;
 
@@ -343,7 +345,7 @@ static int do_noknem_transfer(buf_t *buf)
 							   buf->transfer.noknem.num_iovecs,
 							   buf->transfer.noknem.offset, to_copy);
 
-			data->noknem.length = to_copy;
+			noknem->length = to_copy;
 		}
 
 		/* That should never happen since all lengths were properly
@@ -361,11 +363,11 @@ static int do_noknem_transfer(buf_t *buf)
 	*resid -= to_copy;
 
 	if (*resid == 0)
-		data->noknem.target_done = 1;
+		noknem->target_done = 1;
 
 	/* Tell the initiator the buffer is his again. */
 	__sync_synchronize();
-	data->noknem.state = 0;
+	noknem->state = 0;
 
 	return err;
 }
@@ -382,6 +384,7 @@ static int noknem_tgt_data_out(buf_t *buf, data_t *data)
 	}
 
 	buf->transfer.noknem.transfer_state_expected = 2; /* always the target here */
+	buf->transfer.noknem.noknem = &data->noknem;
 
 	if ((buf->rdma_dir == DATA_DIR_IN && buf->put_resid) ||
 		(buf->rdma_dir == DATA_DIR_OUT && buf->get_resid)) {
@@ -416,7 +419,6 @@ struct transport transport_shmem = {
 	.post_tgt_dma = do_mem_transfer,
 	.tgt_data_out = knem_tgt_data_out,
 #else
-	.post_tgt_dma = do_noknem_transfer,
 	.init_prepare_transfer = init_prepare_transfer_noknem,
 	.post_tgt_dma = do_noknem_transfer,
 	.tgt_data_out = noknem_tgt_data_out,
