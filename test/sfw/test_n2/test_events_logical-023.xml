@@ -8,7 +8,7 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md>
                         <barrier/>
@@ -23,7 +23,7 @@
                         <barrier/>
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <ptl_le le_opt="OP_GET COMM_DISABLE EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
                         <barrier/>
@@ -31,7 +31,7 @@
                         <barrier/>
                       </ptl_le>
                     </if>
-                    
+
                   </ptl_get_id>
                 </ptl_pt>
               </ptl_eq>

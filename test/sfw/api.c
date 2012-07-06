@@ -608,7 +608,7 @@ int test_ptl_swap(struct node_info *info)
 		      info->length, info->target_id, info->pt_index,
 		      info->match, info->rem_offset,
 		      info->user_ptr, info->hdr_data, info->ptr,
-		      info->atom_op, info->type); 
+		      info->atom_op, info->type);
 
 	info->err = ret;
 
@@ -690,7 +690,7 @@ int test_ptl_trig_swap(struct node_info *info)
 			       info->match, info->rem_offset,
 			       info->user_ptr, info->hdr_data, info->ptr,
 			       info->atom_op, info->type,
-			       info->ct_handle, info->threshold); 
+			       info->ct_handle, info->threshold);
 
 	info->err = ret;
 

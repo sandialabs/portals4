@@ -8,7 +8,7 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md>
                         <ptl_md>
@@ -30,7 +30,7 @@
                         </ptl_md>
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <ptl_me me_ignore="0xff00" me_match="0xf32c" me_opt="OP_PUT OP_GET COMM_DISABLE EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
                         <barrier/>
@@ -38,7 +38,7 @@
                         <barrier/>
                       </ptl_me>
                     </if>
-                    
+
                   </ptl_get_id>
                 </ptl_pt>
               </ptl_eq>

@@ -8,59 +8,59 @@
             <ptl_eq>
               <ptl_pt>
                 <ptl_get_id>
-                  
+
                   <if rank="0">
                     <ptl_md md_data="0xaa">
-                      
+
                       <!-- Wait for rank 1 to set up the receiving buffer -->
                       <barrier/>
-                      
+
                       <ptl_put ack_req="ACK" length="4" match="0x5555" target_id="1"/>
-                      
+
                       <!-- Wait for the packet containing the ack -->
                       <ptl_eq_wait>
                         <check event_type="SEND"/>
                       </ptl_eq_wait>
-                      
+
                       <!-- Wait for the ack -->
                       <ptl_eq_wait>
                         <check event_type="ACK"/>
                         <check event_ptl_list="OVERFLOW"/>
                       </ptl_eq_wait>
-                      
+
                     </ptl_md>
                   </if>
-                  
+
                   <if rank="1">
                     <ptl_me list="OVERFLOW" me_data="0x77" me_match="0x5555" me_opt="OP_PUT EVENT_LINK_DISABLE">
-                      
+
                       <!-- Force rank 0 to wait for the buffer to be ready -->
                       <barrier/>
-                      
+
                       <ptl_eq_wait>
                         <check event_type="PUT"/>
                       </ptl_eq_wait>
-                      
+
                       <ptl_ct>
-                        
+
                         <ptl_me list="PRIORITY" me_data="0x77" me_match="0x5555" me_opt="OP_PUT CT_OVERFLOW">
-                          
+
                           <!-- Wait for overflow event -->
                           <ptl_eq_wait>
                             <check event_type="PUT_OVERFLOW"/>
                           </ptl_eq_wait>
-                          
+
                         </ptl_me>
-                        
+
                         <ptl_ct_get ct_handle="ct[0]">
                           <check ct_event_failure="0" ct_event_success="4"/>
                         </ptl_ct_get>
-                        
+
                       </ptl_ct>
-                      
+
                     </ptl_me>
                   </if>
-                  
+
                 </ptl_get_id>
               </ptl_pt>
             </ptl_eq>

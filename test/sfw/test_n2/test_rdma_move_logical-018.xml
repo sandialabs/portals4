@@ -8,12 +8,12 @@
               <ptl_eq>
                 <ptl_pt>
                   <ptl_get_id>
-                    
+
                     <if rank="0">
                       <ptl_md md_length="32768">
                         <barrier/>
                         <ptl_put ack_req="ACK" length="32768" match="0x5555" target_id="1" user_ptr="432"/>
-                        
+
                         <ptl_eq_poll time="200">
                           <check event_type="SEND"/>
                           <check event_user_ptr="432"/>
@@ -28,7 +28,7 @@
                         <barrier/>
                       </ptl_md>
                     </if>
-                    
+
                     <if rank="1">
                       <barrier/>
                       <ptl_eq_poll ret="EQ_EMPTY" time="200"/>

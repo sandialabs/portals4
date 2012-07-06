@@ -8,60 +8,60 @@
             <ptl_eq>
               <ptl_pt>
                 <ptl_get_id>
-                  
+
                   <if rank="0">
                     <ptl_md md_data="0xaa" md_opt="SUCCESS_DISABLE">
-                      
+
                       <!-- Wait for rank 1 to set up the receiving buffer -->
                       <barrier/>
-                      
+
                       <ptl_put ack_req="ACK" length="4" match="0" target_id="1"/>
                       <ptl_put ack_req="ACK" length="40" match="0" target_id="1"/>
-                      
+
                       <barrier/>
-                      
+
                     </ptl_md>
                   </if>
-                  
+
                   <if rank="1">
                     <ptl_me list="OVERFLOW" me_data="0x77" me_match="0" me_opt="OP_PUT EVENT_LINK_DISABLE">
-                      
+
                       <!-- Force rank 0 to wait for the buffer to be ready -->
                       <barrier/>
-                      
+
                       <ptl_eq_wait>
                         <check event_type="PUT"/>
                       </ptl_eq_wait>
-                      
+
                       <ptl_eq_wait>
                         <check event_type="PUT"/>
                       </ptl_eq_wait>
-                      
-                      
+
+
                       <ptl_me list="PRIORITY" me_data="0x77" me_match="0" me_opt="OP_PUT">
-                        
+
                         <!-- Wait for overflow event -->
                         <ptl_eq_wait>
                           <check event_mlength="4" event_type="PUT_OVERFLOW"/>
                         </ptl_eq_wait>
-                        
+
                       </ptl_me>
-                      
-                      
+
+
                       <ptl_me list="PRIORITY" me_data="0x77" me_match="0" me_opt="OP_PUT">
-                        
+
                         <!-- Wait for overflow event -->
                         <ptl_eq_wait>
                           <check event_mlength="40" event_type="PUT_OVERFLOW"/>
                         </ptl_eq_wait>
-                        
+
                       </ptl_me>
-                      
+
                       <barrier/>
-                      
+
                     </ptl_me>
                   </if>
-                  
+
                 </ptl_get_id>
               </ptl_pt>
             </ptl_eq>

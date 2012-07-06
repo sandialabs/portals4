@@ -73,7 +73,7 @@ int main(int   argc,
         md.ct_handle = ct_h;
         CHECK_RETURNVAL(PtlMDBind(ni_logical, &md, &md_h));
 
-        CHECK_RETURNVAL(PtlPut(md_h, 0, 0, PTL_ACK_REQ, myself, 
+        CHECK_RETURNVAL(PtlPut(md_h, 0, 0, PTL_ACK_REQ, myself,
                                logical_pt_index, 0, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(ct_h, 1, &ct));
         assert(1 == ct.success && 0 == ct.failure);

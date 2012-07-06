@@ -222,11 +222,11 @@ static unsigned int hash(const char *data)
 	while(len >= 4) {
 		k = *(unsigned int *)data;
 
-		k *= m; 
-		k ^= k >> 24; 
-		k *= m; 
+		k *= m;
+		k ^= k >> 24;
+		k *= m;
 
-		h *= m; 
+		h *= m;
 		h ^= k;
 
 		data += 4;
@@ -244,7 +244,7 @@ static unsigned int hash(const char *data)
 	h *= m;
 	h ^= h >> 15;
 	return h;
-} 
+}
 
 struct dict_entry *lookup(const char *name)
 {
