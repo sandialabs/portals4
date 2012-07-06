@@ -26,7 +26,7 @@ static int send_message_rdma(buf_t *buf, int from_init)
 	wr.num_sge = 1;
 	wr.opcode = IBV_WR_SEND;
 
-	if ((buf->event_mask & XX_SIGNALED) || 
+	if ((buf->event_mask & XX_SIGNALED) ||
 		(atomic_inc(&buf->conn->rdma.send_comp_threshold) == get_param(PTL_MAX_SEND_COMP_THRESHOLD)) ||
 		(from_init && atomic_read(&conn->rdma.num_req_not_comp) >= get_param(PTL_MAX_SEND_COMP_THRESHOLD))) {
 		wr.send_flags = IBV_SEND_SIGNALED;
@@ -80,7 +80,7 @@ static int send_message_rdma(buf_t *buf, int from_init)
 			 * conn->rdma.num_req_posted and set
 			 * conn->rdma.num_req_posted to 0. */
 			buf->transfer.rdma.num_req_completes = atomic_swap(&conn->rdma.num_req_not_comp, 0);
-		}	
+		}
 	}
 
 	err = ibv_post_send(buf->dest.rdma.qp, &wr, &bad_wr);

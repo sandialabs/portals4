@@ -54,20 +54,20 @@ struct hdr_common {
 	unsigned int	ni_fail:4;	/* response only */
 	unsigned int	data_in:1;
 	unsigned int	data_out:1;
-	unsigned int    matching_list:2; 	/* response only */	
+	unsigned int    matching_list:2; 	/* response only */
 	unsigned int    pad:7;
 	unsigned int    physical:1;	/* PPE */
-	unsigned int	ni_type:4;	/* request only */	
-	unsigned int	pkt_fmt:4;	/* request only */	
+	unsigned int	ni_type:4;	/* request only */
+	unsigned int	pkt_fmt:4;	/* request only */
 	__le32			handle;
 #if IS_PPE
 	/* This information is always needed by the PPE to find the
 	 * destination NI. */
 	__le32 hash;
-	union {							
-		__le32			dst_nid;		
-		__le32			dst_rank;		
-	};								
+	union {
+		__le32			dst_nid;
+		__le32			dst_rank;
+	};
 	__le32			dst_pid;
 #endif
 };
@@ -80,29 +80,29 @@ struct hdr_common {
  */
 typedef struct req_hdr {
 	struct hdr_common h1;
-	unsigned int	ack_req:4;		
-	unsigned int	atom_type:4;	
-	unsigned int	atom_op:5;		
+	unsigned int	ack_req:4;
+	unsigned int	atom_type:4;
+	unsigned int	atom_op:5;
 	unsigned int	reserved_19:19;
-	union {							
-		__le32			src_nid;		
-		__le32			src_rank;		
-	};								
-	__le32			src_pid;		
-	__le64			rlength;			
-	__le64			roffset;			
-	__le64			match_bits;		
-	__le64			hdr_data;		
-	__le64			operand;		
-	__le32			pt_index;		
+	union {
+		__le32			src_nid;
+		__le32			src_rank;
+	};
+	__le32			src_pid;
+	__le64			rlength;
+	__le64			roffset;
+	__le64			match_bits;
+	__le64			hdr_data;
+	__le64			operand;
+	__le32			pt_index;
 	__le32			uid;
 } req_hdr_t;
 
 /* Header for an ack or a reply. */
 typedef struct ack_hdr {
 	struct hdr_common h1;
-	__le64			mlength;			
-	__le64			moffset;			
+	__le64			mlength;
+	__le64			moffset;
 } ack_hdr_t;
 
 #endif /* PTL_HDR_H */

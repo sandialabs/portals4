@@ -83,7 +83,7 @@ static void dump_everything(int unused)
 	gbl_t *gbl = &per_proc_gbl;
 
 	printf("Dumping gbl\n");
-	
+
 	gbl_get();
 
 	for (i=0; i<gbl->num_iface; i++) {
@@ -170,7 +170,7 @@ static void dump_everything(int unused)
 #endif
 			if (ni->options & PTL_NI_LOGICAL) {
 				printf("  Connections on logical NI:\n");
-				
+
 				if (ni->logical.rank_table) {
 					for(k=0; k<ni->logical.map_size; k++) {
 						struct rank_entry *entry = &ni->logical.rank_table[k];
@@ -188,7 +188,7 @@ static void dump_everything(int unused)
 				printf("  polling CQ: ret=%d\n", ibv_poll_cq(ni->rdma.cq, 1, &wc));
 			}
 #endif
-			
+
 
 		}
 	}

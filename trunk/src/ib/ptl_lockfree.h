@@ -82,7 +82,7 @@ static inline void *ll_dequeue_obj_alien(union counted_ptr *free_list, void *vad
 		oldv = retv;
 		if (retv.head != NULL) {
 			/* first object field is the next ptr */
-			newv.head = *(void **)(retv.head + (vaddr - alien_vaddr)); 
+			newv.head = *(void **)(retv.head + (vaddr - alien_vaddr));
 		} else {
 			newv.head = NULL;
 		}
@@ -116,7 +116,7 @@ static inline void ll_enqueue_obj_alien(union counted_ptr *free_list, void *obj,
 	do {
 		oldv = tmpv;
 		/* first field of obj is the next ptr */
-		*(void **)obj = tmpv.head; 
+		*(void **)obj = tmpv.head;
 		newv.head = alien_obj;
 		newv.counter = oldv.counter + 1;
 		tmpv.c16 = PtlInternalAtomicCas128(&free_list->c16, oldv, newv);
@@ -160,7 +160,7 @@ static inline void *ll_dequeue_obj_alien(union counted_ptr *free_list, void *vad
 static inline void ll_enqueue_obj_alien(union counted_ptr *free_list, void *obj, void *vaddr, void *alien_vaddr)
 {
 	void *alien_obj = ((void *)obj) + (alien_vaddr - vaddr); /* vaddr of obj in alien process */
-	
+
 	PTL_FASTLOCK_LOCK(&free_list->lock);
 
 	/* first field of obj is the next ptr */

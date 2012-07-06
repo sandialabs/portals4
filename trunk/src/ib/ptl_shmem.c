@@ -15,7 +15,7 @@
 static int send_message_shmem(buf_t *buf, int from_init)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. will be
-	 * returned by the remote side with type=BUF_SHMEM_RETURN. */ 
+	 * returned by the remote side with type=BUF_SHMEM_RETURN. */
 	assert(buf->obj.obj_pool->type == POOL_SBUF);
 	buf_get(buf);
 
@@ -266,7 +266,7 @@ static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t off
 	else {
 		if (dir == DATA_DIR_IN)
 			buf->data_in->noknem.state = 2;
-		else 
+		else
 			buf->data_out->noknem.state = 0;
 
 		if (md->options & PTL_IOVEC) {
@@ -503,7 +503,7 @@ int setup_shmem(ni_t *ni)
 	int pid_table_size;
 	off_t first_queue_offset;
 
-	/* 
+	/*
 	 * Buffers in shared memory. The buffers will be allocated later,
 	 * but not by the pool management. We compute the sizes now.
 	 */
@@ -528,7 +528,7 @@ int setup_shmem(ni_t *ni)
 	if (ni->options & PTL_NI_PHYSICAL) {
 		/* Create a unique name for the shared memory file. */
 		snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
-				 "/portals4-shmem-pid%d-%d", 
+				 "/portals4-shmem-pid%d-%d",
 				 ni->id.phys.pid, ni->options);
 	} else {
 		/* Create a unique name for the shared memory file. Use the hash
@@ -557,7 +557,7 @@ int setup_shmem(ni_t *ni)
 
 	bounce_head_offset = ni->shmem.comm_pad_size;
 	ni->shmem.comm_pad_size += ROUND_UP(sizeof(struct shmem_bounce_head), pagesize);
-	
+
 	ni->shmem.bounce_buf.buf_size = get_param(PTL_BOUNCE_BUF_SIZE);
 	ni->shmem.bounce_buf.num_bufs = get_param(PTL_BOUNCE_NUM_BUFS);
 
@@ -715,7 +715,7 @@ int setup_shmem(ni_t *ni)
 			WARN();
 			goto exit_fail;
 		}
-		
+
 		conn->transport = transport_shmem;
 		conn->state = CONN_STATE_CONNECTED;
 
@@ -751,7 +751,7 @@ void cleanup_shmem(ni_t *ni)
  * @param[in] dest the destination pid
  */
 void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest)
-{	      
+{
 	queue_t *queue = (queue_t *)(ni->shmem.first_queue +
 			   (ni->shmem.per_proc_comm_buf_size * dest));
 

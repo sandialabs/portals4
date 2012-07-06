@@ -112,7 +112,7 @@ struct conn {
 			 * requested. This is used to rate limit the initiator. */
 			atomic_t num_req_posted;
 			atomic_t num_req_not_comp;
-			
+
 			/* Limit on the number of outstanding requests send
 			 * buffers (ie. from the initiator). Set once after the
 			 * connection is established. There's an implicit
@@ -125,7 +125,7 @@ struct conn {
 			 * shutdown and has sent its in band disconnect request,
 			 * and 2 when that send request has completed, meaning all
 			 * the sends have been flushed.
-			 * 
+			 *
 			 * remote_disc is set to 1 when the remote in band
 			 * disconnect request is received.
 			 *

@@ -492,7 +492,7 @@ static void process_overflowing(eq_t * restrict eq)
 			ev->ni_fail_type = PTL_NI_PT_DISABLED;
 		}
 	}
-	
+
 	eq->overflowing = 0;
 }
 
@@ -591,7 +591,7 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
 
 	check_waiter(eq->eqe_list);
 }
-		       
+
 /**
  * @brief Make and add an event to the event queue from a buf.
  *

@@ -13,7 +13,7 @@ ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_io
 
 #if (WITH_TRANSPORT_SHMEM && USE_KNEM)
 	if (dir == DATA_DIR_IN)
-		copied = knem_copy(ni, remote_iovec->cookie, remote_iovec->offset, 
+		copied = knem_copy(ni, remote_iovec->cookie, remote_iovec->offset,
 						local_mr->knem_cookie,
 						local_addr - local_mr->addr, len);
 	else
@@ -38,7 +38,7 @@ static inline void advance_remote_addr(struct mem_iovec *remote_iovec, ptl_size_
 	remote_iovec->offset += len;
 #elif IS_PPE
 	remote_iovec->addr += len;
-#endif	
+#endif
 }
 
 /**
@@ -107,7 +107,7 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
 			ptl_size_t len_available = me->length - *loc_off;
 
 			assert(me->length > *loc_off);
-				
+
 			if (len > len_available)
 				len = len_available;
 

@@ -113,7 +113,7 @@ typedef struct ni {
 		struct ibv_cq		*cq;
 		struct ibv_comp_channel	*ch;
 		ev_io			async_watcher;
-		
+
 		struct ibv_srq		*srq;
 
 		/* Pending send and receive operations. */

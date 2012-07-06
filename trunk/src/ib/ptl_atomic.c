@@ -35,7 +35,7 @@ struct atom_op_info op_info[] = {
 /**
  * Array of sizes for portals types.
  */
-int atom_type_size[] = 
+int atom_type_size[] =
 {
 	[PTL_INT8_T]			= 1,
 	[PTL_UINT8_T]			= 1,

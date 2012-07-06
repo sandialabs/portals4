@@ -272,7 +272,7 @@ size_t knem_copy_from(ni_t * ni, void *dst,
 size_t knem_copy_to(ni_t * ni, uint64_t cookie,
 					uint64_t off, void *src, size_t len);
 size_t knem_copy(ni_t * ni,
-				 uint64_t scookie, uint64_t soffset, 
+				 uint64_t scookie, uint64_t soffset,
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length);
 #else

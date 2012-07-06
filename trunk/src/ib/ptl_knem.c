@@ -133,7 +133,7 @@ size_t knem_copy_to(ni_t * ni, uint64_t cookie,
 
 /* copy data between 2 regions. */
 size_t knem_copy(ni_t * ni,
-				 uint64_t scookie, uint64_t soffset, 
+				 uint64_t scookie, uint64_t soffset,
 				 uint64_t dcookie, uint64_t doffset,
 				 size_t length)
 {

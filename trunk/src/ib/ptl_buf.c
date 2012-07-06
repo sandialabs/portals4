@@ -46,7 +46,7 @@ int buf_setup(void *arg)
  * Called each time buf is freed to the buf pool.
  *
  * @param arg opaque reference to buf
- */ 
+ */
 void buf_cleanup(void *arg)
 {
 	buf_t *buf = arg;

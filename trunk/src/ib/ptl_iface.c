@@ -72,7 +72,7 @@ int init_iface_table(gbl_t *gbl)
 	int num_iface = get_param(PTL_MAX_IFACE);
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	/* Clip the number of interfaces for shmem. 
+	/* Clip the number of interfaces for shmem.
 	 * Note: Is that really necessary? */
 	num_iface = 1;
 #endif

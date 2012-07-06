@@ -135,7 +135,7 @@ RB_GENERATE_STATIC(the_root, mr, entry, mr_compare);
  * @param[out] mr_p address of return value
  *
  * @return status
- */ 
+ */
 static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	int err;
@@ -245,13 +245,13 @@ err1:
  * @param[out] mr_p address of return value
  *
  * @return status
- */ 
+ */
 int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length, mr_t **mr_p)
 {
 	/*
 	 * Search for an existing mr. The start address of the node must
 	 * be less than or equal to the start address of the requested
-	 * start. Find the closest start. 
+	 * start. Find the closest start.
 	 */
 	struct mr *link;
 	struct mr *rb;
@@ -347,7 +347,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 			 * extend the requeted MR. In that case, we wait for all
 			 * the notification messages to be consummed by
 			 * process_ummunotify() then try again.
-			 * 
+			 *
 			 * This case should rarely happen as it is there only to
 			 * close that small race. */
 			PTL_FASTLOCK_UNLOCK(&tree->tree_lock);
@@ -418,7 +418,7 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
 			PTL_FASTLOCK_UNLOCK(&ni->mr_app.tree_lock);
 		}
 		break;
-	
+
 		case UMMUNOTIFY_EVENT_TYPE_LAST:
 			generation_counter = ev.user_cookie_counter;
 			return;
