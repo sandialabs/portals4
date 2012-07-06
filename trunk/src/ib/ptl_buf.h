@@ -293,6 +293,13 @@ struct buf {
 			unsigned char *data;
 			ptl_size_t data_length;
 			off_t bounce_offset;
+
+			/* noknem communication pad. For the initiator, this
+			 * points to the local internal_data, while for the
+			 * target, it is mem_buf->internal_data; both are the
+			 * same physical location from different address
+			 * spaces. */
+			struct noknem *noknem;
 		} noknem;
 #endif
 	} transfer;

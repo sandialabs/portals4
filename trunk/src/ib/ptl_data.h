@@ -83,7 +83,7 @@ struct data {
 
 #if (WITH_TRANSPORT_SHMEM && !USE_KNEM)
 		/* State memory shared by both sides of the transfer. */
-		struct {
+		struct noknem {
 			/* Transfer state.
 			 * 0 = initiator to process (set by initiator)
 			 * 1 = initiator processing (set by initiator)
