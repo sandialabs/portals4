@@ -569,14 +569,14 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	if (map_size < ni->logical.map_size)
+	if (map_size > ni->logical.map_size)
 		map_size = ni->logical.map_size;
 
 	if (map_size)
 		memcpy(mapping, ni->logical.mapping, map_size * sizeof(ptl_process_t));
 
 	if (actual_map_size)
-		*actual_map_size = map_size;
+		*actual_map_size = ni->logical.map_size;
 
 	ni_put(ni);
 	gbl_put();
