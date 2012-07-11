@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+#include "ptl_sync.h"
 
 #ifdef HAVE_PTHREAD_SPIN_INIT
 # define PTL_FASTLOCK_TYPE pthread_spinlock_t
