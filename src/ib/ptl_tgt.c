@@ -1465,7 +1465,7 @@ static int tgt_send_ack(buf_t *buf)
 		ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
 
 	}
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 	else if (buf->mem_buf) {
 		ack_buf = buf->mem_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
