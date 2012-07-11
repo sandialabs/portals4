@@ -253,8 +253,6 @@ AC_CACHE_SAVE
 ## --------------------------- ##
 
 AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
 AC_FUNC_STRERROR_R
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([syscall __munmap __mmap])

@@ -66,7 +66,9 @@ static inline void *atomic_swap_ptr(void *volatile *addr, void *newval)
 
 static inline void SPINLOCK_BODY(void)
 {
+#if SANDIA_WANT_ASM_PAUSE
 	__asm__ __volatile__ ("pause" ::: "memory");
+#endif
 }
 
 /* branch prediction hints for compiler */
