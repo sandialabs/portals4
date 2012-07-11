@@ -29,6 +29,17 @@ AC_REQUIRE([SANDIA_CHECK_MCX16])
 AC_ARG_ENABLE([builtin-atomics],
      [AS_HELP_STRING([--disable-builtin-atomics],
 	                 [force the use of inline-assembly (if possible) rather than compiler-builtins for atomics. This is useful for working around some compiler bugs; normally, it's preferable to use compiler builtins.])])
+
+  case "${host}" in
+  i?86-*|x86_64*)
+    want_pause=1
+    ;;
+  *)
+    want_pause=0
+    ;;
+  esac
+  AC_DEFINE_UNQUOTED([SANDIA_WANT_ASM_PAUSE], [$want_pause], [Defined to 1 if should use the asm pause instruction])
+
 AS_IF([test "x$enable_builtin_atomics" != xno], [
 AC_CHECK_HEADERS([ia64intrin.h ia32intrin.h])
 AC_CACHE_CHECK([whether compiler supports builtin atomic CAS-32],
@@ -219,7 +230,7 @@ AS_IF([test "x$sandia_cv_atomic_CAS" = "xyes"],
 	[AC_DEFINE([SANDIA_BUILTIN_CAS],[1],[if the compiler supports __sync_val_compare_and_swap])])
 AS_IF([test "$sandia_cv_atomic_incr" = "yes"],
 	[AC_DEFINE([SANDIA_BUILTIN_INCR],[1],[if the compiler supports __sync_fetch_and_add])])
-AS_IF([test "$sandia_cv_atomic_CAS" = "yes" -a "$sandia_cv_atomic_incr" = "yes" -a "x$sandia_cv_cpu_cmpxchg16b" = "xyes"],
+AS_IF([test "$sandia_cv_atomic_CAS" = "yes" -a "$sandia_cv_atomic_incr" = "yes"],
   		[AC_DEFINE([SANDIA_ATOMIC_BUILTINS],[1],[if the compiler supports __sync_val_compare_and_swap])
 		 $1],
 		[$2])
