@@ -52,9 +52,16 @@ void cleanup_iface(iface_t *iface)
  */
 void iface_fini(gbl_t *gbl)
 {
-	gbl->num_iface = 0;
+	int i;
+
+	for (i=0; i<gbl->num_iface; i++) {
+		iface_t *iface = &gbl->iface[i];
+		cleanup_iface(iface);
+	}
+
 	free(gbl->iface);
 	gbl->iface = NULL;
+	gbl->num_iface = 0;
 }
 
 /**

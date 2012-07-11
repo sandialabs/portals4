@@ -316,6 +316,10 @@ static int prepare_send_buf(buf_t *buf)
 
 #ifdef IS_PPE
 		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
+		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+		ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+		ack_hdr->h1.ni_type = ni->ni_type;
 #endif
 
 		send_buf->length = sizeof(*ack_hdr);
@@ -394,6 +398,11 @@ static int tgt_start(buf_t *buf)
 	buf->le = NULL;
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
+
+#ifdef IS_PPE
+	buf->target.phys.nid = le32_to_cpu(hdr->h1.dst_nid);
+	buf->target.phys.pid = le32_to_cpu(hdr->h1.dst_pid);
+#endif
 
 	switch (hdr->h1.operation) {
 	case OP_PUT:
@@ -1338,6 +1347,9 @@ static int tgt_swap_data_in(buf_t *buf)
 	ni_t *ni;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	uint64_t operand = le64_to_cpu(hdr->operand);
+#if IS_PPE
+	mr_t *mr;
+#endif
 
 	assert(data->data_fmt == DATA_FMT_IMMEDIATE);
 
@@ -1348,11 +1360,29 @@ static int tgt_swap_data_in(buf_t *buf)
 
 		dst = copy;
 	} else {
-		dst = me->start + buf->moffset;
+		void *start = me->start + buf->moffset;
+#if IS_PPE
+		if (me->mr_start)
+			mr = me->mr_start;
+		else {
+			err = mr_lookup_app(obj_to_ni(me), start, atom_type_size[hdr->atom_type], &mr);
+			if (err) {
+				WARN();
+				return err;
+			}
+		}
+#endif
+		dst = addr_to_ppe(start, mr);
 	}
 
 	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
 			   data->immediate.data, &operand);
+
+#if IS_PPE
+	if (!me->mr_start)
+		mr_put(mr);
+#endif
+
 	if (err)
 		return STATE_TGT_ERROR;
 

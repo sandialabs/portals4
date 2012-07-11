@@ -90,9 +90,11 @@ typedef struct ni {
 	struct ni_mr_tree mr_self;		/* the PPE */
 	struct ni_mr_tree mr_app;		/* the client */
 
+#if !IS_PPE
 	int umn_fd;
 	ev_io umn_watcher;
 	uint64_t *umn_counter;
+#endif
 
 	/* NI identifications */
 	ptl_process_t		id;

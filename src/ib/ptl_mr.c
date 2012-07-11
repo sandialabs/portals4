@@ -46,9 +46,11 @@ void mr_cleanup(void *arg)
 {
 	mr_t *mr = (mr_t *)arg;
 
+#if !IS_PPE
 	if (mr->obj.obj_ni->umn_fd != -1 && mr->umn_cookie != 0) {
 		ioctl(mr->obj.obj_ni->umn_fd, UMMUNOTIFY_UNREGISTER_REGION, &mr->umn_cookie);
 	}
+#endif
 
 #if WITH_TRANSPORT_IB
 	if (mr->ibmr) {
@@ -93,6 +95,7 @@ static int mr_compare(struct mr *m1, struct mr *m2)
 		m1->addr > m2->addr);
 }
 
+#if !IS_PPE
 static atomic_t umn_cookie = { .val = 1 };
 
 /* Last kernel generation counter seen. If it is different than the
@@ -117,6 +120,7 @@ static void umn_register(ni_t *ni, mr_t *mr, void *start, size_t size)
 
 	mr->umn_cookie = r.user_cookie;
 }
+#endif
 
 /**
  * Generate RB tree internal functions.
@@ -157,9 +161,11 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 
 	ib_start = start;
 
+#if !IS_PPE
 	/* Register the region with ummunotify to be notified when the
 	 * application frees the buffer, or parts of it. */
 	umn_register(ni, mr, start, length);
+#endif
 
 #if IS_PPE
 	if (length == 0) {
@@ -341,6 +347,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 	/* Insert the new node */
 	ret = mr_create(ni, start, length, mr_p);
 	if (ret) {
+#if !IS_PPE
 		if (ret == EFAULT && ni->umn_fd != -1) {
 			/* Some pages cannot be registered. This happens when the
 			 * application has freed some regions, and we tried to
@@ -356,6 +363,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 			}
 			goto again;
 		}
+#endif
 
 		*mr_p = NULL;
 		ret = PTL_FAIL;
@@ -382,6 +390,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 	return ret;
 }
 
+#if !IS_PPE
 static void process_ummunotify(EV_P_ ev_io *w, int revents)
 {
 	ni_t *ni = w->data;
@@ -449,6 +458,7 @@ void mr_init(ni_t *ni)
 			   ni->umn_fd, EV_READ);
 	EVL_WATCH(ev_io_start(evl.loop, &ni->umn_watcher));
 }
+#endif
 
 /**
  * Empty an mr cache.
@@ -478,9 +488,11 @@ static void cleanup_mr_tree(struct ni_mr_tree *tree)
  */
 void cleanup_mr_trees(ni_t *ni)
 {
+#if !IS_PPE
 	if (ni->umn_fd != -1) {
 		EVL_WATCH(ev_io_stop(evl.loop, &ni->umn_watcher));
 	}
+#endif
 
 	cleanup_mr_tree(&ni->mr_self);
 	cleanup_mr_tree(&ni->mr_app);
