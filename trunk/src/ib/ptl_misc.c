@@ -32,6 +32,7 @@ int misc_init_once(void)
 	pagesize = sysconf(_SC_PAGESIZE);
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE
 	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+     if (0 == linesize) linesize = 64;
 #else
 	linesize = 64;
 #endif
