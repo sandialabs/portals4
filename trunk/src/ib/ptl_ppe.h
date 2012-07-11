@@ -65,6 +65,8 @@ enum ppe_op {
 	OP_PtlTriggeredGet,
 	OP_PtlTriggeredPut,
 	OP_PtlTriggeredSwap,
+	OP_PtlStartBundle,
+	OP_PtlEndBundle,
 };
 
 /* Messages exchanged between the PPE and the clients. */
@@ -402,6 +404,14 @@ struct ppe_msg {
 			ptl_handle_ct_t trig_ct_handle;
 			ptl_size_t threshold;
 		} PtlTriggeredCTSet;
+
+		struct {
+			ptl_handle_ni_t ni_handle;
+		}  PtlStartBundle;
+
+		struct {
+			ptl_handle_ni_t ni_handle;
+		}  PtlEndBundle;
 	};
 };
 

@@ -29,8 +29,10 @@ static int ni_compare(struct ni *ni1, struct ni *ni2)
 	assert(ni2->options & PTL_NI_PHYSICAL);
 	assert(ni1->id.phys.nid == ni2->id.phys.nid);
 
-	return (ni1->id.phys.pid < ni2->id.phys.pid ? -1 :
-			ni1->id.phys.pid > ni2->id.phys.pid);
+	if (ni2->id.phys.pid != ni1->id.phys.pid)
+		return ni2->id.phys.pid - ni1->id.phys.pid;
+	else
+		return ni2->ni_type - ni1->ni_type;
 }
 
 static int ni_set_compare(struct logical_ni_set *set1,
@@ -312,6 +314,7 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
 		find.options = PTL_NI_PHYSICAL;
 		find.id.phys.nid = le32_to_cpu(hdr->dst_nid);
 		find.id.phys.pid = le32_to_cpu(hdr->dst_pid);
+		find.ni_type = hdr->ni_type;
 
 		res = RB_FIND(phys_ni_root, &ppe.physni_tree, &find);
 
@@ -589,15 +592,15 @@ static void do_OP_PtlNIStatus(ppebuf_t *buf)
 /* Remove an NI from a PPE set. */
 static void remove_ni(ni_t *ni)
 {
-	if (!ni->mem.in_set)
-		return;
-
-	ni->mem.in_set = 0;
-
 	if (ni->options & PTL_NI_PHYSICAL) {
 		RB_REMOVE(phys_ni_root, &ppe.physni_tree, ni);
 	} else {
 		struct logical_ni_set *set;
+
+		if (!ni->mem.in_set)
+			return;
+
+		ni->mem.in_set = 0;
 
 		set = get_ni_set(ni->mem.hash);
 
@@ -625,6 +628,7 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 	err = to_ni(buf->msg.PtlNIFini.ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
+		buf->msg.ret = PTL_ARG_INVALID;
 		return;
 	}
 
@@ -664,6 +668,7 @@ static void insert_ni_into_set(ptl_handle_ni_t ni_handle)
 
 	if (ni->options & PTL_NI_PHYSICAL) {
 		void *res;
+
 		res = RB_INSERT(phys_ni_root, &ppe.physni_tree, ni);
 		assert(res == NULL);	/* should never happen */
 	} else {
@@ -731,7 +736,9 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 	ptl_process_t *mapping;
 	int ret;
 
-	ret = map_segment_ppe(client, buf->msg.PtlGetMap.mapping, buf->msg.PtlGetMap.map_size, (void **)&mapping);
+	ret = map_segment_ppe(client, buf->msg.PtlGetMap.mapping,
+						  buf->msg.PtlGetMap.map_size*sizeof(ptl_process_t),
+						  (void **)&mapping);
 	if (!ret) {
 		buf->msg.ret = PtlGetMap(buf->msg.PtlGetMap.ni_handle,
 								 buf->msg.PtlGetMap.map_size,
@@ -739,6 +746,8 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 								 &buf->msg.PtlGetMap.actual_map_size);
 
 		unmap_segment_ppe(mapping);
+	} else {
+		buf->msg.ret = PTL_ARG_INVALID;
 	}
 }
 
@@ -884,20 +893,32 @@ static void do_OP_PtlFetchAtomic(ppebuf_t *buf)
 
 static void do_OP_PtlSwap(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlSwap(buf->msg.PtlSwap.get_md_handle,
-						   buf->msg.PtlSwap.local_get_offset,
-						   buf->msg.PtlSwap.put_md_handle,
-						   buf->msg.PtlSwap.local_put_offset,
-						   buf->msg.PtlSwap.length,
-						   buf->msg.PtlSwap.target_id,
-						   buf->msg.PtlSwap.pt_index,
-						   buf->msg.PtlSwap.match_bits,
-						   buf->msg.PtlSwap.remote_offset,
-						   buf->msg.PtlSwap.user_ptr,
-						   buf->msg.PtlSwap.hdr_data,
-						   buf->msg.PtlSwap.operand,
-						   buf->msg.PtlSwap.operation,
-						   buf->msg.PtlSwap.datatype);
+	void *operand;
+	struct client *client = buf->cookie;
+	int ret;
+
+	ret = map_segment_ppe(client, buf->msg.PtlSwap.operand,
+						  buf->msg.PtlSwap.length,
+						  (void **)&operand);
+	if (!ret) {
+		buf->msg.ret = PtlSwap(buf->msg.PtlSwap.get_md_handle,
+							   buf->msg.PtlSwap.local_get_offset,
+							   buf->msg.PtlSwap.put_md_handle,
+							   buf->msg.PtlSwap.local_put_offset,
+							   buf->msg.PtlSwap.length,
+							   buf->msg.PtlSwap.target_id,
+							   buf->msg.PtlSwap.pt_index,
+							   buf->msg.PtlSwap.match_bits,
+							   buf->msg.PtlSwap.remote_offset,
+							   buf->msg.PtlSwap.user_ptr,
+							   buf->msg.PtlSwap.hdr_data,
+							   operand,
+							   buf->msg.PtlSwap.operation,
+							   buf->msg.PtlSwap.datatype);
+		unmap_segment_ppe(operand);
+	} else {
+		buf->msg.ret = PTL_ARG_INVALID;
+	}
 }
 
 static void do_OP_PtlTriggeredPut(ppebuf_t *buf)
@@ -1143,7 +1164,15 @@ static void do_OP_PtlGetUid(ppebuf_t *buf)
 							 &buf->msg.PtlGetUid.uid);
 }
 
+static void do_OP_PtlStartBundle(ppebuf_t *buf)
+{
+	buf->msg.ret = PtlStartBundle(buf->msg.PtlStartBundle.ni_handle);
+}
 
+static void do_OP_PtlEndBundle(ppebuf_t *buf)
+{
+	buf->msg.ret = PtlEndBundle(buf->msg.PtlEndBundle.ni_handle);
+}
 
 #define ADD_OP(opname) [OP_##opname] = { .func = do_OP_##opname, .name = #opname }
 static struct {
@@ -1193,6 +1222,8 @@ static struct {
 	ADD_OP(PtlTriggeredGet),
 	ADD_OP(PtlTriggeredPut),
 	ADD_OP(PtlTriggeredSwap),
+	ADD_OP(PtlStartBundle),
+	ADD_OP(PtlEndBundle),
 };
 
 /* Progress thread for the PPE. */

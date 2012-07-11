@@ -62,7 +62,12 @@ static inline int mr_lookup_self(ni_t *ni, void *start, ptl_size_t length, mr_t 
 }
 
 void cleanup_mr_trees(ni_t *ni);
+
+#if IS_PPE
+static inline void mr_init(ni_t *ni) { }
+#else
 void mr_init(ni_t *ni);
+#endif
 
 /**
  * Allocate an mr object.

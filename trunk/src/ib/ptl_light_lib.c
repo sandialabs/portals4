@@ -341,7 +341,23 @@ void PtlFini(void)
 	ppe.ref_cnt--;
 
 	if (ppe.ref_cnt == 0) {
+		ppebuf_t *buf;
+	
 		ppe.finalized = 1;
+
+		/* Call PPE now. */
+		if ((ret = ppebuf_alloc(&buf))) {
+			WARN();
+			goto err1;
+		}
+		
+		buf->op = OP_PtlFini;
+
+		transfer_msg(buf);
+
+		ret = buf->msg.ret;
+
+		ppebuf_release(buf);
 
 		release_ppe_resources();
 	}
@@ -1956,10 +1972,46 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
 
 int PtlStartBundle(ptl_handle_ni_t ni_handle)
 {
-	return PTL_OK;
+	ppebuf_t *buf;
+	int err;
+
+	if ((err = ppebuf_alloc(&buf))) {
+		WARN();
+		return err;
+	}
+
+	buf->op = OP_PtlStartBundle;
+
+	buf->msg.PtlStartBundle.ni_handle = ni_handle;
+
+	transfer_msg(buf);
+
+	err = buf->msg.ret;
+
+	ppebuf_release(buf);
+
+	return err;
 }
 
 int PtlEndBundle(ptl_handle_ni_t ni_handle)
 {
-	return PTL_OK;
+	ppebuf_t *buf;
+	int err;
+
+	if ((err = ppebuf_alloc(&buf))) {
+		WARN();
+		return err;
+	}
+
+	buf->op = OP_PtlEndBundle;
+
+	buf->msg.PtlEndBundle.ni_handle = ni_handle;
+
+	transfer_msg(buf);
+
+	err = buf->msg.ret;
+
+	ppebuf_release(buf);
+
+	return err;
 }
