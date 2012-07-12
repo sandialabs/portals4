@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with feature TARGET_BIND_INACCESSIBLE</desc>
+  <ptl>
+    <ptl_ni desired_features="TARGET_BIND_INACCESSIBLE">
+    </ptl_ni>
+  </ptl>
+</test>

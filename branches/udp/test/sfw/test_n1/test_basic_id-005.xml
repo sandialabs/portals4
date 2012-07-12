@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGetUid with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_get_uid/>
+    </ptl_ni>
+  </ptl>
+</test>

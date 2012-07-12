@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_LT/DOUBLE</desc>
+  <ptl>
+    <ptl_ni>
+      <ompi_rt>
+        <ptl_ni ni_opt="NO_MATCH LOGICAL">
+          <ptl_pt>
+            <ptl_le le_data="0.194881218033346515" le_opt="OP_PUT OP_GET" type="DOUBLE">
+              <ptl_md md_data="0.029433537902050826" type="DOUBLE">
+                <ptl_md md_data="0.319282886655812337" type="DOUBLE">
+                  <ptl_swap atom_op="CSWAP_LT" atom_type="DOUBLE" length="8" operand="0.223893958130797738" target_id="SELF"/>
+                  <msleep count="50"/>
+                </ptl_md>
+                <check length="8" md_data="0.029433537902050826" type="DOUBLE"/>
+                <check length="8" md_data="0.029433537902050826" offset="8" type="DOUBLE"/>
+              </ptl_md>
+              <check le_data="0.194881218033346515" length="8" type="DOUBLE"/>
+              <check le_data="0.194881218033346515" length="8" offset="8" type="DOUBLE"/>
+            </ptl_le>
+          </ptl_pt>
+          <barrier/>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

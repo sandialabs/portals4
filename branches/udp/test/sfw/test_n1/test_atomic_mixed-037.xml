@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic BXOR/ULONG length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x4bac088b5a35e1b1" le_opt="OP_PUT" type="ULONG">
+          <ptl_md md_data="0x4cbad7a2625b5f7a" type="ULONG">
+            <ptl_atomic atom_op="BXOR" atom_type="ULONG" length="8" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="8" md_data="0x4cbad7a2625b5f7a" type="ULONG"/>
+            <check length="8" md_data="0x4cbad7a2625b5f7a" offset="8" type="ULONG"/>
+          </ptl_md>
+          <check le_data="0x0716df29386ebecb" length="8" type="ULONG"/>
+          <check le_data="0x4bac088b5a35e1b1" length="8" offset="8" type="ULONG"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

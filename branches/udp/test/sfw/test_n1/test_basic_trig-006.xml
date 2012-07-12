@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlTriggeredPut with md_handle = INVALID</desc>
+  <arg_check>
+    <ptl>
+      <ptl_trig_put md_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </arg_check>
+</test>

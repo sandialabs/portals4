@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GT/UINT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x2fffb424" me_match="0x2266241938543634306" me_opt="OP_PUT OP_GET" type="UINT">
+          <ptl_md md_data="0x0bfe309e" type="UINT">
+            <ptl_md md_data="0x535878dd" type="UINT">
+              <ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" match="0x2266241938543634306" operand="0x7f0e13bc" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="4" md_data="0x2fffb424" type="UINT"/>
+              <check length="4" md_data="0x535878dd" offset="4" type="UINT"/>
+            </ptl_md>
+            <check length="4" md_data="0x0bfe309e" type="UINT"/>
+            <check length="4" md_data="0x0bfe309e" offset="4" type="UINT"/>
+          </ptl_md>
+          <check length="4" me_data="0x0bfe309e" type="UINT"/>
+          <check length="4" me_data="0x2fffb424" offset="4" type="UINT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

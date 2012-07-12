@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGet with good parameters length=1024</desc>
+  <ptl>
+    <ptl_ni desired_max_msg_size="4096">
+      <ptl_pt>
+        <ptl_me me_length="2048" me_opt="OP_GET">
+          <ptl_md md_length="1024">
+            <ptl_get length="1024" target_id="SELF"/>
+            <msleep count="50"/>
+          </ptl_md>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

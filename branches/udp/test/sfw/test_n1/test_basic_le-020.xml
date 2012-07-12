@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlLEAppend/Unlink with good parameters</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt pt_index="3">
+        <ptl_le pt_index="3"/>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

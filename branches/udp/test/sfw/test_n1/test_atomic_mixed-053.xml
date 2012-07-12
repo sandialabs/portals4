@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic LOR/ULONG length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x086ba17b49a4039f" me_match="0x5957953590472162716" me_opt="OP_PUT" type="ULONG">
+          <ptl_md md_data="0x49d0151b39c9aa93" type="ULONG">
+            <ptl_atomic atom_op="LOR" atom_type="ULONG" length="8" match="0x5957953590472162716" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="8" md_data="0x49d0151b39c9aa93" type="ULONG"/>
+            <check length="8" md_data="0x49d0151b39c9aa93" offset="8" type="ULONG"/>
+          </ptl_md>
+          <check length="8" me_data="0x0000000000000001" type="ULONG"/>
+          <check length="8" me_data="0x086ba17b49a4039f" offset="8" type="ULONG"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic LAND/USHORT length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0xdf67" le_opt="OP_PUT" type="USHORT">
+          <ptl_md md_data="0xbaf3" type="USHORT">
+            <ptl_atomic atom_op="LAND" atom_type="USHORT" length="32" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="32" md_data="0xbaf3" type="USHORT"/>
+            <check length="2" md_data="0xbaf3" offset="32" type="USHORT"/>
+          </ptl_md>
+          <check le_data="0x0001" length="32" type="USHORT"/>
+          <check le_data="0xdf67" length="2" offset="32" type="USHORT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

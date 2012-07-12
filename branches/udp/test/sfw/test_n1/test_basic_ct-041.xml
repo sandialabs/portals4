@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTCancelTriggered without init</desc>
+  <arg_check>
+    <ptl_ct_cancel_trig ret="NO_INIT"/>
+  </arg_check>
+</test>

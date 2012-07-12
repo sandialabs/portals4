@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic MAX/CHAR length=20</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0xf2" le_opt="OP_PUT" type="CHAR">
+          <ptl_md md_data="0x92" type="CHAR">
+            <ptl_atomic atom_op="MAX" atom_type="CHAR" length="20" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="20" md_data="0x92" type="CHAR"/>
+            <check length="1" md_data="0x92" offset="20" type="CHAR"/>
+          </ptl_md>
+          <check le_data="0xf2" length="20" type="CHAR"/>
+          <check le_data="0xf2" length="1" offset="20" type="CHAR"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

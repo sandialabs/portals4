@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_LT/UINT</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x362f7d00" me_match="0x2b7f21fe" me_opt="OP_PUT OP_GET" type="UINT">
+          <ptl_md md_data="0x5b711270" type="UINT">
+            <ptl_md md_data="0x05441ee9" type="UINT">
+              <ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" match="0x2b7f21fe" operand="0x55d455fa" target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+            <check length="4" md_data="0x5b711270" type="UINT"/>
+            <check length="4" md_data="0x5b711270" offset="4" type="UINT"/>
+          </ptl_md>
+          <check length="4" me_data="0x362f7d00" type="UINT"/>
+          <check length="4" me_data="0x362f7d00" offset="4" type="UINT"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTSet and Inc with success</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct>
+        <ptl_ct_set ct_event_failure="3" ct_event_success="7"/>
+        <ptl_ct_inc ct_event_failure="0" ct_event_success="1"/>
+        <ptl_ct_get>
+          <check ct_event_failure="3" ct_event_success="8"/>
+        </ptl_ct_get>
+      </ptl_ct>
+    </ptl_ni>
+  </ptl>
+</test>

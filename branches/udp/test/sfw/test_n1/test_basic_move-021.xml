@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlSwap with same source and destination</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_pt>
+          <ptl_me me_opt="OP_PUT OP_GET">
+            <ptl_md>
+              <ptl_swap ret="ARG_INVALID" target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+          </ptl_me>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

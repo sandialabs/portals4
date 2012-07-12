@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlNIInit with default iface create all 4 ni types</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ompi_rt>
+        <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+          <ptl_ni ni_opt="MATCH LOGICAL">
+            <ptl_ni ni_opt="NO_MATCH LOGICAL">
+            </ptl_ni>
+          </ptl_ni>
+        </ptl_ni>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

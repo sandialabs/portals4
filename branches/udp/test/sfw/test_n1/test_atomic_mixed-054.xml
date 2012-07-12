@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic LOR/CHAR length=5</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x52" le_opt="OP_PUT" type="CHAR">
+          <ptl_md md_data="0x54" type="CHAR">
+            <ptl_atomic atom_op="LOR" atom_type="CHAR" length="5" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="5" md_data="0x54" type="CHAR"/>
+            <check length="1" md_data="0x54" offset="5" type="CHAR"/>
+          </ptl_md>
+          <check le_data="0x01" length="5" type="CHAR"/>
+          <check le_data="0x52" length="1" offset="5" type="CHAR"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

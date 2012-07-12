@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_entries up to limit for le</desc>
+  <ptl>
+    <ptl_ni desired_max_entries="4" ni_opt="NO_MATCH PHYSICAL">
+      <check actual_max_entries="4"/>
+      <ptl_pt>
+        <ptl_le count="4"/>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

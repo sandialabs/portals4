@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlLEAppend/Unlink with TARGET_BIND_INACCESSIBLE</desc>
+  <ptl>
+    <ptl_ni desired_features="TARGET_BIND_INACCESSIBLE" ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le/>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

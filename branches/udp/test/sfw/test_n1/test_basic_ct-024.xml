@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTInc with both success and failure</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni>
+        <ptl_ct>
+          <ptl_ct_inc ct_event_failure="3" ct_event_success="7" ret="ARG_INVALID"/>
+        </ptl_ct>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

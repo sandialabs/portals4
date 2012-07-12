@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlEQFree without init</desc>
+  <arg_check>
+    <ptl_eq_free ret="NO_INIT"/>
+  </arg_check>
+</test>

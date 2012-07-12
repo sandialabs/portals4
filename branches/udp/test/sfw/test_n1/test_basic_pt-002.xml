@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTFree without init</desc>
+  <arg_check>
+    <ptl_pt_free ret="NO_INIT"/>
+  </arg_check>
+</test>

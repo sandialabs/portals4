@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic PROD/USHORT length=4</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x794f" le_opt="OP_PUT" type="USHORT">
+          <ptl_md md_data="0x9239" type="USHORT">
+            <ptl_atomic atom_op="PROD" atom_type="USHORT" length="4" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="4" md_data="0x9239" type="USHORT"/>
+            <check length="2" md_data="0x9239" offset="4" type="USHORT"/>
+          </ptl_md>
+          <check le_data="0x1097" length="4" type="USHORT"/>
+          <check le_data="0x794f" length="2" offset="4" type="USHORT"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

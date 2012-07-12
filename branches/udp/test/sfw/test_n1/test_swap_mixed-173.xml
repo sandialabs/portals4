@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap MSWAP/CHAR</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0x7f" me_match="0x6685270151711077597" me_opt="OP_PUT OP_GET" type="CHAR">
+          <ptl_md md_data="0x24" type="CHAR">
+            <ptl_md md_data="0x7a" type="CHAR">
+              <ptl_swap atom_op="MSWAP" atom_type="CHAR" length="1" match="0x6685270151711077597" operand="0x5c" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="1" md_data="0x7f" type="CHAR"/>
+              <check length="1" md_data="0x7a" offset="1" type="CHAR"/>
+            </ptl_md>
+            <check length="1" md_data="0x24" type="CHAR"/>
+            <check length="1" md_data="0x24" offset="1" type="CHAR"/>
+          </ptl_md>
+          <check length="1" me_data="0x27" type="CHAR"/>
+          <check length="1" me_data="0x7f" offset="1" type="CHAR"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

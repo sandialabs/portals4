@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTPoll until timeout, with failure</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct>
+        <ptl_ct_set ct_event_failure="1" ct_event_success="5"/>
+        <ptl_ct_poll ct_test="10" ret="OK" time="10"/>
+      </ptl_ct>
+    </ptl_ni>
+  </ptl>
+</test>

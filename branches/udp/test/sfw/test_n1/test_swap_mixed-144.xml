@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap CSWAP_GT/CHAR</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_data="0xce" me_match="0x4809876036143620101" me_opt="OP_PUT OP_GET" type="CHAR">
+          <ptl_md md_data="0xd4" type="CHAR">
+            <ptl_md md_data="0x68" type="CHAR">
+              <ptl_swap atom_op="CSWAP_GT" atom_type="CHAR" length="1" match="0x4809876036143620101" operand="0xd3" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="1" md_data="0xce" type="CHAR"/>
+              <check length="1" md_data="0x68" offset="1" type="CHAR"/>
+            </ptl_md>
+            <check length="1" md_data="0xd4" type="CHAR"/>
+            <check length="1" md_data="0xd4" offset="1" type="CHAR"/>
+          </ptl_md>
+          <check length="1" me_data="0xd4" type="CHAR"/>
+          <check length="1" me_data="0xce" offset="1" type="CHAR"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

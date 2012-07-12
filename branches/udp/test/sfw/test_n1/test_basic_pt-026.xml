@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlPTEnable with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt_alloc/>
+      <ptl_pt_enable/>
+    </ptl_ni>
+  </ptl>
+</test>

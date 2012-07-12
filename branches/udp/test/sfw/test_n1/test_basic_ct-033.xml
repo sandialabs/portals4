@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTWait until Free</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_ct_alloc>
+        <threads count="2">
+          <if thread_id="0">
+            <ptl_ct_wait ct_test="10" ret="INTERRUPTED"/>
+          </if>
+          <if thread_id="1">
+            <msleep count="50"/>
+            <ptl_ct_free/>
+          </if>
+        </threads>
+      </ptl_ct_alloc>
+    </ptl_ni>
+  </ptl>
+</test>

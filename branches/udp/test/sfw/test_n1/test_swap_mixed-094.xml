@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap SWAP/DOUBLE</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0.42134275763811479543" le_opt="OP_PUT OP_GET" type="DOUBLE">
+          <ptl_md md_data="0.46851911007600249848" type="DOUBLE">
+            <ptl_md md_data="0.30364273484811182824" type="DOUBLE">
+              <ptl_swap atom_op="SWAP" atom_type="DOUBLE" length="24" operand="0.06664996890285326825" target_id="SELF"/>
+              <msleep count="50"/>
+              <check length="24" md_data="0.42134275763811479543" type="DOUBLE"/>
+              <check length="8" md_data="0.30364273484811182824" offset="24" type="DOUBLE"/>
+            </ptl_md>
+            <check length="24" md_data="0.46851911007600249848" type="DOUBLE"/>
+            <check length="8" md_data="0.46851911007600249848" offset="24" type="DOUBLE"/>
+          </ptl_md>
+          <check le_data="0.46851911007600249848" length="24" type="DOUBLE"/>
+          <check le_data="0.42134275763811479543" length="8" offset="24" type="DOUBLE"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

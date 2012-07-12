@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test swap me unlink with min_free not reached</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ompi_rt>
+        <ptl_eq>
+          <ptl_pt>
+            <ptl_me_append me_length="10" me_match="0x5555" me_min_free="4" me_opt="OP_GET OP_PUT MANAGE_LOCAL" target_id="SELF" uid="ANY">
+              <ptl_eq>
+                <ptl_md>
+                  <ptl_md>
+                    <ptl_swap atom_op="SWAP" length="6" match="0x5555"/>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="LINK"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[0]">
+                      <check event_type="ATOMIC"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="SEND"/>
+                    </ptl_eq_wait>
+                    <ptl_eq_wait eq_handle="eq[1]">
+                      <check event_type="REPLY"/>
+                    </ptl_eq_wait>
+                  </ptl_md>
+                </ptl_md>
+              </ptl_eq>
+              <ptl_me_unlink/>
+            </ptl_me_append>
+          </ptl_pt>
+        </ptl_eq>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

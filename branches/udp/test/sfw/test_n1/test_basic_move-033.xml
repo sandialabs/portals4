@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlGet message flow with drop at target</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_eq>
+        <ptl_pt pt_index="2">
+          <ptl_eq>
+            <ptl_md>
+              <ptl_get pt_index="2" target_id="SELF" user_ptr="432"/>
+              <msleep count="50"/>
+              <ptl_eq_poll eq_handle="eq[0]" ret="EQ_EMPTY" time="200"/>
+              <ptl_eq_poll eq_handle="eq[1]" time="200">
+                <check event_type="REPLY"/>
+                <check event_user_ptr="432"/>
+                <check event_ni_fail="DROPPED"/>
+              </ptl_eq_poll>
+              <ptl_eq_poll eq_handle="eq[1]" ret="EQ_EMPTY" time="200"/>
+            </ptl_md>
+          </ptl_eq>
+        </ptl_pt>
+      </ptl_eq>
+    </ptl_ni>
+  </ptl>
+</test>

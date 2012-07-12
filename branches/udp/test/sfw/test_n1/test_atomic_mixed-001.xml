@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic BXOR/CHAR length=18</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_data="0x0e" le_opt="OP_PUT" type="CHAR">
+          <ptl_md md_data="0x24" type="CHAR">
+            <ptl_atomic atom_op="BXOR" atom_type="CHAR" length="18" target_id="SELF"/>
+            <msleep count="50"/>
+            <check length="18" md_data="0x24" type="CHAR"/>
+            <check length="1" md_data="0x24" offset="18" type="CHAR"/>
+          </ptl_md>
+          <check le_data="0x2a" length="18" type="CHAR"/>
+          <check le_data="0x0e" length="1" offset="18" type="CHAR"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

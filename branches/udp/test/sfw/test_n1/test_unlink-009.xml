@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test atomic le unlink with USE_ONCE</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ompi_rt>
+        <ptl_eq>
+          <ptl_pt>
+            <ptl_le_append le_opt="OP_GET OP_PUT USE_ONCE" target_id="SELF" uid="ANY">
+              <ptl_eq>
+                <ptl_md>
+                  <ptl_atomic/>
+                  <ptl_eq_wait eq_handle="eq[0]">
+                    <check event_type="LINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait eq_handle="eq[0]">
+                    <check event_type="AUTO_UNLINK"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait eq_handle="eq[0]">
+                    <check event_type="ATOMIC"/>
+                  </ptl_eq_wait>
+                  <ptl_eq_wait eq_handle="eq[1]">
+                    <check event_type="SEND"/>
+                  </ptl_eq_wait>
+                </ptl_md>
+                <ptl_le_unlink ret="ARG_INVALID"/>
+              </ptl_eq>
+            </ptl_le_append>
+          </ptl_pt>
+        </ptl_eq>
+      </ompi_rt>
+    </ptl_ni>
+  </ptl>
+</test>

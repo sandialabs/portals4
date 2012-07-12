@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test max_list_size over limit for le in overflow</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ni desired_max_list_size="4" ni_opt="NO_MATCH PHYSICAL">
+        <check actual_max_list_size="4"/>
+        <ptl_pt>
+          <ptl_le count="4" list="OVERFLOW">
+            <ptl_le_append list="OVERFLOW" ret="NO_SPACE"/>
+          </ptl_le>
+        </ptl_pt>
+      </ptl_ni>
+    </ptl>
+  </arg_check>
+</test>

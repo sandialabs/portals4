@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlFetchAtomic with good parameters</desc>
+  <ptl>
+    <ptl_ni>
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET">
+          <ptl_md>
+            <ptl_md>
+              <ptl_fetch target_id="SELF"/>
+              <msleep count="50"/>
+            </ptl_md>
+          </ptl_md>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

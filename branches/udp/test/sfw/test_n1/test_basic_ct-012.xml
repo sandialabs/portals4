@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test PtlCTGet with bad ct_handle</desc>
+  <arg_check>
+    <ptl>
+      <ptl_ct_get ct_handle="INVALID" ret="ARG_INVALID"/>
+    </ptl>
+  </arg_check>
+</test>
