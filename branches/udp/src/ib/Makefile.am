@@ -69,6 +69,11 @@ libportals_ib_la_SOURCES += \
 	ummunotify.h
 endif
 
+if WITH_TRANSPORT_UDP
+libportals_ib_la_SOURCES += \
+	ptl_udp.c
+endif
+
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \
 	ptl_mem.c \
