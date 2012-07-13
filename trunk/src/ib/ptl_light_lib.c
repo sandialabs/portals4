@@ -54,15 +54,10 @@ static struct {
 
 void gbl_release(ref_t *ref)
 {
-	gbl_t *gbl = container_of(ref, gbl_t, ref);
-
-	pthread_mutex_destroy(&gbl->gbl_mutex);
 }
 
 int gbl_init(gbl_t *gbl)
 {
-	pthread_mutex_init(&gbl->gbl_mutex, NULL);
-
 	return PTL_OK;
 }
 
@@ -282,7 +277,7 @@ int PtlInit(void)
 
 	/* if first call to PtlInit do real initialization */
 	if (ppe.ref_cnt == 0) {
-		if (misc_init_once(NULL) != PTL_OK) {
+		if (misc_init_once() != PTL_OK) {
 			goto err1;
 		}
 

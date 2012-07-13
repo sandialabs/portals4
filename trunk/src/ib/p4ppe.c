@@ -1556,9 +1556,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	err = misc_init_once(&ppe.gbl);
+	/* Misc initializations. */
+	err = misc_init_once();
 	if (err)
 		return 1;
+
+	/* Init the index service */
+	err = index_init(&ppe.gbl);
+	if (err)
+		return err;
 
 	/* Create the event loop thread. */
 	evl_init(&evl);

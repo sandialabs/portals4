@@ -50,14 +50,9 @@ static inline void gbl_put(void) { }
 #define MYNIGBL_ ni->iface->gbl,
 #elif IS_LIGHT_LIB
 
+/* Never instanced, but removing it would needs lots of ifdefs
+ * throughout the code. */
 typedef struct gbl {
-	pthread_mutex_t		gbl_mutex;
-
-	int			ref_cnt;	/* count PtlInit/PtlFini */
-	ref_t			ref;		/* sub objects references */
-	int finalized;
-
-	atomic_t next_index;
 	void **index_map;
 } gbl_t;
 
