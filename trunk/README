@@ -99,7 +99,7 @@ There is currently 2 transports available: mc and infiniband, which are mutually
 
     Test :
       * Type "make check" in the main directory. This will run a
-        series on check on the local node, with either 1 or 2 ranks.
+        series of checks on the local node, with either 1 or 2 ranks.
 
     Building an RPM:
       * make dist       --> this will create portals-4.0.tar.gz
@@ -107,3 +107,9 @@ There is currently 2 transports available: mc and infiniband, which are mutually
 
     Limitations:
       * A program may not open more than one NID in its lifetime.
+
+    Pitfalls:
+      * The user cannot pin enough memory. By default linux systems allow about 32KB. Check with "ulimit -l". This is for IB only.
+
+      * IB is not up and running (check with "ibv_devinfo") or the
+        default IPoIB interface, ib0, doesn't have an IP address.
