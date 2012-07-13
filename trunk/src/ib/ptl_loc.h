@@ -47,10 +47,6 @@
 #include <infiniband/verbs.h>
 #endif
 
-#if WITH_PPE
-#include "xpmem.h"
-#endif
-
 #include "portals4.h"
 
 /* use these for network byte order */
@@ -69,11 +65,15 @@ typedef uint64_t	__le64;
 #include "ptl_atomic.h"
 #include "ptl_param.h"
 #include "ptl_evloop.h"
+#include "ptl_pool.h"
+#include "ptl_queue.h"
+#include "ptl_xpmem.h"
+#include "ptl_gbl.h"
 #include "ptl_obj.h"
+#include "ptl_ppe.h"
+#include "p4ppe.h"
 #include "ptl_iface.h"
 #include "ptl_pt.h"
-#include "ptl_queue.h"
-#include "ptl_ppe.h"
 #include "ptl_ni.h"
 #include "ptl_data.h"
 #include "ptl_conn.h"
@@ -85,13 +85,6 @@ typedef uint64_t	__le64;
 #include "ptl_buf.h"
 #include "ptl_eq.h"
 #include "ptl_hdr.h"
-#if IS_PPE
-#include "p4ppe.h"
-#elif IS_LIGHT_LIB
-#include "ptl_light_lib.h"
-#else
-#include "ptl_gbl.h"
-#endif
 #include "ptl_misc.h"
 
 static inline __be16 cpu_to_be16(uint16_t x) { return htons(x); }

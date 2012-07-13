@@ -193,7 +193,7 @@ err1:
  * @return PTL_NO_SPACE Indicates that there is insufficient memory
  * to allocate the memory descriptor.
  */
-int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
+int _PtlMDBind(PPEGBL ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	      ptl_handle_md_t *md_handle_p)
 {
 	int err;
@@ -205,7 +205,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -259,7 +259,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	}
 
 #ifndef NO_ARG_VALIDATION
-	err = to_eq(md_init->eq_handle, &md->eq);
+	err = to_eq(MYGBL_ md_init->eq_handle, &md->eq);
 	if (err)
 		goto err3;
 
@@ -268,7 +268,7 @@ int PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 		goto err3;
 	}
 
-	err = to_ct(md_init->ct_handle, &md->ct);
+	err = to_ct(MYGBL_ md_init->ct_handle, &md->ct);
 	if (err)
 		goto err3;
 
@@ -329,7 +329,7 @@ err0:
  * @return PTL_IN_USE Indicates that md_handle has pending operations
  * and cannot be released.
  */
-int PtlMDRelease(ptl_handle_md_t md_handle)
+int _PtlMDRelease(PPEGBL ptl_handle_md_t md_handle)
 {
 	int err;
 	md_t *md;
@@ -339,7 +339,7 @@ int PtlMDRelease(ptl_handle_md_t md_handle)
 	if (err)
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (!md) {
 		err = PTL_ARG_INVALID;
 		goto err1;

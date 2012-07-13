@@ -87,7 +87,7 @@ static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
  *
  * @return status
  */
-static inline int to_eq(ptl_handle_eq_t eq_handle, eq_t **eq_p)
+static inline int to_eq(PPEGBL ptl_handle_eq_t eq_handle, eq_t **eq_p)
 {
 	obj_t *obj;
 
@@ -96,7 +96,7 @@ static inline int to_eq(ptl_handle_eq_t eq_handle, eq_t **eq_p)
 		return PTL_OK;
 	}
 
-	obj = to_obj(POOL_EQ, (ptl_handle_any_t)eq_handle);
+	obj = to_obj(MYGBL_ POOL_EQ, (ptl_handle_any_t)eq_handle);
 	if (!obj) {
 		*eq_p = NULL;
 		return PTL_ARG_INVALID;

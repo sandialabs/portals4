@@ -658,7 +658,7 @@ int setup_shmem(ni_t *ni)
 	/* The buffer is right after the nemesis queue. */
 	ni->sbuf_pool.pre_alloc_buffer = (void *)(ni->shmem.queue + 1);
 
-	err = pool_init(&ni->sbuf_pool, "sbuf", real_buf_t_size(),
+	err = pool_init(ni->iface->gbl, &ni->sbuf_pool, "sbuf", real_buf_t_size(),
 					POOL_SBUF, (obj_t *)ni);
 	if (err) {
 		WARN();

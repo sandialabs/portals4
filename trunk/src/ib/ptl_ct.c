@@ -91,7 +91,7 @@ void ct_cleanup(void *arg)
  * @return PTL_NO_SPACE Indicates that there is insufficient
  * memory to allocate the counting event.
  */
-int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
+int _PtlCTAlloc(PPEGBL ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 {
 	int err;
 	ni_t *ni;
@@ -103,7 +103,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -112,7 +112,7 @@ int PtlCTAlloc(ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = fast_to_obj(MYGBL_ ni_handle);
 #endif
 
 	/* check limit resources to see if we can allocate another ct */
@@ -170,7 +170,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
  */
-int PtlCTFree(ptl_handle_ct_t ct_handle)
+int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
 {
 	int err;
 	ct_t *ct;
@@ -182,7 +182,7 @@ int PtlCTFree(ptl_handle_ct_t ct_handle)
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -232,7 +232,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
  */
-int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
+int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 {
 	int err;
 	ct_t *ct;
@@ -243,7 +243,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle)
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -287,7 +287,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
  */
-int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
+int _PtlCTGet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 {
 	int err;
 	ct_t *ct;
@@ -298,7 +298,7 @@ int PtlCTGet(ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -340,7 +340,7 @@ err0:
  * was called by another thread while this thread * was waiting in
  * PtlCTWait().
  */
-int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
+int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
 	      ptl_ct_event_t *event_p)
 {
 	int err;
@@ -352,7 +352,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle, uint64_t threshold,
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -396,7 +396,7 @@ err0:
  * was called by another thread while this thread * was waiting
  * in PtlCTPoll().
  */
-int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
+int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 			  unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
 			  unsigned int *which_p)
 {
@@ -422,7 +422,7 @@ int PtlCTPoll(const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
 	for (i = 0; i < size; i++) {
-		err = to_ct(ct_handles[i], &cts[i]);
+		err = to_ct(MYGBL_ ct_handles[i], &cts[i]);
 		if (unlikely(err || !cts[i])) {
 			err = PTL_ARG_INVALID;
 			goto err2;
@@ -561,7 +561,7 @@ static void ct_set(ct_t *ct, ptl_ct_event_t new_ct)
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
  */
-int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
+int _PtlCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 {
 	int err;
 	ct_t *ct;
@@ -573,7 +573,7 @@ int PtlCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -631,7 +631,7 @@ static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
  */
-int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
+int _PtlCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 {
 	int err;
 	ct_t *ct;
@@ -642,7 +642,7 @@ int PtlCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 	if (err)
 		goto err0;
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err1;
 
@@ -700,7 +700,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that an invalid argument was
  * passed.
  */
-int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
+int _PtlTriggeredCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
@@ -714,13 +714,13 @@ int PtlTriggeredCTInc(ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
 	if (unlikely(err))
 		goto err0;
 
-	err = to_ct(trig_ct_handle, &trig_ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
 	if (unlikely(err))
 		goto err1;
 
 	ni = obj_to_ni(trig_ct);
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err2;
 
@@ -796,7 +796,7 @@ err0:
  * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
  * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  */
-int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
+int _PtlTriggeredCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
 	int err;
@@ -811,13 +811,13 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 	if (err)
 		goto err0;
 
-	err = to_ct(trig_ct_handle, &trig_ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
 	if (err)
 		goto err1;
 
 	ni = obj_to_ni(trig_ct);
 
-	err = to_ct(ct_handle, &ct);
+	err = to_ct(MYGBL_ ct_handle, &ct);
 	if (err)
 		goto err2;
 

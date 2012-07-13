@@ -15,8 +15,8 @@ unsigned int linesize;
 
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Various initalization that must be done once. */
-int misc_init_once(void)
+/* Various initalizations that must be done once. */
+int misc_init_once(gbl_t *gbl)
 {
 	int err;
 
@@ -25,9 +25,11 @@ int misc_init_once(void)
 	ptl_log_level = get_param(PTL_LOG_LEVEL);
 
 	/* init the index service */
-	err = index_init();
-	if (err)
-		return err;
+	if (gbl) {
+		err = index_init(gbl);
+		if (err)
+			return err;
+	}
 
 	pagesize = sysconf(_SC_PAGESIZE);
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE

@@ -64,11 +64,11 @@ static inline int me_alloc(ni_t *ni, me_t **me_p)
  *
  * @return status
  */
-static inline int to_me(ptl_handle_me_t handle, me_t **me_p)
+static inline int to_me(PPEGBL ptl_handle_me_t handle, me_t **me_p)
 {
 	obj_t *obj;
 
-	obj = to_obj(POOL_ME, (ptl_handle_any_t)handle);
+	obj = to_obj(MYGBL_ POOL_ME, (ptl_handle_any_t)handle);
 	if (!obj) {
 		*me_p = NULL;
 		return PTL_ARG_INVALID;

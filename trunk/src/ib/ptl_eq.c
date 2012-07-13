@@ -72,7 +72,7 @@ static inline void check_waiter(struct eqe_list *eqe_list)
  * @return PTL_NO_SPACE Indicates that there is insufficient memory to
  * allocate the event queue.
  */
-int PtlEQAlloc(ptl_handle_ni_t ni_handle,
+int _PtlEQAlloc(PPEGBL ptl_handle_ni_t ni_handle,
 			   ptl_size_t count,
 			   ptl_handle_eq_t *eq_handle_p)
 {
@@ -87,7 +87,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -185,7 +185,7 @@ int PtlEQAlloc(ptl_handle_ni_t ni_handle,
  * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid
  * event queue handle.
  */
-int PtlEQFree(ptl_handle_eq_t eq_handle)
+int _PtlEQFree(PPEGBL ptl_handle_eq_t eq_handle)
 {
 	int err;
 	eq_t *eq;
@@ -197,7 +197,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle)
 	if (err)
 		goto err0;
 
-	err = to_eq(eq_handle, &eq);
+	err = to_eq(MYGBL_ eq_handle, &eq);
 	if (err)
 		goto err1;
 
@@ -258,7 +258,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid event
  * queue handle.
  */
-int PtlEQGet(ptl_handle_eq_t eq_handle,
+int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle,
 			 ptl_event_t *event_p)
 {
 	int err;
@@ -269,7 +269,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
 	if (err)
 		goto err0;
 
-	err = to_eq(eq_handle, &eq);
+	err = to_eq(MYGBL_ eq_handle, &eq);
 	if (err)
 		goto err1;
 
@@ -311,7 +311,7 @@ err0:
  * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
  * called by another thread while this thread was waiting in PtlEQWait().
  */
-int PtlEQWait(ptl_handle_eq_t eq_handle,
+int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle,
 			  ptl_event_t *event_p)
 {
 	int err;
@@ -322,7 +322,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
 	if (err)
 		goto err0;
 
-	err = to_eq(eq_handle, &eq);
+	err = to_eq(MYGBL_ eq_handle, &eq);
 	if (err)
 		goto err1;
 
@@ -368,7 +368,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
  * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
  * called by another thread while this thread was waiting in PtlEQPoll().
  */
-int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
+int _PtlEQPoll(PPEGBL const ptl_handle_eq_t *eq_handles, unsigned int size,
 			  ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
 {
 	int err;
@@ -393,7 +393,7 @@ int PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
 	for (i = 0; i < size; i++) {
-		err = to_eq(eq_handles[i], &eqs[i]);
+		err = to_eq(MYGBL_ eq_handles[i], &eqs[i]);
 		if (unlikely(err || !eqs[i])) {
 			err = PTL_ARG_INVALID;
 			goto err2;

@@ -7,21 +7,18 @@
 /* Maximum number of stored objects ever. */
 #define MAX_INDEX	(256*1024)
 
-static atomic_t next_index;
-void **index_map;
-
 /**
  * initialize indexing service
  *
  * @return status
  */
-int index_init(void)
+int index_init(gbl_t *gbl)
 {
-	index_map = calloc(MAX_INDEX, sizeof(void *));
-	if (!index_map)
+	gbl->index_map = calloc(MAX_INDEX, sizeof(void *));
+	if (!gbl->index_map)
 		return PTL_NO_SPACE;
 
-	atomic_set(&next_index, 0);
+	atomic_set(&gbl->next_index, 0);
 
 	return PTL_OK;
 }
@@ -29,9 +26,9 @@ int index_init(void)
 /**
  * cleanup indexing service
  */
-void index_fini(void)
+void index_fini(gbl_t *gbl)
 {
-	free(index_map);
+	free(gbl->index_map);
 }
 
 /**
@@ -42,16 +39,16 @@ void index_fini(void)
  *
  * @output status
  */
-static inline int index_get(obj_t *obj, unsigned int *index_p)
+static inline int index_get(gbl_t *gbl, obj_t *obj, unsigned int *index_p)
 {
 	unsigned int index;
 
-	index = atomic_inc(&next_index);
+	index = atomic_inc(&gbl->next_index);
 
 	if (index >= MAX_INDEX)
 		return PTL_FAIL;
 
-	index_map[index] = obj;
+	gbl->index_map[index] = obj;
 
 	*index_p = index;
 
@@ -65,15 +62,15 @@ static inline int index_get(obj_t *obj, unsigned int *index_p)
  *
  * @return status
  */
-static inline int index_lookup(unsigned int index, obj_t **obj_p)
+static inline int index_lookup(gbl_t *gbl, unsigned int index, obj_t **obj_p)
 {
 	if (index >= MAX_INDEX) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-	if (index_map[index]) {
-		*obj_p = index_map[index];
+	if (gbl->index_map[index]) {
+		*obj_p = gbl->index_map[index];
 		return PTL_OK;
 	} else {
 		return PTL_FAIL;
@@ -218,7 +215,7 @@ static int pool_alloc_slab(pool_t *pool)
 		obj->obj_ni = (pool->parent) ? pool->parent->obj_ni
 					     : (ni_t *)obj;
 
-		err = index_get(obj, &index);
+		err = index_get(pool->gbl, obj, &index);
 		if (err) {
 			WARN();
 			//todo: leak
@@ -321,13 +318,14 @@ int pool_fini(pool_t *pool)
  *
  * @return status
  */
-int pool_init(pool_t *pool, char *name, int size,
-		  enum obj_type type, obj_t *parent)
+int pool_init(gbl_t *gbl, pool_t *pool, char *name, int size,
+			  enum obj_type type, obj_t *parent)
 {
 	pool->name = name;
 	pool->size = size;
 	pool->type = type;
 	pool->parent = parent;
+	pool->gbl = gbl;
 
 	if (pool->round_size == 0)
 		pool->round_size = (pool->size + linesize - 1)
@@ -466,7 +464,7 @@ int obj_alloc(pool_t *pool, obj_t **obj_p)
  *
  * @return the object
  */
-void *to_obj(enum obj_type type, ptl_handle_any_t handle)
+void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle)
 {
 	int err;
 	obj_t *obj = NULL;
@@ -485,7 +483,7 @@ void *to_obj(enum obj_type type, ptl_handle_any_t handle)
 
 	index = obj_handle_to_index(handle);
 
-	err = index_lookup(index, &obj);
+	err = index_lookup(MYGBL, index, &obj);
 	if (err) {
 		goto err1;
 	}
@@ -501,6 +499,7 @@ void *to_obj(enum obj_type type, ptl_handle_any_t handle)
 	}
 
 	if ((type != POOL_ANY) && (type != obj->obj_pool->type)) {
+		abort();
 		WARN();
 		goto err1;
 	}

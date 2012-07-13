@@ -469,12 +469,12 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 	}
 }
 
-static inline int to_buf(ptl_handle_buf_t handle, buf_t **buf_p)
+static inline int to_buf(PPEGBL ptl_handle_buf_t handle, buf_t **buf_p)
 {
 	obj_t *obj;
 
 	/* The buffer can either be in POOL_BUF or POOL_SBUF. */
-	obj = to_obj(POOL_ANY, (ptl_handle_any_t)handle);
+	obj = to_obj(MYGBL_ POOL_ANY, (ptl_handle_any_t)handle);
 	if (!obj) {
 		*buf_p = NULL;
 		return PTL_ARG_INVALID;

@@ -54,6 +54,7 @@ libportals_ib_la_SOURCES = \
 	ptl_obj.h \
 	ptl_param.c \
 	ptl_param.h \
+	ptl_pool.h \
 	ptl_pt.c \
 	ptl_pt.h \
 	ptl_recv.c \
@@ -94,7 +95,6 @@ libportals_ib_la_SOURCES = \
 	ptl_eq_common.c \
 	ptl_eq_common.h \
 	ptl_light_lib.c \
-	ptl_light_lib.h \
 	ptl_misc.c \
 	ptl_misc.h \
 	ptl_obj.c \
@@ -103,7 +103,8 @@ libportals_ib_la_SOURCES = \
 	ptl_param.h \
 	ptl_ppe.h \
 	ptl_queue.c \
-	ptl_queue.h
+	ptl_queue.h \
+	ptl_xpmem.h
 
 bin_PROGRAMS = p4ppe
 p4ppe_CFLAGS = $(AM_CFLAGS) -DIS_PPE
@@ -158,6 +159,7 @@ p4ppe_SOURCES = \
 	ptl_obj.h \
 	ptl_param.c \
 	ptl_param.h \
+	ptl_pool.h \
 	ptl_ppe.h \
 	ptl_pt.c \
 	ptl_pt.h \
@@ -167,6 +169,7 @@ p4ppe_SOURCES = \
 	ptl_ref.h \
 	ptl_sync.h \
 	ptl_tgt.c \
+	ptl_xpmem.h \
 	tree.h
 
 if WITH_TRANSPORT_IB

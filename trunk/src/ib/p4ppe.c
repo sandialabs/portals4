@@ -116,7 +116,7 @@ static int setup_ppebufs(void)
 	pool->use_pre_alloc_buffer = 1;
 	pool->slab_size = slab_size;
 
-	ret = pool_init(pool, "ppebuf", sizeof(ppebuf_t),
+	ret = pool_init(&ppe.gbl, pool, "ppebuf", sizeof(ppebuf_t),
 					POOL_PPEBUF, NULL);
 	if (ret) {
 		WARN();
@@ -176,6 +176,9 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 	client->gbl.apid = xpmem_get(msg.req.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
 	if (client->gbl.apid == -1) {
 		/* That is possible, but should not happen. */
+		msg.rep.ret = PTL_FAIL;
+	} 
+	else if (index_init(&client->gbl) != PTL_OK) {
 		msg.rep.ret = PTL_FAIL;
 	} else {
 		/* Designate a progress thread for this client. They are alloted
@@ -577,16 +580,18 @@ static void do_OP_PtlNIInit(ppebuf_t *buf)
 							  &buf->msg.PtlNIInit.desired : NULL,
 							  &buf->msg.PtlNIInit.actual,
 							  &buf->msg.PtlNIInit.ni_handle);
-
 	if (buf->msg.ret)
 		WARN();
 }
 
 static void do_OP_PtlNIStatus(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlNIStatus(buf->msg.PtlNIStatus.ni_handle,
-							   buf->msg.PtlNIStatus.status_register,
-							   &buf->msg.PtlNIStatus.status);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlNIStatus(&client->gbl,
+								buf->msg.PtlNIStatus.ni_handle,
+								buf->msg.PtlNIStatus.status_register,
+								&buf->msg.PtlNIStatus.status);
 }
 
 /* Remove an NI from a PPE set. */
@@ -625,7 +630,7 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 	struct client *client = buf->cookie;
 	ni_t *ni;
 
-	err = to_ni(buf->msg.PtlNIFini.ni_handle, &ni);
+	err = to_ni(&client->gbl, buf->msg.PtlNIFini.ni_handle, &ni);
 	if (unlikely(err)) {
 		WARN();
 		buf->msg.ret = PTL_ARG_INVALID;
@@ -650,29 +655,26 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 
 static void do_OP_PtlNIHandle(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlNIHandle(buf->msg.PtlNIHandle.handle,
-							   &buf->msg.PtlNIHandle.ni_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlNIHandle(&client->gbl,
+								buf->msg.PtlNIHandle.handle,
+								&buf->msg.PtlNIHandle.ni_handle);
 }
 
-static void insert_ni_into_set(ptl_handle_ni_t ni_handle)
+static void insert_ni_into_set(gbl_t *gbl, ni_t *ni)
 {
-	ni_t *ni;
-	int err;
-
-	/* Insert the NI into the hash table. */
-	err = to_ni(ni_handle, &ni);
-	if (unlikely(err)) {
-		/* Just created. Cannot happen. */
-		abort();
-	}
-
 	if (ni->options & PTL_NI_PHYSICAL) {
 		void *res;
+
+		/* Insert the NI into the RB tree. */
 
 		res = RB_INSERT(phys_ni_root, &ppe.physni_tree, ni);
 		assert(res == NULL);	/* should never happen */
 	} else {
 		struct logical_ni_set *set;
+
+		/* Insert the NI into the hash table. */
 
 		set = get_ni_set(ni->mem.hash);
 
@@ -699,8 +701,6 @@ static void insert_ni_into_set(ptl_handle_ni_t ni_handle)
 
 		ni->mem.in_set = 1;
 	}
-
-	ni_put(ni);
 }
 
 static void do_OP_PtlSetMap(ppebuf_t *buf)
@@ -713,14 +713,21 @@ static void do_OP_PtlSetMap(ppebuf_t *buf)
 						  buf->msg.PtlSetMap.map_size*sizeof(ptl_process_t),
 						  (void **)&mapping);
 	if (!ret) {
-		ret = PtlSetMap(buf->msg.PtlSetMap.ni_handle,
-						buf->msg.PtlSetMap.map_size,
-						mapping);
+		ret = _PtlSetMap(&client->gbl,
+						 buf->msg.PtlSetMap.ni_handle,
+						 buf->msg.PtlSetMap.map_size,
+						 mapping);
 
 		buf->msg.ret = ret;
 
 		if (ret == PTL_OK) {
-			insert_ni_into_set(buf->msg.PtlSetMap.ni_handle);
+			ni_t *ni;
+
+			/* retrieve the NI. This cannot fail because PtlSetMap succedeed. */
+			ret = to_ni(&client->gbl, buf->msg.PtlSetMap.ni_handle, &ni);
+			assert(ret == PTL_OK);
+
+			insert_ni_into_set(&client->gbl, ni);
 		}
 
 		unmap_segment_ppe(mapping);
@@ -740,10 +747,11 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 						  buf->msg.PtlGetMap.map_size*sizeof(ptl_process_t),
 						  (void **)&mapping);
 	if (!ret) {
-		buf->msg.ret = PtlGetMap(buf->msg.PtlGetMap.ni_handle,
-								 buf->msg.PtlGetMap.map_size,
-								 mapping,
-								 &buf->msg.PtlGetMap.actual_map_size);
+		buf->msg.ret = _PtlGetMap(&client->gbl,
+								  buf->msg.PtlGetMap.ni_handle,
+								  buf->msg.PtlGetMap.map_size,
+								  mapping,
+								  &buf->msg.PtlGetMap.actual_map_size);
 
 		unmap_segment_ppe(mapping);
 	} else {
@@ -753,56 +761,77 @@ static void do_OP_PtlGetMap(ppebuf_t *buf)
 
 static void do_OP_PtlPTAlloc(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlPTAlloc(buf->msg.PtlPTAlloc.ni_handle,
-							  buf->msg.PtlPTAlloc.options,
-							  buf->msg.PtlPTAlloc.eq_handle,
-							  buf->msg.PtlPTAlloc.pt_index_req,
-							  &buf->msg.PtlPTAlloc.pt_index);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlPTAlloc(&client->gbl,
+							   buf->msg.PtlPTAlloc.ni_handle,
+							   buf->msg.PtlPTAlloc.options,
+							   buf->msg.PtlPTAlloc.eq_handle,
+							   buf->msg.PtlPTAlloc.pt_index_req,
+							   &buf->msg.PtlPTAlloc.pt_index);
 }
 
 static void do_OP_PtlPTFree(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlPTFree(buf->msg.PtlPTFree.ni_handle,
-							 buf->msg.PtlPTFree.pt_index);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlPTFree(&client->gbl,
+							  buf->msg.PtlPTFree.ni_handle,
+							  buf->msg.PtlPTFree.pt_index);
 }
 
 static void do_OP_PtlMESearch(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlMESearch(buf->msg.PtlMESearch.ni_handle,
-							   buf->msg.PtlMESearch.pt_index,
-							   &buf->msg.PtlMESearch.me,
-							   buf->msg.PtlMESearch.ptl_search_op,
-							   buf->msg.PtlMESearch.user_ptr);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlMESearch(&client->gbl,
+								buf->msg.PtlMESearch.ni_handle,
+								buf->msg.PtlMESearch.pt_index,
+								&buf->msg.PtlMESearch.me,
+								buf->msg.PtlMESearch.ptl_search_op,
+								buf->msg.PtlMESearch.user_ptr);
 }
 
 static void do_OP_PtlMEAppend(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlMEAppend(buf->msg.PtlMEAppend.ni_handle,
-							   buf->msg.PtlMEAppend.pt_index,
-							   &buf->msg.PtlMEAppend.me,
-							   buf->msg.PtlMEAppend.ptl_list,
-							   buf->msg.PtlMEAppend.user_ptr,
-							   &buf->msg.PtlMEAppend.me_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlMEAppend(&client->gbl,
+								buf->msg.PtlMEAppend.ni_handle,
+								buf->msg.PtlMEAppend.pt_index,
+								&buf->msg.PtlMEAppend.me,
+								buf->msg.PtlMEAppend.ptl_list,
+								buf->msg.PtlMEAppend.user_ptr,
+								&buf->msg.PtlMEAppend.me_handle);
 }
 
 static void do_OP_PtlMEUnlink(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlMEUnlink(buf->msg.PtlMEUnlink.me_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlMEUnlink(&client->gbl,
+								buf->msg.PtlMEUnlink.me_handle);
 }
 
 static void do_OP_PtlLEAppend(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlLEAppend(buf->msg.PtlLEAppend.ni_handle,
-							   buf->msg.PtlLEAppend.pt_index,
-							   &buf->msg.PtlLEAppend.le,
-							   buf->msg.PtlLEAppend.ptl_list,
-							   buf->msg.PtlLEAppend.user_ptr,
-							   &buf->msg.PtlLEAppend.le_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlLEAppend(&client->gbl,
+								buf->msg.PtlLEAppend.ni_handle,
+								buf->msg.PtlLEAppend.pt_index,
+								&buf->msg.PtlLEAppend.le,
+								buf->msg.PtlLEAppend.ptl_list,
+								buf->msg.PtlLEAppend.user_ptr,
+								&buf->msg.PtlLEAppend.le_handle);
 }
 
 static void do_OP_PtlLESearch(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlLESearch(	buf->msg.PtlLESearch.ni_handle,
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlLESearch(&client->gbl,
+								buf->msg.PtlLESearch.ni_handle,
 								buf->msg.PtlLESearch.pt_index,
 								&buf->msg.PtlLESearch.le,
 								buf->msg.PtlLESearch.ptl_search_op,
@@ -811,84 +840,108 @@ static void do_OP_PtlLESearch(ppebuf_t *buf)
 
 static void do_OP_PtlLEUnlink(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlLEUnlink(buf->msg.PtlLEUnlink.le_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlLEUnlink(&client->gbl,
+								buf->msg.PtlLEUnlink.le_handle);
 }
 
 static void do_OP_PtlMDBind(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlMDBind(buf->msg.PtlMDBind.ni_handle,
-							 &buf->msg.PtlMDBind.md,
-							 &buf->msg.PtlMDBind.md_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlMDBind(&client->gbl,
+							  buf->msg.PtlMDBind.ni_handle,
+							  &buf->msg.PtlMDBind.md,
+							  &buf->msg.PtlMDBind.md_handle);
 }
 
 static void do_OP_PtlMDRelease(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlMDRelease(buf->msg.PtlMDRelease.md_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlMDRelease(&client->gbl,
+								 buf->msg.PtlMDRelease.md_handle);
 }
 
 static void do_OP_PtlGetId(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlGetId(buf->msg.PtlGetId.ni_handle,
-							&buf->msg.PtlGetId.id);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlGetId(&client->gbl,
+							 buf->msg.PtlGetId.ni_handle,
+							 &buf->msg.PtlGetId.id);
 }
 
 static void do_OP_PtlPut(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlPut(buf->msg.PtlPut.md_handle,
-						  buf->msg.PtlPut.local_offset,
-						  buf->msg.PtlPut.length,
-						  buf->msg.PtlPut.ack_req,
-						  buf->msg.PtlPut.target_id,
-						  buf->msg.PtlPut.pt_index,
-						  buf->msg.PtlPut.match_bits,
-						  buf->msg.PtlPut.remote_offset,
-						  buf->msg.PtlPut.user_ptr,
-						  buf->msg.PtlPut.hdr_data);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlPut(&client->gbl,
+						   buf->msg.PtlPut.md_handle,
+						   buf->msg.PtlPut.local_offset,
+						   buf->msg.PtlPut.length,
+						   buf->msg.PtlPut.ack_req,
+						   buf->msg.PtlPut.target_id,
+						   buf->msg.PtlPut.pt_index,
+						   buf->msg.PtlPut.match_bits,
+						   buf->msg.PtlPut.remote_offset,
+						   buf->msg.PtlPut.user_ptr,
+						   buf->msg.PtlPut.hdr_data);
 }
 
 static void do_OP_PtlGet(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlGet(buf->msg.PtlGet.md_handle,
-						  buf->msg.PtlGet.local_offset,
-						  buf->msg.PtlGet.length,
-						  buf->msg.PtlGet.target_id,
-						  buf->msg.PtlGet.pt_index,
-						  buf->msg.PtlGet.match_bits,
-						  buf->msg.PtlGet.remote_offset,
-						  buf->msg.PtlGet.user_ptr);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlGet(&client->gbl,
+						   buf->msg.PtlGet.md_handle,
+						   buf->msg.PtlGet.local_offset,
+						   buf->msg.PtlGet.length,
+						   buf->msg.PtlGet.target_id,
+						   buf->msg.PtlGet.pt_index,
+						   buf->msg.PtlGet.match_bits,
+						   buf->msg.PtlGet.remote_offset,
+						   buf->msg.PtlGet.user_ptr);
 }
 
 static void do_OP_PtlAtomic(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlAtomic(buf->msg.PtlAtomic.md_handle,
-							 buf->msg.PtlAtomic.local_offset,
-							 buf->msg.PtlAtomic.length,
-							 buf->msg.PtlAtomic.ack_req,
-							 buf->msg.PtlAtomic.target_id,
-							 buf->msg.PtlAtomic.pt_index,
-							 buf->msg.PtlAtomic.match_bits,
-							 buf->msg.PtlAtomic.remote_offset,
-							 buf->msg.PtlAtomic.user_ptr,
-							 buf->msg.PtlAtomic.hdr_data,
-							 buf->msg.PtlAtomic.operation,
-							 buf->msg.PtlAtomic.datatype);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlAtomic(&client->gbl,
+							  buf->msg.PtlAtomic.md_handle,
+							  buf->msg.PtlAtomic.local_offset,
+							  buf->msg.PtlAtomic.length,
+							  buf->msg.PtlAtomic.ack_req,
+							  buf->msg.PtlAtomic.target_id,
+							  buf->msg.PtlAtomic.pt_index,
+							  buf->msg.PtlAtomic.match_bits,
+							  buf->msg.PtlAtomic.remote_offset,
+							  buf->msg.PtlAtomic.user_ptr,
+							  buf->msg.PtlAtomic.hdr_data,
+							  buf->msg.PtlAtomic.operation,
+							  buf->msg.PtlAtomic.datatype);
 }
 
 static void do_OP_PtlFetchAtomic(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlFetchAtomic(buf->msg.PtlFetchAtomic.get_md_handle,
-								  buf->msg.PtlFetchAtomic.local_get_offset,
-								  buf->msg.PtlFetchAtomic.put_md_handle,
-								  buf->msg.PtlFetchAtomic.local_put_offset,
-								  buf->msg.PtlFetchAtomic.length,
-								  buf->msg.PtlFetchAtomic.target_id,
-								  buf->msg.PtlFetchAtomic.pt_index,
-								  buf->msg.PtlFetchAtomic.match_bits,
-								  buf->msg.PtlFetchAtomic.remote_offset,
-								  buf->msg.PtlFetchAtomic.user_ptr,
-								  buf->msg.PtlFetchAtomic.hdr_data,
-								  buf->msg.PtlFetchAtomic.operation,
-								  buf->msg.PtlFetchAtomic.datatype);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlFetchAtomic(&client->gbl,
+								   buf->msg.PtlFetchAtomic.get_md_handle,
+								   buf->msg.PtlFetchAtomic.local_get_offset,
+								   buf->msg.PtlFetchAtomic.put_md_handle,
+								   buf->msg.PtlFetchAtomic.local_put_offset,
+								   buf->msg.PtlFetchAtomic.length,
+								   buf->msg.PtlFetchAtomic.target_id,
+								   buf->msg.PtlFetchAtomic.pt_index,
+								   buf->msg.PtlFetchAtomic.match_bits,
+								   buf->msg.PtlFetchAtomic.remote_offset,
+								   buf->msg.PtlFetchAtomic.user_ptr,
+								   buf->msg.PtlFetchAtomic.hdr_data,
+								   buf->msg.PtlFetchAtomic.operation,
+								   buf->msg.PtlFetchAtomic.datatype);
 }
 
 static void do_OP_PtlSwap(ppebuf_t *buf)
@@ -901,20 +954,21 @@ static void do_OP_PtlSwap(ppebuf_t *buf)
 						  buf->msg.PtlSwap.length,
 						  (void **)&operand);
 	if (!ret) {
-		buf->msg.ret = PtlSwap(buf->msg.PtlSwap.get_md_handle,
-							   buf->msg.PtlSwap.local_get_offset,
-							   buf->msg.PtlSwap.put_md_handle,
-							   buf->msg.PtlSwap.local_put_offset,
-							   buf->msg.PtlSwap.length,
-							   buf->msg.PtlSwap.target_id,
-							   buf->msg.PtlSwap.pt_index,
-							   buf->msg.PtlSwap.match_bits,
-							   buf->msg.PtlSwap.remote_offset,
-							   buf->msg.PtlSwap.user_ptr,
-							   buf->msg.PtlSwap.hdr_data,
-							   operand,
-							   buf->msg.PtlSwap.operation,
-							   buf->msg.PtlSwap.datatype);
+		buf->msg.ret = _PtlSwap(&client->gbl,
+								buf->msg.PtlSwap.get_md_handle,
+								buf->msg.PtlSwap.local_get_offset,
+								buf->msg.PtlSwap.put_md_handle,
+								buf->msg.PtlSwap.local_put_offset,
+								buf->msg.PtlSwap.length,
+								buf->msg.PtlSwap.target_id,
+								buf->msg.PtlSwap.pt_index,
+								buf->msg.PtlSwap.match_bits,
+								buf->msg.PtlSwap.remote_offset,
+								buf->msg.PtlSwap.user_ptr,
+								buf->msg.PtlSwap.hdr_data,
+								operand,
+								buf->msg.PtlSwap.operation,
+								buf->msg.PtlSwap.datatype);
 		unmap_segment_ppe(operand);
 	} else {
 		buf->msg.ret = PTL_ARG_INVALID;
@@ -923,126 +977,153 @@ static void do_OP_PtlSwap(ppebuf_t *buf)
 
 static void do_OP_PtlTriggeredPut(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredPut(buf->msg.PtlTriggeredPut.md_handle,
-								   buf->msg.PtlTriggeredPut.local_offset,
-								   buf->msg.PtlTriggeredPut.length,
-								   buf->msg.PtlTriggeredPut.ack_req,
-								   buf->msg.PtlTriggeredPut.target_id,
-								   buf->msg.PtlTriggeredPut.pt_index,
-								   buf->msg.PtlTriggeredPut.match_bits,
-								   buf->msg.PtlTriggeredPut.remote_offset,
-								   buf->msg.PtlTriggeredPut.user_ptr,
-								   buf->msg.PtlTriggeredPut.hdr_data,
-								   buf->msg.PtlTriggeredPut.trig_ct_handle,
-								   buf->msg.PtlTriggeredPut.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredPut(&client->gbl,
+									buf->msg.PtlTriggeredPut.md_handle,
+									buf->msg.PtlTriggeredPut.local_offset,
+									buf->msg.PtlTriggeredPut.length,
+									buf->msg.PtlTriggeredPut.ack_req,
+									buf->msg.PtlTriggeredPut.target_id,
+									buf->msg.PtlTriggeredPut.pt_index,
+									buf->msg.PtlTriggeredPut.match_bits,
+									buf->msg.PtlTriggeredPut.remote_offset,
+									buf->msg.PtlTriggeredPut.user_ptr,
+									buf->msg.PtlTriggeredPut.hdr_data,
+									buf->msg.PtlTriggeredPut.trig_ct_handle,
+									buf->msg.PtlTriggeredPut.threshold);
 }
 
 
 static void do_OP_PtlTriggeredGet(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredGet(buf->msg.PtlTriggeredGet.md_handle,
-								   buf->msg.PtlTriggeredGet.local_offset,
-								   buf->msg.PtlTriggeredGet.length,
-								   buf->msg.PtlTriggeredGet.target_id,
-								   buf->msg.PtlTriggeredGet.pt_index,
-								   buf->msg.PtlTriggeredGet.match_bits,
-								   buf->msg.PtlTriggeredGet.remote_offset,
-								   buf->msg.PtlTriggeredGet.user_ptr,
-								   buf->msg.PtlTriggeredGet.trig_ct_handle,
-								   buf->msg.PtlTriggeredGet.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredGet(&client->gbl,
+									buf->msg.PtlTriggeredGet.md_handle,
+									buf->msg.PtlTriggeredGet.local_offset,
+									buf->msg.PtlTriggeredGet.length,
+									buf->msg.PtlTriggeredGet.target_id,
+									buf->msg.PtlTriggeredGet.pt_index,
+									buf->msg.PtlTriggeredGet.match_bits,
+									buf->msg.PtlTriggeredGet.remote_offset,
+									buf->msg.PtlTriggeredGet.user_ptr,
+									buf->msg.PtlTriggeredGet.trig_ct_handle,
+									buf->msg.PtlTriggeredGet.threshold);
 }
 
 static void do_OP_PtlTriggeredAtomic(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredAtomic(buf->msg.PtlTriggeredAtomic.md_handle,
-									  buf->msg.PtlTriggeredAtomic.local_offset,
-									  buf->msg.PtlTriggeredAtomic.length,
-									  buf->msg.PtlTriggeredAtomic.ack_req,
-									  buf->msg.PtlTriggeredAtomic.target_id,
-									  buf->msg.PtlTriggeredAtomic.pt_index,
-									  buf->msg.PtlTriggeredAtomic.match_bits,
-									  buf->msg.PtlTriggeredAtomic.remote_offset,
-									  buf->msg.PtlTriggeredAtomic.user_ptr,
-									  buf->msg.PtlTriggeredAtomic.hdr_data,
-									  buf->msg.PtlTriggeredAtomic.operation,
-									  buf->msg.PtlTriggeredAtomic.datatype,
-									  buf->msg.PtlTriggeredAtomic.trig_ct_handle,
-									  buf->msg.PtlTriggeredAtomic.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredAtomic(&client->gbl,
+									   buf->msg.PtlTriggeredAtomic.md_handle,
+									   buf->msg.PtlTriggeredAtomic.local_offset,
+									   buf->msg.PtlTriggeredAtomic.length,
+									   buf->msg.PtlTriggeredAtomic.ack_req,
+									   buf->msg.PtlTriggeredAtomic.target_id,
+									   buf->msg.PtlTriggeredAtomic.pt_index,
+									   buf->msg.PtlTriggeredAtomic.match_bits,
+									   buf->msg.PtlTriggeredAtomic.remote_offset,
+									   buf->msg.PtlTriggeredAtomic.user_ptr,
+									   buf->msg.PtlTriggeredAtomic.hdr_data,
+									   buf->msg.PtlTriggeredAtomic.operation,
+									   buf->msg.PtlTriggeredAtomic.datatype,
+									   buf->msg.PtlTriggeredAtomic.trig_ct_handle,
+									   buf->msg.PtlTriggeredAtomic.threshold);
 }
 
 static void do_OP_PtlTriggeredFetchAtomic(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredFetchAtomic(buf->msg.PtlTriggeredFetchAtomic.get_md_handle,
-										   buf->msg.PtlTriggeredFetchAtomic.local_get_offset,
-										   buf->msg.PtlTriggeredFetchAtomic.put_md_handle,
-										   buf->msg.PtlTriggeredFetchAtomic.local_put_offset,
-										   buf->msg.PtlTriggeredFetchAtomic.length,
-										   buf->msg.PtlTriggeredFetchAtomic.target_id,
-										   buf->msg.PtlTriggeredFetchAtomic.pt_index,
-										   buf->msg.PtlTriggeredFetchAtomic.match_bits,
-										   buf->msg.PtlTriggeredFetchAtomic.remote_offset,
-										   buf->msg.PtlTriggeredFetchAtomic.user_ptr,
-										   buf->msg.PtlTriggeredFetchAtomic.hdr_data,
-										   buf->msg.PtlTriggeredFetchAtomic.operation,
-										   buf->msg.PtlTriggeredFetchAtomic.datatype,
-										   buf->msg.PtlTriggeredFetchAtomic.trig_ct_handle,
-										   buf->msg.PtlTriggeredFetchAtomic.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredFetchAtomic(&client->gbl,
+											buf->msg.PtlTriggeredFetchAtomic.get_md_handle,
+											buf->msg.PtlTriggeredFetchAtomic.local_get_offset,
+											buf->msg.PtlTriggeredFetchAtomic.put_md_handle,
+											buf->msg.PtlTriggeredFetchAtomic.local_put_offset,
+											buf->msg.PtlTriggeredFetchAtomic.length,
+											buf->msg.PtlTriggeredFetchAtomic.target_id,
+											buf->msg.PtlTriggeredFetchAtomic.pt_index,
+											buf->msg.PtlTriggeredFetchAtomic.match_bits,
+											buf->msg.PtlTriggeredFetchAtomic.remote_offset,
+											buf->msg.PtlTriggeredFetchAtomic.user_ptr,
+											buf->msg.PtlTriggeredFetchAtomic.hdr_data,
+											buf->msg.PtlTriggeredFetchAtomic.operation,
+											buf->msg.PtlTriggeredFetchAtomic.datatype,
+											buf->msg.PtlTriggeredFetchAtomic.trig_ct_handle,
+											buf->msg.PtlTriggeredFetchAtomic.threshold);
 }
 
 static void do_OP_PtlTriggeredSwap(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredSwap(buf->msg.PtlTriggeredSwap.get_md_handle,
-									buf->msg.PtlTriggeredSwap.local_get_offset,
-									buf->msg.PtlTriggeredSwap.put_md_handle,
-									buf->msg.PtlTriggeredSwap.local_put_offset,
-									buf->msg.PtlTriggeredSwap.length,
-									buf->msg.PtlTriggeredSwap.target_id,
-									buf->msg.PtlTriggeredSwap.pt_index,
-									buf->msg.PtlTriggeredSwap.match_bits,
-									buf->msg.PtlTriggeredSwap.remote_offset,
-									buf->msg.PtlTriggeredSwap.user_ptr,
-									buf->msg.PtlTriggeredSwap.hdr_data,
-									buf->msg.PtlTriggeredSwap.operand,
-									buf->msg.PtlTriggeredSwap.operation,
-									buf->msg.PtlTriggeredSwap.datatype,
-									buf->msg.PtlTriggeredSwap.trig_ct_handle,
-									buf->msg.PtlTriggeredSwap.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredSwap(&client->gbl,
+									 buf->msg.PtlTriggeredSwap.get_md_handle,
+									 buf->msg.PtlTriggeredSwap.local_get_offset,
+									 buf->msg.PtlTriggeredSwap.put_md_handle,
+									 buf->msg.PtlTriggeredSwap.local_put_offset,
+									 buf->msg.PtlTriggeredSwap.length,
+									 buf->msg.PtlTriggeredSwap.target_id,
+									 buf->msg.PtlTriggeredSwap.pt_index,
+									 buf->msg.PtlTriggeredSwap.match_bits,
+									 buf->msg.PtlTriggeredSwap.remote_offset,
+									 buf->msg.PtlTriggeredSwap.user_ptr,
+									 buf->msg.PtlTriggeredSwap.hdr_data,
+									 buf->msg.PtlTriggeredSwap.operand,
+									 buf->msg.PtlTriggeredSwap.operation,
+									 buf->msg.PtlTriggeredSwap.datatype,
+									 buf->msg.PtlTriggeredSwap.trig_ct_handle,
+									 buf->msg.PtlTriggeredSwap.threshold);
 }
 
 static void do_OP_PtlTriggeredCTInc(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredCTInc(buf->msg.PtlTriggeredCTInc.ct_handle,
-									 buf->msg.PtlTriggeredCTInc.increment,
-									 buf->msg.PtlTriggeredCTInc.trig_ct_handle,
-									 buf->msg.PtlTriggeredCTInc.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredCTInc(&client->gbl,
+									  buf->msg.PtlTriggeredCTInc.ct_handle,
+									  buf->msg.PtlTriggeredCTInc.increment,
+									  buf->msg.PtlTriggeredCTInc.trig_ct_handle,
+									  buf->msg.PtlTriggeredCTInc.threshold);
 }
 
 static void do_OP_PtlTriggeredCTSet(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlTriggeredCTSet(buf->msg.PtlTriggeredCTSet.ct_handle,
-									 buf->msg.PtlTriggeredCTSet.new_ct,
-									 buf->msg.PtlTriggeredCTSet.trig_ct_handle,
-									 buf->msg.PtlTriggeredCTSet.threshold);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlTriggeredCTSet(&client->gbl,
+									  buf->msg.PtlTriggeredCTSet.ct_handle,
+									  buf->msg.PtlTriggeredCTSet.new_ct,
+									  buf->msg.PtlTriggeredCTSet.trig_ct_handle,
+									  buf->msg.PtlTriggeredCTSet.threshold);
 }
 
 static void do_OP_PtlGetPhysId(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlGetPhysId(buf->msg.PtlGetPhysId.ni_handle,
-								&buf->msg.PtlGetPhysId.id);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlGetPhysId(&client->gbl,
+								 buf->msg.PtlGetPhysId.ni_handle,
+								 &buf->msg.PtlGetPhysId.id);
 }
 
 static void do_OP_PtlEQAlloc(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlEQAlloc(buf->msg.PtlEQAlloc.ni_handle,
-							  buf->msg.PtlEQAlloc.count,
-							  &buf->msg.PtlEQAlloc.eq_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlEQAlloc(&client->gbl,
+							   buf->msg.PtlEQAlloc.ni_handle,
+							   buf->msg.PtlEQAlloc.count,
+							   &buf->msg.PtlEQAlloc.eq_handle);
 
 	if (buf->msg.ret == PTL_OK) {
 		int err;
 		eq_t *eq;
 
 		/* Should not fail since it was just created. */
-		err = to_eq(buf->msg.PtlEQAlloc.eq_handle, &eq);
+		err = to_eq(&client->gbl, buf->msg.PtlEQAlloc.eq_handle, &eq);
 		assert(err == PTL_OK);
 
 		err = create_mapping_ppe(eq->eqe_list, eq->eqe_list_size,
@@ -1052,7 +1133,8 @@ static void do_OP_PtlEQAlloc(ppebuf_t *buf)
 		eq_put(eq);
 
 		if (err != PTL_OK) {
-			PtlEQFree(buf->msg.PtlEQAlloc.eq_handle);
+			_PtlEQFree(&client->gbl,
+					   buf->msg.PtlEQAlloc.eq_handle);
 			buf->msg.ret = PTL_ARG_INVALID;
 			return;
 		}
@@ -1064,8 +1146,9 @@ static void do_OP_PtlEQFree(ppebuf_t *buf)
 	int err;
 	eq_t *eq;
 	struct xpmem_map mapping;
+	struct client *client = buf->cookie;
 
-	err = to_eq(buf->msg.PtlEQFree.eq_handle, &eq);
+	err = to_eq(&client->gbl, buf->msg.PtlEQFree.eq_handle, &eq);
 	if (err || !eq) {
 		buf->msg.ret = PTL_ARG_INVALID;
 		return;
@@ -1073,7 +1156,8 @@ static void do_OP_PtlEQFree(ppebuf_t *buf)
 	mapping = eq->ppe.eqe_list;
 	eq_put(eq);
 
-	buf->msg.ret = PtlEQFree(buf->msg.PtlEQFree.eq_handle);
+	buf->msg.ret = _PtlEQFree(&client->gbl,
+							  buf->msg.PtlEQFree.eq_handle);
 
 	if (buf->msg.ret == PTL_OK)
 		delete_mapping_ppe(&mapping);
@@ -1081,15 +1165,18 @@ static void do_OP_PtlEQFree(ppebuf_t *buf)
 
 static void do_OP_PtlCTAlloc(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlCTAlloc(buf->msg.PtlCTAlloc.ni_handle,
-							  &buf->msg.PtlCTAlloc.ct_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlCTAlloc(&client->gbl,
+							   buf->msg.PtlCTAlloc.ni_handle,
+							   &buf->msg.PtlCTAlloc.ct_handle);
 
 	if (buf->msg.ret == PTL_OK) {
 		int err;
 		ct_t *ct;
 
 		/* Should not fail since it was just created. */
-		err = to_ct(buf->msg.PtlCTAlloc.ct_handle, &ct);
+		err = to_ct(&client->gbl, buf->msg.PtlCTAlloc.ct_handle, &ct);
 		assert(err == PTL_OK);
 
 		err = create_mapping_ppe(&ct->info, sizeof(struct ct_info),
@@ -1099,7 +1186,8 @@ static void do_OP_PtlCTAlloc(ppebuf_t *buf)
 		ct_put(ct);
 
 		if (err != PTL_OK) {
-			PtlCTFree(buf->msg.PtlCTAlloc.ct_handle);
+			_PtlCTFree(&client->gbl,
+					   buf->msg.PtlCTAlloc.ct_handle);
 			buf->msg.ret = PTL_ARG_INVALID;
 			return;
 		}
@@ -1108,12 +1196,18 @@ static void do_OP_PtlCTAlloc(ppebuf_t *buf)
 
 static void do_OP_PtlCTInc(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlCTInc(buf->msg.PtlCTInc.ct_handle, buf->msg.PtlCTInc.increment);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlCTInc(&client->gbl,
+							 buf->msg.PtlCTInc.ct_handle, buf->msg.PtlCTInc.increment);
 }
 
 static void do_OP_PtlCTSet(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlCTSet(buf->msg.PtlCTSet.ct_handle, buf->msg.PtlCTSet.new_ct);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlCTSet(&client->gbl,
+							 buf->msg.PtlCTSet.ct_handle, buf->msg.PtlCTSet.new_ct);
 }
 
 static void do_OP_PtlCTFree(ppebuf_t *buf)
@@ -1121,8 +1215,9 @@ static void do_OP_PtlCTFree(ppebuf_t *buf)
 	int err;
 	ct_t *ct;
 	struct xpmem_map mapping;
+	struct client *client = buf->cookie;
 
-	err = to_ct(buf->msg.PtlCTFree.ct_handle, &ct);
+	err = to_ct(&client->gbl, buf->msg.PtlCTFree.ct_handle, &ct);
 	if (err || !ct) {
 		buf->msg.ret = PTL_ARG_INVALID;
 		return;
@@ -1130,7 +1225,8 @@ static void do_OP_PtlCTFree(ppebuf_t *buf)
 	mapping = ct->ppe.ct_mapping;
 	ct_put(ct);
 
-	buf->msg.ret = PtlCTFree(buf->msg.PtlCTFree.ct_handle);
+	buf->msg.ret = _PtlCTFree(&client->gbl,
+							  buf->msg.PtlCTFree.ct_handle);
 
 	if (buf->msg.ret == PTL_OK)
 		delete_mapping_ppe(&mapping);
@@ -1138,14 +1234,20 @@ static void do_OP_PtlCTFree(ppebuf_t *buf)
 
 static void do_OP_PtlPTDisable(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlPTDisable(buf->msg.PtlPTDisable.ni_handle,
-								buf->msg.PtlPTDisable.pt_index);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlPTDisable(&client->gbl,
+								 buf->msg.PtlPTDisable.ni_handle,
+								 buf->msg.PtlPTDisable.pt_index);
 }
 
 static void do_OP_PtlPTEnable(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlPTEnable(buf->msg.PtlPTDisable.ni_handle,
-							   buf->msg.PtlPTDisable.pt_index);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlPTEnable(&client->gbl,
+								buf->msg.PtlPTDisable.ni_handle,
+								buf->msg.PtlPTDisable.pt_index);
 }
 
 static void do_OP_PtlAtomicSync(ppebuf_t *buf)
@@ -1155,23 +1257,35 @@ static void do_OP_PtlAtomicSync(ppebuf_t *buf)
 
 static void do_OP_PtlCTCancelTriggered(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlCTCancelTriggered(buf->msg.PtlCTCancelTriggered.ct_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlCTCancelTriggered(&client->gbl,
+										 buf->msg.PtlCTCancelTriggered.ct_handle);
 }
 
 static void do_OP_PtlGetUid(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlGetUid(buf->msg.PtlGetUid.ni_handle,
-							 &buf->msg.PtlGetUid.uid);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlGetUid(&client->gbl,
+							  buf->msg.PtlGetUid.ni_handle,
+							  &buf->msg.PtlGetUid.uid);
 }
 
 static void do_OP_PtlStartBundle(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlStartBundle(buf->msg.PtlStartBundle.ni_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlStartBundle(&client->gbl,
+								   buf->msg.PtlStartBundle.ni_handle);
 }
 
 static void do_OP_PtlEndBundle(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlEndBundle(buf->msg.PtlEndBundle.ni_handle);
+	struct client *client = buf->cookie;
+
+	buf->msg.ret = _PtlEndBundle(&client->gbl,
+								 buf->msg.PtlEndBundle.ni_handle);
 }
 
 #define ADD_OP(opname) [OP_##opname] = { .func = do_OP_##opname, .name = #opname }
@@ -1324,7 +1438,7 @@ int gbl_init(gbl_t *gbl)
 	pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
 	/* init ni object pool */
-	err = pool_init(&gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
+	err = pool_init(gbl, &gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
 	if (err) {
 		WARN();
 		goto err;
@@ -1389,7 +1503,7 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 
 		conn_put(conn);			/* from get_conn */
 
-		insert_ni_into_set(ni_to_handle(ni));
+		insert_ni_into_set(gbl, ni);
 	}
 
 	return PTL_OK;
@@ -1442,7 +1556,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	err = misc_init_once();
+	err = misc_init_once(&ppe.gbl);
 	if (err)
 		return 1;
 

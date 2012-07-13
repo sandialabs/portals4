@@ -26,6 +26,8 @@ struct iface {
 	/** The NID/PID for this interface */
 	ptl_process_t		id;
 
+	struct gbl *gbl;
+
 #if WITH_TRANSPORT_IB
 	/** The CM event channel for this interface */
 	struct rdma_event_channel *cm_channel;

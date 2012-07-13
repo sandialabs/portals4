@@ -1,39 +1,11 @@
 /*
- * ptl_gbl.h
+ * ptl_p4ppe.h
  */
 
-#ifndef PTL_GBL_H
-#define PTL_GBL_H
+#ifndef PTL_P4PPE_H
+#define PTL_P4PPE_H
 
-typedef struct gbl {
-	int			num_iface;	/* size of interface table */
-	iface_t			*iface;		/* interface table */
-	int			ref_cnt;	/* count PtlInit/PtlFini */
-	ref_t			ref;		/* sub objects references */
-	int finalized;
-
-	pthread_mutex_t		gbl_mutex;
-	pool_t			ni_pool;
-
-	/* PPE specific. */
-
-	/* Mapping of the whole process. */
-	xpmem_apid_t apid;
-
-	/* Number of the progress thread assigned to this client. */
-	unsigned int prog_thread;
-} gbl_t;
-
-static inline int gbl_get(void)
-{
-	return PTL_OK;
-}
-
-static inline void gbl_put(void)
-{
-}
-
-extern void gbl_release(ref_t *ref);
+#if IS_PPE
 
 /* Represents a client connected to the PPE. */
 struct client
@@ -59,7 +31,7 @@ extern struct transport transport_mem;
    logical NIs (if any). */
 struct logical_ni_set {
 	RB_ENTRY(logical_ni_set) entry;
-	ni_t **ni;
+	struct ni **ni;
 	uint32_t hash;
 	int members;				/* number of rank in the set */
 };
@@ -113,6 +85,11 @@ struct ppe {
 
 	/* List of existing clients. May replace with a tree someday. */
 	RB_HEAD(clients_root, client) clients_tree;
+
+	/* For the PPE use, mainly to allocate object. */
+	gbl_t gbl;	
 };
 
-#endif /* PTL_GBL_H */
+#endif	/* IS_PPE */
+
+#endif /* PTL_P4PPE_H */

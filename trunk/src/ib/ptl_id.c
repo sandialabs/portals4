@@ -16,7 +16,7 @@
  * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
  */
-int PtlGetUid(ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p)
+int _PtlGetUid(PPEGBL ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p)
 {
 	int err;
 	ni_t *ni;
@@ -26,7 +26,7 @@ int PtlGetUid(ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p)
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -60,7 +60,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
  */
-int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
+int _PtlGetId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 {
 	int err;
 	ni_t *ni;
@@ -70,7 +70,7 @@ int PtlGetId(ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -104,7 +104,7 @@ err0:
  * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
  */
-int PtlGetPhysId(ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
+int _PtlGetPhysId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 {
 	int err;
 	ni_t *ni;
@@ -114,7 +114,7 @@ int PtlGetPhysId(ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 

@@ -46,7 +46,7 @@ void me_cleanup(void *arg)
  *
  * @return status
  */
-static int me_append_or_search(ptl_handle_ni_t ni_handle,
+static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 			       ptl_pt_index_t pt_index,
 			       const ptl_me_t *me_init, ptl_list_t ptl_list,
 			       ptl_search_op_t search_op, void *user_ptr,
@@ -63,7 +63,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -114,7 +114,7 @@ static int me_append_or_search(ptl_handle_ni_t ni_handle,
 #ifndef NO_ARG_VALIDATION
 	if (me_handle_p) {
 		/* Only append can modify counters. */
-		err = to_ct(me_init->ct_handle, &me->ct);
+		err = to_ct(MYGBL_ me_init->ct_handle, &me->ct);
 		if (err)
 			goto err3;
 	} else {
@@ -242,13 +242,13 @@ err0:
  * @return PTL_LIST_TOO_LONG Indicates that the resulting list is too
  * long. The maximum length for a list is defined by the interface.
  */
-int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+int _PtlMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
                 const ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
                 ptl_handle_me_t *me_handle_p)
 {
 	int err;
 
-	err = me_append_or_search(ni_handle, pt_index,
+	err = me_append_or_search(MYGBL_ ni_handle, pt_index,
 				   me_init, ptl_list, 0, user_ptr,
 				   me_handle_p);
 	return err;
@@ -284,13 +284,13 @@ int PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * @output PTL_NO_INIT Indicates that the portals API has not been
  * successfully initialized.
  */
-int PtlMESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+int _PtlMESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_me_t *me_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
 	int err;
 
-	err =  me_append_or_search(ni_handle, pt_index, me_init, 0,
+	err =  me_append_or_search(MYGBL_ ni_handle, pt_index, me_init, 0,
 				   search_op, user_ptr, NULL);
 	return err;
 }
@@ -314,7 +314,7 @@ int PtlMESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * @output PTL_IN_USE Indicates that the match list entry has pending
  * operations and cannot be unlinked.
  */
-int PtlMEUnlink(ptl_handle_me_t me_handle)
+int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
 {
 	int err;
 	me_t *me;
@@ -325,7 +325,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle)
 	if (err)
 		goto err0;
 
-	err = to_me(me_handle, &me);
+	err = to_me(MYGBL_ me_handle, &me);
 	if (err)
 		goto err1;
 #else
