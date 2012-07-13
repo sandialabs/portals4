@@ -109,7 +109,15 @@ There is currently 2 transports available: mc and infiniband, which are mutually
       * A program may not open more than one NID in its lifetime.
 
     Pitfalls:
-      * The user cannot pin enough memory. By default linux systems allow about 32KB. Check with "ulimit -l". This is for IB only.
+      * The user cannot pin enough memory. By default linux systems
+        allow about 32KB. Check with "ulimit -l". This is for IB only.
 
       * IB is not up and running (check with "ibv_devinfo") or the
-        default IPoIB interface, ib0, doesn't have an IP address.
+        default IPoIB interface, ib0, doesn't have an IP address. All
+        interfaces should be ob the IP range.
+
+      * slow performances can be caused by cpuspeed. Disable it
+        ("service cpuspeed stop").
+
+      * uneven performance between repeats can be caused by the
+        threads being on different cores. Pin them.
