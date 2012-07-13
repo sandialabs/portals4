@@ -272,7 +272,7 @@ int PtlNIFini(ptl_handle_ni_t ni_handle)
 	for(;;) {
 		ret = _PtlNIFini(&per_proc_gbl, ni_handle);
 		if (ret == PTL_IN_USE)
-			usleep(1000000);
+			usleep(10000);
 		else
 			break;
 	}
