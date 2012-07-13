@@ -10,7 +10,6 @@ libportals_ib_la_SOURCES = \
 	ptl_atomic.h \
 	ptl_buf.c \
 	ptl_buf.h \
-	ptl.c \
 	ptl_conn.c \
 	ptl_conn.h \
 	ptl_ct.c \
@@ -25,6 +24,7 @@ libportals_ib_la_SOURCES = \
 	ptl_eq_common.h \
 	ptl_evloop.c \
 	ptl_evloop.h \
+	ptl_fat_lib.c \
 	ptl_gbl.h \
 	ptl_hdr.h \
 	ptl_id.c \

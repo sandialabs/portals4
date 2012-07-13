@@ -1,7 +1,7 @@
-/*
- * ptl.c
+/**
+ * @file ptl_fat_lib.c
  *
- * Specific parts for the fat library only (ie. IB and/or shmem).
+ * @brief Specific parts for the fat library only.
  */
 
 #include "ptl_loc.h"
