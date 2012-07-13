@@ -52,15 +52,6 @@ static struct {
 	xpmem_segid_t segid;
 } ppe;
 
-void gbl_release(ref_t *ref)
-{
-}
-
-int gbl_init(gbl_t *gbl)
-{
-	return PTL_OK;
-}
-
 /**
  * Allocate a ppebuf from the shared memory pool.
  *
