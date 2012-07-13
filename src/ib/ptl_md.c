@@ -226,7 +226,7 @@ int _PtlMDBind(PPEGBL ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 		}
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	err = md_alloc(ni, &md);
@@ -278,9 +278,9 @@ int _PtlMDBind(PPEGBL ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 	}
 #else
 	md->eq = (md_init->eq_handle != PTL_EQ_NONE) ?
-		fast_to_obj(md_init->eq_handle) : NULL;
+		to_obj(MYGBL_ POOL_ANY, md_init->eq_handle) : NULL;
 	md->ct = (md_init->ct_handle != PTL_CT_NONE) ?
-		fast_to_obj(md_init->ct_handle) : NULL;
+		to_obj(MYGBL_ POOL_ANY, md_init->ct_handle) : NULL;
 #endif
 
 	md->options = md_init->options;
@@ -345,7 +345,7 @@ int _PtlMDRelease(PPEGBL ptl_handle_md_t md_handle)
 		goto err1;
 	}
 #else
-	md = fast_to_obj(md_handle);
+	md = to_obj(MYGBL_ POOL_ANY, md_handle);
 #endif
 
 	/* Ensure there is no in-flight transfer. */

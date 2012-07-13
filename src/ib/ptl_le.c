@@ -515,7 +515,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err2;
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	// TODO convert these to atomic_inc/dec macros
@@ -568,7 +568,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	}
 #else
 	le->ct = (le_handle_p && le_init->ct_handle != PTL_CT_NONE) ?
-			fast_to_obj(le_init->ct_handle) : NULL;
+			to_obj(MYGBL_ POOL_ANY, le_init->ct_handle) : NULL;
 #endif
 
 	if (le_handle_p) {
@@ -756,7 +756,7 @@ int _PtlLEUnlink(PPEGBL ptl_handle_le_t le_handle)
 	if (err)
 		goto err1;
 #else
-	le = fast_to_obj(le_handle);
+	le = to_obj(MYGBL_ POOL_ANY, le_handle);
 #endif
 
 	ref_cnt = le_ref_cnt(le);
