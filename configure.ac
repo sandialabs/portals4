@@ -15,7 +15,6 @@ AC_PREREQ(2.60)
 AC_INIT([portals4], [1.0a1], [portals4-devel@googlegroups.com])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
-AC_CONFIG_SRCDIR([src/ib/ptl.c])
 
 dnl Automake's silent rules were implemented in the same version that
 dnl color-tests was implemented, so we can use one to detect the other.
