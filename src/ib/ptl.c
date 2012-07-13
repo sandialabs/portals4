@@ -205,9 +205,15 @@ int gbl_init(gbl_t *gbl)
 	signal(SIGUSR1, dump_everything);
 #endif
 
-	err = misc_init_once(gbl);
+	/* Misc initializations. */
+	err = misc_init_once();
 	if (err)
 		return PTL_FAIL;
+
+	/* Init the index service */
+	err = index_init(gbl);
+	if (err)
+		return err;
 
 	err = init_iface_table(gbl);
 	if (err)

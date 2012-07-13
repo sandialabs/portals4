@@ -97,7 +97,6 @@ libportals_ib_la_SOURCES = \
 	ptl_light_lib.c \
 	ptl_misc.c \
 	ptl_misc.h \
-	ptl_obj.c \
 	ptl_obj.h \
 	ptl_param.c \
 	ptl_param.h \

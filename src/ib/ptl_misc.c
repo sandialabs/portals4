@@ -13,24 +13,12 @@ int ptl_log_level;
 unsigned long pagesize;
 unsigned int linesize;
 
-static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 /* Various initalizations that must be done once. */
-int misc_init_once(gbl_t *gbl)
+int misc_init_once(void)
 {
-	int err;
-
 	init_param();
 	debug = get_param(PTL_DEBUG);
 	ptl_log_level = get_param(PTL_LOG_LEVEL);
-
-	/* init the index service */
-	if (gbl) {
-		err = index_init(gbl);
-		if (err)
-			return err;
-	}
-
 	pagesize = sysconf(_SC_PAGESIZE);
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE
 	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
@@ -41,6 +29,10 @@ int misc_init_once(gbl_t *gbl)
 
 	return PTL_OK;
 }
+
+#if !IS_LIGHT_LIB
+
+static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int _PtlInit(gbl_t *gbl)
 {
@@ -125,6 +117,7 @@ err1:
 err0:
 	return;
 }
+#endif
 
 /* can return */
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
