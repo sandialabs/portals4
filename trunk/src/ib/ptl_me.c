@@ -73,7 +73,7 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err2;
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	// TODO convert these to atomic_inc/dec macros
@@ -127,7 +127,7 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	}
 #else
 	me->ct = (me_handle_p && me_init->ct_handle != PTL_CT_NONE) ?
-			fast_to_obj(me_init->ct_handle) : NULL;
+			to_obj(MYGBL_ POOL_ANY, me_init->ct_handle) : NULL;
 #endif
 
 	if (me_handle_p) {
@@ -329,7 +329,7 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
 	if (err)
 		goto err1;
 #else
-	me = fast_to_obj(me_handle);
+	me = to_obj(MYGBL_ POOL_ANY, me_handle);
 #endif
 
 	ref_cnt = me_ref_cnt(me);

@@ -96,7 +96,7 @@ int _PtlEQAlloc(PPEGBL ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	/* check limit resources to see if we can allocate another eq */
@@ -213,7 +213,7 @@ int _PtlEQFree(PPEGBL ptl_handle_eq_t eq_handle)
 		goto err1;
 	}
 #else
-	eq = fast_to_obj(eq_handle);
+	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
 	ni = obj_to_ni(eq);
 #endif
 
@@ -278,7 +278,7 @@ int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 #else
-	eq = fast_to_obj(eq_handle);
+	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
 #endif
 
 	err = PtlEQGet_work(eq->eqe_list, event_p);
@@ -331,7 +331,7 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle,
 		goto err1;
 	}
 #else
-	eq = fast_to_obj(eq_handle);
+	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
 #endif
 
 	err = PtlEQWait_work(eq->eqe_list, event_p);
@@ -412,7 +412,7 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t *eq_handles, unsigned int size,
 	}
 #else
 	for (i = 0; i < size; i++) {
-		eqs[i] = fast_to_obj(eq_handles[i]);
+		eqs[i] = to_obj(MYGBL_ POOL_ANY, eq_handles[i]);
 		eqes_list[i] = eqs[i]->eqe_list;
 	}
 	i2 = size - 1;

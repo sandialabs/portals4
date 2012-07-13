@@ -123,26 +123,22 @@ static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 	return handle & HANDLE_INDEX_MASK;
 }
 
+#ifdef NO_ARG_VALIDATION
 /**
  * Faster version of to_obj without checking.
  *
  * Handle must not be PTL_XX_NONE
+ * type is unused
  *
  * @param handle the object handle
  *
  * @return the object
  */
-static inline void *fast_to_obj(PPEGBL ptl_handle_any_t handle)
+static inline void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle)
 {
 	obj_t *obj = (obj_t *)MYGBL->index_map[handle & HANDLE_INDEX_MASK];
 	atomic_inc(&obj->obj_ref.ref_cnt);
 	return obj;
-}
-
-#ifdef NO_ARG_VALIDATION
-static inline void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle)
-{
-	return fast_to_obj(MYGBL_ handle);
 }
 #else
 void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle);

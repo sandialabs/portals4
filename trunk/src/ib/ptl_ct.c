@@ -112,7 +112,7 @@ int _PtlCTAlloc(PPEGBL ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(MYGBL_ ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	/* check limit resources to see if we can allocate another ct */
@@ -191,7 +191,7 @@ int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
 		goto err1;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	ni = obj_to_ni(ct);
@@ -252,7 +252,7 @@ int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 		goto err1;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	ni = obj_to_ni(ct);
@@ -307,7 +307,7 @@ int _PtlCTGet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 		goto err1;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	*event_p = ct->info.event;
@@ -361,7 +361,7 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
 		goto err1;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	err = PtlCTWait_work(&ct->info, threshold, event_p);
@@ -441,7 +441,7 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 	}
 #else
 	for (i = 0; i < size; i++) {
-		cts[i] = fast_to_obj(ct_handles[i]);
+		cts[i] = to_obj(MYGBL_ POOL_ANY, ct_handles[i]);
 		cts_info[i] = &cts[i]->info;
 	}
 	i2 = size - 1;
@@ -582,7 +582,7 @@ int _PtlCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 		goto err1;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	ni = obj_to_ni(ct);
@@ -656,7 +656,7 @@ int _PtlCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 		goto err2;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
 	ni = obj_to_ni(ct);
@@ -735,8 +735,8 @@ int _PtlTriggeredCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t incremen
 		goto err2;
 	}
 #else
-	ct = fast_to_obj(ct_handle);
-	trig_ct = fast_to_obj(trig_ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+	trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
 	ni = obj_to_ni(trig_ct);
 #endif
 
@@ -827,8 +827,8 @@ int _PtlTriggeredCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
 		goto err2;
 	}
 #else
-	trig_ct = fast_to_obj(trig_ct_handle);
-	ct = fast_to_obj(ct_handle);
+	trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
+	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 	ni = obj_to_ni(trig_ct);
 #endif
 

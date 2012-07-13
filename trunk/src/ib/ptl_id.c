@@ -35,7 +35,7 @@ int _PtlGetUid(PPEGBL ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p)
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	*uid_p = ni->uid;
@@ -79,7 +79,7 @@ int _PtlGetId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	*id_p = ni->id;
@@ -123,7 +123,7 @@ int _PtlGetPhysId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 		goto err1;
 	}
 #else
-	ni = fast_to_obj(ni_handle);
+	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
 	*id_p = ni->iface->id;
