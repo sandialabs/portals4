@@ -1,5 +1,5 @@
 /**
- * @file ptl_ppe_client.c
+ * @file ptl_light_lib.c
  *
  * @brief Client side for PPE support.
  */
