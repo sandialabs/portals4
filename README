@@ -24,50 +24,86 @@ Options to configure include:
 
 * Portals 4 Implementation Notes
 
-  - InfiniBand (w/ optional shared memory transport, which is not the
-    same as shmem above)
+There is currently 2 transports available: mc and infiniband, which are mutually exclusive, and can be selected with the --with-implementation=ib|mc configure option.
 
-    Pre-requisite
+  - mc: to be documented.
 
-      + openmpi 1.4.x or 1.5.x: the test program is MPI based, and
-        starting a task necessitate mpirun. Note that older version of
-        openmpi (eg 1.4.3) have a memcpy/memmove bug that will show on
-        Intel cpus. Either upgrade to the latest 1.4 or 1.5 or use the
-        hack at
-        https://bugzilla.redhat.com/show_bug.cgi?id=638477#c38.
-      + libev-4.0.4 (or similar), available at
+  - Infiniband: this transport has multiple options, including not actualling using IB:
+      * Infiniband, selected by default, can be disabled with --disable-ib-ib
+
+      * shared memory, not selected by default, can be enabled with
+        --enable-ib-shmem. It has the option of using KNEM for the
+        large transfer (used if --with-knem=xxxx is present), or to
+        use an internal slower shared memory protocol.
+
+      Both Infiniband and shmem can be used at the same time. In that
+      case, Portals will use infinband between nodes, and shmem
+      intra-node. If only shmem is used, then portals will not run
+      between nodes (obviously).
+
+    On top of that, 2 different environments can be generated:
+
+      * the "fat library" which contains all the portals API. Each
+        process has its own progress thread which leads to the use of
+        too many cores on a machine. This is the default.
+
+      * the Portals Progres Engine (PPE) and the light library. The
+        PPE is a daemon that regroups the progress threads (one by
+        default) for all the portals process on the host. The portals
+        application links to the "light library" which is only a pass
+        through between the application and the PPE. Very litlle
+        processing is done in the light library; most of it is done
+        inside the PPE. This environment is selected with
+        --enable-ib-ppe. The XPMEM driver must be present, and so it
+        is mutually exclusive with the shmem transport.
+
+    Both the fat and light library are called the same, so only one
+    type can exist on a machine at the same time; use LD_LIBRARY_PATH
+    and/or LD_PRELOAD to work around.
+
+    Pre-requisites
+
+      * libev-4.0.4 (or similar), available at
         http://software.schmorp.de/pkg/libev.html
-      + The KNEM driver from http://runtime.bordeaux.inria.fr/knem/.  (optional)
-        Ensure that /dev/knem is readable/writable by the user running the portals
-        software. To use if shared memory transport is requested too.
-      + The ummunotify driver from
+
+      * The KNEM driver from
+        http://runtime.bordeaux.inria.fr/knem/. Will be used for
+        shared memory if --with-knem=<path> is set. Ensure that
+        /dev/knem is readable/writable by the user running the portals
+        software.
+
+      * The XPMEM driver from
+        https://code.google.com/p/portals4/. Mandatory for the PPE is
+        selected, unused otherwise. The current driver has crashing
+        issues and doesn't compile on recent kernel versions.
+
+      * The ummunotify driver from
         http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2
         (optional but recommended). Ensure that /dev/ummunotify is
         readable/writable by the user running the portals software.
 
     Build:
-	  Note that the paths to mpi may not be necessary or may need to
-	  be changed depending on your linux distribution.
+      Note that the paths to mpi may not be necessary or may need to
+      be changed depending on your linux distribution.
 
-      * x86_64 (minimal, no shared memory):
-		  ./configure CFLAGS="-ggdb -Wall -I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib" --with-implementation=ib --with-test-runtime=mpi
+      * minimal, no shared memory:
+          ./configure --with-implementation=ib
 
-      * x86_64 (optimized, with shared memory):
-./configure CFLAGS="-ggdb -Wall -I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS="-L/usr/lib64/openmpi/1.4-gcc/lib" --with-implementation=ib --with-test-runtime=mpi --with-knem=/opt/knem --enable-ib-shmem --enable-fast
+      * optimized, with shared memory and KNEM support:
+          ./configure --with-implementation=ib --enable-ib-shmem --with-knem=/opt/knem --enable-fast
+
+      * PPE, no IB transport (so local node only):
+          ./configure --with-implementation=ib --enable-ib-ppe --disable-ib-ib
+
+      Then type "make".
 
     Test :
-      * Type "make check" in the main directory.
-      * test/sfw/make_test_relay.pl can build a special script for a given amount
-        of ranks. In test/sfw, use mpirun to start the test:
-         -  ./make_test_relay.pl  > test_relay.xml
-         -  mpirun  -H localhost -n 9 ./ptl_test -f test_relay.xml 
+      * Type "make check" in the main directory. This will run a
+        series on check on the local node, with either 1 or 2 ranks.
 
     Building an RPM:
       * make dist       --> this will create portals-4.0.tar.gz
       * rpmbuild -ta portals-4.0.tar.gz
-
-    If mpi is in a non standard path, add CFLAGS and LDFLAGS to rpmbuild, such as:
-      CFLAGS="-I/usr/lib64/openmpi/1.4-gcc/include" LDFLAGS=-L/usr/lib64/openmpi/1.4-gcc/lib 
 
     Limitations:
       * A program may not open more than one NID in its lifetime.
