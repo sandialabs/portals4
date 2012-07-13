@@ -93,7 +93,7 @@ static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
  *
  * @return status
  */
-static inline int to_ct(ptl_handle_ct_t ct_handle, ct_t **ct_p)
+static inline int to_ct(PPEGBL ptl_handle_ct_t ct_handle, ct_t **ct_p)
 {
 	obj_t *obj;
 
@@ -102,7 +102,7 @@ static inline int to_ct(ptl_handle_ct_t ct_handle, ct_t **ct_p)
 		return PTL_OK;
 	}
 
-	obj = to_obj(POOL_CT, (ptl_handle_any_t)ct_handle);
+	obj = to_obj(MYGBL_ POOL_CT, (ptl_handle_any_t)ct_handle);
 	if (unlikely(!obj)) {
 		*ct_p = NULL;
 		return PTL_ARG_INVALID;

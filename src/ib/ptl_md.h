@@ -100,9 +100,9 @@ static inline int md_alloc(ni_t *ni, md_t **md_p)
  *
  * @return the md object
  */
-static inline md_t *to_md(ptl_handle_md_t handle)
+static inline md_t *to_md(PPEGBL ptl_handle_md_t handle)
 {
-	return to_obj(POOL_MD, (ptl_handle_any_t)handle);
+	return to_obj(MYGBL_ POOL_MD, (ptl_handle_any_t)handle);
 }
 
 /**

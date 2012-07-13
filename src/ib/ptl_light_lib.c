@@ -282,7 +282,7 @@ int PtlInit(void)
 
 	/* if first call to PtlInit do real initialization */
 	if (ppe.ref_cnt == 0) {
-		if (misc_init_once() != PTL_OK) {
+		if (misc_init_once(NULL) != PTL_OK) {
 			goto err1;
 		}
 

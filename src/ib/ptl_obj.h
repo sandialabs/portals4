@@ -7,24 +7,6 @@
  * is used to hold all the a Portals objects.  Objects are managed
  * in pools which on demand create new objects in 'slabs'.
  *
- * The pool type is modeled loosely on the Linux kernel slab cache
- * data type which is widely used. It provides efficient allocation and
- * deallocation of fixed sized objects without fragmentation and allows
- * memory usage to grow as needed.
- *
- * Slabs are maintained in 'chunks' which are page sized arrays of
- * slab_info structs.
- *
- * And chunks are maintained in circular lists within pools. The
- * current design is very simple and only allows the object resources
- * in a pool to grow. Additional work would allow this design to
- * dynamically grow and shrink the amount of memory used in a given
- * pool.
- *
- * Pools are designed to allow an object to 'own' pools of other objects
- * in a heirarchy. All objects eventually belong to an NI which is the
- * root of Portals4 resources.
- *
  * Each base object has a handle assigned which can be used to lookup
  * the object. The handle includes an object type and an index into
  * an array of object pointers.
@@ -40,126 +22,7 @@
 #ifndef PTL_OBJ_H
 #define PTL_OBJ_H
 
-
 struct ni;
-
-/**
- * Pool types.
- * Used as part of the object handle.
- */
-enum obj_type {
-	POOL_ANY,
-	POOL_NI,
-	POOL_MR,
-	POOL_LE,
-	POOL_ME,
-	POOL_MD,
-	POOL_EQ,
-	POOL_CT,
-	POOL_BUF,
-	POOL_SBUF,
-	POOL_PPEBUF,
-	POOL_LAST,		/* keep me last */
-};
-
-/**
- * A slab_info struct holds information about a 'slab'.
- * If the pool is used to hold buffers the priv pointer
- * is used to hold information about the memory registration
- * of the slab so that it is not necessary to register each
- * buffer separately.
- */
-struct slab_info {
-	/** address of slab */
-	void			*addr;
-
-	/** slab private data */
-#if WITH_TRANSPORT_IB
-	struct ibv_mr	*mr;
-#endif
-};
-
-typedef struct slab_info slab_info_t;
-
-/**
- * A chunk is a page sized structure that holds an array
- * of slab_info structs.  Chunks are kept on a circular list
- * in a pool.
- */
-struct chunk {
-	/** list head to add to pool chunk list */
-	struct list_head	list;
-
-	/** number of entries in chunk->slab_list */
-	unsigned int		max_slabs;
-
-	/** next slab_list entry to allocate */
-	unsigned int		num_slabs;
-
-	/** space for slab_list with max_slabs entries */
-	slab_info_t		slab_list[0];
-};
-
-typedef struct chunk chunk_t;
-
-/**
- * A pool struct holds information about a type of object
- * that it manages.
- */
-struct pool {
-	/** object that owns pool (usually NI) */
-	struct obj		*parent;
-
-	/** pool name for debugging output */
-	char			*name;
-
-	/** if set, called once per object, when object is created */
-	int			(*init)(void *arg, void *parm);
-
-	/** if set, called once per object, when object is destroyed */
-	void			(*fini)(void *arg);
-
-	/** if set, called when object is allocated from the free list */
-	int			(*setup)(void *arg);
-
-	/** if set, called when object moved to the free list */
-	void			(*cleanup)(void *arg);
-
-	/** list of chunks each of which holds an array of slab descriptors */
-	struct list_head	chunk_list;
-
-	/** lock to protect pool */
-	pthread_mutex_t		mutex;
-
-	/** pointer to free list */
-	union counted_ptr free_list;
-
-	/** pool type */
-	enum obj_type		type;
-
-	/** number of objects currently allocated */
-	atomic_t	count;
-
-	/** object size */
-	int			size;
-
-	/** object alignment */
-	int			round_size;
-
-	/** size of memory for new slab */
-	int			slab_size;
-
-	/** number of objects per slab */
-	int			obj_per_slab;
-
-	/** slab is in preallocated memory */
-	int			use_pre_alloc_buffer;
-
-	/** address of preallocated slab */
-	void			*pre_alloc_buffer;
-};
-
-typedef struct pool pool_t;
 
 /**
  * An obj struct is the base type for all Portals objects.
@@ -191,13 +54,12 @@ struct obj {
 
 typedef struct obj obj_t;
 
-extern void **index_map;
+struct gbl;
+int index_init(struct gbl *gbl);
 
-int index_init(void);
+void index_fini(struct gbl *gbl);
 
-void index_fini(void);
-
-int pool_init(pool_t *pool, char *name, int size,
+int pool_init(struct gbl *gbl, pool_t *pool, char *name, int size,
 	      enum obj_type type, obj_t *parent);
 
 int pool_fini(pool_t *pool);
@@ -270,17 +132,20 @@ static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
  *
  * @return the object
  */
-static inline void *fast_to_obj(ptl_handle_any_t handle)
+static inline void *fast_to_obj(PPEGBL ptl_handle_any_t handle)
 {
-	obj_t *obj = (obj_t *)index_map[handle & HANDLE_INDEX_MASK];
+	obj_t *obj = (obj_t *)MYGBL->index_map[handle & HANDLE_INDEX_MASK];
 	atomic_inc(&obj->obj_ref.ref_cnt);
 	return obj;
 }
 
 #ifdef NO_ARG_VALIDATION
-#define to_obj(type, handle) fast_to_obj(handle)
+static inline void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle)
+{
+	return fast_to_obj(MYGBL_ handle);
+}
 #else
-void *to_obj(enum obj_type type, ptl_handle_any_t handle);
+void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle);
 #endif
 
 #endif /* PTL_OBJ_H */

@@ -95,6 +95,7 @@ int init_iface_table(gbl_t *gbl)
 		gbl->iface[i].iface_id = i;
 		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
 		gbl->iface[i].id.phys.pid = PTL_PID_ANY;
+		gbl->iface[i].gbl = gbl;
 
 #if WITH_TRANSPORT_IB
 		/* the interface name is "ib" followed by the interface id

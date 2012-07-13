@@ -77,7 +77,7 @@ done:
  * @return PTL_ARG_INVALID	if req is out of range, a handle is invalid,
  * 				or options is not supported
  */
-int PtlPTAlloc(ptl_handle_ni_t ni_handle,
+int _PtlPTAlloc(PPEGBL ptl_handle_ni_t ni_handle,
 	       unsigned int options,
 	       ptl_handle_eq_t eq_handle,
 	       ptl_pt_index_t pt_index_req,
@@ -98,7 +98,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -107,7 +107,7 @@ int PtlPTAlloc(ptl_handle_ni_t ni_handle,
 		goto err1;
 	}
 
-	err = to_eq(eq_handle, &eq);
+	err = to_eq(MYGBL_ eq_handle, &eq);
 	if (unlikely(err))
 		goto err2;
 
@@ -176,7 +176,7 @@ err1:
  * 				of its lists
  * @return PTL_ARG_INVALID	if req is out of range or ni handle is invalid
  */
-int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
+int _PtlPTFree(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
 	ni_t *ni;
@@ -186,7 +186,7 @@ int PtlPTFree(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -247,7 +247,7 @@ err1:
  * @return PTL_ARG_INVALID	if req is out of range, ni handle is invalid,
  * 				or pt entry is not allocated
  */
-int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
+int _PtlPTDisable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
 	ni_t *ni;
@@ -257,7 +257,7 @@ int PtlPTDisable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -308,7 +308,7 @@ err1:
  * @return PTL_ARG_INVALID	if req is out of range, ni handle is invalid,
  * 				or pt entry is not allocated
  */
-int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
+int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 {
 	int err;
 	ni_t *ni;
@@ -318,7 +318,7 @@ int PtlPTEnable(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
 	if (unlikely(err))
 		return err;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 

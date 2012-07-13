@@ -246,12 +246,12 @@ static inline int ni_put(ni_t *ni)
 	return obj_put(&ni->obj);
 }
 
-static inline int to_ni(ptl_handle_ni_t handle, ni_t **ni_p)
+static inline int to_ni(PPEGBL ptl_handle_ni_t handle, ni_t **ni_p)
 {
 	obj_t *obj;
 	ni_t *ni;
 
-	obj = to_obj(POOL_NI, (ptl_handle_any_t)handle);
+	obj = to_obj(MYGBL_ POOL_NI, (ptl_handle_any_t)handle);
 	if (!obj)
 		goto err;
 

@@ -308,14 +308,14 @@ static int recv_req(buf_t *buf)
  *
  * @return the next state.
  */
-static int recv_init(buf_t *buf)
+static int recv_init(PPEGBL buf_t *buf)
 {
 	int err;
 	buf_t *init_buf;
 	ack_hdr_t *hdr = (ack_hdr_t *)buf->data;
 
 	/* lookup the buf handle to get original buf */
-	err = to_buf(le32_to_cpu(hdr->h1.handle), &init_buf);
+	err = to_buf(MYGBL_ le32_to_cpu(hdr->h1.handle), &init_buf);
 	if (err) {
 		WARN();
 		return STATE_RECV_DROP_BUF;
@@ -418,7 +418,7 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 			state = recv_req(buf);
 			break;
 		case STATE_RECV_INIT:
-			state = recv_init(buf);
+			state = recv_init(MYNIGBL_ buf);
 			break;
 		case STATE_RECV_REPOST:
 			state = recv_repost(ni);
@@ -484,7 +484,7 @@ void process_recv_mem(ni_t *ni, buf_t *buf)
 			state = recv_req(buf);
 			break;
 		case STATE_RECV_INIT:
-			state = recv_init(buf);
+			state = recv_init(MYNIGBL_ buf);
 			break;
 		case STATE_RECV_DROP_BUF:
 			state = recv_drop_buf(buf);

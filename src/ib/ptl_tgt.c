@@ -314,7 +314,7 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->h1.version = PTL_HDR_VER_1;
 		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
 
-#ifdef IS_PPE
+#if IS_PPE
 		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
 		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
@@ -323,6 +323,13 @@ static int prepare_send_buf(buf_t *buf)
 #endif
 
 		send_buf->length = sizeof(*ack_hdr);
+	} else {
+#if IS_PPE
+		ack_hdr = (ack_hdr_t *)buf->data;
+
+		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+#endif
 	}
 
 	return PTL_OK;
@@ -400,8 +407,8 @@ static int tgt_start(buf_t *buf)
 	buf->send_buf = NULL;
 
 #ifdef IS_PPE
-	buf->target.phys.nid = le32_to_cpu(hdr->h1.dst_nid);
-	buf->target.phys.pid = le32_to_cpu(hdr->h1.dst_pid);
+	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
+	buf->target.phys.pid = le32_to_cpu(hdr->src_pid);
 #endif
 
 	switch (hdr->h1.operation) {

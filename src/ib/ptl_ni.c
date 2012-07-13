@@ -114,11 +114,12 @@ static void release_buffers(ni_t *ni)
 static int init_pools(ni_t *ni)
 {
 	int err;
+	gbl_t *gbl = ni->iface->gbl;
 
 	ni->mr_pool.setup = mr_new;
 	ni->mr_pool.cleanup = mr_cleanup;
 
-	err = pool_init(&ni->mr_pool, "mr", sizeof(mr_t),
+	err = pool_init(gbl, &ni->mr_pool, "mr", sizeof(mr_t),
 					POOL_MR, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -127,7 +128,7 @@ static int init_pools(ni_t *ni)
 
 	ni->md_pool.cleanup = md_cleanup;
 
-	err = pool_init(&ni->md_pool, "md", sizeof(md_t),
+	err = pool_init(gbl, &ni->md_pool, "md", sizeof(md_t),
 					POOL_MD, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -138,7 +139,7 @@ static int init_pools(ni_t *ni)
 		ni->me_pool.init = me_init;
 		ni->me_pool.cleanup = me_cleanup;
 
-		err = pool_init(&ni->me_pool, "me", sizeof(me_t),
+		err = pool_init(gbl, &ni->me_pool, "me", sizeof(me_t),
 						POOL_ME, (obj_t *)ni);
 		if (err) {
 			WARN();
@@ -148,7 +149,7 @@ static int init_pools(ni_t *ni)
 		ni->le_pool.cleanup = le_cleanup;
 		ni->le_pool.init = le_init;
 
-		err = pool_init(&ni->le_pool, "le", sizeof(le_t),
+		err = pool_init(gbl, &ni->le_pool, "le", sizeof(le_t),
 						POOL_LE, (obj_t *)ni);
 		if (err) {
 			WARN();
@@ -159,7 +160,7 @@ static int init_pools(ni_t *ni)
 	ni->eq_pool.setup = eq_new;
 	ni->eq_pool.cleanup = eq_cleanup;
 
-	err = pool_init(&ni->eq_pool, "eq", sizeof(eq_t),
+	err = pool_init(gbl, &ni->eq_pool, "eq", sizeof(eq_t),
 					POOL_EQ, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -171,7 +172,7 @@ static int init_pools(ni_t *ni)
 	ni->ct_pool.setup = ct_new;
 	ni->ct_pool.cleanup = ct_cleanup;
 
-	err = pool_init(&ni->ct_pool, "ct", sizeof(ct_t),
+	err = pool_init(gbl, &ni->ct_pool, "ct", sizeof(ct_t),
 					POOL_CT, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -184,7 +185,7 @@ static int init_pools(ni_t *ni)
 	ni->buf_pool.cleanup = buf_cleanup;
 	ni->buf_pool.slab_size = 128*1024;
 
-	err = pool_init(&ni->buf_pool, "buf", real_buf_t_size(),
+	err = pool_init(gbl, &ni->buf_pool, "buf", real_buf_t_size(),
 					POOL_BUF, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -193,7 +194,7 @@ static int init_pools(ni_t *ni)
 
 	ni->conn_pool.init = conn_init;
 	ni->conn_pool.fini = conn_fini;
-	err = pool_init(&ni->conn_pool, "conn", sizeof(conn_t),
+	err = pool_init(gbl, &ni->conn_pool, "conn", sizeof(conn_t),
 					POOL_BUF, (obj_t *)ni);
 	if (err) {
 		WARN();
@@ -444,7 +445,7 @@ int _PtlNIInit(gbl_t *gbl,
 	return err;
 }
 
-int PtlSetMap(ptl_handle_ni_t ni_handle,
+int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 			  ptl_size_t	  map_size,
 			  const ptl_process_t  *mapping)
 {
@@ -459,7 +460,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 		return err;
 	}
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -541,7 +542,7 @@ int PtlSetMap(ptl_handle_ni_t ni_handle,
 	return PTL_ARG_INVALID;
 }
 
-int PtlGetMap(ptl_handle_ni_t ni_handle,
+int _PtlGetMap(PPEGBL ptl_handle_ni_t ni_handle,
 			  ptl_size_t	  map_size,
 			  ptl_process_t	 *mapping,
 			  ptl_size_t	 *actual_map_size)
@@ -554,7 +555,7 @@ int PtlGetMap(ptl_handle_ni_t ni_handle,
 		return err;
 	}
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -701,7 +702,7 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 		return err;
 	}
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -738,7 +739,7 @@ err1:
 	return err;
 }
 
-int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
+int _PtlNIStatus(PPEGBL ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 		ptl_sr_value_t *status)
 {
 	int err;
@@ -753,7 +754,7 @@ int PtlNIStatus(ptl_handle_ni_t ni_handle, ptl_sr_index_t index,
 		goto err1;
 	}
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -773,7 +774,7 @@ err1:
 	return err;
 }
 
-int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
+int _PtlNIHandle(PPEGBL ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 {
 	obj_t *obj;
 	int err;
@@ -782,7 +783,7 @@ int PtlNIHandle(ptl_handle_any_t handle, ptl_handle_ni_t *ni_handle)
 	if (unlikely(err))
 		return err;
 
-	obj = to_obj(POOL_ANY, handle);
+	obj = to_obj(MYGBL_ POOL_ANY, handle);
 	if (unlikely(!obj)) {
 		err = PTL_ARG_INVALID;
 		goto err1;

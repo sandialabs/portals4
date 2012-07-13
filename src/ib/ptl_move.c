@@ -117,7 +117,7 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
  *
  * @return status
  */
-int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
 	   ptl_size_t remote_offset, void *user_ptr, ptl_hdr_data_t hdr_data)
@@ -132,7 +132,7 @@ int PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -187,7 +187,7 @@ err0:
  *
  * @return status
  */
-int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlTriggeredPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_ack_req_t ack_req,
 		    ptl_process_t target_id, ptl_pt_index_t pt_index,
 		    ptl_match_bits_t match_bits, ptl_size_t remote_offset,
@@ -205,7 +205,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -213,7 +213,7 @@ int PtlTriggeredPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = obj_to_ni(md);
 
-	err = to_ct(trig_ct_handle, &ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err2;
 
@@ -292,7 +292,7 @@ static int check_get(md_t *md, ptl_size_t local_offset,
  *
  * @return status
  */
-int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlGet(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	   ptl_size_t length, ptl_process_t target_id,
 	   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
 	   ptl_size_t remote_offset, void *user_ptr)
@@ -307,7 +307,7 @@ int PtlGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -360,7 +360,7 @@ err0:
  *
  * @return status
  */
-int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlTriggeredGet(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		    ptl_size_t length, ptl_process_t target_id,
 		    ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
 		    ptl_size_t remote_offset, void *user_ptr,
@@ -377,7 +377,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -385,7 +385,7 @@ int PtlTriggeredGet(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = obj_to_ni(md);
 
-	err = to_ct(trig_ct_handle, &ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err2;
 
@@ -521,7 +521,7 @@ static int check_overlap(md_t *get_md, ptl_size_t local_get_offset,
  *
  * @return status
  */
-int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlAtomic(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	      ptl_size_t length, ptl_ack_req_t ack_req,
 	      ptl_process_t target_id, ptl_pt_index_t pt_index,
 	      ptl_match_bits_t match_bits, ptl_size_t remote_offset,
@@ -538,7 +538,7 @@ int PtlAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -596,7 +596,7 @@ err0:
  *
  * @return status
  */
-int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
+int _PtlTriggeredAtomic(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 		       ptl_size_t length, ptl_ack_req_t ack_req,
 		       ptl_process_t target_id, ptl_pt_index_t pt_index,
 		       ptl_match_bits_t match_bits, ptl_size_t remote_offset,
@@ -615,7 +615,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 	if (unlikely(err))
 		goto err0;
 
-	md = to_md(md_handle);
+	md = to_md(MYGBL_ md_handle);
 	if (unlikely(!md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
@@ -623,7 +623,7 @@ int PtlTriggeredAtomic(ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	ni = obj_to_ni(md);
 
-	err = to_ct(trig_ct_handle, &ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err2;
 
@@ -686,7 +686,7 @@ err0:
  *
  * @return status
  */
-int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
+int _PtlFetchAtomic(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		   ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		   ptl_size_t length, ptl_process_t target_id,
 		   ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -705,13 +705,13 @@ int PtlFetchAtomic(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (unlikely(err))
 		goto err0;
 
-	get_md = to_md(get_md_handle);
+	get_md = to_md(MYGBL_ get_md_handle);
 	if (unlikely(!get_md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	put_md = to_md(put_md_handle);
+	put_md = to_md(MYGBL_ put_md_handle);
 	if (unlikely(!put_md)) {
 		err = PTL_ARG_INVALID;
 		goto err2;
@@ -788,7 +788,7 @@ err0:
  *
  * @return status
  */
-int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
+int _PtlTriggeredFetchAtomic(PPEGBL ptl_handle_md_t get_md_handle,
 			    ptl_size_t local_get_offset,
 			    ptl_handle_md_t put_md_handle,
 			    ptl_size_t local_put_offset, ptl_size_t length,
@@ -812,13 +812,13 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 	if (unlikely(err))
 		goto err0;
 
-	get_md = to_md(get_md_handle);
+	get_md = to_md(MYGBL_ get_md_handle);
 	if (unlikely(!get_md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	put_md = to_md(put_md_handle);
+	put_md = to_md(MYGBL_ put_md_handle);
 	if (unlikely(!put_md)) {
 		err = PTL_ARG_INVALID;
 		goto err2;
@@ -826,7 +826,7 @@ int PtlTriggeredFetchAtomic(ptl_handle_md_t get_md_handle,
 
 	ni = obj_to_ni(get_md);
 
-	err = to_ct(trig_ct_handle, &ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err3;
 
@@ -976,7 +976,7 @@ static int check_swap(md_t *get_md, ptl_size_t local_get_offset, md_t *put_md,
  *
  * @return status
  */
-int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
+int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	    ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 	    ptl_size_t length, ptl_process_t target_id,
 	    ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -996,13 +996,13 @@ int PtlSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (unlikely(err))
 		goto err0;
 
-	get_md = to_md(get_md_handle);
+	get_md = to_md(MYGBL_ get_md_handle);
 	if (unlikely(!get_md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	put_md = to_md(put_md_handle);
+	put_md = to_md(MYGBL_ put_md_handle);
 	if (unlikely(!put_md)) {
 		err = PTL_ARG_INVALID;
 		goto err2;
@@ -1086,7 +1086,7 @@ err0:
  *
  * @return status
  */
-int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
+int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 		     ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 		     ptl_size_t length, ptl_process_t target_id,
 		     ptl_pt_index_t pt_index, ptl_match_bits_t match_bits,
@@ -1108,13 +1108,13 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	if (unlikely(err))
 		goto err0;
 
-	get_md = to_md(get_md_handle);
+	get_md = to_md(MYGBL_ get_md_handle);
 	if (unlikely(!get_md)) {
 		err = PTL_ARG_INVALID;
 		goto err1;
 	}
 
-	put_md = to_md(put_md_handle);
+	put_md = to_md(MYGBL_ put_md_handle);
 	if (unlikely(!put_md)) {
 		err = PTL_ARG_INVALID;
 		goto err2;
@@ -1122,7 +1122,7 @@ int PtlTriggeredSwap(ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 
 	ni = obj_to_ni(get_md);
 
-	err = to_ct(trig_ct_handle, &ct);
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
 	if (unlikely(err))
 		goto err3;
 
@@ -1211,7 +1211,7 @@ err0:
  *
  * @return status
  */
-int PtlStartBundle(ptl_handle_ni_t ni_handle)
+int _PtlStartBundle(PPEGBL ptl_handle_ni_t ni_handle)
 {
 	int err;
 	ni_t *ni;
@@ -1220,7 +1220,7 @@ int PtlStartBundle(ptl_handle_ni_t ni_handle)
 	if (unlikely(err))
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 
@@ -1247,7 +1247,7 @@ err0:
  *
  * @return status
  */
-int PtlEndBundle(ptl_handle_ni_t ni_handle)
+int _PtlEndBundle(PPEGBL ptl_handle_ni_t ni_handle)
 {
 	int err;
 	ni_t *ni;
@@ -1256,7 +1256,7 @@ int PtlEndBundle(ptl_handle_ni_t ni_handle)
 	if (unlikely(err))
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
 

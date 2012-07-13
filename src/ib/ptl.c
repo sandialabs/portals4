@@ -32,7 +32,7 @@ void gbl_release(ref_t *ref)
 	pool_fini(&gbl->ni_pool);
 
 	/* fini the index service */
-	index_fini();
+	index_fini(gbl);
 
 	/* Terminate the event loop, which will terminate the event
 	 * thread. */
@@ -205,7 +205,7 @@ int gbl_init(gbl_t *gbl)
 	signal(SIGUSR1, dump_everything);
 #endif
 
-	err = misc_init_once();
+	err = misc_init_once(gbl);
 	if (err)
 		return PTL_FAIL;
 
@@ -226,7 +226,7 @@ int gbl_init(gbl_t *gbl)
 	gbl->event_thread_run = 1;
 
 	/* init ni object pool */
-	err = pool_init(&gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
+	err = pool_init(gbl, &gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
 	if (err) {
 		WARN();
 		goto err;

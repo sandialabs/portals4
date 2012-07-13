@@ -484,7 +484,7 @@ int check_overflow_search_delete(le_t *le)
  *
  * @return status
  */
-static int le_append_or_search(ptl_handle_ni_t ni_handle,
+static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 			       ptl_pt_index_t pt_index,
 			       const ptl_le_t *le_init, ptl_list_t ptl_list,
 			       ptl_search_op_t search_op, void *user_ptr,
@@ -501,7 +501,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	if (err)
 		goto err0;
 
-	err = to_ni(ni_handle, &ni);
+	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (err)
 		goto err1;
 
@@ -552,7 +552,7 @@ static int le_append_or_search(ptl_handle_ni_t ni_handle,
 	if (le_handle_p) {
 		/* Only append can modify counters. */
 		if (le_init->ct_handle != PTL_CT_NONE) {
-			err = to_ct(le_init->ct_handle, &le->ct);
+			err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
 			if (err)
 				goto err3;
 		} else {
@@ -674,13 +674,13 @@ err0:
  * @return PTL_LIST_TOO_LONG Indicates that the resulting list is too long.
  * The maximum length for a list is defined by the interface.
  */
-int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
 		ptl_handle_le_t *le_handle_p)
 {
 	int err;
 
-	err = le_append_or_search(ni_handle, pt_index, le_init,
+	err = le_append_or_search(MYGBL_ ni_handle, pt_index, le_init,
 				  ptl_list, 0, user_ptr, le_handle_p);
 	return err;
 }
@@ -713,13 +713,13 @@ int PtlLEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * @return PTL_NO_INIT Indicates that the portals API has not been
  * successfully initialized.
  */
-int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+int _PtlLESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 		const ptl_le_t *le_init, ptl_search_op_t search_op,
 		void *user_ptr)
 {
 	int err;
 
-	err = le_append_or_search(ni_handle, pt_index, le_init,
+	err = le_append_or_search(MYGBL_ ni_handle, pt_index, le_init,
 				  0, search_op, user_ptr, NULL);
 	return err;
 }
@@ -741,7 +741,7 @@ int PtlLESearch(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * @return PTL_IN_USE Indicates that the list entry has pending
  * operations and cannot be unlinked.
  */
-int PtlLEUnlink(ptl_handle_le_t le_handle)
+int _PtlLEUnlink(PPEGBL ptl_handle_le_t le_handle)
 {
 	int err;
 	le_t *le;
@@ -752,7 +752,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle)
 	if (err)
 		goto err0;
 
-	err = to_le(le_handle, &le);
+	err = to_le(MYGBL_ le_handle, &le);
 	if (err)
 		goto err1;
 #else

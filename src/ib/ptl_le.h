@@ -115,11 +115,11 @@ static inline int le_alloc(ni_t *ni, le_t **le_p)
  *
  * @return status
  */
-static inline int to_le(ptl_handle_le_t handle, le_t **le_p)
+static inline int to_le(PPEGBL ptl_handle_le_t handle, le_t **le_p)
 {
 	obj_t *obj;
 
-	obj = to_obj(POOL_LE, (ptl_handle_any_t)handle);
+	obj = to_obj(MYGBL_ POOL_LE, (ptl_handle_any_t)handle);
 	if (!obj) {
 		*le_p = NULL;
 		return PTL_ARG_INVALID;

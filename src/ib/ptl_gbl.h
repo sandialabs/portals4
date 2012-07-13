@@ -6,10 +6,72 @@
 #define PTL_GBL_H
 
 struct ni;
+struct iface;
+
+extern void gbl_release(ref_t *ref);
+
+/* gbl is a structure to keep a client's information. There is a
+ * unique instance for the fat library (per_proc_gbl), it doesn't
+ * exist for the light library, and the PPE has an instance for each
+ * client. We need to pass around the gbl because it contains the
+ * index table from which we find an object given a portals
+ * handle. However for the fat and light libraries, this isn't needed
+ * because the gbl is global (hence known) or unused. So we play
+ * preprocessor tricks to extend the portal API and add the
+ * corresponding gbl to almost each portals API functions. */
+#if IS_PPE
+typedef struct gbl {
+	int			num_iface;	/* size of interface table */
+	struct iface			*iface;		/* interface table */
+	int			ref_cnt;	/* count PtlInit/PtlFini */
+	ref_t			ref;		/* sub objects references */
+	int finalized;
+
+	pthread_mutex_t		gbl_mutex;
+	pool_t			ni_pool;
+
+	atomic_t next_index;
+	void **index_map;
+
+	/* PPE specific. */
+
+	/* Mapping of the whole process. */
+	xpmem_apid_t apid;
+
+	/* Number of the progress thread assigned to this client. */
+	unsigned int prog_thread;
+} gbl_t;
+
+static inline int gbl_get(void) { return PTL_OK; }
+static inline void gbl_put(void) { }
+#define PPEGBL struct gbl *gbl,
+#define MYGBL gbl
+#define MYGBL_ gbl,
+#define MYNIGBL_ ni->iface->gbl,
+#elif IS_LIGHT_LIB
+
+typedef struct gbl {
+	pthread_mutex_t		gbl_mutex;
+
+	int			ref_cnt;	/* count PtlInit/PtlFini */
+	ref_t			ref;		/* sub objects references */
+	int finalized;
+
+	atomic_t next_index;
+	void **index_map;
+} gbl_t;
+
+/* The light client doesn't have a GBL. */
+#define PPEGBL
+
+#define MYGBL ((gbl_t *)NULL)
+#define MYGBL_
+
+#else
 
 typedef struct gbl {
 	int			num_iface;	/* size of interface table */
-	iface_t			*iface;		/* interface table */
+	struct iface			*iface;		/* interface table */
 	pthread_mutex_t		gbl_mutex;
 	int			ref_cnt;	/* count PtlInit/PtlFini */
 	ref_t			ref;		/* sub objects references */
@@ -18,11 +80,17 @@ typedef struct gbl {
 	struct sockaddr_in	addr;
 	pthread_t		event_thread;
 	int			event_thread_run;
-	pool_t			ni_pool;
+	struct pool			ni_pool;
+
+	atomic_t next_index;
+	void **index_map;
 } gbl_t;
 
 extern gbl_t per_proc_gbl;
-extern void gbl_release(ref_t *ref);
+#define PPEGBL
+#define MYGBL (&per_proc_gbl)
+#define MYGBL_
+#define MYNIGBL_
 
 /*
  * gbl_get()
@@ -64,6 +132,8 @@ static inline void gbl_put(void)
 	ref_put(&per_proc_gbl.ref, gbl_release);
 #endif
 }
+
+#endif
 
 struct ni *gbl_lookup_ni(gbl_t *gbl, ptl_interface_t iface, int ni_type);
 
