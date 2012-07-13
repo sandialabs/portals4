@@ -721,6 +721,10 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 		if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
 			/* Private return code. Not seen by the application. */
 			err = PTL_IN_USE;
+
+			/* Take the reference back because we'll be called
+			 * again. */
+			atomic_inc(&ni->ref_cnt);
 			break;
 		}
 
