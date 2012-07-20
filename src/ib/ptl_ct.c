@@ -908,7 +908,7 @@ void post_ct(buf_t *buf, ct_t *ct)
 	/* Put the buffer on the wait list. */
 	PTL_FASTLOCK_LOCK(&ct->lock);
 
-	/* We must check again to avoid a race with ct_inc/ct_set. */
+	/* 1st check to see whether the condition is already met. */
 	if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
 		PTL_FASTLOCK_UNLOCK(&ct->lock);
 
@@ -918,7 +918,14 @@ void post_ct(buf_t *buf, ct_t *ct)
 
 		list_add(&buf->list, &ct->trig_list);
 
-		PTL_FASTLOCK_UNLOCK(&ct->lock);
+		/* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
+		if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
+			/* Something arrived while we were adding the buffer. */
+			PTL_FASTLOCK_UNLOCK(&ct->lock);
+			ct_check(ct);
+		} else {
+			PTL_FASTLOCK_UNLOCK(&ct->lock);
+		}
 	}
 }
 
@@ -934,7 +941,7 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 	/* Put the buffer on the wait list. */
 	PTL_FASTLOCK_LOCK(&trig_ct->lock);
 
-	/* We must check again to avoid a race with ct_inc/ct_set. */
+	/* 1st check to see whether the condition is already met. */
 	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= buf->threshold) {
 		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 
@@ -944,6 +951,15 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 		atomic_inc(&trig_ct->list_size);
 
 		list_add(&buf->list, &trig_ct->trig_list);
+
+		/* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
+		if ((trig_ct->info.event.success + trig_ct->info.event.failure) >= buf->threshold) {
+			/* Something arrived while we were adding the buffer. */
+			PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
+			ct_check(trig_ct);
+		} else {
+			PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
+		}
 
 		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 	}
