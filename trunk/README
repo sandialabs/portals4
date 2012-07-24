@@ -114,7 +114,7 @@ There is currently 2 transports available: mc and infiniband, which are mutually
 
       * IB is not up and running (check with "ibv_devinfo") or the
         default IPoIB interface, ib0, doesn't have an IP address. All
-        interfaces should be ob the IP range.
+        interfaces should be on the same IP range.
 
       * slow performances can be caused by cpuspeed. Disable it
         ("service cpuspeed stop").
