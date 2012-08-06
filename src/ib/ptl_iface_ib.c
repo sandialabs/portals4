@@ -154,7 +154,7 @@ int init_iface_ib(iface_t *iface)
  *
  * @return status
  */
-int iface_bind(iface_t *iface, unsigned int port)
+static int iface_bind(iface_t *iface, unsigned int port)
 {
 	int ret;
 	int flags;
