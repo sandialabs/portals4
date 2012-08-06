@@ -49,6 +49,10 @@ int conn_init(void *arg, void *parm)
 	conn->rdma.max_req_avail = 0;
 #endif
 
+#if WITH_TRANSPORT_UDP
+	conn->transport = transport_udp;
+#endif
+
 	return PTL_OK;
 }
 
@@ -74,28 +78,6 @@ void conn_fini(void *arg)
 
 	pthread_mutex_destroy(&conn->mutex);
 	PTL_FASTLOCK_DESTROY(&conn->wait_list_lock);
-}
-
-/**
- * Numerically compare two physical IDs.
- *
- * Compare NIDs and then compare PIDs if NIDs are the same.
- * Used to sort IDs in a binary tree. Can be used for a
- * portals physical ID or for a conn_t which contains an ID
- * as its first member.
- *
- * @param[in] a first ID
- * @param[in] b second ID
- *
- * @return > 0 if a > b
- * @return 0 if a = b
- * @return < 0 if a < b
- */
-static int compare_id(const ptl_process_t *id1, const ptl_process_t *id2)
-{
-	return (id1->phys.nid != id2->phys.nid) ?
-			(id1->phys.nid - id2->phys.nid) :
-			(id1->phys.pid - id2->phys.pid);
 }
 
 static int compare_conn_id(const void *a, const void *b)
@@ -407,6 +389,33 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	ptl_info("Connection initiated successfully to %x:%d\n",
 			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+#elif WITH_TRANSPORT_UDP
+	assert(conn->transport.type == CONN_TYPE_UDP);
+	int ret;
+
+	if (ni->shutting_down)
+		return PTL_FAIL;
+
+	conn_get(conn);
+
+	assert(conn->state == CONN_STATE_DISCONNECTED);
+
+	/* Send the connect request. */
+	struct udp_conn_msg msg;
+	msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REQ);
+	msg.port = cpu_to_le16(ni->udp.src_port);
+	msg.req.options = ni->options;
+	msg.req.src_id = ni->id;
+	msg.req_cookie = (uintptr_t)conn;
+
+	/* Send the request to the listening socket on the remote node. */
+	ret = sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
+				 &conn->sin, sizeof(conn->sin));
+	if (ret == -1) {
+		WARN();
+		return PTL_FAIL;
+	}
+
 #elif WITH_TRANSPORT_SHMEM
 	/* We should get here for physical NIs only, since logical NIs are
 	 * automatically connected when other ranks are discovered. */
@@ -415,6 +424,35 @@ int init_connect(ni_t *ni, conn_t *conn)
 
 	return PTL_OK;
 }
+
+#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
+/**
+ * @param[in] conn
+ */
+void flush_pending_xi_xt(conn_t *conn)
+{
+	buf_t *buf;
+
+	PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
+	while(!list_empty(&conn->buf_list)) {
+		buf = list_first_entry(&conn->buf_list, buf_t, list);
+		list_del_init(&buf->list);
+		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
+
+		if (buf->type == BUF_TGT)
+			process_tgt(buf);
+		else {
+			assert(buf->type == BUF_INIT);
+			process_init(buf);
+		}
+
+		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
+	}
+
+
+	PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
+}
+#endif
 
 #if WITH_TRANSPORT_IB
 /**
@@ -555,33 +593,6 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	}
 
 	return PTL_OK;
-}
-
-/**
- * @param[in] conn
- */
-static void flush_pending_xi_xt(conn_t *conn)
-{
-	buf_t *buf;
-
-	PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-	while(!list_empty(&conn->buf_list)) {
-		buf = list_first_entry(&conn->buf_list, buf_t, list);
-		list_del_init(&buf->list);
-		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-
-		if (buf->type == BUF_TGT)
-			process_tgt(buf);
-		else {
-			assert(buf->type == BUF_INIT);
-			process_init(buf);
-		}
-
-		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-	}
-
-
-	PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 }
 
 /**

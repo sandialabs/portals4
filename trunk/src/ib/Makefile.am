@@ -84,6 +84,12 @@ libportals_ib_la_SOURCES += \
 endif
 endif
 
+if WITH_TRANSPORT_UDP
+libportals_ib_la_SOURCES += \
+	ptl_iface_udp.c \
+	ptl_udp.c
+endif
+
 else
 # PPE - (implies no SHMEM; IB optional)
 

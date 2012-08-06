@@ -461,7 +461,7 @@ void progress_thread_ib(ni_t *ni)
 }
 #endif
 
-#if WITH_TRANSPORT_SHMEM || IS_PPE
+#if WITH_TRANSPORT_SHMEM || IS_PPE || WITH_TRANSPORT_UDP
 /**
  * Process a received message in shared memory.
  *
@@ -511,6 +511,39 @@ exit:
 }
 #endif
 
+#if WITH_TRANSPORT_UDP
+static void progress_thread_udp(ni_t *ni)
+{
+	ssize_t nbytes;
+	char data[BUF_DATA_SIZE];
+
+	nbytes = recvfrom(ni->udp.s, data, BUF_DATA_SIZE, 0, 
+					  NULL, NULL);
+
+	if (nbytes != -1) {
+		if (nbytes > 0) {
+			buf_t *buf;
+			int err;
+
+			/* Allocate a buffer to copy the data in. This is bad; we
+			 * should have a buf readily available for the recvfrom
+			 * call to save a copy. TODO. */
+			err = buf_alloc(ni, &buf);
+			if (err) {
+				WARN();
+			} else {
+				memcpy(buf->data, data, nbytes);
+				buf->length = nbytes;
+				process_recv_mem(ni, buf);
+			}
+		} else {
+			/* Can we receive 0 bytes ? */
+			abort();
+		}
+	}
+}
+#endif
+
 #if !IS_PPE
 /**
  * Progress thread. Waits for both ib and shared memory messages.
@@ -529,6 +562,7 @@ void *progress_thread(void *arg)
 		  ) {
 
 		progress_thread_ib(ni);
+		progress_thread_udp(ni);
 
 #if WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */

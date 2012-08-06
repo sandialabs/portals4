@@ -33,6 +33,9 @@ enum transport_type {
 #if WITH_PPE
 	CONN_TYPE_MEM,
 #endif
+#if WITH_TRANSPORT_UDP
+	CONN_TYPE_UDP,
+#endif
 };
 
 struct md;
@@ -71,6 +74,7 @@ struct transport {
 };
 
 extern struct transport transport_rdma;
+extern struct transport transport_udp;
 extern struct transport transport_shmem;
 
 /**
@@ -141,6 +145,12 @@ struct conn {
 		struct {
 			ptl_rank_t	local_rank;	/* local rank on that node. */
 		} shmem;
+#endif
+
+#if WITH_TRANSPORT_UDP
+		struct {
+			struct sockaddr_in	dest_addr;	
+		} udp;
 #endif
 	};
 };
@@ -230,6 +240,54 @@ struct cm_priv_reject {
 struct cm_priv_accept {
 };
 
+#if WITH_TRANSPORT_UDP
+struct udp_conn_msg {
+	/* Type of this message. The connection is a 3-way handshake, similar to IB CM. */
+	__le16 msg_type;
+#define UDP_CONN_MSG_REQ  2		/* connection request (initiator->target) */
+#define UDP_CONN_MSG_REP  3		/* connection reply (target->initiator) */
+#define UDP_CONN_MSG_RTU  5		/* connection ready (initiator->target) */
+#define UDP_CONN_MSG_REJ  7		/* connection rejected (initiator<->target) */
+
+	/* Port for the socket requesting the connection, or of the socket
+	 * accepting the connection. Valid for UDP_CONN_MSG_REQ and
+	 * UDP_CONN_MSG_REP. */
+	__le16 port;
+
+	/* Transparent cookies to find the connection. */
+	uint64_t req_cookie;
+	uint64_t rep_cookie;
+
+	/* The same data as IB CM is needed. */
+	union {
+		struct cm_priv_request req;
+		struct cm_priv_reject rej;
+	};
+};
+#endif
+
+/**
+ * Numerically compare two physical IDs.
+ *
+ * Compare NIDs and then compare PIDs if NIDs are the same.
+ * Used to sort IDs in a binary tree. Can be used for a
+ * portals physical ID or for a conn_t which contains an ID
+ * as its first member.
+ *
+ * @param[in] a first ID
+ * @param[in] b second ID
+ *
+ * @return > 0 if a > b
+ * @return 0 if a = b
+ * @return < 0 if a < b
+ */
+static inline int compare_id(const ptl_process_t *id1, const ptl_process_t *id2)
+{
+	return (id1->phys.nid != id2->phys.nid) ?
+			(id1->phys.nid - id2->phys.nid) :
+			(id1->phys.pid - id2->phys.pid);
+}
+
 conn_t *get_conn(struct ni *ni, ptl_process_t id);
 
 void destroy_conns(struct ni *ni);
@@ -241,5 +299,7 @@ void conn_fini(void *arg);
 int init_connect(struct ni *ni, conn_t *conn);
 
 void process_cm_event(EV_P_ ev_io *w, int revents);
+
+void flush_pending_xi_xt(conn_t *conn);
 
 #endif /* PTL_CONN_H */

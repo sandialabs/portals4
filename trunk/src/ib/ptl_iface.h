@@ -35,7 +35,7 @@ struct iface {
 	struct rdma_cm_id	*listen_id;
 	/** Boolean is true if interface is listening for connections */
 	int			listen;
-	/** IPV4 address if this interface */
+	/** IPV4 address of this interface */
 	struct sockaddr_in	sin;
 	/** RDMA device info for this interface */
 	struct ibv_context	*ibv_context;
@@ -53,6 +53,19 @@ struct iface {
 
 		struct ibv_device_attr device_attr;
 	} cap;
+#endif
+
+#if WITH_TRANSPORT_UDP
+	struct {
+		/* Endpoint for connections handling. */
+		int connect_s;
+
+		/** IPV4 address of this interface */
+		struct sockaddr_in	sin;
+
+		/** Libev handler for incoming connections. */
+		ev_io watcher;
+	} udp;
 #endif
 };
 
@@ -73,7 +86,5 @@ struct ni *iface_get_ni(iface_t *iface, int ni_type);
 void iface_add_ni(iface_t *iface, struct ni *ni);
 
 void iface_remove_ni(struct ni *ni);
-
-int iface_bind(iface_t *iface, unsigned int port);
 
 #endif /* PTL_IFACE_H */
