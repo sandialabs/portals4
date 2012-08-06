@@ -336,6 +336,20 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
 	}
 }
 
+/**
+ * @param[in] ni
+ * @param[in] conn
+ *
+ * @return status
+ *
+ * conn must be locked
+ */
+int mem_init_connect(ni_t *ni, conn_t *conn)
+{
+	/* Q: is that ever called ? */
+	return PTL_OK;
+}
+
 static int send_message_mem(buf_t *buf, int from_init)
 {
 	ni_t *ni;
@@ -498,6 +512,7 @@ static int ppe_tgt_data_out(buf_t *buf, data_t *data)
 struct transport transport_mem = {
 	.type = CONN_TYPE_MEM,
 	.buf_alloc = buf_alloc,
+	.init_connect = mem_init_connect,
 	.post_tgt_dma = do_mem_transfer,
 	.send_message = send_message_mem,
 	.set_send_flags = mem_set_send_flags,

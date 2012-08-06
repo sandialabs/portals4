@@ -50,6 +50,9 @@ struct transport {
 	/* Allocate a transport buffer suited for this transport. */
 	int (*buf_alloc)(ni_t *ni, struct buf **buf_p);
 
+	/* Initiate a connection to a remote node. */
+	int (*init_connect)(ni_t *ni, struct conn *conn);
+
 	/* Sends a short or long message. */
 	int (*send_message)(struct buf *buf, int from_init);
 	int (*post_tgt_dma)(struct buf *buf);
@@ -295,8 +298,6 @@ void destroy_conns(struct ni *ni);
 int conn_init(void *arg, void *parm);
 
 void conn_fini(void *arg);
-
-int init_connect(struct ni *ni, conn_t *conn);
 
 void process_cm_event(EV_P_ ev_io *w, int revents);
 

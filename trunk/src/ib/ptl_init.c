@@ -361,7 +361,7 @@ static int wait_conn(buf_t *buf)
 		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 
 		if (conn->state == CONN_STATE_DISCONNECTED) {
-			if (init_connect(ni, conn)) {
+			if (conn->transport.init_connect(ni, conn)) {
 				pthread_mutex_unlock(&conn->mutex);
 				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 				list_del(&buf->list);
