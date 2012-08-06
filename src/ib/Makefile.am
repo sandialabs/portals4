@@ -10,6 +10,7 @@ libportals_ib_la_SOURCES = \
 	ptl_atomic.h \
 	ptl_buf.c \
 	ptl_buf.h \
+	ptl_byteorder.h \
 	ptl_conn.c \
 	ptl_conn.h \
 	ptl_ct.c \
@@ -116,6 +117,7 @@ p4ppe_SOURCES = \
 	ptl_atomic.h \
 	ptl_buf.c \
 	ptl_buf.h \
+	ptl_byteorder.h \
 	ptl_conn.c \
 	ptl_conn.h \
 	ptl_ct.c \
