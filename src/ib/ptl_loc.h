@@ -259,6 +259,18 @@ static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 								 const ptl_process_t *mapping) { }
 #endif
 
+#ifdef WITH_TRANSPORT_UDP
+int PtlNIInit_UDP(iface_t *iface, ni_t *ni);
+int init_iface_udp(iface_t *iface);
+void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping);
+#else
+static inline int PtlNIInit_UDP(iface_t *iface, ni_t *ni) { return PTL_OK; }
+static inline int init_iface_udp(iface_t *iface) { return PTL_OK; }
+static inline void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,
+								 const ptl_process_t *mapping) { }
+static inline void progress_thread_udp(ni_t *ni) { }
+#endif
+
 #ifdef IS_PPE
 int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni);
 

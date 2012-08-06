@@ -1544,6 +1544,15 @@ static int tgt_send_ack(buf_t *buf)
 		buf->mem_buf->type = BUF_SHMEM_SEND;
 #elif IS_PPE
 		buf->mem_buf->type = BUF_MEM_SEND;
+#elif WITH_TRANSPORT_UDP
+		ack_buf->dest = buf->dest;
+		ack_buf->conn = buf->conn;
+
+		err = ack_buf->conn->transport.send_message(ack_buf, 0);
+		if (err) {
+			WARN();
+			return STATE_TGT_ERROR;
+		}
 #else
 		/* Unreachable. */
 		abort();

@@ -312,6 +312,12 @@ int _PtlNIInit(gbl_t *gbl,
 		goto err2;
 	}
 
+	err = init_iface_udp(iface);
+	if (err) {
+		WARN();
+		goto err2;
+	}
+
 	err = ni_alloc(&gbl->ni_pool, &ni);
 	if (unlikely(err)) {
 		WARN();
@@ -362,6 +368,9 @@ int _PtlNIInit(gbl_t *gbl,
 	atomic_set(&ni->rdma.num_conn, 0);
 	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
 #endif
+#if WITH_TRANSPORT_UDP
+	ni->udp.s = -1;
+#endif
 	PTL_FASTLOCK_INIT(&ni->md_list_lock);
 	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
 	pthread_mutex_init(&ni->atomic_mutex, NULL);
@@ -407,6 +416,12 @@ int _PtlNIInit(gbl_t *gbl,
 	}
 
 	err = PtlNIInit_ppe(gbl, ni);
+	if (unlikely(err)) {
+		WARN();
+		goto err3;
+	}
+
+	err = PtlNIInit_UDP(iface, ni);
 	if (unlikely(err)) {
 		WARN();
 		goto err3;

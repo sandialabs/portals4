@@ -102,6 +102,12 @@ int init_iface_table(gbl_t *gbl)
 		 * in the future we may support other RDMA devices */
 		sprintf(gbl->iface[i].ifname, "ib%d", i);
 #endif
+
+#if WITH_TRANSPORT_UDP
+		sprintf(gbl->iface[i].ifname, "eth%d", i);
+		gbl->iface[i].udp.connect_s = -1;
+#endif
+
 	}
 
 	return PTL_OK;

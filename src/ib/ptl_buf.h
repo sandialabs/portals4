@@ -72,6 +72,12 @@ struct xremote {
 		} shmem;
 #endif
 
+#if WITH_TRANSPORT_UDP
+		struct {
+			int s;
+			struct sockaddr_in *dest_addr;
+		} udp;
+#endif
 	};
 };
 
@@ -446,7 +452,7 @@ static inline ptl_handle_buf_t buf_to_handle(buf_t *buf)
 	return (ptl_handle_buf_t)buf->obj.obj_handle;
 }
 
-static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
+static inline void set_buf_dest(buf_t *buf, conn_t *connect)
 {
 	switch(connect->transport.type) {
 #if WITH_TRANSPORT_IB
@@ -464,6 +470,13 @@ static inline void set_buf_dest(buf_t *buf, const conn_t *connect)
 
 #if WITH_PPE
 	case CONN_TYPE_MEM:
+		break;
+#endif
+
+#if WITH_TRANSPORT_UDP
+	case CONN_TYPE_UDP:
+		buf->dest.udp.s = obj_to_ni(buf)->udp.s;
+		buf->dest.udp.dest_addr = &connect->udp.dest_addr;
 		break;
 #endif
 	}

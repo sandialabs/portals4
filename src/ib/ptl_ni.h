@@ -184,6 +184,13 @@ typedef struct ni {
 	struct list_head noknem_list;
 #endif
 
+#if WITH_TRANSPORT_UDP
+	struct {
+		int s;
+		uint16_t src_port;		/* port number of that socket. */
+	} udp;
+#endif
+
 	/* object allocation pools */
 	pool_t mr_pool;
 	pool_t md_pool;
