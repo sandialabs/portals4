@@ -106,9 +106,50 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 	return err;
 }
 
+/**
+ * @param[in] ni
+ * @param[in] conn
+ *
+ * @return status
+ *
+ * conn must be locked
+ */
+static int init_connect_udp(ni_t *ni, conn_t *conn)
+{
+	int ret;
+
+	assert(conn->transport.type == CONN_TYPE_UDP);
+
+	if (ni->shutting_down)
+		return PTL_FAIL;
+
+	conn_get(conn);
+
+	assert(conn->state == CONN_STATE_DISCONNECTED);
+
+	/* Send the connect request. */
+	struct udp_conn_msg msg;
+	msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REQ);
+	msg.port = cpu_to_le16(ni->udp.src_port);
+	msg.req.options = ni->options;
+	msg.req.src_id = ni->id;
+	msg.req_cookie = (uintptr_t)conn;
+
+	/* Send the request to the listening socket on the remote node. */
+	ret = sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
+				 &conn->sin, sizeof(conn->sin));
+	if (ret == -1) {
+		WARN();
+		return PTL_FAIL;
+	}
+
+	return PTL_OK;
+}
+
 struct transport transport_udp = {
 	.type = CONN_TYPE_UDP,
 	.buf_alloc = buf_alloc,
+	.init_connect = init_connect_udp,
 	.send_message = send_message_udp,
 	.set_send_flags = udp_set_send_flags,
 	.init_prepare_transfer = init_prepare_transfer_udp,

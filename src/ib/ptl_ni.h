@@ -292,8 +292,6 @@ static inline ni_t *obj_to_ni(const void *obj)
 	return ((obj_t *)obj)->obj_ni;
 }
 
-int init_connect(ni_t *ni, struct conn *connect);
-
 /* convert ni option flags to a 2 bit type */
 static inline int ni_options_to_type(unsigned int options)
 {

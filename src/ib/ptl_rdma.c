@@ -6,6 +6,62 @@
 #include "ptl_loc.h"
 
 /**
+ * @param[in] ni
+ * @param[in] conn
+ *
+ * @return status
+ *
+ * conn must be locked
+ */
+int rdma_init_connect(ni_t *ni, conn_t *conn)
+{
+	struct rdma_cm_id *cm_id = cm_id;
+
+	assert(conn->transport.type == CONN_TYPE_RDMA);
+
+	if (ni->shutting_down)
+		return PTL_FAIL;
+
+	conn_get(conn);
+
+	assert(conn->state == CONN_STATE_DISCONNECTED);
+	assert(conn->rdma.cm_id == NULL);
+
+	ptl_info("Initiate connect with %x:%d\n",
+			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+
+	conn->rdma.retry_resolve_addr = 3;
+	conn->rdma.retry_resolve_route = 3;
+	conn->rdma.retry_connect = 3;
+
+	if (rdma_create_id(ni->iface->cm_channel, &cm_id,
+					   conn, RDMA_PS_TCP)) {
+		WARN();
+		conn_put(conn);
+		return PTL_FAIL;
+	}
+
+	conn->state = CONN_STATE_RESOLVING_ADDR;
+	conn->rdma.cm_id = cm_id;
+
+	if (rdma_resolve_addr(cm_id, NULL,
+						  (struct sockaddr *)&conn->sin, get_param(PTL_RDMA_TIMEOUT))) {
+		ptl_warn("rdma_resolve_addr failed %x:%d\n",
+				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+		conn->state = CONN_STATE_DISCONNECTED;
+		conn->rdma.cm_id = NULL;
+		rdma_destroy_id(cm_id);
+		conn_put(conn);
+		return PTL_FAIL;
+	}
+
+	ptl_info("Connection initiated successfully to %x:%d\n",
+			 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
+
+	return PTL_OK;
+}
+
+/**
  * @brief Build and post an send work request to transfer
  *
  * @param[in] buf A buf holding state for the send operation.
@@ -602,6 +658,7 @@ static int process_rdma(buf_t *buf)
 struct transport transport_rdma = {
 	.type = CONN_TYPE_RDMA,
 	.buf_alloc = buf_alloc,
+	.init_connect = rdma_init_connect,
 	.send_message = send_message_rdma,
 	.set_send_flags = set_send_flags_rdma,
 	.init_prepare_transfer = init_prepare_transfer_rdma,

@@ -35,6 +35,23 @@ static void shmem_set_send_flags(buf_t *buf, int can_signal)
 	buf->event_mask |= XX_INLINE;
 }
 
+/**
+ * @param[in] ni
+ * @param[in] conn
+ *
+ * @return status
+ *
+ * conn must be locked
+ */
+static int shmem_init_connect(ni_t *ni, conn_t *conn)
+{
+	/* We should get here for physical NIs only, since logical NIs are
+	 * automatically connected when other ranks are discovered. */
+	assert(ni->options & PTL_NI_PHYSICAL);
+
+	return PTL_OK;
+}
+
 #if USE_KNEM
 static void append_init_data_shmem_direct(data_t *data, mr_t *mr, void *addr,
 										  ptl_size_t length, buf_t *buf)
@@ -412,6 +429,7 @@ static int noknem_tgt_data_out(buf_t *buf, data_t *data)
 struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
+	.init_connect = shmem_init_connect,
 	.send_message = send_message_shmem,
 	.set_send_flags = shmem_set_send_flags,
 #if USE_KNEM

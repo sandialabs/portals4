@@ -857,7 +857,7 @@ static int tgt_wait_conn(buf_t *buf)
 
 		if (conn->state == CONN_STATE_DISCONNECTED) {
 			/* Initiate connection. */
-			if (init_connect(ni, conn)) {
+			if (conn->transport.init_connect(ni, conn)) {
 				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
 				list_del(&buf->list);
 				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
