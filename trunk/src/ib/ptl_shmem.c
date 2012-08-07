@@ -12,7 +12,7 @@
  *
  * @return status
  */
-static int send_message_shmem(buf_t *buf, int from_init)
+static int shmem_send_message(buf_t *buf, int from_init)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. will be
 	 * returned by the remote side with type=BUF_SHMEM_RETURN. */
@@ -108,7 +108,7 @@ static void append_init_data_shmem_iovec_indirect(data_t *data, md_t *md,
  *
  * @return status
  */
-static int init_prepare_transfer_shmem(md_t *md, data_dir_t dir, ptl_size_t offset,
+static int shmem_init_prepare_transfer(md_t *md, data_dir_t dir, ptl_size_t offset,
 									   ptl_size_t length, buf_t *buf)
 {
 	int err = PTL_OK;
@@ -267,7 +267,7 @@ static void append_init_data_noknem_direct(data_t *data, mr_t *mr, void *addr,
  *
  * @return status
  */
-static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t offset,
+static int noknem_init_prepare_transfer(md_t *md, data_dir_t dir, ptl_size_t offset,
 										ptl_size_t length, buf_t *buf)
 {
 	int err = PTL_OK;
@@ -324,7 +324,7 @@ static int init_prepare_transfer_noknem(md_t *md, data_dir_t dir, ptl_size_t off
 	return err;
 }
 
-static int do_noknem_transfer(buf_t *buf)
+static int noknem_do_transfer(buf_t *buf)
 {
 	struct noknem *noknem = buf->transfer.noknem.noknem;
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
@@ -430,15 +430,15 @@ struct transport transport_shmem = {
 	.type = CONN_TYPE_SHMEM,
 	.buf_alloc = sbuf_alloc,
 	.init_connect = shmem_init_connect,
-	.send_message = send_message_shmem,
+	.send_message = shmem_send_message,
 	.set_send_flags = shmem_set_send_flags,
 #if USE_KNEM
-	.init_prepare_transfer = init_prepare_transfer_shmem,
-	.post_tgt_dma = do_mem_transfer,
+	.init_prepare_transfer = shmem_init_prepare_transfer,
+	.post_tgt_dma = mem_do_transfer,
 	.tgt_data_out = knem_tgt_data_out,
 #else
-	.init_prepare_transfer = init_prepare_transfer_noknem,
-	.post_tgt_dma = do_noknem_transfer,
+	.init_prepare_transfer = noknem_init_prepare_transfer,
+	.post_tgt_dma = noknem_do_transfer,
 	.tgt_data_out = noknem_tgt_data_out,
 #endif
 };

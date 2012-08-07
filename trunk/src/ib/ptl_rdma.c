@@ -13,7 +13,7 @@
  *
  * conn must be locked
  */
-int rdma_init_connect(ni_t *ni, conn_t *conn)
+static int rdma_init_connect(ni_t *ni, conn_t *conn)
 {
 	struct rdma_cm_id *cm_id = cm_id;
 
@@ -68,7 +68,7 @@ int rdma_init_connect(ni_t *ni, conn_t *conn)
  *
  * @return status
  */
-static int send_message_rdma(buf_t *buf, int from_init)
+static int rdma_send_message(buf_t *buf, int from_init)
 {
 	int err;
 	struct ibv_send_wr *bad_wr;
@@ -149,7 +149,7 @@ static int send_message_rdma(buf_t *buf, int from_init)
 	return PTL_OK;
 }
 
-static void set_send_flags_rdma(buf_t *buf, int can_signal)
+static void rdma_set_send_flags(buf_t *buf, int can_signal)
 {
 	/* If the buffer fits in the work request inline data, then we can
 	 * inline, in which case the data will be copied during
@@ -276,7 +276,7 @@ static void append_init_data_rdma_iovec_indirect(data_t *data, md_t *md,
  *
  * @return status
  */
-static int init_prepare_transfer_rdma(md_t *md, data_dir_t dir, ptl_size_t offset,
+static int rdma_init_prepare_transfer(md_t *md, data_dir_t dir, ptl_size_t offset,
 									  ptl_size_t length, buf_t *buf)
 {
 	int err = PTL_OK;
@@ -378,7 +378,7 @@ static int rdma_tgt_data_out(buf_t *buf, data_t *data)
  * at the (remote) initiator and also over the memory segments in the
  * (local) target list element. This routine implements the loop over
  * the local memory segments building an InfiniBand scatter/gather
- * array to be used in an rdma operation. It is called by process_rdma
+ * array to be used in an rdma operation. It is called by rdma_process_transfer
  * below which implements the outer loop over the remote memory segments.
  * The case where one or both the MD and the LE/ME do not have an iovec
  * are handled as limits of the general case.
@@ -522,7 +522,7 @@ static buf_t *tgt_alloc_rdma_buf(buf_t *buf)
  *
  * @return status
  */
-static int process_rdma(buf_t *buf)
+static int rdma_do_transfer(buf_t *buf)
 {
 	int err;
 	uint64_t addr;
@@ -659,10 +659,10 @@ struct transport transport_rdma = {
 	.type = CONN_TYPE_RDMA,
 	.buf_alloc = buf_alloc,
 	.init_connect = rdma_init_connect,
-	.send_message = send_message_rdma,
-	.set_send_flags = set_send_flags_rdma,
-	.init_prepare_transfer = init_prepare_transfer_rdma,
-	.post_tgt_dma = process_rdma,
+	.send_message = rdma_send_message,
+	.set_send_flags = rdma_set_send_flags,
+	.init_prepare_transfer = rdma_init_prepare_transfer,
+	.post_tgt_dma = rdma_do_transfer,
 	.tgt_data_out = rdma_tgt_data_out,
 };
 
