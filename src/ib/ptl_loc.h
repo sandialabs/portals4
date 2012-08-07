@@ -251,7 +251,7 @@ static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
 void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 				   const ptl_process_t *mapping);
 void process_recv_mem(ni_t *ni, buf_t *buf);
-int do_mem_transfer(buf_t *buf);
+int mem_do_transfer(buf_t *buf);
 ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec,
 						   void *local_addr, mr_t *local_mr, ptl_size_t len);
 #else

@@ -139,7 +139,7 @@ static ptl_size_t do_mem_copy(buf_t *buf, ptl_size_t rem_len,
  *
  * @return status
  */
-int do_mem_transfer(buf_t *buf)
+int mem_do_transfer(buf_t *buf)
 {
 	ptl_size_t bytes;
 	ptl_size_t iov_index = buf->cur_loc_iov_index;

@@ -344,13 +344,13 @@ static ni_t *get_dest_ni(buf_t *mem_buf)
  *
  * conn must be locked
  */
-int mem_init_connect(ni_t *ni, conn_t *conn)
+static int ppe_init_connect(ni_t *ni, conn_t *conn)
 {
 	/* Q: is that ever called ? */
 	return PTL_OK;
 }
 
-static int send_message_mem(buf_t *buf, int from_init)
+static int ppe_send_message(buf_t *buf, int from_init)
 {
 	ni_t *ni;
 
@@ -370,7 +370,7 @@ static int send_message_mem(buf_t *buf, int from_init)
 	return PTL_OK;
 }
 
-static void mem_set_send_flags(buf_t *buf, int can_inline)
+static void ppe_set_send_flags(buf_t *buf, int can_inline)
 {
 	/* The data is always in the buffer. */
 	buf->event_mask |= XX_INLINE;
@@ -415,7 +415,7 @@ static void append_init_data_ppe_iovec(data_t *data, md_t *md, int iov_start,
  *
  * @return status
  */
-static int init_prepare_transfer_ppe(md_t *md, data_dir_t dir, ptl_size_t offset,
+static int ppe_init_prepare_transfer(md_t *md, data_dir_t dir, ptl_size_t offset,
 									 ptl_size_t length, buf_t *buf)
 {
 	int err = PTL_OK;
@@ -512,11 +512,11 @@ static int ppe_tgt_data_out(buf_t *buf, data_t *data)
 struct transport transport_mem = {
 	.type = CONN_TYPE_MEM,
 	.buf_alloc = buf_alloc,
-	.init_connect = mem_init_connect,
-	.post_tgt_dma = do_mem_transfer,
-	.send_message = send_message_mem,
-	.set_send_flags = mem_set_send_flags,
-	.init_prepare_transfer = init_prepare_transfer_ppe,
+	.init_connect = ppe_init_connect,
+	.post_tgt_dma = mem_do_transfer,
+	.send_message = ppe_send_message,
+	.set_send_flags = ppe_set_send_flags,
+	.init_prepare_transfer = ppe_init_prepare_transfer,
 	.tgt_data_out = ppe_tgt_data_out,
 };
 
