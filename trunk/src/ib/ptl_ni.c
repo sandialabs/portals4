@@ -616,10 +616,6 @@ static void ni_cleanup(ni_t *ni)
 	interrupt_cts(ni);
 	cleanup_mr_trees(ni);
 
-#if WITH_TRANSPORT_IB
-	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
-#endif
-
 	if (transports.local.NIFini)
 		transports.local.NIFini(ni);
 

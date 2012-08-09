@@ -342,6 +342,8 @@ void cleanup_rdma(ni_t *ni)
 {
 	buf_t *buf;
 
+	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
+
 	if (ni->rdma.self_cm_id) {
 		rdma_destroy_id(ni->rdma.self_cm_id);
 	}
