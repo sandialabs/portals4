@@ -238,16 +238,16 @@ int check_match(buf_t *buf, const me_t *me);
 int check_perm(buf_t *buf, const le_t *le);
 
 /* IB transport. */
-int PtlNIInit_IB(gbl_t *gbl, ni_t *ni);
-void cleanup_ib(ni_t *ni);
-int init_iface_ib(iface_t *iface);
+int PtlNIInit_rdma(gbl_t *gbl, ni_t *ni);
+void cleanup_rdma(ni_t *ni);
+int init_iface_rdma(iface_t *iface);
 void initiate_disconnect_all(ni_t *ni);
 
 #ifdef WITH_TRANSPORT_IB
 void disconnect_conn_locked(conn_t *conn);
-void progress_thread_ib(ni_t *ni);
+void progress_thread_rdma(ni_t *ni);
 #else
-static inline void progress_thread_ib(ni_t *ni) { }
+static inline void progress_thread_rdma(ni_t *ni) { }
 #endif
 
 /* Shared memory transport. */

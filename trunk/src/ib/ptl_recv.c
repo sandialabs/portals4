@@ -444,7 +444,7 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 	return;
 }
 
-void progress_thread_ib(ni_t *ni)
+void progress_thread_rdma(ni_t *ni)
 {
 	const int num_wc = get_param(PTL_WC_COUNT);
 	buf_t *buf_list[num_wc];
@@ -561,7 +561,7 @@ void *progress_thread(void *arg)
 #endif
 		  ) {
 
-		progress_thread_ib(ni);
+		progress_thread_rdma(ni);
 		progress_thread_udp(ni);
 
 #if WITH_TRANSPORT_SHMEM
