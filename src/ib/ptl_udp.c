@@ -156,3 +156,8 @@ struct transport transport_udp = {
 	//	.post_tgt_dma = do_noknem_transfer,
 	//	.tgt_data_out = noknem_tgt_data_out,
 };
+
+struct transport_ops transport_remote_udp = {
+	.init_iface = init_iface_udp,
+	.NIInit = PtlNIInit_UDP,
+};

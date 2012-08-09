@@ -171,6 +171,42 @@ static inline ptl_pid_t port_to_pid(__be16 port)
 /* round up x to multiple of y. y MUST be a power of 2. */
 #define ROUND_UP(x,y) ((x) + (y) - 1) & ~((y)-1);
 
+/* Transport operations, use to setup and shutdown the interfaces. */
+struct transport_ops {
+	/* Initializes an interface. */
+	int (*init_iface)(iface_t *iface);
+
+	/* Called during PtlNIInit to finish an NI initialization. */
+	int (*NIInit)(gbl_t *gbl, ni_t *ni);
+
+	/* Called during PtlNIFini to cleanup an NI. */
+	void (*NIFini)(ni_t *ni);
+
+	/* Called during PtlSetMap so the choosen transport can build
+	 * its own internal tables/routing. */
+	int (*SetMap)(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping);
+
+	/* Called during NI shutdown to disconnect all connections. */
+	void (*initiate_disconnect_all)(ni_t *ni);
+
+	/* Returns 1 when all connections have been shutdown (for instance
+	 * following initiate_disconnect_all()). */
+	int (*is_disconnected_all)(ni_t *ni);
+};
+extern struct transport_ops transport_local_shmem;
+extern struct transport_ops transport_local_ppe;
+extern struct transport_ops transport_remote_rdma;
+extern struct transport_ops transport_remote_udp;
+
+/* Functions for intra and inter nodes transport (ie. IB or UDP). There can be
+ * only one instance of it in the library; which also means there can
+ * only be one transport of each at the same time. */
+struct transports {
+	struct transport_ops remote;
+	struct transport_ops local;
+};
+extern struct transports transports;
+
 int iov_copy_out(void *dst, ptl_iovec_t *iov, mr_t **mr_list, ptl_size_t num_iov,
 		 ptl_size_t offset, ptl_size_t length);
 
@@ -200,33 +236,20 @@ int check_match(buf_t *buf, const me_t *me);
 
 int check_perm(buf_t *buf, const le_t *le);
 
-#ifdef WITH_TRANSPORT_IB
-int PtlNIInit_IB(iface_t *iface, ni_t *ni);
+/* IB transport. */
+int PtlNIInit_IB(gbl_t *gbl, ni_t *ni);
 void cleanup_ib(ni_t *ni);
 int init_iface_ib(iface_t *iface);
 void initiate_disconnect_all(ni_t *ni);
+
+#ifdef WITH_TRANSPORT_IB
 void disconnect_conn_locked(conn_t *conn);
 void progress_thread_ib(ni_t *ni);
 #else
-static inline int PtlNIInit_IB(iface_t *iface, ni_t *ni) { return PTL_OK; }
-static inline void cleanup_ib(ni_t *ni) {  }
-static inline int init_iface_ib(iface_t *iface) { return PTL_OK; }
-static inline void initiate_disconnect_all(ni_t *ni) { }
 static inline void progress_thread_ib(ni_t *ni) { }
 #endif
 
-#ifdef WITH_TRANSPORT_SHMEM
-extern int PtlNIInit_shmem(ni_t *ni);
-void cleanup_shmem(ni_t *ni);
-int setup_shmem(ni_t *ni);
-void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
-buf_t *shmem_dequeue(ni_t *ni);
-#else
-static inline int PtlNIInit_shmem(ni_t *ni) { return PTL_OK; }
-static inline void cleanup_shmem(ni_t *ni) { }
-static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
-#endif
-
+/* Shared memory transport. */
 #if (WITH_TRANSPORT_SHMEM && USE_KNEM)
 int knem_init(ni_t *ni);
 void knem_fini(ni_t *ni);
@@ -247,31 +270,27 @@ static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int p
 static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
 #endif
 
-#if WITH_TRANSPORT_SHMEM || IS_PPE
-void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
-				   const ptl_process_t *mapping);
+int PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+				  const ptl_process_t *mapping);
+void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
+buf_t *shmem_dequeue(ni_t *ni);
 void process_recv_mem(ni_t *ni, buf_t *buf);
 int mem_do_transfer(buf_t *buf);
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec,
 						   void *local_addr, mr_t *local_mr, ptl_size_t len);
-#else
-static inline void PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
-								 const ptl_process_t *mapping) { }
 #endif
 
-#ifdef WITH_TRANSPORT_UDP
-int PtlNIInit_UDP(iface_t *iface, ni_t *ni);
+/* UDP transport. */
 int init_iface_udp(iface_t *iface);
-void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping);
-#else
-static inline int PtlNIInit_UDP(iface_t *iface, ni_t *ni) { return PTL_OK; }
-static inline int init_iface_udp(iface_t *iface) { return PTL_OK; }
-static inline void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,
-								 const ptl_process_t *mapping) { }
+int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni);
+
+#if !WITH_TRANSPORT_UDP
 static inline void progress_thread_udp(ni_t *ni) { }
 #endif
 
-#ifdef IS_PPE
+/* PPE/XPMEM transport. */
+#if IS_PPE
 int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni);
 
 /* Translate a client address to the PPE space given an mr to which the address belong to. */
@@ -282,7 +301,6 @@ static inline void *addr_to_ppe(void *addr, mr_t *mr)
 }
 
 #else
-static inline int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni) { return PTL_OK; }
 #define addr_to_ppe(addr,dontcare) (addr)
 #endif
 

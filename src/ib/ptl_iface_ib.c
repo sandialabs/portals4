@@ -430,9 +430,10 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	return PTL_FAIL;
 }
 
-int PtlNIInit_IB(iface_t *iface, ni_t *ni)
+int PtlNIInit_IB(gbl_t *gbl, ni_t *ni)
 {
 	int err;
+	iface_t *iface = ni->iface;
 
 	err = init_ib(iface, ni);
 	if (unlikely(err))
