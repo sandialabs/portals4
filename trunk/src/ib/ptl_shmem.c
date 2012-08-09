@@ -479,7 +479,7 @@ static void release_shmem_resources(ni_t *ni)
  *
  * @return status
  */
-static int setup_shmem(ni_t *ni)
+static int setup_commpad(ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
@@ -691,20 +691,6 @@ static int setup_shmem(ni_t *ni)
 		shm_unlink(ni->shmem.comm_pad_shm_name);
 		free(ni->shmem.comm_pad_shm_name);
 		ni->shmem.comm_pad_shm_name = NULL;
-	} else {
-		/* Physical interface. We are connected to ourselves. */
-		conn_t *conn = get_conn(ni, ni->id);
-
-		if (!conn) {
-			/* It's hard to recover from here. */
-			WARN();
-			goto exit_fail;
-		}
-
-		conn->transport = transport_shmem;
-		conn->state = CONN_STATE_CONNECTED;
-
-		conn_put(conn);			/* from get_conn */
 	}
 
 	return PTL_OK;
@@ -772,16 +758,30 @@ static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
 
 	if (ni->options & PTL_NI_PHYSICAL) {
 		int err;
+		conn_t *conn;
 
 		/* Used later to setup the buffers. */
 		ni->mem.index = 0;
 		ni->mem.node_size = 1;
 
-		err = setup_shmem(ni);
+		err = setup_commpad(ni);
 		if (unlikely(err)) {
 			WARN();
 			return err;
 		}
+
+		/* Physical interface. We are connected to ourselves. */
+		conn = get_conn(ni, ni->id);
+		if (!conn) {
+			/* It's hard to recover from here. */
+			WARN();
+			return PTL_ARG_INVALID;
+		}
+
+		conn->transport = transport_shmem;
+		conn->state = CONN_STATE_CONNECTED;
+
+		conn_put(conn);			/* from get_conn */
 	}
 
 	return PTL_OK;
@@ -794,7 +794,7 @@ static int PtlSetMap_shmem(ni_t *ni,
 {
 	PtlSetMap_mem(ni, map_size, mapping);
 
-	if (setup_shmem(ni)) {
+	if (setup_commpad(ni)) {
 		WARN();
 		return PTL_ARG_INVALID;
 	}
