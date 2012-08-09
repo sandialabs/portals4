@@ -73,6 +73,7 @@ endif
 
 if WITH_TRANSPORT_SHMEM
 libportals_ib_la_SOURCES += \
+	ptl_knem.h \
 	ptl_mem.c \
 	ptl_queue.c \
 	ptl_queue.h \

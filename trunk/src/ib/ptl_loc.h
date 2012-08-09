@@ -79,6 +79,7 @@
 #include "ptl_eq.h"
 #include "ptl_hdr.h"
 #include "ptl_misc.h"
+#include "ptl_knem.h"
 
 enum recv_state {
 	STATE_RECV_SEND_COMP,
@@ -250,26 +251,6 @@ static inline void progress_thread_ib(ni_t *ni) { }
 #endif
 
 /* Shared memory transport. */
-#if (WITH_TRANSPORT_SHMEM && USE_KNEM)
-int knem_init(ni_t *ni);
-void knem_fini(ni_t *ni);
-uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot);
-void knem_unregister(ni_t *ni, uint64_t cookie);
-size_t knem_copy_from(ni_t * ni, void *dst,
-					  uint64_t cookie, uint64_t off, size_t len);
-size_t knem_copy_to(ni_t * ni, uint64_t cookie,
-					uint64_t off, void *src, size_t len);
-size_t knem_copy(ni_t * ni,
-				 uint64_t scookie, uint64_t soffset,
-				 uint64_t dcookie, uint64_t doffset,
-				 size_t length);
-#else
-static inline int knem_init(ni_t *ni) { return PTL_OK; }
-static inline void knem_fini(ni_t *ni) { }
-static inline uint64_t knem_register(ni_t *ni, void *data, ptl_size_t len, int prot) { return 1; }
-static inline void knem_unregister(ni_t *ni, uint64_t cookie) { }
-#endif
-
 int PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
 				  const ptl_process_t *mapping);
 void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
