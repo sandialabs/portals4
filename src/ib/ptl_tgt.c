@@ -1239,7 +1239,7 @@ done:
 #else
 static int tgt_shmem_desc(buf_t *buf)
 {
-	/* Inmvalid state in this configuration. */
+	/* Invalid state in this configuration. */
 	abort();
 }
 #endif
