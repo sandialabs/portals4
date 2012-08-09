@@ -340,6 +340,8 @@ static int ni_rcqp_cleanup(ni_t *ni)
 
 void cleanup_ib(ni_t *ni)
 {
+	buf_t *buf;
+
 	if (ni->rdma.self_cm_id) {
 		rdma_destroy_id(ni->rdma.self_cm_id);
 	}
@@ -359,6 +361,18 @@ void cleanup_ib(ni_t *ni)
 	if (ni->rdma.ch) {
 		ibv_destroy_comp_channel(ni->rdma.ch);
 		ni->rdma.ch = NULL;
+	}
+
+	/* Release the buffers still on the send_list and recv_list. */
+
+	/* TODO: cleanup of the XT/XI and their buffers that might still
+	 * be in flight. It's only usefull when something bad happens, so
+	 * it's not critical. */
+	while(!list_empty(&ni->rdma.recv_list)) {
+		struct list_head *entry = ni->rdma.recv_list.next;
+		list_del(entry);
+		buf = list_entry(entry, buf_t, list);
+		buf_put(buf);
 	}
 }
 
