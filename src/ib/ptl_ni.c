@@ -398,7 +398,8 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->has_catcher = 1;
 #endif
 
-	iface_add_ni(iface, ni);
+	assert(iface->ni[ni_type] == NULL);
+	iface->ni[ni_type] = ni;
 
  done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
@@ -619,14 +620,13 @@ static void ni_cleanup(ni_t *ni)
 	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
 #endif
 
-	iface_remove_ni(ni);
-
 	if (transports.local.NIFini)
 		transports.local.NIFini(ni);
 
 	if (transports.remote.NIFini)
 		transports.remote.NIFini(ni);
 
+	ni->iface->ni[ni->ni_type] = NULL;
 	ni->iface = NULL;
 
 	if (ni->options & PTL_NI_LOGICAL) {

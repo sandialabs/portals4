@@ -83,8 +83,4 @@ iface_t *get_iface(struct gbl *gbl, ptl_interface_t iface_id);
 
 struct ni *iface_get_ni(iface_t *iface, int ni_type);
 
-void iface_add_ni(iface_t *iface, struct ni *ni);
-
-void iface_remove_ni(struct ni *ni);
-
 #endif /* PTL_IFACE_H */
