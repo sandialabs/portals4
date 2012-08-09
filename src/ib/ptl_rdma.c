@@ -674,9 +674,9 @@ static int is_disconnected_all(ni_t *ni)
 }
 
 struct transport_ops transport_remote_rdma = {
-	.init_iface = init_iface_ib,
-	.NIInit = PtlNIInit_IB,
-	.NIFini = cleanup_ib,
+	.init_iface = init_iface_rdma,
+	.NIInit = PtlNIInit_rdma,
+	.NIFini = cleanup_rdma,
 	.initiate_disconnect_all = initiate_disconnect_all,
 	.is_disconnected_all = is_disconnected_all,
 };

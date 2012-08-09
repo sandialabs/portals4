@@ -1368,7 +1368,7 @@ static void *ppe_progress(void *arg)
 		/* Infiniband. Walking the list of active NIs to find work. */
 		ni_t *ni;
 		list_for_each_entry(ni, &ppe.ni_list, rdma.ppe_ni_list) {
-			progress_thread_ib(ni);
+			progress_thread_rdma(ni);
 		}
 #endif
 

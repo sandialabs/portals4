@@ -77,7 +77,7 @@ static in_addr_t get_ip_address(const char *ifname)
  *
  * @return status
  */
-int init_iface_ib(iface_t *iface)
+int init_iface_rdma(iface_t *iface)
 {
 	int err;
 	in_addr_t addr;
@@ -261,7 +261,7 @@ static void process_async(EV_P_ ev_io *w, int revents)
 	gbl_put();
 }
 
-static int init_ib_srq(ni_t *ni)
+static int init_rdma_srq(ni_t *ni)
 {
 	struct ibv_srq_init_attr srq_init_attr;
 	iface_t *iface = ni->iface;
@@ -338,7 +338,7 @@ static int ni_rcqp_cleanup(ni_t *ni)
 	return PTL_OK;
 }
 
-void cleanup_ib(ni_t *ni)
+void cleanup_rdma(ni_t *ni)
 {
 	buf_t *buf;
 
@@ -377,7 +377,7 @@ void cleanup_ib(ni_t *ni)
 }
 
 /* Must be locked by gbl_mutex. */
-static int init_ib(iface_t *iface, ni_t *ni)
+static int init_rdma(iface_t *iface, ni_t *ni)
 {
 	int err;
 	int cqe;
@@ -440,21 +440,21 @@ static int init_ib(iface_t *iface, ni_t *ni)
 	return PTL_OK;
 
  err1:
-	cleanup_ib(ni);
+	cleanup_rdma(ni);
 	return PTL_FAIL;
 }
 
-int PtlNIInit_IB(gbl_t *gbl, ni_t *ni)
+int PtlNIInit_rdma(gbl_t *gbl, ni_t *ni)
 {
 	int err;
 	iface_t *iface = ni->iface;
 
-	err = init_ib(iface, ni);
+	err = init_rdma(iface, ni);
 	if (unlikely(err))
 		goto error;
 
 	/* Create shared receive queue */
-	err = init_ib_srq(ni);
+	err = init_rdma_srq(ni);
 	if (unlikely(err))
 		goto error;
 
