@@ -89,25 +89,6 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 	}
 }
 
-/* Release the buffers still on the send_list and recv_list. */
-static void release_buffers(ni_t *ni)
-{
-#if WITH_TRANSPORT_IB
-	buf_t *buf;
-
-	/* TODO: cleanup of the XT/XI and their buffers that might still
-	 * be in flight. It's only usefull when something bad happens, so
-	 * it's not critical. */
-
-	while(!list_empty(&ni->rdma.recv_list)) {
-		struct list_head *entry = ni->rdma.recv_list.next;
-		list_del(entry);
-		buf = list_entry(entry, buf_t, list);
-		buf_put(buf);
-	}
-#endif
-}
-
 /*
  * init_pools - initialize resource pools for NI
  */
@@ -647,8 +628,6 @@ static void ni_cleanup(ni_t *ni)
 		transports.remote.NIFini(ni);
 
 	ni->iface = NULL;
-
-	release_buffers(ni);
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		if (ni->logical.mapping) {
