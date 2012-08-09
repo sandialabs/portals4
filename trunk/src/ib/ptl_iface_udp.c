@@ -406,6 +406,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	uint16_t port;
 	iface_t *iface = ni->iface;
 
+	ni->udp.s = -1;
 	ni->id.phys.nid = addr_to_nid(&iface->udp.sin);
 
 	if (iface->id.phys.nid == PTL_NID_ANY) {

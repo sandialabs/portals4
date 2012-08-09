@@ -467,6 +467,10 @@ static void release_shmem_resources(ni_t *ni)
 	}
 
 	knem_fini(ni);
+
+#if !USE_KNEM
+	PTL_FASTLOCK_DESTROY(&ni->noknem_lock);
+#endif
 }
 
 /**
@@ -741,6 +745,11 @@ buf_t *shmem_dequeue(ni_t *ni)
 static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
 
 {
+#if !USE_KNEM
+	PTL_FASTLOCK_INIT(&ni->noknem_lock);
+	INIT_LIST_HEAD(&ni->noknem_list);
+#endif
+
 	ni->shmem.knem_fd = -1;
 	ni->shmem.comm_pad = MAP_FAILED;
 
