@@ -634,9 +634,9 @@ static void *progress_thread(void *arg)
 		 * the buf to itself, and on receiving it, the progress thread
 		 * will put it on the list. That way, only the progress thread
 		 * has access to the list. */
-		PTL_FASTLOCK_LOCK(&ni->noknem_lock);
+		PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
 
-		list_for_each_safe(l, t, &ni->noknem_list) {
+		list_for_each_safe(l, t, &ni->shmem.noknem_list) {
 			buf_t *buf = list_entry(l, buf_t, list);
 			struct noknem *noknem = buf->transfer.noknem.noknem;
 
@@ -671,7 +671,7 @@ static void *progress_thread(void *arg)
 			}
 		}
 
-		PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+		PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 #endif
 	}
 

@@ -1045,9 +1045,9 @@ static int tgt_start_copy(buf_t *buf)
 	/* Add to the data queue. */
 	ni_t *ni = obj_to_ni(buf);
 
-	PTL_FASTLOCK_LOCK(&ni->noknem_lock);
-	list_add_tail(&buf->list, &ni->noknem_list);
-	PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+	PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
+	list_add_tail(&buf->list, &ni->shmem.noknem_list);
+	PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 
 	return STATE_TGT_RDMA;
 }

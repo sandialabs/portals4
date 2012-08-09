@@ -455,9 +455,9 @@ static int init_copy_start(buf_t *buf)
 {
 	ni_t *ni = obj_to_ni(buf);
 
-	PTL_FASTLOCK_LOCK(&ni->noknem_lock);
-	list_add_tail(&buf->list, &ni->noknem_list);
-	PTL_FASTLOCK_UNLOCK(&ni->noknem_lock);
+	PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
+	list_add_tail(&buf->list, &ni->shmem.noknem_list);
+	PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 
 	if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) {
 		return STATE_INIT_COPY_IN;
@@ -559,7 +559,7 @@ static int init_copy_done(buf_t *buf)
 						   ni->shmem.bounce_buf.head,
 						   ni->shmem.bounce_buf.head->head_index0);
 
-	/* Only called from the progress thread, so ni->noknem_lock is
+	/* Only called from the progress thread, so ni->shmem.noknem_lock is
 	 * already locked. */
 	list_del(&buf->list);
 
