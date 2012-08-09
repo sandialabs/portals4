@@ -21,7 +21,7 @@ static char *recv_state_name[] = {
 	[STATE_RECV_DONE]		= "recv_done",
 };
 
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 /**
  * Poll the rdma completion queue.
  *
@@ -236,7 +236,7 @@ static int recv_packet(buf_t *buf)
 		return STATE_RECV_INIT;
 	}
 	else {
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 		/* Disconnect. */
 		conn_t *conn;
 		const req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -388,7 +388,7 @@ static int recv_drop_buf(buf_t *buf)
 	return STATE_RECV_REPOST;
 }
 
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 /**
  * Completion queue polling thread.
  *
@@ -556,7 +556,7 @@ void *progress_thread(void *arg)
 	ni_t *ni = arg;
 
 	while(!ni->catcher_stop
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM
 		  || atomic_read(&ni->sbuf_pool.count)
 #endif
 		  ) {
