@@ -186,6 +186,12 @@ p4ppe_SOURCES += \
 	ummunotify.h
 endif
 
+if WITH_TRANSPORT_UDP
+p4ppe_SOURCES += \
+	ptl_iface_udp.c \
+	ptl_udp.c
+endif
+
 endif
 
 EXTRA_DIST = portals4.map

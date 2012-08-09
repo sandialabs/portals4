@@ -1481,7 +1481,7 @@ static unsigned int fakepid(void)
  *
  * @return status
  */
-int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
+static int NIInit_ppe(gbl_t *gbl, ni_t *ni)
 {
 	/* Only if IB hasn't setup the NID first. */
 	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
@@ -1523,6 +1523,11 @@ int PtlNIInit_ppe(gbl_t *gbl, ni_t *ni)
 
 	return PTL_OK;
 }
+
+struct transport_ops transport_local_ppe = {
+	.NIInit = NIInit_ppe,
+	.SetMap = PtlSetMap_mem,
+};
 
 int main(int argc, char *argv[])
 {

@@ -666,6 +666,21 @@ struct transport transport_rdma = {
 	.tgt_data_out = rdma_tgt_data_out,
 };
 
+/* Wait for all to be disconnected. RDMA CM is handling disconnection
+ * timeouts, so we should never block forever because of this test. */
+static int is_disconnected_all(ni_t *ni)
+{
+	return atomic_read(&ni->rdma.num_conn) == 0;
+}
+
+struct transport_ops transport_remote_rdma = {
+	.init_iface = init_iface_ib,
+	.NIInit = PtlNIInit_IB,
+	.NIFini = cleanup_ib,
+	.initiate_disconnect_all = initiate_disconnect_all,
+	.is_disconnected_all = is_disconnected_all,
+};
+
 /**
  * @brief Request the indirect scatter/gather list.
  *

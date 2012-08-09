@@ -304,18 +304,13 @@ int _PtlNIInit(gbl_t *gbl,
 	if (ni)
 		goto done;
 
-	/* check to see if iface is configured and waiting for cm events
-	   if not, initialize it */
-	err = init_iface_ib(iface);
-	if (err) {
-		WARN();
-		goto err2;
-	}
-
-	err = init_iface_udp(iface);
-	if (err) {
-		WARN();
-		goto err2;
+	/* Check whether the interface has been initialized. */
+	if (transports.remote.init_iface) {
+		err = transports.remote.init_iface(iface);
+		if (err) {
+			WARN();
+			goto err2;
+		}
 	}
 
 	err = ni_alloc(&gbl->ni_pool, &ni);
@@ -393,38 +388,22 @@ int _PtlNIInit(gbl_t *gbl,
 	if (unlikely(err))
 		goto err3;
 
-	err = PtlNIInit_IB(iface, ni);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
-	}
-
-	if (get_param(PTL_ENABLE_MEM)) {
-		err = PtlNIInit_shmem(ni);
+	/* Initialize the remote transport first, because the local
+	 * transport might depend on it. */
+	if (transports.remote.NIInit) {
+		err = transports.remote.NIInit(gbl, ni);
 		if (unlikely(err)) {
 			WARN();
 			goto err3;
 		}
+	}
 
-		if (options & PTL_NI_PHYSICAL) {
-			err = setup_shmem(ni);
-			if (unlikely(err)) {
-				WARN();
-				goto err3;
-			}
+	if (transports.local.NIInit) {
+		err = transports.local.NIInit(gbl, ni);
+		if (unlikely(err)) {
+			WARN();
+			goto err3;
 		}
-	}
-
-	err = PtlNIInit_ppe(gbl, ni);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
-	}
-
-	err = PtlNIInit_UDP(iface, ni);
-	if (unlikely(err)) {
-		WARN();
-		goto err3;
 	}
 
 #if !IS_PPE
@@ -536,13 +515,12 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	PtlSetMap_mem(ni, map_size, mapping);
-
-	if (get_param(PTL_ENABLE_MEM) &&
-		(ni->options & PTL_NI_LOGICAL) &&
-		setup_shmem(ni)) {
-		WARN();
-		goto err2;
+	if (transports.local.SetMap) {
+		err = transports.local.SetMap(ni, map_size, mapping);
+		if (err) {
+			WARN();
+			goto err2;
+		}
 	}
 
 	ni_put(ni);
@@ -627,13 +605,15 @@ static void ni_cleanup(ni_t *ni)
 		ni->shutting_down = 1;
 		__sync_synchronize();
 
-		initiate_disconnect_all(ni);
+		if (transports.remote.initiate_disconnect_all)
+			transports.remote.initiate_disconnect_all(ni);
 
 		ni->cleanup_state = NI_WAIT_DISCONNECT_ALL;
 	}
 
 	if (ni->cleanup_state == NI_WAIT_DISCONNECT_ALL) {
-		if (!is_disconnected_all(ni)) {
+		if (transports.remote.is_disconnected_all &&
+			!transports.remote.is_disconnected_all(ni)) {
 			return;
 		}
 
@@ -660,8 +640,11 @@ static void ni_cleanup(ni_t *ni)
 
 	iface_remove_ni(ni);
 
-	cleanup_shmem(ni);
-	cleanup_ib(ni);
+	if (transports.local.NIFini)
+		transports.local.NIFini(ni);
+
+	if (transports.remote.NIFini)
+		transports.remote.NIFini(ni);
 
 	ni->iface = NULL;
 

@@ -13,6 +13,8 @@ int ptl_log_level;
 unsigned long pagesize;
 unsigned int linesize;
 
+struct transports transports;
+
 /* Various initalizations that must be done once. */
 int misc_init_once(void)
 {
@@ -25,6 +27,21 @@ int misc_init_once(void)
      if (0 == linesize) linesize = 64;
 #else
 	linesize = 64;
+#endif
+
+#ifdef WITH_TRANSPORT_SHMEM
+	if (get_param(PTL_ENABLE_MEM)) {
+		transports.local = transport_local_shmem;
+	}
+#endif
+#ifdef IS_PPE
+	transports.local = transport_local_ppe;
+#endif
+#ifdef WITH_TRANSPORT_IB
+	transports.remote = transport_remote_rdma;
+#endif
+#ifdef WITH_TRANSPORT_UDP
+	transports.remote = transport_remote_udp;
 #endif
 
 	return PTL_OK;

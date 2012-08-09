@@ -397,14 +397,14 @@ static int iface_bind(iface_t *iface, unsigned int port)
 	return PTL_FAIL;
 }
 
-int PtlNIInit_UDP(iface_t *iface, ni_t *ni)
+int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 {
 	int err;
 	int ret;
 	int flags;
 	struct sockaddr_in addr;
-	socklen_t addrlen;
 	uint16_t port;
+	iface_t *iface = ni->iface;
 
 	ni->id.phys.nid = addr_to_nid(&iface->udp.sin);
 

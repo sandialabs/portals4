@@ -472,39 +472,6 @@ static void release_shmem_resources(ni_t *ni)
 /**
  * @brief Initialize shared memory resources.
  *
- * @param[in] ni
- *
- * @return status
- */
-int PtlNIInit_shmem(ni_t *ni)
-{
-	ni->shmem.knem_fd = -1;
-	ni->shmem.comm_pad = MAP_FAILED;
-
-	/* Only if IB hasn't setup the NID first. */
-	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
-		ni->iface->id.phys.nid = 0;
-	}
-	if (ni->iface->id.phys.pid == PTL_PID_ANY)
-		ni->iface->id.phys.pid = getpid();
-
-	ni->id.phys.nid = ni->iface->id.phys.nid;
-
-	if (ni->id.phys.pid == PTL_PID_ANY)
-		ni->id.phys.pid = ni->iface->id.phys.pid;
-
-	if (ni->options & PTL_NI_PHYSICAL) {
-		/* Used later to setup the buffers. */
-		ni->mem.index = 0;
-		ni->mem.node_size = 1;
-	}
-
-	return PTL_OK;
-}
-
-/**
- * @brief Initialize shared memory resources.
- *
  * This function is called during NI creation if the NI is physical,
  * or after PtlSetMap if it is logical.
  *
@@ -512,7 +479,7 @@ int PtlNIInit_shmem(ni_t *ni)
  *
  * @return status
  */
-int setup_shmem(ni_t *ni)
+static int setup_shmem(ni_t *ni)
 {
 	int shm_fd = -1;
 	char comm_pad_shm_name[200] = "";
@@ -752,16 +719,6 @@ int setup_shmem(ni_t *ni)
 }
 
 /**
- * @brief Cleanup shared memory resources.
- *
- * @param[in] ni
- */
-void cleanup_shmem(ni_t *ni)
-{
-	release_shmem_resources(ni);
-}
-
-/**
  * @brief enqueue a buf to a pid using shared memory.
  *
  * @param[in] ni the network interface
@@ -787,3 +744,66 @@ buf_t *shmem_dequeue(ni_t *ni)
 {
 	return (buf_t *)dequeue(ni->shmem.comm_pad, ni->shmem.queue);
 }
+
+/**
+ * @brief Initialize shared memory resources.
+ *
+ * @param[in] ni
+ *
+ * @return status
+ */
+static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
+
+{
+	ni->shmem.knem_fd = -1;
+	ni->shmem.comm_pad = MAP_FAILED;
+
+	/* Only if IB hasn't setup the NID first. */
+	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
+		ni->iface->id.phys.nid = 0;
+	}
+	if (ni->iface->id.phys.pid == PTL_PID_ANY)
+		ni->iface->id.phys.pid = getpid();
+
+	ni->id.phys.nid = ni->iface->id.phys.nid;
+
+	if (ni->id.phys.pid == PTL_PID_ANY)
+		ni->id.phys.pid = ni->iface->id.phys.pid;
+
+	if (ni->options & PTL_NI_PHYSICAL) {
+		int err;
+
+		/* Used later to setup the buffers. */
+		ni->mem.index = 0;
+		ni->mem.node_size = 1;
+
+		err = setup_shmem(ni);
+		if (unlikely(err)) {
+			WARN();
+			return err;
+		}
+	}
+
+	return PTL_OK;
+}
+
+/* Lookup our nid/pid to determine local rank */
+static int PtlSetMap_shmem(ni_t *ni,
+							ptl_size_t map_size,
+							const ptl_process_t *mapping)
+{
+	PtlSetMap_mem(ni, map_size, mapping);
+
+	if (setup_shmem(ni)) {
+		WARN();
+		return PTL_ARG_INVALID;
+	}
+
+	return PTL_OK;
+}
+
+struct transport_ops transport_local_shmem = {
+	.SetMap = PtlSetMap_shmem,
+	.NIInit = PtlNIInit_shmem,
+	.NIFini = release_shmem_resources,
+};

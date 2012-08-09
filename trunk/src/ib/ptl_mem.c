@@ -153,7 +153,7 @@ int mem_do_transfer(buf_t *buf)
 
 	while (*resid > 0) {
 
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM && USE_KNEM
 		iovec.offset += buf->transfer.mem.cur_rem_off;
 #endif
 		iovec.length -= buf->transfer.mem.cur_rem_off;
@@ -202,9 +202,9 @@ static uint32_t crc32(const unsigned char *p, uint32_t crc, int size)
 }
 
 /* Lookup our nid/pid to determine local rank */
-void PtlSetMap_mem(ni_t *ni,
-				   ptl_size_t map_size,
-				   const ptl_process_t *mapping)
+int PtlSetMap_mem(ni_t *ni,
+				  ptl_size_t map_size,
+				  const ptl_process_t *mapping)
 {
 	iface_t *iface = ni->iface;
 	int i;
@@ -232,8 +232,7 @@ void PtlSetMap_mem(ni_t *ni,
 				if (!conn) {
 					/* It's hard to recover from here. */
 					WARN();
-					abort();
-					return;
+					return PTL_ARG_INVALID;
 				}
 
 #if IS_PPE
@@ -252,4 +251,6 @@ void PtlSetMap_mem(ni_t *ni,
 
 		ni->mem.hash = crc32((unsigned char *)&mapping[i].phys, ni->mem.hash, sizeof(mapping[i].phys));
 	}
+
+	return PTL_OK;
 }
