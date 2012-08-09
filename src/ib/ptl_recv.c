@@ -551,7 +551,7 @@ static void progress_thread_udp(ni_t *ni)
  * @param arg opaque pointer to ni.
  */
 
-void *progress_thread(void *arg)
+static void *progress_thread(void *arg)
 {
 	ni_t *ni = arg;
 
@@ -677,4 +677,33 @@ void *progress_thread(void *arg)
 
 	return NULL;
 }
+
+/* Add a progress thread. */
+int start_progress_thread(ni_t *ni)
+{
+	int ret;
+
+	ret = pthread_create(&ni->catcher, NULL, progress_thread, ni);
+	if (ret) {
+		WARN();
+		ret = PTL_FAIL;
+	} else {
+		ni->has_catcher = 1;
+
+		ret = PTL_OK;
+	}
+
+	return ret;
+}
+
+/* Stop the progress thread. */
+void stop_progress_thread(ni_t *ni)
+{
+	if (ni->has_catcher) {
+		ni->catcher_stop = 1;
+		pthread_join(ni->catcher, NULL);
+		ni->has_catcher = 0;
+	}
+}
+
 #endif

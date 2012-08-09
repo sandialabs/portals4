@@ -227,8 +227,6 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 
 int process_rdma_desc(buf_t *buf);
 
-void *progress_thread(void *arg);
-
 int process_init(buf_t *buf);
 
 int process_tgt(buf_t *buf);
@@ -281,10 +279,17 @@ static inline void *addr_to_ppe(void *addr, mr_t *mr)
 	return mr->ppe_addr + (addr - mr->addr);
 }
 
-#else
-#define addr_to_ppe(addr,dontcare) (addr)
-#endif
+static inline int start_progress_thread(ni_t *ni) { return PTL_OK }
+static inline void stop_progress_thread(ni_t *ni) { }
 
+#else
+
+#define addr_to_ppe(addr,dontcare) (addr)
+
+/* There is a progress thread per NI when the PPE is not used. */
+int start_progress_thread(ni_t *ni);
+void stop_progress_thread(ni_t *ni);
+#endif
 
 int _PtlInit(gbl_t *gbl);
 void _PtlFini(gbl_t *gbl);
