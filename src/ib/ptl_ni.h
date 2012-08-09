@@ -158,6 +158,9 @@ typedef struct ni {
 			size_t buf_size;
 			unsigned int num_bufs;
 		} bounce_buf;
+
+		PTL_FASTLOCK_TYPE noknem_lock;
+		struct list_head noknem_list;
 #endif
 	} shmem;
 #endif
@@ -177,11 +180,6 @@ typedef struct ni {
 		RB_ENTRY(ni) entry;
 #endif
 	} mem;
-#endif
-
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	PTL_FASTLOCK_TYPE noknem_lock;
-	struct list_head noknem_list;
 #endif
 
 #if WITH_TRANSPORT_UDP

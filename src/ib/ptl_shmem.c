@@ -469,7 +469,7 @@ static void release_shmem_resources(ni_t *ni)
 	knem_fini(ni);
 
 #if !USE_KNEM
-	PTL_FASTLOCK_DESTROY(&ni->noknem_lock);
+	PTL_FASTLOCK_DESTROY(&ni->shmem.noknem_lock);
 #endif
 }
 
@@ -746,8 +746,8 @@ static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
 
 {
 #if !USE_KNEM
-	PTL_FASTLOCK_INIT(&ni->noknem_lock);
-	INIT_LIST_HEAD(&ni->noknem_list);
+	PTL_FASTLOCK_INIT(&ni->shmem.noknem_lock);
+	INIT_LIST_HEAD(&ni->shmem.noknem_list);
 #endif
 
 	ni->shmem.knem_fd = -1;
