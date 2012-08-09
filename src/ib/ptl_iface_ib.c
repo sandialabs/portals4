@@ -376,6 +376,8 @@ void cleanup_rdma(ni_t *ni)
 		buf = list_entry(entry, buf_t, list);
 		buf_put(buf);
 	}
+
+	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
 }
 
 /* Must be locked by gbl_mutex. */
@@ -450,6 +452,10 @@ int PtlNIInit_rdma(gbl_t *gbl, ni_t *ni)
 {
 	int err;
 	iface_t *iface = ni->iface;
+
+	INIT_LIST_HEAD(&ni->rdma.recv_list);
+	atomic_set(&ni->rdma.num_conn, 0);
+	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
 
 	err = init_rdma(iface, ni);
 	if (unlikely(err))

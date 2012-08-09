@@ -328,24 +328,12 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->cleanup_state = NI_INIT_CLEANUP;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	PTL_FASTLOCK_INIT(&ni->noknem_lock);
-	INIT_LIST_HEAD(&ni->noknem_list);
-#endif
 	RB_INIT(&ni->mr_self.tree);
 	PTL_FASTLOCK_INIT(&ni->mr_self.tree_lock);
 	RB_INIT(&ni->mr_app.tree);
 	PTL_FASTLOCK_INIT(&ni->mr_app.tree_lock);
 #if !IS_PPE
 	ni->umn_fd = -1;
-#endif
-#if WITH_TRANSPORT_IB
-	INIT_LIST_HEAD(&ni->rdma.recv_list);
-	atomic_set(&ni->rdma.num_conn, 0);
-	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
-#endif
-#if WITH_TRANSPORT_UDP
-	ni->udp.s = -1;
 #endif
 	PTL_FASTLOCK_INIT(&ni->md_list_lock);
 	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
@@ -657,12 +645,6 @@ static void ni_cleanup(ni_t *ni)
 	PTL_FASTLOCK_DESTROY(&ni->ct_list_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_self.tree_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_app.tree_lock);
-#if WITH_TRANSPORT_IB
-	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
-#endif
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	PTL_FASTLOCK_DESTROY(&ni->noknem_lock);
-#endif
 }
 
 int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
