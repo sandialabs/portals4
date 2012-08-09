@@ -375,16 +375,13 @@ int _PtlNIInit(gbl_t *gbl,
 		}
 	}
 
-#if !IS_PPE
 	/* Add a progress thread. */
-	err = pthread_create(&ni->catcher, NULL, progress_thread, ni);
+	err = start_progress_thread(ni);
 	if (err) {
 		WARN();
-		err = PTL_FAIL;
+		err = PTL_ARG_INVALID;
 		goto err3;
 	}
-	ni->has_catcher = 1;
-#endif
 
 	assert(iface->ni[ni_type] == NULL);
 	iface->ni[ni_type] = ni;
@@ -590,14 +587,7 @@ static void ni_cleanup(ni_t *ni)
 		ni->cleanup_state = NI_FINISH_CLEANUP;
 	}
 
-#if !IS_PPE
-	/* Stop the progress thread. */
-	if (ni->has_catcher) {
-		ni->catcher_stop = 1;
-		pthread_join(ni->catcher, NULL);
-		ni->has_catcher = 0;
-	}
-#endif
+	stop_progress_thread(ni);
 
 	destroy_conns(ni);
 
