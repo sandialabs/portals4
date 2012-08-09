@@ -29,18 +29,18 @@ int misc_init_once(void)
 	linesize = 64;
 #endif
 
-#ifdef WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM
 	if (get_param(PTL_ENABLE_MEM)) {
 		transports.local = transport_local_shmem;
 	}
 #endif
-#ifdef IS_PPE
+#if IS_PPE
 	transports.local = transport_local_ppe;
 #endif
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 	transports.remote = transport_remote_rdma;
 #endif
-#ifdef WITH_TRANSPORT_UDP
+#if WITH_TRANSPORT_UDP
 	transports.remote = transport_remote_udp;
 #endif
 

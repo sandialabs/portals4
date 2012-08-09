@@ -406,7 +406,7 @@ static int tgt_start(buf_t *buf)
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
 
-#ifdef IS_PPE
+#if IS_PPE
 	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
 	buf->target.phys.pid = le32_to_cpu(hdr->src_pid);
 #endif
@@ -1085,7 +1085,7 @@ static int tgt_rdma(buf_t *buf)
 	 * operation reenter this state to issue more
 	 * operations. */
 	if (*resid
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 		|| atomic_read(&buf->rdma.rdma_comp)
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM

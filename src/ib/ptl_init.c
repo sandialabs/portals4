@@ -230,7 +230,7 @@ static int prepare_req(buf_t *buf)
 	hdr->rlength = cpu_to_le64(length);
 	hdr->roffset = cpu_to_le64(buf->roffset);
 
-#ifdef IS_PPE
+#if IS_PPE
 	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 	hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
 	hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);

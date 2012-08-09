@@ -657,7 +657,7 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 
 	if (atomic_read(&ni->ref_cnt) == 0) {
 		remove_ni(ni);
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 		list_del(&ni->rdma.ppe_ni_list);
 #endif
 	}
