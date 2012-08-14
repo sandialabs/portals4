@@ -10,7 +10,6 @@ static char *init_state_name[] = {
 	[STATE_INIT_PREP_REQ]		= "prepare_req",
 	[STATE_INIT_WAIT_CONN]		= "wait_conn",
 	[STATE_INIT_SEND_REQ]		= "send_req",
-	[STATE_INIT_COPY_START]		= "copy_start",
 	[STATE_INIT_COPY_IN]		= "copy_in",
 	[STATE_INIT_COPY_OUT]		= "copy_out",
 	[STATE_INIT_COPY_DONE]		= "copy_done",
@@ -399,27 +398,40 @@ static int send_req(buf_t *buf)
 {
 	int err;
 	conn_t *conn = buf->conn;
+	int state;
+	ni_t *ni = obj_to_ni(buf);
 
 	set_buf_dest(buf, conn);
+
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	if ((buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) ||
+		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)) {
+
+		PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
+		list_add_tail(&buf->list, &ni->shmem.noknem_list);
+		PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
+
+		if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM)
+			state = STATE_INIT_COPY_IN;
+		else
+			state = STATE_INIT_COPY_OUT;
+	}
+	else
+#endif
+	if (buf->event_mask & XX_SIGNALED)
+		state = STATE_INIT_WAIT_COMP;
+	else if (buf->event_mask & XI_EARLY_SEND)
+		state = STATE_INIT_EARLY_SEND_EVENT;
+	else if (buf->event_mask & XI_RECEIVE_EXPECTED)
+		state = STATE_INIT_WAIT_RECV;
+	else
+		state = STATE_INIT_CLEANUP;
 
 	err = buf->conn->transport.send_message(buf, 1);
 	if (err)
 		return STATE_INIT_SEND_ERROR;
 
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	if ((buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) ||
-		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM))
-		return STATE_INIT_COPY_START;
-	else
-#endif
-	if (buf->event_mask & XX_SIGNALED)
-		return STATE_INIT_WAIT_COMP;
-	else if (buf->event_mask & XI_EARLY_SEND)
-		return STATE_INIT_EARLY_SEND_EVENT;
-	else if (buf->event_mask & XI_RECEIVE_EXPECTED)
-		return STATE_INIT_WAIT_RECV;
-	else
-		return STATE_INIT_CLEANUP;
+	return state;
 }
 
 /**
@@ -451,30 +463,11 @@ static int send_error(buf_t *buf)
 }
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-static int init_copy_start(buf_t *buf)
-{
-	ni_t *ni = obj_to_ni(buf);
-
-	PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
-	list_add_tail(&buf->list, &ni->shmem.noknem_list);
-	PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
-
-	if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) {
-		return STATE_INIT_COPY_IN;
-	} else {
-		assert(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM);
-
-		return STATE_INIT_COPY_OUT;
-	}
-}
-
 static int init_copy_in(buf_t *buf)
 {
 	struct noknem *noknem = buf->transfer.noknem.noknem;
 	ptl_size_t to_copy;
 	int ret;
-
-	noknem->state = 1;
 
 	/* Copy the data from the bounce buffer. */
 	to_copy = noknem->length;
@@ -933,10 +926,11 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_SEND_REQ:
 			state = send_req(buf);
-			break;
-		case STATE_INIT_COPY_START:
-			state = init_copy_start(buf);
-			goto exit;
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+			if (state == STATE_INIT_COPY_IN ||
+				state == STATE_INIT_COPY_OUT)
+				goto exit;
+#endif
 			break;
 		case STATE_INIT_COPY_IN:
 			state = init_copy_in(buf);
@@ -950,8 +944,6 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_COPY_DONE:
 			state = init_copy_done(buf);
-			if (state == STATE_INIT_COPY_DONE)
-				goto exit;
 			break;
 		case STATE_INIT_WAIT_COMP:
 			state = wait_comp(buf);
