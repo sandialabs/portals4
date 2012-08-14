@@ -278,7 +278,7 @@ static inline void *addr_to_ppe(void *addr, mr_t *mr)
 	return mr->ppe_addr + (addr - mr->addr);
 }
 
-static inline int start_progress_thread(ni_t *ni) { return PTL_OK }
+static inline int start_progress_thread(ni_t *ni) { return PTL_OK; }
 static inline void stop_progress_thread(ni_t *ni) { }
 
 #else
