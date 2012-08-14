@@ -1074,6 +1074,15 @@ static int tgt_rdma(buf_t *buf)
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 				&buf->put_resid : &buf->get_resid;
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	/* It is possible that post_tgt_dma() sets the target_done flag,
+	 * and that the initiator replies with init_done before we reach
+	 * the exit test. However we must leave the state machine so the
+	 * receive state machine can remove the buffer from the
+	 * noknem_list; this function will be called again, and this time
+	 * was_done will be 1. May be this part needs a nicer design. */
+	int was_done = buf->transfer.noknem.noknem ? buf->transfer.noknem.noknem->init_done : 0;
+#endif
 
 	/* post one or more RDMA operations */
 	err = buf->conn->transport.post_tgt_dma(buf);
@@ -1089,7 +1098,7 @@ static int tgt_rdma(buf_t *buf)
 		|| atomic_read(&buf->rdma.rdma_comp)
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-		|| (buf->transfer.noknem.noknem && buf->transfer.noknem.noknem->init_done == 0)
+		|| (was_done == 0)
 #endif
 		)
 		return STATE_TGT_RDMA;
