@@ -566,7 +566,6 @@ static int init_copy_done(buf_t *buf)
 
 
 #else
-static int init_copy_start(buf_t *buf) { abort(); }
 static int init_copy_in(buf_t *buf) { abort(); }
 static int init_copy_out(buf_t *buf) { abort(); }
 static int init_copy_done(buf_t *buf) { abort(); }
