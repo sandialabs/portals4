@@ -1529,6 +1529,21 @@ struct transport_ops transport_local_ppe = {
 	.SetMap = PtlSetMap_mem,
 };
 
+static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
+{
+	ev_break(evl.loop, EVBREAK_ALL);
+}
+
+static void sig_terminate(int signum)
+{
+	/* Create an async event to stop the event loop. May be there
+	 * is a better way. */
+	ev_async stop_event_loop;
+	ev_async_init(&stop_event_loop, stop_event_loop_func);
+	EVL_WATCH(ev_async_start(evl.loop, &stop_event_loop));
+	ev_async_send(evl.loop, &stop_event_loop);
+}
+
 int main(int argc, char *argv[])
 {
 	int err;
@@ -1603,6 +1618,8 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+
+	signal(SIGTERM, sig_terminate);
 
 	/* Start the event loop. Does not exit. */
 	evl_run(&evl);
