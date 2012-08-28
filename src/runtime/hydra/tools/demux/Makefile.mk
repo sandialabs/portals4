@@ -6,7 +6,9 @@
 
 AM_CPPFLAGS += -I$(top_srcdir)/tools/demux
 
-libhydra_la_SOURCES += $(top_srcdir)/tools/demux/demux.c
+libhydra_la_SOURCES += $(top_srcdir)/tools/demux/demux.c \
+	$(top_srcdir)/tools/demux/demux_internal.h \
+	$(top_srcdir)/tools/demux/demux.h
 
 if hydra_have_poll
 libhydra_la_SOURCES += $(top_srcdir)/tools/demux/demux_poll.c

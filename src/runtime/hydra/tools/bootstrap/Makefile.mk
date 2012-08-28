@@ -16,3 +16,5 @@ endif
 if hydra_bss_persist
 include tools/bootstrap/persist/Makefile.mk
 endif
+
+libhydra_la_SOURCES += 	$(top_srcdir)/tools/bootstrap/include/bsci.h

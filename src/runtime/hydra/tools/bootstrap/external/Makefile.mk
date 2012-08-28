@@ -39,7 +39,15 @@ libhydra_la_SOURCES += $(top_srcdir)/tools/bootstrap/external/external_common.c 
 	$(top_srcdir)/tools/bootstrap/external/pbs_init.c \
 	$(top_srcdir)/tools/bootstrap/external/pbs_query_native_int.c \
 	$(top_srcdir)/tools/bootstrap/external/pbs_query_node_list.c \
-	$(top_srcdir)/tools/bootstrap/external/pbs_query_jobid.c
+	$(top_srcdir)/tools/bootstrap/external/pbs_query_jobid.c \
+	$(top_srcdir)/tools/bootstrap/external/common.h \
+	$(top_srcdir)/tools/bootstrap/external/ll.h \
+	$(top_srcdir)/tools/bootstrap/external/lsf.h \
+	$(top_srcdir)/tools/bootstrap/external/pbs.h \
+	$(top_srcdir)/tools/bootstrap/external/rsh.h \
+	$(top_srcdir)/tools/bootstrap/external/sge.h \
+	$(top_srcdir)/tools/bootstrap/external/slurm.h \
+	$(top_srcdir)/tools/bootstrap/external/ssh.h
 
 if hydra_pbs_launcher
 libhydra_la_SOURCES += \
@@ -48,3 +56,4 @@ libhydra_la_SOURCES += \
 	$(top_srcdir)/tools/bootstrap/external/pbs_wait.c \
 	$(top_srcdir)/tools/bootstrap/external/pbs_env.c
 endif
+

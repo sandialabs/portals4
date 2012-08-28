@@ -6,7 +6,8 @@
 
 AM_CPPFLAGS += -I$(top_srcdir)/tools/topo
 
-libhydra_la_SOURCES += $(top_srcdir)/tools/topo/topo.c
+libhydra_la_SOURCES += $(top_srcdir)/tools/topo/topo.c \
+	$(top_srcdir)/tools/topo/topo.h
 
 # if hydra_have_plpa
 # include tools/topo/plpa/Makefile.mk

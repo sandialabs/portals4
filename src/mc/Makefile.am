@@ -93,6 +93,10 @@ libportals_mc_la_SOURCES = \
 	lib/include/ptl_internal_PT.h \
 	lib/include/ptl_internal_global.h \
 	lib/include/ptl_visibility.h \
+	lib/include/ptl_internal_iface.h \
+	lib/include/ptl_internal_ME.h \
+	lib/include/ptl_internal_startup.h \
+	lib/include/ptl_internal_triggered.h \
 	lib/atomic.c \
 	lib/bundle.c \
 	lib/ct.c \
@@ -127,5 +131,6 @@ libportals_mc_shared_la_SOURCES = \
 	shared/ptl_free_list.h \
 	shared/ptl_internal_handles.h \
 	shared/ptl_stack.c \
-	shared/ptl_stack.h
+	shared/ptl_stack.h \
+	shared/ptl_internal_alignment.h
 

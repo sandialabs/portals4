@@ -11,3 +11,5 @@ libhydra_la_SOURCES += $(top_srcdir)/tools/ftb/hydt_ftb.c
 else
 libhydra_la_SOURCES += $(top_srcdir)/tools/ftb/hydt_ftb_dummy.c
 endif
+
+libhydra_la_SOURCES += $(top_srcdir)/tools/ftb/hydt_ftb.h
