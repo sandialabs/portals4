@@ -334,6 +334,10 @@ AM_CONDITIONAL([BACKEND_IMPL_MC], [test "$with_implementation" = "mc"])
 DISTCHECK_CONFIGURE_FLAGS=
 AS_IF([test -n "$with_implementation"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"])
+AS_IF([test -n "$enable_ib_shmem"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-ib-shmem=${enable_ib_shmem}"])
+AS_IF([test -n "$enable_ib_ib"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-ib-ib=${enable_ib_ib}"])
 AS_IF([test -n "$with_xpmem"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-xpmem=${with_xpmem}"])
 AS_IF([test -n "$with_ev"],

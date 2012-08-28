@@ -3,7 +3,7 @@
 # Copyright (c) 2012 Sandia Corporation
 
 
-DIST_SUBDIRS = ib mc
+DIST_SUBDIRS = ib mc runtime
 SUBDIRS = runtime
 
 lib_LTLIBRARIES = libportals.la

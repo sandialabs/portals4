@@ -3,9 +3,12 @@ SUBDIRS = test_n1 test_n2
 XMLEXTRA = \
 	test_phys_client.xml \
 	test_phys_server.xml \
-	test_threads.xml
+	test_threads.xml \
+	test_atomic_mixed.xml \
+	test_basic_rt.xml \
+	test_loopback_move.xml
 
-EXTRA_DIST = test_n1/*.xml test_n2/*.xml $(XMLEXTRA)
+EXTRA_DIST = $(srcdir)/test_n1/*.xml $(srcdir)/test_n2/*.xml $(XMLEXTRA) make_test_relay.pl
 
 noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 

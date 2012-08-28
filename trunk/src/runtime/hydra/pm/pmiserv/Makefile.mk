@@ -27,4 +27,11 @@ libpm_la_SOURCES += $(top_srcdir)/pm/pmiserv/pmiserv_pmi.c \
 	$(top_srcdir)/pm/pmiserv/pmiserv_cb.c \
 	$(top_srcdir)/pm/pmiserv/pmiserv_utils.c \
 	$(top_srcdir)/pm/pmiserv/common.c \
-	$(top_srcdir)/pm/pmiserv/pmi_v2_common.c
+	$(top_srcdir)/pm/pmiserv/pmi_v2_common.c \
+	$(top_srcdir)/pm/pmiserv/pmi_v2_common.h \
+	$(top_srcdir)/pm/pmiserv/pmip.h \
+	$(top_srcdir)/pm/pmiserv/pmiserv.h \
+	$(top_srcdir)/pm/pmiserv/pmiserv_utils.h \
+	$(top_srcdir)/pm/pmiserv/common.h \
+	$(top_srcdir)/pm/pmiserv/pmip_pmi.h \
+	$(top_srcdir)/pm/pmiserv/pmiserv_pmi.h

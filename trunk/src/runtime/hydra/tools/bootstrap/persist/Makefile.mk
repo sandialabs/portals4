@@ -14,4 +14,7 @@ hydra_persist_DEPENDENCIES = libhydra.la
 
 libhydra_la_SOURCES += $(top_srcdir)/tools/bootstrap/persist/persist_init.c \
 	$(top_srcdir)/tools/bootstrap/persist/persist_launch.c \
-	$(top_srcdir)/tools/bootstrap/persist/persist_wait.c
+	$(top_srcdir)/tools/bootstrap/persist/persist_wait.c \
+	$(top_srcdir)/tools/bootstrap/persist/persist.h \
+	$(top_srcdir)/tools/bootstrap/persist/persist_client.h \
+	$(top_srcdir)/tools/bootstrap/persist/persist_server.h

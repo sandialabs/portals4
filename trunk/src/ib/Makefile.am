@@ -62,7 +62,8 @@ libportals_ib_la_SOURCES = \
 	ptl_ref.h \
 	ptl_sync.h \
 	ptl_tgt.c \
-	tree.h
+	tree.h \
+	ptl_timer.h
 
 if WITH_TRANSPORT_IB
 libportals_ib_la_SOURCES += \

@@ -6,7 +6,8 @@
 
 AM_CPPFLAGS += -I$(top_srcdir)/tools/ckpoint
 
-libhydra_la_SOURCES += $(top_srcdir)/tools/ckpoint/ckpoint.c
+libhydra_la_SOURCES += $(top_srcdir)/tools/ckpoint/ckpoint.c \
+	$(top_srcdir)/tools/ckpoint/ckpoint.h
 
 if hydra_have_blcr
 include tools/ckpoint/blcr/Makefile.mk

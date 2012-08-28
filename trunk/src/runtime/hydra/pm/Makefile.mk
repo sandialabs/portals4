@@ -7,7 +7,7 @@
 AM_CPPFLAGS += -I$(top_srcdir)/pm/include
 
 noinst_LTLIBRARIES += libpm.la
-libpm_la_SOURCES =
+libpm_la_SOURCES = $(top_srcdir)/pm/include/pmci.h
 
 if hydra_pm_pmiserv
 include pm/pmiserv/Makefile.mk
