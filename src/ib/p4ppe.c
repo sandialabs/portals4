@@ -148,6 +148,9 @@ static void destroy_client(struct client *client)
 	/* If the client has crashed, then we should free all its
 	 * ressources. TODO */
 
+	if (client->gbl.apid != -1)
+		xpmem_release(client->gbl.apid);
+
 	free(client);
 }
 
