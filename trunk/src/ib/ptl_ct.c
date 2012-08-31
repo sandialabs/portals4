@@ -960,8 +960,6 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 		} else {
 			PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 		}
-
-		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 	}
 }
 

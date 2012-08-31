@@ -237,7 +237,6 @@ int le_append_pt(ni_t *ni, le_t *le)
 		pt->priority_size++;
 		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
 			pt->priority_size--;
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
 			WARN();
 			return PTL_NO_SPACE;
 		}
@@ -246,7 +245,6 @@ int le_append_pt(ni_t *ni, le_t *le)
 		pt->overflow_size++;
 		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
 			pt->overflow_size--;
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
 			WARN();
 			return PTL_NO_SPACE;
 		}
