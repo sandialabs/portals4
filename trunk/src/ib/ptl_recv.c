@@ -158,9 +158,9 @@ static int rdma_comp(buf_t *rdma_buf)
 	if (rdma_buf != buf) {
 		atomic_dec(&buf->rdma.rdma_comp);
 
-		PTL_FASTLOCK_LOCK(&buf->rdma_list_lock);
-		list_cut_position(&temp_list, &buf->rdma_list, &rdma_buf->list);
-		PTL_FASTLOCK_UNLOCK(&buf->rdma_list_lock);
+		PTL_FASTLOCK_LOCK(&buf->rdma.rdma_list_lock);
+		list_cut_position(&temp_list, &buf->transfer.rdma.rdma_list, &rdma_buf->list);
+		PTL_FASTLOCK_UNLOCK(&buf->rdma.rdma_list_lock);
 
 		/* free the chain of rdma bufs */
 		while(!list_empty(&temp_list)) {

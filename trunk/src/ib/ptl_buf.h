@@ -221,12 +221,6 @@ struct buf {
 	int unexpected_busy;
 	pthread_cond_t cond;
 
-#if WITH_TRANSPORT_IB
-	// TODO: can we move these fields into the next rdma union?
-	struct list_head	rdma_list;
-	PTL_FASTLOCK_TYPE	rdma_list_lock;
-#endif
-
 	/* Fields that survive between buffer reuse. */
 	union {
 #if WITH_TRANSPORT_IB
@@ -246,6 +240,7 @@ struct buf {
 
 			atomic_t rdma_comp;
 
+			PTL_FASTLOCK_TYPE rdma_list_lock; /* lock for transfer.rdma_list */
 		} rdma;
 #endif
 
@@ -261,6 +256,7 @@ struct buf {
 	/* Used during transfer. These fields are only valid while the
 	 * buffer is allocated. */
 	union {
+#if WITH_TRANSPORT_IB
 		struct {
 			/* For RDMA operations. */
 			struct ibv_sge		*cur_rem_sge;
@@ -268,10 +264,13 @@ struct buf {
 			ptl_size_t		cur_rem_off;
 			int			interim_rdma;
 
+			struct list_head	rdma_list;
+
 			/* How many previous requests buffer (ie. from initiator)
 			 * will this one completes. */
 			int num_req_completes;
 		} rdma;
+#endif
 
 #if (WITH_TRANSPORT_SHMEM && USE_KNEM) || IS_PPE
 		struct {
