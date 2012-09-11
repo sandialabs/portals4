@@ -399,13 +399,13 @@ static int send_req(buf_t *buf)
 	int err;
 	conn_t *conn = buf->conn;
 	int state;
-	ni_t *ni = obj_to_ni(buf);
 
 	set_buf_dest(buf, conn);
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 	if ((buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) ||
 		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)) {
+		ni_t *ni = obj_to_ni(buf);
 
 		PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
 		list_add_tail(&buf->list, &ni->shmem.noknem_list);
