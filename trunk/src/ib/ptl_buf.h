@@ -315,7 +315,6 @@ struct buf {
 	} transfer;
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	//TODO: can be moved inside transfer union ?
 	/* When receiving a shared memory buffer (sbuf), a regular buffer (buf) is
 	 * allocated to process the data through the receive state machine
 	 * without destroying the sbuf that belongs to
@@ -324,6 +323,7 @@ struct buf {
 #endif
 
 #if IS_PPE
+	/* TODO: should move inside transfer union. */
 	/* When a memory transfer happens inside the PPE, keep the
 	 * destination NI, so we can find which progress threads will
 	 * process the buffer. */
