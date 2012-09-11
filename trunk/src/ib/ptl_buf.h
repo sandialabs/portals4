@@ -60,11 +60,16 @@ enum {
 
 typedef enum buf_type buf_type_t;
 
+/* That information is coming from the conn structure (see
+ * set_buf_dest()). It is duplicated here to avoid following to many
+ * pointers during the processing of the packet. */
 struct xremote {
 	union {
+#if WITH_TRANSPORT_IB
 		struct {
 			struct ibv_qp *qp;					   /* from RDMA CM */
 		} rdma;
+#endif
 
 #if WITH_TRANSPORT_SHMEM
 		struct {
