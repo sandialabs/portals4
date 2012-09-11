@@ -64,7 +64,7 @@ static void dump_buf(buf_t *buf)
 {
 	printf("  Buffer %x\n", buf_to_handle(buf));
 	printf("    type = %d\n", buf->type);
-	printf("    xxbuf = %p\n", buf->xxbuf);
+	printf("    xxbuf = %p\n", buf->transfer.rdma.xxbuf);
 
 	printf("    init_state = %d\n", buf->init_state);
 	printf("    tgt_state = %d\n", buf->tgt_state);

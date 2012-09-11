@@ -494,7 +494,7 @@ static buf_t *tgt_alloc_rdma_buf(buf_t *buf)
 	}
 
 	rdma_buf->type = BUF_RDMA;
-	rdma_buf->xxbuf = buf;
+	rdma_buf->transfer.rdma.xxbuf = buf;
 	buf_get(buf);
 	rdma_buf->dest = buf->dest;
 	rdma_buf->conn = buf->conn;
@@ -731,7 +731,7 @@ int process_rdma_desc(buf_t *buf)
 
 	/* use the buf as its own rdma buf. */
 	buf->event_mask |= XX_SIGNALED;
-	buf->xxbuf = buf;
+	buf->transfer.rdma.xxbuf = buf;
 	buf->type = BUF_RDMA;
 
 	err = post_rdma(buf, buf->dest.rdma.qp, DATA_DIR_IN,

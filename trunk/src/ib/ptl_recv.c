@@ -142,7 +142,7 @@ static int rdma_comp(buf_t *rdma_buf)
 {
 	struct list_head temp_list;
 	int err;
-	buf_t *buf = rdma_buf->xxbuf;
+	buf_t *buf = rdma_buf->transfer.rdma.xxbuf;
 
 	/* If it's a completion that was not requested, then it's coming
 	 * from the send completion threshold mechanism (see

@@ -302,7 +302,9 @@ static int prepare_send_buf(buf_t *buf)
 
  	if (send_buf) {
 		/* link send buf to buf */
-		send_buf->xxbuf = buf;
+#if WITH_TRANSPORT_IB
+		send_buf->transfer.rdma.xxbuf = buf;
+#endif
 		buf_get(buf);
 		buf->send_buf = send_buf;
 
@@ -1163,7 +1165,7 @@ static int tgt_wait_rdma_desc(buf_t *buf)
 			return STATE_TGT_WAIT_RDMA_DESC;
 	} else {
 		/* Was set in process_rdma_desc(). */
-		buf->xxbuf = NULL;
+		buf->transfer.rdma.xxbuf = NULL;
 	}
 
 	/* setup the remote end of the dma state
