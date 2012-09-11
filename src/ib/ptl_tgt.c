@@ -1472,6 +1472,9 @@ static int tgt_send_ack(buf_t *buf)
 	ack_hdr_t *ack_hdr;
  	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
 
+	/* Find a buffer to send the ack. Depending on the transport we
+	 * may or may not be able to reuse the buffer in which we got the
+	 * request. */
 	if (buf->send_buf) {
 		ack_buf = buf->send_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->data;
@@ -1546,27 +1549,46 @@ static int tgt_send_ack(buf_t *buf)
 			return STATE_TGT_ERROR;
 		}
 	} else {
+		switch(buf->conn->transport.type) {
 #if WITH_TRANSPORT_SHMEM
-		/* The same buffer is used to send the data back. Let the
-		 * progress thread return it. */
-		assert(buf->mem_buf);
-		buf->mem_buf->type = BUF_SHMEM_SEND;
-#elif IS_PPE
-		buf->mem_buf->type = BUF_MEM_SEND;
-#elif WITH_TRANSPORT_UDP
-		ack_buf->dest = buf->dest;
-		ack_buf->conn = buf->conn;
-
-		err = ack_buf->conn->transport.send_message(ack_buf, 0);
-		if (err) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-#else
-		/* Unreachable. */
-		abort();
+		case CONN_TYPE_SHMEM:
+			/* The same buffer is used to send the data back. Let the
+			 * progress thread return it. */
+			assert(buf->mem_buf);
+			buf->mem_buf->type = BUF_SHMEM_SEND;
+			break;
 #endif
-  	}
+
+#if IS_PPE
+		case CONN_TYPE_MEM:
+			buf->mem_buf->type = BUF_MEM_SEND;
+			break;
+#endif
+
+#if WITH_TRANSPORT_UDP
+		case CONN_TYPE_UDP:
+			ack_buf->dest = buf->dest;
+			ack_buf->conn = buf->conn;
+
+			err = ack_buf->conn->transport.send_message(ack_buf, 0);
+			if (err) {
+				WARN();
+				return STATE_TGT_ERROR;
+			}
+#endif
+
+#if WITH_TRANSPORT_IB
+		case CONN_TYPE_RDMA:
+			/* That should not be possible. */
+			abort();
+			break;
+#endif
+
+		default:
+			/* Unreachable. */
+			abort();
+		}
+	}
 
 	return STATE_TGT_CLEANUP;
 }
