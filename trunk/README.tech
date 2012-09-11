@@ -1,0 +1,96 @@
+Introduction to transports.
+
+There is 2 types of transports: local and remote. A local transport
+will only work on one node, while a remote tranport will work between
+nodes. A local transport can be a substitute for a remote
+transport. Up to one local and one remote tranport can co-exist at the
+same time. Usually the local transport will be initialized after the
+remote tranport, so it can override the connections set-up for the
+remote tranport (if the source and destination are on the same node).
+
+Whether remote of local, each transport must provide a set of methods,
+kept in their respective struct transport_ops. Some of the methods can
+be optional.
+
+
+
+
+Transport structures.
+
+Confusingly, there is 3 structures related to transports: 
+- "transport": defines a set of methods to prepare and send a buffer
+  or do a DMA operation.
+- "transport_ops": defines a set of methods that complement the
+  generic implementation of certain Portals calls.
+- "transports": defines at most one local transport and one remote transport.
+
+
+
+
+Connections.
+
+The conn structure holds all the information necessary to identify a
+connection between 2 ranks. It keeps generic as well as transport
+specific information. Two ranks are only connected with one transport
+at any time.
+
+Initially, each connections is configured to use the remote
+transport. If it is later found (during the PtlSetMap call) that two
+ranks are on the same node, then the connection will be overriden to
+use a local transport.
+
+Once a connection between two ranks has been established, there is 2
+kind of messages that can be used: a regular buffer transfer or a
+DMA/RDMA like operation. In infiniband terms, this is either a
+SEND/RECV operation and and READ/WRITE operation. For the shared
+memory transport, a buffer is queued on the destination, while the DMA
+operation is done using KNEM. Depending on the size of the message to
+send, 3 things can happen: - if the message is small enough to fit in
+a buffer, then it is copied in it and sent to the
+target. (DATA_FMT_IMMEDIATE) - if the message doesn't fit in a buffer,
+then DMA will be used. An array of scatter-gather is built, which type
+and size depends on the transport.  * if this array fits in a buffer,
+then this array is sent as is to the target. (DATA_FMT_***_DMA) * if
+the array doesn't fit, then it will reside in the initiator's memory,
+and a single scather gather entry is created to point to that array,
+and it is then sent to the target. The target recovers that array with
+a DMA operation, then proceeds to get the
+message. (DATA_FMT_***_INDIRECT)
+
+In both DMA cases, the target is initiating the DMA operation. For
+instance in the case of a PtlGet(), the target will eventually do it
+with a WRITE operation and a PtlPut() will result in a READ operation.
+
+
+
+
+Adding a new transport.
+
+Give a name to the new transport (say XYZ). Derive the defined name
+for it: WITH_TRANSPORT_XYZ. This will be used to enable that transport
+specific code.
+
+You should add one or more files to keep that transport specific code,
+as in ptl_udp.c or ptl_shmem.c, and add that file to Makefile.am.
+
+Add a new struct transport_ops and a new struct transport for that
+transport; and add the later to transports.local or transports.remote
+in misc_init_once().
+
+Grep the code for "WITH_TRANSPORT_" to identify places where transport
+specific code must be inserted. Most likely the some addtions will be
+needed:
+- to struct xremote in ptl_buf.h to store endpoint information, for
+  each request, with the corresponding change to set_buf_dest().
+- to enum transport_type. Name the new transport CONN_TYPE_XYZ
+- to struct conn
+- to the progress thread, to receive new messages.
+- to ptl_data.[ch] to define how a direct/indirect dma message is encoded.
+
+
+
+
+
+
+
+
