@@ -114,13 +114,6 @@ struct buf {
 	/** enables holding buf on lists */
 	struct list_head	list;
 
-	/* remains of xi/xt */
-	/* TODO names with xx in front had collisions
-	 * with other names already in buf, need to
-	 * see if we can merge them */
-
-
-	struct buf		*xxbuf;
 	unsigned int	event_mask;
 
 	ptl_size_t		rlength;
@@ -265,6 +258,13 @@ struct buf {
 			int			interim_rdma;
 
 			struct list_head	rdma_list;
+
+			/* The MRs cannot be released until the transaction is
+			 * over. So we allocate a new buffer and keep the MRs
+			 * references in mr_list. When that buffer is released, so
+			 * are the MRs. This can point back to the current buffer
+			 * and not be aloocated. */
+			struct buf *xxbuf;
 
 			/* How many previous requests buffer (ie. from initiator)
 			 * will this one completes. */
