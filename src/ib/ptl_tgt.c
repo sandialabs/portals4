@@ -429,7 +429,7 @@ static int tgt_start(buf_t *buf)
 	/* initialize fields */
 	INIT_LIST_HEAD(&buf->unexpected_list);
 #if WITH_TRANSPORT_IB
-	INIT_LIST_HEAD(&buf->rdma_list);
+	INIT_LIST_HEAD(&buf->transfer.rdma.rdma_list);
 #endif
 	buf->in_atomic = 0;
 
@@ -1666,7 +1666,7 @@ static int tgt_cleanup(buf_t *buf)
 
 	assert(!buf->indir_sge);
 #if WITH_TRANSPORT_IB
-	assert(list_empty(&buf->rdma_list));
+	assert(list_empty(&buf->transfer.rdma.rdma_list));
 #endif
 
 	if (buf->send_buf) {

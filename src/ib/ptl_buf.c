@@ -116,7 +116,7 @@ int buf_init(void *arg, void *parm)
 
 		atomic_set(&buf->rdma.rdma_comp, 0);
 	}
-	PTL_FASTLOCK_INIT(&buf->rdma_list_lock);
+	PTL_FASTLOCK_INIT(&buf->rdma.rdma_list_lock);
 #endif
 
 	return 0;
@@ -127,7 +127,7 @@ void buf_fini(void *arg)
 	buf_t *buf = arg;
 
 #if WITH_TRANSPORT_IB
-	PTL_FASTLOCK_DESTROY(&buf->rdma_list_lock);
+	PTL_FASTLOCK_DESTROY(&buf->rdma.rdma_list_lock);
 #endif
 	pthread_mutex_destroy(&buf->mutex);
 	pthread_cond_destroy(&buf->cond);
