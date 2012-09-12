@@ -96,6 +96,9 @@ static long get_number(struct node_info *info, char *orig_val)
 static datatype_t get_datatype(ptl_datatype_t type, char *val)
 {
 	datatype_t num;
+	float f[2];
+	double d[2];
+	long double ld[2];
 
 	num.u64 = 0;
 
@@ -128,13 +131,22 @@ static datatype_t get_datatype(ptl_datatype_t type, char *val)
 		num.f = strtof(val, NULL);
 		break;
 	case PTL_FLOAT_COMPLEX:
-		sscanf(val, "(%f, %f)", &num.fc[0], &num.fc[1]);
+		sscanf(val, "(%f, %f)", &f[0], &f[1]);
+		num.fc = f[0] + f[1] * _Complex_I;
 		break;
 	case PTL_DOUBLE:
 		num.d = strtod(val, NULL);
 		break;
 	case PTL_DOUBLE_COMPLEX:
-		sscanf(val, "(%lf, %lf)", &num.dc[0], &num.dc[1]);
+		sscanf(val, "(%lf, %lf)", &d[0], &d[1]);
+		num.dc = d[0] + d[1] * _Complex_I;
+		break;
+	case PTL_LONG_DOUBLE:
+		num.ld = strtold(val, NULL);
+		break;
+	case PTL_LONG_DOUBLE_COMPLEX:
+		sscanf(val, "(%Lf, %Lf)", &ld[0], &ld[1]);
+		num.ldc = ld[0] + ld[1] * _Complex_I;
 		break;
 	default:
 		printf("invalid type in get_datatype\n");
@@ -415,7 +427,11 @@ static int set_data(datatype_t val, void *data, int type, int length)
 	uint64_t *p_u64;
 	int64_t *p_64;
 	float *p_f;
+	float complex *p_fc;
 	double *p_d;
+	double complex *p_dc;
+	long double *p_ld;
+	long double complex *p_ldc;
 	int i;
 
 	switch(type) {
@@ -465,11 +481,9 @@ static int set_data(datatype_t val, void *data, int type, int length)
 			*p_f = val.f;
 		break;
 	case PTL_FLOAT_COMPLEX:
-		p_f = data;
-		for (i = 0; i < length/8; i++, p_f += 2) {
-			p_f[0] = val.fc[0];
-			p_f[1] = val.fc[1];
-		}
+		p_fc = data;
+		for (i = 0; i < length/8; i++, p_fc ++)
+			*p_fc = val.fc;
 		break;
 	case PTL_DOUBLE:
 		p_d = data;
@@ -477,11 +491,19 @@ static int set_data(datatype_t val, void *data, int type, int length)
 			*p_d = val.d;
 		break;
 	case PTL_DOUBLE_COMPLEX:
-		p_d = data;
-		for (i = 0; i < length/16; i++, p_d += 2) {
-			p_d[0] = val.dc[0];
-			p_d[1] = val.dc[1];
-		}
+		p_dc = data;
+		for (i = 0; i < length/16; i++, p_dc ++)
+			*p_dc = val.dc;
+		break;
+	case PTL_LONG_DOUBLE:
+		p_ld = data;
+		for (i = 0; i < length/sizeof(*p_ld); i++, p_ld++)
+			*p_ld = val.ld;
+		break;
+	case PTL_LONG_DOUBLE_COMPLEX:
+		p_ldc = data;
+		for (i = 0; i < length/sizeof(*p_ldc); i++, p_ldc ++)
+			*p_ldc = val.ldc;
 		break;
 	}
 
@@ -819,7 +841,11 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 	uint64_t *p_u64;
 	int64_t *p_64;
 	float *p_f;
+	float complex *p_fc;
 	double *p_d;
+	double complex *p_dc;
+	long double *p_ld;
+	long double complex *p_ldc;
 	int i;
 	datatype_t num;
 	float eps = 1e-6;
@@ -923,18 +949,18 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 			}
 		break;
 	case PTL_FLOAT_COMPLEX:
-		p_f = data;
-		for (i = 0; i < length/8; i++, p_f += 2) {
-			if (p_f[0] > (num.fc[0] + eps) || p_f[0] < (num.fc[0] - eps)) {
+		p_fc = data;
+		for (i = 0; i < length/8; i++, p_fc ++) {
+			if (crealf(*p_fc) > (crealf(num.fc) + eps) || crealf(*p_fc) < (crealf(num.fc) - eps)) {
 				if (debug)
 					printf("check_data complex.re failed expected %12.10f got %12.10f at i = %d\n",
-						num.fc[0], p_f[0], i);
+						   crealf(num.fc), crealf(*p_fc), i);
 				return 1;
 			}
-			if (p_f[1] > (num.fc[1] + eps) || p_f[1] < (num.fc[1] - eps)) {
+			if (cimagf(*p_fc) > (cimagf(num.fc) + eps) || cimagf(*p_fc) < (cimagf(num.fc) - eps)) {
 				if (debug)
 					printf("check_data complex.im failed expected %12.10f got %12.10f at i = %d\n",
-						num.fc[1], p_f[1], i);
+						   cimagf(num.fc), cimagf(*p_fc), i);
 				return 1;
 			}
 		}
@@ -950,18 +976,45 @@ static int check_data(struct node_info *info, char *val, void *data, int type, i
 			}
 		break;
 	case PTL_DOUBLE_COMPLEX:
-		p_d = data;
-		for (i = 0; i < length/16; i++, p_d += 2) {
-			if (p_d[0] > (num.dc[0] + deps) || p_d[0] < (num.dc[0] - deps)) {
+		p_dc = data;
+		for (i = 0; i < length/16; i++, p_dc ++) {
+			if (creal(*p_dc) > (creal(num.dc) + deps) || creal(*p_dc) < (creal(num.dc) - deps)) {
 				if (debug)
-					printf("check_data complex.re failed expected %22.20f got %22.20f at i = %d\n",
-						num.dc[0], p_d[0], i);
+					printf("check_data complex.re failed expected %22.20lf got %22.20lf at i = %d\n",
+						   creal(num.dc), creal(*p_dc), i);
 				return 1;
 			}
-			if (p_d[1] > (num.dc[1] + deps) || p_d[1] < (num.dc[1] - deps)) {
+			if (cimag(*p_dc) > (cimag(num.dc) + deps) || cimag(*p_dc) < (cimag(num.dc) - deps)) {
 				if (debug)
-					printf("check_data complex.im failed expected %22.20f got %22.20f at i = %d\n",
-						num.dc[1], p_d[1], i);
+					printf("check_data complex.im failed expected %22.20lf got %22.20lf at i = %d\n",
+						   cimag(num.dc), cimag(*p_dc), i);
+				return 1;
+			}
+		}
+		break;
+	case PTL_LONG_DOUBLE:
+		p_ld = data;
+		for (i = 0; i < length/sizeof(*p_ld); i++, p_ld ++)
+			if (*p_ld > (num.ld + deps) || *p_ld < (num.ld - deps)) {
+				if (debug)
+					printf("check_data long double failed expected %22.20Lf got %22.20Lf at i = %d\n",
+						num.ld, *p_ld, i);
+				return 1;
+			}
+		break;
+	case PTL_LONG_DOUBLE_COMPLEX:
+		p_ldc = data;
+		for (i = 0; i < length/sizeof(*p_ldc); i++, p_ldc ++) {
+			if (creall(*p_ldc) > (creall(num.ldc) + deps) || creall(*p_ldc) < (creall(num.ldc) - deps)) {
+				if (debug)
+					printf("check_data complex.re failed expected %22.20Lf got %22.20Lf at i = %d\n",
+						   creall(num.ldc), creall(*p_ldc), i);
+				return 1;
+			}
+			if (cimagl(*p_ldc) > (cimagl(num.ldc) + deps) || cimagl(*p_ldc) < (cimagl(num.ldc) - deps)) {
+				if (debug)
+					printf("check_data complex.im failed expected %22.20Lf got %22.20Lf at i = %d\n",
+						   cimagl(num.ldc), cimagl(*p_ldc), i);
 				return 1;
 			}
 		}

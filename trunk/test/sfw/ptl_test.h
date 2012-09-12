@@ -14,6 +14,7 @@
 #include <libxml/tree.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <complex.h>
 #include <errno.h>
 #include <limits.h>
 #include <sys/time.h>
@@ -42,9 +43,11 @@ typedef union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
-	float		fc[2];
+	float complex fc;
 	double		d;
-	double		dc[2];
+	double complex dc;
+	long double ld;
+	long double complex ldc;
 } datatype_t;
 
 #define PTL_TEST_VERSION	("0.1.0")
