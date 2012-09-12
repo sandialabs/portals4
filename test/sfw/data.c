@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <inttypes.h>
+#include <complex.h>
 #include "../include/portals4.h"
 #include "data.h"
 
@@ -43,6 +44,8 @@ atom_type_t atom_type[] = {
 	[PTL_FLOAT_COMPLEX] = {.name = "COMPLEX", .size = 8,},
 	[PTL_DOUBLE] = {.name = "DOUBLE", .size = 8,},
 	[PTL_DOUBLE_COMPLEX] = {.name = "DCOMPLEX", .size = 16,},
+	[PTL_LONG_DOUBLE] = {.name = "LDOUBLE", .size = sizeof(long double),},
+	[PTL_LONG_DOUBLE_COMPLEX] = {.name = "LDCOMPLEX", .size = sizeof(long double complex),},
 };
 
 datatype_t get_data(int type)
