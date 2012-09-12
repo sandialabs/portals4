@@ -10,19 +10,19 @@
                   <ptl_get_id>
 
                     <if rank="0">
-                      <ptl_md md_data="0xffffffff" md_length="16384" type="UINT">
+                      <ptl_md md_data="0xffffffff" md_length="16384" type="UINT32">
                         <barrier/>
                         <ptl_get length="16384" target_id="1"/>
                         <ptl_eq_poll time="200">
                           <check event_type="REPLY"/>
                         </ptl_eq_poll>
-                        <check length="16384" md_data="0x0f0f0f0f" type="UINT"/>
+                        <check length="16384" md_data="0x0f0f0f0f" type="UINT32"/>
                         <barrier/>
                       </ptl_md>
                     </if>
 
                     <if rank="1">
-                      <ptl_le le_data="0x0f0f0f0f" le_length="16384" le_opt="OP_GET EVENT_LINK_DISABLE" type="UINT">
+                      <ptl_le le_data="0x0f0f0f0f" le_length="16384" le_opt="OP_GET EVENT_LINK_DISABLE" type="UINT32">
                         <barrier/>
                         <ptl_eq_poll time="200">
                           <check event_type="GET"/>

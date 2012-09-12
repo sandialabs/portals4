@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic LOR/UCHAR length=30</desc>
+  <desc>Test atomic LOR/UINT8 length=30</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x57" le_opt="OP_PUT" type="UCHAR">
-          <ptl_md md_data="0xfc" type="UCHAR">
-            <ptl_atomic atom_op="LOR" atom_type="UCHAR" length="30" target_id="SELF"/>
+        <ptl_le le_data="0x57" le_opt="OP_PUT" type="UINT8">
+          <ptl_md md_data="0xfc" type="UINT8">
+            <ptl_atomic atom_op="LOR" atom_type="UINT8" length="30" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="30" md_data="0xfc" type="UCHAR"/>
-            <check length="1" md_data="0xfc" offset="30" type="UCHAR"/>
+            <check length="30" md_data="0xfc" type="UINT8"/>
+            <check length="1" md_data="0xfc" offset="30" type="UINT8"/>
           </ptl_md>
-          <check le_data="0x01" length="30" type="UCHAR"/>
-          <check le_data="0x57" length="1" offset="30" type="UCHAR"/>
+          <check le_data="0x01" length="30" type="UINT8"/>
+          <check le_data="0x57" length="1" offset="30" type="UINT8"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

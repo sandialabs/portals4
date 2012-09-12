@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic BAND/USHORT length=16</desc>
+  <desc>Test atomic BAND/UINT16 length=16</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x0093" me_match="0x9105654319627441782" me_opt="OP_PUT" type="USHORT">
-          <ptl_md md_data="0xdbd1" type="USHORT">
-            <ptl_atomic atom_op="BAND" atom_type="USHORT" length="16" match="0x9105654319627441782" target_id="SELF"/>
+        <ptl_me me_data="0x0093" me_match="0x9105654319627441782" me_opt="OP_PUT" type="UINT16">
+          <ptl_md md_data="0xdbd1" type="UINT16">
+            <ptl_atomic atom_op="BAND" atom_type="UINT16" length="16" match="0x9105654319627441782" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="16" md_data="0xdbd1" type="USHORT"/>
-            <check length="2" md_data="0xdbd1" offset="16" type="USHORT"/>
+            <check length="16" md_data="0xdbd1" type="UINT16"/>
+            <check length="2" md_data="0xdbd1" offset="16" type="UINT16"/>
           </ptl_md>
-          <check length="16" me_data="0x0091" type="USHORT"/>
-          <check length="2" me_data="0x0093" offset="16" type="USHORT"/>
+          <check length="16" me_data="0x0091" type="UINT16"/>
+          <check length="2" me_data="0x0093" offset="16" type="UINT16"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

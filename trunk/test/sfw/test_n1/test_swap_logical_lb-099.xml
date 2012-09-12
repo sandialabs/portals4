@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap MSWAP/LONG</desc>
+  <desc>Test swap MSWAP/INT64</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="MATCH LOGICAL">
           <ptl_pt>
-            <ptl_me me_data="0x6815f62e16740a1c" me_match="0x24ba12fb" me_opt="OP_PUT OP_GET" type="LONG">
-              <ptl_md md_data="0x2252dc6f70f05fb5" type="LONG">
-                <ptl_md md_data="0x3c886cc66f3eca47" type="LONG">
-                  <ptl_swap atom_op="MSWAP" atom_type="LONG" length="8" match="0x24ba12fb" operand="0x5093a523436f3bfc" target_id="SELF"/>
+            <ptl_me me_data="0x6815f62e16740a1c" me_match="0x24ba12fb" me_opt="OP_PUT OP_GET" type="INT64">
+              <ptl_md md_data="0x2252dc6f70f05fb5" type="INT64">
+                <ptl_md md_data="0x3c886cc66f3eca47" type="INT64">
+                  <ptl_swap atom_op="MSWAP" atom_type="INT64" length="8" match="0x24ba12fb" operand="0x5093a523436f3bfc" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="8" md_data="0x2252dc6f70f05fb5" type="LONG"/>
-                <check length="8" md_data="0x2252dc6f70f05fb5" offset="8" type="LONG"/>
+                <check length="8" md_data="0x2252dc6f70f05fb5" type="INT64"/>
+                <check length="8" md_data="0x2252dc6f70f05fb5" offset="8" type="INT64"/>
               </ptl_md>
-              <check length="8" me_data="0x2816d62f54701bb4" type="LONG"/>
-              <check length="8" me_data="0x6815f62e16740a1c" offset="8" type="LONG"/>
+              <check length="8" me_data="0x2816d62f54701bb4" type="INT64"/>
+              <check length="8" me_data="0x6815f62e16740a1c" offset="8" type="INT64"/>
             </ptl_me>
           </ptl_pt>
           <barrier/>

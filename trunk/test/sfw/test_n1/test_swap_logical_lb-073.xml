@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LT/ULONG</desc>
+  <desc>Test swap CSWAP_LT/UINT64</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="MATCH LOGICAL">
           <ptl_pt>
-            <ptl_me me_data="0x59fd1fc26b6ff702" me_match="0x2797a028" me_opt="OP_PUT OP_GET" type="ULONG">
-              <ptl_md md_data="0x1bd5de912caf03f1" type="ULONG">
-                <ptl_md md_data="0x5f21f9ff327dacca" type="ULONG">
-                  <ptl_swap atom_op="CSWAP_LT" atom_type="ULONG" length="8" match="0x2797a028" operand="0x51f1782c52d7c5aa" target_id="SELF"/>
+            <ptl_me me_data="0x59fd1fc26b6ff702" me_match="0x2797a028" me_opt="OP_PUT OP_GET" type="UINT64">
+              <ptl_md md_data="0x1bd5de912caf03f1" type="UINT64">
+                <ptl_md md_data="0x5f21f9ff327dacca" type="UINT64">
+                  <ptl_swap atom_op="CSWAP_LT" atom_type="UINT64" length="8" match="0x2797a028" operand="0x51f1782c52d7c5aa" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="8" md_data="0x1bd5de912caf03f1" type="ULONG"/>
-                <check length="8" md_data="0x1bd5de912caf03f1" offset="8" type="ULONG"/>
+                <check length="8" md_data="0x1bd5de912caf03f1" type="UINT64"/>
+                <check length="8" md_data="0x1bd5de912caf03f1" offset="8" type="UINT64"/>
               </ptl_md>
-              <check length="8" me_data="0x1bd5de912caf03f1" type="ULONG"/>
-              <check length="8" me_data="0x59fd1fc26b6ff702" offset="8" type="ULONG"/>
+              <check length="8" me_data="0x1bd5de912caf03f1" type="UINT64"/>
+              <check length="8" me_data="0x59fd1fc26b6ff702" offset="8" type="UINT64"/>
             </ptl_me>
           </ptl_pt>
           <barrier/>

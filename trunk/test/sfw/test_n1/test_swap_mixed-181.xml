@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap SWAP/USHORT</desc>
+  <desc>Test swap SWAP/UINT16</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x684a" me_match="0x4249838263632162613" me_opt="OP_PUT OP_GET" type="USHORT">
-          <ptl_md md_data="0x26e9" type="USHORT">
-            <ptl_md md_data="0x2a3b" type="USHORT">
-              <ptl_swap atom_op="SWAP" atom_type="USHORT" length="8" match="0x4249838263632162613" operand="0x59d0" target_id="SELF"/>
+        <ptl_me me_data="0x684a" me_match="0x4249838263632162613" me_opt="OP_PUT OP_GET" type="UINT16">
+          <ptl_md md_data="0x26e9" type="UINT16">
+            <ptl_md md_data="0x2a3b" type="UINT16">
+              <ptl_swap atom_op="SWAP" atom_type="UINT16" length="8" match="0x4249838263632162613" operand="0x59d0" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="8" md_data="0x684a" type="USHORT"/>
-              <check length="2" md_data="0x2a3b" offset="8" type="USHORT"/>
+              <check length="8" md_data="0x684a" type="UINT16"/>
+              <check length="2" md_data="0x2a3b" offset="8" type="UINT16"/>
             </ptl_md>
-            <check length="8" md_data="0x26e9" type="USHORT"/>
-            <check length="2" md_data="0x26e9" offset="8" type="USHORT"/>
+            <check length="8" md_data="0x26e9" type="UINT16"/>
+            <check length="2" md_data="0x26e9" offset="8" type="UINT16"/>
           </ptl_md>
-          <check length="8" me_data="0x26e9" type="USHORT"/>
-          <check length="2" me_data="0x684a" offset="8" type="USHORT"/>
+          <check length="8" me_data="0x26e9" type="UINT16"/>
+          <check length="2" me_data="0x684a" offset="8" type="UINT16"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

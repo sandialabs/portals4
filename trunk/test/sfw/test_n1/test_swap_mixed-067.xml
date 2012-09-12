@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LT/LONG</desc>
+  <desc>Test swap CSWAP_LT/INT64</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="6518822374088889594" le_opt="OP_PUT OP_GET" type="LONG">
-          <ptl_md md_data="840460775318085730" type="LONG">
-            <ptl_md md_data="4256320862515833964" type="LONG">
-              <ptl_swap atom_op="CSWAP_LT" atom_type="LONG" length="8" operand="1402648160696341432" target_id="SELF"/>
+        <ptl_le le_data="6518822374088889594" le_opt="OP_PUT OP_GET" type="INT64">
+          <ptl_md md_data="840460775318085730" type="INT64">
+            <ptl_md md_data="4256320862515833964" type="INT64">
+              <ptl_swap atom_op="CSWAP_LT" atom_type="INT64" length="8" operand="1402648160696341432" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="8" md_data="6518822374088889594" type="LONG"/>
-              <check length="8" md_data="4256320862515833964" offset="8" type="LONG"/>
+              <check length="8" md_data="6518822374088889594" type="INT64"/>
+              <check length="8" md_data="4256320862515833964" offset="8" type="INT64"/>
             </ptl_md>
-            <check length="8" md_data="840460775318085730" type="LONG"/>
-            <check length="8" md_data="840460775318085730" offset="8" type="LONG"/>
+            <check length="8" md_data="840460775318085730" type="INT64"/>
+            <check length="8" md_data="840460775318085730" offset="8" type="INT64"/>
           </ptl_md>
-          <check le_data="840460775318085730" length="8" type="LONG"/>
-          <check le_data="6518822374088889594" length="8" offset="8" type="LONG"/>
+          <check le_data="840460775318085730" length="8" type="INT64"/>
+          <check le_data="6518822374088889594" length="8" offset="8" type="INT64"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

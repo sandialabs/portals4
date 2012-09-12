@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_GT/UINT</desc>
+  <desc>Test swap CSWAP_GT/UINT32</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="NO_MATCH LOGICAL">
           <ptl_pt>
-            <ptl_le le_data="0x517e4aa3" le_opt="OP_PUT OP_GET" type="UINT">
-              <ptl_md md_data="0x4cc79e9b" type="UINT">
-                <ptl_md md_data="0x48ee0b13" type="UINT">
-                  <ptl_swap atom_op="CSWAP_GT" atom_type="UINT" length="4" operand="0x4d737d4f" target_id="SELF"/>
+            <ptl_le le_data="0x517e4aa3" le_opt="OP_PUT OP_GET" type="UINT32">
+              <ptl_md md_data="0x4cc79e9b" type="UINT32">
+                <ptl_md md_data="0x48ee0b13" type="UINT32">
+                  <ptl_swap atom_op="CSWAP_GT" atom_type="UINT32" length="4" operand="0x4d737d4f" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="4" md_data="0x4cc79e9b" type="UINT"/>
-                <check length="4" md_data="0x4cc79e9b" offset="4" type="UINT"/>
+                <check length="4" md_data="0x4cc79e9b" type="UINT32"/>
+                <check length="4" md_data="0x4cc79e9b" offset="4" type="UINT32"/>
               </ptl_md>
-              <check le_data="0x517e4aa3" length="4" type="UINT"/>
-              <check le_data="0x517e4aa3" length="4" offset="4" type="UINT"/>
+              <check le_data="0x517e4aa3" length="4" type="UINT32"/>
+              <check le_data="0x517e4aa3" length="4" offset="4" type="UINT32"/>
             </ptl_le>
           </ptl_pt>
           <barrier/>

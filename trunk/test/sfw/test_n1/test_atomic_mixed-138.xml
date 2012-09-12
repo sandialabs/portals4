@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic PROD/UINT length=32</desc>
+  <desc>Test atomic PROD/UINT32 length=32</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x3c33330b" me_match="0x163563221387334085" me_opt="OP_PUT" type="UINT">
-          <ptl_md md_data="0x4bda49d4" type="UINT">
-            <ptl_atomic atom_op="PROD" atom_type="UINT" length="32" match="0x163563221387334085" target_id="SELF"/>
+        <ptl_me me_data="0x3c33330b" me_match="0x163563221387334085" me_opt="OP_PUT" type="UINT32">
+          <ptl_md md_data="0x4bda49d4" type="UINT32">
+            <ptl_atomic atom_op="PROD" atom_type="UINT32" length="32" match="0x163563221387334085" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="32" md_data="0x4bda49d4" type="UINT"/>
-            <check length="4" md_data="0x4bda49d4" offset="32" type="UINT"/>
+            <check length="32" md_data="0x4bda49d4" type="UINT32"/>
+            <check length="4" md_data="0x4bda49d4" offset="32" type="UINT32"/>
           </ptl_md>
-          <check length="32" me_data="0x2452681c" type="UINT"/>
-          <check length="4" me_data="0x3c33330b" offset="32" type="UINT"/>
+          <check length="32" me_data="0x2452681c" type="UINT32"/>
+          <check length="4" me_data="0x3c33330b" offset="32" type="UINT32"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

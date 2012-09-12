@@ -11,7 +11,7 @@
               <ptl_me me_data="7" me_match="0x5555" me_opt="OP_PUT EVENT_LINK_DISABLE">
                 <ptl_eq>
                   <ptl_md md_data="-9">
-                    <ptl_atomic atom_op="MIN" atom_type="CHAR" length="4" match="0x5555" target_id="SELF"/>
+                    <ptl_atomic atom_op="MIN" atom_type="INT8" length="4" match="0x5555" target_id="SELF"/>
                     <ptl_eq_wait eq_handle="eq[0]">
                       <check event_type="ATOMIC"/>
                     </ptl_eq_wait>
@@ -21,8 +21,8 @@
 
                   </ptl_md>
                 </ptl_eq>
-                <check length="4" me_data="-9" type="CHAR"/>
-                <check length="1" me_data="7" offset="4" type="CHAR"/>
+                <check length="4" me_data="-9" type="INT8"/>
+                <check length="1" me_data="7" offset="4" type="INT8"/>
               </ptl_me>
             </ptl_pt>
           </ptl_eq>

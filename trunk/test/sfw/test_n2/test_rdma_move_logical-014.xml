@@ -10,7 +10,7 @@
                   <ptl_get_id>
 
                     <if rank="0">
-                      <ptl_md md_data="0x01234567" md_length="8" md_opt="IOVEC" type="UINT">
+                      <ptl_md md_data="0x01234567" md_length="8" md_opt="IOVEC" type="UINT32">
                         <barrier/>
                         <ptl_put ack_req="ACK" length="8192" target_id="1"/>
                         <ptl_eq_poll time="200">
@@ -24,12 +24,12 @@
                     </if>
 
                     <if rank="1">
-                      <ptl_le le_data="0x00000000" le_length="8" le_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" type="UINT">
+                      <ptl_le le_data="0x00000000" le_length="8" le_opt="IOVEC OP_PUT OP_GET EVENT_LINK_DISABLE" type="UINT32">
                         <barrier/>
                         <ptl_eq_poll time="200">
                           <check event_type="PUT"/>
                         </ptl_eq_poll>
-                        <check le_data="0x01234567" length="8192" type="UINT"/>
+                        <check le_data="0x01234567" length="8192" type="UINT32"/>
                         <barrier/>
                       </ptl_le>
                     </if>

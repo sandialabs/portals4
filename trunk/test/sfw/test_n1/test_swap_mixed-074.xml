@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap SWAP/ULONG</desc>
+  <desc>Test swap SWAP/UINT64</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x5b269bee6a1068b5" me_match="0x8399777309357043100" me_opt="OP_PUT OP_GET" type="ULONG">
-          <ptl_md md_data="0x51c5cbe53f287f97" type="ULONG">
-            <ptl_md md_data="0x4c499cb819152963" type="ULONG">
-              <ptl_swap atom_op="SWAP" atom_type="ULONG" length="32" match="0x8399777309357043100" operand="0x484a5be2353d24d4" target_id="SELF"/>
+        <ptl_me me_data="0x5b269bee6a1068b5" me_match="0x8399777309357043100" me_opt="OP_PUT OP_GET" type="UINT64">
+          <ptl_md md_data="0x51c5cbe53f287f97" type="UINT64">
+            <ptl_md md_data="0x4c499cb819152963" type="UINT64">
+              <ptl_swap atom_op="SWAP" atom_type="UINT64" length="32" match="0x8399777309357043100" operand="0x484a5be2353d24d4" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="32" md_data="0x5b269bee6a1068b5" type="ULONG"/>
-              <check length="8" md_data="0x4c499cb819152963" offset="32" type="ULONG"/>
+              <check length="32" md_data="0x5b269bee6a1068b5" type="UINT64"/>
+              <check length="8" md_data="0x4c499cb819152963" offset="32" type="UINT64"/>
             </ptl_md>
-            <check length="32" md_data="0x51c5cbe53f287f97" type="ULONG"/>
-            <check length="8" md_data="0x51c5cbe53f287f97" offset="32" type="ULONG"/>
+            <check length="32" md_data="0x51c5cbe53f287f97" type="UINT64"/>
+            <check length="8" md_data="0x51c5cbe53f287f97" offset="32" type="UINT64"/>
           </ptl_md>
-          <check length="32" me_data="0x51c5cbe53f287f97" type="ULONG"/>
-          <check length="8" me_data="0x5b269bee6a1068b5" offset="32" type="ULONG"/>
+          <check length="32" me_data="0x51c5cbe53f287f97" type="UINT64"/>
+          <check length="8" me_data="0x5b269bee6a1068b5" offset="32" type="UINT64"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

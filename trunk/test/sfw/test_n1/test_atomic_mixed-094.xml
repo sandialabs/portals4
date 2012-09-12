@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic BOR/UINT length=20</desc>
+  <desc>Test atomic BOR/UINT32 length=20</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x59e4763c" le_opt="OP_PUT" type="UINT">
-          <ptl_md md_data="0x7f6058cf" type="UINT">
-            <ptl_atomic atom_op="BOR" atom_type="UINT" length="20" target_id="SELF"/>
+        <ptl_le le_data="0x59e4763c" le_opt="OP_PUT" type="UINT32">
+          <ptl_md md_data="0x7f6058cf" type="UINT32">
+            <ptl_atomic atom_op="BOR" atom_type="UINT32" length="20" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="20" md_data="0x7f6058cf" type="UINT"/>
-            <check length="4" md_data="0x7f6058cf" offset="20" type="UINT"/>
+            <check length="20" md_data="0x7f6058cf" type="UINT32"/>
+            <check length="4" md_data="0x7f6058cf" offset="20" type="UINT32"/>
           </ptl_md>
-          <check le_data="0x7fe47eff" length="20" type="UINT"/>
-          <check le_data="0x59e4763c" length="4" offset="20" type="UINT"/>
+          <check le_data="0x7fe47eff" length="20" type="UINT32"/>
+          <check le_data="0x59e4763c" length="4" offset="20" type="UINT32"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

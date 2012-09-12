@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LE/SHORT</desc>
+  <desc>Test swap CSWAP_LE/INT16</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="NO_MATCH LOGICAL">
           <ptl_pt>
-            <ptl_le le_data="0xa9e8" le_opt="OP_PUT OP_GET" type="SHORT">
-              <ptl_md md_data="0x1485" type="SHORT">
-                <ptl_md md_data="0x613d" type="SHORT">
-                  <ptl_swap atom_op="CSWAP_LE" atom_type="SHORT" length="2" operand="0x8bfb" target_id="SELF"/>
+            <ptl_le le_data="0xa9e8" le_opt="OP_PUT OP_GET" type="INT16">
+              <ptl_md md_data="0x1485" type="INT16">
+                <ptl_md md_data="0x613d" type="INT16">
+                  <ptl_swap atom_op="CSWAP_LE" atom_type="INT16" length="2" operand="0x8bfb" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="2" md_data="0x1485" type="SHORT"/>
-                <check length="2" md_data="0x1485" offset="2" type="SHORT"/>
+                <check length="2" md_data="0x1485" type="INT16"/>
+                <check length="2" md_data="0x1485" offset="2" type="INT16"/>
               </ptl_md>
-              <check le_data="0x1485" length="2" type="SHORT"/>
-              <check le_data="0xa9e8" length="2" offset="2" type="SHORT"/>
+              <check le_data="0x1485" length="2" type="INT16"/>
+              <check le_data="0xa9e8" length="2" offset="2" type="INT16"/>
             </ptl_le>
           </ptl_pt>
           <barrier/>

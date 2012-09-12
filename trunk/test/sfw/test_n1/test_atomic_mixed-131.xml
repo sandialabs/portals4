@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic BOR/ULONG length=16</desc>
+  <desc>Test atomic BOR/UINT64 length=16</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x0a8d67c242b1eb89" le_opt="OP_PUT" type="ULONG">
-          <ptl_md md_data="0x74b3ca6b6f1eea78" type="ULONG">
-            <ptl_atomic atom_op="BOR" atom_type="ULONG" length="16" target_id="SELF"/>
+        <ptl_le le_data="0x0a8d67c242b1eb89" le_opt="OP_PUT" type="UINT64">
+          <ptl_md md_data="0x74b3ca6b6f1eea78" type="UINT64">
+            <ptl_atomic atom_op="BOR" atom_type="UINT64" length="16" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="16" md_data="0x74b3ca6b6f1eea78" type="ULONG"/>
-            <check length="8" md_data="0x74b3ca6b6f1eea78" offset="16" type="ULONG"/>
+            <check length="16" md_data="0x74b3ca6b6f1eea78" type="UINT64"/>
+            <check length="8" md_data="0x74b3ca6b6f1eea78" offset="16" type="UINT64"/>
           </ptl_md>
-          <check le_data="0x7ebfefeb6fbfebf9" length="16" type="ULONG"/>
-          <check le_data="0x0a8d67c242b1eb89" length="8" offset="16" type="ULONG"/>
+          <check le_data="0x7ebfefeb6fbfebf9" length="16" type="UINT64"/>
+          <check le_data="0x0a8d67c242b1eb89" length="8" offset="16" type="UINT64"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

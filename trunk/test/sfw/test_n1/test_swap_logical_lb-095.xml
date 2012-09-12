@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_GE/LONG</desc>
+  <desc>Test swap CSWAP_GE/INT64</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="NO_MATCH LOGICAL">
           <ptl_pt>
-            <ptl_le le_data="0x04fb43cd0c5ecaff" le_opt="OP_PUT OP_GET" type="LONG">
-              <ptl_md md_data="0x477f5caf4d8ecb5a" type="LONG">
-                <ptl_md md_data="0x4a2bf90b5f3d65c6" type="LONG">
-                  <ptl_swap atom_op="CSWAP_GE" atom_type="LONG" length="8" operand="0x629fbd9c712e2671" target_id="SELF"/>
+            <ptl_le le_data="0x04fb43cd0c5ecaff" le_opt="OP_PUT OP_GET" type="INT64">
+              <ptl_md md_data="0x477f5caf4d8ecb5a" type="INT64">
+                <ptl_md md_data="0x4a2bf90b5f3d65c6" type="INT64">
+                  <ptl_swap atom_op="CSWAP_GE" atom_type="INT64" length="8" operand="0x629fbd9c712e2671" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="8" md_data="0x477f5caf4d8ecb5a" type="LONG"/>
-                <check length="8" md_data="0x477f5caf4d8ecb5a" offset="8" type="LONG"/>
+                <check length="8" md_data="0x477f5caf4d8ecb5a" type="INT64"/>
+                <check length="8" md_data="0x477f5caf4d8ecb5a" offset="8" type="INT64"/>
               </ptl_md>
-              <check le_data="0x477f5caf4d8ecb5a" length="8" type="LONG"/>
-              <check le_data="0x04fb43cd0c5ecaff" length="8" offset="8" type="LONG"/>
+              <check le_data="0x477f5caf4d8ecb5a" length="8" type="INT64"/>
+              <check le_data="0x04fb43cd0c5ecaff" length="8" offset="8" type="INT64"/>
             </ptl_le>
           </ptl_pt>
           <barrier/>
