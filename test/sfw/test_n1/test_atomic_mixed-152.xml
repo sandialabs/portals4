@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic BOR/CHAR length=5</desc>
+  <desc>Test atomic BOR/INT8 length=5</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x2e" me_match="0x3641050039731626960" me_opt="OP_PUT" type="CHAR">
-          <ptl_md md_data="0x34" type="CHAR">
-            <ptl_atomic atom_op="BOR" atom_type="CHAR" length="5" match="0x3641050039731626960" target_id="SELF"/>
+        <ptl_me me_data="0x2e" me_match="0x3641050039731626960" me_opt="OP_PUT" type="INT8">
+          <ptl_md md_data="0x34" type="INT8">
+            <ptl_atomic atom_op="BOR" atom_type="INT8" length="5" match="0x3641050039731626960" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="5" md_data="0x34" type="CHAR"/>
-            <check length="1" md_data="0x34" offset="5" type="CHAR"/>
+            <check length="5" md_data="0x34" type="INT8"/>
+            <check length="1" md_data="0x34" offset="5" type="INT8"/>
           </ptl_md>
-          <check length="5" me_data="0x3e" type="CHAR"/>
-          <check length="1" me_data="0x2e" offset="5" type="CHAR"/>
+          <check length="5" me_data="0x3e" type="INT8"/>
+          <check length="1" me_data="0x2e" offset="5" type="INT8"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

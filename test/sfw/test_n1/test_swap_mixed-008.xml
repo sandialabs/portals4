@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap SWAP/INT</desc>
+  <desc>Test swap SWAP/INT32</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x09457491" me_match="0x6508551754386933439" me_opt="OP_PUT OP_GET" type="INT">
-          <ptl_md md_data="0x347ec2cd" type="INT">
-            <ptl_md md_data="0x07885c81" type="INT">
-              <ptl_swap atom_op="SWAP" atom_type="INT" length="24" match="0x6508551754386933439" operand="0x5d53e4f7" target_id="SELF"/>
+        <ptl_me me_data="0x09457491" me_match="0x6508551754386933439" me_opt="OP_PUT OP_GET" type="INT32">
+          <ptl_md md_data="0x347ec2cd" type="INT32">
+            <ptl_md md_data="0x07885c81" type="INT32">
+              <ptl_swap atom_op="SWAP" atom_type="INT32" length="24" match="0x6508551754386933439" operand="0x5d53e4f7" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="24" md_data="0x09457491" type="INT"/>
-              <check length="4" md_data="0x07885c81" offset="24" type="INT"/>
+              <check length="24" md_data="0x09457491" type="INT32"/>
+              <check length="4" md_data="0x07885c81" offset="24" type="INT32"/>
             </ptl_md>
-            <check length="24" md_data="0x347ec2cd" type="INT"/>
-            <check length="4" md_data="0x347ec2cd" offset="24" type="INT"/>
+            <check length="24" md_data="0x347ec2cd" type="INT32"/>
+            <check length="4" md_data="0x347ec2cd" offset="24" type="INT32"/>
           </ptl_md>
-          <check length="24" me_data="0x347ec2cd" type="INT"/>
-          <check length="4" me_data="0x09457491" offset="24" type="INT"/>
+          <check length="24" me_data="0x347ec2cd" type="INT32"/>
+          <check length="4" me_data="0x09457491" offset="24" type="INT32"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic PROD/UINT length=16</desc>
+  <desc>Test atomic PROD/UINT32 length=16</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x2320cd0a" le_opt="OP_PUT" type="UINT">
-          <ptl_md md_data="0x70da28fd" type="UINT">
-            <ptl_atomic atom_op="PROD" atom_type="UINT" length="16" target_id="SELF"/>
+        <ptl_le le_data="0x2320cd0a" le_opt="OP_PUT" type="UINT32">
+          <ptl_md md_data="0x70da28fd" type="UINT32">
+            <ptl_atomic atom_op="PROD" atom_type="UINT32" length="16" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="16" md_data="0x70da28fd" type="UINT"/>
-            <check length="4" md_data="0x70da28fd" offset="16" type="UINT"/>
+            <check length="16" md_data="0x70da28fd" type="UINT32"/>
+            <check length="4" md_data="0x70da28fd" offset="16" type="UINT32"/>
           </ptl_md>
-          <check le_data="0xd1f832e2" length="16" type="UINT"/>
-          <check le_data="0x2320cd0a" length="4" offset="16" type="UINT"/>
+          <check le_data="0xd1f832e2" length="16" type="UINT32"/>
+          <check le_data="0x2320cd0a" length="4" offset="16" type="UINT32"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

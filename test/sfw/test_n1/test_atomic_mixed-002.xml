@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic BOR/ULONG length=16</desc>
+  <desc>Test atomic BOR/UINT64 length=16</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x00c7a6e000630ce9" me_match="0x8923582611736358234" me_opt="OP_PUT" type="ULONG">
-          <ptl_md md_data="0x2a8275894519d2cf" type="ULONG">
-            <ptl_atomic atom_op="BOR" atom_type="ULONG" length="16" match="0x8923582611736358234" target_id="SELF"/>
+        <ptl_me me_data="0x00c7a6e000630ce9" me_match="0x8923582611736358234" me_opt="OP_PUT" type="UINT64">
+          <ptl_md md_data="0x2a8275894519d2cf" type="UINT64">
+            <ptl_atomic atom_op="BOR" atom_type="UINT64" length="16" match="0x8923582611736358234" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="16" md_data="0x2a8275894519d2cf" type="ULONG"/>
-            <check length="8" md_data="0x2a8275894519d2cf" offset="16" type="ULONG"/>
+            <check length="16" md_data="0x2a8275894519d2cf" type="UINT64"/>
+            <check length="8" md_data="0x2a8275894519d2cf" offset="16" type="UINT64"/>
           </ptl_md>
-          <check length="16" me_data="0x2ac7f7e9457bdeef" type="ULONG"/>
-          <check length="8" me_data="0x00c7a6e000630ce9" offset="16" type="ULONG"/>
+          <check length="16" me_data="0x2ac7f7e9457bdeef" type="UINT64"/>
+          <check length="8" me_data="0x00c7a6e000630ce9" offset="16" type="UINT64"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic PROD/LONG length=8</desc>
+  <desc>Test atomic PROD/INT64 length=8</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="2346329467739541037" le_opt="OP_PUT" type="LONG">
-          <ptl_md md_data="5908575043243979733" type="LONG">
-            <ptl_atomic atom_op="PROD" atom_type="LONG" length="8" target_id="SELF"/>
+        <ptl_le le_data="2346329467739541037" le_opt="OP_PUT" type="INT64">
+          <ptl_md md_data="5908575043243979733" type="INT64">
+            <ptl_atomic atom_op="PROD" atom_type="INT64" length="8" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="8" md_data="5908575043243979733" type="LONG"/>
-            <check length="8" md_data="5908575043243979733" offset="8" type="LONG"/>
+            <check length="8" md_data="5908575043243979733" type="INT64"/>
+            <check length="8" md_data="5908575043243979733" offset="8" type="INT64"/>
           </ptl_md>
-          <check le_data="-1437826896152247695" length="8" type="LONG"/>
-          <check le_data="2346329467739541037" length="8" offset="8" type="LONG"/>
+          <check le_data="-1437826896152247695" length="8" type="INT64"/>
+          <check le_data="2346329467739541037" length="8" offset="8" type="INT64"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

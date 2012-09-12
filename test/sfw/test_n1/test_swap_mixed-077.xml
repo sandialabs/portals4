@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LE/UCHAR</desc>
+  <desc>Test swap CSWAP_LE/UINT8</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0xd4" me_match="0x4326822914002766510" me_opt="OP_PUT OP_GET" type="UCHAR">
-          <ptl_md md_data="0xa9" type="UCHAR">
-            <ptl_md md_data="0x11" type="UCHAR">
-              <ptl_swap atom_op="CSWAP_LE" atom_type="UCHAR" length="1" match="0x4326822914002766510" operand="0xff" target_id="SELF"/>
+        <ptl_me me_data="0xd4" me_match="0x4326822914002766510" me_opt="OP_PUT OP_GET" type="UINT8">
+          <ptl_md md_data="0xa9" type="UINT8">
+            <ptl_md md_data="0x11" type="UINT8">
+              <ptl_swap atom_op="CSWAP_LE" atom_type="UINT8" length="1" match="0x4326822914002766510" operand="0xff" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="1" md_data="0xd4" type="UCHAR"/>
-              <check length="1" md_data="0x11" offset="1" type="UCHAR"/>
+              <check length="1" md_data="0xd4" type="UINT8"/>
+              <check length="1" md_data="0x11" offset="1" type="UINT8"/>
             </ptl_md>
-            <check length="1" md_data="0xa9" type="UCHAR"/>
-            <check length="1" md_data="0xa9" offset="1" type="UCHAR"/>
+            <check length="1" md_data="0xa9" type="UINT8"/>
+            <check length="1" md_data="0xa9" offset="1" type="UINT8"/>
           </ptl_md>
-          <check length="1" me_data="0xd4" type="UCHAR"/>
-          <check length="1" me_data="0xd4" offset="1" type="UCHAR"/>
+          <check length="1" me_data="0xd4" type="UINT8"/>
+          <check length="1" me_data="0xd4" offset="1" type="UINT8"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

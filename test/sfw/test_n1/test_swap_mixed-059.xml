@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LE/USHORT</desc>
+  <desc>Test swap CSWAP_LE/UINT16</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x844e" le_opt="OP_PUT OP_GET" type="USHORT">
-          <ptl_md md_data="0xae0a" type="USHORT">
-            <ptl_md md_data="0xe92a" type="USHORT">
-              <ptl_swap atom_op="CSWAP_LE" atom_type="USHORT" length="2" operand="0x785d" target_id="SELF"/>
+        <ptl_le le_data="0x844e" le_opt="OP_PUT OP_GET" type="UINT16">
+          <ptl_md md_data="0xae0a" type="UINT16">
+            <ptl_md md_data="0xe92a" type="UINT16">
+              <ptl_swap atom_op="CSWAP_LE" atom_type="UINT16" length="2" operand="0x785d" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="2" md_data="0x844e" type="USHORT"/>
-              <check length="2" md_data="0xe92a" offset="2" type="USHORT"/>
+              <check length="2" md_data="0x844e" type="UINT16"/>
+              <check length="2" md_data="0xe92a" offset="2" type="UINT16"/>
             </ptl_md>
-            <check length="2" md_data="0xae0a" type="USHORT"/>
-            <check length="2" md_data="0xae0a" offset="2" type="USHORT"/>
+            <check length="2" md_data="0xae0a" type="UINT16"/>
+            <check length="2" md_data="0xae0a" offset="2" type="UINT16"/>
           </ptl_md>
-          <check le_data="0xae0a" length="2" type="USHORT"/>
-          <check le_data="0x844e" length="2" offset="2" type="USHORT"/>
+          <check le_data="0xae0a" length="2" type="UINT16"/>
+          <check le_data="0x844e" length="2" offset="2" type="UINT16"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

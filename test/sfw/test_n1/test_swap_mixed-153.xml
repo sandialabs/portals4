@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_NE/CHAR</desc>
+  <desc>Test swap CSWAP_NE/INT8</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x31" me_match="0x1094462607707386964" me_opt="OP_PUT OP_GET" type="CHAR">
-          <ptl_md md_data="0x8f" type="CHAR">
-            <ptl_md md_data="0x2c" type="CHAR">
-              <ptl_swap atom_op="CSWAP_NE" atom_type="CHAR" length="1" match="0x1094462607707386964" operand="0xca" target_id="SELF"/>
+        <ptl_me me_data="0x31" me_match="0x1094462607707386964" me_opt="OP_PUT OP_GET" type="INT8">
+          <ptl_md md_data="0x8f" type="INT8">
+            <ptl_md md_data="0x2c" type="INT8">
+              <ptl_swap atom_op="CSWAP_NE" atom_type="INT8" length="1" match="0x1094462607707386964" operand="0xca" target_id="SELF"/>
               <msleep count="50"/>
-              <check length="1" md_data="0x31" type="CHAR"/>
-              <check length="1" md_data="0x2c" offset="1" type="CHAR"/>
+              <check length="1" md_data="0x31" type="INT8"/>
+              <check length="1" md_data="0x2c" offset="1" type="INT8"/>
             </ptl_md>
-            <check length="1" md_data="0x8f" type="CHAR"/>
-            <check length="1" md_data="0x8f" offset="1" type="CHAR"/>
+            <check length="1" md_data="0x8f" type="INT8"/>
+            <check length="1" md_data="0x8f" offset="1" type="INT8"/>
           </ptl_md>
-          <check length="1" me_data="0x8f" type="CHAR"/>
-          <check length="1" me_data="0x31" offset="1" type="CHAR"/>
+          <check length="1" me_data="0x8f" type="INT8"/>
+          <check length="1" me_data="0x31" offset="1" type="INT8"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

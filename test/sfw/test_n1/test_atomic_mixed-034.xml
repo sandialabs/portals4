@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test atomic LOR/USHORT length=24</desc>
+  <desc>Test atomic LOR/UINT16 length=24</desc>
   <ptl>
     <ptl_ni ni_opt="NO_MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_le le_data="0x616f" le_opt="OP_PUT" type="USHORT">
-          <ptl_md md_data="0x56ef" type="USHORT">
-            <ptl_atomic atom_op="LOR" atom_type="USHORT" length="24" target_id="SELF"/>
+        <ptl_le le_data="0x616f" le_opt="OP_PUT" type="UINT16">
+          <ptl_md md_data="0x56ef" type="UINT16">
+            <ptl_atomic atom_op="LOR" atom_type="UINT16" length="24" target_id="SELF"/>
             <msleep count="50"/>
-            <check length="24" md_data="0x56ef" type="USHORT"/>
-            <check length="2" md_data="0x56ef" offset="24" type="USHORT"/>
+            <check length="24" md_data="0x56ef" type="UINT16"/>
+            <check length="2" md_data="0x56ef" offset="24" type="UINT16"/>
           </ptl_md>
-          <check le_data="0x0001" length="24" type="USHORT"/>
-          <check le_data="0x616f" length="2" offset="24" type="USHORT"/>
+          <check le_data="0x0001" length="24" type="UINT16"/>
+          <check le_data="0x616f" length="2" offset="24" type="UINT16"/>
         </ptl_le>
       </ptl_pt>
     </ptl_ni>

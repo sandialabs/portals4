@@ -31,14 +31,14 @@ char *atom_op_name[] = {
 };
 
 atom_type_t atom_type[] = {
-	[PTL_INT8_T] = {.name = "CHAR", .size = 1,},
-	[PTL_UINT8_T] = {.name = "UCHAR", .size = 1,},
-	[PTL_INT16_T] = {.name = "SHORT", .size = 2,},
-	[PTL_UINT16_T] = {.name = "USHORT", .size = 2,},
-	[PTL_INT32_T] = {.name = "INT", .size = 4,},
-	[PTL_UINT32_T] = {.name = "UINT", .size = 4,},
-	[PTL_INT64_T] = {.name = "LONG", .size = 8,},
-	[PTL_UINT64_T] = {.name = "ULONG", .size = 8,},
+	[PTL_INT8_T] = {.name = "INT8", .size = 1,},
+	[PTL_UINT8_T] = {.name = "UINT8", .size = 1,},
+	[PTL_INT16_T] = {.name = "INT16", .size = 2,},
+	[PTL_UINT16_T] = {.name = "UINT16", .size = 2,},
+	[PTL_INT32_T] = {.name = "INT32", .size = 4,},
+	[PTL_UINT32_T] = {.name = "UINT32", .size = 4,},
+	[PTL_INT64_T] = {.name = "INT64", .size = 8,},
+	[PTL_UINT64_T] = {.name = "UINT64", .size = 8,},
 	[PTL_FLOAT] = {.name = "FLOAT", .size = 4,},
 	[PTL_FLOAT_COMPLEX] = {.name = "COMPLEX", .size = 8,},
 	[PTL_DOUBLE] = {.name = "DOUBLE", .size = 8,},

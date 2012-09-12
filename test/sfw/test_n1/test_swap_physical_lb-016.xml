@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap CSWAP_LT/UINT</desc>
+  <desc>Test swap CSWAP_LT/UINT32</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ptl_pt>
-        <ptl_me me_data="0x6b03af22" me_match="0x5a089ad3" me_opt="OP_PUT OP_GET" type="UINT">
-          <ptl_md md_data="0x565497b7" type="UINT">
-            <ptl_md md_data="0x23279c2f" type="UINT">
-              <ptl_swap atom_op="CSWAP_LT" atom_type="UINT" length="4" match="0x5a089ad3" operand="0x5c286799" target_id="SELF"/>
+        <ptl_me me_data="0x6b03af22" me_match="0x5a089ad3" me_opt="OP_PUT OP_GET" type="UINT32">
+          <ptl_md md_data="0x565497b7" type="UINT32">
+            <ptl_md md_data="0x23279c2f" type="UINT32">
+              <ptl_swap atom_op="CSWAP_LT" atom_type="UINT32" length="4" match="0x5a089ad3" operand="0x5c286799" target_id="SELF"/>
               <msleep count="50"/>
             </ptl_md>
-            <check length="4" md_data="0x565497b7" type="UINT"/>
-            <check length="4" md_data="0x565497b7" offset="4" type="UINT"/>
+            <check length="4" md_data="0x565497b7" type="UINT32"/>
+            <check length="4" md_data="0x565497b7" offset="4" type="UINT32"/>
           </ptl_md>
-          <check length="4" me_data="0x565497b7" type="UINT"/>
-          <check length="4" me_data="0x6b03af22" offset="4" type="UINT"/>
+          <check length="4" me_data="0x565497b7" type="UINT32"/>
+          <check length="4" me_data="0x6b03af22" offset="4" type="UINT32"/>
         </ptl_me>
       </ptl_pt>
     </ptl_ni>

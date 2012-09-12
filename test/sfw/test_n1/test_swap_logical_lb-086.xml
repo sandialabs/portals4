@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test swap MSWAP/INT</desc>
+  <desc>Test swap MSWAP/INT32</desc>
   <ptl>
     <ptl_ni>
       <ompi_rt>
         <ptl_ni ni_opt="NO_MATCH LOGICAL">
           <ptl_pt>
-            <ptl_le le_data="0x1132536e" le_opt="OP_PUT OP_GET" type="INT">
-              <ptl_md md_data="0x047b7056" type="INT">
-                <ptl_md md_data="0x6a570824" type="INT">
-                  <ptl_swap atom_op="MSWAP" atom_type="INT" length="4" operand="0x77d54049" target_id="SELF"/>
+            <ptl_le le_data="0x1132536e" le_opt="OP_PUT OP_GET" type="INT32">
+              <ptl_md md_data="0x047b7056" type="INT32">
+                <ptl_md md_data="0x6a570824" type="INT32">
+                  <ptl_swap atom_op="MSWAP" atom_type="INT32" length="4" operand="0x77d54049" target_id="SELF"/>
                   <msleep count="50"/>
                 </ptl_md>
-                <check length="4" md_data="0x047b7056" type="INT"/>
-                <check length="4" md_data="0x047b7056" offset="4" type="INT"/>
+                <check length="4" md_data="0x047b7056" type="INT32"/>
+                <check length="4" md_data="0x047b7056" offset="4" type="INT32"/>
               </ptl_md>
-              <check le_data="0x04735366" length="4" type="INT"/>
-              <check le_data="0x1132536e" length="4" offset="4" type="INT"/>
+              <check le_data="0x04735366" length="4" type="INT32"/>
+              <check le_data="0x1132536e" length="4" offset="4" type="INT32"/>
             </ptl_le>
           </ptl_pt>
           <barrier/>
