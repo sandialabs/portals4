@@ -4,6 +4,8 @@
 #ifndef DATA_H
 #define DATA_H
 
+#include <complex.h>
+
 typedef enum {
 	/* from init to target */
 	OP_PUT,
@@ -32,9 +34,11 @@ typedef union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
-	float		fc[2];
+	float complex fc;
 	double		d;
-	double		dc[2];
+	double complex dc;
+	long double	ld;
+	long double	complex ldc;
 } datatype_t;
 
 extern char *atom_op_name[PTL_OP_LAST];
@@ -49,5 +53,7 @@ extern atom_type_t atom_type[];
 datatype_t get_data(int type);
 
 char *datatype_str(int type, datatype_t data);
+
+int check_op_type_valid(int op, int type);
 
 #endif /* DATA_H */

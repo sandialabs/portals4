@@ -11,9 +11,9 @@
 #include "data.h"
 
 static unsigned int seed;
-static unsigned int physical = 0;
-static unsigned int count = 1;
 static unsigned int max_length = 32;
+static unsigned int to_files = 0;
+static int casenum = 0;
 
 static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, int type)
 {
@@ -55,15 +55,19 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 			z.f = (o.f == t.f) ? d.f : t.f;
 			break;
 		case PTL_FLOAT_COMPLEX:
-			z.fc[0] = (o.fc[0] == t.fc[0] && o.fc[1] == t.fc[1]) ? d.fc[0] : t.fc[0];
-			z.fc[1] = (o.fc[0] == t.fc[0] && o.fc[1] == t.fc[1]) ? d.fc[1] : t.fc[1];
+			z.fc = (o.fc == t.fc) ? d.fc : t.fc;
 			break;
 		case PTL_DOUBLE:
 			z.d = (o.d == t.d) ? d.d : t.d;
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			z.dc[0] = (o.dc[0] == t.dc[0] && o.dc[1] == t.dc[1]) ? d.dc[0] : t.dc[0];
-			z.dc[1] = (o.dc[0] == t.dc[0] && o.dc[1] == t.dc[1]) ? d.dc[1] : t.dc[1];
+			z.dc = (o.dc == t.dc) ? d.dc : t.dc;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld == t.ld) ? d.ld : t.ld;
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			z.ldc = (o.ldc == t.ldc) ? d.ldc : t.ldc;
 			break;
 		}
 		break;
@@ -97,15 +101,19 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 			z.f = (o.f != t.f) ? d.f : t.f;
 			break;
 		case PTL_FLOAT_COMPLEX:
-			z.fc[0] = (o.fc[0] != t.fc[0] || o.fc[1] != t.fc[1]) ? d.fc[0] : t.fc[0];
-			z.fc[1] = (o.fc[0] != t.fc[0] || o.fc[1] != t.fc[1]) ? d.fc[1] : t.fc[1];
+			z.fc = (o.fc != t.fc) ? d.fc : t.fc;
 			break;
 		case PTL_DOUBLE:
 			z.d = (o.d != t.d) ? d.d : t.d;
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			z.dc[0] = (o.dc[0] != t.dc[0] || o.dc[1] != t.dc[1]) ? d.dc[0] : t.dc[0];
-			z.dc[1] = (o.dc[0] != t.dc[0] || o.dc[1] != t.dc[1]) ? d.dc[1] : t.dc[1];
+			z.dc = (o.dc != t.dc) ? d.dc : t.dc;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld != t.ld) ? d.ld : t.ld;
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			z.ldc = (o.ldc != t.ldc) ? d.ldc : t.ldc;
 			break;
 		}
 		break;
@@ -141,6 +149,9 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 		case PTL_DOUBLE:
 			z.d = (o.d <= t.d) ? d.d : t.d;
 			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld <= t.ld) ? d.ld : t.ld;
+			break;
 		}
 		break;
 	case PTL_CSWAP_LT:
@@ -174,6 +185,9 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 			break;
 		case PTL_DOUBLE:
 			z.d = (o.d < t.d) ? d.d : t.d;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld < t.ld) ? d.ld : t.ld;
 			break;
 		}
 		break;
@@ -209,6 +223,9 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 		case PTL_DOUBLE:
 			z.d = (o.d >= t.d) ? d.d : t.d;
 			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld >= t.ld) ? d.ld : t.ld;
+			break;
 		}
 		break;
 	case PTL_CSWAP_GT:
@@ -242,6 +259,9 @@ static datatype_t get_result(datatype_t d, datatype_t t, datatype_t o, int op, i
 			break;
 		case PTL_DOUBLE:
 			z.d = (o.d > t.d) ? d.d : t.d;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = (o.ld > t.ld) ? d.ld : t.ld;
 			break;
 		}
 		break;
@@ -277,14 +297,14 @@ static void usage(void)
 	printf("make_test_swap [OPTIONS] > output_file\n");
 	printf("\n");
 	printf("SYNOPSYS:\n");
-	printf("Generate random portals4 test cases for the PtlSwap operation to standard out.\n");
+	printf("Generate portals4 test cases for the PtlSwap operation.\n");
+	printf("These cases cover all the valid combinations.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("	--help | -h			print this message\n");
-	printf("	--seed | -s		seed	set random number seed (default time())\n");
-	printf("	--count | -c		count	set number of test cases (default 1)\n");
-	printf("	--max_length | -m	length	set max message length (>= 8) (default 32)\n");
-	printf("	--physical | -p			physical use physical NI (logical NI)\n");
+	printf("    --help | -h                   print this message\n");
+	printf("    --seed | -s <seed>            set random number seed (default time())\n");
+	printf("    --max_length | -m <length>    set max message length (>= 8) (default 32)\n");
+	printf("    --write | -w                  output to separate files\n");
 	printf("\n");
 }
 
@@ -292,13 +312,12 @@ static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
-	static char *opt_string = "hps:c:m:";
+	static char *opt_string = "hs:m:w";
 	static struct option long_options[] = {
 		{"help", 0, NULL, 'h'},
 		{"seed", 1, NULL, 's'},
-		{"count", 1, NULL, 'c'},
 		{"max_length", 1, NULL, 'm'},
-		{"physical", 0, NULL, 'p'},
+		{"write", 0, NULL, 'w'},
 		{NULL, 0, NULL, 0}
 	};
 
@@ -317,12 +336,8 @@ static int arg_process(int argc, char *argv[])
 			seed = strtol(optarg, NULL, 0);
 			break;
 
-		case 'c':
-			count = strtol(optarg, NULL, 0);
-			break;
-
-		case 'p':
-			physical = 1;
+		case 'w':
+			to_files = 1;
 			break;
 
 		case 'm':
@@ -346,19 +361,126 @@ static int arg_process(int argc, char *argv[])
 	return 0;
 }
 
+static void generate_case(int op, int type, int match, uint64_t match_bits,
+						  datatype_t din,
+						  datatype_t dout,
+						  datatype_t tgt,
+						  datatype_t opr,
+						  datatype_t z,
+						  int length)
+{
+	FILE *f;
+
+	if (to_files) {
+		char fname[1000];
+
+		casenum ++;
+		sprintf(fname, "temp/test_swap_all-%03d.xml", casenum);
+		f = fopen(fname, "w");
+		if (f == NULL) {
+			fprintf(stderr, "Cannot create file %s - aborting!\n", fname);
+			exit(1);
+		}
+	} else {
+		f = stdout;
+	}
+
+	fprintf(f, "<?xml version=\"1.0\"?>\n");
+
+	fprintf(f, "<!--\n");
+	fprintf(f, "\n");
+	fprintf(f, "		seed = %d\n", seed);
+	fprintf(f, "		max_length = %d\n", max_length);
+	fprintf(f, "-->\n");
+
+	fprintf(f, "<test>\n");
+
+	fprintf(f, "  <desc>Test swap %s/%s</desc>\n",
+			atom_op_name[op], atom_type[type].name);
+	fprintf(f, "  <ptl>\n");
+
+	if (match)
+		fprintf(f, "    <ptl_ni ni_opt=\"MATCH PHYSICAL\">\n");
+	else
+		fprintf(f, "    <ptl_ni ni_opt=\"NO_MATCH PHYSICAL\">\n");
+
+	fprintf(f, "      <ptl_pt>\n");
+
+	if (match)
+		fprintf(f, "        <ptl_me me_opt=\"OP_PUT OP_GET\" type=\"%s\" me_data=\"%s\" me_match=\"0x%" PRIu64 "\">\n",
+				atom_type[type].name, datatype_str(type, tgt), match_bits);
+	else
+		fprintf(f, "        <ptl_le le_opt=\"OP_PUT OP_GET\" type=\"%s\" le_data=\"%s\">\n",
+				atom_type[type].name, datatype_str(type, tgt));
+
+	fprintf(f, "          <ptl_md type=\"%s\" md_data=\"%s\">\n",
+			atom_type[type].name, datatype_str(type, dout));
+	fprintf(f, "            <ptl_md type=\"%s\" md_data=\"%s\">\n",
+			atom_type[type].name, datatype_str(type, din));
+
+	fprintf(f, "              <ptl_swap atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" operand=\"%s\"",
+			atom_op_name[op], atom_type[type].name, length, datatype_str(type, opr));
+
+	if (match)
+		fprintf(f, " match=\"0x%" PRIu64 "\"", match_bits);
+
+	fprintf(f, " target_id=\"SELF\"/>\n");
+
+	fprintf(f, "              <msleep count=\"10\"/>\n");
+
+	fprintf(f, "              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
+			length, atom_type[type].name, datatype_str(type, tgt));
+	fprintf(f, "              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
+			atom_type[type].size, atom_type[type].name, length, datatype_str(type, din));
+
+	fprintf(f, "            </ptl_md>\n");
+
+	fprintf(f, "            <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
+			length, atom_type[type].name, datatype_str(type, dout));
+	fprintf(f, "            <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
+			atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
+
+	fprintf(f, "          </ptl_md>\n");
+
+	if (match) {
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" me_data=\"%s\"/>\n",
+				length, atom_type[type].name, datatype_str(type, z));
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" offset=\"%d\" me_data=\"%s\"/>\n",
+				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
+	} else {
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" le_data=\"%s\"/>\n",
+				length, atom_type[type].name, datatype_str(type, z));
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" offset=\"%d\" le_data=\"%s\"/>\n",
+				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
+	}
+
+	if (match)
+		fprintf(f, "        </ptl_me>\n");
+	else
+		fprintf(f, "        </ptl_le>\n");
+
+	fprintf(f, "      </ptl_pt>\n");
+	fprintf(f, "    </ptl_ni>\n");
+	fprintf(f, "  </ptl>\n");
+
+	fprintf(f, "</test>\n");
+
+	if (to_files) {
+		fclose(f);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int err;
-	int i;
 	int match;
 	uint64_t match_bits;
 	int op;
 	int type;
 	datatype_t din, dout, tgt, opr, z;
 	int length;
-	time_t cur_time = time(NULL);
 
-	seed = cur_time;
+	seed = time(NULL);
 
 	err = arg_process(argc, argv);
 	if (err)
@@ -366,119 +488,53 @@ int main(int argc, char *argv[])
 
 	srandom(seed);
 
-	printf("<?xml version=\"1.0\"?>\n");
+	/* Generate one of each kind. */
+	for (op=PTL_SWAP; op<=PTL_MSWAP; op++) {
 
-	printf("<!--\n");
-	printf("	file generated %s", ctime(&cur_time));
-	printf("		command =");
-	for (i = 0; i < argc; i++)
-		printf(" %s", argv[i]);
-	printf("\n");
-	printf("		seed = %d\n", seed);
-	printf("		count = %d\n", count);
-	printf("		max_length = %d\n", max_length);
-	printf("-->\n");
+		for (type = PTL_INT8_T; type <= PTL_LONG_DOUBLE_COMPLEX; type ++) {
 
-	printf("<test>\n");
-	for (i = 0; i < count; i++) {
-		match = random() & 1;
-		match_bits = random();
-		match_bits = match_bits << 32 | random();
+			if (!check_op_type_valid(op, type))
+				continue;
 
-		do {
-			op = (random() % (PTL_OP_LAST - PTL_SWAP)) + PTL_SWAP;
-			type = random() % PTL_DATATYPE_LAST;
-		} while ((op == PTL_MSWAP && type >= PTL_FLOAT) ||
-			 (op > PTL_CSWAP_NE && (type == PTL_FLOAT_COMPLEX ||
-						type == PTL_DOUBLE_COMPLEX)));
+			match = random() & 1;
+			match_bits = random();
+			match_bits = match_bits << 32 | random();
 
-		din = get_data(type);
-		dout = get_data(type);
-		tgt = get_data(type);
-		opr = get_data(type);
-		z = get_result(dout, tgt, opr, op, type);
+			din = get_data(type);
+			dout = get_data(type);
+			tgt = get_data(type);
+			opr = get_data(type);
 
-		if (op == PTL_SWAP) {
-			length = random() % (max_length/atom_type[type].size);
-			length = (length + 1)*atom_type[type].size;
-		} else {
-			length = atom_type[type].size;
+			if (op == PTL_SWAP) {
+				length = random() % (max_length/atom_type[type].size);
+				length = (length + 1)*atom_type[type].size;
+			} else {
+				length = atom_type[type].size;
+			}
+
+			/* Regular case. */
+			z = get_result(dout, tgt, opr, op, type);
+			generate_case(op, type, match, match_bits, din, dout, tgt, opr, z, length);
+
+			if (op >= PTL_CSWAP_NE && op <= PTL_CSWAP_GT) {
+				/* Need 2 more cases: lower/greater than, and
+				 * equal. Since we have either lower/greater, we swap
+				 * the arguments to get the other one. This assumes
+				 * that the arguments are different. */
+
+				/* Swap dout and tgt. */
+				z = get_result(tgt, dout, opr, op, type);
+				generate_case(op, type, match, match_bits, din, tgt, dout, opr, z, length);
+
+				/* dout=tgt */
+				z = get_result(tgt, tgt, opr, op, type);
+				generate_case(op, type, match, match_bits, din, tgt, tgt, opr, z, length);
+			}
 		}
-
-		printf("  <subtest>\n");
-		printf("    <desc>Test swap %s/%s</desc>\n",
-			atom_op_name[op], atom_type[type].name);
-		printf("    <ptl>\n");
-
-		if (match)
-			printf("      <ptl_ni ni_opt=\"MATCH PHYSICAL\">\n");
-		else
-			printf("      <ptl_ni ni_opt=\"NO_MATCH PHYSICAL\">\n");
-
-		printf("        <ptl_pt>\n");
-
-		if (match)
-			printf("          <ptl_me me_opt=\"OP_PUT OP_GET\" type=\"%s\" me_data=\"%s\" me_match=\"0x%" PRIu64 "\">\n",
-				atom_type[type].name, datatype_str(type, tgt), match_bits);
-		else
-			printf("          <ptl_le le_opt=\"OP_PUT OP_GET\" type=\"%s\" le_data=\"%s\">\n",
-				atom_type[type].name, datatype_str(type, tgt));
-
-		printf("            <ptl_md type=\"%s\" md_data=\"%s\">\n",
-			atom_type[type].name, datatype_str(type, dout));
-		printf("              <ptl_md type=\"%s\" md_data=\"%s\">\n",
-			atom_type[type].name, datatype_str(type, din));
-
-		printf("                <ptl_swap atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" operand=\"%s\"",
-			atom_op_name[op], atom_type[type].name, length, datatype_str(type, opr));
-
-		if (match)
-			printf(" match=\"0x%" PRIu64 "\"", match_bits);
-
-		printf(" target_id=\"SELF\"/>\n");
-
-		printf("                <msleep count=\"10\"/>\n");
-
-		printf("                <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
-			length, atom_type[type].name, datatype_str(type, tgt));
-		printf("                <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
-			atom_type[type].size, atom_type[type].name, length, datatype_str(type, din));
-
-		printf("              </ptl_md>\n");
-
-		printf("              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
-			length, atom_type[type].name, datatype_str(type, dout));
-		printf("              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
-			atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
-
-		printf("            </ptl_md>\n");
-
-		if (match) {
-			printf("            <check length=\"%d\" type=\"%s\" me_data=\"%s\"/>\n",
-				length, atom_type[type].name, datatype_str(type, z));
-			printf("            <check length=\"%d\" type=\"%s\" offset=\"%d\" me_data=\"%s\"/>\n",
-				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
-		} else {
-			printf("            <check length=\"%d\" type=\"%s\" le_data=\"%s\"/>\n",
-				length, atom_type[type].name, datatype_str(type, z));
-			printf("            <check length=\"%d\" type=\"%s\" offset=\"%d\" le_data=\"%s\"/>\n",
-				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
-		}
-
-		if (match)
-			printf("          </ptl_me>\n");
-		else
-			printf("          </ptl_le>\n");
-
-		printf("        </ptl_pt>\n");
-		printf("      </ptl_ni>\n");
-		printf("    </ptl>\n");
-		printf("  </subtest>\n");
 	}
-	printf("</test>\n");
 
 	err = 0;
 
-done:
+ done:
 	return err;
 }
