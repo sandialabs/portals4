@@ -275,17 +275,21 @@ static int recv_req(buf_t *buf)
 {
 	int err;
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	void *start;
 
 	/* compute the data segments in the message
 	 * note req packet data direction is wrt init */
+	start = buf->data + sizeof(*hdr);
+	if (hdr->h1.operand)
+		start += sizeof(datatype_t);
+
 	if (hdr->h1.data_in)
-		buf->data_out = (data_t *)(buf->data + sizeof(*hdr));
+		buf->data_out = start;
 	else
 		buf->data_out = NULL;
 
 	if (hdr->h1.data_out)
-		buf->data_in = (data_t *)(buf->data + sizeof(*hdr) +
-					  data_size(buf->data_out));
+		buf->data_in = start + data_size(buf->data_out);
 	else
 		buf->data_in = NULL;
 

@@ -52,7 +52,7 @@ int atom_type_size[] =
 
 	/* these are system dependant */
 	[PTL_LONG_DOUBLE]		= sizeof(long double),
-	[PTL_LONG_DOUBLE_COMPLEX]	= 2*sizeof(long double),
+	[PTL_LONG_DOUBLE_COMPLEX]	= sizeof(long double complex),
 };
 
 #define min(a, b)	(((a) < (b)) ? (a) : (b))
@@ -760,6 +760,27 @@ static int sum_ld(void *dst, void *src, ptl_size_t length)
 }
 
 /**
+ * Compute sum of two long double arrays.
+ *
+ * @param dst destination array
+ * @param src source array
+ * @param length array length in bytes
+ *
+ * @return status
+ */
+static int sum_ldc(void *dst, void *src, ptl_size_t length)
+{
+	ptl_size_t i;
+	long double complex *s = src;
+	long double complex *d = dst;
+
+	for (i = 0; i < length/sizeof(long double complex); i++, s++, d++)
+		*d = sum(*s, *d);
+
+	return PTL_OK;
+}
+
+/**
  * Compute prod of two signed char arrays.
  *
  * @param dst destination array
@@ -960,15 +981,11 @@ static int prod_f(void *dst, void *src, ptl_size_t length)
 static int prod_fc(void *dst, void *src, ptl_size_t length)
 {
 	ptl_size_t i;
-	float *s = src;
-	float *d = dst;
-	float a, b;
+	float complex *s = src;
+	float complex *d = dst;
 
-	for (i = 0; i < length/8; i++, s += 2, d += 2) {
-		a = prod(s[0], d[0]) - prod(s[1], d[1]);
-		b = prod(s[0], d[1]) + prod(s[1], d[0]);
-		d[0] = a;
-		d[1] = b;
+	for (i = 0; i < length/8; i++, s ++, d ++) {
+		*d = prod(*s, *d);
 	}
 
 	return PTL_OK;
@@ -1007,15 +1024,11 @@ static int prod_d(void *dst, void *src, ptl_size_t length)
 static int prod_dc(void *dst, void *src, ptl_size_t length)
 {
 	ptl_size_t i;
-	double *s = src;
-	double *d = dst;
-	double a, b;
+	double complex *s = src;
+	double complex *d = dst;
 
-	for (i = 0; i < length/16; i++, s += 2, d += 2) {
-		a = prod(s[0], d[0]) - prod(s[1], d[1]);
-		b = prod(s[0], d[1]) + prod(s[1], d[0]);
-		d[0] = a;
-		d[1] = b;
+	for (i = 0; i < length/16; i++, s++, d++) {
+		*d = prod(*s, *d);
 	}
 
 	return PTL_OK;
@@ -1054,15 +1067,11 @@ static int prod_ld(void *dst, void *src, ptl_size_t length)
 static int prod_ldc(void *dst, void *src, ptl_size_t length)
 {
 	ptl_size_t i;
-	long double *s = src;
-	long double *d = dst;
-	long double a, b;
+	long double complex *s = src;
+	long double complex *d = dst;
 
-	for (i = 0; i < length/(2*sizeof(long double)); i++, s += 2, d += 2) {
-		a = prod(s[0], d[0]) - prod(s[1], d[1]);
-		b = prod(s[0], d[1]) + prod(s[1], d[0]);
-		d[0] = a;
-		d[1] = b;
+	for (i = 0; i < length/sizeof(long double complex); i++, s ++, d ++) {
+		*d = prod(*s, *d);
 	}
 
 	return PTL_OK;
@@ -1617,7 +1626,7 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 		[PTL_DOUBLE]		= sum_d,
 		[PTL_DOUBLE_COMPLEX]	= sum_d,
 		[PTL_LONG_DOUBLE]	= sum_ld,
-		[PTL_LONG_DOUBLE_COMPLEX] = sum_ld,
+		[PTL_LONG_DOUBLE_COMPLEX] = sum_ldc,
 	},
 	[PTL_PROD]	= {
 		[PTL_INT8_T]		= prod_sc,
@@ -1700,20 +1709,8 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 #define cswap(op, s, d, type)							\
 	do {	if (op->type == d->type) d->type = s->type; } while (0)
 
-#define cswap_c(op, s, d, type)							\
-	do {	if (op->type[0] == d->type[0] && op->type[1] == d->type[1]) {	\
-		d->type[0] = s->type[0];					\
-		d->type[1] = s->type[1];					\
-	} } while (0);
-
 #define cswap_ne(op, s, d, type)						\
 	do {	if (op->type != d->type) d->type = s->type; } while (0)
-
-#define cswap_ne_c(op, s, d, type)						\
-	do {	if (op->type[0] != d->type[0] || op->type[1] != d->type[1]) {	\
-		d->type[0] = s->type[0];					\
-		d->type[1] = s->type[1];					\
-	} } while (0);
 
 #define cswap_le(op, s, d, type)						\
 	do {	if (op->type <= d->type) d->type = s->type; } while (0)
@@ -1747,9 +1744,8 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
  * @return status
  */
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
-		 void *dest, void *source, void *operand)
+		 void *dest, void *source, datatype_t *operand)
 {
-	datatype_t *opr = operand;
 	datatype_t *src = source;
 	datatype_t *dst = dest;
 
@@ -1757,46 +1753,46 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap(opr, src, dst, s8);
+			cswap(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap(opr, src, dst, u8);
+			cswap(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap(opr, src, dst, s16);
+			cswap(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap(opr, src, dst, u16);
+			cswap(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap(opr, src, dst, s32);
+			cswap(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap(opr, src, dst, u32);
+			cswap(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap(opr, src, dst, s64);
+			cswap(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap(opr, src, dst, u64);
+			cswap(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap(opr, src, dst, f);
+			cswap(operand, src, dst, f);
 			break;
 		case PTL_FLOAT_COMPLEX:
-			cswap_c(opr, src, dst, fc);
+			cswap(operand, src, dst, fc);
 			break;
 		case PTL_DOUBLE:
-			cswap(opr, src, dst, d);
+			cswap(operand, src, dst, d);
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			cswap_c(opr, src, dst, dc);
+			cswap(operand, src, dst, dc);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap(opr, src, dst, ld);
+			cswap(operand, src, dst, ld);
 			break;
 		case PTL_LONG_DOUBLE_COMPLEX:
-			cswap_c(opr, src, dst, ldc);
+			cswap(operand, src, dst, ldc);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1805,46 +1801,46 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP_NE:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap_ne(opr, src, dst, s8);
+			cswap_ne(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap_ne(opr, src, dst, u8);
+			cswap_ne(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap_ne(opr, src, dst, s16);
+			cswap_ne(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap_ne(opr, src, dst, u16);
+			cswap_ne(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap_ne(opr, src, dst, s32);
+			cswap_ne(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap_ne(opr, src, dst, u32);
+			cswap_ne(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap_ne(opr, src, dst, s64);
+			cswap_ne(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap_ne(opr, src, dst, u64);
+			cswap_ne(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap_ne(opr, src, dst, f);
+			cswap_ne(operand, src, dst, f);
 			break;
 		case PTL_FLOAT_COMPLEX:
-			cswap_ne_c(opr, src, dst, fc);
+			cswap_ne(operand, src, dst, fc);
 			break;
 		case PTL_DOUBLE:
-			cswap_ne(opr, src, dst, d);
+			cswap_ne(operand, src, dst, d);
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			cswap_ne_c(opr, src, dst, dc);
+			cswap_ne(operand, src, dst, dc);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap_ne(opr, src, dst, ld);
+			cswap_ne(operand, src, dst, ld);
 			break;
 		case PTL_LONG_DOUBLE_COMPLEX:
-			cswap_ne_c(opr, src, dst, ldc);
+			cswap_ne(operand, src, dst, ldc);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1853,37 +1849,37 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP_LE:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap_le(opr, src, dst, s8);
+			cswap_le(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap_le(opr, src, dst, u8);
+			cswap_le(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap_le(opr, src, dst, s16);
+			cswap_le(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap_le(opr, src, dst, u16);
+			cswap_le(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap_le(opr, src, dst, s32);
+			cswap_le(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap_le(opr, src, dst, u32);
+			cswap_le(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap_le(opr, src, dst, s64);
+			cswap_le(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap_le(opr, src, dst, u64);
+			cswap_le(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap_le(opr, src, dst, f);
+			cswap_le(operand, src, dst, f);
 			break;
 		case PTL_DOUBLE:
-			cswap_le(opr, src, dst, d);
+			cswap_le(operand, src, dst, d);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap_le(opr, src, dst, ld);
+			cswap_le(operand, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1892,37 +1888,37 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP_LT:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap_lt(opr, src, dst, s8);
+			cswap_lt(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap_lt(opr, src, dst, u8);
+			cswap_lt(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap_lt(opr, src, dst, s16);
+			cswap_lt(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap_lt(opr, src, dst, u16);
+			cswap_lt(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap_lt(opr, src, dst, s32);
+			cswap_lt(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap_lt(opr, src, dst, u32);
+			cswap_lt(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap_lt(opr, src, dst, s64);
+			cswap_lt(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap_lt(opr, src, dst, u64);
+			cswap_lt(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap_lt(opr, src, dst, f);
+			cswap_lt(operand, src, dst, f);
 			break;
 		case PTL_DOUBLE:
-			cswap_lt(opr, src, dst, d);
+			cswap_lt(operand, src, dst, d);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap_lt(opr, src, dst, ld);
+			cswap_lt(operand, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1931,37 +1927,37 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP_GE:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap_ge(opr, src, dst, s8);
+			cswap_ge(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap_ge(opr, src, dst, u8);
+			cswap_ge(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap_ge(opr, src, dst, s16);
+			cswap_ge(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap_ge(opr, src, dst, u16);
+			cswap_ge(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap_ge(opr, src, dst, s32);
+			cswap_ge(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap_ge(opr, src, dst, u32);
+			cswap_ge(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap_ge(opr, src, dst, s64);
+			cswap_ge(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap_ge(opr, src, dst, u64);
+			cswap_ge(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap_ge(opr, src, dst, f);
+			cswap_ge(operand, src, dst, f);
 			break;
 		case PTL_DOUBLE:
-			cswap_ge(opr, src, dst, d);
+			cswap_ge(operand, src, dst, d);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap_ge(opr, src, dst, ld);
+			cswap_ge(operand, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -1970,37 +1966,37 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 	case PTL_CSWAP_GT:
 		switch (atom_type) {
 		case PTL_INT8_T:
-			cswap_gt(opr, src, dst, s8);
+			cswap_gt(operand, src, dst, s8);
 			break;
 		case PTL_UINT8_T:
-			cswap_gt(opr, src, dst, u8);
+			cswap_gt(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
-			cswap_gt(opr, src, dst, s16);
+			cswap_gt(operand, src, dst, s16);
 			break;
 		case PTL_UINT16_T:
-			cswap_gt(opr, src, dst, u16);
+			cswap_gt(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
-			cswap_gt(opr, src, dst, s32);
+			cswap_gt(operand, src, dst, s32);
 			break;
 		case PTL_UINT32_T:
-			cswap_gt(opr, src, dst, u32);
+			cswap_gt(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
-			cswap_gt(opr, src, dst, s64);
+			cswap_gt(operand, src, dst, s64);
 			break;
 		case PTL_UINT64_T:
-			cswap_gt(opr, src, dst, u64);
+			cswap_gt(operand, src, dst, u64);
 			break;
 		case PTL_FLOAT:
-			cswap_gt(opr, src, dst, f);
+			cswap_gt(operand, src, dst, f);
 			break;
 		case PTL_DOUBLE:
-			cswap_gt(opr, src, dst, d);
+			cswap_gt(operand, src, dst, d);
 			break;
 		case PTL_LONG_DOUBLE:
-			cswap_gt(opr, src, dst, ld);
+			cswap_gt(operand, src, dst, ld);
 			break;
 		default:
 			return PTL_ARG_INVALID;
@@ -2010,19 +2006,19 @@ int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
 		switch (atom_type) {
 		case PTL_INT8_T:
 		case PTL_UINT8_T:
-			mswap(opr, src, dst, u8);
+			mswap(operand, src, dst, u8);
 			break;
 		case PTL_INT16_T:
 		case PTL_UINT16_T:
-			mswap(opr, src, dst, u16);
+			mswap(operand, src, dst, u16);
 			break;
 		case PTL_INT32_T:
 		case PTL_UINT32_T:
-			mswap(opr, src, dst, u32);
+			mswap(operand, src, dst, u32);
 			break;
 		case PTL_INT64_T:
 		case PTL_UINT64_T:
-			mswap(opr, src, dst, u64);
+			mswap(operand, src, dst, u64);
 			break;
 		default:
 			return PTL_ARG_INVALID;

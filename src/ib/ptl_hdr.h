@@ -55,7 +55,8 @@ struct hdr_common {
 	unsigned int	data_in:1;
 	unsigned int	data_out:1;
 	unsigned int    matching_list:2; 	/* response only */
-	unsigned int    pad:7;
+	unsigned int    operand:1;
+	unsigned int    pad:6;
 	unsigned int    physical:1;	/* PPE */
 	unsigned int	ni_type:4;	/* request only */
 	unsigned int	pkt_fmt:4;	/* request only */
@@ -93,7 +94,6 @@ typedef struct req_hdr {
 	__le64			roffset;
 	__le64			match_bits;
 	__le64			hdr_data;
-	__le64			operand;
 	__le32			pt_index;
 	__le32			uid;
 } req_hdr_t;

@@ -20,11 +20,11 @@ union datatype {
 	int64_t		s64;
 	uint64_t	u64;
 	float		f;
-	float		fc[2];
+	float complex fc;
 	double		d;
-	double		dc[2];
+	double complex dc;
 	long double	ld;
-	long double	ldc[2];
+	long double	complex ldc;
 };
 
 typedef union datatype datatype_t;
@@ -49,6 +49,6 @@ extern struct atom_op_info op_info[PTL_OP_LAST];
 extern int atom_type_size[PTL_DATATYPE_LAST];
 
 int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
-		 void *dest, void *source, void *operand);
+		 void *dest, void *source, datatype_t *operand);
 
 #endif /* PTL_ATOMIC_H */

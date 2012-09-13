@@ -1364,7 +1364,7 @@ static int tgt_swap_data_in(buf_t *buf)
 	void *dst;
 	ni_t *ni;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint64_t operand = le64_to_cpu(hdr->operand);
+	void *operand = buf->data + sizeof(req_hdr_t);
 #if IS_PPE
 	mr_t *mr;
 #endif
@@ -1394,7 +1394,7 @@ static int tgt_swap_data_in(buf_t *buf)
 	}
 
 	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
-			   data->immediate.data, &operand);
+			   data->immediate.data, operand);
 
 #if IS_PPE
 	if (!me->mr_start)

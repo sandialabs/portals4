@@ -224,6 +224,7 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.ni_type = ni->ni_type;
 	hdr->h1.pkt_fmt = PKT_FMT_REQ;
 	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
+	hdr->h1.operand = 0;
 	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 	hdr->rlength = cpu_to_le64(length);
@@ -264,8 +265,20 @@ static int prepare_req(buf_t *buf)
 			goto error;
 		break;
 
-	case OP_FETCH:
 	case OP_SWAP:
+		/* If it is a CSWAP and variants, or MSWAP operation, then the
+		 * operand has already been added after the header. This is
+		 * not too pretty, and it might be better to set buf->length
+		 * in all the functions in ptl_move.c. */
+		if (hdr->atom_op != PTL_SWAP) {
+			assert(hdr->atom_op >= PTL_CSWAP && hdr->atom_op <= PTL_MSWAP);
+			hdr->h1.operand = 1;
+			buf->length += sizeof(datatype_t);
+		}
+		
+		/* fall through ... */
+
+	case OP_FETCH:
 		hdr->h1.data_in = 1;
 		hdr->h1.data_out = 1;
 
