@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <complex.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
@@ -220,9 +221,6 @@ int iov_atomic_in(atom_op_t op, int atom_size, void *src,
 int iov_count_elem(ptl_iovec_t *iov, ptl_size_t num_iov,
 				   ptl_size_t offset, ptl_size_t length,
 				   ptl_size_t *index_p, ptl_size_t *base_p);
-
-int swap_data_in(ptl_op_t atom_op, ptl_datatype_t atom_type,
-		 void *dest, void *source, void *operand);
 
 int process_rdma_desc(buf_t *buf);
 

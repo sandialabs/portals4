@@ -41,43 +41,6 @@ static int get_transport_buf(ni_t *ni, ptl_process_t target_id, buf_t **retbuf)
 	return PTL_OK;
 }
 
-/**
- * @brief Get operand from address and type.
- *
- * @return status
- */
-static int get_operand(ptl_datatype_t type, const void *operand,
-		       uint64_t *opval)
-{
-	uint64_t val;
-	int len = atom_type_size[type];
-
-	switch(len) {
-	case 1:
-		val = *(uint8_t *)operand;
-		break;
-	case 2:
-		val = *(uint16_t *)operand;
-		break;
-	case 4:
-		val = *(uint32_t *)operand;
-		break;
-	case 8:
-		val = *(uint64_t *)operand;
-		break;
-	case 16:
-		/** @todo need to handle double complex case */
-		val = -1ULL;
-		break;
-	default:
-		/* should never happen */
-		abort();
-	}
-
-	*opval = val;
-	return PTL_OK;
-}
-
 #ifndef NO_ARG_VALIDATION
 /**
  * @brief check parameters for a put type operation
@@ -989,7 +952,6 @@ int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	md_t *put_md = NULL;
 	ni_t *ni;
 	buf_t *buf;
-	uint64_t opval = 0;
 	req_hdr_t *hdr;
 
 	err = gbl_get();
@@ -1031,12 +993,6 @@ int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	}
 #endif
 
-	if (op_info[atom_op].use_operand) {
-		err = get_operand(atom_type, operand, &opval);
-		if (unlikely(err))
-			goto err3;
-	}
-
 	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err))
 		goto err3;
@@ -1048,7 +1004,6 @@ int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->operand = cpu_to_le64(opval);
 	hdr->atom_op = atom_op;
 	hdr->atom_type = atom_type;
 	buf->rlength = length;
@@ -1065,6 +1020,13 @@ int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 	buf->put_offset = local_put_offset;
 	buf->get_offset = local_get_offset;
 	buf->init_state = STATE_INIT_START;
+
+	if (op_info[atom_op].use_operand) {
+		/* An MSWAP or CWSAP operation. Operand is valid, and there is
+		 * only 1 element. */
+		datatype_t *operand_msg = (buf->data + sizeof(*hdr));
+		memcpy(operand_msg, operand, atom_type_size[atom_type]);
+	}
 
 	process_init(buf);
 
@@ -1101,7 +1063,6 @@ int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get
 	ni_t *ni;
 	ct_t *ct = NULL;
 	buf_t *buf;
-	uint64_t opval = 0;
 	req_hdr_t *hdr;
 
 	err = gbl_get();
@@ -1152,12 +1113,6 @@ int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get
 	}
 #endif
 
-	if (op_info[atom_op].use_operand) {
-		err = get_operand(atom_type, operand, &opval);
-		if (unlikely(err))
-			goto err1;
-	}
-
 	err = get_transport_buf(ni, target_id, &buf);
 	if (unlikely(err))
 		goto err4;
@@ -1169,7 +1124,6 @@ int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get
 	hdr->pt_index = cpu_to_le32(pt_index);
 	hdr->match_bits = cpu_to_le64(match_bits);
 	hdr->hdr_data = cpu_to_le64(hdr_data);
-	hdr->operand = cpu_to_le64(opval);
 	hdr->atom_op = atom_op;
 	hdr->atom_type = atom_type;
 	buf->rlength = length;
@@ -1187,6 +1141,13 @@ int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get
 	buf->put_offset = local_put_offset;
 	buf->get_offset = local_get_offset;
 	buf->init_state = STATE_INIT_START;
+
+	if (op_info[atom_op].use_operand) {
+		/* An MSWAP or CWSAP operation. Operand is valid, and there is
+		 * only 1 element. */
+		datatype_t *operand_msg = (buf->data + sizeof(*hdr));
+		memcpy(operand_msg, operand, atom_type_size[atom_type]);
+	}
 
 	post_ct(buf, ct);
 
