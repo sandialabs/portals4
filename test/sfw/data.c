@@ -76,15 +76,19 @@ datatype_t get_data(int type)
 		data.f = random()/65384.0/65384.0;
 		break;
 	case PTL_FLOAT_COMPLEX:
-		data.fc[0] = random()/65384.0/65384.0;
-		data.fc[1] = random()/65384.0/65384.0;
+		data.fc = random()/65384.0/65384.0 + random()/65384.0/65384.0 * _Complex_I;
 		break;
 	case PTL_DOUBLE:
 		data.d = random()/65384.0/65384.0;
 		break;
 	case PTL_DOUBLE_COMPLEX:
-		data.dc[0] = random()/65384.0/65384.0;
-		data.dc[1] = random()/65384.0/65384.0;
+		data.dc = random()/65384.0/65384.0 + random()/65384.0/65384.0 * _Complex_I;
+		break;
+	case PTL_LONG_DOUBLE:
+		data.ld = random()/65384.0/65384.0;
+		break;
+	case PTL_LONG_DOUBLE_COMPLEX:
+		data.ldc = random()/65384.0/65384.0 + random()/65384.0/65384.0 * _Complex_I;
 		break;
 	}
 
@@ -118,15 +122,82 @@ char *datatype_str(int type, datatype_t data)
 		sprintf(str, "%12.10f", data.f);
 		break;
 	case PTL_FLOAT_COMPLEX:
-		sprintf(str, "(%12.10f, %12.10f)", data.fc[0], data.fc[1]);
+		sprintf(str, "(%12.10f, %12.10f)", crealf(data.fc), cimagf(data.fc));
 		break;
 	case PTL_DOUBLE:
 		sprintf(str, "%22.20lf", data.d);
 		break;
 	case PTL_DOUBLE_COMPLEX:
-		sprintf(str, "(%22.20f, %22.20f)", data.dc[0], data.dc[1]);
+		sprintf(str, "(%22.20f, %22.20f)", creal(data.dc), cimag(data.dc));
 		break;
+	case PTL_LONG_DOUBLE:
+		sprintf(str, "%22.20Lf", data.ld);
+		break;
+	case PTL_LONG_DOUBLE_COMPLEX:
+		sprintf(str, "(%22.20Lf, %22.20Lf)", creall(data.ldc), cimagl(data.ldc));
+		break;
+	default:
+		abort();
 	}
 
 	return str;
+}
+
+static const int integral[PTL_DATATYPE_LAST] = {
+	[PTL_INT8_T] = 1,
+	[PTL_UINT8_T] = 1,
+	[PTL_INT16_T] = 1,
+	[PTL_UINT16_T] = 1,
+	[PTL_INT32_T] = 1,
+	[PTL_UINT32_T] = 1,
+	[PTL_INT64_T] = 1,
+	[PTL_UINT64_T] = 1
+};
+static const int floating[PTL_DATATYPE_LAST] = {
+	[PTL_FLOAT] = 1,
+	[PTL_DOUBLE] = 1,
+	[PTL_LONG_DOUBLE] = 1,
+};
+static const int complexi[PTL_DATATYPE_LAST] = {
+	[PTL_FLOAT_COMPLEX] = 1,
+	[PTL_DOUBLE_COMPLEX] = 1,
+	[PTL_LONG_DOUBLE_COMPLEX] = 1,
+};
+static const struct {
+	int integral;
+	int floating;
+	int complexi;
+} legal_op[PTL_OP_LAST] = {
+	[PTL_MIN]      = { 1, 1, 0 },
+	[PTL_MAX]      = { 1, 1, 0 },
+	[PTL_SUM]      = { 1, 1, 1 },
+	[PTL_PROD]     = { 1, 1, 1 },
+	[PTL_LOR]      = { 1, 0, 0 },
+	[PTL_LAND]     = { 1, 0, 0 },
+	[PTL_BOR]      = { 1, 0, 0 },
+	[PTL_BAND]     = { 1, 0, 0 },
+	[PTL_LXOR]     = { 1, 0, 0 },
+	[PTL_BXOR]     = { 1, 0, 0 },
+	[PTL_SWAP]     = { 1, 1, 1 },
+	[PTL_CSWAP]    = { 1, 1, 1 },
+	[PTL_CSWAP_NE] = { 1, 1, 1 },
+	[PTL_CSWAP_LE] = { 1, 1, 0 },
+	[PTL_CSWAP_LT] = { 1, 1, 0 },
+	[PTL_CSWAP_GE] = { 1, 1, 0 },
+	[PTL_CSWAP_GT] = { 1, 1, 0 },
+	[PTL_MSWAP]    = { 1, 0, 0 },
+};
+
+int check_op_type_valid(int op, int type)
+{
+	if (integral[type] && legal_op[op].integral)
+		return 1;
+
+	if (floating[type] && legal_op[op].floating)
+		return 1;
+
+	if (complexi[type] && legal_op[op].complexi)
+		return 1;
+	
+	return 0;
 }

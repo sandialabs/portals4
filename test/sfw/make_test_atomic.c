@@ -8,10 +8,9 @@
 #include "data.h"
 
 static unsigned int seed;
-static unsigned int physical = 0;
-static unsigned int count = 1;
 static unsigned int max_length = 32;
-static int fetch;
+static unsigned int to_files = 0;
+static int casenum = 0;
 
 static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 {
@@ -52,6 +51,9 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		case PTL_DOUBLE:
 			z.d = ((x.d < y.d) ? x.d : y.d);
 			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = ((x.ld < y.ld) ? x.ld : y.ld);
+			break;
 		}
 		break;
 	case PTL_MAX:
@@ -86,6 +88,9 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 		case PTL_DOUBLE:
 			z.d = ((x.d > y.d) ? x.d : y.d);
 			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = ((x.ld > y.ld) ? x.ld : y.ld);
+			break;
 		}
 		break;
 	case PTL_SUM:
@@ -118,15 +123,19 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 			z.f = x.f + y.f;
 			break;
 		case PTL_FLOAT_COMPLEX:
-			z.fc[0] = x.fc[0] + y.fc[0];
-			z.fc[1] = x.fc[1] + y.fc[1];
+			z.fc = x.fc + y.fc;
 			break;
 		case PTL_DOUBLE:
 			z.d = x.d + y.d;
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			z.dc[0] = x.dc[0] + y.dc[0];
-			z.dc[1] = x.dc[1] + y.dc[1];
+			z.dc = x.dc + y.dc;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = x.ld + y.ld;
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			z.ldc = x.ldc + y.ldc;
 			break;
 		}
 		break;
@@ -160,15 +169,19 @@ static datatype_t get_result(datatype_t x, datatype_t y, int op, int type)
 			z.f = x.f * y.f;
 			break;
 		case PTL_FLOAT_COMPLEX:
-			z.fc[0] = (x.fc[0]*y.fc[0]) - (x.fc[1]*y.fc[1]);
-			z.fc[1] = (x.fc[0]*y.fc[1]) + (x.fc[1]*y.fc[0]);
+			z.fc = x.fc * y.fc;
 			break;
 		case PTL_DOUBLE:
 			z.d = x.d * y.d;
 			break;
 		case PTL_DOUBLE_COMPLEX:
-			z.dc[0] = (x.dc[0]*y.dc[0]) - (x.dc[1]*y.dc[1]);
-			z.dc[1] = (x.dc[0]*y.dc[1]) + (x.dc[1]*y.dc[0]);
+			z.dc = x.dc * y.dc;
+			break;
+		case PTL_LONG_DOUBLE:
+			z.ld = x.ld * y.ld;
+			break;
+		case PTL_LONG_DOUBLE_COMPLEX:
+			z.ldc = x.ldc * y.ldc;
 			break;
 		}
 		break;
@@ -352,15 +365,13 @@ static void usage(void)
 	printf("make_test_atomic [OPTIONS] > output_file\n");
 	printf("\n");
 	printf("SYNOPSYS:\n");
-	printf("Generate random portals4 test cases for the PtlAtomic operation to standard out.\n");
+	printf("Generate portals4 coverage test cases for the PtlAtomic operation to standard out.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("	-h | --help			 print this message\n");
-	printf("	-f | --fetch			 generate fetch tests\n");
-	printf("	-s | --seed		seed	 set random number seed (default time())\n");
-	printf("	-p | --physical		physical use physical NI (logical NI)\n");
-	printf("	-c | --count		count	  set number of test cases (default 1)\n");
-	printf("	-m | --max_length	length	  set max message length (>= 8) (default 32)\n");
+	printf("    -h | --help                   print this message\n");
+	printf("    -s | --seed <seed>            set random number seed (default time())\n");
+	printf("    -m | --max_length <length>    set max message length (>= 8) (default 32)\n");
+	printf("    -w | --write                  output to separate files\n");
 	printf("\n");
 }
 
@@ -368,13 +379,10 @@ static int arg_process(int argc, char *argv[])
 {
 	int c;
 	int option_index = 0;
-	static char *opt_string = "hfps:c:m:";
+	static char *opt_string = "hs:m:w";
 	static struct option long_options[] = {
 		{"help", 0, NULL, 'h'},
-		{"fetch", 0, NULL, 'f'},
 		{"seed", 1, NULL, 's'},
-		{"physical", 0, NULL, 'p'},
-		{"count", 1, NULL, 'c'},
 		{"max_length", 1, NULL, 'm'},
 		{NULL, 0, NULL, 0}
 	};
@@ -390,20 +398,12 @@ static int arg_process(int argc, char *argv[])
 			usage();
 			exit(0);
 
-		case 'f':
-			fetch++;
-			break;
-
 		case 's':
 			seed = strtol(optarg, NULL, 0);
 			break;
 
-		case 'p':
-			physical = 1;
-			break;
-
-		case 'c':
-			count = strtol(optarg, NULL, 0);
+		case 'w':
+			to_files = 1;
 			break;
 
 		case 'm':
@@ -427,10 +427,128 @@ static int arg_process(int argc, char *argv[])
 	return 0;
 }
 
+static void generate_case(int op, int type, int match, uint64_t match_bits,
+						  datatype_t din,
+						  datatype_t dout,
+						  datatype_t tgt,
+						  datatype_t z,
+						  int length,
+						  int fetch)
+{
+	FILE *f;
+	char *ptl_op;
+	char *me_opt;
+
+	if (to_files) {
+		char fname[1000];
+		
+		casenum ++;		
+		sprintf(fname, "temp/test_atomic_all-%03d.xml", casenum);
+		f = fopen(fname, "w");
+		if (f == NULL) {
+			fprintf(stderr, "Cannot create file %s - aborting!\n", fname);
+			exit(1);
+		}
+	} else {
+		f = stdout;
+	}
+
+	fprintf(f, "<?xml version=\"1.0\"?>\n");
+
+	fprintf(f, "<!--\n");
+	fprintf(f, "		seed = %d\n", seed);
+	fprintf(f, "		max_length = %d\n", max_length);
+	fprintf(f, "-->\n");
+
+	fprintf(f, "<test>\n");
+
+	ptl_op = fetch ? "fetch" : "atomic";
+	me_opt = fetch ? "OP_GET OP_PUT" : "OP_PUT";
+
+	fprintf(f, "  <desc>Test %s %s/%s length=%d</desc>\n",
+		   ptl_op, atom_op_name[op], atom_type[type].name, length);
+	fprintf(f, "  <ptl>\n");
+
+	fprintf(f, "    <ptl_ni ni_opt=\"%s %s\">\n",
+		   match ? "MATCH" : "NO_MATCH",
+		   "PHYSICAL");
+	fprintf(f, "      <ptl_pt>\n");
+
+	/* setup me/le */
+	if (match)
+		fprintf(f, "        <ptl_me me_opt=\"%s\" me_match=\"0x%" PRIu64 "\" type=\"%s\" me_data=\"%s\">\n",
+			   me_opt, match_bits, atom_type[type].name, datatype_str(type, tgt));
+	else
+		fprintf(f, "        <ptl_le le_opt=\"%s\" type=\"%s\" le_data=\"%s\">\n",
+			   me_opt, atom_type[type].name, datatype_str(type, tgt));
+
+	/* setup md(s) */
+	fprintf(f, "          <ptl_md type=\"%s\" md_data=\"%s\">\n",
+		   atom_type[type].name, datatype_str(type, dout));
+	if (fetch)
+		fprintf(f, "            <ptl_md type=\"%s\" md_data=\"%s\">\n",
+			   atom_type[type].name, datatype_str(type, din));
+
+	if (match)
+		fprintf(f, "            <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "\" target_id=\"SELF\"/>\n",
+			   ptl_op, atom_op_name[op], atom_type[type].name, length, match_bits);
+	else
+		fprintf(f, "            <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" target_id=\"SELF\"/>\n",
+			   ptl_op, atom_op_name[op], atom_type[type].name, length);
+
+	/* TODO replace with an event */
+	fprintf(f, "            <msleep count=\"10\"/>\n");
+
+	if (fetch) {
+		/* check to see that din data has changed */
+		fprintf(f, "            <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
+			   length, atom_type[type].name, datatype_str(type, tgt));
+		fprintf(f, "            <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
+			   atom_type[type].size, atom_type[type].name, length, datatype_str(type, din));
+
+		fprintf(f, "            </ptl_md>\n");
+	}
+
+	/* check to see that dout data has not changed */
+	fprintf(f, "            <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
+		   length, atom_type[type].name, datatype_str(type, dout));
+	fprintf(f, "            <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
+		   atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
+
+	fprintf(f, "          </ptl_md>\n");
+
+	/* check to see that target data has changed */
+	if (match) {
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" me_data=\"%s\"/>\n",
+			   length, atom_type[type].name, datatype_str(type, z));
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" offset=\"%d\" me_data=\"%s\"/>\n",
+			   atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
+	} else {
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" le_data=\"%s\"/>\n",
+			   length, atom_type[type].name, datatype_str(type, z));
+		fprintf(f, "          <check length=\"%d\" type=\"%s\" offset=\"%d\" le_data=\"%s\"/>\n",
+			   atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
+	}
+
+	if (match)
+		fprintf(f, "        </ptl_me>\n");
+	else
+		fprintf(f, "        </ptl_le>\n");
+
+	fprintf(f, "      </ptl_pt>\n");
+	fprintf(f, "    </ptl_ni>\n");
+	fprintf(f, "  </ptl>\n");
+
+	fprintf(f, "</test>\n");
+
+	if (to_files) {
+		fclose(f);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int err;
-	int i;
 	int match;
 	uint64_t match_bits;
 	int op;
@@ -438,8 +556,7 @@ int main(int argc, char *argv[])
 	datatype_t tgt, din, dout, z;
 	int length;
 	time_t cur_time = time(NULL);
-	char *ptl_op;
-	char *me_opt;
+	int fetch;
 
 	seed = cur_time;
 
@@ -449,125 +566,36 @@ int main(int argc, char *argv[])
 
 	srandom(seed);
 
-	printf("<?xml version=\"1.0\"?>\n");
+	/* Generate one of each kind. */
+	for (fetch =0; fetch <= 1; fetch ++) {
 
-	printf("<!--\n");
-	printf("	file generated %s", ctime(&cur_time));
-	printf("		command =");
-	for (i = 0; i < argc; i++)
-		printf(" %s", argv[i]);
-	printf("\n");
-	printf("		seed = %d\n", seed);
-	printf("		count = %d\n", count);
-	printf("		max_length = %d\n", max_length);
-	printf("-->\n");
+		for (op=PTL_MIN; op<=PTL_BXOR; op++) {
 
-	printf("<test>\n");
+			for (type = PTL_INT8_T; type <= PTL_LONG_DOUBLE_COMPLEX; type ++) {
 
-	for (i = 0; i < count; i++) {
-		match = random() & 1;
-		match_bits = random();
-		match_bits = match_bits << 32 | random();
+				if (!check_op_type_valid(op, type))
+					continue;
 
-		/* legal combinations */
-		do {
-			op = random() % (PTL_BXOR + 1);
-			type = random() % PTL_DATATYPE_LAST;
-		} while((op >= PTL_LOR && type >= PTL_FLOAT) ||
-			(op <= PTL_MAX && (type == PTL_FLOAT_COMPLEX ||
-					   type == PTL_DOUBLE_COMPLEX)));
+				match = random() & 1;
+				match_bits = random();
+				match_bits = match_bits << 32 | random();
 
-		tgt = get_data(type);
-		dout = get_data(type);
-		din = get_data(type);
-		z = get_result(tgt, dout, op, type);
+				tgt = get_data(type);
+				dout = get_data(type);
+				din = get_data(type);
+				z = get_result(tgt, dout, op, type);
 
-		length = random() % (max_length/atom_type[type].size);
-		length = (length + 1)*atom_type[type].size;
+				length = random() % (max_length/atom_type[type].size);
+				length = (length + 1)*atom_type[type].size;
 
-		ptl_op = fetch ? "fetch" : "atomic";
-		me_opt = fetch ? "OP_GET OP_PUT" : "OP_PUT";
-
-		printf("  <subtest>\n");
-		printf("    <desc>Test %s %s/%s length=%d</desc>\n",
-			ptl_op, atom_op_name[op], atom_type[type].name, length);
-		printf("    <ptl>\n");
-
-		printf("      <ptl_ni ni_opt=\"%s %s\">\n",
-	                        match ? "MATCH" : "NO_MATCH",
-				physical ? "PHYSICAL" : "LOGICAL");
-		printf("        <ptl_pt>\n");
-
-		/* setup me/le */
-		if (match)
-			printf("          <ptl_me me_opt=\"%s\" me_match=\"0x%" PRIu64 "\" type=\"%s\" me_data=\"%s\">\n",
-				me_opt, match_bits, atom_type[type].name, datatype_str(type, tgt));
-		else
-			printf("          <ptl_le le_opt=\"%s\" type=\"%s\" le_data=\"%s\">\n",
-				me_opt, atom_type[type].name, datatype_str(type, tgt));
-
-		/* setup md(s) */
-		printf("            <ptl_md type=\"%s\" md_data=\"%s\">\n",
-			atom_type[type].name, datatype_str(type, dout));
-		if (fetch)
-			printf("              <ptl_md type=\"%s\" md_data=\"%s\">\n",
-				atom_type[type].name, datatype_str(type, din));
-
-		if (match)
-			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" match=\"0x%" PRIu64 "\" target_id=\"SELF\"/>\n",
-				ptl_op, atom_op_name[op], atom_type[type].name, length, match_bits);
-		else
-			printf("              <ptl_%s atom_op=\"%s\" atom_type=\"%s\" length=\"%d\" target_id=\"SELF\"/>\n",
-				ptl_op, atom_op_name[op], atom_type[type].name, length);
-
-		/* TODO replace with an event */
-		printf("              <msleep count=\"10\"/>\n");
-
-		if (fetch) {
-			/* check to see that din data has changed */
-			printf("              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
-				length, atom_type[type].name, datatype_str(type, tgt));
-			printf("              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
-				atom_type[type].size, atom_type[type].name, length, datatype_str(type, din));
-
-			printf("              </ptl_md>\n");
+				generate_case(op, type, match, match_bits, din, dout, tgt,
+							  z, length, fetch);
+			}
 		}
-
-		/* check to see that dout data has not changed */
-	        printf("              <check length=\"%d\" type=\"%s\" md_data=\"%s\"/>\n",
-	                length, atom_type[type].name, datatype_str(type, dout));
-	        printf("              <check length=\"%d\" type=\"%s\" offset=\"%d\" md_data=\"%s\"/>\n",
-	                atom_type[type].size, atom_type[type].name, length, datatype_str(type, dout));
-
-		printf("            </ptl_md>\n");
-
-		/* check to see that target data has changed */
-		if (match) {
-			printf("            <check length=\"%d\" type=\"%s\" me_data=\"%s\"/>\n",
-				length, atom_type[type].name, datatype_str(type, z));
-			printf("            <check length=\"%d\" type=\"%s\" offset=\"%d\" me_data=\"%s\"/>\n",
-				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
-		} else {
-			printf("            <check length=\"%d\" type=\"%s\" le_data=\"%s\"/>\n",
-				length, atom_type[type].name, datatype_str(type, z));
-			printf("            <check length=\"%d\" type=\"%s\" offset=\"%d\" le_data=\"%s\"/>\n",
-				atom_type[type].size, atom_type[type].name, length, datatype_str(type, tgt));
-		}
-
-		if (match)
-			printf("          </ptl_me>\n");
-		else
-			printf("          </ptl_le>\n");
-
-		printf("        </ptl_pt>\n");
-		printf("      </ptl_ni>\n");
-		printf("    </ptl>\n");
-		printf("  </subtest>\n");
 	}
-	printf("</test>\n");
 
 	err = 0;
 
-done:
+ done:
 	return err;
 }
