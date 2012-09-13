@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic LOR/UINT8 length=30</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="UINT8" le_data="0xca">
+          <ptl_md type="UINT8" md_data="0x79">
+            <ptl_atomic atom_op="LOR" atom_type="UINT8" length="30" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="30" type="UINT8" md_data="0x79"/>
+            <check length="1" type="UINT8" offset="30" md_data="0x79"/>
+          </ptl_md>
+          <check length="30" type="UINT8" le_data="0x01"/>
+          <check length="1" type="UINT8" offset="30" le_data="0xca"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

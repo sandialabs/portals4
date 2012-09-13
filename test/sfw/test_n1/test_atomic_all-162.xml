@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch LAND/UINT32 length=12</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x4388011996423821487" type="UINT32" me_data="0x2fe85a18">
+          <ptl_md type="UINT32" md_data="0x57026ca3">
+            <ptl_md type="UINT32" md_data="0x506ff3d7">
+            <ptl_fetch atom_op="LAND" atom_type="UINT32" length="12" match="0x4388011996423821487" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="12" type="UINT32" md_data="0x2fe85a18"/>
+            <check length="4" type="UINT32" offset="12" md_data="0x506ff3d7"/>
+            </ptl_md>
+            <check length="12" type="UINT32" md_data="0x57026ca3"/>
+            <check length="4" type="UINT32" offset="12" md_data="0x57026ca3"/>
+          </ptl_md>
+          <check length="12" type="UINT32" me_data="0x00000001"/>
+          <check length="4" type="UINT32" offset="12" me_data="0x2fe85a18"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

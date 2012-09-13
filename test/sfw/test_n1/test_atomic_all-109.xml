@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch MIN/LDOUBLE length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="LDOUBLE" le_data="0.27974388107526509950">
+          <ptl_md type="LDOUBLE" md_data="0.33814474458669219192">
+            <ptl_md type="LDOUBLE" md_data="0.27030015149309494227">
+            <ptl_fetch atom_op="MIN" atom_type="LDOUBLE" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="LDOUBLE" md_data="0.27974388107526509950"/>
+            <check length="16" type="LDOUBLE" offset="16" md_data="0.27030015149309494227"/>
+            </ptl_md>
+            <check length="16" type="LDOUBLE" md_data="0.33814474458669219192"/>
+            <check length="16" type="LDOUBLE" offset="16" md_data="0.33814474458669219192"/>
+          </ptl_md>
+          <check length="16" type="LDOUBLE" le_data="0.27974388107526509950"/>
+          <check length="16" type="LDOUBLE" offset="16" le_data="0.27974388107526509950"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

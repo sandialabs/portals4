@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch SUM/DOUBLE length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="DOUBLE" le_data="0.00425858239369966089">
+          <ptl_md type="DOUBLE" md_data="0.13668889462314018357">
+            <ptl_md type="DOUBLE" md_data="0.29234070967604403046">
+            <ptl_fetch atom_op="SUM" atom_type="DOUBLE" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="DOUBLE" md_data="0.00425858239369966089"/>
+            <check length="8" type="DOUBLE" offset="16" md_data="0.29234070967604403046"/>
+            </ptl_md>
+            <check length="16" type="DOUBLE" md_data="0.13668889462314018357"/>
+            <check length="8" type="DOUBLE" offset="16" md_data="0.13668889462314018357"/>
+          </ptl_md>
+          <check length="16" type="DOUBLE" le_data="0.14094747701683985053"/>
+          <check length="8" type="DOUBLE" offset="16" le_data="0.00425858239369966089"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

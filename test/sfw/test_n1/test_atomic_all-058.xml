@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic LOR/UINT64 length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x2475585064739703874" type="UINT64" me_data="0x101f0f106b53967f">
+          <ptl_md type="UINT64" md_data="0x5052d63f4e6e1f0a">
+            <ptl_atomic atom_op="LOR" atom_type="UINT64" length="8" match="0x2475585064739703874" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="8" type="UINT64" md_data="0x5052d63f4e6e1f0a"/>
+            <check length="8" type="UINT64" offset="8" md_data="0x5052d63f4e6e1f0a"/>
+          </ptl_md>
+          <check length="8" type="UINT64" me_data="0x0000000000000001"/>
+          <check length="8" type="UINT64" offset="8" me_data="0x101f0f106b53967f"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

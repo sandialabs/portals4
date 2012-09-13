@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP/COMPLEX</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="COMPLEX" me_data="(0.4516755939, 0.3141461313)" me_match="0x2296497522209325831">
+          <ptl_md type="COMPLEX" md_data="(0.3479064405, 0.4992525578)">
+            <ptl_md type="COMPLEX" md_data="(0.3582479656, 0.0544501543)">
+              <ptl_swap atom_op="CSWAP" atom_type="COMPLEX" length="8" operand="(0.1777001768, 0.2026691437)" match="0x2296497522209325831" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="8" type="COMPLEX" md_data="(0.4516755939, 0.3141461313)"/>
+              <check length="8" type="COMPLEX" offset="8" md_data="(0.3582479656, 0.0544501543)"/>
+            </ptl_md>
+            <check length="8" type="COMPLEX" md_data="(0.3479064405, 0.4992525578)"/>
+            <check length="8" type="COMPLEX" offset="8" md_data="(0.3479064405, 0.4992525578)"/>
+          </ptl_md>
+          <check length="8" type="COMPLEX" me_data="(0.4516755939, 0.3141461313)"/>
+          <check length="8" type="COMPLEX" offset="8" me_data="(0.4516755939, 0.3141461313)"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

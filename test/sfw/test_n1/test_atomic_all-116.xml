@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch MAX/FLOAT length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="FLOAT" le_data="0.2575543225">
+          <ptl_md type="FLOAT" md_data="0.0940987766">
+            <ptl_md type="FLOAT" md_data="0.4518345594">
+            <ptl_fetch atom_op="MAX" atom_type="FLOAT" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="FLOAT" md_data="0.2575543225"/>
+            <check length="4" type="FLOAT" offset="16" md_data="0.4518345594"/>
+            </ptl_md>
+            <check length="16" type="FLOAT" md_data="0.0940987766"/>
+            <check length="4" type="FLOAT" offset="16" md_data="0.0940987766"/>
+          </ptl_md>
+          <check length="16" type="FLOAT" le_data="0.2575543225"/>
+          <check length="4" type="FLOAT" offset="16" le_data="0.2575543225"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

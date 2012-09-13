@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MIN/UINT64 length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="UINT64" le_data="0x5581149a2fa682df">
+          <ptl_md type="UINT64" md_data="0x14fd843138350190">
+            <ptl_atomic atom_op="MIN" atom_type="UINT64" length="24" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="UINT64" md_data="0x14fd843138350190"/>
+            <check length="8" type="UINT64" offset="24" md_data="0x14fd843138350190"/>
+          </ptl_md>
+          <check length="24" type="UINT64" le_data="0x14fd843138350190"/>
+          <check length="8" type="UINT64" offset="24" le_data="0x5581149a2fa682df"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

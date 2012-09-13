@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap SWAP/INT8</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="INT8" le_data="0x4a">
+          <ptl_md type="INT8" md_data="0x83">
+            <ptl_md type="INT8" md_data="0x24">
+              <ptl_swap atom_op="SWAP" atom_type="INT8" length="10" operand="0xae" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="10" type="INT8" md_data="0x4a"/>
+              <check length="1" type="INT8" offset="10" md_data="0x24"/>
+            </ptl_md>
+            <check length="10" type="INT8" md_data="0x83"/>
+            <check length="1" type="INT8" offset="10" md_data="0x83"/>
+          </ptl_md>
+          <check length="10" type="INT8" le_data="0x83"/>
+          <check length="1" type="INT8" offset="10" le_data="0x4a"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic PROD/INT16 length=30</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="INT16" le_data="0xcbe5">
+          <ptl_md type="INT16" md_data="0x9bf2">
+            <ptl_atomic atom_op="PROD" atom_type="INT16" length="30" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="30" type="INT16" md_data="0x9bf2"/>
+            <check length="2" type="INT16" offset="30" md_data="0x9bf2"/>
+          </ptl_md>
+          <check length="30" type="INT16" le_data="0x657a"/>
+          <check length="2" type="INT16" offset="30" le_data="0xcbe5"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

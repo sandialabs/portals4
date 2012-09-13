@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap SWAP/DOUBLE</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="DOUBLE" me_data="0.03049547061930617947" me_match="0x2325247504536678505">
+          <ptl_md type="DOUBLE" md_data="0.12302586249530281237">
+            <ptl_md type="DOUBLE" md_data="0.37606132220057297832">
+              <ptl_swap atom_op="SWAP" atom_type="DOUBLE" length="24" operand="0.49863934427705086661" match="0x2325247504536678505" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="24" type="DOUBLE" md_data="0.03049547061930617947"/>
+              <check length="8" type="DOUBLE" offset="24" md_data="0.37606132220057297832"/>
+            </ptl_md>
+            <check length="24" type="DOUBLE" md_data="0.12302586249530281237"/>
+            <check length="8" type="DOUBLE" offset="24" md_data="0.12302586249530281237"/>
+          </ptl_md>
+          <check length="24" type="DOUBLE" me_data="0.12302586249530281237"/>
+          <check length="8" type="DOUBLE" offset="24" me_data="0.03049547061930617947"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

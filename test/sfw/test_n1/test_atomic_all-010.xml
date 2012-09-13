@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MIN/DOUBLE length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="DOUBLE" le_data="0.21685314946291223137">
+          <ptl_md type="DOUBLE" md_data="0.09453602736321362054">
+            <ptl_atomic atom_op="MIN" atom_type="DOUBLE" length="32" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="32" type="DOUBLE" md_data="0.09453602736321362054"/>
+            <check length="8" type="DOUBLE" offset="32" md_data="0.09453602736321362054"/>
+          </ptl_md>
+          <check length="32" type="DOUBLE" le_data="0.09453602736321362054"/>
+          <check length="8" type="DOUBLE" offset="32" le_data="0.21685314946291223137"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic SUM/DCOMPLEX length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x2820134660295845381" type="DCOMPLEX" me_data="(0.15683109375479289960, 0.44793389781777515068)">
+          <ptl_md type="DCOMPLEX" md_data="(0.44916820839984428204, 0.04238194434703207447)">
+            <ptl_atomic atom_op="SUM" atom_type="DCOMPLEX" length="16" match="0x2820134660295845381" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="DCOMPLEX" md_data="(0.44916820839984428204, 0.04238194434703207447)"/>
+            <check length="16" type="DCOMPLEX" offset="16" md_data="(0.44916820839984428204, 0.04238194434703207447)"/>
+          </ptl_md>
+          <check length="16" type="DCOMPLEX" me_data="(0.60599930215463715388, 0.49031584216480722516)"/>
+          <check length="16" type="DCOMPLEX" offset="16" me_data="(0.15683109375479289960, 0.44793389781777515068)"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

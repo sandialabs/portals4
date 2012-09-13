@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_GE/UINT32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="UINT32" me_data="0x6d886b8c" me_match="0x3222377177324001013">
+          <ptl_md type="UINT32" md_data="0x6d886b8c">
+            <ptl_md type="UINT32" md_data="0x063ccb2e">
+              <ptl_swap atom_op="CSWAP_GE" atom_type="UINT32" length="4" operand="0x10283b57" match="0x3222377177324001013" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="4" type="UINT32" md_data="0x6d886b8c"/>
+              <check length="4" type="UINT32" offset="4" md_data="0x063ccb2e"/>
+            </ptl_md>
+            <check length="4" type="UINT32" md_data="0x6d886b8c"/>
+            <check length="4" type="UINT32" offset="4" md_data="0x6d886b8c"/>
+          </ptl_md>
+          <check length="4" type="UINT32" me_data="0x6d886b8c"/>
+          <check length="4" type="UINT32" offset="4" me_data="0x6d886b8c"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

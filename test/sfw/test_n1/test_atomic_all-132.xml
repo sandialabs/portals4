@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch SUM/DCOMPLEX length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="DCOMPLEX" le_data="(0.22647532043994958451, 0.41617327336039111607)">
+          <ptl_md type="DCOMPLEX" md_data="(0.21688932222546900008, 0.38691647559350228480)">
+            <ptl_md type="DCOMPLEX" md_data="(0.05600590457677213224, 0.13949648634503325484)">
+            <ptl_fetch atom_op="SUM" atom_type="DCOMPLEX" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="DCOMPLEX" md_data="(0.22647532043994958451, 0.41617327336039111607)"/>
+            <check length="16" type="DCOMPLEX" offset="16" md_data="(0.05600590457677213224, 0.13949648634503325484)"/>
+            </ptl_md>
+            <check length="16" type="DCOMPLEX" md_data="(0.21688932222546900008, 0.38691647559350228480)"/>
+            <check length="16" type="DCOMPLEX" offset="16" md_data="(0.21688932222546900008, 0.38691647559350228480)"/>
+          </ptl_md>
+          <check length="16" type="DCOMPLEX" le_data="(0.44336464266541858459, 0.80308974895389340087)"/>
+          <check length="16" type="DCOMPLEX" offset="16" le_data="(0.22647532043994958451, 0.41617327336039111607)"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

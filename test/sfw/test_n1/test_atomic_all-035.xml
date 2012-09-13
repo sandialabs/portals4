@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic SUM/LDOUBLE length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x4823999705405234510" type="LDOUBLE" me_data="0.39315117440804187021">
+          <ptl_md type="LDOUBLE" md_data="0.15048204025344857904">
+            <ptl_atomic atom_op="SUM" atom_type="LDOUBLE" length="32" match="0x4823999705405234510" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="32" type="LDOUBLE" md_data="0.15048204025344857904"/>
+            <check length="16" type="LDOUBLE" offset="32" md_data="0.15048204025344857904"/>
+          </ptl_md>
+          <check length="32" type="LDOUBLE" me_data="0.54363321466149044925"/>
+          <check length="16" type="LDOUBLE" offset="32" me_data="0.39315117440804187021"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

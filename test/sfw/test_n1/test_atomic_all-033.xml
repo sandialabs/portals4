@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic SUM/COMPLEX length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="COMPLEX" le_data="(0.2324794531, 0.2838076353)">
+          <ptl_md type="COMPLEX" md_data="(0.3243176937, 0.0512872264)">
+            <ptl_atomic atom_op="SUM" atom_type="COMPLEX" length="8" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="8" type="COMPLEX" md_data="(0.3243176937, 0.0512872264)"/>
+            <check length="8" type="COMPLEX" offset="8" md_data="(0.3243176937, 0.0512872264)"/>
+          </ptl_md>
+          <check length="8" type="COMPLEX" le_data="(0.5567971468, 0.3350948691)"/>
+          <check length="8" type="COMPLEX" offset="8" le_data="(0.2324794531, 0.2838076353)"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

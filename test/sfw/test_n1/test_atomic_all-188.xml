@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch LXOR/UINT64 length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x1347892648934690735" type="UINT64" me_data="0x4907c9d524efc74f">
+          <ptl_md type="UINT64" md_data="0x1bdb0e7667079ec6">
+            <ptl_md type="UINT64" md_data="0x4ff5b7d55f86cd5b">
+            <ptl_fetch atom_op="LXOR" atom_type="UINT64" length="32" match="0x1347892648934690735" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="32" type="UINT64" md_data="0x4907c9d524efc74f"/>
+            <check length="8" type="UINT64" offset="32" md_data="0x4ff5b7d55f86cd5b"/>
+            </ptl_md>
+            <check length="32" type="UINT64" md_data="0x1bdb0e7667079ec6"/>
+            <check length="8" type="UINT64" offset="32" md_data="0x1bdb0e7667079ec6"/>
+          </ptl_md>
+          <check length="32" type="UINT64" me_data="0x0000000000000000"/>
+          <check length="8" type="UINT64" offset="32" me_data="0x4907c9d524efc74f"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

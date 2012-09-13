@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic LXOR/UINT8 length=12</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="UINT8" le_data="0xd1">
+          <ptl_md type="UINT8" md_data="0xf1">
+            <ptl_atomic atom_op="LXOR" atom_type="UINT8" length="12" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="12" type="UINT8" md_data="0xf1"/>
+            <check length="1" type="UINT8" offset="12" md_data="0xf1"/>
+          </ptl_md>
+          <check length="12" type="UINT8" le_data="0x00"/>
+          <check length="1" type="UINT8" offset="12" le_data="0xd1"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

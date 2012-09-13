@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap MSWAP/INT32</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="INT32" le_data="0x58be3748">
+          <ptl_md type="INT32" md_data="0x325b7549">
+            <ptl_md type="INT32" md_data="0x6727425c">
+              <ptl_swap atom_op="MSWAP" atom_type="INT32" length="4" operand="0x25ae0367" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="4" type="INT32" md_data="0x58be3748"/>
+              <check length="4" type="INT32" offset="4" md_data="0x6727425c"/>
+            </ptl_md>
+            <check length="4" type="INT32" md_data="0x325b7549"/>
+            <check length="4" type="INT32" offset="4" md_data="0x325b7549"/>
+          </ptl_md>
+          <check length="4" type="INT32" le_data="0x781a3549"/>
+          <check length="4" type="INT32" offset="4" le_data="0x58be3748"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

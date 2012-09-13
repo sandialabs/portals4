@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic LAND/INT8 length=23</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="INT8" le_data="0x69">
+          <ptl_md type="INT8" md_data="0x88">
+            <ptl_atomic atom_op="LAND" atom_type="INT8" length="23" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="23" type="INT8" md_data="0x88"/>
+            <check length="1" type="INT8" offset="23" md_data="0x88"/>
+          </ptl_md>
+          <check length="23" type="INT8" le_data="0x01"/>
+          <check length="1" type="INT8" offset="23" le_data="0x69"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

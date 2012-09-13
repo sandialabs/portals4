@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_NE/UINT16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="UINT16" le_data="0x0c68">
+          <ptl_md type="UINT16" md_data="0x2c30">
+            <ptl_md type="UINT16" md_data="0xbeb3">
+              <ptl_swap atom_op="CSWAP_NE" atom_type="UINT16" length="2" operand="0x4f82" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="2" type="UINT16" md_data="0x0c68"/>
+              <check length="2" type="UINT16" offset="2" md_data="0xbeb3"/>
+            </ptl_md>
+            <check length="2" type="UINT16" md_data="0x2c30"/>
+            <check length="2" type="UINT16" offset="2" md_data="0x2c30"/>
+          </ptl_md>
+          <check length="2" type="UINT16" le_data="0x2c30"/>
+          <check length="2" type="UINT16" offset="2" le_data="0x0c68"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

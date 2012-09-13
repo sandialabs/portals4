@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch PROD/UINT32 length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="UINT32" le_data="0x0cd4fe7f">
+          <ptl_md type="UINT32" md_data="0x7012f2d4">
+            <ptl_md type="UINT32" md_data="0x5a0efce1">
+            <ptl_fetch atom_op="PROD" atom_type="UINT32" length="24" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="UINT32" md_data="0x0cd4fe7f"/>
+            <check length="4" type="UINT32" offset="24" md_data="0x5a0efce1"/>
+            </ptl_md>
+            <check length="24" type="UINT32" md_data="0x7012f2d4"/>
+            <check length="4" type="UINT32" offset="24" md_data="0x7012f2d4"/>
+          </ptl_md>
+          <check length="24" type="UINT32" le_data="0x6de4cf2c"/>
+          <check length="4" type="UINT32" offset="24" le_data="0x0cd4fe7f"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

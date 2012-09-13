@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic BXOR/UINT8 length=9</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x7637164672616060084" type="UINT8" me_data="0xa2">
+          <ptl_md type="UINT8" md_data="0x39">
+            <ptl_atomic atom_op="BXOR" atom_type="UINT8" length="9" match="0x7637164672616060084" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="9" type="UINT8" md_data="0x39"/>
+            <check length="1" type="UINT8" offset="9" md_data="0x39"/>
+          </ptl_md>
+          <check length="9" type="UINT8" me_data="0x9b"/>
+          <check length="1" type="UINT8" offset="9" me_data="0xa2"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
