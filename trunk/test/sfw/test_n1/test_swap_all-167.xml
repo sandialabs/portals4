@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_GE/LDOUBLE</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="LDOUBLE" le_data="0.48850758859230503095">
+          <ptl_md type="LDOUBLE" md_data="0.04121619315098826175">
+            <ptl_md type="LDOUBLE" md_data="0.11658492904024016223">
+              <ptl_swap atom_op="CSWAP_GE" atom_type="LDOUBLE" length="16" operand="0.45709191822399164451" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="16" type="LDOUBLE" md_data="0.48850758859230503095"/>
+              <check length="16" type="LDOUBLE" offset="16" md_data="0.11658492904024016223"/>
+            </ptl_md>
+            <check length="16" type="LDOUBLE" md_data="0.04121619315098826175"/>
+            <check length="16" type="LDOUBLE" offset="16" md_data="0.04121619315098826175"/>
+          </ptl_md>
+          <check length="16" type="LDOUBLE" le_data="0.48850758859230503095"/>
+          <check length="16" type="LDOUBLE" offset="16" le_data="0.48850758859230503095"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

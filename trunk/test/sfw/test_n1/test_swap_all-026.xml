@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP/DCOMPLEX</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="DCOMPLEX" le_data="(0.29554819847970137392, 0.20605364946082385669)">
+          <ptl_md type="DCOMPLEX" md_data="(0.28543890746972111483, 0.15387622622813651452)">
+            <ptl_md type="DCOMPLEX" md_data="(0.24901947371751598226, 0.34702338109726427184)">
+              <ptl_swap atom_op="CSWAP" atom_type="DCOMPLEX" length="16" operand="(0.08117072948474195193, 0.29883497047677931580)" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="16" type="DCOMPLEX" md_data="(0.29554819847970137392, 0.20605364946082385669)"/>
+              <check length="16" type="DCOMPLEX" offset="16" md_data="(0.24901947371751598226, 0.34702338109726427184)"/>
+            </ptl_md>
+            <check length="16" type="DCOMPLEX" md_data="(0.28543890746972111483, 0.15387622622813651452)"/>
+            <check length="16" type="DCOMPLEX" offset="16" md_data="(0.28543890746972111483, 0.15387622622813651452)"/>
+          </ptl_md>
+          <check length="16" type="DCOMPLEX" le_data="(0.29554819847970137392, 0.20605364946082385669)"/>
+          <check length="16" type="DCOMPLEX" offset="16" le_data="(0.29554819847970137392, 0.20605364946082385669)"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch PROD/INT8 length=29</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="INT8" le_data="0xec">
+          <ptl_md type="INT8" md_data="0xd4">
+            <ptl_md type="INT8" md_data="0xba">
+            <ptl_fetch atom_op="PROD" atom_type="INT8" length="29" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="29" type="INT8" md_data="0xec"/>
+            <check length="1" type="INT8" offset="29" md_data="0xba"/>
+            </ptl_md>
+            <check length="29" type="INT8" md_data="0xd4"/>
+            <check length="1" type="INT8" offset="29" md_data="0xd4"/>
+          </ptl_md>
+          <check length="29" type="INT8" le_data="0x70"/>
+          <check length="1" type="INT8" offset="29" le_data="0xec"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch LOR/INT64 length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x8416333195932945936" type="INT64" me_data="3885919843803502119">
+          <ptl_md type="INT64" md_data="1778284387298590829">
+            <ptl_md type="INT64" md_data="1715063502825758624">
+            <ptl_fetch atom_op="LOR" atom_type="INT64" length="8" match="0x8416333195932945936" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="8" type="INT64" md_data="3885919843803502119"/>
+            <check length="8" type="INT64" offset="8" md_data="1715063502825758624"/>
+            </ptl_md>
+            <check length="8" type="INT64" md_data="1778284387298590829"/>
+            <check length="8" type="INT64" offset="8" md_data="1778284387298590829"/>
+          </ptl_md>
+          <check length="8" type="INT64" me_data="1"/>
+          <check length="8" type="INT64" offset="8" me_data="3885919843803502119"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

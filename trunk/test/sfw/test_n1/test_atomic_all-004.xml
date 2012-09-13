@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MIN/UINT16 length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="UINT16" le_data="0x7859">
+          <ptl_md type="UINT16" md_data="0x54a2">
+            <ptl_atomic atom_op="MIN" atom_type="UINT16" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="UINT16" md_data="0x54a2"/>
+            <check length="2" type="UINT16" offset="16" md_data="0x54a2"/>
+          </ptl_md>
+          <check length="16" type="UINT16" le_data="0x54a2"/>
+          <check length="2" type="UINT16" offset="16" le_data="0x7859"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

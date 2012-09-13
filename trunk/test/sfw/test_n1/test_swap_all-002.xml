@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap SWAP/UINT8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="UINT8" me_data="0x46" me_match="0x8364191559524052468">
+          <ptl_md type="UINT8" md_data="0x61">
+            <ptl_md type="UINT8" md_data="0x80">
+              <ptl_swap atom_op="SWAP" atom_type="UINT8" length="24" operand="0x4d" match="0x8364191559524052468" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="24" type="UINT8" md_data="0x46"/>
+              <check length="1" type="UINT8" offset="24" md_data="0x80"/>
+            </ptl_md>
+            <check length="24" type="UINT8" md_data="0x61"/>
+            <check length="1" type="UINT8" offset="24" md_data="0x61"/>
+          </ptl_md>
+          <check length="24" type="UINT8" me_data="0x61"/>
+          <check length="1" type="UINT8" offset="24" me_data="0x46"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

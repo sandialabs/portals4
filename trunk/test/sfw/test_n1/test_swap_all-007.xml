@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap SWAP/FLOAT</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="FLOAT" le_data="0.4987146258">
+          <ptl_md type="FLOAT" md_data="0.0331775174">
+            <ptl_md type="FLOAT" md_data="0.4971750677">
+              <ptl_swap atom_op="SWAP" atom_type="FLOAT" length="8" operand="0.3963616490" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="8" type="FLOAT" md_data="0.4987146258"/>
+              <check length="4" type="FLOAT" offset="8" md_data="0.4971750677"/>
+            </ptl_md>
+            <check length="8" type="FLOAT" md_data="0.0331775174"/>
+            <check length="4" type="FLOAT" offset="8" md_data="0.0331775174"/>
+          </ptl_md>
+          <check length="8" type="FLOAT" le_data="0.0331775174"/>
+          <check length="4" type="FLOAT" offset="8" le_data="0.4987146258"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

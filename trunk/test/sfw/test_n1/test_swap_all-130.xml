@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_LT/UINT64</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT OP_GET" type="UINT64" le_data="0x104d9ba569105c7e">
+          <ptl_md type="UINT64" md_data="0x104d9ba569105c7e">
+            <ptl_md type="UINT64" md_data="0x0d9d64585dcfe5c4">
+              <ptl_swap atom_op="CSWAP_LT" atom_type="UINT64" length="8" operand="0x12b20e492102596d" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="8" type="UINT64" md_data="0x104d9ba569105c7e"/>
+              <check length="8" type="UINT64" offset="8" md_data="0x0d9d64585dcfe5c4"/>
+            </ptl_md>
+            <check length="8" type="UINT64" md_data="0x104d9ba569105c7e"/>
+            <check length="8" type="UINT64" offset="8" md_data="0x104d9ba569105c7e"/>
+          </ptl_md>
+          <check length="8" type="UINT64" le_data="0x104d9ba569105c7e"/>
+          <check length="8" type="UINT64" offset="8" le_data="0x104d9ba569105c7e"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

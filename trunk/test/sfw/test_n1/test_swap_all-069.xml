@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_NE/LDCOMPLEX</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="LDCOMPLEX" me_data="(0.28162607242845805189, 0.07804088717518473106)" me_match="0x3997742010366841500">
+          <ptl_md type="LDCOMPLEX" md_data="(0.32075036782764626553, 0.36743643537024928136)">
+            <ptl_md type="LDCOMPLEX" md_data="(0.46957753126971946145, 0.29122396519209448051)">
+              <ptl_swap atom_op="CSWAP_NE" atom_type="LDCOMPLEX" length="32" operand="(0.31965972445231050081, 0.04541929922707634015)" match="0x3997742010366841500" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="32" type="LDCOMPLEX" md_data="(0.28162607242845805189, 0.07804088717518473106)"/>
+              <check length="32" type="LDCOMPLEX" offset="32" md_data="(0.46957753126971946145, 0.29122396519209448051)"/>
+            </ptl_md>
+            <check length="32" type="LDCOMPLEX" md_data="(0.32075036782764626553, 0.36743643537024928136)"/>
+            <check length="32" type="LDCOMPLEX" offset="32" md_data="(0.32075036782764626553, 0.36743643537024928136)"/>
+          </ptl_md>
+          <check length="32" type="LDCOMPLEX" me_data="(0.32075036782764626553, 0.36743643537024928136)"/>
+          <check length="32" type="LDCOMPLEX" offset="32" me_data="(0.28162607242845805189, 0.07804088717518473106)"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

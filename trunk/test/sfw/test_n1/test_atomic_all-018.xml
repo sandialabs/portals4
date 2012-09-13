@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MAX/FLOAT length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="FLOAT" le_data="0.0693619549">
+          <ptl_md type="FLOAT" md_data="0.2713032663">
+            <ptl_atomic atom_op="MAX" atom_type="FLOAT" length="24" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="FLOAT" md_data="0.2713032663"/>
+            <check length="4" type="FLOAT" offset="24" md_data="0.2713032663"/>
+          </ptl_md>
+          <check length="24" type="FLOAT" le_data="0.2713032663"/>
+          <check length="4" type="FLOAT" offset="24" le_data="0.0693619549"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

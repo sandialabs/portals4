@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch BOR/UINT8 length=1</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x2384046527143757553" type="UINT8" me_data="0xd3">
+          <ptl_md type="UINT8" md_data="0x70">
+            <ptl_md type="UINT8" md_data="0x62">
+            <ptl_fetch atom_op="BOR" atom_type="UINT8" length="1" match="0x2384046527143757553" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="1" type="UINT8" md_data="0xd3"/>
+            <check length="1" type="UINT8" offset="1" md_data="0x62"/>
+            </ptl_md>
+            <check length="1" type="UINT8" md_data="0x70"/>
+            <check length="1" type="UINT8" offset="1" md_data="0x70"/>
+          </ptl_md>
+          <check length="1" type="UINT8" me_data="0xf3"/>
+          <check length="1" type="UINT8" offset="1" me_data="0xd3"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

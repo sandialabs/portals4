@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MIN/INT32 length=28</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_PUT" type="INT32" le_data="0x62249c4a">
+          <ptl_md type="INT32" md_data="0x70321e5e">
+            <ptl_atomic atom_op="MIN" atom_type="INT32" length="28" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="28" type="INT32" md_data="0x70321e5e"/>
+            <check length="4" type="INT32" offset="28" md_data="0x70321e5e"/>
+          </ptl_md>
+          <check length="28" type="INT32" le_data="0x62249c4a"/>
+          <check length="4" type="INT32" offset="28" le_data="0x62249c4a"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

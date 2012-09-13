@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic MIN/INT16 length=18</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x6599932522320261978" type="INT16" me_data="0x58f1">
+          <ptl_md type="INT16" md_data="0xab18">
+            <ptl_atomic atom_op="MIN" atom_type="INT16" length="18" match="0x6599932522320261978" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="18" type="INT16" md_data="0xab18"/>
+            <check length="2" type="INT16" offset="18" md_data="0xab18"/>
+          </ptl_md>
+          <check length="18" type="INT16" me_data="0xab18"/>
+          <check length="2" type="INT16" offset="18" me_data="0x58f1"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

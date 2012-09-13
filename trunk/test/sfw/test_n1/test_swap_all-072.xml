@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_LE/INT8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="INT8" me_data="0x73" me_match="0x17146103921184273">
+          <ptl_md type="INT8" md_data="0xc1">
+            <ptl_md type="INT8" md_data="0x1c">
+              <ptl_swap atom_op="CSWAP_LE" atom_type="INT8" length="1" operand="0x43" match="0x17146103921184273" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="1" type="INT8" md_data="0x73"/>
+              <check length="1" type="INT8" offset="1" md_data="0x1c"/>
+            </ptl_md>
+            <check length="1" type="INT8" md_data="0xc1"/>
+            <check length="1" type="INT8" offset="1" md_data="0xc1"/>
+          </ptl_md>
+          <check length="1" type="INT8" me_data="0xc1"/>
+          <check length="1" type="INT8" offset="1" me_data="0x73"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

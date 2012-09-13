@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap CSWAP_LT/INT64</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="INT64" me_data="6874557924562865040" me_match="0x1926252528588272220">
+          <ptl_md type="INT64" md_data="7574749605355271642">
+            <ptl_md type="INT64" md_data="2105703762890918418">
+              <ptl_swap atom_op="CSWAP_LT" atom_type="INT64" length="8" operand="5424154197204579141" match="0x1926252528588272220" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="8" type="INT64" md_data="6874557924562865040"/>
+              <check length="8" type="INT64" offset="8" md_data="2105703762890918418"/>
+            </ptl_md>
+            <check length="8" type="INT64" md_data="7574749605355271642"/>
+            <check length="8" type="INT64" offset="8" md_data="7574749605355271642"/>
+          </ptl_md>
+          <check length="8" type="INT64" me_data="7574749605355271642"/>
+          <check length="8" type="INT64" offset="8" me_data="6874557924562865040"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

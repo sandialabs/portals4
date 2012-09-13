@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+
+		seed = 1347556778
+		max_length = 32
+-->
+<test>
+  <desc>Test swap SWAP/INT32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT OP_GET" type="INT32" me_data="0x5120e799" me_match="0x9167108816014595307">
+          <ptl_md type="INT32" md_data="0x35423530">
+            <ptl_md type="INT32" md_data="0x5906c5c4">
+              <ptl_swap atom_op="SWAP" atom_type="INT32" length="8" operand="0x7e29434d" match="0x9167108816014595307" target_id="SELF"/>
+              <msleep count="10"/>
+              <check length="8" type="INT32" md_data="0x5120e799"/>
+              <check length="4" type="INT32" offset="8" md_data="0x5906c5c4"/>
+            </ptl_md>
+            <check length="8" type="INT32" md_data="0x35423530"/>
+            <check length="4" type="INT32" offset="8" md_data="0x35423530"/>
+          </ptl_md>
+          <check length="8" type="INT32" me_data="0x35423530"/>
+          <check length="4" type="INT32" offset="8" me_data="0x5120e799"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

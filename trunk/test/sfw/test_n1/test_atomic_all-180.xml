@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch BAND/UINT64 length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x6340892621253469784" type="UINT64" me_data="0x0744da1a68f33e29">
+          <ptl_md type="UINT64" md_data="0x440e78d16bf301ef">
+            <ptl_md type="UINT64" md_data="0x18cad66f2eed801e">
+            <ptl_fetch atom_op="BAND" atom_type="UINT64" length="8" match="0x6340892621253469784" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="8" type="UINT64" md_data="0x0744da1a68f33e29"/>
+            <check length="8" type="UINT64" offset="8" md_data="0x18cad66f2eed801e"/>
+            </ptl_md>
+            <check length="8" type="UINT64" md_data="0x440e78d16bf301ef"/>
+            <check length="8" type="UINT64" offset="8" md_data="0x440e78d16bf301ef"/>
+          </ptl_md>
+          <check length="8" type="UINT64" me_data="0x0404581068f30029"/>
+          <check length="8" type="UINT64" offset="8" me_data="0x0744da1a68f33e29"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

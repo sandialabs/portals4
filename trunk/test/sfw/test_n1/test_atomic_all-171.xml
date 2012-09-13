@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch BOR/INT64 length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="INT64" le_data="2508608162863377860">
+          <ptl_md type="INT64" md_data="8469761073827228947">
+            <ptl_md type="INT64" md_data="2575502054341077474">
+            <ptl_fetch atom_op="BOR" atom_type="INT64" length="24" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="INT64" md_data="2508608162863377860"/>
+            <check length="8" type="INT64" offset="24" md_data="2575502054341077474"/>
+            </ptl_md>
+            <check length="24" type="INT64" md_data="8469761073827228947"/>
+            <check length="8" type="INT64" offset="24" md_data="8469761073827228947"/>
+          </ptl_md>
+          <check length="24" type="INT64" le_data="8636496536433323479"/>
+          <check length="8" type="INT64" offset="24" le_data="2508608162863377860"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

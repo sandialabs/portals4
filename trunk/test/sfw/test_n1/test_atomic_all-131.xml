@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch SUM/COMPLEX length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="COMPLEX" le_data="(0.3889887929, 0.5008943081)">
+          <ptl_md type="COMPLEX" md_data="(0.3974268734, 0.2848809063)">
+            <ptl_md type="COMPLEX" md_data="(0.4242122471, 0.2194613814)">
+            <ptl_fetch atom_op="SUM" atom_type="COMPLEX" length="24" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="COMPLEX" md_data="(0.3889887929, 0.5008943081)"/>
+            <check length="8" type="COMPLEX" offset="24" md_data="(0.4242122471, 0.2194613814)"/>
+            </ptl_md>
+            <check length="24" type="COMPLEX" md_data="(0.3974268734, 0.2848809063)"/>
+            <check length="8" type="COMPLEX" offset="24" md_data="(0.3974268734, 0.2848809063)"/>
+          </ptl_md>
+          <check length="24" type="COMPLEX" le_data="(0.7864156961, 0.7857751846)"/>
+          <check length="8" type="COMPLEX" offset="24" le_data="(0.3889887929, 0.5008943081)"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

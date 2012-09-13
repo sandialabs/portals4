@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch SUM/LDCOMPLEX length=32</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x943167432528219386" type="LDCOMPLEX" me_data="(0.18826651749562473004, 0.01299398069661710647)">
+          <ptl_md type="LDCOMPLEX" md_data="(0.40391684079195028234, 0.19205078339704215185)">
+            <ptl_md type="LDCOMPLEX" md_data="(0.40198277142694049946, 0.40248371135877580862)">
+            <ptl_fetch atom_op="SUM" atom_type="LDCOMPLEX" length="32" match="0x943167432528219386" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="32" type="LDCOMPLEX" md_data="(0.18826651749562473004, 0.01299398069661710647)"/>
+            <check length="32" type="LDCOMPLEX" offset="32" md_data="(0.40198277142694049946, 0.40248371135877580862)"/>
+            </ptl_md>
+            <check length="32" type="LDCOMPLEX" md_data="(0.40391684079195028234, 0.19205078339704215185)"/>
+            <check length="32" type="LDCOMPLEX" offset="32" md_data="(0.40391684079195028234, 0.19205078339704215185)"/>
+          </ptl_md>
+          <check length="32" type="LDCOMPLEX" me_data="(0.59218335828757501238, 0.20504476409365925832)"/>
+          <check length="32" type="LDCOMPLEX" offset="32" me_data="(0.18826651749562473004, 0.01299398069661710647)"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

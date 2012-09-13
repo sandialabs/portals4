@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch BXOR/INT16 length=20</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="INT16" le_data="0x023f">
+          <ptl_md type="INT16" md_data="0x410b">
+            <ptl_md type="INT16" md_data="0x36dc">
+            <ptl_fetch atom_op="BXOR" atom_type="INT16" length="20" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="20" type="INT16" md_data="0x023f"/>
+            <check length="2" type="INT16" offset="20" md_data="0x36dc"/>
+            </ptl_md>
+            <check length="20" type="INT16" md_data="0x410b"/>
+            <check length="2" type="INT16" offset="20" md_data="0x410b"/>
+          </ptl_md>
+          <check length="20" type="INT16" le_data="0x4334"/>
+          <check length="2" type="INT16" offset="20" le_data="0x023f"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

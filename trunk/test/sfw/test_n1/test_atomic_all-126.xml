@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch SUM/UINT32 length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="NO_MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_le le_opt="OP_GET OP_PUT" type="UINT32" le_data="0x181b8967">
+          <ptl_md type="UINT32" md_data="0x2e1c2f6f">
+            <ptl_md type="UINT32" md_data="0x2c621603">
+            <ptl_fetch atom_op="SUM" atom_type="UINT32" length="16" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="UINT32" md_data="0x181b8967"/>
+            <check length="4" type="UINT32" offset="16" md_data="0x2c621603"/>
+            </ptl_md>
+            <check length="16" type="UINT32" md_data="0x2e1c2f6f"/>
+            <check length="4" type="UINT32" offset="16" md_data="0x2e1c2f6f"/>
+          </ptl_md>
+          <check length="16" type="UINT32" le_data="0x4637b8d6"/>
+          <check length="4" type="UINT32" offset="16" le_data="0x181b8967"/>
+        </ptl_le>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

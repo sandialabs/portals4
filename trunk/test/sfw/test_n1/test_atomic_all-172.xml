@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test fetch BOR/UINT64 length=16</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_GET OP_PUT" me_match="0x2737680613117983864" type="UINT64" me_data="0x69b7ee7a57b535d3">
+          <ptl_md type="UINT64" md_data="0x6f15a3311d533b5f">
+            <ptl_md type="UINT64" md_data="0x1ee3ba5b7f85f4d5">
+            <ptl_fetch atom_op="BOR" atom_type="UINT64" length="16" match="0x2737680613117983864" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="16" type="UINT64" md_data="0x69b7ee7a57b535d3"/>
+            <check length="8" type="UINT64" offset="16" md_data="0x1ee3ba5b7f85f4d5"/>
+            </ptl_md>
+            <check length="16" type="UINT64" md_data="0x6f15a3311d533b5f"/>
+            <check length="8" type="UINT64" offset="16" md_data="0x6f15a3311d533b5f"/>
+          </ptl_md>
+          <check length="16" type="UINT64" me_data="0x6fb7ef7b5ff73fdf"/>
+          <check length="8" type="UINT64" offset="16" me_data="0x69b7ee7a57b535d3"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

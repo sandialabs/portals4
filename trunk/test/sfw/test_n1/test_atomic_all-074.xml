@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic BOR/UINT64 length=8</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x3944274473777779752" type="UINT64" me_data="0x6802a69a053a0c3b">
+          <ptl_md type="UINT64" md_data="0x35023a8b702650fb">
+            <ptl_atomic atom_op="BOR" atom_type="UINT64" length="8" match="0x3944274473777779752" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="8" type="UINT64" md_data="0x35023a8b702650fb"/>
+            <check length="8" type="UINT64" offset="8" md_data="0x35023a8b702650fb"/>
+          </ptl_md>
+          <check length="8" type="UINT64" me_data="0x7d02be9b753e5cfb"/>
+          <check length="8" type="UINT64" offset="8" me_data="0x6802a69a053a0c3b"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

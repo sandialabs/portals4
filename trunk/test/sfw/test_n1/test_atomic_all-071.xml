@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+		seed = 1347556782
+		max_length = 32
+-->
+<test>
+  <desc>Test atomic BOR/INT32 length=24</desc>
+  <ptl>
+    <ptl_ni ni_opt="MATCH PHYSICAL">
+      <ptl_pt>
+        <ptl_me me_opt="OP_PUT" me_match="0x7795239853088855889" type="INT32" me_data="0x010cef0e">
+          <ptl_md type="INT32" md_data="0x2ed9b319">
+            <ptl_atomic atom_op="BOR" atom_type="INT32" length="24" match="0x7795239853088855889" target_id="SELF"/>
+            <msleep count="10"/>
+            <check length="24" type="INT32" md_data="0x2ed9b319"/>
+            <check length="4" type="INT32" offset="24" md_data="0x2ed9b319"/>
+          </ptl_md>
+          <check length="24" type="INT32" me_data="0x2fddff1f"/>
+          <check length="4" type="INT32" offset="24" me_data="0x010cef0e"/>
+        </ptl_me>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
