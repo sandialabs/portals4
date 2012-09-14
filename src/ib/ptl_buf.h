@@ -248,7 +248,7 @@ struct buf {
 
 	/* Used during transfer. These fields are only valid while the
 	 * buffer is allocated. */
-	union {
+	struct {
 #if WITH_TRANSPORT_IB
 		struct {
 			/* For RDMA operations. */

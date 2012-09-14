@@ -234,34 +234,6 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
 	return err;
 }
 
-
-/**
- * @brief Copy data from a list element to a memory segment and
- * save the starting address.
- *
- * @param[in] buf The message buf received by the target.
- * @param[in] me The LE/ME list element.
- * @param[out] data The memory segment to hold the data.
- *
- * @return status
- */
-static int copy_out(buf_t *buf, me_t *me, void *data)
-{
-	int err;
-	ptl_size_t offset = buf->moffset;
-	ptl_size_t length = buf->mlength;
-
-	if (me->num_iov) {
-		err = iov_copy_out(data, (ptl_iovec_t *)me->start, NULL,
-						   me->num_iov, offset, length);
-	} else {
-		memcpy(data, me->start + offset, length);
-		err = PTL_OK;
-	}
-
-	return err;
-}
-
 /**
  * @brief Prepare a send buf to send an ack or reply message to the initiator.
  *
@@ -1360,7 +1332,7 @@ static int tgt_swap_data_in(buf_t *buf)
 	int err;
 	me_t *me = buf->me; /* can be LE or ME */
 	data_t *data = buf->data_in;
-	uint8_t copy[16]; /* big enough to hold double complex */
+	uint8_t copy[sizeof(datatype_t)];
 	void *dst;
 	ni_t *ni;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
@@ -1372,7 +1344,8 @@ static int tgt_swap_data_in(buf_t *buf)
 	assert(data->data_fmt == DATA_FMT_IMMEDIATE);
 
 	if (unlikely(me->num_iov)) {
-		err = copy_out(buf, me, copy);
+		err = iov_copy_out(copy, (ptl_iovec_t *)me->start, NULL,
+						   me->num_iov, buf->moffset, buf->mlength);
 		if (err)
 			return STATE_TGT_ERROR;
 
