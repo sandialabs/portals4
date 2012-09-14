@@ -54,7 +54,7 @@ static inline void ref_set(struct ref *ref, int num)
  */
 static inline void ref_get(struct ref *ref)
 {
-	int ref_cnt;
+	int ref_cnt = ref_cnt;
 
 	ref_cnt = atomic_inc(&ref->ref_cnt);
 

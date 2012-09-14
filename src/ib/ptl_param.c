@@ -77,8 +77,13 @@ param_t param[] = {
 	[PTL_LIM_MAX_LIST_SIZE]		= {
 				.name	= "PTL_LIM_MAX_LIST_SIZE",
 				.min	= 0,
+#if defined(__LP64__)
 				.max	= 4*GiB,
 				.val	= KiB,
+#else
+				.max	= 1*GiB,
+				.val	= KiB,
+#endif
 			},
 	[PTL_LIM_MAX_TRIGGERED_OPS]		= {
 				.name	= "PTL_LIM_MAX_TRIGGERED_OPS",
@@ -90,8 +95,13 @@ param_t param[] = {
 	[PTL_LIM_MAX_MSG_SIZE]		= {
 				.name	= "PTL_LIM_MAX_MSG_SIZE",
 				.min	= 0,
+#if defined(__LP64__)
 				.max	= 4*GiB,
 				.val	= 4*GiB,
+#else
+				.max	= 1*GiB,
+				.val	= 1*GiB,
+#endif
 			},
 	/* must be less than MAX_INLINE_DATA */
 	[PTL_LIM_MAX_ATOMIC_SIZE]		= {

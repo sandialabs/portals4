@@ -151,7 +151,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		mem_iovec->offset = iov->iov_base - mr->addr;
 #endif
 #if IS_PPE
-		mem_iovec->addr = addr_to_ppe(iov->iov_base, md->mr_list[i]);
+		mem_iovec->addr = addr_to_ppe(iov->iov_base, mr);
 #endif
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;

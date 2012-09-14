@@ -391,13 +391,12 @@ static int noknem_do_transfer(buf_t *buf)
 
 static int noknem_tgt_data_out(buf_t *buf, data_t *data)
 {
-	int next;
 	ni_t *ni = obj_to_ni(buf);
 
 	if (data->data_fmt != DATA_FMT_NOKNEM) {
 		assert(0);
 		WARN();
-		next = STATE_TGT_ERROR;
+		return STATE_TGT_ERROR;
 	}
 
 	buf->transfer.noknem.transfer_state_expected = 2; /* always the target here */
@@ -490,7 +489,6 @@ static int setup_commpad(ni_t *ni)
 	int err;
 	int i;
 	int pid_table_size;
-	off_t first_queue_offset;
 
 	/*
 	 * Buffers in shared memory. The buffers will be allocated later,
@@ -537,7 +535,6 @@ static int setup_commpad(ni_t *ni)
 
 	ni->shmem.comm_pad_size = pid_table_size;
 
-	first_queue_offset = ni->shmem.comm_pad_size;
 	ni->shmem.comm_pad_size += (ni->shmem.per_proc_comm_buf_size * ni->mem.node_size);
 
 #if !USE_KNEM
