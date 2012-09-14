@@ -60,14 +60,17 @@ void buf_cleanup(void *arg)
 #if WITH_TRANSPORT_IB
 	/* send/rdma bufs drop their references to
 	 * the master buf here */
-	if (buf->transfer.rdma.xxbuf) {
-		buf_put(buf->transfer.rdma.xxbuf);
-		buf->transfer.rdma.xxbuf = NULL;
-	}
+	if (buf->obj.obj_pool->type == POOL_BUF) {
 
-	if (buf->transfer.rdma.num_req_completes) {
-		atomic_sub(&buf->conn->rdma.num_req_posted, buf->transfer.rdma.num_req_completes);
-		assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
+		if (buf->transfer.rdma.xxbuf) {
+			buf_put(buf->transfer.rdma.xxbuf);
+			buf->transfer.rdma.xxbuf = NULL;
+		}
+
+		if (buf->transfer.rdma.num_req_completes) {
+			atomic_sub(&buf->conn->rdma.num_req_posted, buf->transfer.rdma.num_req_completes);
+			assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
+		}
 	}
 #endif
 
