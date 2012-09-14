@@ -236,7 +236,6 @@ int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 {
 	int err;
 	ct_t *ct;
-	ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -254,8 +253,6 @@ int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 #else
 	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
-
-	ni = obj_to_ni(ct);
 
 	ct->info.interrupt = 1;
 	ct_check(ct);
@@ -401,7 +398,6 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 			  unsigned int *which_p)
 {
 	int err;
-	ni_t *ni = NULL;
 	struct ct_info *cts_info[size];
 	ct_t *cts[size];
 	int i;
@@ -422,6 +418,8 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
 	for (i = 0; i < size; i++) {
+		ni_t *ni;
+
 		err = to_ct(MYGBL_ ct_handles[i], &cts[i]);
 		if (unlikely(err || !cts[i])) {
 			err = PTL_ARG_INVALID;
@@ -445,7 +443,6 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 		cts_info[i] = &cts[i]->info;
 	}
 	i2 = size - 1;
-	ni = obj_to_ni(cts[0]);
 #endif
 
 	err = PtlCTPoll_work(cts_info, thresholds, size, timeout, event_p, which_p);
@@ -565,7 +562,6 @@ int _PtlCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 {
 	int err;
 	ct_t *ct;
-	ni_t *ni;
 
 	/* convert handle to object */
 #ifndef NO_ARG_VALIDATION
@@ -584,8 +580,6 @@ int _PtlCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 #else
 	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
-
-	ni = obj_to_ni(ct);
 
 	ct_set(ct, new_ct);
 
@@ -635,7 +629,6 @@ int _PtlCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 {
 	int err;
 	ct_t *ct;
-	ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
 	err = gbl_get();
@@ -658,8 +651,6 @@ int _PtlCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 #else
 	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
-
-	ni = obj_to_ni(ct);
 
 	ct_inc(ct, increment);
 
