@@ -1731,10 +1731,6 @@ atom_op_t atom_op[PTL_OP_LAST][PTL_DATATYPE_LAST] = {
 /**
  * perform swap operations for all cases except PTL_SWAP.
  *
- * @todo There is an open issue with the operand for double complex
- * swap operations. Since operand is declared as u64 and that
- * is not big enough to hold a double complex.
- *
  * @param atom_op The swap operation to perform
  * @param atom_type The data type to use
  * @param dest address of target data
