@@ -1547,6 +1547,20 @@ static void sig_terminate(int signum)
 	ev_async_send(evl.loop, &stop_event_loop);
 }
 
+static void usage(const char *name)
+{
+	printf("  Portals 4 Process Engine\n\n");
+	printf("  Usage:\n");
+	printf("  %s [OPTIONS]\n\n", name);
+	printf("  Options are:\n");
+	printf("    -n, --nppebufs=NUM     number of PPE buffers to create (default=%d)\n",
+		   ppe.ppebuf.num);
+	printf("    -p, --nprogthreads=NUM number of processing threads to create (default=%d)\n",
+		   ppe.num_prog_threads);
+	printf("    -h, --help             displays this message\n");
+	printf("\n");
+}
+
 int main(int argc, char *argv[])
 {
 	int err;
@@ -1562,10 +1576,11 @@ int main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"nppebufs", 1, 0, 'n'},
 			{"nprogthreads", 1, 0, 'p'},
+			{"help", 0, 0, 'h' },
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "n:p:",
+		c = getopt_long(argc, argv, "n:p:h",
                         long_options, &option_index);
 
 		if (c == -1)
@@ -1586,6 +1601,11 @@ int main(int argc, char *argv[])
 				ptl_warn("Invalid argument value for nprogthreads\n");
 				return 1;
 			}
+			break;
+
+		case 'h':
+			usage(argv[0]);
+			return 1;
 			break;
 
 		default:
