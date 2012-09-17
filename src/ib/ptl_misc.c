@@ -13,7 +13,9 @@ int ptl_log_level;
 unsigned long pagesize;
 unsigned int linesize;
 
+#if !IS_LIGHT_LIB
 struct transports transports;
+#endif
 
 /* Various initalizations that must be done once. */
 int misc_init_once(void)
@@ -29,6 +31,8 @@ int misc_init_once(void)
 	linesize = 64;
 #endif
 
+#if !IS_LIGHT_LIB
+
 #if WITH_TRANSPORT_SHMEM
 	if (get_param(PTL_ENABLE_MEM)) {
 		transports.local = transport_local_shmem;
@@ -43,6 +47,8 @@ int misc_init_once(void)
 #if WITH_TRANSPORT_UDP
 	transports.remote = transport_remote_udp;
 #endif
+
+#endif	/* !IS_LIGHT_LIB */
 
 	return PTL_OK;
 }
