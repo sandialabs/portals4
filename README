@@ -73,7 +73,7 @@ There is currently 2 transports available: mc and infiniband, which are mutually
         software.
 
       * The XPMEM driver from
-        https://code.google.com/p/portals4/. Mandatory for the PPE is
+        https://code.google.com/p/xpmem/. Mandatory if the PPE is
         selected, unused otherwise. The current driver has crashing
         issues and doesn't compile on recent kernel versions.
 
