@@ -97,7 +97,7 @@ There is currently 2 transports available: mc and infiniband, which are mutually
 
       Then type "make".
 
-    Test :
+    Test:
       * Type "make check" in the main directory. This will run a
         series of checks on the local node, with either 1 or 2 ranks.
 
@@ -108,9 +108,16 @@ There is currently 2 transports available: mc and infiniband, which are mutually
     Limitations:
       * A program may not open more than one NID in its lifetime.
 
-    Pitfalls:
+    Why Portals may not run properly:
       * The user cannot pin enough memory. By default linux systems
-        allow about 32KB. Check with "ulimit -l". This is for IB only.
+        allow about 32KB. Check with "ulimit -l". This is for IB
+        only. Edit /etc/security/limits.co onf and change/add the
+        following 2 lines (including the stars):
+           * hard memlock unlimited
+           * soft memlock unlimited
+        (This setting allow every user to pin large amounts of
+        memory. Replace the stars with a user name for a tighter
+        setting).
 
       * IB is not up and running (check with "ibv_devinfo") or the
         default IPoIB interface, ib0, doesn't have an IP address. All
