@@ -101,6 +101,16 @@ There is currently 2 transports available: mc and infiniband, which are mutually
       * Type "make check" in the main directory. This will run a
         series of checks on the local node, with either 1 or 2 ranks.
 
+    Environment variables:
+
+      * PTL_ENABLE_MEM=[0|1] will deactivate/activate the local memory
+        transport, if one is compiled in.
+      * PTL_DEBUG=1 will activate the tracing
+      * PTL_LOG_LEVEL=[0|1|2|3] will set the trace level.
+
+      For instance:
+        PTL_LOG_LEVEL=3 PTL_DEBUG=1 yod -n 1 ./spam
+
     Building an RPM:
       * make dist       --> this will create portals-4.0.tar.gz
       * rpmbuild -ta portals-4.0.tar.gz
