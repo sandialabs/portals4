@@ -339,6 +339,12 @@ int _PtlNIInit(gbl_t *gbl,
 	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
 	pthread_mutex_init(&ni->atomic_mutex, NULL);
 	pthread_mutex_init(&ni->pt_mutex, NULL);
+
+#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	PTL_FASTLOCK_INIT(&ni->shmem.noknem_lock);
+	INIT_LIST_HEAD(&ni->shmem.noknem_list);
+#endif
+
 	if (options & PTL_NI_PHYSICAL) {
 		PTL_FASTLOCK_INIT(&ni->physical.lock);
 	}
