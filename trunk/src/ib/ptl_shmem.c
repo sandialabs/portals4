@@ -740,13 +740,7 @@ buf_t *shmem_dequeue(ni_t *ni)
  * @return status
  */
 static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
-
 {
-#if !USE_KNEM
-	PTL_FASTLOCK_INIT(&ni->shmem.noknem_lock);
-	INIT_LIST_HEAD(&ni->shmem.noknem_list);
-#endif
-
 	ni->shmem.knem_fd = -1;
 	ni->shmem.comm_pad = MAP_FAILED;
 
