@@ -55,9 +55,14 @@ There is currently 2 transports available: mc and infiniband, which are mutually
         processing is done in the light library; most of it is done
         inside the PPE. This environment is selected with
         --enable-ib-ppe. The XPMEM driver must be present, and so it
-        is mutually exclusive with the shmem transport.
+        is mutually exclusive with the shmem transport. The daemon
+        must be started prior to running a Portals4 application:
+          <PATH>/p4ppe
 
-    Both the fat and light library are called the same, so only one
+        p4ppe has a set of options. Run with the --help optins to see
+        them.
+
+    Both the fat and light library are called the same, thus only one
     type can exist on a machine at the same time; use LD_LIBRARY_PATH
     and/or LD_PRELOAD to work around.
 
@@ -138,3 +143,8 @@ There is currently 2 transports available: mc and infiniband, which are mutually
 
       * uneven performance between repeats can be caused by the
         threads being on different cores. Pin them.
+
+      * When shmem is used, under the wrong circumstances, the files
+        /dev/shm/portals4-shmem-* are not removed. If a subsequent run
+        tries to re-use the same name, it will fail and the
+        application may exit.
