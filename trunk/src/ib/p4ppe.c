@@ -289,9 +289,8 @@ static int init_ppe(void)
 		pt->queue = &ppe.comm_pad->q[i].queue;
 		queue_init(pt->queue);
 		queue_init(&pt->internal_queue);
+		INIT_LIST_HEAD(&pt->ni_list);
 	}
-
-	INIT_LIST_HEAD(&ppe.ni_list);
 
 	return PTL_OK;
 
@@ -1370,7 +1369,7 @@ static void *ppe_progress(void *arg)
 #if WITH_TRANSPORT_IB
 		/* Infiniband. Walking the list of active NIs to find work. */
 		ni_t *ni;
-		list_for_each_entry(ni, &ppe.ni_list, rdma.ppe_ni_list) {
+		list_for_each_entry(ni, &pt->ni_list, rdma.ppe_ni_list) {
 			progress_thread_rdma(ni);
 		}
 #endif
@@ -1486,6 +1485,8 @@ static unsigned int fakepid(void)
  */
 static int NIInit_ppe(gbl_t *gbl, ni_t *ni)
 {
+	struct prog_thread *pt = &ppe.prog_thread[gbl->prog_thread];
+
 	/* Only if IB hasn't setup the NID first. */
 	if (ni->iface->id.phys.nid == PTL_NID_ANY) {
 		//todo : bad
@@ -1499,11 +1500,11 @@ static int NIInit_ppe(gbl_t *gbl, ni_t *ni)
 	if (ni->id.phys.pid == PTL_PID_ANY)
 		ni->id.phys.pid = ni->iface->id.phys.pid;
 
-	ni->mem.internal_queue = &ppe.prog_thread[gbl->prog_thread].internal_queue;
+	ni->mem.internal_queue = &pt->internal_queue;
 	ni->mem.apid = gbl->apid;
 
 #if WITH_TRANSPORT_IB
-	list_add_tail(&ni->rdma.ppe_ni_list, &ppe.ni_list);
+	list_add_tail(&ni->rdma.ppe_ni_list, &pt->ni_list);
 #endif
 
 	if (ni->options & PTL_NI_PHYSICAL) {
