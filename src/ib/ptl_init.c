@@ -259,8 +259,8 @@ static int prepare_req(buf_t *buf)
 
 		buf->data_out = NULL;
 		buf->data_in = (data_t *)(buf->data + buf->length);
-		err = buf->conn->transport.init_prepare_transfer(buf->get_md, DATA_DIR_IN,
-														 buf->get_offset, length, buf);
+		err = buf->conn->transport.init_prepare_transfer(buf->get_md, DATA_DIR_IN, 
+				 buf->get_offset, length, buf);
 		if (err)
 			goto error;
 		break;
@@ -275,7 +275,7 @@ static int prepare_req(buf_t *buf)
 			hdr->h1.operand = 1;
 			buf->length += sizeof(datatype_t);
 		}
-		
+
 		/* fall through ... */
 
 	case OP_FETCH:
@@ -482,6 +482,8 @@ static int init_copy_in(buf_t *buf)
 	ptl_size_t to_copy;
 	int ret;
 
+	noknem->state = 1;
+
 	/* Copy the data from the bounce buffer. */
 	to_copy = noknem->length;
 
@@ -577,6 +579,109 @@ static int init_copy_done(buf_t *buf)
 		return STATE_INIT_CLEANUP;
 }
 
+#elif WITH_TRANSPORT_UDP
+static int init_copy_in(buf_t *buf)
+{
+	struct udp *udp = buf->transfer.udp.udp;
+	ptl_size_t to_copy;
+	int ret;
+
+	udp->state = 1;
+
+	/* Copy the data from the bounce buffer. */
+	to_copy = udp->length;
+
+	/* Target should never send more than requested. */
+	assert(to_copy <= buf->transfer.udp.length_left);
+
+	ret = iov_copy_in(buf->transfer.udp.data, buf->transfer.udp.iovecs,
+					  NULL,
+					  buf->transfer.udp.num_iovecs,
+					  buf->transfer.udp.offset,
+					  to_copy);
+	if (ret == PTL_FAIL) {
+		WARN();
+		return STATE_INIT_ERROR;
+	}
+
+	if (udp->target_done)
+		return STATE_INIT_COPY_DONE;
+
+	buf->transfer.udp.length_left -= to_copy;
+	buf->transfer.udp.offset += to_copy;
+
+	/* Tell the target the data is ready. */
+	__sync_synchronize();
+	udp->state = 2;
+
+	return STATE_INIT_COPY_IN;
+}
+
+static int init_copy_out(buf_t *buf)
+{
+	struct udp *udp = buf->transfer.udp.udp;
+	ptl_size_t to_copy;
+	int ret;
+
+	if (udp->target_done)
+		return STATE_INIT_COPY_DONE;
+
+	udp->state = 1;
+
+	/* Copy the data to the bounce buffer. */
+	to_copy = buf->transfer.udp.data_length;
+	if (to_copy > buf->transfer.udp.length_left)
+		to_copy = buf->transfer.udp.length_left;
+
+	ret = iov_copy_out(buf->transfer.udp.data, buf->transfer.udp.iovecs,
+					   NULL,
+					   buf->transfer.udp.num_iovecs,
+					   buf->transfer.udp.offset,
+					   to_copy);
+	if (ret == PTL_FAIL) {
+		WARN();
+		return STATE_INIT_ERROR;
+	}
+
+	buf->transfer.udp.length_left -= to_copy;
+	buf->transfer.udp.offset += to_copy;
+
+	udp->length = to_copy;
+
+	/* Tell the target the data is ready. */
+	__sync_synchronize();
+	udp->state = 2;
+
+	return STATE_INIT_COPY_OUT;
+}
+
+static int init_copy_done(buf_t *buf)
+{
+	ni_t *ni = obj_to_ni(buf);
+	struct udp *udp = buf->transfer.udp.udp;
+
+	/* Ack. */
+	udp->init_done = 1;
+	__sync_synchronize();
+	udp->state = 2;
+
+	/* Free the bounce buffer allocated in init_append_data. */
+	ll_enqueue_obj_alien(&ni->udp.udp_buf.head->free_list,
+						   buf->transfer.udp.data,
+						   ni->udp.udp_buf.head,
+						   ni->udp.udp_buf.head->head_index0);
+
+	/* Only called from the progress thread, so ni->udp_lock is
+	 * already locked. */
+	list_del(&buf->list);
+
+	if (buf->event_mask & XI_EARLY_SEND)
+		return STATE_INIT_EARLY_SEND_EVENT;
+	else if (buf->event_mask & XI_RECEIVE_EXPECTED)
+		return STATE_INIT_WAIT_RECV;
+	else
+		return STATE_INIT_CLEANUP;
+}
 
 #else
 static int init_copy_in(buf_t *buf) { abort(); }
@@ -956,6 +1061,8 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_COPY_DONE:
 			state = init_copy_done(buf);
+			if (state == STATE_INIT_COPY_DONE)
+				goto exit;
 			break;
 		case STATE_INIT_WAIT_COMP:
 			state = wait_comp(buf);

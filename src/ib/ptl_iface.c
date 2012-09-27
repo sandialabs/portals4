@@ -104,7 +104,10 @@ int init_iface_table(gbl_t *gbl)
 #endif
 
 #if WITH_TRANSPORT_UDP
-		sprintf(gbl->iface[i].ifname, "eth%d", i);
+		/* the interface name is "eth" followed by the interface id */
+		//TODO: for now, we'll assume only loopback connection
+		//sprintf(gbl->iface[i].ifname, "eth%d", i);
+		sprintf(gbl->iface[i].ifname, "lo");
 		gbl->iface[i].udp.connect_s = -1;
 #endif
 

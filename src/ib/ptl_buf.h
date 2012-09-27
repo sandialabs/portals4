@@ -19,6 +19,12 @@ enum buf_type {
 	BUF_RECV,
 	BUF_RDMA,
 
+#if WITH_TRANSPORT_UDP
+	BUF_UDP_SEND,
+	BUF_UDP_RETURN,
+	BUF_UDP_RECEIVE,
+#endif
+
 #if WITH_TRANSPORT_SHMEM
 	BUF_SHMEM_SEND,
 	BUF_SHMEM_RETURN,
@@ -61,8 +67,8 @@ enum {
 typedef enum buf_type buf_type_t;
 
 /* That information is coming from the conn structure (see
- * set_buf_dest()). It is duplicated here to avoid following to many
- * pointers during the processing of the packet. */
+ *  * set_buf_dest()). It is duplicated here to avoid following to many
+ *   * pointers during the processing of the packet. */
 struct xremote {
 	union {
 #if WITH_TRANSPORT_IB
@@ -114,6 +120,7 @@ struct buf {
 	/** enables holding buf on lists */
 	struct list_head	list;
 
+	//struct buf		*xxbuf;
 	unsigned int	event_mask;
 
 	ptl_size_t		rlength;
@@ -237,6 +244,12 @@ struct buf {
 		} rdma;
 #endif
 
+#if WITH_TRANSPORT_UDP
+		struct {
+			struct sockaddr_in *dest_addr;
+		} udp;
+#endif
+
 #if WITH_TRANSPORT_SHMEM
 		struct {
 			/* TODO: this field should be set only once; when
@@ -257,7 +270,7 @@ struct buf {
 			ptl_size_t		cur_rem_off;
 			int			interim_rdma;
 
-			struct list_head	rdma_list;
+			struct list_head        rdma_list;
 
 			/* The MRs cannot be released until the transaction is
 			 * over. So we allocate a new buffer and keep the MRs
@@ -312,6 +325,40 @@ struct buf {
 			struct noknem *noknem;
 		} noknem;
 #endif
+
+#if WITH_TRANSPORT_UDP
+		struct {
+			/* Invariant during the transfer,
+			 * 0=initiator, 2=target */
+			int transfer_state_expected;
+
+			/* Local MD/ME/LE */
+			ptl_iovec_t *iovecs;
+			ptl_size_t num_iovecs;
+			ptl_size_t length_left;
+			ptl_size_t offset;
+
+			/* Fake local iovec used when the MD/LE doesn't have an
+			 * iovec array. */
+			ptl_iovec_t my_iovec;
+
+#if 1
+			/* The associated bounce buffer. Its address, its total
+			 * length, and its offset in the comm pad, relative to the
+			 * NI's bounce buffers head. */
+			unsigned char *data;
+			ptl_size_t data_length;
+			off_t bounce_offset;
+#endif
+
+			/* noknem communication pad. For the initiator, this
+			 * points to the local internal_data, while for the
+			 * target, it is mem_buf->internal_data; both are the
+			 * same physical location from different address
+			 * spaces. */
+			struct udp *udp;
+		} udp;
+#endif
 	} transfer;
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -320,6 +367,10 @@ struct buf {
 	 * without destroying the sbuf that belongs to
 	 * another process. Keep a pointer to that sbuf. */
 	struct buf *mem_buf;
+#endif
+
+#if WITH_TRANSPORT_UDP
+	struct buf *udp_buf;
 #endif
 
 #if IS_PPE
@@ -480,7 +531,8 @@ static inline void set_buf_dest(buf_t *buf, conn_t *connect)
 #if WITH_TRANSPORT_UDP
 	case CONN_TYPE_UDP:
 		buf->dest.udp.s = obj_to_ni(buf)->udp.s;
-		buf->dest.udp.dest_addr = &connect->udp.dest_addr;
+		//buf->dest.udp.dest_addr = &connect->udp.dest_addr;
+		buf->dest.udp.dest_addr = &connect->sin;
 		break;
 #endif
 	}

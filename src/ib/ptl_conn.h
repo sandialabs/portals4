@@ -152,7 +152,10 @@ struct conn {
 
 #if WITH_TRANSPORT_UDP
 		struct {
-			struct sockaddr_in	dest_addr;	
+			struct sockaddr_in	dest_addr;
+			//TODO: Why do these counters need to be atomic?
+			atomic_t send_seq;
+			atomic_t recv_seq;
 		} udp;
 #endif
 	};
