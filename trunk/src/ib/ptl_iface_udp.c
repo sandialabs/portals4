@@ -482,19 +482,18 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	ni->udp.dest_addr = &iface->udp.sin;
 
 	// TODO: Does this belong here or even in UDP at all?
-#if 0
 	off_t bounce_buf_offset;
 	off_t bounce_head_offset;
 
-	//bounce_head_offset = ni->udp.comm_pad_size;
-	//ni->shmem.comm_pad_size += ROUND_UP(sizeof(struct shmem_bounce_head), pagesize);
+	bounce_head_offset = ni->udp.comm_pad_size;
+	ni->udp.comm_pad_size += ROUND_UP(sizeof(struct udp_bounce_head), pagesize);
 
 	ni->udp.udp_buf.buf_size = get_param(PTL_BOUNCE_BUF_SIZE);
 	ni->udp.udp_buf.num_bufs = get_param(PTL_BOUNCE_NUM_BUFS);
 
-	//bounce_buf_offset = ni->shmem.comm_pad_size;
-	//ni->shmem.comm_pad_size += ni->shmem.bounce_buf.buf_size * ni->shmem.bounce_buf.num_bufs;
-#endif
+	bounce_buf_offset = ni->udp.comm_pad_size;
+	ni->udp.comm_pad_size += ni->udp.udp_buf.buf_size * ni->udp.udp_buf.num_bufs;
+
 	return PTL_OK;
 
  error:
