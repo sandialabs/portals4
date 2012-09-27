@@ -194,15 +194,14 @@ typedef struct ni {
 		int s;
 		uint16_t src_port;		/* port number of that socket. */
 		struct sockaddr_in *dest_addr;
-		/*
+
 		void *comm_pad;		// in udp datagram?
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
-		atomic_t			num_posted_recv;
+		atomic_t num_posted_recv;
 		// Number of established connections.
 		atomic_t num_conn;
-		*/
 
 		struct {
 			struct udp_bounce_head *head;
