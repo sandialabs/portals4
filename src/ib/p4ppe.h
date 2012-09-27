@@ -42,6 +42,9 @@ struct prog_thread {
 	/* When to stop the progress thread. */
 	int stop;
 
+	/* Linked list of active NIs. */
+	struct list_head ni_list;
+
 	/* Points to own queue in comm pad. */
 	queue_t *queue;
 
@@ -79,9 +82,6 @@ struct ppe {
 	/* Watcher for incoming connection from clients. */
 	ev_io client_watcher;
 	int client_fd;
-
-	/* Linked list of active NIs. */
-	struct list_head ni_list;
 
 	/* List of existing clients. May replace with a tree someday. */
 	RB_HEAD(clients_root, client) clients_tree;
