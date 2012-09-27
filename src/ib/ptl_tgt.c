@@ -1105,6 +1105,71 @@ static int tgt_rdma(buf_t *buf)
 	return STATE_TGT_COMM_EVENT;
 }
 
+#if WITH_TRANSPORT_UDP
+/**
+ * @brief target udp state.
+ *
+ * This state can be reached from tgt_data_in or tgt_data_out. It
+ * generates udp commands to copy data between the md at the
+ * initiator and the le/me at the target. It may require leaving
+ * and reentering the state machine if there are not enough udp
+ * resources. (UO & REB) - not sure!!!
+ *
+ * @param[in] buf The message buf received by the target.
+ *
+ * @return The next state.
+ */
+static int tgt_udp(buf_t *buf)
+{
+	int err;
+	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
+				&buf->put_resid : &buf->get_resid;
+
+	/* post one or more RDMA operations */
+	err = buf->conn->transport.post_tgt_dma(buf);
+	if (err)
+		return STATE_TGT_ERROR;
+
+	/* if there is more work to do leave the state
+	 * machine and have the completion of the rdma
+	 * operation reenter this state to issue more
+	 * operations. */
+	if (*resid
+		|| (buf->transfer.udp.udp && buf->transfer.udp.udp->init_done == 0)
+		)
+		return STATE_TGT_UDP;
+
+	/* check to see if there is another data phase */
+	if (buf->put_resid) {
+		/* re-initialize buf->cur_loc_iov_index/off */
+		err = init_local_offset(buf);
+		if (err)
+			return STATE_TGT_ERROR;
+
+		if (hdr->h1.operation == OP_FETCH)
+			return STATE_TGT_ATOMIC_DATA_IN;
+		else if (hdr->h1.operation == OP_SWAP)
+			return (hdr->atom_op == PTL_SWAP) ?
+				STATE_TGT_DATA_IN :
+				STATE_TGT_SWAP_DATA_IN;
+		else
+			return  STATE_TGT_DATA_IN;
+	}
+
+	/* ok we are done transfering data */
+	return STATE_TGT_COMM_EVENT;
+}
+#else
+static int tgt_udp(buf_t *buf)
+{
+	/* This state can only be reached through UDP. */
+	abort();
+	return STATE_TGT_COMM_EVENT;
+}
+#endif // WITH_TRANSPORT_UDP
+
+
 #if WITH_TRANSPORT_IB
 /**
  * @brief Send rdma read for indirect scatter/gather list
@@ -1556,14 +1621,14 @@ static int tgt_send_ack(buf_t *buf)
 		case CONN_TYPE_RDMA:
 			/* That should not be possible. */
 			abort();
-			break;
+			break:
 #endif
 
 		default:
 			/* Unreachable. */
 			abort();
 		}
-	}
+  	}
 
 	return STATE_TGT_CLEANUP;
 }
@@ -1835,6 +1900,11 @@ int process_tgt(buf_t *buf)
 			state = tgt_rdma(buf);
 			if (state == STATE_TGT_RDMA)
 				goto exit;
+			break;
+		case STATE_TGT_UDP:
+			state = tgt_udp(buf);
+			if (state == STATE_TGT_UDP)
+				 goto exit;
 			break;
 		case STATE_TGT_ATOMIC_DATA_IN:
 			state = tgt_atomic_data_in(buf);

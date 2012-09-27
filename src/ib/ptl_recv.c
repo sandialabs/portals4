@@ -465,6 +465,165 @@ void progress_thread_rdma(ni_t *ni)
 }
 #endif
 
+#if 0
+#if WITH_TRANSPORT_UDP
+//TODO: Fill-in this function showing how udp does its
+//      recvfrom to retrieve the sent buffer; remember to
+//      increment relevant atomics
+static void progress_thread_udp(ni_t *ni)
+{
+	ssize_t nbytes;
+	char data[BUF_DATA_SIZE];
+
+	nbytes = recvfrom(ni->udp.s, data, BUF_DATA_SIZE, 0, 
+					  NULL, NULL);
+
+	if (nbytes != -1) {
+		if (nbytes > 0) {
+			buf_t *buf;
+			int err;
+
+			/* Allocate a buffer to copy the data in. This is bad; we
+			 * should have a buf readily available for the recvfrom
+			 * call to save a copy. TODO. */
+			err = buf_alloc(ni, &buf);
+			if (err) {
+				WARN();
+			} else {
+				memcpy(buf->data, data, nbytes);
+				buf->length = nbytes;
+				process_recv_mem(ni, buf);
+			}
+		} else {
+			/* Can we receive 0 bytes ? */
+			abort();
+		}
+	}
+}
+#endif
+#endif
+
+#if WITH_TRANSPORT_UDP
+static void progress_thread_udp(ni_t *ni)
+{
+//#if WITH_TRANSPORT_SHMEM
+	/* Socket connection.*/
+	if (ni->udp.dest_addr) {
+		int err;
+		buf_t *udp_buf;
+
+		//udp_buf = shmem_dequeue(ni);
+		udp_buf = udp_receive(ni);
+
+		if (udp_buf) {
+			switch(udp_buf->type) {
+			case BUF_UDP_SEND: {
+				buf_t *buf;
+
+				/* Mark it for return now. The target state machine might
+				 * change its type to BUF_SHMEM_SEND. */
+				udp_buf->type = BUF_UDP_RETURN;
+
+				err = buf_alloc(ni, &buf);
+				if (err) {
+					WARN();
+				} else {
+					buf->data = udp_buf->internal_data;
+					buf->length = udp_buf->length;
+					buf->udp_buf = udp_buf;
+					INIT_LIST_HEAD(&buf->list);
+					process_recv_udp(ni, buf);
+				}
+
+//#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+				/* Don't send back if it's on the noknem list. */
+				if (!list_empty(&buf->list))
+					break;
+//#endif
+
+				if (udp_buf->type == BUF_UDP_SEND ||
+					udp_buf->udp.dest_addr != ni->udp.dest_addr) {
+					/* Requested to send the buffer back, or not the
+					 * owner. Send the buffer back in both cases. */
+					//shmem_enqueue(ni, udp_buf, udp_buf->udp.index_owner);
+					//udp_send(ni, udp_buf, udp_buf->udp.index_owner);
+					udp_send(ni, udp_buf, udp_buf->dest.udp.dest_addr);
+				} else {
+					/* It was returned to us with a message from a remote
+					 * rank. From send_message_udp(). */
+					buf_put(udp_buf);
+				}
+			}
+				break;
+
+			case BUF_UDP_RETURN:
+				/* Buffer returned to us by remote node. */
+				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
+
+				/* From send_message_udp(). */
+				buf_put(udp_buf);
+				break;
+
+			default:
+				/* Should not happen. */
+				abort();
+			}
+		}
+	}
+//#endif
+
+//TODO: do we need this for UDP?
+//#if WITH_TRANSPORT_SHMEM && !USE_KNEM
+	struct list_head *l, *t;
+
+	/* TODO: instead of having a lock, the initiator should send
+	 * the buf to itself, and on receiving it, the progress thread
+	 * will put it on the list. That way, only the progress thread
+	 * has access to the list. */
+	PTL_FASTLOCK_LOCK(&ni->udp_lock);
+
+	list_for_each_safe(l, t, &ni->udp_list) {
+		buf_t *buf = list_entry(l, buf_t, list);
+		struct udp *udp = buf->transfer.udp.udp;
+
+		if (buf->transfer.udp.transfer_state_expected == udp->state) {
+			if (udp->state == 0)
+				process_init(buf);
+			else if (udp->state == 2) {
+				if (udp->init_done) {
+					buf_t *udp_buf = buf->udp_buf;
+
+					/* The transfer is now done. Remove from
+					 * udp_list. */
+					list_del(&buf->list);
+
+					process_tgt(buf);
+
+					if (udp_buf->type == BUF_UDP_SEND ||
+						udp_buf->udp.dest_addr != ni->udp.dest_addr) {
+						/* Requested to send the buffer back, or not the
+						 * owner. Send the buffer back in both cases. */
+						//shmem_enqueue(ni, udp_buf, udp_buf->udp.index_owner);
+						//udp_send(ni, udp_buf, udp_buf->udp.index_owner);
+						udp_send(ni, udp_buf, udp_buf->dest.udp.dest_addr);
+					} else {
+						/* It was returned to us with a message from a remote
+						 * rank. From send_message_udp(). */
+						buf_put(udp_buf);
+					}
+
+				} else {
+					process_tgt(buf);
+				}
+			}
+		}
+	}
+
+	PTL_FASTLOCK_UNLOCK(&ni->udp_lock);
+//#endif
+}
+#endif
+
 #if WITH_TRANSPORT_SHMEM || IS_PPE || WITH_TRANSPORT_UDP
 /**
  * Process a received message in shared memory.
@@ -516,41 +675,59 @@ exit:
 #endif
 
 #if WITH_TRANSPORT_UDP
-static void progress_thread_udp(ni_t *ni)
+/**
+ * Process a received message in UDP.
+ *
+ * @param ni the ni to poll.
+ * @param buf the received buffer.
+ */
+void process_recv_udp(ni_t *ni, buf_t *buf)
 {
-	ssize_t nbytes;
-	char data[BUF_DATA_SIZE];
+	enum recv_state state = STATE_RECV_PACKET;
 
-	nbytes = recvfrom(ni->udp.s, data, BUF_DATA_SIZE, 0, 
-					  NULL, NULL);
-
-	if (nbytes != -1) {
-		if (nbytes > 0) {
-			buf_t *buf;
-			int err;
-
-			/* Allocate a buffer to copy the data in. This is bad; we
-			 * should have a buf readily available for the recvfrom
-			 * call to save a copy. TODO. */
-			err = buf_alloc(ni, &buf);
-			if (err) {
-				WARN();
-			} else {
-				memcpy(buf->data, data, nbytes);
-				buf->length = nbytes;
-				process_recv_mem(ni, buf);
+//TODO: Not sure what to put here yet
+	while(1) {
+		ptl_info("tid:%lx buf:%p: recv state local = %s\n",
+				 (long unsigned int)pthread_self(), buf,
+				   recv_state_name[state]);
+		switch (state) {
+		case STATE_RECV_PACKET:
+			state = recv_packet(buf);
+			break;
+		case STATE_RECV_REQ:
+			state = recv_req(buf);
+			break;
+		case STATE_RECV_INIT:
+			state = recv_init(buf);
+			break;
+		case STATE_RECV_DROP_BUF:
+			state = recv_drop_buf(buf);
+			break;
+		case STATE_RECV_ERROR:
+			if (buf) {
+				buf_put(buf);
+				ni->num_recv_errs++;
 			}
-		} else {
-			/* Can we receive 0 bytes ? */
+			goto exit;
+		case STATE_RECV_REPOST:
+		case STATE_RECV_DONE:
+			goto exit;
+
+		case STATE_RECV_PACKET_RDMA:
+		case STATE_RECV_SEND_COMP:
+		case STATE_RECV_RDMA_COMP:
+			/* Not reachable. */
 			abort();
 		}
 	}
+exit:
+	return;
 }
 #endif
 
 #if !IS_PPE
 /**
- * Progress thread. Waits for both ib and shared memory messages.
+ * Progress thread. Waits for ib, udp, and/or shared memory messages.
  *
  * @param arg opaque pointer to ni.
  */
@@ -565,8 +742,13 @@ static void *progress_thread(void *arg)
 #endif
 		  ) {
 
+#if WITH_TRANSPORT_RDMA
 		progress_thread_rdma(ni);
+#endif
+
+#if WITH_TRANSPORT_UDP
 		progress_thread_udp(ni);
+#endif
 
 #if WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */
