@@ -38,6 +38,12 @@ struct shmem_bounce_head {
 						  * 0. Invariant. */
 };
 
+struct udp_bounce_head {
+	union counted_ptr free_list;	 /* head of free list of bounce buffers */
+	void *head_index0;	 /* logical address of the head of local index
+						  * 0. Invariant. */
+};
+
 /* Memory regions tree attached to an NI. The PPE must have 2, the
  * other transports need one. */
 struct ni_mr_tree {
@@ -183,10 +189,34 @@ typedef struct ni {
 #endif
 
 #if WITH_TRANSPORT_UDP
+	/* UDP transport specific */
 	struct {
 		int s;
 		uint16_t src_port;		/* port number of that socket. */
+		struct sockaddr_in *dest_addr;
+		/*
+		void *comm_pad;		// in udp datagram?
+		size_t comm_pad_size;
+		size_t per_proc_comm_buf_size;
+		int per_proc_comm_buf_numbers;
+		atomic_t			num_posted_recv;
+		// Number of established connections.
+		atomic_t num_conn;
+		*/
+
+		struct {
+			struct udp_bounce_head *head;
+			void *bbs;  /* local address of the bounce buffers */
+
+			size_t buf_size;
+			unsigned int num_bufs;
+		} udp_buf;
 	} udp;
+#endif
+
+#if WITH_TRANSPORT_UDP
+	PTL_FASTLOCK_TYPE udp_lock;
+	struct list_head udp_list;
 #endif
 
 	/* object allocation pools */
