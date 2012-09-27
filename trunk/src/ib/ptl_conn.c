@@ -35,7 +35,7 @@ int conn_init(void *arg, void *parm)
 	INIT_LIST_HEAD(&conn->buf_list);
 
 #if WITH_TRANSPORT_IB
-	/* If IB is available, set it as the default transport. If may be
+	/* If IB is available, set it as the default transport. It may be
 	 * overriden later in PtlSetMap to use a local transport such as
 	 * XPMEM or SHMEM. */
 	conn->transport = transport_rdma;
@@ -50,7 +50,11 @@ int conn_init(void *arg, void *parm)
 #endif
 
 #if WITH_TRANSPORT_UDP
+	/* Set udp as the transport. */
 	conn->transport = transport_udp;
+
+	atomic_set(&conn->udp.send_seq, 0);
+	atomic_set(&conn->udp.recv_seq, 0);
 #endif
 
 	return PTL_OK;
@@ -73,6 +77,13 @@ void conn_fini(void *arg)
 			rdma_destroy_id(conn->rdma.cm_id);
 			conn->rdma.cm_id = NULL;
 		}
+	}
+#endif
+
+#if WITH_TRANSPORT_UDP
+	if (conn->transport.type == CONN_TYPE_UDP) {
+		atomic_set(&conn->udp.send_seq, 0);
+		atomic_set(&conn->udp.recv_seq, 0);
 	}
 #endif
 
@@ -350,8 +361,9 @@ void flush_pending_xi_xt(conn_t *conn)
 		list_del_init(&buf->list);
 		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 
-		if (buf->type == BUF_TGT)
+		if (buf->type == BUF_TGT) {
 			process_tgt(buf);
+		}
 		else {
 			assert(buf->type == BUF_INIT);
 			process_init(buf);

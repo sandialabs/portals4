@@ -23,6 +23,10 @@ enum data_fmt {
 	DATA_FMT_RDMA_INDIRECT,
 #endif
 
+#if WITH_TRANSPORT_UDP
+	DATA_FMT_UDP,
+#endif
+
 #if WITH_TRANSPORT_SHMEM && USE_KNEM
 	DATA_FMT_KNEM_DMA,
 	DATA_FMT_KNEM_INDIRECT,
@@ -89,7 +93,7 @@ struct data {
 			 * 1 = initiator processing (set by initiator)
 			 * 2 = target to process (set by target)
 			 * 3 = target processing (set by target)
-			 * 4 = transfert done (set by target only.)
+			 * 4 = transfer done (set by target only.)
 			 */
 			int state;
 
@@ -103,6 +107,30 @@ struct data {
 			int init_done;
 			int target_done;
 		} noknem;
+#endif
+
+#if WITH_TRANSPORT_UDP
+		/* UDP state structure used by both sides of the transfer. */
+		struct udp {
+			/* Transfer state.
+			 * 0 = initiator to process (set by initiator)
+			 * 1 = initiator processing (set by initiator)
+			 * 2 = target to process (set by target)
+			 * 3 = target processing (set by target)
+			 * 4 = transfer done (set by target only.)
+			 */
+			int state;
+
+			/* Length being transfered. Only the current owner can modify it. */
+			int length;
+
+			/* Bounce buffer. */
+			off_t bounce_offset;
+
+			/* Transfer done. Set by the target only. */
+			int init_done;
+			int target_done;
+		} udp;
 #endif
 	};
 } __attribute__((__packed__));
