@@ -89,25 +89,6 @@ static void set_limits(ni_t *ni, const ptl_ni_limits_t *desired)
 	}
 }
 
-/* Release the buffers still on the send_list and recv_list. */
-static void release_buffers(ni_t *ni)
-{
-#if WITH_TRANSPORT_IB
-	buf_t *buf;
-
-	/* TODO: cleanup of the XT/XI and their buffers that might still
-	 * be in flight. It's only usefull when something bad happens, so
-	 * it's not critical. */
-
-	while(!list_empty(&ni->rdma.recv_list)) {
-		struct list_head *entry = ni->rdma.recv_list.next;
-		list_del(entry);
-		buf = list_entry(entry, buf_t, list);
-		buf_put(buf);
-	}
-#endif
-}
-
 /*
  * init_pools - initialize resource pools for NI
  */
@@ -249,28 +230,6 @@ enum {
 	NI_FINISH_CLEANUP
 };
 
-static void iface_add_ni(iface_t *iface, ni_t *ni)
-{
-	int type = ni->ni_type;
-
-	/* sanity check */
-	assert(iface->ni[type] == NULL);
-
-	iface->ni[type] = ni;
-	ni->iface = iface;
-}
-
-static void iface_remove_ni(ni_t *ni)
-{
-	iface_t *iface = ni->iface;
-	int type = ni->ni_type;
-
-	/* sanity check */
-	assert(ni == iface->ni[type]);
-
-	iface->ni[type] = NULL;
-}
-
 int _PtlNIInit(gbl_t *gbl,
 			   ptl_interface_t	iface_id,
 			   unsigned int	options,
@@ -360,7 +319,6 @@ int _PtlNIInit(gbl_t *gbl,
 	}
 
 	ni->iface = iface;
-	ni->iface->gbl = gbl;
 	ni->ni_type = ni_type;
 	atomic_set(&ni->ref_cnt, 1);
 	ni->options = options;
@@ -370,10 +328,6 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->cleanup_state = NI_INIT_CLEANUP;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	PTL_FASTLOCK_INIT(&ni->shmem.noknem_lock);
-	INIT_LIST_HEAD(&ni->shmem.noknem_list);
-#endif
 #if WITH_TRANSPORT_UDP
 	PTL_FASTLOCK_INIT(&ni->udp_lock);
 	INIT_LIST_HEAD(&ni->udp_list);
@@ -384,11 +338,6 @@ int _PtlNIInit(gbl_t *gbl,
 	PTL_FASTLOCK_INIT(&ni->mr_app.tree_lock);
 #if !IS_PPE
 	ni->umn_fd = -1;
-#endif
-#if WITH_TRANSPORT_IB
-	INIT_LIST_HEAD(&ni->rdma.recv_list);
-	atomic_set(&ni->rdma.num_conn, 0);
-	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
 #endif
 	PTL_FASTLOCK_INIT(&ni->md_list_lock);
 	PTL_FASTLOCK_INIT(&ni->ct_list_lock);
@@ -443,9 +392,9 @@ int _PtlNIInit(gbl_t *gbl,
 		err = PTL_ARG_INVALID;
 		goto err3;
 	}
-	ni->has_catcher = 1;
 
-	iface_add_ni(iface, ni);
+	assert(iface->ni[ni_type] == NULL);
+	iface->ni[ni_type] = ni;
 
  done:
 	pthread_mutex_unlock(&gbl->gbl_mutex);
@@ -483,9 +432,8 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 	}
 
 	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (unlikely(err)) {
+	if (unlikely(err))
 		goto err1;
-	}
 
 	if (ni->logical.mapping) {
 		ni_put(ni);
@@ -660,19 +608,14 @@ static void ni_cleanup(ni_t *ni)
 	interrupt_cts(ni);
 	cleanup_mr_trees(ni);
 
-#if WITH_TRANSPORT_IB
-	EVL_WATCH(ev_io_stop(evl.loop, &ni->rdma.async_watcher));
-#endif
-
 	if (transports.local.NIFini)
 		transports.local.NIFini(ni);
 
 	if (transports.remote.NIFini)
 		transports.remote.NIFini(ni);
 
-	iface_remove_ni(ni);
+	ni->iface->ni[ni->ni_type] = NULL;
 	ni->iface = NULL;
-	release_buffers(ni);
 
 	if (ni->options & PTL_NI_LOGICAL) {
 		if (ni->logical.mapping) {
@@ -706,12 +649,6 @@ static void ni_cleanup(ni_t *ni)
 	PTL_FASTLOCK_DESTROY(&ni->ct_list_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_self.tree_lock);
 	PTL_FASTLOCK_DESTROY(&ni->mr_app.tree_lock);
-#if WITH_TRANSPORT_IB
-	PTL_FASTLOCK_DESTROY(&ni->rdma.recv_list_lock);
-#endif
-#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	PTL_FASTLOCK_DESTROY(&ni->shmem.noknem_lock);
-#endif
 #if WITH_TRANSPORT_UDP
 	PTL_FASTLOCK_DESTROY(&ni->udp_lock);
 #endif

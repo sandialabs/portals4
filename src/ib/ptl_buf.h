@@ -67,8 +67,8 @@ enum {
 typedef enum buf_type buf_type_t;
 
 /* That information is coming from the conn structure (see
- *  * set_buf_dest()). It is duplicated here to avoid following to many
- *   * pointers during the processing of the packet. */
+ * set_buf_dest()). It is duplicated here to avoid following to many
+ * pointers during the processing of the packet. */
 struct xremote {
 	union {
 #if WITH_TRANSPORT_IB
@@ -120,7 +120,6 @@ struct buf {
 	/** enables holding buf on lists */
 	struct list_head	list;
 
-	//struct buf		*xxbuf;
 	unsigned int	event_mask;
 
 	ptl_size_t		rlength;

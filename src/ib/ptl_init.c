@@ -482,8 +482,6 @@ static int init_copy_in(buf_t *buf)
 	ptl_size_t to_copy;
 	int ret;
 
-	noknem->state = 1;
-
 	/* Copy the data from the bounce buffer. */
 	to_copy = noknem->length;
 
@@ -1061,8 +1059,6 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_COPY_DONE:
 			state = init_copy_done(buf);
-			if (state == STATE_INIT_COPY_DONE)
-				goto exit;
 			break;
 		case STATE_INIT_WAIT_COMP:
 			state = wait_comp(buf);
