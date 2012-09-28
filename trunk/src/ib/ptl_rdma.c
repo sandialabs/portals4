@@ -495,7 +495,6 @@ static buf_t *tgt_alloc_rdma_buf(buf_t *buf)
 
 	rdma_buf->type = BUF_RDMA;
 	rdma_buf->transfer.rdma.xxbuf = buf;
-	rdma_buf->xxbuf = buf;
 	buf_get(buf);
 	rdma_buf->dest = buf->dest;
 	rdma_buf->conn = buf->conn;

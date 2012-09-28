@@ -1,4 +1,4 @@
-/** 
+/**
  * @file ptl_obj.h
  *
  * Common object type base class.

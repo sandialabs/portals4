@@ -239,31 +239,20 @@ void cleanup_rdma(ni_t *ni);
 int init_iface_rdma(iface_t *iface);
 void initiate_disconnect_all(ni_t *ni);
 
-#ifdef WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB
 void disconnect_conn_locked(conn_t *conn);
 void progress_thread_rdma(ni_t *ni);
-#elif defined(WITH_TRANSPORT_UDP)
-void disconnect_conn_locked(conn_t *conn);
-void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest);
-buf_t *udp_receive(ni_t *ni);
-void process_recv_udp(ni_t *ni, buf_t *buf);
 #else
 static inline void progress_thread_rdma(ni_t *ni) { }
 #endif
 
 /* Shared memory transport. */
+int PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
+				  const ptl_process_t *mapping);
 void shmem_enqueue(ni_t *ni, buf_t *buf, ptl_pid_t dest);
 buf_t *shmem_dequeue(ni_t *ni);
 void process_recv_mem(ni_t *ni, buf_t *buf);
 int mem_do_transfer(buf_t *buf);
-#ifdef WITH_TRANSPORT_SHMEM
-int PtlSetMap_mem(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping);
-int setup_shmem(ni_t *ni);
-#else
-static inline int PtlSetMap_mem(ni_t *ni, ptl_size_t map_size,
-				const ptl_process_t *mapping) { return PTL_OK; }
-static inline int setup_shmem(ni_t *ni) { return PTL_OK; }
-#endif
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
 ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_iovec,
@@ -277,9 +266,11 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni);
 #if WITH_TRANSPORT_UDP
 void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,
 				   const ptl_process_t *mapping);
-#endif
-
-#if !WITH_TRANSPORT_UDP
+void disconnect_conn_locked(conn_t *conn);
+void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest);
+buf_t *udp_receive(ni_t *ni);
+void process_recv_udp(ni_t *ni, buf_t *buf);
+#else
 static inline void progress_thread_udp(ni_t *ni) { }
 #endif
 

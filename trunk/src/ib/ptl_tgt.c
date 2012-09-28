@@ -1621,7 +1621,7 @@ static int tgt_send_ack(buf_t *buf)
 		case CONN_TYPE_RDMA:
 			/* That should not be possible. */
 			abort();
-			break:
+			break;
 #endif
 
 		default:

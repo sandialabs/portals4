@@ -742,13 +742,9 @@ static void *progress_thread(void *arg)
 #endif
 		  ) {
 
-#if WITH_TRANSPORT_RDMA
 		progress_thread_rdma(ni);
-#endif
 
-#if WITH_TRANSPORT_UDP
 		progress_thread_udp(ni);
-#endif
 
 #if WITH_TRANSPORT_SHMEM
 		/* Shared memory. Physical NIs don't have a receive queue. */
