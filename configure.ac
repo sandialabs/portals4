@@ -65,10 +65,6 @@ AC_ARG_ENABLE([arg-checking],
 AS_IF([test "x$enable_arg_checking" == xno],
   [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 
-AC_ARG_ENABLE([transfer-engine],
-  [AS_HELP_STRING([--enable-transfer-engine],
-    [Enables KNEM and other direct SHMEM support])])
-
 AC_ARG_WITH([cacheline-width],
   [AS_HELP_STRING([--with-cacheline-width=bytes],
     [Specify the cacheline width for the target machine. Defaults to 64.])],
@@ -231,21 +227,15 @@ AC_SEARCH_LIBS([shm_open],
 AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 SANDIA_CHOOSE_TIMER
-AS_IF([test "x$enable_transfer_engine" != xno],
-	  [SANDIA_DETECT_KNEM([enable_transfer_engine=yes],
-						  [AS_IF([test "x$enable_transfer_engine" == xyes],
-								 [AC_MSG_ERROR([No transfer engine detected.])],
-								 [enable_transfer_engine=no])])])
-AS_IF([test "x$enable_transfer_engine" == xyes],
-	  [AC_DEFINE([USE_TRANSFER_ENGINE], [1], [Define to enable the use of a transfer engine (e.g. KNEM)])])
 
-AS_IF([test "$with_implementation" = "ib"],
-	  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])])
+SANDIA_DETECT_KNEM()
 
-AS_IF([test "$with_implementation" = "ib" -a x"$enable_ib_ib" != xno],
-	  [SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
+SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
 
-AS_IF([test "$with_implementation" = "mc"],
+AS_IF([test x"$enable_ib_ib" != xno],
+  [SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
+
+AS_IF([test "$enable_ib_ppe" = "yes"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
 
 ## -------------------------- ##
