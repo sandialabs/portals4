@@ -77,36 +77,39 @@ AC_DEFINE_UNQUOTED([CACHELINE_WIDTH], [$with_cacheline_width], [The cacheline wi
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
-dnl fix me
-with_implementation=ib
+AC_ARG_ENABLE([transport-shmem],
+  [AS_HELP_STRING([--enable-transport-shmem],
+    [Use Shared memory for on-node communication. (default: auto-detect)])])
+
+AC_ARG_ENABLE([transport-ib],
+  [AS_HELP_STRING([--enable-transport-ib],
+    [Use IB for remote communiction.  (default: auto-detect)])])
+
+AC_ARG_ENABLE([transport-udp],
+  [AS_HELP_STRING([--enable-transport-udp],
+    [Use UDP for remote communication.  Will only be chosen if IB is not built. Experimental. (default: no)])])
+
+AC_ARG_ENABLE([ppe],
+  [AS_HELP_STRING([--enable-ppe],
+    [Enable process-offload engine for Portals.  Experimental.  (default: disabled)])])
+AS_IF([test "$enable_ppe" == "yes"],
+  [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])])
+AM_CONDITIONAL(WITH_PPE, test "x$enable_ppe" == xyes)
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
-    [Use Shared memory for local communication with IB implementation.])])
-AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_shmem" == "yes"],
-  [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])])
-AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
+    [Backward compatibility option for --enable-transport-shmem.])],
+  [enable_transport_shmem=${enable_ib_shmem}])
+
+AC_ARG_ENABLE([ib-ib],
+  [AS_HELP_STRING([--enable-ib-ib],
+    [Backward compatibility option for --enable-transport-ib.])],
+  [enable_transport_ib=${enable_ib_ib}])
 
 AC_ARG_ENABLE([ib-udp],
   [AS_HELP_STRING([--enable-ib-udp],
-    [Use UDP for remote communication with IB implementation.])])
-AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_udp" == "yes"],
-  [AC_DEFINE([WITH_TRANSPORT_UDP], [1], [Define to enable UDP support])])
-AM_CONDITIONAL(WITH_TRANSPORT_UDP, test "x$enable_ib_udp" == xyes)
-
-AC_ARG_ENABLE([ib-ib],
-  [AS_HELP_STRING([--disable-ib-ib],
-    [Disable IB for communication.])])
-AS_IF([test "x$with_implementation" = "xib" -a x"$enable_ib_ib" != xno],
-  [AC_DEFINE([WITH_TRANSPORT_IB], [1], [Define to enable IB support])])
-AM_CONDITIONAL(WITH_TRANSPORT_IB, test "x$enable_ib_ib" != xno)
-
-AC_ARG_ENABLE([ib-ppe],
-  [AS_HELP_STRING([--enable-ib-ppe],
-    [Enable IB/PPE for communication.])])
-AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_ppe" == "yes"],
-  [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE / XPMEM])])
-AM_CONDITIONAL(WITH_PPE, test "x$enable_ib_ppe" == xyes)
+    [Backward compatibility option for --enable-transport-udp.])],
+  [enable_transport_udp=${enable_ib_udp}])
 
 
 ## ------------------- ##
@@ -218,9 +221,6 @@ AC_SEARCH_LIBS([pthread_spin_init],[pthread],
 AC_CHECK_FUNCS([ftruncate memset setenv strtol strtoul select inet_ntoa socket strerror], [],
 			   [AC_MSG_ERROR([required function not found])])
 AC_CHECK_LIB([bsd-compat],[main]) # potentially important because we use BSD functions like ftruncate
-AS_IF([test "x$enable_papi" != x],
-	  [AC_CHECK_LIB([papi], [PAPI_library_init], [],
-					[AC_MSG_ERROR([Cannot find libpapi])])])
 AC_SEARCH_LIBS([shm_open],
 	       [rt], [],
 	       [AC_MSG_ERROR([Kick the lazy developer and make him support normal file mmaping])])
@@ -228,15 +228,44 @@ AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 SANDIA_CHOOSE_TIMER
 
-SANDIA_DETECT_KNEM()
-
 SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
 
-AS_IF([test x"$enable_ib_ib" != xno],
-  [SANDIA_CHECK_OFED([], [AC_MSG_ERROR([OFED not found.])])])
+AS_IF([test "$enable_transport_shmem" != "no"],
+      [SANDIA_DETECT_KNEM()
+       AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])
+       transport_shmem="yes"],
+      [transport_shmem="no"])
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$enable_transport_shmem" != "no")
 
-AS_IF([test "$enable_ib_ppe" = "yes"],
+AS_IF([test "$enable_ppe" = "yes"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
+
+active_remote_transport=""
+
+AS_IF([test "$active_remote_transport" == ""], 
+  [AS_IF([test "$enable_transport_ib" != "no"],
+         [SANDIA_CHECK_OFED([active_remote_transport="ib"], 
+           [AS_IF([test "$enable_transport_ib" != ""], [AC_MSG_ERROR([OFED not found.])])])])])
+
+AS_IF([test "$active_remote_transport" == ""], 
+  [AS_IF([test "$enable_transport_udp" == "yes"],
+         [active_remote_transport="udp"])])
+
+AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no"],
+  [AC_MSG_ERROR([No transport found.])])
+
+AS_IF([test "$active_remote_transport" == "ib"],
+  [AC_DEFINE([WITH_TRANSPORT_IB], [1], [Define to enable IB support])
+   transport_ib="yes"],
+  [transport_ib="no"])
+AM_CONDITIONAL([WITH_TRANSPORT_IB], [test "$active_remote_transport" == "ib"])
+
+AS_IF([test "$active_remote_transport" == "udp"],
+  [AC_DEFINE([WITH_TRANSPORT_UDP], [1], [Define to enable UDP support])
+   transport_udp="yes"],
+  [transport_udp="no"])
+AM_CONDITIONAL([WITH_TRANSPORT_UDP], [test "$active_remote_transport" == "udp"])
+
 
 ## -------------------------- ##
 ## Check for library behavior ##
@@ -254,28 +283,23 @@ AS_IF([test "x$enable_hard_polling" != xyes],
 AC_CACHE_SAVE
 
 # Only export the library symbols 
-AS_IF([test "$with_implementation" = "ib"], [
 AC_CACHE_CHECK(whether ld accepts --version-script, ac_cv_version_script,
     [AS_IF([test -n "`$LD --help < /dev/null 2>/dev/null | grep version-script`"],
            [LD_VERSION_SCRIPT='-Wl,--version-script=$(srcdir)/ib/portals4.map'],
 		   [LD_VERSION_SCRIPT=''])])
 AC_SUBST(LD_VERSION_SCRIPT)
-])
 
 ## --------------- ##
 ## Output and done ##
 ## --------------- ##
 
-AM_CONDITIONAL([BACKEND_IMPL_IB], [test "$with_implementation" = "ib"])
-AM_CONDITIONAL([BACKEND_IMPL_MC], [test "$with_implementation" = "mc"])
-
 DISTCHECK_CONFIGURE_FLAGS=
-AS_IF([test -n "$with_implementation"],
-  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-implementation=${with_implementation}"])
-AS_IF([test -n "$enable_ib_shmem"],
-  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-ib-shmem=${enable_ib_shmem}"])
-AS_IF([test -n "$enable_ib_ib"],
-  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-ib-ib=${enable_ib_ib}"])
+AS_IF([test -n "$enable_transport_shmem"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-transport-shmem=${enable_transport_shmem}"])
+AS_IF([test -n "$enable_transport_udp"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-transport-udp=${enable_transport_udp}"])
+AS_IF([test -n "$enable_transport_ib"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-transport-ib=${enable_transport_ib}"])
 AS_IF([test -n "$with_xpmem"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-xpmem=${with_xpmem}"])
 AS_IF([test -n "$with_ev"],
@@ -298,3 +322,20 @@ AC_CONFIG_FILES([Makefile
                  test/sfw/test_n1/Makefile
                  test/sfw/test_n2/Makefile])
 AC_OUTPUT
+
+AS_IF([test "enable_ppe" = "yes"],
+      [progress_thread="no"
+       progress_process="yes"],
+      [progress_thread="yes"
+       progress_process="no"])
+echo ""
+echo "  Transport Support:"
+echo "       InfiniBand: $transport_ib"
+echo "              UDP: $transport_udp"
+echo "    Shared memory: $transport_shmem"
+echo "             KNEM: $knem_happy"
+echo ""
+echo "  Progress Support:"
+echo "           Thread: $progress_thread"
+echo "          Process: $progress_process"
+echo ""
