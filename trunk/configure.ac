@@ -93,9 +93,9 @@ AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$enable_ib_shmem" == xyes)
 
 AC_ARG_ENABLE([ib-udp],
   [AS_HELP_STRING([--enable-ib-udp],
-    [Use Shared memory for local communication with IB implementation.])])
+    [Use UDP for remote communication with IB implementation.])])
 AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_udp" == "yes"],
-  [AC_DEFINE([WITH_TRANSPORT_UDP], [1], [Define to enable Shared memory / KNEM support])])
+  [AC_DEFINE([WITH_TRANSPORT_UDP], [1], [Define to enable UDP support])])
 AM_CONDITIONAL(WITH_TRANSPORT_UDP, test "x$enable_ib_udp" == xyes)
 
 AC_ARG_ENABLE([ib-ib],
