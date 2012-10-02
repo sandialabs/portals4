@@ -3,12 +3,11 @@
 # Copyright (c) 2012 Sandia Corporation
 
 
-DIST_SUBDIRS = ib runtime
-SUBDIRS = runtime
+SUBDIRS = ib runtime
 
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=
-
+libportals_la_LIBADD = ib/libportals_ib.la
 # version-info fields are:
 # 1. the current interface revision number (i.e. whenever arguments of existing
 #    functions change, increment this number)
@@ -23,11 +22,4 @@ libportals_la_SOURCES=
 #   and reset the revision and age numbers to 0
 # - If you support all the same functions (just bugfixes or whatnot), increment
 #   the revision number
-libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined
-libportals_la_LIBADD =
-
-if BACKEND_IMPL_IB
-SUBDIRS += ib
-libportals_la_LIBADD += ib/libportals_ib.la
-libportals_la_LDFLAGS += $(LD_VERSION_SCRIPT)
-endif
+libportals_la_LDFLAGS = -version-info 4:0:0 -no-undefined $(LD_VERSION_SCRIPT)
