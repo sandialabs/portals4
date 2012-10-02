@@ -40,7 +40,6 @@ AC_CANONICAL_HOST
 ## Configure Options ##
 ## ----------------- ##
 
-
 AC_ARG_ENABLE([picky],
   [AS_HELP_STRING([--enable-picky],
   [Enable extra compiler warnings (for developers of portals)])])
@@ -66,40 +65,9 @@ AC_ARG_ENABLE([arg-checking],
 AS_IF([test "x$enable_arg_checking" == xno],
   [AC_DEFINE([NO_ARG_VALIDATION], [1], [Define to disable argument checking])])
 
-AC_ARG_ENABLE([hard-polling],
-  [AS_HELP_STRING([--enable-hard-polling],
-    [Enable hard polling communication queues rather than blocking polls. This can reduce the message latency, especially when the message rate is low])])
-AS_IF([test "x$enable_hard_polling" == xyes],
-  [AC_DEFINE([USE_HARD_POLLING], [1], [Define to force the use of hard-polling for message queues.])])
-
-AC_ARG_ENABLE([papi],
-  [AS_HELP_STRING([--enable-papi],
-    [Enables PAPI performance counters support])])
-AM_CONDITIONAL([USE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" == xyes])
-
 AC_ARG_ENABLE([transfer-engine],
   [AS_HELP_STRING([--enable-transfer-engine],
     [Enables KNEM and other direct SHMEM support])])
-AM_CONDITIONAL([USE_TRANSFER_ENGINE], [test "x$enable_transfer_engine" == xyes])
-
-AC_ARG_ENABLE([rdtsc],
-  [AS_HELP_STRING([--enable-rdtsc],
-    [Enables rdtsc performance counters support])])
-AS_IF([test "x$enable_rdtsc" == xyes],
-  [AC_DEFINE([USE_RDTSC], [1], [Define to use rdtsc for performance counter])])
-AM_CONDITIONAL([USE_RDTSC], [test "x$enable_rdtsc" == xyes])
-
-AC_ARG_ENABLE([loud-drops],
-  [AS_HELP_STRING([--enable-loud-drops],
-    [Makes dropped messages print an error to the console])])
-AS_IF([test "x$enable_loud_drops" == xyes],
-	  [AC_DEFINE([LOUD_DROPS], [1], [Define to make dropped messages print an error to the console])])
-
-AC_ARG_ENABLE([strict-uid],
-  [AS_HELP_STRING([--enable-strict-uid],
-    [Makes the uid checking conform strictly according to the spec. By default, the uid is assumed to be correct])])
-AS_IF([test "x$enable_strict_uid" == xyes],
-  [AC_DEFINE([STRICT_UID], [1], [Define to enable extra UID checking per message])])
 
 AC_ARG_WITH([cacheline-width],
   [AS_HELP_STRING([--with-cacheline-width=bytes],
@@ -110,24 +78,11 @@ AC_MSG_CHECKING([cacheline width])
 AC_MSG_RESULT([$with_cacheline_width])
 AC_DEFINE_UNQUOTED([CACHELINE_WIDTH], [$with_cacheline_width], [The cacheline width])
 
-AC_ARG_ENABLE([paranoia],
-  [AS_HELP_STRING([--enable-paranoia],
-    [Adds additional checks that are slow, occasionally painful, and should be entirely unnecessary, just to validate that nothing has gone wrong.])])
-AS_IF([test "x$enable_paranoia" == xyes],
-  [AC_DEFINE([PARANOID], [1], [Define to make dropped messages print an error to the console])])
-
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
-AC_ARG_WITH([implementation],
-  [AS_HELP_STRING([--with-implementation=IMPL],
-                  [Specify implemenation backend.  Options for IMPL
-                   are ib or mc. mc is multicore (read: shared progress
-                   threads in shared memory), and ib is Infiniband.])],
-  [AS_CASE([$with_implementation],
-            [ib|mc], [],
-            [AC_MSG_ERROR([Unrecognized implementation. Valid implementations are mc or ib.])])],
-  [with_implementation=ib])
+dnl fix me
+with_implementation=ib
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -156,13 +111,6 @@ AC_ARG_ENABLE([ib-ppe],
 AS_IF([test "x$with_implementation" = "xib" -a "$enable_ib_ppe" == "yes"],
   [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE / XPMEM])])
 AM_CONDITIONAL(WITH_PPE, test "x$enable_ib_ppe" == xyes)
-
-AC_ARG_WITH([mc-peer-count],
-  [AS_HELP_STRING([--with-mc-peer-count=COUNT],
-     [Multicore server will support COUNT peers.  Default is 16.])])
-AS_IF([test ! -z "$with_mc_peer_count" -a "$with_mc_peer_count" != "yes" -a "$with_mc_peer_count" != "no"].
-  [peer_count=$with_mc_peer_count], [peer_count=16])
-AC_DEFINE_UNQUOTED([MC_PEER_COUNT], [$peer_count], [Number of peers multicore server must simultaneously support])
 
 
 ## ------------------- ##
