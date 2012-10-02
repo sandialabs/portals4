@@ -3,7 +3,7 @@
 # Copyright (c) 2012 Sandia Corporation
 
 
-DIST_SUBDIRS = ib mc runtime
+DIST_SUBDIRS = ib runtime
 SUBDIRS = runtime
 
 lib_LTLIBRARIES = libportals.la
@@ -30,9 +30,4 @@ if BACKEND_IMPL_IB
 SUBDIRS += ib
 libportals_la_LIBADD += ib/libportals_ib.la
 libportals_la_LDFLAGS += $(LD_VERSION_SCRIPT)
-endif
-
-if BACKEND_IMPL_MC
-SUBDIRS += mc
-libportals_la_LIBADD += mc/libportals_mc.la
 endif

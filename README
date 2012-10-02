@@ -24,9 +24,9 @@ Options to configure include:
 
 * Portals 4 Implementation Notes
 
-There is currently 2 transports available: mc and infiniband, which are mutually exclusive, and can be selected with the --with-implementation=ib|mc configure option.
-
-  - mc: to be documented.
+  There is currently one Portals 4 implementation, ib.  The ib
+  implementation supports multiple transports, including InfiniBand,
+  UDP (experimental), and SHMEM.
 
   - Infiniband: this transport has multiple options, including not actualling using IB:
       * Infiniband, selected by default, can be disabled with --disable-ib-ib
