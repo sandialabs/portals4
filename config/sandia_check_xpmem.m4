@@ -28,7 +28,7 @@ AC_DEFUN([SANDIA_CHECK_XPMEM], [
   AS_IF([test "$happy" = "yes"], 
     [AC_CHECK_HEADERS([xpmem.h], [], [happy=no])])
   AS_IF([test "$happy" = "yes"],
-    [AC_CHECK_LIB([xpmem], [xpmem_init], [], [happy=no])])
+    [AC_CHECK_LIB([xpmem], [xpmem_version], [], [happy=no])])
 
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"

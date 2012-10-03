@@ -230,12 +230,12 @@ SANDIA_CHOOSE_TIMER
 
 SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
 
-AS_IF([test "$enable_transport_shmem" != "no"],
-      [SANDIA_DETECT_KNEM()
-       AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable Shared memory / KNEM support])
+SANDIA_DETECT_KNEM()
+AS_IF([test "$enable_transport_shmem" != "no" -a "$enable_ppe" != "yes"],
+      [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
        transport_shmem="yes"],
       [transport_shmem="no"])
-AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$enable_transport_shmem" != "no")
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$transport_shmem" == "yes")
 
 AS_IF([test "$enable_ppe" = "yes"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
@@ -323,7 +323,7 @@ AC_CONFIG_FILES([Makefile
                  test/sfw/test_n2/Makefile])
 AC_OUTPUT
 
-AS_IF([test "enable_ppe" = "yes"],
+AS_IF([test "$enable_ppe" = "yes"],
       [progress_thread="no"
        progress_process="yes"],
       [progress_thread="yes"
