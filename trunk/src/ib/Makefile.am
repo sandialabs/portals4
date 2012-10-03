@@ -1,8 +1,8 @@
-
-AM_CPPFLAGS = -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS)
+EXTRA_DIST = portals4.map
 noinst_LTLIBRARIES = libportals_ib.la
 
 if !WITH_PPE
+libportals_ib_la_CPPFLAGS = -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS)
 libportals_ib_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) -lpthread 
 libportals_ib_la_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS)
 libportals_ib_la_SOURCES = \
@@ -95,9 +95,9 @@ endif
 else
 # PPE - (implies no SHMEM; IB optional)
 
-libportals_ib_la_CFLAGS = -DIS_LIGHT_LIB
-libportals_ib_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) -lxpmem -lpthread -lrt
-libportals_ib_la_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS)
+libportals_ib_la_CPPFLAGS = -DIS_LIGHT_LIB -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS) $(XPMEM_CPPFLAGS)
+libportals_ib_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) $(XPMEM_LIBS) -lpthread -lrt
+libportals_ib_la_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS) $(XPMEM_LDFLAGS)
 libportals_ib_la_SOURCES = \
 	ptl_ct_common.c \
 	ptl_ct_common.h \
@@ -115,9 +115,9 @@ libportals_ib_la_SOURCES = \
 	ptl_xpmem.h
 
 bin_PROGRAMS = p4ppe
-p4ppe_CFLAGS = $(AM_CFLAGS) -DIS_PPE
-p4ppe_LDADD = -lxpmem
-p4ppe_LDFLAGS = $(ev_LIBS) $(ofed_LIBS) $(ev_LDFLAGS) $(ofed_LDFLAGS)
+p4ppe_CPPFLAGS = -DIS_PPE -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS) $(XPMEM_CPPFLAGS)
+p4ppe_LDADD = $(ev_LIBS) $(ofed_LIBS) $(XPMEM_LIBS)
+p4ppe_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS) $(XPMEM_LDFLAGS)
 p4ppe_SOURCES = \
 	p4ppe.c \
 	p4ppe.h \
@@ -195,5 +195,3 @@ p4ppe_SOURCES += \
 endif
 
 endif
-
-EXTRA_DIST = portals4.map
