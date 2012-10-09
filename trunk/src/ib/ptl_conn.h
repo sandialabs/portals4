@@ -91,8 +91,6 @@ struct conn {
 	pthread_mutex_t		mutex;
 	enum conn_state		state;
 	struct sockaddr_in	sin;
-	struct list_head	buf_list;
-	PTL_FASTLOCK_TYPE	wait_list_lock;
 
 	struct transport	transport;
 
@@ -159,6 +157,11 @@ struct conn {
 		} udp;
 #endif
 	};
+
+#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
+	pthread_cond_t move_wait;
+#endif
+
 };
 
 typedef struct conn conn_t;

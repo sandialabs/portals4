@@ -368,22 +368,23 @@ static int wait_conn(buf_t *buf)
 
 	pthread_mutex_lock(&conn->mutex);
 	if (conn->state < CONN_STATE_CONNECTED) {
-		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-		list_add_tail(&buf->list, &conn->buf_list);
-		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-
 		if (conn->state == CONN_STATE_DISCONNECTED) {
 			if (conn->transport.init_connect(ni, conn)) {
 				pthread_mutex_unlock(&conn->mutex);
-				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-				list_del(&buf->list);
-				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
+
 				return STATE_INIT_ERROR;
 			}
 		}
 
-		pthread_mutex_unlock(&conn->mutex);
-		return STATE_INIT_WAIT_CONN;
+ 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+
+	 	pthread_mutex_unlock(&conn->mutex);
+
+		if (conn->state == CONN_STATE_CONNECTED)
+			return STATE_INIT_SEND_REQ;
+
+		WARN();
+		return STATE_INIT_ERROR;
 	}
 	pthread_mutex_unlock(&conn->mutex);
 

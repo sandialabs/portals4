@@ -39,6 +39,7 @@ static void accept_udp_connection_request(ni_t *ni, conn_t *conn,
 	if (ret != sizeof(rep)) {
 		WARN();
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
 	}
 }
 
@@ -155,12 +156,11 @@ static void process_udp_connect_established(struct iface *iface,
 	}
 
 	conn->state = CONN_STATE_CONNECTED;
+	pthread_cond_broadcast(&conn->move_wait);
 
 	/* Update the destination address and port. */
 	conn->udp.dest_addr = conn->sin;
 	conn->udp.dest_addr.sin_port = msg->port;
-
-	flush_pending_xi_xt(conn);
 
 	pthread_mutex_unlock(&conn->mutex);
 }
@@ -217,6 +217,7 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 		if (ret != sizeof(rtu)) {
 			WARN();
 			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&conn->move_wait);
 		} else {
 			process_udp_connect_established(iface, &msg, conn);
 		}
