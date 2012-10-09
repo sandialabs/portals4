@@ -29,10 +29,8 @@ int conn_init(void *arg, void *parm)
 	OBJ_NEW(conn);
 
 	pthread_mutex_init(&conn->mutex, NULL);
-	PTL_FASTLOCK_INIT(&conn->wait_list_lock);
 
 	conn->state = CONN_STATE_DISCONNECTED;
-	INIT_LIST_HEAD(&conn->buf_list);
 
 #if WITH_TRANSPORT_IB
 	/* If IB is available, set it as the default transport. It may be
@@ -55,6 +53,10 @@ int conn_init(void *arg, void *parm)
 
 	atomic_set(&conn->udp.send_seq, 0);
 	atomic_set(&conn->udp.recv_seq, 0);
+#endif
+
+#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
+	pthread_cond_init(&conn->move_wait, NULL);
 #endif
 
 	return PTL_OK;
@@ -88,7 +90,7 @@ void conn_fini(void *arg)
 #endif
 
 	pthread_mutex_destroy(&conn->mutex);
-	PTL_FASTLOCK_DESTROY(&conn->wait_list_lock);
+	pthread_cond_destroy(&conn->move_wait);
 }
 
 static int compare_conn_id(const void *a, const void *b)
@@ -347,36 +349,6 @@ void destroy_conns(ni_t *ni)
 	}
 }
 
-#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
-/**
- * @param[in] conn
- */
-void flush_pending_xi_xt(conn_t *conn)
-{
-	buf_t *buf;
-
-	PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-	while(!list_empty(&conn->buf_list)) {
-		buf = list_first_entry(&conn->buf_list, buf_t, list);
-		list_del_init(&buf->list);
-		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-
-		if (buf->type == BUF_TGT) {
-			process_tgt(buf);
-		}
-		else {
-			assert(buf->type == BUF_INIT);
-			process_init(buf);
-		}
-
-		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-	}
-
-
-	PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-}
-#endif
-
 #if WITH_TRANSPORT_IB
 /**
  * Retrieve some current parameters from the QP. Right now we only
@@ -431,6 +403,8 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
+
 		return PTL_FAIL;
 	}
 
@@ -458,6 +432,8 @@ static int accept_connection_request(ni_t *ni, conn_t *conn,
 		rdma_destroy_qp(event->id);
 		conn->rdma.cm_id = NULL;
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
+
 		return PTL_FAIL;
 	}
 
@@ -494,6 +470,8 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 
 	if (rdma_create_qp(event->id, ni->iface->pd, &init_attr)) {
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
+
 		return PTL_FAIL;
 	}
 
@@ -512,6 +490,8 @@ static int accept_connection_self(ni_t *ni, conn_t *conn,
 	if (rdma_accept(event->id, &conn_param)) {
 		rdma_destroy_qp(event->id);
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
+
 		return PTL_FAIL;
 	}
 
@@ -633,8 +613,7 @@ static void process_connect_reject(struct rdma_cm_event *event, conn_t *conn)
 
 	/* That's bad, and that should not happen. */
 	conn->state = CONN_STATE_DISCONNECTED;
-
-	/* TODO: flush xt/xi. */
+	pthread_cond_broadcast(&conn->move_wait);
 
 	rdma_destroy_qp(conn->rdma.cm_id);
 
@@ -703,6 +682,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		conn->state = CONN_STATE_RESOLVING_ROUTE;
 		if (rdma_resolve_route(event->id, get_param(PTL_RDMA_TIMEOUT))) {
 			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&conn->move_wait);
 			conn->rdma.cm_id = NULL;
 			conn_put(conn);
 		}
@@ -753,12 +733,14 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		if (rdma_create_qp(event->id, ni->iface->pd, &init)) {
 			WARN();
 			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&conn->move_wait);
 			conn->rdma.cm_id = NULL;
 			conn_put(conn);
 		}
 		else if (rdma_connect(event->id, &conn_param)) {
 			WARN();
 			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&conn->move_wait);
 			rdma_destroy_qp(conn->rdma.cm_id);
 			conn->rdma.cm_id = NULL;
 			conn_put(conn);
@@ -791,8 +773,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		get_qp_param(conn);
 
 		conn->state = CONN_STATE_CONNECTED;
-
-		flush_pending_xi_xt(conn);
+		pthread_cond_broadcast(&conn->move_wait);
 
 		pthread_mutex_unlock(&conn->mutex);
 
@@ -829,6 +810,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 		}
 
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
 
 		atomic_dec(&ni->rdma.num_conn);
 
@@ -843,6 +825,7 @@ void process_cm_event(EV_P_ ev_io *w, int revents)
 
 		if (conn->state != CONN_STATE_DISCONNECTED) {
 			conn->state = CONN_STATE_DISCONNECTED;
+			pthread_cond_broadcast(&conn->move_wait);
 			conn->rdma.cm_id->context = NULL;
 			rdma_destroy_qp(conn->rdma.cm_id);
 

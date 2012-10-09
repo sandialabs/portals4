@@ -49,6 +49,7 @@ static int rdma_init_connect(ni_t *ni, conn_t *conn)
 		ptl_warn("rdma_resolve_addr failed %x:%d\n",
 				 conn->sin.sin_addr.s_addr, conn->sin.sin_port);
 		conn->state = CONN_STATE_DISCONNECTED;
+		pthread_cond_broadcast(&conn->move_wait);
 		conn->rdma.cm_id = NULL;
 		rdma_destroy_id(cm_id);
 		conn_put(conn);

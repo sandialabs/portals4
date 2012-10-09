@@ -825,25 +825,23 @@ static int tgt_wait_conn(buf_t *buf)
 	 * retried once connected/disconnected. */
 	pthread_mutex_lock(&conn->mutex);
 	if (conn->state < CONN_STATE_CONNECTED) {
-		PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-		list_add_tail(&buf->list, &conn->buf_list);
-		PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
-
 		if (conn->state == CONN_STATE_DISCONNECTED) {
 			/* Initiate connection. */
 			if (conn->transport.init_connect(ni, conn)) {
-				PTL_FASTLOCK_LOCK(&conn->wait_list_lock);
-				list_del(&buf->list);
-				PTL_FASTLOCK_UNLOCK(&conn->wait_list_lock);
 				pthread_mutex_unlock(&conn->mutex);
 				return STATE_TGT_ERROR;
 			}
 		}
 
-		/* exit the state machine and let the connect event
-		 * reenter the state machine. */
+		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+
 		pthread_mutex_unlock(&conn->mutex);
-		return STATE_TGT_WAIT_CONN;
+
+		if (conn->state == CONN_STATE_CONNECTED)
+			return STATE_TGT_DATA;
+
+		WARN();
+		return STATE_TGT_ERROR;
 	}
 	pthread_mutex_unlock(&conn->mutex);
 
