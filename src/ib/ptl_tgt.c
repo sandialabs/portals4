@@ -833,7 +833,9 @@ static int tgt_wait_conn(buf_t *buf)
 			}
 		}
 
+#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+#endif
 
 		pthread_mutex_unlock(&conn->mutex);
 
