@@ -90,7 +90,9 @@ void conn_fini(void *arg)
 #endif
 
 	pthread_mutex_destroy(&conn->mutex);
+#if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
 	pthread_cond_destroy(&conn->move_wait);
+#endif
 }
 
 static int compare_conn_id(const void *a, const void *b)
