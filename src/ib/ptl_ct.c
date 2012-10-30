@@ -418,7 +418,7 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 #ifndef NO_ARG_VALIDATION
 	i2 = -1;
 	for (i = 0; i < size; i++) {
-		ni_t *ni;
+		ni_t *ni = NULL;
 
 		err = to_ct(MYGBL_ ct_handles[i], &cts[i]);
 		if (unlikely(err || !cts[i])) {
@@ -429,7 +429,7 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
 
 		i2 = i;
 
-		if (i == 0)
+		if (NULL == ni)
 			ni = obj_to_ni(cts[0]);
 
 		if (obj_to_ni(cts[i]) != ni) {
