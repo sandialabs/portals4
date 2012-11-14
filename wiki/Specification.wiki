@@ -4,10 +4,10 @@
   * [http://portals4.googlecode.com/files/portals40-20121114.pdf Portals Document (pdf)]
 
 == November 14, 2012 Changelog ==
-* Add PTL_MD_EVENT_SEND_DISABLE flag
-* Better clarification for when you might want to allow both put and get operations on a list entry or match list entry.
-* Clean up the event error text
-* Fix place where we said LE but meant ME.
+  * Add PTL_MD_EVENT_SEND_DISABLE flag
+  * Better clarification for when you might want to allow both put and get operations on a list entry or match list entry.
+  * Clean up the event error text
+  * Fix place where we said LE but meant ME.
 
 == July 5, 2012 Changelog ==
   * Clean up the triggered operations and counting events sections.
