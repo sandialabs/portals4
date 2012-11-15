@@ -8,7 +8,7 @@ XMLEXTRA = \
 	test_basic_rt.xml \
 	test_loopback_move.xml
 
-EXTRA_DIST = $(srcdir)/test_n1/*.xml $(srcdir)/test_n2/*.xml $(XMLEXTRA) make_test_relay.pl
+EXTRA_DIST = $(XMLEXTRA) make_test_relay.pl
 
 noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 
