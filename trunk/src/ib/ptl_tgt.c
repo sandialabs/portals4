@@ -1402,6 +1402,8 @@ static int tgt_swap_data_in(buf_t *buf)
 	ni_t *ni;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	void *operand = buf->data + sizeof(req_hdr_t);
+     void *source = data->immediate.data;
+     datatype_t tmp;
 #if IS_PPE
 	mr_t *mr;
 #endif
@@ -1431,8 +1433,13 @@ static int tgt_swap_data_in(buf_t *buf)
 		dst = addr_to_ppe(start, mr);
 	}
 
+     /* immediate data might not be aligned.  Make sure it's aligned */
+     if (0 != ((uintptr_t) source & (atom_type_size[hdr->atom_type] - 1))) {
+          memcpy(&tmp, source, atom_type_size[hdr->atom_type]);
+          source = &tmp;
+     }
 	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
-			   data->immediate.data, operand);
+			         source, operand);
 
 #if IS_PPE
 	if (!me->mr_start)

@@ -774,8 +774,11 @@ static int sum_ldc(void *dst, void *src, ptl_size_t length)
 	long double complex *s = src;
 	long double complex *d = dst;
 
-	for (i = 0; i < length/sizeof(long double complex); i++, s++, d++)
-		*d = sum(*s, *d);
+	for (i = 0; i < length/sizeof(long double complex); i++, s++, d++) {
+          long double complex tmp;
+          memcpy(&tmp, s, sizeof(long double complex));
+		*d = sum(tmp, *d);
+     }
 
 	return PTL_OK;
 }
@@ -1071,7 +1074,9 @@ static int prod_ldc(void *dst, void *src, ptl_size_t length)
 	long double complex *d = dst;
 
 	for (i = 0; i < length/sizeof(long double complex); i++, s ++, d ++) {
-		*d = prod(*s, *d);
+          long double complex tmp;
+          memcpy(&tmp, s, sizeof(long double complex));
+		*d = prod(tmp, *d);
 	}
 
 	return PTL_OK;
