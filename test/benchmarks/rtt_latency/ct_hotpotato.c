@@ -55,6 +55,10 @@ int main(int   argc,
 
     num_procs = libtest_get_size();
 
+    if (NULL != getenv("MAKELEVEL") && num_procs > 2) {
+         return 77;
+    }
+
     CHECK_RETURNVAL(PtlNIInit
                         (PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL, PTL_PID_ANY,
                         NULL, NULL, &ni_logical));
