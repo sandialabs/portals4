@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sched.h>
+#include <string.h>
 
 #include "testing.h"
 
@@ -82,7 +83,7 @@ int main(int   argc,
 
         /* create signal ME */
         CHECK_RETURNVAL(PtlCTAlloc(ni_handle, &ct_handle));
-        CHECK_RETURNVAL(PtlPTAlloc(ni_handle, 1, PTL_EQ_NONE, 6,
+        CHECK_RETURNVAL(PtlPTAlloc(ni_handle, 0, PTL_EQ_NONE, 6,
                                    &signal_pt_index));
         value_e.start = NULL;
         value_e.length = 0;
@@ -153,6 +154,14 @@ int main(int   argc,
         ptl_event_t ev;
         int ret, count = 0, fails = 0;
         int i;
+        int *fail_seen;
+
+        fail_seen = malloc(sizeof(int) * ITERS);
+        if (NULL == fail_seen) {
+             fprintf(stderr, "%d: malloc failed\n", rank);
+             return 1;
+        }
+        memset(fail_seen, 0, sizeof(int) * ITERS);
 
         target.rank = 0;
         for (i = 0 ; i < ITERS ; ++i) {
@@ -164,7 +173,7 @@ int main(int   argc,
                                    5,
                                    0,
                                    0,
-                                   NULL,
+                                   (void*)(size_t)i,
                                    0));
         }
 
@@ -186,6 +195,12 @@ int main(int   argc,
                     fprintf(stderr, "%d: Unexpected event type %d\n", rank, ev.type);
                 }
             } else if (ev.ni_fail_type == PTL_NI_PT_DISABLED) {
+                int iter = (size_t) ev.user_ptr;
+                if (fail_seen[iter]++ > 0) {
+                    fprintf(stderr, "%d: Double report of PT_DISABLED for "
+                            "iteration %d\n", rank, iter);
+                    return 1;
+                }
                 count++;
                 fails++;
             } else {
