@@ -112,8 +112,6 @@ int main(int   argc,
             return 1;
         }
 
-        fprintf(stderr, "0: got all my signals\n");
-
         /* wait for event entries */
         while (1) {
             ret = PtlEQGet(eq_handle, &ev);
@@ -154,8 +152,6 @@ int main(int   argc,
                                    0));
         }
 
-        fprintf(stderr, "%d: done with sends\n", rank);
-
         while (count < ITERS) {
             ret = PtlEQGet(eq_handle, &ev);
             if (PTL_EQ_EMPTY == ret) {
@@ -164,8 +160,6 @@ int main(int   argc,
                 fprintf(stderr, "%d: PtlEQGet returned %d\n", rank, ret);
                 return 1;
             }
-
-            fprintf(stderr, "%d: got event %d (%d %d)\n", rank, count, ev.type, ev.ni_fail_type);
 
             if (ev.ni_fail_type == PTL_NI_OK) {
                 if (ev.type == PTL_EVENT_SEND) {
