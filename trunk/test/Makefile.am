@@ -18,6 +18,12 @@ include support/Makefile.am
 TESTS = test_init \
 	test_NIInit \
 	test_bootstrap \
+	test_LE_put_self \
+	test_ME_put_self \
+	test_LE_put \
+	test_ME_put \
+	test_LE_put_multiple \
+	test_ME_put_multiple \
 	test_LE_get \
 	test_ME_get \
 	test_LE_atomic \
@@ -75,6 +81,24 @@ test_init_SOURCES = test_init.c
 test_NIInit_SOURCES = test_NIInit.c
 
 test_bootstrap_SOURCES = test_bootstrap.c
+
+test_LE_put_self_SOURCES = test_put_self.c
+test_LE_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_put_self_SOURCES = test_put_self.c
+test_ME_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_put_SOURCES = test_put.c
+test_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_put_SOURCES = test_put.c
+test_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_put_multiple_SOURCES = test_put_multiple.c
+test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_put_multiple_SOURCES = test_put_multiple.c
+test_ME_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 test_LE_get_SOURCES = test_get.c
 test_LE_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
