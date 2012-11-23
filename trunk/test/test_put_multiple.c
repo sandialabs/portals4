@@ -26,7 +26,9 @@
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
-#define BUFSIZE 4096
+#ifndef BUFSIZE
+#error BUFSIZE must be defined
+#endif
 
 int main(int   argc,
          char *argv[])
