@@ -230,13 +230,6 @@ SANDIA_CHOOSE_TIMER
 
 SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
 
-SANDIA_DETECT_KNEM()
-AS_IF([test "$enable_transport_shmem" != "no" -a "$enable_ppe" != "yes"],
-      [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
-       transport_shmem="yes"],
-      [transport_shmem="no"])
-AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$transport_shmem" == "yes")
-
 AS_IF([test "$enable_ppe" = "yes"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
 
@@ -250,6 +243,16 @@ AS_IF([test "$active_remote_transport" == ""],
 AS_IF([test "$active_remote_transport" == ""], 
   [AS_IF([test "$enable_transport_udp" == "yes"],
          [active_remote_transport="udp"])])
+
+SANDIA_DETECT_KNEM()
+# BWB: temporary hack, disable shmem by default if remote transport available.
+AS_IF([test "$active_remote_transport" != "" -a "$enable_transport_shmem" = ""],
+      [enable_transport_shmem=no])
+AS_IF([test "$enable_transport_shmem" != "no" -a "$enable_ppe" != "yes"],
+      [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
+       transport_shmem="yes"],
+      [transport_shmem="no"])
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$transport_shmem" == "yes")
 
 AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no"],
   [AC_MSG_ERROR([No transport found.])])
