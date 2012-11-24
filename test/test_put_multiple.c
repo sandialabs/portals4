@@ -29,6 +29,9 @@
 #ifndef BUFSIZE
 #error BUFSIZE must be defined
 #endif
+#ifndef OVERLAP
+#error OVERLAP must be defined
+#endif
 
 int main(int   argc,
          char *argv[])
@@ -117,7 +120,7 @@ int main(int   argc,
                                r0,
                                logical_pt_index,
                                1,
-                               BUFSIZE * rank,
+                               BUFSIZE * rank * OVERLAP,
                                NULL,
                                0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
@@ -126,7 +129,7 @@ int main(int   argc,
     }
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        for (unsigned idx = 0; idx < BUFSIZE * num_procs; ++idx) {
+        for (unsigned idx = 0; idx < BUFSIZE * (0 == OVERLAP ? 1 : num_procs); ++idx) {
             if (value[idx] != 61) {
                 fprintf(stderr,
                         "bad value at idx %u (readval[%u] = %i, should be 61)\n",

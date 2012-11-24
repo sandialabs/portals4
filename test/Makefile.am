@@ -26,6 +26,10 @@ TESTS = test_init \
 	test_ME_put_multiple \
 	test_LE_put_multiple_large \
 	test_ME_put_multiple_large \
+	test_LE_put_multiple_overlap \
+	test_ME_put_multiple_overlap \
+	test_LE_put_multiple_large_overlap \
+	test_ME_put_multiple_large_overlap \
 	test_LE_get \
 	test_ME_get \
 	test_LE_atomic \
@@ -97,16 +101,28 @@ test_ME_put_SOURCES = test_put.c
 test_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 test_LE_put_multiple_SOURCES = test_put_multiple.c
-test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256
+test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256 -DOVERLAP=0
 
 test_ME_put_multiple_SOURCES = test_put_multiple.c
-test_ME_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=256
+test_ME_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=256 -DOVERLAP=0
 
 test_LE_put_multiple_large_SOURCES = test_put_multiple.c
-test_LE_put_multiple_large_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=4096
+test_LE_put_multiple_large_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=4096 -DOVERLAP=0
 
 test_ME_put_multiple_large_SOURCES = test_put_multiple.c
-test_ME_put_multiple_large_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=4096
+test_ME_put_multiple_large_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=4096 -DOVERLAP=0
+
+test_LE_put_multiple_overlap_SOURCES = test_put_multiple.c
+test_LE_put_multiple_overlap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256 -DOVERLAP=1
+
+test_ME_put_multiple_overlap_SOURCES = test_put_multiple.c
+test_ME_put_multiple_overlap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=256 -DOVERLAP=1
+
+test_LE_put_multiple_large_overlap_SOURCES = test_put_multiple.c
+test_LE_put_multiple_large_overlap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=4096 -DOVERLAP=1
+
+test_ME_put_multiple_large_overlap_SOURCES = test_put_multiple.c
+test_ME_put_multiple_large_overlap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DBUFSIZE=4096 -DOVERLAP=1
 
 test_LE_get_SOURCES = test_get.c
 test_LE_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
