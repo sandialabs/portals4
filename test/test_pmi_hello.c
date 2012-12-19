@@ -11,7 +11,7 @@ main(int argc,
      char *argv[])
 {
     int initialized, rank, size;
-    int i, ret, max_name_len, max_key_len, max_val_len;
+    int i, max_name_len, max_key_len, max_val_len;
     char *name, *key, *val;
 
     if (PMI_SUCCESS != PMI_Initialized(&initialized)) {
@@ -52,9 +52,6 @@ main(int argc,
     val = (char*) malloc(max_val_len);
     if (NULL == val) return 1;
 
-    ret = PtlGetPhysId(ni_h, &my_id);
-    if (PTL_OK != ret) return 1;
-
     if (PMI_SUCCESS != PMI_KVS_Get_my_name(name, max_name_len)) {
         return 1;
     }
@@ -77,11 +74,16 @@ main(int argc,
 
     /* verify everyone's information */
     for (i = 0 ; i < size ; ++i) {
+        snprintf(key, max_key_len, "pmi_hello-%lu-test", (long unsigned) i);
+
         if (PMI_SUCCESS != PMI_KVS_Get(name, key, val, max_val_len)) {
             return 1;
         }
 
-        if (i != strtol(val, NULL, 0);
+        if (i != strtol(val, NULL, 0)) {
+            fprintf(stderr, "%d: Error: Expected %d, got %d\n", rank, i, (int) strtol(val, NULL, 0));
+            return 1;
+        }
     }
 
     PMI_Finalize();
