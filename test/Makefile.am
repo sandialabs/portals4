@@ -15,7 +15,8 @@ endif
 
 include support/Makefile.am
 
-TESTS = test_init \
+TESTS = \
+	test_init \
 	test_NIInit \
 	test_bootstrap \
 	test_LE_put_self \
@@ -81,6 +82,8 @@ CLEANFILES = $(BENCHMARKS)
 
 THREADS ?= 2
 TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(THREADS)
+
+test_pmi_hello_SOURCES = test_pmi_hello.c
 
 test_init_SOURCES = test_init.c
 
