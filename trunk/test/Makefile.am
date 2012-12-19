@@ -16,6 +16,7 @@ endif
 include support/Makefile.am
 
 TESTS = \
+	test_pmi_hello \
 	test_init \
 	test_NIInit \
 	test_bootstrap \
