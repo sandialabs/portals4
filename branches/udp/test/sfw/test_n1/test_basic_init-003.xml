@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<test>
-  <desc>Test PtlInit 2x</desc>
-  <ptl_init ret="OK"/>
-  <ptl_init ret="OK"/>
-  <ptl_fini/>
-  <ptl_fini/>
-</test>

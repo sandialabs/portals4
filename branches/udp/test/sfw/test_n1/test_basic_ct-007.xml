@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<test>
-  <desc>Test PtlCTInc without init</desc>
-  <arg_check>
-    <ptl_ct_inc ret="NO_INIT"/>
-  </arg_check>
-</test>
