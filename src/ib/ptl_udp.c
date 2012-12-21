@@ -24,12 +24,13 @@ static int send_message_udp(buf_t *buf, int from_init)
 	buf->type = BUF_UDP_SEND;
 
 	buf->udp.dest_addr = buf->obj.obj_ni->udp.dest_addr;
-
-	// increment the sequence number associated with the
+       
+        // increment the sequence number associated with the
 	// send-side of this connection
 	atomic_inc(&buf->conn->udp.send_seq);
-	udp_send(buf->obj.obj_ni, buf, buf->dest.udp.dest_addr);
-
+        //REG: TODO check if this should be buf->dest.udp.dest_addr, where is the destination set?
+        udp_send(buf->obj.obj_ni, buf, buf->udp.dest_addr);
+  
 	//assert(ret == buf->length);
 
 	return PTL_OK;
@@ -301,13 +302,17 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	buf->obj.next = NULL;
 
 	// first, send the actual buffer
-	err = sendto(ni->iface->udp.connect_s, (char*)buf, sizeof(buf_t), 0, dest, 
+	err = sendto(ni->iface->udp.connect_s, (char*)buf, sizeof(buf_t), 0, (struct sockaddr*)dest, 
 	             sizeof((struct sockaddr_in)*dest));
 	if(err == -1) {
 		WARN();
-		ptl_warn("error sending buffer to socket");
+                ptl_error("error sending to: %s:%d \n",inet_ntoa(dest->sin_addr),dest->sin_port);
+		ptl_error("error sending buffer to socket: %i %s \n",ni->iface->udp.connect_s,strerror(errno));
 		return;
 	}
+        ptl_info("UDP send completed succesfully to: %s:%d from: %s:%d \n",inet_ntoa(dest->sin_addr),dest->sin_port,
+        					inet_ntoa(ni->iface->udp.sin.sin_addr),ni->iface->udp.sin.sin_port);;
+
 }
 
 /**
@@ -323,11 +328,11 @@ buf_t *udp_receive(ni_t *ni)
 
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
 
-	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(buf_t), 0, &temp_sin, &lensin);
+	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(thebuf), 0, &temp_sin, &lensin);
 	if(err == -1) {
                 free(thebuf);
 		WARN();
-		ptl_warn("error receiving main buffer from socket");
+		ptl_warn("error receiving main buffer from socket: %d %s\n",ni->iface->udp.connect_s,strerror(errno));
 		return NULL;
 	}
 

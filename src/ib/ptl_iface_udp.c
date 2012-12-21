@@ -34,9 +34,11 @@ static void accept_udp_connection_request(ni_t *ni, conn_t *conn,
 	rep.rep_cookie = (uintptr_t)conn;
 
 	ret = sendto(ni->iface->udp.connect_s, &rep, sizeof(rep), 0,
-				 from_addr, from_addr_len);
+  				 (struct sockaddr*)from_addr, from_addr_len);
 
-	if (ret != sizeof(rep)) {
+        ptl_info("Sent Acceptance of UDP 'connection'\n");
+	
+        if (ret != sizeof(rep)) {
 		WARN();
 		conn->state = CONN_STATE_DISCONNECTED;
 		pthread_cond_broadcast(&conn->move_wait);
@@ -362,6 +364,8 @@ static int iface_bind(iface_t *iface, unsigned int port)
 		goto err1;
 	}
 
+        ptl_info("bound to socket %d, address: %s:%d with given port: %d",iface->udp.connect_s,inet_ntoa(iface->udp.sin.sin_addr),iface->udp.sin.sin_port,port);
+
 	/* In case we asked for any port get the actual source port */
 	ret = getsockname(iface->udp.connect_s, (struct sockaddr *)&addr, &addrlen);
 	if (ret == -1) {
@@ -373,7 +377,8 @@ static int iface_bind(iface_t *iface, unsigned int port)
 	iface->id.phys.pid = port_to_pid(addr.sin_port);
 
 	/* Set the socket in non blocking mode. */
-	flags = fcntl(iface->udp.connect_s, F_GETFL);
+	//temporarily use blocking calls, remove this later -- REG
+        flags = fcntl(iface->udp.connect_s, F_GETFL);
 	ret = fcntl(iface->udp.connect_s, F_SETFL, flags | O_NONBLOCK);
 	if (ret == -1) {
 		ptl_warn("cannot set asynchronous fd to non blocking\n");
@@ -419,6 +424,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	}
 
 	ptl_info("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
+
+        ptl_info("id.phys.pid = %x\n",ni->id.phys.pid);
 
 	err = iface_bind(iface, pid_to_port(ni->id.phys.pid));
 	if (err) {
@@ -477,9 +484,15 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		goto error;
 	}
 
-	ni->udp.src_port = port;
 
+	ni->udp.src_port = port;
+        //REG: This is the struct used for ports
+        ni->iface->udp.sin.sin_port=port;
+
+        ptl_info("UDP bound to socket: %i port: %i reqport: %i address: %s \n",ni->udp.s,ni->iface->udp.sin.sin_port,port,inet_ntoa(ni->iface->udp.sin.sin_addr));
+     
 	// UO & REB: setup ni's udp?
+        // REG: FIXME: This doesn't setup the destination, this is the source!
 	ni->udp.dest_addr = &iface->udp.sin;
 
 	// TODO: Does this belong here or even in UDP at all?
