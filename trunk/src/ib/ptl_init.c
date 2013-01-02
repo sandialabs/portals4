@@ -443,6 +443,8 @@ static int send_req(buf_t *buf)
 	else
 		state = STATE_INIT_CLEANUP;
 
+        //REG
+        //ptl_info("Init send connection request to %s:%d \n",inet_ntoa(buf->udp.dest_addr->sin_addr),buf->udp.dest_addr->sin_port);
 	err = buf->conn->transport.send_message(buf, 1);
 	if (err)
 		return STATE_INIT_SEND_ERROR;

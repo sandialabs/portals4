@@ -83,6 +83,9 @@ static void process_udp_connect_request(struct iface *iface,
 
 	pthread_mutex_lock(&conn->mutex);
 
+        //REG
+        ptl_info("connection state: %i",conn->state);
+
 	switch (conn->state) {
 	case CONN_STATE_CONNECTED:
 		/* We received a connection request but we are already
@@ -99,7 +102,8 @@ static void process_udp_connect_request(struct iface *iface,
 	case CONN_STATE_DISCONNECTING:
 		/* Not sure how to handle that case. Ignore and disconnect
 		 * anyway? */
-		abort();
+		WARN();
+                abort();
 		break;
 
 	case CONN_STATE_CONNECTING:
@@ -364,7 +368,7 @@ static int iface_bind(iface_t *iface, unsigned int port)
 		goto err1;
 	}
 
-        ptl_info("bound to socket %d, address: %s:%d with given port: %d",iface->udp.connect_s,inet_ntoa(iface->udp.sin.sin_addr),iface->udp.sin.sin_port,port);
+        ptl_info("bound to socket %d, address: %s:%d with given port: %d \n",iface->udp.connect_s,inet_ntoa(iface->udp.sin.sin_addr),iface->udp.sin.sin_port,port);
 
 	/* In case we asked for any port get the actual source port */
 	ret = getsockname(iface->udp.connect_s, (struct sockaddr *)&addr, &addrlen);
@@ -409,7 +413,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	int ret;
 	int flags;
 	struct sockaddr_in addr;
-	uint16_t port;
+	//uint16_t port;
+        int port;
 	iface_t *iface = ni->iface;
 
 	ni->udp.s = -1;
@@ -427,21 +432,14 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
         ptl_info("id.phys.pid = %x\n",ni->id.phys.pid);
 
-	err = iface_bind(iface, pid_to_port(ni->id.phys.pid));
+	//err = iface_bind(iface, pid_to_port(ni->id.phys.pid));
 	if (err) {
 		ptl_warn("Binding failed\n");
 		WARN();
 		goto error;
 	}
 
-	if ((ni->options & PTL_NI_PHYSICAL) &&
-		(ni->id.phys.pid == PTL_PID_ANY)) {
-		/* No well known PID was given. Retrieve the pid given by
-		 * bind. */
-		ni->id.phys.pid = iface->id.phys.pid;
 
-		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
-	}
 
 	/* Create a socket to be used for the transport. All connections
 	 * will use it. */
@@ -465,8 +463,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	addr = iface->udp.sin;
 
 	for(port = 49152; port <= 65535; port ++) {
-		addr.sin_port = cpu_to_be16(port);
-		ret = bind(ni->udp.s, (struct sockaddr *)&addr, sizeof(addr));
+		addr.sin_port = htons(port);
+                ret = bind(ni->udp.s, (struct sockaddr *)&addr, sizeof(addr));
 		if (ret == -1) {
 			if (errno == EADDRINUSE)
 				continue;
@@ -485,15 +483,46 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	}
 
 
-	ni->udp.src_port = port;
-        //REG: This is the struct used for ports
-        ni->iface->udp.sin.sin_port=port;
+        ptl_info("UDP socket udp.s bound to socket: %i IP:%s:%i \n",ni->udp.s,inet_ntoa(addr.sin_addr),ntohs(addr.sin_port));
 
-        ptl_info("UDP bound to socket: %i port: %i reqport: %i address: %s \n",ni->udp.s,ni->iface->udp.sin.sin_port,port,inet_ntoa(ni->iface->udp.sin.sin_addr));
+	ni->udp.src_port = htons(port);
+        //REG: This is the struct used for ports
+        ni->iface->udp.sin.sin_port=htons(port);
+        ni->iface->udp.connect_s = ni->udp.s;
+
+        ptl_info("UDP bound to socket: %i port: %i reqport: %i address: %s \n",ni->udp.s,ntohs(ni->iface->udp.sin.sin_port),port,inet_ntoa(ni->iface->udp.sin.sin_addr));
      
+        //err = iface_bind(iface, port);
+        //if (err) {
+        //        ptl_warn("Binding failed\n");
+        //        WARN();
+        //        goto error;
+        //}
+
+        ptl_info("Interface bound to socket %i\n",ni->iface->udp.connect_s);
+
 	// UO & REB: setup ni's udp?
         // REG: FIXME: This doesn't setup the destination, this is the source!
 	ni->udp.dest_addr = &iface->udp.sin;
+         
+        //REG: this is kind of silly to convert back and forth, but port_to_pid is readable
+        iface->id.phys.pid = port_to_pid(ntohs(ni->iface->udp.sin.sin_port)); 
+	if ((ni->options & PTL_NI_PHYSICAL) &&
+		(ni->id.phys.pid == PTL_PID_ANY)) {
+		/* No well known PID was given. Retrieve the pid given by
+		 * bind. */
+		ni->id.phys.pid = iface->id.phys.pid;
+
+		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
+	}
+
+
+        /* add a watcher for connection request events */
+        iface->udp.watcher.data = iface;
+        ev_io_init(&iface->udp.watcher, process_udp_connect,
+                           iface->udp.connect_s, EV_READ);
+
+        EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
 
 	// TODO: Does this belong here or even in UDP at all?
 	off_t bounce_buf_offset;
