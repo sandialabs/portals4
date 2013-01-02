@@ -192,8 +192,10 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 	ret = recvfrom(iface->udp.connect_s, &msg, sizeof(msg), MSG_DONTWAIT,
 				   (struct sockaddr *)&from_addr, &from_addr_len);
 
-	if (ret == -1)
-		return;
+	if (ret == -1){
+		WARN();		
+                return;
+        }
 
 	if (ret != sizeof(msg)) {
 		WARN();
@@ -202,8 +204,11 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 
 	assert(from_addr_len == sizeof(struct sockaddr_in));
 
+ 	ptl_info("Received connection request message, type: %i \n", le16_to_cpu(msg.msg_type));
+
 	switch(le16_to_cpu(msg.msg_type)) {
 	case UDP_CONN_MSG_REQ:
+		ptl_info("Received connection request from: %s \n",inet_ntoa(from_addr.sin_addr));
 		process_udp_connect_request(iface, &msg, &from_addr, from_addr_len);
 		break;
 		
@@ -483,7 +488,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	}
 
 
-        ptl_info("UDP socket udp.s bound to socket: %i IP:%s:%i \n",ni->udp.s,inet_ntoa(addr.sin_addr),ntohs(addr.sin_port));
+        //ptl_info("UDP socket udp.s bound to socket: %i IP:%s:%i \n",ni->udp.s,inet_ntoa(addr.sin_addr),ntohs(addr.sin_port));
 
 	ni->udp.src_port = htons(port);
         //REG: This is the struct used for ports
@@ -516,11 +521,13 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
 
+	//REG TODO: We are going to need to setup a first 'connection' here
+ 	//REG TODO: Not using the EV loop as it doesn't pick up new traffic
 
         /* add a watcher for connection request events */
         iface->udp.watcher.data = iface;
         ev_io_init(&iface->udp.watcher, process_udp_connect,
-                           iface->udp.connect_s, EV_READ);
+                           ni->udp.s, EV_READ);
 
         EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
 
