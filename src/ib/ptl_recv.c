@@ -260,6 +260,8 @@ static int recv_packet(buf_t *buf)
 		pthread_mutex_unlock(&conn->mutex);
 #endif
 
+//REG: TODO case for UDP
+
 		return STATE_RECV_DROP_BUF;
 	}
 }
@@ -514,8 +516,14 @@ static void progress_thread_udp(ni_t *ni)
 
 		//udp_buf = shmem_dequeue(ni);
 		udp_buf = udp_receive(ni);
+                //REG
+                if (udp_buf != NULL){
+                 	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
+		};
+ 
 
-		if (udp_buf) {
+		if (udp_buf != NULL) {
+		 	ptl_info("received UDP buf type: %i, SEND=%i RETURN=%i RECV=%i\n",udp_buf->type,BUF_UDP_SEND,BUF_UDP_RETURN,BUF_UDP_RECEIVE);	
 			switch(udp_buf->type) {
 			case BUF_UDP_SEND: {
 				buf_t *buf;
@@ -553,16 +561,24 @@ static void progress_thread_udp(ni_t *ni)
 					 * rank. From send_message_udp(). */
 					buf_put(udp_buf);
 				}
-			}
+			
 				break;
+			}
 
-			case BUF_UDP_RETURN:
+        		case BUF_UDP_RECEIVE: {
+				//REG: TODO: fix UDP process recv
+ 				process_recv_udp(ni,udp_buf);
+				break;
+  			} 
+
+			case BUF_UDP_RETURN: {
 				/* Buffer returned to us by remote node. */
 				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
 
 				/* From send_message_udp(). */
 				buf_put(udp_buf);
 				break;
+     			}
 
 			default:
 				/* Should not happen. */

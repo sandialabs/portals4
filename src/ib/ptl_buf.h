@@ -245,7 +245,10 @@ struct buf {
 
 #if WITH_TRANSPORT_UDP
 		struct {
-			struct sockaddr_in *dest_addr;
+			/* destination address for send */
+                        struct sockaddr_in *dest_addr;
+                        /* source address for recv */
+                        struct sockaddr_in *src_addr;
 		} udp;
 #endif
 
@@ -530,8 +533,9 @@ static inline void set_buf_dest(buf_t *buf, conn_t *connect)
 #if WITH_TRANSPORT_UDP
 	case CONN_TYPE_UDP:
 		buf->dest.udp.s = obj_to_ni(buf)->udp.s;
-		//buf->dest.udp.dest_addr = &connect->udp.dest_addr;
-		buf->dest.udp.dest_addr = &connect->sin;
+		buf->dest.udp.dest_addr = &connect->udp.dest_addr;
+		//REG: shouldn't be the connection's address
+                //buf->dest.udp.dest_addr = &connect->sin;
 		break;
 #endif
 	}
