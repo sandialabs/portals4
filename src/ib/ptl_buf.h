@@ -86,7 +86,7 @@ struct xremote {
 #if WITH_TRANSPORT_UDP
 		struct {
 			int s;
-			struct sockaddr_in *dest_addr;
+			struct sockaddr_in *dest_addr;             
 		} udp;
 #endif
 	};
@@ -202,7 +202,7 @@ struct buf {
 
 	/** remote destination for message */
 	struct xremote		dest;
-
+        
 	/** message length */
 	unsigned int		length;
 
@@ -248,7 +248,7 @@ struct buf {
 			/* destination address for send */
                         struct sockaddr_in *dest_addr;
                         /* source address for recv */
-                        struct sockaddr_in *src_addr;
+                        struct sockaddr_in src_addr;
 		} udp;
 #endif
 

@@ -302,7 +302,12 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	buf->obj.next = NULL;
 
         //REG: FIXME Awful test to test sockets, but breaks everything else, remove this
+        //conn_t *conn; 
         struct sockaddr_in target;
+        //conn = get_conn(ni, ni->id);
+        //target.sin_addr = conn->sin.sin_addr;
+        //target.sin_port = conn->sin.sin_port;	       
+        //conn_put(conn);
         target.sin_addr = dest->sin_addr;
         target.sin_port = dest->sin_port;
 	target.sin_port = ntohs(target.sin_port);
@@ -321,7 +326,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		ptl_error("error sending buffer to socket: %i %s \n",ni->iface->udp.connect_s,strerror(errno));
 		return;
 	}
-        ptl_info("UDP send completed succesfully to: %s:%d from: %s:%d \n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),
+        ptl_info("UDP send completed successfully to: %s:%d from: %s:%d \n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),
         					inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;
 
 }
@@ -339,7 +344,7 @@ buf_t *udp_receive(ni_t *ni)
 
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
 
-        ptl_info("Entering Recvfrom on socket: %i IP:%s:%i \n",ni->iface->udp.connect_s,inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
+        //ptl_info("Entering Recvfrom on socket: %i IP:%s:%i \n",ni->iface->udp.connect_s,inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
 	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(thebuf), 0, &temp_sin, &lensin);
 	if(err == -1) {
             if (errno != EAGAIN){
@@ -349,13 +354,13 @@ buf_t *udp_receive(ni_t *ni)
 		return NULL;
             }
             else {
-		ptl_info("Nothing to fetch from non-blocking socket: %d \n",ni->iface->udp.connect_s);
+		//ptl_info("Nothing to fetch from non-blocking socket: %d \n",ni->iface->udp.connect_s);
                 return NULL;
             }
 	}
         ptl_info("received data from %s:%i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port));
 	thebuf->type = BUF_UDP_RECEIVE;
-        //REG TODO: must return source address 
+        thebuf->udp.src_addr = temp_sin;
         return (buf_t *)thebuf;
 }
 
@@ -371,7 +376,7 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 		//if (get_param(PTL_ENABLE_UDP)) {
 			/* Connect local ranks through XPMEM or SHMEM. */
 			id.rank = i;
-			conn = get_conn(ni, id);
+			conn = get_conn(ni, ni->id);
 			if (!conn) {
 				/* It's hard to recover from here. */
 				WARN();
@@ -415,20 +420,22 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	/* Send the connect request. */
 	struct udp_conn_msg msg;
 	msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REQ);
-	msg.port = htons(ni->udp.src_port);//REG: cpu_to_le16(ni->udp.src_port);
+	msg.port = ntohs(ni->udp.src_port);//REG: cpu_to_le16(ni->udp.src_port);
 	msg.req.options = ni->options;
 	msg.req.src_id = ni->id;
 	msg.req_cookie = (uintptr_t)conn;
 
-	/* Send the request to the listening socket on the remote node. */
-	ret = sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
+        conn->sin.sin_port = ntohs(conn->sin.sin_port);
+
+	/* Send the request to the listening socket on the remote node. */	
+        ret = sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
 				 &conn->sin, sizeof(conn->sin));
 	if (ret == -1) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-        ptl_info("succesfully send connection request to listener: %s:%d",inet_ntoa(conn->sin.sin_addr),conn->sin.sin_port);
+        ptl_info("succesfully send connection request to listener: %s:%d from: %d\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),htons(ni->udp.src_port));
 
 	return PTL_OK;
 }
