@@ -511,7 +511,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	ni->udp.dest_addr = &iface->udp.sin;
          
         //REG: this is kind of silly to convert back and forth, but port_to_pid is readable
-        iface->id.phys.pid = port_to_pid(ntohs(ni->iface->udp.sin.sin_port)); 
+        iface->id.phys.pid = ntohs(ni->iface->udp.sin.sin_port);//port_to_pid(ntohs(ni->iface->udp.sin.sin_port)); 
 	if ((ni->options & PTL_NI_PHYSICAL) &&
 		(ni->id.phys.pid == PTL_PID_ANY)) {
 		/* No well known PID was given. Retrieve the pid given by
