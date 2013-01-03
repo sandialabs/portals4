@@ -219,6 +219,10 @@ static int recv_packet(buf_t *buf)
 {
 	struct hdr_common *hdr = (struct hdr_common *)buf->data;
 
+#if WITH_TRANSPORT_UDP
+	ptl_info("check incoming buffer for correct PTL header\n");
+#endif
+
 	/* sanity check received buffer */
 	if (hdr->version != PTL_HDR_VER_1) {
 		WARN();
@@ -260,10 +264,14 @@ static int recv_packet(buf_t *buf)
 		pthread_mutex_unlock(&conn->mutex);
 #endif
 
-//REG: TODO case for UDP
-
 		return STATE_RECV_DROP_BUF;
 	}
+	
+ //REG: TODO case for UDP
+#if WITH_TRANSPORT_UDP
+		ptl_info("State machine, handling received UDP message\n");
+
+#endif
 }
 
 /**
@@ -523,7 +531,7 @@ static void progress_thread_udp(ni_t *ni)
  
 
 		if (udp_buf != NULL) {
-		 	ptl_info("received UDP buf type: %i, SEND=%i RETURN=%i RECV=%i\n",udp_buf->type,BUF_UDP_SEND,BUF_UDP_RETURN,BUF_UDP_RECEIVE);	
+		 	ptl_info("received UDP buf type: %i, SEND=%i RETURN=%i RECV=%i CONN_REQ=%i CONN_REP=%i\n",udp_buf->type,BUF_UDP_SEND,BUF_UDP_RETURN,BUF_UDP_RECEIVE,BUF_UDP_CONN_REQ,BUF_UDP_CONN_REP);	
 			switch(udp_buf->type) {
 			case BUF_UDP_SEND: {
 				buf_t *buf;
@@ -567,6 +575,7 @@ static void progress_thread_udp(ni_t *ni)
 
         		case BUF_UDP_RECEIVE: {
 				//REG: TODO: fix UDP process recv
+				ptl_info("prcessing received data message\n");
  				process_recv_udp(ni,udp_buf);
 				break;
   			} 
@@ -579,6 +588,45 @@ static void progress_thread_udp(ni_t *ni)
 				buf_put(udp_buf);
 				break;
      			}
+
+			case BUF_UDP_CONN_REQ:{
+			   	
+				ptl_info("UDP connection request received, handling now.... \n");
+				
+				udp_buf->type = BUF_UDP_CONN_REP;
+			        
+				struct udp_conn_msg msg;
+        			msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REP);
+        			msg.port = ntohs(ni->udp.src_port);
+        			msg.req.options = ni->options;
+        			msg.req.src_id = ni->id;
+        			
+        			udp_buf->transfer.udp.conn_msg = msg;
+        			udp_buf->length = (sizeof(buf_t));	
+				
+				
+				udp_send(ni, udp_buf, &udp_buf->udp.src_addr);
+ 				conn_t *conn;
+ 				conn = get_conn(ni, ni->id);
+				conn->state = CONN_STATE_CONNECTED;
+				pthread_cond_broadcast(&conn->move_wait);
+				conn_put(conn);
+				/* REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here */
+				ptl_info("Connection request reply sent, connection valid. \n");
+				break;	
+			
+			}
+
+			case BUF_UDP_CONN_REP:{
+				ptl_info("UDP connection reply received, validating connection \n");
+			        conn_t *conn;
+                                conn = get_conn(ni, ni->id);
+                                conn->state = CONN_STATE_CONNECTED;
+				pthread_cond_broadcast(&conn->move_wait);
+				conn_put(conn);
+				ptl_info("connection valid for reply\n");
+				break;
+			}
 
 			default:
 				/* Should not happen. */

@@ -23,6 +23,8 @@ enum buf_type {
 	BUF_UDP_SEND,
 	BUF_UDP_RETURN,
 	BUF_UDP_RECEIVE,
+	BUF_UDP_CONN_REQ,
+	BUF_UDP_CONN_REP,
 #endif
 
 #if WITH_TRANSPORT_SHMEM
@@ -359,6 +361,8 @@ struct buf {
 			 * same physical location from different address
 			 * spaces. */
 			struct udp *udp;
+
+			struct udp_conn_msg conn_msg;
 		} udp;
 #endif
 	} transfer;

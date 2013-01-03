@@ -301,24 +301,11 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	// TODO: Don't know the meaning of this (UO & REB)
 	buf->obj.next = NULL;
 
-        //REG: FIXME Awful test to test sockets, but breaks everything else, remove this
-        //conn_t *conn; 
         struct sockaddr_in target;
-        //conn = get_conn(ni, ni->id);
-        //target.sin_addr = conn->sin.sin_addr;
-        //target.sin_port = conn->sin.sin_port;	       
-        //conn_put(conn);
         target.sin_addr = dest->sin_addr;
         target.sin_port = dest->sin_port;
-	target.sin_port = ntohs(target.sin_port);
-        target.sin_port++;
-        target.sin_port = htons(target.sin_port);
- 
-        //REG: to here    
-
+	
 	// first, send the actual buffer
-	//err = sendto(ni->iface->udp.connect_s, (char*)buf, sizeof(buf_t), 0, (struct sockaddr*)dest, 
-	//             sizeof((struct sockaddr_in)*dest));
 	err = sendto(ni->iface->udp.connect_s, (char*)buf, sizeof(buf_t), 0, &target, sizeof(target));
         if(err == -1) {
 		WARN();
@@ -345,7 +332,7 @@ buf_t *udp_receive(ni_t *ni)
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
 
         //ptl_info("Entering Recvfrom on socket: %i IP:%s:%i \n",ni->iface->udp.connect_s,inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
-	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(thebuf), 0, &temp_sin, &lensin);
+	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(buf_t), 0, &temp_sin, &lensin);
 	if(err == -1) {
             if (errno != EAGAIN){
                 free(thebuf);
@@ -358,8 +345,26 @@ buf_t *udp_receive(ni_t *ni)
                 return NULL;
             }
 	}
-        ptl_info("received data from %s:%i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port));
-	thebuf->type = BUF_UDP_RECEIVE;
+        if(&thebuf->transfer.udp.conn_msg != NULL){
+		ptl_info("process received message type \n");
+		struct udp_conn_msg *msg = &thebuf->transfer.udp.conn_msg;
+		
+		if (msg->msg_type == UDP_CONN_MSG_REQ){
+		   ptl_info("received a UDP connection request \n");
+		   thebuf->type = BUF_UDP_CONN_REQ;
+		}
+		else if (msg->msg_type == UDP_CONN_MSG_REP){
+		   ptl_info("recieved a UDP connection reply \n");
+		   thebuf->type = BUF_UDP_CONN_REP;
+		}
+		else{
+		   ptl_info("received a UDP data packet \n");
+		   thebuf->type = BUF_UDP_RECEIVE;
+		}
+
+	}
+	ptl_info("received data from %s:%i type:%i data size: %i message size:%i %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(thebuf->data),sizeof(thebuf),err);
+	 	
         thebuf->udp.src_addr = temp_sin;
         return (buf_t *)thebuf;
 }
@@ -369,6 +374,7 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 {
 	int i;
 
+        ptl_info("Creating a connection for PTlSetMap\n");
 	for (i = 0; i < map_size; i++) {
 		conn_t *conn;
 		ptl_process_t id;
@@ -386,14 +392,18 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 
 #if WITH_TRANSPORT_UDP
 			conn->transport = transport_udp;
+			ptl_info("connection: %s:%i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port));
 #else
-#error
+			/* This should never happen */
+ 			ptl_error("Creating UDP Map for Non-UDP Transport \n");
 #endif
 			conn->state = CONN_STATE_CONNECTED;
 
 			conn_put(conn);			/* from get_conn */
+                 
 		//}
 	}
+	ptl_info("Done creating connection for PtlSetMap\n");
 }
 
 /**
@@ -417,7 +427,11 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
 
-	/* Send the connect request. */
+	/* Create a buffer for sending the connection request message */
+	buf_t * conn_buf = (buf_t *)calloc(1, sizeof(buf_t));
+        conn_buf->type = BUF_UDP_CONN_REQ;
+
+        /* Send the connect request. */
 	struct udp_conn_msg msg;
 	msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REQ);
 	msg.port = ntohs(ni->udp.src_port);//REG: cpu_to_le16(ni->udp.src_port);
@@ -425,18 +439,22 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	msg.req.src_id = ni->id;
 	msg.req_cookie = (uintptr_t)conn;
 
-        conn->sin.sin_port = ntohs(conn->sin.sin_port);
-
+	conn_buf->transfer.udp.conn_msg = msg;
+        conn_buf->length = (sizeof(buf_t));
+        
+	ptl_info("to send msg size: %i in UDP message size: %i\n",sizeof(msg),sizeof(buf_t));
+        
 	/* Send the request to the listening socket on the remote node. */	
-        ret = sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
-				 &conn->sin, sizeof(conn->sin));
+        /* This does not send just the msg, but a buf to maintain compatibility with the progression thread */
+	ret = sendto(ni->iface->udp.connect_s, conn_buf, conn_buf->length, 0,
+				(struct sockaddr_in*)&conn->sin, sizeof(conn->sin));
 	if (ret == -1) {
 		WARN();
 		return PTL_FAIL;
 	}
 
-        ptl_info("succesfully send connection request to listener: %s:%d from: %d\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),htons(ni->udp.src_port));
-
+        ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),htons(ni->udp.src_port),ret);
+        
 	return PTL_OK;
 }
 
