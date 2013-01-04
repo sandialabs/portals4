@@ -308,6 +308,9 @@ static int recv_req(buf_t *buf)
 
 	/* Send message to target state machine. process_tgt must drop the
 	 * buffer, so buf will not be valid after the call. */
+#if WITH_TRANSPORT_UDP
+	ptl_info("process received UDP request as target\n");
+#endif
 	err = process_tgt(buf);
 	if (err)
 		WARN();
@@ -521,10 +524,12 @@ static void progress_thread_udp(ni_t *ni)
 	if (ni->udp.dest_addr) {
 		int err;
 		buf_t *udp_buf;
-
-		//udp_buf = shmem_dequeue(ni);
+	
 		udp_buf = udp_receive(ni);
-                //REG
+                if (&udp_buf->mutex == NULL){
+		  pthread_mutex_init(&udp_buf->mutex,NULL);
+		}
+ 		
                 if (udp_buf != NULL){
                  	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
 		};
@@ -606,11 +611,12 @@ static void progress_thread_udp(ni_t *ni)
 				
 				
 				udp_send(ni, udp_buf, &udp_buf->udp.src_addr);
- 				conn_t *conn;
- 				conn = get_conn(ni, ni->id);
-				conn->state = CONN_STATE_CONNECTED;
-				pthread_cond_broadcast(&conn->move_wait);
-				conn_put(conn);
+ 				//conn_t *conn;
+ 				//conn = get_conn(ni, ni->id);
+				//conn->state = CONN_STATE_CONNECTED;
+				//ptl_info("release wait on %p \n",&conn->move_wait);
+				//pthread_cond_broadcast(&conn->move_wait);
+				//conn_put(conn);
 				/* REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here */
 				ptl_info("Connection request reply sent, connection valid. \n");
 				break;	
@@ -619,11 +625,12 @@ static void progress_thread_udp(ni_t *ni)
 
 			case BUF_UDP_CONN_REP:{
 				ptl_info("UDP connection reply received, validating connection \n");
-			        conn_t *conn;
-                                conn = get_conn(ni, ni->id);
-                                conn->state = CONN_STATE_CONNECTED;
-				pthread_cond_broadcast(&conn->move_wait);
-				conn_put(conn);
+			        //conn_t *conn;
+                                //conn = get_conn(ni, ni->id);
+                                udp_buf->conn->state = CONN_STATE_CONNECTED;
+				ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
+				pthread_cond_broadcast(&udp_buf->conn->move_wait);
+				//conn_put(conn);
 				ptl_info("connection valid for reply\n");
 				break;
 			}
@@ -749,7 +756,7 @@ void process_recv_udp(ni_t *ni, buf_t *buf)
 {
 	enum recv_state state = STATE_RECV_PACKET;
 
-//TODO: Not sure what to put here yet
+//REG: TODO: process receive packets to deliver data.
 	while(1) {
 		ptl_info("tid:%lx buf:%p: recv state local = %s\n",
 				 (long unsigned int)pthread_self(), buf,
@@ -757,9 +764,11 @@ void process_recv_udp(ni_t *ni, buf_t *buf)
 		switch (state) {
 		case STATE_RECV_PACKET:
 			state = recv_packet(buf);
+			ptl_info("recv_packet returned state: %s\n",recv_state_name[state]);
 			break;
 		case STATE_RECV_REQ:
 			state = recv_req(buf);
+			ptl_info("recv_req returned state: %s\n",recv_state_name[state]);
 			break;
 		case STATE_RECV_INIT:
 			state = recv_init(buf);

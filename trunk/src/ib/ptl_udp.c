@@ -423,7 +423,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	if (ni->shutting_down)
 		return PTL_FAIL;
 
-	conn_get(conn);
+	//conn_get(conn);
 
 	assert(conn->state == CONN_STATE_DISCONNECTED);
 
@@ -441,7 +441,8 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 
 	conn_buf->transfer.udp.conn_msg = msg;
         conn_buf->length = (sizeof(buf_t));
-        
+	conn_buf->conn = conn;       
+ 
 	ptl_info("to send msg size: %i in UDP message size: %i\n",sizeof(msg),sizeof(buf_t));
         
 	/* Send the request to the listening socket on the remote node. */	
@@ -452,7 +453,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 		WARN();
 		return PTL_FAIL;
 	}
-
+        
         ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),htons(ni->udp.src_port),ret);
         
 	return PTL_OK;

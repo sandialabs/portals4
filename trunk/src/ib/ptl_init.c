@@ -376,8 +376,18 @@ static int wait_conn(buf_t *buf)
 			}
 		}
 
+#if WITH_TRANSPORT_UDP
+		ptl_info("SM: start waiting on %p\n",&conn->move_wait);
+
+#endif
+
+
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
  		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+#if WITH_TRANSPORT_UDP
+		//REG: remove this later
+		ptl_info("UDP connection complete, advancing state machine\n");
+#endif
 #endif
 
 	 	pthread_mutex_unlock(&conn->mutex);
