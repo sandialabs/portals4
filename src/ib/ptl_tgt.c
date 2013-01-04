@@ -1862,7 +1862,18 @@ int process_tgt(buf_t *buf)
 	int err = PTL_OK;
 	enum tgt_state state;
 
+#if WITH_TRANSPORT_UDP
+	ptl_info("locking buffer for target processing \n");	
+#endif
+
+#if !WITH_TRANSPORT_UDP
+	//REG: TODO: locking not correctly occuring for UDP
 	pthread_mutex_lock(&buf->mutex);
+#endif
+
+#if WITH_TRANSPORT_UDP
+	ptl_info("got lock for target buffer processing \n");
+#endif
 
 	state = buf->tgt_state;
 

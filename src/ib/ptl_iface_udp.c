@@ -134,7 +134,7 @@ static void process_udp_connect_request(struct iface *iface,
 	WARN();
 	rep.msg_type = UDP_CONN_MSG_REJ;
 	sendto(ni->iface->udp.connect_s, &msg, sizeof(msg), 0,
-		   from_addr, from_addr_len);
+		   (struct sockaddr*)from_addr, from_addr_len);
 	
 	return;
 }
@@ -223,7 +223,7 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 		rtu.rep_cookie = msg.rep_cookie;
 
 		ret = sendto(obj_to_ni(conn)->iface->udp.connect_s, &rtu, sizeof(rtu), 0,
-					 &from_addr, from_addr_len);
+					 (struct sockaddr*)&from_addr, from_addr_len);
 
 		if (ret != sizeof(rtu)) {
 			WARN();
@@ -338,17 +338,20 @@ int init_iface_udp(iface_t *iface)
  *
  * @return status
  */
+
+/* REG: Marked for removal later, not needed, the functionality is provived in PtlNIInit_udp.
+   REG: This was previously being done twice, once in PtlNIInit_udp and again here, incorrect and unneeded.
+
 static int iface_bind(iface_t *iface, unsigned int port)
 {
 	int ret;
-	int flags;
+	//int flags;
 	struct sockaddr_in addr;
 	socklen_t addrlen;
 
-	/* Check whther that interface is already configured */
+	// Check whther that interface is already configured 
 	if (iface->udp.connect_s != -1) {
-		/* It does. If we want to bind to the same port, or a random
-		 * port then it's ok. */
+		// It does. If we want to bind to the same port, or a random port then it's ok. 
 		if (port == 0 || port == iface->udp.sin.sin_port)
 			return PTL_OK;
 
@@ -358,14 +361,14 @@ static int iface_bind(iface_t *iface, unsigned int port)
 
 	iface->udp.sin.sin_port = port;
 
-	/* Create the UDP listen socket. */
+	// Create the UDP listen socket. 
 	iface->udp.connect_s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (iface->udp.connect_s == -1) {
 		ptl_warn("unable to create UDP socket\n");
 		goto err1;
 	}
 
-	/* Bind it to the selected port. */
+	// Bind it to the selected port. 
 	ret = bind(iface->udp.connect_s, (struct sockaddr *)&iface->udp.sin, sizeof(iface->udp.sin));
 	if (ret == -1) {
 		ptl_warn("unable to bind to local address %x\n",
@@ -375,26 +378,26 @@ static int iface_bind(iface_t *iface, unsigned int port)
 
         ptl_info("bound to socket %d, address: %s:%d with given port: %d \n",iface->udp.connect_s,inet_ntoa(iface->udp.sin.sin_addr),iface->udp.sin.sin_port,port);
 
-	/* In case we asked for any port get the actual source port */
+	// In case we asked for any port get the actual source port 
 	ret = getsockname(iface->udp.connect_s, (struct sockaddr *)&addr, &addrlen);
 	if (ret == -1) {
 		ptl_warn("unable to retrieve local port\n");
 		goto err1;
 	}
 
-	/* remember the physical pid. */
+	// remember the physical pid. 
 	iface->id.phys.pid = port_to_pid(addr.sin_port);
 
-	/* Set the socket in non blocking mode. */
+	// Set the socket in non blocking mode. 
 	//temporarily use blocking calls, remove this later -- REG
-        flags = fcntl(iface->udp.connect_s, F_GETFL);
-	ret = fcntl(iface->udp.connect_s, F_SETFL, flags | O_NONBLOCK);
-	if (ret == -1) {
-		ptl_warn("cannot set asynchronous fd to non blocking\n");
-		goto err1;
-	}
+        //flags = fcntl(iface->udp.connect_s, F_GETFL);
+	//ret = fcntl(iface->udp.connect_s, F_SETFL, flags | O_NONBLOCK);
+	//if (ret == -1) {
+	//	ptl_warn("cannot set asynchronous fd to non blocking\n");
+	//	goto err1;
+	//}
 
-	/* add a watcher for CM events */
+	// add a watcher for CM events 
 	iface->udp.watcher.data = iface;
 	ev_io_init(&iface->udp.watcher, process_udp_connect,
 			   iface->udp.connect_s, EV_READ);
@@ -411,6 +414,7 @@ static int iface_bind(iface_t *iface, unsigned int port)
 
 	return PTL_FAIL;
 }
+*/
 
 int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 {
@@ -456,6 +460,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	}
 
 	/* Set the socket in non blocking mode. */
+	
+	//REG: set to blocking socket mode
 	flags = fcntl(ni->udp.s, F_GETFL);
 	ret = fcntl(ni->udp.s, F_SETFL, flags | O_NONBLOCK);
 	if (ret == -1) {
