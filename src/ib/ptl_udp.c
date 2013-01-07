@@ -16,23 +16,20 @@
  */
 static int send_message_udp(buf_t *buf, int from_init)
 {
-	ssize_t ret;
-
 	/* Keep a reference on the buffer so it doesn't get freed. */
 	assert(buf->obj.obj_pool->type == POOL_BUF);
-	buf_get(buf);
+	//buf_get(buf);
 	buf->type = BUF_UDP_SEND;
 
-	buf->udp.dest_addr = buf->obj.obj_ni->udp.dest_addr;
-       
+
+	//if (((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1)	
+	//   ptl_info("sending PTL version 1 header: %p \n",((struct hdr_common *)buf->data)->version);
+      
         // increment the sequence number associated with the
 	// send-side of this connection
 	atomic_inc(&buf->conn->udp.send_seq);
-        //REG: TODO check if this should be buf->dest.udp.dest_addr, where is the destination set?
-        udp_send(buf->obj.obj_ni, buf, buf->udp.dest_addr);
-  
-	//assert(ret == buf->length);
-
+        udp_send(buf->obj.obj_ni, buf, &buf->dest.udp.dest_addr);
+  	
 	return PTL_OK;
 }
 
@@ -299,22 +296,22 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	int err;
 
 	// TODO: Don't know the meaning of this (UO & REB)
-	buf->obj.next = NULL;
+	//buf->obj.next = NULL;
 
         struct sockaddr_in target;
         target.sin_addr = dest->sin_addr;
         target.sin_port = dest->sin_port;
-	
+
 	// first, send the actual buffer
-	err = sendto(ni->iface->udp.connect_s, (char*)buf, sizeof(buf_t), 0, &target, sizeof(target));
+	err = sendto(ni->iface->udp.connect_s, buf, sizeof(*buf), 0, (struct sockaddr*)&target, sizeof(target));
         if(err == -1) {
 		WARN();
                 ptl_error("error sending to: %s:%d \n",inet_ntoa(dest->sin_addr),ntohs(dest->sin_port));
 		ptl_error("error sending buffer to socket: %i %s \n",ni->iface->udp.connect_s,strerror(errno));
 		return;
 	}
-        ptl_info("UDP send completed successfully to: %s:%d from: %s:%d \n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),
-        					inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;
+        ptl_info("UDP send completed successfully to: %s:%d from: %s:%d size:%lu\n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),
+        					inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port),sizeof(*buf));;
 
 }
 
@@ -331,8 +328,7 @@ buf_t *udp_receive(ni_t *ni)
 
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
 
-        //ptl_info("Entering Recvfrom on socket: %i IP:%s:%i \n",ni->iface->udp.connect_s,inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
-	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(buf_t), 0, &temp_sin, &lensin);
+        err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(*thebuf), 0, (struct sockaddr*)&temp_sin, &lensin);
 	if(err == -1) {
             if (errno != EAGAIN){
                 free(thebuf);
@@ -341,8 +337,9 @@ buf_t *udp_receive(ni_t *ni)
 		return NULL;
             }
             else {
-		//ptl_info("Nothing to fetch from non-blocking socket: %d \n",ni->iface->udp.connect_s);
-                return NULL;
+		//Nothing to fetch
+                free(thebuf);
+		return NULL;
             }
 	}
         if(&thebuf->transfer.udp.conn_msg != NULL){
@@ -363,7 +360,7 @@ buf_t *udp_receive(ni_t *ni)
 		}
 
 	}
-	ptl_info("received data from %s:%i type:%i data size: %i message size:%i %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(thebuf->data),sizeof(thebuf),err);
+	ptl_info("received data from %s:%i type:%i data size: %lu message size:%lu %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(*(thebuf->data)),sizeof(*thebuf),err);
 	 	
         thebuf->udp.src_addr = temp_sin;
         return (buf_t *)thebuf;
@@ -442,19 +439,20 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	conn_buf->transfer.udp.conn_msg = msg;
         conn_buf->length = (sizeof(buf_t));
 	conn_buf->conn = conn;       
+	conn_buf->udp.dest_addr = &conn->sin;
  
-	ptl_info("to send msg size: %i in UDP message size: %i\n",sizeof(msg),sizeof(buf_t));
+	ptl_info("to send msg size: %lu in UDP message size: %lu\n",sizeof(msg),sizeof(buf_t));
         
 	/* Send the request to the listening socket on the remote node. */	
         /* This does not send just the msg, but a buf to maintain compatibility with the progression thread */
 	ret = sendto(ni->iface->udp.connect_s, conn_buf, conn_buf->length, 0,
-				(struct sockaddr_in*)&conn->sin, sizeof(conn->sin));
+				(struct sockaddr*)&conn->sin, sizeof(conn->sin));
 	if (ret == -1) {
 		WARN();
 		return PTL_FAIL;
 	}
         
-        ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),htons(ni->udp.src_port),ret);
+        ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn_buf->udp.dest_addr->sin_addr),htons(conn_buf->udp.dest_addr->sin_port),htons(ni->udp.src_port),ret);
         
 	return PTL_OK;
 }
