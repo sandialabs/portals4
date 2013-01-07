@@ -221,6 +221,9 @@ static int recv_packet(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	ptl_info("check incoming buffer for correct PTL header\n");
+//        ptl_info("data received %p %p length:%i %lu\n",hdr,buf,buf->length,sizeof(*buf));
+//	if (hdr->version == PTL_HDR_VER_1)
+//	   ptl_info("received a PTL version 1 header \n");
 #endif
 
 	/* sanity check received buffer */
@@ -229,6 +232,9 @@ static int recv_packet(buf_t *buf)
 		return STATE_RECV_DROP_BUF;
 	}
 
+#if WITH_TRANSPORT_UDP
+	ptl_info("PTL header version is correct\n");
+#endif
 	/* compute next state */
 	if (hdr->operation <= OP_SWAP) {
 		if (buf->length < sizeof(req_hdr_t))
@@ -524,7 +530,7 @@ static void progress_thread_udp(ni_t *ni)
 	if (ni->udp.dest_addr) {
 		int err;
 		buf_t *udp_buf;
-	
+
 		udp_buf = udp_receive(ni);
                 if (&udp_buf->mutex == NULL){
 		  pthread_mutex_init(&udp_buf->mutex,NULL);
@@ -532,6 +538,11 @@ static void progress_thread_udp(ni_t *ni)
  		
                 if (udp_buf != NULL){
                  	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
+			req_hdr_t *hdr = (req_hdr_t *)udp_buf->data;
+			//if (hdr->h1.version != PTL_HDR_VER_1){
+			//   ((struct hdr_common *)udp_buf->data)->version = PTL_HDR_VER_1;
+			//   ptl_info("corrected header to version 1 PTL header \n");
+			//}
 		};
  
 
@@ -568,7 +579,7 @@ static void progress_thread_udp(ni_t *ni)
 					 * owner. Send the buffer back in both cases. */
 					//shmem_enqueue(ni, udp_buf, udp_buf->udp.index_owner);
 					//udp_send(ni, udp_buf, udp_buf->udp.index_owner);
-					udp_send(ni, udp_buf, udp_buf->dest.udp.dest_addr);
+					udp_send(ni, udp_buf, &udp_buf->dest.udp.dest_addr);
 				} else {
 					/* It was returned to us with a message from a remote
 					 * rank. From send_message_udp(). */
@@ -580,8 +591,9 @@ static void progress_thread_udp(ni_t *ni)
 
         		case BUF_UDP_RECEIVE: {
 				//REG: TODO: fix UDP process recv
-				ptl_info("prcessing received data message\n");
+				ptl_info("processing received data message\n");
  				process_recv_udp(ni,udp_buf);
+				free(udp_buf);
 				break;
   			} 
 
@@ -590,7 +602,7 @@ static void progress_thread_udp(ni_t *ni)
 				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
 
 				/* From send_message_udp(). */
-				buf_put(udp_buf);
+				free(udp_buf);
 				break;
      			}
 
@@ -609,29 +621,33 @@ static void progress_thread_udp(ni_t *ni)
         			udp_buf->transfer.udp.conn_msg = msg;
         			udp_buf->length = (sizeof(buf_t));	
 				
-				
-				udp_send(ni, udp_buf, &udp_buf->udp.src_addr);
- 				//conn_t *conn;
- 				//conn = get_conn(ni, ni->id);
-				//conn->state = CONN_STATE_CONNECTED;
-				//ptl_info("release wait on %p \n",&conn->move_wait);
-				//pthread_cond_broadcast(&conn->move_wait);
-				//conn_put(conn);
-				/* REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here */
+				//send back to the requesting address
+				udp_buf->udp.dest_addr = &udp_buf->udp.src_addr;
+				udp_buf->dest.udp.dest_addr = udp_buf->udp.src_addr;			
+
+				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
+				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
 				ptl_info("Connection request reply sent, connection valid. \n");
-				break;	
+				free(udp_buf);
+                                break;	
 			
 			}
 
 			case BUF_UDP_CONN_REP:{
 				ptl_info("UDP connection reply received, validating connection \n");
-			        //conn_t *conn;
-                                //conn = get_conn(ni, ni->id);
-                                udp_buf->conn->state = CONN_STATE_CONNECTED;
+				udp_buf->conn->state = CONN_STATE_CONNECTED;
+
+			        udp_buf->conn->udp.dest_addr = udp_buf->udp.src_addr;
+											   	
+				//ptl_info("connection established to: %s:%i from %s:%i \n",inet_ntoa(udp_buf->udp.dest_addr->sin_addr),ntohs(udp_buf->udp.dest_addr->sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
+			
+				//ptl_info("local address: %s:%i \n",inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;
+				
 				ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
+				//release the thread waiting on the establishment of a connection
 				pthread_cond_broadcast(&udp_buf->conn->move_wait);
-				//conn_put(conn);
 				ptl_info("connection valid for reply\n");
+				free(udp_buf);
 				break;
 			}
 
@@ -676,7 +692,7 @@ static void progress_thread_udp(ni_t *ni)
 						 * owner. Send the buffer back in both cases. */
 						//shmem_enqueue(ni, udp_buf, udp_buf->udp.index_owner);
 						//udp_send(ni, udp_buf, udp_buf->udp.index_owner);
-						udp_send(ni, udp_buf, udp_buf->dest.udp.dest_addr);
+						udp_send(ni, udp_buf, &udp_buf->dest.udp.dest_addr);
 					} else {
 						/* It was returned to us with a message from a remote
 						 * rank. From send_message_udp(). */

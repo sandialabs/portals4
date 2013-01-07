@@ -126,6 +126,12 @@ static int start(buf_t *buf)
 {
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
+#if WITH_TRANSPORT_UDP
+	((struct hdr_common *)buf->data)->version = PTL_HDR_VER_1;
+	assert(((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1);
+#endif
+
+
 	if (buf->put_md) {
 		if (buf->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
 			buf->event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
@@ -426,6 +432,7 @@ static int send_req(buf_t *buf)
 	conn_t *conn = buf->conn;
 	int state;
 
+	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
 	set_buf_dest(buf, conn);
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
@@ -452,9 +459,7 @@ static int send_req(buf_t *buf)
 		state = STATE_INIT_WAIT_RECV;
 	else
 		state = STATE_INIT_CLEANUP;
-
-        //REG
-        //ptl_info("Init send connection request to %s:%d \n",inet_ntoa(buf->udp.dest_addr->sin_addr),buf->udp.dest_addr->sin_port);
+      
 	err = buf->conn->transport.send_message(buf, 1);
 	if (err)
 		return STATE_INIT_SEND_ERROR;
@@ -1005,6 +1010,12 @@ static void cleanup(buf_t *buf)
 	}
 
 	conn_put(buf->conn);
+
+#if WITH_TRANSPORT_UDP
+	ptl_info("UDP send cleanup complete \n");
+
+#endif
+
 }
 
 /*
