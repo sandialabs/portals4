@@ -432,7 +432,11 @@ static int send_req(buf_t *buf)
 	conn_t *conn = buf->conn;
 	int state;
 
+
+#if WITH_TRANSPORT_UDP
 	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
+#endif
+
 	set_buf_dest(buf, conn);
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
