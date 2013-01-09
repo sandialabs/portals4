@@ -90,9 +90,16 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
-	err = le_get_mr(ni, (ptl_le_t *)me_init, (le_t *)me);
-	if (unlikely(err))
-		goto err3;
+	//Only get the mr if we need it
+	if (me_init->start != NULL && me_init->length > 0){
+		err = le_get_mr(ni, (ptl_le_t *)me_init, (le_t *)me);
+		if (unlikely(err))
+			goto err3;
+	}
+	else{
+		me->length = me_init->length;
+		me->num_iov = 0;
+	}
 
 	pt = &ni->pt[pt_index];
 
