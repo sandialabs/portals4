@@ -21,7 +21,6 @@ static int send_message_udp(buf_t *buf, int from_init)
 	//buf_get(buf);
 	buf->type = BUF_UDP_SEND;
 
-
 	//if (((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1)	
 	//   ptl_info("sending PTL version 1 header: %p \n",((struct hdr_common *)buf->data)->version);
       
@@ -436,6 +435,16 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	msg.req.src_id = ni->id;
 	msg.req_cookie = (uintptr_t)conn;
 
+
+	struct req_hdr *hdr;
+	hdr = &conn_buf->internal_data;
+	conn_buf->data = hdr;
+
+	((struct hdr_common*)hdr)->version = PTL_HDR_VER_1;
+	
+	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
+        hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+	
 	conn_buf->transfer.udp.conn_msg = msg;
         conn_buf->length = (sizeof(buf_t));
 	conn_buf->conn = conn;       
