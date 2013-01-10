@@ -115,6 +115,10 @@ int _PtlPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
 
 	hdr = (req_hdr_t *)buf->data;
 
+#if WITH_TRANSPORT_UDP
+	hdr->h1.version = PTL_HDR_VER_1;
+#endif
+
 	hdr->h1.operation = OP_PUT;
 	hdr->uid = cpu_to_le32(ni->uid);
 	hdr->pt_index = cpu_to_le32(pt_index);

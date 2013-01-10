@@ -217,14 +217,11 @@ static int recv_packet_rdma(buf_t *buf)
  */
 static int recv_packet(buf_t *buf)
 {
-	struct hdr_common *hdr = (struct hdr_common *)buf->data;
-
 #if WITH_TRANSPORT_UDP
-	ptl_info("check incoming buffer for correct PTL header\n");
-//        ptl_info("data received %p %p length:%i %lu\n",hdr,buf,buf->length,sizeof(*buf));
-//	if (hdr->version == PTL_HDR_VER_1)
-//	   ptl_info("received a PTL version 1 header \n");
+	//with UDP we must reset this pointer to the data location on the local machine
+	buf->data = &buf->internal_data;
 #endif
+	struct hdr_common *hdr = (struct hdr_common *)buf->data;
 
 	/* sanity check received buffer */
 	if (hdr->version != PTL_HDR_VER_1) {
@@ -232,9 +229,6 @@ static int recv_packet(buf_t *buf)
 		return STATE_RECV_DROP_BUF;
 	}
 
-#if WITH_TRANSPORT_UDP
-	ptl_info("PTL header version is correct\n");
-#endif
 	/* compute next state */
 	if (hdr->operation <= OP_SWAP) {
 		if (buf->length < sizeof(req_hdr_t))
@@ -538,12 +532,7 @@ static void progress_thread_udp(ni_t *ni)
  		
                 if (udp_buf != NULL){
                  	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
-			req_hdr_t *hdr = (req_hdr_t *)udp_buf->data;
-			//if (hdr->h1.version != PTL_HDR_VER_1){
-			//   ((struct hdr_common *)udp_buf->data)->version = PTL_HDR_VER_1;
-			//   ptl_info("corrected header to version 1 PTL header \n");
-			//}
-		};
+		}
  
 
 		if (udp_buf != NULL) {
