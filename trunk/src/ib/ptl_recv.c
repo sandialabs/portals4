@@ -582,6 +582,7 @@ static void progress_thread_udp(ni_t *ni)
 				//REG: TODO: fix UDP process recv
 				ptl_info("processing received data message\n");
  				process_recv_udp(ni,udp_buf);
+				process_tgt(udp_buf);
 				free(udp_buf);
 				break;
   			} 
@@ -650,12 +651,12 @@ static void progress_thread_udp(ni_t *ni)
 
 //TODO: do we need this for UDP?
 //#if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	struct list_head *l, *t;
+/*	struct list_head *l, *t;
 
-	/* TODO: instead of having a lock, the initiator should send
-	 * the buf to itself, and on receiving it, the progress thread
-	 * will put it on the list. That way, only the progress thread
-	 * has access to the list. */
+	// TODO: instead of having a lock, the initiator should send
+	//  the buf to itself, and on receiving it, the progress thread
+	//  will put it on the list. That way, only the progress thread
+	//  has access to the list. 
 	PTL_FASTLOCK_LOCK(&ni->udp_lock);
 
 	list_for_each_safe(l, t, &ni->udp_list) {
@@ -669,22 +670,22 @@ static void progress_thread_udp(ni_t *ni)
 				if (udp->init_done) {
 					buf_t *udp_buf = buf->udp_buf;
 
-					/* The transfer is now done. Remove from
-					 * udp_list. */
+					// The transfer is now done. Remove from
+					// udp_list. 
 					list_del(&buf->list);
 
 					process_tgt(buf);
 
 					if (udp_buf->type == BUF_UDP_SEND ||
 						udp_buf->udp.dest_addr != ni->udp.dest_addr) {
-						/* Requested to send the buffer back, or not the
-						 * owner. Send the buffer back in both cases. */
+						// Requested to send the buffer back, or not the
+						// owner. Send the buffer back in both cases. 
 						//shmem_enqueue(ni, udp_buf, udp_buf->udp.index_owner);
 						//udp_send(ni, udp_buf, udp_buf->udp.index_owner);
 						udp_send(ni, udp_buf, &udp_buf->dest.udp.dest_addr);
 					} else {
-						/* It was returned to us with a message from a remote
-						 * rank. From send_message_udp(). */
+						// It was returned to us with a message from a remote
+						// rank. From send_message_udp(). 
 						buf_put(udp_buf);
 					}
 
@@ -696,7 +697,7 @@ static void progress_thread_udp(ni_t *ni)
 	}
 
 	PTL_FASTLOCK_UNLOCK(&ni->udp_lock);
-//#endif
+//#endif*/
 }
 #endif
 

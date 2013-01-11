@@ -393,7 +393,8 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 			/* This should never happen */
  			ptl_error("Creating UDP Map for Non-UDP Transport \n");
 #endif
-			conn->state = CONN_STATE_CONNECTED;
+			//We are not connected until we've exchanged messages
+			//conn->state = CONN_STATE_CONNECTED;
 
 			conn_put(conn);			/* from get_conn */
                  

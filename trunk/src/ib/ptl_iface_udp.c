@@ -193,7 +193,8 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 				   (struct sockaddr *)&from_addr, &from_addr_len);
 
 	if (ret == -1){
-		WARN();		
+		WARN();
+		ptl_info("error receving connection data: %i:%s",ret,strerror(ret));		
                 return;
         }
 
@@ -239,8 +240,10 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 		conn = (void *)(uintptr_t)msg.rep_cookie;
 		process_udp_connect_established(iface, &msg, conn);
 		break;
-	}
-		   
+	default:
+		WARN();
+		abort();	
+	}   
 	return;	
 }
 
@@ -531,11 +534,11 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
  	//REG TODO: Not using the EV loop as it doesn't pick up new traffic
 
         /* add a watcher for connection request events */
-        iface->udp.watcher.data = iface;
-        ev_io_init(&iface->udp.watcher, process_udp_connect,
-                           ni->udp.s, EV_READ);
+        //iface->udp.watcher.data = iface;
+        //ev_io_init(&iface->udp.watcher, process_udp_connect,
+        //                   ni->udp.s, EV_READ);
 
-        EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
+        //EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
 
 	// TODO: Does this belong here or even in UDP at all?
 	off_t bounce_buf_offset;
