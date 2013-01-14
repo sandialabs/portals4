@@ -17,8 +17,7 @@
 static int send_message_udp(buf_t *buf, int from_init)
 {
 	/* Keep a reference on the buffer so it doesn't get freed. */
-	assert(buf->obj.obj_pool->type == POOL_BUF);
-	//buf_get(buf);
+	//assert(buf->obj.obj_pool->type == POOL_BUF);
 	buf->type = BUF_UDP_SEND;
 
 	//if (((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1)	
@@ -359,6 +358,7 @@ buf_t *udp_receive(ni_t *ni)
 		}
 
 	}
+
 	ptl_info("received data from %s:%i type:%i data size: %lu message size:%lu %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(*(thebuf->data)),sizeof(*thebuf),err);
 	 	
         thebuf->udp.src_addr = temp_sin;
@@ -373,22 +373,18 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
         ptl_info("Creating a connection for PTlSetMap\n");
 	for (i = 0; i < map_size; i++) {
 		conn_t *conn;
-		ptl_process_t id;
-
-		//if (get_param(PTL_ENABLE_UDP)) {
-			/* Connect local ranks through XPMEM or SHMEM. */
-			id.rank = i;
-			conn = get_conn(ni, ni->id);
-			if (!conn) {
-				/* It's hard to recover from here. */
-				WARN();
-				abort();
-				return;
-			}
+                
+		conn = get_conn(ni, ni->id);
+		if (!conn) {
+			/* It's hard to recover from here. */
+			WARN();
+			abort();
+			return;
+		}
 
 #if WITH_TRANSPORT_UDP
 			conn->transport = transport_udp;
-			ptl_info("connection: %s:%i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port));
+			//ptl_info("connection: %s:%i rank: %i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),id.rank);
 #else
 			/* This should never happen */
  			ptl_error("Creating UDP Map for Non-UDP Transport \n");
@@ -397,8 +393,7 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 			//conn->state = CONN_STATE_CONNECTED;
 
 			conn_put(conn);			/* from get_conn */
-                 
-		//}
+                	
 	}
 	ptl_info("Done creating connection for PtlSetMap\n");
 }

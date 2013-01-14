@@ -195,6 +195,10 @@ typedef struct ni {
 		uint16_t src_port;		/* port number of that socket. */
 		struct sockaddr_in *dest_addr;
 
+#if WITH_TRANSPORT_UDP
+		int map_done;
+#endif
+
 		void *comm_pad;		// in udp datagram?
 		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
