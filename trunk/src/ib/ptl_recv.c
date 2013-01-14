@@ -521,9 +521,9 @@ static void progress_thread_udp(ni_t *ni)
 {
 //#if WITH_TRANSPORT_SHMEM
 	/* Socket connection.*/
-	if (ni->udp.dest_addr) {
+	if (ni->udp.dest_addr && ni->udp.map_done != 0) {
 		int err;
-		buf_t *udp_buf;
+		buf_t* udp_buf;
 
 		udp_buf = udp_receive(ni);
                 if (&udp_buf->mutex == NULL){
@@ -537,6 +537,7 @@ static void progress_thread_udp(ni_t *ni)
 
 		if (udp_buf != NULL) {
 		 	ptl_info("received UDP buf type: %i, SEND=%i RETURN=%i RECV=%i CONN_REQ=%i CONN_REP=%i\n",udp_buf->type,BUF_UDP_SEND,BUF_UDP_RETURN,BUF_UDP_RECEIVE,BUF_UDP_CONN_REQ,BUF_UDP_CONN_REP);	
+			
 			switch(udp_buf->type) {
 			case BUF_UDP_SEND: {
 				buf_t *buf;
@@ -581,9 +582,14 @@ static void progress_thread_udp(ni_t *ni)
         		case BUF_UDP_RECEIVE: {
 				//REG: TODO: fix UDP process recv
 				ptl_info("processing received data message\n");
- 				process_recv_udp(ni,udp_buf);
-				process_tgt(udp_buf);
-				free(udp_buf);
+ 				pthread_mutex_init(&udp_buf->mutex,NULL);
+				udp_buf->obj.obj_ni = ni;
+				//udp_buf->conn->transport = transport_udp;;
+				//udp_buf->conn->transport.type = CONN_TYPE_UDP;
+				process_recv_udp(ni,udp_buf);
+				//process_tgt(udp_buf);
+				//buf_put(udp_buf);
+				//free(udp_buf);
 				break;
   			} 
 
@@ -592,7 +598,7 @@ static void progress_thread_udp(ni_t *ni)
 				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
 
 				/* From send_message_udp(). */
-				free(udp_buf);
+				//free(udp_buf);
 				break;
      			}
 
@@ -618,7 +624,7 @@ static void progress_thread_udp(ni_t *ni)
 				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
 				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
 				ptl_info("Connection request reply sent, connection valid. \n");
-				free(udp_buf);
+				//free(udp_buf);
                                 break;	
 			
 			}
@@ -637,7 +643,7 @@ static void progress_thread_udp(ni_t *ni)
 				//release the thread waiting on the establishment of a connection
 				pthread_cond_broadcast(&udp_buf->conn->move_wait);
 				ptl_info("connection valid for reply\n");
-				free(udp_buf);
+				//free(udp_buf);
 				break;
 			}
 

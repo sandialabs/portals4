@@ -474,8 +474,12 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 	for (i = 0; i < map_size; i++) {
 		if (mapping[i].phys.nid == iface->id.phys.nid) {
 
-			if (mapping[i].phys.pid == iface->id.phys.pid)
+			if (mapping[i].phys.pid == iface->id.phys.pid){
 				ni->id.rank = i;
+#if WITH_TRANSPORT_UDP
+				ptl_info("my rank is: %i port: %i\n",ni->id.rank,mapping[i].phys.pid);
+#endif
+			}
 		}
 	}
 
@@ -502,6 +506,8 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 
 #if WITH_TRANSPORT_UDP
 	PtlSetMap_udp(ni, map_size, mapping);
+	ni->udp.map_done = 1;
+	ptl_info("done setting maps. my rank is: %i port: %i\n",ni->id.rank,iface->id.phys.pid);
 #endif
 
 	ni_put(ni);

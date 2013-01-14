@@ -411,6 +411,11 @@ static int tgt_start(buf_t *buf)
 	initiator.phys.nid = le32_to_cpu(hdr->src_nid);
 	initiator.phys.pid = le32_to_cpu(hdr->src_pid);
 
+#if WITH_TRANSPORT_UDP
+	ptl_info("initiator nid: %i pid: %i \n",hdr->src_nid,hdr->src_pid);
+	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
+	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
+#endif
 	buf->conn = get_conn(ni, initiator);
 	if (unlikely(!buf->conn)) {
 		WARN();
@@ -1622,6 +1627,7 @@ static int tgt_send_ack(buf_t *buf)
 				WARN();
 				return STATE_TGT_ERROR;
 			}
+			break;
 #endif
 
 #if WITH_TRANSPORT_IB
@@ -1861,15 +1867,12 @@ int process_tgt(buf_t *buf)
 {
 	int err = PTL_OK;
 	enum tgt_state state;
-
+	
 #if WITH_TRANSPORT_UDP
 	ptl_info("locking buffer for target processing \n");	
 #endif
 
-#if !WITH_TRANSPORT_UDP
-	//REG: TODO: locking not correctly occuring for UDP
 	pthread_mutex_lock(&buf->mutex);
-#endif
 
 #if WITH_TRANSPORT_UDP
 	ptl_info("got lock for target buffer processing \n");
@@ -1970,7 +1973,9 @@ int process_tgt(buf_t *buf)
 			tgt_cleanup_2(buf);
 			buf->tgt_state = STATE_TGT_DONE;
 			pthread_mutex_unlock(&buf->mutex);
+#if !WITH_TRANSPORT_UDP
 			buf_put(buf);		/* match buf_alloc */
+#endif
 			return err;
 		case STATE_TGT_DONE:
 			/* buf isn't valid anymore. */

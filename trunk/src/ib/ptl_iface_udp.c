@@ -444,15 +444,6 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
         ptl_info("id.phys.pid = %x\n",ni->id.phys.pid);
 
-	//err = iface_bind(iface, pid_to_port(ni->id.phys.pid));
-	if (err) {
-		ptl_warn("Binding failed\n");
-		WARN();
-		goto error;
-	}
-
-
-
 	/* Create a socket to be used for the transport. All connections
 	 * will use it. */
 	ni->udp.s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -504,23 +495,21 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
         ni->iface->udp.sin.sin_port=htons(port);
         ni->iface->udp.connect_s = ni->udp.s;
 
+	//set NI pid and nid
+	ni->id.phys.pid = port_to_pid(ni->iface->udp.sin.sin_port);
+  	ni->id.phys.nid = addr_to_nid((struct sockaddr *)&ni->iface->udp.sin);	
+	ptl_info("NI PID set to: %i NID: %i ni: %p\n",ni->id.phys.pid, ni->id.phys.nid, ni);
+
+
         ptl_info("UDP bound to socket: %i port: %i reqport: %i address: %s \n",ni->udp.s,ntohs(ni->iface->udp.sin.sin_port),port,inet_ntoa(ni->iface->udp.sin.sin_addr));
      
-        //err = iface_bind(iface, port);
-        //if (err) {
-        //        ptl_warn("Binding failed\n");
-        //        WARN();
-        //        goto error;
-        //}
-
         ptl_info("Interface bound to socket %i\n",ni->iface->udp.connect_s);
 
-	// UO & REB: setup ni's udp?
-        // REG: FIXME: This doesn't setup the destination, this is the source!
 	ni->udp.dest_addr = &iface->udp.sin;
          
-        //REG: this is kind of silly to convert back and forth, but port_to_pid is readable
-        iface->id.phys.pid = ntohs(ni->iface->udp.sin.sin_port);//port_to_pid(ntohs(ni->iface->udp.sin.sin_port)); 
+        iface->id.phys.pid = ntohs(ni->iface->udp.sin.sin_port); 
+	iface->id.phys.nid = addr_to_nid(&iface->udp.sin);
+
 	if ((ni->options & PTL_NI_PHYSICAL) &&
 		(ni->id.phys.pid == PTL_PID_ANY)) {
 		/* No well known PID was given. Retrieve the pid given by
@@ -529,9 +518,6 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
 		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
-
-	//REG TODO: We are going to need to setup a first 'connection' here
- 	//REG TODO: Not using the EV loop as it doesn't pick up new traffic
 
         /* add a watcher for connection request events */
         //iface->udp.watcher.data = iface;
