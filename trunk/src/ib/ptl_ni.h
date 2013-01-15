@@ -61,7 +61,7 @@ typedef struct ni {
 	ptl_ni_limits_t		limits;		/* max number of xxx */
 	ptl_ni_limits_t		current;	/* used for accounting of objects, not real limits. */
 
-	atomic_t			ref_cnt;
+	atomic_t		ref_cnt;
 
 	struct iface		*iface;
 	unsigned int		iface_id;

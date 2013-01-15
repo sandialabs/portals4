@@ -308,9 +308,8 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		ptl_error("error sending buffer to socket: %i %s \n",ni->iface->udp.connect_s,strerror(errno));
 		return;
 	}
-        ptl_info("UDP send completed successfully to: %s:%d from: %s:%d size:%lu\n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),
-        					inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port),sizeof(*buf));;
-
+        ptl_info("UDP send completed successfully to: %s:%d from: %s:%d size:%lu\n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port),sizeof(*buf));;
+  		
 }
 
 /**
