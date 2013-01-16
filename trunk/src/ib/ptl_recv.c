@@ -335,6 +335,7 @@ static int recv_init(PPEGBL buf_t *buf)
 	err = to_buf(MYGBL_ le32_to_cpu(hdr->h1.handle), &init_buf);
 	if (err) {
 		WARN();
+		ptl_info("cannot find buffer via buffer handle: %i %p\n",hdr->h1.handle,init_buf);
 		return STATE_RECV_DROP_BUF;
 	}
 
@@ -400,6 +401,7 @@ static int recv_drop_buf(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 
 	buf_put(buf);
+
 	ni->num_recv_drops++;
 
 	return STATE_RECV_REPOST;
@@ -623,6 +625,7 @@ static void progress_thread_udp(ni_t *ni)
 
 				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
 				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
+				//udp_buf->conn->state = CONN_STATE_CONNECTED;
 				ptl_info("Connection request reply sent, connection valid. \n");
 				//free(udp_buf);
                                 break;	
@@ -632,9 +635,9 @@ static void progress_thread_udp(ni_t *ni)
 			case BUF_UDP_CONN_REP:{
 				ptl_info("UDP connection reply received, validating connection \n");
 				udp_buf->conn->state = CONN_STATE_CONNECTED;
-
+				
 			        udp_buf->conn->udp.dest_addr = udp_buf->udp.src_addr;
-											   	
+			  									   	
 				//ptl_info("connection established to: %s:%i from %s:%i \n",inet_ntoa(udp_buf->udp.dest_addr->sin_addr),ntohs(udp_buf->udp.dest_addr->sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
 			
 				//ptl_info("local address: %s:%i \n",inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;

@@ -235,6 +235,7 @@ static int prepare_req(buf_t *buf)
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 #if WITH_TRANSPORT_UDP
 	ptl_info("initiator nid: %i pid: %i NI: %p\n",hdr->src_nid,hdr->src_pid,ni);
+	ptl_info("buffer handle: %i %p buf:%p\n",hdr->h1.handle,le32_to_cpu(hdr->h1.handle),&buf);
 #endif
 	hdr->rlength = cpu_to_le64(length);
 	hdr->roffset = cpu_to_le64(buf->roffset);

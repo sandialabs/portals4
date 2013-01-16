@@ -287,7 +287,9 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->h1.data_out = 0;
 		ack_hdr->h1.version = PTL_HDR_VER_1;
 		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
-
+#if WITH_TRANSPORT_UDP
+		ptl_info(" preparing response for handle: %i \n",ack_hdr->h1.handle);
+#endif
 #if IS_PPE
 		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
@@ -795,6 +797,11 @@ static int tgt_get_length(buf_t *buf)
 	/* if we are already connected to the initiator skip wait_conn */
 	if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
 		return STATE_TGT_DATA;
+
+#if WITH_TRANSPORT_UDP
+	//REG: UDP needs to connect earlier than this, so it should always be connected at this point
+	return STATE_TGT_DATA;
+#endif
 
 	/* we need a connection if we are sending an ack/reply
 	 * or doing an RDMA operation */
@@ -1619,8 +1626,10 @@ static int tgt_send_ack(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 		case CONN_TYPE_UDP:
-			ack_buf->dest = buf->dest;
+			ack_buf->dest.udp.dest_addr = buf->udp.src_addr;
+			//ack_buf->dest = buf->dest;
 			ack_buf->conn = buf->conn;
+			ptl_info("buffer handle for initiator: %i \n",ack_hdr->h1.handle);
 
 			err = ack_buf->conn->transport.send_message(ack_buf, 0);
 			if (err) {
@@ -1881,8 +1890,8 @@ int process_tgt(buf_t *buf)
 	state = buf->tgt_state;
 
 	while(1) {
-		ptl_info("%p: tgt state = %s\n",
-				 buf, tgt_state_name[state]);
+		ptl_info("%p: tgt state = %s event mask: %i\n",
+				 buf, tgt_state_name[state],buf->event_mask);
 
 		switch (state) {
 		case STATE_TGT_START:

@@ -90,8 +90,10 @@ static void append_init_data_udp_direct(data_t *data, mr_t *mr, void *addr,
 	buf->transfer.udp.udp = &data->udp;
 
 	//TODO: what are bounce buffers and are they relevant for UDP
-	attach_bounce_buffer(buf, data);
+	//REG
+	//attach_bounce_buffer(buf, data);
 
+	//REG: Is there a corresponding send_msg for this? if so where?
 	/* Describes local memory */
 	buf->transfer.udp.my_iovec.iov_base = addr;
 	buf->transfer.udp.my_iovec.iov_len = length;
@@ -160,11 +162,12 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 			addr = md->start + offset;
 			err = mr_lookup_app(ni, addr, length, &mr);
 			if (!err) {
-				buf->mr_list[buf->num_mr++] = mr;
-
+				buf->mr_list[buf->num_mr + 1] = mr;
+				buf->num_mr++;
 				append_init_data_udp_direct(data, mr, addr, length, buf);
 			}
-			abort();//todo
+			//REG: TODO handle large messages, currently it creates a IO vector for the message and places all of it in the IO vec.
+			//abort();//todo
 		}
 	}
 
