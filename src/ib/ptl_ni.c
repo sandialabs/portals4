@@ -678,6 +678,11 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 
 	assert(atomic_read(&ni->ref_cnt) >= 1);
 
+#if WITH_TRANSPORT_UDP
+	if (atomic_read(&ni->ref_cnt) > 2)
+		atomic_dec(&ni->ref_cnt);
+#endif
+
 #if !WITH_TRANSPORT_UDP
 	atomic_dec(&ni->ref_cnt);
 #endif
