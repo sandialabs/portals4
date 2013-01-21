@@ -1687,6 +1687,9 @@ static int tgt_send_reply(buf_t *buf)
 	}
 
 	rep_buf->dest = buf->dest;
+#if WITH_TRANSPORT_UDP
+	rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
+#endif
 	rep_buf->conn = buf->conn;
 
 	/* Inline the data if it fits. That may save waiting for a

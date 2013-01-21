@@ -19,10 +19,8 @@ static int send_message_udp(buf_t *buf, int from_init)
 	/* Keep a reference on the buffer so it doesn't get freed. */
 	//assert(buf->obj.obj_pool->type == POOL_BUF);
 	buf->type = BUF_UDP_SEND;
-
-	//if (((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1)	
-	//   ptl_info("sending PTL version 1 header: %p \n",((struct hdr_common *)buf->data)->version);
-      
+	//buf->recv_buf = 0;
+	      
         // increment the sequence number associated with the
 	// send-side of this connection
 	atomic_inc(&buf->conn->udp.send_seq);
@@ -435,7 +433,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 
 
 	struct req_hdr *hdr;
-	hdr = &conn_buf->internal_data;
+	hdr = (struct req_hdr *)&conn_buf->internal_data;
 	conn_buf->data = hdr;
 
 	((struct hdr_common*)hdr)->version = PTL_HDR_VER_1;
@@ -447,20 +445,43 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
         conn_buf->length = (sizeof(buf_t));
 	conn_buf->conn = conn;       
 	conn_buf->udp.dest_addr = &conn->sin;
+
+	struct sockaddr_in * temp_sin;
+	temp_sin->sin_addr.s_addr = nid_to_addr(ni->id.phys.nid);
+
+	ptl_info("nid: %s pid: %i \n",inet_ntoa(temp_sin->sin_addr),(ni->id.phys.pid));
+	ptl_info("addr: %s : %i \n",inet_ntoa(conn->sin.sin_addr),ntohs(conn_buf->udp.dest_addr->sin_port));
+
+	if (conn_buf->udp.dest_addr->sin_port == ntohs(ni->id.phys.pid)) {
+		if (temp_sin->sin_addr.s_addr == conn->sin.sin_addr.s_addr) {
+			//we are sending to ourselves, so we don't need a connection
+			ptl_info("sending to self! \n");
+			//REG: TODO to make this work, must allow for sending to self, which requires different ports
+			//REG: do we want to change the ptl_map though to allow this to happen?
+			ni->iface->udp.connect_s = socket(PF_LOCAL, SOCK_DGRAM, 0);
+			int ret;
+			ret = bind(ni->iface->udp.connect_s, (struct sockaddr *)&conn->sin, sizeof(conn->sin));
+			conn->udp.loop_to_self = 1;
+			conn->state = CONN_STATE_CONNECTED;
+			//return PTL_OK;
+		}
+	}
+	
+	conn->udp.loop_to_self = 0;
  
 	ptl_info("to send msg size: %lu in UDP message size: %lu\n",sizeof(msg),sizeof(buf_t));
         
 	/* Send the request to the listening socket on the remote node. */	
         /* This does not send just the msg, but a buf to maintain compatibility with the progression thread */
 	ret = sendto(ni->iface->udp.connect_s, conn_buf, conn_buf->length, 0,
-				(struct sockaddr*)&conn->sin, sizeof(conn->sin));
+				(struct sockaddr*)conn_buf->udp.dest_addr, sizeof(conn_buf->udp.dest_addr));
 	if (ret == -1) {
 		WARN();
 		return PTL_FAIL;
 	}
         
         ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn_buf->udp.dest_addr->sin_addr),htons(conn_buf->udp.dest_addr->sin_port),htons(ni->udp.src_port),ret);
-        
+        free(conn_buf); 
 	return PTL_OK;
 }
 

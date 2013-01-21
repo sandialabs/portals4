@@ -235,7 +235,7 @@ static int prepare_req(buf_t *buf)
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 #if WITH_TRANSPORT_UDP
 	ptl_info("initiator nid: %i pid: %i NI: %p\n",hdr->src_nid,hdr->src_pid,ni);
-	ptl_info("buffer handle: %i %p buf:%p\n",hdr->h1.handle,le32_to_cpu(hdr->h1.handle),&buf);
+	ptl_info("buffer handle: %i %i buf:%p\n",hdr->h1.handle,le32_to_cpu(hdr->h1.handle),&buf);
 #endif
 	hdr->rlength = cpu_to_le64(length);
 	hdr->roffset = cpu_to_le64(buf->roffset);
@@ -388,16 +388,15 @@ static int wait_conn(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 		ptl_info("SM: start waiting on %p\n",&conn->move_wait);
-
 #endif
 
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
- 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+
 #if WITH_TRANSPORT_UDP
-		//REG: remove this later
-		ptl_info("UDP connection complete, advancing state machine\n");
+		if (conn->udp.loop_to_self != 1)
 #endif
+		pthread_cond_wait(&conn->move_wait, &conn->mutex);
 #endif
 
 	 	pthread_mutex_unlock(&conn->mutex);
@@ -438,7 +437,14 @@ static int send_req(buf_t *buf)
 
 
 #if WITH_TRANSPORT_UDP
+
+	if (conn->udp.loop_to_self == 1){
+		conn->udp.dest_addr = conn->sin;
+		buf->recv_buf = buf->internal_data;
+	}
+	
 	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
+	
 #endif
 
 	set_buf_dest(buf, conn);
@@ -1002,6 +1008,7 @@ static void error(buf_t *buf)
  */
 static void cleanup(buf_t *buf)
 {
+
 	if (buf->get_md) {
 		md_put(buf->get_md);
 		buf->get_md = NULL;
@@ -1013,17 +1020,14 @@ static void cleanup(buf_t *buf)
 	}
 
 	if (buf->recv_buf) {
+#if WITH_TRANSPORT_UDP
+		if (atomic_read(&buf->recv_buf->obj.obj_ref.ref_cnt) < 1)
+#endif
 		buf_put(buf->recv_buf);
 		buf->recv_buf = NULL;
 	}
 
 	conn_put(buf->conn);
-
-#if WITH_TRANSPORT_UDP
-	ptl_info("UDP send cleanup complete \n");
-
-#endif
-
 }
 
 /*
