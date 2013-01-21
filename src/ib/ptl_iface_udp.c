@@ -194,7 +194,7 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 
 	if (ret == -1){
 		WARN();
-		ptl_info("error receving connection data: %i:%s",ret,strerror(ret));		
+		ptl_info("error receving connection data: %i:%s",(int)ret,strerror(ret));		
                 return;
         }
 
@@ -497,7 +497,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
 	//set NI pid and nid
 	ni->id.phys.pid = port_to_pid(ni->iface->udp.sin.sin_port);
-  	ni->id.phys.nid = addr_to_nid((struct sockaddr *)&ni->iface->udp.sin);	
+  	ni->id.phys.nid = addr_to_nid((struct sockaddr_in *)&ni->iface->udp.sin);	
 	ptl_info("NI PID set to: %i NID: %i ni: %p\n",ni->id.phys.pid, ni->id.phys.nid, ni);
 
 

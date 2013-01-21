@@ -654,6 +654,7 @@ static void progress_thread_udp(ni_t *ni)
 				/* Should not happen. */
 				abort();
 			}
+			free(udp_buf);
 		}
 	}
 //#endif
