@@ -393,9 +393,9 @@ static int wait_conn(buf_t *buf)
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
 
-#if WITH_TRANSPORT_UDP
-		if (conn->udp.loop_to_self != 1)
-#endif
+//#if WITH_TRANSPORT_UDP
+//		if (conn->udp.loop_to_self != 1)
+//#endif
 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
 #endif
 
@@ -438,10 +438,10 @@ static int send_req(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 
-	if (conn->udp.loop_to_self == 1){
-		conn->udp.dest_addr = conn->sin;
-		buf->recv_buf = buf->internal_data;
-	}
+//	if (conn->udp.loop_to_self == 1){
+//		conn->udp.dest_addr = conn->sin;
+//		buf->recv_buf = buf->internal_data;
+//	}
 	
 	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
 	

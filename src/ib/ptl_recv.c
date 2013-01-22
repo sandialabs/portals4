@@ -359,7 +359,8 @@ static int recv_init(PPEGBL buf_t *buf)
 	if (err)
 		WARN();
 
-	buf_put(init_buf);	/* from to_buf() */
+	if (atomic_read(&init_buf->obj.obj_ref.ref_cnt) > 1)
+		buf_put(init_buf);	/* from to_buf() */
 
 	return STATE_RECV_REPOST;
 }
@@ -622,6 +623,8 @@ static void progress_thread_udp(ni_t *ni)
 				//send back to the requesting address
 				udp_buf->udp.dest_addr = &udp_buf->udp.src_addr;
 				udp_buf->dest.udp.dest_addr = udp_buf->udp.src_addr;			
+				//udp_buf->udp.src_addr.sin_addr.s_addr = nid_to_addr(ni->id.phys.nid);
+				//udp_buf->udp.src_addr.sin_port = pid_to_port(ni->id.phys.pid);
 
 				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
 				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
