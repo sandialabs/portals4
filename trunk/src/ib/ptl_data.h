@@ -121,6 +121,8 @@ struct data {
 			 */
 			int state;
 
+			struct iovec iov_data;
+
 			/* Length being transfered. Only the current owner can modify it. */
 			int length;
 

@@ -350,6 +350,7 @@ struct buf {
 			/* The associated bounce buffer. Its address, its total
 			 * length, and its offset in the comm pad, relative to the
 			 * NI's bounce buffers head. */
+			//we need a buffer capable of storing all of the data to be sent in a single UDP message
 			unsigned char *data;
 			ptl_size_t data_length;
 			off_t bounce_offset;

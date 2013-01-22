@@ -18,6 +18,7 @@ static char *tgt_state_name[] = {
 	[STATE_TGT_DATA_IN]		= "tgt_data_in",
 	[STATE_TGT_START_COPY]		= "tgt_start_copy",
 	[STATE_TGT_RDMA]		= "tgt_rdma",
+	[STATE_TGT_UDP]			= "tgt_udp",
 	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
 	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
 	[STATE_TGT_DATA_OUT]		= "tgt_data_out",
@@ -1138,7 +1139,15 @@ static int tgt_udp(buf_t *buf)
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 				&buf->put_resid : &buf->get_resid;
 
-	/* post one or more RDMA operations */
+	//setup udp information from buf info for mem copy
+	buf->transfer.udp.udp->length = buf->rlength;
+	buf->transfer.udp.udp->state = 2; 
+	buf->transfer.udp.data = &buf->data_in;
+	buf->transfer.udp.udp->init_done = 0;
+	buf->transfer.udp.udp->target_done = 0;
+	buf->transfer.udp.udp->bounce_offset = 0;
+
+	//for udp, this simply copies, no DMA
 	err = buf->conn->transport.post_tgt_dma(buf);
 	if (err)
 		return STATE_TGT_ERROR;
@@ -1629,6 +1638,7 @@ static int tgt_send_ack(buf_t *buf)
 			ack_buf->dest.udp.dest_addr = buf->udp.src_addr;
 			//ack_buf->dest = buf->dest;
 			ack_buf->conn = buf->conn;
+			ack_buf->rlength = sizeof(buf_t);
 			ptl_info("buffer handle for initiator: %i \n",ack_hdr->h1.handle);
 
 			err = ack_buf->conn->transport.send_message(ack_buf, 0);
