@@ -1143,7 +1143,6 @@ static int tgt_udp(buf_t *buf)
 	//setup udp information from buf info for mem copy
 	buf->transfer.udp.udp->length = buf->rlength;
 	buf->transfer.udp.udp->state = 2;
-	buf->transfer.udp.data = &buf->data_in;
 	buf->transfer.udp.udp->init_done = 0;
 	buf->transfer.udp.udp->target_done = 0;
 	buf->transfer.udp.udp->bounce_offset = 0;
