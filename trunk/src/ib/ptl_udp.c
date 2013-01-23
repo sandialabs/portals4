@@ -270,9 +270,9 @@ static int udp_tgt_data_out(buf_t *buf, data_t *data)
 		next = STATE_TGT_ERROR;
 	}
 
-fprintf(stderr,"udp_tgt_data_out sets transfer_state_expected buf %p\n",buf);
+        ptl_info("udp_tgt_data_out sets transfer_state_expected buf %p\n",buf);
 	buf->transfer.udp.transfer_state_expected = 2; /* always the target here */
-	//buf->transfer.udp.udp = &data;//->udp;
+	buf->transfer.udp.udp = &data->udp;
 
 	if ((buf->rdma_dir == DATA_DIR_IN && buf->put_resid) ||
 		(buf->rdma_dir == DATA_DIR_OUT && buf->get_resid)) {

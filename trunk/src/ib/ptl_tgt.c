@@ -1136,12 +1136,13 @@ static int tgt_udp(buf_t *buf)
 {
 	int err;
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 				&buf->put_resid : &buf->get_resid;
 
 	//setup udp information from buf info for mem copy
 	buf->transfer.udp.udp->length = buf->rlength;
-	buf->transfer.udp.udp->state = 2; 
+	buf->transfer.udp.udp->state = 2;
 	buf->transfer.udp.data = &buf->data_in;
 	buf->transfer.udp.udp->init_done = 0;
 	buf->transfer.udp.udp->target_done = 0;
