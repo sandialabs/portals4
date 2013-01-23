@@ -359,7 +359,7 @@ static int recv_init(PPEGBL buf_t *buf)
 	if (err)
 		WARN();
 
-#if WITH_TRASNPORT_UDP
+#if WITH_TRANSPORT_UDP
 	if (atomic_read(&init_buf->obj.obj_ref.ref_cnt) > 1)
 #endif
 		buf_put(init_buf);	/* from to_buf() */
