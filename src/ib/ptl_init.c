@@ -971,6 +971,16 @@ static int ack_event(buf_t *buf)
  */
 static int reply_event(buf_t *buf)
 {
+
+#if WITH_TRANSPORT_UDP
+	//immediate copies have already been performed, don't do anything more
+	//otherwise we need to copy the reply into the md
+	if (!buf->data_in){
+		void *start = buf->get_md->start + buf->get_offset;
+		memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
+ 	}
+#endif	
+
 	/* Release the get MD before posting the REPLY event. */
 	md_put(buf->get_md);
 	buf->get_md = NULL;
@@ -1021,7 +1031,7 @@ static void cleanup(buf_t *buf)
 
 	if (buf->recv_buf) {
 #if WITH_TRANSPORT_UDP
-		if (atomic_read(&buf->recv_buf->obj.obj_ref.ref_cnt) < 1)
+	if (atomic_read(&buf->recv_buf->obj.obj_ref.ref_cnt) < 1)
 #endif
 		buf_put(buf->recv_buf);
 		buf->recv_buf = NULL;

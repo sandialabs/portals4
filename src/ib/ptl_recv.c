@@ -352,7 +352,7 @@ static int recv_init(PPEGBL buf_t *buf)
 		init_buf->data_in = NULL;
 
 	init_buf->recv_buf = buf;
-
+	
 	/* Note: process_init must drop recv_buf, so buf will not be valid
 	 * after the call. */
 	err = process_init(init_buf);
