@@ -1037,6 +1037,13 @@ static void cleanup(buf_t *buf)
 		buf->recv_buf = NULL;
 	}
 
+#if WITH_TRANSPORT_UDP
+	//TODO: check the source of these memory leaks
+	ni_t * ni = obj_to_ni(buf);
+	if (atomic_read(&ni->udp.self_recv) > 0)
+	   return;
+	if (atomic_read(&buf->conn->obj.obj_ref.ref_cnt) < 1)
+#endif
 	conn_put(buf->conn);
 }
 
@@ -1158,6 +1165,7 @@ int process_init(buf_t *buf)
 			 * after we return. */
 			goto exit;
 		default:
+			ptl_info("invalid state \n");
 			abort();
 		}
 	}

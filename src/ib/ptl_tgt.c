@@ -790,11 +790,16 @@ static int tgt_get_length(buf_t *buf)
 		le_unlink(buf->le, !(me->options &
 			  PTL_ME_EVENT_UNLINK_DISABLE));
 
-	/* initialize buf->cur_loc_iov_index/off and buf->start */
-	err = init_local_offset(buf);
-	if (err)
-		return STATE_TGT_ERROR;
-
+#if WITH_TRANSPORT_UDP
+	if (atomic_read(&ni->udp.self_recv) <= 0){
+#endif
+		/* initialize buf->cur_loc_iov_index/off and buf->start */
+		err = init_local_offset(buf);
+		if (err)
+			return STATE_TGT_ERROR;
+#if WITH_TRANSPORT_UDP
+	}
+#endif
 	/* if we are already connected to the initiator skip wait_conn */
 	if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
 		return STATE_TGT_DATA;

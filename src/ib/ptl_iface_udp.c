@@ -527,17 +527,21 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
         //EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
 
 	// TODO: Does this belong here or even in UDP at all?
-	off_t bounce_buf_offset;
-	off_t bounce_head_offset;
+	//off_t bounce_buf_offset;
+	//off_t bounce_head_offset;
 
-	bounce_head_offset = ni->udp.comm_pad_size;
-	ni->udp.comm_pad_size += ROUND_UP(sizeof(struct udp_bounce_head), pagesize);
+	//bounce_head_offset = ni->udp.comm_pad_size;
+	//ni->udp.comm_pad_size += ROUND_UP(sizeof(struct udp_bounce_head), pagesize);
+
+	atomic_set(&ni->udp.self_recv, 0);
+	ni->udp.self_recv_addr = NULL;
+	ni->udp.self_recv_len = 0;
 
 	ni->udp.udp_buf.buf_size = get_param(PTL_BOUNCE_BUF_SIZE);
 	ni->udp.udp_buf.num_bufs = get_param(PTL_BOUNCE_NUM_BUFS);
 
-	bounce_buf_offset = ni->udp.comm_pad_size;
-	ni->udp.comm_pad_size += ni->udp.udp_buf.buf_size * ni->udp.udp_buf.num_bufs;
+	//bounce_buf_offset = ni->udp.comm_pad_size;
+	//ni->udp.comm_pad_size += ni->udp.udp_buf.buf_size * ni->udp.udp_buf.num_bufs;
 
 	return PTL_OK;
 
