@@ -198,9 +198,13 @@ typedef struct ni {
 #if WITH_TRANSPORT_UDP
 		int map_done;
 #endif
+		//we use these to signal sends to self, as UDP can't safely communicate with itself on the same
+		//machine over the same port
+		atomic_t self_recv;
+		void * self_recv_addr;		// in udp datagram?
+		size_t self_recv_len;
+		
 
-		void *comm_pad;		// in udp datagram?
-		size_t comm_pad_size;
 		size_t per_proc_comm_buf_size;
 		int per_proc_comm_buf_numbers;
 		atomic_t num_posted_recv;

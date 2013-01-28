@@ -16,17 +16,13 @@
  */
 static int send_message_udp(buf_t *buf, int from_init)
 {
-	/* Keep a reference on the buffer so it doesn't get freed. */
-	//assert(buf->obj.obj_pool->type == POOL_BUF);
-	//assert(buf->obj.obj_pool->type == (BUF_UDP_SEND || BUF_UDP_RETURN || BUF_UDP_CONN_REQ || BUF_UDP_CONN_REP));
 	buf_get(buf);
 
 	//ptl_info("buffer data pointer is: %p %i\n",buf->data_out,buf->data_out->udp.length);
 
-	buf->type = BUF_UDP_SEND;
-	
-	//buf->recv_buf = 0;
-	      
+	//set the buffer type to be received at the other end
+	buf->type = BUF_UDP_RECEIVE;
+
         // increment the sequence number associated with the
 	// send-side of this connection
 	atomic_inc(&buf->conn->udp.send_seq);
@@ -320,10 +316,41 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
         //target.sin_addr = dest->sin_addr;
         //target.sin_port = dest->sin_port;
 
-	int MAX_UDP_MSG_SIZE;
+	int MAX_UDP_MSG_SIZE = 1488;
 	uint32_t max_len_size;
 	max_len_size = sizeof(int);
 	getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_SNDBUF, (int*)&MAX_UDP_MSG_SIZE, &max_len_size);
+
+	//check for send to self, use local memory for transfer
+	if (((dest->sin_port == ntohs(ni->id.phys.pid))) && (dest->sin_addr.s_addr == nid_to_addr(ni->id.phys.nid))) {
+		ptl_info("sending to self! \n");
+		if (buf->rlength <= sizeof(buf_t)) {
+			if (buf->transfer.udp.conn_msg.msg_type != le16_to_cpu(UDP_CONN_MSG_REP)) { 
+				//the only multiple outstanding self sends that are valid are
+				//connection request replies and ACKS, otherwise, wait until the previous
+				//send has been received and processed
+				ack_hdr_t * hdr = (ack_hdr_t *)buf->data;
+			        if (!(hdr->h1.operation == OP_ACK || hdr->h1.operation == OP_CT_ACK || hdr->h1.operation ==  OP_OC_ACK)){	
+					while (atomic_read(&ni->udp.self_recv) > 0){
+				    		ptl_info("queuing for self send \n"); 
+				    		sleep(1);
+					}
+				}
+			}
+			buf->udp.src_addr = *dest;
+			ni->udp.self_recv_addr = buf;
+			ni->udp.self_recv_len = sizeof(buf_t);
+			ptl_info("self ref addr is: %p \n",ni->udp.self_recv_addr);
+			atomic_inc(&ni->udp.self_recv);
+			return;
+		}
+		else{
+			ptl_warn("large message self sends not yet supported \n");
+			abort();
+		}
+
+	}
+
 
 	//the buf has data and is not a small message or an ack
 	if (buf->rlength > sizeof(buf_t)){
@@ -363,7 +390,6 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		}
 
 		ptl_info("iov lengths: %i %i \n",(int)iov[0].iov_len,(int)iov[1].iov_len);
-		ptl_info("start set flags\n");		
 
 		buf_msg_hdr.msg_name = (void *)dest;
 		buf_msg_hdr.msg_namelen = sizeof(*dest);
@@ -371,11 +397,10 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_iovlen = (int)segments;
 		buf_msg_hdr.msg_flags = 0;
 
-		ptl_info("set flags\n");
-
 		ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),ntohs(((struct sockaddr_in*)buf_msg_hdr.msg_name)->sin_port));
 	
 		buf_msg_hdr.msg_control = NULL;
+		buf_msg_hdr.msg_controllen = 0;
 
 		ptl_info("sending UDP message of size: %i, maximum: %i \n",(int)(buf_msg_hdr.msg_iov[0].iov_len+buf_msg_hdr.msg_iov[1].iov_len),(int)MAX_UDP_MSG_SIZE);
 
@@ -435,6 +460,13 @@ buf_t *udp_receive(ni_t *ni){
 	socklen_t lensin = sizeof(temp_sin);	
 
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
+
+	if (atomic_read(&ni->udp.self_recv) == 1){
+		ptl_info("got a message from self %p \n",ni->udp.self_recv_addr);
+		thebuf = (buf_t *) ni->udp.self_recv_addr;
+		return thebuf;//(buf_t *)ni->udp.self_recv_addr;
+	}
+	
 
 	int flags;
 	flags = MSG_PEEK;
@@ -636,7 +668,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 
 	struct req_hdr *hdr;
 	hdr = (struct req_hdr*)&conn_buf->internal_data;
-	conn_buf->data = (void *)&conn_buf->internal_data;//hdr;
+	conn_buf->data = (void *)&conn_buf->internal_data;
 
 	((struct hdr_common*)hdr)->version = PTL_HDR_VER_1;
 	
@@ -648,29 +680,30 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	conn_buf->conn = conn;       
 	conn_buf->udp.dest_addr = &conn->sin;
 
-/*	struct sockaddr_in * temp_sin;
-	temp_sin->sin_addr.s_addr = nid_to_addr(ni->id.phys.nid);
+	struct sockaddr_in temp_sin;
+	
+	temp_sin.sin_addr.s_addr = nid_to_addr(ni->id.phys.nid);
 
-	ptl_info("nid: %s pid: %i \n",inet_ntoa(temp_sin->sin_addr),(ni->id.phys.pid));
+	ptl_info("nid: %s pid: %i \n",inet_ntoa(temp_sin.sin_addr),(ni->id.phys.pid));
 	ptl_info("addr: %s : %i \n",inet_ntoa(conn->sin.sin_addr),ntohs(conn_buf->udp.dest_addr->sin_port));
 
 	if (conn_buf->udp.dest_addr->sin_port == ntohs(ni->id.phys.pid)) {
-		if (temp_sin->sin_addr.s_addr == conn->sin.sin_addr.s_addr) {
+		if (temp_sin.sin_addr.s_addr == conn->sin.sin_addr.s_addr) {
 			//we are sending to ourselves, so we don't need a connection
-			ptl_info("sending to self! \n");
-			//REG: TODO to make this work, must allow for sending to self, which requires different ports
-			//REG: do we want to change the ptl_map though to allow this to happen?
-			ni->iface->udp.connect_s = socket(PF_LOCAL, SOCK_DGRAM, 0);
-			int ret;
-			ret = bind(ni->iface->udp.connect_s, (struct sockaddr *)&conn->sin, sizeof(conn->sin));
-			//conn->udp.loop_to_self = 1;
-			conn->state = CONN_STATE_CONNECTED;
-			//return PTL_OK;
+			ptl_info("sending to self\n");
+			conn_buf->udp.src_addr = conn->sin;
+
+			ni->udp.self_recv_addr = conn_buf;
+			ni->udp.self_recv_len = conn_buf->length;
+			//since setmap does not have to be run
+			ni->udp.dest_addr = conn_buf->udp.dest_addr;
+			ni->udp.map_done = 1;
+			//now let the progress thread know that we've sent something to ourselves
+			atomic_set(&ni->udp.self_recv, 1);
+			return PTL_OK;
 		}
 	}
-*/	
-	//conn->udp.loop_to_self = 0;
- 
+	
 	ptl_info("to send msg size: %lu in UDP message size: %lu\n",sizeof(msg),sizeof(buf_t));
         
 	/* Send the request to the listening socket on the remote node. */	

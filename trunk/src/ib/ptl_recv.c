@@ -352,10 +352,25 @@ static int recv_init(PPEGBL buf_t *buf)
 		init_buf->data_in = NULL;
 
 	init_buf->recv_buf = buf;
-	
-	/* Note: process_init must drop recv_buf, so buf will not be valid
-	 * after the call. */
-	err = process_init(init_buf);
+
+#if WITH_TRANSPORT_UDP	
+	ni_t * ni = obj_to_ni(buf);
+
+	if (atomic_read(&ni->udp.self_recv) > 0){
+		if (hdr->h1.operation == OP_CT_ACK || OP_ACK || OP_OC_ACK){
+			init_buf->init_state = STATE_INIT_ACK_EVENT;
+			err = process_init(init_buf);
+		}
+	}
+	else{
+#endif
+		/* Note: process_init must drop recv_buf, so buf will not be valid
+		 * after the call. */
+		err = process_init(init_buf);
+#if WITH_TRANSPORT_UDP
+	}
+#endif
+
 	if (err)
 		WARN();
 
@@ -534,7 +549,7 @@ static void progress_thread_udp(ni_t *ni)
                 if (&udp_buf->mutex == NULL){
 		  pthread_mutex_init(&udp_buf->mutex,NULL);
 		}
- 		
+	
                 if (udp_buf != NULL){
                  	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
 		}
@@ -587,6 +602,9 @@ static void progress_thread_udp(ni_t *ni)
         		case BUF_UDP_RECEIVE: {
 				//REG: TODO: fix UDP process recv
 				ptl_info("processing received data message\n");
+				if (udp_buf->put_ct != NULL){
+					ptl_info("putct is : %p \n", udp_buf->put_ct);
+				}
  				pthread_mutex_init(&udp_buf->mutex,NULL);
 				udp_buf->obj.obj_ni = ni;
 				//udp_buf->conn->transport = transport_udp;;
@@ -659,9 +677,17 @@ static void progress_thread_udp(ni_t *ni)
 				/* Should not happen. */
 				abort();
 			}
-			free(udp_buf);
+			//if a buffer was allocated for the recv, free it
+			if (atomic_read(&ni->udp.self_recv) == 0){
+				free(udp_buf);
+			}
+			//if we sent something to ourselves, flag it as processed
+			else{
+				atomic_dec(&ni->udp.self_recv);
+			}
 		}
 	}
+	
 //#endif
 
 //TODO: do we need this for UDP?
