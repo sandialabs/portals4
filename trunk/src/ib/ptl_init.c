@@ -968,6 +968,8 @@ static int reply_event(buf_t *buf)
 #if WITH_TRANSPORT_UDP
 	//immediate copies have already been performed, don't do anything more
 	//otherwise we need to copy the reply into the md
+	ptl_info("reply to address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
+	buf->udp = buf->recv_buf->udp;
 	if (!buf->data_in){
 		void *start = buf->get_md->start + buf->get_offset;
 		memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
@@ -983,6 +985,12 @@ static int reply_event(buf_t *buf)
 
 	if (buf->event_mask & XI_CT_REPLY_EVENT)
 		make_ct_reply_event(buf);
+
+#if WITH_TRANSPORT_UDP
+	//we can't free everything before the reply as we still need the buffer
+	//this will be cleaned up after the reply is sent
+	return STATE_INIT_DONE;
+#endif
 
 	return STATE_INIT_CLEANUP;
 }
