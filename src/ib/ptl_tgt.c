@@ -795,7 +795,7 @@ static int tgt_get_length(buf_t *buf)
 			  PTL_ME_EVENT_UNLINK_DISABLE));
 
 #if WITH_TRANSPORT_UDP
-	if (atomic_read(&ni->udp.self_recv) <= 0){
+	if (atomic_read((atomic_t *)&ni->udp.self_recv) <= 0){
 #endif
 		/* initialize buf->cur_loc_iov_index/off and buf->start */
 		err = init_local_offset(buf);
@@ -1707,6 +1707,7 @@ static int tgt_send_reply(buf_t *buf)
 
 	rep_buf->dest = buf->dest;
 #if WITH_TRANSPORT_UDP
+	ptl_info("address that requested reply: %s:%i \n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port));
 	rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
 #endif
 	rep_buf->conn = buf->conn;
@@ -2004,9 +2005,13 @@ int process_tgt(buf_t *buf)
 			tgt_cleanup_2(buf);
 			buf->tgt_state = STATE_TGT_DONE;
 			pthread_mutex_unlock(&buf->mutex);
-#if !WITH_TRANSPORT_UDP
+#if WITH_TRANSPORT_UDP
+			//need this to prevent freeing the buffer if it is a self send
+			ni_t *ni = obj_to_ni(buf);
+			if (atomic_read(&ni->udp.self_recv) == 0)	
+#endif	
 			buf_put(buf);		/* match buf_alloc */
-#endif
+
 			return err;
 		case STATE_TGT_DONE:
 			/* buf isn't valid anymore. */

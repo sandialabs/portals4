@@ -40,6 +40,11 @@ void cleanup_iface(iface_t *iface)
 	iface->sin.sin_addr.s_addr = INADDR_ANY;
 #endif
 
+#if WITH_TRANSPORT_UDP
+	//close the socket
+	close(iface->udp.connect_s);
+#endif
+
 	iface->ifname[0] = 0;
 }
 
@@ -62,6 +67,7 @@ void iface_fini(gbl_t *gbl)
 	free(gbl->iface);
 	gbl->iface = NULL;
 	gbl->num_iface = 0;
+
 }
 
 /**

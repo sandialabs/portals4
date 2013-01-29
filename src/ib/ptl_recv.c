@@ -315,6 +315,16 @@ static int recv_req(buf_t *buf)
 	if (err)
 		WARN();
 
+#if WITH_TRANSPORT_UDP
+	//REG: indicate that this buffer is OK to free later
+	if (buf->tgt_state != STATE_TGT_WAIT_APPEND){
+		buf->completed = 1;
+	}
+	else{
+		buf->completed = 0;
+	}
+#endif
+
 	return STATE_RECV_REPOST;
 }
 
@@ -682,14 +692,20 @@ static void progress_thread_udp(ni_t *ni)
 				abort();
 			}
 			//if a buffer was allocated for the recv, free it
-			if (atomic_read(&ni->udp.self_recv) == 0){
-				ptl_info("free recv buf \n");
-				free(udp_buf);
+			if (atomic_read(&ni->udp.self_recv) == 0) {//&& (udp_buf->type == BUF_TGT)){
+				//ptl_info("free recv buf %p\n",&udp_buf);
+				//if (&udp_buf != NULL)
+				if (udp_buf->completed){ //|| udp_buf->recv_buf) {
+					ptl_info("free recv buf %p\n",&udp_buf);
+					free(udp_buf);
+				}
 			}
 			//if we sent something to ourselves, flag it as processed
-			else{
+			else if ((int)atomic_read(&ni->udp.self_recv) > 0){
+				ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
 				atomic_dec(&ni->udp.self_recv);
 			}
+						
 		}
 	}
 	
