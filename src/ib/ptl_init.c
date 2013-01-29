@@ -387,15 +387,13 @@ static int wait_conn(buf_t *buf)
 		}
 
 #if WITH_TRANSPORT_UDP
-		ptl_info("SM: start waiting on %p\n",&conn->move_wait);
+		ptl_info("SM: start waiting on %p %p\n",&conn->move_wait,&conn->mutex);
+		atomic_inc(&conn->udp.is_waiting);		
 #endif
 
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
 
-//#if WITH_TRANSPORT_UDP
-//		if (conn->udp.loop_to_self != 1)
-//#endif
 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
 #endif
 
@@ -438,11 +436,6 @@ static int send_req(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 
-//	if (conn->udp.loop_to_self == 1){
-//		conn->udp.dest_addr = conn->sin;
-//		buf->recv_buf = buf->internal_data;
-//	}
-	
 	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
 	
 #endif
@@ -1031,7 +1024,7 @@ static void cleanup(buf_t *buf)
 
 	if (buf->recv_buf) {
 #if WITH_TRANSPORT_UDP
-	if (atomic_read(&buf->recv_buf->obj.obj_ref.ref_cnt) < 1)
+//	if (atomic_read(&buf->recv_buf->obj.obj_ref.ref_cnt) < 1)
 #endif
 		buf_put(buf->recv_buf);
 		buf->recv_buf = NULL;
@@ -1042,7 +1035,7 @@ static void cleanup(buf_t *buf)
 	ni_t * ni = obj_to_ni(buf);
 	if (atomic_read(&ni->udp.self_recv) > 0)
 	   return;
-	if (atomic_read(&buf->conn->obj.obj_ref.ref_cnt) < 1)
+//	if (atomic_read(&buf->conn->obj.obj_ref.ref_cnt) < 1)
 #endif
 	conn_put(buf->conn);
 }

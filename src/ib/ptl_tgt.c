@@ -418,8 +418,12 @@ static int tgt_start(buf_t *buf)
 	ptl_info("initiator nid: %i pid: %i \n",hdr->src_nid,hdr->src_pid);
 	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
 	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
+
+	buf->conn = get_conn(ni, ni->id);
 #endif
+#if !WITH_TRANSPORT_UDP
 	buf->conn = get_conn(ni, initiator);
+#endif
 	if (unlikely(!buf->conn)) {
 		WARN();
 		return STATE_TGT_ERROR;

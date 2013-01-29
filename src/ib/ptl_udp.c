@@ -445,7 +445,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		return;
 	}
         ptl_info("UDP send completed successfully to: %s:%d from: %s:%d size:%lu %i %i\n",inet_ntoa(target.sin_addr),ntohs(target.sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port),sizeof(*buf),(int)buf->rlength,err);
-  		
+ 	
 }
 
 /**
@@ -695,7 +695,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 
 			ni->udp.self_recv_addr = conn_buf;
 			ni->udp.self_recv_len = conn_buf->length;
-			//since setmap does not have to be run
+			//since setmap does not have to be run, make sure its valid
 			ni->udp.dest_addr = conn_buf->udp.dest_addr;
 			ni->udp.map_done = 1;
 			//now let the progress thread know that we've sent something to ourselves
@@ -716,7 +716,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	}
         
         ptl_info("succesfully send connection request to listener: %s:%d from: %d size:%i\n",inet_ntoa(conn_buf->udp.dest_addr->sin_addr),htons(conn_buf->udp.dest_addr->sin_port),htons(ni->udp.src_port),ret);
-        //free(conn_buf); 
+        free(conn_buf); 
 	//conn_put(conn);
 	return PTL_OK;
 }
