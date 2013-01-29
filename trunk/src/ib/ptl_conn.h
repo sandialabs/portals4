@@ -156,6 +156,7 @@ struct conn {
 			//TODO: Why do these counters need to be atomic?
 			atomic_t send_seq;
 			atomic_t recv_seq;
+			atomic_t is_waiting;
 		} udp;
 #endif
 	};

@@ -607,12 +607,9 @@ static void progress_thread_udp(ni_t *ni)
 				}
  				pthread_mutex_init(&udp_buf->mutex,NULL);
 				udp_buf->obj.obj_ni = ni;
-				//udp_buf->conn->transport = transport_udp;;
-				//udp_buf->conn->transport.type = CONN_TYPE_UDP;
+				udp_buf->conn = get_conn(ni, ni->id);
+				udp_buf->conn->state = CONN_STATE_CONNECTED;
 				process_recv_udp(ni,udp_buf);
-				//process_tgt(udp_buf);
-				//buf_put(udp_buf);
-				//free(udp_buf);
 				break;
   			} 
 
@@ -621,7 +618,6 @@ static void progress_thread_udp(ni_t *ni)
 				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
 
 				/* From send_message_udp(). */
-				//free(udp_buf);
 				break;
      			}
 
@@ -664,10 +660,18 @@ static void progress_thread_udp(ni_t *ni)
 				//ptl_info("connection established to: %s:%i from %s:%i \n",inet_ntoa(udp_buf->udp.dest_addr->sin_addr),ntohs(udp_buf->udp.dest_addr->sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
 			
 				//ptl_info("local address: %s:%i \n",inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;
-				
-				ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
+				int result;
+				//ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
 				//release the thread waiting on the establishment of a connection
-				pthread_cond_broadcast(&udp_buf->conn->move_wait);
+				while (1) {
+					result = atomic_read(&udp_buf->conn->udp.is_waiting);
+					if (result > 0){
+						ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
+						pthread_cond_broadcast(&udp_buf->conn->move_wait);
+						atomic_set(&udp_buf->conn->udp.is_waiting, 0);
+						break;
+					}
+				}
 				ptl_info("connection valid for reply\n");
 				//free(udp_buf);
 				break;
@@ -679,6 +683,7 @@ static void progress_thread_udp(ni_t *ni)
 			}
 			//if a buffer was allocated for the recv, free it
 			if (atomic_read(&ni->udp.self_recv) == 0){
+				ptl_info("free recv buf \n");
 				free(udp_buf);
 			}
 			//if we sent something to ourselves, flag it as processed
