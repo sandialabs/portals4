@@ -199,8 +199,10 @@ int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
 	/* remove ourselves from ni->ct_list */
 	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
 	list_del(&ct->list);
-	atomic_dec(&ct->list_size);
-	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
+	if (atomic_read(&ct->list_size) > 0){
+		atomic_dec(&ct->list_size);
+	}
+	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);	
 
 	/* clean up pending operations */
 	ct->info.interrupt = 1;
