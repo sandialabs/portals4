@@ -83,8 +83,6 @@ static void append_init_data_udp_iovec(data_t *data, md_t *md,
 static void append_init_data_udp_direct(data_t *data, mr_t *mr, void *addr,
 										   ptl_size_t length, buf_t *buf)
 {
-	int err;
-
 	data->data_fmt = DATA_FMT_UDP;
 
 	data->udp.target_done = 0;
@@ -93,10 +91,6 @@ static void append_init_data_udp_direct(data_t *data, mr_t *mr, void *addr,
 	buf->transfer.udp.transfer_state_expected = 0; /* always the initiator here */
 	buf->transfer.udp.udp = &data->udp;
 	buf->transfer.udp.data = (unsigned char *)&data;
-
-	//TODO: what are bounce buffers and are they relevant for UDP
-	//REG
-	//attach_bounce_buffer(buf, data);
 
 	/* Describes local memory */
 	buf->transfer.udp.my_iovec.iov_base = addr;
@@ -261,7 +255,7 @@ static int do_udp_transfer(buf_t *buf)
 static int udp_tgt_data_out(buf_t *buf, data_t *data)
 {
 	int next;
-	ni_t *ni = obj_to_ni(buf);
+//	ni_t *ni = obj_to_ni(buf);
 
 	if (data->data_fmt != DATA_FMT_UDP) {
 		assert(0);
@@ -357,7 +351,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		//this means that we have a message that is too large for an immediate send
 		//we must do multiple UDP sends to transfer the whole message
 		ptl_info("starting large message send \n");
-		ptl_info("data ptr: %p length: %i \n",buf->transfer.udp.my_iovec.iov_base,buf->transfer.udp.my_iovec.iov_len);
+		ptl_info("data ptr: %p length: %i \n",buf->transfer.udp.my_iovec.iov_base,(int)buf->transfer.udp.my_iovec.iov_len);
 		int segments;
 		struct msghdr buf_msg_hdr;
 		int bytes_remain;
@@ -393,7 +387,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 
 		buf_msg_hdr.msg_name = (void *)dest;
 		buf_msg_hdr.msg_namelen = sizeof(*dest);
-		buf_msg_hdr.msg_iov = &iov;
+		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 		buf_msg_hdr.msg_iovlen = (int)segments;
 		buf_msg_hdr.msg_flags = 0;
 
@@ -514,7 +508,7 @@ buf_t *udp_receive(ni_t *ni){
 	
 		buf_msg_hdr.msg_name = &temp_sin;
 		buf_msg_hdr.msg_namelen = sizeof(temp_sin);
-		buf_msg_hdr.msg_iov = &iov;
+		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 		buf_msg_hdr.msg_iovlen = 2;
 		
 		err = recvmsg(ni->iface->udp.connect_s, &buf_msg_hdr, 0);
@@ -529,14 +523,14 @@ buf_t *udp_receive(ni_t *ni){
 	
 
 	
-		ptl_info("received large message of size: %i %i %i\n",err,iov[0].iov_len,iov[1].iov_len);
+		ptl_info("received large message of size: %i %i %i\n",err,(int)iov[0].iov_len,(int)iov[1].iov_len);
 		//process received IO vectors
 		
 		thebuf = (buf_t *)buf_msg_hdr.msg_iov[0].iov_base;
 		buf_data = (char *)buf_msg_hdr.msg_iov[1].iov_base;
 		buf_data_len = buf_msg_hdr.msg_iovlen;
 
-		thebuf->transfer.udp.data = buf_data;
+		thebuf->transfer.udp.data = (unsigned char *)buf_data;
 		thebuf->transfer.udp.my_iovec.iov_base = buf_msg_hdr.msg_iov[1].iov_base;
 		thebuf->transfer.udp.my_iovec.iov_len = buf_msg_hdr.msg_iov[1].iov_len;
 		
