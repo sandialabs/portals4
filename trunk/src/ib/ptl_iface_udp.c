@@ -18,6 +18,7 @@
  *
  * conn is locked
  */
+/*
 static void accept_udp_connection_request(ni_t *ni, conn_t *conn,
 										  struct udp_conn_msg *msg,
 										  struct sockaddr_in *from_addr,
@@ -44,7 +45,7 @@ static void accept_udp_connection_request(ni_t *ni, conn_t *conn,
 		pthread_cond_broadcast(&conn->move_wait);
 	}
 }
-
+*/
 /**
  * Process an incoming connection request event.
  *
@@ -56,6 +57,7 @@ static void accept_udp_connection_request(ni_t *ni, conn_t *conn,
  *
  * @return status
  */
+/*
 static void process_udp_connect_request(struct iface *iface,
 										struct udp_conn_msg *msg,
 										struct sockaddr_in *from_addr,
@@ -88,29 +90,29 @@ static void process_udp_connect_request(struct iface *iface,
 
 	switch (conn->state) {
 	case CONN_STATE_CONNECTED:
-		/* We received a connection request but we are already
-		 * connected. Ignore. */
+		// We received a connection request but we are already
+		// connected. Ignore. 
 		conn_put(conn);
 		break;
 
 	case CONN_STATE_DISCONNECTED:
-		/* We received a connection request and we are disconnected.
-		 * Accept it */
+		// We received a connection request and we are disconnected.
+		// Accept it
 		accept_udp_connection_request(ni, conn, msg, from_addr, from_addr_len);
 		break;
 
 	case CONN_STATE_DISCONNECTING:
-		/* Not sure how to handle that case. Ignore and disconnect
-		 * anyway? */
+		// Not sure how to handle that case. Ignore and disconnect
+		// anyway? 
 		WARN();
                 abort();
 		break;
 
 	case CONN_STATE_CONNECTING:
-		/* we received a connection request but we are already connecting
-		 * - accept connection from higher id or self
-		 * - ignore from lower id
-		 */
+		// we received a connection request but we are already connecting
+		// - accept connection from higher id or self
+		// - ignore from lower id
+		
 		c = compare_id(&msg->req.src_id, &ni->id);
 		if (c < 0) {
 			conn_put(conn);
@@ -122,7 +124,7 @@ static void process_udp_connect_request(struct iface *iface,
 
 	case CONN_STATE_RESOLVING_ADDR:
 	case CONN_STATE_RESOLVING_ROUTE:
-		/* Never for UDP. */
+		// Never for UDP. 
 		abort();
 	}
 
@@ -138,7 +140,7 @@ static void process_udp_connect_request(struct iface *iface,
 	
 	return;
 }
-
+*/
 /**
  * Process UDP connection established.
  *
@@ -147,6 +149,7 @@ static void process_udp_connect_request(struct iface *iface,
  *
  * @return status
  */
+/*
 static void process_udp_connect_established(struct iface *iface,
 											struct udp_conn_msg *msg,
 											conn_t *conn)
@@ -156,7 +159,7 @@ static void process_udp_connect_established(struct iface *iface,
 	//		atomic_inc(&ni->rdma.num_conn);
 
 	if (conn->state != CONN_STATE_CONNECTING) {
-		/* UDP loopback goes here for instance. */
+		// UDP loopback goes here for instance. 
 		pthread_mutex_unlock(&conn->mutex);
 		return;
 	}
@@ -164,13 +167,13 @@ static void process_udp_connect_established(struct iface *iface,
 	conn->state = CONN_STATE_CONNECTED;
 	pthread_cond_broadcast(&conn->move_wait);
 
-	/* Update the destination address and port. */
+	// Update the destination address and port. 
 	conn->udp.dest_addr = conn->sin;
 	conn->udp.dest_addr.sin_port = msg->port;
 
 	pthread_mutex_unlock(&conn->mutex);
 }
-
+*/
 /**
  * Process a UDP connection event.
  *
@@ -180,6 +183,7 @@ static void process_udp_connect_established(struct iface *iface,
  * @param[in] w
  * @param[in] revents
  */
+/*
 static void process_udp_connect(EV_P_ ev_io *w, int revents)
 {
 	struct iface *iface = w->data;
@@ -216,7 +220,6 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 	case UDP_CONN_MSG_REP:
 		conn = (void *)(uintptr_t)msg.req_cookie;
 
-		/* Send the RTU . */
 		struct udp_conn_msg rtu;
 		int ret;
 
@@ -246,6 +249,8 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
 	}   
 	return;	
 }
+*/
+
 
 /**
  * @brief Get an IPv4 address from network device name (e.g. ib0).
