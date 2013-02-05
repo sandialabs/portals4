@@ -173,6 +173,8 @@ int main(int   argc,
     ptl_handle_md_t write_md_handle;
     int             num_procs;
     ptl_handle_eq_t recv_eq;
+    int             rank;
+    ptl_process_t   peer;
 
     if (getenv("VERBOSE")) {
         verb = 1;
@@ -181,6 +183,8 @@ int main(int   argc,
 
     CHECK_RETURNVAL(libtest_init());
 
+    rank = libtest_get_rank();
+    
     num_procs = libtest_get_size();
 
     unexpected_buf = malloc(sizeof(unsigned char) * BUFSIZE);
@@ -236,17 +240,24 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
+    libtest_barrier();
+
     /* set rank 0's value */
+    peer.rank = ((rank+1) % num_procs);
+    if (verb){
+	printf("peer: %i \n",peer.rank);
+    }
     {
         ptl_ct_event_t ctc;
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, write_md.length,
-                               PTL_CT_ACK_REQ, myself, logical_pt_index, 1, 0,
+                               PTL_CT_ACK_REQ, peer, logical_pt_index, 1, 0,
                                NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
         assert(ctc.success == 1);
     }
     fflush(NULL);
+    libtest_barrier();
     if (verb) {
         printf("-=-=-=-=-=-=-=-=-=-=-\nSending the unexpected put...\n    Initiator-side EQ:\n");
     }
@@ -255,8 +266,8 @@ int main(int   argc,
     if (verb) {
         printf("    Target-side EQ:\n");
     }
-    emptyEQ(recv_eq, myself, 2);
-    assert(emptyEQ(recv_eq, myself, 0) == 0);
+    emptyEQ(recv_eq, myself, 1);
+    assert(emptyEQ(recv_eq, myself, 0) <= 1);
     if (verb) {
         printf("-=-=-=-=-=-=-=-=-=-=-\nNow... posting the receive:\n");
     }
@@ -294,7 +305,11 @@ int main(int   argc,
             printf("%zu events!\n", count_events);
             abort();
         }
-        assert(emptyEQ(recv_eq, myself, 0) == 0);
+        emptyEQ(recv_eq, myself, 0);
+    }
+
+    if (verb) {
+	printf("\n\n done, start cleaning up \n\n");
     }
 
     CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
