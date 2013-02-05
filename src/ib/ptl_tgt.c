@@ -677,9 +677,11 @@ found_one:
 		 * on the unexpected list. So sever the connection between the
 		 * two buffers right now to avoid races with MEAppend() and
 		 * sending that ack. */
-		if (buf->data != buf->internal_data) {
-			memcpy(buf->internal_data, buf->data, buf->length);
-			buf->data = buf->internal_data;
+		if(buf->conn->transport.type == CONN_TYPE_SHMEM){
+			if (buf->data != buf->internal_data) {
+				memcpy(buf->internal_data, buf->data, buf->length);
+				buf->data = buf->internal_data;
+			}
 		}
 #endif
 	}
@@ -1077,7 +1079,9 @@ static int tgt_rdma(buf_t *buf)
 	 * receive state machine can remove the buffer from the
 	 * noknem_list; this function will be called again, and this time
 	 * was_done will be 1. May be this part needs a nicer design. */
-	int was_done = buf->transfer.noknem.noknem ? buf->transfer.noknem.noknem->init_done : 0;
+	int was_done;
+	if (buf->conn->transport.type == CONN_TYPE_SHMEM)
+		was_done = buf->transfer.noknem.noknem ? buf->transfer.noknem.noknem->init_done : 0;
 #endif
 
 	/* post one or more RDMA operations */
@@ -1089,15 +1093,16 @@ static int tgt_rdma(buf_t *buf)
 	 * machine and have the completion of the rdma
 	 * operation reenter this state to issue more
 	 * operations. */
-	if (*resid
+	if (*resid)
+		return STATE_TGT_RDMA;
 #if WITH_TRANSPORT_IB
-		|| atomic_read(&buf->rdma.rdma_comp)
+	if ((atomic_read(&buf->rdma.rdma_comp)) && (buf->conn->transport.type == CONN_TYPE_RDMA))
+		return STATE_TGT_RDMA;
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-		|| (was_done == 0)
-#endif
-		)
+	if ((was_done == 0) && (buf->conn->transport.type == CONN_TYPE_SHMEM))
 		return STATE_TGT_RDMA;
+#endif
 
 	/* here we are done so, if we got one, free the
 	 * indirect sge list */
@@ -1562,7 +1567,7 @@ static int tgt_send_ack(buf_t *buf)
 
 	}
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	else if (buf->mem_buf) {
+	else if ((buf->mem_buf) && (buf->conn->transport.type == CONN_TYPE_SHMEM)) {
 		ack_buf = buf->mem_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
 	}
