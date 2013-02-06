@@ -77,13 +77,20 @@ AC_DEFINE_UNQUOTED([CACHELINE_WIDTH], [$with_cacheline_width], [The cacheline wi
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
+AC_ARG_ENABLE([qlogic],
+  [AS_HELP_STRING([--enable-qlogic],
+    [Use Qlogic InfiniPath Hardware of IB communication. (default: no)])])]
+AS_IF([test "x$enable_qlogic" == "xyes"],
+  [AC_DEFINE([WITH_QLOGIC], [1], [Define to enable Qlogic])])
+AM_CONDITIONAL(WITH_QLOGIC, test "x$enable_qlogic" == xyes)
+
 AC_ARG_ENABLE([transport-shmem],
   [AS_HELP_STRING([--enable-transport-shmem],
     [Use Shared memory for on-node communication. (default: auto-detect)])])
 
 AC_ARG_ENABLE([transport-ib],
   [AS_HELP_STRING([--enable-transport-ib],
-    [Use IB for remote communiction.  (default: auto-detect)])])
+    [Use IB for remote communication.  (default: auto-detect)])])
 
 AC_ARG_ENABLE([transport-udp],
   [AS_HELP_STRING([--enable-transport-udp],
@@ -94,7 +101,10 @@ AC_ARG_ENABLE([ppe],
     [Enable process-offload engine for Portals.  Experimental.  (default: disabled)])])
 AS_IF([test "$enable_ppe" == "yes"],
   [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])])
+AS_IF([test "$enable_ppe" == "yes"],
+  [AC_DEFINE([IS_PPE], [1], [Define to enable PPE])])
 AM_CONDITIONAL(WITH_PPE, test "x$enable_ppe" == xyes)
+AM_CONDITIONAL(IS_PPE, test "x$enable_ppe" == xyes)
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -245,9 +255,6 @@ AS_IF([test "$active_remote_transport" == ""],
          [active_remote_transport="udp"])])
 
 SANDIA_DETECT_KNEM()
-# BWB: temporary hack, disable shmem by default if remote transport available.
-AS_IF([test "$active_remote_transport" != "" -a "$enable_transport_shmem" = ""],
-      [enable_transport_shmem=no])
 AS_IF([test "$enable_transport_shmem" != "no" -a "$enable_ppe" != "yes"],
       [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
        transport_shmem="yes"],
@@ -331,6 +338,11 @@ AS_IF([test "$enable_ppe" = "yes"],
        progress_process="yes"],
       [progress_thread="yes"
        progress_process="no"])
+AS_IF([test "$enable_qlogic" = "yes"],
+      [ib_type="Qlogic"],
+      [ib_type="Mellanox"])
+echo ""
+echo "  InfiniBand Device: $ib_type"
 echo ""
 echo "  Transport Support:"
 echo "       InfiniBand: $transport_ib"
