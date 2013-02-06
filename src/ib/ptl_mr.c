@@ -18,9 +18,8 @@
  */
 int mr_new(void *arg)
 {
-#if !WITH_TRANSPORT_UDP
+
 	mr_t *mr = arg;
-#endif
 
 #if WITH_TRANSPORT_IB 
 	mr->ibmr = NULL;
