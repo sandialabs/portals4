@@ -201,6 +201,7 @@ typedef struct ni {
 		//we use these to signal sends to self, as UDP can't safely communicate with itself on the same
 		//machine over the same port
 		atomic_t self_recv;
+		atomic_t self_recv_complete;
 		void * self_recv_addr;		// in udp datagram?
 		size_t self_recv_len;
 		

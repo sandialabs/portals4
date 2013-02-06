@@ -323,6 +323,7 @@ static int recv_req(buf_t *buf)
 	else{
 		buf->completed = 0;
 	}
+	
 #endif
 
 	return STATE_RECV_REPOST;
@@ -567,7 +568,7 @@ static void progress_thread_udp(ni_t *ni)
 
 		if (udp_buf != NULL) {
 		 	ptl_info("received UDP buf type: %i, SEND=%i RETURN=%i RECV=%i CONN_REQ=%i CONN_REP=%i\n",udp_buf->type,BUF_UDP_SEND,BUF_UDP_RETURN,BUF_UDP_RECEIVE,BUF_UDP_CONN_REQ,BUF_UDP_CONN_REP);	
-			
+		 	ptl_info("start, self recv = %i \n",atomic_read(&ni->udp.self_recv));	
 			switch(udp_buf->type) {
 			case BUF_UDP_SEND: {
 				buf_t *buf;
@@ -697,13 +698,20 @@ static void progress_thread_udp(ni_t *ni)
 				//if (&udp_buf != NULL)
 				if (udp_buf->completed){ //|| udp_buf->recv_buf) {
 					ptl_info("free recv buf %p\n",&udp_buf);
+					if (udp_buf->recv_buf)
+						buf_put(udp_buf->recv_buf);
+					if (udp_buf->conn)
+						conn_put(udp_buf->conn);
 					free(udp_buf);
 				}
 			}
 			//if we sent something to ourselves, flag it as processed
 			else if ((int)atomic_read(&ni->udp.self_recv) > 0){
-				ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
+				//pthread_mutex_lock(&udp_buf->mutex);
+				//ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
 				atomic_dec(&ni->udp.self_recv);
+				ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
+				//pthread_mutex_unlock(&udp_buf->mutex);
 			}
 						
 		}

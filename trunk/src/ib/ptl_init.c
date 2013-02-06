@@ -381,11 +381,10 @@ static int wait_conn(buf_t *buf)
 		if (conn->state == CONN_STATE_DISCONNECTED) {
 			if (conn->transport.init_connect(ni, conn)) {
 				pthread_mutex_unlock(&conn->mutex);
-
 				return STATE_INIT_ERROR;
 			}
 		}
-
+		
 #if WITH_TRANSPORT_UDP
 		ptl_info("SM: start waiting on %p %p\n",&conn->move_wait,&conn->mutex);
 		atomic_inc(&conn->udp.is_waiting);		
@@ -950,6 +949,11 @@ static int ack_event(buf_t *buf)
 		buf->event_mask &= ~(XI_ACK_EVENT | XI_CT_ACK_EVENT);
 	}
 
+#if WITH_TRANSPORT_UDP
+	//if this is a self send/recv the original sender will cleanup
+	return STATE_INIT_DONE;
+#endif
+
 	return STATE_INIT_CLEANUP;
 }
 
@@ -1040,12 +1044,13 @@ static void cleanup(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	//TODO: check the source of these memory leaks
-	ni_t * ni = obj_to_ni(buf);
-	if (atomic_read(&ni->udp.self_recv) > 0)
-	   return;
+	//ni_t * ni = obj_to_ni(buf);
+	//if (atomic_read(&ni->udp.self_recv) > 0)
+	//   return;
 //	if (atomic_read(&buf->conn->obj.obj_ref.ref_cnt) < 1)
 #endif
-	conn_put(buf->conn);
+	
+//	conn_put(buf->conn);
 }
 
 /*
@@ -1150,6 +1155,16 @@ int process_init(buf_t *buf)
 			state = STATE_INIT_CLEANUP;
 			break;
 		case STATE_INIT_CLEANUP:
+#if WITH_TRANSPORT_UDP	
+			pthread_mutex_unlock(&buf->mutex);
+   			ni_t *ni;
+			ni = obj_to_ni(buf);
+	     		while (atomic_read(&ni->udp.self_recv) > 0){
+           			sched_yield();
+				SPINLOCK_BODY();
+			}
+			pthread_mutex_lock(&buf->mutex);
+#endif
 			cleanup(buf);
 			buf->init_state = STATE_INIT_DONE;
 			pthread_mutex_unlock(&buf->mutex);

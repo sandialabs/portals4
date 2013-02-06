@@ -455,7 +455,7 @@ buf_t *udp_receive(ni_t *ni){
 
 	buf_t * thebuf = (buf_t*)calloc(1, sizeof(buf_t));
 
-	if (atomic_read(&ni->udp.self_recv) == 1){
+	if (atomic_read(&ni->udp.self_recv) >= 1){
 		ptl_info("got a message from self %p \n",ni->udp.self_recv_addr);
 		thebuf = (buf_t *) ni->udp.self_recv_addr;
 		return thebuf;//(buf_t *)ni->udp.self_recv_addr;
