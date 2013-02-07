@@ -127,8 +127,10 @@ static int start(buf_t *buf)
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
 #if WITH_TRANSPORT_UDP
-	((struct hdr_common *)buf->data)->version = PTL_HDR_VER_1;
-	assert(((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1);
+	//if (buf->conn->transport.type == CONN_TYPE_UDP){
+//		((struct hdr_common *)buf->data)->version = PTL_HDR_VER_1;
+//		assert(((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1);
+	//}
 #endif
 
 
@@ -248,6 +250,8 @@ static int prepare_req(buf_t *buf)
 #endif
 
 	buf->length = sizeof(req_hdr_t);
+
+	ptl_info("conn type: %i \n",buf->conn->transport.type);
 
 	switch (hdr->h1.operation) {
 	case OP_PUT:
@@ -392,7 +396,6 @@ static int wait_conn(buf_t *buf)
 
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
-
 		pthread_cond_wait(&conn->move_wait, &conn->mutex);
 #endif
 
@@ -434,8 +437,8 @@ static int send_req(buf_t *buf)
 
 
 #if WITH_TRANSPORT_UDP
-
-	ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
+	if (buf->conn->transport.type == CONN_TYPE_UDP)
+	   ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
 	
 #endif
 
@@ -602,7 +605,7 @@ static int init_copy_done(buf_t *buf)
 	else
 		return STATE_INIT_CLEANUP;
 }
-
+/*
 #elif WITH_TRANSPORT_UDP
 static int init_copy_in(buf_t *buf)
 {
@@ -612,10 +615,10 @@ static int init_copy_in(buf_t *buf)
 
 	udp->state = 1;
 
-	/* Copy the data from the bounce buffer. */
+	// Copy the data from the bounce buffer. 
 	to_copy = udp->length;
 
-	/* Target should never send more than requested. */
+	// Target should never send more than requested. 
 	assert(to_copy <= buf->transfer.udp.length_left);
 
 	ret = iov_copy_in(buf->transfer.udp.data, buf->transfer.udp.iovecs,
@@ -634,7 +637,7 @@ static int init_copy_in(buf_t *buf)
 	buf->transfer.udp.length_left -= to_copy;
 	buf->transfer.udp.offset += to_copy;
 
-	/* Tell the target the data is ready. */
+	// Tell the target the data is ready. 
 	__sync_synchronize();
 	udp->state = 2;
 
@@ -652,7 +655,7 @@ static int init_copy_out(buf_t *buf)
 
 	udp->state = 1;
 
-	/* Copy the data to the bounce buffer. */
+	// Copy the data to the bounce buffer. 
 	to_copy = buf->transfer.udp.data_length;
 	if (to_copy > buf->transfer.udp.length_left)
 		to_copy = buf->transfer.udp.length_left;
@@ -672,7 +675,7 @@ static int init_copy_out(buf_t *buf)
 
 	udp->length = to_copy;
 
-	/* Tell the target the data is ready. */
+	// Tell the target the data is ready. 
 	__sync_synchronize();
 	udp->state = 2;
 
@@ -684,19 +687,19 @@ static int init_copy_done(buf_t *buf)
 	ni_t *ni = obj_to_ni(buf);
 	struct udp *udp = buf->transfer.udp.udp;
 
-	/* Ack. */
+	// Ack. 
 	udp->init_done = 1;
 	__sync_synchronize();
 	udp->state = 2;
 
-	/* Free the bounce buffer allocated in init_append_data. */
+	// Free the bounce buffer allocated in init_append_data. 
 	ll_enqueue_obj_alien(&ni->udp.udp_buf.head->free_list,
 						   buf->transfer.udp.data,
 						   ni->udp.udp_buf.head,
 						   ni->udp.udp_buf.head->head_index0);
 
-	/* Only called from the progress thread, so ni->udp_lock is
-	 * already locked. */
+	// Only called from the progress thread, so ni->udp_lock is
+	// already locked. 
 	list_del(&buf->list);
 
 	if (buf->event_mask & XI_EARLY_SEND)
@@ -706,7 +709,7 @@ static int init_copy_done(buf_t *buf)
 	else
 		return STATE_INIT_CLEANUP;
 }
-
+*/
 #else
 static int init_copy_in(buf_t *buf) { abort(); }
 static int init_copy_out(buf_t *buf) { abort(); }
@@ -951,7 +954,8 @@ static int ack_event(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	//if this is a self send/recv the original sender will cleanup
-	return STATE_INIT_DONE;
+	if (buf->conn->transport.type == CONN_TYPE_UDP)
+		return STATE_INIT_DONE;
 #endif
 
 	return STATE_INIT_CLEANUP;
@@ -972,12 +976,14 @@ static int reply_event(buf_t *buf)
 #if WITH_TRANSPORT_UDP
 	//immediate copies have already been performed, don't do anything more
 	//otherwise we need to copy the reply into the md
-	ptl_info("reply to address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
-	buf->udp = buf->recv_buf->udp;
-	if (!buf->data_in){
-		void *start = buf->get_md->start + buf->get_offset;
-		memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
- 	}
+	if (buf->conn->transport.type == CONN_TYPE_UDP){
+		ptl_info("reply to address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
+		buf->udp = buf->recv_buf->udp;
+		if (!buf->data_in){
+			void *start = buf->get_md->start + buf->get_offset;
+			memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
+ 		}
+	}
 #endif	
 
 	/* Release the get MD before posting the REPLY event. */
@@ -993,7 +999,8 @@ static int reply_event(buf_t *buf)
 #if WITH_TRANSPORT_UDP
 	//we can't free everything before the reply as we still need the buffer
 	//this will be cleaned up after the reply is sent
-	return STATE_INIT_DONE;
+	if (buf->conn->transport.type == CONN_TYPE_UDP)
+		return STATE_INIT_DONE;
 #endif
 
 	return STATE_INIT_CLEANUP;
@@ -1156,14 +1163,16 @@ int process_init(buf_t *buf)
 			break;
 		case STATE_INIT_CLEANUP:
 #if WITH_TRANSPORT_UDP	
-			pthread_mutex_unlock(&buf->mutex);
-   			ni_t *ni;
-			ni = obj_to_ni(buf);
-	     		while (atomic_read(&ni->udp.self_recv) > 0){
-           			sched_yield();
-				SPINLOCK_BODY();
+			if (buf->conn->transport.type == CONN_TYPE_UDP){
+				pthread_mutex_unlock(&buf->mutex);
+   				ni_t *ni;
+				ni = obj_to_ni(buf);
+	     			while (atomic_read(&ni->udp.self_recv) > 0){
+           				sched_yield();
+					SPINLOCK_BODY();
+				}
+				pthread_mutex_lock(&buf->mutex);
 			}
-			pthread_mutex_lock(&buf->mutex);
 #endif
 			cleanup(buf);
 			buf->init_state = STATE_INIT_DONE;

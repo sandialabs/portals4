@@ -316,7 +316,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_SNDBUF, (int*)&MAX_UDP_MSG_SIZE, &max_len_size);
 
 	//check for send to self, use local memory for transfer
-	if (((dest->sin_port == ntohs(ni->id.phys.pid))) && (dest->sin_addr.s_addr == nid_to_addr(ni->id.phys.nid))) {
+	if (((dest->sin_port == ni->id.phys.pid) && (dest->sin_addr.s_addr == nid_to_addr(ni->id.phys.nid)))) {
 		ptl_info("sending to self! \n");
 		if (buf->rlength <= sizeof(buf_t)) {
 			if (buf->transfer.udp.conn_msg.msg_type != le16_to_cpu(UDP_CONN_MSG_REP)) { 
@@ -610,8 +610,11 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 			return;
 		}
 
+			
+
 #if WITH_TRANSPORT_UDP
-			conn->transport = transport_udp;
+			if (conn->transport.type == NULL); 
+				conn->transport = transport_udp;
 			//ptl_info("connection: %s:%i rank: %i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),id.rank);
 #else
 			/* This should never happen */

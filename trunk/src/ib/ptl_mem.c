@@ -220,6 +220,7 @@ int PtlSetMap_mem(ni_t *ni,
 
 			if (mapping[i].phys.pid == iface->id.phys.pid) {
 				/* Self. */
+				ptl_info("shmem map self \n");
 				ni->mem.index = ni->mem.node_size;
 			}
 
@@ -227,6 +228,7 @@ int PtlSetMap_mem(ni_t *ni,
 
 			if (get_param(PTL_ENABLE_MEM)) {
 				/* Connect local ranks through XPMEM or SHMEM. */
+				ptl_info("mem enabled \n");
 				id.rank = i;
 				conn = get_conn(ni, id);
 				if (!conn) {
@@ -238,6 +240,7 @@ int PtlSetMap_mem(ni_t *ni,
 #if IS_PPE
 				conn->transport = transport_mem;
 #elif WITH_TRANSPORT_SHMEM
+				ptl_info("shmem map \n");
 				conn->transport = transport_shmem;
 				conn->shmem.local_rank = i;
 #else

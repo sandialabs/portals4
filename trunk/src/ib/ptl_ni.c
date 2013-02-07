@@ -204,6 +204,8 @@ static int create_tables(ni_t *ni)
 		return PTL_NO_SPACE;
 	}
 
+	ptl_info("mapping table: \n");
+
 	for (i = 0; i < map_size; i++) {
 		entry_t *entry = &ni->logical.rank_table[i];
 
@@ -219,6 +221,10 @@ static int create_tables(ni_t *ni)
 		conn->sin.sin_family = AF_INET;
 		conn->sin.sin_addr.s_addr = nid_to_addr(entry->nid);
 		conn->sin.sin_port = pid_to_port(entry->pid);
+#if WITH_TRANSPORT_UDP
+//		conn->sin.sin_port = entry->pid;
+		ptl_info("entry: %i, ADDR: %s PID: %i \n",i,inet_ntoa(conn->sin.sin_addr),(entry->pid));
+#endif
 	}
 
 	return PTL_OK;
@@ -496,6 +502,8 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 		goto err2;
 	}
 
+
+
 	if (transports.local.SetMap) {
 		err = transports.local.SetMap(ni, map_size, mapping);
 		if (err) {
@@ -503,6 +511,7 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 			goto err2;
 		}
 	}
+
 
 #if WITH_TRANSPORT_UDP
 	PtlSetMap_udp(ni, map_size, mapping);
