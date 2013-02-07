@@ -400,6 +400,7 @@ static int tgt_start(buf_t *buf)
 		buf->event_mask |= XT_REPLY_EVENT;
 		break;
 	default:
+		WARN();
 		return STATE_TGT_ERROR;
 	}
 
@@ -420,6 +421,8 @@ static int tgt_start(buf_t *buf)
 	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
 
 	buf->conn = get_conn(ni, ni->id);
+//	if (buf->conn->transport.type != CONN_TYPE_UDP)
+//		conn_put(buf->conn);
 #endif
 #if !WITH_TRANSPORT_UDP
 	buf->conn = get_conn(ni, initiator);
@@ -797,13 +800,15 @@ static int tgt_get_length(buf_t *buf)
 			  PTL_ME_EVENT_UNLINK_DISABLE));
 
 #if WITH_TRANSPORT_UDP
-	if (atomic_read((atomic_t *)&ni->udp.self_recv) <= 0){
+	if (buf->conn->transport.type == CONN_TYPE_UDP){
+		if (atomic_read((atomic_t *)&ni->udp.self_recv) <= 0){
 #endif
 		/* initialize buf->cur_loc_iov_index/off and buf->start */
 		err = init_local_offset(buf);
 		if (err)
 			return STATE_TGT_ERROR;
 #if WITH_TRANSPORT_UDP
+		}
 	}
 #endif
 	/* if we are already connected to the initiator skip wait_conn */
@@ -812,7 +817,8 @@ static int tgt_get_length(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	//REG: UDP needs to connect earlier than this, so it should always be connected at this point
-	return STATE_TGT_DATA;
+	if (buf->conn->transport.type == CONN_TYPE_UDP)
+		return STATE_TGT_DATA;
 #endif
 
 	/* we need a connection if we are sending an ack/reply
@@ -1712,8 +1718,10 @@ static int tgt_send_reply(buf_t *buf)
 
 	rep_buf->dest = buf->dest;
 #if WITH_TRANSPORT_UDP
-	ptl_info("address that requested reply: %s:%i \n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port));
-	rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
+	if (buf->conn->transport.type == CONN_TYPE_UDP){
+		ptl_info("address that requested reply: %s:%i \n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port));
+		rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
+	}
 #endif
 	rep_buf->conn = buf->conn;
 
@@ -2011,11 +2019,11 @@ int process_tgt(buf_t *buf)
 			buf->tgt_state = STATE_TGT_DONE;
 			pthread_mutex_unlock(&buf->mutex);
 #if WITH_TRANSPORT_UDP
-			//need this to prevent freeing the buffer if it is a self send
 			ni_t *ni = obj_to_ni(buf);
-			if (atomic_read(&ni->udp.self_recv) == 0)	
-#endif	
-			buf_put(buf);		/* match buf_alloc */
+                        if (atomic_read(&ni->udp.self_recv) == 0)
+#endif			
+			buf_put(buf);   /* match buf_alloc */
+			
 
 			return err;
 		case STATE_TGT_DONE:

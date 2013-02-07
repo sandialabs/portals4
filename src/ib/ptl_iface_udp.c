@@ -447,7 +447,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
 	ptl_info("setting ni->id.phys.nid = %x\n", ni->id.phys.nid);
 
-        ptl_info("id.phys.pid = %x\n",ni->id.phys.pid);
+        ptl_info("id.phys.pid = %i\n",ni->id.phys.pid);
 
 	/* Create a socket to be used for the transport. All connections
 	 * will use it. */
@@ -503,7 +503,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	//set NI pid and nid
 	ni->id.phys.pid = port_to_pid(ni->iface->udp.sin.sin_port);
   	ni->id.phys.nid = addr_to_nid((struct sockaddr_in *)&ni->iface->udp.sin);	
-	ptl_info("NI PID set to: %i NID: %i ni: %p\n",ni->id.phys.pid, ni->id.phys.nid, ni);
+	ptl_info("NI PID set to: %x NID: %i ni: %p\n",ni->id.phys.pid, ni->id.phys.nid, ni);
 
 
         ptl_info("UDP bound to socket: %i port: %i reqport: %i address: %s \n",ni->udp.s,ntohs(ni->iface->udp.sin.sin_port),port,inet_ntoa(ni->iface->udp.sin.sin_addr));

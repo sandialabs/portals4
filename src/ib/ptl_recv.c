@@ -219,7 +219,11 @@ static int recv_packet(buf_t *buf)
 {
 #if WITH_TRANSPORT_UDP
 	//with UDP we must reset this pointer to the data location on the local machine
-	buf->data = &buf->internal_data;
+	conn_t *conn;
+	conn = get_conn(buf->obj.obj_ni, buf->obj.obj_ni->id);
+	if (conn->transport.type == CONN_TYPE_UDP)
+	    buf->data = &buf->internal_data;
+	conn_put(conn);
 #endif
 	struct hdr_common *hdr = (struct hdr_common *)buf->data;
 
@@ -269,7 +273,8 @@ static int recv_packet(buf_t *buf)
 	
  //REG: TODO case for UDP
 #if WITH_TRANSPORT_UDP
-		ptl_info("State machine, handling received UDP message\n");
+	if (buf->conn->transport.type == CONN_TYPE_UDP)	
+	ptl_info("State machine, handling received UDP message\n");
 
 #endif
 }
@@ -365,6 +370,11 @@ static int recv_init(PPEGBL buf_t *buf)
 	init_buf->recv_buf = buf;
 
 #if WITH_TRANSPORT_UDP	
+	conn_t *conn;
+        conn = get_conn(buf->obj.obj_ni, buf->obj.obj_ni->id);
+        
+	if (conn->transport.type == CONN_TYPE_UDP){
+	ptl_info("udp connection processing \n");
 	ni_t * ni = obj_to_ni(buf);
 
 	if (atomic_read(&ni->udp.self_recv) > 0){
@@ -374,12 +384,18 @@ static int recv_init(PPEGBL buf_t *buf)
 		}
 	}
 	else{
+		err = process_init(init_buf);
+	}
+	}else{
 #endif
 		/* Note: process_init must drop recv_buf, so buf will not be valid
 		 * after the call. */
+		ptl_info("start processing \n");
 		err = process_init(init_buf);
 #if WITH_TRANSPORT_UDP
 	}
+	
+        conn_put(conn);
 #endif
 
 	if (err)
@@ -449,6 +465,7 @@ static void process_recv_rdma(ni_t *ni, buf_t *buf)
 	while(1) {
 		ptl_info("tid:%lx buf:%p: state = %s\n",
 				 pthread_self(), buf, recv_state_name[state]);
+
 		switch (state) {
 		case STATE_RECV_SEND_COMP:
 			state = send_comp(buf);
@@ -786,6 +803,7 @@ void process_recv_mem(ni_t *ni, buf_t *buf)
 		ptl_info("tid:%lx buf:%p: recv state local = %s\n",
 				 (long unsigned int)pthread_self(), buf,
 				   recv_state_name[state]);
+		
 		switch (state) {
 		case STATE_RECV_PACKET:
 			state = recv_packet(buf);
