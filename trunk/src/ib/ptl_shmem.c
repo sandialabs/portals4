@@ -21,6 +21,10 @@ static int shmem_send_message(buf_t *buf, int from_init)
 
 	buf->type = BUF_SHMEM_SEND;
 
+	if (buf->mem_buf) {
+		buf->dest.shmem.local_rank = buf->mem_buf->shmem.index_owner;
+	}
+	
 	buf->shmem.index_owner = buf->obj.obj_ni->mem.index;
 
 	shmem_enqueue(buf->obj.obj_ni, buf,

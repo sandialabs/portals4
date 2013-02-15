@@ -1717,6 +1717,14 @@ static int tgt_send_reply(buf_t *buf)
 	}
 
 	rep_buf->dest = buf->dest;
+
+#if WITH_TRANSPORT_SHMEM
+	if (buf->conn->transport.type == CONN_TYPE_SHMEM)
+		if (!(buf->mem_buf->shmem.index_owner == buf->conn->shmem.local_rank)){
+			rep_buf->mem_buf = buf->mem_buf;
+		}
+#endif
+
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
 		ptl_info("address that requested reply: %s:%i \n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port));
