@@ -84,7 +84,7 @@ int init_iface_table(gbl_t *gbl)
 	int i;
 	int num_iface = get_param(PTL_MAX_IFACE);
 
-#if WITH_TRANSPORT_SHMEM || IS_PPE
+#if WITH_TRANSPORT_SHMEM || IS_PPE || WITH_TRANSPORT_UDP
 	/* Clip the number of interfaces for shmem.
 	 * Note: Is that really necessary? */
 	num_iface = 1;
@@ -97,6 +97,8 @@ int init_iface_table(gbl_t *gbl)
 			return PTL_NO_SPACE;
 	}
 
+	int current_if_num = 0;
+
 	for (i = 0; i < num_iface; i++) {
 		gbl->iface[i].iface_id = i;
 		gbl->iface[i].id.phys.nid = PTL_NID_ANY;
@@ -106,19 +108,44 @@ int init_iface_table(gbl_t *gbl)
 #if WITH_TRANSPORT_IB
 		/* the interface name is "ib" followed by the interface id
 		 * in the future we may support other RDMA devices */
-		sprintf(gbl->iface[i].ifname, "ib%d", i);
+		sprintf(gbl->iface[i].ifname, "ib%d", current_if_num);
+		current_if_num++;
 #endif
 
 #if WITH_TRANSPORT_UDP
 		/* the interface name is "eth" followed by the interface id */
 		//TODO: for now, we'll assume only loopback connection
-		//sprintf(gbl->iface[i].ifname, "eth%d", i);
+		sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
 
 #ifdef __APPLE__
-                sprintf(gbl->iface[i].ifname, "lo%d",i);
-#else
-		sprintf(gbl->iface[i].ifname, "lo");
+                //sprintf(gbl->iface[i].ifname, "lo%d",i);
+		sprintf(gbl->iface[i].ifname, "en%d", current_if_num);
 #endif
+		//sprintf(gbl->iface[i].ifname, "lo");
+		in_addr_t addr;
+		addr = check_ip_address(gbl->iface[i].ifname);
+	        if (addr == INADDR_ANY) {
+                	ptl_warn("interface %d of %d doesn't have an IPv4 address, searching for valid interface\n",
+                        gbl->iface[i].iface_id,num_iface);
+                	while (addr == INADDR_ANY && current_if_num < 100) {
+				current_if_num++;
+#ifdef __APPLE__
+				sprintf(gbl->iface[i].ifname, "en%d", current_if_num);
+#else
+				sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
+#endif
+				addr = check_ip_address(gbl->iface[i].ifname);
+			};
+			if (current_if_num == 100 && addr == INADDR_ANY){
+				ptl_warn("no valid network device found \n");
+				return PTL_NO_INIT;
+			}
+			else{
+				ptl_warn("valid interface IPv4 address found: %s %i\n",gbl->iface[i].ifname,current_if_num);
+			}	
+                }
+
+
 		gbl->iface[i].udp.connect_s = -1;
 #endif
 
@@ -192,3 +219,39 @@ ni_t *iface_get_ni(iface_t *iface, int ni_type)
 
 	return ni;
 }
+
+/* get an IPv4 address from network device name (e.g. ib0).
+ *
+ * Returns INADDR_ANY on error or if address is not assigned.
+ *
+ * @param[in] ifname The network interface name to use
+ *
+ * @return IPV4 address as an in_addr_t in network byte order
+ */
+in_addr_t check_ip_address(const char *ifname)
+{
+        int fd;
+        struct ifreq devinfo;
+        struct sockaddr_in *sin = (struct sockaddr_in*)&devinfo.ifr_addr;
+        in_addr_t addr;
+
+        fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+        if (fd < 0){
+		ptl_warn("error initializing socket \n");		
+                return INADDR_ANY;
+	}
+
+        strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
+
+        if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0){
+		ptl_warn("got a valid address for: %s \n",devinfo.ifr_name);	
+                addr = sin->sin_addr.s_addr;
+	}
+        else{
+                addr = INADDR_ANY;
+	}
+        close(fd);
+
+        return addr;
+}
+

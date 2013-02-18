@@ -600,6 +600,9 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 
         ptl_info("Creating a connection for PTlSetMap\n");
 	for (i = 0; i < map_size; i++) {
+#if WITH_TRANSPORT_SHMEM	    
+	   if (mapping[i].phys.nid != ni->iface->id.phys.nid) {
+#endif
 		conn_t *conn;
                 
 		conn = get_conn(ni, ni->id);
@@ -610,23 +613,23 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 			return;
 		}
 
-			
-
-#if WITH_TRANSPORT_UDP
-			if (conn->transport.type == NULL); 
-				conn->transport = transport_udp;
+		if (conn->transport.type == CONN_TYPE_UDP); 
+			conn->transport = transport_udp;
 			//ptl_info("connection: %s:%i rank: %i\n",inet_ntoa(conn->sin.sin_addr),htons(conn->sin.sin_port),id.rank);
-#else
-			/* This should never happen */
- 			ptl_error("Creating UDP Map for Non-UDP Transport \n");
-#endif
-			//We are not connected until we've exchanged messages
-			//conn->state = CONN_STATE_CONNECTED;
+		conn->udp.dest_addr.sin_addr.s_addr= nid_to_addr(mapping[i].phys.nid);
+		conn->udp.dest_addr.sin_port = pid_to_port(mapping[i].phys.pid);
+		ptl_info("setmap connection: %s:%i rank: %i\n",inet_ntoa(conn->udp.dest_addr.sin_addr),
+		   htons(conn->udp.dest_addr.sin_port),ni->id.rank);
 
-			conn_put(conn);			/* from get_conn */
+		//We are not connected until we've exchanged messages
+		//conn->state = CONN_STATE_CONNECTED;
+		conn_put(conn);			/* from get_conn */
                 	
 	}
 	ptl_info("Done creating connection for PtlSetMap\n");
+#if WITH_TRANSPORT_SHMEM
+	} //end the check for offnode connections
+#endif
 }
 
 /**
