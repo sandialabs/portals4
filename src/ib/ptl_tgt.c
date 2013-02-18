@@ -680,12 +680,16 @@ found_one:
 		 * on the unexpected list. So sever the connection between the
 		 * two buffers right now to avoid races with MEAppend() and
 		 * sending that ack. */
+#if WITH_TRANSPORT_SHMEM
 		if(buf->conn->transport.type == CONN_TYPE_SHMEM){
+#endif
 			if (buf->data != buf->internal_data) {
 				memcpy(buf->internal_data, buf->data, buf->length);
 				buf->data = buf->internal_data;
 			}
+#if WITH_TRANSPORT_SHMEM
 		}
+#endif
 #endif
 	}
 
@@ -1573,9 +1577,15 @@ static int tgt_send_ack(buf_t *buf)
 
 	}
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	else if ((buf->mem_buf) && (buf->conn->transport.type == CONN_TYPE_SHMEM)) {
+	else if (buf->mem_buf) {
+#if WITH_TRANSPORT_SHMEM
+		if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
+#endif
 		ack_buf = buf->mem_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
+#if WITH_TRANSPORT_SHMEM
+		}
+#endif
 	}
 #endif
 	else {
