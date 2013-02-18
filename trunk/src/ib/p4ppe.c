@@ -5,6 +5,7 @@
  */
 
 #include "ptl_loc.h"
+#include "p4ppe.h"
 
 #include <getopt.h>
 #include <sys/un.h>
@@ -1533,6 +1534,7 @@ struct transport_ops transport_local_ppe = {
 	.SetMap = PtlSetMap_mem,
 };
 
+
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
 	ev_break(evl.loop, EVBREAK_ALL);
@@ -1548,72 +1550,11 @@ static void sig_terminate(int signum)
 	ev_async_send(evl.loop, &stop_event_loop);
 }
 
-static void usage(const char *name)
-{
-	printf("  Portals 4 Process Engine\n\n");
-	printf("  Usage:\n");
-	printf("  %s [OPTIONS]\n\n", name);
-	printf("  Options are:\n");
-	printf("    -n, --nppebufs=NUM     number of PPE buffers to create (default=%d)\n",
-		   ppe.ppebuf.num);
-	printf("    -p, --nprogthreads=NUM number of processing threads to create (default=%d)\n",
-		   ppe.num_prog_threads);
-	printf("    -h, --help             displays this message\n");
-	printf("\n");
-}
-
-int main(int argc, char *argv[])
+int
+ptl_run(int num_bufs, int num_threads)
 {
 	int err;
 	int i;
-	int c;
-
-	/* Set some default values. */
-	ppe.ppebuf.num = 1000;
-	ppe.num_prog_threads = 1;
-
-	while (1) {
-		int option_index;
-		static struct option long_options[] = {
-			{"nppebufs", 1, 0, 'n'},
-			{"nprogthreads", 1, 0, 'p'},
-			{"help", 0, 0, 'h' },
-			{0, 0, 0, 0}
-		};
-
-		c = getopt_long(argc, argv, "n:p:h",
-                        long_options, &option_index);
-
-		if (c == -1)
-			break;
-
-		switch (c) {
-		case 'n':
-			ppe.ppebuf.num = atoi(optarg);
-			if (ppe.ppebuf.num < 1) {
-				ptl_warn("Invalid argument value for nppebufs\n");
-				return 1;
-			}
-			break;
-
-		case 'p':
-			ppe.num_prog_threads = atoi(optarg);
-			if (ppe.num_prog_threads < 1 || ppe.num_prog_threads>MAX_PROGRESS_THREADS) {
-				ptl_warn("Invalid argument value for nprogthreads\n");
-				return 1;
-			}
-			break;
-
-		case 'h':
-			usage(argv[0]);
-			return 1;
-			break;
-
-		default:
-			ptl_warn("Invalid option %s\n", argv[option_index]);
-			return 1;
-		}
-	}
 
 	/* Misc initializations. */
 	err = misc_init_once();
@@ -1625,8 +1566,10 @@ int main(int argc, char *argv[])
 	if (err)
 		return err;
 
+#ifndef HAVE_KITTEN
 	/* Create the event loop thread. */
 	evl_init(&evl);
+#endif
 
 	/* Setup the PPE. */
 	err = init_ppe();
@@ -1649,4 +1592,6 @@ int main(int argc, char *argv[])
 	evl_run(&evl);
 
 	//todo: on shutdown, we might want to cleanup
+
+        return 0;
 }

@@ -114,11 +114,18 @@ libportals_ib_la_SOURCES = \
 	ptl_queue.h \
 	ptl_xpmem.h
 
+if !HAVE_KITTEN
 bin_PROGRAMS = p4ppe
 p4ppe_CPPFLAGS = -DIS_PPE -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS) $(XPMEM_CPPFLAGS)
-p4ppe_LDADD = $(ev_LIBS) $(ofed_LIBS) $(XPMEM_LIBS)
-p4ppe_LDFLAGS = $(ev_LDFLAGS) $(ofed_LDFLAGS) $(XPMEM_LDFLAGS)
-p4ppe_SOURCES = \
+p4ppe_LDADD = libportals_ppe.la
+p4ppe_SOURCES = p4ppe_main.c
+endif
+
+lib_LTLIBRARIES = libportals_ppe.la
+libportals_ppe_la_CPPFLAGS = -DIS_PPE -I$(top_srcdir)/include $(ev_CPPFLAGS) $(ofed_CPPFLAGS) $(XPMEM_CPPFLAGS)
+libportals_ppe_la_LDFLAGS = -static $(ev_LDFLAGS) $(ofed_LDFLAGS) $(XPMEM_LDFLAGS)
+libportals_ppe_la_LIBADD = $(ev_LIBS) $(ofed_LIBS) $(XPMEM_LIBS)
+libportals_ppe_la_SOURCES = \
 	p4ppe.c \
 	p4ppe.h \
 	ptl_atomic.c \
@@ -181,15 +188,18 @@ p4ppe_SOURCES = \
 	ptl_xpmem.h \
 	tree.h
 
+portals4_HEADERS = p4ppe.h
+portals4dir = $(includedir)/portals4
+
 if WITH_TRANSPORT_IB
-p4ppe_SOURCES += \
+libportals_ppe_la_SOURCES += \
 	ptl_rdma.c \
 	ptl_iface_ib.c \
 	ummunotify.h
 endif
 
 if WITH_TRANSPORT_UDP
-p4ppe_SOURCES += \
+libportals_ppe_la_SOURCES += \
 	ptl_iface_udp.c \
 	ptl_udp.c
 endif

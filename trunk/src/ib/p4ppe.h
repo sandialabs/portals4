@@ -90,6 +90,8 @@ struct ppe {
 	gbl_t gbl;	
 };
 
+int ptl_run(int num_bufs, int num_threads);
+
 #endif	/* IS_PPE */
 
 #endif /* PTL_P4PPE_H */

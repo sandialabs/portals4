@@ -96,16 +96,6 @@ AC_ARG_ENABLE([transport-udp],
   [AS_HELP_STRING([--enable-transport-udp],
     [Use UDP for remote communication.  Will only be chosen if IB is not built. Experimental. (default: no)])])
 
-AC_ARG_ENABLE([ppe],
-  [AS_HELP_STRING([--enable-ppe],
-    [Enable process-offload engine for Portals.  Experimental.  (default: disabled)])])
-AS_IF([test "$enable_ppe" == "yes"],
-  [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])])
-AS_IF([test "$enable_ppe" == "yes"],
-  [AC_DEFINE([IS_PPE], [1], [Define to enable PPE])])
-AM_CONDITIONAL(WITH_PPE, test "x$enable_ppe" == xyes)
-AM_CONDITIONAL(IS_PPE, test "x$enable_ppe" == xyes)
-
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
     [Backward compatibility option for --enable-transport-shmem.])],
@@ -121,10 +111,19 @@ AC_ARG_ENABLE([ib-udp],
     [Backward compatibility option for --enable-transport-udp.])],
   [enable_transport_udp=${enable_ib_udp}])
 
+AC_ARG_ENABLE([ppe],
+  [AS_HELP_STRING([--enable-ppe],
+    [Enable process-offload engine for Portals.  Experimental.  (default: disabled)])])
+AS_IF([test "$enable_ppe" == "yes"],
+  [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])
+   enable_transport_shmem=no])
+AM_CONDITIONAL(WITH_PPE, test "x$enable_ppe" == xyes)
+
 AC_ARG_ENABLE([kitten],
   [AS_HELP_STRING([--enable-kitten],
     [Enable support for the Kitten OS (default: disabled)])],
   [AC_DEFINE([HAVE_KITTEN], [1], [Defined to 1 if kitten support requested])])
+AM_CONDITIONAL([HAVE_KITTEN], [test "$enable_kitten" = "yes"])
 
 ## ------------------- ##
 ## Checks for programs ##
@@ -268,7 +267,7 @@ AS_IF([test "x$enable_transport_shmem" != "xno" -a "x$enable_ppe" != "xyes"],
       [transport_shmem="no"])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$transport_shmem" == "xyes")
 
-AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no"],
+AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no" -a "$enable_ppe" = "no"],
   [AC_MSG_ERROR([No transport found.])])
 
 AS_IF([test "$active_remote_transport" == "ib"],
@@ -332,7 +331,7 @@ AC_CONFIG_FILES([Makefile
                  doc/Makefile
                  include/Makefile
                  src/Makefile
-                 src/ib/Makefile
+		 src/ib/Makefile
 		 src/runtime/Makefile
                  test/Makefile
                  test/sfw/Makefile
