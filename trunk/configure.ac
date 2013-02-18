@@ -255,11 +255,14 @@ AS_IF([test "$active_remote_transport" == ""],
          [active_remote_transport="udp"])])
 
 SANDIA_DETECT_KNEM()
-AS_IF([test "$enable_transport_shmem" != "no" -a "$enable_ppe" != "yes"],
+# Back to remote transport only until remote+SHMEM is fixed
+AS_IF([test "x$active_remote_transport" != "x" -a "x$enable_transport_shmem" = "x"],
+      [enable_transport_shmem=no])
+AS_IF([test "x$enable_transport_shmem" != "xno" -a "x$enable_ppe" != "xyes"],
       [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
        transport_shmem="yes"],
       [transport_shmem="no"])
-AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "$transport_shmem" == "yes")
+AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$transport_shmem" == "xyes")
 
 AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no"],
   [AC_MSG_ERROR([No transport found.])])
