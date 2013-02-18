@@ -83,4 +83,6 @@ iface_t *get_iface(struct gbl *gbl, ptl_interface_t iface_id);
 
 struct ni *iface_get_ni(iface_t *iface, int ni_type);
 
+in_addr_t check_ip_address(const char *ifname);
+
 #endif /* PTL_IFACE_H */

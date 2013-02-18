@@ -681,13 +681,15 @@ found_one:
 		 * two buffers right now to avoid races with MEAppend() and
 		 * sending that ack. */
 #if WITH_TRANSPORT_SHMEM
-		if(buf->conn->transport.type == CONN_TYPE_SHMEM){
+		if (buf->conn->transport.type == CONN_TYPE_SHMEM){
+#else if IS_PPE
+		if (buf->conn->transport.type == CONN_TYPE_MEM){
 #endif
 			if (buf->data != buf->internal_data) {
 				memcpy(buf->internal_data, buf->data, buf->length);
 				buf->data = buf->internal_data;
 			}
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 		}
 #endif
 #endif
@@ -1580,10 +1582,14 @@ static int tgt_send_ack(buf_t *buf)
 	else if (buf->mem_buf) {
 #if WITH_TRANSPORT_SHMEM
 		if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
+#else if IS_PPE
+		if (buf->conn->transport.type == CONN_TYPE_MEM) {
 #endif
+
+
 		ack_buf = buf->mem_buf;
 		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
-#if WITH_TRANSPORT_SHMEM
+#if WITH_TRANSPORT_SHMEM || IS_PPE
 		}
 #endif
 	}

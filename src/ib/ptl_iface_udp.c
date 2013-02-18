@@ -261,7 +261,7 @@ static void process_udp_connect(EV_P_ ev_io *w, int revents)
  *
  * @return IPV4 address as an in_addr_t in network byte order
  */
-static in_addr_t get_ip_address(const char *ifname)
+in_addr_t get_ip_address(const char *ifname)
 {
 	int fd;
 	struct ifreq devinfo;
@@ -274,8 +274,7 @@ static in_addr_t get_ip_address(const char *ifname)
 
 	strncpy(devinfo.ifr_name, ifname, IFNAMSIZ);
 
-	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0 &&
-	    sin->sin_family == AF_INET)
+	if (ioctl(fd, SIOCGIFADDR, &devinfo) == 0)
 		addr = sin->sin_addr.s_addr;
 	else
 		addr = INADDR_ANY;
