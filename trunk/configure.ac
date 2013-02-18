@@ -121,6 +121,10 @@ AC_ARG_ENABLE([ib-udp],
     [Backward compatibility option for --enable-transport-udp.])],
   [enable_transport_udp=${enable_ib_udp}])
 
+AC_ARG_ENABLE([kitten],
+  [AS_HELP_STRING([--enable-kitten],
+    [Enable support for the Kitten OS (default: disabled)])],
+  [AC_DEFINE([HAVE_KITTEN], [1], [Defined to 1 if kitten support requested])])
 
 ## ------------------- ##
 ## Checks for programs ##
