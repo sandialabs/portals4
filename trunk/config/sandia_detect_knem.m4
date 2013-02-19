@@ -12,6 +12,10 @@ AC_ARG_WITH([knem],
 			[knem_softfail=no],
 			[with_knem=yes
 			 knem_softfail=yes])
+
+  SANDIA_CHECK_PATH([$with_knem], [], [AC_MSG_ERROR([--with-knem option must be an absolute path])])
+
+
 saved_CPPFLAGS="$CPPFLAGS"
 AS_IF([test "x$with_knem" != xno],[
 knem_happy=yes

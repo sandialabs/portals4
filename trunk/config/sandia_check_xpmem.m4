@@ -12,6 +12,8 @@ AC_DEFUN([SANDIA_CHECK_XPMEM], [
 
   AS_IF([test "$with_xpmem" = "no"], [happy=no], [happy=yes])
 
+  SANDIA_CHECK_PATH([$with_xpmem], [], [AC_MSG_ERROR([--with-xpmem option must be an absolute path])])
+
   XPMEM_CPPFLAGS=
   XPMEM_LDFLAGS=
   XPMEM_LIBS="-lxpmem"
