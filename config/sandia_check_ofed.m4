@@ -10,6 +10,8 @@ AC_DEFUN([SANDIA_CHECK_OFED], [
     [AS_HELP_STRING([--with-ofed=[path]],
        [Location of OFED library])])
 
+  SANDIA_CHECK_PATH([$with_ofed], [], [AC_MSG_ERROR([--with-ofed option must be an absolute path])])
+
   saved_CPPFLAGS="$CPPFLAGS"
   saved_LDFLAGS="$LDFLAGS"
   saved_LIBS="$LIBS"

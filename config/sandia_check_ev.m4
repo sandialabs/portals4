@@ -34,6 +34,8 @@ AC_DEFUN([SANDIA_CHECK_EV], [
     [AS_HELP_STRING([--with-ev=[path]],
        [Location of EV library])])
 
+  SANDIA_CHECK_PATH([$with_ev], [], [AC_MSG_ERROR([--with-ev option must be an absolute path])])
+
   AS_IF([test "$with_ev" != "no"],
     [AS_IF([test ! -z "$with_ev" -a "$with_ev" != "yes"],
        [check_ev_dir="$with_ev"])

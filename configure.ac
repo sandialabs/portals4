@@ -79,7 +79,7 @@ AS_IF([test "x$enable_register_on_bind" == xyes],
 
 AC_ARG_ENABLE([qlogic],
   [AS_HELP_STRING([--enable-qlogic],
-    [Use Qlogic InfiniPath Hardware of IB communication. (default: no)])])]
+    [Use Qlogic InfiniPath Hardware of IB communication. (default: no)])])
 AS_IF([test "x$enable_qlogic" == "xyes"],
   [AC_DEFINE([WITH_QLOGIC], [1], [Define to enable Qlogic])])
 AM_CONDITIONAL(WITH_QLOGIC, test "x$enable_qlogic" == xyes)
