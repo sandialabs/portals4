@@ -152,6 +152,16 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 				return NULL;
 			}
 
+#if IS_PPE
+			//need to connect local processes over shared memory
+			if (conn->id.phys.nid == ni->iface->id.phys.nid) {
+				if (get_param(PTL_ENABLE_MEM)) {
+					conn->transport = transport_mem;
+					conn->state = CONN_STATE_CONNECTED;
+				}
+			}
+#endif
+
 			conn->id = id;
 
 			/* Get the IP address from the NID. */

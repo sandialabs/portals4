@@ -243,10 +243,12 @@ static int prepare_req(buf_t *buf)
 	hdr->roffset = cpu_to_le64(buf->roffset);
 
 #if IS_PPE
-	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
-	hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
-	hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
-	hdr->h1.hash = cpu_to_le32(ni->mem.hash);
+	if (ni->options & PTL_NI_PHYSICAL){
+		hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+		hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+		hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+		hdr->h1.hash = cpu_to_le32(ni->mem.hash);
+	}
 #endif
 
 	buf->length = sizeof(req_hdr_t);
