@@ -353,6 +353,7 @@ static int init_local_offset(buf_t *buf)
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
 		buf->start = me->start + buf->moffset;
+		ptl_info("buf start determined to be: %x \n",buf->start);
 	}
 
 	return PTL_OK;
@@ -419,10 +420,17 @@ static int tgt_start(buf_t *buf)
 	ptl_info("initiator nid: %i pid: %i \n",hdr->src_nid,hdr->src_pid);
 	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
 	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
+	ptl_info("buf start: %x \n",buf->start);
+
+	//TODO make the hdr frm the sender send these in network order;
+	initiator.phys.nid = hdr->src_nid;
+	initiator.phys.pid = hdr->src_pid;
 
 	buf->conn = get_conn(ni, ni->id);
-//	if (buf->conn->transport.type != CONN_TYPE_UDP)
-//		conn_put(buf->conn);
+	if (buf->conn->transport.type != CONN_TYPE_UDP) {
+		conn_put(buf->conn);
+		buf->conn = get_conn(ni, initiator);
+	}
 #endif
 #if !WITH_TRANSPORT_UDP
 	buf->conn = get_conn(ni, initiator);
@@ -815,6 +823,11 @@ static int tgt_get_length(buf_t *buf)
 			return STATE_TGT_ERROR;
 #if WITH_TRANSPORT_UDP
 		}
+	}
+	else {
+		err = init_local_offset(buf);
+		if (err)
+			return STATE_TGT_ERROR;
 	}
 #endif
 	/* if we are already connected to the initiator skip wait_conn */

@@ -374,8 +374,8 @@ static int recv_init(PPEGBL buf_t *buf)
         conn = get_conn(buf->obj.obj_ni, buf->obj.obj_ni->id);
         
 	if (conn->transport.type == CONN_TYPE_UDP){
-	ptl_info("udp connection processing \n");
-	ni_t * ni = obj_to_ni(buf);
+	  ptl_info("udp connection processing \n");
+	  ni_t * ni = obj_to_ni(buf);
 
 	if (atomic_read(&ni->udp.self_recv) > 0){
 		if (hdr->h1.operation == OP_CT_ACK || OP_ACK || OP_OC_ACK){
@@ -569,13 +569,15 @@ static void progress_thread_udp(ni_t *ni)
 {
 //#if WITH_TRANSPORT_SHMEM
 	/* Socket connection.*/
+	
 	if (ni->udp.dest_addr && ni->udp.map_done != 0) {
+
 		int err;
 		buf_t* udp_buf;
 
 		udp_buf = udp_receive(ni);
                 if (&udp_buf->mutex == NULL){
-		  pthread_mutex_init(&udp_buf->mutex,NULL);
+		 // pthread_mutex_init(&udp_buf->mutex,NULL);
 		}
 	
                 if (udp_buf != NULL){
@@ -905,7 +907,7 @@ static void *progress_thread(void *arg)
 
 	while(!ni->catcher_stop
 #if WITH_TRANSPORT_SHMEM
-		  || atomic_read(&ni->sbuf_pool.count)
+		//  || atomic_read(&ni->sbuf_pool.count)
 #endif
 		  ) {
 

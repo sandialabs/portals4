@@ -262,6 +262,7 @@ ptl_size_t copy_mem_to_mem(ni_t *ni, data_dir_t dir, struct mem_iovec *remote_io
 /* UDP transport. */
 int init_iface_udp(iface_t *iface);
 int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni);
+void cleanup_udp(ni_t *ni);
 
 #if WITH_TRANSPORT_UDP
 void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,

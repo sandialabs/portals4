@@ -449,6 +449,7 @@ static int send_req(buf_t *buf)
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 	if ((buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM) ||
 		(buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)) {
+		ptl_info("add to noknem list \n");
 		ni_t *ni = obj_to_ni(buf);
 
 		PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
@@ -981,10 +982,12 @@ static int reply_event(buf_t *buf)
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
 		ptl_info("reply to address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
 		buf->udp = buf->recv_buf->udp;
+		
 		if (!buf->data_in){
 			void *start = buf->get_md->start + buf->get_offset;
 			memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
  		}
+		ptl_info("CTs local:%p recv:%p \n",buf->get_ct,buf->recv_buf->ct);
 	}
 #endif	
 
@@ -1059,7 +1062,7 @@ static void cleanup(buf_t *buf)
 //	if (atomic_read(&buf->conn->obj.obj_ref.ref_cnt) < 1)
 #endif
 	
-//	conn_put(buf->conn);
+	conn_put(buf->conn);
 }
 
 /*
