@@ -433,6 +433,13 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
         int port;
 	iface_t *iface = ni->iface;
 
+	//if already initialized
+	if (ni->id.phys.pid = port_to_pid(ni->iface->udp.sin.sin_port)){
+		ptl_warn("attempting to re-initialize the interface \n");
+	 	ni->udp.dest_addr = &iface->udp.sin;	
+		return PTL_OK;
+	}
+
 	ni->udp.s = -1;
 	ni->id.phys.nid = addr_to_nid(&iface->udp.sin);
 
@@ -555,4 +562,12 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		ni->udp.s = -1;
 	}
 	return err;
+}
+
+void cleanup_udp(ni_t *ni){
+
+	//remove address information
+	ni->udp.dest_addr = NULL;
+	//close the socket
+	close(ni->udp.s);
 }

@@ -363,6 +363,8 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
 	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
+	ptl_info("CT Wait start waiting on ct: %p \n",ct);
+
 	err = PtlCTWait_work(&ct->info, threshold, event_p);
 
 	ct_put(ct);
@@ -961,10 +963,11 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
  *
  * @param[in] ct The counting event to update.
  * @param[in] buf The req buf from which to update it.
- * @maram[in] bytes Whether to update evebts or bytes.
+ * @maram[in] bytes Whether to update events or bytes.
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
+	ptl_info("make ct event for: %p\n",ct);
 	if (unlikely(buf->ni_fail))
 		(void)__sync_add_and_fetch(&ct->info.event.failure, 1);
 	else if (likely(bytes == CT_EVENTS))

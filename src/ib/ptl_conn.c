@@ -345,9 +345,6 @@ void destroy_conns(ni_t *ni)
 		/* Destroy active connections. */
 		for (i = 0; i < map_size; i++) {
 			entry_t *entry = &ni->logical.rank_table[i];
-			//Horrible hack, fix any sources of this
-//			if (entry->connect != NULL)
-//			if (atomic_read(&entry->connect->obj.obj_ref.ref_cnt) > 0)
 			destroy_conn(entry->connect);
 			entry->connect = NULL;
 		}

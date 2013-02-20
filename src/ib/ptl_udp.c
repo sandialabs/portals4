@@ -186,6 +186,8 @@ static int do_udp_transfer(buf_t *buf)
 	ptl_size_t to_copy;
 	int err;
 
+	ptl_info("do udp transfer \n");
+
 	if (udp->state != 2)
 		return PTL_OK;
 
@@ -349,7 +351,8 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 	//the buf has data and is not a small message or an ack
 	if (buf->rlength > sizeof(buf_t)){
 		//this means that we have a message that is too large for an immediate send
-		//we must do multiple UDP sends to transfer the whole message
+		//we must send it as a iovec upto the maximum UDP message size (64KB)
+		
 		ptl_info("starting large message send \n");
 		ptl_info("data ptr: %p length: %i \n",buf->transfer.udp.my_iovec.iov_base,(int)buf->transfer.udp.my_iovec.iov_len);
 		int segments;
@@ -735,4 +738,5 @@ struct transport transport_udp = {
 struct transport_ops transport_remote_udp = {
 	.init_iface = init_iface_udp,
 	.NIInit = PtlNIInit_UDP,
+	.NIFini = cleanup_udp,
 };
