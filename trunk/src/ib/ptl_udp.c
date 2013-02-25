@@ -601,14 +601,18 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 {
 	int i;
 
-        ptl_info("Creating a connection for PTlSetMap\n");
+        ptl_info("Creating a connection for PTlSetMapn");
 	for (i = 0; i < map_size; i++) {
 #if WITH_TRANSPORT_SHMEM	    
-	   if (mapping[i].phys.nid != ni->iface->id.phys.nid) {
+	  if (mapping[i].phys.nid != ni->iface->id.phys.nid) {
 #endif
 		conn_t *conn;
-                
-		conn = get_conn(ni, ni->id);
+               
+		ptl_process_t id;
+		id.rank = i;
+ 
+		ptl_info("set conn for %i \n",id);
+		conn = get_conn(ni, id);
 		if (!conn) {
 			/* It's hard to recover from here. */
 			WARN();
@@ -622,13 +626,13 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size, const ptl_process_t *mapping)
 		conn->udp.dest_addr.sin_addr.s_addr= nid_to_addr(mapping[i].phys.nid);
 		conn->udp.dest_addr.sin_port = pid_to_port(mapping[i].phys.pid);
 		ptl_info("setmap connection: %s:%i rank: %i\n",inet_ntoa(conn->udp.dest_addr.sin_addr),
-		   htons(conn->udp.dest_addr.sin_port),ni->id.rank);
+		htons(conn->udp.dest_addr.sin_port),id.rank);
 
 		//We are not connected until we've exchanged messages
 		//conn->state = CONN_STATE_CONNECTED;
 		conn_put(conn);			/* from get_conn */
                 	
-	}
+	  }
 	ptl_info("Done creating connection for PtlSetMap\n");
 #if WITH_TRANSPORT_SHMEM
 	} //end the check for offnode connections

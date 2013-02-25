@@ -219,11 +219,8 @@ static int recv_packet(buf_t *buf)
 {
 #if WITH_TRANSPORT_UDP
 	//with UDP we must reset this pointer to the data location on the local machine
-	conn_t *conn;
-	conn = get_conn(buf->obj.obj_ni, buf->obj.obj_ni->id);
-	if (conn->transport.type == CONN_TYPE_UDP)
-	    buf->data = &buf->internal_data;
-	conn_put(conn);
+	if (buf->type == BUF_UDP_RECEIVE)
+	    buf->data = &buf->internal_data;	
 #endif
 	struct hdr_common *hdr = (struct hdr_common *)buf->data;
 

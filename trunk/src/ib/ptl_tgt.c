@@ -431,6 +431,7 @@ static int tgt_start(buf_t *buf)
 		conn_put(buf->conn);
 		buf->conn = get_conn(ni, initiator);
 	}
+	buf->conn->state = CONN_STATE_CONNECTED;
 #endif
 #if !WITH_TRANSPORT_UDP
 	buf->conn = get_conn(ni, initiator);
