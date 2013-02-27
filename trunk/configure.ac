@@ -84,6 +84,13 @@ AS_IF([test "x$enable_qlogic" == "xyes"],
   [AC_DEFINE([WITH_QLOGIC], [1], [Define to enable Qlogic])])
 AM_CONDITIONAL(WITH_QLOGIC, test "x$enable_qlogic" == xyes)
 
+AC_ARG_ENABLE([trigmeops],
+  [AS_HELP_STRING([--enable-me-triggered],
+    [Enable extended (non-standard) triggered operations. Experimental. (default: no)])])
+AS_IF([test "x$enable_me_triggered" == "xyes"],
+  [AC_DEFINE([WITH_TRIG_ME_OPS], [1], [Define to enable triggered match list entry operations])])
+AM_CONDITIONAL(WITH_TRIG_ME_OPS, test "x$enable_me_triggered" == xyes)
+
 AC_ARG_ENABLE([transport-shmem],
   [AS_HELP_STRING([--enable-transport-shmem],
     [Use Shared memory for on-node communication. (default: auto-detect)])])
@@ -117,7 +124,7 @@ AC_ARG_ENABLE([ppe],
 AS_IF([test "$enable_ppe" == "yes"],
   [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])
    enable_transport_shmem=no])
-AM_CONDITIONAL(WITH_PPE, test "x$enable_ppe" == xyes)
+AM_CONDITIONAL([WITH_PPE], [test "$enable_ppe" = "yes"])
 
 AC_ARG_ENABLE([kitten],
   [AS_HELP_STRING([--enable-kitten],

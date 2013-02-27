@@ -3288,7 +3288,35 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
                       ptl_ct_event_t  new_ct,
                       ptl_handle_ct_t trig_ct_handle,
                       ptl_size_t      threshold);
+
+
+/*!
+ * @fn PtlTriggeredMEAppend(PPEGBL ptl_handle_ni_t ni_handle,
+                         ptl_pt_index_t pt_index,
+                         const ptl_me_t *me_init,
+                         ptl_list_t ptl_list, void *user_ptr,
+                         ptl_handle_me_t *me_handle_p,
+                         ptl_handle_ct_t trig_ct_handle,
+                         ptl_size_t threshold)
+ *
+ * @brief  Undocumented Triggered ME operations, not part of the Portals Specs */
+int PtlTriggeredMEAppend(ptl_handle_ni_t ni_handle, 
+			 ptl_pt_index_t pt_index,
+                	 ptl_me_t *me_init, 
+			 ptl_list_t ptl_list, 
+			 void *user_ptr,
+                	 ptl_handle_me_t *me_handle_p, 
+			 ptl_handle_ct_t trig_ct_handle,
+                	 ptl_size_t threshold);
+
+int PtlTriggeredMEUnlink(ptl_handle_me_t me_handle,
+			 ptl_handle_ct_t trig_ct_handle,
+                         ptl_size_t threshold);
+
+
 /*! @} */
+
+
 
 /*************************************
 * Deferred Communication Operations *

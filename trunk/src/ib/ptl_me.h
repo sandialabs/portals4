@@ -26,6 +26,15 @@ struct me {
 	ptl_process_t		id;
 };
 
+/**
+ * @brief Portals triggered ME types
+ */
+
+enum trig_me_op {
+        TRIG_ME_APPEND = 1,
+        TRIG_ME_UNLINK
+};
+
 typedef struct me me_t;
 
 int me_init(void *arg, void *unused);
@@ -125,5 +134,6 @@ static inline ptl_handle_me_t me_to_handle(me_t *me)
 {
 	return (ptl_handle_me_t)me->obj.obj_handle;
 }
+
 
 #endif /* PTL_ME_H */

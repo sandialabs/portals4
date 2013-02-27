@@ -1118,6 +1118,34 @@ static void do_OP_PtlTriggeredCTSet(ppebuf_t *buf)
 									  buf->msg.PtlTriggeredCTSet.threshold);
 }
 
+static void do_OP_PtlTriggeredMEAppend(ppebuf_t *buf)
+{
+        struct client *client = buf->cookie;
+
+        buf->msg.ret = _PtlTriggeredMEAppend(&client->gbl,
+									 buf->msg.PtlTriggeredMEAppend.ni_handle,
+                                                               		 buf->msg.PtlTriggeredMEAppend.pt_index,
+                                                                	 &buf->msg.PtlTriggeredMEAppend.me,
+                                                                	 buf->msg.PtlTriggeredMEAppend.ptl_list,
+                                                                	 buf->msg.PtlTriggeredMEAppend.user_ptr,
+                                                                	 &buf->msg.PtlTriggeredMEAppend.me_handle,
+									 buf->msg.PtlTriggeredMEAppped.trig_ct_handle,
+                                                                         buf->msg.PtlTriggeredMEAppend.threshold);
+}
+
+static void do_OP_PtlMEUnlink(ppebuf_t *buf)
+{
+        struct client *client = buf->cookie;
+
+        buf->msg.ret = _PtlMEUnlink(&client->gbl,
+                                                                buf->msg.PtlMEUnlink.me_handle);
+}
+ 
+
+
+}
+
+
 static void do_OP_PtlGetPhysId(ppebuf_t *buf)
 {
 	struct client *client = buf->cookie;
@@ -1354,6 +1382,8 @@ static struct {
 	ADD_OP(PtlTriggeredGet),
 	ADD_OP(PtlTriggeredPut),
 	ADD_OP(PtlTriggeredSwap),
+	ADD_OP(PtlTriggeredMEAppend),
+	ADD_OP(PtlTriggeredMEUnlink),
 	ADD_OP(PtlStartBundle),
 	ADD_OP(PtlEndBundle),
 };
