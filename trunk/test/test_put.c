@@ -28,9 +28,9 @@
 int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t ni_logical;
+    ptl_handle_ni_t ni_h;
     ptl_process_t   myself;
-    ptl_pt_index_t  logical_pt_index;
+    ptl_pt_index_t  pt_index;
     uint64_t        value;
     ENTRY_T         value_e;
     HANDLE_T        value_e_handle;
@@ -40,6 +40,7 @@ int main(int   argc,
     ptl_ct_event_t ctc;
     int rank;
     int ret;
+    ptl_process_t *procs;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -48,31 +49,45 @@ int main(int   argc,
     rank = libtest_get_rank();
     num_procs = libtest_get_size();
 
+    /* This test only succeeds if we have more than one rank */
     if (num_procs < 2) return 77;
 
+#if LOGICAL
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, NULL, NULL, &ni_logical));
+                              PTL_PID_ANY, NULL, NULL, &ni_h));
+#else
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_PHYSICAL,
+                              PTL_PID_ANY, NULL, NULL, &ni_h));
+#endif
 
-    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
-                              libtest_get_mapping(ni_logical)));
+    CHECK_RETURNVAL(PtlGetId(ni_h, &myself));
+    procs = libtest_get_mapping(ni_h);
 
-    CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
-                               &logical_pt_index));
-    assert(logical_pt_index == 0);
+#if LOGICAL
+    CHECK_RETURNVAL(PtlSetMap(ni_h, num_procs, procs));
+#endif
+
+    CHECK_RETURNVAL(PtlPTAlloc(ni_h, 0, PTL_EQ_NONE, PTL_PT_ANY,
+                               &pt_index));
+    assert(pt_index == 0);
 
     if (1 == rank) {
         value_e.start  = &value;
         value_e.length = sizeof(uint64_t);
         value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
+ #if LOGICAL == 1
         value_e.match_id.rank = PTL_RANK_ANY;
+ #else
+	value_e.match_id.phys.nid = PTL_NID_ANY;
+	value_e.match_id.phys.pid = PTL_PID_ANY;
+ #endif
         value_e.match_bits    = 1;
         value_e.ignore_bits   = 0;
 #endif
         value_e.options = OPTIONS;
-        CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-        CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
+        CHECK_RETURNVAL(PtlCTAlloc(ni_h, &value_e.ct_handle));
+        CHECK_RETURNVAL(APPEND(ni_h, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                                &value_e_handle));
 
         value = 0;
@@ -82,8 +97,8 @@ int main(int   argc,
         write_md.length    = sizeof(uint64_t);
         write_md.options   = PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_ACK;
         write_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
-        CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
-        CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
+        CHECK_RETURNVAL(PtlCTAlloc(ni_h, &write_md.ct_handle));
+        CHECK_RETURNVAL(PtlMDBind(ni_h, &write_md, &write_md_handle));
 
         value = 0xdeadbeef;
     }
@@ -99,10 +114,13 @@ int main(int   argc,
     } else if (0 == rank) {
         /* write to rank 1 */
         ptl_process_t peer;
-        peer.rank = 1;
-
+#if LOGICAL == 1        
+	peer.rank = 1;
+#else
+        peer = procs[1];
+#endif
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               logical_pt_index, 1, 0, NULL, 0));
+                               pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 2, &ctc));
         assert(ctc.failure == 0);
     }
@@ -118,8 +136,8 @@ int main(int   argc,
         CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
     }
 
-    CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
-    CHECK_RETURNVAL(PtlNIFini(ni_logical));
+    CHECK_RETURNVAL(PtlPTFree(ni_h, pt_index));
+    CHECK_RETURNVAL(PtlNIFini(ni_h));
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();
 

@@ -24,6 +24,8 @@ TESTS = \
 	test_ME_put_self \
 	test_LE_put \
 	test_ME_put \
+        test_LE_put_phys \
+        test_ME_put_phys \
 	test_LE_put_multiple \
 	test_ME_put_multiple \
 	test_LE_put_multiple_large \
@@ -65,14 +67,12 @@ TESTS = \
 	test_ct_ack
 
 EXTRA_TESTS = \
-        test_LE_put_phys \
-        test_ME_put_phys \
 	test_triggered_ME_ops
 
 if WITH_TRIG_ME_OPS
 TESTS += \
 	test_triggered_ME_ops
-endif 
+endif
 
 BENCHMARKS =
 check_PROGRAMS =
