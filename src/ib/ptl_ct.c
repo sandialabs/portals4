@@ -8,7 +8,7 @@
 #include "ptl_timer.h"
 
 /* TODO make these unnecessary by queuing deferred operations */
-static void ct_check(ct_t *ct);
+void ct_check(ct_t *ct);
 static void post_trig_ct(struct buf *buf, ct_t *trig_ct);
 static void do_trig_ct_op(struct buf *buf);
 
@@ -363,8 +363,6 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
 	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	ptl_info("CT Wait start waiting on ct: %p \n",ct);
-
 	err = PtlCTWait_work(&ct->info, threshold, event_p);
 
 	ct_put(ct);
@@ -470,7 +468,7 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
  *
  * @param[in] ct The counting event to check.
  */
-static void ct_check(ct_t *ct)
+void ct_check(ct_t *ct)
 {
 	struct list_head *l;
 	struct list_head *t;
@@ -504,6 +502,31 @@ static void ct_check(ct_t *ct)
 				process_init(buf);
 
 				PTL_FASTLOCK_LOCK(&ct->lock);
+			}
+		} else if (buf->type == BUF_TRIGGERED_ME){
+			if (ct->info.interrupt) {
+                                list_del(l);
+                                atomic_dec(&ct->list_size);
+
+                                PTL_FASTLOCK_UNLOCK(&ct->lock);
+
+                                ct_put(buf->ct);
+                                buf_put(buf);
+
+                                PTL_FASTLOCK_LOCK(&ct->lock);
+                        } else if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
+                                ptl_info("ME operation triggered: %i \n",buf->op);
+				list_del(l);
+                                atomic_dec(&ct->list_size);
+
+                                PTL_FASTLOCK_UNLOCK(&ct->lock);
+				
+                                do_trig_me_op(buf);
+
+                                PTL_FASTLOCK_LOCK(&ct->lock);
+                        }
+			else{
+				ptl_info("ME operation not triggered %i:%i threshold: %i\n",(int)ct->info.event.success,(int)ct->info.event.failure, (int)buf->threshold);
 			}
 		} else {
 			assert(buf->type == BUF_TRIGGERED);
@@ -963,11 +986,10 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
  *
  * @param[in] ct The counting event to update.
  * @param[in] buf The req buf from which to update it.
- * @maram[in] bytes Whether to update events or bytes.
+ * @maram[in] bytes Whether to update evebts or bytes.
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
-	ptl_info("make ct event for: %p\n",ct);
 	if (unlikely(buf->ni_fail))
 		(void)__sync_add_and_fetch(&ct->info.event.failure, 1);
 	else if (likely(bytes == CT_EVENTS))

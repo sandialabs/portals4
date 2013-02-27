@@ -5,6 +5,11 @@
  */
 
 #include "ptl_loc.h"
+#include "ptl_ct.h"
+
+
+static void post_trig_me(buf_t *buf, ct_t *me_ct);
+void do_trig_me_op(buf_t *buf);
 
 /**
  * @brief Initialize a new ME once when created.
@@ -262,6 +267,70 @@ int _PtlMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 }
 
 /**
+ * @brief Append a matching list element to a portals table list using 
+ * Triggered behaviour.
+ *
+ *
+ *
+ */
+int _PtlTriggeredMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
+                ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
+                ptl_handle_me_t *me_handle_p, ptl_handle_ct_t trig_ct_handle, 
+		ptl_size_t threshold)
+{
+	int err;
+	
+	buf_t *buf;
+	ct_t *ct = NULL;
+	ni_t *ni;
+
+	err = gbl_get();
+	if (unlikely(err))
+                goto err0;
+
+	err = to_ni(MYGBL_ ni_handle, &ni);
+	if (unlikely(err))
+		goto err0;	
+
+	err = to_ct(MYGBL_ trig_ct_handle, &ct);
+        if (unlikely(err))
+               goto err0;
+
+#ifndef NO_ARG_VALIDATION
+        if (!ct) {
+                err = PTL_ARG_INVALID;
+                goto err1;
+        }
+#endif
+
+	buf = malloc(sizeof(buf_t));
+
+	buf->user_ptr = user_ptr;
+	buf->ct_threshold = threshold;
+	buf->threshold = threshold;
+	buf->ct = ct;
+	buf->type = BUF_TRIGGERED_ME;
+	buf->me_op = TRIG_ME_APPEND;	
+	buf->pt_index = pt_index;
+	buf->me_init = me_init;
+	buf->ptl_list = (ptl_list_t)ptl_list;
+	buf->me_handle_p = me_handle_p;
+	buf->ni_handle = ni_handle;	
+
+	post_trig_me(buf, ct);	
+
+	ct_put(ct);
+	gbl_put();
+	return PTL_OK;
+
+	err1:
+		gbl_put();
+	err0:
+		return err;
+	
+}
+
+/**
  * @brief Search portals table overflow list for messages that match
  * a matching list entry.
  *
@@ -365,3 +434,120 @@ err0:
 #endif
 	return err;
 }
+
+/* TRIGGERED ME Code Begins */
+
+int _PtlTriggeredMEUnlink(PPEGBL ptl_handle_me_t me_handle,
+		ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
+{
+
+	int err;
+
+        buf_t *buf;
+        ct_t *ct = NULL;
+        ni_t *ni;
+
+        err = gbl_get();
+        if (unlikely(err))
+                goto err0;
+
+        err = to_ct(MYGBL_ trig_ct_handle, &ct);
+        if (unlikely(err))
+               goto err1;
+
+#ifndef NO_ARG_VALIDATION
+        if (!ct) {
+                err = PTL_ARG_INVALID;
+                goto err1;
+        }
+#endif
+
+        buf = malloc(sizeof(buf_t));
+
+        buf->me_handle = me_handle;
+	buf->ct = ct;
+	buf->ct_threshold = threshold;
+	buf->me_op = TRIG_ME_UNLINK;
+	buf->type = BUF_TRIGGERED_ME;
+
+	post_trig_me(buf, ct);
+
+
+        ct_put(ct);
+        gbl_put();
+        return PTL_OK;
+
+        err1:
+                gbl_put();
+        err0:
+                return err;
+
+
+}
+
+/*@brief Perform triggered ME list operation.
+ *
+ * @param[in] buf
+ */
+void do_trig_me_op(buf_t *buf)
+{
+        ct_t *ct = buf->ct;
+
+        /* we're a zombie */
+        if (ct->info.interrupt)
+                goto done;
+
+
+	ptl_info("type of triggered me op is: %i \n",buf->me_op);
+        switch(buf->me_op) {
+        case TRIG_ME_APPEND:
+                _PtlMEAppend(MYGBL_ buf->ni_handle, buf->pt_index,
+                                   buf->me_init, buf->ptl_list, buf->user_ptr,
+                                   buf->me_handle_p);
+		break;
+        case TRIG_ME_UNLINK:
+                _PtlMEUnlink(buf->me_handle);
+                break;
+        default:
+                assert(0);
+        }
+
+done:
+        free(buf);
+}
+
+/**
+ * @brief Add a triggered ME operation to a list or
+ * do it if threshold has already been reached.
+ *
+ * @param[in] buf
+ * @param[in] trig_ct
+ */
+static void post_trig_me(buf_t *buf, ct_t *me_ct)
+{
+        /* Put the buffer on the wait list. */
+        PTL_FASTLOCK_LOCK(&me_ct->lock);
+
+        /* 1st check to see whether the condition is already met. */
+        if ((me_ct->info.event.failure + me_ct->info.event.success) >= buf->threshold) {
+                PTL_FASTLOCK_UNLOCK(&me_ct->lock);
+
+                do_trig_me_op(buf);
+
+        } else {
+                atomic_inc(&me_ct->list_size);
+
+                list_add(&buf->list, &me_ct->trig_list);
+
+                /* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
+                if ((me_ct->info.event.success + me_ct->info.event.failure) >= buf->threshold) {
+                        /* Something arrived while we were adding the buffer. */
+                        PTL_FASTLOCK_UNLOCK(&me_ct->lock);
+                        ct_check(me_ct);
+                } else {
+                        PTL_FASTLOCK_UNLOCK(&me_ct->lock);
+                }
+        }
+}
+
+

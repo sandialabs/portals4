@@ -39,7 +39,8 @@ enum buf_type {
 
 	BUF_INIT,					/* initiator buffer */
 	BUF_TGT,					/* target buffer */
-	BUF_TRIGGERED				/* triggered operation buffer */
+	BUF_TRIGGERED,				/* triggered operation buffer */
+	BUF_TRIGGERED_ME				/*triggered ME operation buffer */
 };
 
 /* Event mask */
@@ -193,9 +194,20 @@ struct buf {
 			ct_t			*ct;		/**< counting event to perform
 										   triggered operation on */
 			ptl_ct_event_t	ct_event;		/**< counting event data for
-											   triggered ct operation */
+										   triggered ct operation */
 			ptl_size_t		threshold;	/**< trigger threshold for
 										   triggered ct operation */
+			
+		};
+		//Pending triggered ME operation info
+		struct {
+			ptl_pt_index_t 		pt_index;
+			ptl_me_t 		*me_init;
+			ptl_list_t 		ptl_list;
+			ptl_handle_me_t 	*me_handle_p;
+			ptl_handle_me_t		me_handle;
+			ptl_handle_ni_t		ni_handle;
+			enum trig_me_op		me_op;
 		};
 	};
 
@@ -251,6 +263,7 @@ struct buf {
                         struct sockaddr_in *dest_addr;
                         /* source address for recv */
                         struct sockaddr_in src_addr;
+			
 		} udp;
 #endif
 

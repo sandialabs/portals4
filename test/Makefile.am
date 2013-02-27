@@ -64,6 +64,16 @@ TESTS = \
 	test_ME_flowctl_norecv \
 	test_ct_ack
 
+EXTRA_TESTS = \
+        test_LE_put_phys \
+        test_ME_put_phys \
+	test_triggered_ME_ops
+
+if WITH_TRIG_ME_OPS
+TESTS += \
+	test_triggered_ME_ops
+endif 
+
 BENCHMARKS =
 check_PROGRAMS =
 
@@ -79,6 +89,13 @@ EXTRA_PROGRAMS = $(BENCHMARKS)
 all: $(TESTS) $(BENCHMARKS)
 
 check_PROGRAMS += $(TESTS)
+
+if WITH_PPE
+ check_PROGRAMS += \
+	test_LE_put_phys \
+        test_ME_put_phys 
+endif
+
 CLEANFILES = $(BENCHMARKS)
 
 THREADS ?= 2
@@ -99,10 +116,16 @@ test_ME_put_self_SOURCES = test_put_self.c
 test_ME_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 test_LE_put_SOURCES = test_put.c
-test_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+test_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DLOGICAL=1
 
 test_ME_put_SOURCES = test_put.c
-test_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+test_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DLOGICAL=1
+
+test_LE_put_phys_SOURCES = test_put.c
+test_LE_put_phys_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DLOGICAL=0
+
+test_ME_put_phys_SOURCES = test_put.c
+test_ME_put_phys_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DLOGICAL=0
 
 test_LE_put_multiple_SOURCES = test_put_multiple.c
 test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256 -DOVERLAP=0
@@ -183,6 +206,9 @@ test_triggered_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
 test_triggered_ME_put_SOURCES = test_triggered_put.c
 test_triggered_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_triggered_ME_ops_SOURCES = test_triggered_me_ops.c
+test_triggered_ME_ops_CPPFLAGS = $(AM_CPP_FLAGS) -DINTERFACE=1
 
 test_triggered_LE_get_SOURCES = test_triggered_get.c
 test_triggered_LE_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
