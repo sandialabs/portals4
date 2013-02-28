@@ -10,8 +10,10 @@
 #include <getopt.h>
 #include <sys/un.h>
 
+#ifndef HAVE_KITTEN
 /* Event loop. */
 struct evl evl;
+#endif
 
 /* Keep global data. */
 static struct ppe ppe;
@@ -142,9 +144,11 @@ static void destroy_client(struct client *client)
 {
 	RB_REMOVE(clients_root, &ppe.clients_tree, client);
 
+#ifndef HAVE_KITTEN
 	ev_io_stop(evl.loop, &client->watcher);
 
 	close(client->s);
+#endif
 
 	/* If the client has crashed, then we should free all its
 	 * ressources. TODO */
@@ -155,35 +159,28 @@ static void destroy_client(struct client *client)
 	free(client);
 }
 
-/* Process a request from a client. */
-static void process_client_msg(EV_P_ ev_io *w, int revents)
+/* Process a client request. */
+static int process_client_msg(struct client *client, union msg_ppe_client *msg)
 {
-	union msg_ppe_client msg;
-	int len;
-	struct client *client = w->data;
-	struct client *client2;
+	struct client *old_client;
 
-	len = recv(client->s, &msg, sizeof(msg), 0);
-	if (len != sizeof(msg)) {
-		destroy_client(client);
-		return;
-	}
-
-	client2 = find_client(msg.req.pid);
-	if (client2) {
+	old_client = find_client(msg->req.pid);
+	if (old_client) {
 		/* If we already have a client with the same PID, the old client
 		 * died and we don't know yet. */
-		destroy_client(client2);
+		destroy_client(old_client);
 	}
 
-	client->pid = msg.req.pid;
-	client->gbl.apid = xpmem_get(msg.req.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+	client->pid = msg->req.pid;
+	client->gbl.apid = xpmem_get(msg->req.segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
+
 	if (client->gbl.apid == -1) {
 		/* That is possible, but should not happen. */
-		msg.rep.ret = PTL_FAIL;
-	} 
-	else if (index_init(&client->gbl) != PTL_OK) {
-		msg.rep.ret = PTL_FAIL;
+		msg->rep.ret = PTL_FAIL;
+		return -1;
+	} else if (index_init(&client->gbl) != PTL_OK) {
+		msg->rep.ret = PTL_FAIL;
+		return -1;
 	} else {
 		/* Designate a progress thread for this client. They are alloted
 		 * on a round-robin fashion. */
@@ -194,12 +191,32 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 
 		RB_INSERT(clients_root, &ppe.clients_tree, client);
 
-		msg.rep.cookie = client;
-		msg.rep.ppebufs_mapping = ppe.comm_pad_mapping;
-		msg.rep.ppebufs_ppeaddr = ppe.comm_pad->ppebuf_slab;
-		msg.rep.queue_index = client->gbl.prog_thread;
-		msg.rep.ret = PTL_OK;
+		msg->rep.cookie = client;
+		msg->rep.ppebufs_mapping = ppe.comm_pad_mapping;
+		msg->rep.ppebufs_ppeaddr = ppe.comm_pad->ppebuf_slab;
+		msg->rep.queue_index = client->gbl.prog_thread;
+		msg->rep.ret = PTL_OK;
 	}
+
+	return 0;
+}
+
+#ifndef HAVE_KITTEN
+
+/* Process a request from a client socket. */
+static void socket_process_client_msg(EV_P_ ev_io *w, int revents)
+{
+	union msg_ppe_client msg;
+	int len;
+	struct client *client = w->data;
+
+	len = recv(client->s, &msg, sizeof(msg), 0);
+	if (len != sizeof(msg)) {
+		destroy_client(client);
+		return;
+	}
+
+	process_client_msg(client, msg);
 
 	if (send(client->s, &msg, sizeof(msg), 0) != sizeof(msg)) {
 		/* The client just died. Whatever. */
@@ -208,7 +225,7 @@ static void process_client_msg(EV_P_ ev_io *w, int revents)
 }
 
 /* Process an incomig connection request. */
-static void process_client_connection(EV_P_ ev_io *w, int revents)
+static void socket_process_client_connection(EV_P_ ev_io *w, int revents)
 {
 	int s;
 
@@ -221,7 +238,7 @@ static void process_client_connection(EV_P_ ev_io *w, int revents)
 			client->s = s;
 
 			/* Add a watcher on this client. */
-			ev_io_init(&client->watcher, process_client_msg, s, EV_READ);
+			ev_io_init(&client->watcher, socket_process_client_msg, s, EV_READ);
 			client->watcher.data = client;
 
 			ev_io_start(evl.loop, &client->watcher);
@@ -236,11 +253,69 @@ static void process_client_connection(EV_P_ ev_io *w, int revents)
 	}
 }
 
+#else
+
+/* Kitten's PCT calls this to manually add a client to the PPE before
+ * the client is actually started. */
+int ppe_add_kitten_client(int pid, void *addr, void *ppe_addr, size_t str_size, char *str)
+{
+	union msg_ppe_client msg;
+	struct client *client;
+	int status;
+
+	msg.req.pid = pid;
+	msg.req.segid = (unsigned long) addr;
+
+	client = calloc(1, sizeof(struct client));
+	if (client == NULL) {
+		WARN();
+		return -1;
+	}
+
+	status = process_client_msg(client, &msg);
+	if (status != 0) {
+		WARN();
+		free(client);
+		return -1;
+	}
+
+	/* Kitten PCT adds this to the client's environment.
+	 * The portals4 "light" library that is linked with
+	 * the client then uses this info to access the PPE. */
+	status = snprintf(str, str_size,
+						"PPE_BASE_ADDR=0x%lx, "
+						"PPE_COOKIE=0x%lx, "
+						"PPE_XPMEM_SOURCE_ADDR=0x%lx, "
+						"PPE_XPMEM_OFFSET=0x%lx, "
+						"PPE_XPMEM_SIZE=0x%lx, "
+						"PPE_XPMEM_SEGID=0x%lx, "
+						"PPE_BUFS_ADDR=0x%lx, "
+						"PPE_QUEUE_INDEX=%d, ",
+						(unsigned long) ppe_addr,
+						(unsigned long) msg.rep.cookie,
+						(unsigned long) msg.rep.ppebufs_mapping.source_addr,
+						(unsigned long) msg.rep.ppebufs_mapping.offset,
+						(unsigned long) msg.rep.ppebufs_mapping.size,
+						(unsigned long) msg.rep.ppebufs_mapping.segid,
+						(unsigned long) msg.rep.ppebufs_ppeaddr,
+						msg.rep.queue_index);
+
+	if ((status < 0) || (status >= str_size)) {
+		WARN();
+		destroy_client(client);
+		free(client);
+		return -1;
+	}
+
+	return 0;
+}
+
+#endif
+
 /* The communication pad for the PPE is only 4KB, and only contains a
  * queue structure. There is no buffers */
 static int init_ppe(void)
 {
-    struct sockaddr_un sockaddr;
 	int err;
 	int i;
 
@@ -249,6 +324,9 @@ static int init_ppe(void)
 	RB_INIT(&ppe.set_tree);
 
 	RB_INIT(&ppe.clients_tree);
+
+#ifndef HAVE_KITTEN
+    struct sockaddr_un sockaddr;
 
 	/* Create the socket on which the client connect to. */
 	if ((ppe.client_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -271,10 +349,11 @@ static int init_ppe(void)
 
 	/* Add a watcher for incoming requests. */
 	ppe.client_watcher.data = NULL;
-	ev_io_init(&ppe.client_watcher, process_client_connection,
+	ev_io_init(&ppe.client_watcher, socket_process_client_connection,
 		   ppe.client_fd, EV_READ);
 
 	EVL_WATCH(ev_io_start(evl.loop, &ppe.client_watcher));
+#endif
 
 	/* Create the PPEBUFs. */
 	err = setup_ppebufs();
@@ -1118,6 +1197,7 @@ static void do_OP_PtlTriggeredCTSet(ppebuf_t *buf)
 									  buf->msg.PtlTriggeredCTSet.threshold);
 }
 
+#ifdef WITH_TRIG_ME_OPS
 static void do_OP_PtlTriggeredMEAppend(ppebuf_t *buf)
 {
         struct client *client = buf->cookie;
@@ -1132,19 +1212,7 @@ static void do_OP_PtlTriggeredMEAppend(ppebuf_t *buf)
 									 buf->msg.PtlTriggeredMEAppped.trig_ct_handle,
                                                                          buf->msg.PtlTriggeredMEAppend.threshold);
 }
-
-static void do_OP_PtlMEUnlink(ppebuf_t *buf)
-{
-        struct client *client = buf->cookie;
-
-        buf->msg.ret = _PtlMEUnlink(&client->gbl,
-                                                                buf->msg.PtlMEUnlink.me_handle);
-}
- 
-
-
-}
-
+#endif
 
 static void do_OP_PtlGetPhysId(ppebuf_t *buf)
 {
@@ -1382,8 +1450,10 @@ static struct {
 	ADD_OP(PtlTriggeredGet),
 	ADD_OP(PtlTriggeredPut),
 	ADD_OP(PtlTriggeredSwap),
+#ifdef WITH_TRIG_ME_OPS
 	ADD_OP(PtlTriggeredMEAppend),
 	ADD_OP(PtlTriggeredMEUnlink),
+#endif
 	ADD_OP(PtlStartBundle),
 	ADD_OP(PtlEndBundle),
 };
@@ -1565,6 +1635,7 @@ struct transport_ops transport_local_ppe = {
 };
 
 
+#ifndef HAVE_KITTEN
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
 	ev_break(evl.loop, EVBREAK_ALL);
@@ -1579,12 +1650,17 @@ static void sig_terminate(int signum)
 	EVL_WATCH(ev_async_start(evl.loop, &stop_event_loop));
 	ev_async_send(evl.loop, &stop_event_loop);
 }
+#endif
 
 int
-ptl_run(int num_bufs, int num_threads)
+ppe_run(int num_bufs, int num_threads)
 {
 	int err;
 	int i;
+
+	/* Stash away PPE config info */
+	ppe.ppebuf.num = num_bufs;
+	ppe.num_prog_threads = num_threads;
 
 	/* Misc initializations. */
 	err = misc_init_once();
@@ -1616,12 +1692,14 @@ ptl_run(int num_bufs, int num_threads)
 		}
 	}
 
+#ifndef HAVE_KITTEN
 	signal(SIGTERM, sig_terminate);
 
 	/* Start the event loop. Does not exit. */
 	evl_run(&evl);
+#endif
 
 	//todo: on shutdown, we might want to cleanup
 
-        return 0;
+	return 0;
 }

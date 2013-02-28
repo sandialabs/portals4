@@ -162,11 +162,14 @@ static void release_ppe_resources(void)
 /* Establish the link with the PPE. */
 static int connect_to_ppe(void)
 {
-	struct sockaddr_un ppe_sock_addr;
 	union msg_ppe_client msg;
-	size_t len;
 
 	ppe.s = -1;
+
+#ifndef HAVE_KITTEN
+
+	struct sockaddr_un ppe_sock_addr;
+	size_t len;
 
 	/* XPMEM the whole memory of that process. */
 	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,
@@ -208,6 +211,50 @@ static int connect_to_ppe(void)
 		WARN();
 		goto exit_fail;
 	}
+
+#else
+
+	/* For Kitten, we already have all the info we need to talk to the PPE in our
+	 * environment. There is no need to do a handshake using sockets. */
+
+	char *p;
+
+	/* The PCT already created our mapping, no need to create one */
+	ppe.segid = -1;
+
+	/* Get the cookie to use when communicating with the PPE */
+	if ((p = getenv("PPE_COOKIE")) != NULL) {
+		msg.rep.cookie = (void *) strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	/* Get the xpmem ppebufs_mapping info */
+	if ((p = getenv("PPE_XPMEM_SOURCE_ADDR")) != NULL) {
+		msg.rep.ppebufs_mapping.source_addr = (void *) strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	if ((p = getenv("PPE_XPMEM_OFFSET")) != NULL) {
+		msg.rep.ppebufs_mapping.offset = strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	if ((p = getenv("PPE_XPMEM_SIZE")) != NULL) {
+		msg.rep.ppebufs_mapping.size = strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	if ((p = getenv("PPE_XPMEM_SEGID")) != NULL) {
+		msg.rep.ppebufs_mapping.segid = strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	/* Get the address of the PPE buffers, from the PPE's perspective */
+	if ((p = getenv("PPE_BUFS_ADDR")) != NULL) {
+		msg.rep.ppebufs_ppeaddr = (void *) strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+	/* Get the PPE queue index that we have been assigned */
+	if ((p = getenv("PPE_QUEUE_INDEX")) != NULL) {
+		msg.rep.queue_index = strtoul(p, NULL, 0);
+	} else { WARN(); goto exit_fail; }
+
+#endif
 
 	ppe.ppe_comm_pad = map_segment(&msg.rep.ppebufs_mapping);
 	if (ppe.ppe_comm_pad == NULL) {

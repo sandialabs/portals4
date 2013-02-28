@@ -12,11 +12,13 @@ struct client
 {
 	RB_ENTRY(client) entry;
 
+#ifndef HAVE_KITTEN
 	/* Unix socket to the PPE. */
 	int s;
 
 	/* Watcher for connection to client. */
 	ev_io watcher;
+#endif
 
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;
@@ -79,9 +81,11 @@ struct ppe {
 	/* Tree for sets of logical NIs, indexed on hash. */
 	RB_HEAD(logical_ni_set_root, logical_ni_set) set_tree;
 
+#ifndef HAVE_KITTEN
 	/* Watcher for incoming connection from clients. */
 	ev_io client_watcher;
 	int client_fd;
+#endif
 
 	/* List of existing clients. May replace with a tree someday. */
 	RB_HEAD(clients_root, client) clients_tree;
@@ -90,8 +94,12 @@ struct ppe {
 	gbl_t gbl;	
 };
 
-int ptl_run(int num_bufs, int num_threads);
-
 #endif	/* IS_PPE */
+
+int ppe_run(int num_bufs, int num_threads);
+
+#ifdef HAVE_KITTEN
+int ppe_add_kitten_client(int pid, void *addr, void *ppe_addr, size_t str_size, char *str);
+#endif
 
 #endif /* PTL_P4PPE_H */
