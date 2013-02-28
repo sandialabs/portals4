@@ -53,6 +53,11 @@ static int shmem_init_connect(ni_t *ni, conn_t *conn)
 	 * automatically connected when other ranks are discovered. */
 	assert(ni->options & PTL_NI_PHYSICAL);
 
+	//TODO: It would be helpful to actually do something here.	
+	ptl_info("start SHMEM connect \n");
+
+	conn->state = CONN_STATE_CONNECTED;
+
 	return PTL_OK;
 }
 
@@ -760,6 +765,8 @@ static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
 	if (ni->id.phys.pid == PTL_PID_ANY)
 		ni->id.phys.pid = ni->iface->id.phys.pid;
 
+	ptl_info("SharedMEM nid : %i pid: %i \n", ni->id.phys.nid, ni->id.phys.pid);
+
 	if (ni->options & PTL_NI_PHYSICAL) {
 		int err;
 		conn_t *conn;
@@ -783,8 +790,10 @@ static int PtlNIInit_shmem(gbl_t *gbl, ni_t *ni)
 		}
 
 		conn->transport = transport_shmem;
-		conn->state = CONN_STATE_CONNECTED;
-
+		
+		//for physical addressing we need to make a connection
+	 	shmem_init_connect(ni, conn);	
+		
 		conn_put(conn);			/* from get_conn */
 	}
 

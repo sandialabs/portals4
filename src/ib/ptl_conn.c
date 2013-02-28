@@ -152,11 +152,15 @@ conn_t *get_conn(ni_t *ni, ptl_process_t id)
 				return NULL;
 			}
 
-#if IS_PPE
+#if IS_PPE || WITH_TRANSPORT_SHMEM
 			//need to connect local processes over shared memory
 			if (conn->id.phys.nid == ni->iface->id.phys.nid) {
 				if (get_param(PTL_ENABLE_MEM)) {
+#if IS_PPE
 					conn->transport = transport_mem;
+#elif WITH_TRANSPORT_SHMEM
+					conn->transport = transport_shmem;
+#endif
 					conn->state = CONN_STATE_CONNECTED;
 				}
 			}

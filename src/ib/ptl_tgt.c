@@ -353,7 +353,7 @@ static int init_local_offset(buf_t *buf)
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
 		buf->start = me->start + buf->moffset;
-		ptl_info("buf start determined to be: %x \n",buf->start);
+		ptl_info("buf start determined to be: %p \n",buf->start);
 	}
 
 	return PTL_OK;
@@ -691,7 +691,7 @@ found_one:
 		 * sending that ack. */
 #if WITH_TRANSPORT_SHMEM
 		if (buf->conn->transport.type == CONN_TYPE_SHMEM){
-#else if IS_PPE
+#elif IS_PPE
 		if (buf->conn->transport.type == CONN_TYPE_MEM){
 #endif
 			if (buf->data != buf->internal_data) {
@@ -1596,7 +1596,7 @@ static int tgt_send_ack(buf_t *buf)
 	else if (buf->mem_buf) {
 #if WITH_TRANSPORT_SHMEM
 		if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
-#else if IS_PPE
+#elif IS_PPE
 		if (buf->conn->transport.type == CONN_TYPE_MEM) {
 #endif
 
