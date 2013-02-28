@@ -503,6 +503,7 @@ void ct_check(ct_t *ct)
 
 				PTL_FASTLOCK_LOCK(&ct->lock);
 			}
+#ifdef WITH_TRIG_ME_OPS
 		} else if (buf->type == BUF_TRIGGERED_ME){
 			if (ct->info.interrupt) {
                                 list_del(l);
@@ -528,6 +529,7 @@ void ct_check(ct_t *ct)
 			else{
 				ptl_info("ME operation not triggered %i:%i threshold: %i\n",(int)ct->info.event.success,(int)ct->info.event.failure, (int)buf->threshold);
 			}
+#endif
 		} else {
 			assert(buf->type == BUF_TRIGGERED);
 			if (ct->info.interrupt) {

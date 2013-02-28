@@ -7,9 +7,10 @@
 #include "ptl_loc.h"
 #include "ptl_ct.h"
 
-
+#ifdef WITH_TRIG_ME_OPS
 static void post_trig_me(buf_t *buf, ct_t *me_ct);
 void do_trig_me_op(buf_t *buf);
+#endif
 
 /**
  * @brief Initialize a new ME once when created.
@@ -266,6 +267,7 @@ int _PtlMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
 	return err;
 }
 
+#ifdef WITH_TRIG_ME_OPS
 /**
  * @brief Append a matching list element to a portals table list using 
  * Triggered behaviour.
@@ -329,6 +331,7 @@ int _PtlTriggeredMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_in
 		return err;
 	
 }
+#endif
 
 /**
  * @brief Search portals table overflow list for messages that match
@@ -436,6 +439,7 @@ err0:
 }
 
 /* TRIGGERED ME Code Begins */
+#ifdef WITH_TRIG_ME_OPS
 
 int _PtlTriggeredMEUnlink(PPEGBL ptl_handle_me_t me_handle,
 		ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
@@ -550,4 +554,4 @@ static void post_trig_me(buf_t *buf, ct_t *me_ct)
         }
 }
 
-
+#endif

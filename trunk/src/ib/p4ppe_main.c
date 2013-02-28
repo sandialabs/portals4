@@ -74,6 +74,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-        return ptl_run(num_bufs, num_threads);
+	return ppe_run(num_bufs, num_threads);
 }
 
