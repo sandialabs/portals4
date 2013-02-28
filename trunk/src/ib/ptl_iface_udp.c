@@ -526,9 +526,11 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		/* No well known PID was given. Retrieve the pid given by
 		 * bind. */
 		ni->id.phys.pid = iface->id.phys.pid;
-
 		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
+	
+	if (ni->options & PTL_NI_PHYSICAL)
+		ni->udp.map_done = 1;
 
         /* add a watcher for connection request events */
         //iface->udp.watcher.data = iface;
