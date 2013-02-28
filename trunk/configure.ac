@@ -93,7 +93,7 @@ AM_CONDITIONAL(WITH_TRIG_ME_OPS, test "x$enable_me_triggered" == xyes)
 
 AC_ARG_ENABLE([transport-shmem],
   [AS_HELP_STRING([--enable-transport-shmem],
-    [Use Shared memory for on-node communication. (default: auto-detect)])])
+    [Use Shared memory for on-node communication. This is currently experimental and should be avoided. (default: off)])])
 
 AC_ARG_ENABLE([transport-ib],
   [AS_HELP_STRING([--enable-transport-ib],
@@ -101,7 +101,7 @@ AC_ARG_ENABLE([transport-ib],
 
 AC_ARG_ENABLE([transport-udp],
   [AS_HELP_STRING([--enable-transport-udp],
-    [Use UDP for remote communication.  Will only be chosen if IB is not built. Experimental. (default: no)])])
+    [Use UDP for remote communication.  Will only be chosen if IB is not built. Experimental. (default: auto-detect)])])
 
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
@@ -123,7 +123,8 @@ AC_ARG_ENABLE([ppe],
     [Enable process-offload engine for Portals.  Experimental.  (default: disabled)])])
 AS_IF([test "$enable_ppe" == "yes"],
   [AC_DEFINE([WITH_PPE], [1], [Define to enable PPE])
-   enable_transport_shmem=no])
+   enable_transport_shmem=no],
+  [enable_ppe=no])
 AM_CONDITIONAL([WITH_PPE], [test "$enable_ppe" = "yes"])
 
 AC_ARG_ENABLE([kitten],
@@ -261,20 +262,17 @@ AS_IF([test "$active_remote_transport" == ""],
            [AS_IF([test "$enable_transport_ib" != ""], [AC_MSG_ERROR([OFED not found.])])])])])
 
 AS_IF([test "$active_remote_transport" == ""], 
-  [AS_IF([test "$enable_transport_udp" == "yes"],
+  [AS_IF([test "$enable_transport_udp" != "no"],
          [active_remote_transport="udp"])])
 
 SANDIA_DETECT_KNEM()
-# Back to remote transport only until remote+SHMEM is fixed
-AS_IF([test "x$active_remote_transport" != "x" -a "x$enable_transport_shmem" = "x"],
-      [enable_transport_shmem=no])
-AS_IF([test "x$enable_transport_shmem" != "xno" -a "x$enable_ppe" != "xyes"],
+AS_IF([test "x$enable_transport_shmem" = "xyes" -a "x$enable_ppe" != "xyes"],
       [AC_DEFINE([WITH_TRANSPORT_SHMEM], [1], [Define to enable shared memory support])
        transport_shmem="yes"],
       [transport_shmem="no"])
 AM_CONDITIONAL(WITH_TRANSPORT_SHMEM, test "x$transport_shmem" == "xyes")
 
-AS_IF([test "$active_remote_transport" == "" -a "$enable_transport_shmem" == "no" -a "$enable_ppe" = "no"],
+AS_IF([test "$active_remote_transport" = "" -a "$enable_ppe" = "no"],
   [AC_MSG_ERROR([No transport found.])])
 
 AS_IF([test "$active_remote_transport" == "ib"],
