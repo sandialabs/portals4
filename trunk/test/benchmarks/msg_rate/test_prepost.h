@@ -1,6 +1,6 @@
 
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #include <time.h>
 #include <stdio.h>

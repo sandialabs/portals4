@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #ifdef __APPLE__
 # include <sys/time.h>

@@ -1,5 +1,5 @@
 #include "ptl_test.h"
-#include "support/support.h"
+#include "support.h"
 
 int ompi_rt_init(struct node_info *info)
 {

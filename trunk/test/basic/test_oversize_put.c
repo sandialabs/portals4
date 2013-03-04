@@ -1,5 +1,5 @@
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -26,62 +26,47 @@
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
-#ifndef BUFSIZE
-#error BUFSIZE must be defined
-#endif
-#ifndef OVERLAP
-#error OVERLAP must be defined
-#endif
+#define BUFSIZE 4096
 
 int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
-    unsigned char  *writeval, *value;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    unsigned char  *value, *readval;
     ENTRY_T         value_e;
     HANDLE_T        value_e_handle;
     ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
-    int             num_procs, rank;
-    ptl_process_t myself;
-    ptl_pt_index_t logical_pt_index;
+    int             num_procs;
 
     CHECK_RETURNVAL(PtlInit());
 
     CHECK_RETURNVAL(libtest_init());
 
-    rank = libtest_get_rank();
     num_procs = libtest_get_size();
 
-    value   = malloc(sizeof(unsigned char) * BUFSIZE * num_procs);
+    value   = malloc(sizeof(unsigned char) * BUFSIZE);
+    readval = malloc(sizeof(unsigned char) * BUFSIZE);
+
     assert(value);
-    writeval = malloc(sizeof(unsigned char) * BUFSIZE);
-    assert(writeval);
+    assert(readval);
 
-    memset(value, 42, BUFSIZE * num_procs);
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                              PTL_PID_ANY, NULL, NULL, &ni_logical));
 
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, 
-                              NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY,
-                              NULL, 
-                              NULL, 
-                              &ni_logical));
-    
-    CHECK_RETURNVAL(PtlSetMap(ni_logical, 
-                              num_procs,
+    CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
                               libtest_get_mapping(ni_logical)));
 
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 
-                               0,
-                               PTL_EQ_NONE,
-                               PTL_PT_ANY,
+    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
-
     /* Now do the initial setup on ni_logical */
+    memset(value, 42, BUFSIZE);
     value_e.start  = value;
-    value_e.length = BUFSIZE * num_procs;
+    value_e.length = BUFSIZE;
     value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
@@ -90,51 +75,38 @@ int main(int   argc,
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-    CHECK_RETURNVAL(APPEND(ni_logical,
-                           0,
-                           &value_e,
-                           PTL_PRIORITY_LIST,
-                           NULL,
+    CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                            &value_e_handle));
-
-    /* Now do a barrierto make sure that everyone has their logical
-     * interface set up */
+    /* Now do a barrier (on ni_physical) to make sure that everyone has their
+     * logical interface set up */
     libtest_barrier();
 
-    memset(writeval, 61, BUFSIZE);
-    write_md.start     = writeval;
+    /* now I can communicate between ranks with ni_logical */
+
+    /* set up the landing pad so that I can read others' values */
+    memset(readval, 61, BUFSIZE);
+    write_md.start     = readval;
     write_md.length    = BUFSIZE;
-    write_md.options   = PTL_MD_EVENT_CT_ACK;
-    write_md.eq_handle = PTL_EQ_NONE;
+    write_md.options   = PTL_MD_EVENT_CT_SEND;
+    write_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
-    /* everyone puts to rank 0 */
+    /* set rank 0's value */
     {
         ptl_ct_event_t ctc;
         ptl_process_t  r0 = { .rank = 0 };
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 
-                               0,
-                               BUFSIZE, 
-                               PTL_CT_ACK_REQ,
-                               r0,
-                               logical_pt_index,
-                               1,
-                               BUFSIZE * rank * OVERLAP,
-                               NULL,
-                               0));
+        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, BUFSIZE, PTL_CT_ACK_REQ,
+                               r0, logical_pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
-        assert(ctc.success == 1);
     }
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
-        for (unsigned idx = 0; idx < BUFSIZE * (0 == OVERLAP ? 1 : num_procs); ++idx) {
+        for (unsigned idx = 0; idx < BUFSIZE; ++idx) {
             if (value[idx] != 61) {
-                fprintf(stderr,
-                        "bad value at idx %u (readval[%u] = %i, should be 61)\n",
-                        idx,
-                        idx, value[idx]);
+                fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n",
+                        idx, idx, value[idx]);
                 abort();
             }
         }

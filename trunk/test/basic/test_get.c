@@ -1,12 +1,11 @@
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sched.h>
-#include <string.h>
 
 #include "testing.h"
 
@@ -26,15 +25,13 @@
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
 
-#define BUFSIZE 4096
-
 int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_logical;
     ptl_process_t   myself;
     ptl_pt_index_t  logical_pt_index;
-    unsigned char  *value, *readval;
+    uint64_t        value, readval;
     ENTRY_T         value_e;
     HANDLE_T        value_e_handle;
     ptl_md_t        read_md;
@@ -47,12 +44,6 @@ int main(int   argc,
 
     num_procs = libtest_get_size();
 
-    value   = malloc(sizeof(unsigned char) * BUFSIZE);
-    readval = malloc(sizeof(unsigned char) * BUFSIZE);
-
-    assert(value);
-    assert(readval);
-
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_logical));
 
@@ -64,9 +55,9 @@ int main(int   argc,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     /* Now do the initial setup on ni_logical */
-    memset(value, 42, BUFSIZE);
-    value_e.start  = value;
-    value_e.length = BUFSIZE;
+    value          = myself.rank + 0xdeadbeefc0d1f1ed;
+    value_e.start  = &value;
+    value_e.length = sizeof(uint64_t);
     value_e.uid    = PTL_UID_ANY;
 #if INTERFACE == 1
     value_e.match_id.rank = PTL_RANK_ANY;
@@ -84,9 +75,8 @@ int main(int   argc,
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    memset(readval, 61, BUFSIZE);
-    read_md.start     = readval;
-    read_md.length    = BUFSIZE;
+    read_md.start     = &readval;
+    read_md.length    = sizeof(uint64_t);
     read_md.options   = PTL_MD_EVENT_CT_REPLY;
     read_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
@@ -96,19 +86,14 @@ int main(int   argc,
     {
         ptl_ct_event_t ctc;
         ptl_process_t  r0 = { .rank = 0 };
-        CHECK_RETURNVAL(PtlGet(read_md_handle, 0, BUFSIZE, r0,
+        CHECK_RETURNVAL(PtlGet(read_md_handle, 0, sizeof(uint64_t), r0,
                                logical_pt_index, 1, 0, NULL));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
-    for (unsigned idx = 0; idx < BUFSIZE; ++idx) {
-        if (readval[idx] != 42) {
-            fprintf(stderr, "bad value at idx %u (readval[%u] = %i)\n", idx,
-                    idx,
-                    readval[idx]);
-            abort();
-        }
-    }
+    /*printf("%i readval: %llx\n", (int)myself.rank,
+     *     (unsigned long long)readval);*/
+    assert(readval == 0xdeadbeefc0d1f1ed);
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
     }

@@ -3,7 +3,7 @@
  */
 
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #include <assert.h>
 #include <stddef.h>
