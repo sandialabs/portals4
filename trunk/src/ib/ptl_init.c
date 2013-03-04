@@ -233,6 +233,8 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.pkt_fmt = PKT_FMT_REQ;
 	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 	hdr->h1.operand = 0;
+	hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
+	ptl_info("request uses physical: %x or logical addressing: %x \n",!!(ni->options & PTL_NI_PHYSICAL), !!(ni->options & PTL_NI_LOGICAL));
 	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
 	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
 #if WITH_TRANSPORT_UDP
@@ -440,8 +442,10 @@ static int send_req(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP)
-	   ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
-	
+	    ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
+	req_hdr_t *hdr = (req_hdr_t *)buf->data;
+	ni_t *ni = obj_to_ni(buf);
+	hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
 #endif
 
 	set_buf_dest(buf, conn);

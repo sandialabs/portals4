@@ -290,6 +290,7 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
 #if WITH_TRANSPORT_UDP
 		ptl_info(" preparing response for handle: %i \n",ack_hdr->h1.handle);
+		ack_hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
 #endif
 #if IS_PPE
 		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);

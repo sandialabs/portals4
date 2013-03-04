@@ -383,6 +383,12 @@ int _PtlNIInit(gbl_t *gbl,
 		}
 	}
 
+#if WITH_TRANSPORT_UDP
+	if (options & PTL_NI_PHYSICAL) {
+          ni->udp.map_done = 1;
+	}
+#endif 
+
 	if (transports.local.NIInit) {
 		err = transports.local.NIInit(gbl, ni);
 		if (unlikely(err)) {
