@@ -434,9 +434,10 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	iface_t *iface = ni->iface;
 
 	//if already initialized
-	if (ni->id.phys.pid = port_to_pid(ni->iface->udp.sin.sin_port)){
+	if (ni->id.phys.pid == (port_to_pid(ni->iface->udp.sin.sin_port))){
 		ptl_warn("attempting to re-initialize the interface \n");
-	 	ni->udp.dest_addr = &iface->udp.sin;	
+	 	ni->udp.dest_addr = &iface->udp.sin;
+		ni->id.phys.nid = iface->id.phys.nid;
 		return PTL_OK;
 	}
 
@@ -529,16 +530,6 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		ptl_info("set iface pid(1) = %x\n", iface->id.phys.pid);
 	}
 	
-	if (ni->options & PTL_NI_PHYSICAL)
-		ni->udp.map_done = 1;
-
-        /* add a watcher for connection request events */
-        //iface->udp.watcher.data = iface;
-        //ev_io_init(&iface->udp.watcher, process_udp_connect,
-        //                   ni->udp.s, EV_READ);
-
-        //EVL_WATCH(ev_io_start(evl.loop, &iface->udp.watcher));
-
 	// TODO: Does this belong here or even in UDP at all?
 	//off_t bounce_buf_offset;
 	//off_t bounce_head_offset;

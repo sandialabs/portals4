@@ -153,10 +153,10 @@ struct conn {
 			struct sockaddr_in	dest_addr;
 			//struct sockaddr_in 	src_addr;
 			//int 			loop_to_self;
-			//TODO: Why do these counters need to be atomic?
 			atomic_t send_seq;
 			atomic_t recv_seq;
 			atomic_t is_waiting;
+			atomic_t fragment_seq;
 		} udp;
 #endif
 	};

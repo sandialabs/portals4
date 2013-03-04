@@ -26,7 +26,8 @@ static int send_message_udp(buf_t *buf, int from_init)
         // increment the sequence number associated with the
 	// send-side of this connection
 	atomic_inc(&buf->conn->udp.send_seq);
-        udp_send(buf->obj.obj_ni, buf, &buf->dest.udp.dest_addr);
+        
+	udp_send(buf->obj.obj_ni, buf, &buf->dest.udp.dest_addr);
   	
 	buf_put(buf);
 
@@ -460,6 +461,7 @@ buf_t *udp_receive(ni_t *ni){
 
 	if (atomic_read(&ni->udp.self_recv) >= 1){
 		ptl_info("got a message from self %p \n",ni->udp.self_recv_addr);
+		free(thebuf);
 		thebuf = (buf_t *) ni->udp.self_recv_addr;
 		return thebuf;//(buf_t *)ni->udp.self_recv_addr;
 	}
@@ -483,6 +485,23 @@ buf_t *udp_receive(ni_t *ni){
 		free(thebuf);	
 		return NULL;
 	    }
+	}
+
+	req_hdr_t *hdr;
+
+	//first check to see if this is meant for this ni
+	if (thebuf->internal_data != NULL){
+		hdr = thebuf->internal_data;
+	} else{
+		hdr = &thebuf->data;
+	}
+
+	if (((hdr->h1.physical == 1) && (!!(ni->options & PTL_NI_PHYSICAL))) ||
+            ((hdr->h1.physical == 0) && (!!(ni->options & PTL_NI_LOGICAL)))) {
+		//this datagram is not meant for us
+		free(thebuf);
+		usleep(20);
+		return NULL;
 	}
 
 	//we are going to be handling multiple messages, implemented through a recvmsg call
@@ -517,7 +536,8 @@ buf_t *udp_receive(ni_t *ni){
 		err = recvmsg(ni->iface->udp.connect_s, &buf_msg_hdr, 0);
 		if(err == -1) {
                         free(thebuf);
-                        WARN();
+                        free(buf_data);
+			WARN();
                         ptl_warn("error receiving main buffer from socket: %d %s\n",ni->iface->udp.connect_s,strerror(errno));
                         abort();
 			return NULL;
@@ -681,6 +701,8 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
 	
 	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
         hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+	ptl_info("addressing type for connection is: %x \n",!!(ni->options & PTL_NI_LOGICAL));
+	hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
 	
 	conn_buf->transfer.udp.conn_msg = msg;
         conn_buf->length = (sizeof(buf_t));
