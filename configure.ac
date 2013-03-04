@@ -339,6 +339,8 @@ AC_CONFIG_FILES([Makefile
 		 src/ib/Makefile
 		 src/runtime/Makefile
                  test/Makefile
+		 test/basic/Makefile
+		 test/benchmarks/Makefile
                  test/sfw/Makefile
                  test/sfw/test_n1/Makefile
                  test/sfw/test_n2/Makefile])

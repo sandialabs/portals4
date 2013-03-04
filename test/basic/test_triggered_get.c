@@ -1,5 +1,5 @@
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #include <assert.h>
 #include <stddef.h>
@@ -14,14 +14,14 @@
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
-# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define OPTIONS  (PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink
 #else
 # define ENTRY_T  ptl_le_t
 # define HANDLE_T ptl_handle_le_t
 # define NI_TYPE  PTL_NI_NO_MATCHING
-# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define OPTIONS  (PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
 # define APPEND   PtlLEAppend
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
@@ -35,15 +35,10 @@ int main(int   argc,
     uint64_t        value, readval;
     ENTRY_T         value_e;
     HANDLE_T        value_e_handle;
-    ptl_md_t        write_md;
-    ptl_handle_md_t write_md_handle;
+    ptl_md_t        read_md;
+    ptl_handle_md_t read_md_handle;
     int             num_procs;
-    ptl_handle_ct_t me_append_trigger;
     ptl_handle_ct_t trigger;
-
-#if INTERFACE != 1
-    	assert("This test is only valid for MEs" == 0);
-#endif
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -63,10 +58,8 @@ int main(int   argc,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &trigger));
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &me_append_trigger));
-    
     /* Now do the initial setup on ni_logical and the new PT */
-    value          = 42;
+    value          = myself.rank + 0xdeadbeefc0d1f1ed;
     value_e.start  = &value;
     value_e.length = sizeof(value);
     value_e.uid    = PTL_UID_ANY;
@@ -77,13 +70,6 @@ int main(int   argc,
 #endif
     value_e.options = OPTIONS;
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-    
-    ptl_ct_event_t me_test;
-    CHECK_RETURNVAL(PtlCTGet(me_append_trigger, &me_test));
-    assert(me_test.success == 0);
-    assert(me_test.failure == 0);
-    
-    CHECK_RETURNVAL(PtlCTInc(me_append_trigger, (ptl_ct_event_t) { 1, 0 }));
     CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                            &value_e_handle));
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
@@ -92,13 +78,13 @@ int main(int   argc,
     /* now I can communicate between ranks with ni_logical */
 
     /* set up the landing pad so that I can read others' values */
-    readval            = 0;
-    write_md.start     = &readval;
-    write_md.length    = sizeof(readval);
-    write_md.options   = PTL_MD_EVENT_CT_SEND;
-    write_md.eq_handle = PTL_EQ_NONE;
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
-    CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
+    readval           = 0;
+    read_md.start     = &readval;
+    read_md.length    = sizeof(readval);
+    read_md.options   = PTL_MD_EVENT_CT_REPLY;
+    read_md.eq_handle = PTL_EQ_NONE;
+    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
+    CHECK_RETURNVAL(PtlMDBind(ni_logical, &read_md, &read_md_handle));
 
     /* check the trigger, make sure it's zero */
     {
@@ -107,41 +93,28 @@ int main(int   argc,
         assert(test.success == 0);
         assert(test.failure == 0);
     }
-
     /* set the trigger */
-    CHECK_RETURNVAL(PtlTriggeredPut(write_md_handle, 0, write_md.length, PTL_CT_ACK_REQ,
-                                    (ptl_process_t) { .rank = 0 }, logical_pt_index, 1, 0, NULL, 0,
+    CHECK_RETURNVAL(PtlTriggeredGet(read_md_handle, 0, read_md.length,
+                                    (ptl_process_t) { .rank = 0 },
+                                    logical_pt_index, 1, 0, NULL,
                                     trigger, 1));
-    
-    //Do an ME Append & setup an unlink for a greater CT value
-    CHECK_RETURNVAL(PtlTriggeredMEAppend(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
-                           &value_e_handle, me_append_trigger, 1));
-    CHECK_RETURNVAL(PtlTriggeredMEUnlink(value_e_handle, me_append_trigger, 2));
+
     /* Increment the trigger */
     CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1, 0 }));
-    
-    CHECK_RETURNVAL(PtlCTInc(me_append_trigger, (ptl_ct_event_t) { 1, 0}));
-    //ME is now appended, inc the CT to unlink it
-    CHECK_RETURNVAL(PtlCTInc(me_append_trigger, (ptl_ct_event_t) { 1, 0}));
-    /* Check the send */
-    {
-        ptl_ct_event_t ctc;
-        CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
-        assert(ctc.failure == 0);
+    /* Check the get */
+    NO_FAILURES(read_md.ct_handle, 1);
+    assert(readval == 0xdeadbeefc0d1f1ed);
+    if (myself.rank == 0) {
+        NO_FAILURES(value_e.ct_handle, num_procs);
     }
-
-    libtest_barrier();
-
-    // Now setup to do ME Appends and unlinks
 
     /* cleanup */
     CHECK_RETURNVAL(PtlCTFree(trigger));
-    CHECK_RETURNVAL(PtlCTFree(me_append_trigger));
-    CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
-    CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
-    //CHECK_RETURNVAL(UNLINK(value_e_handle));
+    CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
+    CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
+    CHECK_RETURNVAL(UNLINK(value_e_handle));
     CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
-    //CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
+    CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();

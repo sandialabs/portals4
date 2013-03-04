@@ -18,7 +18,7 @@
 #include <portals4.h>
 #include <portals4/pmi.h>
 
-#include "support/support.h"
+#include "support.h"
 
 struct map_t {
     ptl_handle_ni_t handle;

@@ -58,7 +58,7 @@
 */
 #include <netpipe.h>
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 
 /* Some globals */

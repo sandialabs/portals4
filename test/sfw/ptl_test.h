@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 
 #include <portals4.h>
-#include <support/support.h>
+#include <support.h>
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
