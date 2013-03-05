@@ -16,7 +16,7 @@ noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test $(XML_CPPFLAGS)
 
-ptl_test_LDFLAGS = -L$(top_builddir)/src
+ptl_test_LDFLAGS = -L$(top_builddir)/src $(LIBTOOL_WRAPPER_LDFLAGS)
 ptl_test_LDADD =  $(PORTALSLIB) -lpthread $(XML_LIBS)
 ptl_test_SOURCES = \
 	api.c \

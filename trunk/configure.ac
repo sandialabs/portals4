@@ -133,6 +133,12 @@ AC_ARG_ENABLE([kitten],
   [AC_DEFINE([HAVE_KITTEN], [1], [Defined to 1 if kitten support requested])])
 AM_CONDITIONAL([HAVE_KITTEN], [test "$enable_kitten" = "yes"])
 
+AC_ARG_ENABLE([libtool-wrapper],
+  [AS_HELP_STRING([--disable-libtool-wrapper],
+    [Disable use of libtool executable wrappers for tests])])
+AS_IF([test "$enable_libtool_wrapper" = "no"], [LIBTOOL_WRAPPER_LDFLAGS="-no-install"], [LIBTOOL_WRAPPER_LDFLAGS=])
+AC_SUBST([LIBTOOL_WRAPPER_LDFLAGS])
+
 ## ------------------- ##
 ## Checks for programs ##
 ## ------------------- ##
