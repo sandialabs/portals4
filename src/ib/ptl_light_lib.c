@@ -174,8 +174,10 @@ static int connect_to_ppe(void)
 	/* XPMEM the whole memory of that process. */
 	ppe.segid = xpmem_make(0, 0xffffffffffffffffUL,
 						   XPMEM_PERMIT_MODE, (void *)0600);
-	if (ppe.segid == -1)
+	if (ppe.segid == -1) {
+            fprintf(stderr, "a\n");
 		goto exit_fail;
+        }
 
 	/* Connect to the PPE. */
 	if ((ppe.s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -184,7 +186,7 @@ static int connect_to_ppe(void)
     }
 
 	ppe_sock_addr.sun_family = AF_UNIX;
-    strcpy(ppe_sock_addr.sun_path, PPE_SOCKET_NAME);
+        strcpy(ppe_sock_addr.sun_path, ptl_ppe_socket_name());
     if (connect(ppe.s, (struct sockaddr *)&ppe_sock_addr, sizeof(ppe_sock_addr)) == -1) {
 		ptl_warn("Connection to PPE failed.\n");
 		goto exit_fail;

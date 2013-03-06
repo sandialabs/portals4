@@ -8,7 +8,7 @@
 
 #ifdef WITH_PPE
 
-#define PPE_SOCKET_NAME "/tmp/portals4-ppe"
+char *ptl_ppe_socket_name(void);
 
 enum ppe_op {
 	OP_PtlAtomic = 1,

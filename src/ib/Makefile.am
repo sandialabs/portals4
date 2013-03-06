@@ -110,6 +110,7 @@ libportals_ib_la_SOURCES = \
 	ptl_param.c \
 	ptl_param.h \
 	ptl_ppe.h \
+	ptl_ppe.c \
 	ptl_queue.c \
 	ptl_queue.h \
 	ptl_xpmem.h
@@ -177,6 +178,7 @@ libportals_ppe_la_SOURCES = \
 	ptl_param.h \
 	ptl_pool.h \
 	ptl_ppe.h \
+	ptl_ppe.c \
 	ptl_pt.c \
 	ptl_pt.h \
 	ptl_queue.c \
