@@ -7,12 +7,17 @@
 
 #include "testing.h"
 
-int main(
-         int argc,
-         char *argv[])
+#if PHYSICAL_ADDR == 1
+#define OPTIONS (PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL)
+#else
+#define OPTIONS (PTL_NI_NO_MATCHING | PTL_NI_LOGICAL)
+#endif
+
+int
+main(int argc, char *argv[])
 {
     ptl_ni_limits_t actual;
-    ptl_handle_ni_t ni_handle_phys;
+    ptl_handle_ni_t ni_h;
 
 #if 0 /* Only works if arg validation is turned on */
     if (PtlNIInit
@@ -25,11 +30,11 @@ int main(
     CHECK_RETURNVAL(PtlInit());
     CHECK_RETURNVAL(PtlInit());
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT,
-                              PTL_NI_NO_MATCHING | PTL_NI_PHYSICAL,
+                              OPTIONS,
                               PTL_PID_ANY,
                               NULL, &actual,
-                              &ni_handle_phys));
-    CHECK_RETURNVAL(PtlNIFini(ni_handle_phys));
+                              &ni_h));
+    CHECK_RETURNVAL(PtlNIFini(ni_h));
     PtlFini();
     PtlFini();
     return 0;

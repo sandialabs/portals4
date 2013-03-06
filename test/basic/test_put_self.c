@@ -9,7 +9,7 @@
 
 #include "testing.h"
 
-#if INTERFACE == 1
+#if MATCHING == 1
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
@@ -28,7 +28,7 @@
 int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t ni_logical;
+    ptl_handle_ni_t ni_h;
     ptl_process_t   myself;
     ptl_pt_index_t  logical_pt_index;
     uint64_t        value, writeval;
@@ -38,6 +38,7 @@ int main(int   argc,
     ptl_handle_md_t write_md_handle;
     int             num_procs;
     ptl_ct_event_t ctc;
+    ptl_process_t *procs;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -45,25 +46,37 @@ int main(int   argc,
 
     num_procs = libtest_get_size();
 
+#if PHYSICAL_ADDR == 0
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+                              PTL_PID_ANY, NULL, NULL, &ni_h));
+#else
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_PHYSICAL,
-                              PTL_PID_ANY, NULL, NULL, &ni_logical));
+                              PTL_PID_ANY, NULL, NULL, &ni_h));
+#endif
 
-    CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
+    procs = libtest_get_mapping(ni_h);
+
+#if PHYSICAL_ADDR == 0
+    CHECK_RETURNVAL(PtlSetMap(ni_h, num_procs, procs));
+#endif
+
+    CHECK_RETURNVAL(PtlGetId(ni_h, &myself));
+
+    CHECK_RETURNVAL(PtlPTAlloc(ni_h, 0, PTL_EQ_NONE, PTL_PT_ANY,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
 
     value_e.start  = &value;
     value_e.length = sizeof(uint64_t);
     value_e.uid    = PTL_UID_ANY;
-#if INTERFACE == 1
+#if MATCHING == 1
     value_e.match_id = myself;
     value_e.match_bits    = 1;
     value_e.ignore_bits   = 0;
 #endif
     value_e.options = OPTIONS;
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-    CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
+    CHECK_RETURNVAL(PtlCTAlloc(ni_h, &value_e.ct_handle));
+    CHECK_RETURNVAL(APPEND(ni_h, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                            &value_e_handle));
 
     writeval = 12345;
@@ -76,8 +89,8 @@ int main(int   argc,
     write_md.length    = sizeof(uint64_t);
     write_md.options   = PTL_MD_EVENT_CT_SEND | PTL_MD_EVENT_CT_ACK;
     write_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
-    CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
+    CHECK_RETURNVAL(PtlCTAlloc(ni_h, &write_md.ct_handle));
+    CHECK_RETURNVAL(PtlMDBind(ni_h, &write_md, &write_md_handle));
 
     /* write to myself */
     CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, myself,
@@ -97,8 +110,8 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
 
     /* cleanup */
-    CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
-    CHECK_RETURNVAL(PtlNIFini(ni_logical));
+    CHECK_RETURNVAL(PtlPTFree(ni_h, logical_pt_index));
+    CHECK_RETURNVAL(PtlNIFini(ni_h));
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();
 

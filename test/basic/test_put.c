@@ -9,7 +9,7 @@
 
 #include "testing.h"
 
-#if INTERFACE == 1
+#if MATCHING == 1
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
@@ -23,13 +23,12 @@
 # define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
 # define APPEND   PtlLEAppend
 # define UNLINK   PtlLEUnlink
-#endif /* if INTERFACE == 1 */
+#endif /* if MATCHING == 1 */
 
 int main(int   argc,
          char *argv[])
 {
     ptl_handle_ni_t ni_h;
-    ptl_process_t   myself;
     ptl_pt_index_t  pt_index;
     uint64_t        value;
     ENTRY_T         value_e;
@@ -52,7 +51,7 @@ int main(int   argc,
     /* This test only succeeds if we have more than one rank */
     if (num_procs < 2) return 77;
 
-#if LOGICAL
+#if PHYSICAL_ADDR == 0
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_h));
 #else
@@ -60,10 +59,9 @@ int main(int   argc,
                               PTL_PID_ANY, NULL, NULL, &ni_h));
 #endif
 
-    CHECK_RETURNVAL(PtlGetId(ni_h, &myself));
     procs = libtest_get_mapping(ni_h);
 
-#if LOGICAL
+#if PHYSICAL_ADDR == 0
     CHECK_RETURNVAL(PtlSetMap(ni_h, num_procs, procs));
 #endif
 
@@ -75,8 +73,8 @@ int main(int   argc,
         value_e.start  = &value;
         value_e.length = sizeof(uint64_t);
         value_e.uid    = PTL_UID_ANY;
-#if INTERFACE == 1
- #if LOGICAL == 1
+#if MATCHING == 1
+ #if PHYSICAL_ADDR == 0
         value_e.match_id.rank = PTL_RANK_ANY;
  #else
 	value_e.match_id.phys.nid = PTL_NID_ANY;
@@ -114,7 +112,7 @@ int main(int   argc,
     } else if (0 == rank) {
         /* write to rank 1 */
         ptl_process_t peer;
-#if LOGICAL == 1        
+#if PHYSICAL_ADDR == 0
 	peer.rank = 1;
 #else
         peer = procs[1];
