@@ -11,14 +11,17 @@ AM_LDFLAGS = $(LIBTOOL_WRAPPER_LDFLAGS)
 TESTS = \
 	test_pmi_hello \
 	test_init \
-	test_NIInit \
+	test_PA_NIInit \
+	test_LA_NIInit \
 	test_bootstrap \
-	test_LE_put_self \
-	test_ME_put_self \
-	test_LE_put \
-	test_ME_put \
-        test_LE_put_phys \
-        test_ME_put_phys \
+	test_PA_LE_put_self \
+	test_PA_ME_put_self \
+	test_LA_LE_put_self \
+	test_LA_ME_put_self \
+	test_PA_LE_put \
+	test_PA_ME_put \
+	test_LA_LE_put \
+	test_LA_ME_put \
 	test_LE_put_multiple \
 	test_ME_put_multiple \
 	test_LE_put_multiple_large \
@@ -67,18 +70,9 @@ TESTS += \
 	test_triggered_ME_ops
 endif
 
-check_PROGRAMS =
-
+check_PROGRAMS = $(TESTS)
 
 all: $(TESTS)
-
-check_PROGRAMS += $(TESTS)
-
-if WITH_PPE
- check_PROGRAMS += \
-	test_LE_put_phys \
-        test_ME_put_phys 
-endif
 
 THREADS ?= 2
 TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(THREADS)
@@ -88,27 +82,37 @@ test_pmi_hello_CPPFLAGS = $(AM_CPPFLAS) -I$(top_srcdir)/src/runtime
 
 test_init_SOURCES = test_init.c
 
-test_NIInit_SOURCES = test_NIInit.c
+test_PA_NIInit_SOURCES = test_NIInit.c
+test_PA_NIInit_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1
+
+test_LA_NIInit_SOURCES = test_NIInit.c
+test_LA_NIInit_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0
 
 test_bootstrap_SOURCES = test_bootstrap.c
 
-test_LE_put_self_SOURCES = test_put_self.c
-test_LE_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+test_PA_LE_put_self_SOURCES = test_put_self.c
+test_PA_LE_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1 -DMATCHING=0
 
-test_ME_put_self_SOURCES = test_put_self.c
-test_ME_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+test_PA_ME_put_self_SOURCES = test_put_self.c
+test_PA_ME_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1 -DMATCHING=1
 
-test_LE_put_SOURCES = test_put.c
-test_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DLOGICAL=1
+test_LA_LE_put_self_SOURCES = test_put_self.c
+test_LA_LE_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=0
 
-test_ME_put_SOURCES = test_put.c
-test_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DLOGICAL=1
+test_LA_ME_put_self_SOURCES = test_put_self.c
+test_LA_ME_put_self_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=1
 
-test_LE_put_phys_SOURCES = test_put.c
-test_LE_put_phys_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DLOGICAL=0
+test_PA_LE_put_SOURCES = test_put.c
+test_PA_LE_put_CPPFLAGS = $(AM_CPPFLAGS)  -DPHYSICAL_ADDR=1 -DMATCHING=0
 
-test_ME_put_phys_SOURCES = test_put.c
-test_ME_put_phys_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1 -DLOGICAL=0
+test_PA_ME_put_SOURCES = test_put.c
+test_PA_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1 -DMATCHING=1
+
+test_LA_LE_put_SOURCES = test_put.c
+test_LA_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=0
+
+test_LA_ME_put_SOURCES = test_put.c
+test_LA_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=1
 
 test_LE_put_multiple_SOURCES = test_put_multiple.c
 test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256 -DOVERLAP=0
