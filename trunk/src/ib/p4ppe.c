@@ -216,7 +216,7 @@ static void socket_process_client_msg(EV_P_ ev_io *w, int revents)
 		return;
 	}
 
-	process_client_msg(client, msg);
+	process_client_msg(client, &msg);
 
 	if (send(client->s, &msg, sizeof(msg), 0) != sizeof(msg)) {
 		/* The client just died. Whatever. */
@@ -335,8 +335,8 @@ static int init_ppe(void)
     }
 
     sockaddr.sun_family = AF_UNIX;
-    strcpy(sockaddr.sun_path, PPE_SOCKET_NAME);
-    unlink(PPE_SOCKET_NAME);
+    strcpy(sockaddr.sun_path, ptl_ppe_socket_name());
+    unlink(ptl_ppe_socket_name());
     if (bind(ppe.client_fd, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_un)) == -1) {
 		WARN();
 		goto exit_fail;
