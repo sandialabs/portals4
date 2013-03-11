@@ -564,6 +564,7 @@ int _PtlTriggeredFetchAtomic(PPEGBL ptl_handle_md_t get_md_handle,
 			    ptl_datatype_t atom_type,
 			    ptl_handle_ct_t trig_ct_handle,
 							 ptl_size_t threshold);
+int _PtlAtomicSync(void);
 int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle, ptl_size_t local_get_offset,
 			 ptl_handle_md_t put_md_handle, ptl_size_t local_put_offset,
 			 ptl_size_t length, ptl_process_t target_id,

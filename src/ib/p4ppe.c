@@ -1366,7 +1366,7 @@ static void do_OP_PtlPTEnable(ppebuf_t *buf)
 
 static void do_OP_PtlAtomicSync(ppebuf_t *buf)
 {
-	buf->msg.ret = PtlAtomicSync();
+	buf->msg.ret = _PtlAtomicSync();
 }
 
 static void do_OP_PtlCTCancelTriggered(ppebuf_t *buf)

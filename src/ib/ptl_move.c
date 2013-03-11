@@ -875,7 +875,7 @@ err0:
  *
  * @return status
  */
-int PtlAtomicSync(void)
+int _PtlAtomicSync(void)
 {
 	int err;
 
