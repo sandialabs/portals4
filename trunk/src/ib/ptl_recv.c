@@ -864,7 +864,7 @@ void process_recv_udp(ni_t *ni, buf_t *buf)
 			ptl_info("recv_req returned state: %s\n",recv_state_name[state]);
 			break;
 		case STATE_RECV_INIT:
-			state = recv_init(buf);
+			state = recv_init(MYNIGBL_ buf);
 			break;
 		case STATE_RECV_DROP_BUF:
 			state = recv_drop_buf(buf);
