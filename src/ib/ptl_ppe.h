@@ -619,6 +619,7 @@ int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index);
 #else  /* WITH_PPE */
 
 #define _PtlAtomic PtlAtomic
+#define _PtlAtomicSync PtlAtomicSync
 #define _PtlCTAlloc PtlCTAlloc
 #define _PtlCTCancelTriggered PtlCTCancelTriggered
 #define _PtlCTFree PtlCTFree
