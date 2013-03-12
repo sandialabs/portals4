@@ -1758,7 +1758,7 @@ static int tgt_send_reply(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
-		ptl_info("address that requested reply: %s:%i \n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port));
+		ptl_info("address that requested reply: %s:%i reply length = %i\n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port),rep_buf->rlength);
 		rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
 	}
 #endif

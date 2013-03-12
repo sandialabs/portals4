@@ -377,6 +377,8 @@ struct buf {
 			struct udp *udp;
 
 			struct udp_conn_msg conn_msg;
+		
+			unsigned int fragment_count;
 		} udp;
 #endif
 	} transfer;
