@@ -135,10 +135,11 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 	}
 	else {
 		if (md->options & PTL_IOVEC) {
+			ptl_warn("using native iovecs \n");
 			ptl_iovec_t *iovecs = md->start;
 
-			/* Find the index and offset of the first IOV as well as the
-			 * total number of IOVs to transfer. */
+			// Find the index and offset of the first IOV as well as the
+			//  total number of IOVs to transfer. 
 			num_sge = iov_count_elem(iovecs, md->num_iov, offset, 
 						 length, &iov_start, &iov_offset);
 			if (num_sge < 0) {
@@ -148,8 +149,8 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 
 			append_init_data_udp_iovec(data, md, iov_start, num_sge, length, buf);
 
-			/* @todo this is completely bogus */
-			/* Adjust the header offset for iov start. */
+			// @todo this is completely bogus 
+			// Adjust the header offset for iov start. 
 			hdr->roffset = cpu_to_le64(le64_to_cpu(hdr->roffset) - iov_offset);
 			abort();//todo
 		} else {
@@ -202,6 +203,7 @@ static int do_udp_transfer(buf_t *buf)
 	if (*resid) {
 		if (buf->rdma_dir == DATA_DIR_IN) {
 			to_copy = udp->length;
+			ptl_info("copy into local mem, length: %i from: %p \n",to_copy,buf->transfer.udp.data);
 			if (to_copy > *resid)
 				to_copy = *resid;
 
@@ -210,6 +212,7 @@ static int do_udp_transfer(buf_t *buf)
 							  buf->transfer.udp.num_iovecs,
 							  buf->transfer.udp.offset, to_copy);
 		} else {
+			ptl_info("prepare data for get response \n");
 			to_copy = buf->mlength;
 			if (to_copy > *resid)
 				to_copy = *resid;
@@ -304,19 +307,21 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 {
 	int err;
 
-	//ptl_info("pointer to data_out: %p \n",buf->data_out);
-
 	// TODO: Don't know the meaning of this (UO & REB)
 	//buf->obj.next = NULL;
 	
         const struct sockaddr_in target = *dest;
-        //target.sin_addr = dest->sin_addr;
-        //target.sin_port = dest->sin_port;
-
+        
 	int MAX_UDP_MSG_SIZE = 1488;
 	uint32_t max_len_size;
 	max_len_size = sizeof(int);
 	getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_SNDBUF, (int*)&MAX_UDP_MSG_SIZE, &max_len_size);
+	//65507 is the max IPv4 UDP message size (65536 - 8 byte UDP header - 20 byte IP header)
+	//Send buffers can sometimes exceed this size, so we need to cap the max packet size
+	if (MAX_UDP_MSG_SIZE > 65507)
+	    MAX_UDP_MSG_SIZE = 65507;
+
+	ptl_info("max udp message size is: %i \n",MAX_UDP_MSG_SIZE);
 
 	//check for send to self, use local memory for transfer
 	if (((dest->sin_port == ni->id.phys.pid) && (dest->sin_addr.s_addr == nid_to_addr(ni->id.phys.nid)))) {
@@ -350,26 +355,34 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 
 
 	//the buf has data and is not a small message or an ack
+	//TODO: Adjust this to the actual data size available in the buf_t immediate data
 	if (buf->rlength > sizeof(buf_t)){
 		//this means that we have a message that is too large for an immediate send
 		//we must send it as a iovec upto the maximum UDP message size (64KB)
 		
 		ptl_info("starting large message send \n");
 		ptl_info("data ptr: %p length: %i \n",buf->transfer.udp.my_iovec.iov_base,(int)buf->transfer.udp.my_iovec.iov_len);
-		int segments;
+		int segments = 0;
 		struct msghdr buf_msg_hdr;
 		int bytes_remain;
 		int cur_ptr;
 		struct sockaddr_in msg_dest;
-		msg_dest = *dest;;
+		msg_dest = *dest;
+		req_hdr_t *hdr = (req_hdr_t *)buf->internal_data;
 
-		segments = ((buf->rlength - sizeof(buf_t)) +  MAX_UDP_MSG_SIZE -1)/MAX_UDP_MSG_SIZE;
-		segments++;
+		segments = (buf->rlength / (MAX_UDP_MSG_SIZE - sizeof(buf_t))) +1;
 
-		struct iovec iov[segments];
+		hdr->fragment_seq = 0;
+
+		//we only have two iovec elements, the buf_t and the data
+		struct iovec iov[2];
 
 		ptl_info("# of segments: %i \n",segments);
 		assert(segments > 0);
+
+		buf->udp.src_addr = target;
+		ptl_info("set buf target to: %s:%d \n",inet_ntoa(target.sin_addr),ntohs(target.sin_port));
+		
 
 		iov[0].iov_base = buf;
 		iov[0].iov_len = sizeof(buf_t);
@@ -392,7 +405,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_name = (void *)dest;
 		buf_msg_hdr.msg_namelen = sizeof(*dest);
 		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
-		buf_msg_hdr.msg_iovlen = (int)segments;
+		buf_msg_hdr.msg_iovlen = 2; 
 		buf_msg_hdr.msg_flags = 0;
 
 		ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),ntohs(((struct sockaddr_in*)buf_msg_hdr.msg_name)->sin_port));
@@ -401,37 +414,37 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_controllen = 0;
 
 		ptl_info("sending UDP message of size: %i, maximum: %i \n",(int)(buf_msg_hdr.msg_iov[0].iov_len+buf_msg_hdr.msg_iov[1].iov_len),(int)MAX_UDP_MSG_SIZE);
-
+		ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
                 err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
 
 		while (bytes_remain){
-			//do we need to null iov[0] here?
-		//	iov[0].iov_base = NULL;
-	//		iov[0].iov_len = 0;
-			//keep sending multiple UDP messages until all the data is sent
-//			iov[1].iov_base = buf->data + cur_ptr;
-			if (bytes_remain > MAX_UDP_MSG_SIZE){
-				//more UDP messages will follow
-//				iov[1].iov_len = MAX_UDP_MSG_SIZE;
-				cur_ptr += MAX_UDP_MSG_SIZE;
-				bytes_remain -= MAX_UDP_MSG_SIZE;
+			
+			hdr->fragment_seq++;
+			//keep sending multiple UDP segments until all the data is sent
+			if (bytes_remain >= (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
+				//more UDP segments to this message will follow
+				cur_ptr = MAX_UDP_MSG_SIZE - sizeof(buf_t);
+				bytes_remain -= (MAX_UDP_MSG_SIZE - sizeof(buf_t));
 			}	
 			else {
-				//last UDP message in sequence
-//				iov[1].iov_len = bytes_remain;
-				cur_ptr += bytes_remain;
+				//last UDP segment in sequence
+				cur_ptr = bytes_remain;
 				bytes_remain -= bytes_remain;
 			}
+			iov[1].iov_base += cur_ptr;
+			iov[1].iov_len = cur_ptr;
 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
+			ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
 			err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
+			if (err == -1){
+				ptl_error("error while sending multi segment message: %s\n remaining data: %i \n",strerror(errno),bytes_remain);
+			}
 		}                      
 		
 		
 	}
 	else{
 		// for immediate data, just send the actual buffer
-		//struct msghdr * buf_msg_hdr;
-		//buf_msg_hdr->msg_name = &target;
 		err = sendto(ni->iface->udp.connect_s, buf, sizeof(*buf), 0, (struct sockaddr *)dest, sizeof(*dest));
         }
 
@@ -463,7 +476,7 @@ buf_t *udp_receive(ni_t *ni){
 		ptl_info("got a message from self %p \n",ni->udp.self_recv_addr);
 		free(thebuf);
 		thebuf = (buf_t *) ni->udp.self_recv_addr;
-		return thebuf;//(buf_t *)ni->udp.self_recv_addr;
+		return thebuf;
 	}
 	
 
@@ -471,13 +484,14 @@ buf_t *udp_receive(ni_t *ni){
 	flags = MSG_PEEK;
 	//REG: we need to perform a quick message peek here to determine if it is a short or long message
 	// this can be tweaked performance wise to only peek on the beginning of the buf for the length
+	// this peak is also used to determine if it is a multi-segment message
 	err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(*thebuf), flags, (struct sockaddr*)&temp_sin, &lensin);
 
 	if (err == -1) {
 	    if (errno != EAGAIN){
 		free(thebuf);
 		WARN();
-		ptl_warn("error when peeking at message \n");
+		ptl_warn("error when peeking at message: %s \n",strerror(errno));
 		return NULL;
 	    }
 	    else{
@@ -491,36 +505,43 @@ buf_t *udp_receive(ni_t *ni){
 
 	//first check to see if this is meant for this ni
 	if (thebuf->internal_data != NULL){
-		hdr = thebuf->internal_data;
+		hdr = (req_hdr_t *)thebuf->internal_data;
 	} else{
-		hdr = &thebuf->data;
+		hdr = (req_hdr_t *)&thebuf->data;
 	}
 
 	if (((hdr->h1.physical == 1) && (!!(ni->options & PTL_NI_PHYSICAL))) ||
             ((hdr->h1.physical == 0) && (!!(ni->options & PTL_NI_LOGICAL)))) {
 		//this datagram is not meant for us
+		ptl_info("packet not meant for this logical NI, dropping \n");
 		free(thebuf);
 		usleep(20);
 		return NULL;
 	}
 
 	//we are going to be handling multiple messages, implemented through a recvmsg call
-	if (thebuf->rlength > sizeof(*thebuf)){
+	if (thebuf->rlength > sizeof(buf_t)){
 		ptl_info("peek indicates large message of size: %i\n",(int)thebuf->rlength);
 		
-	    	 //first I/O vector will be the traditional portals buf
-		 //second will be the data for the buf, so we need to set the data pointer appropriately once
-	 	 //the data has arrived
+	    	//first I/O vector will be the traditional portals buf
+		//second will be the data for the buf, so we need to set the data pointer appropriately once
+	 	//the data has arrived
 		struct msghdr buf_msg_hdr;
 		char * buf_data;
 		int buf_data_len;
 		struct iovec iov[2];
 
 		//this is the size of the largest UDP message that can be sent
+		//without fragmenting into multiple datagrams
 		int MAX_UDP_MSG_SIZE;
         	uint32_t max_len_size;
         	max_len_size = sizeof(int);
-        	getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_RCVBUF, (int *)&MAX_UDP_MSG_SIZE, &max_len_size);
+        	int current_message_size;
+		
+		getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_RCVBUF, (int *)&MAX_UDP_MSG_SIZE, &max_len_size);
+		//65507 is the max IPv4 UDP message size (65536 - 8 byte UDP header - 20 byte IP header)
+		if (MAX_UDP_MSG_SIZE > 65507)
+		    MAX_UDP_MSG_SIZE = 65507;
 		buf_data = calloc(1, (size_t)MAX_UDP_MSG_SIZE);
 		
 		iov[0].iov_base = thebuf;
@@ -534,7 +555,7 @@ buf_t *udp_receive(ni_t *ni){
 		buf_msg_hdr.msg_iovlen = 2;
 		
 		err = recvmsg(ni->iface->udp.connect_s, &buf_msg_hdr, 0);
-		if(err == -1) {
+		if (err == -1) {
                         free(thebuf);
                         free(buf_data);
 			WARN();
@@ -543,14 +564,13 @@ buf_t *udp_receive(ni_t *ni){
 			return NULL;
 
                 }
-	
-
-	
-		ptl_info("received large message of size: %i %i %i\n",err,(int)iov[0].iov_len,(int)iov[1].iov_len);
-		//process received IO vectors
 		
+		current_message_size = err - sizeof(buf_t);
+		ptl_info("received large message of size: %i %i %i\n",err,(int)iov[0].iov_len,(int)iov[1].iov_len);
+		
+		//process received IO vectors
 		thebuf = (buf_t *)buf_msg_hdr.msg_iov[0].iov_base;
-		buf_data = (char *)buf_msg_hdr.msg_iov[1].iov_base;
+		memcpy(buf_data, buf_msg_hdr.msg_iov[1].iov_base, (size_t)buf_msg_hdr.msg_iovlen);
 		buf_data_len = buf_msg_hdr.msg_iovlen;
 
 		thebuf->transfer.udp.data = (unsigned char *)buf_data;
@@ -559,9 +579,15 @@ buf_t *udp_receive(ni_t *ni){
 		
 		temp_sin = *(struct sockaddr_in*)buf_msg_hdr.msg_name;
 		lensin = buf_msg_hdr.msg_namelen;
-				
 	 
-		if (thebuf->rlength > 65507){
+		int MAX_UDP_RECV_SIZE = 1488;
+        	uint32_t max_recv_size;
+        	max_recv_size = sizeof(int);
+        	getsockopt(ni->iface->udp.connect_s, SOL_SOCKET, SO_SNDBUF, (int*)&MAX_UDP_RECV_SIZE, &max_recv_size);	
+		if (MAX_UDP_RECV_SIZE > 65507)
+		    MAX_UDP_RECV_SIZE = 65507;
+
+		if ((thebuf->rlength + sizeof(buf_t)) > MAX_UDP_RECV_SIZE){
 			//this message is large enough to span multiple UDP messages, so we need to fetch them all
 			//first message will be the portals buf, and data upto 64K
 			//subsequent messages need to be added to the received data buffer as extra data
@@ -569,11 +595,88 @@ buf_t *udp_receive(ni_t *ni){
 			//THIS ASSUMES UDP IS RELIABLE AND IN-ORDER, which it is not unless a reliability layer is present.
 			//this also assumes that there is not data incoming from multiple sources on this socket/port		
 			ptl_warn("Message size exceeds that of a single datagram, this operational mode is not recommended \n");		
-			abort();	
+		
+			ptl_info("ni->iface is %p \n",ni->iface);
+	
+			buf_t *big_buf;
+			
+			//create or fetch a large message buffer from a linked list
+			int found_one = 0;
+			struct list_head *l, *t;
+			
+			list_for_each_safe(l, t, &ni->udp_list) {
+                		big_buf = list_entry(l, buf_t, list);
+				ptl_info("list buf @%p \n",big_buf);
+				ptl_info("compare in progress list item to present transfer %p %i %s:%i\n",ni->iface,ni->iface->id.phys.pid,inet_ntoa(big_buf->udp.src_addr.sin_addr),ntohs(big_buf->udp.src_addr.sin_port));	
+				//We only need to check the pid
+				if (ni->iface->id.phys.pid == ntohs(big_buf->udp.src_addr.sin_port)){
+					ptl_info("found match for system, checking logical NI \n");
+					//found a matching buf, check to see if addressing mode is correct
+					if (((!!(ni->options & PTL_NI_LOGICAL)) && (hdr->h1.physical == 1)) ||
+					   ((!!(ni->options & PTL_NI_PHYSICAL)) && (hdr->h1.physical == 0))){
+						//this is an exact match
+						found_one = 1;
+						ptl_info("found a matching in-progress transfer \n");
+						break;
+					}
+				}
+				
+                	}
+			//if a buffer didn't already exist, this is a new incoming
+			//large message, so allocate one
+			if (found_one != 1){
+				//size is 16MB because we have 8 bits available for number of 64K packets
+				//this is completely arbitrary, and could be adjusted up or down
+				ptl_info("not an oustanding transfer, allocate a new buffer \n");
+				//copy the buf over to the first iovec
+				big_buf = calloc(1, sizeof(buf_t));
+				memcpy(big_buf, buf_msg_hdr.msg_iov[0].iov_base, sizeof(buf_t));
+				//set the 16MB buffer
+				big_buf->transfer.udp.data = calloc(1, 65536<<8);
+				ptl_info("memory region starting at %p allocated for transfer reception \n",big_buf->transfer.udp.data);	
+				ptl_info("destination pid is: %s:%d \n",inet_ntoa(big_buf->udp.src_addr.sin_addr),ntohs(big_buf->udp.src_addr.sin_port));	
+				big_buf->transfer.udp.my_iovec.iov_len = 0; 
+				ptl_info("adding buffer @%p to the list \n",big_buf);	
+				//add the buffer to the udp outstanding transfer list
+				INIT_LIST_HEAD(&big_buf->list);
+				list_add_tail(&big_buf->list, &ni->udp_list);
+				big_buf->transfer.udp.fragment_count = 0;	
+			}				
+
+			ptl_info("copy data to big receive buffer for segment #%i\n",hdr->fragment_seq);
+			//Copy the incoming data to the big buffer's data region
+			//In the correct section for its sequence number
+			//so we don't have to worry about out of order segments, this is handled here
+			ptl_info("copying to location: %p \n",big_buf->transfer.udp.data  + ((MAX_UDP_RECV_SIZE - sizeof(buf_t)) * hdr->fragment_seq));
+			memcpy((big_buf->transfer.udp.data  + (((MAX_UDP_RECV_SIZE - sizeof(buf_t))	* hdr->fragment_seq))), buf_msg_hdr.msg_iov[1].iov_base, current_message_size);
+			ptl_info("from :%p data:%x\n",buf_msg_hdr.msg_iov[1].iov_base,*(uint64_t *)buf_msg_hdr.msg_iov[1].iov_base);
+			ptl_info("increase received data count\n");
+			ptl_info("segment size was data:%i max data size:%i \n",current_message_size,MAX_UDP_RECV_SIZE - sizeof(buf_t));
+			big_buf->transfer.udp.my_iovec.iov_len += current_message_size;
+		
+			//increment the fragment counter and check to see if it equals the total
+			big_buf->transfer.udp.fragment_count++;
+			ptl_info("have #%i segments of #%i size: %i\n",big_buf->transfer.udp.fragment_count, ((thebuf->rlength / (MAX_UDP_RECV_SIZE - sizeof(buf_t))) +1),thebuf->rlength);
+			//check to see if the transfer is complete
+			if (big_buf->transfer.udp.fragment_count == ((thebuf->rlength / (MAX_UDP_RECV_SIZE - sizeof(buf_t))) +1)){
+				//we're done the transfer
+				ptl_info("transfer complete length: %i, removing buffer from active transfers list \n",big_buf->transfer.udp.my_iovec.iov_len);
+				
+				if (!(list_empty(&ni->udp_list))){
+				    list_del(l);
+				}
+				thebuf = big_buf;
+				ptl_info("set data transfer pointer to %p \n",big_buf->transfer.udp.data);
+			}
+			//if it does not, return nothing as we are still in progress
+			else{
+				ptl_info("transfer not complete, wait for more incoming datagrams \n");
+				return NULL;
+			}
 		}	
 	}
 	else {
-	
+	//this is a small transfer with immediate data, fetch it.
         err = recvfrom(ni->iface->udp.connect_s, thebuf, sizeof(*thebuf), 0, (struct sockaddr*)&temp_sin, &lensin);
 		if(err == -1) {
             		if (errno != EAGAIN){
@@ -581,8 +684,8 @@ buf_t *udp_receive(ni_t *ni){
 	    			WARN();
 				ptl_warn("error receiving main buffer from socket: %d %s\n",ni->iface->udp.connect_s,strerror(errno));
 				return NULL;
-       	   		}
-		
+       	   		
+			}
        	    		else {
 				//Nothing to fetch
        	      			  free(thebuf);
@@ -609,8 +712,14 @@ buf_t *udp_receive(ni_t *ni){
 		}
 
 		}
-	
-	ptl_info("received data from %s:%i type:%i data size: %lu message size:%u %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(*(thebuf->data)),thebuf->length,err);
+
+	if (thebuf->type == BUF_UDP_RECEIVE){
+		thebuf->obj.obj_ni = ni;
+        	thebuf->conn = get_conn(ni, (ptl_process_t)le32_to_cpu(hdr->src_rank));
+		atomic_inc(&thebuf->conn->udp.recv_seq);
+	}
+
+	ptl_info("received data from %s:%i type:%i data size: %lu message size:%u %i \n",inet_ntoa(temp_sin.sin_addr),ntohs(temp_sin.sin_port),thebuf->type,sizeof(*(thebuf->data)),thebuf->rlength,err);
 	 	
         thebuf->udp.src_addr = temp_sin;
         return (buf_t *)thebuf;

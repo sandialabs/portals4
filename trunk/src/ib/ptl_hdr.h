@@ -96,6 +96,10 @@ typedef struct req_hdr {
 	__le64			hdr_data;
 	__le32			pt_index;
 	__le32			uid;
+#if WITH_TRANSPORT_UDP
+	unsigned int	udp_is_large:1;
+	unsigned int	fragment_seq:8;
+#endif 
 } req_hdr_t;
 
 /* Header for an ack or a reply. */
