@@ -438,7 +438,9 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		ptl_warn("attempting to re-initialize the interface \n");
 	 	ni->udp.dest_addr = &iface->udp.sin;
 		ni->id.phys.nid = iface->id.phys.nid;
+#if !IS_PPE
 		ni->umn_fd = -1;
+#endif
 		return PTL_OK;
 	}
 
