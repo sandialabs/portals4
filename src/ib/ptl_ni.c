@@ -330,7 +330,9 @@ int _PtlNIInit(gbl_t *gbl,
 	ni->options = options;
 	ni->last_pt = -1;
 	set_limits(ni, desired);
+#ifndef HAVE_KITTEN
 	ni->uid = geteuid();
+#endif
 	ni->cleanup_state = NI_INIT_CLEANUP;
 	INIT_LIST_HEAD(&ni->md_list);
 	INIT_LIST_HEAD(&ni->ct_list);

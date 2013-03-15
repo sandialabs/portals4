@@ -257,7 +257,7 @@ static void socket_process_client_connection(EV_P_ ev_io *w, int revents)
 
 /* Kitten's PCT calls this to manually add a client to the PPE before
  * the client is actually started. */
-int ppe_add_kitten_client(int pid, void *addr, void *ppe_addr, size_t str_size, char *str)
+int ppe_add_kitten_client(pid_t pid, uid_t uid, void *addr, void *ppe_addr, size_t str_size, char *str)
 {
 	union msg_ppe_client msg;
 	struct client *client;
@@ -278,6 +278,9 @@ int ppe_add_kitten_client(int pid, void *addr, void *ppe_addr, size_t str_size, 
 		free(client);
 		return -1;
 	}
+
+	/* Stash away the trusted uid */
+	client->uid = uid;
 
 	/* Kitten PCT adds this to the client's environment.
 	 * The portals4 "light" library that is linked with
@@ -677,6 +680,14 @@ static void do_OP_PtlNIInit(ppebuf_t *buf)
 							  &buf->msg.PtlNIInit.desired : NULL,
 							  &buf->msg.PtlNIInit.actual,
 							  &buf->msg.PtlNIInit.ni_handle);
+
+#ifdef HAVE_KITTEN
+	/* Set the trusted uid, based on what the PCT told us about the client */
+	ni_t *ni;
+	to_ni(&client->gbl, buf->msg.PtlNIInit.ni_handle, &ni);
+	ni->uid = client->uid;
+#endif
+
 	if (buf->msg.ret)
 		WARN();
 }
