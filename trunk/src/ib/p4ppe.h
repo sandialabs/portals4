@@ -23,6 +23,11 @@ struct client
 	/* Keep the PID of the client. It's the key to the list. */
 	pid_t pid;
 
+#ifdef HAVE_KITTEN
+	/* On Kitten, the uid is trusted, set by the PCT */
+	uid_t uid;
+#endif
+
 	gbl_t gbl;
 };
 
@@ -99,7 +104,7 @@ struct ppe {
 int ppe_run(int num_bufs, int num_threads);
 
 #ifdef HAVE_KITTEN
-int ppe_add_kitten_client(int pid, void *addr, void *ppe_addr, size_t str_size, char *str);
+int ppe_add_kitten_client(pid_t pid, uid_t uid, void *addr, void *ppe_addr, size_t str_size, char *str);
 #endif
 
 #endif /* PTL_P4PPE_H */
