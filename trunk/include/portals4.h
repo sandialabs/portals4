@@ -296,6 +296,9 @@ typedef struct {
 /*! Enables an infinite timeout. */
 #define PTL_TIME_FOREVER ((ptl_time_t)0xffffffff)
 
+/*! Maximum size of a ptl_size_t (used for creating MD, ME, and LE) */
+#define PTL_SIZE_MAX ((ptl_size_t) 0xffffffffffffffffULL)
+
 /******************************
 * Initialization and Cleanup *
 ******************************/
