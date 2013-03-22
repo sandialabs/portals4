@@ -65,6 +65,22 @@ void le_cleanup(void *arg)
 }
 
 /**
+ * @brief Posts an auto unlink event
+ */
+void le_post_unlink_event(le_t *le)
+{
+	if (!le->eq)
+		return;
+
+	make_le_event(le, le->eq,
+			      PTL_EVENT_AUTO_UNLINK,
+			      PTL_NI_OK);
+
+	if (le->ptl_list == PTL_OVERFLOW_LIST)
+		le->do_auto_free = 1;
+}
+
+/**
  * @brief Unlink an entry from a PT list and remove
  * the reference held by the PT list.
  *
@@ -87,13 +103,8 @@ void le_unlink(le_t *le, int auto_event)
 				pt->overflow_size--;
 			list_del_init(&le->list);
 
-			if (auto_event && le->eq) {
-				make_le_event(le, le->eq,
-					      PTL_EVENT_AUTO_UNLINK,
-					      PTL_NI_OK);
-				if (le->ptl_list == PTL_OVERFLOW_LIST)
-					le->do_auto_free = 1;
-			}
+			if (auto_event)
+				le_post_unlink_event(le);
 
 			le->pt = NULL;
 		}

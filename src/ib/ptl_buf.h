@@ -183,6 +183,8 @@ struct buf {
 			uint32_t		rdma_dir;
 
  			unsigned int operation;	/* Save the operation */
+
+			int			auto_unlink_pending;
 		};
 
 		/*

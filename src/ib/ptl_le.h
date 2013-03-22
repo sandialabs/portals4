@@ -69,6 +69,7 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le);
 
 int le_append_pt(ni_t *ni, le_t *le);
 
+void le_post_unlink_event(le_t *le);
 void le_unlink(le_t *le, int send_event);
 
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,

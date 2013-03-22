@@ -384,6 +384,7 @@ static int tgt_start(buf_t *buf)
 	buf->le = NULL;
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
+	buf->auto_unlink_pending = 0;
 
 #if IS_PPE
 	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
@@ -811,9 +812,11 @@ static int tgt_get_length(buf_t *buf)
 	 */
 	if ((me->options & PTL_ME_USE_ONCE) ||
 	    ((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
-	    ((me->length - me->offset) < me->min_free)))
-		le_unlink(buf->le, !(me->options &
-			  PTL_ME_EVENT_UNLINK_DISABLE));
+	    ((me->length - me->offset) < me->min_free))) {
+		le_unlink(buf->le, 0);
+		if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
+			buf->auto_unlink_pending = 1;
+	}
 
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
@@ -1554,6 +1557,10 @@ static int tgt_comm_event(buf_t *buf)
 
 	if (buf->event_mask & XT_CT_COMM_EVENT)
 		make_ct_comm_event(buf);
+
+	/* Post PTL_EVENT_AUTO_UNLINK after the comm event */
+	if (buf->auto_unlink_pending)
+		le_post_unlink_event(buf->le);
 
 	if (buf->event_mask & XT_REPLY_EVENT)
 		return STATE_TGT_SEND_REPLY;
