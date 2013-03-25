@@ -36,6 +36,7 @@ void gbl_release(ref_t *ref)
 
 	/* Terminate the event loop, which will terminate the event
 	 * thread. */
+#if !WITH_TRANSPORT_UDP	
 	if (gbl->event_thread_run) {
 		/* Create an async event to stop the event loop. May be there
 		 * is a better way. */
@@ -47,7 +48,7 @@ void gbl_release(ref_t *ref)
 		pthread_join(gbl->event_thread, NULL);
 		EVL_WATCH(ev_async_stop(evl.loop, &stop_event_loop));
 	}
-
+#endif
 	iface_fini(gbl);
 
 	pthread_mutex_destroy(&gbl->gbl_mutex);
