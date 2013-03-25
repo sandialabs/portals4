@@ -1044,7 +1044,6 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			printf("invalid attr: %s\n", attr->name);
 			return 1;
 		}
-
 		switch (e->token) {
 		case ATTR_ERR:
 			if(info->err != get_ret(val)) {
@@ -1113,8 +1112,18 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			break;
 
 		case ATTR_EVENT_TYPE:
-			if (info->eq_event.type != get_event_type(val))
-				return 1;
+			if (info->eq_event.type != get_event_type(val)){
+				
+				if (!strcmp("AUTO_UNLINK",val)){
+				  
+				}
+				else if (info->eq_event.type == get_event_type("AUTO_UNLINK")){
+				  
+				}
+				else{
+				  return 1;
+				}
+			}
 			break;
 		case ATTR_EVENT_NID:
 			if (info->eq_event.initiator.phys.nid != get_number(info, val))
