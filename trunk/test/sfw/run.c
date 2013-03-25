@@ -1113,16 +1113,7 @@ static int check_attr(struct node_info *info, xmlNode *node)
 
 		case ATTR_EVENT_TYPE:
 			if (info->eq_event.type != get_event_type(val)){
-				
-				if (!strcmp("AUTO_UNLINK",val)){
-				  
-				}
-				else if (info->eq_event.type == get_event_type("AUTO_UNLINK")){
-				  
-				}
-				else{
-				  return 1;
-				}
+				return 1;
 			}
 			break;
 		case ATTR_EVENT_NID:

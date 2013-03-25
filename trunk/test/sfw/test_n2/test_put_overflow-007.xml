@@ -38,12 +38,12 @@
                       <barrier/>
 
                       <ptl_eq_wait>
-                        <check event_type="AUTO_UNLINK"/>
+                        <check event_type="PUT"/>
                       </ptl_eq_wait>
 
 
                       <ptl_eq_wait>
-                        <check event_type="PUT"/>
+                        <check event_type="AUTO_UNLINK"/>
                       </ptl_eq_wait>
 
 

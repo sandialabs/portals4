@@ -13,10 +13,10 @@
                   <check event_type="LINK"/>
                 </ptl_eq_wait>
                 <ptl_eq_wait>
-                  <check event_type="AUTO_UNLINK"/>
+                  <check event_type="GET"/>
                 </ptl_eq_wait>
                 <ptl_eq_wait>
-                  <check event_type="GET"/>
+                  <check event_type="AUTO_UNLINK"/>
                 </ptl_eq_wait>
                 <ptl_eq_wait>
                   <check event_type="REPLY"/>

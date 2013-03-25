@@ -37,12 +37,12 @@
                       <barrier/>
 
                       <ptl_eq_wait>
-                        <check event_type="AUTO_UNLINK"/>
+                        <check event_type="ATOMIC"/>
                       </ptl_eq_wait>
 
 
                       <ptl_eq_wait>
-                        <check event_type="ATOMIC"/>
+                        <check event_type="AUTO_UNLINK"/>
                       </ptl_eq_wait>
 
 
