@@ -671,9 +671,9 @@ found_one:
 	ni_fail = check_perm(buf, buf->le);
 	if (ni_fail) {
 		if (ni_fail == PTL_NI_PERM_VIOLATION)
-		   ni->status[PTL_SR_PERMISSIONS_VIOLATIONS]++;
+		   ni->status[PTL_SR_PERMISSION_VIOLATIONS]++;
 		if (ni_fail == PTL_NI_OP_VIOLATION)
-		   ni->status[PTL_SR_OPERATIONS_VIOLATIONS]++;
+		   ni->status[PTL_SR_OPERATION_VIOLATIONS]++;
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		le_put(buf->le);
 		buf->le = NULL;
