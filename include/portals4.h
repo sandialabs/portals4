@@ -66,7 +66,7 @@ typedef enum {
                                     * the number of attempted operation
                                     * violations. */
 } ptl_sr_index_t;
-#define PTL_SR_LAST (PTL_SR_PERMISSIONS_VIOLATIONS + 1)
+#define PTL_SR_LAST (PTL_SR_OPERATIONS_VIOLATIONS + 1)
 typedef int ptl_sr_value_t;             /*!< Signed integral type that defines
                                          * the types of values held in status
                                          * registers. */

@@ -488,6 +488,11 @@ static int tgt_start(buf_t *buf)
  */
 static int request_drop(buf_t *buf)
 {
+	if (buf->ni_fail != PTL_NI_OP_VIOLATION && buf->ni_fail != PTL_NI_PERM_VIOLATION){
+		ni_t *ni = obj_to_ni(buf);
+		ni->status[PTL_SR_DROP_COUNT]++;
+	}
+
 	/* we didn't match anything so set start to NULL */
 	buf->start = NULL;
 	buf->put_resid = 0;
@@ -665,6 +670,10 @@ found_one:
 	/* Check to see if we have permission for the operation */
 	ni_fail = check_perm(buf, buf->le);
 	if (ni_fail) {
+		if (ni_fail == PTL_NI_PERM_VIOLATION)
+		   ni->status[PTL_SR_PERMISSIONS_VIOLATIONS]++;
+		if (ni_fail == PTL_NI_OP_VIOLATION)
+		   ni->status[PTL_SR_OPERATIONS_VIOLATIONS]++;
 		PTL_FASTLOCK_UNLOCK(&pt->lock);
 		le_put(buf->le);
 		buf->le = NULL;
