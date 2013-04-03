@@ -17,6 +17,45 @@ unsigned int linesize;
 struct transports transports;
 #endif
 
+#ifdef IS_PPE
+
+/* Various initalizations that must be done once. */
+int ppe_misc_init_once(void)
+{
+	init_param();
+	debug = get_param(PTL_DEBUG);
+	ptl_log_level = get_param(PTL_LOG_LEVEL);
+	pagesize = sysconf(_SC_PAGESIZE);
+#ifdef _SC_LEVEL1_DCACHE_LINESIZE
+	linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+     if (0 == linesize) linesize = 64;
+#else
+	linesize = 64;
+#endif
+
+#if WITH_TRANSPORT_SHMEM
+	if (get_param(PTL_ENABLE_MEM)) {
+		transports.local = transport_local_shmem;
+	}
+#endif
+
+#if IS_PPE
+	transports.local = transport_local_ppe;
+#endif
+
+#if WITH_TRANSPORT_IB
+	transports.remote = transport_remote_rdma;
+#endif
+
+#if WITH_TRANSPORT_UDP
+	transports.remote = transport_remote_udp;
+#endif
+
+	return PTL_OK;
+}
+
+#else
+
 /* Various initalizations that must be done once. */
 int misc_init_once(void)
 {
@@ -52,6 +91,9 @@ int misc_init_once(void)
 
 	return PTL_OK;
 }
+
+#endif
+
 
 #if !IS_LIGHT_LIB
 
@@ -142,9 +184,11 @@ err0:
 }
 #endif
 
+#ifndef IS_PPE
 /* can return */
 int PtlHandleIsEqual(ptl_handle_any_t handle1,
-		     ptl_handle_any_t handle2)
+                     ptl_handle_any_t handle2)
 {
 	return (handle1 == handle2);
 }
+#endif
