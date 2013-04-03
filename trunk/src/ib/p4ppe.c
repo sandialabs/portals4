@@ -1664,17 +1664,18 @@ static void sig_terminate(int signum)
 #endif
 
 int
-ppe_run(int num_bufs, int num_threads)
+ppe_run(int num_bufs, int num_threads, size_t stack_size)
 {
 	int err;
 	int i;
+	pthread_attr_t attr;
 
 	/* Stash away PPE config info */
 	ppe.ppebuf.num = num_bufs;
 	ppe.num_prog_threads = num_threads;
 
 	/* Misc initializations. */
-	err = misc_init_once();
+	err = ppe_misc_init_once();
 	if (err)
 		return 1;
 
@@ -1694,14 +1695,22 @@ ppe_run(int num_bufs, int num_threads)
 		return 1;
 
 	/* Launch the threads. */
+	if (stack_size) {
+		pthread_attr_init(&attr);
+		pthread_attr_setstacksize(&attr, stack_size);
+	}
+
 	for (i=0; i<ppe.num_prog_threads; i++) {
 		struct prog_thread *pt = &ppe.prog_thread[i];
-		err = pthread_create(&pt->thread, NULL, ppe_progress, pt);
+		err = pthread_create(&pt->thread, stack_size ? &attr : NULL, ppe_progress, pt);
 		if (unlikely(err)) {
 			ptl_warn("Failed to create a progress thread.\n");
 			return 1;
 		}
 	}
+
+	if (stack_size)
+		pthread_attr_destroy(&attr);
 
 #ifndef HAVE_KITTEN
 	signal(SIGTERM, sig_terminate);

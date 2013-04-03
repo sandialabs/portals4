@@ -101,7 +101,7 @@ struct ppe {
 
 #endif	/* IS_PPE */
 
-int ppe_run(int num_bufs, int num_threads);
+int ppe_run(int num_bufs, int num_threads, size_t stack_size);
 
 #ifdef HAVE_KITTEN
 int ppe_add_kitten_client(pid_t pid, uid_t uid, void *addr, void *ppe_addr, size_t str_size, char *str);
