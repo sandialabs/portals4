@@ -19,10 +19,12 @@ gbl_t per_proc_gbl;
 /* Event loop. */
 struct evl evl;
 
+#if !WITH_TRANSPORT_UDP
 static void stop_event_loop_func(EV_P_ ev_async *w, int revents)
 {
 	ev_break(evl.loop, EVBREAK_ALL);
 }
+#endif
 
 void gbl_release(ref_t *ref)
 {

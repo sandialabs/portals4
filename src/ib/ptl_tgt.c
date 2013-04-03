@@ -422,7 +422,7 @@ static int tgt_start(buf_t *buf)
 	ptl_info("initiator nid: %i pid: %i \n",hdr->src_nid,hdr->src_pid);
 	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
 	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
-	ptl_info("buf start: %x \n",buf->start);
+	ptl_info("buf start: %p \n",buf->start);
 
 	//TODO make the hdr frm the sender send these in network order;
 	initiator.phys.nid = hdr->src_nid;
@@ -1774,7 +1774,8 @@ static int tgt_send_reply(buf_t *buf)
 
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
-		ptl_info("address that requested reply: %s:%i reply length = %i\n",inet_ntoa(buf->udp.src_addr.sin_addr),ntohs(buf->udp.src_addr.sin_port),rep_buf->rlength);
+		ptl_info("address that requested reply: %s:%i reply length = %i\n",inet_ntoa(buf->udp.src_addr.sin_addr),
+			 ntohs(buf->udp.src_addr.sin_port),(int)rep_buf->rlength);
 		rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
 	}
 #endif

@@ -653,7 +653,8 @@ static void progress_thread_udp(ni_t *ni)
 				ptl_info("UDP connection request received, handling now.... \n");
 				
 				udp_buf->type = BUF_UDP_CONN_REP;
-			        
+			        udp_buf->rlength = 0;
+				
 				struct udp_conn_msg msg;
         			msg.msg_type = cpu_to_le16(UDP_CONN_MSG_REP);
         			msg.port = ntohs(ni->udp.src_port);
@@ -672,6 +673,7 @@ static void progress_thread_udp(ni_t *ni)
 				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
 				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
 				//udp_buf->conn->state = CONN_STATE_CONNECTED;
+				
 				ptl_info("Connection request reply sent, connection valid. \n");
 				//free(udp_buf);
                                 break;	
