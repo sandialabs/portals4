@@ -470,7 +470,7 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
 	/* Set the socket in non blocking mode. */
 	
-	//REG: set to blocking socket mode
+	//REG: set to non-blocking socket mode
 	flags = fcntl(ni->udp.s, F_GETFL);
 	ret = fcntl(ni->udp.s, F_SETFL, flags | O_NONBLOCK);
 	if (ret == -1) {

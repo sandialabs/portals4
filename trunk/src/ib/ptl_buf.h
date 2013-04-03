@@ -381,14 +381,19 @@ struct buf {
 			struct udp_conn_msg conn_msg;
 		
 			unsigned int fragment_count;
+			//is the transfer iovec based
+			unsigned int is_iovec;
 			//how many iovecs are present in the message data
 			unsigned int msg_num_iovecs;
 			//which iovec in the list we are currently receiving
 			//used at the receive side
 			unsigned int cur_iovec;
+			//where the current iovec is getting copied to
+			unsigned int cur_iov_copy_loc;
 			//indicate whether the last iovec in the message data
 			//for a segment is split over multiple segments
 			unsigned int iovec_split;
+			
 		} udp;
 #endif
 	} transfer;

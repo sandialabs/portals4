@@ -984,14 +984,26 @@ static int reply_event(buf_t *buf)
 	//immediate copies have already been performed, don't do anything more
 	//otherwise we need to copy the reply into the md
 	if (buf->conn->transport.type == CONN_TYPE_UDP){
-		ptl_info("reply to address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
+		ptl_info("reply from address: %s:%i \n",inet_ntoa(buf->recv_buf->udp.src_addr.sin_addr),ntohs(buf->recv_buf->udp.src_addr.sin_port));
 		buf->udp = buf->recv_buf->udp;
 		
 		if (!buf->data_in){
+
+		  if (!(!!(buf->get_md->options & PTL_IOVEC))){
 			void *start = buf->get_md->start + buf->get_offset;
 			memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
- 		}
-		ptl_info("CTs local:%p recv:%p \n",buf->get_ct,buf->recv_buf->ct);
+ 		  }
+		  else{ 
+			ptl_info("received reply for a iovec, copying into supplied iovec %i %i %i\n",buf->mlength,buf->get_md->num_iov,buf->get_offset);
+			int err;
+			err = iov_copy_in(buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->get_md->start,
+                                           NULL,
+                                           buf->get_md->num_iov,
+                                           buf->get_offset, buf->mlength);
+                        buf->recv_buf->transfer.udp.num_iovecs = buf->get_md->num_iov;	
+		  }
+		}
+		
 	}
 #endif	
 

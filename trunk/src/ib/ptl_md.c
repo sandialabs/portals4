@@ -71,7 +71,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	int err;
 	ni_t *ni = obj_to_ni(md);
 	const ptl_iovec_t *iov;
-#if WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB 
 	struct ibv_sge *sge;
 #endif
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -83,7 +83,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	md->num_iov = num_iov;
 
 	md->internal_data = calloc(num_iov, sizeof(mr_t)
-#if WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB 
 							   + sizeof(struct ibv_sge)
 #endif
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -100,7 +100,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 	md->mr_list = p;
 	p += num_iov*sizeof(mr_t);
 
-#if WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB 
 	sge = md->sge_list = p;
 	p += num_iov*sizeof(struct ibv_sge);
 #endif
@@ -125,6 +125,11 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 
 	iov = iov_list;
 
+#if WITH_TRANSPORT_UDP
+	md->udp_list = malloc(num_iov * sizeof(ptl_iovec_t));
+	memcpy(md->udp_list, iov_list, (sizeof(ptl_iovec_t) * num_iov));	
+#endif
+
 	for (i = 0; i < num_iov; i++) {
 		mr_t *mr;
 
@@ -137,7 +142,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 
 		mr = md->mr_list[i];
 
-#if WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB 
 		sge->addr = cpu_to_le64((uintptr_t)iov->iov_base);
 		sge->length = cpu_to_le32(iov->iov_len);
 		sge->lkey = cpu_to_le32(mr->ibmr->rkey);
@@ -157,6 +162,11 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 		mem_iovec++;
 #endif
 
+#if WITH_TRANSPORT_UDP
+		//record the iov addresses so we can fetch them later 
+		md->udp_list[i].iov_base = iov->iov_base;
+		md->udp_list[i].iov_len = iov->iov_len;
+#endif
 		iov++;
 	}
 

@@ -36,7 +36,7 @@ struct md {
 	 * or NULL if num_iov is zero */
 	void			*internal_data;
 
-#if WITH_TRANSPORT_IB
+#if WITH_TRANSPORT_IB 
 	/** scatter gather list passed to the target that
 	 * contains a list of addresses, lengths and rkeys
 	 * in network byte order for use by messages sent
@@ -44,6 +44,9 @@ struct md {
 	struct ibv_sge		*sge_list;
 #endif
 
+#if WITH_TRANSPORT_UDP
+	ptl_iovec_t		*udp_list;
+#endif
 	/** mrs to register memory regions for verbs API
 	 * can hold one mr per iovec contained in internal_data	 */
 	mr_t			**mr_list;

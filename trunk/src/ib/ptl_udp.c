@@ -18,8 +18,6 @@ static int send_message_udp(buf_t *buf, int from_init)
 {
 	buf_get(buf);
 
-	//ptl_info("buffer data pointer is: %p %i\n",buf->data_out,buf->data_out->udp.length);
-
 	//set the buffer type to be received at the other end
 	buf->type = BUF_UDP_RECEIVE;
 
@@ -69,11 +67,22 @@ static void append_init_data_udp_iovec(data_t *data, md_t *md,
 	buf->transfer.udp.transfer_state_expected = 0; /* always the initiator here */
 	buf->transfer.udp.udp = &data->udp;
 
-	//TODO: what are bounce buffers and are they relevant for UDP
-	//attach_bounce_buffer(buf, data);
-
 	buf->transfer.udp.num_iovecs = num_iov;
-	buf->transfer.udp.iovecs = &((ptl_iovec_t *)md->start)[iov_start];
+	ptl_info("appending data for %i iovecs \n",num_iov);
+	int i, err;
+	const ptl_iovec_t *iov;
+
+	buf->transfer.udp.iovecs = calloc(1,sizeof(ptl_iovec_t)*num_iov); 
+
+	iov = md->udp_list;
+		
+	for (i = 0; i < num_iov; i++){
+	   buf->transfer.udp.iovecs[i].iov_base = md->udp_list[i].iov_base;
+	   buf->transfer.udp.iovecs[i].iov_len = md->udp_list[i].iov_len;	
+	   //ptl_info("item is: %x length: %i \n",md->udp_list[i].iov_base,md->udp_list[i].iov_len);
+	}
+
+	buf->transfer.udp.my_iovec.iov_base = calloc(1,md->length);
 	buf->transfer.udp.offset = 0;
 
 	buf->transfer.udp.length_left = length;
@@ -117,7 +126,7 @@ static void append_init_data_udp_direct(data_t *data, mr_t *mr, void *addr,
  *
  * @return status
  */
-//TODO: Code review needs to take place here (UO & REB)
+
 static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset,
 					ptl_size_t length, buf_t *buf)
 {
@@ -126,11 +135,11 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 	data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
 	int num_sge;
 
-	//TODO: not sure if we need these iov_ stuff
 	ptl_size_t iov_start = 0;
 	ptl_size_t iov_offset = 0;
 
 	if (length <= get_param(PTL_MAX_INLINE_DATA)) {
+		ptl_info("small transfer inlining data \n");
 		err = append_immediate_data(md->start, NULL, md->num_iov, dir, offset, length, buf);
 	}
 	else {
@@ -168,6 +177,9 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 				append_init_data_udp_direct(data, mr, addr, length, buf);
 				ptl_info("addr to send is: %p, buf addr is: %p \n",addr,buf->transfer.udp.my_iovec.iov_base);
 			}
+			else{
+				abort();
+			}
 			//REG: TODO handle large messages, currently it creates a IO vector for the message and places all of it in the IO vec.
 			//abort();//todo
 		}
@@ -179,9 +191,14 @@ static int init_prepare_transfer_udp(md_t *md, data_dir_t dir, ptl_size_t offset
 	return err;
 }
 
-//TODO: We need to implement the function do_upd_transfer
-//      correctly for UDP transfers...shouldn't this be 
-//      just a regular use of sendto/recvfrom routine (UO & REB)
+
+/**
+ * @brief Perform data movement for put/get operations 
+ *
+ * @param[in] buf the buffer to transfer the data to/from
+ *
+ * @return status
+*/
 static int do_udp_transfer(buf_t *buf)
 {
 	struct udp *udp = buf->transfer.udp.udp;
@@ -190,10 +207,6 @@ static int do_udp_transfer(buf_t *buf)
 	ptl_size_t to_copy;
 	int err;
 	int is_iovec;
-
-	ptl_info("do udp transfer \n");
-
-	//is_iovec = buf->get_md->options & PTL_IOVEC;
 
 	if (udp->state != 2)
 		return PTL_OK;
@@ -206,7 +219,9 @@ static int do_udp_transfer(buf_t *buf)
 	udp->state = 3;
 
 	if (*resid) {
+		ptl_info("begin copy \n");
 		if (buf->rdma_dir == DATA_DIR_IN) {
+			//Put operation copy
 			to_copy = udp->length;
 			ptl_info("copy into local mem, length: %i from: %p \n",to_copy,buf->transfer.udp.data);
 			if (to_copy > *resid)
@@ -217,28 +232,37 @@ static int do_udp_transfer(buf_t *buf)
 							  buf->transfer.udp.num_iovecs,
 							  buf->transfer.udp.offset, to_copy);
 		} else {
-			ptl_info("prepare data for get response \n");
-			to_copy = buf->mlength;
+			//Get operation response
+			is_iovec = !!(buf->me->options & PTL_IOVEC);
+			buf->transfer.udp.is_iovec = is_iovec;
+			ptl_info("iovec response? %i \n",is_iovec);
+			
+			if (is_iovec){
+			   buf->transfer.udp.num_iovecs = buf->me->num_iov;
+			}
+			to_copy = buf->rlength;
 			if (to_copy > *resid)
 				to_copy = *resid;
                         
 			err = PTL_OK;
 			buf->send_buf = buf;
-		
-			//forget copying, just use the iovec	
-			buf->send_buf->transfer.udp.data = buf->transfer.udp.my_iovec.iov_base;			
-	/*		err = iov_copy_out(buf->send_buf->transfer.udp.data, (ptl_iovec_t *)&buf->transfer.udp.my_iovec,
-							   NULL,
-							   buf->transfer.udp.my_iovec.iov_len,
-							   buf->transfer.udp.offset, to_copy);
-	*/		//We need to setup the reply buffer for this data
+
+			if(buf->transfer.udp.is_iovec == 0){		
+			  //forget copying, just use the iovec	
+			  buf->send_buf->transfer.udp.data = buf->transfer.udp.my_iovec.iov_base;			
+			}
+
+			if (is_iovec == 1){
+			    err = iov_copy_out(buf->send_buf->transfer.udp.my_iovec.iov_base, buf->me->start,
+						NULL,
+						buf->me->num_iov,
+						buf->transfer.udp.offset, to_copy);
+			    buf->send_buf->transfer.udp.num_iovecs = buf->me->num_iov;
+			}
+			//We need to setup the reply buffer for this data
 			buf->send_buf->rlength = to_copy;
 			buf->send_buf->transfer.udp.udp->length = to_copy;
 			buf->send_buf->mlength = to_copy;
-			//buf->send_buf->get_md = NULL;
-			//buf->send_buf->put_md = NULL;
-			//buf->get_md = NULL;
-			//buf->put_md = NULL; 
 			udp->length = to_copy;
 		}
 
@@ -247,6 +271,7 @@ static int do_udp_transfer(buf_t *buf)
 		assert(err == PTL_OK);
 
 	} else {
+		ptl_info("udp transfer dropping \n");
 		/* Dropped case. Nothing to transfer, but the buffer must
 		 * still be returned. */
 		to_copy = 0;
@@ -270,7 +295,6 @@ static int do_udp_transfer(buf_t *buf)
 static int udp_tgt_data_out(buf_t *buf, data_t *data)
 {
 	int next;
-//	ni_t *ni = obj_to_ni(buf);
 
 	if (data->data_fmt != DATA_FMT_UDP) {
 		assert(0);
@@ -285,8 +309,9 @@ static int udp_tgt_data_out(buf_t *buf, data_t *data)
 	if ((buf->rdma_dir == DATA_DIR_IN && buf->put_resid) ||
 		(buf->rdma_dir == DATA_DIR_OUT && buf->get_resid)) {
 		if (buf->me->options & PTL_IOVEC) {
-			buf->transfer.udp.num_iovecs = buf->me->length;
+			buf->transfer.udp.num_iovecs = buf->me->num_iov;
 			buf->transfer.udp.iovecs = buf->me->start;
+			ptl_info("num iovecs: %i \n",buf->transfer.udp.num_iovecs);
 		} else {
 			buf->transfer.udp.num_iovecs = 1;
 			buf->transfer.udp.iovecs = &buf->transfer.udp.my_iovec;
@@ -296,13 +321,11 @@ static int udp_tgt_data_out(buf_t *buf, data_t *data)
 		}
 	}
 
-	//TODO: We need to get the buffer and the length content put in the buf->transfer correctly
-	//      (UO & REB)
 	buf->transfer.udp.offset = buf->moffset;
 	buf->transfer.udp.length_left = buf->get_resid; // the residual length left
 	buf->transfer.udp.data_length = buf->rlength;
 
-	return STATE_TGT_UDP;//STATE_TGT_START_COPY;
+	return STATE_TGT_UDP;
 }
 
 /**
@@ -392,11 +415,30 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		//we must send it as a iovec upto the maximum UDP message size (64KB)
 		
 		ptl_info("starting large message send \n");
-		if (send_md == NULL) {
+		if (send_md == NULL){
 		    ptl_info("data ptr: %p length: %i \n",buf->transfer.udp.my_iovec.iov_base,(int)buf->transfer.udp.my_iovec.iov_len);
+		    buf->transfer.udp.is_iovec = 0;
 		}
 		else {
-		    ptl_info("IO vec, data prt: %p number of vecs: %i \n",buf->transfer.udp.iovecs, buf->transfer.udp.num_iovecs);
+		    if (buf->transfer.udp.is_iovec == 1){
+			ptl_info("Flagged IO vec, data prt: %p data: %x number of vecs: %i \n",buf->transfer.udp.data,
+				 *(uint64_t *)buf->transfer.udp.data, buf->transfer.udp.num_iovecs);
+		    }
+	  	    else if (!!(send_md->options & PTL_IOVEC)){
+		        ptl_info("IO vec, data prt: %p number of vecs: %i \n",buf->transfer.udp.iovecs, buf->transfer.udp.num_iovecs);
+		        //Now we just copy the iovecs into a sinlge buffer for sending as one large message
+			int i;
+			int cur_pntr = 0;
+			for (i=0; i< buf->transfer.udp.num_iovecs; i++){
+			    memcpy(buf->transfer.udp.my_iovec.iov_base+cur_pntr,buf->transfer.udp.iovecs[i].iov_base,
+				   buf->transfer.udp.iovecs[i].iov_len);
+			    cur_pntr += buf->transfer.udp.iovecs[i].iov_len;
+			}
+			buf->transfer.udp.is_iovec = 0;
+		    }
+		    else{
+			buf->transfer.udp.is_iovec = 0;	
+		    }
 		}
 		
 		int segments = 0;
@@ -414,18 +456,30 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 
 		int iovec_elements;
 	
-		if (buf->transfer.udp.num_iovecs <= 1){//(send_md == NULL) {
+		if (buf->transfer.udp.is_iovec == 0) {
 			iovec_elements = 2;
-			buf->transfer.udp.num_iovecs = iovec_elements;;
+			buf->transfer.udp.num_iovecs = iovec_elements;
+			buf->transfer.udp.is_iovec = 0;
 		}
 		else{
-			iovec_elements = buf->transfer.udp.num_iovecs + 1;
+			iovec_elements = buf->transfer.udp.num_iovecs;
+			if (iovec_elements == buf->rlength){
+				ptl_info("iovec elements = rbuf \n");
+				iovec_elements = 2;
+				buf->transfer.udp.num_iovecs = 2;
+				buf->transfer.udp.is_iovec = 0;
+			}
+			else{
+			  iovec_elements = buf->transfer.udp.num_iovecs++;
+			}
+			current_iovec = 0;
+			
 		}
 		//for a non-iovec based send
 		//we only have two iovec elements, the buf_t and the data
 		//for an io-vec based send we have 1 + the number of
 		//elements in the sending io-vec
-		struct iovec iov[iovec_elements];
+		struct iovec iov[iovec_elements+1];
 
 		ptl_info("# of segments: %i \n",segments);
 		assert(segments > 0);
@@ -437,9 +491,10 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		iov[0].iov_base = buf;
 		iov[0].iov_len = sizeof(buf_t);
 	    
-		if (buf->transfer.udp.num_iovecs == 2){//(send_md == NULL){
+		if (buf->transfer.udp.is_iovec == 0) {
+			buf->transfer.udp.is_iovec = 0;
 			iov[1].iov_base = (void *)buf->transfer.udp.my_iovec.iov_base; 
-			ptl_info("sending iov: %p \n",buf->transfer.udp.my_iovec.iov_base);
+			ptl_info("sending fake iov: %p \n",buf->transfer.udp.my_iovec.iov_base);
 			if (buf->rlength > MAX_UDP_MSG_SIZE - sizeof(buf_t)){
 				iov[1].iov_len = MAX_UDP_MSG_SIZE - sizeof(buf_t);
 				bytes_remain = buf->rlength - (MAX_UDP_MSG_SIZE - sizeof(buf_t));
@@ -456,30 +511,65 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 			int i = 1;
 			bytes_remain = buf->rlength;
 			int current_size = 0;
-			if ((buf->rlength*(iovec_elements-1)) < (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
-				//just send all of the iovecs in the message data iovec
-				for (i=1; i < iovec_elements; i++)
-					iov[i].iov_base = (void*)&buf->transfer.udp.iovecs[i-1];
+						
+			int total_size = 0;
+			for (i=0; i < buf->transfer.udp.num_iovecs; i++){
+			    total_size += buf->transfer.udp.iovecs[i].iov_len;
+			}
 
+			bytes_remain = total_size;
+			ptl_info("total size of iovec is: %i \n",total_size);
+			i = 1;
+
+			if (total_size < (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
+				//just send all of the iovecs in the message data iovec
+				for (i=1; i <= iovec_elements; i++){
+					iov[i].iov_base = buf->transfer.udp.iovecs[i-1].iov_base;
+					iov[i].iov_len = buf->transfer.udp.iovecs[i-1].iov_len;
+					current_iovec++;
+				}
+				current_iovec++;
 			}
 			else{
-			   while (bytes_remain && i < iovec_elements){
-				if ((current_size + buf->rlength/*transfer.udp.iovecs[i-1].iov_len*/) < (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
-					iov[i].iov_base = (void*)&buf->transfer.udp.iovecs[i-1];
-					ptl_info("native IOvec send, sending iovec #%i of %i \n",i,buf->transfer.udp.num_iovecs);
-					iov[i].iov_len = buf->rlength/(iovec_elements-1);//transfer.udp.iovecs[i-1].iov_len;
+			   while (bytes_remain && current_iovec <= iovec_elements){
+				//TODO: make this work for individual iovec elements that are larger than the MAX_UDP_MSG_SIZE
+				if ((current_size + buf->transfer.udp.iovecs[current_iovec].iov_len) < (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
+					iov[i].iov_base = buf->transfer.udp.iovecs[current_iovec].iov_base;
+					ptl_info("native IOvec send, sending iovec #%i of %i \n",current_iovec+1,buf->transfer.udp.num_iovecs);
+					iov[i].iov_len = buf->transfer.udp.iovecs[current_iovec].iov_len;
 					bytes_remain = bytes_remain - iov[i].iov_len;
 					current_size = current_size + iov[i].iov_len;
+					current_iovec++;
 					i++;
 				}
 				else{
 					ptl_info("current message data payload is full, must send the remaining message in additional segments \n");
-					current_iovec = i;
-					break;
+					//send iovec datagram and then loop back to prepare another
+					buf_msg_hdr.msg_name = (void *)dest;
+                			buf_msg_hdr.msg_namelen = sizeof(*dest);
+                			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
+                			buf_msg_hdr.msg_iovlen = i;
+                			buf->transfer.udp.msg_num_iovecs = i;
+					ptl_info("message header iov num set to %i , size: %i\n",buf_msg_hdr.msg_iovlen,buf->rlength);
+                			buf_msg_hdr.msg_flags = 0;
+
+                			ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),
+						ntohs(((struct sockaddr_in*)buf_msg_hdr.msg_name)->sin_port));
+
+                			buf_msg_hdr.msg_control = NULL;
+                			buf_msg_hdr.msg_controllen = 0;
+					ptl_info("send IOvec, segment #%i of #%i \n",hdr->fragment_seq+1,segments);
+                			err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
+					hdr->fragment_seq++;
+					current_size = 0;
+					i = 1;
 				}
-				current_iovec = i;
+			
 			   }	
-			   ptl_info("ptl iovec send size total: %i \n",current_size);
+			   //current_iovec is used in the next section as the length of the to be sent message, so set it to i.
+		           bytes_remain = 0;
+			   current_iovec = i;
+			   
 			}
 		}
 		
@@ -489,7 +579,8 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_name = (void *)dest;
 		buf_msg_hdr.msg_namelen = sizeof(*dest);
 		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
-		buf_msg_hdr.msg_iovlen = current_iovec; 
+		buf_msg_hdr.msg_iovlen = current_iovec;
+		buf->transfer.udp.msg_num_iovecs = current_iovec; 
 		ptl_info("message header iov num set to %i \n",buf_msg_hdr.msg_iovlen);
 		buf_msg_hdr.msg_flags = 0;
 
@@ -498,17 +589,21 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_control = NULL;
 		buf_msg_hdr.msg_controllen = 0;
 
+		ptl_info("is message iovec? %i \n",buf->transfer.udp.is_iovec);
 		ptl_info("sending UDP message of size: %i, maximum: %i \n",(int)(buf_msg_hdr.msg_iov[0].iov_len+buf_msg_hdr.msg_iov[1].iov_len),(int)MAX_UDP_MSG_SIZE);
 		ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
                 err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
-
+		if (err == -1){
+		    ptl_error("error while sending multi segment message: %s\n remaining data: %i \n",strerror(errno),bytes_remain);
+		}
+		//this continues sending other datagrams for the non-iovec case
 		while (bytes_remain){
 			
 			hdr->fragment_seq++;
 			//keep sending multiple UDP segments until all the data is sent
 			if (bytes_remain >= (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
 				//more UDP segments to this message will follow
-				cur_ptr = MAX_UDP_MSG_SIZE - sizeof(buf_t);
+		  	      	cur_ptr = MAX_UDP_MSG_SIZE - sizeof(buf_t);
 				bytes_remain -= (MAX_UDP_MSG_SIZE - sizeof(buf_t));
 			}	
 			else {
@@ -520,6 +615,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 			iov[1].iov_len = cur_ptr;
 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 			ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
+			usleep(500);
 			err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
 			if (err == -1){
 				ptl_error("error while sending multi segment message: %s\n remaining data: %i \n",strerror(errno),bytes_remain);
@@ -599,6 +695,9 @@ buf_t *udp_receive(ni_t *ni){
 		//this datagram is not meant for us
 		ptl_info("packet not meant for this logical NI, dropping \n");
 		free(thebuf);
+		//this time interval is just to back off, it is completely arbitrary
+		//although 20us is a reasonable approximation of the time to 
+		//fetch a recv through the kernel UDP networking stack
 		usleep(20);
 		return NULL;
 	}
@@ -613,7 +712,7 @@ buf_t *udp_receive(ni_t *ni){
 		struct msghdr buf_msg_hdr;
 		char * buf_data;
 		int buf_data_len;
-		struct iovec iov[2];
+		struct iovec iov[thebuf->transfer.udp.num_iovecs+1];
 
 		//this is the size of the largest UDP message that can be sent
 		//without fragmenting into multiple datagrams
@@ -631,13 +730,15 @@ buf_t *udp_receive(ni_t *ni){
 		iov[0].iov_base = thebuf;
 		iov[0].iov_len = sizeof(buf_t);
 		iov[1].iov_base = buf_data;
+		//just combine all data into one big iov
 		iov[1].iov_len = thebuf->rlength;
-	
+
 		buf_msg_hdr.msg_name = &temp_sin;
 		buf_msg_hdr.msg_namelen = sizeof(temp_sin);
 		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 		
-		buf_msg_hdr.msg_iovlen = thebuf->transfer.udp.num_iovecs;
+		//we only ever have two iovecs, the header and the data
+		buf_msg_hdr.msg_iovlen = 2;
 		
 		err = recvmsg(ni->iface->udp.connect_s, &buf_msg_hdr, 0);
 		if (err == -1) {
@@ -651,34 +752,38 @@ buf_t *udp_receive(ni_t *ni){
                 }
 		
 		current_message_size = err - sizeof(buf_t);
-		ptl_info("received large message of size: %i %i %i\n",err,(int)iov[0].iov_len,(int)iov[1].iov_len);
+		ptl_info("received message of size: %i %i %i\n",err,(int)iov[0].iov_len,(int)iov[1].iov_len);
 		
 		//process received IO vectors
 		thebuf = (buf_t *)buf_msg_hdr.msg_iov[0].iov_base;
-		
+		thebuf->transfer.udp.num_iovecs = buf_msg_hdr.msg_iovlen;
+	
 		struct md * recv_md = NULL;
 	
 		//check if this is an iovec
 		//if it is, copy all of the iovecs over
                 if (thebuf->transfer.udp.num_iovecs > 2){
                        	int cur_iov_copy_loc = 0;
-                       	for (int i=1; i < thebuf->transfer.udp.msg_num_iovecs; i++){
-                        	ptl_info("copy iovec #%i of %i \n",i,thebuf->transfer.udp.msg_num_iovecs);
+			int i;
+                       	for (i=1; i < thebuf->transfer.udp.num_iovecs; i++){ //msg_num_iovecs
+                        	ptl_info("copy iovec #%i of %i of size: %i\n",i,thebuf->transfer.udp.num_iovecs);
 				memcpy((buf_data + cur_iov_copy_loc), buf_msg_hdr.msg_iov[i].iov_base, buf_msg_hdr.msg_iov[i].iov_len);
 				cur_iov_copy_loc = cur_iov_copy_loc + buf_msg_hdr.msg_iov[i].iov_len;
 			}
+			thebuf->transfer.udp.my_iovec.iov_base = buf_data;
+			thebuf->transfer.udp.my_iovec.iov_len = thebuf->rlength;
                 }
 		else{
 		//if not, copy just the data in the 2 element iovec
 			ptl_info("not an iovec \n");
 			memcpy(buf_data, buf_msg_hdr.msg_iov[1].iov_base, (size_t)buf_msg_hdr.msg_iovlen);
 			buf_data_len = buf_msg_hdr.msg_iovlen;
+			thebuf->transfer.udp.my_iovec.iov_base = buf_msg_hdr.msg_iov[1].iov_base;
+			thebuf->transfer.udp.my_iovec.iov_len = buf_msg_hdr.msg_iov[1].iov_len;
 		}
 
 		thebuf->transfer.udp.data = (unsigned char *)buf_data;
-		thebuf->transfer.udp.my_iovec.iov_base = buf_msg_hdr.msg_iov[1].iov_base;
-		thebuf->transfer.udp.my_iovec.iov_len = buf_msg_hdr.msg_iov[1].iov_len;
-		
+
 		temp_sin = *(struct sockaddr_in*)buf_msg_hdr.msg_name;
 		lensin = buf_msg_hdr.msg_namelen;
 	 
@@ -736,21 +841,25 @@ buf_t *udp_receive(ni_t *ni){
 				//set the 16MB buffer
 				big_buf->transfer.udp.data = calloc(1, 65536<<8);
 				ptl_info("memory region starting at %p allocated for transfer reception \n",big_buf->transfer.udp.data);	
-				ptl_info("destination pid is: %s:%d \n",inet_ntoa(big_buf->udp.src_addr.sin_addr),ntohs(big_buf->udp.src_addr.sin_port));	
+				ptl_info("destination pid is: %s:%d \n",inet_ntoa(big_buf->udp.src_addr.sin_addr),
+					  ntohs(big_buf->udp.src_addr.sin_port));	
 				big_buf->transfer.udp.my_iovec.iov_len = 0; 
 				ptl_info("adding buffer @%p to the list \n",big_buf);	
 				//add the buffer to the udp outstanding transfer list
 				INIT_LIST_HEAD(&big_buf->list);
 				list_add_tail(&big_buf->list, &ni->udp_list);
 				big_buf->transfer.udp.fragment_count = 0;	
+				big_buf->transfer.udp.cur_iov_copy_loc = 0;
 			}				
 
 			ptl_info("copy data to big receive buffer for segment #%i\n",hdr->fragment_seq);
 			//Copy the incoming data to the big buffer's data region
 			//In the correct section for its sequence number
 			//so we don't have to worry about out of order segments, this is handled here
-			ptl_info("copying to location: %p \n",big_buf->transfer.udp.data  + ((MAX_UDP_RECV_SIZE - sizeof(buf_t)) * hdr->fragment_seq));
+			ptl_info("copying to location: %p \n",big_buf->transfer.udp.data  + 
+				((MAX_UDP_RECV_SIZE - sizeof(buf_t)) * hdr->fragment_seq));
 
+			if (big_buf->transfer.udp.is_iovec){
 			if ((big_buf->put_md != NULL) || big_buf->get_md != NULL){
 		                if (big_buf->put_md != NULL){
           		              if (big_buf->put_md->options != NULL){
@@ -769,18 +878,14 @@ buf_t *udp_receive(ni_t *ni){
                                 	}
                         	}
                 	}
+			}else{
+				ptl_info("Not a iovec recv \n");
+				recv_md = NULL;
+			}
         				
-			if (recv_md != NULL){
-			    int cur_iov_copy_loc = 0;
-			    for (int i=1; i< big_buf->transfer.udp.msg_num_iovecs; i++)
-			    	memcpy((big_buf->transfer.udp.data + cur_iov_copy_loc), buf_msg_hdr.msg_iov[i].iov_base, buf_msg_hdr.msg_iov[i].iov_len);
-			}
-			else{
-			    memcpy((big_buf->transfer.udp.data  + (((MAX_UDP_RECV_SIZE - sizeof(buf_t))	* hdr->fragment_seq))), 
-				    buf_msg_hdr.msg_iov[1].iov_base, current_message_size);
-			}
-			ptl_info("from :%p data:%x\n",buf_msg_hdr.msg_iov[1].iov_base,*(uint64_t *)buf_msg_hdr.msg_iov[1].iov_base);
-			ptl_info("increase received data count\n");
+		    	memcpy((big_buf->transfer.udp.data  + (((MAX_UDP_RECV_SIZE - sizeof(buf_t))	* hdr->fragment_seq))), 
+			buf_msg_hdr.msg_iov[1].iov_base, current_message_size);
+
 			ptl_info("segment size was data:%i max data size:%i \n",current_message_size,MAX_UDP_RECV_SIZE - sizeof(buf_t));
 			big_buf->transfer.udp.my_iovec.iov_len += current_message_size;
 		
@@ -791,12 +896,15 @@ buf_t *udp_receive(ni_t *ni){
 			if (big_buf->transfer.udp.fragment_count == ((thebuf->rlength / (MAX_UDP_RECV_SIZE - sizeof(buf_t))) +1)){
 				//we're done the transfer
 				ptl_info("transfer complete length: %i, removing buffer from active transfers list \n",big_buf->transfer.udp.my_iovec.iov_len);
-				
+			
+				ptl_info("data at end (%p) is: %x \n",(big_buf->transfer.udp.data+big_buf->rlength), *(uint64_t *)(big_buf->transfer.udp.data + (current_message_size)));
+	
 				if (!(list_empty(&ni->udp_list))){
 				    list_del(l);
 				}
+				big_buf->transfer.udp.my_iovec.iov_base = big_buf->transfer.udp.data;
 				thebuf = big_buf;
-				ptl_info("set data transfer pointer to %p \n",big_buf->transfer.udp.data);
+				thebuf->recv_buf = big_buf;
 			}
 			//if it does not, return nothing as we are still in progress
 			else{
