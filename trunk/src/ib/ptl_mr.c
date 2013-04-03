@@ -19,7 +19,8 @@
 int mr_new(void *arg)
 {
 
-	mr_t *mr = arg;
+	mr_t *mr;
+	mr = arg;
 
 #if WITH_TRANSPORT_IB 
 	mr->ibmr = NULL;
