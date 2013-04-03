@@ -494,7 +494,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		if (buf->transfer.udp.is_iovec == 0) {
 			buf->transfer.udp.is_iovec = 0;
 			iov[1].iov_base = (void *)buf->transfer.udp.my_iovec.iov_base; 
-			ptl_info("sending fake iov: %p \n",buf->transfer.udp.my_iovec.iov_base);
+			ptl_info("sending iov: %p \n",buf->transfer.udp.my_iovec.iov_base);
 			if (buf->rlength > MAX_UDP_MSG_SIZE - sizeof(buf_t)){
 				iov[1].iov_len = MAX_UDP_MSG_SIZE - sizeof(buf_t);
 				bytes_remain = buf->rlength - (MAX_UDP_MSG_SIZE - sizeof(buf_t));
@@ -543,6 +543,16 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 					i++;
 				}
 				else{
+					//if there's any space left, send part of the next iovec.
+					if (current_size < (MAX_UDP_MSG_SIZE - sizeof(buf_t))){
+						int space_left = (MAX_UDP_MSG_SIZE - sizeof(buf_t)) - current_size;
+						iov[i].iov_base = buf->transfer.udp.iovecs[current_iovec].iov_base;
+						iov[i].iov_len = space_left;
+						current_size += iov[i].iov_len;
+						buf->transfer.udp.iovecs[current_iovec].iov_base += space_left;
+						buf->transfer.udp.iovecs[current_iovec].iov_len -= space_left;
+						i++;
+					}
 					ptl_info("current message data payload is full, must send the remaining message in additional segments \n");
 					//send iovec datagram and then loop back to prepare another
 					buf_msg_hdr.msg_name = (void *)dest;
@@ -550,7 +560,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
                 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
                 			buf_msg_hdr.msg_iovlen = i;
                 			buf->transfer.udp.msg_num_iovecs = i;
-					ptl_info("message header iov num set to %i , size: %i\n",buf_msg_hdr.msg_iovlen,buf->rlength);
+					ptl_info("message header iov num set to %i , size: %i, length: %i\n",buf_msg_hdr.msg_iovlen,buf->rlength,current_size);
                 			buf_msg_hdr.msg_flags = 0;
 
                 			ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),
@@ -615,7 +625,8 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 			iov[1].iov_len = cur_ptr;
 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 			ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
-			usleep(500);
+			//We can overrun the send buffer without a wait here
+			usleep(50);
 			err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
 			if (err == -1){
 				ptl_error("error while sending multi segment message: %s\n remaining data: %i \n",strerror(errno),bytes_remain);
@@ -903,6 +914,7 @@ buf_t *udp_receive(ni_t *ni){
 				    list_del(l);
 				}
 				big_buf->transfer.udp.my_iovec.iov_base = big_buf->transfer.udp.data;
+				big_buf->transfer.udp.my_iovec.iov_len = thebuf->rlength;
 				thebuf = big_buf;
 				thebuf->recv_buf = big_buf;
 			}
