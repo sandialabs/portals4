@@ -10,12 +10,11 @@ if HAVE_LIBXML
 SUBDIRS+=sfw
 endif
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/runtime
-
-noinst_LTLIBRARIES = libtestsupport.la
+check_LTLIBRARIES = libtestsupport.la
 libtestsupport_la_SOURCES = support.h support.c pmi.c
+libtestsupport_la_CPPFLAGS = $(pmi_CPPFLAGS)
+libtestsupport_la_LDFLAGS = $(pmi_LDFLAGS)
 libtestsupport_la_LIBADD = \
-	$(top_builddir)/src/libportals.la \
-	$(top_builddir)/src/runtime/libportals_runtime.la
+	$(top_builddir)/src/libportals.la $(pmi_LIBS)
 
 EXTRA_DIST = numawrapper.sh

@@ -13,7 +13,5 @@ EXTRA_PROGRAMS =
 include msg_rate/Makefile.inc
 include rtt_latency/Makefile.inc
 
-all: $(EXTRA_PROGRAMS)
-
-THREADS ?= 2
-TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(THREADS)
+NPROCS ?= 2
+TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)

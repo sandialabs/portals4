@@ -5,8 +5,8 @@
 
 AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test
-LDADD = $(top_builddir)/test/libtestsupport.la $(top_builddir)/src/libportals.la
 AM_LDFLAGS = $(LIBTOOL_WRAPPER_LDFLAGS)
+LDADD = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 
 TESTS = \
 	test_pmi_hello \
@@ -72,10 +72,8 @@ endif
 
 check_PROGRAMS = $(TESTS)
 
-all: $(TESTS)
-
-THREADS ?= 2
-TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(THREADS)
+NPROCS ?= 2
+TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)
 
 test_pmi_hello_SOURCES = test_pmi_hello.c
 test_pmi_hello_CPPFLAGS = $(AM_CPPFLAS) -I$(top_srcdir)/src/runtime

@@ -1,4 +1,4 @@
-SUBDIRS = test_n1 test_n2
+SUBDIRS = . test_n1 test_n2
 
 XMLEXTRA = \
 	test_phys_client.xml \
@@ -10,7 +10,7 @@ XMLEXTRA = \
 
 EXTRA_DIST = $(XMLEXTRA) make_test_relay.pl
 
-noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
+check_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 
 # Each binary needs the portals library and the runtime
 PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la

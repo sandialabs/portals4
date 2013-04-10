@@ -16,7 +16,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <portals4.h>
-#include <portals4/pmi.h>
+#if PMI_SLURM
+#include <slurm/pmi.h>
+#else
+#include <pmi.h>
+#endif
 
 #include "support.h"
 
