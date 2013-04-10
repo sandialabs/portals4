@@ -3,7 +3,12 @@
 # Copyright (c) 2012 Sandia Corporation
 
 
-SUBDIRS = ib runtime
+DIST_SUBDIRS = ib runtime
+SUBDIRS = ib
+
+if WANT_RUNTIME
+SUBDIRS += runtime
+endif
 
 lib_LTLIBRARIES = libportals.la
 libportals_la_SOURCES=

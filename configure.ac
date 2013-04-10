@@ -255,7 +255,8 @@ AC_SEARCH_LIBS([hwloc_topology_init], [hwloc],
 			   [AC_DEFINE([HAVE_HWLOC],[1],[Define if hwloc is available])])
 SANDIA_CHOOSE_TIMER
 
-SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])
+AS_IF([test "$enable_kitten" != "yes"],
+  [SANDIA_CHECK_EV([], [AC_MSG_ERROR([libev not found.])])])
 
 AS_IF([test "$enable_ppe" = "yes"],
   [SANDIA_CHECK_XPMEM([], [AC_MSG_ERROR([libxpmem not found.])])])
@@ -292,6 +293,24 @@ AS_IF([test "$active_remote_transport" == "udp"],
    transport_udp="yes"],
   [transport_udp="no"])
 AM_CONDITIONAL([WITH_TRANSPORT_UDP], [test "$active_remote_transport" == "udp"])
+
+# figure out all the runtime stuff
+AS_IF([test "$with_pmi" = "" -o "$with_pmi" = "no"],
+  [want_runtime=1],
+  [AS_IF([test "$enable_kitten" = "yes"], 
+         [want_runtime=0
+	  pmi_CPPFLAGS="-I${with_pmi}/include"
+	  pmi_LDFLAGS="-L${with_pmi}/lib"
+	  pmi_LIBS="-lpmi"],
+	 [ORTE_CHECK_PMI([pmi], [want_runtime=0], [want_runtime=1])])])
+AS_IF([test "$want_runtime" = "1"],
+  [pmi_CPPFLAGS='-I$(top_srcdir)/src/runtime/portals4'
+   pmi_LDFLAGS=
+   pmi_LIBS='$(top_builddir)/src/runtime/libportals_runtime.la'])
+AC_SUBST(pmi_CPPFLAGS)
+AC_SUBST(pmi_LDFLAGS)
+AC_SUBST(pmi_LIBS)
+AM_CONDITIONAL([WANT_RUNTIME], [test "$want_runtime" = "1"])
 
 
 ## -------------------------- ##
@@ -335,7 +354,7 @@ AS_IF([test -n "$with_ofed"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ofed=${with_ofed}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
-AC_CONFIG_SUBDIRS([src/runtime/hydra])
+AS_IF([test "$want_runtime" = "1"], [AC_CONFIG_SUBDIRS([src/runtime/hydra])])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
