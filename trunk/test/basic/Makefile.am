@@ -76,7 +76,7 @@ NPROCS ?= 2
 TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)
 
 test_pmi_hello_SOURCES = test_pmi_hello.c
-test_pmi_hello_CPPFLAGS = $(AM_CPPFLAS) -I$(top_srcdir)/src/runtime
+test_pmi_hello_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/runtime
 
 test_init_SOURCES = test_init.c
 
