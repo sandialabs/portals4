@@ -45,8 +45,10 @@ static inline int index_get(gbl_t *gbl, obj_t *obj, unsigned int *index_p)
 
 	index = atomic_inc(&gbl->next_index);
 
-	if (index >= MAX_INDEX)
+	if (index >= MAX_INDEX){
+		ptl_warn("Index > MAX Index, index was: %i \n",index);
 		return PTL_FAIL;
+	}
 
 	gbl->index_map[index] = obj;
 
