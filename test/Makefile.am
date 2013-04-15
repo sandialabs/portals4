@@ -12,7 +12,7 @@ endif
 
 check_LTLIBRARIES = libtestsupport.la
 libtestsupport_la_SOURCES = support.h support.c pmi.c
-libtestsupport_la_CPPFLAGS = $(pmi_CPPFLAGS)
+libtestsupport_la_CPPFLAGS = $(pmi_CPPFLAGS) -I$(top_srcdir)/include
 libtestsupport_la_LDFLAGS = $(pmi_LDFLAGS)
 libtestsupport_la_LIBADD = \
 	$(top_builddir)/src/libportals.la $(pmi_LIBS)
