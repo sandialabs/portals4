@@ -349,8 +349,11 @@ void cleanup_rdma(ni_t *ni)
 	}
 
 	if (ni->rdma.srq) {
+		/* This lock should be removed later, testing for possible race condition */
+		PTL_FASTLOCK_LOCK(&ni->rdma.srq_lock);
 		ibv_destroy_srq(ni->rdma.srq);
 		ni->rdma.srq = NULL;
+		PTL_FASTLOCK_UNLOCK(&ni->rdma.srq_lock);
 	}
 
 	ni_rcqp_cleanup(ni);
