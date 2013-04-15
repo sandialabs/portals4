@@ -459,6 +459,7 @@ int PtlNIInit_rdma(gbl_t *gbl, ni_t *ni)
 	INIT_LIST_HEAD(&ni->rdma.recv_list);
 	atomic_set(&ni->rdma.num_conn, 0);
 	PTL_FASTLOCK_INIT(&ni->rdma.recv_list_lock);
+	PTL_FASTLOCK_INIT(&ni->rdma.srq_lock);
 
 	err = init_rdma(iface, ni);
 	if (unlikely(err))
