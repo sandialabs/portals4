@@ -399,7 +399,8 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		else {
 		    if (buf->transfer.udp.is_iovec == 1){
 			ptl_info("Flagged IO vec, data prt: %p data: %llu number of vecs: %i \n",buf->transfer.udp.data,
-				 *(uint64_t *)buf->transfer.udp.data, (int)buf->transfer.udp.num_iovecs);
+
+				 *(long long unsigned int *)buf->transfer.udp.data, (int)buf->transfer.udp.num_iovecs);
 		    }
 	  	    else if (!!(send_md->options & PTL_IOVEC)){
 		        ptl_info("IO vec, data prt: %p number of vecs: %i \n",buf->transfer.udp.iovecs,(int) buf->transfer.udp.num_iovecs);
@@ -536,7 +537,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
                 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
                 			buf_msg_hdr.msg_iovlen = i;
                 			buf->transfer.udp.msg_num_iovecs = i;
-					ptl_info("message header iov num set to %i , size: %i, length: %i\n",buf_msg_hdr.msg_iovlen,(int)buf->rlength,current_size);
+					ptl_info("message header iov num set to %i , size: %i, length: %i\n",(int)buf_msg_hdr.msg_iovlen,(int)buf->rlength,(int)current_size);
                 			buf_msg_hdr.msg_flags = 0;
 
                 			ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),
@@ -567,7 +568,7 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 		buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 		buf_msg_hdr.msg_iovlen = current_iovec;
 		buf->transfer.udp.msg_num_iovecs = current_iovec; 
-		ptl_info("message header iov num set to %i \n",buf_msg_hdr.msg_iovlen);
+		ptl_info("message header iov num set to %i \n",(int)buf_msg_hdr.msg_iovlen);
 		buf_msg_hdr.msg_flags = 0;
 
 		ptl_info("sending large message to: %s:%i \n",inet_ntoa(((struct sockaddr_in *)buf_msg_hdr.msg_name)->sin_addr),ntohs(((struct sockaddr_in*)buf_msg_hdr.msg_name)->sin_port));
@@ -601,8 +602,11 @@ void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 			iov[1].iov_len = cur_ptr;
 			buf_msg_hdr.msg_iov = (struct iovec *)&iov;
 			ptl_info("send segment #%i of #%i \n",hdr->fragment_seq+1,segments);
+#ifdef __APPLE__			
 			//We can overrun the send buffer without a wait here
+			//due to Mac's having very small network buffers
 			usleep(50);
+#endif
 			err = sendmsg(ni->iface->udp.connect_s, (void *)&buf_msg_hdr, 0);
 			if (err == -1){
 				ptl_error("error while sending multi segment message: %s\n remaining data: %i \n",strerror(errno),bytes_remain);
@@ -886,7 +890,7 @@ buf_t *udp_receive(ni_t *ni){
 				//we're done the transfer
 				ptl_info("transfer complete length: %i, removing buffer from active transfers list \n",(int)big_buf->transfer.udp.my_iovec.iov_len);
 			
-				ptl_info("data at end (%p) is: %llu \n",(big_buf->transfer.udp.data+big_buf->rlength), *(uint64_t *)(big_buf->transfer.udp.data + (current_message_size)));
+				ptl_info("data at end (%p) is: %llu \n",(big_buf->transfer.udp.data+big_buf->rlength), *(long long unsigned int *)(big_buf->transfer.udp.data + (current_message_size)));
 	
 				if (!(list_empty(&ni->udp_list))){
 				    list_del(l);
