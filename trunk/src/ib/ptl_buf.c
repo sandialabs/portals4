@@ -213,9 +213,12 @@ int ptl_post_recv(ni_t *ni, int count)
 	/* account for posted buffers */
 	atomic_add(&ni->rdma.num_posted_recv, actual);
 
+	/* Get rid of this SRQ lock later; used for testing possible race condition */
+	PTL_FASTLOCK_LOCK(&ni->rdma.srq_lock);
 	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv.wr, &bad_wr);
 	if (err) {
 		WARN();
+	PTL_FASTLOCK_UNLOCK(&ni->rdma.srq_lock);
 
 		/* re-stock any unposted buffers */
 		PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
