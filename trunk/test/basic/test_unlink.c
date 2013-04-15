@@ -171,15 +171,15 @@ int main(int   argc,
         }
     }
 
-    CHECK_RETURNVAL(PtlMDRelease(md_h));
     CHECK_RETURNVAL(UNLINK(entry_h));
-
+    CHECK_RETURNVAL(PtlMDRelease(md_h));
     free(buf);
 
     libtest_barrier();
 
     /* cleanup */
     CHECK_RETURNVAL(PtlPTFree(ni_h, pt_index));
+    CHECK_RETURNVAL(PtlEQFree(eq_h));
     CHECK_RETURNVAL(PtlNIFini(ni_h));
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();
