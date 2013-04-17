@@ -600,7 +600,7 @@ static void process_connect_request(struct iface *iface, struct rdma_cm_event *e
 	}
 
 	pthread_mutex_unlock(&conn->mutex);
-
+	conn_put(conn);
 	return;
 
  reject:
