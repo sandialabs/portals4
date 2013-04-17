@@ -559,6 +559,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	le->options = le_init->options;
 	le->do_auto_free = 0;
 	le->ptl_list = ptl_list;
+	atomic_set(&le->busy,0);
 
 #ifndef NO_ARG_VALIDATION
 	if (le_handle_p) {
@@ -770,6 +771,16 @@ int _PtlLEUnlink(PPEGBL ptl_handle_le_t le_handle)
 #else
 	le = to_obj(MYGBL_ POOL_ANY, le_handle);
 #endif
+
+	//If this was an overflow, it should just complete now
+	//there's no other busy work being done
+	if (le->ptl_list == PTL_OVERFLOW_LIST){
+		atomic_set(&le->busy, 0);
+	}
+
+	while (atomic_read(&le->busy) == 1){
+                SPINLOCK_BODY();
+        }
 
 	ref_cnt = le_ref_cnt(le);
 
