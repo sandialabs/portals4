@@ -385,7 +385,7 @@ static int tgt_start(buf_t *buf)
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
 	buf->auto_unlink_pending = 0;
-
+	
 #if IS_PPE
 	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
 	buf->target.phys.pid = le32_to_cpu(hdr->src_pid);
@@ -713,8 +713,7 @@ found_one:
 		}
 #endif
 #endif
-	}
-
+	}		
 	buf->matching_list = buf->le->ptl_list;
 
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
@@ -1561,6 +1560,9 @@ static int tgt_comm_event(buf_t *buf)
 		pthread_cond_signal(&buf->cond);
 	}
 
+	if (buf->me)
+		atomic_set(&buf->me->busy,1);
+
 	if (buf->event_mask & XT_COMM_EVENT)
 		make_comm_event(buf);
 
@@ -1667,6 +1669,7 @@ static int tgt_send_ack(buf_t *buf)
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
 		/* The LE must be released before we sent the ack. */
 		le_put(buf->le);
+		atomic_set(&buf->me->busy,0);
 		buf->le = NULL;
 	}
 
@@ -1758,8 +1761,9 @@ static int tgt_send_reply(buf_t *buf)
 	rep_hdr->h1.matching_list = buf->matching_list;
 
 	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
-		/* The LE must be released before we sent the ack. */
+	/* The LE must be released before we sent the ack. */
 		le_put(buf->le);
+		atomic_set(&buf->me->busy, 0);
 		buf->le = NULL;
 	}
 
@@ -1812,6 +1816,7 @@ static int tgt_cleanup(buf_t *buf)
 		/* On the overflow list, and was already matched by an
 		 * ME/LE. */
 		assert(buf->le->ptl_list == PTL_OVERFLOW_LIST);
+		atomic_set(&buf->le->busy, 0);
 		state = STATE_TGT_OVERFLOW_EVENT;
 	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
 		state = STATE_TGT_WAIT_APPEND;
@@ -1860,16 +1865,24 @@ static int tgt_cleanup(buf_t *buf)
  */
 static void tgt_cleanup_2(buf_t *buf)
 {
-	/* tgt must release reference to any LE/ME */
 	if (buf->le) {
+		ptl_warn("me/le cleanup \n");
+		atomic_set(&buf->me->busy, 0);
 		le_put(buf->le);
 		buf->le = NULL;
+	}
+
+	if (buf->matching.le){
+		ptl_warn("matching me/le cleanup \n");
+		atomic_set(&buf->matching.le->busy, 0);
+                le_put(buf->matching.le);
+                buf->matching.le = NULL;
 	}
 
 	if (buf->conn) {
 		conn_put(buf->conn);
 		buf->conn = NULL;
-	}
+	}	
 }
 
 /**
@@ -1944,10 +1957,6 @@ static int tgt_overflow_event(buf_t *buf)
 		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
 			make_ct_event(le->ct, buf, CT_MBYTES);
 	}
-
-	/* drop the matching list element */
-	le_put(le);
-	buf->matching.le = NULL;
 
 	return STATE_TGT_CLEANUP_2;
 }

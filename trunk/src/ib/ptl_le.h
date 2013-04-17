@@ -49,6 +49,7 @@ enum list_element_type {
 	unsigned int		options;	\
 	unsigned int		num_iov;	\
 	unsigned int		do_auto_free; \
+	atomic_t		busy \
 	LE_XPMEM_MAPPING;
 
 /**

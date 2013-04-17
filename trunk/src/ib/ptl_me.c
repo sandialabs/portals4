@@ -123,6 +123,8 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 	me->id = me_init->match_id;
 	me->match_bits = me_init->match_bits;
 	me->ignore_bits = me_init->ignore_bits;
+	
+	atomic_set(&me->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
 	if (me_handle_p) {
@@ -410,6 +412,17 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
 #else
 	me = to_obj(MYGBL_ POOL_ANY, me_handle);
 #endif
+	//If this was an overflow, it should just complete now
+	//there's no other busy work being done
+	if (me->ptl_list == PTL_OVERFLOW_LIST){
+		atomic_set(&me->busy, 0);
+	}
+
+	/* make sure the me isn't still involved in any final
+ 	 * cleanup before we unlink it */		
+	while (atomic_read(&me->busy) == 1){
+		SPINLOCK_BODY();
+	}
 
 	ref_cnt = me_ref_cnt(me);
 
