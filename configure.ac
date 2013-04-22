@@ -23,7 +23,7 @@ dnl http://blog.flameeyes.eu/trackbacks?article_id=5155
 m4_ifdef([AM_SILENT_RULES],
            [m4_define([ptl_color_tests], [color-tests])],
            [m4_define([ptl_color_tests], [])])
-AM_INIT_AUTOMAKE([foreign check-news subdir-objects dist-bzip2 no-define tar-ustar 1.7 -Wall -Werror ]ptl_color_tests)
+AM_INIT_AUTOMAKE([foreign check-news subdir-objects parallel-tests dist-bzip2 no-define tar-ustar 1.7 -Wall -Werror ]ptl_color_tests)
 dnl If Automake supports silent rules, enable them
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
