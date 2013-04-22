@@ -1,6 +1,103 @@
-TESTS = $(top_srcdir)/test/sfw/test_n2/*.xml
+TESTS = \
+	test_atomic_overflow-001.xml \
+	test_atomic_overflow-002.xml \
+	test_atomic_overflow-003.xml \
+	test_atomic_overflow-004.xml \
+	test_atomic_overflow-005.xml \
+	test_atomic_overflow-006.xml \
+	test_atomic_overflow-007.xml \
+	test_atomic_overflow-008.xml \
+	test_atomic_overflow-009.xml \
+	test_atomic_overflow-010.xml \
+	test_eq_overflow-001.xml \
+	test_eq_overflow-002.xml \
+	test_events_logical-001.xml \
+	test_events_logical-002.xml \
+	test_events_logical-003.xml \
+	test_events_logical-004.xml \
+	test_events_logical-005.xml \
+	test_events_logical-006.xml \
+	test_events_logical-007.xml \
+	test_events_logical-008.xml \
+	test_events_logical-009.xml \
+	test_events_logical-010.xml \
+	test_events_logical-011.xml \
+	test_events_logical-012.xml \
+	test_events_logical-013.xml \
+	test_events_logical-014.xml \
+	test_events_logical-015.xml \
+	test_events_logical-016.xml \
+	test_events_logical-017.xml \
+	test_events_logical-018.xml \
+	test_events_logical-019.xml \
+	test_events_logical-020.xml \
+	test_events_logical-021.xml \
+	test_events_logical-022.xml \
+	test_events_logical-023.xml \
+	test_events_logical-024.xml \
+	test_events_logical-025.xml \
+	test_events_logical-026.xml \
+	test_events_logical-027.xml \
+	test_events_logical-028.xml \
+	test_events_logical-029.xml \
+	test_events_logical-030.xml \
+	test_events_logical-031.xml \
+	test_events_logical-032.xml \
+	test_events_logical-033.xml \
+	test_events_logical-034.xml \
+	test_flow-001.xml \
+	test_put_overflow-001.xml \
+	test_put_overflow-002.xml \
+	test_put_overflow-003.xml \
+	test_put_overflow-004.xml \
+	test_put_overflow-005.xml \
+	test_put_overflow-006.xml \
+	test_put_overflow-007.xml \
+	test_put_overflow-008.xml \
+	test_put_overflow-009.xml \
+	test_put_overflow-010.xml \
+	test_put_overflow-011.xml \
+	test_rdma_move_logical-001.xml \
+	test_rdma_move_logical-002.xml \
+	test_rdma_move_logical-003.xml \
+	test_rdma_move_logical-004.xml \
+	test_rdma_move_logical-005.xml \
+	test_rdma_move_logical-006.xml \
+	test_rdma_move_logical-007.xml \
+	test_rdma_move_logical-008.xml \
+	test_rdma_move_logical-009.xml \
+	test_rdma_move_logical-010.xml \
+	test_rdma_move_logical-011.xml \
+	test_rdma_move_logical-012.xml \
+	test_rdma_move_logical-013.xml \
+	test_rdma_move_logical-014.xml \
+	test_rdma_move_logical-015.xml \
+	test_rdma_move_logical-016.xml \
+	test_rdma_move_logical-017.xml \
+	test_rdma_move_logical-018.xml \
+	test_rdma_move_logical-019.xml \
+	test_rdma_move_logical-020.xml \
+	test_rdma_move_logical-021.xml \
+	test_rdma_move_logical-022.xml \
+	test_rdma_move_logical-023.xml \
+	test_rdma_move_logical-024.xml \
+	test_rdma_move_logical-025.xml \
+	test_rdma_move_logical-026.xml \
+	test_rdma_move_logical-027.xml \
+	test_rdma_move_logical-028.xml \
+	test_rdma_move_logical-029.xml \
+	test_rdma_move_logical-030.xml \
+	test_search-001.xml \
+	test_search-002.xml \
+	test_search-003.xml \
+	test_search-004.xml \
+	test_search-005.xml \
+	test_search-006.xml
 
-EXTRA_DIST = $(DESTS)
+EXTRA_DIST = $(TESTS)
 
-NPROCS ?= 2 ../ptl_test -f
-TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)
+TEST_EXTENSIONS = .xml
+XML_LOG_COMPILER = ../ptl_test -b $(srcdir)/ -f
+AM_XML_LOG_FLAGS = 
+
+TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np 2
