@@ -13,6 +13,7 @@ int verbose = 1;
 int debug;
 
 static char *filename;
+static char *basedir;
 
 static void usage(void)
 {
@@ -25,6 +26,7 @@ static void usage(void)
 	printf("	-v, --verbose		increase output\n");
 	printf("	-q, --quiet		reduce output\n");
 	printf("	-d, --debug		increase debugging output\n");
+        printf("        -b, --base DIR          base directory to look for file\n");
 	printf("	-f, --file FILENAME	test file location\n");
 	printf("	-l, --log level		log level\n");
 }
@@ -35,13 +37,14 @@ static int process_args(int argc, char *argv[])
 	extern int optind;
 	int c;
 	int option_index = 0;
-	char *options = "hVvqdf:l:";
+	char *options = "hVvqdb:f:l:";
 	static struct option long_options[] = {
 		{"help", 0, NULL, 'h'},
 		{"version", 0, NULL, 'V'},
 		{"verbose", 0, NULL, 'v'},
 		{"quiet", 0, NULL, 'q'},
 		{"debug", 0, NULL, 'd'},
+		{"base", 1, NULL, 'b'},
 		{"file", 1, NULL, 'f'},
 		{"log", 1, NULL, 'l'},
 		{NULL, 0, NULL, 0}
@@ -72,6 +75,10 @@ static int process_args(int argc, char *argv[])
 		case 'd':
 			debug++;
 			setenv("PTL_DEBUG", "1", -1);
+			break;
+
+		case 'b':
+			basedir = optarg;
 			break;
 
 		case 'f':
@@ -120,6 +127,7 @@ int main(int argc, char *argv[])
 {
 	int ret;
 	xmlDocPtr doc;
+        char *name;
 
 	ret = process_args(argc, argv);
 	if (ret) {
@@ -138,7 +146,13 @@ int main(int argc, char *argv[])
 
 	cio_init();
 
-	doc = cio_get_input(filename);
+        if (NULL != basedir) {
+            asprintf(&name, "%s%s", basedir, filename);
+        } else {
+            name = filename;
+        }
+
+	doc = cio_get_input(name);
 	if (!doc)
 		exit(-1);
 
