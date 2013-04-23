@@ -36,6 +36,12 @@ AC_DEFUN([SANDIA_CHECK_EV], [
 
   SANDIA_CHECK_PATH([$with_ev], [], [AC_MSG_ERROR([--with-ev option must be an absolute path])])
 
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LDFLAGS="$LDFLAGS"
+  saved_LIBS="$LIBS"
+
+  LIBS="$LIBS -lm"
+
   AS_IF([test "$with_ev" != "no"],
     [AS_IF([test ! -z "$with_ev" -a "$with_ev" != "yes"],
        [check_ev_dir="$with_ev"])
@@ -63,10 +69,6 @@ AC_DEFUN([SANDIA_CHECK_EV], [
 	                 [check_ev_happy="no"])])],
     [check_ev_happy="no"])
 
-  saved_CPPFLAGS="$CPPFLAGS"
-  saved_LDFLAGS="$LDFLAGS"
-  saved_LIBS="$LIBS"
-
   CPPFLAGS="$CPPFLAGS $ev_CPPFLAGS"
   LDFLAGS="$LDFLAGS $ev_LDFLAGS"
   LIBS="$LIBS $ev_LIBS"
@@ -76,6 +78,10 @@ AC_DEFUN([SANDIA_CHECK_EV], [
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"
   LIBS="$saved_LIBS"
+
+  echo "ev_LIBS: $ev_LIBS"
+  ev_LIBS="$ev_LIBS -lm"
+  echo "ev_LIBS: $ev_LIBS"
 
   AC_SUBST(ev_CPPFLAGS)
   AC_SUBST(ev_LDFLAGS)
