@@ -65,6 +65,8 @@ enum {
 
 	XX_SIGNALED					= (1 << 20), /* IB only */
 	XX_INLINE					= (1 << 21),
+
+	XI_PUT_SEND_DISABLE_EVENT= (1 << 22),
 };
 
 typedef enum buf_type buf_type_t;

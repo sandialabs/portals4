@@ -884,6 +884,7 @@ enum md_options {
     MD_UNORDERED,
     MD_EVNT_SUCCESS_DISABLE,
     MD_VOLATILE,
+    MD_EVNT_SEND_DISABLE,
     MD_OPTIONS_MASK
 };
 
@@ -892,6 +893,8 @@ enum md_options {
  * need normal events, but does require failure information to enhance
  * reliability. */
 #define PTL_MD_EVENT_SUCCESS_DISABLE (1 << MD_EVNT_SUCCESS_DISABLE)
+
+#define PTL_MD_EVENT_SEND_DISABLE (1 << MD_EVNT_SEND_DISABLE)
 
 /*! Enable the counting of \c PTL_EVENT_SEND events. */
 #define PTL_MD_EVENT_CT_SEND (1 << MD_EVNT_CT_SEND)

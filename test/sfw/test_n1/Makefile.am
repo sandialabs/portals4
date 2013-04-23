@@ -985,4 +985,4 @@ TEST_EXTENSIONS = .xml
 XML_LOG_COMPILER = ../ptl_test -b $(srcdir)/ -f
 AM_XML_LOG_FLAGS = 
 
-TESTS_ENVIRONMENT = echo $(top_builddir)/src/runtime/hydra/yod.hydra -np 1
+TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np 1
