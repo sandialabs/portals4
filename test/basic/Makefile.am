@@ -72,7 +72,7 @@ TESTS += \
 	test_triggered_ME_ops
 endif
 
-check_PROGRAMS = $(TESTS)
+noinst_PROGRAMS = $(TESTS)
 
 NPROCS ?= 2
 TESTS_ENVIRONMENT = $(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)

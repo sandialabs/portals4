@@ -8,6 +8,11 @@ EXTRA_DIST = autogen.sh README NEWS TODO\
 	patches/rdmacm-xrc-v3.diff \
 	portals4-ib.spec .indent.pro
 
-SUBDIRS = doc include src test
+DIST_SUBDIRS = doc include src test
+SUBDIRS = doc include src
+
+if !HAVE_KITTEN
+SUBDIRS +=  test
+endif
 
 ACLOCAL_AMFLAGS = -I config

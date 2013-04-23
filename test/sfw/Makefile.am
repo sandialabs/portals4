@@ -10,7 +10,7 @@ XMLEXTRA = \
 
 EXTRA_DIST = $(XMLEXTRA) make_test_relay.pl
 
-check_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
+noinst_PROGRAMS = ptl_test make_test_atomic make_test_swap make_test_move test
 
 # Each binary needs the portals library and the runtime
 PORTALSLIB = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la

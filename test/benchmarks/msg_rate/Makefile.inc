@@ -1,5 +1,5 @@
 # vim:ft=automake
-EXTRA_PROGRAMS += P4msgrate
+noinst_PROGRAMS += P4msgrate
 
 P4msgrate_SOURCES = \
     msg_rate/test_one_way.h               \
