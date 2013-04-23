@@ -4,13 +4,13 @@
 #
 
 DIST_SUBDIRS=sfw basic benchmarks
-SUBDIRS=. basic benchmarks
+SUBDIRS = . basic benchmarks
 
 if HAVE_LIBXML
 SUBDIRS+=sfw
 endif
 
-check_LTLIBRARIES = libtestsupport.la
+noinst_LTLIBRARIES = libtestsupport.la
 libtestsupport_la_SOURCES = support.h support.c pmi.c
 libtestsupport_la_CPPFLAGS = $(pmi_CPPFLAGS) -I$(top_srcdir)/include
 libtestsupport_la_LDFLAGS = $(pmi_LDFLAGS)

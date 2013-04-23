@@ -8,7 +8,7 @@ LDADD = $(top_builddir)/test/libtestsupport.la $(top_builddir)/src/libportals.la
 AM_LDFLAGS = $(LIBTOOL_WRAPPER_LDFLAGS)
 
 EXTRA_DIST = NetPipe/P4LEwithCT.c
-EXTRA_PROGRAMS = 
+noinst_PROGRAMS = 
 
 include msg_rate/Makefile.inc
 include rtt_latency/Makefile.inc
