@@ -33,7 +33,9 @@ static char *init_state_name[] = {
  */
 static inline void make_send_event(buf_t *buf)
 {
-	if (buf->ni_fail || !(buf->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT))
+       if (buf->ni_fail ||
+           !((buf->event_mask & XI_PUT_SEND_DISABLE_EVENT) ||
+             (buf->event_mask & XI_PUT_SUCCESS_DISABLE_EVENT)))
 		make_init_event(buf, buf->put_eq, PTL_EVENT_SEND);
 
 	buf->event_mask &= ~XI_SEND_EVENT;
@@ -137,6 +139,9 @@ static int start(buf_t *buf)
 	if (buf->put_md) {
 		if (buf->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
 			buf->event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
+
+		if (buf->put_md->options & PTL_MD_EVENT_SEND_DISABLE)
+			buf->event_mask |= XI_PUT_SEND_DISABLE_EVENT;
 
 		if (buf->put_md->options & PTL_MD_EVENT_CT_BYTES)
 			buf->event_mask |= XI_PUT_CT_BYTES;

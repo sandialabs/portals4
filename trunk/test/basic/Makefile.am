@@ -22,6 +22,14 @@ TESTS = \
 	test_PA_ME_put \
 	test_LA_LE_put \
 	test_LA_ME_put \
+	test_PA_LE_put_event \
+	test_PA_ME_put_event \
+	test_LA_LE_put_event \
+	test_LA_ME_put_event \
+	test_PA_LE_put_send_disable \
+	test_PA_ME_put_send_disable \
+	test_LA_LE_put_send_disable \
+	test_LA_ME_put_send_disable \
 	test_LE_put_multiple \
 	test_ME_put_multiple \
 	test_LE_put_multiple_large \
@@ -113,6 +121,30 @@ test_LA_LE_put_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=0
 
 test_LA_ME_put_SOURCES = test_put.c
 test_LA_ME_put_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=1
+
+test_PA_LE_put_event_SOURCES = test_put_event.c
+test_PA_LE_put_event_CPPFLAGS = $(AM_CPPFLAGS)  -DPHYSICAL_ADDR=1 -DMATCHING=0
+
+test_PA_ME_put_event_SOURCES = test_put_event.c
+test_PA_ME_put_event_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1 -DMATCHING=1
+
+test_LA_LE_put_event_SOURCES = test_put_event.c
+test_LA_LE_put_event_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=0
+
+test_LA_ME_put_event_SOURCES = test_put_event.c
+test_LA_ME_put_event_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=1
+
+test_PA_LE_put_send_disable_SOURCES = test_put_send_disable.c
+test_PA_LE_put_send_disable_CPPFLAGS = $(AM_CPPFLAGS)  -DPHYSICAL_ADDR=1 -DMATCHING=0
+
+test_PA_ME_put_send_disable_SOURCES = test_put_send_disable.c
+test_PA_ME_put_send_disable_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=1 -DMATCHING=1
+
+test_LA_LE_put_send_disable_SOURCES = test_put_send_disable.c
+test_LA_LE_put_send_disable_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=0
+
+test_LA_ME_put_send_disable_SOURCES = test_put_send_disable.c
+test_LA_ME_put_send_disable_CPPFLAGS = $(AM_CPPFLAGS) -DPHYSICAL_ADDR=0 -DMATCHING=1
 
 test_LE_put_multiple_SOURCES = test_put_multiple.c
 test_LE_put_multiple_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0 -DBUFSIZE=256 -DOVERLAP=0
