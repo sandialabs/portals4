@@ -605,6 +605,14 @@ static void interrupt_cts(ni_t *ni)
 
 static void ni_cleanup(ni_t *ni)
 {
+	/* if PtlSetMap has not yet been called, set
+	 * set the value of map size to 0 (otherwise
+	 * it is undefined) */
+	if (ni->options & PTL_NI_LOGICAL){
+	    if (!ni->logical.mapping)
+	        ni->logical.map_size = 0;
+	}
+
 	if (ni->cleanup_state == NI_INIT_CLEANUP) {
 		ni->shutting_down = 1;
 		__sync_synchronize();
