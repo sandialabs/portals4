@@ -18,8 +18,6 @@ int foo = 1;]])],
      [sandia_cv_c_mcx16=yes],
      [sandia_cv_c_mcx16=no])
    CFLAGS="$CFLAGS_save"])
-AS_IF([test "x$sandia_cv_c_mcx16" = xyes],
-  [CFLAGS="$CFLAGS -mcx16"])
 ])
 
 # SANDIA_CHECK_ATOMICS([action-if-found], [action-if-not-found])
@@ -212,6 +210,7 @@ return 0;
 AS_IF([test "x$sandia_cv_cpu_cmpxchg16b" == "xassuming yes"],[sandia_cv_cpu_cmpxchg16b="yes"])
 AS_IF([test "x$sandia_cv_cpu_cmpxchg16b" == "xyes"],
       [AC_DEFINE([HAVE_CMPXCHG16B],[1],[if the compiler and cpu can both handle the 128-bit CMPXCHG16B instruction])])
+AS_IF([test "x$sandia_cv_c_mcx16" == "xyes" -a x$sandia_cv_cpu_cmpxchg16b == "xyes"],[CFLAGS="$CFLAGS -mcx16"])
 AS_IF([test "$sandia_cv_require_ia64intrin_h" = "yes"],
 	  [AC_DEFINE([SANDIA_NEEDS_INTEL_INTRIN],[1],[if this header is necessary for builtin atomics])])
 AS_IF([test "x$sandia_cv_atomic_CASptr" = "xyes"],
