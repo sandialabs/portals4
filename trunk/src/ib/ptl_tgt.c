@@ -682,6 +682,16 @@ found_one:
 	}
 
 	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+		if (pt->unexpected_size >= ni->limits.max_unexpected_headers){
+		    le_put(buf->le);
+		    buf->le = NULL;
+		    buf->ni_fail = ni_fail;
+		    return STATE_TGT_DROP;
+		}
+		else{
+		    pt->unexpected_size++;
+		}
+
 		/* take a reference to the buf for the
 		 * unexpected list entry */
 		buf_get(buf);

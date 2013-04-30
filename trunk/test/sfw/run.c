@@ -1768,6 +1768,7 @@ static void set_default_info(struct node_info *info)
 	info->desired.max_list_size		= 10;
 	info->desired.max_msg_size		= IOV_SIZE*IOVEC_LENGTH;
 	info->desired.max_atomic_size		= 64;
+	info->desired.max_unexpected_headers 	= 64;
 	info->map_size				= 10;
 	info->ni_handle				= PTL_INVALID_HANDLE;
 	info->handle				= PTL_INVALID_HANDLE;
