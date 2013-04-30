@@ -332,8 +332,11 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
 		le_get(le);
 
 		if (delete && buf->le) {
+			ni_t *ni = obj_to_ni(le);
+        		pt_t *pt = &ni->pt[le->pt_index];
 			le_put(buf->le);
 			buf->le = NULL;
+			pt->unexpected_size--;
 		}
 
 		list_del(&buf->unexpected_list);
@@ -470,6 +473,7 @@ int check_overflow_search_delete(le_t *le)
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
 
 	if (list_empty(&buf_list)) {
+	    if (le->eq)
 		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
 	} else {
 		flush_from_unexpected_list(le, &buf_list, 1);

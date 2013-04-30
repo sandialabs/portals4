@@ -51,7 +51,7 @@ struct pt {
 	/** list of priority me/le's */
 	struct list_head	priority_list;
 
-	/** size of everflow list */
+	/** size of overflow list */
 	unsigned int		overflow_size;
 
 	/** list of overflow me/le's */
