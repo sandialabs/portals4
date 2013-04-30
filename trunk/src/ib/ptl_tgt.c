@@ -1120,6 +1120,8 @@ static int tgt_rdma(buf_t *buf)
 	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 				&buf->put_resid : &buf->get_resid;
+	int was_done;
+	was_done  = 0;
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 	/* It is possible that post_tgt_dma() sets the target_done flag,
 	 * and that the initiator replies with init_done before we reach
@@ -1127,7 +1129,6 @@ static int tgt_rdma(buf_t *buf)
 	 * receive state machine can remove the buffer from the
 	 * noknem_list; this function will be called again, and this time
 	 * was_done will be 1. May be this part needs a nicer design. */
-	int was_done;
 	if (buf->conn->transport.type == CONN_TYPE_SHMEM)
 		was_done = buf->transfer.noknem.noknem ? buf->transfer.noknem.noknem->init_done : 0;
 #endif
@@ -1605,8 +1606,8 @@ static int tgt_comm_event(buf_t *buf)
 static int tgt_send_ack(buf_t *buf)
 {
 	int err;
-	buf_t *ack_buf;
-	ack_hdr_t *ack_hdr;
+	buf_t *ack_buf = buf;
+	ack_hdr_t *ack_hdr = (ack_hdr_t *)buf->data;
  	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
 
 	/* Find a buffer to send the ack. Depending on the transport we
