@@ -223,7 +223,7 @@ AS_IF([test "x$enable_picky" == xyes],
 		   [CXXFLAGS="-Wall $CXXFLAGS"])
    ])
 
-SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([Atomics are not implemented portably])])
+SANDIA_CHECK_ATOMICS([],[AC_MSG_ERROR([Atomics are not implemented portably, consider upgrading to a newer compiler that supports builtin atomics])])
 SANDIA_CHECK_BITFIELDS
 
 AC_CACHE_SAVE
