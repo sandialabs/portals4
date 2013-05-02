@@ -683,6 +683,8 @@ found_one:
 
 	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
 		if (pt->unexpected_size >= ni->limits.max_unexpected_headers){
+		    WARN();
+		    ptl_warn("ran out of unexpected headers! \n");
 		    PTL_FASTLOCK_UNLOCK(&pt->lock);
 		    le_put(buf->le);
 		    buf->le = NULL;
