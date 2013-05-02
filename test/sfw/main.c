@@ -146,11 +146,41 @@ int main(int argc, char *argv[])
 
 	cio_init();
 
+  	name = malloc(sizeof(char)*1000);	
+	int size = 999;
+
         if (NULL != basedir) {
-            asprintf(&name, "%s%s", basedir, filename);
+            ret = snprintf(name, size, "%s%s", basedir, filename);
+	    if (ret == size){
+		while (size == ret){
+		    if (size > INT_MAX /2){
+			free(name);
+			printf("filename too long \n");
+			cio_cleanup();
+			abort();
+		    }
+		    size = size * 2;
+	            name = realloc(&name,size);
+		    ret = snprintf(name, size, "%s%s", basedir, filename);
+		}
+	    }
         } else {
-            name = filename;
+            ret = snprintf(name, size, "%s", filename);
+	    if (ret == size){
+	        while (size == ret){
+		    if (size > INT_MAX /2){
+                        free(name);
+                        printf("filename too long \n");
+                        cio_cleanup();
+			abort();
+                    }
+                    size = size * 2;
+                    name = realloc(&name,size);
+                    ret = snprintf(name, size, "%s", filename);
+                }
+	    }
         }
+	
 
 	doc = cio_get_input(name);
 	if (!doc)
@@ -163,6 +193,8 @@ int main(int argc, char *argv[])
 	cio_cleanup();
 
 	fini();
+	
+	free(name);
 
 	return ret;
 }
