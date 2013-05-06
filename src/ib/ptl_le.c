@@ -606,7 +606,6 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 						make_le_event(le, eq,
 							PTL_EVENT_AUTO_UNLINK,
 							PTL_NI_OK);
-						le->do_auto_free = 1;
 					}
 
 					*le_handle_p = le_to_handle(le);
