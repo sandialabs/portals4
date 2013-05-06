@@ -385,7 +385,7 @@ static int tgt_start(buf_t *buf)
 	buf->indir_sge = NULL;
 	buf->send_buf = NULL;
 	buf->auto_unlink_pending = 0;
-	
+
 #if IS_PPE
 	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
 	buf->target.phys.pid = le32_to_cpu(hdr->src_pid);
@@ -682,14 +682,23 @@ found_one:
 	}
 
 	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+	    if (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)){
 		if (pt->unexpected_size >= ni->limits.max_unexpected_headers){
-		    WARN();
-		    ptl_warn("ran out of unexpected headers! \n");
-		    PTL_FASTLOCK_UNLOCK(&pt->lock);
-		    le_put(buf->le);
-		    buf->le = NULL;
-		    buf->ni_fail = ni_fail;
-		    return STATE_TGT_DROP;
+		    if (pt->options & PTL_PT_FLOWCTRL){
+		        pt->state |= PT_AUTO_DISABLED;
+                        le_put(buf->le);
+                        buf->le = NULL;
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
+                        buf->ni_fail = PTL_NI_PT_DISABLED;
+			return STATE_TGT_DROP; 
+		    }    
+		    else{
+		        PTL_FASTLOCK_UNLOCK(&pt->lock);
+		        le_put(buf->le);
+		        buf->le = NULL;
+		        buf->ni_fail = PTL_NI_DROPPED;
+		        return STATE_TGT_DROP;
+		    }
 		}
 		else{
 		    pt->unexpected_size++;
@@ -726,6 +735,7 @@ found_one:
 		}
 #endif
 #endif
+	    }
 	}		
 	buf->matching_list = buf->le->ptl_list;
 
@@ -1554,7 +1564,7 @@ static int tgt_swap_data_in(buf_t *buf)
 /**
  * @brief target comm event state.
  *
- * This state is reached when we are ready to deliver a conn event to
+ * This state is reached when we are ready to deliver a comm event to
  * the target side event queue or counting event.
  *
  * @param[in] buf The message buf received by the target.
@@ -1854,12 +1864,19 @@ static int tgt_cleanup(buf_t *buf)
 		if ((pt->state & PT_AUTO_DISABLED) && !pt->num_tgt_active) {
 			pt->state = PT_DISABLED;
 			PTL_FASTLOCK_UNLOCK(&pt->lock);
-
-			// TODO: don't send if PTL_LE_EVENT_FLOWCTRL_DISABLE ?
-			make_target_event(buf, pt->eq,
+			if (buf->le){
+			    if (!(buf->le->options & PTL_LE_EVENT_FLOWCTRL_DISABLE))
+			        make_target_event(buf, pt->eq,
 							  PTL_EVENT_PT_DISABLED,
 							  buf->matching.le ? buf->matching.le->user_ptr
-							  : NULL, NULL);
+			    				  : NULL, NULL);
+			}
+			else{
+				make_target_event(buf, pt->eq,
+                                                          PTL_EVENT_PT_DISABLED,
+                                                          buf->matching.le ? buf->matching.le->user_ptr
+                                                          : NULL, NULL);
+			}
 		} else
 			PTL_FASTLOCK_UNLOCK(&pt->lock);
 	}
