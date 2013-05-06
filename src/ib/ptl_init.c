@@ -128,14 +128,6 @@ static int start(buf_t *buf)
 {
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 
-#if WITH_TRANSPORT_UDP
-	//if (buf->conn->transport.type == CONN_TYPE_UDP){
-//		((struct hdr_common *)buf->data)->version = PTL_HDR_VER_1;
-//		assert(((struct hdr_common *)buf->data)->version == PTL_HDR_VER_1);
-	//}
-#endif
-
-
 	if (buf->put_md) {
 		if (buf->put_md->options & PTL_MD_EVENT_SUCCESS_DISABLE)
 			buf->event_mask |= XI_PUT_SUCCESS_DISABLE_EVENT;
@@ -601,7 +593,8 @@ static int init_copy_done(buf_t *buf)
 	noknem->state = 2;
 
 	/* Free the bounce buffer allocated in init_append_data. */
-	ll_enqueue_obj_alien(&ni->shmem.bounce_buf.head->free_list,
+	if (buf->transfer.noknem.data)
+	    ll_enqueue_obj_alien(&ni->shmem.bounce_buf.head->free_list,
 						   buf->transfer.noknem.data,
 						   ni->shmem.bounce_buf.head,
 						   ni->shmem.bounce_buf.head->head_index0);
