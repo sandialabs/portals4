@@ -68,6 +68,8 @@ TESTS = \
 	test_ME_flowctl_noeq \
 	test_LE_flowctl_norecv \
 	test_ME_flowctl_norecv \
+	test_LE_flowctl_nohdr \
+	test_ME_flowctl_nohdr \
 	test_LE_unlink \
 	test_ME_unlink \
 	test_ct_ack
@@ -259,6 +261,12 @@ test_LE_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
 test_ME_flowctl_norecv_SOURCES = test_flowctl_norecv.c
 test_ME_flowctl_norecv_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_flowctl_nohdr_SOURCES = test_flowctl_nohdr.c
+test_LE_flowctl_nohdr_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_flowctl_nohdr_SOURCES = test_flowctl_nohdr.c
+test_ME_flowctl_nohdr_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 test_LE_unlink_SOURCES = test_unlink.c
 test_LE_unlink_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=0
