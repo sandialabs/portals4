@@ -139,6 +139,8 @@ int main(int   argc,
             if (PTL_OK == ret) {
                 count++;
                 fprintf(stderr, "found EQ value \n");
+            } else if (ret == PTL_EQ_EMPTY){
+                continue;
             } else {
                 fprintf(stderr, "0: Unexpected return code from EQGet: %d\n", ret);
                 return 1;
