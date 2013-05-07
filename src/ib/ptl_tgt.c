@@ -1898,15 +1898,15 @@ static void tgt_cleanup_2(buf_t *buf)
 {
 	if (buf->le) {
 		ptl_warn("me/le cleanup \n");
-		atomic_set(&buf->me->busy, 0);
 		le_put(buf->le);
+		atomic_set(&buf->me->busy, 0);
 		buf->le = NULL;
 	}
 
 	if (buf->matching.le){
-		ptl_warn("matching me/le cleanup \n");
-		atomic_set(&buf->matching.le->busy, 0);
+                ptl_warn("matching me/le cleanup \n");
                 le_put(buf->matching.le);
+                atomic_set(&buf->matching.le->busy, 0);
                 buf->matching.le = NULL;
 	}
 
