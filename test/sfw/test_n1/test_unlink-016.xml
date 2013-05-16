@@ -15,7 +15,7 @@
                       <check event_type="LINK"/>
                     </ptl_eq_wait>
                     <ptl_eq_wait eq_handle="eq[0]">
-                      <check event_type="ATOMIC"/>
+                      <check event_type="FETCH_ATOMIC"/>
                     </ptl_eq_wait>
                     <ptl_eq_wait eq_handle="eq[0]">
                       <check event_type="AUTO_UNLINK"/>

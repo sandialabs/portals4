@@ -29,7 +29,7 @@
                       <ptl_le le_opt="OP_PUT OP_GET EVENT_LINK_DISABLE" uid="ANY" user_ptr="654">
                         <barrier/>
                         <ptl_eq_poll time="200">
-                          <check event_type="ATOMIC"/>
+                          <check event_type="FETCH_ATOMIC"/>
                           <check event_user_ptr="654"/>
                           <check event_ni_fail="OK"/>
                           <check event_atom_op="LXOR"/>
