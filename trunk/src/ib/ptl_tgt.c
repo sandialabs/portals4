@@ -52,8 +52,10 @@ static void make_comm_event(buf_t *buf)
 			type = PTL_EVENT_PUT;
 		else if (operation == OP_GET)
 			type = PTL_EVENT_GET;
-		else
+		else if (operation == OP_ATOMIC)
 			type = PTL_EVENT_ATOMIC;
+		else
+			type = PTL_EVENT_FETCH_ATOMIC;
 
 		make_target_event(buf, buf->pt->eq, type,
 				  buf->le->user_ptr, buf->start);
