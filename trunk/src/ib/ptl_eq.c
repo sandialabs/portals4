@@ -505,6 +505,12 @@ static void process_overflowing(eq_t * restrict eq)
  */
 void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t type)
 {
+	if (unlikely((buf->event_mask & XI_PUT_SEND_DISABLE_EVENT) && type == PTL_EVENT_SEND))
+	{
+	    ptl_warn("ni_fail = %i \n",buf->ni_fail); 
+	    return;
+	}
+
 	ptl_event_t *ev;
 
 	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
