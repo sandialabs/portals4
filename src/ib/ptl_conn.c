@@ -343,15 +343,17 @@ static void destroy_conn(void *data)
 void destroy_conns(ni_t *ni)
 {
 	if (ni->options & PTL_NI_LOGICAL) {
+	    if (ni->logical.mapping){	
 		int i;
 		const int map_size = ni->logical.map_size;
-
+		
 		/* Destroy active connections. */
 		for (i = 0; i < map_size; i++) {
 			entry_t *entry = &ni->logical.rank_table[i];
 			destroy_conn(entry->connect);
 			entry->connect = NULL;
 		}
+	    }
 	} else {
 #ifdef HAVE_TDESTROY
 		tdestroy(ni->physical.tree, destroy_conn);
