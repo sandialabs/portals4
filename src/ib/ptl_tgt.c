@@ -1965,7 +1965,7 @@ static int tgt_overflow_event(buf_t *buf)
 
 	assert(le);
 
-	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE)) {
+	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE) && buf->pt->eq) {
 		switch (buf->operation) {
 		case OP_PUT:
 			make_target_event(buf, buf->pt->eq,
