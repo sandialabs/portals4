@@ -738,6 +738,11 @@ found_one:
 #endif
 #endif
 	    }
+	    //unexpected headers are disabled, just cleanup
+	    else{
+                le_put(buf->le);
+                buf->le = NULL;
+	    }
 	}		
 	buf->matching_list = buf->le->ptl_list;
 
