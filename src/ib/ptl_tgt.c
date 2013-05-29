@@ -742,6 +742,9 @@ found_one:
 	    else{
                 le_put(buf->le);
                 buf->le = NULL;
+                PTL_FASTLOCK_UNLOCK(&pt->lock);
+                buf->ni_fail = PTL_NI_DROPPED;
+                return STATE_TGT_DROP;
 	    }
 	}		
 	buf->matching_list = buf->le->ptl_list;
