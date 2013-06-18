@@ -988,7 +988,7 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
  *
  * @param[in] ct The counting event to update.
  * @param[in] buf The req buf from which to update it.
- * @maram[in] bytes Whether to update evebts or bytes.
+ * @param[in] bytes Whether to update events or bytes.
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
