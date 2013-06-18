@@ -64,11 +64,11 @@ struct param {
 	/** used to match an environment variable */
 	char		*name;
 	/** the minimum acceptable value */
-	long		min;
+	unsigned long		min;
 	/** the maximum acceptable value */
-	long		max;
+	unsigned long		max;
 	/** the current/default value of the parameter */
-	long		val;
+	unsigned long		val;
 };
 
 typedef struct param param_t;
@@ -90,14 +90,14 @@ void init_param(void);
  * to PtlNIInit one with and one without desired limits will result in
  * the original defaults on the second call.
  */
-long chk_param(int param, long val);
+unsigned long chk_param(int param, unsigned long val);
 
 /*
  * This call is currently not used but could be used to modify the
  * default values in the array. For example because of some interaction
  * with a runtime interface.
  */
-long set_param(int parm, long val);
+unsigned long set_param(int parm, long val);
 
 /**
  * @brief Return the current value of a parameter.
@@ -112,7 +112,7 @@ long set_param(int parm, long val);
  *
  * @return the current value.
  */
-static inline long get_param(int parm)
+static inline unsigned long get_param(int parm)
 {
 	return param[parm].val;
 }
