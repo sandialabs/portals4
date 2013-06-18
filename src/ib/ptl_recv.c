@@ -523,48 +523,9 @@ void progress_thread_rdma(ni_t *ni)
 }
 #endif
 
-#if 0
-#if WITH_TRANSPORT_UDP
-//TODO: Fill-in this function showing how udp does its
-//      recvfrom to retrieve the sent buffer; remember to
-//      increment relevant atomics
-static void progress_thread_udp(ni_t *ni)
-{
-	ssize_t nbytes;
-	char data[BUF_DATA_SIZE];
-
-	nbytes = recvfrom(ni->udp.s, data, BUF_DATA_SIZE, 0, 
-					  NULL, NULL);
-
-	if (nbytes != -1) {
-		if (nbytes > 0) {
-			buf_t *buf;
-			int err;
-
-			/* Allocate a buffer to copy the data in. This is bad; we
-			 * should have a buf readily available for the recvfrom
-			 * call to save a copy. TODO. */
-			err = buf_alloc(ni, &buf);
-			if (err) {
-				WARN();
-			} else {
-				memcpy(buf->data, data, nbytes);
-				buf->length = nbytes;
-				process_recv_mem(ni, buf);
-			}
-		} else {
-			/* Can we receive 0 bytes ? */
-			abort();
-		}
-	}
-}
-#endif
-#endif
-
 #if WITH_TRANSPORT_UDP
 static void progress_thread_udp(ni_t *ni)
 {
-//#if WITH_TRANSPORT_SHMEM
 	/* Socket connection.*/
 	
 	if (ni->udp.dest_addr && ni->udp.map_done != 0) {
@@ -573,9 +534,6 @@ static void progress_thread_udp(ni_t *ni)
 		buf_t* udp_buf;
 
 		udp_buf = udp_receive(ni);
-                if (&udp_buf->mutex == NULL){
-		 // pthread_mutex_init(&udp_buf->mutex,NULL);
-		}
 	
                 if (udp_buf != NULL){
                  	ptl_info("UDP progress thread, received data: %p type:%i\n",udp_buf,udp_buf->type);
@@ -604,11 +562,9 @@ static void progress_thread_udp(ni_t *ni)
 					process_recv_udp(ni, buf);
 				}
 
-//#if WITH_TRANSPORT_SHMEM && !USE_KNEM
 				/* Don't send back if it's on the noknem list. */
 				if (!list_empty(&buf->list))
 					break;
-//#endif
 
 				if (udp_buf->type == BUF_UDP_SEND ||
 					udp_buf->udp.dest_addr != ni->udp.dest_addr) {
@@ -627,7 +583,6 @@ static void progress_thread_udp(ni_t *ni)
 			}
 
         		case BUF_UDP_RECEIVE: {
-				//REG: TODO: fix UDP process recv
 				ptl_info("processing received data message\n");
 				if (udp_buf->put_ct != NULL){
 					ptl_info("putct is : %p \n", udp_buf->put_ct);
@@ -643,7 +598,6 @@ static void progress_thread_udp(ni_t *ni)
 			case BUF_UDP_RETURN: {
 				/* Buffer returned to us by remote node. */
 				assert(udp_buf->udp.dest_addr == ni->udp.dest_addr);
-
 				/* From send_message_udp(). */
 				break;
      			}
@@ -667,16 +621,11 @@ static void progress_thread_udp(ni_t *ni)
 				//send back to the requesting address
 				udp_buf->udp.dest_addr = &udp_buf->udp.src_addr;
 				udp_buf->dest.udp.dest_addr = udp_buf->udp.src_addr;			
-				//udp_buf->udp.src_addr.sin_addr.s_addr = nid_to_addr(ni->id.phys.nid);
-				//udp_buf->udp.src_addr.sin_port = pid_to_port(ni->id.phys.pid);
 
 				udp_send(ni, udp_buf, udp_buf->udp.dest_addr);
 				//REG: Note: this assumes that we have a reliable transport, otherwise things can go wrong here
-				//udp_buf->conn->state = CONN_STATE_CONNECTED;
-				
 				ptl_info("Connection request reply sent, connection valid. \n");
-				//free(udp_buf);
-                                break;	
+				break;	
 			
 			}
 
@@ -686,11 +635,8 @@ static void progress_thread_udp(ni_t *ni)
 				
 			        udp_buf->conn->udp.dest_addr = udp_buf->udp.src_addr;
 			  									   	
-				//ptl_info("connection established to: %s:%i from %s:%i \n",inet_ntoa(udp_buf->udp.dest_addr->sin_addr),ntohs(udp_buf->udp.dest_addr->sin_port),inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));
-			
-				//ptl_info("local address: %s:%i \n",inet_ntoa(ni->iface->udp.sin.sin_addr),ntohs(ni->iface->udp.sin.sin_port));;
 				int result;
-				//ptl_info("release wait on %p \n",&udp_buf->conn->move_wait);
+
 				//release the thread waiting on the establishment of a connection
 				while (1) {
 					result = atomic_read(&udp_buf->conn->udp.is_waiting);
@@ -702,7 +648,6 @@ static void progress_thread_udp(ni_t *ni)
 					}
 				}
 				ptl_info("connection valid for reply\n");
-				//free(udp_buf);
 				break;
 			}
 
@@ -711,10 +656,8 @@ static void progress_thread_udp(ni_t *ni)
 				abort();
 			}
 			//if a buffer was allocated for the recv, free it
-			if (atomic_read(&ni->udp.self_recv) == 0) {//&& (udp_buf->type == BUF_TGT)){
-				//ptl_info("free recv buf %p\n",&udp_buf);
-				//if (&udp_buf != NULL)
-				if (udp_buf->completed){ //|| udp_buf->recv_buf) {
+			if (atomic_read(&ni->udp.self_recv) == 0) {
+				if (udp_buf->completed){ 
 					ptl_info("free recv buf %p\n",&udp_buf);
 					if (udp_buf->recv_buf)
 						buf_put(udp_buf->recv_buf);
@@ -725,18 +668,13 @@ static void progress_thread_udp(ni_t *ni)
 			}
 			//if we sent something to ourselves, flag it as processed
 			else if ((int)atomic_read(&ni->udp.self_recv) > 0){
-				//pthread_mutex_lock(&udp_buf->mutex);
-				//ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
 				atomic_dec(&ni->udp.self_recv);
 				ptl_info(" self recv: %i \n",atomic_read(&ni->udp.self_recv));
-				//pthread_mutex_unlock(&udp_buf->mutex);
 			}
 						
 		}
 	}
 	
-//#endif
-
 //TODO: do we need this for UDP?
 //#if WITH_TRANSPORT_SHMEM && !USE_KNEM
 /*	struct list_head *l, *t;

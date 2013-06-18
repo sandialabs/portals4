@@ -114,7 +114,6 @@ int init_iface_table(gbl_t *gbl)
 
 #if WITH_TRANSPORT_UDP
 		/* the interface name is "eth" followed by the interface id */
-		//TODO: for now, we'll assume only loopback connection
 		sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
 
 #ifdef __APPLE__
