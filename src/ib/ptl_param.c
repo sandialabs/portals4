@@ -323,7 +323,7 @@ void init_param(void)
  *
  * @return The acceptable value.
  */
-long chk_param(int parm, long val)
+unsigned long chk_param(int parm, unsigned long val)
 {
 	param_t *p;
 
@@ -351,7 +351,7 @@ long chk_param(int parm, long val)
  *
  * @return The current value.
  */
-long set_param(int parm, long val)
+unsigned long set_param(int parm, long val)
 {
 	param_t *p;
 
