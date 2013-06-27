@@ -72,6 +72,8 @@ TESTS = \
 	test_ME_flowctl_nohdr \
 	test_LE_unlink \
 	test_ME_unlink \
+	test_PA_LE_persistent_search \
+	test_PA_ME_persistent_search \
 	test_ct_ack
 
 EXTRA_TESTS = \
@@ -273,5 +275,11 @@ test_LE_unlink_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=0
 
 test_ME_unlink_SOURCES = test_unlink.c
 test_ME_unlink_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
+
+test_PA_LE_persistent_search_SOURCES = test_persistent_search.c
+test_PA_LE_persistent_search_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=0
+
+test_PA_ME_persistent_search_SOURCES = test_persistent_search.c
+test_PA_ME_persistent_search_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 
 test_ct_ack_SOURCES = test_ct_ack.c
