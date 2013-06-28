@@ -407,7 +407,7 @@ int check_overflow_search_only(le_t *le)
 	buf_t *buf;
 	buf_t *n;
 	int found = 0;
-	ptl_event_t event;
+	ptl_event_t event[pt->unexpected_size];
 
 	PTL_FASTLOCK_LOCK(&pt->lock);
 
@@ -415,17 +415,18 @@ int check_overflow_search_only(le_t *le)
 				 unexpected_list) {
 
 		if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
-			found = 1;
-
 			if (le->eq && !(le->options &
 			    PTL_LE_EVENT_COMM_DISABLE)) {
 				buf->matching_list = PTL_OVERFLOW_LIST;
 				fill_target_event(buf, PTL_EVENT_SEARCH,
 						  le->user_ptr, NULL,
-						  &event);
+						  &event[found]);
 			}
-
-			break;
+			
+			found++;
+			if (le->options & PTL_LE_USE_ONCE)
+			    break;
+			
 		}
 	}
 
@@ -437,10 +438,14 @@ int check_overflow_search_only(le_t *le)
 	 * the event to be delivered outside the lock */
 
 	if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
-		if (found) {
-			/* note search events always set ni ok */
-			event.ni_fail_type = PTL_NI_OK;
-			send_target_event(le->eq, &event);
+		if (found > 0) {
+			int i;
+
+			for (i=0; i < found; i++){
+                            /* note search events always set ni ok */
+			    event[i].ni_fail_type = PTL_NI_OK;
+			    send_target_event(le->eq, &event[i]);
+			}
 		} else {
 			make_le_event(le, le->eq, PTL_EVENT_SEARCH,
 				      PTL_NI_NO_MATCH);
