@@ -626,7 +626,7 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
 }
 
 /**
- * @brief Make and event and add to event queue from an LE/ME.
+ * @brief Make an event and add to event queue from an LE/ME.
  *
  * @param[in] le The list element to make the event from.
  * @param[in] eq The event queue to add the event to.
