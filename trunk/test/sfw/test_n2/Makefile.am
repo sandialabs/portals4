@@ -46,6 +46,7 @@ TESTS = \
 	test_events_logical-033.xml \
 	test_events_logical-034.xml \
 	test_flow-001.xml \
+	test_flow-002.xml \
 	test_put_overflow-001.xml \
 	test_put_overflow-002.xml \
 	test_put_overflow-003.xml \

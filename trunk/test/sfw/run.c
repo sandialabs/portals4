@@ -588,6 +588,9 @@ static int get_attr(struct node_info *info, xmlNode *node)
 		case ATTR_DESIRED_MAX_VOLATILE_SIZE:
 			info->desired.max_volatile_size = get_number(info, val);
 			break;
+		case ATTR_DESIRED_MAX_UNEXPECTED_HEADERS:
+			info->desired.max_unexpected_headers = get_number(info, val);
+                        break;
 		case ATTR_DESIRED_FEATURES:
 			info->desired.features = get_ni_features(val);
 			break;
@@ -1044,6 +1047,9 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			printf("invalid attr: %s\n", attr->name);
 			return 1;
 		}
+		else{
+			printf("check attr: %s\n",attr->name);
+		}
 		switch (e->token) {
 		case ATTR_ERR:
 			if(info->err != get_ret(val)) {
@@ -1100,6 +1106,11 @@ static int check_attr(struct node_info *info, xmlNode *node)
 				return 1;
 			}
 			break;
+		case ATTR_ACTUAL_MAX_UNEXPECTED_HEADERS:
+			if(info->actual.max_unexpected_headers != get_number(info, val)) {
+                                return 1;
+                        }
+                        break;
 		case ATTR_ACTUAL_FEATURES:
 			if(info->actual.features != get_ni_features(val)) {
 				return 1;
@@ -1113,6 +1124,7 @@ static int check_attr(struct node_info *info, xmlNode *node)
 
 		case ATTR_EVENT_TYPE:
 			if (info->eq_event.type != get_event_type(val)){
+				printf("found event type: %i, expecting: %i\n",info->eq_event.type,get_event_type(val));
 				return 1;
 			}
 			break;

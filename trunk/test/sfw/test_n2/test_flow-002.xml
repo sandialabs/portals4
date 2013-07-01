@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<test>
+    <desc>Test put overflow on unexpected headers with ME with 2 unexpected PUTs</desc>
+    <ptl>
+      <ptl_ni ni_opt="MATCH PHYSICAL" desired_max_unexpected_headers="1">
+       <check actual_max_unexpected_headers="1"/>
+        <!--ptl_pt pt_opt="FLOW"-->
+	<ompi_rt>
+          <ptl_ni ni_opt="MATCH LOGICAL" desired_max_unexpected_headers="1">
+           <!--check actual_max_unexpected_headers="1"/-->
+	     <ptl_eq>
+              <ptl_pt pt_opt="FLOW">
+                <ptl_get_id>
+
+                  <if rank="0">
+                    <ptl_md md_data="0xaa" md_opt="SUCCESS_DISABLE">
+
+                      <!-- Wait for rank 1 to set up the receiving buffer -->
+                      <barrier/>
+
+                      <ptl_put ack_req="ACK" length="4" match="0" target_id="1"/>
+               	      <ptl_put ack_req="ACK" length="40" match="0" target_id="1"/>
+
+                      <barrier/>
+
+                    </ptl_md>
+                  </if>
+
+                  <if rank="1">
+                    <ptl_me list="OVERFLOW" me_data="0x77" me_match="0" me_opt="OP_PUT">
+	
+                      <!-- Force rank 0 to wait for the buffer to be ready -->
+                      <barrier/>
+		      
+		      <ptl_eq_wait>
+			<check event_type="LINK"/>
+		      </ptl_eq_wait>
+
+                      <ptl_eq_wait>
+			<check event_type="PUT"/>
+                      </ptl_eq_wait>
+
+		      <!-- Check that the PT was disabled after we ran out of unexpected headers -->
+                      <ptl_eq_wait >
+                        <check event_type="PT_DISABLED"/>
+                      </ptl_eq_wait>
+			
+
+                      <ptl_me list="PRIORITY" me_data="0x77" me_match="0" me_opt="OP_PUT">
+
+                        <!-- Wait for overflow event--> 
+                        <ptl_eq_wait>
+                         <check event_mlength="4" event_type="PUT_OVERFLOW"/>
+			</ptl_eq_wait>
+
+                      </ptl_me>
+			                      
+                      <barrier/>
+
+                    </ptl_me>
+                  </if>
+
+                </ptl_get_id>
+              </ptl_pt>
+            </ptl_eq>
+          </ptl_ni>
+        </ompi_rt>
+      </ptl_ni>
+    </ptl>
+  </test>
