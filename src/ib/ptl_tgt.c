@@ -688,8 +688,7 @@ found_one:
 		if (pt->unexpected_size >= ni->limits.max_unexpected_headers){
 		    if (pt->options & PTL_PT_FLOWCTRL){
 		        pt->state |= PT_AUTO_DISABLED;
-                        le_put(buf->le);
-                        buf->le = NULL;
+                        ptl_info("dropping due to lack of unexpected headers\n");
 			PTL_FASTLOCK_UNLOCK(&pt->lock);
                         buf->ni_fail = PTL_NI_PT_DISABLED;
 			return STATE_TGT_DROP; 
@@ -1853,7 +1852,10 @@ static int tgt_cleanup(buf_t *buf)
 		atomic_set(&buf->le->busy, 0);
 		state = STATE_TGT_OVERFLOW_EVENT;
 	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+	    if (buf->ni_fail != PTL_NI_PT_DISABLED)
 		state = STATE_TGT_WAIT_APPEND;
+	    else
+                state = STATE_TGT_CLEANUP_2;
 	}	else
 		state = STATE_TGT_CLEANUP_2;
 
