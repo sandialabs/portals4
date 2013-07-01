@@ -163,6 +163,7 @@ int main(int   argc,
         }
 
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
+        count = 0;
         while (count < 5) {
             ret = PtlEQPoll(&eq_h, 1, 1000, &ev, &which);
             if (PTL_OK == ret) {
