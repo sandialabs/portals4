@@ -1047,9 +1047,6 @@ static int check_attr(struct node_info *info, xmlNode *node)
 			printf("invalid attr: %s\n", attr->name);
 			return 1;
 		}
-		else{
-			printf("check attr: %s\n",attr->name);
-		}
 		switch (e->token) {
 		case ATTR_ERR:
 			if(info->err != get_ret(val)) {
