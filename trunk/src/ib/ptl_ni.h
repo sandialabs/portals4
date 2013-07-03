@@ -196,9 +196,8 @@ typedef struct ni {
 		uint16_t src_port;		/* port number of that socket. */
 		struct sockaddr_in *dest_addr;
 
-#if WITH_TRANSPORT_UDP
 		int map_done;
-#endif
+
 		//we use these to signal sends to self, as UDP can't safely communicate with itself on the same
 		//machine over the same port
 		atomic_t self_recv;
@@ -220,6 +219,10 @@ typedef struct ni {
 			size_t buf_size;
 			unsigned int num_bufs;
 		} udp_buf;
+#if IS_PPE
+		/* Link the active NIs together so that the PPE can poll them. */
+		struct list_head ppe_ni_list;
+#endif
 	} udp;
 #endif
 

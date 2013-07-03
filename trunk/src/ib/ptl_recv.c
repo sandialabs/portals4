@@ -524,7 +524,7 @@ void progress_thread_rdma(ni_t *ni)
 #endif
 
 #if WITH_TRANSPORT_UDP
-static void progress_thread_udp(ni_t *ni)
+void progress_thread_udp(ni_t *ni)
 {
 	/* Socket connection.*/
 	

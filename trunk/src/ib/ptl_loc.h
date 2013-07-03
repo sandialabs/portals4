@@ -271,6 +271,7 @@ void disconnect_conn_locked(conn_t *conn);
 void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest);
 buf_t *udp_receive(ni_t *ni);
 void process_recv_udp(ni_t *ni, buf_t *buf);
+void progress_thread_udp(ni_t *ni);
 #else
 static inline void progress_thread_udp(ni_t *ni) { }
 #endif
