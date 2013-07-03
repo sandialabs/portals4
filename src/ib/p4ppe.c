@@ -753,6 +753,9 @@ static void do_OP_PtlNIFini(ppebuf_t *buf)
 #if WITH_TRANSPORT_IB
 		list_del(&ni->rdma.ppe_ni_list);
 #endif
+#if WITH_TRANSPORT_UDP
+		list_del(&ni->udp.ppe_ni_list);
+#endif
 	}
 
 	ni_put(ni);
@@ -1486,6 +1489,14 @@ static void *ppe_progress(void *arg)
 		}
 #endif
 
+#if WITH_TRANSPORT_UDP
+		/* UDP. Walking the list of active NIs to find work. */
+		ni_t *ni;
+		list_for_each_entry(ni, &pt->ni_list, udp.ppe_ni_list) {
+			progress_thread_udp(ni);
+		}
+#endif
+
 		/* Get message from the message queue. */
 		ppebuf = (ppebuf_t *)dequeue(NULL, pt->queue);
 
@@ -1617,6 +1628,10 @@ static int NIInit_ppe(gbl_t *gbl, ni_t *ni)
 
 #if WITH_TRANSPORT_IB
 	list_add_tail(&ni->rdma.ppe_ni_list, &pt->ni_list);
+#endif
+
+#if WITH_TRANSPORT_UDP
+	list_add_tail(&ni->udp.ppe_ni_list, &pt->ni_list);
 #endif
 
 	if (ni->options & PTL_NI_PHYSICAL) {
