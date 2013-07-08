@@ -438,6 +438,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 		ptl_warn("attempting to re-initialize the interface \n");
 	 	ni->udp.dest_addr = &iface->udp.sin;
 		ni->id.phys.nid = iface->id.phys.nid;
+		ni->udp.s = ni->iface->udp.connect_s;
+		ni->iface->udp.ni_count++;
 #if !IS_PPE
 		ni->umn_fd = -1;
 #endif
@@ -550,6 +552,8 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 	//bounce_buf_offset = ni->udp.comm_pad_size;
 	//ni->udp.comm_pad_size += ni->udp.udp_buf.buf_size * ni->udp.udp_buf.num_bufs;
 
+	ni->iface->udp.ni_count++;
+
 	return PTL_OK;
 
  error:
@@ -562,8 +566,11 @@ int PtlNIInit_UDP(gbl_t *gbl, ni_t *ni)
 
 void cleanup_udp(ni_t *ni){
 
-	//remove address information
-	ni->udp.dest_addr = NULL;
-	//close the socket
-	close(ni->udp.s);
+	ni->iface->udp.ni_count--;
+	if (ni->iface->udp.ni_count <= 0){
+	    //remove address information
+	    ni->udp.dest_addr = NULL;
+	    //close the socket
+	    close(ni->udp.s);
+	}
 }
