@@ -65,6 +65,11 @@ struct iface {
 
 		/** Libev handler for incoming connections. */
 		ev_io watcher;
+
+		/* Reference counter for number of attached NIs */
+		/* Used to determine when to close the shared */
+		/* connection socket */
+		int ni_count;
 	} udp;
 #endif
 };
