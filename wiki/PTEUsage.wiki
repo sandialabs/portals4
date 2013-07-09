@@ -8,7 +8,7 @@
 ||  4 || OMPI OSC || || OMPI OSC  || ||
 ||  5 || || || OMPI OSC || ||
 ||  6 || || GASNET || || GASNET ||
-||  7 || || GASNET || || ||
+||  7 || || GASNET || || GASNET ||
 ||  8 || || || || SHMEM ||
 ||  9 || || || || SHMEM ||
 || 10 || || || || ||
