@@ -75,9 +75,11 @@ int main(int   argc,
         unsigned int which;
         ptl_size_t test;
 
+	unsigned int check_val = 111;
+
         /* setup match list entry */
-        value_e.start  = NULL;
-        value_e.length = 0;
+        value_e.start  = &check_val;
+        value_e.length = sizeof(uint32_t);;
         value_e.uid    = PTL_UID_ANY;
 #if MATCHING == 1
  #if PHYSICAL_ADDR == 0
@@ -94,9 +96,11 @@ int main(int   argc,
         CHECK_RETURNVAL(APPEND(ni_h, 0, &value_e, PTL_OVERFLOW_LIST, NULL,
                                &value_e_handle));
 
+	unsigned int send_val = 555;
+
         /* setup md */
-        md.start     = NULL;
-        md.length    = 0;
+        md.start     = &send_val;
+        md.length    = sizeof(uint32_t);
         md.options   = PTL_MD_EVENT_CT_ACK;
         md.eq_handle = PTL_EQ_NONE;
         CHECK_RETURNVAL(PtlCTAlloc(ni_h, &md.ct_handle));
@@ -108,7 +112,7 @@ int main(int   argc,
 #else
         peer = procs[0];
 #endif
-        CHECK_RETURNVAL(PtlPut(md_handle, 0, 0, PTL_CT_ACK_REQ, peer,
+        CHECK_RETURNVAL(PtlPut(md_handle, 0, sizeof(uint32_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(md.ct_handle, 1, &ct));
 
@@ -116,6 +120,8 @@ int main(int   argc,
            seconds), since we already have the ack */
         test = 1;
         CHECK_RETURNVAL(PtlCTPoll(&value_e.ct_handle, &test, 1, 2 * 1000, &ct, &which));
+	//fprintf(stderr,"value sent to target is %u \n",check_val);
+	assert(check_val == 555);
     }
 
     libtest_barrier();

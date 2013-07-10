@@ -283,7 +283,7 @@ static int udp_tgt_data_out(buf_t *buf, data_t *data)
 	if (data->data_fmt != DATA_FMT_UDP) {
 		assert(0);
 		WARN();
-		next = STATE_TGT_ERROR;
+		return STATE_TGT_ERROR;
 	}
 
         ptl_info("udp_tgt_data_out sets  %p direction: %i\n",buf,buf->rdma_dir);
