@@ -305,8 +305,8 @@ static int prepare_send_buf(buf_t *buf)
 		send_buf->length = sizeof(*ack_hdr);
 	} else {
 #if IS_PPE
+                //REG: this is handled elsewhere, testcase for fix for Brian K.
 		ack_hdr = (ack_hdr_t *)buf->data;
-
 		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
 		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
 #endif
@@ -356,7 +356,8 @@ static int init_local_offset(buf_t *buf)
 	} else {
 		buf->cur_loc_iov_off = buf->moffset;
 		buf->start = me->start + buf->moffset;
-		ptl_info("buf start determined to be: %p \n",buf->start);
+		ptl_info("buf start determined to be: %p with offset: %i\n",
+                 (int*)buf->start,(int)buf->moffset);
 	}
 
 	return PTL_OK;
@@ -680,6 +681,7 @@ found_one:
 		le_put(buf->le);
 		buf->le = NULL;
 		buf->ni_fail = ni_fail;
+		ptl_warn("permissions failure \n");
 		return STATE_TGT_DROP;
 	}
 
@@ -694,7 +696,8 @@ found_one:
 			return STATE_TGT_DROP; 
 		    }    
 		    else{
-		        PTL_FASTLOCK_UNLOCK(&pt->lock);
+		        ptl_info("dropping due to lack of unexpected headers\n");
+			PTL_FASTLOCK_UNLOCK(&pt->lock);
 		        le_put(buf->le);
 		        buf->le = NULL;
 		        buf->ni_fail = PTL_NI_DROPPED;
@@ -704,7 +707,7 @@ found_one:
 		else{
 		    pt->unexpected_size++;
 		}
-
+            
 		/* take a reference to the buf for the
 		 * unexpected list entry */
 		buf_get(buf);
@@ -713,7 +716,8 @@ found_one:
 		 * it (ie. through an append), then it will have to wait until
 		 * the transfer is completed. */
 		buf->unexpected_busy = 1;
-		list_add_tail(&buf->unexpected_list,
+
+                list_add_tail(&buf->unexpected_list,
 					  &pt->unexpected_list);
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
@@ -737,15 +741,13 @@ found_one:
 #endif
 #endif
 	    }
-	    //unexpected headers are disabled, just cleanup
+	    //unexpected headers are disabled, no unexpected list entry needed
 	    else{
-                le_put(buf->le);
-                buf->le = NULL;
-                PTL_FASTLOCK_UNLOCK(&pt->lock);
-                buf->ni_fail = PTL_NI_DROPPED;
-                return STATE_TGT_DROP;
+                //
+                ptl_info("unexpected headers disabled and overflow \n");
 	    }
 	}		
+	//indicate on which list this buf matched
 	buf->matching_list = buf->le->ptl_list;
 
 	PTL_FASTLOCK_UNLOCK(&pt->lock);
@@ -1246,23 +1248,6 @@ static int tgt_udp(buf_t *buf)
 		)
 		return STATE_TGT_UDP;
 
-	/* check to see if there is another data phase */
-	if (buf->put_resid) {
-		/* re-initialize buf->cur_loc_iov_index/off */
-		err = init_local_offset(buf);
-		if (err)
-			return STATE_TGT_ERROR;
-
-		if (hdr->h1.operation == OP_FETCH)
-			return STATE_TGT_ATOMIC_DATA_IN;
-		else if (hdr->h1.operation == OP_SWAP)
-			return (hdr->atom_op == PTL_SWAP) ?
-				STATE_TGT_DATA_IN :
-				STATE_TGT_SWAP_DATA_IN;
-		else
-			return  STATE_TGT_DATA_IN;
-	}
-
 	/* ok we are done transfering data */
 	return STATE_TGT_COMM_EVENT;
 }
@@ -1739,7 +1724,6 @@ static int tgt_send_ack(buf_t *buf)
 #if WITH_TRANSPORT_UDP
 		case CONN_TYPE_UDP:
 			ack_buf->dest.udp.dest_addr = buf->udp.src_addr;
-			//ack_buf->dest = buf->dest;
 			ack_buf->conn = buf->conn;
 			ack_buf->rlength = sizeof(buf_t);
 			ptl_info("buffer handle for initiator: %i \n",ack_hdr->h1.handle);
@@ -1852,7 +1836,10 @@ static int tgt_cleanup(buf_t *buf)
 		atomic_set(&buf->le->busy, 0);
 		state = STATE_TGT_OVERFLOW_EVENT;
 	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-	    if (buf->ni_fail != PTL_NI_PT_DISABLED)
+	    //if the pt hasn't run out of resources and unexpected headers are enabled
+	    //wait for a priority list append, otherwise just clean up
+	    if (buf->ni_fail != PTL_NI_PT_DISABLED &&
+                (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)))
 		state = STATE_TGT_WAIT_APPEND;
 	    else
                 state = STATE_TGT_CLEANUP_2;
