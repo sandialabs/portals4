@@ -123,7 +123,6 @@ typedef struct ni {
 		ev_io			async_watcher;
 
 		struct ibv_srq		*srq;
-		PTL_FASTLOCK_TYPE	srq_lock;
 
 		/* Pending send and receive operations. */
 		struct list_head	recv_list;
