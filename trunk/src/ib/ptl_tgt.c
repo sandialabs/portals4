@@ -727,6 +727,7 @@ found_one:
 		 * on the unexpected list. So sever the connection between the
 		 * two buffers right now to avoid races with MEAppend() and
 		 * sending that ack. */
+
 #if WITH_TRANSPORT_SHMEM
 		if (buf->conn->transport.type == CONN_TYPE_SHMEM){
 #elif IS_PPE
@@ -1787,10 +1788,11 @@ static int tgt_send_reply(buf_t *buf)
 	rep_buf->dest = buf->dest;
 
 #if WITH_TRANSPORT_SHMEM
-	if (buf->conn->transport.type == CONN_TYPE_SHMEM)
-		if (!(buf->mem_buf->shmem.index_owner == buf->conn->shmem.local_rank)){
-			rep_buf->mem_buf = buf->mem_buf;
-		}
+	if (buf->conn->transport.type == CONN_TYPE_SHMEM){
+		rep_buf->dest.shmem.local_rank = buf->mem_buf->shmem.index_owner;
+		ptl_info("shared mem reply from %i to %i \n",buf->conn->shmem.local_rank,
+                                rep_buf->dest.shmem.local_rank);
+	}
 #endif
 
 #if WITH_TRANSPORT_UDP
