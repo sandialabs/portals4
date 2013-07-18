@@ -48,7 +48,7 @@ int main(int   argc,
     ENTRY_T         value_e;   
  
     limits_reqd.max_entries = 1024;
-    limits_reqd.max_unexpected_headers = ITERS/2;
+    limits_reqd.max_unexpected_headers = ITERS*2;
     limits_reqd.max_mds = 1024;
     limits_reqd.max_eqs = 1024;
     limits_reqd.max_cts = 1024;
@@ -75,6 +75,13 @@ int main(int   argc,
         return 77;
     }
 
+    int iters;
+
+    if (num_procs < ITERS)
+        iters = ITERS*2+1;
+    else
+        iters = ITERS;
+
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
                               PTL_PID_ANY, &limits_reqd, &limits_actual, &ni_handle));
     procs = libtest_get_mapping(ni_handle);
@@ -84,7 +91,7 @@ int main(int   argc,
     if (0 == rank) {
 
         /* create data PT space */
-        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, (num_procs - 1) * ITERS + 64, &eq_handle));
+        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, (num_procs - 1) * iters + 64, &eq_handle));
         CHECK_RETURNVAL(PtlPTAlloc(ni_handle, PTL_PT_FLOWCTRL, eq_handle, 5,
                                    &pt_index));
 
@@ -107,7 +114,7 @@ int main(int   argc,
         ptl_md_t        md;
 
         /* 16 extra just in case... */
-        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, ITERS * 2 + 16, &eq_handle));
+        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, iters + 16, &eq_handle));
 
         md.start = NULL;
         md.length = 0;
@@ -128,8 +135,8 @@ int main(int   argc,
 
         fprintf(stderr,"begin ctwait \n");
         /* wait for signal counts */
-        CHECK_RETURNVAL(PtlCTWait(ct_handle, num_procs - 1, &ct));
-        if (ct.success != num_procs - 1 || ct.failure != 0) {
+        CHECK_RETURNVAL(PtlCTWait(ct_handle, iters / 2 , &ct));
+        if (ct.success != iters / 2 || ct.failure != 0) {
             return 1;
         }
         fprintf(stderr,"done CT wait \n");
@@ -158,6 +165,9 @@ int main(int   argc,
         }
         /* Now clear out all of the unexpected messages so we can clean up everything */
         CHECK_RETURNVAL(APPEND(ni_handle, 5, &value_e, PTL_PRIORITY_LIST, NULL, &signal_e2_handle));
+        ret = PTL_OK;
+        while (ret != PTL_EQ_EMPTY)
+            ret = PtlEQGet(eq_handle, &ev);
     } else {
         ptl_process_t target;
         ptl_event_t ev;
@@ -166,7 +176,7 @@ int main(int   argc,
 
         target.rank = 0;
         printf("beginning puts \n");
-        for (i = 0 ; i < ITERS ; ++i) {
+        for (i = 0 ; i < iters ; ++i) {
             CHECK_RETURNVAL(PtlPut(md_handle,
                                    0,
                                    0,
@@ -179,7 +189,7 @@ int main(int   argc,
                                    0));
         }
 
-        while (count < ITERS) {
+        while (count < iters) {
             ret = PtlEQGet(eq_handle, &ev);
             if (PTL_EQ_EMPTY == ret) {
                 continue;
@@ -210,27 +220,14 @@ int main(int   argc,
         }
 
         fprintf(stderr, "%d: Saw %d of %d ACKs as fails\n", rank, fails, count);
-
-        CHECK_RETURNVAL(PtlPut(md_handle,
-                               0,
-                               0,
-                               PTL_NO_ACK_REQ,
-                               target,
-                               6,
-                               0,
-                               0,
-                               NULL,
-                               0));
-        CHECK_RETURNVAL(PtlEQWait(eq_handle, &ev));
     }
 
     fprintf(stderr,"at final barrier \n");
 
-    
-
     libtest_barrier();
 
     if (0 == rank) {
+         
         CHECK_RETURNVAL(UNLINK(signal_e_handle));
         CHECK_RETURNVAL(UNLINK(signal_e2_handle));
         CHECK_RETURNVAL(PtlPTFree(ni_handle, signal_pt_index));
