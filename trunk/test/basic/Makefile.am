@@ -7,6 +7,7 @@ AM_CXXFLAGS = @RESTRICT_CXXFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test
 AM_LDFLAGS = $(LIBTOOL_WRAPPER_LDFLAGS)
 LDADD = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
+noinst_HEADERS = testing.h
 
 TESTS = \
 	test_pmi_hello \
