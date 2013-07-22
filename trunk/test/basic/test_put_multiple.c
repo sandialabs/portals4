@@ -97,7 +97,7 @@ int main(int   argc,
                            NULL,
                            &value_e_handle));
 
-    /* Now do a barrierto make sure that everyone has their logical
+    /* Now do a barrier to make sure that everyone has their logical
      * interface set up */
     libtest_barrier();
 
@@ -110,10 +110,13 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
     /* everyone puts to rank 0 */
-    {
+    if (myself.rank !=0){
         ptl_ct_event_t ctc;
         ptl_process_t  r0 = { .rank = 0 };
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 
+        int i, iters;
+        iters = 100;
+        for (i=1; i <= iters; i++){
+            CHECK_RETURNVAL(PtlPut(write_md_handle, 
                                0,
                                BUFSIZE, 
                                PTL_CT_ACK_REQ,
@@ -123,12 +126,14 @@ int main(int   argc,
                                BUFSIZE * rank * OVERLAP,
                                NULL,
                                0));
-        CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
-        assert(ctc.failure == 0);
-        assert(ctc.success == 1);
+            CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, i, &ctc));
+        }
+                assert(ctc.failure == 0);
+        //assert(ctc.success == 1);
     }
     if (myself.rank == 0) {
-        NO_FAILURES(value_e.ct_handle, num_procs);
+        memset(value, 61, BUFSIZE); 
+        NO_FAILURES(value_e.ct_handle, (num_procs-1)*100);
         for (unsigned idx = 0; idx < BUFSIZE * (0 == OVERLAP ? 1 : num_procs); ++idx) {
             if (value[idx] != 61) {
                 fprintf(stderr,
@@ -137,8 +142,11 @@ int main(int   argc,
                         idx, value[idx]);
                 abort();
             }
+            //fprintf(stderr,"idx is: %i\n",idx);
         }
+        fprintf(stderr,"rank 0 done listening\n");
     }
+    
     CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
     CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
     CHECK_RETURNVAL(UNLINK(value_e_handle));
