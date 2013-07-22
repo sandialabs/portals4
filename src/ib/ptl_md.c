@@ -131,6 +131,7 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #endif
 
 	for (i = 0; i < num_iov; i++) {
+		void * iov_addr;
 		mr_t *mr;
 
 		md->length += iov->iov_len;
@@ -141,9 +142,10 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 			goto err3;
 
 		mr = md->mr_list[i];
+		iov_addr = addr_to_ppe(iov->iov_base, mr);
 
 #if WITH_TRANSPORT_IB 
-		sge->addr = cpu_to_le64((uintptr_t)iov->iov_base);
+		sge->addr = cpu_to_le64((uintptr_t)iov_addr);
 		sge->length = cpu_to_le32(iov->iov_len);
 		sge->lkey = cpu_to_le32(mr->ibmr->rkey);
 		sge++;
@@ -153,18 +155,16 @@ static int init_iovec(md_t *md, const ptl_iovec_t *iov_list, int num_iov)
 #if WITH_TRANSPORT_SHMEM || IS_PPE
 #if WITH_TRANSPORT_SHMEM && USE_KNEM
 		mem_iovec->cookie = mr->knem_cookie;
-		mem_iovec->offset = iov->iov_base - mr->addr;
+		mem_iovec->offset = iov_addr - mr->addr;
 #endif
-#if IS_PPE
-		mem_iovec->addr = addr_to_ppe(iov->iov_base, mr);
-#endif
+		mem_iovec->addr = iov_addr;
 		mem_iovec->length = iov->iov_len;
 		mem_iovec++;
 #endif
 
 #if WITH_TRANSPORT_UDP
 		//record the iov addresses so we can fetch them later 
-		md->udp_list[i].iov_base = iov->iov_base;
+		md->udp_list[i].iov_base = iov_addr;
 		md->udp_list[i].iov_len = iov->iov_len;
 #endif
 		iov++;

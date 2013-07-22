@@ -292,7 +292,7 @@ static int prepare_send_buf(buf_t *buf)
 		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
 #if WITH_TRANSPORT_UDP
 		ptl_info(" preparing response for handle: %i \n",ack_hdr->h1.handle);
-		ack_hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
+		ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 #endif
 #if IS_PPE
 		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
@@ -390,8 +390,8 @@ static int tgt_start(buf_t *buf)
 	buf->auto_unlink_pending = 0;
 
 #if IS_PPE
-	buf->target.phys.nid = le32_to_cpu(hdr->src_nid);
-	buf->target.phys.pid = le32_to_cpu(hdr->src_pid);
+	buf->target.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+	buf->target.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 #endif
 
 	switch (hdr->h1.operation) {
@@ -418,18 +418,18 @@ static int tgt_start(buf_t *buf)
 	buf->in_atomic = 0;
 
 	/* get per conn info */
-	initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-	initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+	initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+	initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 
 #if WITH_TRANSPORT_UDP
-	ptl_info("initiator nid: %i pid: %i \n",hdr->src_nid,hdr->src_pid);
+	ptl_info("initiator nid: %i pid: %i \n",hdr->h1.src_nid,hdr->h1.src_pid);
 	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
 	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
 	ptl_info("buf start: %p \n",buf->start);
 
 	//TODO make the hdr frm the sender send these in network order;
-	initiator.phys.nid = hdr->src_nid;
-	initiator.phys.pid = hdr->src_pid;
+	initiator.phys.nid = hdr->h1.src_nid;
+	initiator.phys.pid = hdr->h1.src_pid;
 
 	buf->conn = get_conn(ni, ni->id);
 	if (buf->conn->transport.type != CONN_TYPE_UDP) {
@@ -437,6 +437,7 @@ static int tgt_start(buf_t *buf)
 		buf->conn = get_conn(ni, initiator);
 	}
 	buf->conn->state = CONN_STATE_CONNECTED;
+	buf->conn->udp.dest_addr = buf->conn->sin;
 #endif
 #if !WITH_TRANSPORT_UDP
 	buf->conn = get_conn(ni, initiator);
@@ -531,7 +532,7 @@ int check_match(buf_t *buf, const me_t *me)
 	if (ni->options & PTL_NI_LOGICAL) {
 		ptl_process_t initiator;
 
-		initiator.rank = le32_to_cpu(hdr->src_rank);
+		initiator.rank = le32_to_cpu(hdr->h1.src_rank);
 
 		if (!(me->id.rank == PTL_RANK_ANY ||
 		     (me->id.rank == initiator.rank))) {
@@ -540,8 +541,8 @@ int check_match(buf_t *buf, const me_t *me)
 	} else {
 		ptl_process_t initiator;
 
-		initiator.phys.nid = le32_to_cpu(hdr->src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->src_pid);
+		initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+		initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 
 		if (!(me->id.phys.nid == PTL_NID_ANY ||
 		     (me->id.phys.nid == initiator.phys.nid)))
@@ -1223,7 +1224,6 @@ static int tgt_rdma(buf_t *buf)
 static int tgt_udp(buf_t *buf)
 {
 	int err;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	
 	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
 				&buf->put_resid : &buf->get_resid;

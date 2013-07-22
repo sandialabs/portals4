@@ -61,13 +61,18 @@ struct hdr_common {
 	unsigned int	ni_type:4;	/* request only */
 	unsigned int	pkt_fmt:4;	/* request only */
 	__le32			handle;
+	union {
+		__le32		src_nid;
+		__le32		src_rank;
+	};
+	__le32			src_pid;
 #if IS_PPE
 	/* This information is always needed by the PPE to find the
 	 * destination NI. */
 	__le32 hash;
 	union {
-		__le32			dst_nid;
-		__le32			dst_rank;
+		__le32		dst_nid;
+		__le32		dst_rank;
 	};
 	__le32			dst_pid;
 #endif
@@ -85,11 +90,6 @@ typedef struct req_hdr {
 	unsigned int	atom_type:4;
 	unsigned int	atom_op:5;
 	unsigned int	reserved_19:19;
-	union {
-		__le32			src_nid;
-		__le32			src_rank;
-	};
-	__le32			src_pid;
 	__le64			rlength;
 	__le64			roffset;
 	__le64			match_bits;

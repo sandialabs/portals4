@@ -278,7 +278,9 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start, ptl_size_t length,
 	int ret;
 	struct list_head mr_list;
 
+#if !IS_PPE
  again:
+#endif
 	PTL_FASTLOCK_LOCK(&tree->tree_lock);
 
 	link = RB_ROOT(&tree->tree);

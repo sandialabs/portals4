@@ -150,13 +150,12 @@ struct conn {
 
 #if WITH_TRANSPORT_UDP
 		struct {
-			struct sockaddr_in	dest_addr;
-			//struct sockaddr_in 	src_addr;
-			//int 			loop_to_self;
-			atomic_t send_seq;
-			atomic_t recv_seq;
-			atomic_t is_waiting;
-			atomic_t fragment_seq;
+			struct sockaddr_in dest_addr;
+			atomic_t           send_seq;
+			atomic_t           recv_seq;
+			atomic_t           fragment_seq;
+			atomic_t           is_waiting;    /* set if waiting for connection request response to arrive */
+			struct list_head   waiting_bufs;  /* list of bufs waiting for connection to be established */
 		} udp;
 #endif
 	};

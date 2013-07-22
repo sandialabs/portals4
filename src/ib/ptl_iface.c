@@ -116,10 +116,11 @@ int init_iface_table(gbl_t *gbl)
 		/* the interface name is "eth" followed by the interface id */
 		sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(HAVE_KITTEN)
                 //sprintf(gbl->iface[i].ifname, "lo%d",i);
 		sprintf(gbl->iface[i].ifname, "en%d", current_if_num);
 #endif
+
 		//sprintf(gbl->iface[i].ifname, "lo");
 		in_addr_t addr;
 		addr = check_ip_address(gbl->iface[i].ifname);
@@ -128,7 +129,7 @@ int init_iface_table(gbl_t *gbl)
                         gbl->iface[i].iface_id,num_iface);
                 	while (addr == INADDR_ANY && current_if_num < 100) {
 				current_if_num++;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(HAVE_KITTEN)
 				sprintf(gbl->iface[i].ifname, "en%d", current_if_num);
 #else
 				sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
