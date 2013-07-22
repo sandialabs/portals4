@@ -230,22 +230,28 @@ static int prepare_req(buf_t *buf)
 	hdr->h1.pkt_fmt = PKT_FMT_REQ;
 	hdr->h1.handle = cpu_to_le32(buf_to_handle(buf));
 	hdr->h1.operand = 0;
-	hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
+	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 	ptl_info("request uses physical: %x or logical addressing: %x \n",!!(ni->options & PTL_NI_PHYSICAL), !!(ni->options & PTL_NI_LOGICAL));
-	hdr->src_nid = cpu_to_le32(ni->id.phys.nid);
-	hdr->src_pid = cpu_to_le32(ni->id.phys.pid);
+	hdr->h1.src_nid = cpu_to_le32(ni->id.phys.nid);
+	hdr->h1.src_pid = cpu_to_le32(ni->id.phys.pid);
 #if WITH_TRANSPORT_UDP
-	ptl_info("initiator nid: %i pid: %i NI: %p\n",hdr->src_nid,hdr->src_pid,ni);
+	ptl_info("initiator nid: %i pid: %i NI: %p\n",hdr->h1.src_nid,hdr->h1.src_pid,ni);
 	ptl_info("buffer handle: %i %i buf:%p\n",hdr->h1.handle,le32_to_cpu(hdr->h1.handle),&buf);
 #endif
 	hdr->rlength = cpu_to_le64(length);
 	hdr->roffset = cpu_to_le64(buf->roffset);
 
 #if IS_PPE
-	if (ni->options & PTL_NI_PHYSICAL){
-		hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+	if (ni->options & PTL_NI_PHYSICAL) {
+		hdr->h1.src_nid = cpu_to_le32(ni->id.phys.nid);
+		hdr->h1.src_pid = cpu_to_le32(ni->id.phys.pid);
 		hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
 		hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+		hdr->h1.hash = cpu_to_le32(ni->mem.hash);
+	} else {
+		hdr->h1.src_rank = cpu_to_le32(ni->id.rank);
+		hdr->h1.dst_rank = cpu_to_le32(buf->target.rank);
 		hdr->h1.hash = cpu_to_le32(ni->mem.hash);
 	}
 #endif
@@ -436,13 +442,12 @@ static int send_req(buf_t *buf)
 	conn_t *conn = buf->conn;
 	int state;
 
-
 #if WITH_TRANSPORT_UDP
 	if (buf->conn->transport.type == CONN_TYPE_UDP)
 	    ptl_info("set destination to: %s:%i \n",inet_ntoa(conn->udp.dest_addr.sin_addr),ntohs(conn->udp.dest_addr.sin_port));
 	req_hdr_t *hdr = (req_hdr_t *)buf->data;
 	ni_t *ni = obj_to_ni(buf);
-	hdr->h1.physical = !!(ni->options & PTL_NI_LOGICAL);
+	hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 #endif
 
 	set_buf_dest(buf, conn);
@@ -990,14 +995,33 @@ static int reply_event(buf_t *buf)
 
 		  if (!(!!(buf->get_md->options & PTL_IOVEC))){
 			void *start = buf->get_md->start + buf->get_offset;
-			memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);;
+#if IS_PPE
+			md_t *md = buf->get_md;
+			mr_t *mr;
+
+			if (md->ppe.mr_start) {
+				mr = md->ppe.mr_start;
+			} else {
+				if (mr_lookup_app(obj_to_ni(md), start, buf->mlength, &mr))
+					return STATE_INIT_ERROR;
+			}
+
+			memcpy(addr_to_ppe(start, mr),
+				buf->recv_buf->transfer.udp.my_iovec.iov_base,
+				buf->mlength);
+
+			if (!md->ppe.mr_start)
+				mr_put(mr);
+#else
+			memcpy(start, buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->mlength);
+#endif
  		  }
 		  else{ 
 			ptl_info("received reply for a iovec, copying into supplied iovec %i %i %i\n",
 				 (int)buf->mlength,(int)buf->get_md->num_iov,(int)buf->get_offset);
 			int err;
 			err = iov_copy_in(buf->recv_buf->transfer.udp.my_iovec.iov_base, buf->get_md->start,
-                                           NULL,
+                                           buf->get_md->mr_list,
                                            buf->get_md->num_iov,
                                            buf->get_offset, buf->mlength);
                         buf->recv_buf->transfer.udp.num_iovecs = buf->get_md->num_iov;	

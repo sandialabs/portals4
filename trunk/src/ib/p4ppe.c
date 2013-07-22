@@ -461,8 +461,7 @@ static void ppe_set_send_flags(buf_t *buf, int can_inline)
 	buf->event_mask |= XX_INLINE;
 }
 
-static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr,
-										ptl_size_t length, buf_t *buf)
+static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr, ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_MEM_DMA;
 
@@ -476,13 +475,12 @@ static void append_init_data_ppe_direct(data_t *data, mr_t *mr, void *addr,
 /* Let the remote side know where we store the IOVECS. This is used
  * for both direct and indirect iovecs cases. That avoids a copy into
  * the message buffer. */
-static void append_init_data_ppe_iovec(data_t *data, md_t *md, int iov_start,
-												int num_iov, ptl_size_t length, buf_t *buf)
+static void append_init_data_ppe_iovec(data_t *data, md_t *md, int iov_start, int num_iov, ptl_size_t length, buf_t *buf)
 {
 	data->data_fmt = DATA_FMT_MEM_INDIRECT;
 	data->mem.num_mem_iovecs = num_iov;
 
-	data->mem.mem_iovec[0].addr = &md->mem_iovecs[iov_start];
+	data->mem.mem_iovec[0].addr = addr_to_ppe(&md->mem_iovecs[iov_start], md->ppe.mr_start);
 	data->mem.mem_iovec[0].length = num_iov * sizeof(struct mem_iovec);
 
 	buf->length += sizeof(*data) + sizeof(struct mem_iovec);
