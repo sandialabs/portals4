@@ -49,10 +49,8 @@ struct mem_iovec {
 	uint64_t		cookie;
 	uint64_t		offset;		/* add to cookie to get address */
 #endif
-#if IS_PPE
-	void		   *addr;
-#endif
-	uint64_t		length;
+	void                    *addr;
+        uint64_t		length;
 };
 
 /**
