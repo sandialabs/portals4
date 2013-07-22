@@ -175,6 +175,7 @@ int main(int   argc,
                                    0,
                                    (void*)(size_t)i,
                                    0));
+            usleep(100);
         }
 
         while (count < ITERS) {

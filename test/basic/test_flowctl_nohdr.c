@@ -187,6 +187,7 @@ int main(int   argc,
                                    0,
                                    NULL,
                                    0));
+            usleep(100);
         }
 
         while (count < iters) {
