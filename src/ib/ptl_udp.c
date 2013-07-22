@@ -837,7 +837,7 @@ buf_t *udp_receive(ni_t *ni){
                                          ni->iface,ni->iface->id.phys.pid,inet_ntoa(big_buf->udp.src_addr.sin_addr),
                                          ntohs(big_buf->udp.src_addr.sin_port));	
 				//We only need to check the pid
-				if (ni->iface->id.phys.pid == ntohs(big_buf->udp.src_addr.sin_port)){
+				if (ntohs(thebuf->udp.src_addr.sin_port) == ntohs(big_buf->udp.src_addr.sin_port)){
 					//ptl_info("found match for system, checking logical NI \n");
 					//found a matching buf, check to see if addressing mode is correct
 					if (((!!(ni->options & PTL_NI_LOGICAL)) && (hdr->h1.physical == 0)) ||
