@@ -336,7 +336,6 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
         		pt_t *pt = &ni->pt[le->pt_index];
 			le_put(buf->le);
 			buf->le = NULL;
-			pt->unexpected_size--;
 		}
 
 		list_del(&buf->unexpected_list);
@@ -350,7 +349,7 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
 			if (err)
 				WARN();
 		}
-
+	
 		/* From get_match(). */
 		buf_put(buf);
 	}

@@ -1906,6 +1906,12 @@ static void tgt_cleanup_2(buf_t *buf)
 
 	if (buf->matching.le){
                 ptl_warn("matching me/le cleanup \n");
+		ni_t *ni = obj_to_ni(buf->matching.le);
+                pt_t *pt = &ni->pt[buf->matching.le->pt_index];
+                //if the buf has a matching LE/ME, it means that
+                //it was an overflow match, so reduce the
+                //unexpected message count
+		pt->unexpected_size--;
                 le_put(buf->matching.le);
                 atomic_set(&buf->matching.le->busy, 0);
                 buf->matching.le = NULL;
