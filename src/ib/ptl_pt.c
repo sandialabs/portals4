@@ -132,7 +132,7 @@ int _PtlPTAlloc(PPEGBL ptl_handle_ni_t ni_handle,
 	pt->num_tgt_active = 0;
 	pt->options = options;
 	pt->eq = eq;
-	pt->unexpected_size = 0;
+	atomic_set(&pt->unexpected_size,0);
 
 	PTL_FASTLOCK_INIT(&pt->lock);
 	INIT_LIST_HEAD(&pt->priority_list);

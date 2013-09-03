@@ -688,7 +688,7 @@ found_one:
 
 	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
 	    if (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)){
-		if (pt->unexpected_size >= ni->limits.max_unexpected_headers){
+		if (atomic_read(&pt->unexpected_size) >= ni->limits.max_unexpected_headers){
 		    if (pt->options & PTL_PT_FLOWCTRL){
 		        pt->state |= PT_AUTO_DISABLED;
                         ptl_info("dropping due to lack of unexpected headers\n");
@@ -706,7 +706,7 @@ found_one:
 		    }
 		}
 		else{
-		    pt->unexpected_size++;
+		    atomic_inc(&pt->unexpected_size);
 		}
             
 		/* take a reference to the buf for the
@@ -1911,7 +1911,7 @@ static void tgt_cleanup_2(buf_t *buf)
                 //if the buf has a matching LE/ME, it means that
                 //it was an overflow match, so reduce the
                 //unexpected message count
-		pt->unexpected_size--;
+		atomic_dec(&pt->unexpected_size);
                 le_put(buf->matching.le);
                 atomic_set(&buf->matching.le->busy, 0);
                 buf->matching.le = NULL;
