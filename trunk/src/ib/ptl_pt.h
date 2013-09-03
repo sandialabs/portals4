@@ -58,7 +58,7 @@ struct pt {
 	struct list_head	overflow_list;
 
 	/** size of unexpected list */
-	unsigned int		unexpected_size;
+	atomic_t		unexpected_size;
 
 	/** list of unexpected xt's */
 	struct list_head	unexpected_list;
