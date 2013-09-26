@@ -111,6 +111,7 @@ typedef struct ni {
 	pthread_t catcher;
 	int has_catcher;
 	int catcher_stop;
+	int catcher_nosleep;
 #endif
 
 	int cleanup_state;

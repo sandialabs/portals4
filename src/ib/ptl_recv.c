@@ -4,6 +4,8 @@
  * Completion queue processing.
  */
 #include "ptl_loc.h"
+#include <sys/time.h>
+#include <sys/resource.h>
 
 /**
  * Receive state name for debug output.
@@ -20,6 +22,9 @@ static char *recv_state_name[] = {
 	[STATE_RECV_ERROR]		= "recv_error",
 	[STATE_RECV_DONE]		= "recv_done",
 };
+/* keep_polling means that the user thread is waiting for a communication thus 
+ * should not sleep. */
+extern atomic_t keep_polling;
 
 #if WITH_TRANSPORT_IB
 /**
@@ -33,16 +38,45 @@ static char *recv_state_name[] = {
  * @return the number of work completions found if no error.
  * @return a negative number if an error occured.
  */
+int rep_poll = 0;
 static int comp_poll(ni_t *ni, int num_wc,
 					 struct ibv_wc wc_list[], buf_t *buf_list[])
 {
-	int ret;
+	int ret = 0;
 	int i;
 	buf_t *buf;
 
+#if WITH_TRANSPORT_IB && !WITH_TRANSPORT_SHMEM && !IS_PPE
+	while (ni->catcher_stop == 0 && ret == 0) {
+		ret = ibv_poll_cq(ni->rdma.cq, num_wc, wc_list);
+		if (ret <= 0) {
+			rep_poll++;
+			pthread_yield();
+
+			if (rep_poll >= 1000) {
+				if (rep_poll == 1000)
+					ibv_req_notify_cq(ni->rdma.cq,0);
+				else {
+					if (atomic_read(&keep_polling) == 0 && ni->catcher_nosleep == 0) {
+						ret = ibv_get_cq_event(ni->rdma.ch,&ni->rdma.cq,(void ** )&ni->iface->ibv_context);
+						ibv_ack_cq_events(ni->rdma.cq, 1);
+						rep_poll=0;
+					}
+				}
+			}
+		}
+	}
+	if (ret == 0) return 0;
+	rep_poll=0;
+#else
+	/* if there is some other interface the thread
+	 * should continue polling others */
 	ret = ibv_poll_cq(ni->rdma.cq, num_wc, wc_list);
-	if (ret <= 0)
+	if (ret <= 0) {
+		pthread_yield();
 		return 0;
+	}
+#endif
 
 	/* convert from wc to buf and set initial state */
 	for (i = 0; i < ret; i++) {
@@ -312,6 +346,9 @@ static int recv_req(buf_t *buf)
 	 * buffer, so buf will not be valid after the call. */
 #if WITH_TRANSPORT_UDP
 	ptl_info("process received UDP request as target\n");
+#endif
+#if WITH_TRANSPORT_SHMEM
+	ptl_info("begin target processing for shared memory recv\n");
 #endif
 	err = process_tgt(buf);
 	if (err)
@@ -882,8 +919,12 @@ static void *progress_thread(void *arg)
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 					/* Don't send back if it's on the noknem list. */
-					if (!list_empty(&buf->list))
+                                        PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
+					if (!list_empty(&buf->list)){
+						PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 						break;
+					}
+                                        PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 #endif
 
 					if (shmem_buf->type == BUF_SHMEM_SEND ||
@@ -971,6 +1012,9 @@ int start_progress_thread(ni_t *ni)
 {
 	int ret;
 
+	/* Keep the communication thread active at the end to terminate it */
+	ni->catcher_nosleep = 0;
+	atomic_set(&keep_polling, 0);
 	ret = pthread_create(&ni->catcher, NULL, progress_thread, ni);
 	if (ret) {
 		WARN();
@@ -980,6 +1024,10 @@ int start_progress_thread(ni_t *ni)
 
 		ret = PTL_OK;
 	}
+	/* Give the priority to the communication thread */
+	int which = PRIO_PROCESS;
+	pid_t pid = getpid();
+	setpriority(which, pid, 2);
 
 	return ret;
 }
@@ -989,7 +1037,7 @@ void stop_progress_thread(ni_t *ni)
 {
 	if (ni->has_catcher) {
 		ni->catcher_stop = 1;
-		pthread_join(ni->catcher, NULL);
+		pthread_cancel(ni->catcher);
 		ni->has_catcher = 0;
 	}
 }

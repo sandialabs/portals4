@@ -20,6 +20,7 @@
 #include "ptl_timer.h"
 #endif
 
+extern atomic_t keep_polling;
 /**
  * @brief Find whether a queue is empty.
  *
@@ -122,42 +123,21 @@ int PtlEQWait_work(struct eqe_list *eqe_list,
 				   ptl_event_t *event_p)
 {
 	int err;
-	int count = 100000;
+	atomic_inc(&keep_polling);
+	atomic_inc(&eqe_list->waiter);
 
 	while(1) {
 		err = check_eq(eqe_list, event_p);
 		if (err != PTL_EQ_EMPTY) {
 			break;
 		}
+	
+		pthread_yield();
 
-		SPINLOCK_BODY();
-
-		if (--count == 0) {
-
-			atomic_inc(&eqe_list->waiter);
-
-			pthread_mutex_lock(&eqe_list->mutex);
-
-			/* Check one more time. */
-			err = check_eq(eqe_list, event_p);
-			if (err != PTL_EQ_EMPTY) {
-				atomic_dec(&eqe_list->waiter);
-				pthread_mutex_unlock(&eqe_list->mutex);
-				break;
-			}
-
-			pthread_cond_wait(&eqe_list->cond, &eqe_list->mutex);
-
-			pthread_mutex_unlock(&eqe_list->mutex);
-
-			atomic_dec(&eqe_list->waiter);
-
-			/* Just in case we come back because some other thread
-			 * consummed the event. */
-			count = 1;
-		}
 
 	}
+	atomic_dec(&eqe_list->waiter);
+	atomic_dec(&keep_polling);
 
 	return err;
 }
@@ -180,6 +160,7 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
 	nstart = TIMER_INTS(start);
 
 	timeout_ns = MILLI_TO_TIMER_INTS(timeout);
+	atomic_inc(&keep_polling);
 
 	while (1) {
 		for (i = 0; i < size; i++) {
@@ -209,9 +190,10 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
 			}
 		}
 
-		SPINLOCK_BODY();
+		pthread_yield();
 	}
 
  out:
+	atomic_dec(&keep_polling);
 	return err;
 }
