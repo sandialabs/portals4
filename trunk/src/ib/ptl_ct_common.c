@@ -13,10 +13,12 @@
 #include "ptl_timer.h"
 #endif
 
+atomic_t keep_polling;
 int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
 				   ptl_ct_event_t *event_p)
 {
 	int err;
+	atomic_inc(&keep_polling);
 
 	/* wait loop */
 	while (1) {
@@ -34,8 +36,9 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
 		}
 
 		/* memory barrier */
-		SPINLOCK_BODY();
+		pthread_yield();
 	}
+	atomic_dec(&keep_polling);
 
 	return err;
 }
@@ -60,20 +63,24 @@ static int ct_poll_loop(int size, struct ct_info *cts_info[], const ptl_size_t *
 {
 	int i;
 
+	atomic_inc(&keep_polling);
 	for (i = 0; i < size; i++) {
 		const struct ct_info *ct_info = cts_info[i];
 
 		if (ct_info->event.success >= thresholds[i] || ct_info->event.failure) {
 			*event_p = ct_info->event;
 			*which_p = i;
+			atomic_dec(&keep_polling);
 			return PTL_OK;
 		}
 
 		if (ct_info->interrupt) {
+			atomic_dec(&keep_polling);
 			return PTL_INTERRUPTED;
 		}
 	}
 
+	atomic_dec(&keep_polling);
 	return PTL_CT_NONE_REACHED;
 }
 
@@ -86,6 +93,7 @@ int PtlCTPoll_work(struct ct_info *cts_info[], const ptl_size_t *thresholds,
 	uint64_t timeout_ns;
 	uint64_t nstart;
 	TIMER_TYPE start;
+	atomic_inc(&keep_polling);
 
 	/* compute expiration of poll time */
 	MARK_TIMER(start);
@@ -114,5 +122,6 @@ int PtlCTPoll_work(struct ct_info *cts_info[], const ptl_size_t *thresholds,
 		SPINLOCK_BODY();
 	}
 
+	atomic_dec(&keep_polling);
 	return err;
 }

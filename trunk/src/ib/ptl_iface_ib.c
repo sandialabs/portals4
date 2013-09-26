@@ -467,9 +467,9 @@ int PtlNIInit_rdma(gbl_t *gbl, ni_t *ni)
 		goto error;
 
 	/* Add a watcher for asynchronous events. */
-	ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
+	//ev_io_init(&ni->rdma.async_watcher, process_async, iface->ibv_context->async_fd, EV_READ);
 	ni->rdma.async_watcher.data = ni;
-	EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
+	//EVL_WATCH(ev_io_start(evl.loop, &ni->rdma.async_watcher));
 
 	/* Ready to listen. */
 	if (!iface->listen) {

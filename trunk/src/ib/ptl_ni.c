@@ -466,6 +466,7 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 
 	if ((ni->options & PTL_NI_LOGICAL) == 0) {
 		/* Only valid on logical NIs. */
+		ptl_warn("setmap called for physically addressed NI, invalid\n");
 		goto err2;
 	}
 
@@ -535,7 +536,7 @@ int _PtlSetMap(PPEGBL ptl_handle_ni_t ni_handle,
 	ni_put(ni);
  err1:
 	gbl_put();
-
+	ptl_warn("PtlSetMap failed \n");
 	return PTL_ARG_INVALID;
 }
 
@@ -698,6 +699,7 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
+	ni->catcher_nosleep = 1;
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 
