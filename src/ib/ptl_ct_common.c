@@ -36,7 +36,7 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
 		}
 
 		/* memory barrier */
-		pthread_yield();
+		sched_yield();
 	}
 	atomic_dec(&keep_polling);
 

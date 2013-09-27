@@ -132,7 +132,7 @@ int PtlEQWait_work(struct eqe_list *eqe_list,
 			break;
 		}
 	
-		pthread_yield();
+		sched_yield();
 
 
 	}
@@ -190,7 +190,7 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
 			}
 		}
 
-		pthread_yield();
+		sched_yield();
 	}
 
  out:
