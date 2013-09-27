@@ -46,7 +46,7 @@ static inline void check_waiter(struct eqe_list *eqe_list)
 {
 	if (atomic_read(&eqe_list->waiter) > 0) {
 		SPINLOCK_BODY();
-		pthread_yield();
+		sched_yield();
 	}
 }
 
