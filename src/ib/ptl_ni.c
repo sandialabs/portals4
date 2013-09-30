@@ -699,7 +699,10 @@ int _PtlNIFini(gbl_t *gbl, ptl_handle_ni_t ni_handle)
 	err = to_ni(MYGBL_ ni_handle, &ni);
 	if (unlikely(err))
 		goto err1;
-	ni->catcher_nosleep = 1;
+
+#if !IS_PPE
+    ni->catcher_nosleep = 1;
+#endif
 
 	pthread_mutex_lock(&gbl->gbl_mutex);
 
