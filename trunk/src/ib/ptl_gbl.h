@@ -21,29 +21,36 @@ extern void gbl_release(ref_t *ref);
  * corresponding gbl to almost each portals API functions. */
 #if IS_PPE
 typedef struct gbl {
-	int			num_iface;	/* size of interface table */
-	struct iface			*iface;		/* interface table */
-	int			ref_cnt;	/* count PtlInit/PtlFini */
-	ref_t			ref;		/* sub objects references */
-	int finalized;
+    int num_iface;              /* size of interface table */
+    struct iface *iface;        /* interface table */
+    int ref_cnt;                /* count PtlInit/PtlFini */
+    ref_t ref;                  /* sub objects references */
+    int finalized;
 
-	pthread_mutex_t		gbl_mutex;
-	pool_t			ni_pool;
+    pthread_mutex_t gbl_mutex;
+    pool_t ni_pool;
 
-	atomic_t next_index;
-	void **index_map;
+    atomic_t next_index;
+    void **index_map;
 
-	/* PPE specific. */
+    /* PPE specific. */
 
-	/* Mapping of the whole process. */
-	xpmem_apid_t apid;
+    /* Mapping of the whole process. */
+    xpmem_apid_t apid;
 
-	/* Number of the progress thread assigned to this client. */
-	unsigned int prog_thread;
+    /* Number of the progress thread assigned to this client. */
+    unsigned int prog_thread;
 } gbl_t;
 
-static inline int gbl_get(void) { return PTL_OK; }
-static inline void gbl_put(void) { }
+static inline int gbl_get(void)
+{
+    return PTL_OK;
+}
+
+static inline void gbl_put(void)
+{
+}
+
 #define PPEGBL struct gbl *gbl,
 #define MYGBL gbl
 #define MYGBL_ gbl,
@@ -53,7 +60,7 @@ static inline void gbl_put(void) { }
 /* Never instanced, but removing it would needs lots of ifdefs
  * throughout the code. */
 typedef struct gbl {
-	void **index_map;
+    void **index_map;
 } gbl_t;
 
 /* The light client doesn't have a GBL. */
@@ -65,20 +72,20 @@ typedef struct gbl {
 #else
 
 typedef struct gbl {
-	int			num_iface;	/* size of interface table */
-	struct iface			*iface;		/* interface table */
-	pthread_mutex_t		gbl_mutex;
-	int			ref_cnt;	/* count PtlInit/PtlFini */
-	ref_t			ref;		/* sub objects references */
-	int finalized;
-	int			fd;
-	struct sockaddr_in	addr;
-	pthread_t		event_thread;
-	int			event_thread_run;
-	struct pool			ni_pool;
+    int num_iface;              /* size of interface table */
+    struct iface *iface;        /* interface table */
+    pthread_mutex_t gbl_mutex;
+    int ref_cnt;                /* count PtlInit/PtlFini */
+    ref_t ref;                  /* sub objects references */
+    int finalized;
+    int fd;
+    struct sockaddr_in addr;
+    pthread_t event_thread;
+    int event_thread_run;
+    struct pool ni_pool;
 
-	atomic_t next_index;
-	void **index_map;
+    atomic_t next_index;
+    void **index_map;
 } gbl_t;
 
 extern gbl_t per_proc_gbl;
@@ -102,12 +109,12 @@ extern gbl_t per_proc_gbl;
 static inline int gbl_get(void)
 {
 #ifndef NO_ARG_VALIDATION
-	if (unlikely(per_proc_gbl.ref_cnt == 0))
-		return PTL_NO_INIT;
+    if (unlikely(per_proc_gbl.ref_cnt == 0))
+        return PTL_NO_INIT;
 
-	ref_get(&per_proc_gbl.ref);
+    ref_get(&per_proc_gbl.ref);
 #endif
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /*
@@ -124,7 +131,7 @@ static inline int gbl_get(void)
 static inline void gbl_put(void)
 {
 #ifndef NO_ARG_VALIDATION
-	ref_put(&per_proc_gbl.ref, gbl_release);
+    ref_put(&per_proc_gbl.ref, gbl_release);
 #endif
 }
 

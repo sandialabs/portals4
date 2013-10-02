@@ -8,7 +8,7 @@
 # define TIMER_INTS(x)          (x)
 static inline uint64_t MILLI_TO_TIMER_INTS(uint64_t x)
 {
-	return x * 1000000;
+    return x * 1000000;
 }
 
 #elif defined(HAVE_GETTIME_TIMER)
@@ -21,7 +21,7 @@ static inline uint64_t MILLI_TO_TIMER_INTS(uint64_t x)
 # define TIMER_INTS(x)          (x.tv_sec * 1000000000 + x.tv_nsec)
 static inline uint64_t MILLI_TO_TIMER_INTS(uint64_t x)
 {
-	return x * 1000000;
+    return x * 1000000;
 }
 #else /* ifdef HAVE_MACH_TIMER */
 # error No timers are defined!

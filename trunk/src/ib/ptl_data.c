@@ -33,49 +33,49 @@
  */
 int data_size(data_t *data)
 {
-	int size = sizeof(*data);
+    int size = sizeof(*data);
 
-	if (!data)
-		return 0;
+    if (!data)
+        return 0;
 
-	switch (data->data_fmt) {
-	case DATA_FMT_IMMEDIATE:
-		size += le32_to_cpu(data->immediate.data_length);
-		break;
+    switch (data->data_fmt) {
+        case DATA_FMT_IMMEDIATE:
+            size += le32_to_cpu(data->immediate.data_length);
+            break;
 
 #if WITH_TRANSPORT_IB
-	case DATA_FMT_RDMA_DMA:
-		size += le32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
-		break;
-	case DATA_FMT_RDMA_INDIRECT:
-		size += sizeof(struct ibv_sge);
-		break;
+        case DATA_FMT_RDMA_DMA:
+            size += le32_to_cpu(data->rdma.num_sge) * sizeof(struct ibv_sge);
+            break;
+        case DATA_FMT_RDMA_INDIRECT:
+            size += sizeof(struct ibv_sge);
+            break;
 #endif
 
 #if WITH_TRANSPORT_SHMEM && USE_KNEM
-	case DATA_FMT_KNEM_DMA:
-		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
-		break;
-	case DATA_FMT_KNEM_INDIRECT:
-		size += sizeof(struct mem_iovec);
-		break;
+        case DATA_FMT_KNEM_DMA:
+            size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
+            break;
+        case DATA_FMT_KNEM_INDIRECT:
+            size += sizeof(struct mem_iovec);
+            break;
 #endif
 
 #if IS_PPE
-	case DATA_FMT_MEM_DMA:
-		size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
-		break;
-	case DATA_FMT_MEM_INDIRECT:
-		size += sizeof(struct mem_iovec);
-		break;
+        case DATA_FMT_MEM_DMA:
+            size += data->mem.num_mem_iovecs * sizeof(struct mem_iovec);
+            break;
+        case DATA_FMT_MEM_INDIRECT:
+            size += sizeof(struct mem_iovec);
+            break;
 #endif
 
-	default:
-		abort();
-		break;
-	}
+        default:
+            abort();
+            break;
+    }
 
-	return size;
+    return size;
 }
 
 /**
@@ -91,42 +91,44 @@ int data_size(data_t *data)
  *
  * @return status
  */
-int append_immediate_data(void *start, mr_t **mr_list, int num_iov, data_dir_t dir, ptl_size_t offset,
-						  ptl_size_t length, buf_t *buf)
+int append_immediate_data(void *start, mr_t **mr_list, int num_iov,
+                          data_dir_t dir, ptl_size_t offset,
+                          ptl_size_t length, buf_t *buf)
 {
-	int err;
-	data_t *data = (data_t *)(buf->data + buf->length);
+    int err;
+    data_t *data = (data_t *)(buf->data + buf->length);
 
-	if (!length)
-		return PTL_OK;
+    if (!length)
+        return PTL_OK;
 
-	data->data_fmt = DATA_FMT_IMMEDIATE;
+    data->data_fmt = DATA_FMT_IMMEDIATE;
 
-	if (dir == DATA_DIR_OUT) {
-		data->immediate.data_length = cpu_to_le32(length);
+    if (dir == DATA_DIR_OUT) {
+        data->immediate.data_length = cpu_to_le32(length);
 
-		if (num_iov) {
-			err = iov_copy_out(data->immediate.data, start, mr_list,
-							   num_iov, offset, length);
-			if (err) {
-				WARN();
-				return err;
-			}
-		} else {
-			void *from = addr_to_ppe(start + offset, mr_list[0]);
-			memcpy(data->immediate.data, from, length);
-		}
+        if (num_iov) {
+            err =
+                iov_copy_out(data->immediate.data, start, mr_list, num_iov,
+                             offset, length);
+            if (err) {
+                WARN();
+                return err;
+            }
+        } else {
+            void *from = addr_to_ppe(start + offset, mr_list[0]);
+            memcpy(data->immediate.data, from, length);
+        }
 
-		buf->length += sizeof(*data) + length;
-	} else {
-		assert(dir == DATA_DIR_IN);
+        buf->length += sizeof(*data) + length;
+    } else {
+        assert(dir == DATA_DIR_IN);
 
-		/* The reply will be immediate. No need to build an array of
-		 * iovecs. This assumes that PTL_MAX_INLINE_DATA is consistent
-		 * amongst the ranks. */
-		data->immediate.data_length = 0;
-		buf->length += sizeof(*data);
-	}
+        /* The reply will be immediate. No need to build an array of
+         * iovecs. This assumes that PTL_MAX_INLINE_DATA is consistent
+         * amongst the ranks. */
+        data->immediate.data_length = 0;
+        buf->length += sizeof(*data);
+    }
 
-	return PTL_OK;
+    return PTL_OK;
 }

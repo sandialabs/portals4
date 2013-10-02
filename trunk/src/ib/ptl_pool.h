@@ -32,18 +32,18 @@ struct ni;
  * Used as part of the object handle.
  */
 enum obj_type {
-	POOL_ANY,
-	POOL_NI,
-	POOL_MR,
-	POOL_LE,
-	POOL_ME,
-	POOL_MD,
-	POOL_EQ,
-	POOL_CT,
-	POOL_BUF,
-	POOL_SBUF,
-	POOL_PPEBUF,
-	POOL_LAST,		/* keep me last */
+    POOL_ANY,
+    POOL_NI,
+    POOL_MR,
+    POOL_LE,
+    POOL_ME,
+    POOL_MD,
+    POOL_EQ,
+    POOL_CT,
+    POOL_BUF,
+    POOL_SBUF,
+    POOL_PPEBUF,
+    POOL_LAST,                  /* keep me last */
 };
 
 /**
@@ -54,12 +54,12 @@ enum obj_type {
  * buffer separately.
  */
 struct slab_info {
-	/** address of slab */
-	void			*addr;
+        /** address of slab */
+    void *addr;
 
-	/** slab private data */
+        /** slab private data */
 #if WITH_TRANSPORT_IB
-	struct ibv_mr	*mr;
+    struct ibv_mr *mr;
 #endif
 };
 
@@ -71,17 +71,17 @@ typedef struct slab_info slab_info_t;
  * in a pool.
  */
 struct chunk {
-	/** list head to add to pool chunk list */
-	struct list_head	list;
+        /** list head to add to pool chunk list */
+    struct list_head list;
 
-	/** number of entries in chunk->slab_list */
-	unsigned int		max_slabs;
+        /** number of entries in chunk->slab_list */
+    unsigned int max_slabs;
 
-	/** next slab_list entry to allocate */
-	unsigned int		num_slabs;
+        /** next slab_list entry to allocate */
+    unsigned int num_slabs;
 
-	/** space for slab_list with max_slabs entries */
-	slab_info_t		slab_list[0];
+        /** space for slab_list with max_slabs entries */
+    slab_info_t slab_list[0];
 };
 
 typedef struct chunk chunk_t;
@@ -91,58 +91,58 @@ typedef struct chunk chunk_t;
  * that it manages.
  */
 struct pool {
-	/** object that owns pool (usually NI) */
-	struct obj		*parent;
+        /** object that owns pool (usually NI) */
+    struct obj *parent;
 
-	struct gbl *gbl;
+    struct gbl *gbl;
 
-	/** pool name for debugging output */
-	char			*name;
+        /** pool name for debugging output */
+    char *name;
 
-	/** if set, called once per object, when object is created */
-	int			(*init)(void *arg, void *parm);
+        /** if set, called once per object, when object is created */
+    int (*init) (void *arg, void *parm);
 
-	/** if set, called once per object, when object is destroyed */
-	void			(*fini)(void *arg);
+        /** if set, called once per object, when object is destroyed */
+    void (*fini) (void *arg);
 
-	/** if set, called when object is allocated from the free list */
-	int			(*setup)(void *arg);
+        /** if set, called when object is allocated from the free list */
+    int (*setup) (void *arg);
 
-	/** if set, called when object moved to the free list */
-	void			(*cleanup)(void *arg);
+        /** if set, called when object moved to the free list */
+    void (*cleanup) (void *arg);
 
-	/** list of chunks each of which holds an array of slab descriptors */
-	struct list_head	chunk_list;
+        /** list of chunks each of which holds an array of slab descriptors */
+    struct list_head chunk_list;
 
-	/** lock to protect pool */
-	pthread_mutex_t		mutex;
+        /** lock to protect pool */
+    pthread_mutex_t mutex;
 
-	/** pointer to free list */
-	union counted_ptr free_list;
+        /** pointer to free list */
+    union counted_ptr free_list;
 
-	/** pool type */
-	enum obj_type		type;
+        /** pool type */
+    enum obj_type type;
 
-	/** number of objects currently allocated */
-	atomic_t	count;
+        /** number of objects currently allocated */
+    atomic_t count;
 
-	/** object size */
-	int			size;
+        /** object size */
+    int size;
 
-	/** object alignment */
-	int			round_size;
+        /** object alignment */
+    int round_size;
 
-	/** size of memory for new slab */
-	int			slab_size;
+        /** size of memory for new slab */
+    int slab_size;
 
-	/** number of objects per slab */
-	int			obj_per_slab;
+        /** number of objects per slab */
+    int obj_per_slab;
 
-	/** slab is in preallocated memory */
-	int			use_pre_alloc_buffer;
+        /** slab is in preallocated memory */
+    int use_pre_alloc_buffer;
 
-	/** address of preallocated slab */
-	void			*pre_alloc_buffer;
+        /** address of preallocated slab */
+    void *pre_alloc_buffer;
 };
 
 typedef struct pool pool_t;

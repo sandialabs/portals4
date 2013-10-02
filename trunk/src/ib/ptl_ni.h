@@ -16,39 +16,39 @@ struct conn;
  *	only used for logical NIs
  */
 typedef struct rank_entry {
-	ptl_rank_t		rank;		/* world rank */
-	ptl_rank_t		main_rank;	/* main rank on NID */
-	ptl_nid_t		nid;
-	ptl_pid_t		pid;
-	struct conn			*connect;
+    ptl_rank_t rank;            /* world rank */
+    ptl_rank_t main_rank;       /* main rank on NID */
+    ptl_nid_t nid;
+    ptl_pid_t pid;
+    struct conn *connect;
 } entry_t;
 
 /* Used by SHMEM to communicate the PIDs between the local ranks for a
  * physical NI. */
 struct shmem_pid_table {
-	ptl_process_t id;
+    ptl_process_t id;
 
-	/* Set to 1 when id is valid. */
-	int valid;
+    /* Set to 1 when id is valid. */
+    int valid;
 };
 
 struct shmem_bounce_head {
-	union counted_ptr free_list;	 /* head of free list of bounce buffers */
-	void *head_index0;	 /* logical address of the head of local index
-						  * 0. Invariant. */
+    union counted_ptr free_list;    /* head of free list of bounce buffers */
+    void *head_index0;          /* logical address of the head of local index
+                                 * 0. Invariant. */
 };
 
 struct udp_bounce_head {
-	union counted_ptr free_list;	 /* head of free list of bounce buffers */
-	void *head_index0;	 /* logical address of the head of local index
-						  * 0. Invariant. */
+    union counted_ptr free_list;    /* head of free list of bounce buffers */
+    void *head_index0;          /* logical address of the head of local index
+                                 * 0. Invariant. */
 };
 
 /* Memory regions tree attached to an NI. The PPE must have 2, the
  * other transports need one. */
 struct ni_mr_tree {
-	RB_HEAD(the_root, mr) tree;
-	PTL_FASTLOCK_TYPE	tree_lock;
+    RB_HEAD(the_root, mr) tree;
+    PTL_FASTLOCK_TYPE tree_lock;
 };
 
 /*
@@ -56,287 +56,287 @@ struct ni_mr_tree {
  *	per NI info
  */
 typedef struct ni {
-	obj_t			obj;
+    obj_t obj;
 
-	ptl_ni_limits_t		limits;		/* max number of xxx */
-	ptl_ni_limits_t		current;	/* used for accounting of objects, not real limits. */
+    ptl_ni_limits_t limits;     /* max number of xxx */
+    ptl_ni_limits_t current;    /* used for accounting of objects, not real limits. */
 
-	atomic_t		ref_cnt;
+    atomic_t ref_cnt;
 
-	struct iface		*iface;
-	unsigned int		iface_id;
-	unsigned int		options;
-	unsigned int		ni_type;
+    struct iface *iface;
+    unsigned int iface_id;
+    unsigned int options;
+    unsigned int ni_type;
 
-	ptl_sr_value_t		status[PTL_SR_LAST];
+    ptl_sr_value_t status[PTL_SR_LAST];
 
-	ptl_size_t		num_recv_pkts;
-	ptl_size_t		num_recv_bytes;
-	ptl_size_t		num_recv_errs;
-	ptl_size_t		num_recv_drops;
+    ptl_size_t num_recv_pkts;
+    ptl_size_t num_recv_bytes;
+    ptl_size_t num_recv_errs;
+    ptl_size_t num_recv_drops;
 
-	int shutting_down;
+    int shutting_down;
 
-	/* Serialize atomic operations on this NI. */
-	pthread_mutex_t		atomic_mutex;
+    /* Serialize atomic operations on this NI. */
+    pthread_mutex_t atomic_mutex;
 
-	pt_t			*pt;
-	pthread_mutex_t		pt_mutex;
-	ptl_pt_index_t		last_pt;
+    pt_t *pt;
+    pthread_mutex_t pt_mutex;
+    ptl_pt_index_t last_pt;
 
-	struct list_head	md_list;
-	PTL_FASTLOCK_TYPE	md_list_lock;
+    struct list_head md_list;
+    PTL_FASTLOCK_TYPE md_list_lock;
 
-	struct list_head	ct_list;
-	PTL_FASTLOCK_TYPE	ct_list_lock;
+    struct list_head ct_list;
+    PTL_FASTLOCK_TYPE ct_list_lock;
 
-	/* The PPE must have a tree indexed on the application addresses,
-	 * and one tree for its own addresses. The other implementations
-	 * don't need that distinction. */
-	struct ni_mr_tree mr_self;		/* the PPE */
-	struct ni_mr_tree mr_app;		/* the client */
-
-#if !IS_PPE
-	int umn_fd;
-	ev_io umn_watcher;
-	uint64_t *umn_counter;
-#endif
-
-	/* NI identifications */
-	ptl_process_t		id;
-	ptl_uid_t		uid;
+    /* The PPE must have a tree indexed on the application addresses,
+     * and one tree for its own addresses. The other implementations
+     * don't need that distinction. */
+    struct ni_mr_tree mr_self;  /* the PPE */
+    struct ni_mr_tree mr_app;   /* the client */
 
 #if !IS_PPE
-	/* Progress thread. */
-	pthread_t catcher;
-	int has_catcher;
-	int catcher_stop;
-	int catcher_nosleep;
+    int umn_fd;
+    ev_io umn_watcher;
+    uint64_t *umn_counter;
 #endif
 
-	int cleanup_state;
+    /* NI identifications */
+    ptl_process_t id;
+    ptl_uid_t uid;
+
+#if !IS_PPE
+    /* Progress thread. */
+    pthread_t catcher;
+    int has_catcher;
+    int catcher_stop;
+    int catcher_nosleep;
+#endif
+
+    int cleanup_state;
 
 #if WITH_TRANSPORT_IB
-	/* RDMA transport specific */
-	struct {
-		struct ibv_cq		*cq;
-		struct ibv_comp_channel	*ch;
-		ev_io			async_watcher;
+    /* RDMA transport specific */
+    struct {
+        struct ibv_cq *cq;
+        struct ibv_comp_channel *ch;
+        ev_io async_watcher;
 
-		struct ibv_srq		*srq;
+        struct ibv_srq *srq;
 
-		/* Pending send and receive operations. */
-		struct list_head	recv_list;
-		PTL_FASTLOCK_TYPE	recv_list_lock;
+        /* Pending send and receive operations. */
+        struct list_head recv_list;
+        PTL_FASTLOCK_TYPE recv_list_lock;
 
-		atomic_t			num_posted_recv;
+        atomic_t num_posted_recv;
 
-		struct rdma_cm_id *self_cm_id;
+        struct rdma_cm_id *self_cm_id;
 
-		/* Number of established connections. */
-		atomic_t num_conn;
+        /* Number of established connections. */
+        atomic_t num_conn;
 
 #if IS_PPE
-		/* Link the active NIs together so that the PPE can poll their IB CQ. */
-		struct list_head ppe_ni_list;
+        /* Link the active NIs together so that the PPE can poll their IB CQ. */
+        struct list_head ppe_ni_list;
 #endif
-	} rdma;
+    } rdma;
 #endif
 
 #if WITH_TRANSPORT_SHMEM
-	/* SHMEM transport specific */
-	struct {
-		void *comm_pad;		/* in shared memory */
-		size_t comm_pad_size;
-		size_t per_proc_comm_buf_size;
-		int per_proc_comm_buf_numbers;
-		int knem_fd;
-		struct queue *queue;	/* own queue, in the comm pad */
-		void *first_queue;		/* addr of rank 0 queue, in the comm pad */
-		char *comm_pad_shm_name;
+    /* SHMEM transport specific */
+    struct {
+        void *comm_pad;         /* in shared memory */
+        size_t comm_pad_size;
+        size_t per_proc_comm_buf_size;
+        int per_proc_comm_buf_numbers;
+        int knem_fd;
+        struct queue *queue;    /* own queue, in the comm pad */
+        void *first_queue;      /* addr of rank 0 queue, in the comm pad */
+        char *comm_pad_shm_name;
 
 #if !USE_KNEM
-		/* Bounce buffers used when KNEM is not available. They are
-		 * created and linked by rank 0. */
-		struct {
-			struct shmem_bounce_head *head;
-			void *bbs;			/* local address of the bounce buffers */
+        /* Bounce buffers used when KNEM is not available. They are
+         * created and linked by rank 0. */
+        struct {
+            struct shmem_bounce_head *head;
+            void *bbs;          /* local address of the bounce buffers */
 
-			size_t buf_size;
-			unsigned int num_bufs;
-		} bounce_buf;
+            size_t buf_size;
+            unsigned int num_bufs;
+        } bounce_buf;
 
-		PTL_FASTLOCK_TYPE noknem_lock;
-		struct list_head noknem_list;
+        PTL_FASTLOCK_TYPE noknem_lock;
+        struct list_head noknem_list;
 #endif
-	} shmem;
+    } shmem;
 #endif
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	struct {
-		int node_size;		/* number of ranks on the node */
-		int index;	   /* local index on this node [0..node_size[ */
-		uint32_t hash;
+    struct {
+        int node_size;          /* number of ranks on the node */
+        int index;              /* local index on this node [0..node_size[ */
+        uint32_t hash;
 
 #ifdef IS_PPE
-		int in_set;
-		xpmem_apid_t apid; /* from the struct client the client belongs to. */
-		queue_t *internal_queue;
+        int in_set;
+        xpmem_apid_t apid;      /* from the struct client the client belongs to. */
+        queue_t *internal_queue;
 
-		/** entry in PPE physical NI cache */
-		RB_ENTRY(ni) entry;
+                /** entry in PPE physical NI cache */
+                RB_ENTRY(ni) entry;
 #endif
-	} mem;
+    } mem;
 #endif
 
 #if WITH_TRANSPORT_UDP
-	/* UDP transport specific */
-	struct {
-		int s;
-		uint16_t src_port;		/* port number of that socket. */
-		struct sockaddr_in *dest_addr;
+    /* UDP transport specific */
+    struct {
+        int s;
+        uint16_t src_port;      /* port number of that socket. */
+        struct sockaddr_in *dest_addr;
 
-		int map_done;
+        int map_done;
 
-		//we use these to signal sends to self, as UDP can't safely communicate with itself on the same
-		//machine over the same port
-		atomic_t self_recv;
-		atomic_t self_recv_complete;
-		void * self_recv_addr;		// in udp datagram?
-		size_t self_recv_len;
-		
+        //we use these to signal sends to self, as UDP can't safely communicate with itself on the same
+        //machine over the same port
+        atomic_t self_recv;
+        atomic_t self_recv_complete;
+        void *self_recv_addr;   // in udp datagram?
+        size_t self_recv_len;
 
-		size_t per_proc_comm_buf_size;
-		int per_proc_comm_buf_numbers;
-		atomic_t num_posted_recv;
-		// Number of established connections.
-		atomic_t num_conn;
 
-		struct {
-			struct udp_bounce_head *head;
-			void *bbs;  /* local address of the bounce buffers */
+        size_t per_proc_comm_buf_size;
+        int per_proc_comm_buf_numbers;
+        atomic_t num_posted_recv;
+        // Number of established connections.
+        atomic_t num_conn;
 
-			size_t buf_size;
-			unsigned int num_bufs;
-		} udp_buf;
+        struct {
+            struct udp_bounce_head *head;
+            void *bbs;          /* local address of the bounce buffers */
+
+            size_t buf_size;
+            unsigned int num_bufs;
+        } udp_buf;
 #if IS_PPE
-		/* Link the active NIs together so that the PPE can poll them. */
-		struct list_head ppe_ni_list;
+        /* Link the active NIs together so that the PPE can poll them. */
+        struct list_head ppe_ni_list;
 #endif
-	} udp;
+    } udp;
 #endif
 
 #if WITH_TRANSPORT_UDP
-	PTL_FASTLOCK_TYPE udp_lock;
-	struct list_head udp_list;
+    PTL_FASTLOCK_TYPE udp_lock;
+    struct list_head udp_list;
 #endif
 
-	/* object allocation pools */
-	pool_t mr_pool;
-	pool_t md_pool;
-	pool_t me_pool;
-	pool_t le_pool;
-	pool_t eq_pool;
-	pool_t ct_pool;
-	pool_t xt_pool;
-	pool_t buf_pool;
-	pool_t sbuf_pool;
-	pool_t conn_pool;
+    /* object allocation pools */
+    pool_t mr_pool;
+    pool_t md_pool;
+    pool_t me_pool;
+    pool_t le_pool;
+    pool_t eq_pool;
+    pool_t ct_pool;
+    pool_t xt_pool;
+    pool_t buf_pool;
+    pool_t sbuf_pool;
+    pool_t conn_pool;
 
-	/* Connection mappings. */
-	union {
-		struct {
-			/* Logical NI. */
+    /* Connection mappings. */
+    union {
+        struct {
+            /* Logical NI. */
 
-			/* On a NID, the process creating the domain is going to
-			 * be the one with the lowest PID. Connection attempts to
-			 * the other PIDs will be rejected. Also, locally, the
-			 * XI/XT will not be queued on the non-main ranks, but on
-			 * the main rank. */
+            /* On a NID, the process creating the domain is going to
+             * be the one with the lowest PID. Connection attempts to
+             * the other PIDs will be rejected. Also, locally, the
+             * XI/XT will not be queued on the non-main ranks, but on
+             * the main rank. */
 
-			/* Rank table. This is used to connection TO remote ranks */
-			int			map_size;
-			struct rank_entry	*rank_table;
-			ptl_process_t	*mapping;
-		} logical;
+            /* Rank table. This is used to connection TO remote ranks */
+            int map_size;
+            struct rank_entry *rank_table;
+            ptl_process_t *mapping;
+        } logical;
 
-		struct {
-			/* Physical NI. */
-			void			*tree;
-			PTL_FASTLOCK_TYPE	lock;
-		} physical;
-	};
+        struct {
+            /* Physical NI. */
+            void *tree;
+            PTL_FASTLOCK_TYPE lock;
+        } physical;
+    };
 } ni_t;
 
 static inline int ni_alloc(pool_t *pool, ni_t **ni_p)
 {
-	int err;
-	obj_t *obj;
+    int err;
+    obj_t *obj;
 
-	err = obj_alloc(pool, &obj);
-	if (err) {
-		*ni_p = NULL;
-		return err;
-	}
+    err = obj_alloc(pool, &obj);
+    if (err) {
+        *ni_p = NULL;
+        return err;
+    }
 
-	*ni_p = container_of(obj, ni_t, obj);
-	return PTL_OK;
+    *ni_p = container_of(obj, ni_t, obj);
+    return PTL_OK;
 }
 
 static inline void ni_get(ni_t *ni)
 {
-	obj_get(&ni->obj);
+    obj_get(&ni->obj);
 }
 
 static inline int ni_put(ni_t *ni)
 {
-	return obj_put(&ni->obj);
+    return obj_put(&ni->obj);
 }
 
 static inline int to_ni(PPEGBL ptl_handle_ni_t handle, ni_t **ni_p)
 {
-	obj_t *obj;
-	ni_t *ni;
+    obj_t *obj;
+    ni_t *ni;
 
-	obj = to_obj(MYGBL_ POOL_NI, (ptl_handle_any_t)handle);
-	if (!obj)
-		goto err;
+    obj = to_obj(MYGBL_ POOL_NI, (ptl_handle_any_t) handle);
+    if (!obj)
+        goto err;
 
-	ni = container_of(obj, ni_t, obj);
+    ni = container_of(obj, ni_t, obj);
 
 #ifndef NO_ARG_VALIDATION
-	/* this is because we can call PtlNIFini
-	   and still get the object if someone
-	   is holding a reference */
-	if (atomic_read(&ni->ref_cnt) <= 0) {
-		ni_put(ni);
-		goto err;
-	}
+    /* this is because we can call PtlNIFini
+     * and still get the object if someone
+     * is holding a reference */
+    if (atomic_read(&ni->ref_cnt) <= 0) {
+        ni_put(ni);
+        goto err;
+    }
 #endif
 
-	*ni_p = ni;
-	return PTL_OK;
+    *ni_p = ni;
+    return PTL_OK;
 
-err:
-	*ni_p = NULL;
-	return PTL_ARG_INVALID;
+  err:
+    *ni_p = NULL;
+    return PTL_ARG_INVALID;
 }
 
 static inline ptl_handle_ni_t ni_to_handle(const ni_t *ni)
 {
-	return (ptl_handle_ni_t)ni->obj.obj_handle;
+    return (ptl_handle_ni_t)ni->obj.obj_handle;
 }
 
 static inline ni_t *obj_to_ni(const void *obj)
 {
-	return ((obj_t *)obj)->obj_ni;
+    return ((obj_t *)obj)->obj_ni;
 }
 
 /* convert ni option flags to a 2 bit type */
 static inline int ni_options_to_type(unsigned int options)
 {
-	return (((options & PTL_NI_MATCHING) ? 1 : 0) << 1) |
-		((options & PTL_NI_LOGICAL) ? 1 : 0);
+    return (((options & PTL_NI_MATCHING) ? 1 : 0) << 1) |
+        ((options & PTL_NI_LOGICAL) ? 1 : 0);
 }
 
 #endif /* PTL_NI_H */

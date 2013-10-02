@@ -16,8 +16,8 @@ struct mr;
  * @brief Used to distinguish between LE and ME objects.
  */
 enum list_element_type {
-	TYPE_LE,
-	TYPE_ME,
+    TYPE_LE,
+    TYPE_ME,
 };
 
 #if IS_PPE
@@ -56,9 +56,8 @@ enum list_element_type {
  * @brief Portals list element.
  */
 struct le {
-	obj_t			obj;
-	PTL_LE_OBJ
-};
+    obj_t obj;
+      PTL_LE_OBJ};
 
 typedef struct le le_t;
 
@@ -66,7 +65,7 @@ int le_init(void *arg, void *unused);
 
 void le_cleanup(void *arg);
 
-int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le);
+int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le);
 
 int le_append_pt(ni_t *ni, le_t *le);
 
@@ -74,9 +73,8 @@ void le_post_unlink_event(le_t *le);
 void le_unlink(le_t *le, int send_event);
 
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
-		    const ptl_le_t *le_init, ptl_list_t ptl_list,
-		    ptl_search_op_t search_op,
-		    ptl_handle_le_t *le_handle);
+                    const ptl_le_t *le_init, ptl_list_t ptl_list,
+                    ptl_search_op_t search_op, ptl_handle_le_t *le_handle);
 
 int __check_overflow(le_t *le, int delete);
 
@@ -96,17 +94,17 @@ void flush_le_references(le_t *le);
  */
 static inline int le_alloc(ni_t *ni, le_t **le_p)
 {
-	int err;
-	obj_t *obj;
+    int err;
+    obj_t *obj;
 
-	err = obj_alloc(&ni->le_pool, &obj);
-	if (err) {
-		*le_p = NULL;
-		return err;
-	}
+    err = obj_alloc(&ni->le_pool, &obj);
+    if (err) {
+        *le_p = NULL;
+        return err;
+    }
 
-	*le_p = container_of(obj, le_t, obj);
-	return PTL_OK;
+    *le_p = container_of(obj, le_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -119,16 +117,16 @@ static inline int le_alloc(ni_t *ni, le_t **le_p)
  */
 static inline int to_le(PPEGBL ptl_handle_le_t handle, le_t **le_p)
 {
-	obj_t *obj;
+    obj_t *obj;
 
-	obj = to_obj(MYGBL_ POOL_LE, (ptl_handle_any_t)handle);
-	if (!obj) {
-		*le_p = NULL;
-		return PTL_ARG_INVALID;
-	}
+    obj = to_obj(MYGBL_ POOL_LE, (ptl_handle_any_t) handle);
+    if (!obj) {
+        *le_p = NULL;
+        return PTL_ARG_INVALID;
+    }
 
-	*le_p = container_of(obj, le_t, obj);
-	return PTL_OK;
+    *le_p = container_of(obj, le_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -140,7 +138,7 @@ static inline int to_le(PPEGBL ptl_handle_le_t handle, le_t **le_p)
  */
 static inline int le_ref_cnt(le_t *le)
 {
-	return obj_ref_cnt(&le->obj);
+    return obj_ref_cnt(&le->obj);
 }
 
 /**
@@ -150,7 +148,7 @@ static inline int le_ref_cnt(le_t *le)
  */
 static inline void le_get(le_t *le)
 {
-	obj_get(&le->obj);
+    obj_get(&le->obj);
 }
 
 /**
@@ -164,7 +162,7 @@ static inline void le_get(le_t *le)
  */
 static inline int le_put(le_t *le)
 {
-	return obj_put(&le->obj);
+    return obj_put(&le->obj);
 }
 
 /**
@@ -176,7 +174,7 @@ static inline int le_put(le_t *le)
  */
 static inline ptl_handle_le_t le_to_handle(le_t *le)
 {
-        return (ptl_handle_le_t)le->obj.obj_handle;
+    return (ptl_handle_le_t)le->obj.obj_handle;
 }
 
 #endif /* PTL_LE_H */

@@ -18,36 +18,36 @@
  */
 int _PtlGetUid(PPEGBL ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p)
 {
-	int err;
-	ni_t *ni;
+    int err;
+    ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	*uid_p = ni->uid;
+    *uid_p = ni->uid;
 
-	err = PTL_OK;
-	ni_put(ni);
+    err = PTL_OK;
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -62,36 +62,36 @@ err0:
  */
 int _PtlGetId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 {
-	int err;
-	ni_t *ni;
+    int err;
+    ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	*id_p = ni->id;
+    *id_p = ni->id;
 
-	err = PTL_OK;
-	ni_put(ni);
+    err = PTL_OK;
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -106,34 +106,34 @@ err0:
  */
 int _PtlGetPhysId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p)
 {
-	int err;
-	ni_t *ni;
+    int err;
+    ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	*id_p = ni->iface->id;
+    *id_p = ni->iface->id;
 
-	err = PTL_OK;
-	ni_put(ni);
+    err = PTL_OK;
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }

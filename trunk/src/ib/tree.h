@@ -735,4 +735,4 @@ name##_RB_MINMAX(struct name *head, int val)				\
 	     (x) != NULL;						\
 	     (x) = name##_RB_PREV(x))
 
-#endif	/* _SYS_TREE_H_ */
+#endif /* _SYS_TREE_H_ */

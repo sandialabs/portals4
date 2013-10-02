@@ -17,60 +17,60 @@ struct gbl;
  * @brief Per network interface information.
  */
 struct iface {
-	/** The portals iface_id assigned to this interface */
-	ptl_interface_t		iface_id;
-	/** Table of NI's indexed by ni type */
-	struct ni		*ni[MAX_NI_TYPES];
-	/** Network interface name for debugging output */
-	char			ifname[IF_NAMESIZE];
-	/** The NID/PID for this interface */
-	ptl_process_t		id;
+        /** The portals iface_id assigned to this interface */
+    ptl_interface_t iface_id;
+        /** Table of NI's indexed by ni type */
+    struct ni *ni[MAX_NI_TYPES];
+        /** Network interface name for debugging output */
+    char ifname[IF_NAMESIZE];
+        /** The NID/PID for this interface */
+    ptl_process_t id;
 
-	struct gbl *gbl;
+    struct gbl *gbl;
 
 #if WITH_TRANSPORT_IB
-	/** The CM event channel for this interface */
-	struct rdma_event_channel *cm_channel;
-	/** The CM ID for this interface */
-	struct rdma_cm_id	*listen_id;
-	/** Boolean is true if interface is listening for connections */
-	int			listen;
-	/** IPV4 address of this interface */
-	struct sockaddr_in	sin;
-	/** RDMA device info for this interface */
-	struct ibv_context	*ibv_context;
-	/** RDMA protection domain for this interface */
-	struct ibv_pd		*pd;
-	/** Libev handler for CM events */
-	ev_io			cm_watcher;
+        /** The CM event channel for this interface */
+    struct rdma_event_channel *cm_channel;
+        /** The CM ID for this interface */
+    struct rdma_cm_id *listen_id;
+        /** Boolean is true if interface is listening for connections */
+    int listen;
+        /** IPV4 address of this interface */
+    struct sockaddr_in sin;
+        /** RDMA device info for this interface */
+    struct ibv_context *ibv_context;
+        /** RDMA protection domain for this interface */
+    struct ibv_pd *pd;
+        /** Libev handler for CM events */
+    ev_io cm_watcher;
 
-	/** QP/SRQ Capabilities. */
-	struct {
-		unsigned int max_send_wr;
-		unsigned int max_send_sge;
+        /** QP/SRQ Capabilities. */
+    struct {
+        unsigned int max_send_wr;
+        unsigned int max_send_sge;
 
-		unsigned int max_srq_wr;
+        unsigned int max_srq_wr;
 
-		struct ibv_device_attr device_attr;
-	} cap;
+        struct ibv_device_attr device_attr;
+    } cap;
 #endif
 
 #if WITH_TRANSPORT_UDP
-	struct {
-		/* Endpoint for connections handling. */
-		int connect_s;
+    struct {
+        /* Endpoint for connections handling. */
+        int connect_s;
 
-		/** IPV4 address of this interface */
-		struct sockaddr_in	sin;
+                /** IPV4 address of this interface */
+        struct sockaddr_in sin;
 
-		/** Libev handler for incoming connections. */
-		ev_io watcher;
+                /** Libev handler for incoming connections. */
+        ev_io watcher;
 
-		/* Reference counter for number of attached NIs */
-		/* Used to determine when to close the shared */
-		/* connection socket */
-		int ni_count;
-	} udp;
+        /* Reference counter for number of attached NIs */
+        /* Used to determine when to close the shared */
+        /* connection socket */
+        int ni_count;
+    } udp;
 #endif
 };
 

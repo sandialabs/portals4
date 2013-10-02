@@ -14,36 +14,36 @@ struct buf;
  * Counting event object.
  */
 struct ct {
-	obj_t			obj;		/**< object base class */
-	struct list_head	trig_list;	/**< list head of pending
+    obj_t obj;                                  /**< object base class */
+    struct list_head trig_list;                 /**< list head of pending
 						     triggered operations */
-	struct list_head        list;		/**< list member of allocated
+    struct list_head list;                      /**< list member of allocated
 						     counting events */
-	atomic_t list_size;			/**< Number of elements in list */
+    atomic_t list_size;                         /**< Number of elements in list */
 
-	PTL_FASTLOCK_TYPE		lock;		/**< mutex for ct condition */
+    PTL_FASTLOCK_TYPE lock;                             /**< mutex for ct condition */
 
 #if IS_PPE
-	/* PPE transport specific */
-	struct {
-		struct xpmem_map ct_mapping; /* for the info */
-	} ppe;
+    /* PPE transport specific */
+    struct {
+        struct xpmem_map ct_mapping;    /* for the info */
+    } ppe;
 #endif
 
-	struct ct_info info;
+    struct ct_info info;
 };
 
 typedef struct ct ct_t;
 
 enum trig_ct_op {
-	TRIG_CT_SET = 1,
-	TRIG_CT_INC,
+    TRIG_CT_SET = 1,
+    TRIG_CT_INC,
 };
 
 enum ct_bytes {
-	CT_EVENTS,	/**< count events */
-	CT_RBYTES,	/**< count requested bytes */
-	CT_MBYTES,	/**< count modified/actual bytes */
+    CT_EVENTS,          /**< count events */
+    CT_RBYTES,          /**< count requested bytes */
+    CT_MBYTES,          /**< count modified/actual bytes */
 };
 
 int ct_init(void *arg, void *unused);
@@ -70,17 +70,17 @@ void make_ct_event(ct_t *ct, struct buf *buf, enum ct_bytes bytes);
  */
 static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
 {
-	int err;
-	obj_t *obj;
+    int err;
+    obj_t *obj;
 
-	err = obj_alloc(&ni->ct_pool, &obj);
-	if (unlikely(err)) {
-		*ct_p = NULL;
-		return err;
-	}
+    err = obj_alloc(&ni->ct_pool, &obj);
+    if (unlikely(err)) {
+        *ct_p = NULL;
+        return err;
+    }
 
-	*ct_p = container_of(obj, ct_t, obj);
-	return PTL_OK;
+    *ct_p = container_of(obj, ct_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -95,21 +95,21 @@ static inline int ct_alloc(ni_t *ni, ct_t **ct_p)
  */
 static inline int to_ct(PPEGBL ptl_handle_ct_t ct_handle, ct_t **ct_p)
 {
-	obj_t *obj;
+    obj_t *obj;
 
-	if (ct_handle == PTL_CT_NONE) {
-		*ct_p = NULL;
-		return PTL_OK;
-	}
+    if (ct_handle == PTL_CT_NONE) {
+        *ct_p = NULL;
+        return PTL_OK;
+    }
 
-	obj = to_obj(MYGBL_ POOL_CT, (ptl_handle_any_t)ct_handle);
-	if (unlikely(!obj)) {
-		*ct_p = NULL;
-		return PTL_ARG_INVALID;
-	}
+    obj = to_obj(MYGBL_ POOL_CT, (ptl_handle_any_t) ct_handle);
+    if (unlikely(!obj)) {
+        *ct_p = NULL;
+        return PTL_ARG_INVALID;
+    }
 
-	*ct_p = container_of(obj, ct_t, obj);
-	return PTL_OK;
+    *ct_p = container_of(obj, ct_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -119,7 +119,7 @@ static inline int to_ct(PPEGBL ptl_handle_ct_t ct_handle, ct_t **ct_p)
  */
 static inline void ct_get(ct_t *ct)
 {
-	obj_get(&ct->obj);
+    obj_get(&ct->obj);
 }
 
 /**
@@ -133,7 +133,7 @@ static inline void ct_get(ct_t *ct)
  */
 static inline int ct_put(ct_t *ct)
 {
-	return obj_put(&ct->obj);
+    return obj_put(&ct->obj);
 }
 
 /**
@@ -145,7 +145,7 @@ static inline int ct_put(ct_t *ct)
  */
 static inline ptl_handle_ct_t ct_to_handle(ct_t *ct)
 {
-        return (ptl_handle_ct_t)ct->obj.obj_handle;
+    return (ptl_handle_ct_t)ct->obj.obj_handle;
 }
 
 #endif /* PTL_CT_H */

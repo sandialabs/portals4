@@ -20,13 +20,13 @@ static void do_trig_ct_op(struct buf *buf);
  */
 int ct_init(void *arg, void *unused)
 {
-	ct_t *ct = arg;
+    ct_t *ct = arg;
 
-	PTL_FASTLOCK_INIT(&ct->lock);
-	INIT_LIST_HEAD(&ct->trig_list);
-	atomic_set(&ct->list_size, 0);
+    PTL_FASTLOCK_INIT(&ct->lock);
+    INIT_LIST_HEAD(&ct->trig_list);
+    atomic_set(&ct->list_size, 0);
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -36,9 +36,9 @@ int ct_init(void *arg, void *unused)
  */
 void ct_fini(void *arg)
 {
-	ct_t *ct = arg;
+    ct_t *ct = arg;
 
-	PTL_FASTLOCK_DESTROY(&ct->lock);
+    PTL_FASTLOCK_DESTROY(&ct->lock);
 }
 
 /**
@@ -50,15 +50,15 @@ void ct_fini(void *arg)
  */
 int ct_new(void *arg)
 {
-	ct_t *ct = arg;
+    ct_t *ct = arg;
 
-	assert(list_empty(&ct->trig_list));
+    assert(list_empty(&ct->trig_list));
 
-	ct->info.interrupt = 0;
-	ct->info.event.failure = 0;
-	ct->info.event.success = 0;
+    ct->info.interrupt = 0;
+    ct->info.event.failure = 0;
+    ct->info.event.success = 0;
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -70,9 +70,9 @@ int ct_new(void *arg)
  */
 void ct_cleanup(void *arg)
 {
-	ct_t *ct = arg;
+    ct_t *ct = arg;
 
-	ct->info.interrupt = 0;
+    ct->info.interrupt = 0;
 }
 
 /**
@@ -91,64 +91,66 @@ void ct_cleanup(void *arg)
  * @return PTL_NO_SPACE Indicates that there is insufficient
  * memory to allocate the counting event.
  */
-int _PtlCTAlloc(PPEGBL ptl_handle_ni_t ni_handle, ptl_handle_ct_t *ct_handle_p)
+int _PtlCTAlloc(PPEGBL ptl_handle_ni_t ni_handle,
+                ptl_handle_ct_t *ct_handle_p)
 {
-	int err;
-	ni_t *ni;
-	ct_t *ct;
+    int err;
+    ni_t *ni;
+    ct_t *ct;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	/* check limit resources to see if we can allocate another ct */
-	if (unlikely(__sync_add_and_fetch(&ni->current.max_cts, 1) >
-	    ni->limits.max_cts)) {
-		(void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
-		err = PTL_NO_SPACE;
-		goto err2;
-	}
+    /* check limit resources to see if we can allocate another ct */
+    if (unlikely
+        (__sync_add_and_fetch(&ni->current.max_cts, 1) >
+         ni->limits.max_cts)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
+        err = PTL_NO_SPACE;
+        goto err2;
+    }
 
-	/* allocate new ct from free list */
-	err = ct_alloc(ni, &ct);
-	if (unlikely(err)) {
-		(void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
-		goto err2;
-	}
+    /* allocate new ct from free list */
+    err = ct_alloc(ni, &ct);
+    if (unlikely(err)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_cts, 1);
+        goto err2;
+    }
 
-	/* add ourselves to the ni ct list
-	 * this list is used by ni to interrupt
-	 * any ct's that are in PtlCTWait at the time
-	 * that PtlNIFini is called */
-	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
-	list_add(&ct->list, &ni->ct_list);
-	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
+    /* add ourselves to the ni ct list
+     * this list is used by ni to interrupt
+     * any ct's that are in PtlCTWait at the time
+     * that PtlNIFini is called */
+    PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
+    list_add(&ct->list, &ni->ct_list);
+    PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 
-	*ct_handle_p = ct_to_handle(ct);
+    *ct_handle_p = ct_to_handle(ct);
 
-	err = PTL_OK;
-err2:
-	ni_put(ni);
+    err = PTL_OK;
+  err2:
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -172,55 +174,55 @@ err0:
  */
 int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
 {
-	int err;
-	ct_t *ct;
-	ni_t *ni;
+    int err;
+    ct_t *ct;
+    ni_t *ni;
 
-	/* convert handle to pointer */
+    /* convert handle to pointer */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	ni = obj_to_ni(ct);
+    ni = obj_to_ni(ct);
 
-	/* remove ourselves from ni->ct_list */
-	PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
-	list_del(&ct->list);
-	if (atomic_read(&ct->list_size) > 0){
-		atomic_dec(&ct->list_size);
-	}
-	PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);	
+    /* remove ourselves from ni->ct_list */
+    PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
+    list_del(&ct->list);
+    if (atomic_read(&ct->list_size) > 0) {
+        atomic_dec(&ct->list_size);
+    }
+    PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
 
-	/* clean up pending operations */
-	ct->info.interrupt = 1;
-	ct_check(ct);
+    /* clean up pending operations */
+    ct->info.interrupt = 1;
+    ct_check(ct);
 
-	ct_put(ct);
-	ct_put(ct);
+    ct_put(ct);
+    ct_put(ct);
 
-	/* give back the limit resource */
-	(void)__sync_sub_and_fetch(&ni->current.max_cts, 1);
+    /* give back the limit resource */
+    (void)__sync_sub_and_fetch(&ni->current.max_cts, 1);
 
-	err = PTL_OK;
+    err = PTL_OK;
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -236,37 +238,37 @@ err0:
  */
 int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 {
-	int err;
-	ct_t *ct;
+    int err;
+    ct_t *ct;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	ct->info.interrupt = 1;
-	ct_check(ct);
+    ct->info.interrupt = 1;
+    ct_check(ct);
 
-	err = PTL_OK;
-	ct_put(ct);
+    err = PTL_OK;
+    ct_put(ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -288,37 +290,37 @@ err0:
  */
 int _PtlCTGet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 {
-	int err;
-	ct_t *ct;
+    int err;
+    ct_t *ct;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	*event_p = ct->info.event;
+    *event_p = ct->info.event;
 
-	err = PTL_OK;
-	ct_put(ct);
+    err = PTL_OK;
+    ct_put(ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -340,38 +342,38 @@ err0:
  * PtlCTWait().
  */
 int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
-	      ptl_ct_event_t *event_p)
+               ptl_ct_event_t *event_p)
 {
-	int err;
-	ct_t *ct;
+    int err;
+    ct_t *ct;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	err = PtlCTWait_work(&ct->info, threshold, event_p);
+    err = PtlCTWait_work(&ct->info, threshold, event_p);
 
-	ct_put(ct);
+    ct_put(ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -395,71 +397,73 @@ err0:
  * was called by another thread while this thread * was waiting
  * in PtlCTPoll().
  */
-int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thresholds,
-			  unsigned int size, ptl_time_t timeout, ptl_ct_event_t *event_p,
-			  unsigned int *which_p)
+int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
+               const ptl_size_t *thresholds, unsigned int size,
+               ptl_time_t timeout, ptl_ct_event_t *event_p,
+               unsigned int *which_p)
 {
-	int err;
-	struct ct_info *cts_info[size];
-	ct_t *cts[size];
-	int i;
-	int i2;
+    int err;
+    struct ct_info *cts_info[size];
+    ct_t *cts[size];
+    int i;
+    int i2;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 #endif
 
-	if (size == 0) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (size == 0) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 
-	/* convert handles to pointers */
+    /* convert handles to pointers */
 #ifndef NO_ARG_VALIDATION
-	i2 = -1;
-	for (i = 0; i < size; i++) {
-		ni_t *ni = NULL;
+    i2 = -1;
+    for (i = 0; i < size; i++) {
+        ni_t *ni = NULL;
 
-		err = to_ct(MYGBL_ ct_handles[i], &cts[i]);
-		if (unlikely(err || !cts[i])) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-		cts_info[i] = &cts[i]->info;
+        err = to_ct(MYGBL_ ct_handles[i], &cts[i]);
+        if (unlikely(err || !cts[i])) {
+            err = PTL_ARG_INVALID;
+            goto err2;
+        }
+        cts_info[i] = &cts[i]->info;
 
-		i2 = i;
+        i2 = i;
 
-		if (NULL == ni)
-			ni = obj_to_ni(cts[0]);
+        if (NULL == ni)
+            ni = obj_to_ni(cts[0]);
 
-		if (obj_to_ni(cts[i]) != ni) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-	}
+        if (obj_to_ni(cts[i]) != ni) {
+            err = PTL_ARG_INVALID;
+            goto err2;
+        }
+    }
 #else
-	for (i = 0; i < size; i++) {
-		cts[i] = to_obj(MYGBL_ POOL_ANY, ct_handles[i]);
-		cts_info[i] = &cts[i]->info;
-	}
-	i2 = size - 1;
+    for (i = 0; i < size; i++) {
+        cts[i] = to_obj(MYGBL_ POOL_ANY, ct_handles[i]);
+        cts_info[i] = &cts[i]->info;
+    }
+    i2 = size - 1;
 #endif
 
-	err = PtlCTPoll_work(cts_info, thresholds, size, timeout, event_p, which_p);
+    err =
+        PtlCTPoll_work(cts_info, thresholds, size, timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
- err2:
+  err2:
 #endif
-	for (i = i2; i >= 0; i--)
-		ct_put((void *)cts[i]);
- err1:
+    for (i = i2; i >= 0; i--)
+        ct_put((void *)cts[i]);
+  err1:
 #ifndef NO_ARG_VALIDATION
-	gbl_put();
- err0:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -470,92 +474,96 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles, const ptl_size_t *thres
  */
 void ct_check(ct_t *ct)
 {
-	struct list_head *l;
-	struct list_head *t;
+    struct list_head *l;
+    struct list_head *t;
 
-	PTL_FASTLOCK_LOCK(&ct->lock);
+    PTL_FASTLOCK_LOCK(&ct->lock);
 
-	/* check to see if any pending triggered move operations
-	 * can now be performed or discarded
-	 * TODO this should enqueue the xi to a list and then unwind
-	 * all the ct locks before calling process_init */
-	list_for_each_prev_safe(l, t, &ct->trig_list) {
-		buf_t *buf = list_entry(l, buf_t, list);
+    /* check to see if any pending triggered move operations
+     * can now be performed or discarded
+     * TODO this should enqueue the xi to a list and then unwind
+     * all the ct locks before calling process_init */
+    list_for_each_prev_safe(l, t, &ct->trig_list) {
+        buf_t *buf = list_entry(l, buf_t, list);
 
-		if (buf->type == BUF_INIT) {
-			if (ct->info.interrupt) {
-				list_del(l);
-				atomic_dec(&ct->list_size);
+        if (buf->type == BUF_INIT) {
+            if (ct->info.interrupt) {
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-				PTL_FASTLOCK_UNLOCK(&ct->lock);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-				buf->init_state = STATE_INIT_CLEANUP;
-				process_init(buf);
+                buf->init_state = STATE_INIT_CLEANUP;
+                process_init(buf);
 
-				PTL_FASTLOCK_LOCK(&ct->lock);
-			} else if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
-				list_del(l);
-				atomic_dec(&ct->list_size);
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            } else if ((ct->info.event.success + ct->info.event.failure) >=
+                       buf->ct_threshold) {
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-				PTL_FASTLOCK_UNLOCK(&ct->lock);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-				process_init(buf);
+                process_init(buf);
 
-				PTL_FASTLOCK_LOCK(&ct->lock);
-			}
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            }
 #ifdef WITH_TRIG_ME_OPS
-		} else if (buf->type == BUF_TRIGGERED_ME){
-			if (ct->info.interrupt) {
-                                list_del(l);
-                                atomic_dec(&ct->list_size);
+        } else if (buf->type == BUF_TRIGGERED_ME) {
+            if (ct->info.interrupt) {
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-                                PTL_FASTLOCK_UNLOCK(&ct->lock);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-                                ct_put(buf->ct);
-                                buf_put(buf);
+                ct_put(buf->ct);
+                buf_put(buf);
 
-                                PTL_FASTLOCK_LOCK(&ct->lock);
-                        } else if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
-                                ptl_info("ME operation triggered: %i \n",buf->op);
-				list_del(l);
-                                atomic_dec(&ct->list_size);
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            } else if ((ct->info.event.success + ct->info.event.failure) >=
+                       buf->ct_threshold) {
+                ptl_info("ME operation triggered: %i \n", buf->op);
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-                                PTL_FASTLOCK_UNLOCK(&ct->lock);
-				
-                                do_trig_me_op(buf);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-                                PTL_FASTLOCK_LOCK(&ct->lock);
-                        }
-			else{
-				ptl_info("ME operation not triggered %i:%i threshold: %i\n",(int)ct->info.event.success,(int)ct->info.event.failure, (int)buf->threshold);
-			}
+                do_trig_me_op(buf);
+
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            } else {
+                ptl_info("ME operation not triggered %i:%i threshold: %i\n",
+                         (int)ct->info.event.success,
+                         (int)ct->info.event.failure, (int)buf->threshold);
+            }
 #endif
-		} else {
-			assert(buf->type == BUF_TRIGGERED);
-			if (ct->info.interrupt) {
-				list_del(l);
-				atomic_dec(&ct->list_size);
+        } else {
+            assert(buf->type == BUF_TRIGGERED);
+            if (ct->info.interrupt) {
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-				PTL_FASTLOCK_UNLOCK(&ct->lock);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-				ct_put(buf->ct);
-				buf_put(buf);
+                ct_put(buf->ct);
+                buf_put(buf);
 
-				PTL_FASTLOCK_LOCK(&ct->lock);
-			} else if ((ct->info.event.success + ct->info.event.failure) >= buf->threshold) {
-				list_del(l);
-				atomic_dec(&ct->list_size);
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            } else if ((ct->info.event.success + ct->info.event.failure) >=
+                       buf->threshold) {
+                list_del(l);
+                atomic_dec(&ct->list_size);
 
-				PTL_FASTLOCK_UNLOCK(&ct->lock);
+                PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-				do_trig_ct_op(buf);
+                do_trig_ct_op(buf);
 
-				PTL_FASTLOCK_LOCK(&ct->lock);
-			}
-		}
-	}
+                PTL_FASTLOCK_LOCK(&ct->lock);
+            }
+        }
+    }
 
-	PTL_FASTLOCK_UNLOCK(&ct->lock);
+    PTL_FASTLOCK_UNLOCK(&ct->lock);
 }
 
 /**
@@ -566,13 +574,13 @@ void ct_check(ct_t *ct)
  */
 static void ct_set(ct_t *ct, ptl_ct_event_t new_ct)
 {
-	/* set new value */
-	ct->info.event = new_ct;
+    /* set new value */
+    ct->info.event = new_ct;
 
-	/* check to see if this triggers any further
-	 * actions */
-	if (atomic_read(&ct->list_size))
-		ct_check(ct);
+    /* check to see if this triggers any further
+     * actions */
+    if (atomic_read(&ct->list_size))
+        ct_check(ct);
 }
 
 /**
@@ -589,37 +597,37 @@ static void ct_set(ct_t *ct, ptl_ct_event_t new_ct)
  */
 int _PtlCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct)
 {
-	int err;
-	ct_t *ct;
+    int err;
+    ct_t *ct;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	ct_set(ct, new_ct);
+    ct_set(ct, new_ct);
 
-	err = PTL_OK;
-	ct_put(ct);
+    err = PTL_OK;
+    ct_put(ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -630,16 +638,18 @@ err0:
  */
 static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
 {
-	/* increment ct by value */
-	if (likely(increment.success))
-		(void)__sync_add_and_fetch(&ct->info.event.success, increment.success);
-	else
-		(void)__sync_add_and_fetch(&ct->info.event.failure, increment.failure);
+    /* increment ct by value */
+    if (likely(increment.success))
+        (void)__sync_add_and_fetch(&ct->info.event.success,
+                                   increment.success);
+    else
+        (void)__sync_add_and_fetch(&ct->info.event.failure,
+                                   increment.failure);
 
-	/* check to see if this triggers any further
-	 * actions */
-	if (atomic_read(&ct->list_size))
-		ct_check(ct);
+    /* check to see if this triggers any further
+     * actions */
+    if (atomic_read(&ct->list_size))
+        ct_check(ct);
 }
 
 /**
@@ -656,44 +666,44 @@ static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
  */
 int _PtlCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment)
 {
-	int err;
-	ct_t *ct;
+    int err;
+    ct_t *ct;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err1;
 
-	if (!ct) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ct) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 
-	if (increment.failure && increment.success) {
-		err = PTL_ARG_INVALID;
-		goto err2;
-	}
+    if (increment.failure && increment.success) {
+        err = PTL_ARG_INVALID;
+        goto err2;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
-	ct_inc(ct, increment);
+    ct_inc(ct, increment);
 
-	err = PTL_OK;
+    err = PTL_OK;
 #ifndef NO_ARG_VALIDATION
-err2:
+  err2:
 #endif
-	ct_put(ct);
+    ct_put(ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -720,78 +730,80 @@ err0:
  * @return PTL_ARG_INVALID Indicates that an invalid argument was
  * passed.
  */
-int _PtlTriggeredCTInc(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t increment,
-		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
+int _PtlTriggeredCTInc(PPEGBL ptl_handle_ct_t ct_handle,
+                       ptl_ct_event_t increment,
+                       ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
 {
-	int err;
-	ct_t *ct;
-	ct_t *trig_ct;
-	ni_t *ni;
-	buf_t *buf;
+    int err;
+    ct_t *ct;
+    ct_t *trig_ct;
+    ni_t *ni;
+    buf_t *buf;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (unlikely(err))
-		goto err0;
+    err = gbl_get();
+    if (unlikely(err))
+        goto err0;
 
-	err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
-	if (unlikely(err))
-		goto err1;
+    err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
+    if (unlikely(err))
+        goto err1;
 
-	ni = obj_to_ni(trig_ct);
+    ni = obj_to_ni(trig_ct);
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err2;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err2;
 
-	if (ni != obj_to_ni(ct)) {
-		err = PTL_ARG_INVALID;
-		ct_put(ct);
-		goto err2;
-	}
+    if (ni != obj_to_ni(ct)) {
+        err = PTL_ARG_INVALID;
+        ct_put(ct);
+        goto err2;
+    }
 
-	if (increment.failure && increment.success) {
-		err = PTL_ARG_INVALID;
-		goto err2;
-	}
+    if (increment.failure && increment.success) {
+        err = PTL_ARG_INVALID;
+        goto err2;
+    }
 #else
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
-	trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
-	ni = obj_to_ni(trig_ct);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
+    ni = obj_to_ni(trig_ct);
 #endif
 
-	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= threshold) {
-		/* Fast path. Condition is already met. */
-		ct_inc(ct, increment);
+    if ((trig_ct->info.event.failure + trig_ct->info.event.success) >=
+        threshold) {
+        /* Fast path. Condition is already met. */
+        ct_inc(ct, increment);
 
-		ct_put(ct);
-	} else {
-		err = buf_alloc(ni, &buf);
-		if (err) {
-			err = PTL_NO_SPACE;
-			ct_put(ct);
-			goto err2;
-		}
+        ct_put(ct);
+    } else {
+        err = buf_alloc(ni, &buf);
+        if (err) {
+            err = PTL_NO_SPACE;
+            ct_put(ct);
+            goto err2;
+        }
 
-		buf->type = BUF_TRIGGERED;
-		buf->op = TRIG_CT_INC;
-		buf->ct = ct;
-		buf->ct_event = increment;
-		buf->threshold = threshold;
+        buf->type = BUF_TRIGGERED;
+        buf->op = TRIG_CT_INC;
+        buf->ct = ct;
+        buf->ct_event = increment;
+        buf->threshold = threshold;
 
-		post_trig_ct(buf, trig_ct);
+        post_trig_ct(buf, trig_ct);
 
-	}
+    }
 
-	err = PTL_OK;
-err2:
-	ct_put(trig_ct);
+    err = PTL_OK;
+  err2:
+    ct_put(trig_ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -816,73 +828,75 @@ err0:
  * @return PTL_NO_INIT Indicates that the portals API has not been successfully initialized.
  * @return PTL_ARG_INVALID Indicates that an invalid argument was passed.
  */
-int _PtlTriggeredCTSet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t new_ct,
-		      ptl_handle_ct_t trig_ct_handle, ptl_size_t threshold)
+int _PtlTriggeredCTSet(PPEGBL ptl_handle_ct_t ct_handle,
+                       ptl_ct_event_t new_ct, ptl_handle_ct_t trig_ct_handle,
+                       ptl_size_t threshold)
 {
-	int err;
-	ct_t *ct;
-	ct_t *trig_ct;
-	ni_t *ni;
-	buf_t *buf;
+    int err;
+    ct_t *ct;
+    ct_t *trig_ct;
+    ni_t *ni;
+    buf_t *buf;
 
-	/* convert handles to objects */
+    /* convert handles to objects */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
-	if (err)
-		goto err1;
+    err = to_ct(MYGBL_ trig_ct_handle, &trig_ct);
+    if (err)
+        goto err1;
 
-	ni = obj_to_ni(trig_ct);
+    ni = obj_to_ni(trig_ct);
 
-	err = to_ct(MYGBL_ ct_handle, &ct);
-	if (err)
-		goto err2;
+    err = to_ct(MYGBL_ ct_handle, &ct);
+    if (err)
+        goto err2;
 
-	if (ni != obj_to_ni(ct)) {
-		err = PTL_ARG_INVALID;
-		ct_put(ct);
-		goto err2;
-	}
+    if (ni != obj_to_ni(ct)) {
+        err = PTL_ARG_INVALID;
+        ct_put(ct);
+        goto err2;
+    }
 #else
-	trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
-	ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
-	ni = obj_to_ni(trig_ct);
+    trig_ct = to_obj(MYGBL_ POOL_ANY, trig_ct_handle);
+    ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
+    ni = obj_to_ni(trig_ct);
 #endif
 
-	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= threshold) {
-		/* Fast path. Condition already met. */
-		ct_set(ct, new_ct);
+    if ((trig_ct->info.event.failure + trig_ct->info.event.success) >=
+        threshold) {
+        /* Fast path. Condition already met. */
+        ct_set(ct, new_ct);
 
-	} else {
-		/* get container for triggered ct op */
-		err = buf_alloc(ni, &buf);
-		if (err) {
-			err = PTL_NO_SPACE;
-			ct_put(ct);
-			goto err2;
-		}
+    } else {
+        /* get container for triggered ct op */
+        err = buf_alloc(ni, &buf);
+        if (err) {
+            err = PTL_NO_SPACE;
+            ct_put(ct);
+            goto err2;
+        }
 
-		buf->type = BUF_TRIGGERED;
-		buf->op = TRIG_CT_SET;
-		buf->ct = ct;
-		buf->ct_event = new_ct;
-		buf->threshold = threshold;
+        buf->type = BUF_TRIGGERED;
+        buf->op = TRIG_CT_SET;
+        buf->ct = ct;
+        buf->ct_event = new_ct;
+        buf->threshold = threshold;
 
-		post_trig_ct(buf, trig_ct);
-	}
+        post_trig_ct(buf, trig_ct);
+    }
 
-	err = PTL_OK;
-err2:
-	ct_put(trig_ct);
+    err = PTL_OK;
+  err2:
+    ct_put(trig_ct);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -892,26 +906,26 @@ err0:
  */
 static void do_trig_ct_op(buf_t *buf)
 {
-	ct_t *ct = buf->ct;
+    ct_t *ct = buf->ct;
 
-	/* we're a zombie */
-	if (ct->info.interrupt)
-		goto done;
+    /* we're a zombie */
+    if (ct->info.interrupt)
+        goto done;
 
-	switch(buf->op) {
-	case TRIG_CT_SET:
-		ct_set(ct, buf->ct_event);
-		break;
-	case TRIG_CT_INC:
-		ct_inc(ct, buf->ct_event);
-		break;
-	default:
-		assert(0);
-	}
+    switch (buf->op) {
+        case TRIG_CT_SET:
+            ct_set(ct, buf->ct_event);
+            break;
+        case TRIG_CT_INC:
+            ct_inc(ct, buf->ct_event);
+            break;
+        default:
+            assert(0);
+    }
 
-done:
-	ct_put(ct);
-	buf_put(buf);
+  done:
+    ct_put(ct);
+    buf_put(buf);
 }
 
 /**
@@ -923,30 +937,32 @@ done:
  */
 void post_ct(buf_t *buf, ct_t *ct)
 {
-	assert(buf->type == BUF_INIT);
+    assert(buf->type == BUF_INIT);
 
-	/* Put the buffer on the wait list. */
-	PTL_FASTLOCK_LOCK(&ct->lock);
+    /* Put the buffer on the wait list. */
+    PTL_FASTLOCK_LOCK(&ct->lock);
 
-	/* 1st check to see whether the condition is already met. */
-	if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
-		PTL_FASTLOCK_UNLOCK(&ct->lock);
+    /* 1st check to see whether the condition is already met. */
+    if ((ct->info.event.success + ct->info.event.failure) >=
+        buf->ct_threshold) {
+        PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-		process_init(buf);
-	} else {
-		atomic_inc(&ct->list_size);
+        process_init(buf);
+    } else {
+        atomic_inc(&ct->list_size);
 
-		list_add(&buf->list, &ct->trig_list);
+        list_add(&buf->list, &ct->trig_list);
 
-		/* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
-		if ((ct->info.event.success + ct->info.event.failure) >= buf->ct_threshold) {
-			/* Something arrived while we were adding the buffer. */
-			PTL_FASTLOCK_UNLOCK(&ct->lock);
-			ct_check(ct);
-		} else {
-			PTL_FASTLOCK_UNLOCK(&ct->lock);
-		}
-	}
+        /* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
+        if ((ct->info.event.success + ct->info.event.failure) >=
+            buf->ct_threshold) {
+            /* Something arrived while we were adding the buffer. */
+            PTL_FASTLOCK_UNLOCK(&ct->lock);
+            ct_check(ct);
+        } else {
+            PTL_FASTLOCK_UNLOCK(&ct->lock);
+        }
+    }
 }
 
 /**
@@ -958,29 +974,31 @@ void post_ct(buf_t *buf, ct_t *ct)
  */
 static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
 {
-	/* Put the buffer on the wait list. */
-	PTL_FASTLOCK_LOCK(&trig_ct->lock);
+    /* Put the buffer on the wait list. */
+    PTL_FASTLOCK_LOCK(&trig_ct->lock);
 
-	/* 1st check to see whether the condition is already met. */
-	if ((trig_ct->info.event.failure + trig_ct->info.event.success) >= buf->threshold) {
-		PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
+    /* 1st check to see whether the condition is already met. */
+    if ((trig_ct->info.event.failure + trig_ct->info.event.success) >=
+        buf->threshold) {
+        PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
 
-		do_trig_ct_op(buf);
+        do_trig_ct_op(buf);
 
-	} else {
-		atomic_inc(&trig_ct->list_size);
+    } else {
+        atomic_inc(&trig_ct->list_size);
 
-		list_add(&buf->list, &trig_ct->trig_list);
+        list_add(&buf->list, &trig_ct->trig_list);
 
-		/* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
-		if ((trig_ct->info.event.success + trig_ct->info.event.failure) >= buf->threshold) {
-			/* Something arrived while we were adding the buffer. */
-			PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
-			ct_check(trig_ct);
-		} else {
-			PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
-		}
-	}
+        /* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
+        if ((trig_ct->info.event.success + trig_ct->info.event.failure) >=
+            buf->threshold) {
+            /* Something arrived while we were adding the buffer. */
+            PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
+            ct_check(trig_ct);
+        } else {
+            PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
+        }
+    }
 }
 
 /**
@@ -992,17 +1010,17 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
  */
 void make_ct_event(ct_t *ct, buf_t *buf, enum ct_bytes bytes)
 {
-	if (unlikely(buf->ni_fail))
-		(void)__sync_add_and_fetch(&ct->info.event.failure, 1);
-	else if (likely(bytes == CT_EVENTS))
-		(void)__sync_add_and_fetch(&ct->info.event.success, 1);
-	else if (likely(bytes == CT_MBYTES))
-		(void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
-	else {
-		assert(bytes == CT_RBYTES);
-		(void)__sync_add_and_fetch(&ct->info.event.success, buf->rlength);
-	}
+    if (unlikely(buf->ni_fail))
+        (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+    else if (likely(bytes == CT_EVENTS))
+        (void)__sync_add_and_fetch(&ct->info.event.success, 1);
+    else if (likely(bytes == CT_MBYTES))
+        (void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
+    else {
+        assert(bytes == CT_RBYTES);
+        (void)__sync_add_and_fetch(&ct->info.event.success, buf->rlength);
+    }
 
-	if (atomic_read(&ct->list_size))
-		ct_check(ct);
+    if (atomic_read(&ct->list_size))
+        ct_check(ct);
 }

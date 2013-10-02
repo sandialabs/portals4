@@ -15,8 +15,8 @@
  * Include this into object that requires reference counting.
  */
 typedef struct ref {
-	/** The reference count. */
-	atomic_t ref_cnt;
+    /** The reference count. */
+    atomic_t ref_cnt;
 } ref_t;
 
 /**
@@ -28,7 +28,7 @@ typedef struct ref {
  */
 static inline int ref_cnt(struct ref *ref)
 {
-	return atomic_read(&ref->ref_cnt);
+    return atomic_read(&ref->ref_cnt);
 }
 
 /**
@@ -41,7 +41,7 @@ static inline int ref_cnt(struct ref *ref)
  */
 static inline void ref_set(struct ref *ref, int num)
 {
-	atomic_set(&ref->ref_cnt, num);
+    atomic_set(&ref->ref_cnt, num);
 }
 
 /**
@@ -54,11 +54,11 @@ static inline void ref_set(struct ref *ref, int num)
  */
 static inline void ref_get(struct ref *ref)
 {
-	int ref_cnt = ref_cnt;
+    int ref_cnt = ref_cnt;
 
-	ref_cnt = atomic_inc(&ref->ref_cnt);
+    ref_cnt = atomic_inc(&ref->ref_cnt);
 
-	assert(ref_cnt >= 1);
+    assert(ref_cnt >= 1);
 }
 
 /**
@@ -70,20 +70,20 @@ static inline void ref_get(struct ref *ref)
  * @param ref the ref to get a reference to.
  * @param release a cleanup routine to call if the resulting reference count reaches zero.
  */
-static inline int ref_put(struct ref *ref, void (*release)(ref_t *ref))
+static inline int ref_put(struct ref *ref, void (*release) (ref_t *ref))
 {
-	int ref_cnt;
+    int ref_cnt;
 
-	ref_cnt = atomic_dec(&ref->ref_cnt);
+    ref_cnt = atomic_dec(&ref->ref_cnt);
 
-	assert(ref_cnt >= 0);
+    assert(ref_cnt >= 0);
 
-	if (ref_cnt == 0) {
-	        release(ref);
-	        return 1;
-	}
+    if (ref_cnt == 0) {
+        release(ref);
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 #endif /* PTL_REF_H */

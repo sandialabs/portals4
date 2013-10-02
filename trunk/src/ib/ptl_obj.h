@@ -30,26 +30,26 @@ struct ni;
  * a struct obj as its first member.
  */
 struct obj {
-	/** freelist chain pointer */
-	struct obj		*next;
+        /** freelist chain pointer */
+    struct obj *next;
 
-	/** backpointer to pool that owns object */
-	pool_t			*obj_pool;
+        /** backpointer to pool that owns object */
+    pool_t *obj_pool;
 
-	/** backpointer to parent that owns pool */
-	struct obj		*obj_parent;
+        /** backpointer to parent that owns pool */
+    struct obj *obj_parent;
 
-	/** backpointer to NI that owns parent */
-	struct ni		*obj_ni;
+        /** backpointer to NI that owns parent */
+    struct ni *obj_ni;
 
-	/** object handle */
-	ptl_handle_any_t	obj_handle;
+        /** object handle */
+    ptl_handle_any_t obj_handle;
 
-	/** object reference count */
-	ref_t			obj_ref;
+        /** object reference count */
+    ref_t obj_ref;
 
-	/** object is free if set */
-	int			obj_free;
+        /** object is free if set */
+    int obj_free;
 };
 
 typedef struct obj obj_t;
@@ -60,7 +60,7 @@ int index_init(struct gbl *gbl);
 void index_fini(struct gbl *gbl);
 
 int pool_init(struct gbl *gbl, pool_t *pool, char *name, int size,
-	      enum obj_type type, obj_t *parent);
+              enum obj_type type, obj_t *parent);
 
 int pool_fini(pool_t *pool);
 
@@ -81,7 +81,7 @@ int obj_alloc(pool_t *pool, obj_t **p_obj);
  */
 static inline int obj_ref_cnt(obj_t *obj)
 {
-	return ref_cnt(&obj->obj_ref);
+    return ref_cnt(&obj->obj_ref);
 }
 
 /**
@@ -91,7 +91,7 @@ static inline int obj_ref_cnt(obj_t *obj)
  */
 static inline void obj_get(obj_t *obj)
 {
-	ref_get(&obj->obj_ref);
+    ref_get(&obj->obj_ref);
 }
 
 /**
@@ -106,7 +106,7 @@ static inline void obj_get(obj_t *obj)
  */
 static inline int obj_put(obj_t *obj)
 {
-	return ref_put(&obj->obj_ref, obj_release);
+    return ref_put(&obj->obj_ref, obj_release);
 }
 
 #define HANDLE_INDEX_MASK	(0x00ffffff)
@@ -120,7 +120,7 @@ static inline int obj_put(obj_t *obj)
  */
 static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
 {
-	return handle & HANDLE_INDEX_MASK;
+    return handle & HANDLE_INDEX_MASK;
 }
 
 #ifdef NO_ARG_VALIDATION
@@ -136,9 +136,9 @@ static inline unsigned int obj_handle_to_index(ptl_handle_any_t handle)
  */
 static inline void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle)
 {
-	obj_t *obj = (obj_t *)MYGBL->index_map[handle & HANDLE_INDEX_MASK];
-	atomic_inc(&obj->obj_ref.ref_cnt);
-	return obj;
+    obj_t *obj = (obj_t *)MYGBL->index_map[handle & HANDLE_INDEX_MASK];
+    atomic_inc(&obj->obj_ref.ref_cnt);
+    return obj;
 }
 #else
 void *to_obj(PPEGBL enum obj_type type, ptl_handle_any_t handle);

@@ -15,11 +15,11 @@
  */
 int le_init(void *arg, void *unused)
 {
-	le_t *le = arg;
+    le_t *le = arg;
 
-	le->type = TYPE_LE;
+    le->type = TYPE_LE;
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -30,38 +30,38 @@ int le_init(void *arg, void *unused)
  */
 void le_cleanup(void *arg)
 {
-	le_t *le = arg;
-	ni_t *ni = obj_to_ni(le);
+    le_t *le = arg;
+    ni_t *ni = obj_to_ni(le);
 
-	if (le->ct)
-		ct_put(le->ct);
+    if (le->ct)
+        ct_put(le->ct);
 
-	if (le->pt) {
-		WARN();
-		le->pt = NULL;
-	}
+    if (le->pt) {
+        WARN();
+        le->pt = NULL;
+    }
 
-	if (le->mr_start) {
-		mr_put(le->mr_start);
-		le->mr_start = NULL;
-	}
+    if (le->mr_start) {
+        mr_put(le->mr_start);
+        le->mr_start = NULL;
+    }
 
-	if (le->do_auto_free)
-		make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
+    if (le->do_auto_free)
+        make_le_event(le, le->eq, PTL_EVENT_AUTO_FREE, PTL_NI_OK);
 
-	if (le->mr_list) {
-		int i;
+    if (le->mr_list) {
+        int i;
 
-		for (i = 0; i < le->num_iov; i++) {
-			if (le->mr_list[i])
-				mr_put(le->mr_list[i]);
-		}
+        for (i = 0; i < le->num_iov; i++) {
+            if (le->mr_list[i])
+                mr_put(le->mr_list[i]);
+        }
 
-		free(le->mr_list);
-		le->mr_list = NULL;
-	}
+        free(le->mr_list);
+        le->mr_list = NULL;
+    }
 
-	(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+    (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
 }
 
 /**
@@ -69,15 +69,13 @@ void le_cleanup(void *arg)
  */
 void le_post_unlink_event(le_t *le)
 {
-	if (!le->eq)
-		return;
+    if (!le->eq)
+        return;
 
-	make_le_event(le, le->eq,
-			      PTL_EVENT_AUTO_UNLINK,
-			      PTL_NI_OK);
+    make_le_event(le, le->eq, PTL_EVENT_AUTO_UNLINK, PTL_NI_OK);
 
-	if (le->ptl_list == PTL_OVERFLOW_LIST)
-		le->do_auto_free = 1;
+    if (le->ptl_list == PTL_OVERFLOW_LIST)
+        le->do_auto_free = 1;
 }
 
 /**
@@ -90,32 +88,32 @@ void le_post_unlink_event(le_t *le)
  */
 void le_unlink(le_t *le, int auto_event)
 {
-	pt_t *pt = le->pt;
+    pt_t *pt = le->pt;
 
-	if (pt) {
-		PTL_FASTLOCK_LOCK(&pt->lock);
+    if (pt) {
+        PTL_FASTLOCK_LOCK(&pt->lock);
 
-		/* Avoid a race between PTLMeUnlink and autounlink. */
-		if (le->pt) {
-			if (le->ptl_list == PTL_PRIORITY_LIST)
-				pt->priority_size--;
-			else if (le->ptl_list == PTL_OVERFLOW_LIST)
-				pt->overflow_size--;
-			list_del_init(&le->list);
+        /* Avoid a race between PTLMeUnlink and autounlink. */
+        if (le->pt) {
+            if (le->ptl_list == PTL_PRIORITY_LIST)
+                pt->priority_size--;
+            else if (le->ptl_list == PTL_OVERFLOW_LIST)
+                pt->overflow_size--;
+            list_del_init(&le->list);
 
-			if (auto_event)
-				le_post_unlink_event(le);
+            if (auto_event)
+                le_post_unlink_event(le);
 
-			le->pt = NULL;
-		}
+            le->pt = NULL;
+        }
 
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-		if (le->type == TYPE_ME)
-			me_put((me_t *)le);
-		else
-			le_put(le);
-	}
+        if (le->type == TYPE_ME)
+            me_put((me_t *)le);
+        else
+            le_put(le);
+    }
 }
 
 /**
@@ -123,49 +121,49 @@ void le_unlink(le_t *le, int auto_event)
  * @note common code for LE and ME.
  */
 int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
-		    const ptl_le_t *le_init, ptl_list_t ptl_list,
-		    ptl_search_op_t search_op, ptl_handle_le_t *le_handle)
+                    const ptl_le_t *le_init, ptl_list_t ptl_list,
+                    ptl_search_op_t search_op, ptl_handle_le_t *le_handle)
 {
 #ifndef NO_ARG_VALIDATION
-	pt_t *pt = &ni->pt[pt_index];
+    pt_t *pt = &ni->pt[pt_index];
 
-	if (pt_index > ni->limits.max_pt_index)
-		return PTL_ARG_INVALID;
+    if (pt_index > ni->limits.max_pt_index)
+        return PTL_ARG_INVALID;
 
-	if (!pt->in_use)
-		return PTL_ARG_INVALID;
+    if (!pt->in_use)
+        return PTL_ARG_INVALID;
 
-	if (type == TYPE_ME) {
-		if ((ni->options & PTL_NI_MATCHING) == 0)
-			return PTL_ARG_INVALID;
-	} else {
-		if ((ni->options & PTL_NI_NO_MATCHING) == 0)
-			return PTL_ARG_INVALID;
-	}
+    if (type == TYPE_ME) {
+        if ((ni->options & PTL_NI_MATCHING) == 0)
+            return PTL_ARG_INVALID;
+    } else {
+        if ((ni->options & PTL_NI_NO_MATCHING) == 0)
+            return PTL_ARG_INVALID;
+    }
 
-	if (le_init->options & PTL_IOVEC) {
-		if (le_init->length > ni->limits.max_iovecs)
-			return PTL_ARG_INVALID;
-	}
+    if (le_init->options & PTL_IOVEC) {
+        if (le_init->length > ni->limits.max_iovecs)
+            return PTL_ARG_INVALID;
+    }
 
-	if (type == TYPE_ME) {
-		if (le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)
-			return PTL_ARG_INVALID;
-	} else {
-		if (le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)
-			return PTL_ARG_INVALID;
-	}
+    if (type == TYPE_ME) {
+        if (le_init->options & ~PTL_ME_APPEND_OPTIONS_MASK)
+            return PTL_ARG_INVALID;
+    } else {
+        if (le_init->options & ~PTL_LE_APPEND_OPTIONS_MASK)
+            return PTL_ARG_INVALID;
+    }
 
-	if (le_handle) {
-		if (ptl_list > PTL_OVERFLOW_LIST)
-			return PTL_ARG_INVALID;
-	} else {
-		if (search_op > PTL_SEARCH_DELETE)
-			return PTL_ARG_INVALID;
-	}
+    if (le_handle) {
+        if (ptl_list > PTL_OVERFLOW_LIST)
+            return PTL_ARG_INVALID;
+    } else {
+        if (search_op > PTL_SEARCH_DELETE)
+            return PTL_ARG_INVALID;
+    }
 
 #endif /* NO_ARG_VALIDATION */
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -179,52 +177,53 @@ int le_append_check(int type, ni_t *ni, ptl_pt_index_t pt_index,
  *
  * @return status
  */
-int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
+int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le)
 {
-	int i;
-	ptl_iovec_t *iov;
+    int i;
+    ptl_iovec_t *iov;
 
-	if (le_init->options & PTL_IOVEC) {
+    if (le_init->options & PTL_IOVEC) {
 
 #if IS_PPE
-		if (!mr_lookup_app(ni, le_init->start,
-						   le_init->length*sizeof(ptl_iovec_t),
-						   &le->mr_start) == PTL_OK)
-			return PTL_ARG_INVALID;
+        if (!mr_lookup_app
+            (ni, le_init->start, le_init->length * sizeof(ptl_iovec_t),
+             &le->mr_start) == PTL_OK)
+            return PTL_ARG_INVALID;
 #endif
 
-		le->num_iov = le_init->length;
-		le->length = 0;
+        le->num_iov = le_init->length;
+        le->length = 0;
 
-		le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
-		if (!le->mr_list)
-			return PTL_NO_SPACE;
+        le->mr_list = calloc(le->num_iov, sizeof(mr_t *));
+        if (!le->mr_list)
+            return PTL_NO_SPACE;
 
-		iov = (ptl_iovec_t *)addr_to_ppe(le_init->start, le->mr_start);
+        iov = (ptl_iovec_t *)addr_to_ppe(le_init->start, le->mr_start);
 
-		for (i = 0; i < le->num_iov; i++) {
-			if (!mr_lookup_app(ni, iov->iov_base,
-							   iov->iov_len, &le->mr_list[i]) == PTL_OK)
-				return PTL_ARG_INVALID;
+        for (i = 0; i < le->num_iov; i++) {
+            if (!mr_lookup_app
+                (ni, iov->iov_base, iov->iov_len, &le->mr_list[i]) == PTL_OK)
+                return PTL_ARG_INVALID;
 
-			le->length += iov->iov_len;
-			iov++;
-		}
-	} else {
-		/* If the memory is supposedly all accessible, register it. */
-		if (!(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
-			(le_init->options & PTL_LE_IS_ACCESSIBLE)) {
+            le->length += iov->iov_len;
+            iov++;
+        }
+    } else {
+        /* If the memory is supposedly all accessible, register it. */
+        if (!(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
+            (le_init->options & PTL_LE_IS_ACCESSIBLE)) {
 
-			if (!mr_lookup_app(ni, le_init->start,
-							   le_init->length, &le->mr_start) == PTL_OK)
-				return PTL_ARG_INVALID;
-		}
+            if (!mr_lookup_app
+                (ni, le_init->start, le_init->length,
+                 &le->mr_start) == PTL_OK)
+                return PTL_ARG_INVALID;
+        }
 
-		le->length = le_init->length;
-		le->num_iov = 0;
-	}
+        le->length = le_init->length;
+        le->num_iov = 0;
+    }
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -240,37 +239,37 @@ int le_get_mr(ni_t * restrict ni, const ptl_le_t *le_init, le_t *le)
  */
 int le_append_pt(ni_t *ni, le_t *le)
 {
-	pt_t *pt = &ni->pt[le->pt_index];
+    pt_t *pt = &ni->pt[le->pt_index];
 
-	le->pt = pt;
+    le->pt = pt;
 
-	if (le->ptl_list == PTL_PRIORITY_LIST) {
-		pt->priority_size++;
-		if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
-			pt->priority_size--;
-			WARN();
-			return PTL_NO_SPACE;
-		}
-		list_add_tail(&le->list, &pt->priority_list);
-	} else if (le->ptl_list == PTL_OVERFLOW_LIST) {
-		pt->overflow_size++;
-		if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
-			pt->overflow_size--;
-			WARN();
-			return PTL_NO_SPACE;
-		}
-		list_add_tail(&le->list, &pt->overflow_list);
-	}
+    if (le->ptl_list == PTL_PRIORITY_LIST) {
+        pt->priority_size++;
+        if (unlikely(pt->priority_size > ni->limits.max_list_size)) {
+            pt->priority_size--;
+            WARN();
+            return PTL_NO_SPACE;
+        }
+        list_add_tail(&le->list, &pt->priority_list);
+    } else if (le->ptl_list == PTL_OVERFLOW_LIST) {
+        pt->overflow_size++;
+        if (unlikely(pt->overflow_size > ni->limits.max_list_size)) {
+            pt->overflow_size--;
+            WARN();
+            return PTL_NO_SPACE;
+        }
+        list_add_tail(&le->list, &pt->overflow_list);
+    }
 
-	if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE))
-		make_le_event(le, le->eq, PTL_EVENT_LINK, PTL_NI_OK);
+    if (le->eq && !(le->options & PTL_LE_EVENT_LINK_DISABLE))
+        make_le_event(le, le->eq, PTL_EVENT_LINK, PTL_NI_OK);
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 enum {
-	DONT_CHECK_PERM,
-	CHECK_PERM,
+    DONT_CHECK_PERM,
+    CHECK_PERM,
 };
 
 /**
@@ -284,73 +283,73 @@ enum {
  * @param[out] buf_list The returned message list.
  */
 static void __match_le_unexpected(const le_t *le, int perm,
-				  struct list_head *buf_list)
+                                  struct list_head *buf_list)
 {
-	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = &ni->pt[le->pt_index];
-	buf_t *buf;
-	buf_t *n;
+    ni_t *ni = obj_to_ni(le);
+    pt_t *pt = &ni->pt[le->pt_index];
+    buf_t *buf;
+    buf_t *n;
 
-	INIT_LIST_HEAD(buf_list);
+    INIT_LIST_HEAD(buf_list);
 
-	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
-				 unexpected_list) {
+    list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
-		if ((le->type == TYPE_LE || check_match(buf, (me_t *)le)) &&
-		    (perm == DONT_CHECK_PERM || !check_perm(buf, le))) {
-			list_del(&buf->unexpected_list);
-			list_add_tail(&buf->unexpected_list, buf_list);
+        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le)) &&
+            (perm == DONT_CHECK_PERM || !check_perm(buf, le))) {
+            list_del(&buf->unexpected_list);
+            list_add_tail(&buf->unexpected_list, buf_list);
 
-			if (le->options & PTL_LE_USE_ONCE)
-				break;
-		}
-	}
+            if (le->options & PTL_LE_USE_ONCE)
+                break;
+        }
+    }
 }
 
-static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_list, int delete)
+static void flush_from_unexpected_list(le_t *le,
+                                       const struct list_head *buf_list,
+                                       int delete)
 {
-	buf_t *buf;
-	buf_t *n;
+    buf_t *buf;
+    buf_t *n;
 
-	/* PT lock must not be taken. */
+    /* PT lock must not be taken. */
 
-	list_for_each_entry_safe(buf, n, buf_list,
-							 unexpected_list) {
-		int err;
-		int state;
+    list_for_each_entry_safe(buf, n, buf_list, unexpected_list) {
+        int err;
+        int state;
 
-		pthread_mutex_lock(&buf->mutex);
+        pthread_mutex_lock(&buf->mutex);
 
-		/* It is possible that there is a still a transfer occurring
-		 * on this buffer. So wait for it to finish. */
-		if (buf->unexpected_busy)
-			pthread_cond_wait(&buf->cond, &buf->mutex);
-		assert(buf->unexpected_busy == 0);
+        /* It is possible that there is a still a transfer occurring
+         * on this buffer. So wait for it to finish. */
+        if (buf->unexpected_busy)
+            pthread_cond_wait(&buf->cond, &buf->mutex);
+        assert(buf->unexpected_busy == 0);
 
-		assert(buf->matching.le == NULL);
-		buf->matching.le = le;
-		le_get(le);
+        assert(buf->matching.le == NULL);
+        buf->matching.le = le;
+        le_get(le);
 
-		if (delete && buf->le) {
-			le_put(buf->le);
-			buf->le = NULL;
-		}
+        if (delete && buf->le) {
+            le_put(buf->le);
+            buf->le = NULL;
+        }
 
-		list_del(&buf->unexpected_list);
+        list_del(&buf->unexpected_list);
 
-		state = buf->tgt_state;
+        state = buf->tgt_state;
 
-		pthread_mutex_unlock(&buf->mutex);
+        pthread_mutex_unlock(&buf->mutex);
 
-		if (state == STATE_TGT_WAIT_APPEND) {
-			err = process_tgt(buf);
-			if (err)
-				WARN();
-		}
-	
-		/* From get_match(). */
-		buf_put(buf);
-	}
+        if (state == STATE_TGT_WAIT_APPEND) {
+            err = process_tgt(buf);
+            if (err)
+                WARN();
+        }
+
+        /* From get_match(). */
+        buf_put(buf);
+    }
 }
 
 /**
@@ -368,24 +367,24 @@ static void flush_from_unexpected_list(le_t *le, const struct list_head *buf_lis
  */
 int __check_overflow(le_t *le, int delete)
 {
-	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = &ni->pt[le->pt_index];
-	struct list_head buf_list;
-	int ret;
+    ni_t *ni = obj_to_ni(le);
+    pt_t *pt = &ni->pt[le->pt_index];
+    struct list_head buf_list;
+    int ret;
 
-	__match_le_unexpected(le, DONT_CHECK_PERM, &buf_list);
+    __match_le_unexpected(le, DONT_CHECK_PERM, &buf_list);
 
-	ret = !list_empty(&buf_list);
-	if (ret) {
-		/* Process the elements of the list. */
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
+    ret = !list_empty(&buf_list);
+    if (ret) {
+        /* Process the elements of the list. */
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-		flush_from_unexpected_list(le, &buf_list, 0);
+        flush_from_unexpected_list(le, &buf_list, 0);
 
-		PTL_FASTLOCK_LOCK(&pt->lock);
-	}
+        PTL_FASTLOCK_LOCK(&pt->lock);
+    }
 
-	return ret;
+    return ret;
 }
 
 /**
@@ -399,57 +398,53 @@ int __check_overflow(le_t *le, int delete)
  */
 int check_overflow_search_only(le_t *le)
 {
-	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = &ni->pt[le->pt_index];
-	buf_t *buf;
-	buf_t *n;
-	int found = 0;
-	ptl_event_t event[atomic_read(&pt->unexpected_size)];
+    ni_t *ni = obj_to_ni(le);
+    pt_t *pt = &ni->pt[le->pt_index];
+    buf_t *buf;
+    buf_t *n;
+    int found = 0;
+    ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
-	PTL_FASTLOCK_LOCK(&pt->lock);
+    PTL_FASTLOCK_LOCK(&pt->lock);
 
-	list_for_each_entry_safe(buf, n, &pt->unexpected_list,
-				 unexpected_list) {
+    list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
-		if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
-			if (le->eq && !(le->options &
-			    PTL_LE_EVENT_COMM_DISABLE)) {
-				buf->matching_list = PTL_OVERFLOW_LIST;
-				fill_target_event(buf, PTL_EVENT_SEARCH,
-						  le->user_ptr, NULL,
-						  &event[found]);
-			}
-			
-			found++;
-			if (le->options & PTL_LE_USE_ONCE)
-			    break;
-			
-		}
-	}
+        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
+            if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
+                buf->matching_list = PTL_OVERFLOW_LIST;
+                fill_target_event(buf, PTL_EVENT_SEARCH, le->user_ptr, NULL,
+                                  &event[found]);
+            }
 
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
+            found++;
+            if (le->options & PTL_LE_USE_ONCE)
+                break;
 
-	/* note there is a race where the buf can get removed before
-	 * the event is delivered to the target so we save the contents
-	 * of the event in a local struct inside the lock and cause
-	 * the event to be delivered outside the lock */
+        }
+    }
 
-	if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
-		if (found > 0) {
-			int i;
+    PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-			for (i=0; i < found; i++){
-                            /* note search events always set ni ok */
-			    event[i].ni_fail_type = PTL_NI_OK;
-			    send_target_event(le->eq, &event[i]);
-			}
-		} else {
-			make_le_event(le, le->eq, PTL_EVENT_SEARCH,
-				      PTL_NI_NO_MATCH);
-		}
-	}
+    /* note there is a race where the buf can get removed before
+     * the event is delivered to the target so we save the contents
+     * of the event in a local struct inside the lock and cause
+     * the event to be delivered outside the lock */
 
-	return PTL_OK;
+    if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
+        if (found > 0) {
+            int i;
+
+            for (i = 0; i < found; i++) {
+                /* note search events always set ni ok */
+                event[i].ni_fail_type = PTL_NI_OK;
+                send_target_event(le->eq, &event[i]);
+            }
+        } else {
+            make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
+        }
+    }
+
+    return PTL_OK;
 }
 
 /**
@@ -462,26 +457,26 @@ int check_overflow_search_only(le_t *le)
  */
 int check_overflow_search_delete(le_t *le)
 {
-	ni_t *ni = obj_to_ni(le);
-	pt_t *pt = &ni->pt[le->pt_index];
-	struct list_head buf_list;
+    ni_t *ni = obj_to_ni(le);
+    pt_t *pt = &ni->pt[le->pt_index];
+    struct list_head buf_list;
 
-	/* scan the unexpected list removing each
-	 * matching message and adding to the buf_list */
-	PTL_FASTLOCK_LOCK(&pt->lock);
+    /* scan the unexpected list removing each
+     * matching message and adding to the buf_list */
+    PTL_FASTLOCK_LOCK(&pt->lock);
 
-	__match_le_unexpected(le, CHECK_PERM, &buf_list);
+    __match_le_unexpected(le, CHECK_PERM, &buf_list);
 
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
+    PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-	if (list_empty(&buf_list)) {
-	    if (le->eq)
-		make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
-	} else {
-		flush_from_unexpected_list(le, &buf_list, 1);
-	}
+    if (list_empty(&buf_list)) {
+        if (le->eq)
+            make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
+    } else {
+        flush_from_unexpected_list(le, &buf_list, 1);
+    }
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -500,159 +495,160 @@ int check_overflow_search_delete(le_t *le)
  * @return status
  */
 static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
-			       ptl_pt_index_t pt_index,
-			       const ptl_le_t *le_init, ptl_list_t ptl_list,
-			       ptl_search_op_t search_op, void *user_ptr,
-			       ptl_handle_le_t *le_handle_p)
+                               ptl_pt_index_t pt_index,
+                               const ptl_le_t *le_init, ptl_list_t ptl_list,
+                               ptl_search_op_t search_op, void *user_ptr,
+                               ptl_handle_le_t *le_handle_p)
 {
-	int err;
-	ni_t *ni;
-	le_t *le = le;
-	pt_t *pt;
+    int err;
+    ni_t *ni;
+    le_t *le = le;
+    pt_t *pt;
 
-	/* sanity checks and convert ni handle to object */
+    /* sanity checks and convert ni handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 
-	err = le_append_check(TYPE_LE, ni, pt_index, le_init,
-			      ptl_list, search_op, le_handle_p);
-	if (err)
-		goto err2;
+    err =
+        le_append_check(TYPE_LE, ni, pt_index, le_init, ptl_list, search_op,
+                        le_handle_p);
+    if (err)
+        goto err2;
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	// TODO convert these to atomic_inc/dec macros
-	if (unlikely(__sync_add_and_fetch(&ni->current.max_entries, 1) >
-				 ni->limits.max_entries)) {
-		(void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
-		err = PTL_NO_SPACE;
-		goto err2;
-	}
+    // TODO convert these to atomic_inc/dec macros
+    if (unlikely
+        (__sync_add_and_fetch(&ni->current.max_entries, 1) >
+         ni->limits.max_entries)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+        err = PTL_NO_SPACE;
+        goto err2;
+    }
 
-	err = le_alloc(ni, &le);
-	if (unlikely(err)) {
-                (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
-		goto err2;
-	}
+    err = le_alloc(ni, &le);
+    if (unlikely(err)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_entries, 1);
+        goto err2;
+    }
+    //Only get the mr if it's needed
+    if (le_init->length > 0) {
+        err = le_get_mr(ni, le_init, le);
+        if (unlikely(err))
+            goto err3;
+    }
 
-	//Only get the mr if it's needed
-	if (le_init->length > 0) {
-		err = le_get_mr(ni, le_init, le);
-		if (unlikely(err))
-			goto err3;
-	}
+    pt = &ni->pt[pt_index];
 
-	pt = &ni->pt[pt_index];
-
-	INIT_LIST_HEAD(&le->list);
-	le->eq = pt->eq;
-	le->pt_index = pt_index;
-	le->uid = le_init->uid;
-	le->user_ptr = user_ptr;
-	le->start = le_init->start;
-	le->options = le_init->options;
-	le->do_auto_free = 0;
-	le->ptl_list = ptl_list;
-	atomic_set(&le->busy,0);
+    INIT_LIST_HEAD(&le->list);
+    le->eq = pt->eq;
+    le->pt_index = pt_index;
+    le->uid = le_init->uid;
+    le->user_ptr = user_ptr;
+    le->start = le_init->start;
+    le->options = le_init->options;
+    le->do_auto_free = 0;
+    le->ptl_list = ptl_list;
+    atomic_set(&le->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
-	if (le_handle_p) {
-		/* Only append can modify counters. */
-		if (le_init->ct_handle != PTL_CT_NONE) {
-			err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
-			if (err)
-				goto err3;
-		} else {
-			le->ct = NULL;
-		}
-	} else {
-		le->ct = NULL;
-	}
+    if (le_handle_p) {
+        /* Only append can modify counters. */
+        if (le_init->ct_handle != PTL_CT_NONE) {
+            err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+            if (err)
+                goto err3;
+        } else {
+            le->ct = NULL;
+        }
+    } else {
+        le->ct = NULL;
+    }
 
-	if (le->ct && (obj_to_ni(le->ct) != ni)) {
-		err = PTL_ARG_INVALID;
-		goto err3;
-	}
+    if (le->ct && (obj_to_ni(le->ct) != ni)) {
+        err = PTL_ARG_INVALID;
+        goto err3;
+    }
 #else
-	le->ct = (le_handle_p && le_init->ct_handle != PTL_CT_NONE) ?
-			to_obj(MYGBL_ POOL_ANY, le_init->ct_handle) : NULL;
+    le->ct = (le_handle_p &&
+              le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
+                                                          le_init->ct_handle)
+        : NULL;
 #endif
 
-	if (le_handle_p) {
-		PTL_FASTLOCK_LOCK(&pt->lock);
+    if (le_handle_p) {
+        PTL_FASTLOCK_LOCK(&pt->lock);
 
-		if (ptl_list == PTL_PRIORITY_LIST) {
-			/* To avoid races we must cycle through the list until
-			 * nothing matches anymore. */
-			while(__check_overflow(le, 0)) {
-				/* Some XT were processed. */
-				if (le->options & PTL_ME_USE_ONCE) {
-					eq_t *eq = ni->pt[le->pt_index].eq;
+        if (ptl_list == PTL_PRIORITY_LIST) {
+            /* To avoid races we must cycle through the list until
+             * nothing matches anymore. */
+            while (__check_overflow(le, 0)) {
+                /* Some XT were processed. */
+                if (le->options & PTL_ME_USE_ONCE) {
+                    eq_t *eq = ni->pt[le->pt_index].eq;
 
-					PTL_FASTLOCK_UNLOCK(&pt->lock);
+                    PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-					if (eq && !(le->options &
-					    PTL_ME_EVENT_UNLINK_DISABLE)) {
-						make_le_event(le, eq,
-							PTL_EVENT_AUTO_UNLINK,
-							PTL_NI_OK);
-					}
+                    if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
+                        make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK,
+                                      PTL_NI_OK);
+                    }
 
-					*le_handle_p = le_to_handle(le);
-					le_put(le);
+                    *le_handle_p = le_to_handle(le);
+                    le_put(le);
 
-					goto done;
-				}
-			}
-		}
+                    goto done;
+                }
+            }
+        }
 
-		err = le_append_pt(ni, le);
+        err = le_append_pt(ni, le);
 
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-		if (unlikely(err))
-			goto err3;
+        if (unlikely(err))
+            goto err3;
 
-		*le_handle_p = le_to_handle(le);
-	} else {
-		if (search_op == PTL_SEARCH_ONLY)
-			err = check_overflow_search_only(le);
-		else
-			err = check_overflow_search_delete(le);
+        *le_handle_p = le_to_handle(le);
+    } else {
+        if (search_op == PTL_SEARCH_ONLY)
+            err = check_overflow_search_only(le);
+        else
+            err = check_overflow_search_delete(le);
 
-		if (err)
-			goto err3;
+        if (err)
+            goto err3;
 
-		le_put(le);
-	}
+        le_put(le);
+    }
 
-done:
-	ni_put(ni);
-	gbl_put();
-	return PTL_OK;
+  done:
+    ni_put(ni);
+    gbl_put();
+    return PTL_OK;
 
-err3:
-	le_put(le);
-err2:
-	ni_put(ni);
+  err3:
+    le_put(le);
+  err2:
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -693,14 +689,15 @@ err0:
  * The maximum length for a list is defined by the interface.
  */
 int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-		const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
-		ptl_handle_le_t *le_handle_p)
+                 const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
+                 ptl_handle_le_t *le_handle_p)
 {
-	int err;
+    int err;
 
-	err = le_append_or_search(MYGBL_ ni_handle, pt_index, le_init,
-				  ptl_list, 0, user_ptr, le_handle_p);
-	return err;
+    err =
+        le_append_or_search(MYGBL_ ni_handle, pt_index, le_init, ptl_list, 0,
+                            user_ptr, le_handle_p);
+    return err;
 }
 
 /**
@@ -732,14 +729,15 @@ int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * successfully initialized.
  */
 int _PtlLESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-		const ptl_le_t *le_init, ptl_search_op_t search_op,
-		void *user_ptr)
+                 const ptl_le_t *le_init, ptl_search_op_t search_op,
+                 void *user_ptr)
 {
-	int err;
+    int err;
 
-	err = le_append_or_search(MYGBL_ ni_handle, pt_index, le_init,
-				  0, search_op, user_ptr, NULL);
-	return err;
+    err =
+        le_append_or_search(MYGBL_ ni_handle, pt_index, le_init, 0, search_op,
+                            user_ptr, NULL);
+    return err;
 }
 
 /**
@@ -761,55 +759,55 @@ int _PtlLESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  */
 int _PtlLEUnlink(PPEGBL ptl_handle_le_t le_handle)
 {
-	int err;
-	le_t *le;
-	int ref_cnt;
+    int err;
+    le_t *le;
+    int ref_cnt;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_le(MYGBL_ le_handle, &le);
-	if (err)
-		goto err1;
+    err = to_le(MYGBL_ le_handle, &le);
+    if (err)
+        goto err1;
 #else
-	le = to_obj(MYGBL_ POOL_ANY, le_handle);
+    le = to_obj(MYGBL_ POOL_ANY, le_handle);
 #endif
 
-	//If this was an overflow, it should just complete now
-	//there's no other busy work being done
-	if (le->ptl_list == PTL_OVERFLOW_LIST){
-		atomic_set(&le->busy, 0);
-	}
+    //If this was an overflow, it should just complete now
+    //there's no other busy work being done
+    if (le->ptl_list == PTL_OVERFLOW_LIST) {
+        atomic_set(&le->busy, 0);
+    }
 
-	while (atomic_read(&le->busy) == 1){
-                SPINLOCK_BODY();
-        }
+    while (atomic_read(&le->busy) == 1) {
+        SPINLOCK_BODY();
+    }
 
-	ref_cnt = le_ref_cnt(le);
+    ref_cnt = le_ref_cnt(le);
 
-	/* There should only be 2 references on the object before we can
-	 * release it. */
-	if (ref_cnt > 2) {
-		le_put(le);
-		err = PTL_IN_USE;
-		goto err1;
-	} else if (ref_cnt < 2) {
-		le_put(le);
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    /* There should only be 2 references on the object before we can
+     * release it. */
+    if (ref_cnt > 2) {
+        le_put(le);
+        err = PTL_IN_USE;
+        goto err1;
+    } else if (ref_cnt < 2) {
+        le_put(le);
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 
-	le_unlink(le, 0);
+    le_unlink(le, 0);
 
-	err = PTL_OK;
+    err = PTL_OK;
 
-	le_put(le);
-err1:
+    le_put(le);
+  err1:
 #ifndef NO_ARG_VALIDATION
-	gbl_put();
-err0:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }

@@ -16,11 +16,11 @@
  */
 int eq_new(void *arg)
 {
-	eq_t *eq = arg;
+    eq_t *eq = arg;
 
-	INIT_LIST_HEAD(&eq->flowctrl_list);
+    INIT_LIST_HEAD(&eq->flowctrl_list);
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -32,22 +32,22 @@ int eq_new(void *arg)
  */
 void eq_cleanup(void *arg)
 {
-	eq_t *eq = arg;
+    eq_t *eq = arg;
 
-	if (eq->eqe_list) {
-		PTL_FASTLOCK_DESTROY(&eq->eqe_list->lock);
-		free(eq->eqe_list);
-	}
-	eq->eqe_list = NULL;
+    if (eq->eqe_list) {
+        PTL_FASTLOCK_DESTROY(&eq->eqe_list->lock);
+        free(eq->eqe_list);
+    }
+    eq->eqe_list = NULL;
 }
 
 /* After an event is posted, check if there is any waiter. */
 static inline void check_waiter(struct eqe_list *eqe_list)
 {
-	if (atomic_read(&eqe_list->waiter) > 0) {
-		SPINLOCK_BODY();
-		sched_yield();
-	}
+    if (atomic_read(&eqe_list->waiter) > 0) {
+        SPINLOCK_BODY();
+        sched_yield();
+    }
 }
 
 /**
@@ -64,104 +64,104 @@ static inline void check_waiter(struct eqe_list *eqe_list)
  * @return PTL_NO_SPACE Indicates that there is insufficient memory to
  * allocate the event queue.
  */
-int _PtlEQAlloc(PPEGBL ptl_handle_ni_t ni_handle,
-			   ptl_size_t count,
-			   ptl_handle_eq_t *eq_handle_p)
+int _PtlEQAlloc(PPEGBL ptl_handle_ni_t ni_handle, ptl_size_t count,
+                ptl_handle_eq_t * eq_handle_p)
 {
-	int err;
-	ni_t *ni;
-	eq_t *eq;
-	struct eqe_list *eqe_list;
+    int err;
+    ni_t *ni;
+    eq_t *eq;
+    struct eqe_list *eqe_list;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_ni(MYGBL_ ni_handle, &ni);
-	if (err)
-		goto err1;
+    err = to_ni(MYGBL_ ni_handle, &ni);
+    if (err)
+        goto err1;
 
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
+    ni = to_obj(MYGBL_ POOL_ANY, ni_handle);
 #endif
 
-	/* check limit resources to see if we can allocate another eq */
-	if (unlikely(__sync_add_and_fetch(&ni->current.max_eqs, 1) >
-				 ni->limits.max_eqs)) {
-		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
-		err = PTL_NO_SPACE;
-		goto err2;
-	}
+    /* check limit resources to see if we can allocate another eq */
+    if (unlikely
+        (__sync_add_and_fetch(&ni->current.max_eqs, 1) >
+         ni->limits.max_eqs)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+        err = PTL_NO_SPACE;
+        goto err2;
+    }
 
-	/* allocate event queue object */
-	err = eq_alloc(ni, &eq);
-	if (unlikely(err)) {
-		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
-		goto err2;
-	}
+    /* allocate event queue object */
+    err = eq_alloc(ni, &eq);
+    if (unlikely(err)) {
+        (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+        goto err2;
+    }
 
-	/* Allocate memory for event circular buffer. Add some extra room
-	 * to account for PTs with flow control. See implementation note
-	 * 19 for PtlEQAlloc(). */
-	eq->count_simple = count;
-	count += ni->limits.max_pt_index + 1;
+    /* Allocate memory for event circular buffer. Add some extra room
+     * to account for PTs with flow control. See implementation note
+     * 19 for PtlEQAlloc(). */
+    eq->count_simple = count;
+    count += ni->limits.max_pt_index + 1;
 
-	eq->eqe_list_size = sizeof(struct eqe_list) + count * sizeof(eqe_t);
-	eq->eqe_list = calloc(1, eq->eqe_list_size);
-	if (!eq->eqe_list) {
-		err = PTL_NO_SPACE;
-		(void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
-		eq_put(eq);
-		goto err2;
-	}
+    eq->eqe_list_size = sizeof(struct eqe_list) + count * sizeof(eqe_t);
+    eq->eqe_list = calloc(1, eq->eqe_list_size);
+    if (!eq->eqe_list) {
+        err = PTL_NO_SPACE;
+        (void)__sync_fetch_and_sub(&ni->current.max_eqs, 1);
+        eq_put(eq);
+        goto err2;
+    }
 
-	eqe_list = eq->eqe_list;
+    eqe_list = eq->eqe_list;
 
-	eqe_list->producer = 0;
-	eqe_list->consumer = 0;
-	eqe_list->used = 0;
-	eqe_list->prod_gen = 0;
-	eqe_list->cons_gen = 0;
-	eqe_list->interrupt = 0;
-	eqe_list->count = count;
+    eqe_list->producer = 0;
+    eqe_list->consumer = 0;
+    eqe_list->used = 0;
+    eqe_list->prod_gen = 0;
+    eqe_list->cons_gen = 0;
+    eqe_list->interrupt = 0;
+    eqe_list->count = count;
 
 #if IS_PPE
-	pthread_mutexattr_t mattr;
-	pthread_condattr_t cattr;
+    pthread_mutexattr_t mattr;
+    pthread_condattr_t cattr;
 
-	PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
+    PTL_FASTLOCK_INIT_SHARED(&eqe_list->lock);
 
-	pthread_mutexattr_init(&mattr);
-	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
-	pthread_mutex_init(&eqe_list->mutex, &mattr);
-	pthread_mutexattr_destroy(&mattr);
+    pthread_mutexattr_init(&mattr);
+    pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&eqe_list->mutex, &mattr);
+    pthread_mutexattr_destroy(&mattr);
 
-	pthread_condattr_init(&cattr);
-	pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-	pthread_cond_init(&eqe_list->cond, &cattr);
-	pthread_condattr_destroy(&cattr);
+    pthread_condattr_init(&cattr);
+    pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&eqe_list->cond, &cattr);
+    pthread_condattr_destroy(&cattr);
 #else
-	PTL_FASTLOCK_INIT(&eqe_list->lock);
+    PTL_FASTLOCK_INIT(&eqe_list->lock);
 
 #endif
 
-	*eq_handle_p = eq_to_handle(eq);
+    *eq_handle_p = eq_to_handle(eq);
 
-	err = PTL_OK;
- err2:
-	ni_put(ni);
+    err = PTL_OK;
+  err2:
+    ni_put(ni);
 #ifndef NO_ARG_VALIDATION
- err1:
-	gbl_put();
- err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -177,54 +177,54 @@ int _PtlEQAlloc(PPEGBL ptl_handle_ni_t ni_handle,
  */
 int _PtlEQFree(PPEGBL ptl_handle_eq_t eq_handle)
 {
-	int err;
-	eq_t *eq;
-	ni_t *ni;
+    int err;
+    eq_t *eq;
+    ni_t *ni;
 
-	/* convert handle to object */
+    /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_eq(MYGBL_ eq_handle, &eq);
-	if (err)
-		goto err1;
+    err = to_eq(MYGBL_ eq_handle, &eq);
+    if (err)
+        goto err1;
 
-	if (!eq) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!eq) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 
-	ni = obj_to_ni(eq);
-	if (!ni) {
-		err = PTL_ARG_INVALID;
-		eq_put(eq);
-		goto err1;
-	}
+    ni = obj_to_ni(eq);
+    if (!ni) {
+        err = PTL_ARG_INVALID;
+        eq_put(eq);
+        goto err1;
+    }
 #else
-	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
-	ni = obj_to_ni(eq);
+    eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
+    ni = obj_to_ni(eq);
 #endif
 
-	/* cleanup resources. */
-	eq->eqe_list->interrupt = 1;
-	__sync_synchronize();
-	check_waiter(eq->eqe_list);
+    /* cleanup resources. */
+    eq->eqe_list->interrupt = 1;
+    __sync_synchronize();
+    check_waiter(eq->eqe_list);
 
-	err = PTL_OK;
-	eq_put(eq);					/* from to_eq() */
-	eq_put(eq);					/* from PtlCTAlloc() */
+    err = PTL_OK;
+    eq_put(eq);                        /* from to_eq() */
+    eq_put(eq);                        /* from PtlCTAlloc() */
 
-	/* give back the limit resource */
-	(void)__sync_sub_and_fetch(&ni->current.max_eqs, 1);
+    /* give back the limit resource */
+    (void)__sync_sub_and_fetch(&ni->current.max_eqs, 1);
 
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -248,38 +248,37 @@ err0:
  * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid event
  * queue handle.
  */
-int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle,
-			 ptl_event_t *event_p)
+int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
-	int err;
-	eq_t *eq;
+    int err;
+    eq_t *eq;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_eq(MYGBL_ eq_handle, &eq);
-	if (err)
-		goto err1;
+    err = to_eq(MYGBL_ eq_handle, &eq);
+    if (err)
+        goto err1;
 
-	if (!eq) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!eq) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
+    eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
 #endif
 
-	err = PtlEQGet_work(eq->eqe_list, event_p);
+    err = PtlEQGet_work(eq->eqe_list, event_p);
 
-	eq_put(eq);
+    eq_put(eq);
 #ifndef NO_ARG_VALIDATION
-err1:
-	gbl_put();
-err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -301,38 +300,37 @@ err0:
  * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
  * called by another thread while this thread was waiting in PtlEQWait().
  */
-int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle,
-			  ptl_event_t *event_p)
+int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
-	int err;
-	eq_t *eq;
+    int err;
+    eq_t *eq;
 
 #ifndef NO_ARG_VALIDATION
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 
-	err = to_eq(MYGBL_ eq_handle, &eq);
-	if (err)
-		goto err1;
+    err = to_eq(MYGBL_ eq_handle, &eq);
+    if (err)
+        goto err1;
 
-	if (!eq) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
+    if (!eq) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #else
-	eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
+    eq = to_obj(MYGBL_ POOL_ANY, eq_handle);
 #endif
 
-	err = PtlEQWait_work(eq->eqe_list, event_p);
+    err = PtlEQWait_work(eq->eqe_list, event_p);
 
-	eq_put(eq);
+    eq_put(eq);
 #ifndef NO_ARG_VALIDATION
- err1:
-	gbl_put();
- err0:
+  err1:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
 /**
@@ -358,132 +356,130 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle,
  * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
  * called by another thread while this thread was waiting in PtlEQPoll().
  */
-int _PtlEQPoll(PPEGBL const ptl_handle_eq_t *eq_handles, unsigned int size,
-			  ptl_time_t timeout, ptl_event_t *event_p, unsigned int *which_p)
+int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
+               ptl_time_t timeout, ptl_event_t *event_p,
+               unsigned int *which_p)
 {
-	int err;
-	eq_t *eqs[size];
-	struct eqe_list *eqes_list[size];
-	int i;
-	int i2;
+    int err;
+    eq_t *eqs[size];
+    struct eqe_list *eqes_list[size];
+    int i;
+    int i2;
 
 #ifndef NO_ARG_VALIDATION
-	ni_t *ni = NULL;
+    ni_t *ni = NULL;
 
-	err = gbl_get();
-	if (err)
-		goto err0;
+    err = gbl_get();
+    if (err)
+        goto err0;
 #endif
 
-	if (size == 0) {
-		err = PTL_ARG_INVALID;
-		goto err1;
-	}
-
+    if (size == 0) {
+        err = PTL_ARG_INVALID;
+        goto err1;
+    }
 #ifndef NO_ARG_VALIDATION
-	i2 = -1;
-	for (i = 0; i < size; i++) {
-		err = to_eq(MYGBL_ eq_handles[i], &eqs[i]);
-		if (unlikely(err || !eqs[i])) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-		eqes_list[i] = eqs[i]->eqe_list;
+    i2 = -1;
+    for (i = 0; i < size; i++) {
+        err = to_eq(MYGBL_ eq_handles[i], &eqs[i]);
+        if (unlikely(err || !eqs[i])) {
+            err = PTL_ARG_INVALID;
+            goto err2;
+        }
+        eqes_list[i] = eqs[i]->eqe_list;
 
-		i2 = i;
+        i2 = i;
 
-		if (i == 0)
-			ni = obj_to_ni(eqs[0]);
+        if (i == 0)
+            ni = obj_to_ni(eqs[0]);
 
-		if (ni != obj_to_ni(eqs[i])) {
-			err = PTL_ARG_INVALID;
-			goto err2;
-		}
-	}
+        if (ni != obj_to_ni(eqs[i])) {
+            err = PTL_ARG_INVALID;
+            goto err2;
+        }
+    }
 #else
-	for (i = 0; i < size; i++) {
-		eqs[i] = to_obj(MYGBL_ POOL_ANY, eq_handles[i]);
-		eqes_list[i] = eqs[i]->eqe_list;
-	}
-	i2 = size - 1;
+    for (i = 0; i < size; i++) {
+        eqs[i] = to_obj(MYGBL_ POOL_ANY, eq_handles[i]);
+        eqes_list[i] = eqs[i]->eqe_list;
+    }
+    i2 = size - 1;
 #endif
 
-	err = PtlEQPoll_work(eqes_list, size,
-						 timeout, event_p, which_p);
+    err = PtlEQPoll_work(eqes_list, size, timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
- err2:
+  err2:
 #endif
-	for (i = i2; i >= 0; i--)
-		eq_put(eqs[i]);
- err1:
+    for (i = i2; i >= 0; i--)
+        eq_put(eqs[i]);
+  err1:
 #ifndef NO_ARG_VALIDATION
-	gbl_put();
- err0:
+    gbl_put();
+  err0:
 #endif
-	return err;
+    return err;
 }
 
-static inline ptl_event_t *reserve_ev(eq_t * restrict eq)
+static inline ptl_event_t *reserve_ev(eq_t *restrict eq)
 {
-	ptl_event_t *ev;
-	eqe_t *eqe;
-	struct eqe_list *eqe_list;
+    ptl_event_t *ev;
+    eqe_t *eqe;
+    struct eqe_list *eqe_list;
 
-	eqe_list = eq->eqe_list;
-	eqe = &eqe_list->eqe[eqe_list->producer];
+    eqe_list = eq->eqe_list;
+    eqe = &eqe_list->eqe[eqe_list->producer];
 
-	eqe->generation = eqe_list->prod_gen;
-	ev = &eqe->event;
+    eqe->generation = eqe_list->prod_gen;
+    ev = &eqe->event;
 
-	eqe_list->producer ++;
-	if (eqe_list->producer >= eqe_list->count) {
-		eqe_list->producer = 0;
-		eqe_list->prod_gen++;
-	}
+    eqe_list->producer++;
+    if (eqe_list->producer >= eqe_list->count) {
+        eqe_list->producer = 0;
+        eqe_list->prod_gen++;
+    }
 
-	eqe_list->used ++;
+    eqe_list->used++;
 
-	/* If all unreserved entries are used, then the queue is
-	 * overflowing. It matters only if an attached PT wants flow
-	 * control. TODO: we should not be counting already inserted
-	 * reserved entries. */
-	if (eqe_list->used == eq->count_simple &&
-		!list_empty(&eq->flowctrl_list)) {
-		eq->overflowing = 1;
-	}
+    /* If all unreserved entries are used, then the queue is
+     * overflowing. It matters only if an attached PT wants flow
+     * control. TODO: we should not be counting already inserted
+     * reserved entries. */
+    if (eqe_list->used == eq->count_simple && !list_empty(&eq->flowctrl_list)) {
+        eq->overflowing = 1;
+    }
 
-	return ev;
+    return ev;
 }
 
 /* Overflow situation. The EQ lock must be taken. */
-static void process_overflowing(eq_t * restrict eq)
+static void process_overflowing(eq_t *restrict eq)
 {
-	/* If the EQ is overflowing, warn every PT not already stopped by
-	 * using one of the reserved EQ entries. */
-	struct list_head *l;
-	pt_t *pt;
-	ptl_event_t *ev;
+    /* If the EQ is overflowing, warn every PT not already stopped by
+     * using one of the reserved EQ entries. */
+    struct list_head *l;
+    pt_t *pt;
+    ptl_event_t *ev;
 
-	assert(eq->overflowing);
+    assert(eq->overflowing);
 
-	list_for_each(l, &eq->flowctrl_list) {
-		pt = list_entry(l, pt_t, flowctrl_list);
+    list_for_each(l, &eq->flowctrl_list) {
+        pt = list_entry(l, pt_t, flowctrl_list);
 
-		if (pt->state == PT_ENABLED) {
-			pt->state = PT_AUTO_DISABLED;
+        if (pt->state == PT_ENABLED) {
+            pt->state = PT_AUTO_DISABLED;
 
-			/* Note/TODO: this will take a reserved entry but it
-			 * will be counted as a regular entry later. */
-			ev = reserve_ev(eq);
+            /* Note/TODO: this will take a reserved entry but it
+             * will be counted as a regular entry later. */
+            ev = reserve_ev(eq);
 
-			ev->type = PTL_EVENT_PT_DISABLED;
-			ev->pt_index = pt->index;
-			ev->ni_fail_type = PTL_NI_PT_DISABLED;
-		}
-	}
+            ev->type = PTL_EVENT_PT_DISABLED;
+            ev->pt_index = pt->index;
+            ev->ni_fail_type = PTL_NI_PT_DISABLED;
+        }
+    }
 
-	eq->overflowing = 0;
+    eq->overflowing = 0;
 }
 
 /**
@@ -493,45 +489,47 @@ static void process_overflowing(eq_t * restrict eq)
  * @param[in] eq The event queue.
  * @param[in] type The event type.
  */
-void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t type)
+void make_init_event(buf_t *restrict buf, eq_t *restrict eq,
+                     ptl_event_kind_t type)
 {
-	if (unlikely((buf->event_mask & XI_PUT_SEND_DISABLE_EVENT) && type == PTL_EVENT_SEND))
-	{
-	    ptl_warn("ni_fail = %i \n",buf->ni_fail); 
-	    return;
-	}
+    if (unlikely
+        ((buf->event_mask & XI_PUT_SEND_DISABLE_EVENT) &&
+         type == PTL_EVENT_SEND)) {
+        ptl_warn("ni_fail = %i \n", buf->ni_fail);
+        return;
+    }
 
-	ptl_event_t *ev;
+    ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
-	ev = reserve_ev(eq);
-	ev->type		= type;
-	ev->user_ptr		= buf->user_ptr;
+    ev = reserve_ev(eq);
+    ev->type = type;
+    ev->user_ptr = buf->user_ptr;
 
-	if (type == PTL_EVENT_SEND) {
-		/* The buf->ni_fail field can be overriden by the target side
-		 * before we reach this function. If the message has been
-		 * delivered then sending it was OK. */
-		if (buf->ni_fail == PTL_NI_UNDELIVERABLE)
-			ev->ni_fail_type = buf->ni_fail;
-		else
-			ev->ni_fail_type = PTL_NI_OK;
-	} else {
-		ev->mlength		= buf->mlength;
-		ev->remote_offset	= buf->moffset;
-		ev->ni_fail_type	= buf->ni_fail;
-		ev->ptl_list		= buf->matching_list;
-	}
+    if (type == PTL_EVENT_SEND) {
+        /* The buf->ni_fail field can be overriden by the target side
+         * before we reach this function. If the message has been
+         * delivered then sending it was OK. */
+        if (buf->ni_fail == PTL_NI_UNDELIVERABLE)
+            ev->ni_fail_type = buf->ni_fail;
+        else
+            ev->ni_fail_type = PTL_NI_OK;
+    } else {
+        ev->mlength = buf->mlength;
+        ev->remote_offset = buf->moffset;
+        ev->ni_fail_type = buf->ni_fail;
+        ev->ptl_list = buf->matching_list;
+    }
 
-	/* If the EQ is overflowing, warn every PT not already stopped by
-	 * using one of the reserved EQ entries. */
-	if (eq->overflowing)
-		process_overflowing(eq);
+    /* If the EQ is overflowing, warn every PT not already stopped by
+     * using one of the reserved EQ entries. */
+    if (eq->overflowing)
+        process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 
-	check_waiter(eq->eqe_list);
+    check_waiter(eq->eqe_list);
 }
 
 /**
@@ -543,28 +541,28 @@ void make_init_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t 
  * @param[in] start The start address.
  * @param[out] The address of the returned event.
  */
-void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
-		       void *user_ptr, void *start, ptl_event_t * restrict ev)
+void fill_target_event(buf_t *restrict buf, ptl_event_kind_t type,
+                       void *user_ptr, void *start, ptl_event_t *restrict ev)
 {
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
 
-	ev->type		= type;
-	ev->start		= start;
-	ev->user_ptr		= user_ptr;
+    ev->type = type;
+    ev->start = start;
+    ev->user_ptr = user_ptr;
 
-	ev->ni_fail_type	= buf->ni_fail;
-	ev->mlength		= buf->mlength;
-	ev->match_bits		= le64_to_cpu(hdr->match_bits);
-	ev->hdr_data		= le64_to_cpu(hdr->hdr_data);
-	ev->ptl_list		= buf->matching_list;
-	ev->pt_index		= le32_to_cpu(hdr->pt_index);
-	ev->uid			= le32_to_cpu(hdr->uid);
-	ev->rlength		= le64_to_cpu(hdr->rlength);
-	ev->remote_offset	= le64_to_cpu(hdr->roffset);
-	ev->atomic_operation	= hdr->atom_op;
-	ev->atomic_type		= hdr->atom_type;
-	ev->initiator.phys.nid	= le32_to_cpu(hdr->h1.src_nid);
-	ev->initiator.phys.pid	= le32_to_cpu(hdr->h1.src_pid);
+    ev->ni_fail_type = buf->ni_fail;
+    ev->mlength = buf->mlength;
+    ev->match_bits = le64_to_cpu(hdr->match_bits);
+    ev->hdr_data = le64_to_cpu(hdr->hdr_data);
+    ev->ptl_list = buf->matching_list;
+    ev->pt_index = le32_to_cpu(hdr->pt_index);
+    ev->uid = le32_to_cpu(hdr->uid);
+    ev->rlength = le64_to_cpu(hdr->rlength);
+    ev->remote_offset = le64_to_cpu(hdr->roffset);
+    ev->atomic_operation = hdr->atom_op;
+    ev->atomic_type = hdr->atom_type;
+    ev->initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+    ev->initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 }
 
 /**
@@ -573,18 +571,18 @@ void fill_target_event(buf_t * restrict buf, ptl_event_kind_t type,
  * @param[in] eq the event queue to post the event to.
  * @param[in] ev the event to post.
  */
-void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
+void send_target_event(eq_t *restrict eq, ptl_event_t *restrict ev)
 {
-	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
-	*(reserve_ev(eq)) = *ev;
+    *(reserve_ev(eq)) = *ev;
 
-	if (eq->overflowing)
-		process_overflowing(eq);
+    if (eq->overflowing)
+        process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 
-	check_waiter(eq->eqe_list);
+    check_waiter(eq->eqe_list);
 }
 
 /**
@@ -596,23 +594,23 @@ void send_target_event(eq_t * restrict eq, ptl_event_t * restrict ev)
  * @param[in] usr_ptr The user pointer.
  * @param[in] start The start address.
  */
-void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_t type,
-		       void *user_ptr, void *start)
+void make_target_event(buf_t *restrict buf, eq_t *restrict eq,
+                       ptl_event_kind_t type, void *user_ptr, void *start)
 {
-	ptl_event_t *ev;
+    ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
-	ev = reserve_ev(eq);
+    ev = reserve_ev(eq);
 
-	fill_target_event(buf, type, user_ptr, start, ev);
+    fill_target_event(buf, type, user_ptr, start, ev);
 
-	if (eq->overflowing)
-		process_overflowing(eq);
+    if (eq->overflowing)
+        process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 
-	check_waiter(eq->eqe_list);
+    check_waiter(eq->eqe_list);
 }
 
 /**
@@ -623,23 +621,23 @@ void make_target_event(buf_t * restrict buf, eq_t * restrict eq, ptl_event_kind_
  * @param[in] type The event type.
  * @param[in] fail_type The NI fail type.
  */
-void make_le_event(le_t * restrict le, eq_t * restrict eq, ptl_event_kind_t type,
-		   ptl_ni_fail_t fail_type)
+void make_le_event(le_t *restrict le, eq_t *restrict eq,
+                   ptl_event_kind_t type, ptl_ni_fail_t fail_type)
 {
-	ptl_event_t *ev;
+    ptl_event_t *ev;
 
-	PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_LOCK(&eq->eqe_list->lock);
 
-	ev = reserve_ev(eq);
-	ev->type = type;
-	ev->pt_index = le->pt_index;
-	ev->user_ptr = le->user_ptr;
-	ev->ni_fail_type = fail_type;
+    ev = reserve_ev(eq);
+    ev->type = type;
+    ev->pt_index = le->pt_index;
+    ev->user_ptr = le->user_ptr;
+    ev->ni_fail_type = fail_type;
 
-	if (eq->overflowing)
-		process_overflowing(eq);
+    if (eq->overflowing)
+        process_overflowing(eq);
 
-	PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
+    PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
 
-	check_waiter(eq->eqe_list);
+    check_waiter(eq->eqe_list);
 }
