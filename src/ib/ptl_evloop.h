@@ -9,9 +9,9 @@
 #endif
 
 struct evl {
-	struct ev_loop *loop;
-	pthread_mutex_t lock; /* global loop lock */
-	ev_async async_w;
+    struct ev_loop *loop;
+    pthread_mutex_t lock;       /* global loop lock */
+    ev_async async_w;
 };
 
 extern struct evl evl;

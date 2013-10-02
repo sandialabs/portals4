@@ -49,11 +49,11 @@
  * unused and should be set to 0 for forward compatibility.
  */
 struct ummunotify_register_ioctl {
-	uint64_t	start;
-	uint64_t	end;
-	uint64_t	user_cookie;
-	uint32_t	flags;
-	uint32_t	reserved;
+    uint64_t start;
+    uint64_t end;
+    uint64_t user_cookie;
+    uint32_t flags;
+    uint32_t reserved;
 };
 
 #define UMMUNOTIFY_MAGIC		'U'
@@ -107,20 +107,20 @@ struct ummunotify_register_ioctl {
  * other fields are not filled in for this event.
  */
 enum {
-	UMMUNOTIFY_EVENT_TYPE_INVAL	= 0,
-	UMMUNOTIFY_EVENT_TYPE_LAST	= 1,
+    UMMUNOTIFY_EVENT_TYPE_INVAL = 0,
+    UMMUNOTIFY_EVENT_TYPE_LAST = 1,
 };
 
 enum {
-	UMMUNOTIFY_EVENT_FLAG_HINT	= 1 << 0,
+    UMMUNOTIFY_EVENT_FLAG_HINT = 1 << 0,
 };
 
 struct ummunotify_event {
-	uint32_t	type;
-	uint32_t	flags;
-	uint64_t	hint_start;
-	uint64_t	hint_end;
-	uint64_t	user_cookie_counter;
+    uint32_t type;
+    uint32_t flags;
+    uint64_t hint_start;
+    uint64_t hint_end;
+    uint64_t user_cookie_counter;
 };
 
 #endif /* _LINUX_UMMUNOTIFY_H */

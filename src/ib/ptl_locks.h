@@ -14,7 +14,7 @@
 # define PTL_FASTLOCK_LOCK(x)    pthread_spin_lock(x)
 # define PTL_FASTLOCK_UNLOCK(x)  pthread_spin_unlock(x)
 #else
-typedef struct ptl_spin_exclusive_s { /* stolen from Qthreads */
+typedef struct ptl_spin_exclusive_s {   /* stolen from Qthreads */
     unsigned long enter;
     unsigned long exit;
 } ptl_spin_exclusive_t;

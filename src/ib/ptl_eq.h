@@ -15,21 +15,21 @@
  * Event queue info.
  */
 struct eq {
-	obj_t			obj;		/**< object base class */
-	struct eqe_list		*eqe_list;	/**< circular buffer for
+    obj_t obj;                                  /**< object base class */
+    struct eqe_list *eqe_list;                  /**< circular buffer for
 									   holding events */
-	int eqe_list_size;
-	unsigned int		count_simple;		/**< size of event queue minus reserved entries */
+    int eqe_list_size;
+    unsigned int count_simple;                          /**< size of event queue minus reserved entries */
 
-	/** to attach the PTs supporting flow control. **/
-	struct list_head	flowctrl_list;
-	int overflowing;			/* the queue is overflowing */
+        /** to attach the PTs supporting flow control. **/
+    struct list_head flowctrl_list;
+    int overflowing;            /* the queue is overflowing */
 
 #if IS_PPE
-	/* PPE transport specific */
-	struct {
-		struct xpmem_map eqe_list; /* for the eqe_list */
-	} ppe;
+    /* PPE transport specific */
+    struct {
+        struct xpmem_map eqe_list;  /* for the eqe_list */
+    } ppe;
 #endif
 };
 
@@ -41,16 +41,16 @@ void eq_cleanup(void *arg);
 
 void make_init_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type);
 
-void fill_target_event(buf_t *buf, ptl_event_kind_t type,
-		       void *user_ptr, void *start, ptl_event_t *ev);
+void fill_target_event(buf_t *buf, ptl_event_kind_t type, void *user_ptr,
+                       void *start, ptl_event_t *ev);
 
 void send_target_event(eq_t *eq, ptl_event_t *ev);
 
 void make_target_event(buf_t *buf, eq_t *eq, ptl_event_kind_t type,
-		       void *user_ptr, void *start);
+                       void *user_ptr, void *start);
 
 void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
-		   ptl_ni_fail_t fail_type);
+                   ptl_ni_fail_t fail_type);
 
 /**
  * Allocate a new eq object.
@@ -64,17 +64,17 @@ void make_le_event(le_t *le, eq_t *eq, ptl_event_kind_t type,
  */
 static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
 {
-	int err;
-	obj_t *obj;
+    int err;
+    obj_t *obj;
 
-	err = obj_alloc(&ni->eq_pool, &obj);
-	if (err) {
-		*eq_p = NULL;
-		return err;
-	}
+    err = obj_alloc(&ni->eq_pool, &obj);
+    if (err) {
+        *eq_p = NULL;
+        return err;
+    }
 
-	*eq_p = container_of(obj, eq_t, obj);
-	return PTL_OK;
+    *eq_p = container_of(obj, eq_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -89,21 +89,21 @@ static inline int eq_alloc(ni_t *ni, eq_t **eq_p)
  */
 static inline int to_eq(PPEGBL ptl_handle_eq_t eq_handle, eq_t **eq_p)
 {
-	obj_t *obj;
+    obj_t *obj;
 
-	if (eq_handle == PTL_EQ_NONE) {
-		*eq_p = NULL;
-		return PTL_OK;
-	}
+    if (eq_handle == PTL_EQ_NONE) {
+        *eq_p = NULL;
+        return PTL_OK;
+    }
 
-	obj = to_obj(MYGBL_ POOL_EQ, (ptl_handle_any_t)eq_handle);
-	if (!obj) {
-		*eq_p = NULL;
-		return PTL_ARG_INVALID;
-	}
+    obj = to_obj(MYGBL_ POOL_EQ, (ptl_handle_any_t) eq_handle);
+    if (!obj) {
+        *eq_p = NULL;
+        return PTL_ARG_INVALID;
+    }
 
-	*eq_p = container_of(obj, eq_t, obj);
-	return PTL_OK;
+    *eq_p = container_of(obj, eq_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -113,7 +113,7 @@ static inline int to_eq(PPEGBL ptl_handle_eq_t eq_handle, eq_t **eq_p)
  */
 static inline void eq_get(eq_t *eq)
 {
-	obj_get(&eq->obj);
+    obj_get(&eq->obj);
 }
 
 /**
@@ -127,7 +127,7 @@ static inline void eq_get(eq_t *eq)
  */
 static inline int eq_put(eq_t *eq)
 {
-	return obj_put(&eq->obj);
+    return obj_put(&eq->obj);
 }
 
 /**
@@ -139,7 +139,7 @@ static inline int eq_put(eq_t *eq)
  */
 static inline ptl_handle_eq_t eq_to_handle(eq_t *eq)
 {
-	return (ptl_handle_eq_t)eq->obj.obj_handle;
+    return (ptl_handle_eq_t) eq->obj.obj_handle;
 }
 
 #endif /* PTL_EQ_H */

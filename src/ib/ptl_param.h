@@ -10,65 +10,65 @@
  * @brief Parameter indices.
  */
 enum {
-	PTL_MAX_IFACE,
-	PTL_MAX_INLINE_DATA,
-	PTL_MAX_INLINE_SGE,
-	PTL_MAX_INDIRECT_SGE,
+    PTL_MAX_IFACE,
+    PTL_MAX_INLINE_DATA,
+    PTL_MAX_INLINE_SGE,
+    PTL_MAX_INDIRECT_SGE,
 
-	PTL_LIM_MAX_ENTRIES,
-	PTL_LIM_MAX_UNEXPECTED_HEADERS,
-	PTL_LIM_MAX_MDS,
-	PTL_LIM_MAX_CTS,
-	PTL_LIM_MAX_EQS,
-	PTL_LIM_MAX_PT_INDEX,
-	PTL_LIM_MAX_IOVECS,
-	PTL_LIM_MAX_LIST_SIZE,
-	PTL_LIM_MAX_TRIGGERED_OPS,
-	PTL_LIM_MAX_MSG_SIZE,
-	PTL_LIM_MAX_ATOMIC_SIZE,
-	PTL_LIM_MAX_FETCH_ATOMIC_SIZE,
-	PTL_LIM_MAX_WAW_ORDERED_SIZE,
-	PTL_LIM_MAX_WAR_ORDERED_SIZE,
-	PTL_LIM_MAX_VOLATILE_SIZE,
-	PTL_LIM_FEATURES,
+    PTL_LIM_MAX_ENTRIES,
+    PTL_LIM_MAX_UNEXPECTED_HEADERS,
+    PTL_LIM_MAX_MDS,
+    PTL_LIM_MAX_CTS,
+    PTL_LIM_MAX_EQS,
+    PTL_LIM_MAX_PT_INDEX,
+    PTL_LIM_MAX_IOVECS,
+    PTL_LIM_MAX_LIST_SIZE,
+    PTL_LIM_MAX_TRIGGERED_OPS,
+    PTL_LIM_MAX_MSG_SIZE,
+    PTL_LIM_MAX_ATOMIC_SIZE,
+    PTL_LIM_MAX_FETCH_ATOMIC_SIZE,
+    PTL_LIM_MAX_WAW_ORDERED_SIZE,
+    PTL_LIM_MAX_WAR_ORDERED_SIZE,
+    PTL_LIM_MAX_VOLATILE_SIZE,
+    PTL_LIM_FEATURES,
 
-	PTL_OBJ_ALLOC_TIMEOUT,
-	PTL_MAX_QP_SEND_WR,
-	PTL_MAX_SEND_COMP_THRESHOLD,
-	PTL_MAX_QP_SEND_SGE,
-	PTL_MAX_QP_RECV_SGE,
-	PTL_MAX_SRQ_RECV_WR,
-	PTL_SRQ_REPOST_SIZE,
-	PTL_MAX_RDMA_WR_OUT,
-	PTL_RDMA_TIMEOUT,
-	PTL_WC_COUNT,
-	PTL_CT_WAIT_LOOP_COUNT,
-	PTL_CT_POLL_LOOP_COUNT,
-	PTL_EQ_WAIT_LOOP_COUNT,
-	PTL_EQ_POLL_LOOP_COUNT,
-	PTL_NUM_SBUF,
+    PTL_OBJ_ALLOC_TIMEOUT,
+    PTL_MAX_QP_SEND_WR,
+    PTL_MAX_SEND_COMP_THRESHOLD,
+    PTL_MAX_QP_SEND_SGE,
+    PTL_MAX_QP_RECV_SGE,
+    PTL_MAX_SRQ_RECV_WR,
+    PTL_SRQ_REPOST_SIZE,
+    PTL_MAX_RDMA_WR_OUT,
+    PTL_RDMA_TIMEOUT,
+    PTL_WC_COUNT,
+    PTL_CT_WAIT_LOOP_COUNT,
+    PTL_CT_POLL_LOOP_COUNT,
+    PTL_EQ_WAIT_LOOP_COUNT,
+    PTL_EQ_POLL_LOOP_COUNT,
+    PTL_NUM_SBUF,
 
-	PTL_LOG_LEVEL,
-	PTL_DEBUG,
-	PTL_ENABLE_MEM,
-	PTL_BOUNCE_NUM_BUFS,
-	PTL_BOUNCE_BUF_SIZE,
+    PTL_LOG_LEVEL,
+    PTL_DEBUG,
+    PTL_ENABLE_MEM,
+    PTL_BOUNCE_NUM_BUFS,
+    PTL_BOUNCE_BUF_SIZE,
 
-	PTL_PARAM_LAST,		/* keep me last */
+    PTL_PARAM_LAST,             /* keep me last */
 };
 
 /**
  * @brief Info about tunable parameters.
  */
 struct param {
-	/** used to match an environment variable */
-	char		*name;
-	/** the minimum acceptable value */
-	unsigned long		min;
-	/** the maximum acceptable value */
-	unsigned long		max;
-	/** the current/default value of the parameter */
-	unsigned long		val;
+        /** used to match an environment variable */
+    char *name;
+        /** the minimum acceptable value */
+    unsigned long min;
+        /** the maximum acceptable value */
+    unsigned long max;
+        /** the current/default value of the parameter */
+    unsigned long val;
 };
 
 typedef struct param param_t;
@@ -114,7 +114,7 @@ unsigned long set_param(int parm, long val);
  */
 static inline unsigned long get_param(int parm)
 {
-	return param[parm].val;
+    return param[parm].val;
 }
 
 #endif /* PTL_PARAM_H */

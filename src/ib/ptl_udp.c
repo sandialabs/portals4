@@ -15,7 +15,7 @@
  *
  * @return status
  */
-static int send_message_udp(buf_t * buf, int from_init)
+static int send_message_udp(buf_t *buf, int from_init)
 {
     buf_get(buf);
 
@@ -37,22 +37,22 @@ static int send_message_udp(buf_t * buf, int from_init)
     return PTL_OK;
 }
 
-static void udp_set_send_flags(buf_t * buf, int can_signal)
+static void udp_set_send_flags(buf_t *buf, int can_signal)
 {
     /* The data is always in the buffer. */
     buf->event_mask |= XX_INLINE;
 }
 
-static void append_init_data_udp_iovec(data_t * data, md_t * md,
-                                       int iov_start, int num_iov,
-                                       ptl_size_t length, buf_t * buf)
+static void append_init_data_udp_iovec(data_t *data, md_t *md, int iov_start,
+                                       int num_iov, ptl_size_t length,
+                                       buf_t *buf)
 {
     data->data_fmt = DATA_FMT_UDP;
 
     data->udp.target_done = 0;
     data->udp.init_done = 0;
 
-    buf->transfer.udp.transfer_state_expected = 0;      /* always the initiator here */
+    buf->transfer.udp.transfer_state_expected = 0;  /* always the initiator here */
     buf->transfer.udp.udp = &data->udp;
 
     buf->transfer.udp.num_iovecs = num_iov;
@@ -75,15 +75,15 @@ static void append_init_data_udp_iovec(data_t * data, md_t * md,
     buf->length += sizeof(*data);
 }
 
-static void append_init_data_udp_direct(data_t * data, mr_t * mr, void *addr,
-                                        ptl_size_t length, buf_t * buf)
+static void append_init_data_udp_direct(data_t *data, mr_t *mr, void *addr,
+                                        ptl_size_t length, buf_t *buf)
 {
     data->data_fmt = DATA_FMT_UDP;
 
     data->udp.target_done = 0;
     data->udp.init_done = 0;
 
-    buf->transfer.udp.transfer_state_expected = 0;      /* always the initiator here */
+    buf->transfer.udp.transfer_state_expected = 0;  /* always the initiator here */
     buf->transfer.udp.udp = &data->udp;
     buf->transfer.udp.data = (unsigned char *)&data;
 
@@ -112,13 +112,13 @@ static void append_init_data_udp_direct(data_t * data, mr_t * mr, void *addr,
  * @return status
  */
 
-static int init_prepare_transfer_udp(md_t * md, data_dir_t dir,
+static int init_prepare_transfer_udp(md_t *md, data_dir_t dir,
                                      ptl_size_t offset, ptl_size_t length,
-                                     buf_t * buf)
+                                     buf_t *buf)
 {
     int err = PTL_OK;
     req_hdr_t *hdr = (req_hdr_t *) buf->data;
-    data_t *data = (data_t *) (buf->data + sizeof(req_hdr_t));
+    data_t *data = (data_t *)(buf->data + sizeof(req_hdr_t));
     int num_sge;
 
     ptl_size_t iov_start = 0;
@@ -196,7 +196,7 @@ static int init_prepare_transfer_udp(md_t * md, data_dir_t dir,
  *
  * @return status
 */
-static int do_udp_transfer(buf_t * buf)
+static int do_udp_transfer(buf_t *buf)
 {
     struct udp *udp = buf->transfer.udp.udp;
     ptl_size_t *resid =
@@ -301,7 +301,7 @@ static int do_udp_transfer(buf_t * buf)
     return err;
 }
 
-static int udp_tgt_data_out(buf_t * buf, data_t * data)
+static int udp_tgt_data_out(buf_t *buf, data_t *data)
 {
     if (data->data_fmt != DATA_FMT_UDP) {
         assert(0);
@@ -310,7 +310,7 @@ static int udp_tgt_data_out(buf_t * buf, data_t * data)
     }
 
     ptl_info("udp_tgt_data_out sets  %p direction: %i\n", buf, buf->rdma_dir);
-    buf->transfer.udp.transfer_state_expected = 2;      /* always the target here */
+    buf->transfer.udp.transfer_state_expected = 2;  /* always the target here */
     buf->transfer.udp.udp = &data->udp;
 
     if ((buf->rdma_dir == DATA_DIR_IN && buf->put_resid) ||
@@ -330,7 +330,7 @@ static int udp_tgt_data_out(buf_t * buf, data_t * data)
     }
 
     buf->transfer.udp.offset = buf->moffset;
-    buf->transfer.udp.length_left = buf->get_resid;     // the residual length left
+    buf->transfer.udp.length_left = buf->get_resid; // the residual length left
     buf->transfer.udp.data_length = buf->rlength;
 
     return STATE_TGT_UDP;
@@ -343,7 +343,7 @@ static int udp_tgt_data_out(buf_t * buf, data_t * data)
  * @param[in] buf the buf
  * @param[in] dest the destination socket info
  */
-void udp_send(ni_t * ni, buf_t * buf, struct sockaddr_in *dest)
+void udp_send(ni_t *ni, buf_t *buf, struct sockaddr_in *dest)
 {
     int err;
 
@@ -715,19 +715,19 @@ void udp_send(ni_t * ni, buf_t * buf, struct sockaddr_in *dest)
  *
  * @param[in] ni the network interface.
  */
-buf_t *udp_receive(ni_t * ni)
+buf_t *udp_receive(ni_t *ni)
 {
 
     int err;
     struct sockaddr_in temp_sin;
     socklen_t lensin = sizeof(temp_sin);
 
-    buf_t *thebuf = (buf_t *) calloc(1, sizeof(buf_t));
+    buf_t *thebuf = (buf_t *)calloc(1, sizeof(buf_t));
 
     if (atomic_read(&ni->udp.self_recv) >= 1) {
         ptl_info("got a message from self %p \n", ni->udp.self_recv_addr);
         free(thebuf);
-        thebuf = (buf_t *) ni->udp.self_recv_addr;
+        thebuf = (buf_t *)ni->udp.self_recv_addr;
         return thebuf;
     }
 
@@ -832,7 +832,7 @@ buf_t *udp_receive(ni_t * ni)
                  (int)iov[0].iov_len, (int)iov[1].iov_len);
 
         //process received IO vectors
-        thebuf = (buf_t *) buf_msg_hdr.msg_iov[0].iov_base;
+        thebuf = (buf_t *)buf_msg_hdr.msg_iov[0].iov_base;
         thebuf->transfer.udp.num_iovecs = buf_msg_hdr.msg_iovlen;
 
         struct md *recv_md = NULL;
@@ -842,7 +842,7 @@ buf_t *udp_receive(ni_t * ni)
         if (thebuf->transfer.udp.num_iovecs > 2) {
             int cur_iov_copy_loc = 0;
             int i;
-            for (i = 1; i < thebuf->transfer.udp.num_iovecs; i++) {     //msg_num_iovecs
+            for (i = 1; i < thebuf->transfer.udp.num_iovecs; i++) { //msg_num_iovecs
                 ptl_info("copy iovec #%i of %i\n", i,
                          (int)thebuf->transfer.udp.num_iovecs);
                 memcpy((buf_data + cur_iov_copy_loc),
@@ -1072,7 +1072,7 @@ buf_t *udp_receive(ni_t * ni)
     if (thebuf->type == BUF_UDP_RECEIVE) {
         thebuf->obj.obj_ni = ni;
         thebuf->conn =
-            get_conn(ni, (ptl_process_t) le32_to_cpu(hdr->h1.src_rank));
+            get_conn(ni, (ptl_process_t)le32_to_cpu(hdr->h1.src_rank));
         //atomic_inc(&thebuf->conn->udp.recv_seq);
     }
 
@@ -1082,12 +1082,12 @@ buf_t *udp_receive(ni_t * ni)
          sizeof(*(thebuf->data)), (int)thebuf->rlength, err);
 
     thebuf->udp.src_addr = temp_sin;
-    return (buf_t *) thebuf;
+    return (buf_t *)thebuf;
 }
 
 /* change the state of conn; we are now connected (UO & REB) */
-void PtlSetMap_udp(ni_t * ni, ptl_size_t map_size,
-                   const ptl_process_t * mapping)
+void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,
+                   const ptl_process_t *mapping)
 {
     int i;
 
@@ -1137,12 +1137,12 @@ void PtlSetMap_udp(ni_t * ni, ptl_size_t map_size,
  *
  * conn must be locked
  */
-static int init_connect_udp(ni_t * ni, conn_t * conn)
+static int init_connect_udp(ni_t *ni, conn_t *conn)
 {
     int ret;
 
     /* Create a buffer for sending the connection request message */
-    buf_t *conn_buf = (buf_t *) calloc(1, sizeof(buf_t));
+    buf_t *conn_buf = (buf_t *)calloc(1, sizeof(buf_t));
     conn_buf->type = BUF_UDP_CONN_REQ;
 
     /* Send the connect request. */

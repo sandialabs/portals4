@@ -11,62 +11,62 @@ struct ct;
 
 /** md object info */
 struct md {
-	/** object base class */
-	obj_t			obj;
+        /** object base class */
+    obj_t obj;
 
-	/** start of buff or iovec array from md_init */
-	void			*start;
+        /** start of buff or iovec array from md_init */
+    void *start;
 
-	/** number of entries in iovec arrays */
-	unsigned int		num_iov;
+        /** number of entries in iovec arrays */
+    unsigned int num_iov;
 
-	/** size of md data from md_init length or sum of iovecs */
-	ptl_size_t		length;
+        /** size of md data from md_init length or sum of iovecs */
+    ptl_size_t length;
 
-	/** md options */
-	unsigned int		options;
+        /** md options */
+    unsigned int options;
 
-	/** optional event queue or NULL */
-	struct eq		*eq;
+        /** optional event queue or NULL */
+    struct eq *eq;
 
-	/** optional counting event or NULL */
-	struct ct		*ct;
+        /** optional counting event or NULL */
+    struct ct *ct;
 
-	/** allocated memory used to hold iovec arrays
+        /** allocated memory used to hold iovec arrays
 	 * or NULL if num_iov is zero */
-	void			*internal_data;
+    void *internal_data;
 
-#if WITH_TRANSPORT_IB 
-	/** scatter gather list passed to the target that
+#if WITH_TRANSPORT_IB
+        /** scatter gather list passed to the target that
 	 * contains a list of addresses, lengths and rkeys
 	 * in network byte order for use by messages sent
 	 * over the OFA verbs API */
-	struct ibv_sge		*sge_list;
+    struct ibv_sge *sge_list;
 #endif
 
 #if WITH_TRANSPORT_UDP
-	ptl_iovec_t		*udp_list;
+    ptl_iovec_t *udp_list;
 #endif
-	/** mrs to register memory regions for verbs API
+        /** mrs to register memory regions for verbs API
 	 * can hold one mr per iovec contained in internal_data	 */
-	mr_t			**mr_list;
+    mr_t **mr_list;
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	/** list of info for each iovec for use in long
+        /** list of info for each iovec for use in long
 	 * messages sent through shared memory */
-	struct mem_iovec	*mem_iovecs;
+    struct mem_iovec *mem_iovecs;
 #endif
 
 #if IS_PPE
-	struct {
-		mr_t *mr_start;		/* mr containing start */
-	} ppe;
+    struct {
+        mr_t *mr_start;         /* mr containing start */
+    } ppe;
 #endif
 
-	/** mr to register long array of iovecs passed to target
+        /** mr to register long array of iovecs passed to target
 	 * when num_iov exceeds the amount that will fit in a
 	 * short message */
-	mr_t			*sge_list_mr;
+    mr_t *sge_list_mr;
 };
 
 typedef struct md md_t;
@@ -83,17 +83,17 @@ void md_cleanup(void *arg);
  */
 static inline int md_alloc(ni_t *ni, md_t **md_p)
 {
-	int err;
-	obj_t *obj;
+    int err;
+    obj_t *obj;
 
-	err = obj_alloc(&ni->md_pool, &obj);
-	if (err) {
-		*md_p = NULL;
-		return err;
-	}
+    err = obj_alloc(&ni->md_pool, &obj);
+    if (err) {
+        *md_p = NULL;
+        return err;
+    }
 
-	*md_p = container_of(obj, md_t, obj);
-	return PTL_OK;
+    *md_p = container_of(obj, md_t, obj);
+    return PTL_OK;
 }
 
 /**
@@ -105,7 +105,7 @@ static inline int md_alloc(ni_t *ni, md_t **md_p)
  */
 static inline md_t *to_md(PPEGBL ptl_handle_md_t handle)
 {
-	return to_obj(MYGBL_ POOL_MD, (ptl_handle_any_t)handle);
+    return to_obj(MYGBL_ POOL_MD, (ptl_handle_any_t) handle);
 }
 
 /**
@@ -115,7 +115,7 @@ static inline md_t *to_md(PPEGBL ptl_handle_md_t handle)
  */
 static inline void md_get(md_t *md)
 {
-	obj_get(&md->obj);
+    obj_get(&md->obj);
 }
 
 /**
@@ -127,7 +127,7 @@ static inline void md_get(md_t *md)
  */
 static inline int md_put(md_t *md)
 {
-	return obj_put(&md->obj);
+    return obj_put(&md->obj);
 }
 
 /**
@@ -139,7 +139,7 @@ static inline int md_put(md_t *md)
  */
 static inline ptl_handle_md_t md_to_handle(md_t *md)
 {
-	return (ptl_handle_md_t)md->obj.obj_handle;
+    return (ptl_handle_md_t)md->obj.obj_handle;
 }
 
 #endif /* PTL_MD_H */

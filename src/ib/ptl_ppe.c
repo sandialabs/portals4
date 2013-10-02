@@ -13,11 +13,10 @@
 
 static char *socket_name = NULL;
 
-char*
-ptl_ppe_socket_name(void)
+char *ptl_ppe_socket_name(void)
 {
     uid_t uid;
-    struct passwd* pw;
+    struct passwd *pw;
 
     if (NULL != socket_name) {
         return socket_name;
@@ -28,8 +27,8 @@ ptl_ppe_socket_name(void)
     if (NULL != pw && NULL != pw->pw_name) {
         asprintf(&socket_name, "/tmp/portals-ppe-%s", pw->pw_name);
     } else {
-        asprintf(&socket_name, "/tmp/portals-ppe-%d", (int) uid);
+        asprintf(&socket_name, "/tmp/portals-ppe-%d", (int)uid);
     }
-    
+
     return socket_name;
 }

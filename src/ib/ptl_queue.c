@@ -19,18 +19,18 @@
  */
 void enqueue(const void *comm_pad, queue_t *restrict queue, obj_t *obj)
 {
-	unsigned long off;
-	unsigned long off_prev;
+    unsigned long off;
+    unsigned long off_prev;
 
-	off = PTR2OFF(comm_pad, obj);
-	off_prev = (uintptr_t)atomic_swap_ptr(
-				(void **)(uintptr_t)&(queue->tail),
-				(void *)(uintptr_t)off);
+    off = PTR2OFF(comm_pad, obj);
+    off_prev =
+        (uintptr_t) atomic_swap_ptr((void **)(uintptr_t) & (queue->tail),
+                                    (void *)(uintptr_t) off);
 
-	if (off_prev == 0)
-		queue->head = off;
-	else
-		OFF2PTR(comm_pad, off_prev)->next = (void *)off;
+    if (off_prev == 0)
+        queue->head = off;
+    else
+        OFF2PTR(comm_pad, off_prev)->next = (void *)off;
 }
 
 /**
@@ -42,39 +42,41 @@ void enqueue(const void *comm_pad, queue_t *restrict queue, obj_t *obj)
  */
 obj_t *dequeue(const void *comm_pad, queue_t *queue)
 {
-	obj_t *obj;
+    obj_t *obj;
 
-	if (!queue->shadow_head) {
-		if (!queue->head)
-			return NULL;
-		queue->shadow_head = queue->head;
-		queue->head	= 0;
-	}
+    if (!queue->shadow_head) {
+        if (!queue->head)
+            return NULL;
+        queue->shadow_head = queue->head;
+        queue->head = 0;
+    }
 
-	obj = OFF2PTR(comm_pad, queue->shadow_head);
+    obj = OFF2PTR(comm_pad, queue->shadow_head);
 
-	if (obj) {
-		if (obj->next) {
-			queue->shadow_head = (uintptr_t)obj->next;
-			obj->next = NULL;
-		} else {
-			unsigned long old;
+    if (obj) {
+        if (obj->next) {
+            queue->shadow_head = (uintptr_t) obj->next;
+            obj->next = NULL;
+        } else {
+            unsigned long old;
 
-			queue->shadow_head = 0;
-			old = (uintptr_t)__sync_val_compare_and_swap(
-				&(queue->tail), PTR2OFF(comm_pad, obj), 0);
+            queue->shadow_head = 0;
+            old =
+                (uintptr_t) __sync_val_compare_and_swap(&(queue->tail),
+                                                        PTR2OFF(comm_pad,
+                                                                obj), 0);
 
-			if (old != PTR2OFF(comm_pad, obj)) {
-				while (obj->next == NULL)
-					SPINLOCK_BODY();
+            if (old != PTR2OFF(comm_pad, obj)) {
+                while (obj->next == NULL)
+                    SPINLOCK_BODY();
 
-				queue->shadow_head = (uintptr_t)obj->next;
-				obj->next = NULL;
-			}
-		}
-	}
+                queue->shadow_head = (uintptr_t) obj->next;
+                obj->next = NULL;
+            }
+        }
+    }
 
-	return obj;
+    return obj;
 }
 
 /**
@@ -84,7 +86,7 @@ obj_t *dequeue(const void *comm_pad, queue_t *queue)
  */
 void queue_init(queue_t *queue)
 {
-	queue->head = 0;
-	queue->tail = 0;
-	queue->shadow_head = 0;
+    queue->head = 0;
+    queue->tail = 0;
+    queue->shadow_head = 0;
 }

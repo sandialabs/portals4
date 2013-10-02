@@ -9,29 +9,29 @@
  * @brief Target state names for debugging output.
  */
 static char *tgt_state_name[] = {
-	[STATE_TGT_START]		= "tgt_start",
-	[STATE_TGT_DROP]		= "tgt_drop",
-	[STATE_TGT_GET_MATCH]		= "tgt_get_match",
-	[STATE_TGT_GET_LENGTH]		= "tgt_get_length",
-	[STATE_TGT_WAIT_CONN]		= "tgt_wait_conn",
-	[STATE_TGT_DATA]		= "tgt_data",
-	[STATE_TGT_DATA_IN]		= "tgt_data_in",
-	[STATE_TGT_START_COPY]		= "tgt_start_copy",
-	[STATE_TGT_RDMA]		= "tgt_rdma",
-	[STATE_TGT_UDP]			= "tgt_udp",
-	[STATE_TGT_ATOMIC_DATA_IN]	= "tgt_atomic_data_in",
-	[STATE_TGT_SWAP_DATA_IN]	= "tgt_swap_data_in",
-	[STATE_TGT_DATA_OUT]		= "tgt_data_out",
-	[STATE_TGT_WAIT_RDMA_DESC]	= "tgt_wait_rdma_desc",
-	[STATE_TGT_SEND_ACK]		= "tgt_send_ack",
-	[STATE_TGT_SEND_REPLY]		= "tgt_send_reply",
-	[STATE_TGT_COMM_EVENT]		= "tgt_comm_event",
-	[STATE_TGT_OVERFLOW_EVENT]	= "tgt_overflow_event",
-	[STATE_TGT_WAIT_APPEND]		= "tgt_wait_append",
-	[STATE_TGT_CLEANUP]		= "tgt_cleanup",
-	[STATE_TGT_CLEANUP_2]		= "tgt_cleanup_2",
-	[STATE_TGT_ERROR]		= "tgt_error",
-	[STATE_TGT_DONE]		= "tgt_done",
+    [STATE_TGT_START] = "tgt_start",
+    [STATE_TGT_DROP] = "tgt_drop",
+    [STATE_TGT_GET_MATCH] = "tgt_get_match",
+    [STATE_TGT_GET_LENGTH] = "tgt_get_length",
+    [STATE_TGT_WAIT_CONN] = "tgt_wait_conn",
+    [STATE_TGT_DATA] = "tgt_data",
+    [STATE_TGT_DATA_IN] = "tgt_data_in",
+    [STATE_TGT_START_COPY] = "tgt_start_copy",
+    [STATE_TGT_RDMA] = "tgt_rdma",
+    [STATE_TGT_UDP] = "tgt_udp",
+    [STATE_TGT_ATOMIC_DATA_IN] = "tgt_atomic_data_in",
+    [STATE_TGT_SWAP_DATA_IN] = "tgt_swap_data_in",
+    [STATE_TGT_DATA_OUT] = "tgt_data_out",
+    [STATE_TGT_WAIT_RDMA_DESC] = "tgt_wait_rdma_desc",
+    [STATE_TGT_SEND_ACK] = "tgt_send_ack",
+    [STATE_TGT_SEND_REPLY] = "tgt_send_reply",
+    [STATE_TGT_COMM_EVENT] = "tgt_comm_event",
+    [STATE_TGT_OVERFLOW_EVENT] = "tgt_overflow_event",
+    [STATE_TGT_WAIT_APPEND] = "tgt_wait_append",
+    [STATE_TGT_CLEANUP] = "tgt_cleanup",
+    [STATE_TGT_CLEANUP_2] = "tgt_cleanup_2",
+    [STATE_TGT_ERROR] = "tgt_error",
+    [STATE_TGT_DONE] = "tgt_done",
 };
 
 /**
@@ -41,27 +41,26 @@ static char *tgt_state_name[] = {
  */
 static void make_comm_event(buf_t *buf)
 {
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	unsigned operation = hdr->h1.operation;
-	ptl_event_kind_t type;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    unsigned operation = hdr->h1.operation;
+    ptl_event_kind_t type;
 
-	if (buf->ni_fail || !(buf->le->options
-				& PTL_LE_EVENT_SUCCESS_DISABLE)) {
+    if (buf->ni_fail || !(buf->le->options & PTL_LE_EVENT_SUCCESS_DISABLE)) {
 
-		if (operation == OP_PUT)
-			type = PTL_EVENT_PUT;
-		else if (operation == OP_GET)
-			type = PTL_EVENT_GET;
-		else if (operation == OP_ATOMIC)
-			type = PTL_EVENT_ATOMIC;
-		else
-			type = PTL_EVENT_FETCH_ATOMIC;
+        if (operation == OP_PUT)
+            type = PTL_EVENT_PUT;
+        else if (operation == OP_GET)
+            type = PTL_EVENT_GET;
+        else if (operation == OP_ATOMIC)
+            type = PTL_EVENT_ATOMIC;
+        else
+            type = PTL_EVENT_FETCH_ATOMIC;
 
-		make_target_event(buf, buf->pt->eq, type,
-				  buf->le->user_ptr, buf->start);
-	}
+        make_target_event(buf, buf->pt->eq, type, buf->le->user_ptr,
+                          buf->start);
+    }
 
-	buf->event_mask &= ~XT_COMM_EVENT;
+    buf->event_mask &= ~XT_COMM_EVENT;
 }
 
 /**
@@ -71,12 +70,12 @@ static void make_comm_event(buf_t *buf)
  */
 static void make_ct_comm_event(buf_t *buf)
 {
-	int bytes = (buf->le->options & PTL_LE_EVENT_CT_BYTES) ?
-			CT_MBYTES : CT_EVENTS;
+    int bytes =
+        (buf->le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
 
-	make_ct_event(buf->le->ct, buf, bytes);
+    make_ct_event(buf->le->ct, buf, bytes);
 
-	buf->event_mask &= ~XT_CT_COMM_EVENT;
+    buf->event_mask &= ~XT_CT_COMM_EVENT;
 }
 
 /**
@@ -86,13 +85,11 @@ static void make_ct_comm_event(buf_t *buf)
  */
 static void init_events(buf_t *buf)
 {
-	if (buf->pt->eq && !(buf->le->options &
-				    PTL_LE_EVENT_COMM_DISABLE))
-		buf->event_mask |= XT_COMM_EVENT;
+    if (buf->pt->eq && !(buf->le->options & PTL_LE_EVENT_COMM_DISABLE))
+        buf->event_mask |= XT_COMM_EVENT;
 
-	if (buf->le->ct && (buf->le->options &
-				   PTL_LE_EVENT_CT_COMM))
-		buf->event_mask |= XT_CT_COMM_EVENT;
+    if (buf->le->ct && (buf->le->options & PTL_LE_EVENT_CT_COMM))
+        buf->event_mask |= XT_CT_COMM_EVENT;
 }
 
 /**
@@ -107,60 +104,64 @@ static void init_events(buf_t *buf)
  */
 static int tgt_copy_in(buf_t *buf, me_t *me, void *data)
 {
-	int err;
-	ptl_size_t offset = buf->moffset;
-	ptl_size_t length = buf->mlength;
+    int err;
+    ptl_size_t offset = buf->moffset;
+    ptl_size_t length = buf->mlength;
 
-	if (me->num_iov) {
+    if (me->num_iov) {
 #if IS_PPE
-		mr_t *mr;
+        mr_t *mr;
 
-		if (me->mr_start)
-			mr = me->mr_start;
-		else {
-			err = mr_lookup_app(obj_to_ni(me), me->start, length*sizeof(ptl_iovec_t), &mr);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
+        if (me->mr_start)
+            mr = me->mr_start;
+        else {
+            err =
+                mr_lookup_app(obj_to_ni(me), me->start,
+                              length * sizeof(ptl_iovec_t), &mr);
+            if (err) {
+                WARN();
+                return err;
+            }
+        }
 
-		err = iov_copy_in(data, addr_to_ppe(me->start, mr), me->mr_list,
-						  me->num_iov, offset, length);
+        err =
+            iov_copy_in(data, addr_to_ppe(me->start, mr), me->mr_list,
+                        me->num_iov, offset, length);
 
-		if (!me->mr_start)
-			mr_put(mr);
+        if (!me->mr_start)
+            mr_put(mr);
 #else
-		err = iov_copy_in(data, (ptl_iovec_t *)me->start, me->mr_list,
-				  me->num_iov, offset, length);
+        err =
+            iov_copy_in(data, (ptl_iovec_t *)me->start, me->mr_list,
+                        me->num_iov, offset, length);
 #endif
-	} else {
-		void *start = me->start + offset;
+    } else {
+        void *start = me->start + offset;
 #if IS_PPE
-		mr_t *mr;
+        mr_t *mr;
 
-		if (me->mr_start)
-			mr = me->mr_start;
-		else {
-			err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
+        if (me->mr_start)
+            mr = me->mr_start;
+        else {
+            err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
+            if (err) {
+                WARN();
+                return err;
+            }
+        }
 
-		memcpy(addr_to_ppe(start, mr), data, length);
-		err = PTL_OK;
+        memcpy(addr_to_ppe(start, mr), data, length);
+        err = PTL_OK;
 
-		if (!me->mr_start)
-			mr_put(mr);
+        if (!me->mr_start)
+            mr_put(mr);
 #else
-		memcpy(start, data, length);
+        memcpy(start, data, length);
 #endif
-		err = PTL_OK;
-	}
+        err = PTL_OK;
+    }
 
-	return err;
+    return err;
 }
 
 /**
@@ -175,66 +176,70 @@ static int tgt_copy_in(buf_t *buf, me_t *me, void *data)
  */
 static int atomic_in(buf_t *buf, me_t *me, void *data)
 {
-	int err;
-	ptl_size_t offset = buf->moffset;
-	ptl_size_t length = buf->mlength;
-	atom_op_t op;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+    int err;
+    ptl_size_t offset = buf->moffset;
+    ptl_size_t length = buf->mlength;
+    atom_op_t op;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
 
-	op = atom_op[hdr->atom_op][hdr->atom_type];
-	assert(op);
+    op = atom_op[hdr->atom_op][hdr->atom_type];
+    assert(op);
 
-	if (me->num_iov) {
+    if (me->num_iov) {
 #if IS_PPE
-		mr_t *mr;
+        mr_t *mr;
 
-		if (me->mr_start)
-			mr = me->mr_start;
-		else {
-			err = mr_lookup_app(obj_to_ni(me), me->start, length*sizeof(ptl_iovec_t), &mr);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
+        if (me->mr_start)
+            mr = me->mr_start;
+        else {
+            err =
+                mr_lookup_app(obj_to_ni(me), me->start,
+                              length * sizeof(ptl_iovec_t), &mr);
+            if (err) {
+                WARN();
+                return err;
+            }
+        }
 
-		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
-							data, addr_to_ppe(me->start, mr), me->mr_list,
-							me->num_iov, offset, length);
+        err =
+            iov_atomic_in(op, atom_type_size[hdr->atom_type], data,
+                          addr_to_ppe(me->start, mr), me->mr_list,
+                          me->num_iov, offset, length);
 
-		if (!me->mr_start)
-			mr_put(mr);
+        if (!me->mr_start)
+            mr_put(mr);
 #else
-		err = iov_atomic_in(op, atom_type_size[hdr->atom_type],
-							data, (ptl_iovec_t *)me->start, me->mr_list,
-							me->num_iov, offset, length);
+        err =
+            iov_atomic_in(op, atom_type_size[hdr->atom_type], data,
+                          (ptl_iovec_t *)me->start, me->mr_list, me->num_iov,
+                          offset, length);
 #endif
-	} else {
-		void *start = me->start + offset;
+    } else {
+        void *start = me->start + offset;
 #if IS_PPE
-		mr_t *mr;
+        mr_t *mr;
 
-		if (me->mr_start)
-			mr = me->mr_start;
-		else {
-			err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
+        if (me->mr_start)
+            mr = me->mr_start;
+        else {
+            err = mr_lookup_app(obj_to_ni(me), start, length, &mr);
+            if (err) {
+                WARN();
+                return err;
+            }
+        }
 
-		(*op)(addr_to_ppe(start, mr), data, length);
+        (*op) (addr_to_ppe(start, mr), data, length);
 
-		if (!me->mr_start)
-			mr_put(mr);
+        if (!me->mr_start)
+            mr_put(mr);
 #else
-		(*op)(start, data, length);
+        (*op) (start, data, length);
 #endif
-		err = PTL_OK;
-	}
+        err = PTL_OK;
+    }
 
-	return err;
+    return err;
 }
 
 /**
@@ -246,73 +251,73 @@ static int atomic_in(buf_t *buf, me_t *me, void *data)
  */
 static int prepare_send_buf(buf_t *buf)
 {
-	buf_t *send_buf;
-	int err;
-	ack_hdr_t *ack_hdr;
-	ni_t *ni = obj_to_ni(buf);
+    buf_t *send_buf;
+    int err;
+    ack_hdr_t *ack_hdr;
+    ni_t *ni = obj_to_ni(buf);
 
-	/* Determine whether to reuse the current buffer to reply, or get
-	 * a new one. */
+    /* Determine whether to reuse the current buffer to reply, or get
+     * a new one. */
 #if WITH_TRANSPORT_IB
-	if (buf->conn->transport.type == CONN_TYPE_RDMA)
-		err = buf_alloc(ni, &send_buf);
-	else
+    if (buf->conn->transport.type == CONN_TYPE_RDMA)
+        err = buf_alloc(ni, &send_buf);
+    else
 #endif
-		{
-		if (!(buf->event_mask & XT_ACK_EVENT)) {
-			/* No ack but a reply. The current buffer cannot be
-			 * reused. */
-			err = buf->conn->transport.buf_alloc(ni, &send_buf);
-		} else {
-			/* Itself. */
-			send_buf = NULL;
-			err = PTL_OK;
-		}
-	}
+    {
+        if (!(buf->event_mask & XT_ACK_EVENT)) {
+            /* No ack but a reply. The current buffer cannot be
+             * reused. */
+            err = buf->conn->transport.buf_alloc(ni, &send_buf);
+        } else {
+            /* Itself. */
+            send_buf = NULL;
+            err = PTL_OK;
+        }
+    }
 
-	if (err) {
-		WARN();
-		return PTL_FAIL;
-	}
+    if (err) {
+        WARN();
+        return PTL_FAIL;
+    }
 
- 	if (send_buf) {
-		/* link send buf to buf */
+    if (send_buf) {
+        /* link send buf to buf */
 #if WITH_TRANSPORT_IB
-		send_buf->transfer.rdma.xxbuf = buf;
+        send_buf->transfer.rdma.xxbuf = buf;
 #endif
-		buf_get(buf);
-		buf->send_buf = send_buf;
+        buf_get(buf);
+        buf->send_buf = send_buf;
 
-		/* initiate response header */
-		ack_hdr = (ack_hdr_t *)send_buf->data;
+        /* initiate response header */
+        ack_hdr = (ack_hdr_t *) send_buf->data;
 
-		ack_hdr->h1.data_in = 0;
-		ack_hdr->h1.data_out = 0;
-		ack_hdr->h1.version = PTL_HDR_VER_1;
-		ack_hdr->h1.handle	= ((req_hdr_t *)buf->data)->h1.handle;
+        ack_hdr->h1.data_in = 0;
+        ack_hdr->h1.data_out = 0;
+        ack_hdr->h1.version = PTL_HDR_VER_1;
+        ack_hdr->h1.handle = ((req_hdr_t *) buf->data)->h1.handle;
 #if WITH_TRANSPORT_UDP
-		ptl_info(" preparing response for handle: %i \n",ack_hdr->h1.handle);
-		ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+        ptl_info(" preparing response for handle: %i \n", ack_hdr->h1.handle);
+        ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 #endif
 #if IS_PPE
-		ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
-		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
-		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
-		ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
-		ack_hdr->h1.ni_type = ni->ni_type;
+        ack_hdr->h1.hash = cpu_to_le32(ni->mem.hash);
+        ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+        ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+        ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+        ack_hdr->h1.ni_type = ni->ni_type;
 #endif
 
-		send_buf->length = sizeof(*ack_hdr);
-	} else {
+        send_buf->length = sizeof(*ack_hdr);
+    } else {
 #if IS_PPE
-                //REG: this is handled elsewhere, testcase for fix for Brian K.
-		ack_hdr = (ack_hdr_t *)buf->data;
-		ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
-		ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
+        //REG: this is handled elsewhere, testcase for fix for Brian K.
+        ack_hdr = (ack_hdr_t *) buf->data;
+        ack_hdr->h1.dst_nid = cpu_to_le32(buf->target.phys.nid);
+        ack_hdr->h1.dst_pid = cpu_to_le32(buf->target.phys.pid);
 #endif
-	}
+    }
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -324,43 +329,44 @@ static int prepare_send_buf(buf_t *buf)
  */
 static int init_local_offset(buf_t *buf)
 {
-	me_t *me = buf->me;
+    me_t *me = buf->me;
 
-	buf->cur_loc_iov_index = 0;
-	buf->cur_loc_iov_off = 0;
+    buf->cur_loc_iov_index = 0;
+    buf->cur_loc_iov_off = 0;
 
-	if (me->num_iov) {
-		ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
-		ptl_size_t i = 0;
-		ptl_size_t loc_offset = 0;
-		ptl_size_t iov_offset = 0;
+    if (me->num_iov) {
+        ptl_iovec_t *iov = (ptl_iovec_t *)me->start;
+        ptl_size_t i = 0;
+        ptl_size_t loc_offset = 0;
+        ptl_size_t iov_offset = 0;
 
-		for (i = 0; i < me->num_iov && loc_offset < buf->moffset;
-			i++, iov++) {
-			iov_offset = buf->moffset - loc_offset;
-			if (iov_offset > iov->iov_len)
-				iov_offset = iov->iov_len;
-			loc_offset += iov_offset;
-		}
+        for (i = 0; i < me->num_iov && loc_offset < buf->moffset; i++, iov++) {
+            iov_offset = buf->moffset - loc_offset;
+            if (iov_offset > iov->iov_len)
+                iov_offset = iov->iov_len;
+            loc_offset += iov_offset;
+        }
 
-		if (loc_offset < buf->moffset)
-			return PTL_FAIL;
+        if (loc_offset < buf->moffset)
+            return PTL_FAIL;
 
-		buf->cur_loc_iov_index = i;
-		buf->cur_loc_iov_off = iov_offset;
+        buf->cur_loc_iov_index = i;
+        buf->cur_loc_iov_off = iov_offset;
 #if IS_PPE
-		buf->start = ((ptl_iovec_t *)(me->mr_start->ppe_addr))[i].iov_base + iov_offset;
+        buf->start =
+            ((ptl_iovec_t *)(me->mr_start->ppe_addr))[i].iov_base +
+            iov_offset;
 #else
-		buf->start = iov->iov_base + iov_offset;
+        buf->start = iov->iov_base + iov_offset;
 #endif
-	} else {
-		buf->cur_loc_iov_off = buf->moffset;
-		buf->start = me->start + buf->moffset;
-		ptl_info("buf start determined to be: %p with offset: %i\n",
-                 (int*)buf->start,(int)buf->moffset);
-	}
+    } else {
+        buf->cur_loc_iov_off = buf->moffset;
+        buf->start = me->start + buf->moffset;
+        ptl_info("buf start determined to be: %p with offset: %i\n",
+                 (int *)buf->start, (int)buf->moffset);
+    }
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -375,108 +381,110 @@ static int init_local_offset(buf_t *buf)
  */
 static int tgt_start(buf_t *buf)
 {
-	ni_t *ni = obj_to_ni(buf);
-	ptl_pt_index_t pt_index;
-	ptl_process_t initiator;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+    ni_t *ni = obj_to_ni(buf);
+    ptl_pt_index_t pt_index;
+    ptl_process_t initiator;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
 
-	buf->operation = hdr->h1.operation;
-	buf->pt = NULL;
-	buf->in_atomic = 0;
-	buf->matching.le = NULL;
-	buf->le = NULL;
-	buf->indir_sge = NULL;
-	buf->send_buf = NULL;
-	buf->auto_unlink_pending = 0;
+    buf->operation = hdr->h1.operation;
+    buf->pt = NULL;
+    buf->in_atomic = 0;
+    buf->matching.le = NULL;
+    buf->le = NULL;
+    buf->indir_sge = NULL;
+    buf->send_buf = NULL;
+    buf->auto_unlink_pending = 0;
 
 #if IS_PPE
-	buf->target.phys.nid = le32_to_cpu(hdr->h1.src_nid);
-	buf->target.phys.pid = le32_to_cpu(hdr->h1.src_pid);
+    buf->target.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+    buf->target.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 #endif
 
-	switch (hdr->h1.operation) {
-	case OP_PUT:
-	case OP_ATOMIC:
-		if (hdr->ack_req != PTL_NO_ACK_REQ)
-			buf->event_mask |= XT_ACK_EVENT;
-		break;
-	case OP_GET:
-	case OP_FETCH:
-	case OP_SWAP:
-		buf->event_mask |= XT_REPLY_EVENT;
-		break;
-	default:
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    switch (hdr->h1.operation) {
+        case OP_PUT:
+        case OP_ATOMIC:
+            if (hdr->ack_req != PTL_NO_ACK_REQ)
+                buf->event_mask |= XT_ACK_EVENT;
+            break;
+        case OP_GET:
+        case OP_FETCH:
+        case OP_SWAP:
+            buf->event_mask |= XT_REPLY_EVENT;
+            break;
+        default:
+            WARN();
+            return STATE_TGT_ERROR;
+    }
 
-	/* initialize fields */
-	INIT_LIST_HEAD(&buf->unexpected_list);
+    /* initialize fields */
+    INIT_LIST_HEAD(&buf->unexpected_list);
 #if WITH_TRANSPORT_IB
-	INIT_LIST_HEAD(&buf->transfer.rdma.rdma_list);
+    INIT_LIST_HEAD(&buf->transfer.rdma.rdma_list);
 #endif
-	buf->in_atomic = 0;
+    buf->in_atomic = 0;
 
-	/* get per conn info */
-	initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
-	initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
+    /* get per conn info */
+    initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+    initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 
 #if WITH_TRANSPORT_UDP
-	ptl_info("initiator nid: %i pid: %i \n",hdr->h1.src_nid,hdr->h1.src_pid);
-	ptl_info("ni: %p conn pool (%p) size: %i \n",ni,&ni->conn_pool,ni->conn_pool.size);
-	ptl_info("buffer ni: %p \n",buf->obj.obj_ni);
-	ptl_info("buf start: %p \n",buf->start);
+    ptl_info("initiator nid: %i pid: %i \n", hdr->h1.src_nid,
+             hdr->h1.src_pid);
+    ptl_info("ni: %p conn pool (%p) size: %i \n", ni, &ni->conn_pool,
+             ni->conn_pool.size);
+    ptl_info("buffer ni: %p \n", buf->obj.obj_ni);
+    ptl_info("buf start: %p \n", buf->start);
 
-	//TODO make the hdr frm the sender send these in network order;
-	initiator.phys.nid = hdr->h1.src_nid;
-	initiator.phys.pid = hdr->h1.src_pid;
+    //TODO make the hdr frm the sender send these in network order;
+    initiator.phys.nid = hdr->h1.src_nid;
+    initiator.phys.pid = hdr->h1.src_pid;
 
-	buf->conn = get_conn(ni, ni->id);
-	if (buf->conn->transport.type != CONN_TYPE_UDP) {
-		conn_put(buf->conn);
-		buf->conn = get_conn(ni, initiator);
-	}
-	buf->conn->state = CONN_STATE_CONNECTED;
-	buf->conn->udp.dest_addr = buf->conn->sin;
+    buf->conn = get_conn(ni, ni->id);
+    if (buf->conn->transport.type != CONN_TYPE_UDP) {
+        conn_put(buf->conn);
+        buf->conn = get_conn(ni, initiator);
+    }
+    buf->conn->state = CONN_STATE_CONNECTED;
+    buf->conn->udp.dest_addr = buf->conn->sin;
 #endif
 #if !WITH_TRANSPORT_UDP
-	buf->conn = get_conn(ni, initiator);
+    buf->conn = get_conn(ni, initiator);
 #endif
-	if (unlikely(!buf->conn)) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    if (unlikely(!buf->conn)) {
+        WARN();
+        return STATE_TGT_ERROR;
+    }
 
-	/* allocate the ack/reply send buf */
-	if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) {
-		int err = prepare_send_buf(buf);
-		if (err)
-			return STATE_TGT_ERROR;
-	}
+    /* allocate the ack/reply send buf */
+    if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) {
+        int err = prepare_send_buf(buf);
+        if (err)
+            return STATE_TGT_ERROR;
+    }
 
-	pt_index = le32_to_cpu(hdr->pt_index);
-	if (pt_index >= ni->limits.max_pt_index) {
-		buf->ni_fail = PTL_NI_DROPPED;
-		return STATE_TGT_DROP;
-	}
+    pt_index = le32_to_cpu(hdr->pt_index);
+    if (pt_index >= ni->limits.max_pt_index) {
+        buf->ni_fail = PTL_NI_DROPPED;
+        return STATE_TGT_DROP;
+    }
 
-	buf->pt = &ni->pt[pt_index];
-	if (!buf->pt->in_use) {
-		buf->ni_fail = PTL_NI_DROPPED;
-		return STATE_TGT_DROP;
-	}
+    buf->pt = &ni->pt[pt_index];
+    if (!buf->pt->in_use) {
+        buf->ni_fail = PTL_NI_DROPPED;
+        return STATE_TGT_DROP;
+    }
 
-	/* synchronize with enable/disable APIs */
-	PTL_FASTLOCK_LOCK(&buf->pt->lock);
-	if (buf->pt->state != PT_ENABLED) {
-		PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
-		buf->ni_fail = PTL_NI_PT_DISABLED;
-		return STATE_TGT_DROP;
-	}
-	buf->pt->num_tgt_active++;
-	PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
+    /* synchronize with enable/disable APIs */
+    PTL_FASTLOCK_LOCK(&buf->pt->lock);
+    if (buf->pt->state != PT_ENABLED) {
+        PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
+        buf->ni_fail = PTL_NI_PT_DISABLED;
+        return STATE_TGT_DROP;
+    }
+    buf->pt->num_tgt_active++;
+    PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
 
-	return STATE_TGT_GET_MATCH;
+    return STATE_TGT_GET_MATCH;
 }
 
 /**
@@ -492,24 +500,25 @@ static int tgt_start(buf_t *buf)
  */
 static int request_drop(buf_t *buf)
 {
-	if (buf->ni_fail != PTL_NI_OP_VIOLATION && buf->ni_fail != PTL_NI_PERM_VIOLATION){
-		ni_t *ni = obj_to_ni(buf);
-		ni->status[PTL_SR_DROP_COUNT]++;
-	}
+    if (buf->ni_fail != PTL_NI_OP_VIOLATION &&
+        buf->ni_fail != PTL_NI_PERM_VIOLATION) {
+        ni_t *ni = obj_to_ni(buf);
+        ni->status[PTL_SR_DROP_COUNT]++;
+    }
 
-	/* we didn't match anything so set start to NULL */
-	buf->start = NULL;
-	buf->put_resid = 0;
-	buf->get_resid = 0;
+    /* we didn't match anything so set start to NULL */
+    buf->start = NULL;
+    buf->put_resid = 0;
+    buf->get_resid = 0;
 
-	if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) {
-		/* if we are already connected to the initiator skip wait_conn */
-		if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
-			return STATE_TGT_DATA;
-		else
-			return STATE_TGT_WAIT_CONN;
-	} else
-		return STATE_TGT_CLEANUP;
+    if (buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) {
+        /* if we are already connected to the initiator skip wait_conn */
+        if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
+            return STATE_TGT_DATA;
+        else
+            return STATE_TGT_WAIT_CONN;
+    } else
+        return STATE_TGT_CLEANUP;
 }
 
 /**
@@ -523,44 +532,44 @@ static int request_drop(buf_t *buf)
  */
 int check_match(buf_t *buf, const me_t *me)
 {
-	const ni_t *ni = obj_to_ni(buf);
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ptl_size_t offset;
-	ptl_size_t length = le64_to_cpu(hdr->rlength);
-	ptl_size_t req_off = le64_to_cpu(hdr->roffset);
+    const ni_t *ni = obj_to_ni(buf);
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    ptl_size_t offset;
+    ptl_size_t length = le64_to_cpu(hdr->rlength);
+    ptl_size_t req_off = le64_to_cpu(hdr->roffset);
 
-	if (ni->options & PTL_NI_LOGICAL) {
-		ptl_process_t initiator;
+    if (ni->options & PTL_NI_LOGICAL) {
+        ptl_process_t initiator;
 
-		initiator.rank = le32_to_cpu(hdr->h1.src_rank);
+        initiator.rank = le32_to_cpu(hdr->h1.src_rank);
 
-		if (!(me->id.rank == PTL_RANK_ANY ||
-		     (me->id.rank == initiator.rank))) {
-			return 0;
-		}
-	} else {
-		ptl_process_t initiator;
+        if (!(me->id.rank == PTL_RANK_ANY || (me->id.rank == initiator.rank))) {
+            return 0;
+        }
+    } else {
+        ptl_process_t initiator;
 
-		initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
-		initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
+        initiator.phys.nid = le32_to_cpu(hdr->h1.src_nid);
+        initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 
-		if (!(me->id.phys.nid == PTL_NID_ANY ||
-		     (me->id.phys.nid == initiator.phys.nid)))
-			return 0;
-		if (!(me->id.phys.pid == PTL_PID_ANY ||
-		     (me->id.phys.pid == initiator.phys.pid)))
-			return 0;
-	}
+        if (!
+            (me->id.phys.nid == PTL_NID_ANY ||
+             (me->id.phys.nid == initiator.phys.nid)))
+            return 0;
+        if (!
+            (me->id.phys.pid == PTL_PID_ANY ||
+             (me->id.phys.pid == initiator.phys.pid)))
+            return 0;
+    }
 
-	offset = (me->options & PTL_ME_MANAGE_LOCAL) ?
-			me->offset : req_off;
+    offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : req_off;
 
-	if ((me->options & PTL_ME_NO_TRUNCATE) &&
-	    ((offset + length) > me->length))
-			return 0;
+    if ((me->options & PTL_ME_NO_TRUNCATE) &&
+        ((offset + length) > me->length))
+        return 0;
 
-	return (le64_to_cpu(hdr->match_bits) | me->ignore_bits) ==
-		(me->match_bits | me->ignore_bits);
+    return (le64_to_cpu(hdr->match_bits) | me->ignore_bits) ==
+        (me->match_bits | me->ignore_bits);
 }
 
 /**
@@ -576,35 +585,35 @@ int check_match(buf_t *buf, const me_t *me)
  */
 int check_perm(buf_t *buf, const le_t *le)
 {
-	int ret = PTL_NI_OK;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint32_t uid = le32_to_cpu(hdr->uid);
+    int ret = PTL_NI_OK;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    uint32_t uid = le32_to_cpu(hdr->uid);
 
-	if (!(le->uid == PTL_UID_ANY || (le->uid == uid))) {
-		ret = PTL_NI_PERM_VIOLATION;
-	} else {
-		switch (buf->operation) {
-		case OP_ATOMIC:
-		case OP_PUT:
-			if (!(le->options & PTL_ME_OP_PUT))
-				ret = PTL_NI_OP_VIOLATION;
-			break;
+    if (!(le->uid == PTL_UID_ANY || (le->uid == uid))) {
+        ret = PTL_NI_PERM_VIOLATION;
+    } else {
+        switch (buf->operation) {
+            case OP_ATOMIC:
+            case OP_PUT:
+                if (!(le->options & PTL_ME_OP_PUT))
+                    ret = PTL_NI_OP_VIOLATION;
+                break;
 
-		case OP_GET:
-			if (!(le->options & PTL_ME_OP_GET))
-				ret = PTL_NI_OP_VIOLATION;
-			break;
+            case OP_GET:
+                if (!(le->options & PTL_ME_OP_GET))
+                    ret = PTL_NI_OP_VIOLATION;
+                break;
 
-		case OP_FETCH:
-		case OP_SWAP:
-			if ((le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET)) !=
-			    (PTL_ME_OP_PUT | PTL_ME_OP_GET))
-				ret = PTL_NI_OP_VIOLATION;
-			break;
-		}
-	}
+            case OP_FETCH:
+            case OP_SWAP:
+                if ((le->options & (PTL_ME_OP_PUT | PTL_ME_OP_GET)) !=
+                    (PTL_ME_OP_PUT | PTL_ME_OP_GET))
+                    ret = PTL_NI_OP_VIOLATION;
+                break;
+        }
+    }
 
-	return ret;
+    return ret;
 }
 
 /**
@@ -620,145 +629,143 @@ int check_perm(buf_t *buf, const le_t *le)
  */
 static int tgt_get_match(buf_t *buf)
 {
-	ni_t *ni = obj_to_ni(buf);
-	pt_t *pt = buf->pt;
-	ptl_ni_fail_t ni_fail;
+    ni_t *ni = obj_to_ni(buf);
+    pt_t *pt = buf->pt;
+    ptl_ni_fail_t ni_fail;
 
-	/* Synchronize with LE/ME append/search APIs */
-	PTL_FASTLOCK_LOCK(&pt->lock);
+    /* Synchronize with LE/ME append/search APIs */
+    PTL_FASTLOCK_LOCK(&pt->lock);
 
-	/* Check the priority list.
-	 * If we find a match take a reference to protect
-	 * the list element pointer.
-	 * Note buf->le and buf->me are in a union */
-	list_for_each_entry(buf->le, &pt->priority_list, list) {
-		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_get(buf->le);
-			goto found_one;
-		}
+    /* Check the priority list.
+     * If we find a match take a reference to protect
+     * the list element pointer.
+     * Note buf->le and buf->me are in a union */
+    list_for_each_entry(buf->le, &pt->priority_list, list) {
+        if (ni->options & PTL_NI_NO_MATCHING) {
+            le_get(buf->le);
+            goto found_one;
+        }
 
-		if (check_match(buf, buf->me)) {
-			me_get(buf->me);
-			goto found_one;
-		}
-	}
+        if (check_match(buf, buf->me)) {
+            me_get(buf->me);
+            goto found_one;
+        }
+    }
 
-	/* Check the overflow list */
-	list_for_each_entry(buf->le, &pt->overflow_list, list) {
-		if (ni->options & PTL_NI_NO_MATCHING) {
-			le_get(buf->le);
-			goto found_one;
-		}
+    /* Check the overflow list */
+    list_for_each_entry(buf->le, &pt->overflow_list, list) {
+        if (ni->options & PTL_NI_NO_MATCHING) {
+            le_get(buf->le);
+            goto found_one;
+        }
 
-		if (check_match(buf, buf->me)) {
-			me_get(buf->me);
-			goto found_one;
-		}
-	}
+        if (check_match(buf, buf->me)) {
+            me_get(buf->me);
+            goto found_one;
+        }
+    }
 
-	/* Failed to match any elements */
-	if (pt->options & PTL_PT_FLOWCTRL) {
-		pt->state |= PT_AUTO_DISABLED;
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
-		buf->ni_fail = PTL_NI_PT_DISABLED;
-	} else {
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
-		buf->ni_fail = PTL_NI_DROPPED;
-	}
-	buf->le = NULL;
-	WARN();
+    /* Failed to match any elements */
+    if (pt->options & PTL_PT_FLOWCTRL) {
+        pt->state |= PT_AUTO_DISABLED;
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
+        buf->ni_fail = PTL_NI_PT_DISABLED;
+    } else {
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
+        buf->ni_fail = PTL_NI_DROPPED;
+    }
+    buf->le = NULL;
+    WARN();
 
-	return STATE_TGT_DROP;
+    return STATE_TGT_DROP;
 
-found_one:
-	/* Check to see if we have permission for the operation */
-	ni_fail = check_perm(buf, buf->le);
-	if (ni_fail) {
-		if (ni_fail == PTL_NI_PERM_VIOLATION)
-		   ni->status[PTL_SR_PERMISSION_VIOLATIONS]++;
-		if (ni_fail == PTL_NI_OP_VIOLATION)
-		   ni->status[PTL_SR_OPERATION_VIOLATIONS]++;
-		PTL_FASTLOCK_UNLOCK(&pt->lock);
-		le_put(buf->le);
-		buf->le = NULL;
-		buf->ni_fail = ni_fail;
-		ptl_warn("permissions failure \n");
-		return STATE_TGT_DROP;
-	}
+  found_one:
+    /* Check to see if we have permission for the operation */
+    ni_fail = check_perm(buf, buf->le);
+    if (ni_fail) {
+        if (ni_fail == PTL_NI_PERM_VIOLATION)
+            ni->status[PTL_SR_PERMISSION_VIOLATIONS]++;
+        if (ni_fail == PTL_NI_OP_VIOLATION)
+            ni->status[PTL_SR_OPERATION_VIOLATIONS]++;
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
+        le_put(buf->le);
+        buf->le = NULL;
+        buf->ni_fail = ni_fail;
+        ptl_warn("permissions failure \n");
+        return STATE_TGT_DROP;
+    }
 
-	if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-	    if (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)){
-		if (atomic_read(&pt->unexpected_size) >= ni->limits.max_unexpected_headers){
-		    if (pt->options & PTL_PT_FLOWCTRL){
-		        pt->state |= PT_AUTO_DISABLED;
-                        ptl_info("dropping due to lack of unexpected headers\n");
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
-                        buf->ni_fail = PTL_NI_PT_DISABLED;
-			return STATE_TGT_DROP; 
-		    }    
-		    else{
-		        ptl_info("dropping due to lack of unexpected headers\n");
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
-		        le_put(buf->le);
-		        buf->le = NULL;
-		        buf->ni_fail = PTL_NI_DROPPED;
-		        return STATE_TGT_DROP;
-		    }
-		}
-		else{
-		    atomic_inc(&pt->unexpected_size);
-		}
-            
-		/* take a reference to the buf for the
-		 * unexpected list entry */
-		buf_get(buf);
+    if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+        if (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)) {
+            if (atomic_read(&pt->unexpected_size) >=
+                ni->limits.max_unexpected_headers) {
+                if (pt->options & PTL_PT_FLOWCTRL) {
+                    pt->state |= PT_AUTO_DISABLED;
+                    ptl_info("dropping due to lack of unexpected headers\n");
+                    PTL_FASTLOCK_UNLOCK(&pt->lock);
+                    buf->ni_fail = PTL_NI_PT_DISABLED;
+                    return STATE_TGT_DROP;
+                } else {
+                    ptl_info("dropping due to lack of unexpected headers\n");
+                    PTL_FASTLOCK_UNLOCK(&pt->lock);
+                    le_put(buf->le);
+                    buf->le = NULL;
+                    buf->ni_fail = PTL_NI_DROPPED;
+                    return STATE_TGT_DROP;
+                }
+            } else {
+                atomic_inc(&pt->unexpected_size);
+            }
 
-		/* Mark the buffer as busy. If something is trying to dequeue
-		 * it (ie. through an append), then it will have to wait until
-		 * the transfer is completed. */
-		buf->unexpected_busy = 1;
+            /* take a reference to the buf for the
+             * unexpected list entry */
+            buf_get(buf);
 
-                list_add_tail(&buf->unexpected_list,
-					  &pt->unexpected_list);
+            /* Mark the buffer as busy. If something is trying to dequeue
+             * it (ie. through an append), then it will have to wait until
+             * the transfer is completed. */
+            buf->unexpected_busy = 1;
+
+            list_add_tail(&buf->unexpected_list, &pt->unexpected_list);
 
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-		/* If it is a shared memory buffer, then the data is actually
-		 * in a different buffer. This second buffer will be used to
-		 * send back an ack/reply, while the first buffer has been put
-		 * on the unexpected list. So sever the connection between the
-		 * two buffers right now to avoid races with MEAppend() and
-		 * sending that ack. */
+            /* If it is a shared memory buffer, then the data is actually
+             * in a different buffer. This second buffer will be used to
+             * send back an ack/reply, while the first buffer has been put
+             * on the unexpected list. So sever the connection between the
+             * two buffers right now to avoid races with MEAppend() and
+             * sending that ack. */
 
 #if WITH_TRANSPORT_SHMEM
-		if (buf->conn->transport.type == CONN_TYPE_SHMEM){
+            if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
 #elif IS_PPE
-		if (buf->conn->transport.type == CONN_TYPE_MEM){
+            if (buf->conn->transport.type == CONN_TYPE_MEM) {
 #endif
-			if (buf->data != buf->internal_data) {
-				memcpy(buf->internal_data, buf->data, buf->length);
-				buf->data = buf->internal_data;
-			}
+                if (buf->data != buf->internal_data) {
+                    memcpy(buf->internal_data, buf->data, buf->length);
+                    buf->data = buf->internal_data;
+                }
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-		}
+            }
 #endif
 #endif
-	    }
-	    //unexpected headers are disabled, no unexpected list entry needed
-	    else{
-                //
-                ptl_info("unexpected headers disabled and overflow \n");
-	    }
-	}		
-	//indicate on which list this buf matched
-	buf->matching_list = buf->le->ptl_list;
+        }
+        //unexpected headers are disabled, no unexpected list entry needed
+        else {
+            //
+            ptl_info("unexpected headers disabled and overflow \n");
+        }
+    }
+    //indicate on which list this buf matched
+    buf->matching_list = buf->le->ptl_list;
 
-	PTL_FASTLOCK_UNLOCK(&pt->lock);
+    PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-	/* now that we have determined the list element
-	 * compute the remaining event mask bits */
-	init_events(buf);
+    /* now that we have determined the list element
+     * compute the remaining event mask bits */
+    init_events(buf);
 
-	return STATE_TGT_GET_LENGTH;
+    return STATE_TGT_GET_LENGTH;
 }
 
 /**
@@ -775,128 +782,126 @@ found_one:
  */
 static int tgt_get_length(buf_t *buf)
 {
-	int err;
-	const ni_t *ni = obj_to_ni(buf);
-	me_t *me = buf->me;
-	ptl_size_t offset;
-	ptl_size_t length;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	uint64_t rlength = le64_to_cpu(hdr->rlength);
-	uint64_t roffset = le64_to_cpu(hdr->roffset);
+    int err;
+    const ni_t *ni = obj_to_ni(buf);
+    me_t *me = buf->me;
+    ptl_size_t offset;
+    ptl_size_t length;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    uint64_t rlength = le64_to_cpu(hdr->rlength);
+    uint64_t roffset = le64_to_cpu(hdr->roffset);
 
-	/* note only MEs can have PTL_ME_MANAGE_LOCAL set */
-	offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : roffset;
+    /* note only MEs can have PTL_ME_MANAGE_LOCAL set */
+    offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : roffset;
 
-	if (offset > me->length) {
-		/* Messages that start outside the bounds of the ME are
-		 * truncated to zero bytes. */
-		length = 0;
-	} else {
-		ptl_size_t room = me->length - offset;
-		length = (room >= rlength) ? rlength : room;
-	}
+    if (offset > me->length) {
+        /* Messages that start outside the bounds of the ME are
+         * truncated to zero bytes. */
+        length = 0;
+    } else {
+        ptl_size_t room = me->length - offset;
+        length = (room >= rlength) ? rlength : room;
+    }
 
-	switch (buf->operation) {
-	case OP_PUT:
-		if (length > ni->limits.max_msg_size)
-			length = ni->limits.max_msg_size;
-		buf->put_resid = length;
-		buf->get_resid = 0;
-		break;
+    switch (buf->operation) {
+        case OP_PUT:
+            if (length > ni->limits.max_msg_size)
+                length = ni->limits.max_msg_size;
+            buf->put_resid = length;
+            buf->get_resid = 0;
+            break;
 
-	case OP_GET:
-		if (length > ni->limits.max_msg_size)
-			length = ni->limits.max_msg_size;
-		buf->put_resid = 0;
-		buf->get_resid = length;
-		break;
+        case OP_GET:
+            if (length > ni->limits.max_msg_size)
+                length = ni->limits.max_msg_size;
+            buf->put_resid = 0;
+            buf->get_resid = length;
+            break;
 
-	case OP_ATOMIC:
-		if (length > ni->limits.max_atomic_size)
-			length = ni->limits.max_atomic_size;
-		buf->put_resid = length;
-		buf->get_resid = 0;
-		break;
+        case OP_ATOMIC:
+            if (length > ni->limits.max_atomic_size)
+                length = ni->limits.max_atomic_size;
+            buf->put_resid = length;
+            buf->get_resid = 0;
+            break;
 
-	case OP_FETCH:
-		if (length > ni->limits.max_atomic_size)
-			length = ni->limits.max_atomic_size;
-		buf->put_resid = length;
-		buf->get_resid = length;
-		break;
+        case OP_FETCH:
+            if (length > ni->limits.max_atomic_size)
+                length = ni->limits.max_atomic_size;
+            buf->put_resid = length;
+            buf->get_resid = length;
+            break;
 
-	case OP_SWAP:
-		if (hdr->atom_op == PTL_SWAP) {
-			if (length > ni->limits.max_atomic_size)
-				length = ni->limits.max_atomic_size;
-		} else {
-			if (length > atom_type_size[hdr->atom_type])
-				length = atom_type_size[hdr->atom_type];
-		}
-		buf->put_resid = length;
-		buf->get_resid = length;
-		break;
-	}
+        case OP_SWAP:
+            if (hdr->atom_op == PTL_SWAP) {
+                if (length > ni->limits.max_atomic_size)
+                    length = ni->limits.max_atomic_size;
+            } else {
+                if (length > atom_type_size[hdr->atom_type])
+                    length = atom_type_size[hdr->atom_type];
+            }
+            buf->put_resid = length;
+            buf->get_resid = length;
+            break;
+    }
 
-	buf->mlength = length;
-	buf->moffset = offset;
+    buf->mlength = length;
+    buf->moffset = offset;
 
-	/*
-	 * If locally managed update to reserve space for the
-	 * associated RDMA data. Note the early states in the
-	 * state machine only run on the progress thread so no
-	 * other request message can run this code until we return.
-	 */
-	if (me->options & PTL_ME_MANAGE_LOCAL)
-		me->offset += length;
+    /*
+     * If locally managed update to reserve space for the
+     * associated RDMA data. Note the early states in the
+     * state machine only run on the progress thread so no
+     * other request message can run this code until we return.
+     */
+    if (me->options & PTL_ME_MANAGE_LOCAL)
+        me->offset += length;
 
-	/*
-	 * Unlink if required to prevent further use of this
-	 * ME/LE.
-	 */
-	if ((me->options & PTL_ME_USE_ONCE) ||
-	    ((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
-	    ((me->length - me->offset) < me->min_free))) {
-		le_unlink(buf->le, 0);
-		if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
-			buf->auto_unlink_pending = 1;
-	}
+    /*
+     * Unlink if required to prevent further use of this
+     * ME/LE.
+     */
+    if ((me->options & PTL_ME_USE_ONCE) ||
+        ((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
+         ((me->length - me->offset) < me->min_free))) {
+        le_unlink(buf->le, 0);
+        if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
+            buf->auto_unlink_pending = 1;
+    }
+#if WITH_TRANSPORT_UDP
+    if (buf->conn->transport.type == CONN_TYPE_UDP) {
+        if (atomic_read((atomic_t *)&ni->udp.self_recv) <= 0) {
+#endif
+            /* initialize buf->cur_loc_iov_index/off and buf->start */
+            err = init_local_offset(buf);
+            if (err)
+                return STATE_TGT_ERROR;
+#if WITH_TRANSPORT_UDP
+        }
+    } else {
+        err = init_local_offset(buf);
+        if (err)
+            return STATE_TGT_ERROR;
+    }
+#endif
+    /* if we are already connected to the initiator skip wait_conn */
+    if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
+        return STATE_TGT_DATA;
 
 #if WITH_TRANSPORT_UDP
-	if (buf->conn->transport.type == CONN_TYPE_UDP){
-		if (atomic_read((atomic_t *)&ni->udp.self_recv) <= 0){
-#endif
-		/* initialize buf->cur_loc_iov_index/off and buf->start */
-		err = init_local_offset(buf);
-		if (err)
-			return STATE_TGT_ERROR;
-#if WITH_TRANSPORT_UDP
-		}
-	}
-	else {
-		err = init_local_offset(buf);
-		if (err)
-			return STATE_TGT_ERROR;
-	}
-#endif
-	/* if we are already connected to the initiator skip wait_conn */
-	if (likely(buf->conn->state >= CONN_STATE_CONNECTED))
-		return STATE_TGT_DATA;
-
-#if WITH_TRANSPORT_UDP
-	//REG: UDP needs to connect earlier than this, so it should always be connected at this point
-	if (buf->conn->transport.type == CONN_TYPE_UDP)
-		return STATE_TGT_DATA;
+    //REG: UDP needs to connect earlier than this, so it should always be connected at this point
+    if (buf->conn->transport.type == CONN_TYPE_UDP)
+        return STATE_TGT_DATA;
 #endif
 
-	/* we need a connection if we are sending an ack/reply
-	 * or doing an RDMA operation */
-	if ((buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) ||
-	    (buf->data_out || (buf->data_in && (buf->data_in->data_fmt
-						!= DATA_FMT_IMMEDIATE))))
-		return STATE_TGT_WAIT_CONN;
+    /* we need a connection if we are sending an ack/reply
+     * or doing an RDMA operation */
+    if ((buf->event_mask & (XT_ACK_EVENT | XT_REPLY_EVENT)) ||
+        (buf->data_out ||
+         (buf->data_in && (buf->data_in->data_fmt != DATA_FMT_IMMEDIATE))))
+        return STATE_TGT_WAIT_CONN;
 
-	return STATE_TGT_DATA;
+    return STATE_TGT_DATA;
 }
 
 /**
@@ -912,40 +917,39 @@ static int tgt_get_length(buf_t *buf)
  */
 static int tgt_wait_conn(buf_t *buf)
 {
-	ni_t *ni = obj_to_ni(buf);
-	conn_t *conn = buf->conn;
+    ni_t *ni = obj_to_ni(buf);
+    conn_t *conn = buf->conn;
 
-	/* if we are connected to the initiator we're done here */
-	if (conn->state >= CONN_STATE_CONNECTED)
-		return STATE_TGT_DATA;
+    /* if we are connected to the initiator we're done here */
+    if (conn->state >= CONN_STATE_CONNECTED)
+        return STATE_TGT_DATA;
 
-	/* if not connected. Add the buf to the pending list. It will be
-	 * retried once connected/disconnected. */
-	pthread_mutex_lock(&conn->mutex);
-	if (conn->state < CONN_STATE_CONNECTED) {
-		if (conn->state == CONN_STATE_DISCONNECTED) {
-			/* Initiate connection. */
-			if (conn->transport.init_connect(ni, conn)) {
-				pthread_mutex_unlock(&conn->mutex);
-				return STATE_TGT_ERROR;
-			}
-		}
-
+    /* if not connected. Add the buf to the pending list. It will be
+     * retried once connected/disconnected. */
+    pthread_mutex_lock(&conn->mutex);
+    if (conn->state < CONN_STATE_CONNECTED) {
+        if (conn->state == CONN_STATE_DISCONNECTED) {
+            /* Initiate connection. */
+            if (conn->transport.init_connect(ni, conn)) {
+                pthread_mutex_unlock(&conn->mutex);
+                return STATE_TGT_ERROR;
+            }
+        }
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
-		pthread_cond_wait(&conn->move_wait, &conn->mutex);
+        pthread_cond_wait(&conn->move_wait, &conn->mutex);
 #endif
 
-		pthread_mutex_unlock(&conn->mutex);
+        pthread_mutex_unlock(&conn->mutex);
 
-		if (conn->state == CONN_STATE_CONNECTED)
-			return STATE_TGT_DATA;
+        if (conn->state == CONN_STATE_CONNECTED)
+            return STATE_TGT_DATA;
 
-		WARN();
-		return STATE_TGT_ERROR;
-	}
-	pthread_mutex_unlock(&conn->mutex);
+        WARN();
+        return STATE_TGT_ERROR;
+    }
+    pthread_mutex_unlock(&conn->mutex);
 
-	return STATE_TGT_DATA;
+    return STATE_TGT_DATA;
 }
 
 /**
@@ -960,45 +964,43 @@ static int tgt_wait_conn(buf_t *buf)
  */
 static int tgt_data(buf_t *buf)
 {
-	ni_t *ni = obj_to_ni(buf);
+    ni_t *ni = obj_to_ni(buf);
 
-	/* save the addressing information to the initiator
-	 * in buf */
-	if (buf->conn->state >= CONN_STATE_CONNECTED)
-		set_buf_dest(buf, buf->conn);
+    /* save the addressing information to the initiator
+     * in buf */
+    if (buf->conn->state >= CONN_STATE_CONNECTED)
+        set_buf_dest(buf, buf->conn);
 
-	/* This implementation guarantees atomicity between
-	 * the three atomic type operations by only alowing a
-	 * single operation at a time to be processed. */
+    /* This implementation guarantees atomicity between
+     * the three atomic type operations by only alowing a
+     * single operation at a time to be processed. */
 
-	// TODO we could improve performance by having more locks
-	// here covering operations that do no overlap. Also
-	// we could think some more about how to protect between
-	// atomic and regular get/put operations.
-	if (buf->operation == OP_ATOMIC ||
-	    buf->operation == OP_SWAP ||
-	    buf->operation == OP_FETCH) {
-		pthread_mutex_lock(&ni->atomic_mutex);
-		buf->in_atomic = 1;
-	}
+    // TODO we could improve performance by having more locks
+    // here covering operations that do no overlap. Also
+    // we could think some more about how to protect between
+    // atomic and regular get/put operations.
+    if (buf->operation == OP_ATOMIC || buf->operation == OP_SWAP ||
+        buf->operation == OP_FETCH) {
+        pthread_mutex_lock(&ni->atomic_mutex);
+        buf->in_atomic = 1;
+    }
 
-	/* process data out, then data in */
-	if (buf->get_resid)
-		return STATE_TGT_DATA_OUT;
-	else if (buf->put_resid)
-		return (buf->operation == OP_ATOMIC) ?
-			STATE_TGT_ATOMIC_DATA_IN :
-			STATE_TGT_DATA_IN;
-	else {
-		/* Dropping. */
+    /* process data out, then data in */
+    if (buf->get_resid)
+        return STATE_TGT_DATA_OUT;
+    else if (buf->put_resid)
+        return (buf->operation ==
+                OP_ATOMIC) ? STATE_TGT_ATOMIC_DATA_IN : STATE_TGT_DATA_IN;
+    else {
+        /* Dropping. */
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-		if (buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)
-			return STATE_TGT_DATA_OUT;
-		else if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM)
-			return STATE_TGT_DATA_IN;
+        if (buf->data_out && buf->data_out->data_fmt == DATA_FMT_NOKNEM)
+            return STATE_TGT_DATA_OUT;
+        else if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM)
+            return STATE_TGT_DATA_IN;
 #endif
-		return STATE_TGT_COMM_EVENT;
-	}
+        return STATE_TGT_COMM_EVENT;
+    }
 }
 
 /**
@@ -1018,113 +1020,125 @@ static int tgt_data(buf_t *buf)
  */
 static int tgt_data_out(buf_t *buf)
 {
-	int err;
-	data_t *data = buf->data_out;
-	struct ack_hdr *send_hdr = (ack_hdr_t *)buf->send_buf->data;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+    int err;
+    data_t *data = buf->data_out;
+    struct ack_hdr *send_hdr = (ack_hdr_t *) buf->send_buf->data;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
 
-	if (!data)
-		return STATE_TGT_ERROR;
+    if (!data)
+        return STATE_TGT_ERROR;
 
-	buf->rdma_dir = DATA_DIR_OUT;
+    buf->rdma_dir = DATA_DIR_OUT;
 
-	/* The initiator picks how we reply. */
-	if (data->data_fmt == DATA_FMT_IMMEDIATE) {
-		/* We assummed that both the initiator and the target have the
-		 * same max inline data. */
-		me_t *me = buf->me;
+    /* The initiator picks how we reply. */
+    if (data->data_fmt == DATA_FMT_IMMEDIATE) {
+        /* We assummed that both the initiator and the target have the
+         * same max inline data. */
+        me_t *me = buf->me;
 
-		assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
+        assert(buf->mlength <= get_param(PTL_MAX_INLINE_DATA));
 
-		send_hdr->h1.data_out = 1;
+        send_hdr->h1.data_out = 1;
 
-		if (me->num_iov) {
+        if (me->num_iov) {
 #if IS_PPE
-			mr_t *mr;
+            mr_t *mr;
 
-			if (me->mr_start)
-				mr = me->mr_start;
-			else {
-				err = mr_lookup_app(obj_to_ni(me), me->start, me->length*sizeof(ptl_iovec_t), &mr);
-				if (err) {
-					WARN();
-					return err;
-				}
-			}
+            if (me->mr_start)
+                mr = me->mr_start;
+            else {
+                err =
+                    mr_lookup_app(obj_to_ni(me), me->start,
+                                  me->length * sizeof(ptl_iovec_t), &mr);
+                if (err) {
+                    WARN();
+                    return err;
+                }
+            }
 
-			err = append_immediate_data(addr_to_ppe(me->start, mr), me->mr_list,
-										me->num_iov, DATA_DIR_OUT,
-										buf->moffset, buf->mlength, buf->send_buf);
+            err =
+                append_immediate_data(addr_to_ppe(me->start, mr), me->mr_list,
+                                      me->num_iov, DATA_DIR_OUT, buf->moffset,
+                                      buf->mlength, buf->send_buf);
 
-			if (!me->mr_start)
-				mr_put(mr);
+            if (!me->mr_start)
+                mr_put(mr);
 #else
-			err = append_immediate_data(me->start, me->mr_list,
-										me->num_iov, DATA_DIR_OUT,
-										buf->moffset, buf->mlength, buf->send_buf);
+            err =
+                append_immediate_data(me->start, me->mr_list, me->num_iov,
+                                      DATA_DIR_OUT, buf->moffset,
+                                      buf->mlength, buf->send_buf);
 #endif
-		} else {
+        } else {
 #if IS_PPE
-			mr_t *mr;
+            mr_t *mr;
 
-			if (me->mr_start)
-				mr = me->mr_start;
-			else {
-				err = mr_lookup_app(obj_to_ni(me), me->start+buf->moffset, buf->mlength, &mr);
-				if (err) {
-					WARN();
-					return err;
-				}
-			}
+            if (me->mr_start)
+                mr = me->mr_start;
+            else {
+                err =
+                    mr_lookup_app(obj_to_ni(me), me->start + buf->moffset,
+                                  buf->mlength, &mr);
+                if (err) {
+                    WARN();
+                    return err;
+                }
+            }
 
-			err = append_immediate_data(me->start, &mr, me->num_iov, DATA_DIR_OUT,
-										buf->moffset, buf->mlength, buf->send_buf);
+            err =
+                append_immediate_data(me->start, &mr, me->num_iov,
+                                      DATA_DIR_OUT, buf->moffset,
+                                      buf->mlength, buf->send_buf);
 
-			if (!me->mr_start)
-				mr_put(mr);
+            if (!me->mr_start)
+                mr_put(mr);
 #else
-			err = append_immediate_data(me->start, NULL, me->num_iov, DATA_DIR_OUT,
-										buf->moffset, buf->mlength, buf->send_buf);
+            err =
+                append_immediate_data(me->start, NULL, me->num_iov,
+                                      DATA_DIR_OUT, buf->moffset,
+                                      buf->mlength, buf->send_buf);
 #endif
-		}
-		if (err)
-			return STATE_TGT_ERROR;
+        }
+        if (err)
+            return STATE_TGT_ERROR;
 
-		/* check to see if we still need data in phase */
-		if (buf->put_resid) {
-			if (buf->operation == OP_FETCH)
-				return STATE_TGT_ATOMIC_DATA_IN;
-			else if (buf->operation == OP_SWAP)
-				return (hdr->atom_op == PTL_SWAP)
-					? STATE_TGT_DATA_IN
-					: STATE_TGT_SWAP_DATA_IN;
-			else
-				return  STATE_TGT_DATA_IN;
-		}
+        /* check to see if we still need data in phase */
+        if (buf->put_resid) {
+            if (buf->operation == OP_FETCH)
+                return STATE_TGT_ATOMIC_DATA_IN;
+            else if (buf->operation == OP_SWAP)
+                return (hdr->atom_op == PTL_SWAP)
+                    ? STATE_TGT_DATA_IN : STATE_TGT_SWAP_DATA_IN;
+            else
+                return STATE_TGT_DATA_IN;
+        }
 
-		return STATE_TGT_COMM_EVENT;
-	}
+        return STATE_TGT_COMM_EVENT;
+    }
 
-	/* all atomic or swap data should fit as immediate data so */
-	assert(buf->in_atomic == 0);
+    /* all atomic or swap data should fit as immediate data so */
+    assert(buf->in_atomic == 0);
 
-	return buf->conn->transport.tgt_data_out(buf, data);
+    return buf->conn->transport.tgt_data_out(buf, data);
 }
 
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
 static int tgt_start_copy(buf_t *buf)
 {
-	/* Add to the data queue. */
-	ni_t *ni = obj_to_ni(buf);
+    /* Add to the data queue. */
+    ni_t *ni = obj_to_ni(buf);
 
-	PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
-	list_add_tail(&buf->list, &ni->shmem.noknem_list);
-	PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
+    PTL_FASTLOCK_LOCK(&ni->shmem.noknem_lock);
+    list_add_tail(&buf->list, &ni->shmem.noknem_list);
+    PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 
-	return STATE_TGT_RDMA;
+    return STATE_TGT_RDMA;
 }
 #else
-static int tgt_start_copy(buf_t *buf) { abort(); }
+static int tgt_start_copy(buf_t *buf)
+{
+    abort();
+}
 #endif
 
 /**
@@ -1142,69 +1156,71 @@ static int tgt_start_copy(buf_t *buf) { abort(); }
  */
 static int tgt_rdma(buf_t *buf)
 {
-	int err;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
-				&buf->put_resid : &buf->get_resid;
-	int was_done;
-	was_done  = 0;
+    int err;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    ptl_size_t *resid =
+        buf->rdma_dir == DATA_DIR_IN ? &buf->put_resid : &buf->get_resid;
+    int was_done;
+    was_done = 0;
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	/* It is possible that post_tgt_dma() sets the target_done flag,
-	 * and that the initiator replies with init_done before we reach
-	 * the exit test. However we must leave the state machine so the
-	 * receive state machine can remove the buffer from the
-	 * noknem_list; this function will be called again, and this time
-	 * was_done will be 1. May be this part needs a nicer design. */
-	if (buf->conn->transport.type == CONN_TYPE_SHMEM)
-		was_done = buf->transfer.noknem.noknem ? buf->transfer.noknem.noknem->init_done : 0;
+    /* It is possible that post_tgt_dma() sets the target_done flag,
+     * and that the initiator replies with init_done before we reach
+     * the exit test. However we must leave the state machine so the
+     * receive state machine can remove the buffer from the
+     * noknem_list; this function will be called again, and this time
+     * was_done will be 1. May be this part needs a nicer design. */
+    if (buf->conn->transport.type == CONN_TYPE_SHMEM)
+        was_done =
+            buf->transfer.noknem.noknem ? buf->transfer.noknem.
+            noknem->init_done : 0;
 #endif
 
-	/* post one or more RDMA operations */
-	err = buf->conn->transport.post_tgt_dma(buf);
-	if (err)
-		return STATE_TGT_ERROR;
+    /* post one or more RDMA operations */
+    err = buf->conn->transport.post_tgt_dma(buf);
+    if (err)
+        return STATE_TGT_ERROR;
 
-	/* if there is more work to do leave the state
-	 * machine and have the completion of the rdma
-	 * operation reenter this state to issue more
-	 * operations. */
-	if (*resid)
-		return STATE_TGT_RDMA;
+    /* if there is more work to do leave the state
+     * machine and have the completion of the rdma
+     * operation reenter this state to issue more
+     * operations. */
+    if (*resid)
+        return STATE_TGT_RDMA;
 #if WITH_TRANSPORT_IB
-	if ((atomic_read(&buf->rdma.rdma_comp)) && (buf->conn->transport.type == CONN_TYPE_RDMA))
-		return STATE_TGT_RDMA;
+    if ((atomic_read(&buf->rdma.rdma_comp)) &&
+        (buf->conn->transport.type == CONN_TYPE_RDMA))
+        return STATE_TGT_RDMA;
 #endif
 #if WITH_TRANSPORT_SHMEM && !USE_KNEM
-	if ((was_done == 0) && (buf->conn->transport.type == CONN_TYPE_SHMEM))
-		return STATE_TGT_RDMA;
+    if ((was_done == 0) && (buf->conn->transport.type == CONN_TYPE_SHMEM))
+        return STATE_TGT_RDMA;
 #endif
 
-	/* here we are done so, if we got one, free the
-	 * indirect sge list */
-	if (buf->indir_sge) {
-		free(buf->indir_sge);
-		buf->indir_sge = NULL;
-	}
+    /* here we are done so, if we got one, free the
+     * indirect sge list */
+    if (buf->indir_sge) {
+        free(buf->indir_sge);
+        buf->indir_sge = NULL;
+    }
 
-	/* check to see if there is another data phase */
-	if (buf->put_resid) {
-		/* re-initialize buf->cur_loc_iov_index/off */
-		err = init_local_offset(buf);
-		if (err)
-			return STATE_TGT_ERROR;
+    /* check to see if there is another data phase */
+    if (buf->put_resid) {
+        /* re-initialize buf->cur_loc_iov_index/off */
+        err = init_local_offset(buf);
+        if (err)
+            return STATE_TGT_ERROR;
 
-		if (hdr->h1.operation == OP_FETCH)
-			return STATE_TGT_ATOMIC_DATA_IN;
-		else if (hdr->h1.operation == OP_SWAP)
-			return (hdr->atom_op == PTL_SWAP) ?
-				STATE_TGT_DATA_IN :
-				STATE_TGT_SWAP_DATA_IN;
-		else
-			return  STATE_TGT_DATA_IN;
-	}
+        if (hdr->h1.operation == OP_FETCH)
+            return STATE_TGT_ATOMIC_DATA_IN;
+        else if (hdr->h1.operation == OP_SWAP)
+            return (hdr->atom_op ==
+                    PTL_SWAP) ? STATE_TGT_DATA_IN : STATE_TGT_SWAP_DATA_IN;
+        else
+            return STATE_TGT_DATA_IN;
+    }
 
-	/* ok we are done transfering data */
-	return STATE_TGT_COMM_EVENT;
+    /* ok we are done transfering data */
+    return STATE_TGT_COMM_EVENT;
 }
 
 #if WITH_TRANSPORT_UDP
@@ -1223,41 +1239,41 @@ static int tgt_rdma(buf_t *buf)
  */
 static int tgt_udp(buf_t *buf)
 {
-	int err;
-	
-	ptl_size_t *resid = buf->rdma_dir == DATA_DIR_IN ?
-				&buf->put_resid : &buf->get_resid;
+    int err;
 
-	//setup udp information from buf info for mem copy
-	buf->transfer.udp.udp->length = buf->rlength;
-	buf->transfer.udp.udp->state = 2;
-	buf->transfer.udp.udp->init_done = 0;
-	buf->transfer.udp.udp->target_done = 0;
-	buf->transfer.udp.udp->bounce_offset = 0;
+    ptl_size_t *resid =
+        buf->rdma_dir == DATA_DIR_IN ? &buf->put_resid : &buf->get_resid;
 
-	//for udp, this simply copies, no DMA
-	err = buf->conn->transport.post_tgt_dma(buf);
-	if (err)
-		return STATE_TGT_ERROR;
+    //setup udp information from buf info for mem copy
+    buf->transfer.udp.udp->length = buf->rlength;
+    buf->transfer.udp.udp->state = 2;
+    buf->transfer.udp.udp->init_done = 0;
+    buf->transfer.udp.udp->target_done = 0;
+    buf->transfer.udp.udp->bounce_offset = 0;
 
-	/* if there is more work to do leave the state
-	 * machine and have the completion of the rdma
-	 * operation reenter this state to issue more
-	 * operations. */
-	if (*resid
-		|| (buf->transfer.udp.udp && buf->transfer.udp.udp->init_done == 0)
-		)
-		return STATE_TGT_UDP;
+    //for udp, this simply copies, no DMA
+    err = buf->conn->transport.post_tgt_dma(buf);
+    if (err)
+        return STATE_TGT_ERROR;
 
-	/* ok we are done transfering data */
-	return STATE_TGT_COMM_EVENT;
+    /* if there is more work to do leave the state
+     * machine and have the completion of the rdma
+     * operation reenter this state to issue more
+     * operations. */
+    if (*resid ||
+        (buf->transfer.udp.udp && buf->transfer.udp.udp->init_done == 0)
+        )
+        return STATE_TGT_UDP;
+
+    /* ok we are done transfering data */
+    return STATE_TGT_COMM_EVENT;
 }
 #else
 static int tgt_udp(buf_t *buf)
 {
-	/* This state can only be reached through UDP. */
-	abort();
-	return STATE_TGT_COMM_EVENT;
+    /* This state can only be reached through UDP. */
+    abort();
+    return STATE_TGT_COMM_EVENT;
 }
 #endif // WITH_TRANSPORT_UDP
 
@@ -1278,49 +1294,49 @@ static int tgt_udp(buf_t *buf)
  */
 static int tgt_wait_rdma_desc(buf_t *buf)
 {
-	int err;
+    int err;
 
-	/* if this is the first time we get here
-	 * rdma_desc_ok will be zero and we call
-	 * process_rdma_desc() to post the rdma
-	 * read for it. When the operation completes
-	 * we will reenter here from recv with
-	 * rdma_desc_ok = 1*/
-	if (!buf->rdma_desc_ok) {
-		err = process_rdma_desc(buf);
-		if (err)
-			return STATE_TGT_ERROR;
-		else
-			return STATE_TGT_WAIT_RDMA_DESC;
-	} else {
-		/* Was set in process_rdma_desc(). */
-		buf->transfer.rdma.xxbuf = NULL;
-	}
+    /* if this is the first time we get here
+     * rdma_desc_ok will be zero and we call
+     * process_rdma_desc() to post the rdma
+     * read for it. When the operation completes
+     * we will reenter here from recv with
+     * rdma_desc_ok = 1*/
+    if (!buf->rdma_desc_ok) {
+        err = process_rdma_desc(buf);
+        if (err)
+            return STATE_TGT_ERROR;
+        else
+            return STATE_TGT_WAIT_RDMA_DESC;
+    } else {
+        /* Was set in process_rdma_desc(). */
+        buf->transfer.rdma.xxbuf = NULL;
+    }
 
-	/* setup the remote end of the dma state
-	 * to point to the indirect scatter/gather list */
-	if (buf->rdma_dir == DATA_DIR_IN) {
-		buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
-		buf->transfer.rdma.num_rem_sge =
-			(le32_to_cpu(buf->data_in->rdma.sge_list[0].length))
-				/sizeof(struct ibv_sge);
-		buf->transfer.rdma.cur_rem_off = 0;
-	} else {
-		buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
-		buf->transfer.rdma.num_rem_sge =
-			(le32_to_cpu(buf->data_out->rdma.sge_list[0].length))
-				/sizeof(struct ibv_sge);
-		buf->transfer.rdma.cur_rem_off = 0;
-	}
+    /* setup the remote end of the dma state
+     * to point to the indirect scatter/gather list */
+    if (buf->rdma_dir == DATA_DIR_IN) {
+        buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
+        buf->transfer.rdma.num_rem_sge =
+            (le32_to_cpu(buf->data_in->rdma.sge_list[0].length))
+            / sizeof(struct ibv_sge);
+        buf->transfer.rdma.cur_rem_off = 0;
+    } else {
+        buf->transfer.rdma.cur_rem_sge = buf->indir_sge;
+        buf->transfer.rdma.num_rem_sge =
+            (le32_to_cpu(buf->data_out->rdma.sge_list[0].length))
+            / sizeof(struct ibv_sge);
+        buf->transfer.rdma.cur_rem_off = 0;
+    }
 
-	return STATE_TGT_RDMA;
+    return STATE_TGT_RDMA;
 }
 #else
 static int tgt_wait_rdma_desc(buf_t *buf)
 {
-	/* This state can only be reached through IB. */
-	abort();
-	return STATE_TGT_RDMA;
+    /* This state can only be reached through IB. */
+    abort();
+    return STATE_TGT_RDMA;
 }
 #endif
 
@@ -1337,50 +1353,51 @@ static int tgt_wait_rdma_desc(buf_t *buf)
  */
 static int tgt_shmem_desc(buf_t *buf)
 {
-	int next;
-	data_t *data;
-	size_t len;
-	ni_t *ni = obj_to_ni(buf);
-	void *indir_sge;
-	mr_t *mr;
+    int next;
+    data_t *data;
+    size_t len;
+    ni_t *ni = obj_to_ni(buf);
+    void *indir_sge;
+    mr_t *mr;
 
-	data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
-	len = data->mem.mem_iovec[0].length;
+    data = buf->rdma_dir == DATA_DIR_IN ? buf->data_in : buf->data_out;
+    len = data->mem.mem_iovec[0].length;
 
-	/*
-	 * Allocate and map indirect buffer and setup to read
-	 * descriptor list from initiator memory.
-	 */
-	indir_sge = malloc(len);
-	if (!indir_sge) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
+    /*
+     * Allocate and map indirect buffer and setup to read
+     * descriptor list from initiator memory.
+     */
+    indir_sge = malloc(len);
+    if (!indir_sge) {
+        WARN();
+        next = STATE_TGT_COMM_EVENT;
+        goto done;
+    }
 
-	if (mr_lookup_self(obj_to_ni(buf), indir_sge, len, &mr)) {
-		WARN();
-		next = STATE_TGT_COMM_EVENT;
-		goto done;
-	}
+    if (mr_lookup_self(obj_to_ni(buf), indir_sge, len, &mr)) {
+        WARN();
+        next = STATE_TGT_COMM_EVENT;
+        goto done;
+    }
 
-	copy_mem_to_mem(ni, DATA_DIR_IN, &data->mem.mem_iovec[0], indir_sge, mr, len);
+    copy_mem_to_mem(ni, DATA_DIR_IN, &data->mem.mem_iovec[0], indir_sge, mr,
+                    len);
 
-	buf->indir_sge = indir_sge;
-	buf->mr_list[buf->num_mr++] = mr;
-	buf->transfer.mem.cur_rem_iovec = indir_sge;
-	buf->transfer.mem.cur_rem_off = 0;
-	buf->transfer.mem.num_rem_iovecs = len/sizeof(struct mem_iovec);
+    buf->indir_sge = indir_sge;
+    buf->mr_list[buf->num_mr++] = mr;
+    buf->transfer.mem.cur_rem_iovec = indir_sge;
+    buf->transfer.mem.cur_rem_off = 0;
+    buf->transfer.mem.num_rem_iovecs = len / sizeof(struct mem_iovec);
 
-	next = STATE_TGT_RDMA;
-done:
-	return next;
+    next = STATE_TGT_RDMA;
+  done:
+    return next;
 }
 #else
 static int tgt_shmem_desc(buf_t *buf)
 {
-	/* Invalid state in this configuration. */
-	abort();
+    /* Invalid state in this configuration. */
+    abort();
 }
 #endif
 
@@ -1395,32 +1412,32 @@ static int tgt_shmem_desc(buf_t *buf)
  */
 static int tgt_data_in(buf_t *buf)
 {
-	int err;
-	me_t *me = buf->me;
-	data_t *data = buf->data_in;
-	int next;
+    int err;
+    me_t *me = buf->me;
+    data_t *data = buf->data_in;
+    int next;
 
-	buf->rdma_dir = DATA_DIR_IN;
+    buf->rdma_dir = DATA_DIR_IN;
 
-	if (data->data_fmt == DATA_FMT_IMMEDIATE) {
-		err = tgt_copy_in(buf, me, data->immediate.data);
-		if (err)
-			return STATE_TGT_ERROR;
+    if (data->data_fmt == DATA_FMT_IMMEDIATE) {
+        err = tgt_copy_in(buf, me, data->immediate.data);
+        if (err)
+            return STATE_TGT_ERROR;
 
-		next = STATE_TGT_COMM_EVENT;
-	} else {
-		next = buf->conn->transport.tgt_data_out(buf, data);
-	}
+        next = STATE_TGT_COMM_EVENT;
+    } else {
+        next = buf->conn->transport.tgt_data_out(buf, data);
+    }
 
-	/* this can happen for a simple swap operation */
-	if (buf->in_atomic) {
-		ni_t *ni = obj_to_ni(buf);
+    /* this can happen for a simple swap operation */
+    if (buf->in_atomic) {
+        ni_t *ni = obj_to_ni(buf);
 
-		pthread_mutex_unlock(&ni->atomic_mutex);
-		buf->in_atomic = 0;
-	}
+        pthread_mutex_unlock(&ni->atomic_mutex);
+        buf->in_atomic = 0;
+    }
 
-	return next;
+    return next;
 }
 
 /**
@@ -1434,35 +1451,34 @@ static int tgt_data_in(buf_t *buf)
  */
 static int tgt_atomic_data_in(buf_t *buf)
 {
-	int err;
-	data_t *data = buf->data_in;
-	me_t *me = buf->me;
-	ni_t *ni;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
+    int err;
+    data_t *data = buf->data_in;
+    me_t *me = buf->me;
+    ni_t *ni;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
 
-	/* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
-	if (data->data_fmt != DATA_FMT_IMMEDIATE) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    /* assumes that max_atomic_size is <= PTL_MAX_INLINE_DATA */
+    if (data->data_fmt != DATA_FMT_IMMEDIATE) {
+        WARN();
+        return STATE_TGT_ERROR;
+    }
+    // TODO should we return an ni fail??
+    if (hdr->atom_op > PTL_BXOR || hdr->atom_type >= PTL_DATATYPE_LAST) {
+        WARN();
+        return STATE_TGT_ERROR;
+    }
 
-	// TODO should we return an ni fail??
-	if (hdr->atom_op > PTL_BXOR || hdr->atom_type >= PTL_DATATYPE_LAST) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    err = atomic_in(buf, me, data->immediate.data);
+    if (err)
+        return STATE_TGT_ERROR;
 
-	err = atomic_in(buf, me, data->immediate.data);
-	if (err)
-		return STATE_TGT_ERROR;
+    assert(buf->in_atomic);
 
-	assert(buf->in_atomic);
+    ni = obj_to_ni(buf);
+    pthread_mutex_unlock(&ni->atomic_mutex);
+    buf->in_atomic = 0;
 
-	ni = obj_to_ni(buf);
-	pthread_mutex_unlock(&ni->atomic_mutex);
-	buf->in_atomic = 0;
-
-	return STATE_TGT_COMM_EVENT;
+    return STATE_TGT_COMM_EVENT;
 }
 
 /**
@@ -1486,74 +1502,76 @@ static int tgt_atomic_data_in(buf_t *buf)
  */
 static int tgt_swap_data_in(buf_t *buf)
 {
-	int err;
-	me_t *me = buf->me; /* can be LE or ME */
-	data_t *data = buf->data_in;
-	uint8_t copy[sizeof(datatype_t)];
-	void *dst;
-	ni_t *ni;
-	const req_hdr_t *hdr = (req_hdr_t *)buf->data;
-	void *operand = buf->data + sizeof(req_hdr_t);
-     void *source = data->immediate.data;
-     datatype_t tmp;
+    int err;
+    me_t *me = buf->me;         /* can be LE or ME */
+    data_t *data = buf->data_in;
+    uint8_t copy[sizeof(datatype_t)];
+    void *dst;
+    ni_t *ni;
+    const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+    void *operand = buf->data + sizeof(req_hdr_t);
+    void *source = data->immediate.data;
+    datatype_t tmp;
 #if IS_PPE
-	mr_t *mr;
+    mr_t *mr;
 #endif
 
-	assert(data->data_fmt == DATA_FMT_IMMEDIATE);
+    assert(data->data_fmt == DATA_FMT_IMMEDIATE);
 
-	if (unlikely(me->num_iov)) {
-		err = iov_copy_out(copy, (ptl_iovec_t *)me->start, NULL,
-						   me->num_iov, buf->moffset, buf->mlength);
-		if (err)
-			return STATE_TGT_ERROR;
+    if (unlikely(me->num_iov)) {
+        err =
+            iov_copy_out(copy, (ptl_iovec_t *)me->start, NULL, me->num_iov,
+                         buf->moffset, buf->mlength);
+        if (err)
+            return STATE_TGT_ERROR;
 
-		dst = copy;
-	} else {
-		void *start = me->start + buf->moffset;
+        dst = copy;
+    } else {
+        void *start = me->start + buf->moffset;
 #if IS_PPE
-		if (me->mr_start)
-			mr = me->mr_start;
-		else {
-			err = mr_lookup_app(obj_to_ni(me), start, atom_type_size[hdr->atom_type], &mr);
-			if (err) {
-				WARN();
-				return err;
-			}
-		}
+        if (me->mr_start)
+            mr = me->mr_start;
+        else {
+            err =
+                mr_lookup_app(obj_to_ni(me), start,
+                              atom_type_size[hdr->atom_type], &mr);
+            if (err) {
+                WARN();
+                return err;
+            }
+        }
 #endif
-		dst = addr_to_ppe(start, mr);
-	}
+        dst = addr_to_ppe(start, mr);
+    }
 
-     /* immediate data might not be aligned.  Make sure it's aligned */
-     if (0 != ((uintptr_t) source & (atom_type_size[hdr->atom_type] - 1))) {
-          memcpy(&tmp, source, atom_type_size[hdr->atom_type]);
-          source = &tmp;
-     }
-	err = swap_data_in(hdr->atom_op, hdr->atom_type, dst,
-			         source, operand);
+    /* immediate data might not be aligned.  Make sure it's aligned */
+    if (0 != ((uintptr_t) source & (atom_type_size[hdr->atom_type] - 1))) {
+        memcpy(&tmp, source, atom_type_size[hdr->atom_type]);
+        source = &tmp;
+    }
+    err = swap_data_in(hdr->atom_op, hdr->atom_type, dst, source, operand);
 
 #if IS_PPE
-	if (!me->mr_start)
-		mr_put(mr);
+    if (!me->mr_start)
+        mr_put(mr);
 #endif
 
-	if (err)
-		return STATE_TGT_ERROR;
+    if (err)
+        return STATE_TGT_ERROR;
 
-	if (unlikely(me->num_iov)) {
-		err = tgt_copy_in(buf, buf->me, copy);
-		if (err)
-			return STATE_TGT_ERROR;
-	}
+    if (unlikely(me->num_iov)) {
+        err = tgt_copy_in(buf, buf->me, copy);
+        if (err)
+            return STATE_TGT_ERROR;
+    }
 
-	assert(buf->in_atomic);
+    assert(buf->in_atomic);
 
-	ni = obj_to_ni(buf);
-	pthread_mutex_unlock(&ni->atomic_mutex);
-	buf->in_atomic = 0;
+    ni = obj_to_ni(buf);
+    pthread_mutex_unlock(&ni->atomic_mutex);
+    buf->in_atomic = 0;
 
-	return STATE_TGT_COMM_EVENT;
+    return STATE_TGT_COMM_EVENT;
 }
 
 /**
@@ -1568,37 +1586,36 @@ static int tgt_swap_data_in(buf_t *buf)
  */
 static int tgt_comm_event(buf_t *buf)
 {
-	if (buf->le &&
-		buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+    if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
 
-		/* The buf should be on the unexpected list, unless an
-		 * append/search operation removed it since the buffer was in
-		 * the check_match state. Tell the potential waiter the buffer
-		 * is now ready. */
-		buf->unexpected_busy = 0;
-		pthread_cond_signal(&buf->cond);
-	}
+        /* The buf should be on the unexpected list, unless an
+         * append/search operation removed it since the buffer was in
+         * the check_match state. Tell the potential waiter the buffer
+         * is now ready. */
+        buf->unexpected_busy = 0;
+        pthread_cond_signal(&buf->cond);
+    }
 
-	if (buf->me)
-		atomic_set(&buf->me->busy,1);
+    if (buf->me)
+        atomic_set(&buf->me->busy, 1);
 
-	if (buf->event_mask & XT_COMM_EVENT)
-		make_comm_event(buf);
+    if (buf->event_mask & XT_COMM_EVENT)
+        make_comm_event(buf);
 
-	if (buf->event_mask & XT_CT_COMM_EVENT)
-		make_ct_comm_event(buf);
+    if (buf->event_mask & XT_CT_COMM_EVENT)
+        make_ct_comm_event(buf);
 
-	/* Post PTL_EVENT_AUTO_UNLINK after the comm event */
-	if (buf->auto_unlink_pending)
-		le_post_unlink_event(buf->le);
+    /* Post PTL_EVENT_AUTO_UNLINK after the comm event */
+    if (buf->auto_unlink_pending)
+        le_post_unlink_event(buf->le);
 
-	if (buf->event_mask & XT_REPLY_EVENT)
-		return STATE_TGT_SEND_REPLY;
+    if (buf->event_mask & XT_REPLY_EVENT)
+        return STATE_TGT_SEND_REPLY;
 
-	if (buf->event_mask & XT_ACK_EVENT)
-		return STATE_TGT_SEND_ACK;
+    if (buf->event_mask & XT_ACK_EVENT)
+        return STATE_TGT_SEND_ACK;
 
-	return STATE_TGT_CLEANUP;
+    return STATE_TGT_CLEANUP;
 }
 
 /**
@@ -1613,144 +1630,143 @@ static int tgt_comm_event(buf_t *buf)
  */
 static int tgt_send_ack(buf_t *buf)
 {
-	int err;
-	buf_t *ack_buf = buf;
-	ack_hdr_t *ack_hdr = (ack_hdr_t *)buf->data;
- 	const int ack_req = ((req_hdr_t *)(buf->data))->ack_req;
+    int err;
+    buf_t *ack_buf = buf;
+    ack_hdr_t *ack_hdr = (ack_hdr_t *) buf->data;
+    const int ack_req = ((req_hdr_t *) (buf->data))->ack_req;
 
-	/* Find a buffer to send the ack. Depending on the transport we
-	 * may or may not be able to reuse the buffer in which we got the
-	 * request. */
-	if (buf->send_buf) {
-		ack_buf = buf->send_buf;
-		ack_hdr = (ack_hdr_t *)ack_buf->data;
+    /* Find a buffer to send the ack. Depending on the transport we
+     * may or may not be able to reuse the buffer in which we got the
+     * request. */
+    if (buf->send_buf) {
+        ack_buf = buf->send_buf;
+        ack_hdr = (ack_hdr_t *) ack_buf->data;
 
-		ack_hdr->h1.data_in = 0;
-		ack_hdr->h1.data_out = 0;	/* can get reset to one for short replies */
-		ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
+        ack_hdr->h1.data_in = 0;
+        ack_hdr->h1.data_out = 0;      /* can get reset to one for short replies */
+        ack_hdr->h1.pkt_fmt = PKT_FMT_REPLY;
 
-	}
+    }
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-	else if (buf->mem_buf) {
+    else if (buf->mem_buf) {
 #if WITH_TRANSPORT_SHMEM
-		if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
+        if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
 #elif IS_PPE
-		if (buf->conn->transport.type == CONN_TYPE_MEM) {
+        if (buf->conn->transport.type == CONN_TYPE_MEM) {
 #endif
 
 
-		ack_buf = buf->mem_buf;
-		ack_hdr = (ack_hdr_t *)ack_buf->internal_data;
+            ack_buf = buf->mem_buf;
+            ack_hdr = (ack_hdr_t *) ack_buf->internal_data;
 #if WITH_TRANSPORT_SHMEM || IS_PPE
-		}
+        }
 #endif
-	}
+    }
 #endif
-	else {
-		/* Reusing received buffer. */
-		ack_buf = buf;
-		ack_hdr = (ack_hdr_t *)buf->data;
-	}
+    else {
+        /* Reusing received buffer. */
+        ack_buf = buf;
+        ack_hdr = (ack_hdr_t *) buf->data;
+    }
 
-	/* Reset some header values while keeping others. */
-	ack_buf->length = sizeof(*ack_hdr);
+    /* Reset some header values while keeping others. */
+    ack_buf->length = sizeof(*ack_hdr);
 
-	ack_hdr->h1.ni_fail = buf->ni_fail;
-	ack_hdr->mlength	= cpu_to_le64(buf->mlength);
-	ack_hdr->moffset	= cpu_to_le64(buf->moffset);
-	ack_hdr->h1.matching_list = buf->matching_list;
+    ack_hdr->h1.ni_fail = buf->ni_fail;
+    ack_hdr->mlength = cpu_to_le64(buf->mlength);
+    ack_hdr->moffset = cpu_to_le64(buf->moffset);
+    ack_hdr->h1.matching_list = buf->matching_list;
 
-	switch (ack_req) {
-	case PTL_ACK_REQ:
-		ack_hdr->h1.operation = OP_ACK;
-		break;
-	case PTL_CT_ACK_REQ:
-		ack_buf->length -= sizeof(ack_hdr->moffset); /* don't need offset */
-		ack_hdr->h1.operation = OP_CT_ACK;
-		break;
-	case PTL_OC_ACK_REQ:
-		ack_buf->length -= (sizeof(ack_hdr->moffset) +
-							sizeof(ack_hdr->mlength)); /* don't need offset nor length */
-		ack_hdr->h1.operation = OP_OC_ACK;
-		break;
-	default:
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    switch (ack_req) {
+        case PTL_ACK_REQ:
+            ack_hdr->h1.operation = OP_ACK;
+            break;
+        case PTL_CT_ACK_REQ:
+            ack_buf->length -= sizeof(ack_hdr->moffset);    /* don't need offset */
+            ack_hdr->h1.operation = OP_CT_ACK;
+            break;
+        case PTL_OC_ACK_REQ:
+            ack_buf->length -= (sizeof(ack_hdr->moffset) + sizeof(ack_hdr->mlength));   /* don't need offset nor length */
+            ack_hdr->h1.operation = OP_OC_ACK;
+            break;
+        default:
+            WARN();
+            return STATE_TGT_ERROR;
+    }
 
-	/* Initiator is still waiting for an ACK to unblock its buf. */
-	if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
-		ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->moffset) -
-			sizeof(ack_hdr->mlength); /* don't need offset nor length */
-		ack_hdr->h1.operation = OP_NO_ACK;
-	}
+    /* Initiator is still waiting for an ACK to unblock its buf. */
+    if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
+        ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->moffset) - sizeof(ack_hdr->mlength);  /* don't need offset nor length */
+        ack_hdr->h1.operation = OP_NO_ACK;
+    }
 
-	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
-		/* The LE must be released before we sent the ack. */
-		le_put(buf->le);
-		atomic_set(&buf->me->busy,0);
-		buf->le = NULL;
-	}
+    if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
+        /* The LE must be released before we sent the ack. */
+        le_put(buf->le);
+        atomic_set(&buf->me->busy, 0);
+        buf->le = NULL;
+    }
 
- 	if (buf->send_buf) {
-		ack_buf->dest = buf->dest;
-		ack_buf->conn = buf->conn;
+    if (buf->send_buf) {
+        ack_buf->dest = buf->dest;
+        ack_buf->conn = buf->conn;
 
-		/* Inline the data if it fits. That may save waiting for a
-		 * completion. */
-		ack_buf->conn->transport.set_send_flags(ack_buf, 1);
+        /* Inline the data if it fits. That may save waiting for a
+         * completion. */
+        ack_buf->conn->transport.set_send_flags(ack_buf, 1);
 
-		err = ack_buf->conn->transport.send_message(ack_buf, 0);
-		if (err) {
-			WARN();
-			return STATE_TGT_ERROR;
-		}
-	} else {
-		switch(buf->conn->transport.type) {
+        err = ack_buf->conn->transport.send_message(ack_buf, 0);
+        if (err) {
+            WARN();
+            return STATE_TGT_ERROR;
+        }
+    } else {
+        switch (buf->conn->transport.type) {
 #if WITH_TRANSPORT_SHMEM
-		case CONN_TYPE_SHMEM:
-			/* The same buffer is used to send the data back. Let the
-			 * progress thread return it. */
-			assert(buf->mem_buf);
-			buf->mem_buf->type = BUF_SHMEM_SEND;
-			break;
+            case CONN_TYPE_SHMEM:
+                /* The same buffer is used to send the data back. Let the
+                 * progress thread return it. */
+                assert(buf->mem_buf);
+                buf->mem_buf->type = BUF_SHMEM_SEND;
+                break;
 #endif
 
 #if IS_PPE
-		case CONN_TYPE_MEM:
-			buf->mem_buf->type = BUF_MEM_SEND;
-			break;
+            case CONN_TYPE_MEM:
+                buf->mem_buf->type = BUF_MEM_SEND;
+                break;
 #endif
 
 #if WITH_TRANSPORT_UDP
-		case CONN_TYPE_UDP:
-			ack_buf->dest.udp.dest_addr = buf->udp.src_addr;
-			ack_buf->conn = buf->conn;
-			ack_buf->rlength = sizeof(buf_t);
-			ptl_info("buffer handle for initiator: %i \n",ack_hdr->h1.handle);
+            case CONN_TYPE_UDP:
+                ack_buf->dest.udp.dest_addr = buf->udp.src_addr;
+                ack_buf->conn = buf->conn;
+                ack_buf->rlength = sizeof(buf_t);
+                ptl_info("buffer handle for initiator: %i \n",
+                         ack_hdr->h1.handle);
 
-			err = ack_buf->conn->transport.send_message(ack_buf, 0);
-			if (err) {
-				WARN();
-				return STATE_TGT_ERROR;
-			}
-			break;
+                err = ack_buf->conn->transport.send_message(ack_buf, 0);
+                if (err) {
+                    WARN();
+                    return STATE_TGT_ERROR;
+                }
+                break;
 #endif
 
 #if WITH_TRANSPORT_IB
-		case CONN_TYPE_RDMA:
-			/* That should not be possible. */
-			abort();
-			break;
+            case CONN_TYPE_RDMA:
+                /* That should not be possible. */
+                abort();
+                break;
 #endif
 
-		default:
-			/* Unreachable. */
-			abort();
-		}
-  	}
+            default:
+                /* Unreachable. */
+                abort();
+        }
+    }
 
-	return STATE_TGT_CLEANUP;
+    return STATE_TGT_CLEANUP;
 }
 
 /**
@@ -1765,56 +1781,57 @@ static int tgt_send_ack(buf_t *buf)
  */
 static int tgt_send_reply(buf_t *buf)
 {
-	int err;
-	buf_t *rep_buf;
-	ack_hdr_t *rep_hdr;
+    int err;
+    buf_t *rep_buf;
+    ack_hdr_t *rep_hdr;
 
-	rep_buf = buf->send_buf;
-	rep_hdr = (ack_hdr_t *)rep_buf->data;
+    rep_buf = buf->send_buf;
+    rep_hdr = (ack_hdr_t *) rep_buf->data;
 
-	rep_hdr->h1.ni_fail = buf->ni_fail;
-	rep_hdr->mlength	= cpu_to_le64(buf->mlength);
-	rep_hdr->moffset	= cpu_to_le64(buf->moffset);
-	rep_hdr->h1.operation = OP_REPLY;
-	rep_hdr->h1.matching_list = buf->matching_list;
+    rep_hdr->h1.ni_fail = buf->ni_fail;
+    rep_hdr->mlength = cpu_to_le64(buf->mlength);
+    rep_hdr->moffset = cpu_to_le64(buf->moffset);
+    rep_hdr->h1.operation = OP_REPLY;
+    rep_hdr->h1.matching_list = buf->matching_list;
 
-	if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
-	/* The LE must be released before we sent the ack. */
-		le_put(buf->le);
-		atomic_set(&buf->me->busy, 0);
-		buf->le = NULL;
-	}
+    if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
+        /* The LE must be released before we sent the ack. */
+        le_put(buf->le);
+        atomic_set(&buf->me->busy, 0);
+        buf->le = NULL;
+    }
 
-	rep_buf->dest = buf->dest;
+    rep_buf->dest = buf->dest;
 
 #if WITH_TRANSPORT_SHMEM
-	if (buf->conn->transport.type == CONN_TYPE_SHMEM){
-		rep_buf->dest.shmem.local_rank = buf->mem_buf->shmem.index_owner;
-		ptl_info("shared mem reply from %i to %i \n",buf->conn->shmem.local_rank,
-                                rep_buf->dest.shmem.local_rank);
-	}
+    if (buf->conn->transport.type == CONN_TYPE_SHMEM) {
+        rep_buf->dest.shmem.local_rank = buf->mem_buf->shmem.index_owner;
+        ptl_info("shared mem reply from %i to %i \n",
+                 buf->conn->shmem.local_rank, rep_buf->dest.shmem.local_rank);
+    }
 #endif
 
 #if WITH_TRANSPORT_UDP
-	if (buf->conn->transport.type == CONN_TYPE_UDP){
-		ptl_info("address that requested reply: %s:%i reply length = %i\n",inet_ntoa(buf->udp.src_addr.sin_addr),
-			 ntohs(buf->udp.src_addr.sin_port),(int)rep_buf->rlength);
-		rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
-	}
+    if (buf->conn->transport.type == CONN_TYPE_UDP) {
+        ptl_info("address that requested reply: %s:%i reply length = %i\n",
+                 inet_ntoa(buf->udp.src_addr.sin_addr),
+                 ntohs(buf->udp.src_addr.sin_port), (int)rep_buf->rlength);
+        rep_buf->dest.udp.dest_addr = buf->udp.src_addr;
+    }
 #endif
-	rep_buf->conn = buf->conn;
+    rep_buf->conn = buf->conn;
 
-	/* Inline the data if it fits. That may save waiting for a
-	 * completion. */
-	rep_buf->conn->transport.set_send_flags(rep_buf, 1);
+    /* Inline the data if it fits. That may save waiting for a
+     * completion. */
+    rep_buf->conn->transport.set_send_flags(rep_buf, 1);
 
-	err = rep_buf->conn->transport.send_message(rep_buf, 0);
-	if (err) {
-		WARN();
-		return STATE_TGT_ERROR;
-	}
+    err = rep_buf->conn->transport.send_message(rep_buf, 0);
+    if (err) {
+        WARN();
+        return STATE_TGT_ERROR;
+    }
 
-	return STATE_TGT_CLEANUP;
+    return STATE_TGT_CLEANUP;
 }
 
 /**
@@ -1828,61 +1845,58 @@ static int tgt_send_reply(buf_t *buf)
  */
 static int tgt_cleanup(buf_t *buf)
 {
-	int state;
-	pt_t *pt;
+    int state;
+    pt_t *pt;
 
-	if (buf->matching.le) {
-		/* On the overflow list, and was already matched by an
-		 * ME/LE. */
-		assert(buf->le->ptl_list == PTL_OVERFLOW_LIST);
-		atomic_set(&buf->le->busy, 0);
-		state = STATE_TGT_OVERFLOW_EVENT;
-	} else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
-	    //if the pt hasn't run out of resources and unexpected headers are enabled
-	    //wait for a priority list append, otherwise just clean up
-	    if (buf->ni_fail != PTL_NI_PT_DISABLED &&
-                (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)))
-		state = STATE_TGT_WAIT_APPEND;
-	    else
-                state = STATE_TGT_CLEANUP_2;
-	}	else
-		state = STATE_TGT_CLEANUP_2;
+    if (buf->matching.le) {
+        /* On the overflow list, and was already matched by an
+         * ME/LE. */
+        assert(buf->le->ptl_list == PTL_OVERFLOW_LIST);
+        atomic_set(&buf->le->busy, 0);
+        state = STATE_TGT_OVERFLOW_EVENT;
+    } else if (buf->le && buf->le->ptl_list == PTL_OVERFLOW_LIST) {
+        //if the pt hasn't run out of resources and unexpected headers are enabled
+        //wait for a priority list append, otherwise just clean up
+        if (buf->ni_fail != PTL_NI_PT_DISABLED &&
+            (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)))
+            state = STATE_TGT_WAIT_APPEND;
+        else
+            state = STATE_TGT_CLEANUP_2;
+    } else
+        state = STATE_TGT_CLEANUP_2;
 
-	assert(!buf->indir_sge);
+    assert(!buf->indir_sge);
 #if WITH_TRANSPORT_IB
-	assert(list_empty(&buf->transfer.rdma.rdma_list));
+    assert(list_empty(&buf->transfer.rdma.rdma_list));
 #endif
 
-	if (buf->send_buf) {
-		buf_put(buf->send_buf);
-		buf->send_buf = NULL;
-	}
+    if (buf->send_buf) {
+        buf_put(buf->send_buf);
+        buf->send_buf = NULL;
+    }
 
-	pt = buf->pt;
-	if (pt) {
-		PTL_FASTLOCK_LOCK(&pt->lock);
-		pt->num_tgt_active--;
-		if ((pt->state & PT_AUTO_DISABLED) && !pt->num_tgt_active) {
-			pt->state = PT_DISABLED;
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
-			if (buf->le){
-			    if (!(buf->le->options & PTL_LE_EVENT_FLOWCTRL_DISABLE))
-			        make_target_event(buf, pt->eq,
-							  PTL_EVENT_PT_DISABLED,
-							  buf->matching.le ? buf->matching.le->user_ptr
-			    				  : NULL, NULL);
-			}
-			else{
-				make_target_event(buf, pt->eq,
-                                                          PTL_EVENT_PT_DISABLED,
-                                                          buf->matching.le ? buf->matching.le->user_ptr
-                                                          : NULL, NULL);
-			}
-		} else
-			PTL_FASTLOCK_UNLOCK(&pt->lock);
-	}
+    pt = buf->pt;
+    if (pt) {
+        PTL_FASTLOCK_LOCK(&pt->lock);
+        pt->num_tgt_active--;
+        if ((pt->state & PT_AUTO_DISABLED) && !pt->num_tgt_active) {
+            pt->state = PT_DISABLED;
+            PTL_FASTLOCK_UNLOCK(&pt->lock);
+            if (buf->le) {
+                if (!(buf->le->options & PTL_LE_EVENT_FLOWCTRL_DISABLE))
+                    make_target_event(buf, pt->eq, PTL_EVENT_PT_DISABLED,
+                                      buf->matching.le ? buf->matching.
+                                      le->user_ptr : NULL, NULL);
+            } else {
+                make_target_event(buf, pt->eq, PTL_EVENT_PT_DISABLED,
+                                  buf->matching.le ? buf->matching.
+                                  le->user_ptr : NULL, NULL);
+            }
+        } else
+            PTL_FASTLOCK_UNLOCK(&pt->lock);
+    }
 
-	return state;
+    return state;
 }
 
 /**
@@ -1897,30 +1911,30 @@ static int tgt_cleanup(buf_t *buf)
  */
 static void tgt_cleanup_2(buf_t *buf)
 {
-	if (buf->le) {
-		ptl_warn("me/le cleanup \n");
-		le_put(buf->le);
-		atomic_set(&buf->me->busy, 0);
-		buf->le = NULL;
-	}
+    if (buf->le) {
+        ptl_warn("me/le cleanup \n");
+        le_put(buf->le);
+        atomic_set(&buf->me->busy, 0);
+        buf->le = NULL;
+    }
 
-	if (buf->matching.le){
-                ptl_warn("matching me/le cleanup \n");
-		ni_t *ni = obj_to_ni(buf->matching.le);
-                pt_t *pt = &ni->pt[buf->matching.le->pt_index];
-                //if the buf has a matching LE/ME, it means that
-                //it was an overflow match, so reduce the
-                //unexpected message count
-		atomic_dec(&pt->unexpected_size);
-                le_put(buf->matching.le);
-                atomic_set(&buf->matching.le->busy, 0);
-                buf->matching.le = NULL;
-	}
+    if (buf->matching.le) {
+        ptl_warn("matching me/le cleanup \n");
+        ni_t *ni = obj_to_ni(buf->matching.le);
+        pt_t *pt = &ni->pt[buf->matching.le->pt_index];
+        //if the buf has a matching LE/ME, it means that
+        //it was an overflow match, so reduce the
+        //unexpected message count
+        atomic_dec(&pt->unexpected_size);
+        le_put(buf->matching.le);
+        atomic_set(&buf->matching.le->busy, 0);
+        buf->matching.le = NULL;
+    }
 
-	if (buf->conn) {
-		conn_put(buf->conn);
-		buf->conn = NULL;
-	}	
+    if (buf->conn) {
+        conn_put(buf->conn);
+        buf->conn = NULL;
+    }
 }
 
 /**
@@ -1937,14 +1951,14 @@ static void tgt_cleanup_2(buf_t *buf)
 /* The XT is on the overflow list and waiting for a ME/LE search/append. */
 static int tgt_wait_append(buf_t *buf)
 {
-	int state;
+    int state;
 
-	if (buf->matching.le)
-		state = STATE_TGT_OVERFLOW_EVENT;
-	else
-		state = STATE_TGT_WAIT_APPEND;
+    if (buf->matching.le)
+        state = STATE_TGT_OVERFLOW_EVENT;
+    else
+        state = STATE_TGT_WAIT_APPEND;
 
-	return state;
+    return state;
 }
 
 /**
@@ -1958,45 +1972,42 @@ static int tgt_wait_append(buf_t *buf)
  */
 static int tgt_overflow_event(buf_t *buf)
 {
-	le_t *le = buf->matching.le;
+    le_t *le = buf->matching.le;
 
-	assert(le);
+    assert(le);
 
-	if (!(le->options & PTL_LE_EVENT_OVER_DISABLE) && buf->pt->eq) {
-		switch (buf->operation) {
-		case OP_PUT:
-			make_target_event(buf, buf->pt->eq,
-					  PTL_EVENT_PUT_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
+    if (!(le->options & PTL_LE_EVENT_OVER_DISABLE) && buf->pt->eq) {
+        switch (buf->operation) {
+            case OP_PUT:
+                make_target_event(buf, buf->pt->eq, PTL_EVENT_PUT_OVERFLOW,
+                                  le->user_ptr, buf->start);
+                break;
 
-		case OP_ATOMIC:
-			make_target_event(buf, buf->pt->eq,
-					  PTL_EVENT_ATOMIC_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
+            case OP_ATOMIC:
+                make_target_event(buf, buf->pt->eq, PTL_EVENT_ATOMIC_OVERFLOW,
+                                  le->user_ptr, buf->start);
+                break;
 
-		case OP_FETCH:
-		case OP_SWAP:
-			make_target_event(buf, buf->pt->eq,
-					  PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
+            case OP_FETCH:
+            case OP_SWAP:
+                make_target_event(buf, buf->pt->eq,
+                                  PTL_EVENT_FETCH_ATOMIC_OVERFLOW,
+                                  le->user_ptr, buf->start);
+                break;
 
-		case OP_GET:
-			make_target_event(buf, buf->pt->eq,
-					  PTL_EVENT_GET_OVERFLOW,
-					  le->user_ptr, buf->start);
-			break;
-		}
+            case OP_GET:
+                make_target_event(buf, buf->pt->eq, PTL_EVENT_GET_OVERFLOW,
+                                  le->user_ptr, buf->start);
+                break;
+        }
 
-		/* Update the counter if we can. If LE comes from PtlLESearch,
-		 * then ct is NULL. */
-		if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
-			make_ct_event(le->ct, buf, CT_MBYTES);
-	}
+        /* Update the counter if we can. If LE comes from PtlLESearch,
+         * then ct is NULL. */
+        if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
+            make_ct_event(le->ct, buf, CT_MBYTES);
+    }
 
-	return STATE_TGT_CLEANUP_2;
+    return STATE_TGT_CLEANUP_2;
 }
 
 /**
@@ -2013,131 +2024,131 @@ static int tgt_overflow_event(buf_t *buf)
  */
 int process_tgt(buf_t *buf)
 {
-	int err = PTL_OK;
-	enum tgt_state state;
-	
+    int err = PTL_OK;
+    enum tgt_state state;
+
 #if WITH_TRANSPORT_UDP
-	ptl_info("locking buffer for target processing \n");	
+    ptl_info("locking buffer for target processing \n");
 #endif
 
-	pthread_mutex_lock(&buf->mutex);
+    pthread_mutex_lock(&buf->mutex);
 
 #if WITH_TRANSPORT_UDP
-	ptl_info("got lock for target buffer processing \n");
+    ptl_info("got lock for target buffer processing \n");
 #endif
 
-	state = buf->tgt_state;
+    state = buf->tgt_state;
 
-	while(1) {
-		ptl_info("%p: tgt state = %s event mask: %i\n",
-				 buf, tgt_state_name[state],buf->event_mask);
+    while (1) {
+        ptl_info("%p: tgt state = %s event mask: %i\n", buf,
+                 tgt_state_name[state], buf->event_mask);
 
-		switch (state) {
-		case STATE_TGT_START:
-			state = tgt_start(buf);
-			break;
-		case STATE_TGT_GET_MATCH:
-			state = tgt_get_match(buf);
-			break;
-		case STATE_TGT_GET_LENGTH:
-			state = tgt_get_length(buf);
-			break;
-		case STATE_TGT_WAIT_CONN:
-			state = tgt_wait_conn(buf);
-			if (state == STATE_TGT_WAIT_CONN)
-				goto exit;
-			break;
-		case STATE_TGT_DATA:
-			state = tgt_data(buf);
-			break;
-		case STATE_TGT_DATA_IN:
-			state = tgt_data_in(buf);
-			break;
-		case STATE_TGT_WAIT_RDMA_DESC:
-			state = tgt_wait_rdma_desc(buf);
-			if (state == STATE_TGT_WAIT_RDMA_DESC)
-				goto exit;
-			break;
-		case STATE_TGT_SHMEM_DESC:
-			state = tgt_shmem_desc(buf);
-			break;
-		case STATE_TGT_START_COPY:
-			state = tgt_start_copy(buf);
-			goto exit;
-			break;
-		case STATE_TGT_RDMA:
-			state = tgt_rdma(buf);
-			if (state == STATE_TGT_RDMA)
-				goto exit;
-			break;
-		case STATE_TGT_UDP:
-			state = tgt_udp(buf);
-			if (state == STATE_TGT_UDP)
-				 goto exit;
-			break;
-		case STATE_TGT_ATOMIC_DATA_IN:
-			state = tgt_atomic_data_in(buf);
-			break;
-		case STATE_TGT_SWAP_DATA_IN:
-			state = tgt_swap_data_in(buf);
-			break;
-		case STATE_TGT_DATA_OUT:
-			state = tgt_data_out(buf);
-			break;
-		case STATE_TGT_COMM_EVENT:
-			state = tgt_comm_event(buf);
-			break;
-		case STATE_TGT_SEND_ACK:
-			state = tgt_send_ack(buf);
-			break;
-		case STATE_TGT_SEND_REPLY:
-			state = tgt_send_reply(buf);
-			break;
-		case STATE_TGT_DROP:
-			WARN();
-			state = request_drop(buf);
-			break;
-		case STATE_TGT_WAIT_APPEND:
-			state = tgt_wait_append(buf);
-			if (state == STATE_TGT_WAIT_APPEND)
-				goto exit;
-			break;
-		case STATE_TGT_OVERFLOW_EVENT:
-			state = tgt_overflow_event(buf);
-			break;
-		case STATE_TGT_ERROR:
-			if (buf->in_atomic) {
-				ni_t *ni = obj_to_ni(buf);
-				pthread_mutex_unlock(&ni->atomic_mutex);
-				buf->in_atomic = 0;
-			}
-			err = PTL_FAIL;
-			state = STATE_TGT_CLEANUP;
-			break;
-		case STATE_TGT_CLEANUP:
-			state = tgt_cleanup(buf);
-			break;
-		case STATE_TGT_CLEANUP_2:
-			tgt_cleanup_2(buf);
-			buf->tgt_state = STATE_TGT_DONE;
-			pthread_mutex_unlock(&buf->mutex);
+        switch (state) {
+            case STATE_TGT_START:
+                state = tgt_start(buf);
+                break;
+            case STATE_TGT_GET_MATCH:
+                state = tgt_get_match(buf);
+                break;
+            case STATE_TGT_GET_LENGTH:
+                state = tgt_get_length(buf);
+                break;
+            case STATE_TGT_WAIT_CONN:
+                state = tgt_wait_conn(buf);
+                if (state == STATE_TGT_WAIT_CONN)
+                    goto exit;
+                break;
+            case STATE_TGT_DATA:
+                state = tgt_data(buf);
+                break;
+            case STATE_TGT_DATA_IN:
+                state = tgt_data_in(buf);
+                break;
+            case STATE_TGT_WAIT_RDMA_DESC:
+                state = tgt_wait_rdma_desc(buf);
+                if (state == STATE_TGT_WAIT_RDMA_DESC)
+                    goto exit;
+                break;
+            case STATE_TGT_SHMEM_DESC:
+                state = tgt_shmem_desc(buf);
+                break;
+            case STATE_TGT_START_COPY:
+                state = tgt_start_copy(buf);
+                goto exit;
+                break;
+            case STATE_TGT_RDMA:
+                state = tgt_rdma(buf);
+                if (state == STATE_TGT_RDMA)
+                    goto exit;
+                break;
+            case STATE_TGT_UDP:
+                state = tgt_udp(buf);
+                if (state == STATE_TGT_UDP)
+                    goto exit;
+                break;
+            case STATE_TGT_ATOMIC_DATA_IN:
+                state = tgt_atomic_data_in(buf);
+                break;
+            case STATE_TGT_SWAP_DATA_IN:
+                state = tgt_swap_data_in(buf);
+                break;
+            case STATE_TGT_DATA_OUT:
+                state = tgt_data_out(buf);
+                break;
+            case STATE_TGT_COMM_EVENT:
+                state = tgt_comm_event(buf);
+                break;
+            case STATE_TGT_SEND_ACK:
+                state = tgt_send_ack(buf);
+                break;
+            case STATE_TGT_SEND_REPLY:
+                state = tgt_send_reply(buf);
+                break;
+            case STATE_TGT_DROP:
+                WARN();
+                state = request_drop(buf);
+                break;
+            case STATE_TGT_WAIT_APPEND:
+                state = tgt_wait_append(buf);
+                if (state == STATE_TGT_WAIT_APPEND)
+                    goto exit;
+                break;
+            case STATE_TGT_OVERFLOW_EVENT:
+                state = tgt_overflow_event(buf);
+                break;
+            case STATE_TGT_ERROR:
+                if (buf->in_atomic) {
+                    ni_t *ni = obj_to_ni(buf);
+                    pthread_mutex_unlock(&ni->atomic_mutex);
+                    buf->in_atomic = 0;
+                }
+                err = PTL_FAIL;
+                state = STATE_TGT_CLEANUP;
+                break;
+            case STATE_TGT_CLEANUP:
+                state = tgt_cleanup(buf);
+                break;
+            case STATE_TGT_CLEANUP_2:
+                tgt_cleanup_2(buf);
+                buf->tgt_state = STATE_TGT_DONE;
+                pthread_mutex_unlock(&buf->mutex);
 #if WITH_TRANSPORT_UDP
-			ni_t *ni = obj_to_ni(buf);
-                        if (atomic_read(&ni->udp.self_recv) == 0)
-#endif			
-			buf_put(buf);   /* match buf_alloc */
-			
+                ni_t *ni = obj_to_ni(buf);
+                if (atomic_read(&ni->udp.self_recv) == 0)
+#endif
+                    buf_put(buf);      /* match buf_alloc */
 
-			return err;
-		case STATE_TGT_DONE:
-			/* buf isn't valid anymore. */
-			goto done;
-		}
-	}
 
-exit:
-	buf->tgt_state = state;
-done:
-	pthread_mutex_unlock(&buf->mutex);
-	return err;
+                return err;
+            case STATE_TGT_DONE:
+                /* buf isn't valid anymore. */
+                goto done;
+        }
+    }
+
+  exit:
+    buf->tgt_state = state;
+  done:
+    pthread_mutex_unlock(&buf->mutex);
+    return err;
 }

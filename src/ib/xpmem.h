@@ -24,12 +24,12 @@
 /*
  * basic argument type definitions
  */
-typedef int64_t xpmem_segid_t;	/* segid returned from xpmem_make() */
-typedef int64_t xpmem_apid_t;	/* apid returned from xpmem_get() */
+typedef int64_t xpmem_segid_t;  /* segid returned from xpmem_make() */
+typedef int64_t xpmem_apid_t;   /* apid returned from xpmem_get() */
 
 struct xpmem_addr {
-	xpmem_apid_t apid;	/* apid that represents memory */
-	off_t offset;		/* offset into apid's memory */
+    xpmem_apid_t apid;          /* apid that represents memory */
+    off_t offset;               /* offset into apid's memory */
 };
 
 #define XPMEM_MAXADDR_SIZE	(size_t)(-1L)
@@ -42,7 +42,7 @@ struct xpmem_addr {
 /*
  * The following are the possible XPMEM related errors.
  */
-#define XPMEM_ERRNO_NOPROC	2004	/* unknown thread due to fork() */
+#define XPMEM_ERRNO_NOPROC	2004       /* unknown thread due to fork() */
 
 /*
  * flags for segment permissions
@@ -73,40 +73,40 @@ struct xpmem_addr {
  * Structures used with the preceding ioctl() commands to pass data.
  */
 struct xpmem_cmd_make {
-	uint64_t vaddr;
-	size_t size;
-	int permit_type;
-	uint64_t permit_value;
-	xpmem_segid_t segid;	/* returned on success */
+    uint64_t vaddr;
+    size_t size;
+    int permit_type;
+    uint64_t permit_value;
+    xpmem_segid_t segid;        /* returned on success */
 };
 
 struct xpmem_cmd_remove {
-	xpmem_segid_t segid;
+    xpmem_segid_t segid;
 };
 
 struct xpmem_cmd_get {
-	xpmem_segid_t segid;
-	int flags;
-	int permit_type;
-	uint64_t permit_value;
-	xpmem_apid_t apid;	/* returned on success */
+    xpmem_segid_t segid;
+    int flags;
+    int permit_type;
+    uint64_t permit_value;
+    xpmem_apid_t apid;          /* returned on success */
 };
 
 struct xpmem_cmd_release {
-	xpmem_apid_t apid;
+    xpmem_apid_t apid;
 };
 
 struct xpmem_cmd_attach {
-	xpmem_apid_t apid;
-	off_t offset;
-	size_t size;
-	uint64_t vaddr;
-	int fd;
-	int flags;
+    xpmem_apid_t apid;
+    off_t offset;
+    size_t size;
+    uint64_t vaddr;
+    int fd;
+    int flags;
 };
 
 struct xpmem_cmd_detach {
-	uint64_t vaddr;
+    uint64_t vaddr;
 };
 
 /* For use with XPMEM + IB, to declare that a region being registered

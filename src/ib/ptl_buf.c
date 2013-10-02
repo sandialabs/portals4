@@ -17,27 +17,27 @@
  */
 int buf_setup(void *arg)
 {
-	buf_t *buf = arg;
+    buf_t *buf = arg;
 
-	buf->num_mr = 0;
-	buf->event_mask = 0;
-	buf->data = buf->internal_data;
-	buf->rdma_desc_ok = 0;
-	buf->ni_fail = PTL_NI_OK;
-	buf->conn = NULL;
+    buf->num_mr = 0;
+    buf->event_mask = 0;
+    buf->data = buf->internal_data;
+    buf->rdma_desc_ok = 0;
+    buf->ni_fail = PTL_NI_OK;
+    buf->conn = NULL;
 
 #if WITH_TRANSPORT_IB
-	if (buf->obj.obj_pool->type == POOL_BUF) {
-		buf->rdma.recv.wr.next = NULL;
-		buf->transfer.rdma.num_req_completes = 0;
-	}
+    if (buf->obj.obj_pool->type == POOL_BUF) {
+        buf->rdma.recv.wr.next = NULL;
+        buf->transfer.rdma.num_req_completes = 0;
+    }
 #endif
 
 #if WITH_TRANSPORT_SHMEM &&!USE_KNEM
-	buf->transfer.noknem.data = NULL;
+    buf->transfer.noknem.data = NULL;
 #endif
 
-	return PTL_OK;
+    return PTL_OK;
 }
 
 /**
@@ -49,32 +49,33 @@ int buf_setup(void *arg)
  */
 void buf_cleanup(void *arg)
 {
-	buf_t *buf = arg;
-	int i;
+    buf_t *buf = arg;
+    int i;
 
-	for (i = 0; i < buf->num_mr; i++)
-		mr_put(buf->mr_list[i]);
+    for (i = 0; i < buf->num_mr; i++)
+        mr_put(buf->mr_list[i]);
 
-	buf->num_mr = 0;
+    buf->num_mr = 0;
 
 #if WITH_TRANSPORT_IB
-	/* send/rdma bufs drop their references to
-	 * the master buf here */
-	if (buf->obj.obj_pool->type == POOL_BUF) {
+    /* send/rdma bufs drop their references to
+     * the master buf here */
+    if (buf->obj.obj_pool->type == POOL_BUF) {
 
-		if (buf->transfer.rdma.xxbuf) {
-			buf_put(buf->transfer.rdma.xxbuf);
-			buf->transfer.rdma.xxbuf = NULL;
-		}
+        if (buf->transfer.rdma.xxbuf) {
+            buf_put(buf->transfer.rdma.xxbuf);
+            buf->transfer.rdma.xxbuf = NULL;
+        }
 
-		if (buf->transfer.rdma.num_req_completes) {
-			atomic_sub(&buf->conn->rdma.num_req_posted, buf->transfer.rdma.num_req_completes);
-			assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
-		}
-	}
+        if (buf->transfer.rdma.num_req_completes) {
+            atomic_sub(&buf->conn->rdma.num_req_posted,
+                       buf->transfer.rdma.num_req_completes);
+            assert(atomic_read(&buf->conn->rdma.num_req_posted) >= 0);
+        }
+    }
 #endif
 
-	buf->type = BUF_FREE;
+    buf->type = BUF_FREE;
 }
 
 /**
@@ -91,49 +92,49 @@ void buf_cleanup(void *arg)
  */
 int buf_init(void *arg, void *parm)
 {
-	buf_t *buf = arg;
+    buf_t *buf = arg;
 
-	INIT_LIST_HEAD(&buf->list);
+    INIT_LIST_HEAD(&buf->list);
 
-	buf->length = 0;
-	buf->type = BUF_FREE;
+    buf->length = 0;
+    buf->type = BUF_FREE;
 
-	pthread_mutex_init(&buf->mutex, NULL);
-	pthread_cond_init(&buf->cond, NULL);
+    pthread_mutex_init(&buf->mutex, NULL);
+    pthread_cond_init(&buf->cond, NULL);
 
 #if WITH_TRANSPORT_IB
-	if (parm) {
-		/* This buffer carries an MR, so it's an IB buffer, not a
-		 * buffer in shared memory. */
-		struct ibv_mr *mr = parm;
+    if (parm) {
+        /* This buffer carries an MR, so it's an IB buffer, not a
+         * buffer in shared memory. */
+        struct ibv_mr *mr = parm;
 
-		buf->rdma.recv.wr.next = NULL;
-		buf->rdma.recv.wr.wr_id = (uintptr_t)buf;
-		buf->rdma.recv.wr.sg_list = &buf->rdma.recv.sg_list;
-		buf->rdma.recv.wr.num_sge = 1;
+        buf->rdma.recv.wr.next = NULL;
+        buf->rdma.recv.wr.wr_id = (uintptr_t) buf;
+        buf->rdma.recv.wr.sg_list = &buf->rdma.recv.sg_list;
+        buf->rdma.recv.wr.num_sge = 1;
 
-		buf->rdma.recv.sg_list.addr = (uintptr_t)buf->internal_data;
-		buf->rdma.recv.sg_list.lkey = mr->lkey;
+        buf->rdma.recv.sg_list.addr = (uintptr_t) buf->internal_data;
+        buf->rdma.recv.sg_list.lkey = mr->lkey;
 
-		buf->rdma.lkey = mr->lkey;
+        buf->rdma.lkey = mr->lkey;
 
-		atomic_set(&buf->rdma.rdma_comp, 0);
-	}
-	PTL_FASTLOCK_INIT(&buf->rdma.rdma_list_lock);
+        atomic_set(&buf->rdma.rdma_comp, 0);
+    }
+    PTL_FASTLOCK_INIT(&buf->rdma.rdma_list_lock);
 #endif
 
-	return 0;
+    return 0;
 }
 
 void buf_fini(void *arg)
 {
-	buf_t *buf = arg;
+    buf_t *buf = arg;
 
 #if WITH_TRANSPORT_IB
-	PTL_FASTLOCK_DESTROY(&buf->rdma.rdma_list_lock);
+    PTL_FASTLOCK_DESTROY(&buf->rdma.rdma_list_lock);
 #endif
-	pthread_mutex_destroy(&buf->mutex);
-	pthread_cond_destroy(&buf->cond);
+    pthread_mutex_destroy(&buf->mutex);
+    pthread_cond_destroy(&buf->cond);
 }
 
 /**
@@ -143,16 +144,16 @@ void buf_fini(void *arg)
  */
 void buf_dump(buf_t *buf)
 {
-	struct req_hdr *hdr = (struct req_hdr *)buf->data;
+    struct req_hdr *hdr = (struct req_hdr *)buf->data;
 
-	printf("buf: %p\n", buf);
-	printf("buf->size	= %d\n", BUF_DATA_SIZE);
-	printf("buf->length	= %d\n", buf->length);
-	printf("hdr->h1.version	= %d\n", hdr->h1.version);
-	printf("hdr->h1.operation	= %d\n", hdr->h1.operation);
-	printf("hdr->ni_type	= %d\n", hdr->h1.ni_type);
-	printf("hdr->pkt_fmt	= %d\n", hdr->h1.pkt_fmt);
-	printf("\n");
+    printf("buf: %p\n", buf);
+    printf("buf->size	= %d\n", BUF_DATA_SIZE);
+    printf("buf->length	= %d\n", buf->length);
+    printf("hdr->h1.version	= %d\n", hdr->h1.version);
+    printf("hdr->h1.operation	= %d\n", hdr->h1.operation);
+    printf("hdr->ni_type	= %d\n", hdr->h1.ni_type);
+    printf("hdr->pkt_fmt	= %d\n", hdr->h1.pkt_fmt);
+    printf("\n");
 }
 
 #if WITH_TRANSPORT_IB
@@ -173,63 +174,63 @@ void buf_dump(buf_t *buf)
  */
 int ptl_post_recv(ni_t *ni, int count)
 {
-	int err;
-	buf_t *buf;
-	struct ibv_recv_wr *bad_wr;
-	int actual;
-	struct ibv_recv_wr *wr;
-	struct list_head list;
+    int err;
+    buf_t *buf;
+    struct ibv_recv_wr *bad_wr;
+    int actual;
+    struct ibv_recv_wr *wr;
+    struct list_head list;
 
-	if (count == 0)
-		return PTL_OK;
+    if (count == 0)
+        return PTL_OK;
 
-	INIT_LIST_HEAD(&list);
-	wr = NULL;
+    INIT_LIST_HEAD(&list);
+    wr = NULL;
 
-	for (actual = 0; actual < count; actual++) {
-		err = buf_alloc(ni, &buf);
-		if (err)
-			break;
+    for (actual = 0; actual < count; actual++) {
+        err = buf_alloc(ni, &buf);
+        if (err)
+            break;
 
-		buf->rdma.recv.sg_list.length = BUF_DATA_SIZE;
-		buf->type = BUF_RECV;
-		buf->rdma.recv.wr.next = wr;
-		wr = &buf->rdma.recv.wr;
+        buf->rdma.recv.sg_list.length = BUF_DATA_SIZE;
+        buf->type = BUF_RECV;
+        buf->rdma.recv.wr.next = wr;
+        wr = &buf->rdma.recv.wr;
 
-		list_add_tail(&buf->list, &list);
-	}
+        list_add_tail(&buf->list, &list);
+    }
 
-	/* couldn't alloc any buffers */
-	if (!actual) {
-		WARN();
-		return PTL_FAIL;
-	}
+    /* couldn't alloc any buffers */
+    if (!actual) {
+        WARN();
+        return PTL_FAIL;
+    }
 
-	/* add buffers to ni recv_list for recovery during shutdown */
-	PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
-	list_splice_tail(&list, &ni->rdma.recv_list);
-	PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
+    /* add buffers to ni recv_list for recovery during shutdown */
+    PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
+    list_splice_tail(&list, &ni->rdma.recv_list);
+    PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
 
-	/* account for posted buffers */
-	atomic_add(&ni->rdma.num_posted_recv, actual);
+    /* account for posted buffers */
+    atomic_add(&ni->rdma.num_posted_recv, actual);
 
-	err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv.wr, &bad_wr);
-	
-	if (err) {
-		WARN();
-		/* re-stock any unposted buffers */
-		PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
-		for (wr = bad_wr; wr; wr = wr->next) {
-			buf = container_of(wr, buf_t, rdma.recv.wr);
-			list_del(&buf->list);
-			buf_put(buf);
+    err = ibv_post_srq_recv(ni->rdma.srq, &buf->rdma.recv.wr, &bad_wr);
 
-			/* account for failed buffers */
-			atomic_dec(&ni->rdma.num_posted_recv);
-		}
-		PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
-	}
+    if (err) {
+        WARN();
+        /* re-stock any unposted buffers */
+        PTL_FASTLOCK_LOCK(&ni->rdma.recv_list_lock);
+        for (wr = bad_wr; wr; wr = wr->next) {
+            buf = container_of(wr, buf_t, rdma.recv.wr);
+            list_del(&buf->list);
+            buf_put(buf);
 
-	return PTL_OK;
+            /* account for failed buffers */
+            atomic_dec(&ni->rdma.num_posted_recv);
+        }
+        PTL_FASTLOCK_UNLOCK(&ni->rdma.recv_list_lock);
+    }
+
+    return PTL_OK;
 }
 #endif

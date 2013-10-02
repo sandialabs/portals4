@@ -11,15 +11,13 @@
  * @brief shared memory buffer queue
  */
 struct queue {
-	/* The First Cacheline */
-	unsigned long		head;
-	unsigned long		tail;
-	uint8_t			pad1[CACHELINE_WIDTH -
-					(2*sizeof(unsigned long))];
-	/* The Second Cacheline */
-	unsigned long		shadow_head;
-	uint8_t			pad2[CACHELINE_WIDTH -
-					sizeof(unsigned long)];
+    /* The First Cacheline */
+    unsigned long head;
+    unsigned long tail;
+    uint8_t pad1[CACHELINE_WIDTH - (2 * sizeof(unsigned long))];
+    /* The Second Cacheline */
+    unsigned long shadow_head;
+    uint8_t pad2[CACHELINE_WIDTH - sizeof(unsigned long)];
 };
 
 typedef struct queue queue_t;
