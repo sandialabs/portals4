@@ -103,6 +103,16 @@ AC_ARG_ENABLE([transport-udp],
   [AS_HELP_STRING([--enable-transport-udp],
     [Use UDP for remote communication.  Will only be chosen if IB is not built. Experimental. (default: auto-detect)])])
 
+AC_ARG_ENABLE([reliable-udp],
+  [AS_HELP_STRING([--enable-reliable-udp],
+    [Use reliable UDP for remote communication. Must select this in addition to --enable-transport-udp. Experimental. (default: off)])])
+AS_IF([test "x$enable_reliable_udp" == "xyes"],
+  [AC_DEFINE([WITH_RUDP], [1], [Define to enable RUDP])
+    reliable_udp=yes],
+    [reliable_udp=no])
+AM_CONDITIONAL(WITH_RUDP, test "x$enable_reliable_udp" == xyes)
+
+
 AC_ARG_ENABLE([ib-shmem],
   [AS_HELP_STRING([--enable-ib-shmem],
     [Backward compatibility option for --enable-transport-shmem.])],
@@ -292,6 +302,7 @@ AS_IF([test "$active_remote_transport" == "udp"],
   [AC_DEFINE([WITH_TRANSPORT_UDP], [1], [Define to enable UDP support])
    transport_udp="yes"],
   [transport_udp="no"])
+
 AM_CONDITIONAL([WITH_TRANSPORT_UDP], [test "$active_remote_transport" == "udp"])
 
 # figure out all the runtime stuff
@@ -385,6 +396,7 @@ echo ""
 echo "  Transport Support:"
 echo "       InfiniBand: $transport_ib"
 echo "              UDP: $transport_udp"
+echo "     Reliable UDP: $enable_reliable_udp"
 echo "    Shared memory: $transport_shmem"
 echo "             KNEM: $knem_happy"
 echo ""

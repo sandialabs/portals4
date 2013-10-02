@@ -89,7 +89,9 @@ endif
 if WITH_TRANSPORT_UDP
 libportals_ib_la_SOURCES += \
 	ptl_iface_udp.c \
-	ptl_udp.c
+	ptl_udp.c \
+    ptl_rudp.h \
+    ptl_rudp.c
 endif
 
 else

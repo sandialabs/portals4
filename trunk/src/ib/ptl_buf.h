@@ -27,6 +27,11 @@ enum buf_type {
 	BUF_UDP_CONN_REP,
 #endif
 
+#if WITH_RUDP
+    BUF_UDP_ACK,
+    BUF_UDP_NACK,
+#endif
+
 #if WITH_TRANSPORT_SHMEM
 	BUF_SHMEM_SEND,
 	BUF_SHMEM_RETURN,
@@ -187,6 +192,7 @@ struct buf {
  			unsigned int operation;	/* Save the operation */
 
 			int			auto_unlink_pending;
+			int			init_flow_ctrl;
 		};
 
 		/*
@@ -267,7 +273,9 @@ struct buf {
                         struct sockaddr_in *dest_addr;
                         /* source address for recv */
                         struct sockaddr_in src_addr;
-			
+#if WITH_RUDP
+			            int    in_progress;
+#endif
 		} udp;
 #endif
 
@@ -395,7 +403,8 @@ struct buf {
 			//indicate whether the last iovec in the message data
 			//for a segment is split over multiple segments
 			unsigned int iovec_split;
-			
+			//sequence number for this buf
+            unsigned int seq_num;
 		} udp;
 #endif
 	} transfer;
