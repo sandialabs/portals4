@@ -151,11 +151,14 @@ struct conn {
 #if WITH_TRANSPORT_UDP
 		struct {
 			struct sockaddr_in dest_addr;
-			atomic_t           send_seq;
-			atomic_t           recv_seq;
 			atomic_t           fragment_seq;
 			atomic_t           is_waiting;    /* set if waiting for connection request response to arrive */
 			struct list_head   waiting_bufs;  /* list of bufs waiting for connection to be established */
+#if WITH_RUDP
+            atomic_t           recv_seq_num;    /*sequence number for reliability*/
+            atomic_t           send_seq_num;
+            struct list_head   rel_queued_bufs; /*list of queued buffers for in-order delivery */
+#endif
 		} udp;
 #endif
 	};

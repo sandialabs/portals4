@@ -51,8 +51,15 @@ int conn_init(void *arg, void *parm)
 	/* Set udp as the transport. */
 	conn->transport = transport_udp;
 
-	atomic_set(&conn->udp.send_seq, 0);
-	atomic_set(&conn->udp.recv_seq, 0);
+#if WITH_RUDP
+	atomic_set(&conn->udp.send_seq_num, 1);
+    //recv side starts at 1, due to the
+    //need to use atomic inc on the send
+    //seq num before the message is sent
+	atomic_set(&conn->udp.recv_seq_num, 1);
+    INIT_LIST_HEAD(&conn->udp.rel_queued_bufs);
+#endif
+
 #endif
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
@@ -82,10 +89,10 @@ void conn_fini(void *arg)
 	}
 #endif
 
-#if WITH_TRANSPORT_UDP
+#if WITH_TRANSPORT_UDP && WITH_RUDP
 	if (conn->transport.type == CONN_TYPE_UDP) {
-		atomic_set(&conn->udp.send_seq, 0);
-		atomic_set(&conn->udp.recv_seq, 0);
+		atomic_set(&conn->udp.send_seq_num, 0);
+		atomic_set(&conn->udp.recv_seq_num, 0);
 	}
 #endif
 
