@@ -942,6 +942,8 @@ static void *progress_thread(void *arg)
                         }
                         PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 #endif
+                        if (buf_ref_cnt(buf) == 1)
+                            buf_put(buf);
 
                         if (shmem_buf->type == BUF_SHMEM_SEND ||
                             shmem_buf->shmem.index_owner != ni->mem.index) {

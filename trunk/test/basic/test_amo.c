@@ -82,6 +82,8 @@ main(int argc, char *argv[])
 	// put two values alternately to the 1st 32 bit word
         locktype expect, check;
 
+	peer.rank = other;
+
         write_md.start = &expect;
         write_md.length = sizeof(expect);
         write_md.options = PTL_MD_EVENT_CT_ACK;
@@ -139,6 +141,8 @@ main(int argc, char *argv[])
         one = 1;
         oldval = -10;
 
+	peer.rank = 0;
+
         write_md.start = &one;
         write_md.length = sizeof(one);
         write_md.options = 0;
@@ -188,7 +192,8 @@ main(int argc, char *argv[])
     if (PTL_CT_NONE != write_md.ct_handle) {
         PtlCTFree(write_md.ct_handle);
     }
-    PtlMDRelease(read_md_h);
+    if (rank == 0 || rank == other)
+        PtlMDRelease(read_md_h);
     PtlCTFree(read_md.ct_handle);
     CHECK_RETURNVAL(PtlPTFree(ni_h, pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_h));
