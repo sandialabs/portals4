@@ -267,11 +267,6 @@ int le_append_pt(ni_t *ni, le_t *le)
     return PTL_OK;
 }
 
-enum {
-    DONT_CHECK_PERM,
-    CHECK_PERM,
-};
-
 /**
  * @brief Compares an ME/LE with the unexpected list
  * and returns a list of messages that match.
@@ -279,10 +274,9 @@ enum {
  * @pre PT lock must be held by caller.
  *
  * @param[in] le The LE/ME match against the unexpected list.
- * @param[in] perm Flag to control permission checking.
  * @param[out] buf_list The returned message list.
  */
-static void __match_le_unexpected(const le_t *le, int perm,
+static void __match_le_unexpected(const le_t *le,
                                   struct list_head *buf_list)
 {
     ni_t *ni = obj_to_ni(le);
@@ -294,8 +288,7 @@ static void __match_le_unexpected(const le_t *le, int perm,
 
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
-        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le)) &&
-            (perm == DONT_CHECK_PERM || !check_perm(buf, le))) {
+        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))){
             list_del(&buf->unexpected_list);
             list_add_tail(&buf->unexpected_list, buf_list);
 
@@ -372,7 +365,7 @@ int __check_overflow(le_t *le, int delete)
     struct list_head buf_list;
     int ret;
 
-    __match_le_unexpected(le, DONT_CHECK_PERM, &buf_list);
+    __match_le_unexpected(le,&buf_list);
 
     ret = !list_empty(&buf_list);
     if (ret) {
@@ -465,7 +458,7 @@ int check_overflow_search_delete(le_t *le)
      * matching message and adding to the buf_list */
     PTL_FASTLOCK_LOCK(&pt->lock);
 
-    __match_le_unexpected(le, CHECK_PERM, &buf_list);
+    __match_le_unexpected(le, &buf_list);
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
