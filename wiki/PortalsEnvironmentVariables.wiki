@@ -1,0 +1,16 @@
+#summary An explanation of all of the environment variables used.
+
+= Introduction =
+
+This page lists all of the available environment variables for the Portals 4 Reference Implementation.
+
+
+= Details =
+
+*PTL_IFACE_NAME*: The name of the network interface that you wish to use. Default names starting with eth, ib or en are automatically found. Any others need to be explicitly set with this variable, e.g. ens1, qib0.
+
+*PTL_DEBUG*: Set to 0/1 to disable/enable Portals4 warning messages
+
+*PTL_LOG_LEVEL*: Set to 0 to disable trace messages, set up to 3 for more detailed messages.
+
+*PTL_ENABLE_MEM*: Set to 0/1 to disable/enable the local memory transport (if you compiled in support for it).
