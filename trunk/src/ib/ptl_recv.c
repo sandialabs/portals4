@@ -942,9 +942,15 @@ static void *progress_thread(void *arg)
                         }
                         PTL_FASTLOCK_UNLOCK(&ni->shmem.noknem_lock);
 #endif
-                        if (buf_ref_cnt(buf) == 1)
-                            buf_put(buf);
-
+#if WITH_TRANSPORT_IB
+                        if (buf_ref_cnt(buf) == 1 && 
+                            !(buf->event_mask & XI_RECEIVE_EXPECTED) && 
+                            (buf->type == BUF_TGT)) {
+                            ptl_warn("freeing a shared mem buf of type: %i with mask %X \n",buf->type, buf->event_mask);
+			    buf->type = BUF_FREE;
+			    buf_put(buf);
+			}
+#endif
                         if (shmem_buf->type == BUF_SHMEM_SEND ||
                             shmem_buf->shmem.index_owner != ni->mem.index) {
                             /* Requested to send the buffer back, or not the
