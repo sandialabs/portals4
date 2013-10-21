@@ -98,6 +98,7 @@ int init_iface_table(gbl_t *gbl)
     }
 
     int current_if_num = 0;
+    extern char *ptl_iface_name;
 
     for (i = 0; i < num_iface; i++) {
         gbl->iface[i].iface_id = i;
@@ -108,8 +109,12 @@ int init_iface_table(gbl_t *gbl)
 #if WITH_TRANSPORT_IB
         /* the interface name is "ib" followed by the interface id
          * in the future we may support other RDMA devices */
-        sprintf(gbl->iface[i].ifname, "ib%d", current_if_num);
+        if (ptl_iface_name != NULL) 
+	    sprintf(gbl->iface[i].ifname, "%s", ptl_iface_name);
+        else 
+            sprintf(gbl->iface[i].ifname, "ib%d", current_if_num);
         current_if_num++;
+        
 #endif
 
 #if WITH_TRANSPORT_UDP
@@ -120,6 +125,10 @@ int init_iface_table(gbl_t *gbl)
         //sprintf(gbl->iface[i].ifname, "lo%d",i);
         sprintf(gbl->iface[i].ifname, "en%d", current_if_num);
 #endif
+
+        if (ptl_iface_name != NULL) {
+	    sprintf(gbl->iface[i].ifname, "%s", ptl_iface_name);
+        }
 
         //sprintf(gbl->iface[i].ifname, "lo");
         in_addr_t addr;
@@ -135,10 +144,13 @@ int init_iface_table(gbl_t *gbl)
 #else
                 sprintf(gbl->iface[i].ifname, "eth%d", current_if_num);
 #endif
+                if(ptl_iface_name != NULL) {
+                    sprintf(gbl->iface[i].ifname, "%s", ptl_iface_name);
+                }
                 addr = check_ip_address(gbl->iface[i].ifname);
             };
             if (current_if_num == 100 && addr == INADDR_ANY) {
-                ptl_warn("no valid network device found \n");
+                ptl_warn("no valid network device found, try setting the PTL_IFACE_NAME environment variable\n");
                 return PTL_NO_INIT;
             } else {
                 ptl_warn("valid interface IPv4 address found: %s %i\n",

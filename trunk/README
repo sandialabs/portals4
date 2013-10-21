@@ -112,6 +112,8 @@ Options to configure include:
         transport, if one is compiled in.
       * PTL_DEBUG=1 will activate the tracing
       * PTL_LOG_LEVEL=[0|1|2|3] will set the trace level.
+      * PTL_IFACE_NAME allows for the explicit naming of the network interface
+        for example ib0, eno1, etc.
 
       For instance:
         PTL_LOG_LEVEL=3 PTL_DEBUG=1 yod -n 1 ./spam
