@@ -230,11 +230,11 @@ int process_rudp_recv_hdr(buf_t *buf, int len, ni_t *ni)
 ssize_t ptl_sendmsg(int sockfd, const struct msghdr *msg, int flags, ni_t *ni)
 {
     ssize_t ret;
-    int hdr_status;
 #if !WITH_RUDP
     ret = sendmsg(sockfd, msg, flags);
 #else
     //send this reliably
+    int hdr_status;
     hdr_status =
         process_rudp_send_hdr((void *)(msg->msg_iov[0].iov_base),
                               (int)(msg->msg_iov[0].iov_len), ni);
@@ -268,11 +268,11 @@ ssize_t ptl_sendto(int sockfd, buf_t *buf, size_t len, int flags,
                    struct sockaddr * dest_addr, socklen_t addrlen, ni_t *ni)
 {
     ssize_t ret;
-    int hdr_status;
 #if !WITH_RUDP
     ret = sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 #else
     //send this reliably
+    int hdr_status;
     hdr_status = process_rudp_send_hdr(buf, len, ni);
 
     //begin send
@@ -304,11 +304,11 @@ ssize_t ptl_sendto(int sockfd, buf_t *buf, size_t len, int flags,
 ssize_t ptl_recvmsg(int sockfd, struct msghdr *msg, int flags, ni_t *ni)
 {
     ssize_t ret;
-    int hdr_status;
 #if !WITH_RUDP
     ret = recvmsg(sockfd, msg, flags);
 #else
     //send this reliably
+    int hdr_status;
     ptl_info("@@@@@@@@@ RUDP recvmsg @@@@@@@@@\n");
     ret = recvmsg(sockfd, msg, flags);
     if (ret == -1)
@@ -344,11 +344,11 @@ ssize_t ptl_recvfrom(int sockfd, buf_t *buf, size_t len, int flags,
                      struct sockaddr * src_addr, socklen_t *addrlen, ni_t *ni)
 {
     ssize_t ret;
-    int hdr_status;
 #if !WITH_RUDP
     ret = recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
 #else
     //recv this reliably
+    int hdr_status;
     ret = recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
     //error processing, just hand the error back to the caller
     if (ret == -1 || ret == 0)
