@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test with TARGET_BIND_INACCESSIBLE</desc>
+  <ptl>
+    <ptl_ni desired_features="TARGET_BIND_INACCESSIBLE">
+      <ptl_pt>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

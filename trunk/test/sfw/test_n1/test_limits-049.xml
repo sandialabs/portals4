@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test with COHERENT_ATOMICS</desc>
+  <ptl>
+    <ptl_ni desired_features="COHERENT_ATOMICS">
+      <ptl_pt>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>

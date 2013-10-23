@@ -415,6 +415,7 @@ typedef unsigned char ptl_ni_fail_t;
 enum ni_features {
     NI_BIND_INACCESSIBLE,
     NI_DATA_ORDERING,
+    NI_COHERENT_ATOMICS,
     NI_OPTIONS_MASK
 };
 
@@ -423,6 +424,10 @@ enum ni_features {
 
 /*! Indicates that the Portals implementation supports total data ordering. */
 #define PTL_TOTAL_DATA_ORDERING (1 << NI_DATA_ORDERING)
+
+/*! Indicates that the Portals implementation provides atomic operations that are
+ * coherent with processor atomic operations */
+#define PTL_COHERENT_ATOMICS (1 << NI_COHERENT_ATOMICS)
 
 /*!
  * @struct ptl_ni_limits_t

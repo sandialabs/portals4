@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<test>
+  <desc>Test with TOTAL_DATA_ORDERING</desc>
+  <ptl>
+    <ptl_ni desired_features="TOTAL_DATA_ORDERING">
+      <ptl_pt>
+      </ptl_pt>
+    </ptl_ni>
+  </ptl>
+</test>
