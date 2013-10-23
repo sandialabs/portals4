@@ -543,7 +543,10 @@ TESTS = \
 	test_limits-044.xml \
 	test_limits-045.xml \
 	test_limits-046.xml \
-	test_mapping-001.xml \
+	test_limits-047.xml \
+	test_limits-048.xml \
+	test_limits-049.xml \
+        test_mapping-001.xml \
 	test_mapping-002.xml \
 	test_mapping-003.xml \
 	test_short-001.xml \
