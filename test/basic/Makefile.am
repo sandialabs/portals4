@@ -80,7 +80,8 @@ TESTS = \
 	test_PA_LE_persistent_search \
 	test_PA_ME_persistent_search \
 	test_ct_ack \
-	test_amo
+	test_amo \
+	test_amo_barrier
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -303,3 +304,5 @@ test_PA_ME_persistent_search_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 test_ct_ack_SOURCES = test_ct_ack.c
 
 test_amo_SOURCES = test_amo.c
+
+test_amo_barrier_SOURCES = test_amo_barrier.c
