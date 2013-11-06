@@ -107,10 +107,12 @@ main(int argc, char *argv[])
             fprintf(stderr, "%d %03d iter %d wait on %d\n",
                     j, rank, i, (int) psync_bytes[i]);
 #endif
-            while (psync_bytes[i] != 1) {
+            while (psync_bytes[i] < 1) {
                 __sync_synchronize();
-                if (psync_bytes[i] > 2) abort();
             }
+  
+            if (psync_bytes[i] > 2) abort();
+
 #ifdef DEBUG
             fprintf(stderr, "%d %03d iter %d done wait on %d\n",
                     j, rank, i, (int) psync_bytes[i]);
