@@ -9,7 +9,8 @@ TESTS = \
 	test_atomic_overflow-008.xml \
 	test_atomic_overflow-009.xml \
 	test_atomic_overflow-010.xml \
-	test_eq_overflow-001.xml \
+	test_atomic_overflow-011.xml \
+        test_eq_overflow-001.xml \
 	test_eq_overflow-002.xml \
 	test_events_logical-001.xml \
 	test_events_logical-002.xml \
@@ -58,6 +59,7 @@ TESTS = \
 	test_put_overflow-009.xml \
 	test_put_overflow-010.xml \
 	test_put_overflow-011.xml \
+        test_put_overflow-012.xml \
 	test_rdma_move_logical-001.xml \
 	test_rdma_move_logical-002.xml \
 	test_rdma_move_logical-003.xml \

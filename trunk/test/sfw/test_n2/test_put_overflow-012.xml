@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-    <desc>Test put overflow with ME with used CT</desc>
+    <desc>Test put overflow with ME with used CT with events</desc>
     <ptl>
       <ptl_ni ni_opt="MATCH PHYSICAL">
         <ompi_rt>
@@ -43,7 +43,7 @@
 
                       <ptl_ct>
 
-                        <ptl_me list="PRIORITY" me_data="0x77" me_match="0x5555" me_opt="OP_PUT CT_OVERFLOW CT_BYTES">
+                        <ptl_me list="PRIORITY" me_data="0x77" me_match="0x5555" me_opt="OP_PUT CT_OVERFLOW">
 
                           <!-- Wait for overflow event -->
                           <ptl_eq_wait>
@@ -53,7 +53,7 @@
                         </ptl_me>
 
                         <ptl_ct_get ct_handle="ct[0]">
-                          <check ct_event_failure="0" ct_event_success="4"/>
+                          <check ct_event_failure="0" ct_event_success="1"/>
                         </ptl_ct_get>
 
                       </ptl_ct>
