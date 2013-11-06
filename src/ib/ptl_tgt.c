@@ -1468,10 +1468,11 @@ static int tgt_atomic_data_in(buf_t *buf)
         return STATE_TGT_ERROR;
     }
 
+    //PTL_FASTLOCK_LOCK(&pt->lock)
     err = atomic_in(buf, me, data->immediate.data);
     if (err)
         return STATE_TGT_ERROR;
-
+    //PTL_FASTLOCK_UNLOCK(&pt->lock);
     assert(buf->in_atomic);
 
     ni = obj_to_ni(buf);
@@ -2003,8 +2004,14 @@ static int tgt_overflow_event(buf_t *buf)
 
         /* Update the counter if we can. If LE comes from PtlLESearch,
          * then ct is NULL. */
-        if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct)
-            make_ct_event(le->ct, buf, CT_MBYTES);
+        if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct){
+            int bytes =
+                (le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
+            make_ct_event(le->ct, buf, bytes);
+        }
+        else if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && (le->ct == NULL)){
+            ptl_warn("overflow CT == NULL but counting requested!\n");
+        }
     }
 
     return STATE_TGT_CLEANUP_2;
