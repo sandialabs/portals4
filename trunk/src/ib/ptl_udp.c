@@ -1109,8 +1109,8 @@ void PtlSetMap_udp(ni_t *ni, ptl_size_t map_size,
                 return;
             };
 
-            if (conn->transport.type == CONN_TYPE_UDP) ;
-            conn->transport = transport_udp;
+            if (conn->transport.type == CONN_TYPE_UDP)
+                conn->transport = transport_udp;
 
             conn->udp.dest_addr.sin_addr.s_addr =
                 nid_to_addr(mapping[i].phys.nid);
