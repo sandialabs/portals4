@@ -417,7 +417,8 @@ static int recv_init(PPEGBL buf_t *buf)
         ni_t *ni = obj_to_ni(buf);
 
         if (atomic_read(&ni->udp.self_recv) > 0) {
-            if (hdr->h1.operation == OP_CT_ACK || OP_ACK || OP_OC_ACK) {
+            if (hdr->h1.operation == OP_CT_ACK || 
+                hdr->h1.operation == OP_ACK || hdr->h1.operation == OP_OC_ACK) {
                 init_buf->init_state = STATE_INIT_ACK_EVENT;
                 err = process_init(init_buf);
             }

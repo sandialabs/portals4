@@ -436,7 +436,7 @@ int test_ptl_le_unlink(struct node_info *info)
 {
 	int ret;
 
-	while ((ret = PtlLEUnlink(info->le_handle)) == PTL_IN_USE);
+	while ((ret = PtlLEUnlink(info->le_handle)) == PTL_IN_USE)
 		sched_yield();
 
 	info->err = ret;
@@ -494,7 +494,7 @@ int test_ptl_me_unlink(struct node_info *info)
 {
 	int ret;
 
-	while ((ret = PtlMEUnlink(info->me_handle)) == PTL_IN_USE);
+	while ((ret = PtlMEUnlink(info->me_handle)) == PTL_IN_USE)
 		sched_yield();
 
 	info->err = ret;
