@@ -29,10 +29,10 @@ Options to configure include:
   UDP (experimental), and SHMEM.
 
   - Infiniband: this transport has multiple options, including not actualling using IB:
-      * Infiniband, selected by default, can be disabled with --disable-ib-ib
+      * Infiniband, selected by default, can be disabled with --disable-transport-ib
 
       * shared memory, not selected by default, can be enabled with
-        --enable-ib-shmem. It has the option of using KNEM for the
+        --enable-transport-shmem. It has the option of using KNEM for the
         large transfer (used if --with-knem=xxxx is present), or to
         use an internal slower shared memory protocol.
 
@@ -92,19 +92,23 @@ Options to configure include:
       be changed depending on your linux distribution.
 
       * minimal, no shared memory:
-          ./configure --with-implementation=ib
+          ./configure
 
       * optimized, with shared memory and KNEM support:
-          ./configure --with-implementation=ib --enable-ib-shmem --with-knem=/opt/knem --enable-fast
+          ./configure --enable-transport-shmem --with-knem=/opt/knem --enable-fast
 
       * PPE, no IB transport (so local node only):
-          ./configure --with-implementation=ib --enable-ib-ppe --disable-ib-ib
+          ./configure --enable-ib-ppe --disable-transport-ib
 
       Then type "make".
 
     Test:
       * Type "make check" in the main directory. This will run a
         series of checks on the local node, with either 1 or 2 ranks.
+        Configure will attempt to figure out the proper way to launch
+        parallel processes.  The TEST_RUNNER environment variable can
+        be used to set the proper test runner (such as
+        TEST_RUNNER='yod -np $(NPROCS)').
 
     Environment variables:
 
