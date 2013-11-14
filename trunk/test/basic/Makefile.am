@@ -83,7 +83,8 @@ TESTS = \
 	test_ct_overflow \
 	test_amo \
 	test_amo_barrier \
-	test_ro_put
+	test_LE_ro_put \
+        test_ME_ro_put
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -311,4 +312,9 @@ test_amo_SOURCES = test_amo.c
 
 test_amo_barrier_SOURCES = test_amo_barrier.c
 
-test_ro_put_SOURCES = test_ro_put.c
+test_LE_ro_put_SOURCES = test_ro_put.c
+test_LE_ro_put_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=0
+
+test_ME_ro_put_SOURCES = test_ro_put.c
+test_ME_ro_put_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
+
