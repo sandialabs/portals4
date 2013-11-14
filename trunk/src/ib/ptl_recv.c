@@ -135,6 +135,7 @@ static int comp_poll(ni_t *ni, int num_wc, struct ibv_wc wc_list[],
  */
 static int send_comp(buf_t *buf)
 {
+    int err;
     /* If it's a completion that was not requested, then it's either
      * coming from the send completion threshold mechanism (see
      * conn->rdma.completion_threshold), or it was completed in
@@ -146,7 +147,9 @@ static int send_comp(buf_t *buf)
 
         if (hdr->operation <= OP_SWAP) {
             buf->completed = 1;
-            process_init(buf);
+            err =process_init(buf);
+            if (unlikely(err))
+                ptl_warn("Error processing send completion\n");
         } else if (hdr->operation == OP_RDMA_DISC) {
             conn_t *conn = buf->conn;
 
@@ -895,6 +898,7 @@ void process_recv_udp(ni_t *ni, buf_t *buf)
 static void *progress_thread(void *arg)
 {
     ni_t *ni = arg;
+    int err = 0;
 
     while (!ni->catcher_stop
 #if WITH_TRANSPORT_SHMEM
@@ -909,7 +913,7 @@ static void *progress_thread(void *arg)
 #if WITH_TRANSPORT_SHMEM
         /* Shared memory. Physical NIs don't have a receive queue. */
         if (ni->shmem.queue) {
-            int err;
+            
             buf_t *shmem_buf;
 
             shmem_buf = shmem_dequeue(ni);
@@ -996,8 +1000,11 @@ static void *progress_thread(void *arg)
             struct noknem *noknem = buf->transfer.noknem.noknem;
 
             if (buf->transfer.noknem.transfer_state_expected == noknem->state) {
-                if (noknem->state == 0)
-                    process_init(buf);
+                if (noknem->state == 0){
+                    err = process_init(buf);
+                    if (unlikely(err))
+                        ptl_warn("Error in non-knem shared memory initiator processing\n");
+                }
                 else if (noknem->state == 2) {
                     if (noknem->init_done) {
                         buf_t *shmem_buf = buf->mem_buf;
@@ -1006,7 +1013,9 @@ static void *progress_thread(void *arg)
                          * noknem_list. */
                         list_del(&buf->list);
 
-                        process_tgt(buf);
+                        err = process_tgt(buf);
+                        if (unlikely(err))
+                            ptl_warn("Error in non-knem shared memory target processing");
 
                         if (shmem_buf->type == BUF_SHMEM_SEND ||
                             shmem_buf->shmem.index_owner != ni->mem.index) {
@@ -1021,7 +1030,9 @@ static void *progress_thread(void *arg)
                         }
 
                     } else {
-                        process_tgt(buf);
+                        err = process_tgt(buf);
+                        if (unlikely(err))
+                            ptl_warn("Error in non-knem shared memory target processing");
                     }
                 }
             }
