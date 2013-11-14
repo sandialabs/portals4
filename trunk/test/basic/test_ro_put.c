@@ -7,26 +7,9 @@
 #include <stdio.h>
 #include <sched.h>
 #include <unistd.h>
-#include <malloc.h>
 #include <sys/mman.h>
 
 #include "testing.h"
-
-#if MATCHING == 1
-# define ENTRY_T  ptl_me_t
-# define HANDLE_T ptl_handle_me_t
-# define NI_TYPE  PTL_NI_MATCHING
-# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
-# define APPEND   PtlMEAppend
-# define UNLINK   PtlMEUnlink
-#else
-# define ENTRY_T  ptl_le_t
-# define HANDLE_T ptl_handle_le_t
-# define NI_TYPE  PTL_NI_NO_MATCHING
-# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
-# define APPEND   PtlLEAppend
-# define UNLINK   PtlLEUnlink
-#endif /* if MATCHING == 1 */
 
 int main(int   argc,
          char *argv[])
@@ -34,16 +17,16 @@ int main(int   argc,
     ptl_handle_ni_t ni_h;
     ptl_pt_index_t  pt_index;
     uint64_t        *value;
-    ENTRY_T         value_e;
-    HANDLE_T        value_e_handle;
+    ptl_me_t        value_e;
+    ptl_handle_me_t value_e_handle;
     ptl_md_t        write_md;
     ptl_handle_md_t write_md_handle;
     int             num_procs;
-    ptl_ct_event_t ctc;
-    int rank;
-    int ret;
-    ptl_process_t *procs;
-    int pagesize;
+    ptl_ct_event_t  ctc;
+    int             rank;
+    int             ret;
+    ptl_process_t   *procs;
+    int             pagesize;
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -55,45 +38,31 @@ int main(int   argc,
     /* This test only succeeds if we have more than one rank */
     if (num_procs < 2) return 77;
 
-#if PHYSICAL_ADDR == 0
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
+    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, PTL_NI_MATCHING | PTL_NI_PHYSICAL,
                               PTL_PID_ANY, NULL, NULL, &ni_h));
-#else
-    CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_PHYSICAL,
-                              PTL_PID_ANY, NULL, NULL, &ni_h));
-#endif
 
     procs = libtest_get_mapping(ni_h);
-
-#if PHYSICAL_ADDR == 0
-    CHECK_RETURNVAL(PtlSetMap(ni_h, num_procs, procs));
-#endif
 
     CHECK_RETURNVAL(PtlPTAlloc(ni_h, 0, PTL_EQ_NONE, PTL_PT_ANY,
                                &pt_index));
     assert(pt_index == 0);
 
     pagesize = sysconf(_SC_PAGE_SIZE);
-    value = memalign(pagesize, pagesize);
-    if (NULL == value) exit(1);
+    if (0 != posix_memalign((void**) &value, pagesize, pagesize)) {
+        exit(1);
+    }
 
     if (1 == rank) {
         value_e.start  = value;
         value_e.length = sizeof(uint64_t);
         value_e.uid    = PTL_UID_ANY;
-#if MATCHING == 1
- #if PHYSICAL_ADDR == 0
-        value_e.match_id.rank = PTL_RANK_ANY;
- #else
 	value_e.match_id.phys.nid = PTL_NID_ANY;
 	value_e.match_id.phys.pid = PTL_PID_ANY;
- #endif
         value_e.match_bits    = 1;
         value_e.ignore_bits   = 0;
-#endif
-        value_e.options = OPTIONS;
+        value_e.options = PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM;
         CHECK_RETURNVAL(PtlCTAlloc(ni_h, &value_e.ct_handle));
-        CHECK_RETURNVAL(APPEND(ni_h, 0, &value_e, PTL_PRIORITY_LIST, NULL,
+        CHECK_RETURNVAL(PtlMEAppend(ni_h, 0, &value_e, PTL_PRIORITY_LIST, NULL,
                                &value_e_handle));
 
         value[0] = 0;
@@ -145,7 +114,7 @@ int main(int   argc,
 
     /* cleanup */
     if (1 == rank) {
-        CHECK_RETURNVAL(UNLINK(value_e_handle));
+        CHECK_RETURNVAL(PtlMEUnlink(value_e_handle));
         CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     } else if (0 == rank) {
         CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
