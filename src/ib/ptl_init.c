@@ -456,13 +456,15 @@ static int send_req(buf_t *buf)
     int state;
 
 #if WITH_TRANSPORT_UDP
-    if (buf->conn->transport.type == CONN_TYPE_UDP)
+    if (buf->conn->transport.type == CONN_TYPE_UDP) {
         ptl_info("set destination to: %s:%i \n",
                  inet_ntoa(conn->udp.dest_addr.sin_addr),
                  ntohs(conn->udp.dest_addr.sin_port));
-    req_hdr_t *hdr = (req_hdr_t *) buf->data;
-    ni_t *ni = obj_to_ni(buf);
-    hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+    
+        req_hdr_t *hdr = (req_hdr_t *) buf->data;
+        ni_t *ni = obj_to_ni(buf);
+        hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+    }
 #endif
 
     set_buf_dest(buf, conn);
@@ -1272,8 +1274,8 @@ int process_init(buf_t *buf)
   exit:
     /* we reach this point if we are leaving the state machine
      * to wait for an external event such as an IB send completion. */
+    ptl_info("exiting process init with pending task\n");
     buf->init_state = state;
     pthread_mutex_unlock(&buf->mutex);
-
-    return PTL_OK;
+    return err;
 }

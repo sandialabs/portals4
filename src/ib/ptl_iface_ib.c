@@ -235,6 +235,7 @@ static int iface_bind(iface_t *iface, unsigned int port)
     return PTL_FAIL;
 }
 
+/*
 static void process_async(EV_P_ ev_io *w, int revents)
 {
     ni_t *ni = w->data;
@@ -248,14 +249,14 @@ static void process_async(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    /* Get the async event */
+    // Get the async event 
     if (ni->iface) {
         if (ibv_get_async_event(ni->iface->ibv_context, &event) == 0) {
 
             ptl_warn("Got an unexpected asynchronous event: %d\n",
                      event.event_type);
 
-            /* Ack the event */
+            // Ack the event 
             ibv_ack_async_event(&event);
         } else {
             ptl_warn("Failed to get the asynchronous event\n");
@@ -264,7 +265,7 @@ static void process_async(EV_P_ ev_io *w, int revents)
 
     gbl_put();
 }
-
+*/
 static int init_rdma_srq(ni_t *ni)
 {
     struct ibv_srq_init_attr srq_init_attr;
