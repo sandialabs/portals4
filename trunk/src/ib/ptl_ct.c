@@ -476,6 +476,7 @@ void ct_check(ct_t *ct)
 {
     struct list_head *l;
     struct list_head *t;
+    int err;
 
     PTL_FASTLOCK_LOCK(&ct->lock);
 
@@ -494,7 +495,9 @@ void ct_check(ct_t *ct)
                 PTL_FASTLOCK_UNLOCK(&ct->lock);
 
                 buf->init_state = STATE_INIT_CLEANUP;
-                process_init(buf);
+                err = process_init(buf);
+                if (unlikely(err))
+                    ptl_warn("Error in cleanup on ct interrupt\n");
 
                 PTL_FASTLOCK_LOCK(&ct->lock);
             } else if ((ct->info.event.success + ct->info.event.failure) >=
@@ -504,8 +507,9 @@ void ct_check(ct_t *ct)
 
                 PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-                process_init(buf);
-
+                err = process_init(buf);
+                if (unlikely(err))
+                    ptl_warn("Error in processing initiator traffic\n");
                 PTL_FASTLOCK_LOCK(&ct->lock);
             }
 #ifdef WITH_TRIG_ME_OPS
@@ -937,6 +941,7 @@ static void do_trig_ct_op(buf_t *buf)
  */
 void post_ct(buf_t *buf, ct_t *ct)
 {
+    int err;
     assert(buf->type == BUF_INIT);
 
     /* Put the buffer on the wait list. */
@@ -947,7 +952,9 @@ void post_ct(buf_t *buf, ct_t *ct)
         buf->ct_threshold) {
         PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-        process_init(buf);
+        err = process_init(buf);
+        if (unlikely(err))
+            ptl_warn("error in processing at initiator on post CT \n");
     } else {
         atomic_inc(&ct->list_size);
 
