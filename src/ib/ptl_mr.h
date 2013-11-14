@@ -40,8 +40,10 @@ typedef struct mr {
     /* ummunotify kernel memory notification cookie */
     uint64_t umn_cookie;
 
-        /** entry in mr cache */
-             RB_ENTRY(mr) entry;
+    /** entry in mr cache */
+    RB_ENTRY(mr) entry;
+
+    int readonly;
 } mr_t;
 
 int mr_new(void *arg);

@@ -223,8 +223,26 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
     if (!mr->ibmr) {
         err = errno;
         WARN();
-        goto err1;
+        /* Try again for a read only MR */
+        mr->ibmr = ibv_reg_mr(ni->iface->pd, ib_start, length,
+                   IBV_ACCESS_REMOTE_READ 
+#ifdef IS_PPE
+                   | IBV_ACCESS_XPMEM
+#endif
+        );
+        if (!mr->ibmr){
+            err = errno;
+            WARN();
+            goto err1;
+        }
+        else {
+            mr->readonly = 1;
+        }
     }
+    else {
+        mr->readonly = 0;
+    }
+   
 #endif
 
 #if WITH_TRANSPORT_SHMEM

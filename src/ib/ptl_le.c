@@ -204,7 +204,8 @@ int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le)
             if (!mr_lookup_app
                 (ni, iov->iov_base, iov->iov_len, &le->mr_list[i]) == PTL_OK)
                 return PTL_ARG_INVALID;
-
+            if (le->mr_list[i]->readonly)
+                return PTL_ARG_INVALID;
             le->length += iov->iov_len;
             iov++;
         }

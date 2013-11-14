@@ -118,7 +118,7 @@ static int tgt_copy_in(buf_t *buf, me_t *me, void *data)
             err =
                 mr_lookup_app(obj_to_ni(me), me->start,
                               length * sizeof(ptl_iovec_t), &mr);
-            if (err) {
+            if (err) || (mr->readonly) {
                 WARN();
                 return err;
             }
