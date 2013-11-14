@@ -137,7 +137,9 @@ int _PtlPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
 
-    process_init(buf);
+    err = process_init(buf);; 
+    if (unlikely(err))
+        goto err1;
 
     gbl_put();
     return PTL_OK;
@@ -311,7 +313,9 @@ int _PtlGet(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
     buf->get_offset = local_offset;
     buf->init_state = STATE_INIT_START;
 
-    process_init(buf);
+    err = process_init(buf); 
+    if (unlikely(err)) 
+        goto err1;
 
     gbl_put();
     return PTL_OK;
@@ -547,7 +551,9 @@ int _PtlAtomic(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
 
-    process_init(buf);
+    err = process_init(buf); 
+    if (unlikely(err)) 
+        goto err1;
 
     gbl_put();
     return PTL_OK;
@@ -742,7 +748,9 @@ int _PtlFetchAtomic(PPEGBL ptl_handle_md_t get_md_handle,
     buf->get_offset = local_get_offset;
     buf->init_state = STATE_INIT_START;
 
-    process_init(buf);
+    err = process_init(buf); 
+    if (unlikely(err)) 
+        goto err1;
 
     gbl_put();
     return PTL_OK;
@@ -1042,7 +1050,9 @@ int _PtlSwap(PPEGBL ptl_handle_md_t get_md_handle,
         memcpy(operand_msg, operand, atom_type_size[atom_type]);
     }
 
-    process_init(buf);
+    err = process_init(buf); 
+    if (unlikely(err)) 
+        goto err1;
 
     gbl_put();
     return PTL_OK;
