@@ -12,7 +12,7 @@
 
 #include "testing.h"
 
-#if 1
+#if MATCHING == 1
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
