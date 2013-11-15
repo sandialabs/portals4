@@ -296,7 +296,7 @@ static int prepare_send_buf(buf_t *buf)
         ack_hdr->h1.version = PTL_HDR_VER_1;
         ack_hdr->h1.handle = ((req_hdr_t *) buf->data)->h1.handle;
 #if WITH_TRANSPORT_UDP
-        ptl_info(" preparing response for handle: %i \n", ack_hdr->h1.handle);
+        ptl_info(" preparing response for handle: %i \n", le32_to_cpu(ack_hdr->h1.handle));
         ack_hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
 #endif
 #if IS_PPE
@@ -428,16 +428,12 @@ static int tgt_start(buf_t *buf)
     initiator.phys.pid = le32_to_cpu(hdr->h1.src_pid);
 
 #if WITH_TRANSPORT_UDP
-    ptl_info("initiator nid: %i pid: %i \n", hdr->h1.src_nid,
-             hdr->h1.src_pid);
+    ptl_info("initiator nid: %i pid: %i \n", le32_to_cpu(hdr->h1.src_nid),
+             le32_to_cpu(hdr->h1.src_pid));
     ptl_info("ni: %p conn pool (%p) size: %i \n", ni, &ni->conn_pool,
              ni->conn_pool.size);
     ptl_info("buffer ni: %p \n", buf->obj.obj_ni);
     ptl_info("buf start: %p \n", buf->start);
-
-    //TODO make the hdr frm the sender send these in network order;
-    initiator.phys.nid = hdr->h1.src_nid;
-    initiator.phys.pid = hdr->h1.src_pid;
 
     buf->conn = get_conn(ni, ni->id);
     if (buf->conn->transport.type != CONN_TYPE_UDP) {
@@ -1744,7 +1740,7 @@ static int tgt_send_ack(buf_t *buf)
                 ack_buf->conn = buf->conn;
                 ack_buf->rlength = sizeof(buf_t);
                 ptl_info("buffer handle for initiator: %i \n",
-                         ack_hdr->h1.handle);
+                         le32_to_cpu(ack_hdr->h1.handle));
 
                 err = ack_buf->conn->transport.send_message(ack_buf, 0);
                 if (err) {

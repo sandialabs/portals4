@@ -392,7 +392,7 @@ static int recv_init(PPEGBL buf_t *buf)
     if (err) {
         WARN();
         ptl_info("cannot find buffer via buffer handle: %i %p\n",
-                 hdr->h1.handle, init_buf);
+                 le32_to_cpu(hdr->h1.handle), init_buf);
         return STATE_RECV_DROP_BUF;
     }
 
