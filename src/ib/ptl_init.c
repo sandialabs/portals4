@@ -233,8 +233,8 @@ static int prepare_req(buf_t *buf)
     hdr->h1.src_nid = cpu_to_le32(ni->id.phys.nid);
     hdr->h1.src_pid = cpu_to_le32(ni->id.phys.pid);
 #if WITH_TRANSPORT_UDP
-    ptl_info("initiator nid: %i pid: %i NI: %p\n", hdr->h1.src_nid,
-             hdr->h1.src_pid, ni);
+    ptl_info("initiator nid: %i pid: %i NI: %p\n", le32_to_cpu(hdr->h1.src_nid),
+             le32_to_cpu(hdr->h1.src_pid), ni);
     ptl_info("buffer handle: %i %i buf:%p\n", hdr->h1.handle,
              le32_to_cpu(hdr->h1.handle), &buf);
 #endif

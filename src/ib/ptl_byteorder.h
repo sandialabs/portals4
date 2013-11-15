@@ -70,6 +70,36 @@ static inline uint64_t le64_to_cpu(__le64 x)
 {
     return x;
 }
+#elif __BYTE_ORDER==__BIG_ENDIAN
+static inline __le16 cpu_to_le16(uint16_t x)
+{
+    return htole16(x);
+}
+
+static inline uint16_t le16_to_cpu(__le16 x)
+{
+    return le16toh(x);
+}
+
+static inline __le32 cpu_to_le32(uint32_t x)
+{
+    return htole32(x);
+}
+
+static inline uint32_t le32_to_cpu(__le32 x)
+{
+    return le32toh(x);
+}
+
+static inline __le64 cpu_to_le64(uint64_t x)
+{
+    return htole64(x);
+}
+
+static inline uint64_t le64_to_cpu(__le64 x)
+{
+    return le64toh(x);
+}
 #else
 #error Not defined yet.
 #endif

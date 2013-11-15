@@ -1056,10 +1056,10 @@ buf_t *udp_receive(ni_t *ni)
         ptl_info("process received message type \n");
         struct udp_conn_msg *msg = &thebuf->transfer.udp.conn_msg;
 
-        if (msg->msg_type == UDP_CONN_MSG_REQ) {
+        if (msg->msg_type == le16_to_cpu(UDP_CONN_MSG_REQ)) {
             ptl_info("received a UDP connection request \n");
             thebuf->type = BUF_UDP_CONN_REQ;
-        } else if (msg->msg_type == UDP_CONN_MSG_REP) {
+        } else if (msg->msg_type == le16_to_cpu(UDP_CONN_MSG_REP)) {
             ptl_info("recieved a UDP connection reply \n");
             thebuf->type = BUF_UDP_CONN_REP;
         } else {

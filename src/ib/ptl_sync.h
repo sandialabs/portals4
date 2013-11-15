@@ -74,6 +74,10 @@ static inline void SPINLOCK_BODY(void)
 #endif
 #endif
 
+#ifdef __powerpc__
+    __sync_synchronize();
+#endif
+
 #ifdef __arm__
     __sync_synchronize();
 #endif
