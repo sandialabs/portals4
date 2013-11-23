@@ -224,25 +224,23 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
         err = errno;
         WARN();
         /* Try again for a read only MR */
-        mr->ibmr = ibv_reg_mr(ni->iface->pd, ib_start, length,
-                   IBV_ACCESS_REMOTE_READ 
+        mr->ibmr =
+            ibv_reg_mr(ni->iface->pd, ib_start, length, IBV_ACCESS_REMOTE_READ
 #ifdef IS_PPE
-                   | IBV_ACCESS_XPMEM
+                       | IBV_ACCESS_XPMEM
 #endif
-        );
-        if (!mr->ibmr){
+            );
+        if (!mr->ibmr) {
             err = errno;
             WARN();
             goto err1;
-        }
-        else {
+        } else {
             mr->readonly = 1;
         }
-    }
-    else {
+    } else {
         mr->readonly = 0;
     }
-   
+
 #endif
 
 #if WITH_TRANSPORT_SHMEM
@@ -478,6 +476,8 @@ void mr_init(ni_t *ni)
 {
     ni->umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
     if (ni->umn_fd == -1) {
+        fprintf(stderr,
+                "WARNING: Ummunotify not found: Not using ummunotify can result in incorrect results download and install ummunotify from:\n http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2\n");
         return;
     }
 

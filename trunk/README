@@ -84,8 +84,9 @@ Options to configure include:
 
       * The ummunotify driver from
         http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2
-        (optional but recommended). Ensure that /dev/ummunotify is
+        (required for correctness with the IB transport). Ensure that /dev/ummunotify is
         readable/writable by the user running the portals software.
+        WARNING: Not using ummunotify may result in program incorrectness..
 
     Build:
       Note that the paths to mpi may not be necessary or may need to
