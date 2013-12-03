@@ -318,7 +318,7 @@ AS_IF([test "$want_runtime" = "1"],
   [pmi_CPPFLAGS='-I$(top_srcdir)/src/runtime/portals4'
    pmi_LDFLAGS=
    pmi_LIBS='$(top_builddir)/src/runtime/libportals_runtime.la'
-   TEST_RUNNER='yod -np $(NPROCS)'],
+   TEST_RUNNER='$(top_builddir)/src/runtime/hydra/yod.hydra -np $(NPROCS)'],
   [TEST_RUNNER='yod -np $(NPROCS)'])
 AC_SUBST(pmi_CPPFLAGS)
 AC_SUBST(pmi_LDFLAGS)
