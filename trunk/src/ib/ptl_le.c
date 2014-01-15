@@ -397,9 +397,8 @@ int check_overflow_search_only(le_t *le)
     buf_t *buf;
     buf_t *n;
     int found = 0;
-    ptl_event_t event[atomic_read(&pt->unexpected_size)];
-
     PTL_FASTLOCK_LOCK(&pt->lock);
+    ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
