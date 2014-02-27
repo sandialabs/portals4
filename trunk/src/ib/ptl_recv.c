@@ -39,13 +39,13 @@ extern atomic_t keep_polling;
  * @return the number of work completions found if no error.
  * @return a negative number if an error occured.
  */
-int rep_poll = 0;
 static int comp_poll(ni_t *ni, int num_wc, struct ibv_wc wc_list[],
                      buf_t *buf_list[])
 {
     int ret = 0;
     int i;
     buf_t *buf;
+    int rep_poll = 0;
 
 #if WITH_TRANSPORT_IB && !WITH_TRANSPORT_SHMEM && !IS_PPE
     while (ni->catcher_stop == 0 && ret == 0) {
