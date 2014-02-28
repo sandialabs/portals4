@@ -461,12 +461,14 @@ static int tgt_start(buf_t *buf)
     pt_index = le32_to_cpu(hdr->pt_index);
     if (pt_index >= ni->limits.max_pt_index) {
         buf->ni_fail = PTL_NI_DROPPED;
+        WARN();
         return STATE_TGT_DROP;
     }
 
     buf->pt = &ni->pt[pt_index];
     if (!buf->pt->in_use) {
         buf->ni_fail = PTL_NI_DROPPED;
+        WARN();
         return STATE_TGT_DROP;
     }
 
@@ -475,6 +477,7 @@ static int tgt_start(buf_t *buf)
     if (buf->pt->state != PT_ENABLED) {
         PTL_FASTLOCK_UNLOCK(&buf->pt->lock);
         buf->ni_fail = PTL_NI_PT_DISABLED;
+        WARN();
         return STATE_TGT_DROP;
     }
     buf->pt->num_tgt_active++;
@@ -688,6 +691,7 @@ static int tgt_get_match(buf_t *buf)
         buf->le = NULL;
         buf->ni_fail = ni_fail;
         ptl_warn("permissions failure \n");
+        WARN();
         return STATE_TGT_DROP;
     }
 
@@ -700,6 +704,7 @@ static int tgt_get_match(buf_t *buf)
                     ptl_info("dropping due to lack of unexpected headers\n");
                     PTL_FASTLOCK_UNLOCK(&pt->lock);
                     buf->ni_fail = PTL_NI_PT_DISABLED;
+                    WARN();
                     return STATE_TGT_DROP;
                 } else {
                     ptl_info("dropping due to lack of unexpected headers\n");
@@ -707,6 +712,7 @@ static int tgt_get_match(buf_t *buf)
                     le_put(buf->le);
                     buf->le = NULL;
                     buf->ni_fail = PTL_NI_DROPPED;
+                    WARN();
                     return STATE_TGT_DROP;
                 }
             } else {
