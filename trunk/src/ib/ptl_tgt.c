@@ -800,6 +800,7 @@ static int tgt_get_length(buf_t *buf)
         /* Messages that start outside the bounds of the ME are
          * truncated to zero bytes. */
         length = 0;
+        WARN();
     } else {
         ptl_size_t room = me->length - offset;
         length = (room >= rlength) ? rlength : room;
