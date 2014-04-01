@@ -310,7 +310,7 @@ int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
     atomic_set(&ni->ref_cnt, 1);
     ni->options = options;
     ni->last_pt = -1;
-    set_limits(ni, desired);
+
 #ifndef HAVE_KITTEN
     ni->uid = geteuid();
 #endif
@@ -344,14 +344,6 @@ int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
 
     mr_init(ni);
 
-    /* Note: pt range is [0..max_pt_index]. */
-    ni->pt = calloc(ni->limits.max_pt_index + 1, sizeof(*ni->pt));
-    if (unlikely(!ni->pt)) {
-        WARN();
-        err = PTL_NO_SPACE;
-        goto err3;
-    }
-
     err = init_pools(ni);
     if (unlikely(err))
         goto err3;
@@ -378,6 +370,18 @@ int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
             goto err3;
         }
     }
+
+    /* Set limits now that we know the transports limits */
+    set_limits(ni, desired);
+
+    /* Note: pt range is [0..max_pt_index]. */
+    ni->pt = calloc(ni->limits.max_pt_index + 1, sizeof(*ni->pt));
+    if (unlikely(!ni->pt)) {
+        WARN();
+        err = PTL_NO_SPACE;
+        goto err3;
+    }
+
 
     /* Add a progress thread. */
     err = start_progress_thread(ni);
