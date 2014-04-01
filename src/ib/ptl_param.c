@@ -374,3 +374,24 @@ unsigned long set_param(int parm, long val)
 
     return p->val;
 }
+
+/**
+ * @brief Set the max value given a requested value.
+ *
+ * This is currently used to feed back device maximum
+ * values to cap portals default maximums in the case
+ * that a device does not support the default max.
+ *
+ * @param[in] The parameter ID.
+ * @param[in] The requested value.
+ *
+ * @return The current value.
+ */
+unsigned long set_param_max(int parm, long val)
+{
+    param_t *p;
+    assert(parm < PTL_PARAM_LAST);
+    p = &param[parm];
+    p->max = val;
+    return p->max;
+}

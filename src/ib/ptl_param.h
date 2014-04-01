@@ -117,4 +117,17 @@ static inline unsigned long get_param(int parm)
     return param[parm].val;
 }
 
+/**
+  * @brief Set the maximum allowable value of a parameter.
+  *
+  * This call sets the parameter max value.
+  *
+  * @param[in] the index of the parameter.
+  *
+  * @param[in] the value to set the param max to.
+  *
+  * @return the max value set 
+  */
+unsigned long set_param_max(int parm, long val);
+
 #endif /* PTL_PARAM_H */

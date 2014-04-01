@@ -10,7 +10,7 @@
 
 #include "testing.h"
 
-const int tries = 1000000;
+const int tries = 100000;
 typedef int32_t locktype;
  
 

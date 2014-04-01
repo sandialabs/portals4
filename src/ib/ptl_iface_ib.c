@@ -14,6 +14,7 @@
 static int query_rdma_interface(iface_t *iface)
 {
     int ret;
+    struct ibv_port_attr port_attr;
 
     ret = ibv_query_device(iface->ibv_context, &iface->cap.device_attr);
     if (ret)
@@ -36,6 +37,14 @@ static int query_rdma_interface(iface_t *iface)
     iface->cap.max_srq_wr =
         min(get_param(PTL_MAX_SRQ_RECV_WR),
             iface->cap.device_attr.max_srq_wr);
+
+    ret = ibv_query_port(iface->ibv_context, iface->listen_id->port_num, 
+                         &port_attr);
+    if (ret)
+        return ret;
+    set_param_max(PTL_LIM_MAX_MSG_SIZE, port_attr.max_msg_sz);
+
+    ptl_info("max msg size is: %u",port_attr.max_msg_sz);
 
     return 0;
 }
