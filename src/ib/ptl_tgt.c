@@ -1935,6 +1935,21 @@ static void tgt_cleanup_2(buf_t *buf)
         buf->matching.le = NULL;
     }
 
+#if WITH_TRANSPORT_IB && !IS_PPE
+    if(buf->conn->transport.type == CONN_TYPE_RDMA){
+        ni_t *ni = obj_to_ni(buf);
+        if(buf->mr_list[0] != NULL && ni->umn_fd == -1){
+            int i = 0;
+            while (buf->mr_list[i] != NULL){
+                mr_put(buf->mr_list[i]);
+                i++;
+                if (i == 2) 
+                 abort();
+            }
+        }
+    }
+#endif
+
     if (buf->conn) {
         conn_put(buf->conn);
         buf->conn = NULL;

@@ -273,6 +273,12 @@ param_t param[] = {
                              .max = 10000000,
                              .val = 8 * 4096,
                              },
+    [PTL_DISABLE_MEM_REG_CACHE] = {
+                                   .name = "PTL_DISABLE_MEM_REG_CACHE",
+                                   .min = 0,
+                                   .max = 1,
+                                   .val = 0,
+                                  },
 };
 
 /**

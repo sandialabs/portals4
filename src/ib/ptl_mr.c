@@ -474,6 +474,7 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
  */
 void mr_init(ni_t *ni)
 {
+    if (get_param(PTL_DISABLE_MEM_REG_CACHE) != 1) {
     ni->umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
     if (ni->umn_fd == -1) {
         fprintf(stderr,
@@ -493,6 +494,10 @@ void mr_init(ni_t *ni)
     ni->umn_watcher.data = ni;
     ev_io_init(&ni->umn_watcher, process_ummunotify, ni->umn_fd, EV_READ);
     EVL_WATCH(ev_io_start(evl.loop, &ni->umn_watcher));
+    }
+    else {
+        fprintf(stderr, "NOTE: Ummunotify and IB registered mem cache disabled, set PTL_DISABLE_MEM_REG_CACHE=0 to re-enable.\n"); 
+    }
 }
 #endif
 
@@ -511,6 +516,8 @@ static void cleanup_mr_tree(struct ni_mr_tree *tree)
     for (mr = RB_MIN(the_root, &tree->tree); mr != NULL; mr = next_mr) {
         next_mr = RB_NEXT(the_root, &tree->tree, mr);
         RB_REMOVE(the_root, &tree->tree, mr);
+        //account for the case where no active mrs are on the list
+        if (atomic_read(&mr->obj.obj_ref.ref_cnt) > 1)
         mr_put(mr);
     }
 

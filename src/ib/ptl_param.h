@@ -53,7 +53,7 @@ enum {
     PTL_ENABLE_MEM,
     PTL_BOUNCE_NUM_BUFS,
     PTL_BOUNCE_BUF_SIZE,
-
+    PTL_DISABLE_MEM_REG_CACHE,
     PTL_PARAM_LAST,             /* keep me last */
 };
 
