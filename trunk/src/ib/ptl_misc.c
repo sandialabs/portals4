@@ -10,6 +10,7 @@
 int debug;
 int ptl_log_level;
 char *ptl_iface_name;
+int ptl_disable_ummu;
 
 unsigned long pagesize;
 unsigned int linesize;
@@ -27,6 +28,7 @@ int ppe_misc_init_once(void)
     debug = get_param(PTL_DEBUG);
     ptl_log_level = get_param(PTL_LOG_LEVEL);
     ptl_iface_name = getenv("PTL_IFACE_NAME");
+    ptl_disable_ummu = get_param(PTL_DISABLE_MEM_REG_CACHE);
     pagesize = sysconf(_SC_PAGESIZE);
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE
     linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
@@ -66,6 +68,7 @@ int misc_init_once(void)
     debug = get_param(PTL_DEBUG);
     ptl_log_level = get_param(PTL_LOG_LEVEL);
     ptl_iface_name = getenv("PTL_IFACE_NAME");
+    ptl_disable_ummu = get_param(PTL_DISABLE_MEM_REG_CACHE);
     pagesize = sysconf(_SC_PAGESIZE);
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE
     linesize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);

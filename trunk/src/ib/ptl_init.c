@@ -1108,6 +1108,21 @@ static void error(buf_t *buf)
 static void cleanup(buf_t *buf)
 {
 
+#if WITH_TRANSPORT_IB && !IS_PPE
+    /* In the case where ummunotify is not installed */
+    ni_t *ni = obj_to_ni(buf);
+    if (ni->umn_fd == -1) {
+        if (buf->conn->transport.type == CONN_TYPE_RDMA) {
+            if (buf->get_md)
+                if (buf->get_md->mr_list)
+                    mr_put(buf->get_md->mr_list[0]);
+            if (buf->put_md)
+                if (buf->put_md->mr_list)
+                    mr_put(buf->put_md->mr_list[0]);
+        } 
+    }
+#endif
+
     if (buf->get_md) {
         md_put(buf->get_md);
         buf->get_md = NULL;

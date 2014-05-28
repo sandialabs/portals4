@@ -119,6 +119,9 @@ Options to configure include:
       * PTL_LOG_LEVEL=[0|1|2|3] will set the trace level.
       * PTL_IFACE_NAME allows for the explicit naming of the network interface
         for example ib0, eno1, etc.
+      * PTL_DISABLE_MEM_REG_CACHE=[0|1] deactivates/activates the IB memory 
+        registration cache. Disabling it no longer requires ummunotify, and
+        the implementation does not keep a registered memory cache.
 
       For instance:
         PTL_LOG_LEVEL=3 PTL_DEBUG=1 yod -n 1 ./spam
