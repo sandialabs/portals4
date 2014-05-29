@@ -9,6 +9,15 @@
 
 #include "ummunotify.h"
 
+#if !IS_PPE
+int global_umn_init=0;
+int global_umn_fd;
+uint64_t *global_umn_counter;
+ev_io global_umn_watcher;
+ni_t *global_nis[8];
+int global_ni_count;
+#endif
+
 /**
  * @brief Initialize mr each time when allocated from free list.
  *
@@ -298,6 +307,14 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
     struct list_head mr_list;
 
 #if !IS_PPE
+    if (global_umn_init == 1){
+        while (generation_counter != *ni->umn_counter){
+            SPINLOCK_BODY();
+        }
+    }
+#endif
+
+#if !IS_PPE
   again:
 #endif
     PTL_FASTLOCK_LOCK(&tree->tree_lock);
@@ -425,20 +442,24 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
 }
 
 #if !IS_PPE
+
 static void process_ummunotify(EV_P_ ev_io *w, int revents)
 {
-    ni_t *ni = w->data;
     struct ummunotify_event ev;
     int len;
 
     while (1) {
 
         /* Read an event. */
-        len = read(ni->umn_fd, &ev, sizeof ev);
+        len = read(global_umn_fd, &ev, sizeof ev);
         if (len < 0 || len != sizeof ev) {
             WARN();
             return;
         }
+        int i;
+        for(i=0; i<global_ni_count; i++)
+          {
+            ni_t *ni = global_nis[i];
 
         switch (ev.type) {
             case UMMUNOTIFY_EVENT_TYPE_INVAL:{
@@ -466,6 +487,7 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
                 generation_counter = ev.user_cookie_counter;
                 return;
         }
+        }
     }
 }
 
@@ -475,25 +497,33 @@ static void process_ummunotify(EV_P_ ev_io *w, int revents)
 void mr_init(ni_t *ni)
 {
     if (get_param(PTL_DISABLE_MEM_REG_CACHE) != 1) {
-    ni->umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
-    if (ni->umn_fd == -1) {
-        fprintf(stderr,
-                "WARNING: Ummunotify not found: Not using ummunotify can result in incorrect results download and install ummunotify from:\n http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2\n");
-        return;
-    }
+        global_nis[global_ni_count++] = ni;
+        if (!global_umn_init) {
+            global_umn_init = 1;
+            global_umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
+            if (global_umn_fd == -1) {
+                fprintf(stderr,
+                        "WARNING: Ummunotify not found: Not using ummunotify can result in incorrect results download and install ummunotify from:\n http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2\n");
+                global_umn_init = 0;
+                return;
+            }   
 
-    ni->umn_counter =
-        mmap(NULL, sizeof *(ni->umn_counter), PROT_READ, MAP_SHARED,
-             ni->umn_fd, 0);
-    if (ni->umn_counter == MAP_FAILED) {
-        close(ni->umn_fd);
-        ni->umn_fd = -1;
-        return;
-    }
+            global_umn_counter =
+                mmap(NULL, sizeof *(global_umn_counter), PROT_READ, MAP_SHARED,
+                     global_umn_fd, 0);
+            if (global_umn_counter == MAP_FAILED) {
+                close(global_umn_fd);
+                global_umn_fd = -1;
+                return;
+            }
 
-    ni->umn_watcher.data = ni;
-    ev_io_init(&ni->umn_watcher, process_ummunotify, ni->umn_fd, EV_READ);
-    EVL_WATCH(ev_io_start(evl.loop, &ni->umn_watcher));
+            global_umn_watcher.data = NULL;
+            ev_io_init(&global_umn_watcher, process_ummunotify, global_umn_fd, EV_READ);
+            EVL_WATCH(ev_io_start(evl.loop, &global_umn_watcher));
+        }
+        ni->umn_counter = global_umn_counter;
+        ni->umn_watcher = global_umn_watcher;
+        ni->umn_fd = global_umn_fd;
     }
     else {
         fprintf(stderr, "NOTE: Ummunotify and IB registered mem cache disabled, set PTL_DISABLE_MEM_REG_CACHE=0 to re-enable.\n"); 
@@ -518,7 +548,7 @@ static void cleanup_mr_tree(struct ni_mr_tree *tree)
         RB_REMOVE(the_root, &tree->tree, mr);
         //account for the case where no active mrs are on the list
         if (atomic_read(&mr->obj.obj_ref.ref_cnt) > 1)
-        mr_put(mr);
+            mr_put(mr);
     }
 
     PTL_FASTLOCK_UNLOCK(&tree->tree_lock);
