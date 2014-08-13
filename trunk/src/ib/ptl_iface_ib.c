@@ -42,6 +42,8 @@ static int query_rdma_interface(iface_t *iface)
                          &port_attr);
     if (ret)
         return ret;
+    
+    set_param(PTL_LIM_MAX_MSG_SIZE, port_attr.max_msg_sz);
     set_param_max(PTL_LIM_MAX_MSG_SIZE, port_attr.max_msg_sz);
 
     ptl_info("max msg size is: %u",port_attr.max_msg_sz);
