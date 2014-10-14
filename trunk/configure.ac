@@ -77,12 +77,12 @@ AC_DEFINE_UNQUOTED([CACHELINE_WIDTH], [$with_cacheline_width], [The cacheline wi
 AS_IF([test "x$enable_register_on_bind" == xyes],
 	  [AC_DEFINE([REGISTER_ON_BIND], [1], [Define that makes XFE memory registration happen at MDBind time, rather than at data movement time.])])
 
-AC_ARG_ENABLE([qlogic],
-  [AS_HELP_STRING([--enable-qlogic],
-    [Use Qlogic InfiniPath Hardware of IB communication. (default: no)])])
-AS_IF([test "x$enable_qlogic" == "xyes"],
-  [AC_DEFINE([WITH_QLOGIC], [1], [Define to enable Qlogic])])
-AM_CONDITIONAL(WITH_QLOGIC, test "x$enable_qlogic" == xyes)
+AC_ARG_ENABLE([zeromrs],
+  [AS_HELP_STRING([--enable-zero-mrs],
+    [Enable this when using MOFED V2.2+ or Qlogic InfiniPath Hardware of IB communication. (default: no)])])
+AS_IF([test "x$enable_zero-mrs" == "xyes"],
+  [AC_DEFINE([WITH_ZERO_MRS], [1], [Define to enable MOFED V2.2 or greater or Qlogic])])
+AM_CONDITIONAL(WITH_ZERO_MRS, test "x$enable_zero-mrs" == xyes)
 
 AC_ARG_ENABLE([trigmeops],
   [AS_HELP_STRING([--enable-me-triggered],

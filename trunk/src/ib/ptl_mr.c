@@ -164,9 +164,9 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
         err = ENOMEM;
         goto err1;
     }
-#if WITH_QLOGIC
-    //Fix for Qlogic InfiniPath, that does not accept a NULL value for an ibv_mr_reg
-    //REG 2013
+#if WITH_ZERO_MRS
+    //Fix for Qlogic InfiniPath and recent MOFED versions, that does not accept a NULL value for an ibv_mr_reg
+    //REG 2014
     if ((start == NULL) && ((int)length == 0)) {
         uint64_t junk_value;
         start = &junk_value;
@@ -430,7 +430,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
         mr_get(mr);
         res = RB_INSERT(the_root, &tree->tree, mr);
 //this can happen if using Qlogic
-#if !WITH_QLOGIC
+#if !WITH_ZERO_MRS
         assert(res == NULL);           /* should never happen */
 #endif
     }
