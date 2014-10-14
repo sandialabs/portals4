@@ -537,7 +537,7 @@ static int setup_commpad(ni_t *ni)
     if (ni->options & PTL_NI_PHYSICAL) {
         /* Create a unique name for the shared memory file. */
         snprintf(comm_pad_shm_name, sizeof(comm_pad_shm_name),
-                 "/portals4-shmem-pid%d-%d", ni->id.phys.pid, ni->options);
+                 "/portals4-shmem-pid%d", ni->id.phys.pid);
     } else {
         /* Create a unique name for the shared memory file. Use the hash
          * created from the mapping. */
