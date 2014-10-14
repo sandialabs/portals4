@@ -563,7 +563,7 @@ static int rdma_do_transfer(buf_t *buf)
     iov_off = buf->cur_loc_iov_off;
 
     rem_sge = buf->transfer.rdma.cur_rem_sge;
-    rem_off = buf->transfer.rdma.cur_rem_off;
+    rem_off = 0;
     rem_size = le32_to_cpu(rem_sge->length);
     rem_key = le32_to_cpu(rem_sge->lkey);
 
@@ -623,13 +623,6 @@ static int rdma_do_transfer(buf_t *buf)
         resid -= bytes;
         rem_off += bytes;
 
-        if (resid && rem_off >= rem_size) {
-            rem_sge++;
-            rem_size = le32_to_cpu(rem_sge->length);
-            rem_key = le32_to_cpu(rem_sge->lkey);
-            rem_off = 0;
-        }
-
         /* if we are finished or have reached the limit
          * of the number of rdma's outstanding then
          * request a completion notification */
@@ -650,6 +643,13 @@ static int rdma_do_transfer(buf_t *buf)
             list_del(&rdma_buf->list);
             PTL_FASTLOCK_UNLOCK(&buf->rdma.rdma_list_lock);
             return err;
+        }
+
+        if (resid && rem_off >= rem_size) {
+            rem_sge++;
+            rem_size = le32_to_cpu(rem_sge->length);
+            rem_key = le32_to_cpu(rem_sge->lkey);
+            rem_off = 0;
         }
 
         if (comp)
