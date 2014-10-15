@@ -115,7 +115,7 @@ int main(int   argc,
         ptl_md_t        md;
 
         /* 16 extra just in case... */
-        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, iters + 16, &eq_handle));
+        CHECK_RETURNVAL(PtlEQAlloc(ni_handle, iters*2 + 16, &eq_handle));
 
         md.start = NULL;
         md.length = 0;
