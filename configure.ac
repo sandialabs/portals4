@@ -80,9 +80,9 @@ AS_IF([test "x$enable_register_on_bind" == xyes],
 AC_ARG_ENABLE([zeromrs],
   [AS_HELP_STRING([--enable-zero-mrs],
     [Enable this when using MOFED V2.2+ or Qlogic InfiniPath Hardware of IB communication. (default: no)])])
-AS_IF([test "x$enable_zero-mrs" == "xyes"],
+AS_IF([test "x$enable_zero_mrs" == "xyes"],
   [AC_DEFINE([WITH_ZERO_MRS], [1], [Define to enable MOFED V2.2 or greater or Qlogic])])
-AM_CONDITIONAL(WITH_ZERO_MRS, test "x$enable_zero-mrs" == xyes)
+AM_CONDITIONAL(WITH_ZERO_MRS, test "x$enable_zero_mrs" == xyes)
 
 AC_ARG_ENABLE([trigmeops],
   [AS_HELP_STRING([--enable-me-triggered],
