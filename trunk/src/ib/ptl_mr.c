@@ -68,10 +68,16 @@ void mr_cleanup(void *arg)
     if (mr->ibmr) {
         int err;
 
-        err = ibv_dereg_mr(mr->ibmr);
-        if (err) {
-            ptl_error("ibv_dereg_mr failed, ret = %d\n", err);
-        }
+        int count = 0;
+ 
+         err = ibv_dereg_mr(mr->ibmr);
+         if (err) {
+            while (err && count < 50){
+                err=ibv_dereg_mr(mr->ibmr);
+            }
+            if (err)
+                ptl_warn("ibv_dereg_mr failed, ret = %d\n", err);
+         }
         mr->ibmr = NULL;
     }
 #endif
