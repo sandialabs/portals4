@@ -1941,7 +1941,7 @@ static void tgt_cleanup_2(buf_t *buf)
         if(buf->mr_list[0] != NULL && ni->umn_fd == -1){
             int i = 0;
             while (buf->mr_list[i] != NULL){
-                mr_put(buf->mr_list[i]);
+                mr_cleanup(buf->mr_list[i]);
                 i++;
                 if (i == 2) 
                  abort();

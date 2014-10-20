@@ -324,74 +324,82 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
 
     mr = NULL;
 
-    while (link) {
-        mr = link;
+    if (global_umn_init == 1){
 
-        if (start < mr->addr)
-            link = RB_LEFT(mr, entry);
-        else {
-            if (mr->addr + mr->length >= start + length) {
-                /* Requested mr fits in an existing region. */
-                mr_get(mr);
-                ret = 0;
-                *mr_p = mr;
-                goto done;
+        while (link) {
+            mr = link;
+
+            if (start < mr->addr)
+                link = RB_LEFT(mr, entry);
+            else {
+                if (mr->addr + mr->length >= start + length) {
+                    /* Requested mr fits in an existing region. */
+                    mr_get(mr);
+                    if (atomic_read(&mr->obj.obj_ref.ref_cnt) >= 1){
+                        ret = 0;
+                        *mr_p = mr;
+                        goto done;
+                    }    
+                }
+                left_node = mr;
+                link = RB_RIGHT(mr, entry);
             }
-            left_node = mr;
-            link = RB_RIGHT(mr, entry);
-        }
-    }
-
-    /* Not found. */
-    INIT_LIST_HEAD(&mr_list);
-
-    mr = NULL;
-
-    /* Extend region to the left. */
-    if (left_node && (start <= (left_node->addr + left_node->length))) {
-        length += start - left_node->addr;
-        start = left_node->addr;
-
-        /* First merge node. Will be replaced later. */
-        mr = left_node;
-    }
-
-    /* Extend the region to the right. */
-    if (left_node)
-        rb = RB_NEXT(the_root, &tree->tree, left_node);
-    else
-        rb = RB_MIN(the_root, &tree->tree);
-    while (rb) {
-        struct mr *next_rb = RB_NEXT(the_root, &tree->tree, rb);
-
-        /* Check whether new region can be merged with this node. */
-        if (start + length >= rb->addr) {
-            /* Is it completely part of the new region ? */
-            size_t new_length = rb->addr + rb->length - start;
-            if (new_length > length)
-                length = new_length;
-
-            if (mr) {
-                /* Mark the node for removal since it will be included
-                 * in the new mr. */
-                list_add_tail(&rb->list, &mr_list);
-            } else {
-                /* First merge node. Will be replaced later. */
-                mr = rb;
-            }
-        } else {
-            break;
         }
 
-        rb = next_rb;
-    }
+        /* Not found. */
+        INIT_LIST_HEAD(&mr_list);
 
-    if (mr) {
-        /* Mark for removal the included mr on the right. */
-        list_add_tail(&mr->list, &mr_list);
         mr = NULL;
-    }
 
+        /* Extend region to the left. */
+        if (left_node && (start <= (left_node->addr + left_node->length))) {
+            length += start - left_node->addr;
+            start = left_node->addr;
+
+            /* First merge node. Will be replaced later. */
+            mr = left_node;
+        }
+
+        /* Extend the region to the right. */
+        if (left_node)
+            rb = RB_NEXT(the_root, &tree->tree, left_node);
+        else
+            rb = RB_MIN(the_root, &tree->tree);
+        while (rb) {
+            struct mr *next_rb = RB_NEXT(the_root, &tree->tree, rb);
+
+            /* Check whether new region can be merged with this node. */
+            if (start + length >= rb->addr) {
+                /* Is it completely part of the new region ? */
+                size_t new_length = rb->addr + rb->length - start;
+                if (new_length > length)
+                    length = new_length;
+
+                if (mr) {
+                    /* Mark the node for removal since it will be included
+                     * in the new mr. */
+                    list_add_tail(&rb->list, &mr_list);
+                } else {
+                    /* First merge node. Will be replaced later. */
+                    mr = rb;
+                }
+            } else {
+                break;
+            }
+
+            rb = next_rb;
+        }
+
+        if (mr) {
+            /* Mark for removal the included mr on the right. */
+            list_add_tail(&mr->list, &mr_list);
+            mr = NULL;
+        }
+    }
+    /* No memory registration cache enabled */
+    else {
+        INIT_LIST_HEAD(&mr_list);
+    }
     /* Insert the new node */
     ret = mr_create(ni, start, length, mr_p);
     if (ret) {
@@ -409,6 +417,10 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
             while (generation_counter != *ni->umn_counter) {
                 SPINLOCK_BODY();
             }
+            goto again;
+        }
+        if (ret == EFAULT && ni->umn_fd == -1){
+            PTL_FASTLOCK_UNLOCK(&tree->tree_lock); 
             goto again;
         }
 #endif
@@ -526,6 +538,7 @@ void mr_init(ni_t *ni)
         ni->umn_fd = global_umn_fd;
     }
     else {
+        global_umn_fd = -1;
         fprintf(stderr, "NOTE: Ummunotify and IB registered mem cache disabled, set PTL_DISABLE_MEM_REG_CACHE=0 to re-enable.\n"); 
     }
 }
