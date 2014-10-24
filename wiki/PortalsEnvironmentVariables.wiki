@@ -14,3 +14,5 @@ This page lists all of the available environment variables for the Portals 4 Ref
 *PTL_LOG_LEVEL*: Set to 0 to disable trace messages, set up to 3 for more detailed messages.
 
 *PTL_ENABLE_MEM*: Set to 0/1 to disable/enable the local memory transport (if you compiled in support for it).
+
+*PTL_DISABLE_MEM_REG_CACHE*: Set to 0/1 to activate/deactivate the IB memory registration cache. Disabling it no longer requires ummunotify, and the implementation does not keep a registered memory cache.
