@@ -488,6 +488,7 @@ void ct_check(ct_t *ct)
         buf_t *buf = list_entry(l, buf_t, list);
 
         if (buf->type == BUF_INIT) {
+            ptl_info("check for init BUF triggering\n");
             if (ct->info.interrupt) {
                 list_del(l);
                 atomic_dec(&ct->list_size);
@@ -506,7 +507,11 @@ void ct_check(ct_t *ct)
                 atomic_dec(&ct->list_size);
 
                 PTL_FASTLOCK_UNLOCK(&ct->lock);
-
+                
+                ptl_info("CT Triggered, initiating operation\n");
+#if WITH_TRANSPORT_UDP
+                buf->udp.i_am_prog_thread = 1;
+#endif
                 err = process_init(buf);
                 if (unlikely(err))
                     ptl_warn("Error in processing initiator traffic\n");
@@ -542,6 +547,7 @@ void ct_check(ct_t *ct)
             }
 #endif
         } else {
+            ptl_info("check for BUF triggering\n");
             assert(buf->type == BUF_TRIGGERED);
             if (ct->info.interrupt) {
                 list_del(l);

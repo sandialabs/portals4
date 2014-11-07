@@ -276,6 +276,7 @@ struct buf {
 #if WITH_RUDP
             int in_progress;
 #endif
+            int i_am_prog_thread;
         } udp;
 #endif
 

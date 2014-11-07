@@ -416,7 +416,17 @@ static int wait_conn(buf_t *buf)
 
 
 #if WITH_TRANSPORT_IB || WITH_TRANSPORT_UDP
-        pthread_cond_wait(&conn->move_wait, &conn->mutex);
+#if WITH_TRANSPORT_UDP
+        if (buf->udp.i_am_prog_thread == 1){
+            while (conn->state < CONN_STATE_CONNECTED)
+                progress_thread_udp(ni);
+        }
+        else{
+#endif
+            pthread_cond_wait(&conn->move_wait, &conn->mutex);
+#if WITH_TRANSPORT_UDP
+        }
+#endif
 #endif
 
         pthread_mutex_unlock(&conn->mutex);
@@ -464,6 +474,7 @@ static int send_req(buf_t *buf)
         req_hdr_t *hdr = (req_hdr_t *) buf->data;
         ni_t *ni = obj_to_ni(buf);
         hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+    
     }
 #endif
 
