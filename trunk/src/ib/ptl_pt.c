@@ -340,6 +340,7 @@ int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
         PTL_FASTLOCK_LOCK(&pt->lock);
     }
     pt->state = PT_ENABLED;
+    pt->num_tgt_active = 0;
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
     ni_put(ni);
