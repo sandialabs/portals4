@@ -1050,6 +1050,8 @@ buf_t *udp_receive(ni_t *ni)
                 return NULL;
             }
         }
+        thebuf->transfer.udp.data = &thebuf->internal_data;
+        thebuf->transfer.udp.my_iovec.iov_len = thebuf->length;
     }
 
     if (&thebuf->transfer.udp.conn_msg != NULL) {
