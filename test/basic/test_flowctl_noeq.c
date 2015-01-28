@@ -132,6 +132,10 @@ int main(int   argc,
                 ;
             } else if (PTL_EQ_DROPPED == ret) {
                 saw_dropped++;
+                if (ev.type == PTL_EVENT_PT_DISABLED){
+                    saw_flowctl++;
+                    CHECK_RETURNVAL(PtlPTEnable(ni_handle, pt_index));
+                }
                 break;
             } else {
                 fprintf(stderr, "0: Unexpected return code from EQWait: %d\n", ret);
@@ -147,7 +151,7 @@ int main(int   argc,
         }
 
         fprintf(stderr, "0: Saw %d dropped, %d flowctl\n", saw_dropped, saw_flowctl);
-        if (saw_dropped != 0 || saw_flowctl == 0) {
+        if (saw_flowctl == 0) {
             return 1;
         }
     } else {
