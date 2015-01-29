@@ -898,7 +898,9 @@ void process_recv_udp(ni_t *ni, buf_t *buf)
 static void *progress_thread(void *arg)
 {
     ni_t *ni = arg;
+#if WITH_TRANSPORT_SHMEM
     int err = 0;
+#endif
 
     while (!ni->catcher_stop
 #if WITH_TRANSPORT_SHMEM
