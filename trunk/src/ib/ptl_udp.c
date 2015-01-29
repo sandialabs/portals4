@@ -764,16 +764,20 @@ buf_t *udp_receive(ni_t *ni)
         hdr = (req_hdr_t *) & thebuf->data;
     }
 
+    ptl_info("QQQQQQQQQQQQQQ: ni_type of incoming message: %x and ni_type of %x\n",hdr->h1.ni_type,ni->ni_type);
+
     if (((hdr->h1.physical == 0) && (!!(ni->options & PTL_NI_PHYSICAL))) ||
-        ((hdr->h1.physical == 1) && (!!(ni->options & PTL_NI_LOGICAL)))) {
-        //this datagram is not meant for us
-        ptl_info("packet not meant for this logical NI, dropping \n");
-        free(thebuf);
-        //this time interval is just to back off, it is completely arbitrary
-        //although 20us is a reasonable approximation of the time to 
-        //fetch a recv through the kernel UDP networking stack
-        usleep(20);
-        return NULL;
+        ((hdr->h1.physical == 1) && (!!(ni->options & PTL_NI_LOGICAL))) ||
+        (hdr->h1.ni_type != ni->ni_type)) {
+            //this datagram is not meant for us
+            ptl_info("packet not meant for this NI, dropping \n");
+            free(thebuf);
+            //this time interval is just to back off, it is completely arbitrary
+            //although 20us is a reasonable approximation of the time to 
+            //fetch a recv through the kernel UDP networking stack
+            usleep(20);
+            return NULL;
+        
     }
     //we are going to be handling multiple messages, implemented through a recvmsg call
     if (thebuf->rlength > sizeof(buf_t)) {
@@ -912,11 +916,13 @@ buf_t *udp_receive(ni_t *ni)
                     if (((!!(ni->options & PTL_NI_LOGICAL)) &&
                          (hdr->h1.physical == 0)) ||
                         ((!!(ni->options & PTL_NI_PHYSICAL)) &&
-                         (hdr->h1.physical == 1))) {
-                        //this is an exact match
-                        found_one = 1;
-                        ptl_info("found a matching in-progress transfer \n");
-                        break;
+                         (hdr->h1.physical == 1)) &&
+                        (hdr->h1.ni_type == ni->ni_type)) {
+                            //this is an exact match
+                            found_one = 1;
+                            ptl_info("found a matching in-progress transfer \n");
+                            break;
+                            
                     }
                 }
 
@@ -1167,6 +1173,7 @@ static int init_connect_udp(ni_t *ni, conn_t *conn)
     ptl_info("addressing type for connection is: %x \n",
              !!(ni->options & PTL_NI_LOGICAL));
     hdr->h1.physical = !!(ni->options & PTL_NI_PHYSICAL);
+    hdr->h1.ni_type = ni->ni_type;
 
     conn_buf->transfer.udp.conn_msg = msg;
     conn_buf->length = (sizeof(buf_t));

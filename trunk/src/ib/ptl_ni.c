@@ -342,7 +342,9 @@ int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
         PTL_FASTLOCK_INIT(&ni->physical.lock);
     }
 
+#if !WITH_TRANSPORT_UDP
     mr_init(ni);
+#endif
 
     err = init_pools(ni);
     if (unlikely(err))
