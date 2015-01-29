@@ -913,10 +913,10 @@ buf_t *udp_receive(ni_t *ni)
                     ntohs(big_buf->udp.src_addr.sin_port)) {
                     //ptl_info("found match for system, checking logical NI \n");
                     //found a matching buf, check to see if addressing mode is correct
-                    if (((!!(ni->options & PTL_NI_LOGICAL)) &&
+                    if ((((!!(ni->options & PTL_NI_LOGICAL)) &&
                          (hdr->h1.physical == 0)) ||
                         ((!!(ni->options & PTL_NI_PHYSICAL)) &&
-                         (hdr->h1.physical == 1)) &&
+                         (hdr->h1.physical == 1))) &&
                         (hdr->h1.ni_type == ni->ni_type)) {
                             //this is an exact match
                             found_one = 1;
@@ -1056,7 +1056,7 @@ buf_t *udp_receive(ni_t *ni)
                 return NULL;
             }
         }
-        thebuf->transfer.udp.data = &thebuf->internal_data;
+        thebuf->transfer.udp.data = (unsigned char*)&thebuf->internal_data;
         thebuf->transfer.udp.my_iovec.iov_len = thebuf->length;
     }
 
