@@ -1797,6 +1797,8 @@ static int tgt_send_reply(buf_t *buf)
     rep_hdr->moffset = cpu_to_le64(buf->moffset);
     rep_hdr->h1.operation = OP_REPLY;
     rep_hdr->h1.matching_list = buf->matching_list;
+    ni_t *ni = obj_to_ni(buf);
+    rep_hdr->h1.ni_type = ni->ni_type;
 
     if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {
         /* The LE must be released before we sent the ack. */
