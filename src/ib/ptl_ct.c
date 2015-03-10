@@ -537,7 +537,7 @@ void ct_check(ct_t *ct)
 
                 PTL_FASTLOCK_UNLOCK(&ct->lock);
 
-                do_trig_me_op(buf);
+                do_trig_me_op(buf, ct);
 
                 PTL_FASTLOCK_LOCK(&ct->lock);
             } else {

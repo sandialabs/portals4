@@ -9,7 +9,7 @@
 
 #ifdef WITH_TRIG_ME_OPS
 static void post_trig_me(buf_t *buf, ct_t *me_ct);
-void do_trig_me_op(buf_t *buf);
+void do_trig_me_op(buf_t *buf, ct_t *ct);
 #endif
 
 /**
@@ -508,13 +508,14 @@ int _PtlTriggeredMEUnlink(PPEGBL ptl_handle_me_t me_handle,
  *
  * @param[in] buf
  */
-void do_trig_me_op(buf_t *buf)
+void do_trig_me_op(buf_t *buf, ct_t *ct)
 {
-    ct_t *ct = buf->ct;
 
-    /* we're a zombie */
-    if (ct->info.interrupt)
+    /* if we're a zombie */
+    if (ct->info.interrupt) {
+        ptl_info("this CT is being shut down, don't trigger anything on it\n");
         goto done;
+    }
 
 
     ptl_info("type of triggered me op is: %i \n", buf->me_op);
@@ -551,7 +552,7 @@ static void post_trig_me(buf_t *buf, ct_t *me_ct)
         buf->threshold) {
         PTL_FASTLOCK_UNLOCK(&me_ct->lock);
 
-        do_trig_me_op(buf);
+        do_trig_me_op(buf,me_ct);
 
     } else {
         atomic_inc(&me_ct->list_size);
