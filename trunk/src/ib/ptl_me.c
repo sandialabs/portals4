@@ -549,7 +549,7 @@ static void post_trig_me(buf_t *buf, ct_t *me_ct)
 
     /* 1st check to see whether the condition is already met. */
     if ((me_ct->info.event.failure + me_ct->info.event.success) >=
-        buf->threshold) {
+        buf->ct_threshold) {
         PTL_FASTLOCK_UNLOCK(&me_ct->lock);
 
         do_trig_me_op(buf,me_ct);
@@ -561,7 +561,7 @@ static void post_trig_me(buf_t *buf, ct_t *me_ct)
 
         /* We must check again to avoid a race with make_ct_event/ct_inc_ct_set. */
         if ((me_ct->info.event.success + me_ct->info.event.failure) >=
-            buf->threshold) {
+            buf->ct_threshold) {
             /* Something arrived while we were adding the buffer. */
             PTL_FASTLOCK_UNLOCK(&me_ct->lock);
             ct_check(me_ct);
