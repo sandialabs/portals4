@@ -519,7 +519,8 @@ void ct_check(ct_t *ct)
             }
 #ifdef WITH_TRIG_ME_OPS
         } else if (buf->type == BUF_TRIGGERED_ME) {
-            if (ct->info.interrupt) {
+             ptl_info("check for triggered ME ops\n");
+             if (ct->info.interrupt) {
                 list_del(l);
                 atomic_dec(&ct->list_size);
 
@@ -531,7 +532,8 @@ void ct_check(ct_t *ct)
                 PTL_FASTLOCK_LOCK(&ct->lock);
             } else if ((ct->info.event.success + ct->info.event.failure) >=
                        buf->ct_threshold) {
-                ptl_info("ME operation triggered: %i \n", buf->op);
+                ptl_info("ME operation triggered: %i on ct of: %i and threshold %i\n", 
+                         buf->op,ct->info.event.success,buf->ct_threshold);
                 list_del(l);
                 atomic_dec(&ct->list_size);
 
@@ -543,7 +545,7 @@ void ct_check(ct_t *ct)
             } else {
                 ptl_info("ME operation not triggered %i:%i threshold: %i\n",
                          (int)ct->info.event.success,
-                         (int)ct->info.event.failure, (int)buf->threshold);
+                         (int)ct->info.event.failure, (int)buf->ct_threshold);
             }
 #endif
         } else {
