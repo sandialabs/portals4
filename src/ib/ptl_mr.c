@@ -72,7 +72,7 @@ void mr_cleanup(void *arg)
  
          err = ibv_dereg_mr(mr->ibmr);
          if (err) {
-            while (err && count < 50){
+            while (err && count++ < 50){
                 err=ibv_dereg_mr(mr->ibmr);
             }
             if (err)
