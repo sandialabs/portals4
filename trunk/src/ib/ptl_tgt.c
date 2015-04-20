@@ -695,6 +695,11 @@ static int tgt_get_match(buf_t *buf)
         return STATE_TGT_DROP;
     }
 
+    /* mark as busy to avoid races */
+    if (buf->le->ptl_list == PTL_PRIORITY_LIST && buf->me &&
+    buf->me->options & PTL_ME_USE_ONCE)
+        atomic_set(&buf->me->busy, 1);
+
     if (buf->le->ptl_list == PTL_OVERFLOW_LIST) {
         if (!(buf->le->options & PTL_ME_UNEXPECTED_HDR_DISABLE)) {
             if (atomic_read(&pt->unexpected_size) >=

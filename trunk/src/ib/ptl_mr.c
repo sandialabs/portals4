@@ -173,7 +173,7 @@ static int mr_create(ni_t *ni, void *start, ptl_size_t length, mr_t **mr_p)
 #if WITH_ZERO_MRS
     //Fix for Qlogic InfiniPath and recent MOFED versions, that does not accept a NULL value for an ibv_mr_reg
     //REG 2014
-    if ((start == NULL) && ((int)length == 0)) {
+    if ((start == NULL || (int)start % getpagesize() == 0) && ((int)length == 0)) {
         uint64_t junk_value;
         start = &junk_value;
         end = start;
