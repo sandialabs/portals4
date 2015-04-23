@@ -583,7 +583,10 @@ static void process_connect_request(struct iface *iface,
         case CONN_STATE_DISCONNECTING:
             /* Not sure how to handle that case. Ignore and disconnect
              * anyway? */
-            abort();
+            rej.reason = REJECT_REASON_DISCONNECTING;
+            pthread_mutex_unlock(&conn->mutex);
+            conn_put(conn);
+            goto reject;
             break;
 
         case CONN_STATE_RESOLVING_ADDR:

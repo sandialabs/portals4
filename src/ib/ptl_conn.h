@@ -234,6 +234,7 @@ enum {
     REJECT_REASON_BAD_PARAM,           /* request parm is invalid */
     REJECT_REASON_CONNECTED,           /* already connected */
     REJECT_REASON_CONNECTING,          /* already connected */
+    REJECT_REASON_DISCONNECTING,       /* already disconnecting */
     REJECT_REASON_ERROR,               /* something unexpected happened; catch all */
 };
 
