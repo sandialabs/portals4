@@ -1076,9 +1076,12 @@ int start_progress_thread(ni_t *ni)
 void stop_progress_thread(ni_t *ni)
 {
     if (ni->has_catcher) {
+        int *status;
         ni->catcher_stop = 1;
         pthread_cancel(ni->catcher);
         ni->has_catcher = 0;
+        pthread_join(ni->catcher, (void **)&status);
+        assert(status == 0 || status == PTHREAD_CANCELED);
     }
 }
 
