@@ -73,6 +73,8 @@ void ct_cleanup(void *arg)
     ct_t *ct = arg;
 
     ct->info.interrupt = 0;
+    ct->info.event.failure = 0;
+    ct->info.event.success = 0;
 }
 
 /**
@@ -201,7 +203,7 @@ int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
     /* remove ourselves from ni->ct_list */
     PTL_FASTLOCK_LOCK(&ni->ct_list_lock);
     list_del(&ct->list);
-    if (atomic_read(&ct->list_size) > 0) {
+    while (atomic_read(&ct->list_size) > 1) {
         atomic_dec(&ct->list_size);
     }
     PTL_FASTLOCK_UNLOCK(&ni->ct_list_lock);
@@ -210,9 +212,13 @@ int _PtlCTFree(PPEGBL ptl_handle_ct_t ct_handle)
     ct->info.interrupt = 1;
     ct_check(ct);
 
+    ct_cleanup(ct);
+    ptl_info("CT ref count before free: %i\n",atomic_read(&ct->obj.obj_ref.ref_cnt));
     ct_put(ct);
     ct_put(ct);
 
+    ptl_info("CT freed\n");
+    
     /* give back the limit resource */
     (void)__sync_sub_and_fetch(&ni->current.max_cts, 1);
 
@@ -658,9 +664,11 @@ static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
         (void)__sync_add_and_fetch(&ct->info.event.failure,
                                    increment.failure);
 
+    ptl_info("CT inc, CT: %p new val: %i value inc'd by: %i failures: %i\n",ct,ct->info.event.success,increment.success,ct->info.event.failure);     
+
     /* check to see if this triggers any further
      * actions */
-    if (atomic_read(&ct->list_size))
+    if (atomic_read(&ct->list_size) > 0)
         ct_check(ct);
 }
 
@@ -894,6 +902,7 @@ int _PtlTriggeredCTSet(PPEGBL ptl_handle_ct_t ct_handle,
         buf->type = BUF_TRIGGERED;
         buf->op = TRIG_CT_SET;
         buf->ct = ct;
+        //ct_set(ct, new_ct);
         buf->ct_event = new_ct;
         buf->threshold = threshold;
 
@@ -996,11 +1005,14 @@ static void post_trig_ct(buf_t *buf, ct_t *trig_ct)
     if ((trig_ct->info.event.failure + trig_ct->info.event.success) >=
         buf->threshold) {
         PTL_FASTLOCK_UNLOCK(&trig_ct->lock);
-
+        ptl_info("triggered ct already met conditions\n");
         do_trig_ct_op(buf);
 
     } else {
+        ptl_info("ct value before inc for triggered: %i\n",atomic_read(&trig_ct->list_size));
         atomic_inc(&trig_ct->list_size);
+
+        ptl_info("triggered condition not met adding to list, list lenght: %i\n",atomic_read(&trig_ct->list_size));
 
         list_add(&buf->list, &trig_ct->trig_list);
 
