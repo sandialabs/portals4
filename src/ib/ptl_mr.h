@@ -21,6 +21,8 @@ typedef struct mr {
     void *addr;                 /* in application space */
     size_t length;
 
+    PTL_FASTLOCK_TYPE lock;
+
 #if WITH_TRANSPORT_IB
         /** OFA verbs mr for memory region */
     struct ibv_mr *ibmr;
