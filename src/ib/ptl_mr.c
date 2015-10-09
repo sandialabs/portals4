@@ -31,6 +31,8 @@ int mr_new(void *arg)
     mr_t *mr;
     mr = arg;
 
+    PTL_FASTLOCK_INIT(&mr->lock);
+
 #if WITH_TRANSPORT_IB
     mr->ibmr = NULL;
 #endif
@@ -65,6 +67,7 @@ void mr_cleanup(void *arg)
 #endif
 
 #if WITH_TRANSPORT_IB
+    PTL_FASTLOCK_LOCK(&mr->lock);
     if (mr->ibmr) {
         int err;
 
@@ -80,6 +83,7 @@ void mr_cleanup(void *arg)
          }
         mr->ibmr = NULL;
     }
+    PTL_FASTLOCK_UNLOCK(&mr->lock);
 #endif
 
 #if WITH_TRANSPORT_SHMEM
