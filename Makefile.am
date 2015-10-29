@@ -12,7 +12,9 @@ DIST_SUBDIRS = doc include src test
 SUBDIRS = doc include src
 
 if !HAVE_KITTEN
+if WANT_TESTING
 SUBDIRS +=  test
+endif
 endif
 
 ACLOCAL_AMFLAGS = -I config
