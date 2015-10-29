@@ -12,10 +12,12 @@ before_install:
 install:
         - git clone https://github.com/regrant/portals4.git
         - ./autogen.sh
-        - ./configure --prefix=$HOME --with-libev=/usr/lib/ --enable-zero-mrs --enable-reliable-udp --enable-transport-shmem
+        - ./configure --prefix=$HOME --with-libev=/usr/lib/ --enable-zero-mrs --disable-transport-udp --enable-transport-shmem
         - make -j2
         - make install
 script:
+        - export PTL_LOG_LEVEL=3
+        - export PTL_DEBUG=1
         - make check
         - ./src/runtime/hydra/yod.hydra -np 2 ./test/basic/.libs/test_LE_get
         - cat ./test/basic/test-suite.log
