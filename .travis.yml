@@ -7,7 +7,7 @@ os:
 before_install:
         - wget http://dist.schmorp.de/libev/Attic/libev-4.15.tar.gz
         - tar -xzvf libev-4.15.tar.gz
-        - cd libev-4.15 && ./configure --prefix=/usr/lib && make && sudo make install
+        - cd libev-4.15 && ./configure --prefix=/usr/ && make && sudo make install
         - cd ..
 install:
         - git clone https://github.com/regrant/portals4.git
@@ -17,3 +17,10 @@ install:
         - make install
 script:
         - make check
+
+notifications:
+  email:
+    recipients:
+      - regrant@sandia.gov
+    on_success: [change]
+    on_failure: [always] 
