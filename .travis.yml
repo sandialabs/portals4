@@ -8,16 +8,12 @@ before_install:
         - wget http://dist.schmorp.de/libev/Attic/libev-4.15.tar.gz
         - tar -xzvf libev-4.15.tar.gz
         - cd libev-4.15 && ./configure --prefix=/usr/lib && make && sudo make install
+        - cd ..
 install:
-        - sudo ./autogen.sh
-        - ./configure --prefix=$HOME --with-libev=/usr/lib/ --enable-zero-mrs --enable-reliable-udp
-        - make -j2
-        - make install
-        - make check
-script:
         - git clone https://github.com/regrant/portals4.git
-        - sudo ./autogen.sh
+        - ./autogen.sh
         - ./configure --prefix=$HOME --with-libev=/usr/lib/ --enable-zero-mrs --enable-reliable-udp
         - make -j2
         - make install
+script:
         - make check
