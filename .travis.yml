@@ -6,7 +6,7 @@ os:
     - linux
 before_install:
         - sudo apt-get update -qq
-        - sudo apt-get install -y libevent-dev
+        - sudo apt-get install -y libev4
 install:
         - ./autogen.sh
         - ./configure --prefix=$HOME --enable-zero-mrs --enable-reliable-udp
