@@ -5,6 +5,7 @@ compiler:
 os:
     - linux
 before_install:
+        - ifconfig
         - wget http://dist.schmorp.de/libev/Attic/libev-4.15.tar.gz
         - tar -xzvf libev-4.15.tar.gz
         - cd libev-4.15 && ./configure --prefix=/usr/ && make && sudo make install
@@ -18,6 +19,7 @@ install:
 script:
         - export PTL_LOG_LEVEL=3
         - export PTL_DEBUG=1
+        - export PTL_IFACE_NAME=eth0
         - make check
         - ./src/runtime/hydra/yod.hydra -np 2 ./test/basic/.libs/test_LE_get
         - cat ./test/basic/test-suite.log
