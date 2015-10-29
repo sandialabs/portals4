@@ -1,0 +1,22 @@
+sudo: true
+language: c
+compiler:
+    - gcc
+os:
+    - linux
+before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -y libev
+install:
+        - ./autogen.sh
+        - ./configure --prefix=$HOME --enable-zero-mrs --enable-reliable-udp
+        - make -j2
+        - make install
+        - make check
+script:
+        - git clone https://github.com/regrant/portals4.git
+        - ./autogen.sh
+        - ./configure --prefix=$HOME --enable-zero-mrs --enable-reliable-udp
+        - make -j2
+        - make install
+        - make check
