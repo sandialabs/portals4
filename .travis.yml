@@ -13,7 +13,7 @@ before_install:
 install:
         - git clone https://github.com/regrant/portals4.git
         - ./autogen.sh
-        - ./configure --prefix=$HOME/portals4-install/ --with-libev=/usr/lib/ --enable-zero-mrs --enable-transport-udp --enable-transport-shmem
+        - ./configure --prefix=$HOME/portals4-install/ --with-libev=/usr/lib/ --enable-zero-mrs --enable-transport-udp --enable-reliable-udp
         - make -j2
         - make install
 script:
