@@ -94,7 +94,7 @@ TESTS += \
 	test_triggered_ME_ops
 endif
 
-noinst_PROGRAMS = $(TESTS)
+check_PROGRAMS = $(TESTS)
 
 NPROCS ?= 2
 LOG_COMPILER = $(TEST_RUNNER)
