@@ -1050,11 +1050,18 @@ static void *progress_thread(void *arg)
 /* Add a progress thread. */
 int start_progress_thread(ni_t *ni)
 {
+    char *str;
     int ret;
 
     /* Keep the communication thread active at the end to terminate it */
     ni->catcher_nosleep = 0;
-    atomic_set(&keep_polling, 0);
+
+    str = getenv("PTL_PROGRESS_NOSLEEP");
+    if (NULL != str && ( str[0] == 'y' || str[0] == 'Y' || str[0] == '1'))
+        atomic_set(&keep_polling, 1);
+    else
+        atomic_set(&keep_polling, 0);
+
     ret = pthread_create(&ni->catcher, NULL, progress_thread, ni);
     if (ret) {
         WARN();
