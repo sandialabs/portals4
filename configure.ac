@@ -143,6 +143,16 @@ AC_ARG_ENABLE([kitten],
   [AC_DEFINE([HAVE_KITTEN], [1], [Defined to 1 if kitten support requested])])
 AM_CONDITIONAL([HAVE_KITTEN], [test "$enable_kitten" = "yes"])
 
+AC_ARG_ENABLE([testing],
+  [AS_HELP_STRING([--disable-testing],
+    [Disable support for the Portals 4 test suite (default: automatic)])],
+  [want_testing=${enable_testing}], [want_testing="no"])
+
+AC_ARG_ENABLE([pmi-from-portals],
+  [AS_HELP_STRING([--disable-pmi-from-portals],
+                  [Disable building PMI from the Portals 4 distribution (default:enabled)])],
+                  [], [enable_pmi_from_portals="yes"])
+
 AC_ARG_ENABLE([libtool-wrapper],
   [AS_HELP_STRING([--disable-libtool-wrapper],
     [Disable use of libtool executable wrappers for tests])])
@@ -307,14 +317,16 @@ AM_CONDITIONAL([WITH_TRANSPORT_UDP], [test "$active_remote_transport" == "udp"])
 
 # figure out all the runtime stuff
 AS_IF([test "$with_pmi" = "" -o "$with_pmi" = "no"],
-  [want_runtime=1],
+  [],
   [AS_IF([test "$enable_kitten" = "yes"], 
-         [want_runtime=0
+         [enable_pmi_from_portals="no"
 	  pmi_CPPFLAGS="-I${with_pmi}/include"
 	  pmi_LDFLAGS="-L${with_pmi}/lib"
 	  pmi_LIBS="-lpmi"],
-	 [ORTE_CHECK_PMI([pmi], [want_runtime=0], [want_runtime=1])])])
-AS_IF([test "$want_runtime" = "1"],
+	 [ORTE_CHECK_PMI([pmi],
+                         [enable_pmi_from_portals="no"
+                          with_pmi_happy="yes"], [])])])
+AS_IF([test "$enable_pmi_from_portals" = "yes"],
   [pmi_CPPFLAGS='-I$(top_srcdir)/src/runtime/portals4'
    pmi_LDFLAGS=
    pmi_LIBS='$(top_builddir)/src/runtime/libportals_runtime.la'
@@ -324,7 +336,15 @@ AC_SUBST(pmi_CPPFLAGS)
 AC_SUBST(pmi_LDFLAGS)
 AC_SUBST(pmi_LIBS)
 AC_SUBST(TEST_RUNNER)
-AM_CONDITIONAL([WANT_RUNTIME], [test "$want_runtime" = "1"])
+AM_CONDITIONAL([WANT_RUNTIME], [test "$enable_pmi_from_portals" = "yes"])
+
+# Automatically enable testing if user did not specify and we have PMI support
+AS_IF([test "x$enable_testing" = "x"],
+      AS_IF([ test "x$enable_pmi_from_portals" = "xyes" -o "x$with_pmi_happy" = "xyes"],
+            [want_testing="yes"]))
+AM_CONDITIONAL([WANT_TESTING], [test "$want_testing" = "yes"])
+AS_IF([test "$want_testing" = "yes"],
+      [AC_DEFINE([WANT_TESTING], [1], [Defined to 1 if testing is enabled])])
 
 
 ## -------------------------- ##
@@ -368,7 +388,7 @@ AS_IF([test -n "$with_ofed"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ofed=${with_ofed}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
-AS_IF([test "$want_runtime" = "1"], [AC_CONFIG_SUBDIRS([src/runtime/hydra])])
+AS_IF([test "$enable_pmi_from_portals" = "yes"], [AC_CONFIG_SUBDIRS([src/runtime/hydra])])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile
@@ -406,4 +426,10 @@ echo ""
 echo "  Progress Support:"
 echo "           Thread: $progress_thread"
 echo "          Process: $progress_process"
+echo ""
+echo "  Process Management:"
+echo "      Portals PMI: $enable_pmi_from_portals"
+echo "     External PMI: $with_pmi"
+echo ""
+echo "      Build tests: $want_testing"
 echo ""
