@@ -6,6 +6,10 @@ os:
     - linux
 before_install:
         - ifconfig
+        - sysctl net.core.rmem_max
+        - sysctl net.core.rmem_default
+        - sysctl -w net.core.rmem_max=212992
+        - sysctl -w net.core.rmem_default=212992
         - wget http://dist.schmorp.de/libev/Attic/libev-4.15.tar.gz
         - tar -xzvf libev-4.15.tar.gz
         - cd libev-4.15 && ./configure --prefix=/usr/ && make && sudo make install
