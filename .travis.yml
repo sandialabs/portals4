@@ -23,9 +23,9 @@ install:
 script:
         - export PTL_LOG_LEVEL=3
         - export PTL_DEBUG=1
-        - export PTL_IFACE_NAME=eth0
+        - export PTL_IFACE_NAME=lo
 #get full output on tests of interest
-        - ./src/runtime/hydra/yod.hydra -np 2 ./test/basic/.libs/test_ME_put_multiple_large_overlap
+        - ./src/runtime/hydra/yod.hydra -np 2 ./test/basic/test_ME_put_multiple_large_overlap
         - make check
 #        - ./src/runtime/hydra/yod.hydra -np 2 ./test/basic/.libs/test_LE_get
         - cat ./test/basic/test-suite.log
