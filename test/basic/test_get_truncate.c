@@ -117,6 +117,7 @@ int main(int   argc,
             abort();
         }
     }
+    libtest_barrier();
     CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
     CHECK_RETURNVAL(UNLINK(value_e_handle));

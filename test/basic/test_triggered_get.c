@@ -109,6 +109,7 @@ int main(int   argc,
     }
 
     /* cleanup */
+    libtest_barrier();
     CHECK_RETURNVAL(PtlCTFree(trigger));
     CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
