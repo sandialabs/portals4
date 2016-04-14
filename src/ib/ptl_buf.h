@@ -30,6 +30,7 @@ enum buf_type {
 #if WITH_RUDP
     BUF_UDP_ACK,
     BUF_UDP_NACK,
+    BUF_UDP_INVALID,
 #endif
 
 #if WITH_TRANSPORT_SHMEM

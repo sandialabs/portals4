@@ -93,8 +93,8 @@ int process_rudp_recv_hdr(buf_t *buf, int len, ni_t *ni)
             if (temp_buf->transfer.udp.seq_num == buf->transfer.udp.seq_num) {
                 //if (!(list_empty(&temp_conn->udp.rel_queued_bufs))){
                 ptl_info("found one, delete it from queued bufs\n");
-                //if (buf->type != BUF_UDP_NACK)
-                //list_del(l);
+                if (buf->type != BUF_UDP_NACK)
+                    list_del(l);
                 found_one = 1;
                 //if (list_empty(&temp_conn->udp.rel_queued_bufs)){
                 //   INIT_LIST_HEAD(&temp_conn->udp.rel_queued_bufs); 
@@ -138,13 +138,22 @@ int process_rudp_recv_hdr(buf_t *buf, int len, ni_t *ni)
             if (found_one == 1) {
                 //only handles the non-large message case
                 ptl_info("@@@@ RUDP NACK sendto retransmission @@@@@\n");
-                ret =
-                    sendto(ni->iface->udp.connect_s, temp_buf,
-                           sizeof(*temp_buf), 0,
-                           (struct sockaddr *)temp_buf->udp.dest_addr,
-                           sizeof(*temp_buf->udp.dest_addr));
-                if (ret == -1)
-                    return ret;
+                list_for_each_safe(l, t, &temp_conn->udp.rel_queued_bufs) {
+                     temp_buf = list_entry(l, buf_t, list);
+                     assert(&temp_buf != NULL);
+                     ptl_info("checking udp seq numbers %i:%i\n",
+                         temp_buf->transfer.udp.seq_num,
+                         buf->transfer.udp.seq_num);
+                     if (temp_buf->transfer.udp.seq_num <= buf->transfer.udp.seq_num) {
+                         ret =
+                            sendto(ni->iface->udp.connect_s, temp_buf,
+                               sizeof(*temp_buf), 0,
+                               (struct sockaddr *)temp_buf->udp.dest_addr,
+                               sizeof(*temp_buf->udp.dest_addr));
+                        if (ret == -1)
+                            return ret;
+                     }
+                }
                 //add the buffer back to the list
                 //INIT_LIST_HEAD(&temp_buf->list);
                 //list_add_tail(&temp_buf->list, &temp_conn->udp.rel_queued_bufs);
@@ -170,6 +179,10 @@ int process_rudp_recv_hdr(buf_t *buf, int len, ni_t *ni)
                 /*inet_ntoa(buf->udp.src_addr.sin_addr),
                  * ntohs(buf->udp.src_addr.sin_port)); */
                 buf->type = BUF_UDP_ACK;
+            } else if (atomic_read(&temp_conn->udp.recv_seq_num) >
+                       buf->transfer.udp.seq_num) {
+                buf->type = BUF_UDP_INVALID;     
+
             } else {
                 ptl_info("@@@@@@@@@send NACK for seq num: %i \n",
                          buf->transfer.udp.seq_num);
@@ -186,6 +199,7 @@ int process_rudp_recv_hdr(buf_t *buf, int len, ni_t *ni)
 
             //TODO: strip out the data so we have less network load
             //      on the ACK/NACK
+            if (buf->type != BUF_UDP_INVALID)
             sendto(ni->iface->udp.connect_s, buf, sizeof(*buf), 0,
                    (struct sockaddr *)&temp_conn->sin,
                    sizeof(*&temp_conn->sin));
