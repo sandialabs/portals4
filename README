@@ -26,7 +26,7 @@ Options to configure include:
 
   There is currently one Portals 4 implementation, ib.  The ib
   implementation supports multiple transports, including InfiniBand,
-  UDP (experimental), and SHMEM.
+  UDP/Reliable UDP (experimental), and SHMEM.
 
   - Infiniband: this transport has multiple options, including not actualling using IB:
       * Infiniband, selected by default, can be disabled with --disable-transport-ib
@@ -158,3 +158,7 @@ Options to configure include:
         /dev/shm/portals4-shmem-* are not removed. If a subsequent run
         tries to re-use the same name, it will fail and the
         application may exit.
+
+      * If you get a mr_lookup: Assertion `res == ((void *)0)' failed
+        error, you need to configure Portals 4 with --enable-zero-mrs
+        to enable zero length MR suport.
