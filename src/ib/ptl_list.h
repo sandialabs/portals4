@@ -8,9 +8,11 @@
 /*
  * list_head ops fragment, adapted from linux/list.h
  */
+#ifndef container_of
 #define container_of(ptr, type, member) ({ \
 	const typeof( ((type *)0)->member ) *__mptr = (ptr); \
 	(type *)( (char *)__mptr - offsetof(type,member) );})
+#endif
 
 struct list_head {
     struct list_head *next;
