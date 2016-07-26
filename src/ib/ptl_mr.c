@@ -453,7 +453,10 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
         res = RB_INSERT(the_root, &tree->tree, mr);
 //this can happen if using Qlogic
 #if !WITH_ZERO_MRS
-        assert(res == NULL);           /* should never happen */
+        /* should never happen */
+        if (res == NULL) {
+            ptl_fatal("NULL result from RB_INSERT, try rebuilding with --enable-zero-mrs");
+        }
 #endif
     }
 
