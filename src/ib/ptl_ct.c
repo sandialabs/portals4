@@ -481,7 +481,6 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
 void ct_check(ct_t *ct)
 {
     struct list_head *l;
-    struct list_head *t;
     int err;
 
     PTL_FASTLOCK_LOCK(&ct->lock);
@@ -490,7 +489,7 @@ void ct_check(ct_t *ct)
      * can now be performed or discarded
      * TODO this should enqueue the xi to a list and then unwind
      * all the ct locks before calling process_init */
-    list_for_each_prev_safe(l, t, &ct->trig_list) {
+    list_for_each_prev_safe(l, ct->trig_list_tmp, &ct->trig_list) {
         buf_t *buf = list_entry(l, buf_t, list);
 
         if (buf->type == BUF_INIT) {

@@ -17,6 +17,7 @@ struct ct {
     obj_t obj;                                  /**< object base class */
     struct list_head trig_list;                 /**< list head of pending
 						     triggered operations */
+	struct list_head *trig_list_tmp;            /**< temporary holder for trig_list->prev*/
     struct list_head list;                      /**< list member of allocated
 						     counting events */
     atomic_t list_size;                         /**< Number of elements in list */
