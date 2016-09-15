@@ -204,16 +204,21 @@ struct buf {
 										   operation */
             ct_t *ct;                                           /**< counting event to perform
 										   triggered operation on */
-            ptl_ct_event_t ct_event;                            /**< counting event data for
-										   triggered ct operation */
             ptl_size_t threshold;                               /**< trigger threshold for
+										   triggered ct operation */ // DBL re-ordered threshold/ct_event for trig. me append
+            ptl_ct_event_t ct_event;                            /**< counting event data for
 										   triggered ct operation */
 
         };
         //Pending triggered ME operation info
+        /* add 24 bytes of padding to accomodate triggered ME append ops */
+        /* uses user_ptr/ct_threshold from init */
+        /* uses threshold/ct from triggered ct */
         struct {
-            ptl_pt_index_t pt_index;
-            ptl_me_t *me_init;
+            ptl_pt_index_t pt_index; // this is okay
+            char tme_pad[16]; 
+            ptl_me_t *me_init; // fits in hole between PTidx,ct,ct_thresh and user_ptr
+            char tme_pad2[8]; 
             ptl_list_t ptl_list;
             ptl_handle_me_t *me_handle_p;
             ptl_handle_me_t me_handle;
