@@ -3,7 +3,7 @@ dnl ptl_buf struct is required. This test checks for this alignment.
 
 AC_DEFUN([CHECK_BUF_ALIGNMENT], [
   saved_CPPFLAGS="$CPPFLAGS"
-  saved_LDLAGS="$CPPFLAGS"
+  saved_LDLAGS="$LDFLAGS"
   saved_LIBS="$LIBS"
   CPPFLAGS="$CPPFLAGS -I${srcdir}/src/ib/ -I${srcdir}/include/ -I${top_srcdir}/include ${ev_CPPFLAGS} ${ofed_CPPFLAGS} ${XPMEM_CPPFLAGS}" 
   LDFLAGS="$LDFLAGS ${ev_LDFLAGS} ${ofed_LDFLAGS} ${XPMEM_LDFLAGS}"
