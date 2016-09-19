@@ -3,8 +3,11 @@ dnl ptl_buf struct is required. This test checks for this alignment.
 
 AC_DEFUN([CHECK_BUF_ALIGNMENT], [
   saved_CPPFLAGS="$CPPFLAGS"
-  CPPFLAGS="$CPPFLAGS -I${srcdir}/src/ib/" 
-  CPPFLAGS="$CPPFLAGS -I${srcdir}/include/" 
+  saved_LDLAGS="$LDFLAGS"
+  saved_LIBS="$LIBS"
+  CPPFLAGS="$CPPFLAGS -I${srcdir}/src/ib/ -I${srcdir}/include/ -I${top_srcdir}/include ${ev_CPPFLAGS} ${ofed_CPPFLAGS} ${XPMEM_CPPFLAGS}" 
+  LDFLAGS="$LDFLAGS ${ev_LDFLAGS} ${ofed_LDFLAGS} ${XPMEM_LDFLAGS}"
+  LIBS="$LIBS ${ev_LIBS} ${ofed_LIBS} ${XPMEM_LIBS}"
 AC_CACHE_CHECK([if buf is aligned right for triggered me],
   [ptl_cv_buf_aligned_for_trig_me],
   [AC_TRY_RUN([
@@ -47,5 +50,7 @@ else
   AC_MSG_ERROR(["fix the padding in buf_t or build without triggered me ops"])
 fi
 CPPFLAGS="$saved_CPPFLAGS"
+LDFLAGS="$saved_LDFLAGS"
+LIBS="$saved_LIBS"
 ])
 
