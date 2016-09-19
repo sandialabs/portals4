@@ -34,6 +34,6 @@ script:
 notifications:
   email:
     recipients:
-      - regrant@sandia.gov
+      - timo.schneider@intel.com
     on_success: [change]
     on_failure: [always] 
