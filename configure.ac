@@ -88,7 +88,8 @@ AC_ARG_ENABLE([trigmeops],
   [AS_HELP_STRING([--enable-me-triggered],
     [Enable extended (non-standard) triggered operations. Experimental. (default: no)])])
 AS_IF([test "x$enable_me_triggered" == "xyes"],
-  [AC_DEFINE([WITH_TRIG_ME_OPS], [1], [Define to enable triggered match list entry operations])])
+  [AC_DEFINE([WITH_TRIG_ME_OPS], [1], [Define to enable triggered match list entry operations]) 
+  test_trig=yes],[test_trig=no])
 AM_CONDITIONAL(WITH_TRIG_ME_OPS, test "x$enable_me_triggered" == xyes)
 
 AC_ARG_ENABLE([transport-shmem],
@@ -354,7 +355,8 @@ SANDIA_CHECK_8ALIGNED_MALLOC
 SANDIA_CHECK_8ALIGNED_CALLOC
 SANDIA_CHECK_16ALIGNED_MALLOC
 SANDIA_CHECK_16ALIGNED_CALLOC
-CHECK_BUF_ALIGNMENT
+AS_IF([test "$test_trig" == "yes"],
+ [CHECK_BUF_ALIGNMENT],[])
 SANDIA_CHECK_WORKING_VALLOC
 AS_IF([test "x$enable_hard_polling" != xyes],
 	  [SANDIA_CHECK_PTHREAD_PROCESS_SHARED([AC_DEFINE([HAVE_PTHREAD_SHMEM_LOCKS],
@@ -387,6 +389,8 @@ AS_IF([test -n "$with_ev"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ev=${with_ev}"])
 AS_IF([test -n "$with_ofed"],
   [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --with-ofed=${with_ofed}"])
+AS_IF([test -n "$enable_me_triggered"],
+  [DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS --enable-me-triggered=${enable_me_triggered}"])
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
 AS_IF([test "$enable_pmi_from_portals" = "yes"], [AC_CONFIG_SUBDIRS([src/runtime/hydra])])
@@ -434,4 +438,5 @@ echo "      Portals PMI: $enable_pmi_from_portals"
 echo "     External PMI: $with_pmi"
 echo ""
 echo "      Build tests: $want_testing"
+echo "      Triggered MEAppend support: $test_trig"
 echo ""
