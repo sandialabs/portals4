@@ -157,8 +157,6 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
                 /* Some XT were processed. */
                 if (me->options & PTL_ME_USE_ONCE) {
                     eq_t *eq = ni->pt[me->pt_index].eq;
-
-                    PTL_FASTLOCK_UNLOCK(&pt->lock);
                     if (eq && !(me->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
                         make_le_event((le_t *)me, eq, PTL_EVENT_AUTO_UNLINK,
                                       PTL_NI_OK);
@@ -169,6 +167,7 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 
                     *me_handle_p = me_to_handle(me);
                     me_put(me);
+                    PTL_FASTLOCK_UNLOCK(&pt->lock);
 
                     goto done;
                 }
@@ -401,18 +400,26 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
     int err;
     me_t *me;
     int ref_cnt;
+//    int pt_index;
+//    pt_t *pt;
+//    ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
     err = gbl_get();
     if (err)
         goto err0;
 
+  
     err = to_me(MYGBL_ me_handle, &me);
     if (err)
         goto err1;
 #else
     me = to_obj(MYGBL_ POOL_ANY, me_handle);
 #endif
+    //pt_index = me->pt_index;
+    //pt = &ni->pt[pt_index];
+        //me_get(me);
+   
     //If this was an overflow, it should just complete now
     //there's no other busy work being done
     if (me->ptl_list == PTL_OVERFLOW_LIST) {
@@ -425,6 +432,9 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
         SPINLOCK_BODY();
     }
 
+    PTL_FASTLOCK_LOCK(&me->pt->lock);
+
+ 
     ref_cnt = me_ref_cnt(me);
 
     /* There should only be 2 references on the object before we can
@@ -439,11 +449,14 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
         goto err1;
     }
 
+    PTL_FASTLOCK_UNLOCK(&me->pt->lock);
     le_unlink((le_t *)me, 0);
-
+        
     err = PTL_OK;
 
-    me_put(me);
+    ref_cnt = me_ref_cnt(me);
+    if (ref_cnt > 0)
+        me_put(me);
   err1:
 #ifndef NO_ARG_VALIDATION
     gbl_put();
