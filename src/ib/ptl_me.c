@@ -401,7 +401,7 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
     me_t *me;
     int ref_cnt;
 //    int pt_index;
-//    pt_t *pt;
+    pt_t *pt;
 //    ni_t *ni;
 
 #ifndef NO_ARG_VALIDATION
@@ -413,12 +413,20 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
     err = to_me(MYGBL_ me_handle, &me);
     if (err)
         goto err1;
+ 
+    if (me == NULL){
+       err = PTL_OK;
+       goto err1;
+    }
+    else{
+       pt = me->pt;
+    }
 #else
     me = to_obj(MYGBL_ POOL_ANY, me_handle);
 #endif
     //pt_index = me->pt_index;
     //pt = &ni->pt[pt_index];
-        //me_get(me);
+    //me_get(me);
    
     //If this was an overflow, it should just complete now
     //there's no other busy work being done
@@ -428,13 +436,31 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
 
     /* make sure the me isn't still involved in any final
      * cleanup before we unlink it */
-    while (atomic_read(&me->busy) == 1) {
-        SPINLOCK_BODY();
+    if (atomic_read(&me->busy) == 1){
+        err = PTL_IN_USE;
+        me_put(me);
+        goto err1;
     }
 
-    PTL_FASTLOCK_LOCK(&me->pt->lock);
+    if (me != NULL && pt != NULL){
+        while (pthread_spin_trylock(&pt->lock) != 0){
+            usleep(500);
+            if(me == NULL ){
+               err = PTL_IN_USE;
+               goto err1;
+            }
+        }
+        if(me == NULL){
+            PTL_FASTLOCK_UNLOCK(&pt->lock);
+            err = PTL_IN_USE;
+            goto err1;
+        } 
+    }
+    else {
+        err = PTL_OK;
+        goto err1;
+    }
 
- 
     ref_cnt = me_ref_cnt(me);
 
     /* There should only be 2 references on the object before we can
@@ -442,21 +468,31 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
     if (ref_cnt > 2) {
         me_put(me);
         err = PTL_IN_USE;
-        goto err1;
-    } else if (ref_cnt < 2) {
+        goto err2;
+    } else if (ref_cnt < 2 && ref_cnt > 0) {
         me_put(me);
         err = PTL_ARG_INVALID;
-        goto err1;
+        goto err2;
+    }
+    else if (ref_cnt <= 0){
+        err = PTL_OK;
+        goto err2;
     }
 
-    PTL_FASTLOCK_UNLOCK(&me->pt->lock);
-    le_unlink((le_t *)me, 0);
+    //if (me->pt != NULL)
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
+    //if (me != NULL)
+        le_unlink((le_t *)me, 0);
         
     err = PTL_OK;
 
     ref_cnt = me_ref_cnt(me);
-    if (ref_cnt > 0)
-        me_put(me);
+    if (ref_cnt > 0) 
+       me_put(me);
+    goto err1;
+  err2:
+    //if (me->pt != NULL)
+        PTL_FASTLOCK_UNLOCK(&pt->lock);
   err1:
 #ifndef NO_ARG_VALIDATION
     gbl_put();

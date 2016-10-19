@@ -58,7 +58,10 @@ static inline void ref_get(struct ref *ref)
 
     ref_cnt = atomic_inc(&ref->ref_cnt);
 
+#ifdef PTL_DEBUG
     assert(ref_cnt >= 1);
+#endif
+
 }
 
 /**
