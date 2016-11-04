@@ -4,6 +4,9 @@
  * @brief This file implements the counting event class.
  */
 
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 #include "ptl_loc.h"
 #include "ptl_timer.h"
 
@@ -663,7 +666,10 @@ static void ct_inc(ct_t *ct, ptl_ct_event_t increment)
         (void)__sync_add_and_fetch(&ct->info.event.failure,
                                    increment.failure);
 
-    ptl_info("CT inc, CT: %p new val: %i value inc'd by: %i failures: %i\n",ct,ct->info.event.success,increment.success,ct->info.event.failure);     
+    ptl_info("CT inc, CT: %p new val: %" PRIu64
+             " value inc'd by: %" PRIu64 " failures: %" PRIu64 "\n",
+             ct, ct->info.event.success, increment.success,
+             ct->info.event.failure);
 
     /* check to see if this triggers any further
      * actions */
