@@ -143,6 +143,12 @@ int _PtlPTAlloc(PPEGBL ptl_handle_ni_t ni_handle, unsigned int options,
         PTL_FASTLOCK_UNLOCK(&eq->eqe_list->lock);
     }
 
+#ifdef WITH_UNORDERED_MATCHING
+    if (options & PTL_PT_MATCH_UNORDERED) {
+        pt->matchlist_ht = NULL;
+    }
+#endif
+
     *pt_index = index;
 
     ni_put(ni);
@@ -209,6 +215,17 @@ int _PtlPTFree(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index)
         err = PTL_PT_IN_USE;
         goto err2;
     }
+
+#ifdef WITH_UNORDERED_MATCHING
+    // should switch to slab/pool allocator if this becomes troublesome
+    if (pt->options & PTL_PT_MATCH_UNORDERED) {
+        pt_me_hash_t *meh_entry, *meh_temp;
+        HASH_ITER(hh, pt->matchlist_ht, meh_entry, meh_temp) {
+            HASH_DEL(pt->matchlist_ht, meh_entry);
+            free(meh_entry);
+        }
+    }
+#endif
 
     PTL_FASTLOCK_DESTROY(&pt->lock);
 

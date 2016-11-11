@@ -92,6 +92,13 @@ AS_IF([test "x$enable_me_triggered" == "xyes"],
   test_trig=yes],[test_trig=no])
 AM_CONDITIONAL(WITH_TRIG_ME_OPS, test "x$enable_me_triggered" == xyes)
 
+AC_ARG_ENABLE([unordered-matching],
+  [AS_HELP_STRING([--enable-unordered-matching],
+    [Enable unordered (hashed) match list searching. Experimental. (default: no)])])
+AS_IF([test "x$enable_unordered_matching" == "xyes"],
+  [AC_DEFINE([WITH_UNORDERED_MATCHING], [1], [Define to enable unordered (hashed) match list searching])])
+AM_CONDITIONAL(WITH_UNORDERED_MATCHING, test "x$enable_unordered_matching" == xyes)
+
 AC_ARG_ENABLE([transport-shmem],
   [AS_HELP_STRING([--enable-transport-shmem],
     [Use Shared memory for on-node communication. This is currently experimental and should be avoided. (default: off)])])
@@ -439,4 +446,5 @@ echo "     External PMI: $with_pmi"
 echo ""
 echo "      Build tests: $want_testing"
 echo "      Triggered MEAppend support: $test_trig"
+echo "      Unordered matchlist searching: $enable_unordered_matching"
 echo ""
