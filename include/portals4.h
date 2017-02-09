@@ -679,6 +679,7 @@ enum pt_options {
     ONLY_USE_ONCE,
     FLOWCTRL,
     ONLY_TRUNCATE,
+    MATCH_UNORDERED,
     PT_OPTIONS_MASK
 };
 /*! Hint to the underlying implementation that all entries attached to this
@@ -693,6 +694,9 @@ enum pt_options {
  * priority list on this portal table entry will not have the \c
  * PTL_ME_NO_TRUNCATE option set. */
 #define PTL_PT_ONLY_TRUNCATE (1 << ONLY_TRUNCATE)
+
+/*! Allow for unordered match list searching. (via hash table) */
+#define PTL_PT_MATCH_UNORDERED (1 << MATCH_UNORDERED)
 
 #define PTL_PT_ALLOC_OPTIONS_MASK ((1 << PT_OPTIONS_MASK) - 1)
 

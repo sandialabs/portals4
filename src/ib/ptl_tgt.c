@@ -635,6 +635,24 @@ static int tgt_get_match(buf_t *buf)
     /* Synchronize with LE/ME append/search APIs */
     PTL_FASTLOCK_LOCK(&pt->lock);
 
+#ifdef WITH_UNORDERED_MATCHING
+    /* If message ordering isn't necessary use a hash lookup instead of
+     * a list search for priority list lookups */
+    if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+        pt_me_hash_t *hashentry;
+        const req_hdr_t *hdr = (req_hdr_t *) buf->data;
+        ptl_match_bits_t mbits = le64_to_cpu(hdr->match_bits);
+
+        HASH_FIND(hh, pt->matchlist_ht, &mbits, sizeof(ptl_match_bits_t), hashentry);
+        if (hashentry) {
+            buf->me = hashentry->match_entry;
+            if (check_match(buf, buf->me)) {
+              me_get(buf->me);
+            }
+            goto found_one;
+        }
+    }
+#endif
     /* Check the priority list.
      * If we find a match take a reference to protect
      * the list element pointer.
@@ -874,7 +892,21 @@ static int tgt_get_length(buf_t *buf)
     if ((me->options & PTL_ME_USE_ONCE) ||
         ((me->options & PTL_ME_MANAGE_LOCAL) && me->min_free &&
          ((me->length - me->offset) < me->min_free))) {
+
+#ifdef WITH_UNORDERED_MATCHING
+        pt_t *pt = me->pt;
+        if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+            pt_me_hash_t *hashentry;
+            HASH_FIND(hh, pt->matchlist_ht, &me->match_bits, sizeof(ptl_match_bits_t), hashentry);
+            if (hashentry) {
+                HASH_DEL(pt->matchlist_ht, hashentry);
+                free(hashentry);
+            }
+        }
+#endif
+
         le_unlink(buf->le, 0);
+
         if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
             buf->auto_unlink_pending = 1;
     }

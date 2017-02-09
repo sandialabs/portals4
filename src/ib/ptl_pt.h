@@ -11,7 +11,12 @@
 
 #include "ptl_locks.h"
 
+#ifdef WITH_UNORDERED_MATCHING
+#include "uthash.h"
+#endif
+
 struct eq;
+struct me;
 
 /**
  * pt state variables.
@@ -22,6 +27,18 @@ enum pt_state {
     PT_DISABLED = 1 << 0,
     PT_AUTO_DISABLED = 1 << 1,
 };
+
+#ifdef WITH_UNORDERED_MATCHING
+/**
+ * PT hash table structure for unordered match lists
+ */
+struct pt_me_hash {
+    uint64_t match_bits;  // hash key
+    struct me *match_entry;    // hash object
+    UT_hash_handle hh;
+};
+typedef struct pt_me_hash pt_me_hash_t;
+#endif
 
 /**
  * pt class into.
@@ -65,6 +82,11 @@ struct pt {
 
         /** to attach on the EQ flow control list if this PT does it. **/
     struct list_head flowctrl_list;
+
+#ifdef WITH_UNORDERED_MATCHING
+       /** hash table for unordered match list matching **/
+    pt_me_hash_t *matchlist_ht;
+#endif
 
         /** spin lock to protect pt lists */
     PTL_FASTLOCK_TYPE lock;
