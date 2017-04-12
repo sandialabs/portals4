@@ -4,9 +4,6 @@
 
 #include "ptl_loc.h"
 
-/* Maximum number of stored objects ever. */
-#define MAX_INDEX	(256*1024)
-
 /**
  * initialize indexing service
  *
@@ -78,8 +75,6 @@ static inline int index_lookup(gbl_t *gbl, unsigned int index, obj_t **obj_p)
         return PTL_FAIL;
     }
 }
-
-#define HANDLE_SHIFT ((sizeof(ptl_handle_any_t)*8)-8)
 
 /**
  * Return a new zero filled slab.

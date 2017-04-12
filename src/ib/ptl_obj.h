@@ -109,7 +109,14 @@ static inline int obj_put(obj_t *obj)
     return ref_put(&obj->obj_ref, obj_release);
 }
 
-#define HANDLE_INDEX_MASK	(0x00ffffff)
+/* Handle format, 32-bits: [Type/8, Index/24] */
+#define HANDLE_TYPE_SIZE 8
+#define HANDLE_INDEX_MASK (0x00ffffff)
+#define HANDLE_SHIFT ((sizeof(ptl_handle_any_t)*8)-HANDLE_TYPE_SIZE)
+
+/* Maximum number of stored objects ever. */
+#define MAX_INDEX (256*1024)
+
 
 /**
  * Convert a handle to an object index.
