@@ -459,7 +459,7 @@ static int tgt_start(buf_t *buf)
     }
 
     pt_index = le32_to_cpu(hdr->pt_index);
-    if (pt_index >= ni->limits.max_pt_index) {
+    if (pt_index > ni->limits.max_pt_index) {
         buf->ni_fail = PTL_NI_DROPPED;
         WARN();
         return STATE_TGT_DROP;
