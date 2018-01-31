@@ -454,7 +454,7 @@ int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle)
 
 
     if (me != NULL && pt != NULL){
-        while (pthread_spin_trylock(&pt->lock) != 0){
+        while (PTL_FASTLOCK_TRYLOCK(&pt->lock) != 0){
             usleep(500);
             if(me == NULL ){
                err = PTL_IN_USE;

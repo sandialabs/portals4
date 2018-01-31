@@ -12,6 +12,7 @@
 # define PTL_FASTLOCK_INIT_SHARED(x)    pthread_spin_init((x), PTHREAD_PROCESS_SHARED)
 # define PTL_FASTLOCK_DESTROY(x) pthread_spin_destroy(x)
 # define PTL_FASTLOCK_LOCK(x)    pthread_spin_lock(x)
+# define PTL_FASTLOCK_TRYLOCK(x) pthread_spin_trylock(x)
 # define PTL_FASTLOCK_UNLOCK(x)  pthread_spin_unlock(x)
 #else
 typedef struct ptl_spin_exclusive_s {   /* stolen from Qthreads */
@@ -27,6 +28,16 @@ typedef struct ptl_spin_exclusive_s {   /* stolen from Qthreads */
                                    while (val != (x)->exit) SPINLOCK_BODY(); }
 # define PTL_FASTLOCK_UNLOCK(x)  { __sync_fetch_and_add(&(x)->exit, 1); \
                                    __sync_synchronize(); }
+
+static inline int PTL_FASTLOCK_TRYLOCK(ptl_spin_exclusive_t *lock) {
+    unsigned long val = __sync_fetch_and_add(&lock->enter, 1);
+    if (val == lock->exit) {
+        __sync_synchronize();
+        return 0;
+    }
+    return 1;
+}
+
 #endif // ifdef HAVE_PTHREAD_SPIN_INIT
 
 #endif // ifndef PTL_LOCKS_H
