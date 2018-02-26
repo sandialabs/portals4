@@ -185,9 +185,9 @@ int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le)
     if (le_init->options & PTL_IOVEC) {
 
 #if IS_PPE
-        if (!mr_lookup_app
-            (ni, le_init->start, le_init->length * sizeof(ptl_iovec_t),
-             &le->mr_start) == PTL_OK)
+        if (!(mr_lookup_app(ni, le_init->start,
+                            le_init->length * sizeof(ptl_iovec_t),
+                            &le->mr_start) == PTL_OK))
             return PTL_ARG_INVALID;
 #endif
 
@@ -201,8 +201,8 @@ int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le)
         iov = (ptl_iovec_t *)addr_to_ppe(le_init->start, le->mr_start);
 
         for (i = 0; i < le->num_iov; i++) {
-            if (!mr_lookup_app
-                (ni, iov->iov_base, iov->iov_len, &le->mr_list[i]) == PTL_OK)
+            if (!(mr_lookup_app(ni, iov->iov_base, iov->iov_len,
+                                &le->mr_list[i]) == PTL_OK))
                 return PTL_ARG_INVALID;
             if (le->mr_list[i]->readonly)
                 return PTL_ARG_INVALID;
@@ -214,9 +214,8 @@ int le_get_mr(ni_t *restrict ni, const ptl_le_t *le_init, le_t *le)
         if (!(ni->limits.features & PTL_TARGET_BIND_INACCESSIBLE) ||
             (le_init->options & PTL_LE_IS_ACCESSIBLE)) {
 
-            if (!mr_lookup_app
-                (ni, le_init->start, le_init->length,
-                 &le->mr_start) == PTL_OK)
+            if (!(mr_lookup_app(ni, le_init->start, le_init->length,
+                                &le->mr_start) == PTL_OK))
                 return PTL_ARG_INVALID;
         }
 
