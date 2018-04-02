@@ -18,7 +18,7 @@ install:
         - git clone https://github.com/regrant/portals4.git
         - ./autogen.sh
         - ./configure --prefix=$HOME/portals4-install/ --with-libev=/usr/lib/ --enable-zero-mrs --enable-transport-udp --enable-reliable-udp --disable-transport-shmem
-        - make -j2
+        - make -j2 check TESTS=""
         - make install
 script:
         - export PTL_LOG_LEVEL=3
