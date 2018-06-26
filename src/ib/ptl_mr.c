@@ -529,7 +529,7 @@ void mr_init(ni_t *ni)
             global_umn_fd = open("/dev/ummunotify", O_RDONLY | O_NONBLOCK);
             if (global_umn_fd == -1) {
                 fprintf(stderr,
-                        "WARNING: Ummunotify not found: Not using ummunotify can result in incorrect results download and install ummunotify from:\n http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2\n");
+                        "WARNING: Ummunotify not found: Not using ummunotify can result in incorrect results download and install ummunotify from:\n  https://github.com/Portals4/ummunotify/ummunotify-v2.tar.gz \n");
                 global_umn_init = 0;
                 return;
             }   
