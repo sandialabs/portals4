@@ -8,6 +8,7 @@
 #include "ptl_ct.h"
 
 #ifdef WITH_TRIG_ME_OPS
+void ct_check(ct_t *ct);
 static void post_trig_me(buf_t *buf, ct_t *me_ct);
 void do_trig_me_op(buf_t *buf, ct_t *ct);
 #endif

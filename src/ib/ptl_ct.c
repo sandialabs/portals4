@@ -10,10 +10,15 @@
 #include "ptl_loc.h"
 #include "ptl_timer.h"
 
+
 /* TODO make these unnecessary by queuing deferred operations */
 void ct_check(ct_t *ct);
 static void post_trig_ct(struct buf *buf, ct_t *trig_ct);
 static void do_trig_ct_op(struct buf *buf);
+
+#ifdef WITH_TRIG_ME_OPS
+void do_trig_me_op(buf_t *buf, ct_t *ct);
+#endif
 
 /**
  * @brief Initialize a ct object once when created.
@@ -541,7 +546,7 @@ void ct_check(ct_t *ct)
             } else if ((ct->info.event.success + ct->info.event.failure) >=
                        buf->ct_threshold) {
                 ptl_info("ME operation triggered: %i on ct of: %i and threshold %i\n", 
-                         buf->op,ct->info.event.success,buf->ct_threshold);
+                         (int) buf->op, (int)ct->info.event.success, (int)buf->ct_threshold);
                 list_del(l);
                 atomic_dec(&ct->list_size);
 
