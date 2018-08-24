@@ -269,6 +269,7 @@ int _PtlCTCancelTriggered(PPEGBL ptl_handle_ct_t ct_handle)
 
     ct->info.interrupt = 1;
     ct_check(ct);
+    ct->info.interrupt = 0;
 
     err = PTL_OK;
     ct_put(ct);
