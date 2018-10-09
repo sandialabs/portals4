@@ -1046,6 +1046,7 @@ static int tgt_data(buf_t *buf)
         else if (buf->data_in && buf->data_in->data_fmt == DATA_FMT_NOKNEM)
             return STATE_TGT_DATA_IN;
 #endif
+        pthread_mutex_unlock(&ni->atomic_mutex);
         return STATE_TGT_COMM_EVENT;
     }
 }

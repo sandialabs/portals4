@@ -136,6 +136,7 @@ int _PtlPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
     buf->user_ptr = user_ptr;
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
+    buf->recv_buf = NULL;
 
     err = process_init(buf);; 
     if (unlikely(err))
@@ -222,6 +223,7 @@ int _PtlTriggeredPut(PPEGBL ptl_handle_md_t md_handle,
     buf->ct_threshold = threshold;
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
+    buf->recv_buf = NULL;
 
     post_ct(buf, ct);
 
@@ -550,6 +552,7 @@ int _PtlAtomic(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
     buf->user_ptr = user_ptr;
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
+    buf->recv_buf = NULL;
 
     err = process_init(buf); 
     if (unlikely(err)) 
@@ -641,6 +644,7 @@ int _PtlTriggeredAtomic(PPEGBL ptl_handle_md_t md_handle,
     buf->ct_threshold = threshold;
     buf->put_offset = local_offset;
     buf->init_state = STATE_INIT_START;
+    buf->recv_buf = NULL;
 
     post_ct(buf, ct);
 
