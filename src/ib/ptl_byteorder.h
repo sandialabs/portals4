@@ -1,6 +1,9 @@
 #ifndef PTL_BYTEORDER_H
 #define PTL_BYTEORDER_H
 
+#ifdef HAVE_LINUX_TYPES_H
+#include <linux/types.h>
+#else
 /* use these for network byte order */
 typedef uint16_t __be16;
 typedef uint32_t __be32;
@@ -8,6 +11,7 @@ typedef uint64_t __be64;
 typedef uint16_t __le16;
 typedef uint32_t __le32;
 typedef uint64_t __le64;
+#endif
 
 static inline __be16 cpu_to_be16(uint16_t x)
 {
