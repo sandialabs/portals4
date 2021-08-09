@@ -97,9 +97,9 @@ endif
 else
 # PPE - (implies no SHMEM; IB optional)
 
-libportals_ib_la_CPPFLAGS = -DIS_LIGHT_LIB -I$(top_srcdir)/include $(XPMEM_CPPFLAGS)
-libportals_ib_la_LIBADD = $(XPMEM_LIBS)
-libportals_ib_la_LDFLAGS = $(XPMEM_LDFLAGS)
+libportals_ib_la_CPPFLAGS = -DIS_LIGHT_LIB -I$(top_srcdir)/include $(ev_CPPFLAGS) $(XPMEM_CPPFLAGS)
+libportals_ib_la_LIBADD = $(ev_LIBS) $(XPMEM_LIBS)
+libportals_ib_la_LDFLAGS = $(ev_LDFLAGS) $(XPMEM_LDFLAGS)
 libportals_ib_la_SOURCES = \
 	ptl_ct_common.c \
 	ptl_ct_common.h \
@@ -205,7 +205,9 @@ endif
 if WITH_TRANSPORT_UDP
 libportals_ppe_la_SOURCES += \
 	ptl_iface_udp.c \
-	ptl_udp.c
+	ptl_udp.c \
+    ptl_rudp.h \
+    ptl_rudp.c
 endif
 
 endif

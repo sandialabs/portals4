@@ -335,6 +335,7 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
 
     mr = NULL;
 
+#if !IS_PPE
     if (global_umn_init == 1){
 
         while (link) {
@@ -407,8 +408,10 @@ int mr_lookup(ni_t *ni, struct ni_mr_tree *tree, void *start,
             mr = NULL;
         }
     }
+    else
+#endif
     /* No memory registration cache enabled */
-    else {
+    {
         INIT_LIST_HEAD(&mr_list);
     }
     /* Insert the new node */
