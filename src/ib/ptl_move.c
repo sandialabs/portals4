@@ -372,6 +372,11 @@ int _PtlTriggeredGet(PPEGBL ptl_handle_md_t md_handle,
     if (unlikely(err))
         goto err2;
 
+    /* Check if we are out of space for the number of triggered operations */
+    if (atomic_read(&ct->list_size) + 1 > ni->limits.max_triggered_ops) {
+        err = PTL_NO_SPACE;
+        goto err1;
+    }
 #ifndef NO_ARG_VALIDATION
     if (!ct) {
         err = PTL_ARG_INVALID;
@@ -613,6 +618,11 @@ int _PtlTriggeredAtomic(PPEGBL ptl_handle_md_t md_handle,
     if (unlikely(err))
         goto err2;
 
+    /* Check if we are out of space for the number of triggered operations */
+    if (atomic_read(&ct->list_size) + 1 > ni->limits.max_triggered_ops) {
+        err = PTL_NO_SPACE;
+        goto err1;
+    }
 #ifndef NO_ARG_VALIDATION
     if (!ct) {
         err = PTL_ARG_INVALID;
@@ -823,6 +833,11 @@ int _PtlTriggeredFetchAtomic(PPEGBL ptl_handle_md_t get_md_handle,
     if (unlikely(err))
         goto err3;
 
+    /* Check if we are out of space for the number of triggered operations */
+    if (atomic_read(&ct->list_size) + 1 > ni->limits.max_triggered_ops) {
+        err = PTL_NO_SPACE;
+        goto err1;
+    }
 #ifndef NO_ARG_VALIDATION
     if (!ct) {
         err = PTL_ARG_INVALID;
@@ -1124,6 +1139,11 @@ int _PtlTriggeredSwap(PPEGBL ptl_handle_md_t get_md_handle,
     if (unlikely(err))
         goto err3;
 
+    /* Check if we are out of space for the number of triggered operations */
+    if (atomic_read(&ct->list_size) + 1 > ni->limits.max_triggered_ops) {
+        err = PTL_NO_SPACE;
+        goto err1;
+    }
 #ifndef NO_ARG_VALIDATION
     if (!ct) {
         err = PTL_ARG_INVALID;
