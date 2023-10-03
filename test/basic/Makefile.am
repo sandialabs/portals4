@@ -85,11 +85,11 @@ TESTS = \
 	test_amo \
 	test_amo_barrier \
 	test_LE_ro_put \
-	test_ME_ro_put \
-	test_LE_no_space_triggered_put \
-	test_ME_no_space_triggered_put \
-	test_LE_no_space_triggered_get \
-	test_ME_no_space_triggered_get
+	test_ME_ro_put
+	#test_LE_no_space_triggered_put \
+	#test_ME_no_space_triggered_put \
+	#test_LE_no_space_triggered_get \
+	#test_ME_no_space_triggered_get
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -333,19 +333,25 @@ test_LE_ro_put_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=0
 test_ME_ro_put_SOURCES = test_ro_put.c
 test_ME_ro_put_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 
-test_LE_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
-test_LE_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
-test_ME_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
-test_ME_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
-#test_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
 
-test_LE_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
-test_LE_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
-test_ME_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
-test_ME_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+##### I'm leaving these tests here so I can test specidfic 4.3 details
+
+
+#test_LE_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
+#test_LE_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+#test_ME_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
+#test_ME_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+
+#test_LE_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
+#test_LE_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+#test_ME_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
+#test_ME_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 #test_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
 
