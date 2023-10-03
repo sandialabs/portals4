@@ -29,16 +29,20 @@
 int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t ni_logical;
-    ptl_process_t   myself;
-    ptl_pt_index_t  logical_pt_index;
-    uint64_t        value, readval;
-    ENTRY_T         value_e;
-    HANDLE_T        value_e_handle;
-    ptl_md_t        write_md;
-    ptl_handle_md_t write_md_handle;
-    int             num_procs;
-    ptl_handle_ct_t trigger;
+    ptl_handle_ni_t  ni_logical;
+    ptl_process_t    myself;
+    ptl_pt_index_t   logical_pt_index;
+    uint64_t         value, readval;
+    ENTRY_T          value_e;
+    HANDLE_T         value_e_handle;
+    ptl_md_t         write_md;
+    ptl_handle_md_t  write_md_handle;
+    int              num_procs;
+    ptl_handle_ct_t  trigger;
+    ptl_ni_limits_t  ni_limits;
+    int              max_triggered_ops;
+    
+     
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -47,7 +51,7 @@ int main(int   argc,
     num_procs = libtest_get_size();
 
     CHECK_RETURNVAL(PtlNIInit(PTL_IFACE_DEFAULT, NI_TYPE | PTL_NI_LOGICAL,
-                              PTL_PID_ANY, NULL, NULL, &ni_logical));
+                              PTL_PID_ANY, NULL, &ni_limits, &ni_logical));
 
     CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
                               libtest_get_mapping(ni_logical)));
@@ -78,6 +82,18 @@ int main(int   argc,
     libtest_barrier();
     /* now I can communicate between ranks with ni_logical */
 
+    
+
+    
+    /* get the limits */
+    max_triggered_ops = ni_limits.max_triggered_ops;
+    fprintf(stdout, "#### max triggered ops = %d\n", max_triggered_ops);
+    fprintf(stdout, "#### max triggered ops = %d\n", ni_limits.max_triggered_ops);
+    
+
+
+    
+    
     /* set up the landing pad so that I can read others' values */
     readval            = 0;
     write_md.start     = &readval;
@@ -87,6 +103,8 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
     CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
 
+
+        
     /* check the trigger, make sure it's zero */
     {
         ptl_ct_event_t test;
@@ -94,13 +112,20 @@ int main(int   argc,
         assert(test.success == 0);
         assert(test.failure == 0);
     }
-    /* set the trigger */
-    CHECK_RETURNVAL(PtlTriggeredPut(write_md_handle, 0, write_md.length, PTL_CT_ACK_REQ,
-                                    (ptl_process_t) { .rank = 0 }, logical_pt_index, 1, 0, NULL, 0,
-                                    trigger, 1));
 
+    
+    /* set the trigger */
+    /* rack up the number of triggered ops. We should then get a PTL_NO_SPACE error */
+    for (int i = 0; i < max_triggered_ops + 20; i++) {
+        CHECK_RETURNVAL(PtlTriggeredPut(write_md_handle, 0, write_md.length, PTL_CT_ACK_REQ,
+                                        (ptl_process_t) { .rank = 0 }, logical_pt_index, 1, 0, NULL, 0,
+                                        trigger, 1));
+    }
+    
+    
     /* Increment the trigger */
-    CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1, 0 }));
+    CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1 , 0 }));
+    
     /* Check the send */
     {
         ptl_ct_event_t ctc;
