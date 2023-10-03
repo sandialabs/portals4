@@ -86,10 +86,11 @@ TESTS = \
 	test_amo_barrier \
 	test_LE_ro_put \
 	test_ME_ro_put
-	#test_LE_no_space_triggered_put \
-	#test_ME_no_space_triggered_put \
-	#test_LE_no_space_triggered_get \
-	#test_ME_no_space_triggered_get
+
+#test_LE_no_space_triggered_put \
+#test_ME_no_space_triggered_put \
+#test_LE_no_space_triggered_get \
+#test_ME_no_space_triggered_get
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
