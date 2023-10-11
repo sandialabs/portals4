@@ -16,6 +16,23 @@
         default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, ret, (unsigned int)__LINE__); abort(); break; \
     } } while (0)
 
+#define ASSERT_RETURNVAL(x, retval) do { int ret;      \
+        ret = x;                                         \
+        if ( ret != retval) {                            \
+            switch (ret) {                               \
+                case PTL_IGNORED:                                       \
+                case PTL_OK: break;                                     \
+                case PTL_FAIL: fprintf(stderr, "=> %s returned PTL_FAIL (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                case PTL_NO_SPACE: fprintf(stderr, "=> %s returned PTL_NO_SPACE (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                case PTL_ARG_INVALID: fprintf(stderr, "=> %s returned PTL_ARG_INVALID (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                case PTL_NO_INIT: fprintf(stderr, "=> %s returned PTL_NO_INIT (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                case PTL_PT_IN_USE: fprintf(stderr, "=> %s returned PTL_PT_IN_USE (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                case PTL_IN_USE: fprintf(stderr, "=> %s returned PTL_IN_USE (line %u), expecting %s\n", #x, (unsigned int)__LINE__, #retval); abort(); break; \
+                default: fprintf(stderr, "=> %s returned failcode %i (line %u), expecting %s\n", #x, ret, (unsigned int)__LINE__, #retval); abort(); break; \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
 #define NO_FAILURES(ct,threshold) do { \
     ptl_ct_event_t ct_data; \
     CHECK_RETURNVAL(PtlCTWait(ct, threshold, &ct_data)); \

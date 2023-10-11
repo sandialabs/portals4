@@ -15,7 +15,7 @@ TESTS = \
 	test_PA_NIInit \
 	test_LA_NIInit \
 	test_bootstrap \
-        test_PA_LE_put_self \
+	test_PA_LE_put_self \
 	test_PA_ME_put_self \
 	test_LA_LE_put_self \
 	test_LA_ME_put_self \
@@ -85,12 +85,13 @@ TESTS = \
 	test_amo \
 	test_amo_barrier \
 	test_LE_ro_put \
-	test_ME_ro_put
-
-#test_LE_no_space_triggered_put \
-#test_ME_no_space_triggered_put \
-#test_LE_no_space_triggered_get \
-#test_ME_no_space_triggered_get
+	test_ME_ro_put \
+	test_LE_no_space_triggered_atomic \
+	test_ME_no_space_triggered_atomic \
+	test_LE_no_space_triggered_put \
+	test_ME_no_space_triggered_put \
+	test_LE_no_space_triggered_get \
+	test_ME_no_space_triggered_get 
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -335,25 +336,31 @@ test_ME_ro_put_SOURCES = test_ro_put.c
 test_ME_ro_put_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 
 
+test_LE_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
+test_LE_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
+test_ME_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+#test_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
 
 
+test_LE_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
+test_LE_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
-##### I'm leaving these tests here so I can test specidfic 4.3 details
+test_ME_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
+test_ME_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
-
-#test_LE_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
-#test_LE_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
-
-#test_ME_no_space_triggered_put_SOURCES = test_no_space_triggered_put.c
-#test_ME_no_space_triggered_put_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
-
-
-#test_LE_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
-#test_LE_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
-
-#test_ME_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
-#test_ME_no_space_triggered_get_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 #test_no_space_triggered_get_SOURCES = test_no_space_triggered_get.c
+
+
+test_LE_no_space_triggered_atomic_SOURCES = test_no_space_triggered_atomic.c
+test_LE_no_space_triggered_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_no_space_triggered_atomic_SOURCES = test_no_space_triggered_atomic.c
+test_ME_no_space_triggered_atomic_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+#test_no_space_triggered_atomic_SOURCES = test_no_space_triggered_atomic.c
 
 #TODO add no_space tests for other triggered ops

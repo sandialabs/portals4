@@ -105,11 +105,12 @@ int main(int   argc,
     
     /* set the trigger */
     /* rack up the number of triggered ops. We should then get a PTL_NO_SPACE error */
-    for (int i = 0; i < max_triggered_ops + 20; i++) {
-    CHECK_RETURNVAL(PtlTriggeredGet(read_md_handle, 0, read_md.length,
-                                    (ptl_process_t) { .rank = 0 },
-                                    logical_pt_index, 1, 0, NULL,
-                                    trigger, 1));
+    for (int i = 0; i < max_triggered_ops + 1; i++) {
+        ASSERT_RETURNVAL(PtlTriggeredGet(read_md_handle, 0, read_md.length,
+                                         (ptl_process_t) { .rank = 0 },
+                                         logical_pt_index, 1, 0, NULL,
+                                         trigger, 1),
+                         PTL_NO_SPACE);
     }
     
 

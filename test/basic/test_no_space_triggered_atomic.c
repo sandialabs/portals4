@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sched.h>
-#include <string.h> /* for memset() */
 
 #include "testing.h"
 
@@ -14,14 +13,14 @@
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
-# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_CT_COMM)
+# define OPTIONS  (PTL_ME_OP_PUT | PTL_ME_OP_GET | PTL_ME_EVENT_CT_COMM)
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink
 #else
 # define ENTRY_T  ptl_le_t
 # define HANDLE_T ptl_handle_le_t
 # define NI_TYPE  PTL_NI_NO_MATCHING
-# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_EVENT_CT_COMM)
+# define OPTIONS  (PTL_LE_OP_PUT | PTL_LE_OP_GET | PTL_LE_EVENT_CT_COMM)
 # define APPEND   PtlLEAppend
 # define UNLINK   PtlLEUnlink
 #endif /* if INTERFACE == 1 */
@@ -29,20 +28,19 @@
 int main(int   argc,
          char *argv[])
 {
-    ptl_handle_ni_t  ni_logical;
-    ptl_process_t    myself;
-    ptl_pt_index_t   logical_pt_index;
-    uint64_t         value, readval;
-    ENTRY_T          value_e;
-    HANDLE_T         value_e_handle;
-    ptl_md_t         write_md;
-    ptl_handle_md_t  write_md_handle;
-    int              num_procs;
+    ptl_handle_ni_t ni_logical;
+    ptl_process_t   myself;
+    ptl_pt_index_t  logical_pt_index;
+    // uint64_t value, readval;
+    double          value, readval;
+    ENTRY_T         value_e;
+    HANDLE_T        value_e_handle;
+    ptl_md_t        read_md;
+    ptl_handle_md_t read_md_handle;
+    int             num_procs;
     ptl_handle_ct_t  trigger;
     ptl_ni_limits_t  ni_limits;
     int              max_triggered_ops;
-    
-     
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -56,54 +54,50 @@ int main(int   argc,
     CHECK_RETURNVAL(PtlSetMap(ni_logical, num_procs,
                               libtest_get_mapping(ni_logical)));
 
-
     CHECK_RETURNVAL(PtlGetId(ni_logical, &myself));
-    /* Now do the initial setup on ni_logical */
     CHECK_RETURNVAL(PtlPTAlloc(ni_logical, 0, PTL_EQ_NONE, PTL_PT_ANY,
                                &logical_pt_index));
     assert(logical_pt_index == 0);
     CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &trigger));
-    /* Now do the initial setup on ni_logical and the new PT */
-    value          = 42;
-    value_e.start  = &value;
-    value_e.length = sizeof(value);
-    value_e.uid    = PTL_UID_ANY;
+    /* Now do the initial setup on ni_logical */
+    value = 77.5;
+    if (myself.rank == 0) {
+        value_e.start   = &value;
+        value_e.length  = sizeof(value);
+        value_e.uid     = PTL_UID_ANY;
+        value_e.options = OPTIONS;
 #if INTERFACE == 1
-    value_e.match_id.rank = PTL_RANK_ANY;
-    value_e.match_bits    = 1;
-    value_e.ignore_bits   = 0;
+        value_e.match_id.rank = PTL_RANK_ANY;
+        value_e.match_bits    = 1;
+        value_e.ignore_bits   = 0;
 #endif
-    value_e.options = OPTIONS;
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
-    CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST, NULL,
-                           &value_e_handle));
+        CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &value_e.ct_handle));
+        CHECK_RETURNVAL(APPEND(ni_logical, 0, &value_e, PTL_PRIORITY_LIST,
+                               NULL, &value_e_handle));
+    }
     /* Now do a barrier (on ni_physical) to make sure that everyone has their
      * logical interface set up */
     libtest_barrier();
+    /* don't need this anymore, so free up resources */
+
     /* now I can communicate between ranks with ni_logical */
 
-    
 
-    
-    /* get the limits */
+
     max_triggered_ops = ni_limits.max_triggered_ops;
     fprintf(stdout, "#### max triggered ops = %d\n", max_triggered_ops);
-    
 
 
-    
-    
     /* set up the landing pad so that I can read others' values */
-    readval            = 0;
-    write_md.start     = &readval;
-    write_md.length    = sizeof(readval);
-    write_md.options   = PTL_MD_EVENT_CT_SEND;
-    write_md.eq_handle = PTL_EQ_NONE;
-    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &write_md.ct_handle));
-    CHECK_RETURNVAL(PtlMDBind(ni_logical, &write_md, &write_md_handle));
+    readval       = 1.1;
+    read_md.start = &readval;
+    // read_md.length = sizeof(uint64_t);
+    read_md.length    = sizeof(double);
+    read_md.options   = PTL_MD_EVENT_CT_ACK;
+    read_md.eq_handle = PTL_EQ_NONE;   // i.e. don't queue send events
+    CHECK_RETURNVAL(PtlCTAlloc(ni_logical, &read_md.ct_handle));
+    CHECK_RETURNVAL(PtlMDBind(ni_logical, &read_md, &read_md_handle));
 
-
-        
     /* check the trigger, make sure it's zero */
     {
         ptl_ct_event_t test;
@@ -112,42 +106,56 @@ int main(int   argc,
         assert(test.failure == 0);
     }
 
-    
     /* set the trigger */
     /* rack up the number of triggered ops. We should then get a PTL_NO_SPACE error */
+    ptl_ct_event_t ctc;
+    ptl_process_t  r0 = { .rank = 0 };
     int retval;
     for (int i = 0; i < max_triggered_ops + 1; i++) {
         retval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
-        ASSERT_RETURNVAL(PtlTriggeredPut(write_md_handle,
-                                        0, write_md.length, PTL_CT_ACK_REQ,
-                                        (ptl_process_t) { .rank = 0 },
-                                        logical_pt_index, 1, 0, NULL, 0,
-                                         trigger, 1),
-                         retval);
+        ASSERT_RETURNVAL(
+            PtlTriggeredAtomic(read_md_handle,
+                               0,
+                               sizeof(double),
+                               PTL_CT_ACK_REQ,
+                               r0,
+                               logical_pt_index,
+                               1,
+                               0,
+                               NULL,
+                               0,
+                               PTL_SUM,
+                               PTL_DOUBLE,
+                               trigger,
+                               1),
+            retval);
+
+
     }
-    
-    
     /* Increment the trigger */
     /* this actually doesn't happen */
     /* TODO make this happen even after no_space error */
     CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1 , 0 }));
-    
-    /* Check the send */
-    ptl_ct_event_t ctc;
-    for (int i = 0; i < max_triggered_ops ; i++) {
-        CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
-        assert(ctc.failure == 0);
-    }
+    CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
+    assert(ctc.failure == 0);
+
+    printf("%i readval: %g\n", (int)myself.rank, readval);
+
+    assert(readval == 1.1);
+
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
+        printf("0 value: %g\n", value);
+        assert(fpequal(value, 77.5 + (1.1 * num_procs)));
+        CHECK_RETURNVAL(UNLINK(value_e_handle));
+        CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     }
 
     /* cleanup */
+    CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
+    CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
+
     CHECK_RETURNVAL(PtlCTFree(trigger));
-    CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
-    CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
-    CHECK_RETURNVAL(UNLINK(value_e_handle));
-    CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
     CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     CHECK_RETURNVAL(libtest_fini());
