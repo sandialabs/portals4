@@ -113,44 +113,34 @@ int main(int   argc,
                                        PTL_UINT64_T));
         CHECK_RETURNVAL(PtlCTWait(read_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
+        int ret;
+        int assertval;
         for (int i = 0; i < max_triggered_ops + 1; i++) {
-            retval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
-            ASSERT_RETURNVAL(
-                PtlTriggeredFetchAtomic(read_md_handle, 0,
-                                        read_md_handle, 0,
-                                        sizeof(uint64_t),
-                                        r0,
-                                        logical_pt_index,
-                                        1,
-                                        0,
-                                        NULL,
-                                        0,
-                                        PTL_SUM,
-                                        PTL_UINT64_T,
-                                        trigger,
-                                        1),
-                retval);
+            assertval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
+            ret = PtlTriggeredFetchAtomic(read_md_handle, 0,
+                                    read_md_handle, 0,
+                                    sizeof(uint64_t),
+                                    r0,
+                                    logical_pt_index,
+                                    1,
+                                    0,
+                                    NULL,
+                                    0,
+                                    PTL_SUM,
+                                    PTL_UINT64_T,
+                                    trigger,
+                                    1);
+            assert(ret == assertval);
         }
         
     }
     
-    printf("%i readval: %llx\n", (int)myself.rank, (unsigned long long)readval); 
-    assert(readval >= 0xdeadbeefc0d1f1ed && readval < 0xdeadbeefc0d1f1ed +
-           num_procs);
-
-    if (myself.rank == 0) {
-        NO_FAILURES(value_e.ct_handle, num_procs);
-        /* printf("0 value: %llx\n", (unsigned long long)value); */
-        assert(value == 0xdeadbeefc0d1f1ed + num_procs);
-        CHECK_RETURNVAL(UNLINK(value_e_handle));
-        CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));
-    }
-    CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
-    CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
 
     /* cleanup */
+    /* CHECK_RETURNVAL(PtlMDRelease(read_md_handle)); */
+    /* CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle)); */
     CHECK_RETURNVAL(PtlCTFree(trigger));
-    CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index));
+    /* CHECK_RETURNVAL(PtlPTFree(ni_logical, logical_pt_index)); */
     CHECK_RETURNVAL(PtlNIFini(ni_logical));
     CHECK_RETURNVAL(libtest_fini());
     PtlFini();

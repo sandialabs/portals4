@@ -41,6 +41,7 @@ int main(int   argc,
     ptl_handle_ct_t trigger;
     ptl_ni_limits_t  ni_limits;
     int              max_triggered_ops;
+    
 
     CHECK_RETURNVAL(PtlInit());
 
@@ -105,12 +106,15 @@ int main(int   argc,
     
     /* set the trigger */
     /* rack up the number of triggered ops. We should then get a PTL_NO_SPACE error */
+    int ret;
+    int assertval;
     for (int i = 0; i < max_triggered_ops + 1; i++) {
-        ASSERT_RETURNVAL(PtlTriggeredGet(read_md_handle, 0, read_md.length,
-                                         (ptl_process_t) { .rank = 0 },
-                                         logical_pt_index, 1, 0, NULL,
-                                         trigger, 1),
-                         PTL_NO_SPACE);
+        assertval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
+        ret = PtlTriggeredGet(read_md_handle, 0, read_md.length,
+                              (ptl_process_t) { .rank = 0 },
+                              logical_pt_index, 1, 0, NULL,
+                              trigger, 1);
+        assert(ret == assertval);
     }
     
 
@@ -126,7 +130,8 @@ int main(int   argc,
     /* cleanup */
     libtest_barrier();
     CHECK_RETURNVAL(PtlCTFree(trigger));
-    CHECK_RETURNVAL(PtlMDRelease(read_md_handle));
+    /* PtlMDRelease happens in PtlTriggeredGet when PTL_NO_SPACE error happens */
+    /* CHECK_RETURNVAL(PtlMDRelease(read_md_handle)); */
     CHECK_RETURNVAL(PtlCTFree(read_md.ct_handle));
     CHECK_RETURNVAL(UNLINK(value_e_handle));
     CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));

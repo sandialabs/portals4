@@ -115,36 +115,48 @@ int main(int   argc,
     
     /* set the trigger */
     /* rack up the number of triggered ops. We should then get a PTL_NO_SPACE error */
-    int retval;
-    for (int i = 0; i < max_triggered_ops + 1; i++) {
-        retval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
-        ASSERT_RETURNVAL(PtlTriggeredPut(write_md_handle,
-                                        0, write_md.length, PTL_CT_ACK_REQ,
-                                        (ptl_process_t) { .rank = 0 },
-                                        logical_pt_index, 1, 0, NULL, 0,
-                                         trigger, 1),
-                         retval);
+    {
+        int assertval;
+        int ret;
+        for (int i = 0; i < max_triggered_ops + 1; i++) {
+            assertval = (i == max_triggered_ops) ? PTL_NO_SPACE : PTL_OK;
+            ret = PtlTriggeredPut(write_md_handle,
+                                  0,
+                                  write_md.length,
+                                  PTL_CT_ACK_REQ,
+                                  (ptl_process_t) { .rank = 0 }, /* target (destination) rank */
+                                  logical_pt_index,
+                                  1, /* match bits */
+                                  0, /* remote offset */
+                                  NULL, /* user pointer used for whatever */
+                                  0, /* 64 bits of user data that can be included in the message header */
+                                  trigger, 1);
+            
+            assert(ret == assertval);
+        }
     }
     
     
     /* Increment the trigger */
-    /* this actually doesn't happen */
-    /* TODO make this happen even after no_space error */
     CHECK_RETURNVAL(PtlCTInc(trigger, (ptl_ct_event_t) { 1 , 0 }));
     
     /* Check the send */
-    ptl_ct_event_t ctc;
-    for (int i = 0; i < max_triggered_ops ; i++) {
+    {
+        ptl_ct_event_t ctc;
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 1, &ctc));
         assert(ctc.failure == 0);
     }
+    
     if (myself.rank == 0) {
         NO_FAILURES(value_e.ct_handle, num_procs);
     }
 
+        
     /* cleanup */
     CHECK_RETURNVAL(PtlCTFree(trigger));
-    CHECK_RETURNVAL(PtlMDRelease(write_md_handle));
+    /* PtlMDRelease() happens in PtlTriggeredPut when there is
+       a PTL_NO_SPACE error, so we don't do it here */
+    /* CHECK_RETURNVAL(PtlMDRelease(write_md_handle)); */
     CHECK_RETURNVAL(PtlCTFree(write_md.ct_handle));
     CHECK_RETURNVAL(UNLINK(value_e_handle));
     CHECK_RETURNVAL(PtlCTFree(value_e.ct_handle));

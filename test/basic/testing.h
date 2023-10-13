@@ -16,6 +16,8 @@
         default: fprintf(stderr, "=> %s returned failcode %i (line %u)\n", #x, ret, (unsigned int)__LINE__); abort(); break; \
     } } while (0)
 
+
+/* TODO this doesn't work right now */
 #define ASSERT_RETURNVAL(x, retval) do { int ret;      \
         ret = x;                                         \
         if ( ret != retval) {                            \
