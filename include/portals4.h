@@ -27,7 +27,6 @@ enum ptl_retvals {
     PTL_FAIL,            /*!< Indicates a non-specific error */
     PTL_IGNORED,         /*!< Logical map set failed. */
     PTL_IN_USE,          /*!< The specified resource is currently in use. */
-    PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. */
     PTL_LIST_TOO_LONG,   /*!< The resulting list is too long (interface-dependent). */
     PTL_NO_INIT,         /*!< Init has not yet completed successfully. */
     PTL_NO_SPACE,        /*!< Sufficient memory for action was not available. */
@@ -35,6 +34,9 @@ enum ptl_retvals {
     PTL_PT_FULL,         /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,    /*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE        /*!< Portal table index is busy. */
+    
+    /* Deprecated return vals */
+    //PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. */
 };
 #define PTL_STATUS_LAST (PTL_PT_IN_USE + 1)
 
@@ -1784,7 +1786,7 @@ int PtlCTCancelTriggered(ptl_handle_ct_t ct_handle);
  *                          successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a ct_handle is not a valid
  *                          counting event handle.
- * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
+ * @retval DEPRECATED PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
  *                          called by another thread while this thread was
  *                          in PtlCTGet()
  * @note PtlCTGet() must be as close to the speed of a simple variable
@@ -1813,14 +1815,14 @@ int PtlCTGet(ptl_handle_ct_t ct_handle,
  *                          successfully initialized.
  * @retval PTL_ARG_INVALID  Indicates that \a ct_handle is not a valid
  *                          counting event handle.
- * @retval PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
+ * @retval DEPRECATED PTL_INTERRUPTED  Indicates that PtlCTFree() or PtlNIFini() was
  *                          called by another thread while this thread was
  *                          waiting in PtlCTWait()
  * @note PtlCTWait() returns when the counting event referenced by the \a
  *      ct_handle is greater than or equal to the test; thus, the actual value
  *      of the counting event is returned to prevent the user from having to
  *      call PtlCTGet().
- * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree
+ * @implnote The return code of \c PTL_INTERRUPTED (DEPRECATED as of 4.3) adds an unfortunate degree
  *      of complexity to the PtlCTWait() function; however, it was deemed
  *      necessary to be able to interrupt waiting functions for the sake of
  *      applications that need to tolerate failures. Hence, this approach to
@@ -1878,7 +1880,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
  * @retval PTL_CT_NONE_REACHED  Indicates that none of the counting events
  *                              reached their test before the timeout was
  *                              reached.
- * @retval PTL_INTERRUPTED      Indicates that PtlCTFree() or PtlNIFini() was
+ * @retval DEPRECATED PTL_INTERRUPTED      Indicates that PtlCTFree() or PtlNIFini() was
  *                              called by another thread while this thread was
  *                              waiting in PtlCTPoll().
  * @implnote Implementations are discouraged from providing macros for
@@ -1886,7 +1888,7 @@ int PtlCTWait(ptl_handle_ct_t ct_handle,
  *      these functions. The usage scenario for PtlCTGet() and PtlCTWait() is
  *      expected to depend on minimizing the computational cost of these
  *      routines.
- * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree
+ * @implnote The return code of \c PTL_INTERRUPTED (DEPRECATED as of 4.3) adds an unfortunate degree
  *      of complexity to the PtlCTPoll() function; however, it was deemed
  *      necessary to be able to interrupt waiting functions for the sake of
  *      applications that need to tolerate failures. Hence, this approach to
@@ -2838,7 +2840,7 @@ int PtlEQFree(ptl_handle_eq_t eq_handle);
  *                          PtlEQWait(), or PtlEQPoll() -- from this event
  *                          queue has been dropped due to limited space in the
  *                          event queue.
- * @implnote The return code of \c PTL_INTERRUPTED adds an unfortunate degree of
+ * @implnote The return code of \c PTL_INTERRUPTED (DEPRECATED as of 4.3) adds an unfortunate degree of
  *      complexity to the PtlEQGet(), PtlEQWait(), and PtlEQPoll() functions;
  *      however, it was deemed necessary to be able to interrupt waiting
  *      functions for the sake of applications that need to tolerate failures.
@@ -2875,7 +2877,7 @@ int PtlEQGet(ptl_handle_eq_t eq_handle,
  *                              PtlEQGet(), PtlEQWait(), or PtlEQPoll() -- from
  *                              this event queue has been dropped due to
  *                              limited space in the event queue.
- * @retval PTL_INTERRUPTED      Indicates that PtlEQFree() or PtlNIFini() was
+ * @retval DEPRECATED PTL_INTERRUPTED      Indicates that PtlEQFree() or PtlNIFini() was
  *                              called by another thread while this thread was
  *                              waiting in PtlEQWait().
  * @see PtlEQGet(), PtlEQPoll()
@@ -2927,7 +2929,7 @@ int PtlEQWait(ptl_handle_eq_t eq_handle,
  *                              and the last event obtained from the event
  *                              queue indicated by \a which has been dropped
  *                              due to limited space in the event queue.
- * @retval PTL_INTERRUPTED      Indicates that PtlEQFree() or PtlNIFini() was
+ * @retval DEPRECATED PTL_INTERRUPTED      Indicates that PtlEQFree() or PtlNIFini() was
  *                              called by another thread while this thread was
  *                              waiting in PtlEQPoll().
  * @implnote Implementations are free to provide macros for PtlEQGet() and
