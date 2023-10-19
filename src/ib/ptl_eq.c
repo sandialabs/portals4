@@ -297,8 +297,6 @@ int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
  * successfully initialized.
  * @return PTL_ARG_INVALID Indicates that eq_handle is not a valid event
  * queue handle.
- * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
- * called by another thread while this thread was waiting in PtlEQWait().
  */
 int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
@@ -353,8 +351,6 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
  * The definition of which arguments are checked is implementation dependent.
  * @return PTL_EQ_EMPTY Indicates that the timeout has been reached and all
  * of the event queues are empty.
- * @return PTL_INTERRUPTED Indicates that PtlEQFree() or PtlNIFini() was
- * called by another thread while this thread was waiting in PtlEQPoll().
  */
 int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
                ptl_time_t timeout, ptl_event_t *event_p,

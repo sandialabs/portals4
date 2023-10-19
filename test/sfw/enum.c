@@ -13,7 +13,7 @@ int get_ret(char *val)
 	else if (!strcmp("EQ_DROPPED", val))	return PTL_EQ_DROPPED;
 	else if (!strcmp("EQ_EMPTY", val))	return PTL_EQ_EMPTY;
 	else if (!strcmp("IN_USE", val))	return PTL_IN_USE;
-	else if (!strcmp("INTERRUPTED", val))	return PTL_INTERRUPTED;
+         //else if (!strcmp("INTERRUPTED", val))	return PTL_INTERRUPTED;
 	else if (!strcmp("LIST_TOO_LONG", val))	return PTL_LIST_TOO_LONG;
 	else if (!strcmp("NO_INIT", val))	return PTL_NO_INIT;
 	else if (!strcmp("NO_SPACE", val))	return PTL_NO_SPACE;

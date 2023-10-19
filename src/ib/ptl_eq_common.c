@@ -110,7 +110,9 @@ static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
     }
 
     if (eqe_list->interrupt) {
-        return PTL_INTERRUPTED;
+        /* PTL_INTERRUPTED is deprecated as of 4.3 */
+        /* return PTL_INTERRUPTED; */
+        return PTL_FAIL;
     }
 
     return PTL_EQ_EMPTY;
@@ -176,7 +178,9 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
             }
 
             if (eqe_list->interrupt) {
-                err = PTL_INTERRUPTED;
+                /* PTL_INTERRUPTED is deprecated as of 4.3 */
+                /* err = PTL_INTERRUPTED; */
+                err = PTL_FAIL;
                 goto out;
             }
         }

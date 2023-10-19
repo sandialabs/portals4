@@ -32,7 +32,9 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
 
         /* someone called PtlCTFree or PtlNIFini, leave */
         if (unlikely(ct_info->interrupt)) {
-            err = PTL_INTERRUPTED;
+            /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
+            //err = PTL_INTERRUPTED;
+            err = PTL_FAIL;
             break;
         }
 
@@ -54,9 +56,8 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
  * @param thresholds array of thresholds
  * @param event_p address of returned event
  * @param which_p address of returned which
- *
+ * 
  * @return PTL_OK if found an event
- * @return PTL_INTERRUPTED if someone is tearing down a ct
  * @return PTL_CT_NONE_REACHED if did not find an event
  */
 static int ct_poll_loop(int size, struct ct_info *cts_info[],
@@ -78,7 +79,9 @@ static int ct_poll_loop(int size, struct ct_info *cts_info[],
 
         if (ct_info->interrupt) {
             atomic_dec(&keep_polling);
-            return PTL_INTERRUPTED;
+            /* PTL_INTERRUPTED is deprecated as of 4.3 */
+            //return PTL_INTERRUPTED;
+            return PTL_FAIL;
         }
     }
 

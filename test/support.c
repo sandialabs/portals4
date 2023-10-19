@@ -55,8 +55,8 @@ char *libtest_StrPtlError(int error_code)
         case PTL_IGNORED:
             return "PTL_IGNORED";
 
-        case PTL_INTERRUPTED:
-            return "PTL_INTERRUPTED";
+        //case PTL_INTERRUPTED:
+        //    return "PTL_INTERRUPTED";
 
         case PTL_LIST_TOO_LONG:
             return "PTL_LIST_TOO_LONG";

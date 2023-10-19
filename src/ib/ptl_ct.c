@@ -352,9 +352,6 @@ int _PtlCTGet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
  * successfully initialized.
  * @return PTL_ARG_INVALID Indicates that ct_handle is not a valid
  * counting event handle.
- * @return PTL_INTERRUPTED Indicates that PtlCTFree() or PtlNIFini()
- * was called by another thread while this thread * was waiting in
- * PtlCTWait().
  */
 int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
                ptl_ct_event_t *event_p)
@@ -408,9 +405,6 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
  * bad ct_handle).
  * @return PTL_CT_NONE_REACHED Indicates that none of the counting
  * events reached their test before the timeout was * reached.
- * @return PTL_INTERRUPTED Indicates that PtlCTFree() or PtlNIFini()
- * was called by another thread while this thread * was waiting
- * in PtlCTPoll().
  */
 int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
                const ptl_size_t *thresholds, unsigned int size,
