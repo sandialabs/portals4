@@ -34,7 +34,7 @@ enum ptl_retvals {
     PTL_PT_FULL,         /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,    /*!< Flow control is enabled and there is no EQ provided. */
     PTL_PT_IN_USE        /*!< Portal table index is busy. */
-    
+
     /* Deprecated return vals */
     //PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. Deprecated as of 4.3. */
 };
@@ -686,6 +686,7 @@ enum pt_options {
     FLOWCTRL,
     ONLY_TRUNCATE,
     MATCH_UNORDERED,
+    PT_ALLOC_DISABLED,
     PT_OPTIONS_MASK
 };
 /*! Hint to the underlying implementation that all entries attached to this
@@ -701,10 +702,14 @@ enum pt_options {
  * PTL_ME_NO_TRUNCATE option set. */
 #define PTL_PT_ONLY_TRUNCATE (1 << ONLY_TRUNCATE)
 
+/* Allocate portal table entry in disabled status */
+#define PTL_PT_ALLOC_DISABLED (1 << PT_ALLOC_DISABLED) 
+
 /*! Allow for unordered match list searching. (via hash table) */
 #define PTL_PT_MATCH_UNORDERED (1 << MATCH_UNORDERED)
 
 #define PTL_PT_ALLOC_OPTIONS_MASK ((1 << PT_OPTIONS_MASK) - 1)
+
 
 /*!
  * @fn PtlPTAlloc(ptl_handle_ni_t   ni_handle,
@@ -1976,7 +1981,7 @@ typedef unsigned char ptl_ack_req_t;
                           * generated. */
 #define PTL_ACK_REQ    1 /*!< Requests an acknowledgment. */
 #define PTL_CT_ACK_REQ 2 /*!< Requests a simple counting acknowledgment. */
-#define PTL_OC_ACK_REQ 3 /*!< Requests an operation completed 
+#define PTL_OC_ACK_REQ 3 /*!< Requests an operation completed
                           * acknowledgment. */
 
 /*!
@@ -2267,7 +2272,7 @@ typedef unsigned char ptl_datatype_t;
 #define PTL_DOUBLE   9      /*!< 64-bit floating-point number */
 #define PTL_FLOAT_COMPLEX  10  /*!< 32-bit floating-point complex number */
 #define PTL_DOUBLE_COMPLEX 11  /*!< 64-bit floating-point complex number */
-#define PTL_LONG_DOUBLE    12 
+#define PTL_LONG_DOUBLE    12
 #define PTL_LONG_DOUBLE_COMPLEX 13
 #define PTL_DATATYPE_LAST  14
 
@@ -3289,17 +3294,17 @@ int PtlTriggeredCTSet(ptl_handle_ct_t ct_handle,
                          ptl_size_t threshold)
  *
  * @brief  Undocumented Triggered ME operations, not part of the Portals Specs */
-int PtlTriggeredMEAppend(ptl_handle_ni_t ni_handle, 
-			 ptl_pt_index_t pt_index,
-                	 ptl_me_t *me_init, 
-			 ptl_list_t ptl_list, 
-			 void *user_ptr,
-                	 ptl_handle_me_t *me_handle_p, 
-			 ptl_handle_ct_t trig_ct_handle,
-                	 ptl_size_t threshold);
+int PtlTriggeredMEAppend(ptl_handle_ni_t ni_handle,
+             ptl_pt_index_t pt_index,
+                     ptl_me_t *me_init,
+             ptl_list_t ptl_list,
+             void *user_ptr,
+                     ptl_handle_me_t *me_handle_p,
+             ptl_handle_ct_t trig_ct_handle,
+                     ptl_size_t threshold);
 
 int PtlTriggeredMEUnlink(ptl_handle_me_t me_handle,
-			 ptl_handle_ct_t trig_ct_handle,
+             ptl_handle_ct_t trig_ct_handle,
                          ptl_size_t threshold);
 
 
