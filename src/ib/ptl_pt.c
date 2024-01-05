@@ -68,7 +68,7 @@ static int get_pt_index(ni_t *ni, ptl_pt_index_t req, ptl_pt_index_t *index_p)
  * @paran[in] pt_index_req requested pt index for entry or PTL_PT_ANY
  * @param[out] pt_index address of return value
  *
- * @return PTL_OK		on success
+ * @return PTL_OK		    on success
  * @return PTL_NO_INIT		if PtlInit has not been called
  * @return PTL_PT_IN_USE	if req is already in use
  * @return PTL_PT_FULL		if no index available

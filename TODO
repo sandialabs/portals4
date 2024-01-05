@@ -1,4 +1,15 @@
 ==========================
+Thu Oct 19 12:20:44 2023
+STARTED
+Add from changelog: new option PTL_PT_ALLOC_DISABLED to PtlPTAlloc() (Section3.7.1)
+
+==========================
+Thu Oct 19 12:20:08 2023
+FINISHED
+Removing PTL_INTERRUPTED error code (deprecated as of 4.3)
+Note that return code PTL_FAIL used in place of PTL_INTERRUPTED.
+
+==========================
 Mon Oct 16 13:05:34 2023
 
 Removing PTL_INTERRUPTED error code (deprecated as of 4.3)
