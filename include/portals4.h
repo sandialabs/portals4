@@ -138,6 +138,7 @@ typedef struct {
                                 * - \c PTL_MD_EVENT_CT_ACK
                                 * - \c PTL_MD_EVENT_CT_BYTES
                                 * - \c PTL_MD_UNORDERED
+                                * - \c PTL_MD_UNRELIABLE
                                 * - \c PTL_IOVEC
                                 */
     ptl_handle_eq_t eq_handle; /*!< The event queue handle used to log the
@@ -905,7 +906,8 @@ enum md_options {
     MD_EVNT_SUCCESS_DISABLE,
     MD_VOLATILE,
     MD_EVNT_SEND_DISABLE,
-    MD_OPTIONS_MASK
+    MD_UNRELIABLE,
+    MD_OPTIONS_MASK,
 };
 
 /*! Specifies that this memory descriptor should not generate events that
@@ -942,6 +944,15 @@ enum md_options {
  * required to honor this option unless the size of the operation is less than
  * or equal to \a max_volatile_size. */
 #define PTL_MD_VOLATILE (1 << MD_VOLATILE)
+
+
+/*! Indicate to the Portals implementation that guaranteed delivery of
+ * messages is not required and messages may be dropped by the network.
+ * Only the put operation with no acknowledgment is supported in this
+ * mode. Other operations are considered undefined behavior.
+ */
+#define PTL_MD_UNRELIABLE (1 << MD_UNRELIABLE)
+
 
 #define PTL_MD_OPTIONS_MASK (((1 << MD_OPTIONS_MASK) - 1) | PTL_MD_EVENT_CT_BYTES)
 
