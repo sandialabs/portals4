@@ -72,6 +72,10 @@ static int check_put(md_t *md, ptl_size_t local_offset, ptl_size_t length,
          * copied in the request buffer. */
         return PTL_ARG_INVALID;
 
+    if (ack_req == PTL_ACK_REQ && (md->options & PTL_MD_UNRELIABLE))
+        return PTL_ARG_INVALID;
+        
+
     return PTL_OK;
 }
 #endif
