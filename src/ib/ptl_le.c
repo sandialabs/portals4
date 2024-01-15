@@ -391,6 +391,7 @@ int __check_overflow(le_t *le, int delete)
  */
 int check_overflow_search_only(le_t *le)
 {
+    // TODO dkruse this function to implement counter events 
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     buf_t *buf;
@@ -408,6 +409,8 @@ int check_overflow_search_only(le_t *le)
                                   &event[found]);
             }
 
+            // TODO dkruse maybe use goto, pay attention to failing counter,
+            // use_once logic, see diagram on board 
             found++;
             if (le->options & PTL_LE_USE_ONCE)
                 break;
@@ -562,6 +565,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
             err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
             if (err)
                 goto err3;
+            
         } else {
             le->ct = NULL;
         }
@@ -581,6 +585,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 #endif
 
     if (le_handle_p) {
+        /* TODO dkruse Is this the append case? */
         PTL_FASTLOCK_LOCK(&pt->lock);
 
         if (ptl_list == PTL_PRIORITY_LIST) {
@@ -593,6 +598,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 
                     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
+                    // TODO dkruse check for le->ct, update, 
                     if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
                         make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK,
                                       PTL_NI_OK);
