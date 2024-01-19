@@ -276,26 +276,70 @@ int le_append_pt(ni_t *ni, le_t *le)
  * @param[in] le The LE/ME match against the unexpected list.
  * @param[out] buf_list The returned message list.
  */
-static void __match_le_unexpected(const le_t *le,
-                                  struct list_head *buf_list)
+static void __match_le_unexpected(le_t *le,
+                                  struct list_head *buf_list,
+                                  int update_counter)
 {
+    // TODO dkruse this function needs a flag for whether we update counters or not
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     buf_t *buf;
     buf_t *n;
+    ptl_ct_event_t ct_incr_success = {1, 0};
+    ptl_ct_event_t ct_incr_fail = {0, 1};
+    int ret;
+    
 
     INIT_LIST_HEAD(buf_list);
 
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
-        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))){
+        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
             list_del(&buf->unexpected_list);
             list_add_tail(&buf->unexpected_list, buf_list);
 
+            /* counter event handle exists and we found a match, increment counter success */
+            if (le->ct) {
+                printf("DKRUSE __match_le_unexpected have counter and match\n");
+                ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_success);
+                if (ret == PTL_ARG_INVALID)
+                    printf("DKRUSE __match_le_unexpected PTL_ARG_invalid");
+                else
+                    printf("DKRUSE __match_le_unexpected ret = %d\n", ret);
+            }
+            
+            
             if (le->options & PTL_LE_USE_ONCE)
                 break;
+            
+        } else {
+            
+            /* when PTL_LE_USE_ONCE, increment failure counter for all non-matching entries */
+            if (le->options & PTL_LE_USE_ONCE && le->ct) {
+               printf("DKRUSE __match_le_unexpected have counter not match use once\n");
+               ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
+                if (ret == PTL_ARG_INVALID)
+                    printf("DKRUSE __match_le_unexpected PTL_ARG_invalid\n");
+                else
+                    printf("DKRUSE __match_le_unexpected ret = %d\n", ret);
+                    
+            }
+            
         }
     }
+    
+    /* if not using the LE once, increment fail counter to mean "all done" */
+    if (!(le->options & PTL_LE_USE_ONCE)
+        && le->ct) {
+        printf("DKRUSE __match_le_unexpected have counter no matches use once\n");
+        ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
+        if (ret == PTL_ARG_INVALID)
+            printf("DKRUSE __match_le_unexpected PTL_ARG_invalid");
+        else
+            printf("DKRUSE __match_le_unexpected ret = %d\n", ret);
+    }
+    
+    
 }
 
 static void flush_from_unexpected_list(le_t *le,
@@ -391,12 +435,16 @@ int __check_overflow(le_t *le, int delete)
  */
 int check_overflow_search_only(le_t *le)
 {
-    // TODO dkruse this function to implement counter events 
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     buf_t *buf;
     buf_t *n;
     int found = 0;
+    ptl_ct_event_t ct_incr_success = {1, 0};
+    ptl_ct_event_t ct_incr_fail = {0, 1};
+    
+        
+  
     PTL_FASTLOCK_LOCK(&pt->lock);
     ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
@@ -409,14 +457,27 @@ int check_overflow_search_only(le_t *le)
                                   &event[found]);
             }
 
-            // TODO dkruse maybe use goto, pay attention to failing counter,
-            // use_once logic, see diagram on board 
             found++;
+
+            /* counter event handle exists and we found a match, increment counter success */
+            if (le->ct)
+                _PtlCTInc(ct_to_handle(le->ct), ct_incr_success);
+            
             if (le->options & PTL_LE_USE_ONCE)
                 break;
-
+            
+        } else {
+            
+            /* when PTL_LE_USE_ONCE, increment failure counter for all non-matching entries */
+            if (le->options & PTL_LE_USE_ONCE && le->ct)
+                _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
         }
     }
+    /* if not using the LE once, increment fail counter to mean "all done" */
+    if (!(le->options & PTL_LE_USE_ONCE)
+        && le->ct)
+        _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
+        
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
@@ -585,7 +646,6 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 #endif
 
     if (le_handle_p) {
-        /* TODO dkruse Is this the append case? */
         PTL_FASTLOCK_LOCK(&pt->lock);
 
         if (ptl_list == PTL_PRIORITY_LIST) {
@@ -598,7 +658,6 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 
                     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
-                    // TODO dkruse check for le->ct, update, 
                     if (eq && !(le->options & PTL_ME_EVENT_UNLINK_DISABLE)) {
                         make_le_event(le, eq, PTL_EVENT_AUTO_UNLINK,
                                       PTL_NI_OK);
@@ -621,6 +680,17 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 
         *le_handle_p = le_to_handle(le);
     } else {
+        // TODO dkruse I think this is the issue
+        // search only makes sence for counter logic defined
+        // in ptlsearch.
+        //However, when deleting, it follows common code for
+        // PtlLEAppend, so any counter in the le will get
+        // updated if appending and searching...
+        // Therefore, check_overflow_search_delete may need its
+        // own function to handle the counter logic for PTLSearch
+        //
+        // The common function causing this issue is
+        // __match_le_unexpected
         if (search_op == PTL_SEARCH_ONLY)
             err = check_overflow_search_only(le);
         else
