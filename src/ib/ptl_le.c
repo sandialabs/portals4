@@ -274,6 +274,9 @@ int le_append_pt(ni_t *ni, le_t *le)
  * @pre PT lock must be held by caller.
  *
  * @param[in] le The LE/ME match against the unexpected list.
+ * @param[in] buf_list 
+ * @param[in] update_counter , if update_counter > 0, then update
+ * the counter in le if it exists
  * @param[out] buf_list The returned message list.
  */
 static void __match_le_unexpected(le_t *le,
@@ -299,7 +302,7 @@ static void __match_le_unexpected(le_t *le,
             list_add_tail(&buf->unexpected_list, buf_list);
 
             /* counter event handle exists and we found a match, increment counter success */
-            if (le->ct) {
+            if (le->ct && update_counter > 0) {
                 printf("DKRUSE __match_le_unexpected have counter and match\n");
                 ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_success);
                 if (ret == PTL_ARG_INVALID)
@@ -315,7 +318,7 @@ static void __match_le_unexpected(le_t *le,
         } else {
             
             /* when PTL_LE_USE_ONCE, increment failure counter for all non-matching entries */
-            if (le->options & PTL_LE_USE_ONCE && le->ct) {
+            if (le->options & PTL_LE_USE_ONCE && le->ct && update_counter > 0) {
                printf("DKRUSE __match_le_unexpected have counter not match use once\n");
                ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
                 if (ret == PTL_ARG_INVALID)
@@ -330,7 +333,7 @@ static void __match_le_unexpected(le_t *le,
     
     /* if not using the LE once, increment fail counter to mean "all done" */
     if (!(le->options & PTL_LE_USE_ONCE)
-        && le->ct) {
+        && le->ct && update_counter > 0) {
         printf("DKRUSE __match_le_unexpected have counter no matches use once\n");
         ret = _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
         if (ret == PTL_ARG_INVALID)
@@ -409,7 +412,8 @@ int __check_overflow(le_t *le, int delete)
     struct list_head buf_list;
     int ret;
 
-    __match_le_unexpected(le,&buf_list);
+    // dkruse this should have the third param `update_counter` to 1
+    __match_le_unexpected(le, &buf_list, 0);
 
     ret = !list_empty(&buf_list);
     if (ret) {
@@ -521,7 +525,7 @@ int check_overflow_search_delete(le_t *le)
      * matching message and adding to the buf_list */
     PTL_FASTLOCK_LOCK(&pt->lock);
 
-    __match_le_unexpected(le, &buf_list);
+    __match_le_unexpected(le, &buf_list, 0);
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
