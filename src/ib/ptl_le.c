@@ -438,6 +438,7 @@ int __check_overflow(le_t *le, int delete)
  * @return status
  */
 int check_overflow_search_only(le_t *le)
+
 {
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
@@ -464,8 +465,10 @@ int check_overflow_search_only(le_t *le)
             found++;
 
             /* counter event handle exists and we found a match, increment counter success */
-            if (le->ct)
+            if (le->ct) {
+                fprintf(stderr, "dkruse found counter and match in search_only\n");
                 _PtlCTInc(ct_to_handle(le->ct), ct_incr_success);
+            }
             
             if (le->options & PTL_LE_USE_ONCE)
                 break;
@@ -479,7 +482,7 @@ int check_overflow_search_only(le_t *le)
     }
     /* if not using the LE once, increment fail counter to mean "all done" */
     if (!(le->options & PTL_LE_USE_ONCE)
-        && le->ct)
+        && le->ct) 
         _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
         
 
