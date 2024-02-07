@@ -199,7 +199,7 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
         if (search_op == PTL_SEARCH_ONLY)
             err = check_overflow_search_only((le_t *)me);
         else
-            err = check_overflow_search_delete((le_t *)me);
+            err = check_overflow_search_delete((le_t *)me, 0);
 
         if (err)
             goto err3;

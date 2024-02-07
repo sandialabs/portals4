@@ -515,7 +515,7 @@ int check_overflow_search_only(le_t *le)
  *
  * @return status
  */
-int check_overflow_search_delete(le_t *le)
+int check_overflow_search_delete(le_t *le, int update_counter)
 {
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
@@ -525,7 +525,7 @@ int check_overflow_search_delete(le_t *le)
      * matching message and adding to the buf_list */
     PTL_FASTLOCK_LOCK(&pt->lock);
 
-    __match_le_unexpected(le, &buf_list, 0);
+    __match_le_unexpected(le, &buf_list, update_counter);
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
@@ -698,7 +698,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
         if (search_op == PTL_SEARCH_ONLY)
             err = check_overflow_search_only(le);
         else
-            err = check_overflow_search_delete(le);
+            err = check_overflow_search_delete(le, 1);
 
         if (err)
             goto err3;

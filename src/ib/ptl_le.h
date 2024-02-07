@@ -80,7 +80,7 @@ int __check_overflow(le_t *le, int delete);
 
 int check_overflow_search_only(le_t *le);
 
-int check_overflow_search_delete(le_t *le);
+int check_overflow_search_delete(le_t *le, int update_counter);
 
 void flush_le_references(le_t *le);
 

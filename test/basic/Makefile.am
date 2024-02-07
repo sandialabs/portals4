@@ -95,7 +95,9 @@ TESTS = \
 	test_LE_no_space_triggered_fetchatomic \
 	test_ME_no_space_triggered_fetchatomic \
 	test_LE_no_space_triggeredswap \
-	test_ME_no_space_triggeredswap
+	test_ME_no_space_triggeredswap \
+	test_LE_update_counter_event_search \
+	test_ME_update_counter_event_search
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -369,5 +371,11 @@ test_LE_no_space_triggeredswap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 
 test_ME_no_space_triggeredswap_SOURCES = test_no_space_triggeredswap.c
 test_ME_no_space_triggeredswap_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
+test_LE_update_counter_event_search_SOURCES = test_update_counter_event_search.c
+test_LE_update_counter_event_search_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
+
+test_ME_update_counter_event_search_SOURCES = test_update_counter_event_search.c
+test_ME_update_counter_event_search_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
 #TODO add no_space tests for other triggered ops
