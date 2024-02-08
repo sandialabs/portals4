@@ -553,19 +553,22 @@ int check_overflow_search_delete(le_t *le, int update_counter)
  * @param[in] ptl_list
  * @param[in] search_op
  * @param[in] user_ptr
- * @param[out] le_handle_p
+ * @param[out] le_handle_p // TODO what is this???
  *
  * @return status
  */
 static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
                                ptl_pt_index_t pt_index,
-                               const ptl_le_t *le_init, ptl_list_t ptl_list,
-                               ptl_search_op_t search_op, void *user_ptr,
+                               ptl_le_t *le_init,
+                               ptl_list_t ptl_list,
+                               ptl_search_op_t search_op,
+                               void *user_ptr,
                                ptl_handle_le_t *le_handle_p)
 {
     int err;
     ni_t *ni;
-    le_t *le = le;
+    //le_t *le = le;
+    le_t *le;
     pt_t *pt;
 
     /* sanity checks and convert ni handle to object */
@@ -627,28 +630,59 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
     atomic_set(&le->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
-    if (le_handle_p) {
-        /* Only append can modify counters. */
-        if (le_init->ct_handle != PTL_CT_NONE) {
-            err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
-            if (err)
-                goto err3;
-            
-        } else {
-            le->ct = NULL;
-        }
+    fprintf(stderr, "dkruse no arg validation\n");
+    // dkruse debug
+    if (le_handle_p)
+        fprintf(stderr, "dkruse le_handle_p is NOT null\n");
+    if (le_init->ct_handle) 
+        fprintf(stderr, "dkruse le->ct is NOT null\n");
+    else  
+        fprintf(stderr, "dkruse le->ct is null\n");
+    
+    //if (le_handle_p) {
+    //    /* Only append can modify counters. */
+    //    if (le_init->ct_handle != PTL_CT_NONE) {
+    //        err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+    //        if (err)
+    //            goto err3;
+    //        
+    //    } else {
+    //        le->ct = NULL;
+    //    }
+    //} else {
+    //    le->ct = NULL;
+    //}
+    if (le_init->ct_handle != PTL_CT_NONE) {
+        err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+        if (err)
+            goto err3;
+        
     } else {
         le->ct = NULL;
     }
-
+    
     if (le->ct && (obj_to_ni(le->ct) != ni)) {
         err = PTL_ARG_INVALID;
         goto err3;
     }
 #else
-    le->ct = (le_handle_p &&
-              le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
-                                                          le_init->ct_handle)
+    // dkruse debug
+    if (le_handle_p)
+        fprintf(stderr, "dkruse le_handle_p is NOT null\n");
+    if (le_init->ct_handle) 
+        fprintf(stderr, "dkruse le->ct is NOT null\n");
+    else  
+        fprintf(stderr, "dkruse le->ct is null\n");
+
+    // TODO dkruse -- I think that we need to assign le to le_init if le_handle_p is NULL
+    // This is because we now update the counter in le_init if it exists.
+    // This also means that le_init is no longer const.
+    //le->ct = (le_handle_p &&
+    //          le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
+    //                                                      le_init->ct_handle)
+    //    : NULL;
+    le->ct = (le_init->ct_handle != PTL_CT_NONE) ?
+        to_obj(MYGBL_ POOL_ANY, le_init->ct_handle)
         : NULL;
 #endif
 
@@ -764,7 +798,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
  * The maximum length for a list is defined by the interface.
  */
 int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
+                 ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
                  ptl_handle_le_t *le_handle_p)
 {
     int err;
@@ -804,14 +838,19 @@ int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
  * successfully initialized.
  */
 int _PtlLESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_le_t *le_init, ptl_search_op_t search_op,
+                 ptl_le_t *le_init, ptl_search_op_t search_op,
                  void *user_ptr)
 {
     int err;
 
     err =
-        le_append_or_search(MYGBL_ ni_handle, pt_index, le_init, 0, search_op,
-                            user_ptr, NULL);
+        le_append_or_search(MYGBL_ ni_handle,
+                            pt_index,
+                            le_init,
+                            0,
+                            search_op,
+                            user_ptr,
+                            NULL);
     return err;
 }
 

@@ -49,6 +49,7 @@ int main(int   argc,
     num_procs = libtest_get_size();
 
     /* This test only succeeds if we have more than one rank */
+    // TODO change to assert
     if (num_procs < 2) return 77;
 
 #if PHYSICAL_ADDR == 0

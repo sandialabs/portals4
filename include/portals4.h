@@ -1197,7 +1197,7 @@ typedef unsigned char ptl_search_op_t;
  */
 int PtlLEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_pt_index_t   pt_index,
-                const ptl_le_t  *le,
+                ptl_le_t  *le,
                 ptl_list_t       ptl_list,
                 void            *user_ptr,
                 ptl_handle_le_t *le_handle);
@@ -1285,7 +1285,7 @@ int PtlLEUnlink(ptl_handle_le_t le_handle);
  */
 int PtlLESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
-                const ptl_le_t *le,
+                ptl_le_t *le,
                 ptl_search_op_t ptl_search_op,
                 void           *user_ptr);
 /*! @} */
@@ -1606,7 +1606,7 @@ typedef struct {
  */
 int PtlMEAppend(ptl_handle_ni_t  ni_handle,
                 ptl_pt_index_t   pt_index,
-                const ptl_me_t  *me,
+                ptl_me_t  *me,
                 ptl_list_t       ptl_list,
                 void            *user_ptr,
                 ptl_handle_me_t *me_handle);
@@ -1690,7 +1690,7 @@ int PtlMEUnlink(ptl_handle_me_t me_handle);
  */
 int PtlMESearch(ptl_handle_ni_t ni_handle,
                 ptl_pt_index_t  pt_index,
-                const ptl_me_t *me,
+                ptl_me_t *me,
                 ptl_search_op_t ptl_search_op,
                 void           *user_ptr);
 /*! @} */

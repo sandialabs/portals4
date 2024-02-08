@@ -55,7 +55,7 @@ void me_cleanup(void *arg)
  */
 static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
                                ptl_pt_index_t pt_index,
-                               const ptl_me_t *me_init, ptl_list_t ptl_list,
+                               ptl_me_t *me_init, ptl_list_t ptl_list,
                                ptl_search_op_t search_op, void *user_ptr,
                                ptl_handle_me_t *me_handle_p)
 {
@@ -265,7 +265,7 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
  * long. The maximum length for a list is defined by the interface.
  */
 int _PtlMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
+                 ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
                  ptl_handle_me_t *me_handle_p)
 {
     int err;
@@ -375,7 +375,7 @@ int _PtlTriggeredMEAppend(PPEGBL ptl_handle_ni_t ni_handle,
  * successfully initialized.
  */
 int _PtlMESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_me_t *me_init, ptl_search_op_t search_op,
+                 ptl_me_t *me_init, ptl_search_op_t search_op,
                  void *user_ptr)
 {
     int err;

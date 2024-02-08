@@ -501,10 +501,10 @@ int _PtlGetUid(PPEGBL ptl_handle_ni_t ni_handle, ptl_uid_t *uid_p);
 int _PtlGetId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p);
 int _PtlGetPhysId(PPEGBL ptl_handle_ni_t ni_handle, ptl_process_t *id_p);
 int _PtlLEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
+                 ptl_le_t *le_init, ptl_list_t ptl_list, void *user_ptr,
                  ptl_handle_le_t *le_handle_p);
 int _PtlLESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_le_t *le_init, ptl_search_op_t search_op,
+                 ptl_le_t *le_init, ptl_search_op_t search_op,
                  void *user_ptr);
 int _PtlLEUnlink(PPEGBL ptl_handle_le_t le_handle);
 int _PtlMDBind(PPEGBL ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
@@ -512,10 +512,10 @@ int _PtlMDBind(PPEGBL ptl_handle_ni_t ni_handle, const ptl_md_t *md_init,
 int _PtlMDRelease(PPEGBL ptl_handle_md_t md_handle);
 int _PtlMEUnlink(PPEGBL ptl_handle_me_t me_handle);
 int _PtlMEAppend(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
+                 ptl_me_t *me_init, ptl_list_t ptl_list, void *user_ptr,
                  ptl_handle_me_t *me_handle_p);
 int _PtlMESearch(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
-                 const ptl_me_t *me_init, ptl_search_op_t search_op,
+                 ptl_me_t *me_init, ptl_search_op_t search_op,
                  void *user_ptr);
 int _PtlPut(PPEGBL ptl_handle_md_t md_handle, ptl_size_t local_offset,
             ptl_size_t length, ptl_ack_req_t ack_req, ptl_process_t target_id,
