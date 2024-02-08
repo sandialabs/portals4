@@ -133,6 +133,21 @@ int main(int   argc,
 #endif
         value_e.options = SOPTIONS;
 
+        //cases to check only for search_only
+
+        // when opt != PTL_LE_USE_ONCE
+        //     1. no match
+        //     2. 1 match
+        //     3. mult match
+        //     
+        // when opt == PTL_LE_USE_ONCE
+        //     1. no match
+        //     2. 1 match first entry
+        //     2. 1 match middle entry
+        //     3. mult match first entry 
+        //     3. mult match not first entry 
+        
+
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_ONLY, NULL));
         //PtlCTGet(value_e.ct_handle, &myct);
         //printf("DKRUSE myct successes = %d\n", myct.success);
