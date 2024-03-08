@@ -10,6 +10,11 @@ LDADD = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 noinst_HEADERS = testing.h
 
 TESTS = \
+	test_ME_search_counters_update \
+	test_PA_LE_persistent_search \
+	test_PA_ME_persistent_search \
+	test_LE_ptl_search_update_counter_search \
+	test_ME_ptl_search_update_counter_search \
 	test_pmi_hello \
 	test_init \
 	test_PA_NIInit \
@@ -78,8 +83,6 @@ TESTS = \
 	test_LE_unlink \
 	test_ME_unlink \
 	test_unlink_race \
-	test_PA_LE_persistent_search \
-	test_PA_ME_persistent_search \
 	test_ct_ack \
 	test_ct_overflow \
 	test_amo \
@@ -95,9 +98,7 @@ TESTS = \
 	test_LE_no_space_triggered_fetchatomic \
 	test_ME_no_space_triggered_fetchatomic \
 	test_LE_no_space_triggeredswap \
-	test_ME_no_space_triggeredswap \
-	test_LE_ptl_search_update_counter_search \
-	test_ME_ptl_search_update_counter_search
+	test_ME_no_space_triggeredswap
 
 EXTRA_TESTS = \
 	test_triggered_ME_ops
@@ -378,4 +379,9 @@ test_LE_ptl_search_update_counter_search_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=0
 test_ME_ptl_search_update_counter_search_SOURCES = test_ptl_search_update_counter_search.c
 test_ME_ptl_search_update_counter_search_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
 
+
+test_ME_search_counters_update_SOURCES = test_search_counters_update.c
+test_ME_search_counters_update_CPPFLAGS = $(AM_CPPFLAGS) -DINTERFACE=1
+
 #TODO add no_space tests for other triggered ops
+

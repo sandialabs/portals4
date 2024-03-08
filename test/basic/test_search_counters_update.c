@@ -72,7 +72,7 @@ int main(int   argc,
 #if MATCHING == 1
         value_e.match_id.rank = PTL_RANK_ANY;
         value_e.match_bits    = 1;
-        value_e.ignore_bits   = 0;
+        value_e.ignore_bits   = 0xffffffff;
 #endif
         value_e.options = AOPTIONS;
         CHECK_RETURNVAL(PtlCTAlloc(ni_h, &value_e.ct_handle));
@@ -104,7 +104,7 @@ int main(int   argc,
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
+                               pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 1, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
@@ -128,12 +128,15 @@ int main(int   argc,
         value_e.uid    = PTL_UID_ANY;
 #if MATCHING == 1
         value_e.match_id.rank = PTL_RANK_ANY;
-        value_e.match_bits    = 1;
+        value_e.match_bits    = 55;
         value_e.ignore_bits   = 0;
 #endif
         value_e.options = SOPTIONS;
 
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_ONLY, NULL));
+        PtlCTGet(value_e.ct_handle, &myct);
+        printf("DKRUSE: test_ptl_search_update, no match: myct successes = %d\n", myct.success);
+        printf("DKRUSE: test_ptl_search_update, no match: myct failure   = %d\n", myct.failure);
         while (count < 5) {
             ret = PtlEQPoll(&eq_h, 1, 1000, &ev, &which);
             if (PTL_OK == ret) {

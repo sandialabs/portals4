@@ -567,6 +567,8 @@ int check_match(buf_t *buf, const me_t *me)
         ((offset + length) > me->length))
         return 0;
 
+    fprintf(stderr, "dkruse ptl_tgt.c: buf->match_bits = %d\n", le64_to_cpu(hdr->match_bits));
+    fprintf(stderr, "dkruse ptl_tgt.c: le->match_bits = %d\n", me->match_bits);
     return (le64_to_cpu(hdr->match_bits) | me->ignore_bits) ==
         (me->match_bits | me->ignore_bits);
 }

@@ -449,12 +449,20 @@ int check_overflow_search_only(le_t *le)
     ptl_ct_event_t ct_incr_fail = {0, 1};
     
         
+    fprintf(stderr, "dkruse le value = %d\n", le->start);
   
     PTL_FASTLOCK_LOCK(&pt->lock);
     ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
+    /* what the loop below does
+         #define list_for_each_entry_safe(pos, n, head, member)       \
+            for (pos = list_entry((head)->next, typeof(*pos), member), \
+            	n = list_entry(pos->member.next, typeof(*pos), member); \
+            	&pos->member != (head); \
+            	pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	*/
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
-
+        
         if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
             if (le->eq && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) {
                 buf->matching_list = PTL_OVERFLOW_LIST;
@@ -463,10 +471,11 @@ int check_overflow_search_only(le_t *le)
             }
 
             found++;
+            fprintf(stderr, "dkruse found match in search_only\n");
 
             /* counter event handle exists and we found a match, increment counter success */
             if (le->ct) {
-                fprintf(stderr, "dkruse found counter and match in search_only\n");
+                fprintf(stderr, "dkruse found counter search_only\n");
                 _PtlCTInc(ct_to_handle(le->ct), ct_incr_success);
             }
             
@@ -474,16 +483,23 @@ int check_overflow_search_only(le_t *le)
                 break;
             
         } else {
+            fprintf(stderr, "dkruse DID NOT find match in search_only\n");
             
             /* when PTL_LE_USE_ONCE, increment failure counter for all non-matching entries */
-            if (le->options & PTL_LE_USE_ONCE && le->ct)
+            if (le->options & PTL_LE_USE_ONCE && le->ct) {
+                fprintf(stderr, "dkruse found counter and NON match in search_only\n");
                 _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
+            }
+            
         }
     }
     /* if not using the LE once, increment fail counter to mean "all done" */
     if (!(le->options & PTL_LE_USE_ONCE)
-        && le->ct) 
+        && le->ct) {
+            fprintf(stderr, "dkruse use once and counter, all done\n");
         _PtlCTInc(ct_to_handle(le->ct), ct_incr_fail);
+    }
+    fprintf(stderr, "dkruse after loop in search_only\n");
         
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
@@ -653,15 +669,21 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
     //    le->ct = NULL;
     //}
     if (le_init->ct_handle != PTL_CT_NONE) {
+        fprintf(stderr, "dkruse le_init->ct_handle != PTL_CT_NONE\n");
         err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
-        if (err)
+        if (err) {
+            fprintf(stderr, "dkruse goto err3\n");
             goto err3;
+        }
+        
         
     } else {
+        fprintf(stderr, "dkruse le->ct = NULL\n");
         le->ct = NULL;
     }
     
     if (le->ct && (obj_to_ni(le->ct) != ni)) {
+        fprintf(stderr, "dkruse le->ct && (obj_to_ni(le->ct) != ni) --> err = PTL_ARG_INVALID --> goto err3\n");
         err = PTL_ARG_INVALID;
         goto err3;
     }
@@ -732,10 +754,14 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
         //
         // The common function causing this issue is
         // __match_le_unexpected
-        if (search_op == PTL_SEARCH_ONLY)
+        if (search_op == PTL_SEARCH_ONLY) {
+            fprintf(stderr, "dkruse search_only\n");
             err = check_overflow_search_only(le);
-        else
+        }
+        else {
+            fprintf(stderr, "dkruse search_delete\n");
             err = check_overflow_search_delete(le, 1);
+        }
 
         if (err)
             goto err3;
