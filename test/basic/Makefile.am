@@ -11,6 +11,7 @@ noinst_HEADERS = testing.h
 
 TESTS = \
 	test_search_only_counter_me \
+	test_search_only_counter_le \
 	test_pmi_hello \
 	test_init \
 	test_PA_NIInit \
@@ -327,6 +328,8 @@ test_PA_ME_persistent_search_SOURCES = test_persistent_search.c
 test_PA_ME_persistent_search_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 
 test_search_only_counter_me_SOURCES = test_search_only_counter_me.c
+
+test_search_only_counter_le_SOURCES = test_search_only_counter_le.c
 
 test_ct_ack_SOURCES = test_ct_ack.c
 
