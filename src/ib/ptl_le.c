@@ -411,11 +411,8 @@ int check_overflow_search_only(le_t *le)
             // 4.3 : If there is a counter in the searching LE or ME, update it
             // TODO: determine what if any options should be checked
             if (!(le->ct == NULL) && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) { // probably the wrong option to check
-              fprintf(stderr, "updating counter\n");
-              fflush(stderr);
               (le->ct->info.event.success)++;
               ct_check(le->ct); /* Check if counter update triggers anything */
-              fprintf(stderr, "success = %d\n", le->ct->info.event.success);
             } 
             // end of 4.3
 
