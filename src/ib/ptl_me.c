@@ -127,24 +127,39 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
     atomic_set(&me->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
-    if (me_handle_p) {
-        /* Only append can modify counters. */
-        err = to_ct(MYGBL_ me_init->ct_handle, &me->ct);
-        if (err)
-            goto err3;
+    // 4.3 : now search can modify counters
+    //if (me_handle_p) {
+    //    /* Only append can modify counters. */
+    //    err = to_ct(MYGBL_ me_init->ct_handle, &me->ct);
+    //    if (err)
+    //        goto err3;
+    //} else {
+    //    me->ct = NULL;
+    //}
+
+    if (me_init->ct_handle != PTL_CT_NONE) {
+      err = to_ct(MYGBL_ me_init->ct_handle, &me->ct);
+      if (err)
+        goto err3;
     } else {
-        me->ct = NULL;
+      me->ct = NULL;
     }
+    // end change for 4.3
 
     if (me->ct && (obj_to_ni(me->ct) != ni)) {
         err = PTL_ARG_INVALID;
         goto err3;
     }
 #else
-    me->ct = (me_handle_p &&
-              me_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
-                                                          me_init->ct_handle)
-        : NULL;
+    // 4.3 : now search can modify counters
+    //me->ct = (me_handle_p &&
+    //          me_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
+    //                                                      me_init->ct_handle)
+    //    : NULL;
+    
+    me->ct = (me_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY, me_init->ct_handle) : NULL;
+    // end change for 4.3
+
 #endif
 
     if (me_handle_p) {

@@ -408,12 +408,35 @@ int check_overflow_search_only(le_t *le)
                                   &event[found]);
             }
 
+            // 4.3 : If there is a counter in the searching LE or ME, update it
+            // TODO: determine what if any options should be checked
+            if (!(le->ct == NULL) && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) { // probably the wrong option to check
+              fprintf(stderr, "updating counter\n");
+              fflush(stderr);
+              (le->ct->info.event.success)++;
+              ct_check(le->ct); /* Check if counter update triggers anything */
+              fprintf(stderr, "success = %d\n", le->ct->info.event.success);
+            } 
+            // end of 4.3
+
             found++;
             if (le->options & PTL_LE_USE_ONCE)
                 break;
-
         }
     }
+
+    // 4.3 : Semantics for use once are different than not use once
+    if (!(le->ct == NULL)) {
+      if (le->options & PTL_LE_USE_ONCE) {
+        if (found == 0) {
+          (le->ct->info.event.failure)++;
+        }
+      } else {
+        (le->ct->info.event.failure)++;
+      }
+    }
+    // end of new 4.3
+
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
@@ -556,28 +579,43 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
     atomic_set(&le->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
-    if (le_handle_p) {
-        /* Only append can modify counters. */
-        if (le_init->ct_handle != PTL_CT_NONE) {
-            err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
-            if (err)
-                goto err3;
-        } else {
-            le->ct = NULL;
-        }
+    // 4.3 : now search can modify counters
+    //if (le_handle_p) {
+    //    /* Only append can modify counters. */
+    //    if (le_init->ct_handle != PTL_CT_NONE) {
+    //        err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+    //        if (err)
+    //            goto err3;
+    //    } else {
+    //        le->ct = NULL;
+    //    }
+    //} else {
+    //    le->ct = NULL;
+    //}
+
+    if (le_init->ct_handle != PTL_CT_NONE) {
+      err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+      if (err)
+        goto err3;
     } else {
-        le->ct = NULL;
+      le->ct = NULL;
     }
+    // end change for 4.3
 
     if (le->ct && (obj_to_ni(le->ct) != ni)) {
         err = PTL_ARG_INVALID;
         goto err3;
     }
 #else
-    le->ct = (le_handle_p &&
-              le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
-                                                          le_init->ct_handle)
-        : NULL;
+    // 4.3 : Now search can modify counters
+    //le->ct = (le_handle_p &&
+    //          le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
+    //                                                      le_init->ct_handle)
+    //    : NULL;
+
+    le->ct = (le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY, le_init->ct_handle) : NULL;
+    // end change for 4.3
+    
 #endif
 
     if (le_handle_p) {
