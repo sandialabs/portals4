@@ -15,6 +15,7 @@
 # define NI_TYPE  PTL_NI_MATCHING
 # define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
 # define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE)
+# define SSOPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_USE_ONCE)
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink
 # define SEARCH   PtlMESearch
@@ -112,11 +113,12 @@ int main(int   argc,
         ct_event.failure = 0;
         PtlCTSet(value_e.ct_handle, ct_event);
 
+        /* First count those with match bits = 55 */
         value_e.start  = &value;
         value_e.length = sizeof(uint64_t);
         value_e.uid    = PTL_UID_ANY;
         value_e.match_id.rank = PTL_RANK_ANY;
-        value_e.match_bits    = 55; /* first count those with match bits 55 */
+        value_e.match_bits    = 55; 
         value_e.ignore_bits   = 0;
         value_e.options = SOPTIONS;
 
@@ -149,7 +151,7 @@ int main(int   argc,
         /* do a search-only search */
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_ONLY, NULL));
 
-        /* report counter value */
+        /* inspect counter value */
         /* counter success should be 3 and failure 1 */
         PtlCTGet(value_e.ct_handle, &ct_event);
         //fprintf(stderr, ">>>>>>>>>> TEST OUTPUT:\n");
@@ -164,7 +166,56 @@ int main(int   argc,
           return 1;
         }
 
+        // reset counts
+        ct_event.success = 0;
+        ct_event.failure = 0;
+        PtlCTSet(value_e.ct_handle, ct_event);
+
+        /* Now test when PTL_USE_ONCE is specified */
+        value_e.options = SSOPTIONS;
+        CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_ONLY, NULL));
+
+        /* inspect counter value */
+        /* counter success should be 1 and failure 0 */
+        PtlCTGet(value_e.ct_handle, &ct_event);
+        //fprintf(stderr, ">>>>>>>>>> TEST OUTPUT:\n");
+        //fprintf(stderr, "ct.success       : %d\n", ct_event.success);
+        //fprintf(stderr, "ct.failure       : %d\n", ct_event.failure);
+        if (ct_event.success != 1) {
+          fprintf(stderr, "When searching for unexpected headers with match bits = 1 and PTL_ME_USE_ONCE, expected 3 but found %d\n", ct_event.success);
+          return 1;
+        }
+        if (ct_event.failure != 0) {
+          fprintf(stderr, "When searching for unexpected headers with match bits = 1 and PTL_ME_USE_ONCE, expected failure = 1 to indicate search completed, but found %d\n", ct_event.failure);
+          return 1;
+        }
+        
+        // reset counts
+        ct_event.success = 0;
+        ct_event.failure = 0;
+        PtlCTSet(value_e.ct_handle, ct_event);
+
+        /* Now test when PTL_USE_ONCE is specified and nothing will be found */
+        value_e.match_bits = 101;
+        CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_ONLY, NULL));
+
+        /* inspect counter value */
+        /* counter success should be 0 and failure 1 */
+        PtlCTGet(value_e.ct_handle, &ct_event);
+        //fprintf(stderr, ">>>>>>>>>> TEST OUTPUT:\n");
+        //fprintf(stderr, "ct.success       : %d\n", ct_event.success);
+        //fprintf(stderr, "ct.failure       : %d\n", ct_event.failure);
+        if (ct_event.success != 0) {
+          fprintf(stderr, "When searching for unexpected headers with match bits = 101 and PTL_ME_USE_ONCE, expected success = 0 but found %d\n", ct_event.success);
+          return 1;
+        }
+        if (ct_event.failure != 1) {
+          fprintf(stderr, "When searching for unexpected headers with match bits = 101 and PTL_ME_USE_ONCE, expected failure = 1 to indicate search completed, but found %d\n", ct_event.failure);
+          return 1;
+        }
+
         /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
+        value_e.options = SOPTIONS;
         value_e.match_id.rank = PTL_RANK_ANY;
         value_e.match_bits    = 0;
         value_e.ignore_bits   = 0xffffffff;
