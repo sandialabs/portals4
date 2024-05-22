@@ -141,7 +141,8 @@ static void postME(ptl_handle_ni_t  ni,
     int      rc;
     ptl_me_t me;
 
-    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE |
+    //unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE |
+    unsigned int options = PTL_ME_OP_PUT |
                            PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE |
                            PTL_ME_EVENT_LINK_DISABLE;
 
