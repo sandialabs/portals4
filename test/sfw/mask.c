@@ -153,8 +153,6 @@ unsigned int get_le_opt(char *orig_val)
 			le_opt |= PTL_LE_OP_GET;
 		} else if (!strcmp("USE_ONCE", tok)) {
 			le_opt |= PTL_LE_USE_ONCE;
-            //} else if (!strcmp("ACK_DISABLE", tok)) {
-            //	le_opt |= PTL_LE_ACK_DISABLE;
 		} else if (!strcmp("SUCCESS_DISABLE", tok)) {
 			le_opt |= PTL_LE_EVENT_SUCCESS_DISABLE;
 		} else if (!strcmp("IS_ACCESSIBLE", tok)) {
@@ -209,8 +207,6 @@ unsigned int get_me_opt(char *orig_val)
 			me_opt |= PTL_ME_OP_GET;
 		} else if (!strcmp("USE_ONCE", tok)) {
 			me_opt |= PTL_ME_USE_ONCE;
-            //} else if (!strcmp("ACK_DISABLE", tok)) {
-            //	me_opt |= PTL_ME_ACK_DISABLE;
 		} else if (!strcmp("SUCCESS_DISABLE", tok)) {
 			me_opt |= PTL_ME_EVENT_SUCCESS_DISABLE;
 		} else if (!strcmp("IS_ACCESSIBLE", tok)) {

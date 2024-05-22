@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <test>
-  <desc>Test put me with ack disabled</desc>
+  <desc>DEPRECATED AS OF 4.3. Test put me with ack disabled</desc>
   <ptl>
     <ptl_ni ni_opt="MATCH PHYSICAL">
       <ompi_rt>

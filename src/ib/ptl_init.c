@@ -990,15 +990,6 @@ static int ack_event(buf_t *buf)
         buf->put_md = NULL;
     }
 
-    //if (ack_hdr->h1.operation != OP_NO_ACK) {
-    //    if (buf->event_mask & XI_ACK_EVENT)
-    //        make_ack_event(buf);
-
-    //    if (buf->event_mask & XI_CT_ACK_EVENT)
-    //        make_ct_ack_event(buf);
-    //} else {
-    //    buf->event_mask &= ~(XI_ACK_EVENT | XI_CT_ACK_EVENT);
-    //}
     if (buf->event_mask & XI_ACK_EVENT)
         make_ack_event(buf);
     
