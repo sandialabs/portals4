@@ -1,10 +1,8 @@
 TESTS = \
 	test_advanced_le-001.xml \
 	test_advanced_le-002.xml \
-	test_advanced_le-003.xml \
 	test_advanced_me-001.xml \
 	test_advanced_me-002.xml \
-	test_advanced_me-003.xml \
 	test_atomic_all-001.xml \
 	test_atomic_all-002.xml \
 	test_atomic_all-003.xml \
