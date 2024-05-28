@@ -410,7 +410,7 @@ int check_overflow_search_only(le_t *le)
 
             // 4.3 : If there is a counter in the searching LE or ME, update it
             // TODO: determine what if any options should be checked
-            if (!(le->ct == NULL) && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) { // probably the wrong option to check
+            if (!(le->ct == NULL) && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) { 
               (le->ct->info.event.success)++;
               ct_check(le->ct); /* Check if counter update triggers anything */
             } 
@@ -485,8 +485,12 @@ int check_overflow_search_delete(le_t *le)
         if (le->eq)
             make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
     } else {
+        // 4.3 This call will eventually result in counter success being incremented by at least 1
         flush_from_unexpected_list(le, &buf_list, 1);
     }
+
+    // 4.3 search counter updates always increment failure by 1, reardless of whether USE_ONCE is set or not
+    // So just update failure regardless
 
     return PTL_OK;
 }
