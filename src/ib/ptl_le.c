@@ -484,13 +484,22 @@ int check_overflow_search_delete(le_t *le)
     if (list_empty(&buf_list)) {
         if (le->eq)
             make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
+        // 4.3 if the list is empty, no match is found, so failure++ regardless of whether it is USE_ONCE or not USE_ONCE 
+        if (!(le->ct == NULL)) {
+            (le->ct->info.event.failure)++;
+        }
+        // end of new 4.3
     } else {
         // 4.3 This call will eventually result in counter success being incremented by at least 1
         flush_from_unexpected_list(le, &buf_list, 1);
+        // 4.3 If USE_ONCE and a match is found, then failure is not incremented
+        // 4.3 If not USE_ONCE, failure++ in both cases. 
+        if (!(le->ct == NULL) && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE))) {
+            (le->ct->info.event.failure)++;
+        }
+        // end of new 4.3
     }
 
-    // 4.3 search counter updates always increment failure by 1, reardless of whether USE_ONCE is set or not
-    // So just update failure regardless
 
     return PTL_OK;
 }

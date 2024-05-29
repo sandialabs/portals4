@@ -2070,9 +2070,9 @@ static int tgt_overflow_event(buf_t *buf)
 
         /* Update the counter if we can. If LE comes from PtlLESearch,
          * then ct is NULL. */
-        // 4.3 Now the LE can come from PtlLESearch with a counter
-        // It seems correct that counting using the counter requires the CT_OVERFLOW be set
-        // The potential problem here is we've lost the information regarding whether this was a search
+        // 4.3 Now the LE can come from PtlLESearch with a counter, so the check for NULL no longer distinguishes the two.
+        // This code should now work for both appending and searching.
+        // (The potential problem here is we've lost the information regarding whether this was a search)
         if ((le->options & PTL_LE_EVENT_CT_OVERFLOW) && le->ct){
             int bytes =
                 (le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
