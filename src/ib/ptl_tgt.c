@@ -1744,9 +1744,8 @@ static int tgt_send_ack(buf_t *buf)
     }
 
     /* Initiator is still waiting for an ACK to unblock its buf. */
-    if (buf->le && buf->le->options & PTL_LE_ACK_DISABLE) {
+    if (buf->le) {
         ack_buf->length = sizeof(ack_hdr_t) - sizeof(ack_hdr->moffset) - sizeof(ack_hdr->mlength);  /* don't need offset nor length */
-        ack_hdr->h1.operation = OP_NO_ACK;
     }
 
     if (buf->le && buf->le->ptl_list == PTL_PRIORITY_LIST) {

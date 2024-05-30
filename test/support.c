@@ -163,7 +163,7 @@ void libtest_CreateLECT(ptl_handle_ni_t  ni,
     le.start     = start;
     le.length    = length;
     le.uid       = PTL_UID_ANY;
-    le.options   = PTL_LE_OP_PUT | PTL_LE_ACK_DISABLE | PTL_LE_EVENT_CT_COMM | PTL_ME_EVENT_LINK_DISABLE;
+    le.options   = PTL_LE_OP_PUT |  PTL_LE_EVENT_CT_COMM | PTL_ME_EVENT_LINK_DISABLE;
     le.ct_handle = *ch;
     rc           = PtlLEAppend(ni, index, &le, PTL_PRIORITY_LIST, NULL, lh);
     LIBTEST_CHECK(rc, "Error in libtest_CreateLECT(): PtlLEAppend");
@@ -217,7 +217,7 @@ int libtest_CreateMEPersistent(ptl_handle_ni_t  ni,
                             ptl_size_t       count,
                             ptl_handle_me_t *mh)
 {   /*{{{*/
-    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE;
+    unsigned int options = PTL_ME_OP_PUT;
 
     return libtest_CreateME(ni, index, start, length, count, options, mh);
 }                                /* end of libtest_CreateMEPersistent() *//*}}}*/
@@ -234,7 +234,7 @@ int libtest_CreateMEUseOnce(ptl_handle_ni_t  ni,
                          ptl_size_t       count,
                          ptl_handle_me_t *mh)
 {
-    unsigned int options = PTL_ME_OP_PUT | PTL_ME_ACK_DISABLE |
+    unsigned int options = PTL_ME_OP_PUT |
                            PTL_ME_USE_ONCE | PTL_ME_EVENT_UNLINK_DISABLE |
                            PTL_ME_EVENT_LINK_DISABLE;
 

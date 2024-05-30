@@ -241,7 +241,6 @@ typedef struct {
      * - \c PTL_LE_OP_PUT
      * - \c PTL_LE_OP_GET
      * - \c PTL_LE_USE_ONCE
-     * - \c PTL_LE_ACK_DISABLE
      * - \c PTL_LE_UNEXPECTED_HDR_DISABLE
      * - \c PTL_IOVEC
      * - \c PTL_LE_EVENT_COMM_DISABLE
@@ -1078,14 +1077,6 @@ typedef unsigned char ptl_search_op_t;
  * unlinked. */
 #define PTL_LE_USE_ONCE PTL_ME_USE_ONCE
 
-/*! Specifies that an acknowledgment should not be sent for incoming \p put
- * operations, even if requested. By default, acknowledgments are sent for \p
- * put operations that request an acknowledgment. This applies to both standard
- * and counting type events. Acknowledgments are never sent for \p get
- * operations. The data sent in the \p reply serves as an implicit
- * acknowledgment. */
-#define PTL_LE_ACK_DISABLE PTL_ME_ACK_DISABLE
-
 /*! Specifies that the header for a message delivered to this list entry should
  * not be added to the unexpected list. This option only has meaning if the
  * list entry is inserted into the overflow list. By creating a list entry
@@ -1295,7 +1286,6 @@ enum mele_options {
     MELE_OP_PUT,
     MELE_OP_GET,
     MELE_USE_ONCE,
-    MELE_ACK_DISABLE,
     MELE_UNEXPECTED_HDR_DISABLE,
     MELE_IS_ACCESSIBLE,
     MELE_EVNT_LINK_DISABLE,
@@ -1349,13 +1339,6 @@ enum me_options {
  * another unlink condition is triggered. */
 #define PTL_ME_USE_ONCE (1 << MELE_USE_ONCE)
 
-/*! Specifies that an \p acknowledgment should \e not be sent for incoming \p
- * put operations, even if requested. By default, acknowledgments are sent for
- * put operations that request an acknowledgment. This applies to both standard
- * and counting type events. Acknowledgments are never sent for \p get
- * operations. The data sent in the \p reply serves as an implicit
- * acknowledgment. */
-#define PTL_ME_ACK_DISABLE (1 << MELE_ACK_DISABLE)
 
 /*! Specifies that the header for a message delivered to this list entry should
  * not be added to the unexpected list. This option only has meaning if the
@@ -1497,7 +1480,6 @@ typedef struct {
      * - \c PTL_ME_NO_TRUNCATE
      * - \c PTL_ME_USE_ONCE
      * - \c PTL_ME_MAY_ALIGN
-     * - \c PTL_ME_ACK_DISABLE
      * - \c PTL_IOVEC
      * - \c PTL_ME_EVENT_COMM_DISABLE
      * - \c PTL_ME_EVENT_FLOWCTRL_DISABLE
