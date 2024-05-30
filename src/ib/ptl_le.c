@@ -399,6 +399,8 @@ int check_overflow_search_only(le_t *le)
     PTL_FASTLOCK_LOCK(&pt->lock);
     ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
+    ct_t *ct = le->ct; // 4.3
+
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
         if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
@@ -408,12 +410,40 @@ int check_overflow_search_only(le_t *le)
                                   &event[found]);
             }
 
+            // 4.3 : If there is a counter in the searching LE or ME, update it
+            // 4.3 Note that the case of counting MBYTES is included but this would likely be a user error;
+            // 4.3 The specification does not prohibit it but there is no known use case
+            if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) { 
+              // 4.3 The following code is based on code in ptl_tgt.c and from make_ct_event in ptl_ct.c
+              int bytes = (le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
+              if (bytes == CT_EVENTS)
+                (void)__sync_add_and_fetch(&ct->info.event.success, 1);
+              else
+                (void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
+              ct_check(ct); /* Check if counter update triggers anything */
+            } 
+            // end of 4.3
+
             found++;
             if (le->options & PTL_LE_USE_ONCE)
                 break;
-
         }
     }
+
+    // 4.3 : Semantics for use once are different than not use once
+    if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
+      if (le->options & PTL_LE_USE_ONCE) {
+        if (found == 0) {
+          (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+          //(le->ct->info.event.failure)++;
+        }
+      } else {
+        (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+        //(le->ct->info.event.failure)++;
+      }
+    }
+    // end of new 4.3
+
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
@@ -452,6 +482,7 @@ int check_overflow_search_delete(le_t *le)
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     struct list_head buf_list;
+    ct_t *ct = le->ct; // 4.3
 
     /* scan the unexpected list removing each
      * matching message and adding to the buf_list */
@@ -464,9 +495,28 @@ int check_overflow_search_delete(le_t *le)
     if (list_empty(&buf_list)) {
         if (le->eq)
             make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
+        // 4.3 if the list is empty, no match is found, so failure++ regardless of 
+        // 4.3 whether it is USE_ONCE or not USE_ONCE. This occurs only if 
+        // 4.3 PTL_LE_EVENT_CT_OVERFLOW is enabled
+        //if (!(le->ct == NULL) && ((le->options & PTL_LE_EVENT_CT_OVERFLOW) || (le->options & PTL_ME_EVENT_CT_OVERFLOW))) {
+        if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
+            (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+            //(le->ct->info.event.failure)++;
+        }
+        // end of new 4.3
     } else {
+        // 4.3 This call will eventually result in counter success being incremented by at least 1
+        // 4.3 This occurs in tgt_overflow_event() in ptl_tgt.c
         flush_from_unexpected_list(le, &buf_list, 1);
+        // 4.3 If USE_ONCE and a match is found, then failure is not incremented
+        // 4.3 If not USE_ONCE, failure++ in both cases. 
+        if (ct && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE)) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
+            (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+            //(le->ct->info.event.failure)++;
+        }
+        // end of new 4.3
     }
+
 
     return PTL_OK;
 }
@@ -556,28 +606,43 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
     atomic_set(&le->busy, 0);
 
 #ifndef NO_ARG_VALIDATION
-    if (le_handle_p) {
-        /* Only append can modify counters. */
-        if (le_init->ct_handle != PTL_CT_NONE) {
-            err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
-            if (err)
-                goto err3;
-        } else {
-            le->ct = NULL;
-        }
+    // 4.3 : now search can modify counters
+    //if (le_handle_p) {
+    //    /* Only append can modify counters. */
+    //    if (le_init->ct_handle != PTL_CT_NONE) {
+    //        err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+    //        if (err)
+    //            goto err3;
+    //    } else {
+    //        le->ct = NULL;
+    //    }
+    //} else {
+    //    le->ct = NULL;
+    //}
+
+    if (le_init->ct_handle != PTL_CT_NONE) {
+      err = to_ct(MYGBL_ le_init->ct_handle, &le->ct);
+      if (err)
+        goto err3;
     } else {
-        le->ct = NULL;
+      le->ct = NULL;
     }
+    // end change for 4.3
 
     if (le->ct && (obj_to_ni(le->ct) != ni)) {
         err = PTL_ARG_INVALID;
         goto err3;
     }
 #else
-    le->ct = (le_handle_p &&
-              le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
-                                                          le_init->ct_handle)
-        : NULL;
+    // 4.3 : Now search can modify counters
+    //le->ct = (le_handle_p &&
+    //          le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY,
+    //                                                      le_init->ct_handle)
+    //    : NULL;
+
+    le->ct = (le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY, le_init->ct_handle) : NULL;
+    // end change for 4.3
+    
 #endif
 
     if (le_handle_p) {
