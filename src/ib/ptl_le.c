@@ -399,6 +399,8 @@ int check_overflow_search_only(le_t *le)
     PTL_FASTLOCK_LOCK(&pt->lock);
     ptl_event_t event[atomic_read(&pt->unexpected_size)];
 
+    ct_t *ct = le->ct; // 4.3
+
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
         if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
@@ -409,9 +411,16 @@ int check_overflow_search_only(le_t *le)
             }
 
             // 4.3 : If there is a counter in the searching LE or ME, update it
-            if (!(le->ct == NULL) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) { 
-              (le->ct->info.event.success)++;
-              ct_check(le->ct); /* Check if counter update triggers anything */
+            // 4.3 Note that the case of counting MBYTES is included but this would likely be a user error;
+            // 4.3 The specification does not prohibit it but there is no known use case
+            if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) { 
+              // 4.3 The following code is based on code in ptl_tgt.c and from make_ct_event in ptl_ct.c
+              int bytes = (le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
+              if (bytes == CT_EVENTS)
+                (void)__sync_add_and_fetch(&ct->info.event.success, 1);
+              else
+                (void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
+              ct_check(ct); /* Check if counter update triggers anything */
             } 
             // end of 4.3
 
@@ -422,13 +431,15 @@ int check_overflow_search_only(le_t *le)
     }
 
     // 4.3 : Semantics for use once are different than not use once
-    if (!(le->ct == NULL) && (ptl->le & PTL_LE_EVENT_CT_OVERFLOW)) {
+    if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
       if (le->options & PTL_LE_USE_ONCE) {
         if (found == 0) {
-          (le->ct->info.event.failure)++;
+          (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+          //(le->ct->info.event.failure)++;
         }
       } else {
-        (le->ct->info.event.failure)++;
+        (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+        //(le->ct->info.event.failure)++;
       }
     }
     // end of new 4.3
@@ -471,6 +482,7 @@ int check_overflow_search_delete(le_t *le)
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     struct list_head buf_list;
+    ct_t *ct = le->ct; // 4.3
 
     /* scan the unexpected list removing each
      * matching message and adding to the buf_list */
@@ -487,8 +499,9 @@ int check_overflow_search_delete(le_t *le)
         // 4.3 whether it is USE_ONCE or not USE_ONCE. This occurs only if 
         // 4.3 PTL_LE_EVENT_CT_OVERFLOW is enabled
         //if (!(le->ct == NULL) && ((le->options & PTL_LE_EVENT_CT_OVERFLOW) || (le->options & PTL_ME_EVENT_CT_OVERFLOW))) {
-        if (!(le->ct == NULL) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
-            (le->ct->info.event.failure)++;
+        if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
+            (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+            //(le->ct->info.event.failure)++;
         }
         // end of new 4.3
     } else {
@@ -497,8 +510,9 @@ int check_overflow_search_delete(le_t *le)
         flush_from_unexpected_list(le, &buf_list, 1);
         // 4.3 If USE_ONCE and a match is found, then failure is not incremented
         // 4.3 If not USE_ONCE, failure++ in both cases. 
-        if (!(le->ct == NULL) && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE)) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
-            (le->ct->info.event.failure)++;
+        if (ct && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE)) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
+            (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
+            //(le->ct->info.event.failure)++;
         }
         // end of new 4.3
     }
