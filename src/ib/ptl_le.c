@@ -409,8 +409,7 @@ int check_overflow_search_only(le_t *le)
             }
 
             // 4.3 : If there is a counter in the searching LE or ME, update it
-            // TODO: determine what if any options should be checked
-            if (!(le->ct == NULL) && !(le->options & PTL_LE_EVENT_COMM_DISABLE)) { 
+            if (!(le->ct == NULL) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) { 
               (le->ct->info.event.success)++;
               ct_check(le->ct); /* Check if counter update triggers anything */
             } 
@@ -423,7 +422,7 @@ int check_overflow_search_only(le_t *le)
     }
 
     // 4.3 : Semantics for use once are different than not use once
-    if (!(le->ct == NULL)) {
+    if (!(le->ct == NULL) && (ptl->le & PTL_LE_EVENT_CT_OVERFLOW)) {
       if (le->options & PTL_LE_USE_ONCE) {
         if (found == 0) {
           (le->ct->info.event.failure)++;
@@ -484,17 +483,21 @@ int check_overflow_search_delete(le_t *le)
     if (list_empty(&buf_list)) {
         if (le->eq)
             make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
-        // 4.3 if the list is empty, no match is found, so failure++ regardless of whether it is USE_ONCE or not USE_ONCE 
-        if (!(le->ct == NULL)) {
+        // 4.3 if the list is empty, no match is found, so failure++ regardless of 
+        // 4.3 whether it is USE_ONCE or not USE_ONCE. This occurs only if 
+        // 4.3 PTL_LE_EVENT_CT_OVERFLOW is enabled
+        //if (!(le->ct == NULL) && ((le->options & PTL_LE_EVENT_CT_OVERFLOW) || (le->options & PTL_ME_EVENT_CT_OVERFLOW))) {
+        if (!(le->ct == NULL) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
             (le->ct->info.event.failure)++;
         }
         // end of new 4.3
     } else {
         // 4.3 This call will eventually result in counter success being incremented by at least 1
+        // 4.3 This occurs in tgt_overflow_event() in ptl_tgt.c
         flush_from_unexpected_list(le, &buf_list, 1);
         // 4.3 If USE_ONCE and a match is found, then failure is not incremented
         // 4.3 If not USE_ONCE, failure++ in both cases. 
-        if (!(le->ct == NULL) && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE))) {
+        if (!(le->ct == NULL) && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE)) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
             (le->ct->info.event.failure)++;
         }
         // end of new 4.3
