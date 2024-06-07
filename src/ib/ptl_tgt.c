@@ -560,8 +560,21 @@ int check_match(buf_t *buf, const me_t *me)
              (me->id.phys.pid == initiator.phys.pid)))
             return 0;
     }
-
-    offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : req_off;
+    // todo dkruse maybe here?
+    // offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : req_off;
+    if (me->options & PTL_ME_MANAGE_LOCAL && me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
+        offset += me->offset;
+        fprintf(stderr, "me->offset = %d\n", me->offset);
+        fprintf(stderr, "offset = %d\n", offset);
+        // todo dkruse do something when greater than min_free
+    } else if (me->options & PTL_ME_MANAGE_LOCAL) {
+        offset = me->offset;
+    } else {
+        offset = req_off;
+    }
+    
+    
+    
 
     if ((me->options & PTL_ME_NO_TRUNCATE) &&
         ((offset + length) > me->length))
@@ -2041,7 +2054,6 @@ static int tgt_overflow_event(buf_t *buf)
     le_t *le = buf->matching.le;
 
     assert(le);
-
     if (!(le->options & PTL_LE_EVENT_OVER_DISABLE) && buf->pt->eq) {
         switch (buf->operation) {
             case OP_PUT:

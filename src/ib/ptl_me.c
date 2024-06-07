@@ -181,11 +181,6 @@ static int me_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
                             me->do_auto_free = 1;
                     }
 
-                    // TODO dkruse update offset here?
-                    /*
-                    if (me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
-                       me->offset += 
-                    */
                     *me_handle_p = me_to_handle(me);
                     me_put(me);
                     PTL_FASTLOCK_UNLOCK(&pt->lock);
