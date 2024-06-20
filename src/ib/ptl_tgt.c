@@ -564,15 +564,17 @@ int check_match(buf_t *buf, const me_t *me)
     // offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : req_off;
     if (me->options & PTL_ME_MANAGE_LOCAL && me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
         offset += me->offset;
-        fprintf(stderr, "me->offset = %d\n", me->offset);
-        fprintf(stderr, "offset = %d\n", offset);
+        fprintf(stdout, "dkruse :: me->offset = %d\n", me->offset);
+        fprintf(stdout, "dkruse :: offset = %d\n", offset);
         // todo dkruse do something when greater than min_free
     } else if (me->options & PTL_ME_MANAGE_LOCAL) {
+        fprintf(stdout, "dkruse :: no local_inc update\n");
         offset = me->offset;
     } else {
+        fprintf(stdout, "dkruse :: no manage_local options\n");
         offset = req_off;
     }
-    
+    fprintf(stdout, "dkruse :: after manage_local checks\n");
     
     
 
