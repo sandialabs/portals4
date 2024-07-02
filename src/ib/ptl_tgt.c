@@ -535,6 +535,7 @@ int check_match(buf_t *buf, const me_t *me)
     const req_hdr_t *hdr = (req_hdr_t *) buf->data;
     ptl_size_t offset;
     ptl_size_t length = le64_to_cpu(hdr->rlength);
+    ptl_size_t msglength = le64_to_cpu(buf->mlength);
     ptl_size_t req_off = le64_to_cpu(hdr->roffset);
 
     if (ni->options & PTL_NI_LOGICAL) {
@@ -561,11 +562,41 @@ int check_match(buf_t *buf, const me_t *me)
             return 0;
     }
     // todo dkruse maybe here?
-    // offset = (me->options & PTL_ME_MANAGE_LOCAL) ? me->offset : req_off;
+    fprintf(stdout, "dkruse :: offset = %d\n", offset);
+    fprintf(stdout, "dkruse :: msglength = %d\n", msglength);
+    fprintf(stdout, "dkruse :: me->min_free = %d\n", me->min_free);
+    fprintf(stdout, "dkruse :: START if (me->options & PTL_ME_MANAGE_LOCAL && me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) \n");
     if (me->options & PTL_ME_MANAGE_LOCAL && me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
-        offset += length;
+        offset += msglength;
         fprintf(stdout, "dkruse :: offset = %d\n", offset);
-        // todo dkruse do something when greater than min_free
+        fprintf(stdout, "dkruse :: msglength - offset = %d\n", (msglength - offset) );
+        fflush(stdout);
+
+
+        //if (me->min_free && ((msglength - me->offset) < me->min_free)) {
+        //if (msglength - offset < me->min_free) {
+        if (me->min_free && ((msglength - me->offset) < me->min_free)) {
+            fprintf(stdout, "dkruse :: detatching\n");
+            fflush(stdout);
+
+#ifdef WITH_UNORDERED_MATCHING
+            fprintf(stdout, "dkruse :: WITH_UNORDERED_MATCHING enabled\n");
+            pt_t *pt = me->pt;
+            if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+                pt_me_hash_t *hashentry;
+                HASH_FIND(hh, pt->matchlist_ht, &me->match_bits, sizeof(ptl_match_bits_t), hashentry);
+                if (hashentry) {
+                    HASH_DEL(pt->matchlist_ht, hashentry);
+                    free(hashentry);
+                }
+            }
+#endif
+            le_unlink(buf->le, 0);
+
+            if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
+                buf->auto_unlink_pending = 1;
+        }
+
     } else if (me->options & PTL_ME_MANAGE_LOCAL) {
         fprintf(stdout, "dkruse :: no manage_local and local_inc update\n");
         offset = me->offset;
@@ -573,9 +604,9 @@ int check_match(buf_t *buf, const me_t *me)
         fprintf(stdout, "dkruse :: no manage_local options\n");
         offset = req_off;
     }
-    fprintf(stdout, "dkruse :: after manage_local checks\n");
-    
-    
+    fprintf(stdout, "dkruse :: END if (me->options & PTL_ME_MANAGE_LOCAL && me->options & PTL_ME_LOCAL_INC_UH_RLENGTH) \n\n\n\n");
+
+
 
     if ((me->options & PTL_ME_NO_TRUNCATE) &&
         ((offset + length) > me->length))
@@ -2004,7 +2035,7 @@ static void tgt_cleanup_2(buf_t *buf)
             while (buf->mr_list[i] != NULL){
                 mr_cleanup(buf->mr_list[i]);
                 i++;
-                if (i == 2) 
+                if (i == 2)
                  abort();
             }
         }

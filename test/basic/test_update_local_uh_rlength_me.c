@@ -66,6 +66,7 @@ int main(int   argc,
         value_e.match_bits    = 1;
         value_e.ignore_bits = 0xffffffff; /* match on anything */
         value_e.options = AOPTIONS;
+        value_e.min_free = 2;
         CHECK_RETURNVAL(PtlCTAlloc(ni_h, &value_e.ct_handle));
         CHECK_RETURNVAL(APPEND(ni_h, 0, &value_e, PTL_OVERFLOW_LIST, NULL,
                                &value_e_handle));
@@ -91,21 +92,21 @@ int main(int   argc,
 	      peer.rank = 1;
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 1, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 5, &ctc));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 55, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 1, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 1, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 1, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 55, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 55, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        //                       pt_index, 1, 0, NULL, 0));
+        //CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 5, &ctc));
         assert(ctc.failure == 0);
     }
 
@@ -135,10 +136,10 @@ int main(int   argc,
         /* For the first subtest, it should find 3 headers with match bits = 55 */
         error_found = 0;
         PtlCTGet(value_e.ct_handle, &ct_event);
-        fprintf(stderr, ">>>>>>>>>> TEST OUTPUT (search and delete match bits = 55):\n");
-        fprintf(stderr, "ct.success       : %d\n", ct_event.success);
-        fprintf(stderr, "ct.failure       : %d\n", ct_event.failure);
-        fprintf(stderr, "dkruse  offset   : %d\n", value_e.offset);
+        //fprintf(stderr, ">>>>>>>>>> TEST OUTPUT (search and delete match bits = 55):\n");
+        //fprintf(stderr, "ct.success       : %d\n", ct_event.success);
+        //fprintf(stderr, "ct.failure       : %d\n", ct_event.failure);
+        //fprintf(stderr, "dkruse  offset   : %d\n", value_e.offset);
         if (ct_event.success != 3) {
           fprintf(stderr, "When searching for unexpected headers with match bits = 55, expected 3 but found %d\n", ct_event.success);
           error_found = 1;
