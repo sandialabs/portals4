@@ -96,15 +96,15 @@ int main(int   argc,
         //                       pt_index, 55, 0, NULL, 0));
         //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
         //                       pt_index, 1, 0, NULL, 0));
-        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-        //                       pt_index, 1, 0, NULL, 0));
-        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-        //                       pt_index, 1, 0, NULL, 0));
-        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-        //                       pt_index, 55, 0, NULL, 0));
-        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-        //                       pt_index, 55, 0, NULL, 0));
-        //CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        ///CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        ///                       pt_index, 1, 0, NULL, 0));
+        ///CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        ///                       pt_index, 1, 0, NULL, 0));
+        ///CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        ///                       pt_index, 55, 0, NULL, 0));
+        ///CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+        ///                       pt_index, 55, 0, NULL, 0));
+        ///CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
         //                       pt_index, 1, 0, NULL, 0));
         //CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 5, &ctc));
         assert(ctc.failure == 0);

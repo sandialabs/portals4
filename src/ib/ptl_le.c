@@ -267,6 +267,12 @@ int le_append_pt(ni_t *ni, le_t *le)
     return PTL_OK;
 }
 
+// TODO dkruse duplicate this function but for INC_uh_rlength,
+// match up till min_free is met
+//
+// logic to increment offset
+// stops adding to buflist when at end of list or
+// min_free no longer met
 /**
  * @brief Compares an ME/LE with the unexpected list
  * and returns a list of messages that match.
