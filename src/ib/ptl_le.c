@@ -273,6 +273,9 @@ int le_append_pt(ni_t *ni, le_t *le)
 // logic to increment offset
 // stops adding to buflist when at end of list or
 // min_free no longer met
+//
+// have to ensure that we know if we return because all bufs have
+// been matched OR min_free condition is met
 /**
  * @brief Compares an ME/LE with the unexpected list
  * and returns a list of messages that match.
