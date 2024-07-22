@@ -1,7 +1,3 @@
-// TODO dkruse update this description
-// This test confirms that when doing an ME search and a match is found and 
-// USE_ONCE is ***NOT*** set, failure is incremented. It also confirms all matches 
-// are found. It also confirms the matched headers were deleted.
 
 #include <portals4.h>
 #include <support.h>
@@ -18,7 +14,7 @@
 # define ENTRY_T  ptl_me_t
 # define HANDLE_T ptl_handle_me_t
 # define NI_TYPE  PTL_NI_MATCHING
-# define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
+# define AOPTIONS  (PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH | PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
 # define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_CT_OVERFLOW  | PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH)
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink

@@ -17,12 +17,6 @@
 # define APPEND   PtlMEAppend
 # define UNLINK   PtlMEUnlink
 
-//#ifndef BUFSIZE
-//#error BUFSIZE must be defined
-//#endif
-//#ifndef OVERLAP
-//#error OVERLAP must be defined
-//#endif
 #define BUFSIZE 256
 #define OVERLAP 0
 
