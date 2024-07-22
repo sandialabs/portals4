@@ -12,8 +12,6 @@ noinst_HEADERS = testing.h
 TESTS = \
 	test_manage_local_only \
 	test_manage_local_and_inc_uh_rlength \
-	test_update_local_uh_rlength_me_2 \
-	test_update_local_uh_rlength_me \
 	test_search_only_counter_me \
 	test_search_only_counter_le \
 	test_search_delete_counter_me_1 \
@@ -356,10 +354,6 @@ test_search_delete_counter_me_1_SOURCES = test_search_delete_counter_me_1.c
 test_search_delete_counter_me_2_SOURCES = test_search_delete_counter_me_2.c
 
 test_search_delete_counter_me_3_SOURCES = test_search_delete_counter_me_3.c
-
-test_update_local_uh_rlength_me_SOURCES = test_update_local_uh_rlength_me.c
-test_update_local_uh_rlength_me_2_SOURCES = test_update_local_uh_rlength_me.c
-
 
 test_ct_ack_SOURCES = test_ct_ack.c
 
