@@ -276,90 +276,93 @@ int le_append_pt(ni_t *ni, le_t *le)
 //
 // have to ensure that we know if we return because all bufs have
 // been matched OR min_free condition is met
-/**
- * @brief Compares an ME/LE with the unexpected list
- * and returns a list of messages that match while updating
- * the local offset in accordance with spec 4.3, section 3.12.1.
- * Note that this function is called ONLY when the options
- * PTL_ME_LOCAL_INC_UH_RLENGTH and PTL_ME_MANAGE_LOCAL are set.
- * @pre PT lock must be held by caller.
- *
- * @param[in] le The LE/ME match against the unexpected list.
- * @param[out] buf_list The returned message list ONLY if min_free condition
- * is respected.
- * @param[out] Returns 1 if min_free is violated, 0 otherwise.
- * 
- */
-static int __match_le_unexpected_inc_rlength(const le_t *le,
-                                  struct list_head *buf_list)
-{
-    ni_t *ni = obj_to_ni(le);
-    pt_t *pt = &ni->pt[le->pt_index];
-    buf_t *buf;
-    buf_t *n;
-
-    me_t me = (me_t *) le;
-    ptl_size_t local_offset = 0;
-    ptl_size_t length = me->length;
-    ptl_size_t min_free = me->min_free;
-    
-    fprintf(stdout, "dkruse :: offset = %d\n", offset);
-    fprintf(stdout, "dkruse :: length = %d\n", length);
-    fprintf(stdout, "dkruse :: min_free = %d\n", min_free);
-    
-
-    INIT_LIST_HEAD(buf_list);
-
-    fprintf(stdout, "dkruse :: START list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {\n");
-    list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
-
-        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))){
-            list_del(&buf->unexpected_list);
-            list_add_tail(&buf->unexpected_list, buf_list);
-
-            fprintf(stdout, "dkruse :: local_offset + buf->rlength = %d\n", local_offset + buf->rlength);
-            if (local_offset + buf->rlength <= length)
-                local_offset += buf->rlength;
-            fprintf(stdout, "dkruse :: local_offset = %d\n", local_offset);
-                
-            fprintf(stdout, "dkruse :: local_offset - length = %d\n", local_offset - length );
-            fprintf(stdout, "dkruse :: min_free = %d\n", min_free);
-            
-            if (local_offset - length < min_free) {
-                fprintf(stdout, "dkruse :: detatching\n");
-                // TODO dkruse min_free violated,
-                // do not add ME to priority list, do auto_unlink
-                ;
-#ifdef WITH_UNORDERED_MATCHING
-                pt_t *pt = me->pt;
-                if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
-                    pt_me_hash_t *hashentry;
-                    HASH_FIND(hh, pt->matchlist_ht, &me->match_bits, sizeof(ptl_match_bits_t), hashentry);
-                    if (hashentry) {
-                        HASH_DEL(pt->matchlist_ht, hashentry);
-                        free(hashentry);
-                    }
-                }
-#endif
-                
-                fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
-                le_unlink(le, 0);
-                fprintf(stdout, "dkruse :: AFTER le_unlink\n");
-                if (!(me->options & PTL_ME_EVENT_UNLINK_DISABLE))
-                    le_post_unlink_event(le);
-                    //    buf->auto_unlink_pending = 1;
-                return 1;
-            }
-
-            
-            // this should never happen
-            //if (le->options & PTL_LE_USE_ONCE)
-            //    break;
-       }
-    }
-    fprintf(stdout, "dkruse :: END list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list)\n");
-    return 0;
-}
+///**
+// * @brief Compares an ME/LE with the unexpected list
+// * and returns a list of messages that match while updating
+// * the local offset in accordance with spec 4.3, section 3.12.1.
+// * Note that this function is called ONLY when the options
+// * PTL_ME_LOCAL_INC_UH_RLENGTH and PTL_ME_MANAGE_LOCAL are set.
+// * @pre PT lock must be held by caller.
+// *
+// * @param[in] le The LE/ME match against the unexpected list.
+// * @param[out] buf_list The returned message list ONLY if min_free condition
+// * is respected.
+// * @param[out] Returns 1 if min_free is violated, 0 otherwise.
+// * 
+// */
+//static int __match_le_unexpected_inc_rlength(le_t *le,
+//                                  struct list_head *buf_list)
+//{
+//    ni_t *ni = obj_to_ni(le);
+//    pt_t *pt = &ni->pt[le->pt_index];
+//    buf_t *buf;
+//    buf_t *n;
+//    int ret;
+//    
+//
+//    me_t* me = (me_t *) le;
+//    ptl_size_t local_offset = 0;
+//    ptl_size_t length = le->length;
+//    ptl_size_t min_free = me->min_free;
+//    
+//    fprintf(stdout, "dkruse :: local_offset = %d\n", local_offset);
+//    fprintf(stdout, "dkruse :: length = %d\n", length);
+//    fprintf(stdout, "dkruse :: min_free = %d\n", min_free);
+//    
+//
+//    INIT_LIST_HEAD(buf_list);
+//
+//    fprintf(stdout, "dkruse :: START list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {\n");
+//    list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
+//
+//        if ((le->type == TYPE_ME || check_match(buf, (me_t *)le))){
+//            list_del(&buf->unexpected_list);
+//            list_add_tail(&buf->unexpected_list, buf_list);
+//
+//            fprintf(stdout, "dkruse :: local_offset + buf->rlength = %d\n", local_offset + buf->rlength);
+//            if (local_offset + buf->rlength <= length)
+//                local_offset += buf->rlength;
+//            fprintf(stdout, "dkruse :: local_offset = %d\n", local_offset);
+//                
+//            fprintf(stdout, "dkruse :: local_offset - length = %d\n", local_offset - length );
+//            fprintf(stdout, "dkruse :: min_free = %d\n", min_free);
+//            
+//            if (local_offset - length < min_free) {
+//                ret = 1;
+//                fprintf(stdout, "dkruse :: detatching\n");
+//                // TODO dkruse min_free violated,
+//                // do not add ME to priority list, do auto_unlink
+//                
+//#ifdef WITH_UNORDERED_MATCHING
+//                pt_t *pt = le->pt;
+//                if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+//                    pt_me_hash_t *hashentry;
+//                    HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
+//                    if (hashentry) {
+//                        HASH_DEL(pt->matchlist_ht, hashentry);
+//                        free(hashentry);
+//                    }
+//                }
+//#endif
+//                
+//                fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
+//                le_unlink(le, 0);
+//                fprintf(stdout, "dkruse :: AFTER le_unlink\n");
+//                if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
+//                    le_post_unlink_event(le);
+//                    //    buf->auto_unlink_pending = 1;
+//                return 1;
+//            }
+//            
+//            
+//            // this should never happen
+//            //if (le->options & PTL_LE_USE_ONCE)
+//            //    break;
+//       }
+//    }
+//    fprintf(stdout, "dkruse :: END list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list)\n");
+//    return 0;
+//}
 
 
 
@@ -374,20 +377,96 @@ static int __match_le_unexpected_inc_rlength(const le_t *le,
  *
  * @param[in] le The LE/ME match against the unexpected list.
  * @param[out] buf_list The returned message list.
+ * @param[out] append  if the le is actually an ME and the min_free condition is
+ * violated when PTL_ME_LOCAL_INC_UH_RLENGTH and PTL_ME_MANAGE_LOCAL is set, then we do
+ * NOT appened to the priority list so return 0, otherwise return 1
  */
 static void __match_le_unexpected(const le_t *le,
-                                  struct list_head *buf_list)
+                                          struct list_head *buf_list,
+                                          int* append)
 {
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     buf_t *buf;
     buf_t *n;
 
-    INIT_LIST_HEAD(buf_list);
+    // Used if LE is actually an ME (le->type == TYPE_ME)
+    // The buf->data is a request header, and that is where info about the PUT is hiding
+    const req_hdr_t *hdr;
+    ptl_size_t rlength;
+    ptl_size_t loffset; 
+    ptl_size_t me_length; 
+    ptl_size_t min_free;
+    
 
+    
+    INIT_LIST_HEAD(buf_list);
+    *append = 1;
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
         if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))){
+
+            // ---> New stuff
+            // checking if the LE is actually an ME
+            if (le->type == TYPE_ME) {
+                hdr       = (req_hdr_t *) buf->data;
+                rlength   = le64_to_cpu(hdr->rlength);
+                loffset   = ((me_t *)le)->offset;
+                min_free  = ((me_t *)le)->min_free;
+                me_length = ((me_t *)le)->length;
+                
+                printf("Found a match on the unexpected list.\n");
+                
+                // it is an ME, so we can access PTL_ME_MANAGE_LOCAL
+                if (le->options & PTL_ME_MANAGE_LOCAL) {
+                    printf("dkruse :::: MANAGE_LOCAL is set\n");
+                    printf("dkruse :::: ... And the local offset is: %d\n", loffset);
+                    printf("dkruse :::: ... And the min_free for the ME is: %d\n", min_free);
+                    printf("dkruse :::: ... And the rlength of the put is: %d\n", rlength);
+
+                    
+                } else {
+                    printf("dkruse :::: MANAGE_LOCAL is NOT set\n");
+                }
+
+                
+                if (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
+                    printf("dkruse :::: INC_UH_RLENGTH is set\n");
+                    loffset += rlength;
+                    if (loffset - me_length < min_free) {
+                        fprintf(stdout, "dkruse :: detatching\n");
+                        // TODO dkruse min_free violated,
+                        // do not add ME to priority list, do auto_unlink
+                
+#ifdef WITH_UNORDERED_MATCHING
+                        pt_t *pt = le->pt;
+                        if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+                            pt_me_hash_t *hashentry;
+                            HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
+                            if (hashentry) {
+                                HASH_DEL(pt->matchlist_ht, hashentry);
+                                free(hashentry);
+                            }
+                        }
+#endif
+                
+                        fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
+                        le_unlink(le, 0);
+                        fprintf(stdout, "dkruse :: AFTER le_unlink\n");
+                        if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
+                            le_post_unlink_event(le);
+                        buf->auto_unlink_pending = 1;
+
+                        *append = 0;
+                        return;
+                    }
+                    
+                } else {
+                    printf("INC_UH_RLENGTH is NOT set\n");
+                }
+            }
+            // --> end new stuff
+             
             list_del(&buf->unexpected_list);
             list_add_tail(&buf->unexpected_list, buf_list);
 
@@ -462,11 +541,16 @@ int __check_overflow(le_t *le, int delete)
     ni_t *ni = obj_to_ni(le);
     pt_t *pt = &ni->pt[le->pt_index];
     struct list_head buf_list;
-    int ret;
+    int ret = 0; // list is empty to start
+    int append = 1; // assume we append to priority list if matches are found
 
-    __match_le_unexpected(le,&buf_list);
+    fprintf(stdout, "dkruse :::: before __match_le_unexpected\n");
+    __match_le_unexpected(le, &buf_list, &append);
+    fprintf(stdout, "dkruse :::: after __match_le_unexpected\n");
 
-    ret = !list_empty(&buf_list);
+    if (append) 
+        ret = !list_empty(&buf_list);
+    
     if (ret) {
         /* Process the elements of the list. */
         PTL_FASTLOCK_UNLOCK(&pt->lock);
@@ -582,12 +666,13 @@ int check_overflow_search_delete(le_t *le)
     pt_t *pt = &ni->pt[le->pt_index];
     struct list_head buf_list;
     ct_t *ct = le->ct; // 4.3
+    int append = 1;
 
     /* scan the unexpected list removing each
      * matching message and adding to the buf_list */
     PTL_FASTLOCK_LOCK(&pt->lock);
 
-    __match_le_unexpected(le, &buf_list);
+    __match_le_unexpected(le, &buf_list, &append);
 
     PTL_FASTLOCK_UNLOCK(&pt->lock);
 
