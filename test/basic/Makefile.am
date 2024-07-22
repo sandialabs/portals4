@@ -11,7 +11,7 @@ noinst_HEADERS = testing.h
 
 TESTS = \
 	test_manage_local_only \
-	test_managel_local_and_inc_uh_rlength \
+	test_manage_local_and_inc_uh_rlength \
 	test_update_local_uh_rlength_me_2 \
 	test_update_local_uh_rlength_me \
 	test_search_only_counter_me \
