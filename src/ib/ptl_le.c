@@ -399,6 +399,12 @@ static void __match_le_unexpected(const le_t *le,
     ptl_size_t min_free;
     
 
+    if (le->type == TYPE_ME) {
+        loffset   = ((me_t *)le)->offset;
+        min_free  = ((me_t *)le)->min_free;
+        me_length = ((me_t *)le)->length;
+    }
+                
     
     INIT_LIST_HEAD(buf_list);
     *append = 1;
@@ -411,16 +417,16 @@ static void __match_le_unexpected(const le_t *le,
             if (le->type == TYPE_ME) {
                 hdr       = (req_hdr_t *) buf->data;
                 rlength   = le64_to_cpu(hdr->rlength);
-                loffset   = ((me_t *)le)->offset;
-                min_free  = ((me_t *)le)->min_free;
-                me_length = ((me_t *)le)->length;
                 
                 printf("Found a match on the unexpected list.\n");
                 
                 // it is an ME, so we can access PTL_ME_MANAGE_LOCAL
                 if (le->options & PTL_ME_MANAGE_LOCAL) {
+                    hdr       = (req_hdr_t *) buf->data;
+                    rlength   = le64_to_cpu(hdr->rlength);
                     printf("dkruse :::: MANAGE_LOCAL is set\n");
                     printf("dkruse :::: ... And the local offset is: %d\n", loffset);
+                    printf("dkruse :::: ... And the local length is: %d\n", me_length);
                     printf("dkruse :::: ... And the min_free for the ME is: %d\n", min_free);
                     printf("dkruse :::: ... And the rlength of the put is: %d\n", rlength);
 
@@ -433,7 +439,9 @@ static void __match_le_unexpected(const le_t *le,
                 if (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
                     printf("dkruse :::: INC_UH_RLENGTH is set\n");
                     loffset += rlength;
-                    if (loffset - me_length < min_free) {
+                    printf("dkruse :::: loffset = %d\n", loffset);
+                    printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
+                    if ((me_length - loffset) < min_free) {
                         fprintf(stdout, "dkruse :: detatching\n");
                         // TODO dkruse min_free violated,
                         // do not add ME to priority list, do auto_unlink

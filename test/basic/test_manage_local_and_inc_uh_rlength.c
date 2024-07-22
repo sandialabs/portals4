@@ -12,21 +12,22 @@
 #include <sched.h>
 #include <unistd.h>
 #include "testing.h"
-# define ENTRY_T  ptl_me_t
-# define HANDLE_T ptl_handle_me_t
-# define NI_TYPE  PTL_NI_MATCHING
+#define ENTRY_T  ptl_me_t
+#define HANDLE_T ptl_handle_me_t
+#define NI_TYPE  PTL_NI_MATCHING
 // for catching unexpected puts
-# define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
+#define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
 //# define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
 //# define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_CT_OVERFLOW)
-# define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE)
+#define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE)
 //# define SSOPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_USE_ONCE | PTL_ME_EVENT_CT_OVERFLOW)
 //# define ME_OPTIONS (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_MANAGE_LOCAL)
-# define ME_OPTIONS (PTL_ME_OP_PUT | PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH)
-# define APPEND   PtlMEAppend
-# define UNLINK   PtlMEUnlink
-# define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
-# define ME_BUF_SIZE (2)
+#define ME_OPTIONS (PTL_ME_OP_PUT | PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH)
+#define APPEND   PtlMEAppend
+#define UNLINK   PtlMEUnlink
+#define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
+#define ME_BUF_SIZE (2)
+#define MIN_FREE 1
 
 
 
@@ -101,13 +102,13 @@ int main(int   argc, char *argv[])
         /* Put three with match bits 1 and two with match bits 55 */
         /* Use the MD counter to count ACKS */
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
+                               pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
+                               pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 1, 0, NULL, 0));
+                               pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                pt_index, 55, 0, NULL, 0));
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 5, &ctc));
@@ -127,6 +128,7 @@ int main(int   argc, char *argv[])
         append_me.match_bits    = 55; // only will match unexpected headers with these match bits
         append_me.ignore_bits   = 0; // don't ignore any match bits
         append_me.options       = ME_OPTIONS;
+        append_me.min_free      = MIN_FREE;
         append_me.ct_handle     = PTL_CT_NONE; // don't use a counter
 
         /* append */
