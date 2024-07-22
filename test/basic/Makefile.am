@@ -10,7 +10,8 @@ LDADD = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 noinst_HEADERS = testing.h
 
 TESTS = \
-	test_whit_uh_test \
+	test_manage_local_only \
+	test_managel_local_and_inc_uh_rlength \
 	test_update_local_uh_rlength_me_2 \
 	test_update_local_uh_rlength_me \
 	test_search_only_counter_me \
@@ -338,7 +339,9 @@ test_PA_ME_persistent_search_CPPFLAGS = $(AM_CPPFLAGS) -DMATCHING=1
 
 test_search_only_counter_me_SOURCES = test_search_only_counter_me.c
 
-test_whit_uh_test_SOURCES = test_whit_uh_test.c
+test_manage_local_only_SOURCES = test_manage_local_only.c
+
+test_manage_local_and_inc_uh_rlength_SOURCES = test_manage_local_and_inc_uh_rlength.c
 
 test_search_only_counter_le_SOURCES = test_search_only_counter_le.c
 
