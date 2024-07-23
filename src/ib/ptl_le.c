@@ -424,54 +424,54 @@ static void __match_le_unexpected(const le_t *le,
                 if (le->options & PTL_ME_MANAGE_LOCAL) {
                     hdr       = (req_hdr_t *) buf->data;
                     rlength   = le64_to_cpu(hdr->rlength);
+                    loffset += rlength;
                     printf("dkruse :::: MANAGE_LOCAL is set\n");
                     printf("dkruse :::: ... And the local offset is: %d\n", loffset);
                     printf("dkruse :::: ... And the local length is: %d\n", me_length);
                     printf("dkruse :::: ... And the min_free for the ME is: %d\n", min_free);
                     printf("dkruse :::: ... And the rlength of the put is: %d\n", rlength);
 
+                    if (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
+                        printf("dkruse :::: INC_UH_RLENGTH is set\n");
+                        printf("dkruse :::: loffset = %d\n", loffset);
+                        printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
+                        if ((me_length - loffset) < min_free) {
+                            fprintf(stdout, "dkruse :: detatching\n");
+                            // TODO dkruse min_free violated,
+                            // do not add ME to priority list, do auto_unlink
+                
+#ifdef WITH_UNORDERED_MATCHING
+                            pt_t *pt = le->pt;
+                            if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+                                pt_me_hash_t *hashentry;
+                                HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
+                                if (hashentry) {
+                                    HASH_DEL(pt->matchlist_ht, hashentry);
+                                    free(hashentry);
+                                }
+                            }
+#endif
+                
+                            fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
+                            le_unlink(le, 0);
+                            fprintf(stdout, "dkruse :: AFTER le_unlink\n");
+                            if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
+                                le_post_unlink_event(le);
+                            buf->auto_unlink_pending = 1;
+
+                            *append = 0;
+                            return;
+                        }
+                    
+                    } else {
+                        printf("INC_UH_RLENGTH is NOT set\n");
+                    }
                     
                 } else {
                     printf("dkruse :::: MANAGE_LOCAL is NOT set\n");
                 }
 
                 
-                if (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
-                    printf("dkruse :::: INC_UH_RLENGTH is set\n");
-                    loffset += rlength;
-                    printf("dkruse :::: loffset = %d\n", loffset);
-                    printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
-                    if ((me_length - loffset) < min_free) {
-                        fprintf(stdout, "dkruse :: detatching\n");
-                        // TODO dkruse min_free violated,
-                        // do not add ME to priority list, do auto_unlink
-                
-#ifdef WITH_UNORDERED_MATCHING
-                        pt_t *pt = le->pt;
-                        if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
-                            pt_me_hash_t *hashentry;
-                            HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
-                            if (hashentry) {
-                                HASH_DEL(pt->matchlist_ht, hashentry);
-                                free(hashentry);
-                            }
-                        }
-#endif
-                
-                        fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
-                        le_unlink(le, 0);
-                        fprintf(stdout, "dkruse :: AFTER le_unlink\n");
-                        if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
-                            le_post_unlink_event(le);
-                        buf->auto_unlink_pending = 1;
-
-                        *append = 0;
-                        return;
-                    }
-                    
-                } else {
-                    printf("INC_UH_RLENGTH is NOT set\n");
-                }
             }
             // --> end new stuff
              

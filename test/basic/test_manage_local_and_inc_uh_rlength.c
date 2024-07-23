@@ -26,7 +26,7 @@
 #define APPEND   PtlMEAppend
 #define UNLINK   PtlMEUnlink
 #define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
-#define ME_BUF_SIZE (2)
+#define ME_BUF_SIZE (200)
 #define MIN_FREE 1
 
 
@@ -45,6 +45,7 @@ int main(int   argc, char *argv[])
     int              rank;
     ptl_process_t   *procs;
     ptl_handle_eq_t  eq_h;
+    ptl_event_t      event;
     ENTRY_T          append_me; // the ME to be appended
     HANDLE_T         append_me_handle; // handle for the ME to be appended
     uint64_t         me_buffer[ME_BUF_SIZE]; // buffer used by the ME being appended
@@ -145,8 +146,81 @@ int main(int   argc, char *argv[])
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
     }
 
-    libtest_barrier();    /* more cleanup */
+    libtest_barrier(); 
 
+
+    if (rank == 1) {
+        int ret;
+        while ((ret = PtlEQGet(eq_h, &event)) == PTL_OK) {
+            
+            switch (event.type) {
+                case PTL_EVENT_AUTO_UNLINK:
+                    printf("UNLINK: \n");
+                    break;
+                case PTL_EVENT_GET:
+                    printf("GET: ");
+                    break;
+                case PTL_EVENT_GET_OVERFLOW:
+                    printf("GET OVERFLOW: ");
+                    break;
+                case PTL_EVENT_PUT:
+                    printf("PUT: ");
+                    break;
+                case PTL_EVENT_PUT_OVERFLOW:
+                    printf("PUT OVERFLOW: ");
+                    break;
+                case PTL_EVENT_ATOMIC:
+                    printf("ATOMIC: ");
+                    break;
+                case PTL_EVENT_ATOMIC_OVERFLOW:
+                    printf("ATOMIC OVERFLOW: ");
+                    break;
+                case PTL_EVENT_FETCH_ATOMIC:
+                    printf("FETCHATOMIC: ");
+                    break;
+                case PTL_EVENT_FETCH_ATOMIC_OVERFLOW:
+                    printf("FETCHATOMIC OVERFLOW: ");
+                    break;
+                case PTL_EVENT_REPLY:
+                    printf("REPLY: ");
+                    break;
+                case PTL_EVENT_SEND:
+                    printf("SEND: ");
+                    break;
+                case PTL_EVENT_ACK:
+                    printf("ACK: ");
+                    break;
+                case PTL_EVENT_PT_DISABLED:
+                    printf("PT DISABLED: ");
+                    break;
+                case PTL_EVENT_AUTO_FREE:
+                    printf("FREE: ");
+                    break;
+                case PTL_EVENT_SEARCH:
+                    printf("SEARCH: ");
+                    break;
+                case PTL_EVENT_LINK:
+                    printf("LINK: ");
+                    break;
+            }
+        }
+        
+    }
+        
+    //if (rank == 2) {
+    //    /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
+    //    // this will generate matches for whatever unexpected headers remain on the list
+    //    value_e.options       = SOPTIONS;
+    //    value_e.match_id.rank = PTL_RANK_ANY;
+    //    value_e.match_bits    = 0;
+    //    value_e.ignore_bits   = 0xffffffff;
+    //    CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
+    //}
+
+    
+    libtest_barrier();
+
+    
     if (1 == rank) {
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(UNLINK(append_me_handle)); // this is required if the ME we appended made it to the priority list
