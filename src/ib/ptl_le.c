@@ -382,10 +382,11 @@ int le_append_pt(ni_t *ni, le_t *le)
  * NOT appened to the priority list so return 0, otherwise return 1
  */
 static void __match_le_unexpected(const le_t *le,
-                                          struct list_head *buf_list,
-                                          int* append)
+                                  struct list_head *buf_list,
+                                  int* append)
 {
     ni_t *ni = obj_to_ni(le);
+    //ptl_handle_ni_t* ni_h = ni_to_handle(hi_h);
     pt_t *pt = &ni->pt[le->pt_index];
     buf_t *buf;
     buf_t *n;
@@ -425,11 +426,14 @@ static void __match_le_unexpected(const le_t *le,
                     hdr       = (req_hdr_t *) buf->data;
                     rlength   = le64_to_cpu(hdr->rlength);
                     loffset += rlength;
+
+                    
                     printf("dkruse :::: MANAGE_LOCAL is set\n");
                     printf("dkruse :::: ... And the local offset is: %d\n", loffset);
                     printf("dkruse :::: ... And the local length is: %d\n", me_length);
                     printf("dkruse :::: ... And the min_free for the ME is: %d\n", min_free);
                     printf("dkruse :::: ... And the rlength of the put is: %d\n", rlength);
+
 
                     if (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH) {
                         printf("dkruse :::: INC_UH_RLENGTH is set\n");
@@ -437,8 +441,7 @@ static void __match_le_unexpected(const le_t *le,
                         printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
                         if ((me_length - loffset) < min_free) {
                             fprintf(stdout, "dkruse :: detatching\n");
-                            // TODO dkruse min_free violated,
-                            // do not add ME to priority list, do auto_unlink
+                            //hdr->rlength = rlength;
                 
 #ifdef WITH_UNORDERED_MATCHING
                             pt_t *pt = le->pt;
@@ -459,7 +462,7 @@ static void __match_le_unexpected(const le_t *le,
                                 le_post_unlink_event(le);
                             buf->auto_unlink_pending = 1;
 
-                            *append = 0;
+                            *append = 1;
                             return;
                         }
                     
@@ -467,6 +470,7 @@ static void __match_le_unexpected(const le_t *le,
                         printf("INC_UH_RLENGTH is NOT set\n");
                     }
                     
+                    //hdr->rlength = rlength;
                 } else {
                     printf("dkruse :::: MANAGE_LOCAL is NOT set\n");
                 }
@@ -560,13 +564,17 @@ int __check_overflow(le_t *le, int delete)
         ret = !list_empty(&buf_list);
     
     if (ret) {
+        fprintf(stdout, "dkruse :::: before flush_from_unexpected\n");
         /* Process the elements of the list. */
         PTL_FASTLOCK_UNLOCK(&pt->lock);
 
         flush_from_unexpected_list(le, &buf_list, 0);
 
         PTL_FASTLOCK_LOCK(&pt->lock);
+        fprintf(stdout, "dkruse :::: after flush_from_unexpected\n");
     }
+    fprintf(stdout, "dkruse :::: append was %d\n", append);
+    fprintf(stdout, "dkruse ::::    ret was %d\n", ret);
 
     return ret;
 }

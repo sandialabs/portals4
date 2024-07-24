@@ -26,8 +26,8 @@
 #define APPEND   PtlMEAppend
 #define UNLINK   PtlMEUnlink
 #define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
-#define ME_BUF_SIZE (200)
-#define MIN_FREE 1
+#define ME_BUF_SIZE (6)
+#define MIN_FREE 16
 
 
 
@@ -94,7 +94,9 @@ int main(int   argc, char *argv[])
         value              = 0xdeadbeef;
     }
 
-    libtest_barrier();    /* 0 writes unexpecteds to 1 */
+    libtest_barrier();
+
+    /* 0 writes unexpecteds to 1 */
 
     if (0 == rank) {
         /* write to rank 1 */
@@ -136,91 +138,95 @@ int main(int   argc, char *argv[])
         // this will remove those (if any) that match
         CHECK_RETURNVAL(APPEND(ni_h, 0, &append_me, PTL_PRIORITY_LIST, NULL, &append_me_handle));
 
+        printf("dkruse :::: me_buffer start: %u\n", me_buffer);
+        printf("dkruse :::: append_me.start: %u\n", append_me.start);
+        
 
         /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
         // this will generate matches for whatever unexpected headers remain on the list
+        //value_e.options       = SOPTIONS;
+        //value_e.match_id.rank = PTL_RANK_ANY;
+        //value_e.match_bits    = 0;
+        //value_e.ignore_bits   = 0xffffffff;
+        //CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
+    }
+
+    libtest_barrier();
+
+
+    int ret;
+    while ((ret = PtlEQGet(eq_h, &event)) == PTL_OK) {
+
+        switch (event.type) {
+            case PTL_EVENT_AUTO_UNLINK:
+                printf("rank[\%d]: AUTO_UNLINK: \n", rank);
+                break;
+            case PTL_EVENT_GET:
+                printf("rank[\%d]: GET: \n", rank);
+                break;
+            case PTL_EVENT_GET_OVERFLOW:
+                printf("rank[\%d]: GET OVERFLOW: \n", rank);
+                break;
+            case PTL_EVENT_PUT:
+                printf("rank[\%d]: PUT: \n", rank);
+                break;
+            case PTL_EVENT_PUT_OVERFLOW:
+                printf("rank[\%d]: PUT OVERFLOW: \n", rank);
+                break;
+            case PTL_EVENT_ATOMIC:
+                printf("rank[\%d]: ATOMIC: \n", rank);
+                break;
+            case PTL_EVENT_ATOMIC_OVERFLOW:
+                printf("rank[\%d]: ATOMIC OVERFLOW: \n", rank);
+                break;
+            case PTL_EVENT_FETCH_ATOMIC:
+                printf("rank[\%d]: FETCHATOMIC: \n", rank);
+                break;
+            case PTL_EVENT_FETCH_ATOMIC_OVERFLOW:
+                printf("rank[\%d]: FETCHATOMIC OVERFLOW: \n", rank);
+                break;
+            case PTL_EVENT_REPLY:
+                printf("rank[\%d]: REPLY: \n", rank);
+                break;
+            case PTL_EVENT_SEND:
+                printf("rank[\%d]: SEND: \n", rank);
+                break;
+            case PTL_EVENT_ACK:
+                printf("rank[\%d]: ACK: \n", rank);
+                break;
+            case PTL_EVENT_PT_DISABLED:
+                printf("rank[\%d]: PT DISABLED: \n", rank);
+                break;
+            case PTL_EVENT_AUTO_FREE:
+                printf("rank[\%d]: FREE: \n", rank);
+                break;
+            case PTL_EVENT_SEARCH:
+                printf("rank[\%d]: SEARCH: \n", rank);
+                break;
+            case PTL_EVENT_LINK:
+                printf("rank[\%d]: LINK: \n", rank);
+                break;
+        }
+
+    }
+
+
+
+    libtest_barrier();
+
+    if (rank == 1) {
+        /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
+        // this will generate matches for whatever unexpected headers remain on the list
         value_e.options       = SOPTIONS;
-        value_e.match_id.rank = PTL_RANK_ANY;
+        //value_e.match_id.rank = PTL_RANK_ANY;
+        value_e.uid = PTL_UID_ANY;
         value_e.match_bits    = 0;
         value_e.ignore_bits   = 0xffffffff;
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
     }
 
-    libtest_barrier(); 
-
-
-    if (rank == 1) {
-        int ret;
-        while ((ret = PtlEQGet(eq_h, &event)) == PTL_OK) {
-            
-            switch (event.type) {
-                case PTL_EVENT_AUTO_UNLINK:
-                    printf("UNLINK: \n");
-                    break;
-                case PTL_EVENT_GET:
-                    printf("GET: ");
-                    break;
-                case PTL_EVENT_GET_OVERFLOW:
-                    printf("GET OVERFLOW: ");
-                    break;
-                case PTL_EVENT_PUT:
-                    printf("PUT: ");
-                    break;
-                case PTL_EVENT_PUT_OVERFLOW:
-                    printf("PUT OVERFLOW: ");
-                    break;
-                case PTL_EVENT_ATOMIC:
-                    printf("ATOMIC: ");
-                    break;
-                case PTL_EVENT_ATOMIC_OVERFLOW:
-                    printf("ATOMIC OVERFLOW: ");
-                    break;
-                case PTL_EVENT_FETCH_ATOMIC:
-                    printf("FETCHATOMIC: ");
-                    break;
-                case PTL_EVENT_FETCH_ATOMIC_OVERFLOW:
-                    printf("FETCHATOMIC OVERFLOW: ");
-                    break;
-                case PTL_EVENT_REPLY:
-                    printf("REPLY: ");
-                    break;
-                case PTL_EVENT_SEND:
-                    printf("SEND: ");
-                    break;
-                case PTL_EVENT_ACK:
-                    printf("ACK: ");
-                    break;
-                case PTL_EVENT_PT_DISABLED:
-                    printf("PT DISABLED: ");
-                    break;
-                case PTL_EVENT_AUTO_FREE:
-                    printf("FREE: ");
-                    break;
-                case PTL_EVENT_SEARCH:
-                    printf("SEARCH: ");
-                    break;
-                case PTL_EVENT_LINK:
-                    printf("LINK: ");
-                    break;
-            }
-        }
-        
-    }
-        
-    //if (rank == 2) {
-    //    /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
-    //    // this will generate matches for whatever unexpected headers remain on the list
-    //    value_e.options       = SOPTIONS;
-    //    value_e.match_id.rank = PTL_RANK_ANY;
-    //    value_e.match_bits    = 0;
-    //    value_e.ignore_bits   = 0xffffffff;
-    //    CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
-    //}
-
-    
     libtest_barrier();
 
-    
     if (1 == rank) {
         CHECK_RETURNVAL(UNLINK(value_e_handle));
         CHECK_RETURNVAL(UNLINK(append_me_handle)); // this is required if the ME we appended made it to the priority list
