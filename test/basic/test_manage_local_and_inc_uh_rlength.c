@@ -134,12 +134,12 @@ int main(int   argc, char *argv[])
         append_me.min_free      = MIN_FREE;
         append_me.ct_handle     = PTL_CT_NONE; // don't use a counter
 
+        //printf("dkruse :::: BEFORE append, me local offset : %u\n", append_me.offset);
         /* append */
         // this will remove those (if any) that match
         CHECK_RETURNVAL(APPEND(ni_h, 0, &append_me, PTL_PRIORITY_LIST, NULL, &append_me_handle));
 
-        printf("dkruse :::: me_buffer start: %u\n", me_buffer);
-        printf("dkruse :::: append_me.start: %u\n", append_me.start);
+        //printf("dkruse :::: AFFTER append, me local offset : %u\n", append_me.offset);
         
 
         /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
@@ -159,7 +159,9 @@ int main(int   argc, char *argv[])
 
         switch (event.type) {
             case PTL_EVENT_AUTO_UNLINK:
-                printf("rank[\%d]: AUTO_UNLINK: \n", rank);
+                printf("rank[%d]: AUTO_UNLINK: remote_offset = %d\n", rank, event.remote_offset);
+                printf("rank[%d]: AUTO_UNLINK: mlength = %d\n", rank, event.mlength);
+                printf("rank[%d]: AUTO_UNLINK: rlength = %d\n", rank, event.rlength);
                 break;
             case PTL_EVENT_GET:
                 printf("rank[\%d]: GET: \n", rank);
@@ -171,7 +173,9 @@ int main(int   argc, char *argv[])
                 printf("rank[\%d]: PUT: \n", rank);
                 break;
             case PTL_EVENT_PUT_OVERFLOW:
-                printf("rank[\%d]: PUT OVERFLOW: \n", rank);
+                printf("rank[%d]: PUT OVERFLOW: remote_offset = %d\n", rank, event.remote_offset);
+                printf("rank[%d]: PUT OVERFLOW: mlength = %d\n", rank, event.mlength);
+                printf("rank[%d]: PUT OVERFLOW: rlength = %d\n", rank, event.rlength);
                 break;
             case PTL_EVENT_ATOMIC:
                 printf("rank[\%d]: ATOMIC: \n", rank);
@@ -204,7 +208,9 @@ int main(int   argc, char *argv[])
                 printf("rank[\%d]: SEARCH: \n", rank);
                 break;
             case PTL_EVENT_LINK:
-                printf("rank[\%d]: LINK: \n", rank);
+                printf("rank[%d]: LINK: remote_offset = %d\n", rank, event.remote_offset);
+                printf("rank[%d]: LINK: mlength = %d\n", rank, event.mlength);
+                printf("rank[%d]: LINK: rlength = %d\n", rank, event.rlength);
                 break;
         }
 

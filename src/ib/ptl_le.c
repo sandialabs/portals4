@@ -340,7 +340,7 @@ static void __match_le_unexpected(const le_t *le,
                         printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
                         if ((me_length - loffset) < min_free) {
                             fprintf(stdout, "dkruse :: detatching\n");
-                            //hdr->rlength = rlength;
+                            ((me_t *)le)->offset = loffset;
                 
 #ifdef WITH_UNORDERED_MATCHING
                             pt_t *pt = le->pt;
@@ -369,7 +369,7 @@ static void __match_le_unexpected(const le_t *le,
                         printf("INC_UH_RLENGTH is NOT set\n");
                     }
                     
-                    //hdr->rlength = rlength;
+                    ((me_t *)le)->offset = loffset;
                 } else {
                     printf("dkruse :::: MANAGE_LOCAL is NOT set\n");
                 }
@@ -455,9 +455,9 @@ int __check_overflow(le_t *le, int delete)
     int ret = 0; // list is empty to start
     int append = 1; // assume we append to priority list if matches are found
 
-    fprintf(stdout, "dkruse :::: before __match_le_unexpected\n");
+    fprintf(stdout, "dkruse :::: before __match_le_unexpected, offset = %d\n", ((me_t*)le)->offset);
     __match_le_unexpected(le, &buf_list, &append);
-    fprintf(stdout, "dkruse :::: after __match_le_unexpected\n");
+    fprintf(stdout, "dkruse :::: after __match_le_unexpected, offset = %d\n", ((me_t*)le)->offset);
 
     if (append) 
         ret = !list_empty(&buf_list);
