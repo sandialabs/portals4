@@ -27,7 +27,7 @@
 #define UNLINK   PtlMEUnlink
 #define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
 #define ME_BUF_SIZE (6)
-#define MIN_FREE 16
+#define MIN_FREE (30)
 
 
 
@@ -49,6 +49,11 @@ int main(int   argc, char *argv[])
     ENTRY_T          append_me; // the ME to be appended
     HANDLE_T         append_me_handle; // handle for the ME to be appended
     uint64_t         me_buffer[ME_BUF_SIZE]; // buffer used by the ME being appended
+
+    int num_puts = 5;
+//    int offset = ((int)ME_BUF_SIZE + 1) * sizeof(int) - (int)MIN_FREE;
+
+    
 
 
     for (int i = 0; i < ME_BUF_SIZE; ++i)
@@ -104,22 +109,18 @@ int main(int   argc, char *argv[])
         peer.rank = 1;
         /* Put three with match bits 1 and two with match bits 55 */
         /* Use the MD counter to count ACKS */
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
-        CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
-                               pt_index, 55, 0, NULL, 0));
+
+        //printf("offset_size = %d\n", offset);
+        for (int n = 0; n < num_puts; n++) {
+            CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
+                                   pt_index, 55, 0, NULL, 0));
+        }
         CHECK_RETURNVAL(PtlCTWait(write_md.ct_handle, 5, &ctc));
         assert(ctc.failure == 0);
     }
 
-    libtest_barrier();    /* 1 creates an ME and appends it */
-
+    libtest_barrier();
+    
     if (1 == rank) {
         int ret;
         ptl_event_t ev;
@@ -134,24 +135,12 @@ int main(int   argc, char *argv[])
         append_me.min_free      = MIN_FREE;
         append_me.ct_handle     = PTL_CT_NONE; // don't use a counter
 
-        //printf("dkruse :::: BEFORE append, me local offset : %u\n", append_me.offset);
-        /* append */
         // this will remove those (if any) that match
         CHECK_RETURNVAL(APPEND(ni_h, 0, &append_me, PTL_PRIORITY_LIST, NULL, &append_me_handle));
-
-        //printf("dkruse :::: AFFTER append, me local offset : %u\n", append_me.offset);
-        
-
-        /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
-        // this will generate matches for whatever unexpected headers remain on the list
-        //value_e.options       = SOPTIONS;
-        //value_e.match_id.rank = PTL_RANK_ANY;
-        //value_e.match_bits    = 0;
-        //value_e.ignore_bits   = 0xffffffff;
-        //CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
     }
 
     libtest_barrier();
+
 
 
     int ret;
@@ -215,11 +204,8 @@ int main(int   argc, char *argv[])
         }
 
     }
-
-
-
     libtest_barrier();
-
+    
     if (rank == 1) {
         /* cleanup: do search-delete matching everything on the unexpected list to remove all entries */
         // this will generate matches for whatever unexpected headers remain on the list
@@ -231,7 +217,9 @@ int main(int   argc, char *argv[])
         CHECK_RETURNVAL(SEARCH(ni_h, 0, &value_e, PTL_SEARCH_DELETE, NULL));
     }
 
+
     libtest_barrier();
+    
 
     if (1 == rank) {
         CHECK_RETURNVAL(UNLINK(value_e_handle));
