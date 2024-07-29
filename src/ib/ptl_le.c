@@ -290,90 +290,68 @@ static void __match_le_unexpected(le_t *le,
     // The buf->data is a request header, and that is where info about the PUT is hiding
     const req_hdr_t *hdr;
     ptl_size_t rlength;
-    ptl_size_t loffset; 
-    ptl_size_t me_length; 
+    ptl_size_t loffset;
+    ptl_size_t me_length;
     ptl_size_t min_free;
-    
+
 
     if (le->type == TYPE_ME) {
         loffset   = ((me_t *)le)->offset;
         min_free  = ((me_t *)le)->min_free;
         me_length = ((me_t *)le)->length;
-        printf("dkruse :::: BEFORE loop ... And the local offset is: %d\n", loffset);
-        printf("dkruse :::: BEFORE loop ... And the local length is: %d\n", me_length);
-        printf("dkruse :::: BEFORE loop ... And the min_free for the ME is: %d\n", min_free);
-        printf("dkruse :::: BEFORE loop ... And the rlength of the put is: %d\n", rlength);
     }
-                
-    
+
+
     INIT_LIST_HEAD(buf_list);
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
         if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
 
-            // ---> New stuff
             // checking if the LE is actually an ME
             if (le->type == TYPE_ME
-                && (le->options & PTL_ME_MANAGE_LOCAL) 
+                && (le->options & PTL_ME_MANAGE_LOCAL)
                 && (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH)) {
-                //hdr       = (req_hdr_t *) buf->data;
-                //rlength   = le64_to_cpu(hdr->rlength);
 
-                printf("Found a match on the unexpected list.\n");
                 list_del(&buf->unexpected_list);
                 list_add_tail(&buf->unexpected_list, buf_list);
-                
-                // it is an ME, so we can access PTL_ME_MANAGE_LOCAL
-                if ((le->options & PTL_ME_MANAGE_LOCAL) 
-                    && (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH)) {
-                    hdr       = (req_hdr_t *) buf->data;
-                    rlength   = le64_to_cpu(hdr->rlength);
-                    loffset += rlength;
 
-                    printf("dkruse :::: MANAGE_LOCAL and INC_UH_RLENGTH are set\n");
-                    printf("dkruse :::: ... And the local offset is: %d\n", loffset);
-                    printf("dkruse :::: ... And the local length is: %d\n", me_length);
-                    printf("dkruse :::: ... And the min_free for the ME is: %d\n", min_free);
-                    printf("dkruse :::: ... And the rlength of the put is: %d\n", rlength);
-                    printf("dkruse :::: me_length - loffset = %d\n", (me_length - loffset) );
+                hdr       = (req_hdr_t *) buf->data;
+                rlength   = le64_to_cpu(hdr->rlength);
+                loffset += rlength;
 
-                    
-                    if ((me_length - loffset) < min_free) {
-                        fprintf(stdout, "dkruse :: detatching\n");
-                        ((me_t *)le)->offset = loffset;
-                
+
+
+                if ((me_length - loffset) < min_free) {
+                    ((me_t *)le)->offset = loffset;
+
 #ifdef WITH_UNORDERED_MATCHING
-                        pt_t *pt = le->pt;
-                        if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
-                            pt_me_hash_t *hashentry;
-                            HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
-                            if (hashentry) {
-                                HASH_DEL(pt->matchlist_ht, hashentry);
-                                free(hashentry);
-                            }
+                    pt_t *pt = le->pt;
+                    if ((pt->options & PTL_PT_MATCH_UNORDERED) && (ni->options & PTL_NI_MATCHING)) {
+                        pt_me_hash_t *hashentry;
+                        HASH_FIND(hh, pt->matchlist_ht, &le->match_bits, sizeof(ptl_match_bits_t), hashentry);
+                        if (hashentry) {
+                            HASH_DEL(pt->matchlist_ht, hashentry);
+                            free(hashentry);
                         }
+                    }
 #endif
-                
-                        fprintf(stdout, "dkruse :: BEFORE le_unlink\n");
-                        le_unlink(le, 0);
-                        fprintf(stdout, "dkruse :: AFTER le_unlink\n");
-                        if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
-                            le_post_unlink_event(le);
-                        buf->auto_unlink_pending = 1;
 
-                        return;
-                     
-                    } 
+                    le_unlink(le, 0);
+                    if (!(le->options & PTL_ME_EVENT_UNLINK_DISABLE))
+                        le_post_unlink_event(le);
+                    buf->auto_unlink_pending = 1;
+
+                    return;
+
                 }
             }
-            // --> end new stuff
-             
+
             list_del(&buf->unexpected_list);
             list_add_tail(&buf->unexpected_list, buf_list);
 
             if (le->options & PTL_LE_USE_ONCE)
                 break;
-            
+
         }
     }
 }
@@ -445,21 +423,17 @@ int __check_overflow(le_t *le, int delete)
     struct list_head buf_list;
     int ret = 0; // list is empty to start
 
-    fprintf(stdout, "dkruse :::: before __match_le_unexpected, offset = %d\n", ((me_t*)le)->offset);
     __match_le_unexpected(le, &buf_list);
-    fprintf(stdout, "dkruse :::: after __match_le_unexpected, offset = %d\n", ((me_t*)le)->offset);
 
     ret = !list_empty(&buf_list);
-    
+
     if (ret) {
-        fprintf(stdout, "dkruse :::: before flush_from_unexpected\n");
         /* Process the elements of the list. */
         PTL_FASTLOCK_UNLOCK(&pt->lock);
 
         flush_from_unexpected_list(le, &buf_list, 0);
 
         PTL_FASTLOCK_LOCK(&pt->lock);
-        fprintf(stdout, "dkruse :::: after flush_from_unexpected\n");
     }
 
     return ret;
@@ -498,7 +472,7 @@ int check_overflow_search_only(le_t *le)
             // 4.3 : If there is a counter in the searching LE or ME, update it
             // 4.3 Note that the case of counting MBYTES is included but this would likely be a user error;
             // 4.3 The specification does not prohibit it but there is no known use case
-            if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) { 
+            if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
                 // 4.3 The following code is based on code in ptl_tgt.c and from make_ct_event in ptl_ct.c
                 int bytes = (le->options & PTL_LE_EVENT_CT_BYTES) ? CT_MBYTES : CT_EVENTS;
                 if (bytes == CT_EVENTS)
@@ -506,7 +480,7 @@ int check_overflow_search_only(le_t *le)
                 else
                     (void)__sync_add_and_fetch(&ct->info.event.success, buf->mlength);
                 ct_check(ct); /* Check if counter update triggers anything */
-            } 
+            }
             // end of 4.3
 
             found++;
@@ -580,8 +554,8 @@ int check_overflow_search_delete(le_t *le)
     if (list_empty(&buf_list)) {
         if (le->eq)
             make_le_event(le, le->eq, PTL_EVENT_SEARCH, PTL_NI_NO_MATCH);
-        // 4.3 if the list is empty, no match is found, so failure++ regardless of 
-        // 4.3 whether it is USE_ONCE or not USE_ONCE. This occurs only if 
+        // 4.3 if the list is empty, no match is found, so failure++ regardless of
+        // 4.3 whether it is USE_ONCE or not USE_ONCE. This occurs only if
         // 4.3 PTL_LE_EVENT_CT_OVERFLOW is enabled
         //if (!(le->ct == NULL) && ((le->options & PTL_LE_EVENT_CT_OVERFLOW) || (le->options & PTL_ME_EVENT_CT_OVERFLOW))) {
         if (ct && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
@@ -594,7 +568,7 @@ int check_overflow_search_delete(le_t *le)
         // 4.3 This occurs in tgt_overflow_event() in ptl_tgt.c
         flush_from_unexpected_list(le, &buf_list, 1);
         // 4.3 If USE_ONCE and a match is found, then failure is not incremented
-        // 4.3 If not USE_ONCE, failure++ in both cases. 
+        // 4.3 If not USE_ONCE, failure++ in both cases.
         if (ct && !((le->options & PTL_LE_USE_ONCE) || (le->options & PTL_ME_USE_ONCE)) && (le->options & PTL_LE_EVENT_CT_OVERFLOW)) {
             (void)__sync_add_and_fetch(&ct->info.event.failure, 1);
             //(le->ct->info.event.failure)++;
@@ -727,7 +701,7 @@ static int le_append_or_search(PPEGBL ptl_handle_ni_t ni_handle,
 
     le->ct = (le_init->ct_handle != PTL_CT_NONE) ? to_obj(MYGBL_ POOL_ANY, le_init->ct_handle) : NULL;
     // end change for 4.3
-    
+
 #endif
 
     if (le_handle_p) {
