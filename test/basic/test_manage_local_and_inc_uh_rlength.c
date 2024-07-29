@@ -26,8 +26,6 @@
 #define APPEND   PtlMEAppend
 #define UNLINK   PtlMEUnlink
 #define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
-#define ME_BUF_SIZE (6)
-#define MIN_FREE (30)
 
 
 
@@ -40,7 +38,7 @@ int main(int   argc, char *argv[])
     HANDLE_T         value_e_handle;
     ptl_md_t         write_md;
     ptl_handle_md_t  write_md_handle;
-    int              num_procs, error_found;
+    int              num_procs, error_found, ret;
     ptl_ct_event_t   ctc;
     int              rank;
     ptl_process_t   *procs;
@@ -48,16 +46,21 @@ int main(int   argc, char *argv[])
     ptl_event_t      event;
     ENTRY_T          append_me; // the ME to be appended
     HANDLE_T         append_me_handle; // handle for the ME to be appended
-    uint64_t         me_buffer[ME_BUF_SIZE]; // buffer used by the ME being appended
-
-    int num_puts = 5;
-//    int offset = ((int)ME_BUF_SIZE + 1) * sizeof(int) - (int)MIN_FREE;
+    
+    const uint64_t num_puts    = 5;
+    const uint64_t ME_BUF_SIZE = 6;
+    const uint64_t MIN_FREE    = 30;
+    unsigned int loffset       =  (ME_BUF_SIZE+1)*sizeof(uint64_t) - MIN_FREE;
+    loffset = loffset - (loffset % sizeof(uint64_t));
+    printf("loffset = %lu\n", loffset);
+    
+    uint64_t me_buffer[ME_BUF_SIZE]; // buffer used by the ME being appended
 
     
 
 
     for (int i = 0; i < ME_BUF_SIZE; ++i)
-        me_buffer[i] = 0;
+        me_buffer[i] = i;
 
     CHECK_RETURNVAL(PtlInit());
     CHECK_RETURNVAL(libtest_init());
@@ -110,7 +113,6 @@ int main(int   argc, char *argv[])
         /* Put three with match bits 1 and two with match bits 55 */
         /* Use the MD counter to count ACKS */
 
-        //printf("offset_size = %d\n", offset);
         for (int n = 0; n < num_puts; n++) {
             CHECK_RETURNVAL(PtlPut(write_md_handle, 0, sizeof(uint64_t), PTL_CT_ACK_REQ, peer,
                                    pt_index, 55, 0, NULL, 0));
@@ -142,15 +144,28 @@ int main(int   argc, char *argv[])
     libtest_barrier();
 
 
-
-    int ret;
+    int offset_acc          = 0; // start accumulating when unlink number is 1
+    int unlink_number       = 0; // how many unlinks have happend
     while ((ret = PtlEQGet(eq_h, &event)) == PTL_OK) {
 
         switch (event.type) {
             case PTL_EVENT_AUTO_UNLINK:
+                unlink_number++;
+                if (unlink_number == 2) {
+                    printf("rank[%d]: AUTO_UNLINK: unlink number = %d\n", rank, unlink_number);
+                    printf("rank[%d]: AUTO_UNLINK: offset_acc = %d\n", rank, offset_acc);
+                    printf("rank[%d]: AUTO_UNLINK: loffset    = %lu\n", rank, loffset);
+                    if (loffset != offset_acc)
+                        printf("rank[%d]: AUTO_UNLINK: loffset != offset_acc. FAIL!\n", rank);
+                    else
+                        printf("rank[%d]: AUTO_UNLINK: loffset == offset_acc. pass\n", rank);
+                    assert(loffset == offset_acc);
+                    break;
+                }
                 printf("rank[%d]: AUTO_UNLINK: remote_offset = %d\n", rank, event.remote_offset);
                 printf("rank[%d]: AUTO_UNLINK: mlength = %d\n", rank, event.mlength);
                 printf("rank[%d]: AUTO_UNLINK: rlength = %d\n", rank, event.rlength);
+                printf("rank[%d]: AUTO_UNLINK: unlink number = %d\n", rank, unlink_number);
                 break;
             case PTL_EVENT_GET:
                 printf("rank[\%d]: GET: \n", rank);
@@ -162,6 +177,8 @@ int main(int   argc, char *argv[])
                 printf("rank[\%d]: PUT: \n", rank);
                 break;
             case PTL_EVENT_PUT_OVERFLOW:
+                if (unlink_number == 1)
+                    offset_acc += event.mlength; 
                 printf("rank[%d]: PUT OVERFLOW: remote_offset = %d\n", rank, event.remote_offset);
                 printf("rank[%d]: PUT OVERFLOW: mlength = %d\n", rank, event.mlength);
                 printf("rank[%d]: PUT OVERFLOW: rlength = %d\n", rank, event.rlength);

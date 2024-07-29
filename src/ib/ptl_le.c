@@ -309,15 +309,19 @@ static void __match_le_unexpected(le_t *le,
     INIT_LIST_HEAD(buf_list);
     list_for_each_entry_safe(buf, n, &pt->unexpected_list, unexpected_list) {
 
-        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))){
+        if ((le->type == TYPE_LE || check_match(buf, (me_t *)le))) {
 
             // ---> New stuff
             // checking if the LE is actually an ME
-            if (le->type == TYPE_ME) {
+            if (le->type == TYPE_ME
+                && (le->options & PTL_ME_MANAGE_LOCAL) 
+                && (le->options & PTL_ME_LOCAL_INC_UH_RLENGTH)) {
                 //hdr       = (req_hdr_t *) buf->data;
                 //rlength   = le64_to_cpu(hdr->rlength);
-                
+
                 printf("Found a match on the unexpected list.\n");
+                list_del(&buf->unexpected_list);
+                list_add_tail(&buf->unexpected_list, buf_list);
                 
                 // it is an ME, so we can access PTL_ME_MANAGE_LOCAL
                 if ((le->options & PTL_ME_MANAGE_LOCAL) 
@@ -362,15 +366,15 @@ static void __match_le_unexpected(le_t *le,
                     } 
                 }
             }
-        }
-        // --> end new stuff
+            // --> end new stuff
              
-        list_del(&buf->unexpected_list);
-        list_add_tail(&buf->unexpected_list, buf_list);
+            list_del(&buf->unexpected_list);
+            list_add_tail(&buf->unexpected_list, buf_list);
 
-        if (le->options & PTL_LE_USE_ONCE)
-            break;
+            if (le->options & PTL_LE_USE_ONCE)
+                break;
             
+        }
     }
 }
 
