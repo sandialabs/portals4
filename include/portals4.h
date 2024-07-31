@@ -1304,6 +1304,7 @@ enum me_options {
     ME_MANAGE_LOCAL = LE_OPTIONS_MASK,
     ME_NO_TRUNCATE,
     ME_MAY_ALIGN,
+    ME_LOCAL_INC_UH_RLENGTH,
     ME_OPTIONS_MASK
 };
 
@@ -1417,6 +1418,23 @@ enum me_options {
  * */
 #define PTL_ME_MAY_ALIGN (1 << ME_MAY_ALIGN)
 
+/*!
+ * Specifies that the local offset should be incremented by the requested
+ * length of every matching header found in the unexpected headers list.
+ * When this option is set and a locally managed, persistent match list entry
+ * is appended to the priority list, the local offset is incremented by the
+ * requested length of every matching header found in the unexpected
+ * headers list as long as the min_free condition is respected. Note that the
+ * min_free semantics is checked for each matching header found in the
+ * unexpected headers list. If, after moving the local offset, the min_free
+ * condition is no longer valid, the match list entry is not appended to the
+ * priority list and a PTL_EVENT_AUTO_UNLINK event is generated. This
+ * option is only relevant when the PTL_ME_MANAGE_LOCAL option is set.
+ * When the PTL_ME_LOCAL_INC_UH_RLENGTH option is set, the
+ * PTL_ME_MAY_ALIGN option is ignored.
+ * */
+#define PTL_ME_LOCAL_INC_UH_RLENGTH (1 << ME_LOCAL_INC_UH_RLENGTH)
+
 #define PTL_ME_APPEND_OPTIONS_MASK ((1 << ME_OPTIONS_MASK) - 1)
 
 /*!
@@ -1477,6 +1495,7 @@ typedef struct {
      * - \c PTL_ME_OP_PUT
      * - \c PTL_ME_OP_GET
      * - \c PTL_ME_MANAGE_LOCAL
+     * - \c PTL_ME_LOCAL_INC_UH_RLENGTH
      * - \c PTL_ME_NO_TRUNCATE
      * - \c PTL_ME_USE_ONCE
      * - \c PTL_ME_MAY_ALIGN
