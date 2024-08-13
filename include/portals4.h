@@ -33,7 +33,9 @@ enum ptl_retvals {
     PTL_PID_IN_USE,      /*!< PID is in use. */
     PTL_PT_FULL,         /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,    /*!< Flow control is enabled and there is no EQ provided. */
-    PTL_PT_IN_USE        /*!< Portal table index is busy. */
+    PTL_PT_IN_USE,       /*!< Portal table index is busy. */
+    PTL_ABORTED          /*!< Wait/poll operation was aborted. */
+
 
     /* Deprecated return vals */
     //PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. Deprecated as of 4.3. */
@@ -703,7 +705,7 @@ enum pt_options {
 #define PTL_PT_ONLY_TRUNCATE (1 << ONLY_TRUNCATE)
 
 /* Allocate portal table entry in disabled status */
-#define PTL_PT_ALLOC_DISABLED (1 << PT_ALLOC_DISABLED) 
+#define PTL_PT_ALLOC_DISABLED (1 << PT_ALLOC_DISABLED)
 
 /*! Allow for unordered match list searching. (via hash table) */
 #define PTL_PT_MATCH_UNORDERED (1 << MATCH_UNORDERED)
@@ -1995,6 +1997,25 @@ typedef unsigned char ptl_ack_req_t;
 #define PTL_CT_ACK_REQ 2 /*!< Requests a simple counting acknowledgment. */
 #define PTL_OC_ACK_REQ 3 /*!< Requests an operation completed
                           * acknowledgment. */
+
+
+/*!
+ * @fn PtlAbort(void)
+ *
+ * @brief Gracefully abort the execution of waiting and polling Portals
+ * routines.
+ *
+ * @details The PtlAbort() function allows an application to gracefully abort the execution of waiting and polling Portals
+ * routines. Multithreaded applications with threads waiting in PtlEQPoll(), PtlEQWait(), PtlCTWait() or PtlCTPoll()
+ * must use PtlAbort() before calling PtlEQFree() and PtlCTFree() in order to avoid use-after-free scenarios.
+ * Polling and waiting functions must stop and return once PtlAbort() is called. Subsequent calls to polling and waiting
+ * routines must immediately return PTL_ABORTED. Once PtlAbort() is completed, the application may safely call
+ * PtlEQFree() and PtlCTFree().
+ *
+ * @see PtlGet()
+ */
+void PtlAbort(void);
+
 
 /*!
  * @fn PtlPut(ptl_handle_md_t   md_handle,
