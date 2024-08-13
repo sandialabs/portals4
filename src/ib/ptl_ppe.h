@@ -618,7 +618,6 @@ int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index);
 
 
 
-
 #endif
 
 #else /* WITH_PPE */
@@ -673,6 +672,7 @@ int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index);
 #define _PtlTriggeredSwap PtlTriggeredSwap
 #define _PtlTriggeredMEAppend PtlTriggeredMEAppend
 #define _PtlTriggeredMEUnlink PtlTriggeredMEUnlink
+#define _PtlAbort PtlAbort
 
 #endif
 

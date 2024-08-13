@@ -57,6 +57,7 @@
 		PtlTriggeredSwap;
 		PtlTriggeredMEAppend;
 		PtlTriggeredMEUnlink;
+        PtlAbort;
 
 	local:
 		*;

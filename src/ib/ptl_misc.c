@@ -190,6 +190,7 @@ void _PtlFini(gbl_t *gbl)
   err0:
     return;
 }
+
 #endif
 
 #ifndef IS_PPE
