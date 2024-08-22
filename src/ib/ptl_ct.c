@@ -356,6 +356,7 @@ int _PtlCTGet(PPEGBL ptl_handle_ct_t ct_handle, ptl_ct_event_t *event_p)
 int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
                ptl_ct_event_t *event_p)
 {
+    // TODO dkruse this code will be modified for PtlAbort
     int err;
     ct_t *ct;
 
@@ -411,6 +412,7 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
                ptl_time_t timeout, ptl_ct_event_t *event_p,
                unsigned int *which_p)
 {
+    // TODO dkruse this code will be modified for PtlAbort
     int err;
     struct ct_info *cts_info[size];
     ct_t *cts[size];
