@@ -28,6 +28,7 @@ enum ppe_op {
     OP_PtlGetPhysId,
     OP_PtlGetUid,
     OP_PtlInit,
+    OP_PtlAbort,
     OP_PtlLEAppend,
     OP_PtlLESearch,
     OP_PtlLEUnlink,
@@ -672,7 +673,7 @@ int _PtlPTEnable(PPEGBL ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index);
 #define _PtlTriggeredSwap PtlTriggeredSwap
 #define _PtlTriggeredMEAppend PtlTriggeredMEAppend
 #define _PtlTriggeredMEUnlink PtlTriggeredMEUnlink
-#define _PtlAbort PtlAbort
+//#define _PtlAbort PtlAbort
 
 #endif
 

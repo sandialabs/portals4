@@ -123,6 +123,7 @@ static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
  */
 int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
 {
+    // TODO dkruse maybe do checking here?
     int err;
     atomic_inc(&keep_polling);
     atomic_inc(&eqe_list->waiter);
@@ -150,6 +151,7 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
                    ptl_time_t timeout, ptl_event_t *event_p,
                    unsigned int *which_p)
 {
+    // TODO dkruse maybe do checking here?
     int err;
     uint64_t nstart;
     uint64_t timeout_ns;

@@ -312,6 +312,7 @@ void stop_progress_thread(ni_t *ni);
 #endif
 
 int _PtlInit(gbl_t *gbl);
+int _PtlAbort(gbl_t *gbl);
 void _PtlFini(gbl_t *gbl);
 int _PtlNIInit(gbl_t *gbl, ptl_interface_t iface_id, unsigned int options,
                ptl_pid_t pid, const ptl_ni_limits_t *desired,

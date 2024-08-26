@@ -107,6 +107,37 @@ int misc_init_once(void)
 
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int _PtlAbort(gbl_t *gbl) {
+    // TODO dkruse
+    int ret;
+
+    ret = pthread_mutex_lock(&per_proc_gbl_mutex);
+    if (ret) {
+        ptl_warn("unable to acquire proc_gbl mutex\n");
+        ret = PTL_FAIL;
+        goto err0;
+    }
+
+    if (gbl->finalized) {
+        ptl_warn("Portals was finalized\n");
+        ret = PTL_FAIL;
+        goto err1;
+    }
+
+    /* if polling/waiting threads can abort, then abort */
+    if (gbl->abort_count > 0)
+        gbl->aborted = 1;
+
+    pthread_mutex_unlock(&per_proc_gbl_mutex);
+
+    return PTL_OK;
+
+  err1:
+    pthread_mutex_unlock(&per_proc_gbl_mutex);
+  err0:
+    return ret;
+
+}
 int _PtlInit(gbl_t *gbl)
 {
     int ret;

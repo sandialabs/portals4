@@ -301,6 +301,7 @@ int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
     // TODO dkruse this code will be modified for PtlAbort
+    // just increment gbl->abort_count
     int err;
     eq_t *eq;
 
@@ -353,17 +354,27 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
  * @return PTL_EQ_EMPTY Indicates that the timeout has been reached and all
  * of the event queues are empty.
  */
-int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
+int _PtlEQPoll(PPEGBL ptl_handle_eq_t * eq_handles, unsigned int size,
                ptl_time_t timeout, ptl_event_t *event_p,
                unsigned int *which_p)
 {
     // TODO dkruse this code will be modified for PtlAbort
     int err;
+    int ret;
     eq_t *eqs[size];
     struct eqe_list *eqes_list[size];
     int i;
     int i2;
 
+    ret = pthread_mutex_lock(eq_handles->gbl_mutex);
+    if (ret) {
+        ptl_warn("unable to acquire proc_gbl mutex\n");
+        ret = PTL_FAIL;
+        return ret
+    }
+    eq_handles->abort_count++;
+    pthread_mutex_unlock(eq_handles->gbl_mutex);
+    
 #ifndef NO_ARG_VALIDATION
     ni_t *ni = NULL;
 
@@ -404,7 +415,7 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
     i2 = size - 1;
 #endif
 
-    err = PtlEQPoll_work(eqes_list, size, timeout, event_p, which_p);
+    err = PtlEQPoll_work(eq_handles, eqes_list, size, timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
   err2:
@@ -416,6 +427,9 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
     gbl_put();
   err0:
 #endif
+    ret = pthread_mutex_lock(eq_handles->gbl_mutex);
+    eq_handles->abort_count--;
+    pthread_mutex_unlock(eq_handles->gbl_mutex);
     return err;
 }
 
