@@ -151,8 +151,8 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
                    ptl_time_t timeout, ptl_event_t *event_p,
                    unsigned int *which_p)
 {
-    // TODO dkruse maybe do checking here?
     int err;
+    int ret;
     uint64_t nstart;
     uint64_t timeout_ns;
     TIMER_TYPE start;
@@ -185,6 +185,16 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
                 err = PTL_FAIL;
                 goto out;
             }
+
+            /* has PtlAbort() been called? */
+            ret = pthread_mutex_lock(&abort_state.aborted_mutex);
+            if (abort_state.aborted > 0) {
+                printf("dkruse :::: abort_state > 0, PtlAbort was called...\n");
+                err = PTL_ABORTED;
+                goto aborted;
+            }
+            pthread_mutex_unlock(&abort_state.aborted_mutex);
+               
         }
 
         if (!forever) {
@@ -201,5 +211,8 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
 
   out:
     atomic_dec(&keep_polling);
+    return err;
+  aborted:
+    pthread_mutex_unlock(&abort_state.aborted_mutex);
     return err;
 }

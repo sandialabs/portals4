@@ -275,6 +275,10 @@ int PtlInit(void)
 {
     return _PtlInit(&per_proc_gbl);
 }
+void PtlAbort(void)
+{
+    _PtlAbort(&per_proc_gbl);
+}
 
 void PtlFini(void)
 {

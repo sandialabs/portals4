@@ -111,6 +111,7 @@ int _PtlAbort(gbl_t *gbl) {
     // TODO dkruse
     int ret;
 
+    printf("dkruse :::: in _PtlAbort()\n" );
     ret = pthread_mutex_lock(&per_proc_gbl_mutex);
     if (ret) {
         ptl_warn("unable to acquire proc_gbl mutex\n");
@@ -125,8 +126,11 @@ int _PtlAbort(gbl_t *gbl) {
     }
 
     /* if polling/waiting threads can abort, then abort */
-    if (gbl->abort_count > 0)
-        gbl->aborted = 1;
+    if (abort_state.abort_count > 0) {
+        ret = pthread_mutex_lock(&abort_state.aborted_mutex);
+        abort_state.aborted = 1;
+        pthread_mutex_unlock(&abort_state.aborted_mutex);
+    }
 
     pthread_mutex_unlock(&per_proc_gbl_mutex);
 
@@ -138,6 +142,8 @@ int _PtlAbort(gbl_t *gbl) {
     return ret;
 
 }
+
+
 int _PtlInit(gbl_t *gbl)
 {
     int ret;

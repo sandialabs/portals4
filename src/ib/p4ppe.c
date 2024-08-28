@@ -1554,6 +1554,9 @@ int gbl_init(gbl_t *gbl)
 
     pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
+    /* for PtlAbort */
+    pthread_mutex_init(&abort_state->aborted_mutex, NULL);
+
     /* init ni object pool */
     err = pool_init(gbl, &gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
     if (err) {
