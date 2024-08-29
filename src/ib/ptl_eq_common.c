@@ -129,6 +129,15 @@ int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
     atomic_inc(&eqe_list->waiter);
 
     while (1) {
+
+        /*
+         * has PtlAbort been called?
+         * if so, leave immediately
+         */
+        err = check_abort_state();
+        if (err == PTL_ABORTED)
+            goto err0;
+        
         err = check_eq(eqe_list, event_p);
         if (err != PTL_EQ_EMPTY) {
             break;
@@ -141,6 +150,9 @@ int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
     atomic_dec(&eqe_list->waiter);
     atomic_dec(&keep_polling);
 
+    return err;
+    
+  err0:
     return err;
 }
 

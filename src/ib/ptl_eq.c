@@ -301,9 +301,15 @@ int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
     // TODO dkruse this code will be modified for PtlAbort
-    // just increment gbl->abort_count
     int err;
     eq_t *eq;
+
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+
+    abort_state_inc();
+        
 
 #ifndef NO_ARG_VALIDATION
     err = gbl_get();
@@ -323,13 +329,18 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 #endif
 
     err = PtlEQWait_work(eq->eqe_list, event_p);
-
-    eq_put(eq);
+    if (err == PTL_ABORTED) {
+        abort_sate_dec();
+        return err;
+    }
+        eq_put(eq);
 #ifndef NO_ARG_VALIDATION
   err1:
+    abort_state_dec();
     gbl_put();
   err0:
 #endif
+    abort_state_dec();
     return err;
 }
 
@@ -433,6 +444,10 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
 #endif
 
     err = PtlEQPoll_work(PPEGBL eqes_list, size, timeout, event_p, which_p);
+    if (err == PTL_ABORTED) {
+        abort_state_dec();
+        return err;
+    }
 
 #ifndef NO_ARG_VALIDATION
   err2:
@@ -458,7 +473,6 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
     //}
     //pthread_mutex_unlock(&abort_state.abort_count_mutex);
     abort_state_dec();
-    
     return err;
 }
 
