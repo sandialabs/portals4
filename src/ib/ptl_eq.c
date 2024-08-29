@@ -330,7 +330,7 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 
     err = PtlEQWait_work(eq->eqe_list, event_p);
     if (err == PTL_ABORTED) {
-        abort_sate_dec();
+        abort_state_dec();
         return err;
     }
         eq_put(eq);
