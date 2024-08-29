@@ -126,13 +126,13 @@ int _PtlAbort(gbl_t *gbl) {
     }
 
     /* if polling/waiting threads can abort, then abort */
+    
+    ret = pthread_mutex_lock(&abort_state.abort_state_mutex);
     if (abort_state.abort_count > 0) {
-        ret = pthread_mutex_lock(&abort_state.aborted_mutex);
         abort_state.aborted = 1;
-        pthread_mutex_unlock(&abort_state.aborted_mutex);
     }
-
-    pthread_mutex_unlock(&per_proc_gbl_mutex);
+    //pthread_mutex_unlock(&per_proc_gbl_mutex);
+    pthread_mutex_unlock(&abort_state.abort_state_mutex);
 
     return PTL_OK;
 

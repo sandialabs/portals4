@@ -1555,8 +1555,7 @@ int gbl_init(gbl_t *gbl)
     pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
     /* for PtlAbort */
-    pthread_mutex_init(&abort_state->aborted_mutex, NULL);
-    pthread_mutex_init(&abort_state->abort_count_mutex, NULL);
+    pthread_mutex_init(&abort_state->abort_state_mutex, NULL);
 
     /* init ni object pool */
     err = pool_init(gbl, &gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
@@ -1569,8 +1568,7 @@ int gbl_init(gbl_t *gbl)
 
   err:
     pthread_mutex_destroy(&gbl->gbl_mutex);
-    pthread_mutex_destroy(&abort_state->aborted_mutex, NULL);
-    pthread_mutex_destroy(&abort_state->abort_count_mutex, NULL);
+    pthread_mutex_destroy(&abort_state->abort_state_mutex, NULL);
     return err;
 }
 

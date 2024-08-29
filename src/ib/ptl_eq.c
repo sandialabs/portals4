@@ -359,6 +359,7 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
                unsigned int *which_p)
 {
     // TODO dkruse this code will be modified for PtlAbort
+    // TODO dkruse clean up commented out code 
     int err;
     int ret;
     eq_t *eqs[size];
@@ -366,8 +367,29 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
     int i;
     int i2;
 
+    /*
+     * PtlAbort has been called and currently aborting
+    /* return PTL_ABORTED
+    */
+    //ret = pthread_mutex_lock(&abort_state.aborted);
+    //if (abort_state.aborted > 0) {
+    //    err = PTL_ABORTED;
+    //    pthread_mutex_unlock(&abort_state.aborted);
+    //    return err;
+    //}
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+
+    /* No abort happening, release lock */
+    //pthread_mutex_unlock(&abort_state.aborted);
+    abort_state_inc();
+
+        
     /* we are in a polling/waiting function that can be aborted */
-    abort_state.abort_count++;
+    //ret = pthread_mutex_lock(&abort_state.abort_count_mutex);
+    //abort_state.abort_count++;
+    //pthread_mutex_unlock(&abort_state.abort_count_mutex);
     
 #ifndef NO_ARG_VALIDATION
     ni_t *ni = NULL;
@@ -379,8 +401,9 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
 
     if (size == 0) {
         err = PTL_ARG_INVALID;
-        goto err1;
+        
     }
+    
 #ifndef NO_ARG_VALIDATION
     i2 = -1;
     for (i = 0; i < size; i++) {
@@ -422,8 +445,19 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
   err0:
 #endif
     
-    /* we are leaving a polling/waiting function that can be aborted */
-    abort_state.abort_count--;
+    /*
+     * we are leaving a polling/waiting function that can be aborted
+     * if we are the last to leave, reset aborted to 0 so it can be used again
+     */
+    //ret = pthread_mutex_lock(&abort_state.abort_count_mutex);
+    //abort_state.abort_count--;
+    //if (abort_state.abort_count == 0) {
+    //ret = pthread_mutex_lock(&abort_state.aborted);
+    //    abort_state.aborted = 0;
+    //    pthread_mutex_unlock(&abort_state.aborted);
+    //}
+    //pthread_mutex_unlock(&abort_state.abort_count_mutex);
+    abort_state_dec();
     
     return err;
 }
