@@ -14,17 +14,14 @@ struct ptl_abort_state {
     
     /* Has a thread called PtlAbort? */
     int aborted;
-    
-    /* mutex for aborted */
     pthread_mutex_t aborted_mutex;
 
     
     /* number of threads that can be aborted,
      if 0: nothing to abort, if greater than 0: set
      aborted to 1 if PtlAbort is called */
-    // TODO  use atomic sets on this stuff
     int abort_count;
-
+    pthread_mutex_t abort_count_mutex;
 };
     
 struct ptl_abort_state abort_state;

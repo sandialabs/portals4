@@ -54,6 +54,9 @@ void gbl_release(ref_t *ref)
     iface_fini(gbl);
 
     pthread_mutex_destroy(&gbl->gbl_mutex);
+    /* for PtlAbort */
+    pthread_mutex_destroy(&abort_state->aborted_mutex, NULL);
+    pthread_mutex_destroy(&abort_state->abort_count_mutex, NULL);
 }
 
 static void *event_loop_func(void *arg)
