@@ -83,7 +83,7 @@ Options to configure include:
         issues and doesn't compile on recent kernel versions.
 
       * The ummunotify driver from
-        http://support.systemfabricworks.com/downloads/ummunotify/ummunotify-v2.tar.bz2
+        https://github.com/Portals4/ummunotify/
         (required for correctness with the IB transport). Ensure that /dev/ummunotify is
         readable/writable by the user running the portals software.
         WARNING: Not using ummunotify may result in program incorrectness..
