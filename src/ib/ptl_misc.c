@@ -134,7 +134,7 @@ int _PtlAbort(gbl_t *gbl) {
     //pthread_mutex_unlock(&per_proc_gbl_mutex);
     pthread_mutex_unlock(&abort_state.abort_state_mutex);
 
-    return PTL_OK;
+    //return PTL_OK;
 
   err1:
     pthread_mutex_unlock(&per_proc_gbl_mutex);

@@ -444,10 +444,6 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
 #endif
 
     err = PtlEQPoll_work(PPEGBL eqes_list, size, timeout, event_p, which_p);
-    if (err == PTL_ABORTED) {
-        abort_state_dec();
-        return err;
-    }
 
 #ifndef NO_ARG_VALIDATION
   err2:

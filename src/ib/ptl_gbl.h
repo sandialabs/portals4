@@ -24,6 +24,7 @@ struct ptl_abort_state {
      aborted to 1 if PtlAbort is called */
     int abort_count;
 };
+
 struct ptl_abort_state abort_state;
 
 static inline int check_abort_state(void) {
