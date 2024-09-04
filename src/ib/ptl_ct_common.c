@@ -30,17 +30,25 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
             break;
         }
 
-        /* someone called PtlCTFree or PtlNIFini, leave */
-        if (unlikely(ct_info->interrupt)) {
-            /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
-            //err = PTL_INTERRUPTED;
-            err = PTL_FAIL;
-            break;
-        }
+        ///* someone called PtlCTFree or PtlNIFini, leave */
+        //if (unlikely(ct_info->interrupt)) {
+        //    /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
+        //    //err = PTL_INTERRUPTED;
+        //    err = PTL_FAIL;
+        //    break;
+        //}
+        
+        /* has PtlAbort() been called? */
+        err = check_abort_state();
+        if (err == PTL_ABORTED) {
+            atomic_dec(&keep_polling);
+            return err;
+        } 
 
         /* memory barrier */
         sched_yield();
     }
+    
     atomic_dec(&keep_polling);
 
     return err;
