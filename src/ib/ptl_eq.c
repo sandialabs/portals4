@@ -329,14 +329,11 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 #endif
 
     err = PtlEQWait_work(eq->eqe_list, event_p);
-    if (err == PTL_ABORTED) {
-        abort_state_dec();
-        return err;
-    }
-        eq_put(eq);
+    
+    eq_put(eq);
+    
 #ifndef NO_ARG_VALIDATION
   err1:
-    abort_state_dec();
     gbl_put();
   err0:
 #endif
@@ -382,25 +379,13 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
      * PtlAbort has been called and currently aborting
     /* return PTL_ABORTED
     */
-    //ret = pthread_mutex_lock(&abort_state.aborted);
-    //if (abort_state.aborted > 0) {
-    //    err = PTL_ABORTED;
-    //    pthread_mutex_unlock(&abort_state.aborted);
-    //    return err;
-    //}
     err = check_abort_state();
     if (err == PTL_ABORTED)
         return err;
 
-    /* No abort happening, release lock */
-    //pthread_mutex_unlock(&abort_state.aborted);
+    /* No abort happening */
     abort_state_inc();
 
-        
-    /* we are in a polling/waiting function that can be aborted */
-    //ret = pthread_mutex_lock(&abort_state.abort_count_mutex);
-    //abort_state.abort_count++;
-    //pthread_mutex_unlock(&abort_state.abort_count_mutex);
     
 #ifndef NO_ARG_VALIDATION
     ni_t *ni = NULL;
@@ -456,18 +441,7 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
   err0:
 #endif
     
-    /*
-     * we are leaving a polling/waiting function that can be aborted
-     * if we are the last to leave, reset aborted to 0 so it can be used again
-     */
-    //ret = pthread_mutex_lock(&abort_state.abort_count_mutex);
-    //abort_state.abort_count--;
-    //if (abort_state.abort_count == 0) {
-    //ret = pthread_mutex_lock(&abort_state.aborted);
-    //    abort_state.aborted = 0;
-    //    pthread_mutex_unlock(&abort_state.aborted);
-    //}
-    //pthread_mutex_unlock(&abort_state.abort_count_mutex);
+     /* we are leaving a polling/waiting function that can be aborted */
     abort_state_dec();
     return err;
 }
