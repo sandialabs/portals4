@@ -123,7 +123,6 @@ static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
  */
 int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
 {
-    // TODO dkruse maybe do checking here?
     int err;
     atomic_inc(&keep_polling);
     atomic_inc(&eqe_list->waiter);
@@ -135,11 +134,10 @@ int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
          * if so, leave immediately
          */
         err = check_abort_state();
-        if (err == PTL_ABORTED) {
-            printf("dkruse :::: abort_state > 0, PtlAbort was called...\n");
+        if (err == PTL_ABORTED)
             break;
-        }
-        
+
+
         err = check_eq(eqe_list, event_p);
         if (err != PTL_EQ_EMPTY)
             break;
@@ -148,12 +146,12 @@ int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
 
 
     }
-    
+
     atomic_dec(&eqe_list->waiter);
     atomic_dec(&keep_polling);
 
     return err;
-    
+
   err0:
     return err;
 }
@@ -200,14 +198,13 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
             //    goto out;
             //}
 
-            
+
             /* has PtlAbort() been called? */
             err = check_abort_state();
-            if (err == PTL_ABORTED) {
-                printf("dkruse :::: abort_state > 0, PtlAbort was called...\n");
+            if (err == PTL_ABORTED)
                 goto out;
-            }
-               
+
+
         }
 
         if (!forever) {

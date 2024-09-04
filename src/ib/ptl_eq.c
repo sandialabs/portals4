@@ -300,7 +300,6 @@ int _PtlEQGet(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
  */
 int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 {
-    // TODO dkruse this code will be modified for PtlAbort
     int err;
     eq_t *eq;
 
@@ -366,8 +365,6 @@ int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
                ptl_time_t timeout, ptl_event_t *event_p,
                unsigned int *which_p)
 {
-    // TODO dkruse this code will be modified for PtlAbort
-    // TODO dkruse clean up commented out code 
     int err;
     int ret;
     eq_t *eqs[size];
