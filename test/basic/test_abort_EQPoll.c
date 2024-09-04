@@ -1,8 +1,3 @@
-// put some unexpected puts to rank 1
-// barrier
-// have rank 1 append an ME that matches zero or more of them
-// barrier
-// clean up
 #include <portals4.h>
 #include <support.h>
 #include <assert.h>
@@ -36,7 +31,7 @@ void* thread_test(void* arg) {
 }
 
     
-void* thread_poll(void* arg) {
+void* thread_EQPoll(void* arg) {
     void * ret;
     int err;
     unsigned int which;
@@ -153,8 +148,8 @@ int main(int   argc, char *argv[])
         
         /* parent thread aborts, 2 worker threads poll */
         printf("parent thread aborts, 2 worker threads poll\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
-        ret = pthread_create(&worker1, NULL, thread_poll, &tdata1);
+        ret = pthread_create(&worker0, NULL, thread_EQPoll, &tdata0);
+        ret = pthread_create(&worker1, NULL, thread_EQPoll, &tdata1);
         sleep(1);
         PtlAbort();
 
@@ -204,11 +199,11 @@ int main(int   argc, char *argv[])
         
         /* parent thread aborts, 2 worker threads poll again */
         printf("parent thread aborts, 2 worker threads poll again\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
+        ret = pthread_create(&worker0, NULL, thread_EQPoll, &tdata0);
         if (ret)
             printf("worker0 pthread_create error\n");
         
-        ret = pthread_create(&worker1, NULL, thread_poll, &tdata1);
+        ret = pthread_create(&worker1, NULL, thread_EQPoll, &tdata1);
         if (ret)
             printf("worker1 pthread_create error\n");
         //err = PtlEQPoll(&eq_h, 1, polltime_ms, &event, &which);
@@ -258,9 +253,9 @@ int main(int   argc, char *argv[])
         printf("\n");
 
         
-        /* parent thread and worker0 poll, worker2 aborts*/
-        printf("parent thread aborts, 2 worker threads poll again\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
+        /* parent thread and worker0 poll, worker2 aborts */
+        printf("parent thread and worker0 poll, worker2 aborts\n");
+        ret = pthread_create(&worker0, NULL, thread_EQPoll, &tdata0);
         if (ret)
             printf("worker0 pthread_create error\n");
         

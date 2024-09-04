@@ -1,8 +1,3 @@
-// put some unexpected puts to rank 1
-// barrier
-// have rank 1 append an ME that matches zero or more of them
-// barrier
-// clean up
 #include <portals4.h>
 #include <support.h>
 #include <assert.h>
@@ -36,7 +31,7 @@ void* thread_test(void* arg) {
 }
 
     
-void* thread_poll(void* arg) {
+void* thread_EQPoll(void* arg) {
     void * ret;
     int err;
     unsigned int which;
@@ -54,9 +49,25 @@ void* thread_poll(void* arg) {
     return ret;
 }
 
+void* thread_EQWait(void* arg) {
+    void * ret;
+    int err;
+    struct thread_data *data = (struct thread_data*) arg; 
+    printf("worker[%d]: calling PtlEQWait\n", data->name);
+    
+    err = PtlEQWait(data->eq_h, &data->event);
+    if (err == PTL_ABORTED) {
+        printf("worker[%d]: PTL_ABORTED returned\n", data->name);
+    } else {
+        printf("worker[%d]: PTL_ABORTED NOT returned\n", data->name);
+    }
+    ret = (void*) err;
+    return ret;
+}
+
 void* thread_abort(void* arg) {
     struct thread_data *data = (struct thread_data*) arg; 
-    sleep(1);
+    sleep(2);
     printf("worker[%d]: calling PtlAbort\n", data->name);
     PtlAbort();
 }
@@ -129,12 +140,9 @@ int main(int   argc, char *argv[])
     
     if (rank == 0) {
         int err;
-        unsigned int which;
-        unsigned polltime_ms = 5000;
         int ret;
 
         
-        // TODO dkruse this is where we poll/wait for stuff then abort
         pthread_attr_t tattr0;
         pthread_t worker0;
         void *status0;
@@ -151,11 +159,11 @@ int main(int   argc, char *argv[])
         tdata1.name = 1;
         tdata2.name = 2;
         
-        /* parent thread aborts, 2 worker threads poll */
-        printf("parent thread aborts, 2 worker threads poll\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
-        ret = pthread_create(&worker1, NULL, thread_poll, &tdata1);
-        sleep(1);
+        /* parent thread aborts, 2 worker threads EQWait */
+        printf("parent thread aborts, 2 worker threads EQWait\n");
+        ret = pthread_create(&worker0, NULL, thread_EQWait, &tdata0);
+        ret = pthread_create(&worker1, NULL, thread_EQWait, &tdata1);
+        sleep(2);
         PtlAbort();
 
         ret = pthread_join(worker0, &status0);
@@ -166,18 +174,21 @@ int main(int   argc, char *argv[])
         if (ret)
             printf("worker1 pthread_join error\n");
 
+        printf("\n");
         printf("PTL_ABORTED is %d\n", PTL_ABORTED);
-        printf("worker0 returned %d\n", (int) status0);
-        printf("worker1 returned %d\n", (int) status1);
+        printf("worker0 join returned %d\n", (int) status0);
+        printf("worker1 join returned %d\n", (int) status1);
         assert((int)status0 == PTL_ABORTED);
         assert((int)status1 == PTL_ABORTED);
 
+        printf("\n");
         ret = PtlEQFree(tdata0.eq_h);
-        printf("worker0 ret = %d\n", ret);
+        printf("worker0 PtlEQFree ret = %d\n", ret);
         ret = PtlEQFree(tdata1.eq_h);
-        printf("worker1 ret = %d\n", ret);
+        printf("worker1 PtlEQFree ret = %d\n", ret);
         printf("PTL_OK == %d\n", PTL_OK);
   
+        printf("\n");
         ret = PtlEQAlloc(ni_h, 8192, &eq_h);
         printf("eqAlloc: worker0 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, eq_h, PTL_PT_ANY,
@@ -202,17 +213,15 @@ int main(int   argc, char *argv[])
         printf("\n");
 
         
-        /* parent thread aborts, 2 worker threads poll again */
-        printf("parent thread aborts, 2 worker threads poll again\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
+        /* parent thread aborts, 2 worker threads EQWait again */
+        printf("parent thread aborts, 2 worker threads EQWait again\n");
+        ret = pthread_create(&worker0, NULL, thread_EQWait, &tdata0);
         if (ret)
             printf("worker0 pthread_create error\n");
         
-        ret = pthread_create(&worker1, NULL, thread_poll, &tdata1);
+        ret = pthread_create(&worker1, NULL, thread_EQWait, &tdata1);
         if (ret)
             printf("worker1 pthread_create error\n");
-        //err = PtlEQPoll(&eq_h, 1, polltime_ms, &event, &which);
-        //
         sleep(1);
         PtlAbort();
         ret = pthread_join(worker0, &status0);
@@ -223,11 +232,13 @@ int main(int   argc, char *argv[])
         if (ret)
             printf("worker1 pthread_join error\n");
 
+        printf("\n");
         printf("PTL_ABORTED is %d\n", PTL_ABORTED);
         printf("worker0 returned %d\n", (int) status0);
         printf("worker1 returned %d\n", (int) status1);
         assert((int)status0 == PTL_ABORTED);
         
+        printf("\n");
         ret = PtlEQFree(tdata0.eq_h);
         printf("worker0 ret = %d\n", ret);
         ret = PtlEQFree(tdata1.eq_h);
@@ -258,9 +269,9 @@ int main(int   argc, char *argv[])
         printf("\n");
 
         
-        /* parent thread and worker0 poll, worker2 aborts*/
-        printf("parent thread aborts, 2 worker threads poll again\n");
-        ret = pthread_create(&worker0, NULL, thread_poll, &tdata0);
+        /* parent thread and worker0 EQWait, worker2 aborts */
+        printf("parent thread and worker0 EQWait, worker2 aborts\n");
+        ret = pthread_create(&worker0, NULL, thread_EQWait, &tdata0);
         if (ret)
             printf("worker0 pthread_create error\n");
         
@@ -268,7 +279,7 @@ int main(int   argc, char *argv[])
         if (ret)
             printf("worker1 pthread_create error\n");
         
-        err = PtlEQPoll(&eq_h, 1, polltime_ms, &event, &which);
+        err = PtlEQWait(eq_h, &event);
         
 
         

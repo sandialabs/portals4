@@ -109,11 +109,11 @@ static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
             return err;
     }
 
-    if (eqe_list->interrupt) {
-        /* PTL_INTERRUPTED is deprecated as of 4.3 */
-        /* return PTL_INTERRUPTED; */
-        return PTL_FAIL;
-    }
+    //if (eqe_list->interrupt) {
+    //    /* PTL_INTERRUPTED is deprecated as of 4.3 */
+    //    /* return PTL_INTERRUPTED; */
+    //    return PTL_FAIL;
+    //}
 
     return PTL_EQ_EMPTY;
 }
