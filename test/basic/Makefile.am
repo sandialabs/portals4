@@ -10,7 +10,8 @@ LDADD = $(top_builddir)/src/libportals.la $(top_builddir)/test/libtestsupport.la
 noinst_HEADERS = testing.h
 
 TESTS = \
-	test_abort_eq \
+	test_abort_EQWait \
+	test_abort_EQPoll \
 	test_manage_local_only \
 	test_manage_local_and_inc_uh_rlength \
 	test_search_only_counter_me \
@@ -340,7 +341,9 @@ test_search_only_counter_me_SOURCES = test_search_only_counter_me.c
 
 test_manage_local_only_SOURCES = test_manage_local_only.c
 
-test_abort_eq_SOURCES = test_abort_eq.c
+test_abort_EQPoll_SOURCES = test_abort_EQPoll.c
+
+test_abort_EQWait_SOURCES = test_abort_EQWait.c
 
 test_manage_local_and_inc_uh_rlength_SOURCES = test_manage_local_and_inc_uh_rlength.c
 
