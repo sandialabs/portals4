@@ -359,6 +359,7 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
     int err;
     ct_t *ct;
 
+
     /*
      * PtlAbort has been called and currently aborting
     /* return PTL_ABORTED
@@ -372,13 +373,18 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
 
     /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
+    printf("dkruse :::: ARG_VALIDATION\n");
     err = gbl_get();
-    if (err)
+    if (err) {
+        printf("dkruse :::: gbl_get() err = %d\n",  err);
         goto err0;
-
+    }
+    
     err = to_ct(MYGBL_ ct_handle, &ct);
-    if (err)
+    if (err) {
+        printf("dkruse :::: to_ct() err = %d\n",  err);
         goto err1;
+    }
 
     if (!ct) {
         printf("dkruse :::: no ct!\n");
@@ -386,9 +392,11 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
         goto err1;
     }
 #else
+    printf("dkruse :::: NO arg validation set\n");
     ct = to_obj(MYGBL_ POOL_ANY, ct_handle);
 #endif
 
+    printf("dkruse :::: before PtlCTWait\n");
     err = PtlCTWait_work(&ct->info, threshold, event_p);
 
     ct_put(ct);

@@ -8,16 +8,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "testing.h"
-#define ENTRY_T  ptl_me_t
-#define HANDLE_T ptl_handle_me_t
 #define NI_TYPE  PTL_NI_MATCHING
-// for catching unexpected puts
-#define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
-#define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE)
-#define ME_OPTIONS (PTL_ME_OP_PUT | PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH)
-#define APPEND   PtlMEAppend
-#define UNLINK   PtlMEUnlink
-#define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
 
 struct thread_data {
     int             name;
@@ -73,13 +64,21 @@ void* thread_CTPoll(void* arg) {
 void* thread_CTWait(void* arg) {
     void * ret;
     int err;
-    ptl_size_t test = 0;
-    struct thread_data *data = (struct thread_data*) arg; 
-    printf("worker[%d]: calling PtlCTWait\n", data->name);
+    ptl_size_t test = 10;
+    ptl_ct_event_t foo;
+    struct thread_data *data = (struct thread_data*) arg;
     
-    err = PtlCTWait(data->eq_h, test, &data->counter);
+    PtlCTGet(data->ct_h, &foo);
+    printf("worker[%d]: data->ct_h success field == %u\n",
+           data->name, foo.success);
+    
+    printf("worker[%d]: calling PtlCTWait\n", data->name);
+    err = PtlCTWait(data->ct_h, test, &foo);
+    printf("worker[%d]: after PtlCTWait, err == %d\n", err);
     if (err == PTL_ABORTED) {
         printf("worker[%d]: PTL_ABORTED returned\n", data->name);
+    } else if (err == PTL_ARG_INVALID) {
+        printf("worker[%d]: PTL_ARG_INVALID returned\n", data->name);
     } else {
         printf("worker[%d]: PTL_ABORTED NOT returned\n", data->name);
     }
@@ -99,15 +98,11 @@ int main(int   argc, char *argv[])
 {
     ptl_handle_ni_t     ni_h;
     ptl_pt_index_t      pt_index;
-    uint64_t            value;
-    ENTRY_T             value_e;
-    HANDLE_T            value_e_handle;
-    ptl_md_t            write_md;
-    ptl_handle_md_t     write_md_handle;
-    int                 num_procs, error_found, ret;
-    ptl_ct_event_t      ctc;
+    int                 num_procs, ret;
     int                 rank;
     ptl_process_t      *procs;
+
+     
     struct thread_data  tdata0;
     struct thread_data  tdata1;
     struct thread_data  tdata2;
@@ -148,17 +143,17 @@ int main(int   argc, char *argv[])
     CHECK_RETURNVAL(PtlCTAlloc(ni_h, &ct_h));
     CHECK_RETURNVAL(PtlCTAlloc(ni_h, &tdata0.ct_h));
     CHECK_RETURNVAL(PtlCTAlloc(ni_h, &tdata1.ct_h));
-    //assert(pt_index == 0);
 
     libtest_barrier();
 
                     
     if (rank == 0) {
+        
         int err;
         int ret;
         unsigned timeout = PTL_TIME_FOREVER;
         unsigned int which;
-        ptl_size_t tests = 0;
+        ptl_size_t test = 10;
 
         
         // TODO dkruse this is where we poll/wait for stuff then abort
@@ -193,10 +188,12 @@ int main(int   argc, char *argv[])
         if (ret)
             printf("worker1 pthread_join error\n");
 
+        printf("\n");    
         printf("PTL_ARG_INVALID is %d\n", PTL_ARG_INVALID);
         printf("PTL_ABORTED is %d\n", PTL_ABORTED);
         printf("worker0 returned %d\n", (int) status0);
         printf("worker1 returned %d\n", (int) status1);
+        printf("\n");    
         assert((int)status0 == PTL_ABORTED);
         assert((int)status1 == PTL_ABORTED);
 
@@ -205,21 +202,23 @@ int main(int   argc, char *argv[])
         ret = PtlCTFree(tdata1.ct_h);
         printf("worker1 ret = %d\n", ret);
         printf("PTL_OK == %d\n", PTL_OK);
+        printf("\n");    
   
         ret = PtlCTAlloc(ni_h, &ct_h);
-        printf("eqAlloc: worker0 ret = %d\n", ret);
+        printf("CTAlloc: worker0 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, eq_h, PTL_PT_ANY,
                          &pt_index);
-        printf("ptAlloc: worker0 ret = %d\n", ret);
+        printf("PTAlloc: worker0 ret = %d\n", ret);
     
         ret = PtlCTAlloc(ni_h, &tdata1.ct_h);
-        printf("eqAlloc: worker1 ret = %d\n", ret);
+        printf("CTAlloc: worker1 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, tdata1.eq_h, PTL_PT_ANY,
                                    &pt_index);
-        printf("ptAlloc: worker1 ret = %d\n", ret);
+        printf("PTAlloc: worker1 ret = %d\n", ret);
+        printf("\n");    
+        printf("\n");    
 
 
-        return -1;
 
         printf("\n////////////////////////////////////////////////////////////////////////////////\n");
         printf("////////////////////////////////////////////////////////////////////////////////\n\n");
@@ -230,6 +229,7 @@ int main(int   argc, char *argv[])
         ret = pthread_create(&worker2, NULL, thread_test, &tdata2);
         ret = pthread_join(worker2, &status2);
         printf("\n");
+        printf("\n");    
 
         
         /* parent thread aborts, 2 worker threads poll again */
@@ -250,29 +250,35 @@ int main(int   argc, char *argv[])
         ret = pthread_join(worker1, &status1);
         if (ret)
             printf("worker1 pthread_join error\n");
+        printf("\n");    
 
         printf("PTL_ABORTED is %d\n", PTL_ABORTED);
         printf("worker0 returned %d\n", (int) status0);
         printf("worker1 returned %d\n", (int) status1);
         assert((int)status0 == PTL_ABORTED);
+        printf("\n");    
+        printf("\n");    
         
         ret = PtlCTFree(tdata0.ct_h);
         printf("worker0 ret = %d\n", ret);
         ret = PtlCTFree(tdata1.ct_h);
         printf("worker1 ret = %d\n", ret);
         printf("PTL_OK == %d\n", PTL_OK);
+        printf("\n");    
   
         ret = PtlCTAlloc(ni_h, &ct_h);
-        printf("eqAlloc: worker0 ret = %d\n", ret);
+        printf("CTAlloc: worker0 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, eq_h, PTL_PT_ANY,
                          &pt_index);
-        printf("ptAlloc: worker0 ret = %d\n", ret);
+        printf("PTAlloc: worker0 ret = %d\n", ret);
     
         ret = PtlCTAlloc(ni_h, &tdata1.ct_h);
-        printf("eqAlloc: worker1 ret = %d\n", ret);
+        printf("CTAlloc: worker1 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, tdata1.eq_h, PTL_PT_ANY,
                                    &pt_index);
-        printf("ptAlloc: worker1 ret = %d\n", ret);
+        printf("PTAlloc: worker1 ret = %d\n", ret);
+        printf("\n");    
+        printf("\n");    
 
         
         printf("\n////////////////////////////////////////////////////////////////////////////////\n");
@@ -286,7 +292,7 @@ int main(int   argc, char *argv[])
 
         
         /* parent thread and worker0 poll, worker2 aborts */
-        printf("parent thread and worker0 poll, worker2 aborts\n");
+        printf("parent thread and worker0 poll, worker1 aborts\n");
         ret = pthread_create(&worker0, NULL, thread_CTWait, &tdata0);
         if (ret)
             printf("worker0 pthread_create error\n");
@@ -294,10 +300,9 @@ int main(int   argc, char *argv[])
         ret = pthread_create(&worker1, NULL, thread_abort, &tdata1);
         if (ret)
             printf("worker1 pthread_create error\n");
+        printf("\n");
         
-        err = PtlCTWait(ct_h, tests, &counter);
-        
-
+        err = PtlCTWait(ct_h, test, &counter);
         
         ret = pthread_join(worker0, &status0);
         if (ret)
@@ -306,30 +311,34 @@ int main(int   argc, char *argv[])
         ret = pthread_join(worker1, &status1);
         if (ret)
             printf("worker1 pthread_join error\n");
+        printf("\n");
 
         printf("PTL_ABORTED is %d\n", PTL_ABORTED);
         printf("worker0 returned %d\n", (int) status0);
         printf("parent returned %d\n", err);
         assert((int)status0 == PTL_ABORTED);
+        assert(err == PTL_ABORTED);
+        printf("\n");
         
         ret = PtlCTFree(tdata0.ct_h);
         printf("worker0 ret = %d\n", ret);
         ret = PtlCTFree(tdata1.ct_h);
         printf("worker1 ret = %d\n", ret);
         printf("PTL_OK == %d\n", PTL_OK);
+        printf("\n");
   
         ret = PtlCTAlloc(ni_h, &ct_h);
-        printf("eqAlloc: worker0 ret = %d\n", ret);
+        printf("CTAlloc: worker0 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, eq_h, PTL_PT_ANY,
                          &pt_index);
-        printf("ptAlloc: worker0 ret = %d\n", ret);
+        printf("PTAlloc: worker0 ret = %d\n", ret);
     
         ret = PtlCTAlloc(ni_h, &tdata1.ct_h);
-        printf("eqAlloc: worker1 ret = %d\n", ret);
+        printf("CTAlloc: worker1 ret = %d\n", ret);
         ret = PtlPTAlloc(ni_h, 0, tdata1.eq_h, PTL_PT_ANY,
                                    &pt_index);
-        printf("ptAlloc: worker1 ret = %d\n", ret);
-
+        printf("PTAlloc: worker1 ret = %d\n", ret);
+        printf("\n");
     }
     
 

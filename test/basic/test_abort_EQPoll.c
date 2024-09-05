@@ -8,16 +8,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "testing.h"
-#define ENTRY_T  ptl_me_t
-#define HANDLE_T ptl_handle_me_t
 #define NI_TYPE  PTL_NI_MATCHING
-// for catching unexpected puts
-#define AOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_COMM_DISABLE)
-#define SOPTIONS  (PTL_ME_OP_PUT | PTL_ME_EVENT_LINK_DISABLE)
-#define ME_OPTIONS (PTL_ME_OP_PUT | PTL_ME_MANAGE_LOCAL | PTL_ME_LOCAL_INC_UH_RLENGTH)
-#define APPEND   PtlMEAppend
-#define UNLINK   PtlMEUnlink
-#define SEARCH   PtlMESearch // buffer size (in uint64_t) of ME appended by rank 1
+
+
 
 struct thread_data {
     int name;
@@ -61,13 +54,7 @@ int main(int   argc, char *argv[])
 {
     ptl_handle_ni_t  ni_h;
     ptl_pt_index_t   pt_index;
-    uint64_t         value;
-    ENTRY_T          value_e;
-    HANDLE_T         value_e_handle;
-    ptl_md_t         write_md;
-    ptl_handle_md_t  write_md_handle;
-    int              num_procs, error_found, ret;
-    ptl_ct_event_t   ctc;
+    int              num_procs, ret;
     int              rank;
     ptl_process_t   *procs;
     struct thread_data tdata0;
@@ -75,23 +62,7 @@ int main(int   argc, char *argv[])
     struct thread_data tdata2;
     ptl_handle_eq_t  eq_h;
     ptl_event_t      event;
-    ENTRY_T          append_me; // the ME to be appended
-    HANDLE_T         append_me_handle; // handle for the ME to be appended
     
-    const uint64_t num_puts    = 5;
-    const uint64_t ME_BUF_SIZE = 6;
-    const uint64_t MIN_FREE    = 30;
-    unsigned int loffset       =  (ME_BUF_SIZE+1)*sizeof(uint64_t) - MIN_FREE;
-    loffset = loffset - (loffset % sizeof(uint64_t));
-    printf("loffset = %lu\n", loffset);
-    
-    uint64_t me_buffer[ME_BUF_SIZE]; // buffer used by the ME being appended
-
-    
-
-
-    for (int i = 0; i < ME_BUF_SIZE; ++i)
-        me_buffer[i] = i;
 
     CHECK_RETURNVAL(PtlInit());
     CHECK_RETURNVAL(libtest_init());

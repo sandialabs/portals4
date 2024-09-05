@@ -20,20 +20,26 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
     int err;
     atomic_inc(&keep_polling);
 
+    printf("dkruse :::: success = %d\n", ct_info->event.success);
+    printf("dkruse :::: threshold = %d\n", threshold);
+    printf("dkruse :::: failure = %d\n", ct_info->event.failure);
+    printf("dkruse :::: failure = %d\n", ct_info->event.failure);
     /* wait loop */
     while (1) {
         /* check if wait condition satisfied */
         if (unlikely
             (ct_info->event.success >= threshold || ct_info->event.failure)) {
             *event_p = ct_info->event;
+            printf("dkruse :::: returning PTL_OK\n");
             err = PTL_OK;
             break;
         }
 
-        ///* someone called PtlCTFree or PtlNIFini, leave */
+        /* someone called PtlCTFree or PtlNIFini, leave */
         //if (unlikely(ct_info->interrupt)) {
         //    /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
         //    //err = PTL_INTERRUPTED;
+        //    printf("dkruse :::: returning PTL_FAIL\n");
         //    err = PTL_FAIL;
         //    break;
         //}
@@ -42,7 +48,7 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
         err = check_abort_state();
         if (err == PTL_ABORTED) {
             atomic_dec(&keep_polling);
-            return err;
+            break;
         } 
 
         /* memory barrier */
