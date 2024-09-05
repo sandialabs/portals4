@@ -17,7 +17,6 @@ struct ptl_abort_state {
     
     /* Has a thread called PtlAbort? */
     int aborted;
-
     
     /* number of threads that can be aborted,
      if 0: nothing to abort, if greater than 0: set
@@ -92,15 +91,6 @@ typedef struct gbl {
 
     /* Number of the progress thread assigned to this client. */
     unsigned int prog_thread;
-
-    /* Has a thread called PtlAbort? */
-    int aborted;
-
-    /* number of threads that can be aborted,
-     if 0: nothing to abort, if greater than 0: set
-     aborted to 1 if PtlAbort is called */
-    // TODO  use atomic sets on this stuff
-    int abort_count;
     
 } gbl_t;
 

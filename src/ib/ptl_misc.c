@@ -108,10 +108,8 @@ int misc_init_once(void)
 static pthread_mutex_t per_proc_gbl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int _PtlAbort(gbl_t *gbl) {
-    // TODO dkruse
     int ret;
 
-    printf("dkruse :::: in _PtlAbort()\n" );
     ret = pthread_mutex_lock(&per_proc_gbl_mutex);
     if (ret) {
         ptl_warn("unable to acquire proc_gbl mutex\n");
@@ -131,10 +129,8 @@ int _PtlAbort(gbl_t *gbl) {
     if (abort_state.abort_count > 0) {
         abort_state.aborted = 1;
     }
-    //pthread_mutex_unlock(&per_proc_gbl_mutex);
     pthread_mutex_unlock(&abort_state.abort_state_mutex);
 
-    //return PTL_OK;
 
   err1:
     pthread_mutex_unlock(&per_proc_gbl_mutex);
