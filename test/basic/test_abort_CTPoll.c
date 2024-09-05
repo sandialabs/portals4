@@ -8,8 +8,6 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "testing.h"
-#define ENTRY_T  ptl_me_t
-#define HANDLE_T ptl_handle_me_t
 #define NI_TYPE  PTL_NI_MATCHING
 
 struct thread_data {
