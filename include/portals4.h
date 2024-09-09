@@ -33,7 +33,8 @@ enum ptl_retvals {
     PTL_PID_IN_USE,      /*!< PID is in use. */
     PTL_PT_FULL,         /*!< Portal table has no empty entries. */
     PTL_PT_EQ_NEEDED,    /*!< Flow control is enabled and there is no EQ provided. */
-    PTL_PT_IN_USE        /*!< Portal table index is busy. */
+    PTL_PT_IN_USE,        /*!< Portal table index is busy. */
+    PTL_ABORTED          /*!< wait/poll operation was aborted */
 
     /* Deprecated return vals */
     //PTL_INTERRUPTED,     /*!< Wait/get operation was interrupted. Deprecated as of 4.3. */
@@ -308,6 +309,21 @@ typedef struct {
 /******************************
 * Initialization and Cleanup *
 ******************************/
+
+/*!
+ * @addtogroup INC Initialization and Cleanup
+ * @{
+ * @fn PtlAbort(void)
+ *      @details The PtlAbort() function allows an application to gracefully abort the execution of waiting and polling Portals
+ *      routines. Multithreaded applications with threads waiting in PtlEQPoll(), PtlEQWait(), PtlCTWait() or PtlCTPoll()
+ *      must use PtlAbort() before calling PtlEQFree() and PtlCTFree() in order to avoid use-after-free scenarios.
+ *      Polling and waiting functions must stop and return once PtlAbort() is called. Subsequent calls to polling and waiting
+ *      routines must immediately return PTL_ABORTED. Once PtlAbort() is completed, the application may safely call
+ *      PtlEQFree() and PtlCTFree().
+ */
+void PtlAbort(void);
+
+    
 /*!
  * @addtogroup INC Initialization and Cleanup
  * @{

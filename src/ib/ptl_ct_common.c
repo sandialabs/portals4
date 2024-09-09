@@ -31,16 +31,24 @@ int PtlCTWait_work(struct ct_info *ct_info, uint64_t threshold,
         }
 
         /* someone called PtlCTFree or PtlNIFini, leave */
-        if (unlikely(ct_info->interrupt)) {
-            /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
-            //err = PTL_INTERRUPTED;
-            err = PTL_FAIL;
+        //if (unlikely(ct_info->interrupt)) {
+        //    /* PTL_INTERRUPTED is deprecated as of 4.3 */ 
+        //    //err = PTL_INTERRUPTED;
+        //    err = PTL_FAIL;
+        //    break;
+        //}
+        
+        /* has PtlAbort() been called? */
+        err = check_abort_state();
+        if (err == PTL_ABORTED) {
+            atomic_dec(&keep_polling);
             break;
-        }
+        } 
 
         /* memory barrier */
         sched_yield();
     }
+    
     atomic_dec(&keep_polling);
 
     return err;
@@ -65,6 +73,7 @@ static int ct_poll_loop(int size, struct ct_info *cts_info[],
                         unsigned int *which_p)
 {
     int i;
+    int err;
 
     atomic_inc(&keep_polling);
     for (i = 0; i < size; i++) {
@@ -77,12 +86,21 @@ static int ct_poll_loop(int size, struct ct_info *cts_info[],
             return PTL_OK;
         }
 
-        if (ct_info->interrupt) {
+        //if (ct_info->interrupt) {
+        //    atomic_dec(&keep_polling);
+        //    /* PTL_INTERRUPTED is deprecated as of 4.3 */
+        //    //return PTL_INTERRUPTED;
+        //    return PTL_FAIL;
+        //}
+
+        
+        /* has PtlAbort() been called? */
+        err = check_abort_state();
+        if (err == PTL_ABORTED) {
             atomic_dec(&keep_polling);
-            /* PTL_INTERRUPTED is deprecated as of 4.3 */
-            //return PTL_INTERRUPTED;
-            return PTL_FAIL;
-        }
+            return err;
+        } 
+
     }
 
     atomic_dec(&keep_polling);
@@ -111,6 +129,8 @@ int PtlCTPoll_work(struct ct_info *cts_info[], const ptl_size_t *thresholds,
         /* spin PTL_CT_POLL_LOOP_COUNT times */
         /* scan list to see if we can complete one */
         err = ct_poll_loop(size, cts_info, thresholds, event_p, which_p);
+        if (err == PTL_ABORTED)
+            break;
         if (err != PTL_CT_NONE_REACHED)
             break;
 

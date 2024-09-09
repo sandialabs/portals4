@@ -303,6 +303,13 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
     int err;
     eq_t *eq;
 
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+
+    abort_state_inc();
+        
+
 #ifndef NO_ARG_VALIDATION
     err = gbl_get();
     if (err)
@@ -321,13 +328,15 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
 #endif
 
     err = PtlEQWait_work(eq->eqe_list, event_p);
-
+    
     eq_put(eq);
+    
 #ifndef NO_ARG_VALIDATION
   err1:
     gbl_put();
   err0:
 #endif
+    abort_state_dec();
     return err;
 }
 
@@ -352,16 +361,29 @@ int _PtlEQWait(PPEGBL ptl_handle_eq_t eq_handle, ptl_event_t *event_p)
  * @return PTL_EQ_EMPTY Indicates that the timeout has been reached and all
  * of the event queues are empty.
  */
-int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
+int _PtlEQPoll(const ptl_handle_eq_t * eq_handles, unsigned int size,
                ptl_time_t timeout, ptl_event_t *event_p,
                unsigned int *which_p)
 {
     int err;
+    int ret;
     eq_t *eqs[size];
     struct eqe_list *eqes_list[size];
     int i;
     int i2;
 
+    /*
+     * PtlAbort has been called and currently aborting
+    /* return PTL_ABORTED
+    */
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+
+    /* No abort happening */
+    abort_state_inc();
+
+    
 #ifndef NO_ARG_VALIDATION
     ni_t *ni = NULL;
 
@@ -372,8 +394,9 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
 
     if (size == 0) {
         err = PTL_ARG_INVALID;
-        goto err1;
+        
     }
+    
 #ifndef NO_ARG_VALIDATION
     i2 = -1;
     for (i = 0; i < size; i++) {
@@ -402,7 +425,7 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
     i2 = size - 1;
 #endif
 
-    err = PtlEQPoll_work(eqes_list, size, timeout, event_p, which_p);
+    err = PtlEQPoll_work(PPEGBL eqes_list, size, timeout, event_p, which_p);
 
 #ifndef NO_ARG_VALIDATION
   err2:
@@ -414,6 +437,9 @@ int _PtlEQPoll(PPEGBL const ptl_handle_eq_t * eq_handles, unsigned int size,
     gbl_put();
   err0:
 #endif
+    
+     /* we are leaving a polling/waiting function that can be aborted */
+    abort_state_dec();
     return err;
 }
 

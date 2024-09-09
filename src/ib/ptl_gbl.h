@@ -10,6 +10,57 @@ struct iface;
 
 extern void gbl_release(ref_t *ref);
 
+struct ptl_abort_state {
+
+    /* mutex for both fields */ 
+    pthread_mutex_t abort_state_mutex;
+    
+    /* Has a thread called PtlAbort? */
+    int aborted;
+    
+    /* number of threads that can be aborted,
+     if 0: nothing to abort, if greater than 0: set
+     aborted to 1 if PtlAbort is called */
+    int abort_count;
+};
+
+struct ptl_abort_state abort_state;
+
+static inline int check_abort_state(void) {
+    int ret;
+    int err;
+
+    err = PTL_OK;
+    
+    ret = pthread_mutex_lock(&abort_state.abort_state_mutex);
+    if (abort_state.aborted > 0) {
+        err = PTL_ABORTED;
+    } 
+    pthread_mutex_unlock(&abort_state.abort_state_mutex);
+    
+    return err;
+
+}
+
+static inline void abort_state_inc(void) {
+    int ret;
+    ret = pthread_mutex_lock(&abort_state.abort_state_mutex);
+    abort_state.abort_count++;
+    pthread_mutex_unlock(&abort_state.abort_state_mutex);
+}
+
+/* decrement the abort count in a waiting/polling function */
+static inline void abort_state_dec(void) {
+    int ret;
+    ret = pthread_mutex_lock(&abort_state.abort_state_mutex);
+    abort_state.abort_count--;
+    if (abort_state.abort_count == 0) {
+        abort_state.aborted = 0;
+    }
+    pthread_mutex_unlock(&abort_state.abort_state_mutex);
+}
+    
+
 /* gbl is a structure to keep a client's information. There is a
  * unique instance for the fat library (per_proc_gbl), it doesn't
  * exist for the light library, and the PPE has an instance for each
@@ -40,6 +91,7 @@ typedef struct gbl {
 
     /* Number of the progress thread assigned to this client. */
     unsigned int prog_thread;
+    
 } gbl_t;
 
 static inline int gbl_get(void)

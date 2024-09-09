@@ -359,15 +359,29 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
     int err;
     ct_t *ct;
 
+
+    /*
+     * PtlAbort has been called and currently aborting
+    /* return PTL_ABORTED
+    */
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+    
+    /* No abort happening */
+    abort_state_inc();
+
     /* convert handle to object */
 #ifndef NO_ARG_VALIDATION
     err = gbl_get();
-    if (err)
+    if (err) {
         goto err0;
-
+    }
+    
     err = to_ct(MYGBL_ ct_handle, &ct);
-    if (err)
+    if (err) {
         goto err1;
+    }
 
     if (!ct) {
         err = PTL_ARG_INVALID;
@@ -385,6 +399,7 @@ int _PtlCTWait(PPEGBL ptl_handle_ct_t ct_handle, uint64_t threshold,
     gbl_put();
   err0:
 #endif
+    abort_state_dec();
     return err;
 }
 
@@ -416,6 +431,17 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
     ct_t *cts[size];
     int i;
     int i2;
+    
+    /*
+     * PtlAbort has been called and currently aborting
+    /* return PTL_ABORTED
+    */
+    err = check_abort_state();
+    if (err == PTL_ABORTED)
+        return err;
+    
+    /* No abort happening */
+    abort_state_inc();
 
 #ifndef NO_ARG_VALIDATION
     err = gbl_get();
@@ -472,6 +498,9 @@ int _PtlCTPoll(PPEGBL const ptl_handle_ct_t *ct_handles,
     gbl_put();
   err0:
 #endif
+    
+    /* we are leaving a polling/waiting function that can be aborted */
+    abort_state_dec();
     return err;
 }
 

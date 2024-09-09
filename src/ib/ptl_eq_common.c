@@ -109,11 +109,11 @@ static inline int check_eq(struct eqe_list *eqe_list, ptl_event_t *event_p)
             return err;
     }
 
-    if (eqe_list->interrupt) {
-        /* PTL_INTERRUPTED is deprecated as of 4.3 */
-        /* return PTL_INTERRUPTED; */
-        return PTL_FAIL;
-    }
+    //if (eqe_list->interrupt) {
+    //    /* PTL_INTERRUPTED is deprecated as of 4.3 */
+    //    /* return PTL_INTERRUPTED; */
+    //    return PTL_FAIL;
+    //}
 
     return PTL_EQ_EMPTY;
 }
@@ -128,18 +128,31 @@ int PtlEQWait_work(struct eqe_list *eqe_list, ptl_event_t *event_p)
     atomic_inc(&eqe_list->waiter);
 
     while (1) {
-        err = check_eq(eqe_list, event_p);
-        if (err != PTL_EQ_EMPTY) {
+
+        /*
+         * has PtlAbort been called?
+         * if so, leave immediately
+         */
+        err = check_abort_state();
+        if (err == PTL_ABORTED)
             break;
-        }
+
+
+        err = check_eq(eqe_list, event_p);
+        if (err != PTL_EQ_EMPTY)
+            break;
 
         sched_yield();
 
 
     }
+
     atomic_dec(&eqe_list->waiter);
     atomic_dec(&keep_polling);
 
+    return err;
+
+  err0:
     return err;
 }
 
@@ -151,6 +164,7 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
                    unsigned int *which_p)
 {
     int err;
+    int ret;
     uint64_t nstart;
     uint64_t timeout_ns;
     TIMER_TYPE start;
@@ -177,12 +191,20 @@ int PtlEQPoll_work(struct eqe_list *eqe_list_in[], unsigned int size,
                 }
             }
 
-            if (eqe_list->interrupt) {
-                /* PTL_INTERRUPTED is deprecated as of 4.3 */
-                /* err = PTL_INTERRUPTED; */
-                err = PTL_FAIL;
+            //    /* PTL_INTERRUPTED is deprecated as of 4.3 */
+            //if (eqe_list->interrupt) {
+            //    /* err = PTL_INTERRUPTED; */
+            //    err = PTL_FAIL;
+            //    goto out;
+            //}
+
+
+            /* has PtlAbort() been called? */
+            err = check_abort_state();
+            if (err == PTL_ABORTED)
                 goto out;
-            }
+
+
         }
 
         if (!forever) {

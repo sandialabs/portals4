@@ -54,6 +54,8 @@ void gbl_release(ref_t *ref)
     iface_fini(gbl);
 
     pthread_mutex_destroy(&gbl->gbl_mutex);
+    /* for PtlAbort */
+    pthread_mutex_destroy(&abort_state.abort_state_mutex);
 }
 
 static void *event_loop_func(void *arg)
@@ -246,6 +248,8 @@ int gbl_init(gbl_t *gbl)
         return err;
 
     pthread_mutex_init(&gbl->gbl_mutex, NULL);
+    /* for PtlAbort */
+    pthread_mutex_init(&abort_state.abort_state_mutex, NULL);
 
     /* Create the event loop thread. */
     evl_init(&evl);
@@ -274,6 +278,10 @@ int gbl_init(gbl_t *gbl)
 int PtlInit(void)
 {
     return _PtlInit(&per_proc_gbl);
+}
+void PtlAbort(void)
+{
+    _PtlAbort(&per_proc_gbl);
 }
 
 void PtlFini(void)

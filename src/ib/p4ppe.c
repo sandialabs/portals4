@@ -1414,6 +1414,14 @@ static void do_OP_PtlEndBundle(ppebuf_t *buf)
         _PtlEndBundle(&client->gbl, buf->msg.PtlEndBundle.ni_handle);
 }
 
+static void do_OP_PtlAbort(ppebuf_t *buf)
+{
+    struct client *client = buf->cookie;
+
+    buf->msg.ret =
+        _PtlEndBundle(&client->gbl, buf->msg.PtlEndBundle.ni_handle);
+}
+
 #define ADD_OP(opname) [OP_##opname] = { .func = do_OP_##opname, .name = #opname }
 static struct {
     void (*func) (ppebuf_t *buf);
@@ -1435,6 +1443,7 @@ static struct {
         ADD_OP(PtlTriggeredCTSet), ADD_OP(PtlTriggeredFetchAtomic),
         ADD_OP(PtlTriggeredGet), ADD_OP(PtlTriggeredPut),
         ADD_OP(PtlTriggeredSwap),
+        ADD_OP(PtlAbort)
 #ifdef WITH_TRIG_ME_OPS
         ADD_OP(PtlTriggeredMEAppend), ADD_OP(PtlTriggeredMEUnlink),
 #endif
@@ -1545,6 +1554,9 @@ int gbl_init(gbl_t *gbl)
 
     pthread_mutex_init(&gbl->gbl_mutex, NULL);
 
+    /* for PtlAbort */
+    pthread_mutex_init(&abort_state->abort_state_mutex, NULL);
+
     /* init ni object pool */
     err = pool_init(gbl, &gbl->ni_pool, "ni", sizeof(ni_t), POOL_NI, NULL);
     if (err) {
@@ -1556,6 +1568,7 @@ int gbl_init(gbl_t *gbl)
 
   err:
     pthread_mutex_destroy(&gbl->gbl_mutex);
+    pthread_mutex_destroy(&abort_state->abort_state_mutex, NULL);
     return err;
 }
 
